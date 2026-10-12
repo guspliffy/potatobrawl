@@ -1,0 +1,27 @@
+[Unit]
+Description=PotatoBrawl game server
+After=network.target
+
+[Service]
+Type=simple
+User=potatobrawl
+Group=potatobrawl
+WorkingDirectory=/opt/potatobrawl
+ExecStart=/usr/bin/node /opt/potatobrawl/server.js
+Environment=PORT=8080
+Environment=KEEPALIVE_MINUTES=0
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

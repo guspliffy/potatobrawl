@@ -1,0 +1,13 @@
+# Render Blueprint: one free web service in Frankfurt that serves the game and relays matches.
+services:
+  - type: web
+    name: potatobrawl
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: KEEPALIVE_MINUTES
+        value: "4"
