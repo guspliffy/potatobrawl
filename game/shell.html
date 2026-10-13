@@ -162,16 +162,18 @@ button { font: inherit; color: inherit; }
   display: grid; place-items: center; overflow: hidden;
 }
 .pb.on { background: var(--bc); color: var(--ink); }
-.pb[data-k="light"] { --bc: var(--sand); width: 80px; height: 80px; right: 86px; bottom: 10px; font-size: 15px; }
-.pb[data-k="heavy"] { --bc: var(--ember); width: 66px; height: 66px; right: 178px; bottom: 26px; }
+.pb[data-k="light"] { --bc: var(--sand); width: 80px; height: 80px; right: 82px; bottom: 10px; font-size: 15px; }
+.pb[data-k="heavy"] { --bc: var(--ember); width: 73px; height: 73px; right: 171px; bottom: 22px; font-size: 14px; }
 .pb[data-k="jump"] { --bc: #eef0fa; width: 70px; height: 70px; right: 8px; bottom: 92px; }
-.pb[data-k="special"] { --bc: var(--fc, #8fb6ff); width: 58px; height: 58px; right: 100px; bottom: 108px; font-size: 11px; }
+.pb[data-k="special"] { --bc: var(--fc, #8fb6ff); width: 64px; height: 64px; right: 97px; bottom: 105px; font-size: 12px; transition: transform 90ms ease-out; }
+/* in the air after a jump (a ground jump or an air jump) the special is 15% bigger, growing from its centre so nothing else moves */
+.pb[data-k="special"].jb { transform: scale(1.15); }
 .pb[data-k="dodge"] { --bc: var(--mute); width: 54px; height: 54px; right: 16px; bottom: 18px; font-size: 11px; }
 .pb[data-k="special"]::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(14, 16, 34, 0.78) calc(var(--cd, 0) * 360deg), transparent 0); pointer-events: none; }
 .pb > span { position: relative; z-index: 1; }
 /* the special can finish: it glows and shows its name (the opponent is at finish percent) */
 .pb[data-k="special"].fin { animation: specFin 0.7s ease-in-out infinite; }
-.pb[data-k="special"].fin > span { font-size: 10px; line-height: 1; letter-spacing: 0.02em; text-align: center; padding: 0 3px; white-space: normal; }
+.pb[data-k="special"].fin > span { font-size: 11px; line-height: 1; letter-spacing: 0.02em; text-align: center; padding: 0 3px; white-space: normal; }
 @keyframes specFin { 0%, 100% { box-shadow: 0 0 6px 1px var(--bc), inset 0 0 8px rgba(255, 255, 255, 0.15); } 50% { box-shadow: 0 0 20px 6px var(--bc), inset 0 0 14px rgba(255, 255, 255, 0.45); } }
 /* heavy charge: a ring fills inside the button while the heavy is held */
 .pb[data-k="heavy"]::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; pointer-events: none; opacity: 0; background: conic-gradient(#fff calc(var(--ch, 0) * 360deg), rgba(14, 16, 34, 0.5) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); }
@@ -463,7 +465,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
-@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } }
 </style>
 
 <div id="app">

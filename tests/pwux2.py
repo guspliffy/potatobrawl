@@ -1,4 +1,4 @@
-import asyncio, sys
+import asyncio, sys, math
 import pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
 from playwright.async_api import async_playwright
@@ -40,6 +40,71 @@ async def fresh(b, tag, vp, mob, errs):
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)
     await frames(pg, 20); await pg.screenshot(path=f'{OUT}/{tag}_t1.png')
     await ctx.close()
+# --- touch controls: Heavy/Special sizes, spacing, Special boost in the air after a jump ---
+PAD_RECTS = """(() => { const o = {}; for (const b of document.querySelectorAll('.pb')) { const r = b.getBoundingClientRect(); o[b.dataset.k] = { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; } return o; })()"""
+SP = "document.querySelector('.pb[data-k=special]')"
+def layout(tag, what, rc, vp, top, errs):
+    ks = list(rc)
+    for i, a in enumerate(ks):
+        A = rc[a]
+        if A['x'] - A['r'] < 8 or A['x'] + A['r'] > vp['width'] - 8 or A['y'] - A['r'] < top or A['y'] + A['r'] > vp['height'] - 4:
+            errs.append(f"{tag} {what}: {a} too near the screen edge or panel top")
+        for b in ks[i + 1:]:
+            B = rc[b]; gap = math.hypot(A['x'] - B['x'], A['y'] - B['y']) - A['r'] - B['r']
+            if gap < 4: errs.append(f"{tag} {what}: {a} and {b} are {gap:.1f}px apart")
+async def hud(b, tag, vp, up, errs):
+    mob = vp['width'] < 1000
+    ctx = await b.new_context(viewport=vp, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=True)
+    await ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify({tokens: 85, rating: 1080, wins: 3, losses: 2, matches: 5%s}))" % (", screen: 'up'" if up else ""))
+    pg = await ctx.new_page()
+    pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
+    await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true"); await pg.wait_for_timeout(900)
+    # practice against the Dummy, so nothing hits the player while the jump is measured
+    await pg.tap('#bPractice'); await pg.wait_for_timeout(500)
+    await pg.tap('#lvlPick'); await pg.wait_for_timeout(200)
+    await pg.evaluate("[...document.querySelectorAll('#lvlPop button')].find((x) => x.textContent === 'Dummy').click()"); await pg.wait_for_timeout(200)
+    await pg.tap('#selGo'); await pg.wait_for_timeout(700)
+    await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)
+    await frames(pg, 30)
+    top = await pg.evaluate("innerHeight - parseFloat(getComputedStyle(document.getElementById('app')).getPropertyValue('--panelH'))") if up else 0
+    rc = await pg.evaluate(PAD_RECTS)
+    layout(tag, 'normal', rc, vp, top, errs)
+    h, s = rc['heavy']['r'] * 2, rc['special']['r'] * 2
+    k = rc['jump']['r'] * 2 / 70    # the upright panel scales the cluster (0.9)
+    if abs(h - 73 * k) > 1 or abs(s - 64 * k) > 1: errs.append(f'{tag}: heavy {h:.1f}px / special {s:.1f}px, want {73 * k:.1f} / {64 * k:.1f}')
+    await pg.screenshot(path=f'{OUT}/{tag}_6_hud.png')
+    # boosted: layout must still be clean, and the size is +15%
+    await pg.evaluate(f"{SP}.style.transform = 'scale(1.15)'")
+    await pg.wait_for_function(f"{SP}.getBoundingClientRect().width > {s} * 1.14", timeout=20000); await pg.wait_for_timeout(100)
+    rb = await pg.evaluate(PAD_RECTS)
+    layout(tag, 'special boosted', rb, vp, top, errs)
+    if abs(rb['special']['r'] * 2 / s - 1.15) > 0.01: errs.append(f"{tag}: boosted special is {rb['special']['r'] * 2 / s:.3f}x, want 1.15x")
+    await pg.evaluate(f"{SP}.style.transform = ''")
+    await pg.wait_for_function(f"{SP}.getBoundingClientRect().width < {s} * 1.01", timeout=20000)
+    # the real thing: Jump boosts the Special until landing
+    cls = lambda: pg.evaluate(f"{SP}.classList.contains('jb')")
+    if await cls(): errs.append(f'{tag}: special boosted before any jump')
+    await pg.tap('.pb[data-k=jump]')
+    await pg.wait_for_function(f"{SP}.classList.contains('jb')", timeout=15000)
+    await pg.wait_for_function(f"{SP}.getBoundingClientRect().width > {s} * 1.14", timeout=15000); await pg.wait_for_timeout(60)
+    await pg.screenshot(path=f'{OUT}/{tag}_6b_hud_jump.png')
+    await pg.wait_for_function(f"!{SP}.classList.contains('jb')", timeout=15000)   # landed
+    # air jump counts too
+    await pg.tap('.pb[data-k=jump]'); await pg.wait_for_function(f"{SP}.classList.contains('jb')", timeout=15000)
+    await pg.wait_for_function(f"!{SP}.classList.contains('jb')", timeout=15000)
+    # falls that are not jumps: walking off a ledge (in the air, no jump event) does not boost
+    await pg.evaluate("(() => { const f = window.__blastline.game.fighters[0]; f.grounded = false; f.state = 'air'; f.y -= 170; f.vy = 0; })()")
+    await frames(pg, 6)
+    if await pg.evaluate("window.__blastline.game.fighters[0].grounded"): errs.append(f'{tag}: test fall ended too early')
+    if await cls(): errs.append(f'{tag}: special boosted while falling without a jump')
+    await pg.wait_for_function("window.__blastline.game.fighters[0].grounded", timeout=15000); await frames(pg, 4)
+    # a hit out of a jump ends the boost, and being knocked up does not start one
+    await pg.tap('.pb[data-k=jump]'); await pg.wait_for_function(f"{SP}.classList.contains('jb')", timeout=15000)
+    await pg.evaluate("(() => { const f = window.__blastline.game.fighters[0]; f.state = 'hitstun'; f.hitstun = 30; f.tumble = true; f.kby = -6; })()")
+    await pg.wait_for_function(f"!{SP}.classList.contains('jb')", timeout=15000)
+    await frames(pg, 40)
+    if await cls(): errs.append(f'{tag}: special boosted again after being hit out of a jump')
+    await ctx.close()
 async def main():
     errs = []
     async with async_playwright() as p:
@@ -47,6 +112,8 @@ async def main():
         await shoot(b, 'phone', {'width': 844, 'height': 390}, True, errs)
         await shoot(b, 'se', {'width': 667, 'height': 320}, True, errs)
         await shoot(b, 'desk', {'width': 1280, 'height': 760}, False, errs)
+        for tag, vp, up in [('se', {'width': 667, 'height': 320}, False), ('phone', {'width': 844, 'height': 390}, False), ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True)]:
+            await hud(b, tag + 'T', vp, up, errs)
         await fresh(b, 'phone', {'width': 844, 'height': 390}, True, errs)
         await fresh(b, 'desk', {'width': 1280, 'height': 760}, False, errs)
         await b.close()

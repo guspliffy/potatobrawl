@@ -225,14 +225,14 @@ function enterMatchUI() {
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
-  hudX.spFin = null; hudX.ch = -1; btnSpec.classList.remove("fin"); btnSpec.querySelector("span").textContent = "Special";
+  hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
   for (const e of document.querySelectorAll(".pcard")) e.classList.remove("finr");
   fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
-const hudCache = [{}, {}], hudX = { spFin: null, ch: -1 };
+const hudCache = [{}, {}], hudX = { spFin: null, ch: -1, jb: false };
 const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
 // A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
 function finReady(i) {
@@ -287,6 +287,12 @@ function updateHud() {
   // touch: the special glows and names itself while the opponent is at finish percent
   const sf = !!hudCache[1 - meSlot].fin;
   if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? me.spec.signature.name : "Special"; }
+  // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
+  // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,
+  // being hit (hitstun, tumble), the ledge, a KO or respawn, so a walk-off or a knock-up never boosts it.
+  const jumpAir = !me.grounded && !me.tumble && (me.state === "air" || me.state === "attack" || me.state === "dodge");
+  if (hudX.jb && !jumpAir) hudX.jb = false;
+  if (btnSpec.classList.contains("jb") !== hudX.jb) btnSpec.classList.toggle("jb", hudX.jb);
   // touch: a ring fills on the Heavy button while a ground heavy is held and charging
   const mv = me.move, charging = me.state === "attack" && !!mv && !!mv.charge && me.chg > 0 && me.mt <= mv.startup - BL.TUNE.chgHold;
   const chv = charging ? Math.min(1, me.chg / BL.TUNE.chgMax) : 0;
