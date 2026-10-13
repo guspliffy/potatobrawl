@@ -310,7 +310,7 @@ const FIGHTERS = [
       up:    M(5, 5, 12,  6, 5, 8, 86, [16, -70, 20, -16, -72], { limb: "arm" }),
       down:  M(5, 3, 11,  5, 4, 7, 18, [32, -6, 16], { limb: "leg" }),
       // Fan the hammer: a point-blank blast that kicks him back in a small hop
-      hSide: M(13, 4, 26, 15, 7, 19, 34, [36, -38, 21, 56, -36], { limb: "arm", impulse: [-5, -3] }),
+      hSide: M(13, 4, 24, 15, 7, 20, 34, [36, -38, 21, 56, -36], { limb: "arm", impulse: [-5, -3] }),
       hUp:   M(11, 6, 22, 13, 7, 18, 88, [10, -88, 26], { limb: "arm" }),
       hDown: M(11, 4, 24, 12, 6.5, 16, 25, [[38, -10, 19], [-38, -10, 19]], { limb: "arm" }),
       nair:  M(4, 7, 10,  7, 4.5, 8, 45, [0, -32, 30], { limb: "body", landLag: 6 }),
@@ -323,7 +323,7 @@ const FIGHTERS = [
       pound: M(9, 1, 18,  10, 6, 11, -78, [0, -6, 22], { limb: "leg", pound: true, vyStart: 17, landLag: 15 }),
       // two quick weak shots; against a finish-ready opponent one golden bullet instead ("High Noon", see finCount)
       spec:  M(8, 9, 12, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 48,
-               proj: { style: "bullet", speed: 15, life: 30, r: 8, ox: 34, oy: -38, count: 2, interval: 8, dmg: 3, bkb: 2.5, kbg: 1.5, angle: 20,
+               proj: { style: "bullet", speed: 15, life: 30, r: 8, ox: 34, oy: -38, count: 2, interval: 8, dmg: 4, bkb: 2.5, kbg: 1.5, angle: 20,
                        finCount: 1, finStyle: "gold", fin: { dmg: 10, bkb: 10, kbg: 14, angle: 30 } } }),
     },
   },
