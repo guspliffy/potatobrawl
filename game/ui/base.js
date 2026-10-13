@@ -106,5 +106,54 @@ const Sfx = {
   burst() { this.noise(0.25, 0.35, 1400); this.tone(220, 90, 0.2, "sine", 0.25); },
   caw() { this.tone(700, 420, 0.09, "sawtooth", 0.05); setTimeout(() => this.tone(650, 380, 0.08, "sawtooth", 0.045), 110); },
   fry() { this.tone(980, 520, 0.06, "square", 0.045); this.noise(0.04, 0.08, 4000); },
+  // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"
+  noiseF(dur, vol, type, f0, f1, q) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noiseBuf; f.type = type; f.Q.value = q || 1;
+    f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+    this.env(g, t, vol, dur); s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
+  },
+  later(ms, fn) { setTimeout(() => { if (this.ok()) fn(); }, ms); },
+  // Heavy attacks: a low "whoomp" under every heavy, then a signature per fighter and move (id = fighter, key = hSide / hUp / hDown / hAir)
+  heavy(id, key) {
+    if (!this.ok()) return;
+    const up = key === "hUp", dn = key === "hDown", air = key === "hAir";
+    this.tone(180, 50, 0.3, "sine", 0.42); this.noise(0.22, 0.2, 500);
+    switch (id) {
+      case "dragon": // a rip and a short growl; fwap for the horn toss, low whoosh and thud for the tail
+        this.noiseF(0.22, 0.3, "bandpass", 1800, 1800, 1.1);
+        this.tone(105, 62, 0.32, "sawtooth", 0.12); this.tone(112, 70, 0.28, "sawtooth", 0.09);
+        if (up) this.noiseF(0.16, 0.35, "bandpass", 500, 1700, 1.4);
+        if (dn) { this.noiseF(0.3, 0.3, "lowpass", 900, 200, 0.8); this.later(110, () => this.tone(95, 38, 0.2, "sine", 0.4)); }
+        break;
+      case "samurai": // shing
+        this.noiseF(0.28, 0.22, "highpass", 2600, 6500, 2.2); this.tone(2300, 3600, 0.26, "sine", 0.07); this.tone(3400, 5200, 0.2, "triangle", 0.035);
+        if (key === "hSide") this.later(330, () => { this.tone(1500, 900, 0.05, "square", 0.09); this.noise(0.03, 0.2, 5000); });   // the click as the blade is sheathed
+        break;
+      case "odin": // deep thud with ice crackle, a caw for the raven, a boom for the stomp
+        this.tone(95, 38, 0.42, "sine", 0.55);
+        this.noiseF(0.18, 0.18, "highpass", 5200, 3600, 2);
+        if (up) this.later(60, () => this.caw());
+        if (dn) { this.tone(70, 28, 0.6, "sine", 0.55); this.noise(0.4, 0.3, 380); }
+        if (!up && !dn) this.later(80, () => { this.noiseF(0.1, 0.12, "highpass", 6200, 5200, 3); this.noiseF(0.08, 0.1, "highpass", 4600, 6200, 3); });
+        break;
+      case "wizard": // a chime over the whoomp; boom plus chime for the slam
+        this.tone(880, 880, 0.5, "sine", 0.07); this.later(70, () => this.tone(1318, 1318, 0.5, "sine", 0.06));
+        if (dn) { this.tone(80, 30, 0.5, "sine", 0.55); this.noise(0.3, 0.25, 420); this.later(120, () => { this.tone(1760, 1760, 0.6, "sine", 0.05); this.tone(2093, 2093, 0.5, "sine", 0.035); }); }
+        break;
+      case "phoenix": // a fire roar; fwap plus fire for the wing flare; thud and sizzle for the stomp
+        this.noiseF(0.4, 0.3, "lowpass", 1300, 500, 0.7); this.tone(210, 90, 0.34, "sawtooth", 0.06);
+        if (up) this.noiseF(0.14, 0.3, "bandpass", 600, 1800, 1.4);
+        if (dn) { this.tone(90, 34, 0.3, "sine", 0.45); this.later(80, () => this.noiseF(0.35, 0.16, "highpass", 3800, 7000, 1.3)); }
+        break;
+      case "alchemist": // zap crackle; glass and a burst for the flask
+        if (dn) {
+          this.noiseF(0.2, 0.2, "highpass", 3200, 6800, 1.5); this.tone(2600, 1700, 0.18, "triangle", 0.06); this.tone(3600, 2400, 0.14, "triangle", 0.04);
+          this.later(60, () => this.burst());
+        } else { for (let i = 0; i < 4; i++) this.later(i * 38, () => this.tone(900 + Math.random() * 1500, 300 + Math.random() * 400, 0.05, "square", 0.05)); this.noiseF(0.18, 0.12, "highpass", 4000, 6000, 1); }
+        break;
+    }
+  },
 };
 

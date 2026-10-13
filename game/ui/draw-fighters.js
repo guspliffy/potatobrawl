@@ -6,7 +6,9 @@ function rot(p, c, a) { const dx = p[0] - c[0], dy = p[1] - c[1], cs = Math.cos(
 function pose(f, tk) {
   const L_ = f.spec.look, s = f.s, w = s.w, h = s.h;
   const leg = h * L_.leg, tor = h * L_.torso, hr = h * L_.headR;
-  const P = { leg, tor, hr, w, h, crouch: 0, lean: 0, spin: 0, swoosh: null, dim: false, mouth: 0, tailTo: null, flap: 0 };
+  const P = { leg, tor, hr, w, h, crouch: 0, lean: 0, spin: 0, swoosh: null, dim: false, mouth: 0, tailTo: null, flap: 0,
+    // heavy-attack extras (see HEAVY_LOOK): glint, wings, hop, weapon angle, sheathed blade, tail whirl, crystal, raven, flask
+    pre: 0, hv: null, wingUp: 0, hop: 0, holdAng: null, sheath: 0, tailSwing: null, tailLift: 0, cryK: 1, ravenK: 0, ravenTo: null, flask: 0, hornFlash: 0, glintAt: null };
   let fF = [w * 0.24, 0], fB = [-w * 0.2, 0];
   let hF = [w * 0.5, -leg - tor * 0.52], hB = [w * 0.2, -leg - tor * 0.42];
   const st = f.state;
@@ -45,11 +47,13 @@ function pose(f, tk) {
   if (st === "attack" && f.move) {
     const m = f.move, a0 = m.startup + 1, a1 = m.startup + m.active;
     const b = m.boxes[0];
+    const hk = HEAVY_KEYS[f.mid] === 1 ? f.mid : null;   // a heavy: gets the shared heavy language plus its HEAVY_LOOK entry
     let tx = w * 0.9, ty = -leg - tor * 0.6;
     if (b) { const t = m.active > 1 ? clamp((f.mt - a0) / (m.active - 1), 0, 1) : 0; tx = b.x + (b.x2 - b.x) * t; ty = b.y + (b.y2 - b.y) * t; }
     const phase = f.mt < a0 ? 0 : f.mt <= a1 ? 1 : 2;
     const k = phase === 0 ? f.mt / Math.max(1, m.startup) : phase === 2 ? (f.mt - a1) / Math.max(1, m.endlag) : 1;
-    const wind = [-Math.abs(tx) * 0.3 - w * 0.25, ty * 0.85 + 4];
+    // heavies pull the limb much further back before they swing
+    const wind = hk ? [-Math.abs(tx) * 0.45 - w * 0.4, ty * 0.7 + 10] : [-Math.abs(tx) * 0.3 - w * 0.25, ty * 0.85 + 4];
     const reach = (rest) => (phase === 0 ? lerp2(rest, wind, ease(k)) : phase === 1 ? [tx, ty] : lerp2([tx, ty], rest, ease(k)));
     if (m.limb === "arm") hF = reach(hF);
     else if (m.limb === "leg") { fF = reach(fF); if (phase < 2) P.lean = ty > -leg ? -0.2 : 0; }
@@ -74,7 +78,23 @@ function pose(f, tk) {
     if (m.kind === "projectile" && m.limb !== "head") { hF = phase === 0 ? lerp2(hF, [-w * 0.6, -leg - tor * 0.9], ease(k)) : lerp2([w * 1.1, -leg - tor * 0.7], hF, phase === 2 ? ease(k) : 0); }
     if (m.kind === "charge" && phase === 0) P.crouch = 0.3 * ease(k);
     if (m.pound) { fF = [w * 0.08, 4]; fB = [-w * 0.12, 2]; hF = [w * 0.42, -leg - tor * 1.15]; hB = [-w * 0.42, -leg - tor * 1.1]; }
-    if (phase === 1 && b) P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire };
+    let look = null, replace = false;
+    if (hk) {
+      // shared heavy language: a deeper crouch while winding up, a glint in the last two startup frames
+      const air = !f.grounded, wk = phase === 0 ? ease(clamp(f.mt / Math.max(1, m.startup - 1), 0, 1)) : 1;
+      P.crouch = Math.max(P.crouch, phase === 0 ? (air ? 0.12 : 0.25) * wk : phase === 2 ? (air ? 0.1 : 0.2) * (1 - ease(k)) : 0);
+      P.pre = phase === 0 && f.mt >= m.startup - 1 ? (f.mt >= m.startup ? 1 : 0.6) : 0;
+      look = HEAVY_LOOK[f.spec.id] && HEAVY_LOOK[f.spec.id][hk] || null;
+      const X = { P, f, m, key: hk, phase, k, u: phase === 0 ? 0 : phase === 1 ? (m.active > 1 ? (f.mt - a0) / (m.active - 1) : 1) : 1, wk, mt: f.mt, startup: m.startup, active: m.active, a0, a1, age: f.mt - a0,
+        tx, ty, b, w, h, leg, tor, air, hF, hB, fF, fB, replace: false };
+      if (look && look.pose) look.pose(X);
+      hF = X.hF; hB = X.hB; fF = X.fF; fB = X.fB; replace = X.replace;
+      P.hv = { id: f.spec.id, key: hk, look, phase, k, u: X.u, wk, age: X.age, startup: m.startup, active: m.active, a0, a1, tx, ty, b, trail: X.trail || null };
+    }
+    const lingerEnd = a1 + (look && look.linger != null ? look.linger : 0);
+    if (b && !replace && (phase === 1 || (phase === 2 && f.mt <= lingerEnd && look && look.keepSwoosh))) {
+      P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire, hv: !!hk, linger: phase === 2, age: f.mt - a0, key: hk };
+    }
   }
   if (L_.wings) {
     const fast = st === "attack" && f.move && (f.move.rec || f.mid === "spec");
@@ -285,16 +305,25 @@ function drawWing(c, P, pal, f) {
 }
 function drawFlame(c, P, S, tk) {
   const m = rot(P.mouthPt || [P.head[0] + P.hr * 1.5, P.head[1] + P.hr * 0.25], P.hip, P.lean);
-  const len = Math.hypot(S.tx - m[0], S.ty - m[1]) + S.r, ang = Math.atan2(S.ty - m[1], S.tx - m[0]);
+  const big = S.hv ? 1.5 : 1;   // heavy flames are half as big again
+  const len = (Math.hypot(S.tx - m[0], S.ty - m[1]) + S.r) * (S.hv ? 1.2 : 1), ang = Math.atan2(S.ty - m[1], S.tx - m[0]);
   const fl = Math.sin(tk * 1.3) * 3;
   c.save(); c.translate(m[0], m[1]); c.rotate(ang);
   const gr = c.createLinearGradient(0, 0, len, 0);
   gr.addColorStop(0, "#fff6c8"); gr.addColorStop(0.3, "#ffc04d"); gr.addColorStop(0.7, "#ff6a2b"); gr.addColorStop(1, "rgba(255,70,30,0)");
   c.fillStyle = gr; c.globalAlpha = 0.95;
-  c.beginPath(); c.moveTo(0, -3); c.quadraticCurveTo(len * 0.5, -(S.r + fl), len, -S.r * 0.35);
-  c.lineTo(len, S.r * 0.35); c.quadraticCurveTo(len * 0.5, S.r + fl, 0, 3); c.closePath(); c.fill();
+  const R = S.r * big;
+  c.beginPath(); c.moveTo(0, -3); c.quadraticCurveTo(len * 0.5, -(R + fl), len, -R * 0.35);
+  c.lineTo(len, R * 0.35); c.quadraticCurveTo(len * 0.5, R + fl, 0, 3); c.closePath(); c.fill();
   c.fillStyle = "rgba(255,250,220,0.85)";
-  c.beginPath(); c.moveTo(0, -1.5); c.quadraticCurveTo(len * 0.4, -S.r * 0.35, len * 0.65, 0); c.quadraticCurveTo(len * 0.4, S.r * 0.35, 0, 1.5); c.fill();
+  c.beginPath(); c.moveTo(0, -1.5); c.quadraticCurveTo(len * 0.4, -R * 0.35, len * 0.65, 0); c.quadraticCurveTo(len * 0.4, R * 0.35, 0, 1.5); c.fill();
+  if (S.hv) {
+    // ember comet: sparks stream off the tip of a heavy flame
+    for (let i = 0; i < 7; i++) {
+      const q = ((tk * 0.09 + i * 0.37) % 1), ex = len * (0.55 + q * 0.7), ey = Math.sin(tk * 0.7 + i * 2.3) * R * (0.4 + q * 0.5);
+      c.fillStyle = q < 0.5 ? "#ffe08a" : "#ff8a3d"; c.globalAlpha = 0.9 * (1 - q); c.beginPath(); c.arc(ex, ey, 3.2 * (1 - q * 0.6), 0, Math.PI * 2); c.fill();
+    }
+  }
   c.restore();
 }
 
@@ -434,7 +463,14 @@ function batWing(c, ax, ay, ang, len, pal, dark, mirror) {
 }
 function dragonTail(c, P, pal, tk, f) {
   const sw = Math.sin(tk * 0.07 + f.slot) * 3;
-  const pts = [[-P.w * 0.2, P.hip[1] - 6], [-P.w * 0.75, P.hip[1] + 2], [-P.w * 1.15, -4 + sw * 0.3], [-P.w * 1.45 + sw, -7]];
+  let pts = [[-P.w * 0.2, P.hip[1] - 6], [-P.w * 0.75, P.hip[1] + 2], [-P.w * 1.15, -4 + sw * 0.3], [-P.w * 1.45 + sw, -7]];
+  if (P.tailTo) {
+    // Tail sweep: the tail follows P.tailTo (a bowed curve from the hip to the tip)
+    const a = pts[0], t = P.tailTo, dx = t[0] - a[0], dy = t[1] - a[1], d = Math.hypot(dx, dy) || 1;
+    let nx = -dy / d, ny = dx / d; if (ny > 0) { nx = -nx; ny = -ny; }
+    const ctrl = [(a[0] + t[0]) / 2 + nx * d * 0.28, (a[1] + t[1]) / 2 + ny * d * 0.28];
+    pts = qpts(a, ctrl, t, 3);
+  }
   c.lineCap = "round";
   for (const [wd, col] of [[P.w * 0.3 + 3, OUT], [P.w * 0.3, pal.accent]]) {
     for (let i = 0; i < pts.length - 1; i++) {
@@ -522,6 +558,7 @@ function wizardHat(c, P, pal, tk) {
   leaf(c, -rx * 0.3, by - ry * 0.62, 0.8, -0.4); leaf(c, rx * 0.2, by - ry * 0.4, 0.8, 0.6); leaf(c, -rx * 0.45, by - ry * 1.25, 0.75, 0.2);
 }
 function heldDir(f, P, shR, rest) {
+  if (P.holdAng != null) return P.holdAng;   // a heavy look fixes the weapon angle (staff slam, sheathed katana ...)
   const m = f.state === "attack" && f.move;
   if (m && m.kind === "dash") return 0.05;
   if (m && (m.limb === "arm" || m.limb === "both")) return Math.atan2(P.hF[1] - shR[1], P.hF[0] - shR[0]);
@@ -533,26 +570,36 @@ function wizardStaff(c, P, f, shR, tk) {
   c.lineCap = "round";
   c.strokeStyle = OUT; c.lineWidth = 6; c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke();
   c.strokeStyle = "#7a4a26"; c.lineWidth = 3.5; c.stroke();
-  const fl = 1 + Math.sin(tk * 0.3) * 0.08;
-  const glow = c.createRadialGradient(t[0], t[1], 1, t[0], t[1], 16 * fl);
+  const fl = 1 + Math.sin(tk * 0.3) * 0.08, gf = fl * P.cryK, cf = fl * (1 + (P.cryK - 1) * 0.5);   // cryK: the crystal flares during heavy wind-ups
+  const glow = c.createRadialGradient(t[0], t[1], 1, t[0], t[1], 16 * gf);
   glow.addColorStop(0, "rgba(255,226,140,0.85)"); glow.addColorStop(1, "rgba(255,200,90,0)");
-  c.fillStyle = glow; c.beginPath(); c.arc(t[0], t[1], 16 * fl, 0, Math.PI * 2); c.fill();
+  c.fillStyle = glow; c.beginPath(); c.arc(t[0], t[1], 16 * gf, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(t[0], t[1]); c.rotate(a + Math.PI / 2);
-  c.beginPath(); c.moveTo(0, -11 * fl); c.lineTo(4.5, -2); c.lineTo(2.5, 4); c.lineTo(-2.5, 4); c.lineTo(-4.5, -2); c.closePath();
+  c.beginPath(); c.moveTo(0, -11 * cf); c.lineTo(4.5 * cf, -2); c.lineTo(2.5 * cf, 4); c.lineTo(-2.5 * cf, 4); c.lineTo(-4.5 * cf, -2); c.closePath();
   c.fillStyle = "#ffd27a"; c.fill(); c.lineWidth = 1.4; c.strokeStyle = "#a8701c"; c.stroke();
-  c.fillStyle = "#fff6d8"; c.beginPath(); c.moveTo(0, -7 * fl); c.lineTo(2, -1); c.lineTo(-2, -1); c.closePath(); c.fill();
+  c.fillStyle = "#fff6d8"; c.beginPath(); c.moveTo(0, -7 * cf); c.lineTo(2 * cf, -1); c.lineTo(-2 * cf, -1); c.closePath(); c.fill();
   c.restore();
   P.staffTip = t;
 }
 function katana(c, P, f, shR, pal) {
-  const a = heldDir(f, P, shR, -0.8), L = P.w * 1.35;
+  const a = heldDir(f, P, shR, -0.8), L = P.w * 1.35, sh = P.sheath;
   c.save(); c.translate(P.hF[0], P.hF[1]); c.rotate(a);
   c.lineCap = "round";
   c.strokeStyle = OUT; c.lineWidth = 5.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(2, 0); c.stroke();
   c.strokeStyle = "#3a2a22"; c.lineWidth = 3; c.stroke();
-  c.beginPath(); c.moveTo(4, -1.8); c.quadraticCurveTo(L * 0.55, -3.6, L, -5.5); c.quadraticCurveTo(L * 0.55, 0.6, 4, 1.8); c.closePath();
-  c.fillStyle = pal.accent; c.fill(); c.lineWidth = 1.5; c.strokeStyle = OUT; c.stroke();
-  c.strokeStyle = "rgba(255,255,255,0.6)"; c.lineWidth = 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(L * 0.55, -2.5, L - 4, -4.5); c.stroke();
+  if (sh > 0) {
+    // Iaido: the blade rests in its scabbard (lacquer, gold mouth and tip) until the draw
+    c.beginPath(); c.moveTo(4, -3.4); c.lineTo(L * 0.96, -2.8); c.lineTo(L * 0.96, 2.8); c.lineTo(4, 3.4); c.closePath();
+    c.fillStyle = "#26232d"; c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = "#c9a227"; c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = "rgba(255,255,255,0.25)"; c.lineWidth = 1; c.beginPath(); c.moveTo(10, -1.6); c.lineTo(L * 0.9, -1.4); c.stroke();
+  }
+  const Lb = sh > 0 ? 4 + (L - 4) * (1 - sh) : L;
+  if (Lb > 9) {
+    c.beginPath(); c.moveTo(4, -1.8); c.quadraticCurveTo(Lb * 0.55, -3.6, Lb, -5.5); c.quadraticCurveTo(Lb * 0.55, 0.6, 4, 1.8); c.closePath();
+    c.fillStyle = pal.accent; c.fill(); c.lineWidth = 1.5; c.strokeStyle = OUT; c.stroke();
+    c.strokeStyle = "rgba(255,255,255,0.6)"; c.lineWidth = 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(Lb * 0.55, -2.5, Lb - 4, -4.5); c.stroke();
+  }
   c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = "#c9a227"; c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
   c.restore();
 }
@@ -592,7 +639,10 @@ function drawMagic(c, from, S, tk) {
   c.fillStyle = gr;
   c.beginPath(); c.moveTo(0, -3); c.quadraticCurveTo(len * 0.5, -(S.r + fl), len, -S.r * 0.3); c.lineTo(len, S.r * 0.3); c.quadraticCurveTo(len * 0.5, S.r + fl, 0, 3); c.closePath(); c.fill();
   c.fillStyle = "rgba(255,255,255,0.8)";
-  for (let i = 1; i <= 3; i++) { const t = ((tk * 0.07 + i / 3) % 1) * len; c.beginPath(); c.arc(t, Math.sin(tk * 0.4 + i) * S.r * 0.4, 2, 0, Math.PI * 2); c.fill(); }
+  if (S.hv) {
+    // a heavy sweep leaves three star motes behind
+    for (let i = 1; i <= 3; i++) star4(c, len * (0.28 + i * 0.2), Math.sin(tk * 0.4 + i * 2) * S.r * 0.55, 6.5 - i * 0.6, i % 2 ? "#fff6d8" : "#bff3ff");
+  } else for (let i = 1; i <= 3; i++) { const t = ((tk * 0.07 + i / 3) % 1) * len; c.beginPath(); c.arc(t, Math.sin(tk * 0.4 + i) * S.r * 0.4, 2, 0, Math.PI * 2); c.fill(); }
   c.restore();
 }
 function drawPotato(c, f, tk, at) {
@@ -606,7 +656,7 @@ function drawPotato(c, f, tk, at) {
   const pal = flash ? { body: "#ffffff", trim: "#ffffff", accent: "#ffffff" } : P.dim ? { body: mix(pal0.body, "#6a6a7a", 0.45), trim: pal0.trim, accent: mix(pal0.accent, "#6a6a7a", 0.45) } : pal0;
   const limbF = flash ? "#ffffff" : LIMB, limbB = flash ? "#e8e8f0" : LIMB_BACK;
   c.save();
-  c.translate(ox, oy); c.globalAlpha = alpha; c.scale(f.facing, 1);
+  c.translate(ox, oy - P.hop); c.globalAlpha = alpha; c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
@@ -615,15 +665,17 @@ function drawPotato(c, f, tk, at) {
     const air = !f.grounded && f.state !== "ledge";
     const len = P.w * (air ? 1.35 : 1.0);
     const a1 = rot([-P.w * 0.2, P.cy - P.ry * 0.2], P.hip, P.lean), a2 = rot([P.w * 0.05, P.cy - P.ry * 0.3], P.hip, P.lean);
-    flameWing(c, a1[0], a1[1], (air ? -2.7 : -2.4) + P.flap + P.lean, len, pal, true);
-    flameWing(c, a2[0], a2[1], (air ? -0.75 : -1.2) - P.flap * 0.7 + P.lean, len * 0.9, pal, false);
+    const fl = P.flap + P.wingUp * 0.9;
+    flameWing(c, a1[0], a1[1], (air ? -2.7 : -2.4) + fl + P.lean, len, pal, true);
+    flameWing(c, a2[0], a2[1], (air ? -0.75 : -1.2) - fl * 0.7 + P.lean, len * 0.9, pal, false);
   }
   if (cos === "dragon") {
     dragonTail(c, P, pal, tk, f);
     const air = !f.grounded && f.state !== "ledge", len = P.w * (air ? 1.1 : 0.95);
     const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean);
-    batWing(c, a1[0], a1[1], Math.PI + 0.18 - P.flap + P.lean, len, pal, true, true);
-    batWing(c, a2[0], a2[1], -0.25 + P.flap * 0.7 + P.lean, len * 0.9, pal, false, false);
+    const fl = P.flap - P.wingUp * 0.9;
+    batWing(c, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, pal, true, true);
+    batWing(c, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, pal, false, false);
   }
   if (cos === "alchemist") capeShape(c, P, f, tk, mix(pal.accent, "#000000", 0.15), false);
   if (cos === "odin") capeShape(c, P, f, tk, pal.accent, true);
@@ -675,8 +727,9 @@ function drawPotato(c, f, tk, at) {
   if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
   c.restore();
   if (cos === "odin" && !f._ravenOut) {
-    const p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
-    ravenShape(c, p[0], p[1], 0.85, Math.sin(tk * 0.08) > 0.95 ? 0.4 : 0);
+    let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
+    if (P.ravenTo && P.ravenK > 0) p = lerp2(p, P.ravenTo, P.ravenK);   // Raven rise: it lifts off with the fist
+    ravenShape(c, p[0], p[1], 0.85, P.ravenK > 0.3 ? Math.sin(tk * 1.1) * 0.8 : Math.sin(tk * 0.08) > 0.95 ? 0.4 : 0);
   }
   limbPath(c, shR, P.hF, armLen, "down", lw, limbF);
   c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
@@ -686,16 +739,21 @@ function drawPotato(c, f, tk, at) {
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
   }
-  if (P.swoosh) {
-    const S = P.swoosh, m = f.move;
-    c.globalAlpha = alpha * (S.heavy ? 0.75 : 0.55);
-    c.strokeStyle = pal0.accent; c.lineCap = "round";
-    if (S.fire) { c.globalAlpha = alpha; drawFlame(c, P, S, tk); }
-    else if (m && m.zap) { c.globalAlpha = alpha; drawZap(c, [P.hF[0], P.hF[1] - 4], S, tk, skinLvl(f) >= 3 ? pal0.accent : null); }
-    else if (m && m.magic) { c.globalAlpha = alpha * 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
-    else drawSwoosh(c, f, P, S);
-  }
+  drawSwooshes(c, f, P, tk, alpha);
+  drawHeavyFx(c, f, P, tk);
   c.restore();
+  if (!at) drawHx(c, f.slot);
+}
+// The classic slash / flame / zap / magic swoosh for the move being played (shared by 2D and the 3D overlay)
+function drawSwooshes(c, f, P, tk, alpha) {
+  if (!P.swoosh || P.swoosh.linger) return;
+  const S = P.swoosh, m = f.move, pal0 = f.pal;
+  c.globalAlpha = alpha * (S.heavy ? 0.75 : 0.55);
+  c.strokeStyle = pal0.accent; c.lineCap = "round";
+  if (S.fire) { c.globalAlpha = alpha; drawFlame(c, P, S, tk); }
+  else if (m && m.zap) { c.globalAlpha = alpha; drawZap(c, [P.hF[0], P.hF[1] - 4], S, tk, skinLvl(f) >= 3 ? pal0.accent : null); }
+  else if (m && m.magic) { c.globalAlpha = alpha * 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
+  else drawSwoosh(c, f, P, S);
 }
 // Slash arcs. Samurai skins from 120 chips get an ink-brush underlay with the same shape and size.
 function drawSwoosh(c, f, P, S) {
@@ -707,6 +765,14 @@ function drawSwoosh(c, f, P, S) {
     else c.arc(S.tx - S.r * 0.45, S.ty, S.r * 0.95, -1.15, 1.15);
   };
   const lw = S.body ? 5 : S.sweep ? S.r * 0.6 : S.r * (S.heavy ? 0.5 : 0.35);
+  if (S.hv && !S.body) {
+    // heavies: dark edge, accent core, white hairline
+    const ga = c.globalAlpha;
+    c.globalAlpha = ga; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lw * 1.3; path(); c.stroke();
+    c.strokeStyle = f.pal.accent; c.lineWidth = lw * 0.62; path(); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = Math.max(1.2, lw * 0.14); path(); c.stroke();
+    return;
+  }
   if (ink) {
     const ga = c.globalAlpha;
     c.globalAlpha = ga * 0.8; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lw; path(); c.stroke();
@@ -768,3 +834,661 @@ function drawFighter(c, f, tk, at) {
   c.restore();
 }
 
+
+/* ===================== heavy attacks =====================
+   Every fighter's heavies share one language: a deeper wind-up with a white glint in the last two startup frames,
+   a double-stroked swoosh in the fighter's element, a small camera shake and a low "whoomp" when the swing lands,
+   and a bigger ring on the hit. Each heavy then gets its own look in HEAVY_LOOK[fighterId][moveKey]. UI only:
+   nothing here touches the simulation (see pose(), drawHeavyFx(), heavySwing(), heavyHit() and Sfx.heavy()).
+   An entry may define:
+     pose(X)             bend the skeleton. X.hF / hB / fF / fB are hands and feet, X.P holds lean, crouch, mouth, wingUp, hop,
+                         holdAng (weapon angle), sheath, tailSwing, cryK, ravenK, glintAt ... X.phase is 0 startup / 1 hit window /
+                         2 endlag, X.wk the wind-up progress, X.u the hit-window progress, X.age frames since the window opened.
+                         hpath(X, rest, wind, strike, strike2) walks one point (or number) through that timeline.
+                         X.replace = true drops the classic swoosh; X.trail carries geometry to fx().
+     fx(c, f, P, hv, tk) extra drawing in fighter space: swoosh styles, ground rings, glyphs (hv.sp = stroke progress, hv.post = frames since the window closed)
+     keepSwoosh          keep drawing the classic swoosh during linger frames too
+     linger              frames fx() keeps drawing after the hit window closes
+     swing(f)            one-shot world effects when the hit window opens (dust, shards, rings)
+     hit(att, e)         one-shot world effects when the move connects
+   To add something per heavy (for example a charge-up glow while holding), add a field here and read it in pose() / drawHeavyFx(). */
+const HEAVY_KEYS = { hSide: 1, hUp: 1, hDown: 1, hAir: 1 };
+const isHeavyKey = (k) => HEAVY_KEYS[k] === 1;
+const mixv = (a, b, t) => (typeof a === "number" ? a + (b - a) * t : lerp2(a, b, t));
+function hpath(X, rest, wind, strike, strike2) {
+  if (X.phase === 0) {
+    const p = mixv(rest, wind, X.wk);
+    return X.mt >= X.startup ? mixv(p, strike, 0.5) : p;   // the last startup frame smears towards the strike
+  }
+  const s = strike2 ? mixv(strike, strike2, X.u) : strike;
+  return X.phase === 1 ? s : mixv(s, rest, ease(X.k));
+}
+
+/* ---- small drawing helpers (fighter space) ---- */
+function star4(c, x, y, s, colr) {
+  c.fillStyle = colr || "#ffffff";
+  c.beginPath(); c.moveTo(x, y - s); c.lineTo(x + s * 0.2, y - s * 0.2); c.lineTo(x + s, y); c.lineTo(x + s * 0.2, y + s * 0.2);
+  c.lineTo(x, y + s); c.lineTo(x - s * 0.2, y + s * 0.2); c.lineTo(x - s, y); c.lineTo(x - s * 0.2, y - s * 0.2); c.closePath(); c.fill();
+}
+function qpts(a, b, d, n) { const o = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; o.push([u * u * a[0] + 2 * u * t * b[0] + t * t * d[0], u * u * a[1] + 2 * u * t * b[1] + t * t * d[1]]); } return o; }
+function apts(cx, cy, rx, ry, a0, a1, n) { const o = []; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * (i / n); o.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]); } return o; }
+function lpts(a, b, n) { const o = []; for (let i = 0; i <= n; i++) o.push(lerp2(a, b, i / n)); return o; }
+// a tapered brush stroke through pts[0..n], sharp at both ends, filled with the current fillStyle
+function brush(c, pts, wmax, n) {
+  n = Math.min(n, pts.length - 1);
+  if (n < 1) return;
+  const Lp = [], Rp = [];
+  for (let i = 0; i <= n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const wd = Math.max(0.4, wmax * 0.5 * Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * (i / n))), 0.55));
+    Lp.push([pts[i][0] - dy * wd, pts[i][1] + dx * wd]); Rp.push([pts[i][0] + dy * wd, pts[i][1] - dx * wd]);
+  }
+  c.beginPath(); c.moveTo(Lp[0][0], Lp[0][1]);
+  for (let i = 1; i <= n; i++) c.lineTo(Lp[i][0], Lp[i][1]);
+  for (let i = n; i >= 0; i--) c.lineTo(Rp[i][0], Rp[i][1]);
+  c.closePath(); c.fill();
+}
+// the double stroke every heavy swoosh shares: dark edge, element colour, bright core
+function duoStroke(c, pts, n, wmax, colr, core, a) {
+  c.globalAlpha = a * 0.9; c.fillStyle = "rgba(20,15,30,0.85)"; brush(c, pts, wmax * 1.3 + 2, n);
+  c.globalAlpha = a; c.fillStyle = colr; brush(c, pts, wmax, n);
+  c.fillStyle = core; brush(c, pts, wmax * 0.4, n);
+}
+function gring(c, x, y, r, a, colr, edge) {
+  if (a <= 0) return;
+  c.save(); c.globalAlpha = Math.min(1, a);
+  c.lineWidth = 6 * a + 1.5; c.strokeStyle = edge || "rgba(20,15,30,0.7)"; c.beginPath(); c.ellipse(x, y, r, r * 0.24, 0, 0, Math.PI * 2); c.stroke();
+  c.lineWidth = 3.4 * a + 0.8; c.strokeStyle = colr; c.stroke(); c.restore();
+}
+const RUNES = [
+  [[0, -1, 0, 1], [0, -0.6, 0.7, -0.2, 0, 0.2]],                      // thurisaz
+  [[0, -1, 0, 1], [0, -0.1, -0.7, -0.8], [0, -0.1, 0.7, -0.8]],       // algiz
+  [[0, -1, 0, 1], [-0.7, -0.3, 0, -1, 0.7, -0.3]],                    // tiwaz
+  [[0, -1, 0, 1], [0, -0.4, 0.7, -0.9], [0, 0.2, 0.7, -0.3]],         // fehu
+  [[-0.6, 1, 0, -1, 0.6, 1], [-0.45, 0.2, 0.45, 0.2]],                // othala-ish
+];
+function rune(c, x, y, s, which, colr, wd) {
+  c.save(); c.translate(x, y); c.scale(s, s); c.lineCap = "round"; c.lineJoin = "round";
+  for (const [pass, lw] of [[0, wd + 3.2], [1, wd]]) {
+    c.strokeStyle = pass ? colr : "rgba(20,15,30,0.8)"; c.lineWidth = lw / s;
+    c.beginPath();
+    for (const line of RUNES[which % RUNES.length]) { c.moveTo(line[0], line[1]); for (let i = 2; i < line.length; i += 2) c.lineTo(line[i], line[i + 1]); }
+    c.stroke();
+  }
+  c.restore();
+}
+function flaskShape(c, x, y, s, rot0, liquid) {
+  c.save(); c.translate(x, y); c.rotate(rot0); c.scale(s, s);
+  c.beginPath(); c.arc(0, 4, 8, 0, Math.PI * 2); c.fillStyle = "rgba(230,255,245,0.85)"; c.fill();
+  c.beginPath(); c.arc(0, 4, 6.2, 0.1, Math.PI - 0.1); c.lineTo(-6, 2.2); c.lineTo(6, 2.2); c.closePath(); c.fillStyle = liquid || "#7dff62"; c.fill();
+  c.beginPath(); c.arc(0, 4, 8, 0, Math.PI * 2); c.lineWidth = 1.8 / s * s; c.strokeStyle = OUT; c.stroke();
+  c.fillStyle = "rgba(230,255,245,0.9)"; c.fillRect(-2.6, -9, 5.2, 8); c.lineWidth = 1.4; c.strokeRect(-2.6, -9, 5.2, 8);
+  c.fillStyle = "#b8863b"; c.fillRect(-3.4, -12, 6.8, 3.6); c.strokeRect(-3.4, -12, 6.8, 3.6);
+  c.fillStyle = "rgba(255,255,255,0.8)"; c.beginPath(); c.ellipse(-3, 2, 1.8, 3, 0.4, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+
+/* ---- the glint in the last two startup frames, then the look's own fx ---- */
+function drawGlint(c, f, P, tk) {
+  const a = P.pre;
+  if (!a) return;
+  const L = P.hv && P.hv.look, gc = (L && L.glintCol) || "#ffffff";
+  c.save();
+  if (P.rx) {
+    // rim light round the potato
+    c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    const kx = R3.on ? 0.9 : 1, ky = R3.on ? 0.96 : 1;   // the 3D body is a little narrower than the 2D one
+    c.globalAlpha = 0.3 * a; c.strokeStyle = gc; c.lineWidth = 7; c.beginPath(); c.ellipse(0, P.cy, P.rx * kx + 2, P.ry * ky + 2, 0, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 0.95 * a; c.strokeStyle = "#ffffff"; c.lineWidth = 2.6; c.stroke();
+  }
+  c.restore();
+  // a sparkle where the swing will come from
+  let g = P.hF;
+  if (P.glintAt === "tip") g = P.staffTip || P.hF;
+  else if (P.glintAt === "katana") { const sh = rot(P.sh, P.hip, P.lean), ang = heldDir(f, P, sh, -0.8); g = [P.hF[0] + Math.cos(ang) * 8, P.hF[1] + Math.sin(ang) * 8]; }
+  else if (P.glintAt === "horns") g = rot([-P.w * 0.05 - 9, P.top - 14], P.hip, P.lean);
+  else if (P.glintAt === "foot") g = P.fF;
+  else if (P.glintAt) g = P.glintAt;
+  c.save(); c.globalAlpha = a;
+  const gl = c.createRadialGradient(g[0], g[1], 1, g[0], g[1], 20);
+  gl.addColorStop(0, "rgba(255,255,255,0.8)"); gl.addColorStop(1, "rgba(255,255,255,0)");
+  c.fillStyle = gl; c.beginPath(); c.arc(g[0], g[1], 20, 0, Math.PI * 2); c.fill();
+  star4(c, g[0], g[1], 15 * (0.6 + 0.4 * a), "#ffffff");
+  star4(c, g[0], g[1], 7, gc);
+  c.restore();
+}
+function drawHeavyFx(c, f, P, tk) {
+  const hv = P.hv;
+  if (!hv) return;
+  hv.post = hv.phase === 2 ? hv.age - (hv.active - 1) : 0;
+  hv.sp = hv.phase === 0 ? 0 : hv.phase === 1 ? clamp((hv.age + 1.6) / (hv.active - 0.2), 0.45, 1) : 1;
+  const L = hv.look;
+  c.save(); c.lineCap = "round"; c.lineJoin = "round";
+  if (P.flask) flaskShape(c, P.hF[0] + 3, P.hF[1] - 10, 1.15, hv.phase === 0 ? Math.sin(tk * 0.5) * 0.12 : 0.2, "#7dff62");
+  if (L && L.fx && (hv.phase === 1 || (hv.phase === 2 && hv.post <= (L.linger || 0)) || L.fxStartup)) L.fx(c, f, P, hv, tk);
+  c.restore();
+  drawGlint(c, f, P, tk);
+}
+// world-space marks that outlive the swing (claw slashes, rune glyphs); they ride in the shared fx list and are drawn by their owner
+function drawHx(c, slot) {
+  for (const e of fx) {
+    if (e.k !== "hx" || e.owner !== slot) continue;
+    const q = e.t / e.life, a = Math.min(1, (1 - q) * 2.2);
+    c.save(); c.translate(e.x, e.y); c.scale(e.dir || 1, 1); c.lineCap = "round"; c.lineJoin = "round"; c.globalAlpha = a;
+    if (e.sub === "slash") {
+      const grow = Math.min(1, (e.t + 1) / 3), ang = 0.95, ca = Math.cos(ang), sa = Math.sin(ang);
+      for (let i = -1; i <= 1; i++) {
+        const ox = -sa * i * 12 + i * 2, oy = ca * i * 12, len = 27 * grow * (i === 0 ? 1.1 : 0.9);
+        const pts = lpts([ox - ca * len, oy - sa * len], [ox + ca * len, oy + sa * len], 8);
+        c.fillStyle = "rgba(17,16,28,0.85)"; brush(c, pts, 8.5, 8);
+        c.fillStyle = "#f3ede2"; brush(c, pts, 5, 8);
+        c.fillStyle = e.col; brush(c, pts, 1.8, 8);
+      }
+    } else if (e.sub === "rune") {
+      const r = 8 + 14 * ease(Math.min(1, e.t / 6));
+      c.strokeStyle = e.col; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, r + 6, 0, Math.PI * 2); c.stroke();
+      rune(c, 0, 0, r * 0.7, e.which || 0, "#ffffff", 2.4);
+    }
+    c.restore();
+  }
+}
+
+/* ---- one-shot world effects, called from handleEvent (effects.js) ---- */
+// Runs when a heavy starts: waits for the hit window, then shakes the camera and plays the heavy sound.
+function heavySwing(g, f, live) {
+  const key = f.mid, mv = f.move, moveT = f.moveT, slot = f.slot;
+  setTimeout(() => {
+    const q = g.fighters[slot];
+    if (!q || q.state !== "attack" || q.mid !== key || q.moveT !== moveT || paused) return;
+    cam.shake = Math.max(cam.shake, 3);
+    const L = HEAVY_LOOK[q.spec.id] && HEAVY_LOOK[q.spec.id][key];
+    if (L && L.swing) L.swing(q);
+    if (live) Sfx.heavy(q.spec.id, key);
+  }, Math.max(0, mv.startup * STEP - 8));
+}
+// Runs when a heavy connects: the ring is half as big again, plus the fighter's own sparks.
+function heavyHit(att, e) {
+  const kb = e.kb || 10, c0 = e.fire ? "#ff8a3d" : col(e.pal);
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 18, r0: 12, r1: (26 + kb * 2.4) * 1.5, col: c0 });
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 12, r0: 4, r1: (26 + kb * 2.4) * 0.8, col: "#ffffff" });
+  if (kb <= 14) addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: 36 + kb * 1.6 });
+  const L = HEAVY_LOOK[att.spec.id] && HEAVY_LOOK[att.spec.id][att.mid];
+  if (L && L.hit) L.hit(att, e);
+}
+const hxAdd = (att, e, o) => addFx(Object.assign({ k: "hx", owner: att.slot, x: e.x, y: e.y, dir: att.facing, t: 0, life: 10, col: att.pal.accent }, o));
+const frand = (a, b) => a + Math.random() * (b - a);
+function burstLines(x, y, n, cols, sp) {
+  for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + Math.random() * 0.4; addFx({ k: "line", x, y, vx: Math.cos(a) * (sp || 6), vy: Math.sin(a) * (sp || 6), t: 0, life: 12 + Math.random() * 6, col: cols[i % cols.length], w: 2.6 }); }
+}
+function groundDust(f, offs, n) { for (const o of offs) dust(f.x + o * f.facing, f.y, n || 4, 26); }
+
+/* ---- the looks ---- */
+const HEAVY_LOOK = {
+  dragon: {
+    // three bone-white claws raked down from above the head
+    hSide: {
+      name: "Claw rake", linger: 12,
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        X.hF = hpath(X, X.hF, [w * 0.04, -h - 7], [30, -62], [64, -20]);
+        X.hB = hpath(X, X.hB, [-w * 0.55, -leg - tor * 0.45], [-w * 0.35, -leg - tor * 0.4]);
+        P.lean = hpath(X, 0, -0.3, 0.36);
+        P.mouth = hpath(X, 0, 0.5, 1);
+        P.wingUp = hpath(X, 0, 0.45, 0.7);
+        P.glintAt = [w * 0.04 + 2, -h - 7];
+      },
+      fx(c, f, P, hv, tk) { clawRake(c, f, hv, [8, -78], [72, -72], [92, 12]); },
+      hit(att, e) { hxAdd(att, e, { sub: "slash" }); },
+    },
+    // head and shoulders toss upward, both wings snapping up, horn tips flashing
+    hUp: {
+      name: "Horn toss", linger: 10, glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        P.lean = hpath(X, 0, -0.34, 0.3);
+        P.mouth = hpath(X, 0, 0.8, 1);
+        P.wingUp = hpath(X, 0, 0.25, 1);
+        P.hop = hpath(X, 0, 0, 6);
+        X.hF = hpath(X, X.hF, [w * 0.45, -leg - tor * 0.3], [w * 0.8, -h * 0.72]);
+        X.hB = hpath(X, X.hB, [-w * 0.2, -leg - tor * 0.3], [-w * 0.7, -h * 0.68]);
+        P.hornFlash = X.phase === 1 ? 1 : X.phase === 0 ? P.pre : 0;
+        P.glintAt = "horns";
+      },
+      fx(c, f, P, hv, tk) {
+        wingArc(c, f, P, hv);
+        const a = hv.phase === 1 ? 1 : Math.max(0, 1 - hv.post / 8);
+        for (const x0 of [-P.w * 0.2, P.w * 0.12]) { const t = rot([x0 - 8, P.top - 13], P.hip, P.lean); c.globalAlpha = a; star4(c, t[0], t[1], 11, "#ffffff"); }
+      },
+      hit(att, e) { burstLines(e.x, e.y, 8, ["#ffd27a", "#ff9a3d"], 6); for (let i = 0; i < 8; i++) ember(e.x, e.y, frand(-4, 4), frand(-5, 0)); },
+    },
+    // the tail whips round to both sides
+    hDown: {
+      name: "Tail sweep", linger: 12,
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        P.spin = 0; X.replace = true;
+        P.crouch = Math.max(P.crouch, 0.3 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.fF = [w * 0.3, 0]; X.fB = [-w * 0.2, 0];
+        P.lean = hpath(X, 0, 0.14, 0.1);
+        X.hF = hpath(X, X.hF, [w * 0.6, -leg - tor * 0.25], [w * 0.75, -leg - tor * 0.2]);
+        X.hB = hpath(X, X.hB, [w * 0.35, -leg - tor * 0.2], [w * 0.5, -leg - tor * 0.2]);
+        // the tail coils up and back, then whirls once round the body (it keeps going a little after the hit window)
+        const turns = X.phase === 0 ? 0 : X.phase === 1 ? X.u : 1 + ease(Math.min(1, X.k * 1.8));
+        const wind = X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(Math.min(1, X.k * 1.2));
+        const R = w * 1.35, ph = turns * Math.PI * 2;
+        P.tailTo = X.phase === 0 || (X.phase === 2 && X.k > 0.55) ? mixv([-w * 1.3, -leg * 0.4], [-w * 0.95, -h * 0.62], wind) : [-Math.cos(ph) * R, -leg * 0.45 + Math.sin(ph) * 10];
+        P.tailSwing = wind * -0.7 + turns * Math.PI * 2; P.tailLift = -0.45 * wind;
+        P.glintAt = [-w * 0.9, -h * 0.62];
+      },
+      fx(c, f, P, hv, tk) { dustArcs(c, f, P, hv, 56, "#d9d4ea", f.pal.accent); },
+      swing(f) { groundDust(f, [46, -46], 5); },
+      hit(att, e) { groundDust(att, [40, -40], 3); },
+    },
+    // both claws forward in a dive, wings tucked
+    hAir: {
+      name: "Claw dive", linger: 10,
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        P.lean = hpath(X, 0, -0.15, 0.5);
+        P.mouth = hpath(X, 0, 0.5, 1);
+        P.wingUp = hpath(X, 0, 0.3, -0.6);
+        X.hF = hpath(X, X.hF, [w * 0.1, -h * 0.74], [36, -40], [60, -34]);
+        X.hB = hpath(X, X.hB, [-w * 0.05, -h * 0.66], [30, -28], [50, -24]);
+        X.fF = hpath(X, X.fF, [-w * 0.1, -leg * 0.3], [-w * 0.25, -leg * 0.3]); X.fB = hpath(X, X.fB, [-w * 0.3, -leg * 0.2], [-w * 0.55, -leg * 0.2]);
+        P.glintAt = [w * 0.1, -h * 0.74];
+      },
+      fx(c, f, P, hv, tk) { clawRake(c, f, hv, [6, -66], [68, -68], [92, 4]); },
+      hit(att, e) { hxAdd(att, e, { sub: "slash" }); },
+    },
+  },
+
+  samurai: {
+    // the blade stays sheathed, one very wide horizontal cut, then it clicks home
+    hSide: {
+      name: "Iaido", linger: 8, glintAt: "katana",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        const sAng = Math.PI - 0.5;
+        P.crouch = Math.max(P.crouch, 0.3 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        P.lean = hpath(X, 0, 0.14, 0.18);
+        X.hF = hpath(X, X.hF, [w * 0.1, -leg - tor * 0.3], [w * 0.5, X.ty + 2]);
+        X.hB = hpath(X, X.hB, [-w * 0.45, -leg - tor * 0.3], [-w * 0.3, -leg - tor * 0.5]);
+        P.holdAng = hpath(X, -0.8, sAng, 0.02);
+        if (X.phase === 2) P.holdAng = mixv(0.02, sAng, ease(clamp((X.k - 0.25) / 0.45, 0, 1)));
+        P.sheath = X.phase === 0 ? (X.mt >= X.startup ? 0.5 : 1) : X.phase === 1 ? 0 : clamp((X.k - 0.3) / 0.4, 0, 1);
+        P.glintAt = "katana";
+        X.trail = { line: [[10, X.ty + 2], [94, X.ty + 2]] };
+      },
+      fx(c, f, P, hv, tk) { inkStroke(c, f, lpts(hv.trail.line[0], hv.trail.line[1], 18), hv, 13, 8); if (hv.phase === 1 && hv.age <= 1) { c.globalAlpha = 0.7; c.strokeStyle = "#ffffff"; c.lineWidth = 3; c.beginPath(); c.moveTo(hv.trail.line[0][0], hv.trail.line[0][1] - 1); c.lineTo(hv.trail.line[1][0], hv.trail.line[1][1] - 1); c.stroke(); } },
+      swing(f) { for (let i = 0; i < 3; i++) addFx({ k: "petal", x: f.x + f.facing * frand(20, 60), y: f.y - frand(25, 45), vx: f.facing * frand(1, 3), vy: frand(-1, 0.2), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: mix(f.pal.accent, "#ffb7c9", 0.6), r: frand(2.2, 3), t: 0, life: 30, g: 0.03, damp: 0.96 }); },
+      hit(att, e) { addFx({ k: "flashline", x1: att.x, x2: e.x + att.facing * 40, y: e.y, col: att.pal.accent, t: 0, life: 14 }); },
+    },
+    // crouch, then the blade sweeps from hip to overhead in a tall ink arc with a petal burst
+    hUp: {
+      name: "Rising cut", linger: 9, glintAt: "katana",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        P.crouch = Math.max(P.crouch, 0.3 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        const h1 = [w * 0.45, -leg - tor * 0.32], h2 = [w * 0.2, -leg - tor * 0.78];
+        X.hF = hpath(X, X.hF, [-w * 0.12, -leg - tor * 0.1], h1, h2);
+        X.hB = hpath(X, X.hB, [-w * 0.45, -leg - tor * 0.3], [-w * 0.3, -leg - tor * 0.55]);
+        P.holdAng = hpath(X, -0.8, 2.3, 0.5, -2.75);
+        P.lean = hpath(X, 0, -0.12, 0.1);
+        X.trail = { h1, h2, a1: 0.5, a2: -2.75 };
+        P.glintAt = "katana";
+      },
+      fx(c, f, P, hv, tk) { inkArc(c, f, P, hv, 11); petals(c, f, hv, tk, 9); },
+      swing(f) { for (let i = 0; i < 5; i++) addFx({ k: "petal", x: f.x + f.facing * frand(0, 30), y: f.y - frand(60, 85), vx: f.facing * frand(-1, 2), vy: frand(-2, -0.4), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: mix(f.pal.accent, "#ffb7c9", 0.6), r: frand(2.2, 3.2), t: 0, life: 34, g: 0.04, damp: 0.96 }); },
+      hit(att, e) { for (let i = 0; i < 6; i++) addFx({ k: "petal", x: e.x, y: e.y, vx: frand(-3, 3), vy: frand(-3, 0), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: mix(att.pal.accent, "#ffb7c9", 0.6), r: frand(2.4, 3.4), t: 0, life: 30, g: 0.05, damp: 0.95 }); },
+    },
+    // the spin stays; the blade is held straight out and an ink ring sweeps the floor
+    hDown: {
+      name: "Low sweep", linger: 12, glintAt: "katana",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        P.crouch = Math.max(P.crouch, 0.4 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        P.lean = hpath(X, 0, 0.12, 0.05);
+        X.hF = hpath(X, X.hF, [w * 0.5, -leg - tor * 0.3], [w * 0.8, -leg - tor * 0.3]);
+        X.hB = hpath(X, X.hB, [-w * 0.2, -leg - tor * 0.3], [-w * 0.3, -leg - tor * 0.3]);
+        P.holdAng = X.phase === 2 ? mixv(0, -0.8, ease(X.k)) : 0;
+        if (X.phase === 0) { P.holdAng = mixv(-0.8, 0, X.wk); X.hF = hpath(X, X.hF, X.hF, X.hF); }
+        P.glintAt = "katana";
+      },
+      fx(c, f, P, hv, tk) {
+        // the ink ring lies flat on the floor, so undo the body spin
+        if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(-P.spin); c.translate(0, P.h * 0.5); }
+        dustArcs(c, f, P, hv, 60, "rgba(20,15,30,0.92)", f.pal.accent, true);
+      },
+      swing(f) { groundDust(f, [44, -44], 3); },
+    },
+    // the arm swing with an ink stroke
+    hAir: {
+      name: "Ink swing", linger: 9, glintAt: "katana",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        const h1 = [w * 0.35, -leg - tor * 0.78], h2 = [w * 0.45, -leg - tor * 0.5];
+        X.hF = hpath(X, X.hF, [w * 0.05, -leg - tor * 0.85], h1, h2);
+        P.holdAng = hpath(X, -0.8, -2.0, -1.55, 0.35);
+        P.lean = hpath(X, 0, -0.18, 0.2);
+        X.trail = { h1, h2, a1: -1.55, a2: 0.35 };
+        P.glintAt = "katana";
+      },
+      fx(c, f, P, hv, tk) { inkArc(c, f, P, hv, 10); },
+    },
+  },
+
+  odin: {
+    // both fists back with the armour ring showing, then forward together; a rune flashes at the impact
+    hSide: {
+      name: "Hammer fists", linger: 14, glintCol: "#bfe3ff",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        P.crouch = Math.max(P.crouch, 0.32 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.hF = hpath(X, X.hF, [-w * 0.5, -leg - tor * 0.62], [X.tx, X.ty]);
+        X.hB = hpath(X, X.hB, [-w * 0.62, -leg - tor * 0.5], [X.tx - 14, X.ty + 8]);
+        if (X.phase === 0) { X.fF = [w * 0.3, 0]; X.fB = [-w * 0.3, 0]; }
+        P.lean = hpath(X, 0, -0.25, 0.3);
+        P.glintAt = [-w * 0.5, -leg - tor * 0.62];
+      },
+      fx(c, f, P, hv, tk) { shockArcs(c, f, hv, "#bfe3ff"); runeHit(c, f, hv, hv.tx + hv.b.r * 0.55, hv.ty, 0); },
+      hit(att, e) { for (let i = 0; i < 6; i++) addFx({ k: "puff", x: e.x, y: e.y, vx: frand(-2.5, 2.5), vy: frand(-2, 0), r: frand(3, 5), t: 0, life: 24, col: "#dfeeff" }); hxAdd(att, e, { sub: "rune", which: 0, col: "#8fc8ff", life: 14 }); },
+    },
+    // an uppercut with the raven lifting off his shoulder
+    hUp: {
+      name: "Raven rise", linger: 14, glintCol: "#bfe3ff",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.hF = hpath(X, X.hF, [-w * 0.15, -leg - tor * 0.12], [X.b.x, X.b.y], [X.b.x2, X.b.y2]);
+        X.hB = hpath(X, X.hB, [-w * 0.55, -leg - tor * 0.4], [-w * 0.4, -leg - tor * 0.5]);
+        P.lean = hpath(X, 0, -0.18, 0.12);
+        P.ravenTo = [X.hF[0] - 6, X.hF[1] - 20];
+        P.ravenK = X.phase === 0 ? (X.mt >= X.startup ? 0.3 : 0.05 * X.wk) : X.phase === 1 ? 1 : 1 - ease(clamp(X.k * 1.5, 0, 1));
+        P.glintAt = [-w * 0.15, -leg - tor * 0.12];
+      },
+      fx(c, f, P, hv, tk) { runeHit(c, f, hv, 4, hv.b ? hv.b.y - 14 : -98, 2); },
+      swing(f) { for (let i = 0; i < 4; i++) addFx({ k: "feather", x: f.x - f.facing * 12 + frand(-6, 6), y: f.y - f.s.h * 0.85, vx: frand(-1, 1.5) * f.facing, vy: frand(-2.4, -0.8), rot: frand(0, 6), vr: frand(-0.15, 0.15), t: 0, life: 50, g: 0.05, damp: 0.95 }); },
+      hit(att, e) { for (let i = 0; i < 4; i++) addFx({ k: "feather", x: e.x, y: e.y, vx: frand(-3, 3), vy: frand(-3, 0), rot: frand(0, 6), vr: frand(-0.15, 0.15), t: 0, life: 42, g: 0.06, damp: 0.95 }); hxAdd(att, e, { sub: "rune", which: 2, col: "#8fc8ff", life: 14 }); },
+    },
+    // both fists driven into the floor; shock ring plus a rune ring
+    hDown: {
+      name: "Stomp", linger: 16, glintCol: "#bfe3ff",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        P.crouch = Math.max(P.crouch, 0.5 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.hF = hpath(X, X.hF, [w * 0.3, -h * 0.98], [X.b.x, -7]);
+        X.hB = hpath(X, X.hB, [-w * 0.05, -h * 0.92], [-X.b.x * 0.9, -7]);
+        X.fF = [w * 0.38, 0]; X.fB = [-w * 0.36, 0];
+        P.lean = hpath(X, 0, -0.12, 0.34);
+        P.glintAt = [w * 0.3, -h * 0.98];
+      },
+      fx(c, f, P, hv, tk) {
+        const age = Math.max(0, hv.age + (hv.phase === 0 ? 0 : 1)), a = 1 - age / 16;
+        for (const sx of [1, -1]) gring(c, sx * 40, -4, 12 + age * 4.2, a, "#e8f2ff");
+        if (hv.phase > 0) { c.globalAlpha = a; for (const sx of [1, -1]) rune(c, sx * 40, -22 - age * 0.4, 9, sx > 0 ? 3 : 1, "#bfe3ff", 2.2); }
+      },
+      swing(f) {
+        addFx({ k: "shock", x: f.x, y: f.y, t: 0, life: 18 }); dust(f.x, f.y, 8, 60);
+        addFx({ k: "runering", x: f.x, y: f.y, col: "#bfe3ff", t: 0, life: 36, r: f.s.w * 1.2 });
+      },
+    },
+    // both fists overhead, then hammered down in front
+    hAir: {
+      name: "Hammer drop", linger: 10, glintCol: "#bfe3ff",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.hF = hpath(X, X.hF, [w * 0.12, -h - 16], [X.tx, X.ty]);
+        X.hB = hpath(X, X.hB, [-w * 0.1, -h - 10], [X.tx - 12, X.ty + 6]);
+        P.lean = hpath(X, 0, -0.2, 0.4);
+        P.glintAt = [w * 0.12, -h - 16];
+        const sh = [w * 0.38, -leg - tor * 0.7];
+        X.trail = { h1: sh, h2: sh, a1: -1.75, a2: 0.15, L: 56 };
+      },
+      fx(c, f, P, hv, tk) { inkArc(c, f, P, hv, 13, f.pal.accent, "#e8f2ff"); runeHit(c, f, hv, hv.tx + hv.b.r * 0.4, hv.ty, 1); },
+      hit(att, e) { hxAdd(att, e, { sub: "rune", which: 1, col: "#8fc8ff", life: 14 }); },
+    },
+  },
+
+  wizard: {
+    // the crystal flares while he winds up; the sweep leaves three star motes (see drawMagic)
+    hSide: {
+      name: "Magic sweep", glintAt: "tip",
+      pose(X) { X.P.cryK = hpath(X, 1, 2, 2); X.P.glintAt = "tip"; },
+    },
+    hUp: {
+      name: "Magic rise", glintAt: "tip",
+      pose(X) { X.P.cryK = hpath(X, 1, 2, 2); X.P.glintAt = "tip"; },
+    },
+    // staff overhead while he winds up, then slammed into the floor
+    hDown: {
+      name: "Staff slam", linger: 16, glintAt: "tip",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        P.spin = 0; X.replace = true;
+        P.crouch = Math.max(P.crouch, 0.2 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.fF = [w * 0.32, 0]; X.fB = [-w * 0.2, 0];
+        P.lean = hpath(X, 0, -0.12, 0.3);
+        X.hF = hpath(X, X.hF, [w * 0.28, -h * 0.82], [w * 0.62, -tor * 0.8 - leg * 0.3]);
+        X.hB = hpath(X, X.hB, [w * 0.05, -h * 0.76], [w * 0.42, -tor * 0.7]);
+        P.holdAng = hpath(X, -1.45, -1.62, 1.15);
+        P.cryK = hpath(X, 1, 2, 2.4);
+        P.glintAt = "tip";
+      },
+      fx(c, f, P, hv, tk) {
+        const tip = P.staffTip || [P.w * 0.95, -4], age = Math.max(0, hv.age + 1), a = 1 - age / 16;
+        const x = tip[0], y = Math.min(-2, tip[1]);
+        gring(c, x, y + 2, 14 + age * 5.4, a, "#ffd98a", "rgba(60,200,230,0.8)");
+        gring(c, x, y + 2, 7 + age * 3.6, a * 0.8, "#bff3ff", "rgba(255,217,138,0.7)");
+        c.globalAlpha = a;
+        for (let i = 0; i < 6; i++) { const s = (i % 2 ? 1 : -1), d = 8 + age * (3 + i * 0.9); star4(c, x + s * d, y - 6 - Math.sin(age * 0.5 + i) * 7 - i * 1.5, 5.5 - i * 0.4, i % 2 ? "#fff6d8" : "#bff3ff"); }
+      },
+      swing(f) { addFx({ k: "shock", x: f.x + f.facing * 46, y: f.y, t: 0, life: 18 }); dust(f.x + f.facing * 46, f.y, 6, 50); for (let i = 0; i < 6; i++) mote(f.x + f.facing * 46 + frand(-30, 30), f.y - frand(4, 20), frand(-2, 2), frand(-2.4, -0.6), i % 2 ? "#ffd98a" : "#7fe3ff", frand(1.5, 2.4), 24); },
+      hit(att, e) { for (let i = 0; i < 6; i++) mote(e.x, e.y, frand(-3.5, 3.5), frand(-3.5, 0.5), i % 2 ? "#ffd98a" : "#7fe3ff", frand(1.6, 2.6), 22); },
+    },
+    hAir: { name: "Magic sweep", pose(X) { X.P.cryK = hpath(X, 1, 2, 2); X.P.glintAt = "tip"; } },
+  },
+
+  phoenix: {
+    // the fire headbutt: wings fold in the wind-up, the flame is half as big again with an ember comet
+    hSide: {
+      name: "Fire headbutt", glintAt: "foot",
+      pose(X) { const { P, w, h } = X; P.wingUp = hpath(X, 0, -0.8, 0.4); P.glintAt = [w * 0.3, -h * 0.82]; },
+      hit(att, e) { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 20, r0: 10, r1: 70, col: "#ffc04d" }); for (let i = 0; i < 8; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+    },
+    // both arms up, wings snap open, a fire arc over the head, embers rain down
+    hUp: {
+      name: "Wing flare", linger: 14, glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        P.wingUp = hpath(X, 0, -0.35, 1);
+        P.hop = hpath(X, 0, 0, 6);
+        X.hF = hpath(X, X.hF, [w * 0.3, -leg - tor * 0.5], [w * 0.2, -h - 8]);
+        X.hB = hpath(X, X.hB, [-w * 0.1, -leg - tor * 0.5], [-w * 0.25, -h - 4]);
+        P.lean = hpath(X, 0, -0.14, 0.08);
+        P.glintAt = [w * 0.2, -h - 8];
+      },
+      fx(c, f, P, hv, tk) { fireArc(c, f, P, hv); },
+      swing(f) { for (let i = 0; i < 6; i++) ember(f.x + frand(-26, 26), f.y - f.s.h - frand(6, 26), frand(-0.6, 0.6), frand(0.4, 1.6)); },
+      hit(att, e) { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 20, r0: 10, r1: 66, col: "#ffc04d" }); for (let i = 0; i < 8; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+    },
+    // crouch, both feet slammed out, orange shock rings along the ground
+    hDown: {
+      name: "Ember stomp", linger: 14, glintAt: "foot", glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        P.crouch = Math.max(P.crouch, 0.34 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.hF = hpath(X, X.hF, [w * 0.4, -leg - tor * 0.7], [w * 0.75, -leg - tor * 0.45]);
+        X.hB = hpath(X, X.hB, [-w * 0.3, -leg - tor * 0.7], [-w * 0.65, -leg - tor * 0.4]);
+        P.wingUp = hpath(X, 0, 0.2, 0.7);
+        P.glintAt = [w * 0.2, -leg * 0.5];
+      },
+      fx(c, f, P, hv, tk) {
+        const age = Math.max(0, hv.age + 1), a = 1 - age / 14;
+        for (const sx of [1, -1]) { gring(c, sx * 34, -3, 10 + age * 4.4, a, "#ff9a3d", "rgba(120,30,10,0.7)"); gring(c, sx * 34, -3, 5 + age * 2.8, a * 0.8, "#ffe08a", "rgba(255,120,40,0.6)"); }
+      },
+      swing(f) { for (const s of [1, -1]) for (let i = 0; i < 5; i++) ember(f.x + s * f.facing * 34 + frand(-8, 8), f.y - 4, s * f.facing * frand(0.5, 3), frand(-3, -0.5)); dust(f.x, f.y, 6, 70); },
+      hit(att, e) { for (let i = 0; i < 8; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+    },
+    // the headbutt with a roll and a longer flame tail
+    hAir: {
+      name: "Fire dive",
+      pose(X) { const { P, w, h } = X; P.lean += hpath(X, 0, -0.1, 0.3); P.wingUp = hpath(X, 0, -0.5, 0.3); P.glintAt = [w * 0.3, -h * 0.82]; },
+      hit(att, e) { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 20, r0: 10, r1: 70, col: "#ffc04d" }); for (let i = 0; i < 8; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+    },
+  },
+
+  alchemist: {
+    // zaps: a green sparkle gathers at the hand, a green burst star on the hit
+    hSide: { name: "Zap", glintCol: "#9dff7a", pose(X) { X.P.glintAt = null; }, hit(att, e) { greenBurst(e); } },
+    hUp: { name: "Zap rise", glintCol: "#9dff7a", pose(X) { X.P.glintAt = null; }, hit(att, e) { greenBurst(e); } },
+    // the hand slams a flask into the floor; green bursts both sides
+    hDown: {
+      name: "Flask smash", linger: 14, glintCol: "#9dff7a",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        P.spin = 0; X.replace = true;
+        P.crouch = Math.max(P.crouch, 0.3 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.fF = [w * 0.3, 0]; X.fB = [-w * 0.2, 0];
+        P.lean = hpath(X, 0, -0.1, 0.4);
+        X.hF = hpath(X, X.hF, [w * 0.3, -h - 8], [w * 0.8, -8]);
+        X.hB = hpath(X, X.hB, [-w * 0.3, -leg - tor * 0.5], [w * 0.1, -leg - tor * 0.4]);
+        P.flask = X.phase < 2 && !(X.phase === 1 && X.age >= 0) ? 1 : 0;
+        P.glintAt = [w * 0.3, -h - 8];
+      },
+      fx(c, f, P, hv, tk) {
+        const age = Math.max(0, hv.age + 1), a = 1 - age / 14, x0 = P.hF[0];
+        for (const sx of [1, -1]) {
+          const cx = sx * 33;
+          gring(c, cx, -5, 8 + age * 3.6, a, "#7dff62", "rgba(20,90,30,0.7)");
+          c.globalAlpha = a; c.lineWidth = 2.4; c.strokeStyle = "#d9ffcf";
+          for (let i = 0; i < 7; i++) { const an = -Math.PI * (i + 0.5) / 7, r0 = 6 + age * 2.6, r1 = r0 + 7 + age; c.beginPath(); c.moveTo(cx + Math.cos(an) * r0, -5 + Math.sin(an) * r0 * 1.1); c.lineTo(cx + Math.cos(an) * r1, -5 + Math.sin(an) * r1 * 1.1); c.stroke(); }
+        }
+        // glass shards fly from the hand
+        c.globalAlpha = a;
+        for (let i = 0; i < 7; i++) { const an = -0.2 - i * 0.42 + (i % 2) * 0.2, d = 6 + age * (3 + (i % 3)), s = 3 - (i % 3) * 0.6; c.save(); c.translate(x0 + Math.cos(an) * d * 1.3, -8 + Math.sin(an) * d - age * 0.3); c.rotate(age * 0.5 + i); c.fillStyle = i % 2 ? "rgba(230,255,245,0.95)" : "#7dff62"; c.beginPath(); c.moveTo(0, -s * 1.5); c.lineTo(s, s); c.lineTo(-s, s * 0.6); c.closePath(); c.fill(); c.restore(); }
+      },
+      swing(f) { addFx({ k: "ring", x: f.x + f.facing * 33, y: f.y - 6, t: 0, life: 16, r0: 8, r1: 44, col: "#7dff62" }); addFx({ k: "ring", x: f.x - f.facing * 33, y: f.y - 6, t: 0, life: 16, r0: 8, r1: 44, col: "#7dff62" }); },
+      hit(att, e) { greenBurst(e); },
+    },
+    hAir: { name: "Zap", glintCol: "#9dff7a", pose(X) { X.P.glintAt = null; }, hit(att, e) { greenBurst(e); } },
+  },
+};
+function greenBurst(e) {
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: 54, col: "#7dff62" });
+  addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: 40 });
+  burstLines(e.x, e.y, 10, ["#d9ffcf", "#55e05a"], 6.5);
+}
+
+/* ---- swoosh styles used by the looks above ---- */
+// three bone-white claw marks with an accent core, drawn along a rake path as it happens
+function clawRake(c, f, hv, a, b, d) {
+  const pts = qpts(a, b, d, 16), n = Math.max(3, Math.round(16 * hv.sp));
+  const al = hv.phase === 2 ? 1 - hv.post / 6 : 1;
+  if (al <= 0) return;
+  const dx = d[0] - a[0], dy = d[1] - a[1], dl = Math.hypot(dx, dy), nx = -dy / dl, ny = dx / dl;
+  for (let i = -1; i <= 1; i++) {
+    const off = i * 13, sh = pts.map((p) => [p[0] + nx * off, p[1] + ny * off]);
+    const nn = i === 0 ? n : Math.max(3, n - 2);
+    c.globalAlpha = 0.9 * al; c.fillStyle = "rgba(20,15,30,0.85)"; brush(c, sh, 11, nn);
+    c.globalAlpha = al; c.fillStyle = "#f3ede2"; brush(c, sh, 7.5, nn);
+    c.fillStyle = f.pal.accent; brush(c, sh, 3, nn);
+  }
+}
+// wing-shaped orange-gold arc above the head
+function wingArc(c, f, P, hv) {
+  const al = hv.phase === 2 ? 1 - hv.post / 8 : 1;
+  if (al <= 0) return;
+  const cy = -P.h * 0.74, pts = apts(2, cy, 50, 44, -Math.PI + 0.35, -0.35, 18), n = Math.max(3, Math.round(18 * hv.sp));
+  duoStroke(c, pts, n, 17, f.pal.accent, "#ffd27a", al);
+  // feather notches along the outer edge
+  c.globalAlpha = al; c.strokeStyle = "#ffd27a"; c.lineWidth = 2.4;
+  for (let i = 3; i < Math.min(n, 16); i += 3) { const p = pts[i], an = -Math.PI + 0.35 + (Math.PI - 0.7) * (i / 18); c.beginPath(); c.moveTo(p[0] + Math.cos(an) * 8, p[1] + Math.sin(an) * 8); c.lineTo(p[0] + Math.cos(an) * 16, p[1] + Math.sin(an) * 16); c.stroke(); }
+}
+// low dust whips along the floor on both sides of the feet (the tail's path)
+function dustArcs(c, f, P, hv, R, dustCol, accent, ink) {
+  const al = hv.phase === 2 ? 1 - hv.post / 12 : 1;
+  if (al <= 0 || hv.phase === 0) return;
+  const t = hv.phase === 1 ? 0.5 + 0.5 * hv.u : 1, n = Math.max(3, Math.round(14 * t));
+  for (const s of [1, -1]) {
+    const pts = qpts([s * 8, -17], [s * R * 0.6, -2], [s * (R + 12), -9], 14);
+    c.globalAlpha = (ink ? 0.9 : 0.55) * al; c.fillStyle = "rgba(20,15,30,0.8)"; brush(c, pts, ink ? 17 : 14, n);
+    c.globalAlpha = al * (ink ? 0.95 : 0.7); c.fillStyle = dustCol; brush(c, pts, ink ? 11 : 8, n);
+    c.fillStyle = accent; brush(c, pts, ink ? 4 : 3, n);
+    if (ink) { c.globalAlpha = al; c.strokeStyle = "#ffffff"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i <= n; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke(); }
+  }
+  if (ink) return;
+  c.globalAlpha = al * 0.65; c.fillStyle = dustCol;
+  for (let i = 0; i < 8; i++) { const s = i % 2 ? 1 : -1, d = R * 0.6 + (hv.age + 1) * 2.4 + i * 3.5; c.beginPath(); c.arc(s * d, -6 - ((hv.age + i) % 5) * 1.3, 3 + (i % 3), 0, Math.PI * 2); c.fill(); }
+}
+// Samurai ink: tapered black stroke with an accent core and a white flash line
+function inkStroke(c, f, pts, hv, wmax, fade) {
+  const n = pts.length - 1, i1 = Math.max(2, Math.round(n * hv.sp)), a = hv.phase === 2 ? 1 - hv.post / fade : 1;
+  if (a <= 0) return;
+  c.globalAlpha = 0.92 * a; c.fillStyle = "rgba(20,15,30,0.9)"; brush(c, pts, wmax, i1);
+  c.globalAlpha = a; c.fillStyle = f.pal.accent; brush(c, pts, wmax * 0.42, i1);
+  c.globalAlpha = a * (hv.phase === 1 ? 1 : 0.7); c.strokeStyle = "#ffffff"; c.lineWidth = 1.8;
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i <= i1; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+  c.globalAlpha = 0.8 * a; c.fillStyle = "rgba(20,15,30,0.9)";
+  for (let i = 3; i < i1; i += 4) { const p = pts[i], s = i % 8 < 4 ? 1 : -1; c.beginPath(); c.arc(p[0] + 1, p[1] + s * (wmax * 0.5 + 4 + (i % 5)), 1.5 + (i % 3) * 0.6, 0, Math.PI * 2); c.fill(); }
+}
+// tip trail of a blade (or fists) swung round a pivot: hv.trail = { h1, h2, a1, a2, L }
+function inkArc(c, f, P, hv, wmax, colr, core) {
+  const T = hv.trail, L = T.L || P.w * 1.35 + 4, pts = [];
+  for (let i = 0; i <= 18; i++) { const u = i / 18, h = lerp2(T.h1, T.h2, u), an = T.a1 + (T.a2 - T.a1) * u; pts.push([h[0] + Math.cos(an) * L, h[1] + Math.sin(an) * L]); }
+  const n = Math.max(3, Math.round(18 * hv.sp)), a = hv.phase === 2 ? 1 - hv.post / 9 : 1;
+  if (a <= 0) return;
+  c.globalAlpha = 0.92 * a; c.fillStyle = "rgba(20,15,30,0.9)"; brush(c, pts, wmax, n);
+  c.globalAlpha = a; c.fillStyle = colr || f.pal.accent; brush(c, pts, wmax * 0.42, n);
+  c.strokeStyle = core || "#ffffff"; c.lineWidth = 1.8; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i <= n; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+}
+function petals(c, f, hv, tk, n) {
+  if (hv.phase === 0) return;
+  const age = hv.age + 1, a = 1 - age / 20;
+  if (a <= 0) return;
+  c.fillStyle = mix(f.pal.accent, "#ffb7c9", 0.6); c.globalAlpha = a;
+  for (let i = 0; i < n; i++) {
+    const an = -0.4 - i * 0.55, d = 14 + age * (2.4 + (i % 3) * 0.7), x = 10 + Math.cos(an) * d * 0.8 - 8, y = -62 + Math.sin(an) * d - age * 0.6 + age * age * 0.03;
+    c.save(); c.translate(x, y); c.rotate(age * 0.3 + i); c.beginPath(); c.ellipse(0, 0, 3.4, 1.9, 0, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+}
+// two concentric arcs in front of the fists
+function shockArcs(c, f, hv, colr) {
+  if (hv.phase === 0) return;
+  const al = hv.phase === 2 ? 1 - hv.post / 14 : 1, age = hv.age + 1;
+  if (al <= 0) return;
+  for (const [r, w] of [[hv.b.r * 0.9 + age * 1.5, 12], [hv.b.r * 1.35 + age * 2.4, 7]]) {
+    const pts = apts(hv.tx - hv.b.r * 0.45, hv.ty, r, r * 1.05, -1.0, 1.0, 12);
+    duoStroke(c, pts, 12, w, f.pal.accent, colr, al * (r < hv.b.r * 1.1 ? 1 : 0.7));
+  }
+  c.globalAlpha = al;
+  for (let i = 0; i < 4; i++) star4(c, hv.tx + 12 + age * (2 + i) , hv.ty - 22 + i * 14 + Math.sin(age + i) * 3, 5 - i * 0.6, "#ffffff");
+}
+function runeHit(c, f, hv, x, y, which) {
+  if (hv.phase === 0) return;
+  const al = hv.phase === 2 ? 1 - hv.post / 14 : 1, age = hv.age + 1;
+  if (al <= 0) return;
+  const s = 10 + Math.min(age, 4) * 2.2;
+  c.globalAlpha = al * 0.9; c.strokeStyle = f.pal.accent; c.lineWidth = 2.6; c.beginPath(); c.arc(x, y, s + 5, 0, Math.PI * 2); c.stroke();
+  c.globalAlpha = al; rune(c, x, y, s * 0.8, which, "#ffffff", 2.4);
+}
+// a fire arc over the head with embers raining from it
+function fireArc(c, f, P, hv) {
+  const al = hv.phase === 2 ? 1 - hv.post / 14 : 1;
+  if (al <= 0 || hv.phase === 0) return;
+  const pts = apts(2, -P.h * 0.7, 46, 40, -Math.PI + 0.3, -0.3, 18), n = Math.max(3, Math.round(18 * hv.sp));
+  duoStroke(c, pts, n, 17, "#ff6a2b", "#ffe08a", al);
+  const age = hv.age + 1;
+  for (let i = 0; i < 9; i++) {
+    const p = pts[2 + ((i * 2) % 15)], fall = age * (1.2 + (i % 3) * 0.5), q = 1 - Math.min(1, age / 18);
+    c.globalAlpha = al * q; c.fillStyle = i % 2 ? "#ffe08a" : "#ff8a3d";
+    c.beginPath(); c.arc(p[0] + Math.sin(i * 3 + age * 0.3) * 4, p[1] + 6 + fall * 3.2, 2.6 - (i % 3) * 0.5, 0, Math.PI * 2); c.fill();
+  }
+}
