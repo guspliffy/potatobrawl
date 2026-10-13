@@ -1,0 +1,12 @@
+# Paste on the server as root after uploading index.html to GitHub.
+# When PROTO changes in ui.js, change the grep string below to the new value.
+bash <<'EOF'
+set -e
+cd /opt/potatobrawl
+git pull --ff-only
+cp -f index.html three.min.js public/
+chown -R potatobrawl:potatobrawl /opt/potatobrawl
+systemctl restart potatobrawl
+sleep 2
+grep -q "const PROTO = 2" public/index.html && echo "new version is live" || echo "still the old version: upload index.html to GitHub first"
+EOF

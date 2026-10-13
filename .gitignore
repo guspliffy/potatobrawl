@@ -1,0 +1,6 @@
+node_modules/
+build/
+public/
+shots/
+ux2/
+__pycache__/
