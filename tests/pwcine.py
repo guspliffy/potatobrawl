@@ -104,7 +104,7 @@ def run(b, fid, opp):
     if not nogl and fid == "dragon" and not info["cine"]: bad.append(f"{fid}/{opp}: the film did not start ({cin})")
     files = []
     if video:
-        frames = pathlib.Path(video).with_suffix("") .parent / (pathlib.Path(video).stem + "-frames")
+        frames = pathlib.Path.cwd() / (pathlib.Path(video).stem + "-frames")   # the pictures stay in the working folder, only the mp4 goes to the given path
         shutil.rmtree(frames, ignore_errors=True); frames.mkdir(parents=True)
         n, acc = 0, 0.0
         while True:
@@ -161,6 +161,6 @@ if sheet and made:
 for e in errs + bad: print("ERROR", e)
 if not errs and not bad: print("no errors")
 if video and not errs:
-    frames = pathlib.Path(video).parent / (pathlib.Path(video).stem + "-frames")
+    frames = pathlib.Path.cwd() / (pathlib.Path(video).stem + "-frames")
     subprocess.run(["/usr/bin/ffmpeg", "-y", "-loglevel", "error", "-framerate", "30", "-i", str(frames / "f%04d.png"), "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", video], check=True)
     print("video:", video)

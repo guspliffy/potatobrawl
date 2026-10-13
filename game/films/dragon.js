@@ -365,12 +365,12 @@
       if (!D.ringOn && t >= 3390) { D.ringOn = true; D.ringT = t; }
       D.ring.visible = D.ringOn && t < 4200;
       if (D.ring.visible) {
-        const u = (t - D.ringT) / 760, k = cnClamp01(u);
+        const u = (t - D.ringT) / 640, k = cnClamp01(u);
         V.a.subVectors(camP, AW.mouth).normalize();
         D.ring.position.copy(AW.mouth).addScaledVector(V.a, 14 + 150 * k * (0.6 + 0.4 * k)).y += 2;
         D.ring.quaternion.setFromUnitVectors(D.Z, V.a);
         D.ring.scale.setScalar(5 + 20 * cnOut3(k));
-        D.ring.material.uniforms.uA.value = 0.95 * cnSmooth(cnProg(0, 0.12, k)) * (1 - cnProg(0.55, 1, k));
+        D.ring.material.uniforms.uA.value = 0.62 * cnSmooth(cnProg(0, 0.12, k)) * (1 - cnProg(0.12, 0.6, k));
         D.ring.material.uniforms.uLit.value.copy(D.ringLit).multiplyScalar(0.8 + 1.4 * glowK);
       }
       /* ---- shock spheres ---- */

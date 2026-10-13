@@ -988,6 +988,11 @@ function cineStage0(g, key, fid) {
   CINE.tier = cineTierName(); CINE.cfg = CT_TIERS[CINE.tier];
   CINE.slots = key; CINE.hasRes = true; CINE.ms = []; CINE.film = FILMS[fid];
   if (!CINE.renderer) {
+    // probe on a throw-away canvas first: three.js logs a console error when it cannot get a context, and a phone without WebGL is a normal case, not an error
+    const pc = document.createElement("canvas"); let px = null;
+    try { px = pc.getContext("webgl2") || pc.getContext("webgl"); } catch (e) { px = null; }
+    if (!px) throw new Error("no WebGL");
+    try { const ext = px.getExtension("WEBGL_lose_context"); if (ext) ext.loseContext(); } catch (e) { /* the probe context is only being freed */ }
     const r = new T.WebGLRenderer({ canvas: glcv, antialias: false, alpha: true, powerPreference: "high-performance", stencil: false });
     if (!r.getContext()) throw new Error("no WebGL context");
     glcv.addEventListener("webglcontextlost", cineLost);
