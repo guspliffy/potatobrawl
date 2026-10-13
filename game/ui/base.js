@@ -19,7 +19,7 @@ function defProfile() {
   return {
     rating: 1000, peak: 1000, wins: 0, losses: 0, draws: 0, matches: 0, tokens: 0, streak: 0,
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
-    last: FIGHTERS[0].id, sound: true, history: [], screen: "cw", gfx: "3d", rules: { l: 3, t: 4, b: 1 },
+    last: FIGHTERS[0].id, sound: true, history: [], screen: "cw", rules: { l: 3, t: 4, b: 1 },
   };
 }
 let firstRun = false;

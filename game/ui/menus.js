@@ -58,7 +58,7 @@ tap("onCopy", () => {
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
 tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
-/* ----- settings: sound, graphics, fullscreen, screen turning, reset ----- */
+/* ----- settings: sound, fullscreen, screen turning, reset ----- */
 let resetArmed = false;
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
@@ -71,8 +71,6 @@ function chipRow(id, items, cur, pick, disabled) {
 }
 function renderSettings() {
   chipRow("setSound", [[true, "On"], [false, "Off"]], !!P.sound, (v) => { P.sound = v; saveProfile(); });
-  chipRow("setGfx", [["3d", "3D"], ["2d", "2D"]], R3.failed ? "2d" : P.gfx === "2d" ? "2d" : "3d", (v) => { P.gfx = v; saveProfile(); }, (v) => R3.failed && v === "3d");
-  $("setGfxNote").hidden = !R3.failed; $("setGfxNote").textContent = "3D isn't supported on this device.";
   $("setFullRow").hidden = !FS.can;
   chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;

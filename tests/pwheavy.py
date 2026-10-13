@@ -15,7 +15,7 @@ from playwright.sync_api import sync_playwright
 from PIL import Image, ImageDraw
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 args = sys.argv[1:]
-gfx = "2d" if "--2d" in args else "3d"
+gfx = "2d"   # matches are 2D only since M4 (the flag is ignored by the game)
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
 UPLIFT = {k: 30 for k in ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon"]}   # up heavies swing overhead; lift the pinned opponent so they connect

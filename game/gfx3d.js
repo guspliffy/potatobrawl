@@ -23,7 +23,8 @@ const QUALITY = [
 ];
 
 function lin(hex) { return new R3.T.Color(hex).convertSRGBToLinear(); }
-function use3D() { return P.gfx !== "2d" && r3Init(); }
+// Matches and menus are drawn in 2D only since M4 (Jonny finds 2D more fun to play). three.js stays for the KO films.
+function use3D() { return false; }
 function r3Fail() { R3.failed = true; R3.ready = false; r3Layers(false); if (!$("scrSettings").hidden) renderSettings(); }
 
 function r3Init() {

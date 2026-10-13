@@ -61,8 +61,22 @@ button { font: inherit; color: inherit; }
 .pc-pct { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(30px, calc(var(--uh) * 7), 46px); line-height: 0.95; font-variant-numeric: tabular-nums; display: inline-block; transform-origin: 30% 70%; }
 .pc-pct small { font-size: 0.5em; margin-left: 1px; }
 .pc-stocks { display: flex; gap: 4px; padding-bottom: 6px; }
-/* lives are little potatoes in the fighter's colour */
-.pc-stocks i { width: 13px; height: 9px; border-radius: 55% 45% 44% 56% / 60% 52% 48% 40%; background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.4), transparent 42%), radial-gradient(circle at 70% 62%, rgba(0, 0, 0, 0.28) 0 1px, transparent 1.6px), var(--fc); transform: rotate(-14deg); box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.7), inset -2px -2px 0 rgba(0, 0, 0, 0.16); }
+/* lives are red hearts: a lost one cracks in two and falls away while the others thump, the last one beats (faster when finish-ready) */
+.pc-stocks i { --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 26'%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6470'/%3E%3Cstop offset='1' stop-color='%23d61f36'/%3E%3C/linearGradient%3E%3Cpath d='M15 24C6.6 18.3 2 13.6 2 8.3 2 4.7 4.8 2 8.2 2c2.8 0 4.8 1.6 6.8 4 2-2.4 4-4 6.8-4C25.2 2 28 4.7 28 8.3c0 5.3-4.6 10-13 15.7z' fill='url(%23g)' stroke='%230e1022' stroke-opacity='.75' stroke-width='2.6' stroke-linejoin='round'/%3E%3Cpath d='M6.4 7.4c.7-1.7 2.4-2.5 4-1.8' fill='none' stroke='%23fff' stroke-opacity='.8' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; position: relative; width: 15px; height: 13px; background: var(--heart); }
+.pc-stocks i.lost { background: none; }
+.pc-stocks i.lost::before, .pc-stocks i.lost::after { content: ""; position: absolute; inset: 0; background: var(--heart); }
+.pc-stocks i.lost::before { clip-path: polygon(0 0, 50% 0, 42% 32%, 57% 52%, 44% 74%, 50% 100%, 0 100%); animation: heartL 0.45s ease-in forwards; }
+.pc-stocks i.lost::after { clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%, 44% 74%, 57% 52%, 42% 32%); animation: heartR 0.45s ease-in forwards; }
+@keyframes heartL { 0% { filter: brightness(2.4); } 18% { transform: translate(-1px, 0) rotate(-5deg); filter: none; opacity: 1; } 100% { transform: translate(-4px, 10px) rotate(-30deg); opacity: 0; } }
+@keyframes heartR { 0% { filter: brightness(2.4); } 18% { transform: translate(1px, 0) rotate(5deg); filter: none; opacity: 1; } 100% { transform: translate(4px, 10px) rotate(30deg); opacity: 0; } }
+.pc-stocks i.last { animation: heartBeat 1s ease-in-out infinite; }
+.pcard.finr .pc-stocks i.last:not(.thump):not(.pop) { animation-duration: 0.6s; }
+.pc-stocks i.thump { animation: heartThump 0.2s ease-out; }
+.pc-stocks i.pop { animation: heartPop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes heartBeat { 0%, 34%, 100% { transform: scale(1); } 12% { transform: scale(1.14); } 22% { transform: scale(1.05); } }
+@keyframes heartThump { 50% { transform: scale(1.2); } }
+@keyframes heartPop { from { transform: scale(0); } }
+@keyframes heartFade { to { opacity: 0; } }
 .hud-mid { display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: auto; }
 #clock { font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; padding: 1px 10px; background: rgba(14, 16, 34, 0.6); border-radius: 3px; }
 #clock.warn { color: var(--ember); }
@@ -440,7 +454,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
-@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } }
 </style>
 
 </head><body><div id="app">
@@ -645,7 +659,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="sheet set-sheet scroll">
       <div class="x-row"><h3>Settings</h3><button class="link" id="setClose">Close</button></div>
       <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
-      <div class="set-row"><span>Graphics</span><span class="chips" id="setGfx"></span><small id="setGfxNote" hidden></small></div>
       <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
       <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
       <div class="set-row"><span>Progress</span><span class="chips"><button class="chip" id="setReset">Reset progress</button></span></div>
@@ -2069,7 +2082,7 @@ function defProfile() {
   return {
     rating: 1000, peak: 1000, wins: 0, losses: 0, draws: 0, matches: 0, tokens: 0, streak: 0,
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
-    last: FIGHTERS[0].id, sound: true, history: [], screen: "cw", gfx: "3d", rules: { l: 3, t: 4, b: 1 },
+    last: FIGHTERS[0].id, sound: true, history: [], screen: "cw", rules: { l: 3, t: 4, b: 1 },
   };
 }
 let firstRun = false;
@@ -4773,7 +4786,8 @@ const QUALITY = [
 ];
 
 function lin(hex) { return new R3.T.Color(hex).convertSRGBToLinear(); }
-function use3D() { return P.gfx !== "2d" && r3Init(); }
+// Matches and menus are drawn in 2D only since M4 (Jonny finds 2D more fun to play). three.js stays for the KO films.
+function use3D() { return false; }
 function r3Fail() { R3.failed = true; R3.ready = false; r3Layers(false); if (!$("scrSettings").hidden) renderSettings(); }
 
 function r3Init() {
@@ -7066,6 +7080,20 @@ function vsLine() {
   if (match.ranked) { const ti = tierInfo(match.oppRating); return `${me} vs ${op} · CPU ${ti.t.name} ${match.oppRating}`; }
   return `${me} vs ${op} · ${match.level}`;
 }
+// Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
+function setHearts(box, n, prev) {
+  if (prev < 0) box.innerHTML = "<i></i>".repeat(n);
+  const live = [...box.querySelectorAll("i:not(.lost)")];
+  for (let k = live.length; k < n; k++) {
+    const h = document.createElement("i"); h.className = "pop"; box.appendChild(h); live.push(h);
+    setTimeout(() => h.classList.remove("pop"), 340);
+  }
+  for (const h of live.splice(n)) { h.className = "lost"; setTimeout(() => h.remove(), 480); }
+  for (const h of live) {
+    h.classList.toggle("last", n === 1);
+    if (prev > n) { h.classList.remove("thump"); void h.offsetWidth; h.classList.add("thump"); setTimeout(() => h.classList.remove("thump"), 220); }
+  }
+}
 function updateHud() {
   for (let i = 0; i < 2; i++) {
     const f = G.fighters[i], el = $("pc" + i), hc = hudCache[i];
@@ -7076,7 +7104,7 @@ function updateHud() {
     if (hc.fin !== fin) { const first = fin && !hc.fin; hc.fin = fin; el.classList.toggle("finr", fin); if (first) finReady(i); }
     const fl = f.flash;
     wrap.style.transform = fl > 0 ? `scale(${1 + fl * 0.035}) translateX(${(Math.random() - 0.5) * fl * 0.8}px)` : "";
-    if (hc.stocks !== f.stocks) { el.querySelector(".pc-stocks").innerHTML = "<i></i>".repeat(Math.max(0, f.stocks)); hc.stocks = f.stocks; }
+    if (hc.stocks !== f.stocks) { setHearts(el.querySelector(".pc-stocks"), Math.max(0, f.stocks), hc.stocks); hc.stocks = f.stocks; }
     const out = f.state === "dead" || f.state === "gone";
     if (hc.out !== out) { el.classList.toggle("out", out); hc.out = out; }
   }
@@ -7788,7 +7816,7 @@ tap("onCopy", () => {
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
 tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
-/* ----- settings: sound, graphics, fullscreen, screen turning, reset ----- */
+/* ----- settings: sound, fullscreen, screen turning, reset ----- */
 let resetArmed = false;
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
@@ -7801,8 +7829,6 @@ function chipRow(id, items, cur, pick, disabled) {
 }
 function renderSettings() {
   chipRow("setSound", [[true, "On"], [false, "Off"]], !!P.sound, (v) => { P.sound = v; saveProfile(); });
-  chipRow("setGfx", [["3d", "3D"], ["2d", "2D"]], R3.failed ? "2d" : P.gfx === "2d" ? "2d" : "3d", (v) => { P.gfx = v; saveProfile(); }, (v) => R3.failed && v === "3d");
-  $("setGfxNote").hidden = !R3.failed; $("setGfxNote").textContent = "3D isn't supported on this device.";
   $("setFullRow").hidden = !FS.can;
   chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;

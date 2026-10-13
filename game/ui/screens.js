@@ -247,6 +247,20 @@ function vsLine() {
   if (match.ranked) { const ti = tierInfo(match.oppRating); return `${me} vs ${op} · CPU ${ti.t.name} ${match.oppRating}`; }
   return `${me} vs ${op} · ${match.level}`;
 }
+// Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
+function setHearts(box, n, prev) {
+  if (prev < 0) box.innerHTML = "<i></i>".repeat(n);
+  const live = [...box.querySelectorAll("i:not(.lost)")];
+  for (let k = live.length; k < n; k++) {
+    const h = document.createElement("i"); h.className = "pop"; box.appendChild(h); live.push(h);
+    setTimeout(() => h.classList.remove("pop"), 340);
+  }
+  for (const h of live.splice(n)) { h.className = "lost"; setTimeout(() => h.remove(), 480); }
+  for (const h of live) {
+    h.classList.toggle("last", n === 1);
+    if (prev > n) { h.classList.remove("thump"); void h.offsetWidth; h.classList.add("thump"); setTimeout(() => h.classList.remove("thump"), 220); }
+  }
+}
 function updateHud() {
   for (let i = 0; i < 2; i++) {
     const f = G.fighters[i], el = $("pc" + i), hc = hudCache[i];
@@ -257,7 +271,7 @@ function updateHud() {
     if (hc.fin !== fin) { const first = fin && !hc.fin; hc.fin = fin; el.classList.toggle("finr", fin); if (first) finReady(i); }
     const fl = f.flash;
     wrap.style.transform = fl > 0 ? `scale(${1 + fl * 0.035}) translateX(${(Math.random() - 0.5) * fl * 0.8}px)` : "";
-    if (hc.stocks !== f.stocks) { el.querySelector(".pc-stocks").innerHTML = "<i></i>".repeat(Math.max(0, f.stocks)); hc.stocks = f.stocks; }
+    if (hc.stocks !== f.stocks) { setHearts(el.querySelector(".pc-stocks"), Math.max(0, f.stocks), hc.stocks); hc.stocks = f.stocks; }
     const out = f.state === "dead" || f.state === "gone";
     if (hc.out !== out) { el.classList.toggle("out", out); hc.out = out; }
   }
