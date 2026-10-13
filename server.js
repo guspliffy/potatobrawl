@@ -6,6 +6,7 @@
  * only exchange inputs, so this process stays tiny (a few KB/s per match).
  *
  *   PORT               port to listen on (default 8080; Render sets this itself)
+ *   HOST               address to listen on (default: all; the beta server uses 127.0.0.1)
  *   LAG_MS             artificial one-way delay for testing (default 0)
  *   KEEPALIVE_MINUTES  how often the server pings its own public URL so a free host
  *                      doesn't put it to sleep (default 4; 0 turns it off)
@@ -18,6 +19,7 @@ const zlib = require("zlib");
 const { WebSocketServer } = require("ws");
 
 const PORT = Number(process.env.PORT) || 8080;
+const HOST = process.env.HOST || undefined;
 const LAG = Number(process.env.LAG_MS) || 0;
 const GRACE_MS = 8000;           // keep a dropped player's seat this long so a brief reconnect continues the match
 const MAX_ROOMS_PER_CLIENT = 6;
@@ -195,4 +197,4 @@ if (SELF_URL && KEEPALIVE_MIN > 0 && typeof fetch === "function") {
   console.log(`Keep-alive: pinging ${SELF_URL}/health every ${KEEPALIVE_MIN} min`);
 }
 
-server.listen(PORT, () => console.log(`PotatoBrawl running on http://localhost:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`PotatoBrawl running on http://${HOST || "localhost"}:${PORT}`));

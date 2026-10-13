@@ -1,12 +1,12 @@
 # PotatoBrawl: how we work (v2)
 
 ## Where things live
-- **Code:** GitHub repo `guspliffy/potatobrawl`, once GitHub is connected to Claude (until then: `potatobrawl-source.zip`). Planned layout: `game/` (sources + build.py), `tests/`, server files and the built `index.html` at the root, `CLAUDE.md` (short version of this file), `docs/HANDOFF.md`.
+- **Code:** GitHub repo `guspliffy/potatobrawl`. Layout: `game/` (sources + build.py, ui split into `game/ui/`), `tests/`, `deploy/`, server files and the built `index.html` at the root, `CLAUDE.md`, `docs/HANDOFF.md`, `check.sh`.
 - **Plans, decisions, feedback:** the claude.ai Project "potato brawl" (WORKFLOW, HANDOFF, PLAN, FEEDBACK docs) and the plan doc "PotatoBrawl: Session Wrap-up and Next Plan" (decision table). Never put code in Project docs: they load into every chat and cost tokens.
 - **Live:** https://potatobrawl.cloud. **Test copy:** beta.potatobrawl.cloud (to be set up in milestone 0).
 
 ## Roles
-- **Opus (main session): conductor and reviewer.** Talks to Jonny, plans, writes briefs, reviews, decides what ships. Owns the simulation and online sync (`core.js`, lockstep code in `ui.js`): writes those changes itself or reviews them line by line.
+- **Opus (main session): conductor and reviewer.** Talks to Jonny, plans, writes briefs, reviews, decides what ships. Owns the simulation and online sync (`core.js`, lockstep code in `game/ui/online.js`): writes those changes itself or reviews them line by line.
 - **Fable 5.1 (Agent, model "fable"): creative head and design analyst.** Concepts, game feel, balance, effect and finisher designs, mockups as SVG/HTML/three.js sketches, and deep "why does this happen" analysis. Only at decision points: top tier, likely the most expensive. Max 600 words or one mockup file. Never edits game files.
 - **Sonnet 5.5 (Agent general-purpose, model "sonnet"): coders.** Screens, server endpoints, effects, setup files, refactors. One agent per task, each owning distinct files. Report max 200 words: files touched, what changed, command output tails, doubts. No code dumps.
 - **Tester (Agent, model "haiku" or "sonnet").** Runs `check.sh` and the screenshot pass, reports only failures plus one contact sheet. Independent of whoever planned the work.
@@ -21,7 +21,7 @@
 
 ## Token rules
 - One milestone per session. Every message carries the whole conversation, so long sessions get expensive and lose detail when summarized. Start fresh with the handoff.
-- Never read a whole large file. Grep, then line ranges. (`ui.js` gets split into modules in milestone 0.)
+- Never read a whole large file. Grep, then line ranges.
 - Reuse agents via SendMessage; don't respawn. Ask Jonny all open questions at once, before expensive work.
 - Run each check once per step. Keep CLAUDE.md and Project docs short; they load every time.
 - Don't run parallel agents that all read the same big file.
@@ -40,5 +40,5 @@
 - **Then** the backlog, in the order of Jonny's answer to decision 8 in the plan doc, plus the FEEDBACK doc.
 
 ## Session start and end
-- **Start:** the cloud session clones the repo (or restores the zip per HANDOFF.md). Read CLAUDE.md, docs/HANDOFF.md, the Project FEEDBACK doc and the plan doc's decision table. Confirm the milestone with Jonny.
-- **End:** update HANDOFF (state, decisions, next steps), commit and push (or build a fresh zip), and give Jonny the deploy steps.
+- **Start:** the cloud session clones the repo. Read CLAUDE.md, docs/HANDOFF.md, the Project FEEDBACK doc and the plan doc's decision table. Confirm the milestone with Jonny.
+- **End:** update HANDOFF (state, decisions, next steps), commit, push and open a pull request, and give Jonny the deploy steps.
