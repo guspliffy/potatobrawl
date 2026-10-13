@@ -221,7 +221,7 @@ function enterMatchUI() {
     const f = G.fighters[i], el = $("pc" + i);
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
-    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : match.tutorial ? "Dummy" : "CPU";
+    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));

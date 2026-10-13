@@ -261,7 +261,7 @@ function drawProj(c, p, tk) {
 
 function drawTag(c, f, isP1, lift) {
   if (f.state === "dead" || f.state === "gone") return;
-  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : match && match.tutorial ? "DUMMY" : "CPU";
+  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.translate(f.x, y); c.scale(k, k);
   c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8";
