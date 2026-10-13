@@ -37,7 +37,7 @@
 - **M1:** light-attack lock fix + fullscreen / home-screen app.
 - **M2:** KO finisher Phase 1 (moved ahead of accounts by Jonny, 2026-10-13; shipped together with M1 in PR #2).
 - **M3:** fight feel (moved ahead of accounts by Jonny, 2026-10-13): heavy looks, specials finish from 175%, 1 s charged heavies, KO decided at the hit so the finisher starts on it (PROTO 4).
-- **M4:** 2D-only matches + red heart lives, then the KO finisher as a live 3D film per fighter (Jonny, 2026-10-13; plan in Project files finisher-films/plan.md, Fable's design in finisher-films/fable-cinematics.md). The Potatalities move to a later finisher shop (alternates for chips).
+- **M4:** 2D-only matches + red heart lives, then the KO finisher as a 2D manga page per fighter (3D films first, replaced by manga on Jonny's call), originally a live 3D film per fighter (Jonny, 2026-10-13; plan in Project files finisher-films/plan.md, Fable's design in finisher-films/fable-cinematics.md). The Potatalities move to a later finisher shop (alternates for chips).
 - **M5:** accounts with sync codes + server housekeeping (close :8080, nightly backup).
 - **M6:** hit-feel polish + KO finisher Phase 3.
 - **Then** the backlog, in the order of Jonny's answer to decision 8 in the plan doc, plus the FEEDBACK doc.
