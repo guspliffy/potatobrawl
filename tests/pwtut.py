@@ -90,6 +90,8 @@ async def run(b, tag, vp, touch, up, errs, full):
             await pg.dispatch_event(heavy, 'pointerdown', {'pointerId': 7, 'isPrimary': True, 'pointerType': 'touch'})
         else:
             await pg.keyboard.down('KeyK')
+        try: await pg.wait_for_function(f"{G}.fighters[0].state === 'attack'", timeout=5000)   # the heavy has started
+        except Exception: pass
         try: await pg.wait_for_function(f"{G}.fighters[0].chg >= 12 || {G}.fighters[0].state !== 'attack'", timeout=20000)   # hold in sim time, not wall time
         except Exception: pass
         # while the heavy is charging (chg > 0 on the held wind-up) the ring must show on the Heavy button; if the CPU
