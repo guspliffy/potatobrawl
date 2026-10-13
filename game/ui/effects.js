@@ -183,13 +183,17 @@ function drawBubbles(c, g, tk, img) {
 
 /*GFX3D*/
 
+/*CINE*/
+
 function render(g, tk) {
   RG = g; humStep(g);   // RG: the game drawn this frame (finish-ready looks read it); humStep: the charge hum
   // during the KO finisher the scene shows its two stand-ins instead of the real fighters
   const fin = FIN.on && mode === "match";
   if (fin) g = finFrame(g, tk);
-  if (use3D()) render3D(g, tk); else render2D(g, tk);
-  if (fin) finOverlay(use3D() ? octx : ctx, tk);
+  if (fin && FIN.on && FIN.cine) cineDraw(g, tk);
+  else if (use3D()) render3D(g, tk); else render2D(g, tk);
+  if (fin) finOverlay(FIN.cine && FIN.cut ? octx : use3D() ? octx : ctx, tk);
+  else { if (mode === "match") r3Perf(performance.now()); cineIdle(g); }   // match frames feed the tier watchdog; the KO film warms up (or lets go) here
 }
 function render2D(g, tk) {
   r3Layers(false);

@@ -9,7 +9,7 @@
    launch direction, spinning. It leaves the screen, the KO beam and a burst of fries and chips mark the
    edge, then the name card. A tap or key skips it; the results screen opens when it ends. */
 const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null], parts: [], shake: 0, out: false,
-  cue: {}, finish: null, k: 1, use3D: false, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
+  cue: {}, finish: null, cine: false, cardSub: "", k: 1, use3D: false, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
 // timeline, in ms after the final hit. The loser stays put FLAUNCH ms after HIT (impact freeze), then flies.
 const FT = { CUT: 520, ACT: 920, HIT: 1520, OUT: 2020, CARD: 2400, END: 3800 };
 const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
@@ -39,6 +39,9 @@ function finStart(g) {
   FIN.P = [null, null];
   FIN.P[FIN.w] = finPuppet(W, FIN.wx, FIN.dir, "w");
   FIN.P[FIN.l] = finPuppet(Lf, FIN.lx, -FIN.dir, "l");
+  // a winner with a 3D film (cine.js) plays that instead of the 2D staging below; anything missing or broken falls back to it
+  FIN.cine = false; FIN.cardSub = "";
+  FIN.cine = cineStart(g);
 }
 function finPuppet(f, x, facing, role) {
   const p = Object.assign({}, f, { x, y: 0, vx: 0, vy: 0, kbx: 0, kby: 0, facing, grounded: true, plat: 0, state: "fin", st: 0,
@@ -57,6 +60,7 @@ function finEnd() {
 }
 function finStop() { finClear(); FIN.finish = null; FIN.pend = null; }
 function finClear() {
+  if (FIN.cine) cineEnd();
   FIN.on = false; cam.yaw = 0; FIN.parts.length = 0; FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; finFilter(0); fxHitOff();
   if (finFull) { finFull = false; resize(); }
 }
@@ -68,8 +72,9 @@ function finFilter(v) {
 }
 // Skipping only counts once the cinematic is on screen, so buttons still being mashed at the KO don't skip it.
 function finSkip(e) {
-  if (!FIN.on || FIN.t < FT.CUT + 400) return;
+  if (!FIN.on || FIN.t < (FIN.cine ? CT.SKIP : FT.CUT + 400)) return;
   if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (FIN.cine) { cineFinish(); return; }
   FIN.skipAt = performance.now();
   finEnd();
 }
@@ -468,6 +473,7 @@ function finFrame(g, tk) {
   const now = performance.now(), dt = Math.min(80, now - FIN.last) * FIN.rate; FIN.last = now;
   if (!paused) FIN.t += dt;
   const t = FIN.t, k = dt / FMS;
+  if (FIN.cine) return cineTick(g, t);
   if (t >= FT.END) { finEnd(); return g; }
   if (t < FT.CUT) return g; // beat 0: the real hit plays (hitstop, then slow motion) under the camera punch-in
   if (!FIN.cut) {
@@ -612,6 +618,7 @@ function finScene(o, t) {
 }
 function finOverlay(o, tk) {
   if (!FIN.on) return;
+  if (FIN.cine) { cineOverlay(o, tk); return; }
   const t = FIN.t;
   o.save(); o.setTransform(DPR, 0, 0, DPR, 0, 0);
   o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
@@ -651,6 +658,7 @@ function finCard(o, t) {
   const nw = o.measureText(W.spec.name.toUpperCase()).width;
   o.font = `700 ${Math.round(fs * 0.36)}px "Barlow Condensed", "Arial Narrow", sans-serif`; o.fillStyle = c1;
   o.fillText(W.slot === meSlot ? "YOU WIN" : "WINS", x + nw + 12, y + fs * 0.12);
+  if (FIN.cine && FIN.cardSub) { o.font = `700 ${Math.round(fs * 0.3)}px "Barlow Condensed", "Arial Narrow", sans-serif`; o.fillStyle = "rgba(244,242,236,0.78)"; o.fillText(FIN.cardSub.toUpperCase(), x, y + fs * 0.62); }
   o.restore();
   // K.O. stamp
   const s = fe(FT.CARD + 180, FT.CARD + 420, t);

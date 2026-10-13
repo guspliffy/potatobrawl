@@ -111,6 +111,15 @@ button { font: inherit; color: inherit; }
 #banner.fin .b-sub { color: var(--text); }
 
 /* ---------- KO zoom / finishing special (UI only, drawn above the arena) ---------- */
+#cShut { position: absolute; inset: 0; z-index: 40; pointer-events: none; display: none; }
+#cShut i { position: absolute; left: 0; right: 0; background: #05050b; }
+#cShut i:first-child { top: 0; height: 51%; }
+#cShut i:last-child { bottom: 0; height: 51%; }
+#cShut.open { display: block; }
+#cShut.open i:first-child { animation: shutT 0.34s cubic-bezier(0.6, 0, 0.2, 1) both; }
+#cShut.open i:last-child { animation: shutB 0.34s cubic-bezier(0.6, 0, 0.2, 1) both; }
+@keyframes shutT { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+@keyframes shutB { from { transform: translateY(0); } to { transform: translateY(100%); } }
 #fxHit { position: absolute; inset: 0; z-index: 5; pointer-events: none; --hx: 50%; --hy: 50%; }
 #fxHit i { position: absolute; inset: 0; opacity: 0; }
 #fxHit .fh-w { background: #fff; }
@@ -476,6 +485,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>
   <div id="fxHit" aria-hidden="true"><i class="fh-v"></i><i class="fh-l"></i><i class="fh-w"></i></div>
+  <div id="cShut" aria-hidden="true"><i></i><i></i></div>
   <div id="finBan" hidden aria-hidden="true"><div class="fb"><span class="fb-t"></span></div></div>
 
   <div id="ctl" hidden>
@@ -667,7 +677,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /*CORE*/
 </script>
