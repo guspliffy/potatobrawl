@@ -11146,7 +11146,7 @@ MANGA.wizard = (function () {
         ting(0), ting(3), ting(5),
         { text: "VWOOOM", t0: T_DET, t1: FIN.hit + 40, size: 0.115, arc: 9, rot: 1.05 * D, stretch: { ang: 1.05 * D, k: 0.45 },
           at: (t) => { const m = meteorState(t); return m ? [m.x - D * 95, m.y + 80] : [L.gw / 2, L.gh / 2]; } },
-        { text: "KRISSH", t0: FIN.hit, t1: 3560, size: 0.2, arc: 8, jag: 0.1, rot: -0.07 * D, at: () => { const p = P3(); return [p.x0 + mxu(0.2) * p.w + p.ox, p.y0 + p.h * 0.36 + p.oy]; } },
+        { text: "KRISSH", t0: FIN.hit, t1: 3560, size: 0.2, arc: 8, jag: 0.1, rot: -0.07 * D, at: () => { const p = P3(); return [p.x0 + mxu(lay.port ? 0.36 : 0.2) * p.w + p.ox, p.y0 + p.h * (lay.port ? 0.3 : 0.36) + p.oy]; } },
       ].map((w) => Object.assign(w, { mul }));
     },
     build(lay) {
