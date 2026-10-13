@@ -7,7 +7,7 @@ PAIRS = [('samurai', 'dragon'), ('odin', 'wizard'), ('phoenix', 'alchemist')]
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(args=ARGS)
-        for gfx in ('3d', '2d'):
+        for gfx in ('2d',):
             ctx = await b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
             await ctx.add_init_script(f"localStorage.setItem('potatobrawl.profile.v1', JSON.stringify({{matches: 5, gfx: '{gfx}'}}))")
             pg = await ctx.new_page(); errs = []

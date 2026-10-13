@@ -13,7 +13,7 @@ import sys, json, pathlib
 from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 args = sys.argv[1:]
-gfx = "2d" if "--2d" in args else "3d"
+gfx = "2d"   # matches are 2D only since M4 (the flag is ignored by the game)
 screen = "up" if "--up" in args else "cw"
 skip = "--skip" in args
 selfkill = "--self" in args

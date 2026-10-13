@@ -17,7 +17,7 @@
 2. **Brief (Opus):** self-contained briefs (agents can't see the chat): paths, functions, constraints, what not to touch, commands, definition of done, report format.
 3. **Execute (Sonnet):** different files in parallel, same file in sequence. One branch per milestone, one commit per task.
 4. **Test, then review:** the tester runs `check.sh` + screenshots; Opus reads its report and `git diff`, never whole files. Fixes go back to the same agent via SendMessage.
-5. **Ship:** build, deploy to beta, Jonny checks on his phone, then live. Publish the artifact copy if it's still used. Update HANDOFF, commit, push.
+5. **Ship:** build; Claude merges its own PR once `check.sh` passes (Jonny's standing rule since 2026-10-13); Jonny pastes deploy/update.txt to put it live and checks on his phone. Publish the artifact copy if it's still used. Update HANDOFF, commit, push.
 
 ## Token rules
 - One milestone per session. Every message carries the whole conversation, so long sessions get expensive and lose detail when summarized. Start fresh with the handoff.
@@ -37,7 +37,7 @@
 - **M1:** light-attack lock fix + fullscreen / home-screen app.
 - **M2:** KO finisher Phase 1 (moved ahead of accounts by Jonny, 2026-10-13; shipped together with M1 in PR #2).
 - **M3:** fight feel (moved ahead of accounts by Jonny, 2026-10-13): heavy looks, specials finish from 175%, 1 s charged heavies, KO decided at the hit so the finisher starts on it (PROTO 4).
-- **M4:** KO finisher films with Potatalities (plan in Project files fight-ideas/plan.md, section B).
+- **M4:** 2D-only matches + red heart lives, then the KO finisher as a live 3D film per fighter (Jonny, 2026-10-13; plan in Project files finisher-films/plan.md, Fable's design in finisher-films/fable-cinematics.md). The Potatalities move to a later finisher shop (alternates for chips).
 - **M5:** accounts with sync codes + server housekeeping (close :8080, nightly backup).
 - **M6:** hit-feel polish + KO finisher Phase 3.
 - **Then** the backlog, in the order of Jonny's answer to decision 8 in the plan doc, plus the FEEDBACK doc.

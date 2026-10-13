@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-13, M3 fight feel)
+# PotatoBrawl handoff (updated 2026-10-13, M4 step 1: 2D only + hearts)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -12,9 +12,15 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 - M3 "fight feel" (branch claude/m1-dragon-lock-fullscreen-u9pkgz restarted from main, PROTO 4): heavies get
   their own look and sound, specials finish from 175% (finish mode), ground heavies charge up to 1 s, and the
   KO is decided at the hit so the finisher starts on the KO hit and launches the loser out. Plan and Fable's
-  design: /mnt/project-files/fight-ideas/plan.md (Project files).
+  design: /mnt/project-files/fight-ideas/plan.md (Project files). Merged (PR #3, 61492cb) and live since
+  2026-10-13 16:25 UTC.
+- M4 (Jonny, 2026-10-13, after playing M3): matches are 2D only (he finds 2D more fun; the Graphics setting is
+  gone and `use3D()` returns false), lives are red hearts, and the KO finisher becomes a live 3D film per
+  fighter (three.js; the 2D picture shatters like glass into a 3D "dimension"). Plan and Fable's film design:
+  /mnt/project-files/finisher-films/plan.md and fable-cinematics.md. Step 1 (2D only + hearts) is this PR.
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
-  and opens a pull request, Jonny merges.
+  and opens a pull request. Claude merges its own PRs once ./check.sh passes (Jonny's standing rule since
+  2026-10-13); deploying stays Jonny's paste.
 - Beta: deploy/beta-setup.txt sets up https://beta.potatobrawl.cloud (127.0.0.1:8081). Not run yet unless
   Jonny says so.
 - The same VPS hosts Jonny's real-money trading bot (exchange keys on disk). Anything that adds attack
@@ -92,7 +98,8 @@ pwon.py now also asks both browsers for a rematch after the KO (prints "rematch 
 experiments/lockfix-prototype/ was removed once the fix went into core.js (its checks are lockrun/lockdet).
 
 ## Deploy
-- Live: Jonny merges the pull request on GitHub, then pastes deploy/update.txt on the server; it must print
+- Live: Claude merges the pull request once all checks pass, then Jonny pastes deploy/update.txt on the server
+  (always the current file: an old saved copy checks an old PROTO); it must print
   "new version is live". No more file uploads. Since M1 the block also copies web/* (manifest, icons).
 - Beta (once set up): deploy/beta-update.txt with BRANCH set to the branch to try.
 
@@ -108,11 +115,11 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 On 2026-10-13, after playing M1 + M2, Jonny asked for special finishes, Mortal-Kombat-style finishers, heavies
 that differ from lights, a charged heavy, and the finisher starting on the KO hit. He chose to do this before
 accounts (1 s charge).
-- M3 fight feel (this PR): Jonny tests on his phone, merges, pastes deploy/update.txt (PROTO 4: everyone
-  reloads once).
-- M4 finisher films (plan.md section B): slow-motion replay of the real final blow, cut-in, re-shot signature
-  moves, the six "Potatalities" (only after a special finish; any other final KO keeps the launch-out
-  ending), Finishers Full/Short/Off setting. Two fighters per session.
+- M3 fight feel: live; Jonny's phone test (sounds) still pending.
+- M4 (finisher-films/plan.md): 1. 2D only + red hearts (this PR, display only). 2. The 3D film engine + the
+  Dragon's "Inferno" film, sent to Jonny as a video before the rest. 3. The other five films (Phoenix, then
+  Wizard + Alchemist, then Odin + Samurai). UI only, no PROTO bump. The Potatalities move to a later finisher
+  shop that sells alternates for chips (the existing currency) next to the skins.
 - M5: accounts via sync code (server endpoints, StateDirectory=potatobrawl, limits, nightly backup, close
   :8080). Still needs Jonny's answers to plan-doc decisions 3 and 5.
 - Then hit-feel polish, finisher Phase 3 (bloom on strong phones, music stingers), upgraded finishers for top
