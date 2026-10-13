@@ -3214,7 +3214,7 @@ const GUN_GOLD = (f) => skinLvl(f) >= 3;   // the 200-chip skin carries gold pis
 // High Noon (f.finShot) is one shot from the front hand only. set(hF, hB) hands the hands back to pose().
 function gunShotPose(f, P, m, phase, k, w, leg, tor, set) {
   const iv = m.proj.interval || 1, n = f.finShot ? m.proj.finCount || 1 : m.proj.count || 1, sk = f.mt - m.startup;
-  const kick = (i) => (i < n && sk >= i * iv && sk < i * iv + 5 ? 1 - (sk - i * iv) / 5 : 0);
+  const kick = (i) => { const d = sk - i * iv; return i < n && d >= 1 && d < 6 ? 1 - (d - 1) / 5 : 0; };   // the barrel is level on the shot frame, the kick follows
   const up = phase === 0 ? ease(k) : phase === 2 ? 1 - ease(k) : 1;
   const hF = lerp2([w * 0.62, -leg - tor * 0.22], [w * 1.02, -leg - tor * 0.64], up), kf = kick(0), kb = kick(1);
   const hB = f.finShot ? null : lerp2([-w * 0.5, -leg - tor * 0.25], [w * 0.8, -leg - tor * 0.76], up);
