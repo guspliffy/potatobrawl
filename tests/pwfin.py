@@ -20,7 +20,7 @@ selfkill = "--self" in args
 aim = next((a.split("=")[1] for a in args if a.startswith("--aim=")), "side")
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
-ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon"]
+ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]
 ids = [a for a in args if not a.startswith("--") and not a[0].isdigit()] or ALL
 # moments (ms after the final hit): beat 0 is the real hit, 520 the cut, ~1520 the winner's impact, then the loser's flight, the card
 TIMES = [] if (skip or selfkill) else [60, 200, 340, 500, 620, 1000, 1400, 1530, 1650, 1760, 1860, 1960, 2150, 2450, 2900, 3500]

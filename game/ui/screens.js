@@ -237,7 +237,7 @@ const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = docu
 function finReady(i) {
   if (!G || G.phase !== "play" || (match && match.tutorial)) return;
   const att = G.fighters[1 - i];
-  showBanner("Finish!", `${att.spec.signature.name} KOs now`, "fin", 1100, col(att.pal));
+  showBanner("Finish!", `${finName(att.spec)} KOs now`, "fin", 1100, col(att.pal));
   Sfx.tone(330, 740, 0.22, "sawtooth", 0.06); Sfx.noise(0.16, 0.22, 3200);
 }
 function vsLine() {
@@ -285,7 +285,7 @@ function updateHud() {
   btnSpec.style.setProperty("--cd", (me.specCd / cd).toFixed(3));
   // touch: the special glows and names itself while the opponent is at finish percent
   const sf = !!hudCache[1 - meSlot].fin;
-  if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? me.spec.signature.name : "Special"; }
+  if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? finName(me.spec) : "Special"; }   // finName: finisher.js (High Noon)
   // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
   // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,
   // being hit (hitstun, tumble), the ledge, a KO or respawn, so a walk-off or a knock-up never boosts it.

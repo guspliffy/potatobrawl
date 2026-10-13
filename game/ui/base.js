@@ -106,6 +106,11 @@ const Sfx = {
   burst() { this.noise(0.25, 0.35, 1400); this.tone(220, 90, 0.2, "sine", 0.25); },
   caw() { this.tone(700, 420, 0.09, "sawtooth", 0.05); setTimeout(() => this.tone(650, 380, 0.08, "sawtooth", 0.045), 110); },
   fry() { this.tone(980, 520, 0.06, "square", 0.045); this.noise(0.04, 0.08, 4000); },
+  // Gunslinger: a crisp crack with a low thump; the golden High Noon shot is heavier and leaves a whine
+  shot(gold) {
+    this.noiseF(0.07, 0.5, "highpass", 2400, 900, 0.7); this.noise(0.09, 0.3, 2600); this.tone(260, 55, 0.1, "sine", 0.3);
+    if (gold) { this.noise(0.35, 0.4, 1200); this.tone(150, 38, 0.35, "sine", 0.45); this.later(90, () => this.tone(2600, 1300, 0.3, "sine", 0.04)); }
+  },
   // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"
   noiseF(dur, vol, type, f0, f1, q) {
     if (!this.ok()) return;
@@ -168,6 +173,11 @@ const Sfx = {
         this.noiseF(0.4, 0.3, "lowpass", 1300, 500, 0.7); this.tone(210, 90, 0.34, "sawtooth", 0.06);
         if (up) this.noiseF(0.14, 0.3, "bandpass", 600, 1800, 1.4);
         if (dn) { this.tone(90, 34, 0.3, "sine", 0.45); this.later(80, () => this.noiseF(0.35, 0.16, "highpass", 3800, 7000, 1.3)); }
+        break;
+      case "gunslinger": // three fanned cracks for the side blast, two cracks for the sky and floor shots, a dull thud of dust for the floor
+        for (let i = 0; i < (up || dn ? 2 : 3); i++) this.later(i * (up || dn ? 30 : 55), () => { this.noiseF(0.06, 0.45, "highpass", 2600, 1000, 0.7); this.tone(240, 60, 0.08, "sine", 0.22); });
+        if (dn) this.later(40, () => this.noise(0.25, 0.2, 500));
+        if (!up && !dn && !air) this.later(170, () => this.tone(1800, 1500, 0.06, "triangle", 0.03));   // a spent shell rings on the floor
         break;
       case "alchemist": // zap crackle; glass and a burst for the flask
         if (dn) {

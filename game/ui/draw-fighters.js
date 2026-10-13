@@ -10,7 +10,9 @@ function pose(f, tk) {
     // heavy-attack extras (see HEAVY_LOOK): glint, wings, hop, weapon angle, sheathed blade, tail whirl, crystal, raven, flask
     pre: 0, hv: null, wingUp: 0, hop: 0, holdAng: null, sheath: 0, tailSwing: null, tailLift: 0, cryK: 1, ravenK: 0, ravenTo: null, flask: 0, hornFlash: 0, glintAt: null,
     // charge-up (a ground heavy held at its hold point): chg frames, whether it is waiting right now, the 1 px jitter at full charge
-    chg: 0, hold: false, jit: [0, 0] };
+    chg: 0, hold: false, jit: [0, 0],
+    // Gunslinger: the back pistol's angle (null = at rest) and which pistol has just fired (draws the muzzle flash)
+    gunB: null, shotF: -1, shotB: -1 };
   let fF = [w * 0.24, 0], fB = [-w * 0.2, 0];
   let hF = [w * 0.5, -leg - tor * 0.52], hB = [w * 0.2, -leg - tor * 0.42];
   const st = f.state;
@@ -78,6 +80,13 @@ function pose(f, tk) {
     }
     if (phase === 1) P.mouth = Math.max(P.mouth, 1);
     if (m.kind === "projectile" && m.limb !== "head") { hF = phase === 0 ? lerp2(hF, [-w * 0.6, -leg - tor * 0.9], ease(k)) : lerp2([w * 1.1, -leg - tor * 0.7], hF, phase === 2 ? ease(k) : 0); }
+    if (m.kind === "projectile" && L_.costume === "gunslinger") gunShotPose(f, P, m, phase, k, w, leg, tor, (a, b) => { hF = a; if (b) hB = b; });
+    // Powder jump (Gunslinger): the front pistol points straight down and fires once as he lifts off
+    if (m.rec && L_.costume === "gunslinger") {
+      const sk = f.mt - m.startup;
+      hF = [w * 0.34, -leg * 0.2 - (sk < 0 ? 6 : sk < 4 ? 6 - sk * 1.5 : 0)]; P.holdAng = 1.42; P.lean = -0.1;
+      if (sk >= 0 && sk < 3) P.shotF = sk;
+    }
     if (m.kind === "charge" && phase === 0) P.crouch = 0.3 * ease(k);
     if (m.pound) { fF = [w * 0.08, 4]; fB = [-w * 0.12, 2]; hF = [w * 0.42, -leg - tor * 1.15]; hB = [-w * 0.42, -leg - tor * 1.1]; }
     let look = null, replace = false;
@@ -444,6 +453,7 @@ function potatoFace(c, f, P, look) {
     else if (ex === "calm" || ex === "dazed") c.arc(e[0], e[1] - er * 0.6, er * 1.1, -2.4, -0.75);
     else if (style === "evil" || style === "fierce" || style === "focused") { c.moveTo(e[0] + side * er * 0.9, e[1] - er * (style === "focused" ? 1.6 : 1.8)); c.lineTo(e[0] - side * er * 0.7, e[1] - er * (style === "focused" ? 1.15 : 1.2)); }
     else if (style === "stern") { c.moveTo(e[0] - er * 1.1, e[1] - er * 1.45); c.lineTo(e[0] + er * 1.1, e[1] - er * 1.3); }
+    else if (style === "cocky") { c.lineWidth = 3; c.moveTo(e[0] + side * er * 1.0, e[1] - er * (side > 0 ? 1.95 : 1.75)); c.quadraticCurveTo(e[0], e[1] - er * 2.0, e[0] - side * er * 0.85, e[1] - er * 1.3); }
     else c.arc(e[0], e[1] - er * 0.6, er * 1.1, -2.4, -0.75);
     c.stroke();
   });
@@ -487,6 +497,10 @@ function potatoFace(c, f, P, look) {
     c.fillStyle = "#5a1a14"; c.fill(); c.lineWidth = 1.6; c.stroke();
   } else if (style === "focused") {
     c.beginPath(); c.moveTo(mx - er * 0.7, my + er * 0.1); c.quadraticCurveTo(mx, my - er * 0.15, mx + er * 0.7, my + er * 0.1); c.lineWidth = 1.8; c.stroke();
+  } else if (style === "cocky") {
+    c.beginPath(); c.moveTo(mx - er * 1.05, my - er * 0.2); c.quadraticCurveTo(mx + er * 0.1, my + er * 1.25, mx + er * 1.35, my - er * 0.55);
+    c.quadraticCurveTo(mx + er * 0.15, my + er * 0.3, mx - er * 1.05, my - er * 0.2); c.closePath();
+    c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = 1.6; c.stroke();
   } else if (style === "fierce") {
     c.beginPath(); c.moveTo(mx - er * 1.0, my - er * 0.1); c.quadraticCurveTo(mx, my + er * 0.6, mx + er * 1.1, my - er * 0.5); c.lineWidth = 1.8; c.stroke();
     c.fillStyle = "#ffffff"; c.beginPath(); c.moveTo(mx + er * 0.25, my + er * 0.2); c.lineTo(mx + er * 0.4, my + er * 0.7); c.lineTo(mx + er * 0.58, my + er * 0.12); c.closePath(); c.fill(); c.lineWidth = 0.8; c.stroke();
@@ -660,6 +674,122 @@ function katana(c, P, f, shR, pal) {
   c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = "#c9a227"; c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
   c.restore();
 }
+/* ---- Gunslinger: hat, neckerchief, vest, belt with holster, two revolvers ---- */
+const GUN_GOLD = (f) => skinLvl(f) >= 3;   // the 200-chip skin carries gold pistols
+// Twin Shot (and High Noon): both pistols come up from the hips and fire in turn, front one first; each shot kicks the hand up.
+// High Noon (f.finShot) is one shot from the front hand only. set(hF, hB) hands the hands back to pose().
+function gunShotPose(f, P, m, phase, k, w, leg, tor, set) {
+  const iv = m.proj.interval || 1, n = f.finShot ? m.proj.finCount || 1 : m.proj.count || 1, sk = f.mt - m.startup;
+  const kick = (i) => (i < n && sk >= i * iv && sk < i * iv + 5 ? 1 - (sk - i * iv) / 5 : 0);
+  const up = phase === 0 ? ease(k) : phase === 2 ? 1 - ease(k) : 1;
+  const hF = lerp2([w * 0.62, -leg - tor * 0.22], [w * 1.02, -leg - tor * 0.64], up), kf = kick(0), kb = kick(1);
+  const hB = f.finShot ? null : lerp2([-w * 0.5, -leg - tor * 0.25], [w * 0.8, -leg - tor * 0.76], up);
+  set([hF[0] - kf * 4, hF[1] - kf * 5], hB && [hB[0] - kb * 4, hB[1] - kb * 5]);
+  P.holdAng = lerp(0.9, -0.04, up) - kf * 0.55;
+  if (hB) P.gunB = lerp(Math.PI - 0.9, -0.08, up) - kb * 0.55;
+  P.lean = -0.06 * up - (kf + kb) * 0.05;
+  if (sk >= 0 && sk < 3) P.shotF = sk;
+  if (!f.finShot && sk >= iv && sk < iv + 3) P.shotB = sk - iv;
+}
+// a revolver in the hand at (hx, hy), pointing along a; the fist is drawn again over the grip. shot >= 0: the muzzle flash, frames since the shot
+function gunHeld(c, f, P, hand, a, shot, r, limb, flash, back) {
+  const [hx, hy] = hand, gold = GUN_GOLD(f), s = back ? 0.92 : 1;
+  c.save(); c.translate(hx, hy); c.rotate(a); c.scale(s, s); c.lineJoin = "round"; c.lineCap = "round";
+  const metal = flash ? "#ffffff" : gold ? "#e8b83e" : back ? "#555b66" : "#6f7682", dark = gold ? "#9c6c16" : "#30343c";
+  c.lineWidth = 1.3; c.strokeStyle = OUT;
+  c.beginPath(); c.moveTo(-3.5, -1); c.lineTo(1.5, -1); c.lineTo(-1.5, 8.5); c.lineTo(-6.5, 8); c.closePath();   // grip
+  c.fillStyle = flash ? "#ffffff" : gold ? "#f3e4bf" : "#6e4529"; c.fill(); c.stroke();
+  c.fillStyle = metal;
+  c.beginPath(); c.roundRect(-4.5, -5, 9.5, 6.4, 1.6); c.fill(); c.stroke();                                    // frame and cylinder
+  c.beginPath(); c.roundRect(4.2, -4.4, 13, 3.4, 1); c.fill(); c.stroke();                                       // barrel
+  c.fillStyle = dark; c.fillRect(15, -6.1, 1.7, 1.9);                                                             // front sight
+  c.beginPath(); c.moveTo(-4.2, -4.4); c.lineTo(-7.4, -7.2); c.lineTo(-3, -5); c.closePath(); c.fill();            // hammer
+  c.lineWidth = 1; c.beginPath(); c.arc(1.8, 2.6, 2.3, 0, Math.PI); c.stroke();                                    // trigger guard
+  c.strokeStyle = "rgba(255,255,255,0.6)"; c.beginPath(); c.moveTo(5.5, -3.7); c.lineTo(15.5, -3.7); c.stroke();
+  if (shot >= 0) gunFlash(c, 18.5, -2.7, shot, f.finShot && !back ? 1.6 : 1, f.finShot && !back);
+  c.restore();
+  c.fillStyle = limb; c.beginPath(); c.arc(hx, hy, r, 0, Math.PI * 2); c.fill();
+  if (!back) { c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke(); }
+}
+// the muzzle flash, in the pistol's own frame (x along the barrel): a white core in a four-point star, k frames old
+function gunFlash(c, x, y, k, s, gold) {
+  const q = 1 - k / 3;
+  if (q <= 0) return;
+  c.save(); c.translate(x, y); c.scale(s * (0.7 + 0.5 * q), s * (0.7 + 0.5 * q));
+  c.globalAlpha = q;
+  c.fillStyle = gold ? "#ffcf3d" : "#ffb347";
+  c.beginPath(); c.moveTo(-2, -5); c.lineTo(5, -2.5); c.lineTo(17, 0); c.lineTo(5, 2.5); c.lineTo(-2, 5); c.lineTo(1, 0); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(3, -9); c.lineTo(6, 0); c.lineTo(3, 9); c.lineTo(8, 0); c.closePath(); c.fill();
+  c.fillStyle = gold ? "#fff6c8" : "#fff4d8"; c.beginPath(); c.ellipse(4, 0, 5, 2.6, 0, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+// neckerchief, leather vest, belt and the holster on the front hip, over the potato (inside the body's lean)
+function gunOutfit(c, f, P, pal, flash) {
+  const { rx, ry, cy } = P, hx = P.head[0], lvl = skinLvl(f);
+  const vest = flash ? "#ffffff" : "#5b3a26", vestD = flash ? "#ffffff" : "#40281a", belt = flash ? "#ffffff" : "#3a2418";
+  const kerch = flash ? "#ffffff" : col(pal), buckle = flash ? "#ffffff" : lvl === 2 ? "#dfe5ec" : "#e3b54a";
+  c.save(); potatoPath(c, P); c.clip();
+  // the vest: two leather panels open at the front
+  c.fillStyle = vest;
+  c.beginPath(); c.moveTo(-rx * 1.3, cy + ry * 0.26); c.lineTo(hx - rx * 0.5, cy + ry * 0.3); c.lineTo(hx - rx * 0.3, cy + ry * 1.2); c.lineTo(-rx * 1.3, cy + ry * 1.2); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(rx * 1.3, cy + ry * 0.24); c.lineTo(hx + rx * 0.42, cy + ry * 0.3); c.lineTo(hx + rx * 0.3, cy + ry * 1.2); c.lineTo(rx * 1.3, cy + ry * 1.2); c.closePath(); c.fill();
+  c.strokeStyle = vestD; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(hx - rx * 0.5, cy + ry * 0.3); c.lineTo(hx - rx * 0.3, cy + ry * 1.2); c.moveTo(hx + rx * 0.42, cy + ry * 0.3); c.lineTo(hx + rx * 0.3, cy + ry * 1.2); c.stroke();
+  // the belt
+  c.fillStyle = belt; c.fillRect(-rx * 1.3, cy + ry * 0.68, rx * 2.6, ry * 0.15);
+  c.restore();
+  // buckle, holster on the front hip, neckerchief
+  c.lineWidth = 1.2; c.strokeStyle = OUT;
+  c.fillStyle = buckle; c.beginPath(); c.roundRect(hx - 4, cy + ry * 0.66, 8, ry * 0.19, 1.5); c.fill(); c.stroke();
+  c.fillStyle = flash ? "#ffffff" : "#7a4a2a";
+  c.beginPath(); c.moveTo(rx * 0.55, cy + ry * 0.72); c.lineTo(rx * 1.02, cy + ry * 0.72); c.lineTo(rx * 0.96, cy + ry * 1.12); c.quadraticCurveTo(rx * 0.78, cy + ry * 1.2, rx * 0.62, cy + ry * 1.1); c.closePath(); c.fill(); c.stroke();
+  c.strokeStyle = "rgba(255,230,180,0.45)"; c.setLineDash([1.5, 2]); c.beginPath(); c.moveTo(rx * 0.62, cy + ry * 0.8); c.lineTo(rx * 0.68, cy + ry * 1.05); c.stroke(); c.setLineDash([]);
+  if (lvl === 2 && !flash) star5(c, -rx * 0.55, cy + ry * 0.48, 4.2, "#dfe5ec");   // the Sheriff's badge
+  c.fillStyle = kerch; c.strokeStyle = OUT; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(hx - rx * 0.62, cy + ry * 0.22); c.quadraticCurveTo(hx, cy + ry * 0.36, hx + rx * 0.58, cy + ry * 0.2); c.lineTo(hx + rx * 0.06, cy + ry * 0.72); c.closePath(); c.fill(); c.stroke();
+  if (!flash) { c.fillStyle = "rgba(255,255,255,0.7)"; for (const [dx, dy] of [[-0.2, 0.33], [0.18, 0.31], [0, 0.5]]) { c.beginPath(); c.arc(hx + rx * dx, cy + ry * dy, 0.9, 0, Math.PI * 2); c.fill(); } }
+}
+function star5(c, x, y, r, colr) {
+  c.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  c.closePath(); c.fillStyle = colr; c.fill(); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke();
+}
+// the cowboy hat: a wide brim with the sides curled up, a dented crown with a band, the sprout poking through the top
+function cowboyHat(c, P, pal) {
+  const { rx, ry } = P, by = P.top + ry * 0.3, hat = pal.accent;
+  c.save(); c.translate(rx * 0.08, by); c.rotate(-0.07);
+  c.lineWidth = 2.2; c.strokeStyle = OUT;
+  const brim = () => {
+    c.beginPath();
+    c.moveTo(-rx * 1.5, -ry * 0.36);
+    c.quadraticCurveTo(-rx * 1.32, ry * 0.04, -rx * 0.7, ry * 0.08);
+    c.quadraticCurveTo(0, ry * 0.2, rx * 0.75, ry * 0.08);
+    c.quadraticCurveTo(rx * 1.38, ry * 0.04, rx * 1.58, -ry * 0.38);
+    c.quadraticCurveTo(rx * 1.2, -ry * 0.12, rx * 0.7, -ry * 0.12);
+    c.quadraticCurveTo(0, -ry * 0.04, -rx * 0.7, -ry * 0.12);
+    c.quadraticCurveTo(-rx * 1.15, -ry * 0.12, -rx * 1.5, -ry * 0.36);
+    c.closePath();
+  };
+  brim(); c.fillStyle = mix(hat, "#000000", 0.12); c.fill(); c.stroke();
+  sprout(c, rx * 0.04, -ry * 0.7, 0.85);
+  c.lineWidth = 2.2; c.strokeStyle = OUT;   // (sprout leaves its own green stroke behind)
+  c.beginPath();
+  c.moveTo(-rx * 0.66, -ry * 0.04);
+  c.bezierCurveTo(-rx * 0.72, -ry * 0.5, -rx * 0.5, -ry * 0.84, -rx * 0.18, -ry * 0.8);
+  c.quadraticCurveTo(rx * 0.02, -ry * 0.62, rx * 0.22, -ry * 0.8);
+  c.bezierCurveTo(rx * 0.54, -ry * 0.84, rx * 0.76, -ry * 0.5, rx * 0.68, -ry * 0.04);
+  c.closePath();
+  c.fillStyle = hat; c.fill(); c.stroke();
+  c.save(); c.clip();
+  c.fillStyle = mix(hat, "#ffffff", 0.22); c.beginPath(); c.ellipse(-rx * 0.36, -ry * 0.52, rx * 0.13, ry * 0.17, -0.3, 0, Math.PI * 2); c.fill();   // a soft highlight
+  c.fillStyle = mix(hat, "#000000", 0.45); c.fillRect(-rx, -ry * 0.27, rx * 2, ry * 0.15);                                                 // the band
+  c.restore();
+  // the front lip of the brim, over the crown's base
+  c.beginPath(); c.moveTo(-rx * 0.86, ry * 0.07); c.quadraticCurveTo(0, ry * 0.2, rx * 0.88, ry * 0.07); c.quadraticCurveTo(0, ry * 0.02, -rx * 0.86, ry * 0.07); c.closePath();
+  c.fillStyle = mix(hat, "#000000", 0.12); c.fill();
+  c.beginPath(); c.moveTo(-rx * 0.7, ry * 0.08); c.quadraticCurveTo(0, ry * 0.2, rx * 0.75, ry * 0.08); c.stroke();
+  c.restore();
+}
 function greenOrb(c, x, y, r, tk) {
   const fl = 1 + Math.sin(tk * 0.25) * 0.08;
   const glow = c.createRadialGradient(x, y, r * 0.3, x, y, r * 2.4 * fl);
@@ -740,6 +870,7 @@ function drawPotato(c, f, tk, at) {
   c.fillStyle = limbB; c.beginPath(); c.ellipse(P.fB[0] + 2, P.fB[1] - 1, 5, 3, 0, 0, Math.PI * 2); c.fill();
   limbPath(c, shB, P.hB, armLen, "down", lw - 0.5, limbB);
   c.fillStyle = limbB; c.beginPath(); c.arc(P.hB[0], P.hB[1], lw * (look.fist ? 1 : 0.85), 0, Math.PI * 2); c.fill();
+  if (cos === "gunslinger") gunHeld(c, f, P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, P.shotB, lw * 0.85, limbB, flash, true);
   limbPath(c, P.hipF, P.fF, legLen, "fwd", lw, limbF);
   c.fillStyle = limbF; c.beginPath(); c.ellipse(P.fF[0] + 2, P.fF[1] - 1, 5.5, 3.2, 0, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
   c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
@@ -761,6 +892,7 @@ function drawPotato(c, f, tk, at) {
     c.fillStyle = "#d8b04a"; c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
     c.restore();
   }
+  if (cos === "gunslinger") gunOutfit(c, f, P, pal, flash);
   if (cos === "dragon") {
     c.fillStyle = mix(pal.body, "#fff0c6", 0.45); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
     c.strokeStyle = mix(pal.body, "#7a4a22", 0.4); c.lineWidth = 1.2;
@@ -774,6 +906,7 @@ function drawPotato(c, f, tk, at) {
     for (const dx of [-1.25, 1.2]) { c.fillStyle = "#b8863b"; c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = "#8fe8d2"; c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
   }
   if (cos === "wizard") wizardHat(c, P, pal, tk);
+  if (cos === "gunslinger") cowboyHat(c, P, pal);
   if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
   if (cos === "dragon") {
     c.fillStyle = "#efe3c8"; c.strokeStyle = OUT; c.lineWidth = 1.2;
@@ -792,6 +925,7 @@ function drawPotato(c, f, tk, at) {
   c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
   if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
   if (cos === "samurai") katana(c, P, f, shR, pal);
+  if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
   if (cos === "alchemist" && f.specCd <= 0 && !flash) greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
@@ -1448,7 +1582,116 @@ const HEAVY_LOOK = {
     },
     hAir: { name: "Zap", glintCol: "#9dff7a", pose(X) { X.P.glintAt = null; }, hit(att, e) { greenBurst(e); } },
   },
+
+  gunslinger: {
+    // Fan the hammer: both pistols out at chest height, the free hand fans the hammer (the flashes alternate), the recoil throws him back
+    hSide: {
+      name: "Fan the hammer", linger: 16, glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, leg, tor } = X;
+        X.replace = true;
+        X.hF = hpath(X, X.hF, [w * 0.42, -leg - tor * 0.36], [w * 0.98, -leg - tor * 0.6]);
+        X.hB = hpath(X, X.hB, [w * 0.18, -leg - tor * 0.3], [w * 0.74, -leg - tor * 0.5]);
+        P.holdAng = hpath(X, -0.3, 0.3, -0.04); P.gunB = hpath(X, Math.PI + 0.35, 0.35, 0.02);
+        P.lean = hpath(X, 0, 0.08, -0.24);
+        if (X.phase === 1) { const a = X.age % 2; P.shotF = a ? -1 : 0; P.shotB = a ? 0 : -1; }
+        P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
+      },
+      fx(c, f, P, hv, tk) { gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 34, false); },
+      swing(f) { gunSmoke(f, [[52, -42], [44, -38]], 5); for (let i = 0; i < 2; i++) gunShell(f, 30, -44); },
+      hit(att, e) { gunSpark(e, 9); },
+    },
+    // Sky shot: both pistols straight up over the hat, two flashes and two tracers going up
+    hUp: {
+      name: "Sky shot", linger: 14, glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, h, leg, tor } = X;
+        X.replace = true;
+        X.hF = hpath(X, X.hF, [w * 0.45, -leg - tor * 0.45], [w * 0.36, -h - 4]);
+        X.hB = hpath(X, X.hB, [w * 0.1, -leg - tor * 0.45], [-w * 0.16, -h]);
+        P.holdAng = hpath(X, -0.3, -0.5, -Math.PI / 2 + 0.12); P.gunB = hpath(X, Math.PI + 0.35, -0.8, -Math.PI / 2 - 0.12);
+        P.lean = hpath(X, 0, 0.1, -0.08); P.crouch = Math.max(P.crouch, X.phase === 1 ? 0.18 : 0);
+        if (X.phase === 1 && X.age < 2) { P.shotF = X.age; P.shotB = X.age; }
+        P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
+      },
+      fx(c, f, P, hv, tk) {
+        gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 30, false);
+        gunBlast(c, P, hv, gunMuzzle(P, P.hB, P.gunB, true), P.gunB, 24, false);
+      },
+      swing(f) { gunSmoke(f, [[14, -96], [-6, -92]], 4); },
+      hit(att, e) { gunSpark(e, 8); },
+    },
+    // Crossfire: a crouch, one pistol fires at the floor in front, the other behind; dust jumps up on both sides
+    hDown: {
+      name: "Crossfire", linger: 14, glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, leg, tor } = X;
+        X.replace = true; P.spin = 0;
+        P.crouch = Math.max(P.crouch, 0.36 * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+        X.fF = [w * 0.34, 0]; X.fB = [-w * 0.26, 0];
+        X.hF = hpath(X, X.hF, [w * 0.5, -leg - tor * 0.55], [w * 0.8, -leg - tor * 0.22]);
+        X.hB = hpath(X, X.hB, [-w * 0.3, -leg - tor * 0.55], [-w * 0.66, -leg - tor * 0.22]);
+        P.holdAng = hpath(X, -0.3, -0.2, 0.8); P.gunB = hpath(X, Math.PI + 0.35, Math.PI + 0.2, Math.PI - 0.8);
+        if (X.phase === 1 && X.age < 2) { P.shotF = X.age; P.shotB = X.age; }
+        P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
+      },
+      fx(c, f, P, hv, tk) {
+        gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 22, false);
+        gunBlast(c, P, hv, gunMuzzle(P, P.hB, P.gunB, true), P.gunB, 22, false);
+        const age = Math.max(0, hv.age + 1), a = 1 - age / 14;
+        for (const sx of [1, -1]) gring(c, sx * 38, -2, 8 + age * 3.4, a, "#ffcf7a", "rgba(90,50,20,0.7)");
+      },
+      swing(f) { groundDust(f, [40, -40], 4); gunSmoke(f, [[40, -14], [-40, -14]], 3); },
+      hit(att, e) { gunSpark(e, 8); },
+    },
+    // in the air: the same fanned blast with a smaller kick
+    hAir: {
+      name: "Fan the hammer", linger: 14, glintCol: "#ffd27a",
+      pose(X) {
+        const { P, w, leg, tor } = X;
+        X.replace = true;
+        X.hF = hpath(X, X.hF, [w * 0.42, -leg - tor * 0.5], [w * 0.98, -leg - tor * 0.62]);
+        X.hB = hpath(X, X.hB, [w * 0.18, -leg - tor * 0.45], [w * 0.74, -leg - tor * 0.54]);
+        P.holdAng = hpath(X, -0.3, 0.3, -0.02); P.gunB = hpath(X, Math.PI + 0.35, 0.35, 0.04);
+        P.lean = hpath(X, 0, 0.08, -0.2);
+        if (X.phase === 1) { const a = X.age % 2; P.shotF = a ? -1 : 0; P.shotB = a ? 0 : -1; }
+        P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
+      },
+      fx(c, f, P, hv, tk) { gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 30, false); },
+      swing(f) { gunSmoke(f, [[50, -42]], 4); gunShell(f, 30, -44); },
+      hit(att, e) { gunSpark(e, 8); },
+    },
+  },
 };
+// the muzzle of a pistol held at hand along a (see gunHeld), in fighter space
+function gunMuzzle(P, hand, a, back) { const s = back ? 0.92 : 1, ca = Math.cos(a), sa = Math.sin(a); return [hand[0] + (18.5 * ca + 2.7 * sa) * s, hand[1] + (18.5 * sa - 2.7 * ca) * s]; }
+// a heavy's blast from the muzzle at m along a: a fire cone len long in the hit window, then a grey smoke ball that drifts and fades
+function gunBlast(c, P, hv, m, a, len, gold) {
+  const age = Math.max(0, hv.age + 1);
+  c.save(); c.translate(m[0], m[1]); c.rotate(a);
+  if (hv.phase === 1) {
+    const q = 1 - hv.u * 0.35, L_ = len * (0.8 + 0.25 * Math.sin(age * 2.1)) * (1 + 0.6 * HV_K);
+    c.globalAlpha = 0.9; c.fillStyle = "rgba(20,15,30,0.75)";
+    c.beginPath(); c.moveTo(0, -7 * q); c.quadraticCurveTo(L_ * 0.5, -12 * q, L_ + 4, 0); c.quadraticCurveTo(L_ * 0.5, 12 * q, 0, 7 * q); c.closePath(); c.fill();
+    c.fillStyle = gold ? "#ffcf3d" : "#ff9a3d";
+    c.beginPath(); c.moveTo(0, -5.5 * q); c.quadraticCurveTo(L_ * 0.5, -10 * q, L_, 0); c.quadraticCurveTo(L_ * 0.5, 10 * q, 0, 5.5 * q); c.closePath(); c.fill();
+    c.fillStyle = "#fff4d0"; c.beginPath(); c.ellipse(L_ * 0.3, 0, L_ * 0.32, 3.2 * q, 0, 0, Math.PI * 2); c.fill();
+    star4(c, 3, 0, 11 * q, "#ffffff");
+  }
+  const sm = hv.phase === 2 ? hv.post : 0, k = sm / 16;
+  if (hv.phase === 2 && k < 1) {
+    c.globalAlpha = 0.55 * (1 - k); c.fillStyle = "#cfc8d8";
+    for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(8 + i * 7 + sm * 0.8, -sm * (0.5 + i * 0.25), 4 + i * 1.5 + sm * 0.45, 0, Math.PI * 2); c.fill(); }
+  }
+  c.restore();
+}
+// one-shot world effects: smoke puffs at muzzle points (fighter-relative [x, y]), a brass shell, sparks on a hit
+function gunSmoke(f, pts, n) { for (const [x, y] of pts) for (let i = 0; i < n; i++) addFx({ k: "puff", x: f.x + f.facing * (x + frand(-4, 8)), y: f.y + y + frand(-4, 4), vx: f.facing * frand(0.2, 1.2), vy: frand(-0.9, -0.2), r: frand(3, 5.5), t: 0, life: frand(22, 34), col: "#cfc8d8" }); }
+function gunShell(f, x, y) { addFx({ k: "shard", x: f.x + f.facing * x, y: f.y + y, vx: -f.facing * frand(1, 2.4), vy: frand(-3.2, -2), rot: frand(0, 6), vr: frand(-0.4, 0.4), r: 2.2, col: "#e3b54a", t: 0, life: 30, g: 0.32, damp: 0.98 }); }
+function gunSpark(e, n) {
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 44, col: "#ffcf7a" });
+  burstLines(e.x, e.y, n, ["#fff4d0", "#ffb347"], 7);
+}
 function greenBurst(e) {
   addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: 54, col: "#7dff62" });
   addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: 40 });
@@ -1641,6 +1884,7 @@ function chargePts(f, P, key) {
     case "odin": return key === "hUp" ? [hand] : [hand, P.hB];
     case "wizard": return [P.staffTip || hand];
     case "samurai": { const a = heldDir(f, P, bp(P, P.sh), -0.8), L = P.w * 1.35; return [hand, [hand[0] + Math.cos(a) * L * 0.6, hand[1] + Math.sin(a) * L * 0.6]]; }
+    case "gunslinger": return [gunMuzzle(P, hand, heldDir(f, P, bp(P, P.sh), -0.3), false), gunMuzzle(P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, true)];
     default: return key === "hUp" ? [hand, bp(P, [-P.w * 0.05 - 9, P.top - 14])] : key === "hDown" ? [hand, P.hB] : [hand];   // dragon: claws (and the horns for the toss)
   }
 }
@@ -1657,6 +1901,13 @@ const CHARGE_GATHER = {
     motes(c, x, y, tk, q, st === 3 ? 7 : 5);
   },
   samurai(c, f, P, tk, st, q) { bladeGlint(c, f, P, tk, st, q); },
+  gunslinger(c, f, P, tk, st, q, pts) {   // the barrels heat up: an orange glow and sparks that spit off the muzzles
+    for (const [x, y] of pts) {
+      glowDot(c, x, y, 9 + 6 * q + (st === 3 ? 5 : 0), 0.8, "#ff9a3d");
+      for (let i = 0; i < (st === 3 ? 5 : 3); i++) { const ph = (tk * 0.11 + i / 5 + nz(i * 4.1)) % 1, an = nz(i * 7.7 + (tk >> 3)) * Math.PI * 2, d = 4 + ph * (10 + 8 * q); c.globalAlpha = 1 - ph; star4(c, x + Math.cos(an) * d, y + Math.sin(an) * d, 3.5 - ph * 2, i % 2 ? "#fff4d0" : "#ffcf7a"); }
+      c.globalAlpha = 1;
+    }
+  },
 };
 function drawCharge(c, f, P, tk) {
   if (!P.hold || P.chg <= 0 || !P.rx || !P.hv) return;
