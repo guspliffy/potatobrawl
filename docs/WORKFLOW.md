@@ -36,8 +36,10 @@
 - **M0, setup:** sources from the zip into the repo; `CLAUDE.md`; split `ui.js` into modules (byte-identical build output); `check.sh` (one command, PASS/FAIL lines); beta subdomain on the server.
 - **M1:** light-attack lock fix + fullscreen / home-screen app.
 - **M2:** KO finisher Phase 1 (moved ahead of accounts by Jonny, 2026-10-13; shipped together with M1 in PR #2).
-- **M3:** accounts with sync codes + server housekeeping (close :8080, nightly backup).
-- **M4:** hit-feel polish + KO finisher Phase 2/3.
+- **M3:** fight feel (moved ahead of accounts by Jonny, 2026-10-13): heavy looks, specials finish from 175%, 1 s charged heavies, KO decided at the hit so the finisher starts on it (PROTO 4).
+- **M4:** KO finisher films with Potatalities (plan in Project files fight-ideas/plan.md, section B).
+- **M5:** accounts with sync codes + server housekeeping (close :8080, nightly backup).
+- **M6:** hit-feel polish + KO finisher Phase 3.
 - **Then** the backlog, in the order of Jonny's answer to decision 8 in the plan doc, plus the FEEDBACK doc.
 
 ## Session start and end
