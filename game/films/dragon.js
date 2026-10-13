@@ -17,8 +17,8 @@
     look.copy(An.eyes).lerp(An.mouth, 0.42);
     V.a.subVectors(An.face, An.body); V.a.y = 0; V.a.normalize();
     V.a.x -= CINE.dir * 0.12; V.a.normalize();
-    pos.copy(look).addScaledVector(V.a, cnMix(150, 215, k)); pos.y += cnMix(3, 9, k);
-    return { fov: cnMix(20, 14, k), roll: 0.03 * (1 - k) };
+    pos.copy(look).addScaledVector(V.a, cnMix(175, 250, k)); pos.y += cnMix(3, 9, k);
+    return { fov: cnMix(20, 14.1, k), roll: 0.03 * (1 - k) };
   }
   function shotMacro(u, tr, pos, look) {             // the loser's eyes, very close
     const An = CINE.anc.L, V = CINE.v;
@@ -44,8 +44,8 @@
     return { fov: cnMix(21, 17, k), roll: 0.02 };
   }
   const SHOTS = [
-    { t0: 420, keys: [{ t: 420, pos: P3(-20, 96, 660), look: P3(-30, 50, 0), fov: 30 }, { t: 760, pos: P3(-80, 46, 430), look: P3(-45, 50, 0), fov: 30 }], e: "io3" },
-    { t0: 760, keys: [{ t: 760, pos: P3(-80, 46, 430), look: P3(-45, 50, 0), fov: 30 }, { t: 1500, pos: P3(-118, 62, 650), look: P3(-52, 74, 0), fov: 30, roll: 0.025 }], e: "inout" },
+    { t0: 420, keys: [{ t: 420, pos: P3(-20, 96, 660), look: P3(-30, 50, 0), fov: 30 }, { t: 760, pos: P3(-86, 30, 360), look: P3(-52, 42, 0), fov: 30 }], e: "io3" },
+    { t0: 760, keys: [{ t: 760, pos: P3(-86, 30, 360), look: P3(-52, 42, 0), fov: 30 }, { t: 1500, pos: P3(-125, 60, 640), look: P3(-55, 74, 0), fov: 30, roll: 0.025 }], e: "inout" },
     { t0: 1500, t1: 2150, fn: shotPortrait },
     { t0: 2150, t1: 2400, fn: shotMacro },
     { t0: 2400, keys: [
@@ -61,8 +61,8 @@
   /* ---- cues: one-shots on the real clock ---- */
   const CUES = [
     { t: 770, fn: () => Cin.go(() => Cin.growl(1.3)) },
-    { t: 960, fn: () => Cin.go(() => { Cin.clack(); Cin.whoosh(0.35, -0.6, 0.7, 0.5); Cin.sub(80, 36, 0.35, 0.5); }) },
-    { t: 1160, fn: () => Cin.go(() => Cin.whoosh(0.3, 0.8, -0.8, 0.45)) },
+    { t: 900, fn: () => Cin.go(() => { Cin.clack(); Cin.whoosh(0.35, -0.6, 0.7, 0.5); Cin.sub(80, 36, 0.35, 0.5); }) },
+    { t: 1100, fn: () => Cin.go(() => Cin.whoosh(0.3, 0.8, -0.8, 0.45)) },
     { t: 1500, fn: () => Cin.go(() => { Cin.inhale(0.95); Cin.riser(1.0, 0.18); }) },
     { t: 2150, fn: () => Cin.go(() => { Cin.sub(70, 30, 0.5, 0.6); Cin.stab(110, 0.75); }) },
     { t: 2330, fn: () => Cin.go(() => Cin.sub(66, 30, 0.3, 0.5)) },
@@ -86,18 +86,18 @@
   const armK = (q, a, b, k) => { q.arms = true; q.hfx = cnMix(a.F[0], b.F[0], k); q.hfy = cnMix(a.F[1], b.F[1], k); q.hbx = cnMix(a.B[0], b.B[0], k); q.hby = cnMix(a.B[1], b.B[1], k); };
 
   function poseW(t, tw, q) {
-    const grow = cnOut3(cnProg(900, 1450, t)), fold = cnInOut(cnProg(3300, 3700, t));
+    const grow = cnOut3(cnProg(820, 1380, t)), fold = cnInOut(cnProg(3300, 3700, t));
     q.lean = 0; q.mouth = 0; q.crouch = 0; q.spin = 0; q.flap = 0;
     q.wingUp = 0.55 * grow * (1 - 0.85 * fold);
-    q.flap = 0.35 * Math.sin(cnProg(960, 1180, t) * Math.PI) + (t > 2500 && t < 3300 ? 0.14 * Math.sin(tw * 0.026) : 0);
+    q.flap = 0.35 * Math.sin(cnProg(900, 1100, t) * Math.PI) + (t > 2500 && t < 3300 ? 0.14 * Math.sin(tw * 0.026) : 0);
     // the tail: idle sway, one whip across the floor (wind back, sweep, return), lashing while he roars
-    const wu = cnProg(1000, 1600, t), idle = 0.12 * Math.sin(tw * 0.0042);
+    const wu = cnProg(940, 1560, t), idle = 0.12 * Math.sin(tw * 0.0042);
     let a = idle;
     if (wu > 0 && wu < 1) { a = wu < 0.25 ? cnMix(idle, -0.85, cnSmooth(wu / 0.25)) : wu < 0.52 ? cnMix(-0.85, 0.95, cnSmooth((wu - 0.25) / 0.27)) : cnMix(0.95, idle, cnSmooth((wu - 0.52) / 0.48)); }
     q.tail = a; q.tailLift = 0.05 + 0.25 * Math.sin(Math.min(1, wu) * Math.PI) + (t > 2500 && t < 3300 ? 0.3 : 0);
     // body language
     const g = cnProg(1500, 2000, t), r = cnProg(2480, 2560, t);
-    if (t < 1500) { armK(q, rest, open, cnSmooth(cnProg(960, 1250, t))); }
+    if (t < 1500) { armK(q, rest, open, cnSmooth(cnProg(880, 1150, t))); }
     else if (t < 2500) { q.lean = -0.32 * cnOut3(g) + 0.02 * Math.sin(tw * 0.03) * cnProg(1900, 2400, t); q.crouch = -0.04 * g; armK(q, open, { F: [0.86, 0.5], B: [-0.92, 0.62] }, cnSmooth(cnProg(1500, 1800, t))); q.mouth = 0.15 + 0.5 * cnProg(1750, 2450, t); }
     else if (t < 3300) { q.lean = cnMix(-0.32, 0.28, cnOut3(r)); q.mouth = 1; q.crouch = 0.08 * r; armK(q, { F: [0.86, 0.5], B: [-0.92, 0.62] }, roar, cnSmooth(r)); }
     else { const k = cnInOut(cnProg(3300, 3650, t)); q.lean = 0.28 * (1 - k); q.mouth = (1 - cnProg(3300, 3360, t)) * 1.0; q.crouch = 0.08 * (1 - k); armK(q, roar, { F: [0.8, 0.3], B: [-0.8, 0.3] }, cnSmooth(cnProg(3300, 3480, t))); }
@@ -157,11 +157,11 @@
     set: { slab: [380, 168], floorY: -86, floor: "#0b0607", grass: "#86b07c", rockGlow: "#3a1208", crystal: "#ff7a2a" },
     stars: 900, starA: 0.5,
     env: { boxes: [{ w: 300, h: 190, p: [-320, 380, 330], col: "#ffe2c4", I: 1.8 }, { w: 260, h: 260, p: [340, 140, -320], col: "#ff3a14", I: 2.2 }, { w: 400, h: 90, p: [0, -50, 420], col: "#ff8a3a", I: 0.7 }, { w: 240, h: 120, p: [0, 300, -380], col: "#ff5a22", I: 0.9 }] },
-    lights: { key: "#ffe0c0", keyI: 1.8, rim: "#ff2a0e", rimI: 3.4, sky: "#4a2a2a", ground: "#160a0a", fill: 0.26, practical: "#ff7a1c", blast: "#ff9a4a", keyPos: [-700, 900, 900], rimPos: [800, 420, -900] },
+    lights: { key: "#ffe0c0", keyI: 1.8, rim: "#ff2a0e", rimI: 2.6, sky: "#4a2a2a", ground: "#160a0a", fill: 0.26, practical: "#ff9a3c", blast: "#ff9a4a", keyPos: [-700, 900, 900], rimPos: [800, 420, -900] },
     grade: { lift: [-0.01, -0.012, -0.012], gamma: [1.05, 1.0, 0.94], gain: [1.08, 0.98, 0.86], sat: 1.1, vig: 0.55, grain: 0.022 },
     bloomK: 0.9,
     ramp: RAMP,
-    shake: [{ t0: 960, dur: 380, amp: 2.4 }, { t0: 1300, dur: 260, amp: 1.8 }, { t0: 2500, dur: 420, amp: 6, hold: true }, { t0: 2920, dur: 420, amp: 8 }],
+    shake: [{ t0: 900, dur: 380, amp: 2.4 }, { t0: 1240, dur: 260, amp: 1.8 }, { t0: 2500, dur: 420, amp: 6, hold: true }, { t0: 2920, dur: 420, amp: 8 }],
     shots: SHOTS,
     cues: CUES,
 
@@ -170,28 +170,27 @@
       D.pp = [mkq(), mkq()];
       const n = (k) => Math.ceil(k * pk) + 8;
       D.ash = cnGP(n(520), { add: true, drag: 0.15, size: 3.4, turb: 4, c0: [1.4, 0.55, 0.14], c1: [1.0, 0.3, 0.06], c2: [0.3, 0.06, 0.02], cell: [1, 1], alpha: 0.9, g: [0, 3, 0] });
-      D.emb = cnGP(n(420), { add: true, drag: 0.6, size: 4.6, c0: [2.6, 1.9, 0.9], c1: [2.2, 0.8, 0.15], c2: [0.7, 0.12, 0.02], cell: [1, 1] });
-      D.fire = cnGP(n(1500), { add: true, drag: 1.1, size: 3.4, grow: -0.1, g: [0, 80, 0], c0: [3, 2.4, 1.3], c1: [2.0, 0.7, 0.12], c2: [0.5, 0.07, 0.01], cell: [1, 1] });
+      D.emb = cnGP(n(640), { add: true, drag: 0.6, size: 5.6, c0: [2.6, 1.9, 0.9], c1: [2.2, 0.8, 0.15], c2: [0.7, 0.12, 0.02], cell: [1, 1] });
+      D.fire = cnGP(n(1500), { add: true, drag: 1.1, size: 2.8, grow: -0.1, g: [0, 80, 0], c0: [1.7, 1.2, 0.5], c1: [1.3, 0.45, 0.07], c2: [0.4, 0.06, 0.01], cell: [1, 1] });
       D.spark = cnGP(n(300), { add: true, drag: 1.7, size: 2.2, g: [0, -240, 0], c0: [3.2, 3.0, 2.4], c1: [2.4, 1.0, 0.2], c2: [0.4, 0.04, 0], cell: [1, 1] });
       D.smoke = cnGP(n(280), { add: false, drag: 0.9, size: 22, grow: 2.0, g: [0, 22, 0], c0: "#4a3228", c1: "#241714", c2: "#0e0909", cell: [2, 1], alpha: 0.6, spin: 1.2 });
       D.dust = cnGP(n(150), { add: false, drag: 2.2, size: 11, grow: 1.1, g: [0, 12, 0], c0: "#7a5646", c1: "#44302a", c2: "#1a1210", cell: [2, 1], alpha: 0.55 });
       D.gps = [D.ash, D.emb, D.fire, D.spark, D.smoke, D.dust];
       for (const s of D.gps) sc.add(s.pts);
       // flames: the breath (two nested cones), little fires on the grass, the burning sprout
-      D.coneO = mkFire(sc, 330, 8, 42, 20, [[1.2, 0.7, 0.3], [1.0, 0.3, 0.05], [0.4, 0.05, 0.01]], 0.5, 14);
-      D.coneI = mkFire(sc, 240, 4, 19, 8, [[1.6, 1.3, 0.7], [1.3, 0.6, 0.15], [0.6, 0.2, 0.03]], 0.6, 7);
+      D.coneO = mkFire(sc, 330, 14, 58, 24, [[1.3, 0.75, 0.3], [1.1, 0.32, 0.05], [0.45, 0.06, 0.01]], 0.42, 14);
+      D.coneI = mkFire(sc, 250, 7, 26, 10, [[1.7, 1.35, 0.7], [1.3, 0.6, 0.15], [0.6, 0.2, 0.03]], 0.5, 7);
       D.slabF = [];
       for (let i = 0; i < 9; i++) { const m = mkFire(sc, 46, 7, 1.5, 3, [[1.0, 0.6, 0.28], [1.0, 0.28, 0.04], [0.4, 0.04, 0.01]], 0.9, 5); m.userData.ph = i * 0.9; D.slabF.push(m); }
       D.sprout = mkFire(sc, 30, 5, 1, 2, [[2, 1.5, 0.8], [1.8, 0.6, 0.08], [0.6, 0.06, 0.01]], 1.5, 3);
       // smoke ring (torus), shock spheres, comet ribbon
-      D.ring = new T.Mesh(cnOwn(new T.TorusGeometry(1, 0.2, 14, 44)), cnSmokeMat("#2e2422", "#ff9a50"));
+      D.ring = new T.Mesh(cnOwn(new T.TorusGeometry(1, 0.15, 14, 44)), cnSmokeMat("#6a5a54", "#ffb070"));
       D.ring.material.uniforms.uAmp.value = 0.1; D.ring.frustumCulled = false; D.ring.visible = false; D.ring.renderOrder = 5; sc.add(D.ring);
-      const sg = cnOwn(new T.SphereGeometry(1, 28, 18));
-      D.sh1 = new T.Mesh(sg, cnShockMat()); D.sh2 = new T.Mesh(sg, cnShockMat());
+      D.sh1 = new T.Mesh(cnOwn(new T.SphereGeometry(1, 28, 18)), cnShockMat()); D.sh2 = new T.Mesh(cnOwn(new T.TorusGeometry(1, 0.03, 8, 72)), cnShockMat());   // a bubble at the roar, a flat ring (facing the lens) at the pop
       for (const m of [D.sh1, D.sh2]) { m.frustumCulled = false; m.visible = false; m.renderOrder = 6; sc.add(m); }
       D.rib = cnRibbon(30); sc.add(D.rib.mesh);
       D.Y = new T.Vector3(0, 1, 0); D.Z = new T.Vector3(0, 0, 1);
-      D.grass0 = cnLin(FILMS.dragon.set.grass);
+      D.grass0 = cnLin(FILMS.dragon.set.grass); D.ringLit = cnLin("#ff9a50");
       D.cdir = new T.Vector3(1, 0, 0); D.lp = new T.Vector3(); D.rp = new T.Vector3(); D.uv0 = new T.Vector3(); D.uv1 = new T.Vector3();
       D.fl = { x: 0, y: 0, a: 0 };
     },
@@ -217,7 +216,7 @@
       D.pW = mkPuppet(FIN.P[C.wSlot], D.pp[C.wSlot]); D.pL = mkPuppet(FIN.P[C.lSlot], D.pp[C.lSlot]);
       for (const r of [D.W, D.Lr]) { r.root.visible = true; r.root.scale.setScalar(1); cnChar(r, 0); cnExpr(r, "rest", 0); r.eyeK = 1; r.xl = ""; r.expr = ""; if (r.hero.sprout) { r.hero.sprout.visible = true; r.hero.sprout.scale.setScalar(1); } }
       D.W.hero.belly.emissive.setRGB(1, 0.3, 0.04); D.W.hero.belly.emissiveIntensity = 0;
-      D.ci = 0; D.popped = false; D.exited = false; D.bo = null; D.roared = false; D.twPop = 0; D.kc = -1; D.exT = 0; D.ringT = 0; D.ringOn = false; D.cdirFix = false;
+      D.dimK = -1; D.armHid = false; D.tintL = ""; cnLimbVis(D.W.armF, true); D.ci = 0; D.popped = false; D.exited = false; D.bo = null; D.roared = false; D.twPop = 0; D.kc = -1; D.exT = 0; D.ringT = 0; D.ringOn = false; D.cdirFix = false;
       D.fl.a = 0; D.lp.set(0, 0, 0);
       for (const s of D.gps) resetGP(s);
       seedAsh(D.ash); cnGPFlush(D.ash);
@@ -244,7 +243,7 @@
       /* ---- the fighters ---- */
       const tk = tw / FMS;
       poseW(t, tw, D.pp[C.wSlot]); poseL(t, tw, D.pp[C.lSlot]);
-      const grow = cnSmooth(cnProg(900, 1500, t)), fold = cnInOut(cnProg(3300, 3700, t));
+      const grow = cnSmooth(cnProg(820, 1420, t)), fold = cnInOut(cnProg(3300, 3700, t));
       const sW = 1 + 0.6 * grow - 0.6 * fold, span = 1 + 1.0 * grow - 1.0 * fold;
       syncRig(W, D.pW, pose(D.pW, tk), tk, [-75 * dir, 0]);
       W.root.scale.setScalar(sW);
@@ -266,20 +265,24 @@
       if (t >= 1500 && t < 2150) cnLookAt(W, camP, 0.9); else if (t >= 3300) cnLookAt(W, camP, 1); else cnLookAt(W, AL.eyes, 0.7);
       cnLookAt(Lr, t > 2150 && t < 2500 ? AW.mouth : camP, 0.8);
       const kc = cnSmooth(cnProg(2700, 2930, t));
-      if (Math.abs(kc - D.kc) > 0.002) { D.kc = kc; cnChar(Lr, kc); }
+      if (D.tintL !== Lr.tint) { D.tintL = Lr.tint; D.kc = -1; }     // a tint change (the white flash) restores the colours: put the char back
+      if (Math.abs(kc - D.kc) > 0.002) { D.kc = kc; cnChar(Lr, Math.pow(kc, 0.8)); }
       if (Lr.hero.sprout) { const sk = 1 - cnProg(2760, 2880, t); Lr.hero.sprout.scale.setScalar(Math.max(0.001, sk)); }
       /* ---- light on the potatoes and in the world ---- */
       const chestK = cnSmooth(cnProg(1500, 2400, t)), roarK = t < 2500 ? 0 : t < 3300 ? 1 : 1 - cnSmooth(cnProg(3300, 3900, t));
       const glowK = chestK * (1 - 0.55 * cnSmooth(cnProg(3300, 3900, t)));
       W.hero.belly.emissiveIntensity = 2.6 * glowK;
-      W.hero.bone.emissiveIntensity = 0.5 + 2.4 * cnSmooth(cnProg(1000, 1500, t)) * (1 - 0.6 * fold);
-      W.hero.u.rim.value.setRGB(1.5, 0.42, 0.08).multiplyScalar(0.25 + 0.75 * Math.max(glowK, cnProg(900, 1500, t)));
+      W.hero.bone.emissiveIntensity = 0.5 + 2.4 * cnSmooth(cnProg(900, 1400, t)) * (1 - 0.6 * fold);
+      W.hero.u.rim.value.setRGB(1.3, 0.4, 0.08).multiplyScalar(0.15 + 0.5 * Math.max(glowK, cnProg(820, 1420, t)));
       Lr.hero.u.rim.value.setRGB(1.3, 0.38, 0.07).multiplyScalar(0.12 + 0.88 * Math.max(cnProg(1900, 2400, t) * 0.8, roarK * (D.popped ? 0.6 : 1)));
-      const dim = 1 - 0.45 * cnProg(1500, 2150, t) - 0.4 * cnSmooth(cnProg(2150, 2350, t)) + 0.85 * cnSmooth(cnProg(2480, 2600, t));
-      Lt.key.intensity = 1.8 * Math.min(1, dim); Lt.hemi.intensity = 0.26 * (0.4 + 0.6 * Math.min(1, dim));
+      const dim = Math.min(1, 1 - 0.5 * cnProg(1500, 2150, t) - 0.42 * cnSmooth(cnProg(2100, 2300, t)) + 0.9 * cnSmooth(cnProg(2480, 2600, t)));
+      Lt.key.intensity = 1.8 * dim; Lt.hemi.intensity = 0.26 * (0.2 + 0.8 * dim);
+      if (Math.abs(dim - D.dimK) > 0.01) { D.dimK = dim; cnEnvK(W, 0.3 + 0.7 * dim); cnEnvK(Lr, 0.3 + 0.7 * dim); }
+      const hideArm = (t >= 1500 && t < 2150) || t >= 3300;
+      if (hideArm !== D.armHid) { D.armHid = hideArm; cnLimbVis(W.armF, !hideArm); }
       V.a.subVectors(AW.chest, AW.body).normalize();
       Lt.prac.position.copy(AW.chest).addScaledVector(V.a, 10 * sW).y -= 3;
-      Lt.prac.intensity = 6.5 * glowK * (0.94 + 0.06 * Math.sin(tw * 0.05));
+      Lt.prac.intensity = 5 * glowK * (1 - 0.5 * cnProg(3300, 3600, t)) * (0.94 + 0.06 * Math.sin(tw * 0.05));
       // the blast light: from the mouth towards the loser as the fire builds, along the cone while he roars, then with the comet
       if (t >= 1800 && t < 2500) { Lt.blast.position.copy(AW.mouth).lerp(AL.face, 0.55); Lt.blast.position.y += 4; Lt.blast.intensity = 2.6 * cnSmooth(cnProg(1900, 2420, t)); }
       else if (t >= 2500 && t < 3320) { Lt.blast.position.copy(AW.mouth).addScaledVector(D.cdir, D.popped ? 150 : 110); Lt.blast.intensity = (D.popped ? 3.2 : 4) * (1 - 0.4 * cnProg(2920, 3300, t)) * (0.9 + 0.1 * Math.sin(tw * 0.07)); }
@@ -295,7 +298,7 @@
         const pull = cnProg(1500, 2440, t);
         au.uAtt.value.set(AW.mouth.x, AW.mouth.y, AW.mouth.z, pull > 0 ? 1 : 0); au.uPull.value = pull * pull * (3 - 2 * pull) * 1.02;
         eu.uAtt.value.copy(au.uAtt.value); eu.uPull.value = au.uPull.value;
-        if (t >= 1500 && t < 1950) cnEmit(D.emb, 1100 * pk, tw0m, tw, (tb) => {
+        if (t >= 1500 && t < 1950) cnEmit(D.emb, 1300 * pk, tw0m, tw, (tb) => {
           const r = C.rnd, a = r() * 6.283, e = (r() - 0.5) * 2, rad = 80 + r() * 300, c = Math.sqrt(1 - e * e);
           cnGPAdd(D.emb, AW.mouth.x + Math.cos(a) * c * rad, AW.mouth.y + e * rad * 0.6, AW.mouth.z + Math.sin(a) * c * rad, 0, 6 + r() * 10, 0, tb, 1.9 + r() * 0.5, r(), 0.7 + r() * 0.9);
         });
@@ -305,7 +308,7 @@
         if (t > 2570) { au.uAtt.value.w = 0; au.uPull.value = 0; eu.uAtt.value.w = 0; eu.uPull.value = 0; }
       }
       // ash kicked up by the tail whip
-      if (t > 1060 && t < 1340) {
+      if (t > 1000 && t < 1300) {
         W.tail.updateWorldMatrix(true, false);
         V.a.set(-1.75 * W.B.rx, -(W.B.yC + W.B.leg) + 9 + 0.55 * W.B.ry, 0.2 * W.B.rz); W.tail.localToWorld(V.a);
         cnEmit(D.dust, 220 * pk, tw0m, tw, (tb) => { const r = C.rnd; cnGPAdd(D.dust, V.a.x + (r() - 0.5) * 12, 2 + r() * 4, V.a.z + (r() - 0.5) * 12, (r() - 0.5) * 30, 14 + r() * 24, (r() - 0.5) * 30, tb, 1.1 + r() * 0.9, r(), 0.7 + r() * 0.8); });
@@ -316,7 +319,7 @@
       D.coneO.visible = D.coneI.visible = showCone;
       let cut = 0;
       if (showCone) {
-        cut = t < 2500 ? 0.1 + 0.1 * cnProg(2400, 2500, t) : cnMix(0.2, 1, cnOut3(cnProg(2500, 2700, t)));
+        cut = t < 2500 ? 0.06 + 0.08 * cnProg(2400, 2500, t) : cnMix(0.14, 1, cnOut3(cnProg(2500, 2700, t)));
         cut *= 1 - cnSmooth(cnProg(3260, 3420, t));
         const fl = 0.5 + 0.5 * Math.sin(tw * 0.05);
         for (const [m, k] of [[D.coneO, 1], [D.coneI, 0.8]]) {
@@ -355,7 +358,7 @@
       }
       /* ---- glow sprites ---- */
       const orb = cnProg(1750, 2480, t), fcl = 0.9 + 0.1 * Math.sin(tw * 0.06);
-      if (t >= 1750 && t < 2700) { V.a.copy(AW.mouth).addScaledVector(D.cdir, 3); cnGlow(0, V.a.x, V.a.y, V.a.z, (8 + 60 * orb * orb) * fcl * (t < 2500 ? 1 : 1 + 1.2 * (1 - cnProg(2500, 2700, t))), 1.7, 0.85, 0.28); } else cnGlow(0, 0, 0, 0, 0, 0, 0, 0);
+      if (t >= 1750 && t < 2700) { V.a.copy(AW.mouth).addScaledVector(D.cdir, 3); cnGlow(0, V.a.x, V.a.y, V.a.z, (6 + 26 * orb * orb) * fcl * (t < 2500 ? 1 : 1 + 1.6 * (1 - cnProg(2500, 2700, t))), 1.3, 0.65, 0.2); } else cnGlow(0, 0, 0, 0, 0, 0, 0, 0);
       if (D.popped) { const k = cnProg(2920, 3260, t); cnGlow(3, AL.chest.x, AL.chest.y, AL.chest.z, 300 * (1 - k) * (1 - k), 1.8, 1.2, 0.55); if (t > 2985 && D.exited) cnGlow(3, 0, 0, 0, 0, 0, 0, 0); } else cnGlow(3, 0, 0, 0, 0, 0, 0, 0);
       cnGlow(1, AW.chest.x, AW.chest.y, AW.chest.z, glowK > 0.02 ? 30 + 45 * glowK : 0, 0.9 * glowK, 0.32 * glowK, 0.06 * glowK);
       /* ---- the smoke ring ---- */
@@ -368,13 +371,13 @@
         D.ring.quaternion.setFromUnitVectors(D.Z, V.a);
         D.ring.scale.setScalar(5 + 20 * cnOut3(k));
         D.ring.material.uniforms.uA.value = 0.95 * cnSmooth(cnProg(0, 0.12, k)) * (1 - cnProg(0.55, 1, k));
-        D.ring.material.uniforms.uLit.value.copy(cnLin("#ff9a50")).multiplyScalar(0.8 + 1.4 * glowK);
+        D.ring.material.uniforms.uLit.value.copy(D.ringLit).multiplyScalar(0.8 + 1.4 * glowK);
       }
       /* ---- shock spheres ---- */
       D.sh1.visible = t >= 2500 && t < 2900;
-      if (D.sh1.visible) { const k = cnProg(2500, 2900, t); D.sh1.position.copy(AW.mouth); D.sh1.scale.setScalar(20 + 220 * cnOut3(k)); D.sh1.material.uniforms.uA.value = 0.7 * (1 - k); }
-      D.sh2.visible = D.popped && t < 3350;
-      if (D.sh2.visible) { const k = cnProg(2920, 3350, t); D.sh2.position.set(dir * 75, 40, 0); D.sh2.scale.setScalar(16 + 330 * cnOut3(k)); D.sh2.material.uniforms.uA.value = 0.85 * (1 - k); }
+      if (D.sh1.visible) { const k = cnProg(2500, 2900, t); D.sh1.position.copy(AW.mouth); D.sh1.scale.setScalar(20 + 200 * cnOut3(k)); D.sh1.material.uniforms.uA.value = 0.3 * (1 - k) * (1 - k); }
+      D.sh2.visible = D.popped && t < 3200;
+      if (D.sh2.visible) { const k = cnProg(2920, 3200, t); D.sh2.position.set(dir * 75, 40, 0); D.sh2.quaternion.copy(C.camera.quaternion); D.sh2.scale.setScalar(16 + 300 * cnOut3(k)); D.sh2.material.uniforms.uA.value = 1.2 * (1 - k) * (1 - k); }
       for (const s of D.gps) cnGPFlush(s);
     },
 

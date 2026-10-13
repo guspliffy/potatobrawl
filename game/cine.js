@@ -205,6 +205,11 @@ function cnLookAt(rig, target, k) {
     p.pu.position.set(p.p0.x + dx, p.p0.y + dy, p.p0.z); p.ir.position.set(p.i0.x + dx * 0.8, p.i0.y + dy * 0.8, p.i0.z);
   }
 }
+// scales the environment light on a rig's materials (the film dims the world while a glow takes over)
+function cnEnvK(rig, k) {
+  for (const s of rig.mats) { const m = s.m; if (m.envMapIntensity === undefined) continue; if (s.env0 === undefined) s.env0 = m.envMapIntensity; m.envMapIntensity = s.env0 * k; }
+}
+function cnLimbVis(L, v) { for (const m of [L.s1, L.s2, L.j0, L.j1, L.end]) m.visible = v; }
 // char: skin and every material darkens towards burnt black, the cracks glow ember-red (k 0..1)
 const CN_CHAR = [0.1, 0.05, 0.03];
 function cnChar(rig, k) {
@@ -673,7 +678,7 @@ function cnPt(spec, out) {
   return out;
 }
 function cnFovFix(fov) {
-  const asp = CINE.w / CINE.h, k = asp >= 1.6 ? 1 : Math.min(2.4, Math.pow(1.6 / asp, 0.85));
+  const asp = CINE.w / CINE.h, k = asp >= 1.6 ? 1 : Math.min(fov > 24 ? 3.4 : 2.4, Math.pow(1.6 / asp, 0.85));   // upright phones: widen the lens so the pair still fits
   return (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * k) * 180) / Math.PI;
 }
 // evaluates the film's shots at real time tr into CINE.camera (position, look, roll, fov) plus shake, kick and hand-held drift
@@ -1179,6 +1184,7 @@ function cineTick(g, t) {
     cineSize();
     cnCamera(C.film, CT.SHATTER);
     cm.updateMatrixWorld(true);
+    if (!C.cfg.shatter) { cv.style.transform = ""; Cin.go(() => { Cin.whoosh(0.4, -0.8, 0.8, 0.5); Cin.sub(62, 26, 0.9, 0.9); }); return g; }   // tier C: a flash cut, no pane
     const P = C.pane = cinePane(C.web, cm.position, cm.quaternion, cm.fov), up = P.Hp / L.gh;
     P.tex = new T.CanvasTexture(cv); P.tex.minFilter = T.LinearFilter; P.tex.generateMipmaps = false; P.tex.encoding = T.sRGBEncoding;
     P.mat.map = P.tex; P.mat.needsUpdate = true;
@@ -1222,6 +1228,7 @@ function cineFrame3D(t) {
   C.pu.uTime.value = C.tw / 1000;
   cnResetPost(C.gu);
   if (C.pane) { if (t > CT.THROUGH + 60) cinePaneDrop(); else cinePaneStep(C.pane, t); }
+  else if (!C.cfg.shatter && t < CT.SHATTER + 220) { const f = 0.95 * (1 - (t - CT.SHATTER) / 220); C.gu.uFlash.value.set(f, f, f); }
   film.update(C, t, C.tw, C.tw - twPrev, t - trPrev);
   cnFinishFrame(C, film, t);
   C.composer.render(0.016);
@@ -1253,8 +1260,8 @@ function cnFinishFrame(C, film, t) {
   u.uLift.value.set(g.lift[0] * k, g.lift[1] * k, g.lift[2] * k);
   u.uSat.value = cnMix(1, g.sat, k); u.uVig.value = cnMix(0.15, g.vig, k); u.uGrain.value = C.cfg.grain ? g.grain * k : 0;
   u.uTime.value = C.tw / 1000;
-  C.bloom.strength = (film.bloomK || 1) * (C.cfg.bloom === 2 ? 0.95 : 0.8) * (0.4 + 0.6 * k) * (C.bloomMul === undefined ? 1 : C.bloomMul);
-  C.bloom.radius = 0.55; C.bloom.threshold = C.cfg.hdr ? 0.85 : 0.8;
+  C.bloom.strength = (film.bloomK || 1) * (C.cfg.bloom === 2 ? 0.6 : 0.52) * (0.4 + 0.6 * k) * (C.bloomMul === undefined ? 1 : C.bloomMul);
+  C.bloom.radius = 0.55; C.bloom.threshold = C.cfg.hdr ? 0.92 : 0.8;
   if (film.post) film.post(C, t, C.tw);
   if (!C.cfg.distort) { u.uHeatA.value = 0; u.uShock.value.z = 0; }
 }
