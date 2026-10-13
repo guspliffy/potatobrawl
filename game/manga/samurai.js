@@ -12,9 +12,10 @@
 MANGA.samurai = (function () {
   const COL = "#3fe0a8", EDGE = "#effff8", PINK = "#ffbdd3", PINK_D = "#b84a73", PAPER_G = "#dedad3";
   const HIT = 2900, POP = 3000, CUT_T = 2560, STROKE_T = 2600, SHEATH0 = 3560, CLICK = 3780, FLOOD = 3780, TURN = 3850, TILT = 0.15;
-  const far = () => (L.portrait ? 92 : 120);   // how far past the loser he stands
+  const far = () => (L.portrait ? 92 : 140);   // how far past the loser he stands
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
-  let petals = [], snapC = null, tmp = null, tx = null, half = null, flick = null;
+  let petals = [], snapC = null, half = null, flick = 0, floodAt = null;
+  const scratch = new WeakMap();   // the grey pass's scratch canvas lives and dies with the page's layer canvas (freed by the engine at the end of the page)
   const D_ = () => FIN.dir;
   const wx_ = (t) => (t >= CUT_T ? FIN.lx + FIN.dir * far() : FIN.wx);   // where he stands: before the cut, and one frame later behind the loser
   const faceK = (t) => { const k = fe(TURN, TURN + 220, t), c = Math.cos(Math.PI * k); return Math.abs(c) < 0.04 ? (k < 0.5 ? 0.04 : -0.04) : c; };   // facing as a squash: 1 -> -1 (he turns away)
@@ -35,7 +36,9 @@ MANGA.samurai = (function () {
     const x0 = Math.max(0, Math.floor(X.sx - rad * X.z)), x1 = Math.min(MG.cw, Math.ceil(X.sx + rad * X.z)), y0 = Math.max(0, Math.floor(X.sy - rad * 1.0 * X.z)), y1 = Math.min(MG.ch, Math.ceil(X.sy + rad * 0.35 * X.z));
     const w = x1 - x0, h = y1 - y0;
     if (w < 2 || h < 2) return;
-    if (!tmp) { tmp = mgCanvas(w, h); tx = tmp.getContext("2d"); } else if (tmp.width < w || tmp.height < h) { tmp.width = Math.max(tmp.width, w); tmp.height = Math.max(tmp.height, h); tx = tmp.getContext("2d"); }
+    let sc = scratch.get(MG.layer);
+    if (!sc) { sc = { cv: mgCanvas(w, h) }; sc.x = sc.cv.getContext("2d"); scratch.set(MG.layer, sc); } else if (sc.cv.width < w || sc.cv.height < h) { sc.cv.width = Math.max(sc.cv.width, w); sc.cv.height = Math.max(sc.cv.height, h); sc.x = sc.cv.getContext("2d"); }
+    const tmp = sc.cv, tx = sc.x;
     tx.setTransform(1, 0, 0, 1, 0, 0); tx.globalCompositeOperation = "source-over"; tx.clearRect(0, 0, w, h);
     tx.drawImage(MG.layer, x0, y0, w, h, 0, 0, w, h);
     tx.globalCompositeOperation = "saturation"; tx.fillStyle = "#000"; tx.fillRect(0, 0, w, h);
@@ -92,7 +95,7 @@ MANGA.samurai = (function () {
         draw: drawInset },
       { id: "strike", t0: MT.STRIKE, from: "l", freeze: MT.AFTER, cover: MT.AFTER,
         poly: port ? [[0, 0.44], [1, 0.41], [1, 0.74], [0, 0.77]] : [[0, 0.5], [1, 0.47], [1, 1], [0, 1]],
-        cam: (t) => { const k = fe(MT.STRIKE, HIT, t), vh = (port ? 262 : 120) * (1 - 0.06 * k); return { wx: FIN.wx + D * (port ? 108 : 118), wy: -0.27 * vh, vh }; },
+        cam: (t) => { const k = fe(MT.STRIKE, HIT, t), vh = (port ? 262 : 120) * (1 - 0.06 * k); return { wx: FIN.wx + D * (port ? 108 : 126), wy: -0.27 * vh, vh }; },
         draw: drawStrike },
       { id: "after", t0: MT.AFTER, from: "b", live: true,
         poly: port ? [[0, 0.62], [1, 0.6], [1, 1], [0, 1]] : [[0, 0.4], [0.62, 0.37], [0.58, 1], [0, 1]],
@@ -326,12 +329,29 @@ MANGA.samurai = (function () {
     o.restore();
   }
 
+  // the light of the cut: when the loser comes apart, a long lens of jade light runs along the cut across the whole page for a moment
+  function flare(o, t) {
+    if (t < POP || t > POP + 150) return;
+    const pn = MG.byId.strike, u = cutU(), C = pn.sp(FIN.lx, -cutH()), a = 1 - fe(POP + 30, POP + 150, t), len = Math.hypot(L.gw, L.gh), k = easeOut(fe(POP, POP + 40, t)), nx = -u[1], ny = u[0];
+    o.save(); o.globalAlpha = a;
+    for (const [w, col] of [[7 * (1 - 0.5 * (1 - a)), MG_INK], [4.4, COL], [1.6, "#ffffff"]]) {
+      o.fillStyle = col; o.beginPath(); o.moveTo(C[0] - u[0] * len * k, C[1] - u[1] * len * k); o.lineTo(C[0] + nx * w, C[1] + ny * w); o.lineTo(C[0] + u[0] * len * k, C[1] + u[1] * len * k); o.lineTo(C[0] - nx * w, C[1] - ny * w); o.closePath(); o.fill();
+    }
+    o.restore();
+  }
+
   /* ---- panel 4: he sheathes the blade, turns away; the colour floods back from the blade (a growing circle) ---- */
+  const NOFLOOD = { x: 0, y: 0, r: 0, full: false };
   function flood(t) {
     const pn = MG.byId.after;
-    if (!pn || t < FLOOD) return { x: 0, y: 0, r: 0 };
-    const tip = bladeTip(W_(), Math.min(t, FLOOD)), q = pn.sp(tip[0], tip[1]), R = Math.hypot(Math.max(q[0], L.gw - q[0]), Math.max(q[1], L.gh - q[1])) * 1.02;
-    return { x: q[0], y: q[1], r: R * easeOut(fe(FLOOD, FLOOD + 500, t)) };
+    if (!pn || t < FLOOD) return NOFLOOD;
+    if (floodAt && floodAt.t === t) return floodAt.v;
+    const tip = bladeTip(W_(), FLOOD), q = pn.sp(tip[0], tip[1]), R = Math.hypot(Math.max(q[0], L.gw - q[0]), Math.max(q[1], L.gh - q[1])) * 1.02, r = R * easeOut(fe(FLOOD, FLOOD + 500, t));
+    // full: the circle has swallowed the whole panel, so the grey puppet underneath is not drawn any more
+    const cn = Math.max(Math.hypot(pn.x0 - q[0], pn.y0 - q[1]), Math.hypot(pn.x1 - q[0], pn.y0 - q[1]), Math.hypot(pn.x0 - q[0], pn.y1 - q[1]), Math.hypot(pn.x1 - q[0], pn.y1 - q[1]));
+    const v = { x: q[0], y: q[1], r, full: r > cn + 4 };
+    floodAt = { t, v };
+    return v;
   }
   function enso(c, x, y, r, k, col, w) {   // one brush stroke in a circle, open at the top right
     const pts = [], n = 36, a0 = -0.35 * Math.PI, sweep = Math.PI * 2 * 0.93 * k;
@@ -350,8 +370,8 @@ MANGA.samurai = (function () {
     c.fillStyle = MG_INK; c.fillRect(FIN.wx - 600, -1.4, 1500, 3.6);
     c.lineCap = "round"; c.strokeStyle = MG_INK;
     for (let i = 0; i < 12; i++) { const r = mgRng(90 + i), x = wx_(t) - 160 + r() * 320, y = 5 + (i % 4) * 5.5 + r() * 2; c.lineWidth = 1 + r() * 1.2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 25 + r() * 70, y); c.stroke(); }
-    mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), post: grey(120) });
-    if (fl.r > 2) {   // colour: the puppet again, as he really looks, inside the circle (and the ensō in jade)
+    if (!fl.full) mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), post: grey(120) });
+    if (fl.r > 2) {   // colour: the puppet as he really looks, inside the circle
       c.save(); pn.screen(c); c.beginPath(); c.arc(fl.x - pn.ox, fl.y - pn.oy, fl.r, 0, Math.PI * 2); c.clip();
       mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), tint: 0.32 });
       c.restore();
@@ -380,19 +400,17 @@ MANGA.samurai = (function () {
           at: () => { const p = P3(), q = p.sp(FIN.lx - D * (lay.port ? 84 : 108), -cutH() - (lay.port ? 40 : 54)); return [q[0], q[1]]; } },
       ];
     },
-    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; },   // no drone (wind and petals only), no taiko (SHING is the hit)
+    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; petals = []; snapC = null; half = null; flick = 0; floodAt = null; },   // no drone (wind and petals only), no taiko (SHING is the hit)
     build(lay) {
       const r = mgRng(2026), g = L.gw, h = L.gh;
-      petals = Array.from({ length: 34 }, () => ({ x: r() * (g + 60), y: r() * (h + 60), vx: 24 + r() * 34, vy: 7 + r() * 15, a: 0.5 + r() * 1.5, f: 1.1 + r() * 1.6, ph: r() * 6.28, s: 3.6 + r() * 3.2, sp: (r() - 0.5) * 2.4 }));
+      petals = Array.from({ length: MG.slow ? 20 : 34 }, () => ({ x: r() * (g + 60), y: r() * (h + 60), vx: 24 + r() * 34, vy: 7 + r() * 15, a: 0.5 + r() * 1.5, f: 1.1 + r() * 1.6, ph: r() * 6.28, s: 3.6 + r() * 3.2, sp: (r() - 0.5) * 2.4 }));
       snapC = MG.snap; MG.snap = greyOf(snapC, 2);
       const p1 = MG.panels[0]; p1.d.draw = drawHit; p1.d.bw = MG.bw * 1.45;
-      flick = 0; half = null;
     },
     step(t, k) {
       const W = W_(), Lp = L_();
       W.x = wx_(t); W.facing = faceK(t) * FIN.dir;
       if (t > 700 && snapC) snapC = null;
-      if (t > MT.END - 60) { tmp = null; tx = null; }
       MG.pt = t;
     },
     after(t) {
@@ -431,6 +449,7 @@ MANGA.samurai = (function () {
     over(o, t) {
       petalsOver(o, t);
       trailOver(o, t);
+      flare(o, t);
       const fl = flood(t);
       if (fl.r > 2) {
         o.save(); o.beginPath(); o.arc(fl.x, fl.y, fl.r, 0, Math.PI * 2); o.clip();
