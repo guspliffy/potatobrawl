@@ -68,7 +68,6 @@ with sync_playwright() as p:
     for fid in ids:
         ctx = b.new_context(viewport={"width": W, "height": H}, has_touch=True, is_mobile=True, device_scale_factor=1)
         ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": gfx, "sound": False, "fs": False, "screen": screen}))
-        ctx.add_init_script("window.__cineTier = 'B';")   # the 3D KO film (cine.js, a winner that has one) runs at a pinned tier: no watchdog, same picture every run
         ctx.add_init_script(CLOCK)
         pg = ctx.new_page(); pg.on("pageerror", lambda e, fid=fid: errs.append(f"{fid}: {e}"))
         pg.goto((ROOT / "build" / "test.html").as_uri()); pg.wait_for_timeout(1200)
@@ -78,8 +77,6 @@ with sync_playwright() as p:
         pg.click("#oppPick"); pg.click(f"#oppPop button >> nth={1 + (ALL.index(fid) + 1) % len(ALL)}")
         pg.click("#selGo")
         pg.wait_for_function("() => window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=20000)
-        # the film warms up during the countdown; wait for it (live) so it is ready when the clock is taken over
-        pg.wait_for_function("() => { const c = window.__blastline.cine; return !c || c.ready || c.failed || !c.libs; }", timeout=60000)
         pg.wait_for_timeout(300)
         # from here on the page clock only moves when the test steps it
         pg.evaluate("() => window.__clock.freeze()")
@@ -102,7 +99,7 @@ with sync_playwright() as p:
                 bad.append(f"{fid}: the forced heavy never ended the game"); ctx.close(); continue
         if selfkill: until(pg, "() => window.__blastline.game.phase !== 'play'", 1000, 16)
         t0 = pg.evaluate("() => performance.now()")
-        info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, ev: f.ev ? { final: f.ev.final, fin: f.ev.fin, mv: f.ev.mv, dirx: f.ev.dirx, diry: f.ev.diry } : null, cine: !!f.cine, manga: !!f.manga }; }")
+        info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, ev: f.ev ? { final: f.ev.final, fin: f.ev.fin, mv: f.ev.mv, dirx: f.ev.dirx, diry: f.ev.diry } : null, manga: !!f.manga }; }")
         if selfkill:
             # the old teleport is a self-destruct: no finisher at any moment, "Game!" banner, results appear
             seen_fin = info["on"]
@@ -134,10 +131,10 @@ with sync_playwright() as p:
         ff(pg, 500)
         shot(pg, f"{fid}-{tag}-result")
         ev = info["ev"] or {}
-        print(f"{fid}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) fin={ev.get('fin')}, results after {took:.0f} ms{' (3D film)' if info.get('cine') else ' (manga page)' if info.get('manga') else ''}")
+        print(f"{fid}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) fin={ev.get('fin')}, results after {took:.0f} ms{' (manga page)' if info.get('manga') else ''}")
         if not ok: bad.append(f"{fid}: no results screen")
         if skip and took > 1700: bad.append(f"{fid}: skip didn't end it ({took:.0f} ms)")
-        lo, hi = (4400, 5000) if info.get("manga") else (4100, 4700) if info.get("cine") else (3600, 4300)   # the manga page (4.7 s) and the 3D film are a little longer than the 2D staging
+        lo, hi = (4400, 5000) if info.get("manga") else (3600, 4300)   # the manga page (4.7 s) is a little longer than the 2D staging
         if not skip and not (lo <= took <= hi): bad.append(f"{fid}: results at {took:.0f} ms, wanted {lo}-{hi}")
         ctx.close()
     b.close()

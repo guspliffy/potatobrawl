@@ -802,7 +802,7 @@ function drawPotato(c, f, tk, at) {
   c.restore();
   if (!at) drawHx(c, f.slot);
 }
-// The classic slash / flame / zap / magic swoosh for the move being played (shared by 2D and the 3D overlay)
+// The classic slash / flame / zap / magic swoosh for the move being played
 function drawSwooshes(c, f, P, tk, alpha) {
   if (!P.swoosh || P.swoosh.linger) return;
   const S = P.swoosh, m = f.move, pal0 = f.pal;
@@ -1001,8 +1001,7 @@ function drawGlint(c, f, P, tk) {
   if (P.rx) {
     // rim light round the potato
     c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
-    const kx = R3.on ? 0.9 : 1, ky = R3.on ? 0.96 : 1;   // the 3D body is a little narrower than the 2D one
-    c.globalAlpha = 0.3 * a; c.strokeStyle = gc; c.lineWidth = 7; c.beginPath(); c.ellipse(0, P.cy, P.rx * kx + 2, P.ry * ky + 2, 0, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 0.3 * a; c.strokeStyle = gc; c.lineWidth = 7; c.beginPath(); c.ellipse(0, P.cy, P.rx + 2, P.ry + 2, 0, 0, Math.PI * 2); c.stroke();
     c.globalAlpha = 0.95 * a; c.strokeStyle = "#ffffff"; c.lineWidth = 2.6; c.stroke();
   }
   c.restore();
@@ -1565,8 +1564,8 @@ function fireArc(c, f, P, hv) {
 /* ===================== charge-up glow =====================
    A ground heavy that is held at its hold point (f.chg counts 1..BL.TUNE.chgMax) reads in three stages: wound (1-20), loaded (21-40), max (41-60).
    Stage 1: a soft glow in the accent colour at the striking limb or weapon. Stage 2: the fighter's own element gathers (CHARGE_GATHER[id]).
-   Stage 3: the glow doubles, a rim light runs round the body and the body shakes 1 px (pose() sets P.jit; both renderers apply it).
-   UI only: everything is a function of f.chg and the tick, so it works with a frozen sim and in 2D and 3D alike.
+   Stage 3: the glow doubles, a rim light runs round the body and the body shakes 1 px (pose() sets P.jit).
+   UI only: everything is a function of f.chg and the tick, so it works with a frozen sim.
    On release, P.hv.ck (= chg / chgMax) makes the heavy's strokes thicker and two-toned (see brush(), duoStroke(), drawSwoosh()).
    To change what a fighter shows: chargePts() says where the glow sits, CHARGE_GATHER[id] draws the stage 2 and 3 element. */
 const bp = (P, p) => rot(p, P.hip, P.lean);   // a point on the leaning body, in fighter space
@@ -1669,8 +1668,7 @@ function drawCharge(c, f, P, tk) {
   if (st === 3) {
     // rim light round the whole body
     c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
-    const kx = R3.on ? 0.9 : 1, ky = R3.on ? 0.96 : 1;
-    c.globalAlpha = 0.22 + 0.1 * Math.sin(tk * 0.6); c.strokeStyle = acc; c.lineWidth = 8; c.beginPath(); c.ellipse(0, P.cy, P.rx * kx + 2, P.ry * ky + 2, 0, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 0.22 + 0.1 * Math.sin(tk * 0.6); c.strokeStyle = acc; c.lineWidth = 8; c.beginPath(); c.ellipse(0, P.cy, P.rx + 2, P.ry + 2, 0, 0, Math.PI * 2); c.stroke();
     c.restore();
   }
   for (const p of pts) {
@@ -1683,7 +1681,7 @@ function drawCharge(c, f, P, tk) {
 
 /* ===================== finish-ready: the fighter side =====================
    While the opponent is at BL.TUNE.finishPct or more, Samurai's Quick Draw leaves the white flash line (the world-space part is finDashTick in effects.js;
-   the projectiles and the ring under the feet are in draw-world.js and gfx3d.js). */
+   the projectiles and the ring under the feet are in draw-world.js). */
 function drawFinishFx(c, f, P, tk) {
   const m = f.move;
   if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot)) return;
