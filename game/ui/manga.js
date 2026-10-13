@@ -108,21 +108,39 @@ Object.assign(Cin, {
 const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced in at the end of this part)
 // ms after the final hit. FREEZE: the picture stops (the loser has left the shot by 520, so the picture is taken while it is still in it); INKED: the ink is down.
 const MT = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
+const MG_BOX = [-100, -125, 100, 14];
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
 const MG = { on: false, script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, strip: null, stripW: null,
-  snapPending: false, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
+  snapPending: false, tintK: 0.56, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, fixed: false, avg: 0, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
 const mgClock = () => (window.__realNow ? window.__realNow() : performance.now());   // the tests step performance.now themselves; this one stays real
 function mgRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 function mgCanvas(w, h) { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
 const mgTk = (t) => t / FMS;   // the puppets' animation tick (60 per second of page time)
 function mgWarn(e) { try { console.warn("Manga finisher failed, using the 2D finisher:", e && e.stack ? e.stack.split("\n").slice(0, 3).join(" | ") : e); } catch (x) { /* no console */ } }
 
-/* ---------- ink: fat outlines and cel shading, without touching the fighter drawing code ---------- */
-// OUT strokes get k times heavier (limb outlines, which are a wide stroke under the limb colour, grow by a fixed amount instead) and every
-// gradient on the context turns into hard bands: manga has flat shapes and cut tone, no gradients.
+/* ---------- ink: fat black outlines, flat tint and cel shading, without touching the fighter drawing code ---------- */
+// While a fighter is drawn into the page layer: OUT strokes turn pure ink and get k times heavier (limb outlines, which are a wide stroke under the limb
+// colour, grow by a fixed amount instead); every colour the fighter sets is pulled toward the paper (light colours a lot, dark ones not at all, so the ink
+// stays black and the skin shows as a weak tint); every gradient turns into hard bands: manga has flat shapes and cut tone, no gradients.
+const MG_FS = Object.getOwnPropertyDescriptor(MG_CTX, "fillStyle"), MG_SS = Object.getOwnPropertyDescriptor(MG_CTX, "strokeStyle"), MG_TC = new Map();
+function mgTintCss(s, k) {
+  const key = k + s;
+  let v = MG_TC.get(key);
+  if (v !== undefined) return v;
+  let r, g, b, a = 1, m;
+  if (s.charCodeAt(0) === 35 && s.length === 7) { const n = parseInt(s.slice(1), 16); r = n >> 16; g = (n >> 8) & 255; b = n & 255; }
+  else if (s.charCodeAt(0) === 35 && s.length === 4) { r = parseInt(s[1] + s[1], 16); g = parseInt(s[2] + s[2], 16); b = parseInt(s[3] + s[3], 16); }
+  else if ((m = /^rgba?\(([^)]*)\)$/.exec(s))) { const q = m[1].split(","); r = +q[0]; g = +q[1]; b = +q[2]; if (q.length > 3) a = +q[3]; }
+  else { MG_TC.set(key, s); return s; }
+  const lum = (r * 0.3 + g * 0.59 + b * 0.11) / 255, u = clamp((lum - 0.1) / 0.4, 0, 1), w = k * u * u * (3 - 2 * u);
+  v = `rgba(${Math.round(r + (241 - r) * w)},${Math.round(g + (236 - g) * w)},${Math.round(b + (226 - b) * w)},${a})`;
+  MG_TC.set(key, v);
+  return v;
+}
 function mgCel(g) {
   let prev = null, po = 0;
   g.addColorStop = function (o, colr) {
+    if (typeof colr === "string") colr = mgTintCss(colr, MG.tintK);
     if (prev === null) MG_GRAD.addColorStop.call(g, o, colr);
     else { const b = po + (o - po) * 0.4; MG_GRAD.addColorStop.call(g, b, prev); MG_GRAD.addColorStop.call(g, b, colr); }
     prev = colr; po = o;
@@ -130,16 +148,18 @@ function mgCel(g) {
   return g;
 }
 function mgInkOn(c, k) {
+  Object.defineProperty(c, "fillStyle", { configurable: true, get() { return MG_FS.get.call(this); }, set(v) { MG_FS.set.call(this, typeof v === "string" ? mgTintCss(v, MG.tintK) : v); } });
+  Object.defineProperty(c, "strokeStyle", { configurable: true, get() { return MG_SS.get.call(this); }, set(v) { MG_SS.set.call(this, typeof v === "string" ? (v === OUT ? MG_INK : mgTintCss(v, MG.tintK)) : v); } });
   c.stroke = function () {
     const lw = this.lineWidth;
-    if (this.strokeStyle === OUT) this.lineWidth = lw <= 4 ? lw * k : lw + 3.5 * (k - 1);
+    if (this.strokeStyle === MG_INK) this.lineWidth = lw <= 4 ? lw * k : lw + 3.5 * (k - 1);
     MG_CTX.stroke.apply(this, arguments);
     this.lineWidth = lw;
   };
   c.createRadialGradient = function () { return mgCel(MG_CTX.createRadialGradient.apply(this, arguments)); };
   c.createLinearGradient = function () { return mgCel(MG_CTX.createLinearGradient.apply(this, arguments)); };
 }
-function mgInkOff(c) { delete c.stroke; delete c.createRadialGradient; delete c.createLinearGradient; }
+function mgInkOff(c) { delete c.stroke; delete c.createRadialGradient; delete c.createLinearGradient; delete c.fillStyle; delete c.strokeStyle; }
 
 /* ---------- cached art: tone tiles, focus disc, speed strips (built once per page, freed at its end) ---------- */
 // a 45 degree dot screen: `cover` is the share of the paper the dots cover (0.4 = a 40% screen), `size` the pitch of the tile in css px
@@ -221,11 +241,13 @@ function mgWord(text, o) {
   return { cv: cvs, w: cw, h: ch_ };
 }
 // a word instance of the script: { text, t0, t1, size (share of the screen height), at(t) -> [x, y] css px, rot, arc, jag, stretch: { ang, k } }
+function mgWordPrep(w) { if (!w.img) { const sz = Math.round(w.size * Math.min(L.gh, L.gw * 0.9) * (w.mul || 1)); w.img = mgWord(w.text, { size: sz, seed: w.seed, arc: w.arc, jag: w.jag, jit: w.jit, fill: w.fill, space: w.space }); } }
 function mgWordDraw(c, w, t) {
   if (t < w.t0 || t > w.t1) return;
-  if (!w.img) { const sz = Math.round(w.size * L.gh * (w.mul || 1)); w.img = mgWord(w.text, { size: sz, seed: w.seed, arc: w.arc, jag: w.jag, jit: w.jit, fill: w.fill, space: w.space }); }
+  mgWordPrep(w);
   const u = t - w.t0, k = fe(0, 120, u), slam = 1 + 0.6 * (1 - k) * (1 - k) - 0.07 * Math.sin(k * Math.PI), grow = 1 + 0.06 * fe(0, 1500, u);
-  const a = Math.min(1, k * 3) * (1 - fe(w.t1 - 220, w.t1, t)), [x, y] = w.at(t);
+  const a = Math.min(1, k * 3) * (1 - fe(w.t1 - 220, w.t1, t)), [x0, y0] = w.at(t), hw = w.img.w * 0.4, hh = w.img.h * 0.3;
+  const x = clamp(x0, hw, L.gw - hw), y = clamp(y0, hh, L.gh - hh);   // the lettering may cross a border, never the edge of the page
   c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalAlpha = a; c.translate(x, y); c.rotate(w.rot || 0);
   if (w.stretch) { const st = w.stretch.k * easeOut(fe(0, w.t1 - w.t0, u)); c.rotate(w.stretch.ang); c.scale(1 + st, 1); c.rotate(-w.stretch.ang); }
   c.scale(slam * grow, slam * grow);
@@ -352,49 +374,60 @@ function mgTear(pn, sx, sy, wdt, t, glowCol) {
 }
 
 /* ---------- a fighter drawn into a panel: fat ink, paper tint, cut tone ---------- */
-// o: { sc (scale about the feet), a (alpha), sil ("#fff" | "#000": a flat silhouette), tint, light (angle the light comes from), wash: [hex, alpha],
+// o: { sc (scale about the feet), halo (css px of white edge), under (lc, p) (art behind the fighter, inked like it), box ([l, t, r, b] world units about the feet that the drawing may cover), free (not cut to the panel), a (alpha), sil ("#fff" | "#000": a flat silhouette), tint, light (angle the light comes from), wash: [hex, alpha],
 //      post(lc, X) (extra source-atop art in device px: X = { sx, sy, z } is the feet and the device px per world unit), tone (false: no dots), k (ink) }
 function mgPuppet(c, pn, p, tt, o) {
   o = o || {};
-  const D = DPR, sc = o.sc || 1, ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y);
-  const R = 135 * ze, bx = Math.max(0, Math.floor((sx + pn.ox - R) * D)), by = Math.max(0, Math.floor((sy + pn.oy - R * 1.05) * D));
-  const bw = Math.min(MG.cw - bx, Math.ceil(R * 2 * D)), bh = Math.min(MG.ch - by, Math.ceil(R * 1.4 * D));
+  const D = DPR, sc = o.sc || 1, ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y), bq = o.box || MG_BOX;
+  // the box the fighter can cover (world units about its feet: left, top, right, bottom; o.box widens it for a long spear), cut to the panel (the panel clips it anyway) unless it may leave the panel (o.free)
+  let x0 = sx + pn.ox + bq[0] * ze, y0 = sy + pn.oy + bq[1] * ze, x1 = sx + pn.ox + bq[2] * ze, y1 = sy + pn.oy + bq[3] * ze;
+  if (!o.free) { x0 = Math.max(x0, pn.x0 + pn.ox - 2); x1 = Math.min(x1, pn.x1 + pn.ox + 2); y0 = Math.max(y0, pn.y0 + pn.oy - 2); y1 = Math.min(y1, pn.y1 + pn.oy + 2); }
+  const bx = Math.max(0, Math.floor(x0 * D)), by = Math.max(0, Math.floor(y0 * D)), bw = Math.min(MG.cw - bx, Math.ceil((x1 - x0) * D) + 1), bh = Math.min(MG.ch - by, Math.ceil((y1 - y0) * D) + 1);
   if (bw <= 2 || bh <= 2) return;
   const lc = MG.lc, k = o.k || clamp(10 / (2.5 * ze), 1, 2.2);
   lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(bx, by, bw, bh);
   lc.save(); lc.beginPath(); lc.rect(bx, by, bw, bh); lc.clip();
   lc.setTransform(D * ze, 0, 0, D * ze, D * (sx + pn.ox), D * (sy + pn.oy));
-  MG.pt = tt;
+  MG.pt = tt; MG.tintK = o.tint === undefined ? 0.56 : o.tint;
   if (o.flash) p.flash = 2;
   mgInkOn(lc, k);
-  try { drawFighter(lc, p, mgTk(tt), [0, 0]); } finally { mgInkOff(lc); p.flash = 0; }
+  try {
+    if (o.under) { lc.save(); lc.scale(p.facing, 1); o.under(lc, p); lc.restore(); }   // art behind the fighter that goes through the same ink (the Dragon's big wings), in the fighter's own units
+    drawFighter(lc, p, mgTk(tt), [0, 0]);
+  } finally { mgInkOff(lc); p.flash = 0; }
   lc.setTransform(1, 0, 0, 1, 0, 0);
   lc.globalCompositeOperation = "source-atop";
   if (o.sil) { lc.fillStyle = o.sil; lc.fillRect(bx, by, bw, bh); }
   else {
-    lc.fillStyle = `rgba(241,236,226,${o.tint === undefined ? 0.56 : o.tint})`; lc.fillRect(bx, by, bw, bh);
     if (o.tone !== false && !MG.slow) mgToneBands(lc, (sx + pn.ox) * D, (sy + pn.oy - 33 * ze) * D, 40 * ze * D, o.light === undefined ? -2.3 : o.light, ze >= 2.2 ? 12 : 8);
     if (o.wash) { lc.fillStyle = rgba(o.wash[0], o.wash[1]); lc.fillRect(bx, by, bw, bh); }
-    if (o.post) o.post(lc, { sx: (sx + pn.ox) * D, sy: (sy + pn.oy) * D, z: ze * D, ze });
+    if (o.post) o.post(lc, { sx: (sx + pn.ox) * D, sy: (sy + pn.oy) * D, z: ze * D, ze, bx, by, bw, bh });
   }
   lc.globalCompositeOperation = "source-over";
   lc.restore();
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = o.a === undefined ? 1 : o.a;
+  if (o.halo) {   // a white edge round the shape (a black fighter on a dark panel stays readable): its silhouette drawn at eight offsets behind it
+    const h = o.halo * D, l2 = MG.l2 || (MG.l2 = mgCanvas(MG.cw, MG.ch)), x2 = MG.l2c || (MG.l2c = l2.getContext("2d"));
+    x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = "source-over"; x2.clearRect(bx, by, bw, bh);
+    x2.drawImage(MG.layer, bx, by, bw, bh, bx, by, bw, bh);
+    x2.globalCompositeOperation = "source-in"; x2.fillStyle = "#ffffff"; x2.fillRect(bx, by, bw, bh);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; c.drawImage(l2, bx, by, bw, bh, bx + Math.cos(a) * h, by + Math.sin(a) * h, bw, bh); }
+  }
   c.drawImage(MG.layer, bx, by, bw, bh, bx, by, bw, bh);
   c.restore();
 }
 // two tone bands on the side away from the light: a 40% screen from just past the middle, a 70% screen near the edge (device px, over source-atop)
 function mgToneBands(lc, cx, cy, R, lightAng, tile) {
   const sdx = Math.cos(lightAng + Math.PI), sdy = Math.sin(lightAng + Math.PI), px_ = -sdy, py_ = sdx, B = R * 5;
-  for (const [d, cover] of [[-0.1 * R, 0.4], [0.5 * R, 0.7]]) {
+  for (const [d, cover] of [[0.12 * R, 0.4], [0.62 * R, 0.7]]) {
     const bx = cx + sdx * d, by = cy + sdy * d;
     lc.fillStyle = mgTile(tile, cover);
     lc.beginPath(); lc.moveTo(bx + px_ * B, by + py_ * B); lc.lineTo(bx - px_ * B, by - py_ * B); lc.lineTo(bx - px_ * B + sdx * B, by - py_ * B + sdy * B); lc.lineTo(bx + px_ * B + sdx * B, by + py_ * B + sdy * B); lc.closePath(); lc.fill();
   }
 }
 // the freeze: the picture is inked once (paper tint, dots in the dark areas: a 70% screen where it is darkest, a 40% screen in the middle tones).
-// One readback of a half-size copy, now, not per frame.
-function mgInkSnap() {
+// One readback of a half-size copy, now, not per frame. It runs as three small tasks (mgWork) so no single frame pays for all of it.
+function mgInkA() {
   const W = MG.cw, H = MG.ch, ik = mgCanvas(W, H), x = ik.getContext("2d");
   x.drawImage(MG.snap, 0, 0);
   x.fillStyle = "rgba(241,236,226,0.45)"; x.fillRect(0, 0, W, H);
@@ -402,57 +435,66 @@ function mgInkSnap() {
   sx.drawImage(MG.snap, 0, 0, hw, hh);
   let id = null;
   try { id = sx.getImageData(0, 0, hw, hh); } catch (e) { id = null; }
-  const dark = mgCanvas(hw, hh), mid = mgCanvas(hw, hh);
-  if (id) {
-    const d = id.data, dk = new ImageData(hw, hh), md = new ImageData(hw, hh);
+  MG.inkS = { ik, x, hw, hh, id };
+}
+function mgInkB() {
+  const S = MG.inkS, hw = S.hw, hh = S.hh, dark = mgCanvas(hw, hh), mid = mgCanvas(hw, hh);
+  if (S.id) {
+    const d = S.id.data, dk = new ImageData(hw, hh), md = new ImageData(hw, hh);
     for (let i = 0; i < d.length; i += 4) {
       const lum = (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) / 255;
       if (lum < 0.3) dk.data[i + 3] = 255; else if (lum < 0.52) md.data[i + 3] = 255;
     }
     dark.getContext("2d").putImageData(dk, 0, 0); mid.getContext("2d").putImageData(md, 0, 0);
   } else { const mx = mid.getContext("2d"); mx.fillStyle = "#000"; mx.fillRect(0, 0, hw, hh); }
-  for (const [mask, cover] of [[mid, 0.4], [dark, 0.7]]) {
-    const tl = mgCanvas(W, H), t = tl.getContext("2d");
-    t.fillStyle = mgTile(8, cover); t.fillRect(0, 0, W, H);
-    t.globalCompositeOperation = "destination-in"; t.imageSmoothingEnabled = true; t.drawImage(mask, 0, 0, W, H);
-    x.drawImage(tl, 0, 0);
-  }
-  MG.ink = ik;
+  S.id = null; S.dark = dark; S.mid = mid;
+}
+function mgInkC(which) {
+  const S = MG.inkS, W = MG.cw, H = MG.ch, mask = which ? S.dark : S.mid, tl = mgCanvas(W, H), t = tl.getContext("2d");
+  t.fillStyle = mgTile(8, which ? 0.7 : 0.4); t.fillRect(0, 0, W, H);
+  t.globalCompositeOperation = "destination-in"; t.imageSmoothingEnabled = true; t.drawImage(mask, 0, 0, W, H);
+  S.x.drawImage(tl, 0, 0);
+  if (which) { MG.ink = S.ik; MG.inkT = MG.pt; MG.inkS = null; }
 }
 
 /* ---------- building the page (at the freeze) ---------- */
 // panel 1 is the engine's own: the real hit, frozen and inked, the whole page
 function mgFirstPanel() { return { id: "hit", t0: MT.FREEZE, slide: 0, live: true, poly: [[0, 0], [1, 0], [1, 1], [0, 1]], draw: mgDrawHit }; }
 function mgDrawHit(c, pn, t) {
-  const ink = fe(MT.FREEZE, MT.INKED, t), life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
+  const ink = MG.ink ? easeOut(fe(MT.FREEZE + 60, MT.INKED, t)) : 0, life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
   c.save(); c.translate(ix, iy); c.scale(s, s); c.translate(-ix, -iy);
-  c.drawImage(MG.snap, 0, 0, L.gw, L.gh);
+  if (ink < 1) c.drawImage(MG.snap, 0, 0, L.gw, L.gh);
   if (ink > 0) { c.globalAlpha = ink; c.drawImage(MG.ink, 0, 0, L.gw, L.gh); }
   c.restore();
-  const R = Math.hypot(Math.max(ix, L.gw - ix), Math.max(iy, L.gh - iy));
-  mgFocus(c, ix, iy, R, t * 0.00035, 0.9 * ink);
+  if (MG.disc) { const R = Math.hypot(Math.max(ix, L.gw - ix), Math.max(iy, L.gh - iy)); mgFocus(c, ix, iy, R, t * 0.00035, 0.9 * ink); }
 }
-function mgBuild() {
+// at the freeze: the screen is copied (cheap) and a queue of small build tasks is set up; mgWork runs them one or two per frame while the first panel holds
+function mgSnapshot() {
   const S = MG.script, gw = L.gw, gh = L.gh;
+  MG.snap = mgCanvas(cv.width, cv.height); MG.snap.getContext("2d").drawImage(cv, 0, 0);
+  const ev = FIN.ev, d = FIN.P[FIN.l], q = ev ? toScreen(ev.x, ev.y - d.s.h * 0.5) : [gw / 2, gh / 2];
+  MG.ix = clamp(q[0], gw * 0.2, gw * 0.8); MG.iy = clamp(q[1], gh * 0.25, gh * 0.75);
   MG.cw = cv.width; MG.ch = cv.height;
   MG.m = clamp(Math.min(gw, gh) * 0.026, 6, 16); MG.bw = clamp(Math.min(gw, gh) * 0.0105, 3, 9);
   MG.page = { x: MG.m, y: MG.m, w: gw - 2 * MG.m, h: gh - 2 * MG.m };
-  MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d");
-  MG.disc = mgFocusDisc(false); MG.discW = mgFocusDisc(true); MG.strip = mgSpeedStrip(false); MG.stripW = mgSpeedStrip(true);
-  const lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh };
-  MG.lay = lay;
-  MG.panels = [mgFirstPanel()].concat(S.panels(lay)).map((d, i) => mgPanel(d, i));
-  MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
-  MG.words = (S.words ? S.words(lay) : []).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
-  if (S.build) S.build(lay);
+  MG.lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh };
+  MG.panels = [mgPanel(mgFirstPanel(), 0)]; MG.byId = { hit: MG.panels[0] };
+  MG.todo = [
+    () => { MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d"); MG.disc = mgFocusDisc(false); },
+    () => { MG.discW = mgFocusDisc(true); MG.strip = mgSpeedStrip(false); MG.stripW = mgSpeedStrip(true); },
+    mgInkA, mgInkB, () => mgInkC(0), () => mgInkC(1),
+    () => {
+      MG.panels = MG.panels.concat(S.panels(MG.lay).map((dd, i) => mgPanel(dd, i + 1)));
+      MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
+      MG.words = (S.words ? S.words(MG.lay) : []).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+      if (S.build) S.build(MG.lay);
+    },
+  ];
+  MG.todo.push(() => { for (const w of MG.words.slice(0, 2)) mgWordPrep(w); }, () => { for (const w of MG.words.slice(2, 4)) mgWordPrep(w); }, () => { for (const w of MG.words.slice(4)) mgWordPrep(w); }, mgCardPrep);
 }
-// the frozen real hit: taken from the canvas as it stands (once), where the hit was (the impact point on the screen)
-function mgSnapshot() {
-  MG.snap = mgCanvas(cv.width, cv.height); MG.snap.getContext("2d").drawImage(cv, 0, 0);
-  const ev = FIN.ev, d = FIN.P[FIN.l], q = ev ? toScreen(ev.x, ev.y - d.s.h * 0.5) : [L.gw / 2, L.gh / 2];
-  MG.ix = clamp(q[0], L.gw * 0.2, L.gw * 0.8); MG.iy = clamp(q[1], L.gh * 0.25, L.gh * 0.75);
-  mgBuild();
-  mgInkSnap();
+function mgWork(t) {
+  let n = t > 1000 ? 99 : 1;
+  while (n-- > 0 && MG.todo.length) MG.todo.shift()();
 }
 
 /* ---------- start, tick, draw, end ---------- */
@@ -461,9 +503,9 @@ function mangaStart(g) {
   if (!S) return false;
   try {
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
-    MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
+    MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    MG.slow = (R3.q | 0) >= 2 || !!window.__mangaSlow;
+    MG.slow = (R3.q | 0) >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
     if (S.start) S.start(g);
     FIN.hit = S.hit || MT.HIT; FIN.launch = S.pop || FIN.hit + FLAUNCH;
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
@@ -541,6 +583,7 @@ function mangaDraw(g, tk) {
     if (MG.snapPending) { render2D(g, tk); mgSnapshot(); MG.snapPending = false; }
     else if (cv.width !== MG.cw || cv.height !== MG.ch) throw new Error("the screen was resized during the page");
     mgPage(ctx, FIN.t);
+    mgWork(FIN.t);
   } catch (e) { mangaBail(e); render2D(g, tk); }
   const ms = mgClock() - t0;
   if (MG.snap) { const s = MG.stat; s.n++; s.sum += ms; s.last = ms; if (ms > s.max) s.max = ms; }
@@ -565,7 +608,7 @@ function mangaBail(e) {
 function mangaEnd() {
   FIN.manga = false; MG.on = false;
   for (const pn of MG.panels) pn.cache = null;
-  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
+  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
   try { Cin.drone(false); Cin.close(); } catch (e) { /* sound off */ }
 }
 function mangaFinish() {
@@ -591,18 +634,18 @@ function mgCues(t) {
 
 /* ---------- the layer over the page: unclipped things, words, impact frames, the title block, the fade ---------- */
 function mangaOverlay(o, tk) {
-  const t = FIN.t, D = DPR;
+  const t = FIN.t, D = DPR, t0 = mgClock();
   try {
     o.save(); o.setTransform(D, 0, 0, D, 0, 0); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
-    if (t < MT.FREEZE || !MG.ink) {   // the real hit: the black bars slide in as today
+    if (t < MT.FREEZE || !MG.snap) {   // the real hit: the black bars slide in as today
       const bar = easeOut(fe(0, 240, t)) * L.gh * 0.11;
       o.fillStyle = "#05050b"; o.fillRect(0, 0, L.gw, bar); o.fillRect(0, L.gh - bar, L.gw, bar);
       o.restore(); return;
     }
     const S = MG.script, fl = (1 - fe(MT.FREEZE, MT.FREEZE + 200, t)) * 0.9;
     if (S.over) S.over(o, t);
-    mgLoserOver(o, t);
     for (const w of MG.words) mgWordDraw(o, w, t);
+    mgLoserOver(o, t);
     if (t >= FIN.launch) finScene(o, t);
     mgBeam(o, t);
     mgImpact(o, t);
@@ -617,6 +660,11 @@ function mangaOverlay(o, tk) {
     if (fade > 0) { o.fillStyle = `rgba(14,16,34,${(0.9 * fade).toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
     o.restore();
   } catch (e) { try { o.restore(); } catch (x) { /* ok */ } mangaBail(e); }
+  if (MG.snap) {   // the page's drawing time counts both layers; a device that cannot keep up drops the smears and the tone on the fighters (the cheap tier)
+    const st = MG.stat, ms = mgClock() - t0; st.sum += ms; st.last += ms; if (st.last > st.max) st.max = st.last;
+    MG.avg = MG.avg * 0.9 + st.last * 0.1;
+    if (!MG.fixed && !MG.slow && st.n > 24 && MG.avg > 11) MG.slow = true;
+  }
 }
 // the loser, once it has burst through its panel's border, is drawn over the whole page
 function mgLoserOver(o, t) {
@@ -630,7 +678,7 @@ function mgBeam(o, t) {
   if (!bm) return;
   const bt = (t - bm.t0) / FMS;
   if (bt < 0 || bt > 50) return;
-  const x = bm.sx, y = bm.sy, ang = Math.atan2(L.gh / 2 - y, L.gw / 2 - x), len = Math.max(L.gw, L.gh) * 0.7 * (0.5 + 0.5 * easeOut(Math.min(1, bt / 8))), a = 1 - bt / 50, wd = Math.min(L.gw, L.gh) * 0.13 * (bt < 6 ? bt / 6 : a);
+  const x = bm.sx, y = bm.sy, ang = Math.atan2(-FIN.ldy, -FIN.ldx), len = Math.max(L.gw, L.gh) * 0.55 * (0.5 + 0.5 * easeOut(Math.min(1, bt / 8))), a = 1 - bt / 50, wd = Math.min(L.gw, L.gh) * 0.13 * (bt < 6 ? bt / 6 : a);
   o.save(); o.translate(x, y); o.rotate(ang);
   o.fillStyle = MG_INK; o.beginPath(); o.moveTo(-10, -wd); o.lineTo(len, 0); o.lineTo(-10, wd); o.closePath(); o.fill();
   o.fillStyle = "#ffffff"; o.beginPath(); o.moveTo(-10, -wd * 0.4); o.lineTo(len * 0.7, 0); o.lineTo(-10, wd * 0.4); o.closePath(); o.fill();
@@ -664,19 +712,23 @@ function mgImpact(o, t) {
     mgFocus(o, hp[0], hp[1], R * 1.05, t * 0.001, 1, !white);
     S.impact(o, pn, white ? "#000000" : "#ffffff", t);
   } else {
-    const a = 0.8 * (1 - fe(H0 + 100, H0 + 240, t));
+    const a = 0.4 * (1 - fe(H0 + 100, H0 + 200, t));
     if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
   }
 }
 
 /* ---------- the title block: a slanted black band, the name in hand lettering, a screened accent strip, the red hanko K.O. seal ---------- */
-function mgCard(o, t) {
+function mgCardPrep() {
   const S = MG.script, W = FIN.P[FIN.w], accent = S.col;
   if (!MG.cards) {
-    const hh = Math.min(L.gh * 0.17, 86), nm = W.spec.name.toUpperCase();
+    const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
     MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
       sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: "#f1ece2" }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
   }
+}
+function mgCard(o, t) {
+  const S = MG.script, accent = S.col;
+  mgCardPrep();
   const C = MG.cards, hh = C.hh, k = easeOut(fe(MT.CARD, MT.CARD + 260, t)), slide = (1 - k) * L.gw * (FIN.dir > 0 ? -1 : 1);
   const y = L.portrait ? L.gh * 0.12 + hh * 0.5 : L.gh * 0.17 + hh * 0.5, sl = L.gh * 0.035;
   o.save(); o.translate(slide, 0);
@@ -694,7 +746,7 @@ function mgCard(o, t) {
   // the seal
   const s = fe(MT.SEAL, MT.SEAL + 140, t);
   if (s > 0) {
-    const sc = 1 + 0.9 * (1 - easeOut(s)), sz = hh * 1.25, kx = L.portrait ? L.gw * 0.78 : Math.min(L.gw - sz * 0.7, L.gw * 0.86), ky = y + hh * 0.62;
+    const sc = 1 + 0.9 * (1 - easeOut(s)), sz = hh * 1.25, kx = L.portrait ? L.gw - sz * 0.72 : Math.min(L.gw - sz * 0.7, L.gw * 0.86), ky = L.portrait ? y + hh * 0.5 + sz * 0.6 : y + hh * 0.62;
     o.save(); o.translate(kx, ky); o.rotate(-0.09); o.scale(sc, sc); o.globalAlpha = Math.min(1, s * 3);
     for (const [dx, dy, al] of [[2.2, 1.6, 0.55], [0, 0, 1]]) {   // misprinted: a faint second print, a hair off
       o.save(); o.translate(dx, dy); o.globalAlpha *= al;

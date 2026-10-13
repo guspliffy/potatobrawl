@@ -9,6 +9,7 @@
 #   --skip        tap mid-page (at 1300 ms) and check that the results follow at once
 #   --reduced     prefers-reduced-motion: the impact frames become one white frame
 #   --sheet       stitch the pictures of all opponents into manga-sheet-<size>.jpg (rows: opponents, columns: moments)
+#   --slow / --adaptive  the cheap tier / let the page choose its tier by its own timing (the default pins the full tier)
 #   --throttle=N  CPU throttling (a mid phone is about 4); the page's own timing of its draw (FIN.mgStat) is printed either way
 #   --video=      step the page at 30 fps from the hit to the results, screenshot every frame at the given size and device scale, encode with ffmpeg
 # Prints "no errors" when no page errors happened and every run ended on the results screen as expected.
@@ -70,6 +71,7 @@ def run(b, fid, opp):
     ctx = b.new_context(viewport={"width": W, "height": H}, has_touch=True, is_mobile=True, device_scale_factor=dsf, reduced_motion="reduce" if reduced else "no-preference")
     ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": "2d", "sound": False, "fs": False, "screen": screen}))
     ctx.add_init_script(CLOCK)
+    ctx.add_init_script("window.__mangaSlow = %s;" % ("true" if "--slow" in args else "undefined" if "--adaptive" in args else "false"))   # pin the quality tier so the pictures do not depend on the machine's speed
     pg = ctx.new_page(); pg.on("pageerror", lambda e: errs.append(f"{fid}/{opp}: {e}"))
     pg.on("console", lambda m: errs.append(f"{fid}/{opp}: console {m.text}") if m.type in ("error", "warning") and "KO film" not in m.text else None)
     if throttle > 1:
@@ -114,6 +116,17 @@ def run(b, fid, opp):
         for _ in range(8):
             ff(pg, 1000 / 30); n += 1; shot(pg, str(frames / f"f{n:04d}.png"))
         print(f"video frames: {n} in {frames}")
+    cdp = None
+    if "--cpuprof" in args:
+        cdp = ctx.new_cdp_session(pg); cdp.send("Profiler.enable"); cdp.send("Profiler.setSamplingInterval", {"interval": 200}); cdp.send("Profiler.start")
+    if "--prof" in args:
+        # the draw time of the page over its life: the average and the worst of every 250 ms window, stepped at 60 fps
+        rows = {}
+        for _ in range(400):
+            f = pg.evaluate("() => { const f = window.__blastline.fin; return f.on ? [f.t, f.mgStat ? f.mgStat.last : 0] : null; }")
+            if f is None: break
+            rows.setdefault(int(f[0] // 250) * 250, []).append(f[1]); ff(pg, 1000 / 60)
+        print("draw ms per 250 ms window (avg/max): " + "  ".join(f"{k}:{sum(v) / len(v):.1f}/{max(v):.1f}" for k, v in sorted(rows.items())))
     for ms in AT:
         until_t(pg, ms)
         name = f"manga-{fid}-vs-{opp}-{tag}-{ms:04d}.png"
@@ -122,6 +135,26 @@ def run(b, fid, opp):
         until_t(pg, 1300); pg.mouse.click(W // 2, H // 2)
     until(pg, "() => window.__blastline.mode === 'result'", 9000, 32)
     took = pg.evaluate("() => performance.now()") - t0
+    if cdp:
+        prof = cdp.send("Profiler.stop")["profile"]; self_t = {}
+        dt = prof["timeDeltas"]; idx = {n["id"]: n for n in prof["nodes"]}
+        for sid, d in zip(prof["samples"], dt):
+            cf = idx[sid]["callFrame"]; key = f"{cf['functionName'] or '(anon)'}:{cf['lineNumber']}"; self_t[key] = self_t.get(key, 0) + d
+        par = {}
+        for n in prof["nodes"]:
+            for ch in n.get("children", []): par[ch] = n["id"]
+        by_caller = {}
+        for sid, d in zip(prof["samples"], dt):
+            cf = idx[sid]["callFrame"]
+            if cf["functionName"] in ("drawImage", "fillRect", "fill", "stroke", "measureText", "getContext", "createPattern", "fillText", "strokeText", "clip"):
+                q = idx.get(par.get(sid)); pc = q["callFrame"] if q else None
+                key = f"{cf['functionName']} <- {pc['functionName'] if pc else '?'}:{pc['lineNumber'] if pc else 0}:{pc['columnNumber'] if pc else 0}"
+                by_caller[key] = by_caller.get(key, 0) + d
+        print("native calls by caller (ms):")
+        for k, v in sorted(by_caller.items(), key=lambda kv: -kv[1])[:16]: print(f"  {v / 1000:8.1f}  {k}")
+        tot = sum(self_t.values()) or 1
+        print("cpu profile (self time, ms of %.0f):" % (tot / 1000))
+        for k, v in sorted(self_t.items(), key=lambda kv: -kv[1])[:28]: print(f"  {v / 1000:8.1f}  {k}")
     ok = pg.evaluate("() => window.__blastline.mode") == "result"
     ff(pg, 500)
     shot(pg, f"manga-{fid}-vs-{opp}-{tag}-result.png")

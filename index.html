@@ -9723,21 +9723,39 @@ Object.assign(Cin, {
 const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced in at the end of this part)
 // ms after the final hit. FREEZE: the picture stops (the loser has left the shot by 520, so the picture is taken while it is still in it); INKED: the ink is down.
 const MT = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
+const MG_BOX = [-100, -125, 100, 14];
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
 const MG = { on: false, script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, strip: null, stripW: null,
-  snapPending: false, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
+  snapPending: false, tintK: 0.56, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, fixed: false, avg: 0, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
 const mgClock = () => (window.__realNow ? window.__realNow() : performance.now());   // the tests step performance.now themselves; this one stays real
 function mgRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 function mgCanvas(w, h) { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
 const mgTk = (t) => t / FMS;   // the puppets' animation tick (60 per second of page time)
 function mgWarn(e) { try { console.warn("Manga finisher failed, using the 2D finisher:", e && e.stack ? e.stack.split("\n").slice(0, 3).join(" | ") : e); } catch (x) { /* no console */ } }
 
-/* ---------- ink: fat outlines and cel shading, without touching the fighter drawing code ---------- */
-// OUT strokes get k times heavier (limb outlines, which are a wide stroke under the limb colour, grow by a fixed amount instead) and every
-// gradient on the context turns into hard bands: manga has flat shapes and cut tone, no gradients.
+/* ---------- ink: fat black outlines, flat tint and cel shading, without touching the fighter drawing code ---------- */
+// While a fighter is drawn into the page layer: OUT strokes turn pure ink and get k times heavier (limb outlines, which are a wide stroke under the limb
+// colour, grow by a fixed amount instead); every colour the fighter sets is pulled toward the paper (light colours a lot, dark ones not at all, so the ink
+// stays black and the skin shows as a weak tint); every gradient turns into hard bands: manga has flat shapes and cut tone, no gradients.
+const MG_FS = Object.getOwnPropertyDescriptor(MG_CTX, "fillStyle"), MG_SS = Object.getOwnPropertyDescriptor(MG_CTX, "strokeStyle"), MG_TC = new Map();
+function mgTintCss(s, k) {
+  const key = k + s;
+  let v = MG_TC.get(key);
+  if (v !== undefined) return v;
+  let r, g, b, a = 1, m;
+  if (s.charCodeAt(0) === 35 && s.length === 7) { const n = parseInt(s.slice(1), 16); r = n >> 16; g = (n >> 8) & 255; b = n & 255; }
+  else if (s.charCodeAt(0) === 35 && s.length === 4) { r = parseInt(s[1] + s[1], 16); g = parseInt(s[2] + s[2], 16); b = parseInt(s[3] + s[3], 16); }
+  else if ((m = /^rgba?\(([^)]*)\)$/.exec(s))) { const q = m[1].split(","); r = +q[0]; g = +q[1]; b = +q[2]; if (q.length > 3) a = +q[3]; }
+  else { MG_TC.set(key, s); return s; }
+  const lum = (r * 0.3 + g * 0.59 + b * 0.11) / 255, u = clamp((lum - 0.1) / 0.4, 0, 1), w = k * u * u * (3 - 2 * u);
+  v = `rgba(${Math.round(r + (241 - r) * w)},${Math.round(g + (236 - g) * w)},${Math.round(b + (226 - b) * w)},${a})`;
+  MG_TC.set(key, v);
+  return v;
+}
 function mgCel(g) {
   let prev = null, po = 0;
   g.addColorStop = function (o, colr) {
+    if (typeof colr === "string") colr = mgTintCss(colr, MG.tintK);
     if (prev === null) MG_GRAD.addColorStop.call(g, o, colr);
     else { const b = po + (o - po) * 0.4; MG_GRAD.addColorStop.call(g, b, prev); MG_GRAD.addColorStop.call(g, b, colr); }
     prev = colr; po = o;
@@ -9745,16 +9763,18 @@ function mgCel(g) {
   return g;
 }
 function mgInkOn(c, k) {
+  Object.defineProperty(c, "fillStyle", { configurable: true, get() { return MG_FS.get.call(this); }, set(v) { MG_FS.set.call(this, typeof v === "string" ? mgTintCss(v, MG.tintK) : v); } });
+  Object.defineProperty(c, "strokeStyle", { configurable: true, get() { return MG_SS.get.call(this); }, set(v) { MG_SS.set.call(this, typeof v === "string" ? (v === OUT ? MG_INK : mgTintCss(v, MG.tintK)) : v); } });
   c.stroke = function () {
     const lw = this.lineWidth;
-    if (this.strokeStyle === OUT) this.lineWidth = lw <= 4 ? lw * k : lw + 3.5 * (k - 1);
+    if (this.strokeStyle === MG_INK) this.lineWidth = lw <= 4 ? lw * k : lw + 3.5 * (k - 1);
     MG_CTX.stroke.apply(this, arguments);
     this.lineWidth = lw;
   };
   c.createRadialGradient = function () { return mgCel(MG_CTX.createRadialGradient.apply(this, arguments)); };
   c.createLinearGradient = function () { return mgCel(MG_CTX.createLinearGradient.apply(this, arguments)); };
 }
-function mgInkOff(c) { delete c.stroke; delete c.createRadialGradient; delete c.createLinearGradient; }
+function mgInkOff(c) { delete c.stroke; delete c.createRadialGradient; delete c.createLinearGradient; delete c.fillStyle; delete c.strokeStyle; }
 
 /* ---------- cached art: tone tiles, focus disc, speed strips (built once per page, freed at its end) ---------- */
 // a 45 degree dot screen: `cover` is the share of the paper the dots cover (0.4 = a 40% screen), `size` the pitch of the tile in css px
@@ -9836,11 +9856,13 @@ function mgWord(text, o) {
   return { cv: cvs, w: cw, h: ch_ };
 }
 // a word instance of the script: { text, t0, t1, size (share of the screen height), at(t) -> [x, y] css px, rot, arc, jag, stretch: { ang, k } }
+function mgWordPrep(w) { if (!w.img) { const sz = Math.round(w.size * Math.min(L.gh, L.gw * 0.9) * (w.mul || 1)); w.img = mgWord(w.text, { size: sz, seed: w.seed, arc: w.arc, jag: w.jag, jit: w.jit, fill: w.fill, space: w.space }); } }
 function mgWordDraw(c, w, t) {
   if (t < w.t0 || t > w.t1) return;
-  if (!w.img) { const sz = Math.round(w.size * L.gh * (w.mul || 1)); w.img = mgWord(w.text, { size: sz, seed: w.seed, arc: w.arc, jag: w.jag, jit: w.jit, fill: w.fill, space: w.space }); }
+  mgWordPrep(w);
   const u = t - w.t0, k = fe(0, 120, u), slam = 1 + 0.6 * (1 - k) * (1 - k) - 0.07 * Math.sin(k * Math.PI), grow = 1 + 0.06 * fe(0, 1500, u);
-  const a = Math.min(1, k * 3) * (1 - fe(w.t1 - 220, w.t1, t)), [x, y] = w.at(t);
+  const a = Math.min(1, k * 3) * (1 - fe(w.t1 - 220, w.t1, t)), [x0, y0] = w.at(t), hw = w.img.w * 0.4, hh = w.img.h * 0.3;
+  const x = clamp(x0, hw, L.gw - hw), y = clamp(y0, hh, L.gh - hh);   // the lettering may cross a border, never the edge of the page
   c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalAlpha = a; c.translate(x, y); c.rotate(w.rot || 0);
   if (w.stretch) { const st = w.stretch.k * easeOut(fe(0, w.t1 - w.t0, u)); c.rotate(w.stretch.ang); c.scale(1 + st, 1); c.rotate(-w.stretch.ang); }
   c.scale(slam * grow, slam * grow);
@@ -9967,49 +9989,60 @@ function mgTear(pn, sx, sy, wdt, t, glowCol) {
 }
 
 /* ---------- a fighter drawn into a panel: fat ink, paper tint, cut tone ---------- */
-// o: { sc (scale about the feet), a (alpha), sil ("#fff" | "#000": a flat silhouette), tint, light (angle the light comes from), wash: [hex, alpha],
+// o: { sc (scale about the feet), halo (css px of white edge), under (lc, p) (art behind the fighter, inked like it), box ([l, t, r, b] world units about the feet that the drawing may cover), free (not cut to the panel), a (alpha), sil ("#fff" | "#000": a flat silhouette), tint, light (angle the light comes from), wash: [hex, alpha],
 //      post(lc, X) (extra source-atop art in device px: X = { sx, sy, z } is the feet and the device px per world unit), tone (false: no dots), k (ink) }
 function mgPuppet(c, pn, p, tt, o) {
   o = o || {};
-  const D = DPR, sc = o.sc || 1, ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y);
-  const R = 135 * ze, bx = Math.max(0, Math.floor((sx + pn.ox - R) * D)), by = Math.max(0, Math.floor((sy + pn.oy - R * 1.05) * D));
-  const bw = Math.min(MG.cw - bx, Math.ceil(R * 2 * D)), bh = Math.min(MG.ch - by, Math.ceil(R * 1.4 * D));
+  const D = DPR, sc = o.sc || 1, ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y), bq = o.box || MG_BOX;
+  // the box the fighter can cover (world units about its feet: left, top, right, bottom; o.box widens it for a long spear), cut to the panel (the panel clips it anyway) unless it may leave the panel (o.free)
+  let x0 = sx + pn.ox + bq[0] * ze, y0 = sy + pn.oy + bq[1] * ze, x1 = sx + pn.ox + bq[2] * ze, y1 = sy + pn.oy + bq[3] * ze;
+  if (!o.free) { x0 = Math.max(x0, pn.x0 + pn.ox - 2); x1 = Math.min(x1, pn.x1 + pn.ox + 2); y0 = Math.max(y0, pn.y0 + pn.oy - 2); y1 = Math.min(y1, pn.y1 + pn.oy + 2); }
+  const bx = Math.max(0, Math.floor(x0 * D)), by = Math.max(0, Math.floor(y0 * D)), bw = Math.min(MG.cw - bx, Math.ceil((x1 - x0) * D) + 1), bh = Math.min(MG.ch - by, Math.ceil((y1 - y0) * D) + 1);
   if (bw <= 2 || bh <= 2) return;
   const lc = MG.lc, k = o.k || clamp(10 / (2.5 * ze), 1, 2.2);
   lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(bx, by, bw, bh);
   lc.save(); lc.beginPath(); lc.rect(bx, by, bw, bh); lc.clip();
   lc.setTransform(D * ze, 0, 0, D * ze, D * (sx + pn.ox), D * (sy + pn.oy));
-  MG.pt = tt;
+  MG.pt = tt; MG.tintK = o.tint === undefined ? 0.56 : o.tint;
   if (o.flash) p.flash = 2;
   mgInkOn(lc, k);
-  try { drawFighter(lc, p, mgTk(tt), [0, 0]); } finally { mgInkOff(lc); p.flash = 0; }
+  try {
+    if (o.under) { lc.save(); lc.scale(p.facing, 1); o.under(lc, p); lc.restore(); }   // art behind the fighter that goes through the same ink (the Dragon's big wings), in the fighter's own units
+    drawFighter(lc, p, mgTk(tt), [0, 0]);
+  } finally { mgInkOff(lc); p.flash = 0; }
   lc.setTransform(1, 0, 0, 1, 0, 0);
   lc.globalCompositeOperation = "source-atop";
   if (o.sil) { lc.fillStyle = o.sil; lc.fillRect(bx, by, bw, bh); }
   else {
-    lc.fillStyle = `rgba(241,236,226,${o.tint === undefined ? 0.56 : o.tint})`; lc.fillRect(bx, by, bw, bh);
     if (o.tone !== false && !MG.slow) mgToneBands(lc, (sx + pn.ox) * D, (sy + pn.oy - 33 * ze) * D, 40 * ze * D, o.light === undefined ? -2.3 : o.light, ze >= 2.2 ? 12 : 8);
     if (o.wash) { lc.fillStyle = rgba(o.wash[0], o.wash[1]); lc.fillRect(bx, by, bw, bh); }
-    if (o.post) o.post(lc, { sx: (sx + pn.ox) * D, sy: (sy + pn.oy) * D, z: ze * D, ze });
+    if (o.post) o.post(lc, { sx: (sx + pn.ox) * D, sy: (sy + pn.oy) * D, z: ze * D, ze, bx, by, bw, bh });
   }
   lc.globalCompositeOperation = "source-over";
   lc.restore();
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = o.a === undefined ? 1 : o.a;
+  if (o.halo) {   // a white edge round the shape (a black fighter on a dark panel stays readable): its silhouette drawn at eight offsets behind it
+    const h = o.halo * D, l2 = MG.l2 || (MG.l2 = mgCanvas(MG.cw, MG.ch)), x2 = MG.l2c || (MG.l2c = l2.getContext("2d"));
+    x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = "source-over"; x2.clearRect(bx, by, bw, bh);
+    x2.drawImage(MG.layer, bx, by, bw, bh, bx, by, bw, bh);
+    x2.globalCompositeOperation = "source-in"; x2.fillStyle = "#ffffff"; x2.fillRect(bx, by, bw, bh);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; c.drawImage(l2, bx, by, bw, bh, bx + Math.cos(a) * h, by + Math.sin(a) * h, bw, bh); }
+  }
   c.drawImage(MG.layer, bx, by, bw, bh, bx, by, bw, bh);
   c.restore();
 }
 // two tone bands on the side away from the light: a 40% screen from just past the middle, a 70% screen near the edge (device px, over source-atop)
 function mgToneBands(lc, cx, cy, R, lightAng, tile) {
   const sdx = Math.cos(lightAng + Math.PI), sdy = Math.sin(lightAng + Math.PI), px_ = -sdy, py_ = sdx, B = R * 5;
-  for (const [d, cover] of [[-0.1 * R, 0.4], [0.5 * R, 0.7]]) {
+  for (const [d, cover] of [[0.12 * R, 0.4], [0.62 * R, 0.7]]) {
     const bx = cx + sdx * d, by = cy + sdy * d;
     lc.fillStyle = mgTile(tile, cover);
     lc.beginPath(); lc.moveTo(bx + px_ * B, by + py_ * B); lc.lineTo(bx - px_ * B, by - py_ * B); lc.lineTo(bx - px_ * B + sdx * B, by - py_ * B + sdy * B); lc.lineTo(bx + px_ * B + sdx * B, by + py_ * B + sdy * B); lc.closePath(); lc.fill();
   }
 }
 // the freeze: the picture is inked once (paper tint, dots in the dark areas: a 70% screen where it is darkest, a 40% screen in the middle tones).
-// One readback of a half-size copy, now, not per frame.
-function mgInkSnap() {
+// One readback of a half-size copy, now, not per frame. It runs as three small tasks (mgWork) so no single frame pays for all of it.
+function mgInkA() {
   const W = MG.cw, H = MG.ch, ik = mgCanvas(W, H), x = ik.getContext("2d");
   x.drawImage(MG.snap, 0, 0);
   x.fillStyle = "rgba(241,236,226,0.45)"; x.fillRect(0, 0, W, H);
@@ -10017,57 +10050,66 @@ function mgInkSnap() {
   sx.drawImage(MG.snap, 0, 0, hw, hh);
   let id = null;
   try { id = sx.getImageData(0, 0, hw, hh); } catch (e) { id = null; }
-  const dark = mgCanvas(hw, hh), mid = mgCanvas(hw, hh);
-  if (id) {
-    const d = id.data, dk = new ImageData(hw, hh), md = new ImageData(hw, hh);
+  MG.inkS = { ik, x, hw, hh, id };
+}
+function mgInkB() {
+  const S = MG.inkS, hw = S.hw, hh = S.hh, dark = mgCanvas(hw, hh), mid = mgCanvas(hw, hh);
+  if (S.id) {
+    const d = S.id.data, dk = new ImageData(hw, hh), md = new ImageData(hw, hh);
     for (let i = 0; i < d.length; i += 4) {
       const lum = (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) / 255;
       if (lum < 0.3) dk.data[i + 3] = 255; else if (lum < 0.52) md.data[i + 3] = 255;
     }
     dark.getContext("2d").putImageData(dk, 0, 0); mid.getContext("2d").putImageData(md, 0, 0);
   } else { const mx = mid.getContext("2d"); mx.fillStyle = "#000"; mx.fillRect(0, 0, hw, hh); }
-  for (const [mask, cover] of [[mid, 0.4], [dark, 0.7]]) {
-    const tl = mgCanvas(W, H), t = tl.getContext("2d");
-    t.fillStyle = mgTile(8, cover); t.fillRect(0, 0, W, H);
-    t.globalCompositeOperation = "destination-in"; t.imageSmoothingEnabled = true; t.drawImage(mask, 0, 0, W, H);
-    x.drawImage(tl, 0, 0);
-  }
-  MG.ink = ik;
+  S.id = null; S.dark = dark; S.mid = mid;
+}
+function mgInkC(which) {
+  const S = MG.inkS, W = MG.cw, H = MG.ch, mask = which ? S.dark : S.mid, tl = mgCanvas(W, H), t = tl.getContext("2d");
+  t.fillStyle = mgTile(8, which ? 0.7 : 0.4); t.fillRect(0, 0, W, H);
+  t.globalCompositeOperation = "destination-in"; t.imageSmoothingEnabled = true; t.drawImage(mask, 0, 0, W, H);
+  S.x.drawImage(tl, 0, 0);
+  if (which) { MG.ink = S.ik; MG.inkT = MG.pt; MG.inkS = null; }
 }
 
 /* ---------- building the page (at the freeze) ---------- */
 // panel 1 is the engine's own: the real hit, frozen and inked, the whole page
 function mgFirstPanel() { return { id: "hit", t0: MT.FREEZE, slide: 0, live: true, poly: [[0, 0], [1, 0], [1, 1], [0, 1]], draw: mgDrawHit }; }
 function mgDrawHit(c, pn, t) {
-  const ink = fe(MT.FREEZE, MT.INKED, t), life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
+  const ink = MG.ink ? easeOut(fe(MT.FREEZE + 60, MT.INKED, t)) : 0, life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
   c.save(); c.translate(ix, iy); c.scale(s, s); c.translate(-ix, -iy);
-  c.drawImage(MG.snap, 0, 0, L.gw, L.gh);
+  if (ink < 1) c.drawImage(MG.snap, 0, 0, L.gw, L.gh);
   if (ink > 0) { c.globalAlpha = ink; c.drawImage(MG.ink, 0, 0, L.gw, L.gh); }
   c.restore();
-  const R = Math.hypot(Math.max(ix, L.gw - ix), Math.max(iy, L.gh - iy));
-  mgFocus(c, ix, iy, R, t * 0.00035, 0.9 * ink);
+  if (MG.disc) { const R = Math.hypot(Math.max(ix, L.gw - ix), Math.max(iy, L.gh - iy)); mgFocus(c, ix, iy, R, t * 0.00035, 0.9 * ink); }
 }
-function mgBuild() {
+// at the freeze: the screen is copied (cheap) and a queue of small build tasks is set up; mgWork runs them one or two per frame while the first panel holds
+function mgSnapshot() {
   const S = MG.script, gw = L.gw, gh = L.gh;
+  MG.snap = mgCanvas(cv.width, cv.height); MG.snap.getContext("2d").drawImage(cv, 0, 0);
+  const ev = FIN.ev, d = FIN.P[FIN.l], q = ev ? toScreen(ev.x, ev.y - d.s.h * 0.5) : [gw / 2, gh / 2];
+  MG.ix = clamp(q[0], gw * 0.2, gw * 0.8); MG.iy = clamp(q[1], gh * 0.25, gh * 0.75);
   MG.cw = cv.width; MG.ch = cv.height;
   MG.m = clamp(Math.min(gw, gh) * 0.026, 6, 16); MG.bw = clamp(Math.min(gw, gh) * 0.0105, 3, 9);
   MG.page = { x: MG.m, y: MG.m, w: gw - 2 * MG.m, h: gh - 2 * MG.m };
-  MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d");
-  MG.disc = mgFocusDisc(false); MG.discW = mgFocusDisc(true); MG.strip = mgSpeedStrip(false); MG.stripW = mgSpeedStrip(true);
-  const lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh };
-  MG.lay = lay;
-  MG.panels = [mgFirstPanel()].concat(S.panels(lay)).map((d, i) => mgPanel(d, i));
-  MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
-  MG.words = (S.words ? S.words(lay) : []).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
-  if (S.build) S.build(lay);
+  MG.lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh };
+  MG.panels = [mgPanel(mgFirstPanel(), 0)]; MG.byId = { hit: MG.panels[0] };
+  MG.todo = [
+    () => { MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d"); MG.disc = mgFocusDisc(false); },
+    () => { MG.discW = mgFocusDisc(true); MG.strip = mgSpeedStrip(false); MG.stripW = mgSpeedStrip(true); },
+    mgInkA, mgInkB, () => mgInkC(0), () => mgInkC(1),
+    () => {
+      MG.panels = MG.panels.concat(S.panels(MG.lay).map((dd, i) => mgPanel(dd, i + 1)));
+      MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
+      MG.words = (S.words ? S.words(MG.lay) : []).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+      if (S.build) S.build(MG.lay);
+    },
+  ];
+  MG.todo.push(() => { for (const w of MG.words.slice(0, 2)) mgWordPrep(w); }, () => { for (const w of MG.words.slice(2, 4)) mgWordPrep(w); }, () => { for (const w of MG.words.slice(4)) mgWordPrep(w); }, mgCardPrep);
 }
-// the frozen real hit: taken from the canvas as it stands (once), where the hit was (the impact point on the screen)
-function mgSnapshot() {
-  MG.snap = mgCanvas(cv.width, cv.height); MG.snap.getContext("2d").drawImage(cv, 0, 0);
-  const ev = FIN.ev, d = FIN.P[FIN.l], q = ev ? toScreen(ev.x, ev.y - d.s.h * 0.5) : [L.gw / 2, L.gh / 2];
-  MG.ix = clamp(q[0], L.gw * 0.2, L.gw * 0.8); MG.iy = clamp(q[1], L.gh * 0.25, L.gh * 0.75);
-  mgBuild();
-  mgInkSnap();
+function mgWork(t) {
+  let n = t > 1000 ? 99 : 1;
+  while (n-- > 0 && MG.todo.length) MG.todo.shift()();
 }
 
 /* ---------- start, tick, draw, end ---------- */
@@ -10076,9 +10118,9 @@ function mangaStart(g) {
   if (!S) return false;
   try {
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
-    MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
+    MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    MG.slow = (R3.q | 0) >= 2 || !!window.__mangaSlow;
+    MG.slow = (R3.q | 0) >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
     if (S.start) S.start(g);
     FIN.hit = S.hit || MT.HIT; FIN.launch = S.pop || FIN.hit + FLAUNCH;
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
@@ -10156,6 +10198,7 @@ function mangaDraw(g, tk) {
     if (MG.snapPending) { render2D(g, tk); mgSnapshot(); MG.snapPending = false; }
     else if (cv.width !== MG.cw || cv.height !== MG.ch) throw new Error("the screen was resized during the page");
     mgPage(ctx, FIN.t);
+    mgWork(FIN.t);
   } catch (e) { mangaBail(e); render2D(g, tk); }
   const ms = mgClock() - t0;
   if (MG.snap) { const s = MG.stat; s.n++; s.sum += ms; s.last = ms; if (ms > s.max) s.max = ms; }
@@ -10180,7 +10223,7 @@ function mangaBail(e) {
 function mangaEnd() {
   FIN.manga = false; MG.on = false;
   for (const pn of MG.panels) pn.cache = null;
-  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
+  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
   try { Cin.drone(false); Cin.close(); } catch (e) { /* sound off */ }
 }
 function mangaFinish() {
@@ -10206,18 +10249,18 @@ function mgCues(t) {
 
 /* ---------- the layer over the page: unclipped things, words, impact frames, the title block, the fade ---------- */
 function mangaOverlay(o, tk) {
-  const t = FIN.t, D = DPR;
+  const t = FIN.t, D = DPR, t0 = mgClock();
   try {
     o.save(); o.setTransform(D, 0, 0, D, 0, 0); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
-    if (t < MT.FREEZE || !MG.ink) {   // the real hit: the black bars slide in as today
+    if (t < MT.FREEZE || !MG.snap) {   // the real hit: the black bars slide in as today
       const bar = easeOut(fe(0, 240, t)) * L.gh * 0.11;
       o.fillStyle = "#05050b"; o.fillRect(0, 0, L.gw, bar); o.fillRect(0, L.gh - bar, L.gw, bar);
       o.restore(); return;
     }
     const S = MG.script, fl = (1 - fe(MT.FREEZE, MT.FREEZE + 200, t)) * 0.9;
     if (S.over) S.over(o, t);
-    mgLoserOver(o, t);
     for (const w of MG.words) mgWordDraw(o, w, t);
+    mgLoserOver(o, t);
     if (t >= FIN.launch) finScene(o, t);
     mgBeam(o, t);
     mgImpact(o, t);
@@ -10232,6 +10275,11 @@ function mangaOverlay(o, tk) {
     if (fade > 0) { o.fillStyle = `rgba(14,16,34,${(0.9 * fade).toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
     o.restore();
   } catch (e) { try { o.restore(); } catch (x) { /* ok */ } mangaBail(e); }
+  if (MG.snap) {   // the page's drawing time counts both layers; a device that cannot keep up drops the smears and the tone on the fighters (the cheap tier)
+    const st = MG.stat, ms = mgClock() - t0; st.sum += ms; st.last += ms; if (st.last > st.max) st.max = st.last;
+    MG.avg = MG.avg * 0.9 + st.last * 0.1;
+    if (!MG.fixed && !MG.slow && st.n > 24 && MG.avg > 11) MG.slow = true;
+  }
 }
 // the loser, once it has burst through its panel's border, is drawn over the whole page
 function mgLoserOver(o, t) {
@@ -10245,7 +10293,7 @@ function mgBeam(o, t) {
   if (!bm) return;
   const bt = (t - bm.t0) / FMS;
   if (bt < 0 || bt > 50) return;
-  const x = bm.sx, y = bm.sy, ang = Math.atan2(L.gh / 2 - y, L.gw / 2 - x), len = Math.max(L.gw, L.gh) * 0.7 * (0.5 + 0.5 * easeOut(Math.min(1, bt / 8))), a = 1 - bt / 50, wd = Math.min(L.gw, L.gh) * 0.13 * (bt < 6 ? bt / 6 : a);
+  const x = bm.sx, y = bm.sy, ang = Math.atan2(-FIN.ldy, -FIN.ldx), len = Math.max(L.gw, L.gh) * 0.55 * (0.5 + 0.5 * easeOut(Math.min(1, bt / 8))), a = 1 - bt / 50, wd = Math.min(L.gw, L.gh) * 0.13 * (bt < 6 ? bt / 6 : a);
   o.save(); o.translate(x, y); o.rotate(ang);
   o.fillStyle = MG_INK; o.beginPath(); o.moveTo(-10, -wd); o.lineTo(len, 0); o.lineTo(-10, wd); o.closePath(); o.fill();
   o.fillStyle = "#ffffff"; o.beginPath(); o.moveTo(-10, -wd * 0.4); o.lineTo(len * 0.7, 0); o.lineTo(-10, wd * 0.4); o.closePath(); o.fill();
@@ -10279,19 +10327,23 @@ function mgImpact(o, t) {
     mgFocus(o, hp[0], hp[1], R * 1.05, t * 0.001, 1, !white);
     S.impact(o, pn, white ? "#000000" : "#ffffff", t);
   } else {
-    const a = 0.8 * (1 - fe(H0 + 100, H0 + 240, t));
+    const a = 0.4 * (1 - fe(H0 + 100, H0 + 200, t));
     if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
   }
 }
 
 /* ---------- the title block: a slanted black band, the name in hand lettering, a screened accent strip, the red hanko K.O. seal ---------- */
-function mgCard(o, t) {
+function mgCardPrep() {
   const S = MG.script, W = FIN.P[FIN.w], accent = S.col;
   if (!MG.cards) {
-    const hh = Math.min(L.gh * 0.17, 86), nm = W.spec.name.toUpperCase();
+    const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
     MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
       sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: "#f1ece2" }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
   }
+}
+function mgCard(o, t) {
+  const S = MG.script, accent = S.col;
+  mgCardPrep();
   const C = MG.cards, hh = C.hh, k = easeOut(fe(MT.CARD, MT.CARD + 260, t)), slide = (1 - k) * L.gw * (FIN.dir > 0 ? -1 : 1);
   const y = L.portrait ? L.gh * 0.12 + hh * 0.5 : L.gh * 0.17 + hh * 0.5, sl = L.gh * 0.035;
   o.save(); o.translate(slide, 0);
@@ -10309,7 +10361,7 @@ function mgCard(o, t) {
   // the seal
   const s = fe(MT.SEAL, MT.SEAL + 140, t);
   if (s > 0) {
-    const sc = 1 + 0.9 * (1 - easeOut(s)), sz = hh * 1.25, kx = L.portrait ? L.gw * 0.78 : Math.min(L.gw - sz * 0.7, L.gw * 0.86), ky = y + hh * 0.62;
+    const sc = 1 + 0.9 * (1 - easeOut(s)), sz = hh * 1.25, kx = L.portrait ? L.gw - sz * 0.72 : Math.min(L.gw - sz * 0.7, L.gw * 0.86), ky = L.portrait ? y + hh * 0.5 + sz * 0.6 : y + hh * 0.62;
     o.save(); o.translate(kx, ky); o.rotate(-0.09); o.scale(sc, sc); o.globalAlpha = Math.min(1, s * 3);
     for (const [dx, dy, al] of [[2.2, 1.6, 0.55], [0, 0, 1]]) {   // misprinted: a faint second print, a hair off
       o.save(); o.translate(dx, dy); o.globalAlpha *= al;
@@ -10332,7 +10384,7 @@ const size0 = (w) => w.h * 0.12;
    after(t), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). */
 MANGA.dragon = (function () {
   const COL = "#ff8a3d", CORE = "#fff4d6", FLAME_DARK = "#d93a24";
-  let ash = [], embers = [], smoke = [];
+  let ash = [], embers = [], smoke = [], rnd = Math.random;
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   // the Dragon's size: a potato (1) who grows to 1.6 over 600 ms in panel 2, and shrinks back over 400 ms in panel 4
   const grow = (t) => 1 + 0.6 * ease(fe(1250, 1850, t)) - 0.6 * ease(fe(3500, 3900, t));
@@ -10351,6 +10403,19 @@ MANGA.dragon = (function () {
     if (t < 1620) { const k = ease(fe(1450, 1620, t)); return [rest[0] + (-w * 0.9 - rest[0]) * k, rest[1] + (-tor * 1.5 - rest[1]) * k]; }
     if (t < 1800) { const k = easeOut(fe(1620, 1800, t)); return [-w * 0.9 + (w * 1.5 + w * 0.9) * k, -tor * 1.5 + (-8 + tor * 1.5) * k]; }
     const k = ease(fe(1800, 1950, t)); return [w * 1.5 + (rest[0] - w * 1.5) * k, -8 + (rest[1] + 8) * k];
+  }
+  // a point of the page (shares of its area, drawn for a winner on the left; mirrored when he is on the right), in css px
+  const pg = (fx, fy) => [MG.page.x + (FIN.dir > 0 ? fx : 1 - fx) * MG.page.w, MG.page.y + fy * MG.page.h];
+  // his wings, grown: the game's own bat wing drawn bigger behind him, through the same ink (the bones stay the wing's own)
+  function wingsUnder(p, t) {
+    const spread = ease(fe(MT.LOOK, 1700, t)) * (1 - ease(fe(3500, 3900, t)));
+    if (spread < 0.05) return null;
+    return (lc) => {
+      const P = pose(p, mgTk(t)), len = P.w * 0.95 * (1 + 0.85 * spread);
+      const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean), fl = P.flap - P.wingUp * 0.9;
+      batWing(lc, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, p.pal, true, true);
+      batWing(lc, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, p.pal, false, false);
+    };
   }
   const lbs = (t) => (t >= MANGA.dragon.pop ? finTrav((t - MANGA.dragon.pop) / FMS) : 0);   // the loser's flight, world units after the pop
 
@@ -10374,7 +10439,7 @@ MANGA.dragon = (function () {
         draw: drawStrike },
       { id: "after", t0: MT.AFTER, from: "b", live: true,
         poly: port ? [[0, 0.68], [1, 0.66], [1, 1], [0, 1]] : [[0, 0.44], [0.66, 0.41], [0.62, 1], [0, 1]],
-        cam: (t) => { const vh = (port ? 130 : 118) * (1 - 0.08 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + D * 4, wy: -0.38 * vh, vh }; },
+        cam: (t) => { const vh = (port ? 112 : 96) * (1 - 0.07 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + D * 8, wy: -0.45 * vh, vh }; },
         draw: drawAfter },
     ];
   }
@@ -10410,17 +10475,8 @@ MANGA.dragon = (function () {
       if (pts.length > 2) { c.fillStyle = `rgba(40,34,48,${(0.38 * (1 - fe(1950, 2250, t))).toFixed(3)})`; brush(c, pts, 16 * s, pts.length - 1); }
     }
     // him
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s) });
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t) });
     pn.screen(c);
-    // embers pulled into his mouth
-    const m = pn.p(...mouthW(t));
-    for (const e of embers) {
-      const k = (t - e.t0) / e.life; if (k < 0 || k > 1) continue;
-      const r = e.r0 * Math.pow(1 - ease(k), 1.6), x = m[0] + Math.cos(e.a) * r, y = m[1] + Math.sin(e.a) * r * 0.8;
-      const sz = 2 + 2.2 * e.s * (1 - k * 0.5);
-      c.fillStyle = MG_INK; c.beginPath(); c.arc(x, y, sz + 1.3, 0, 7); c.fill();
-      c.fillStyle = e.hot ? CORE : COL; c.beginPath(); c.arc(x, y, sz, 0, 7); c.fill();
-    }
     // the squint: nothing drawn, it is in the face (pose). The edge of the page darkens as the power gathers: a 70% screen creeping in from the corners
     if (power > 0.3) {
       const q = (power - 0.3) / 0.7, d = 0.18 * q * pn.w;
@@ -10460,7 +10516,7 @@ MANGA.dragon = (function () {
   /* ---- panel 3: the strike ---- */
   const coneLen = (t) => 400 * easeOut(fe(FIN.hit, FIN.hit + 140, t)) * (1 - easeIn(fe(3300, 3500, t)));
   function drawStrike(c, pn, t) {
-    const W = W_(), Lp = L_(), s = grow(t), H0 = FIN.hit;
+    const W = W_(), s = grow(t), H0 = FIN.hit, pop = S_.pop;
     const m = mouthW(t), len = coneLen(t), tgt = [FIN.lx, -30], ang = Math.atan2(tgt[1] - m[1], tgt[0] - m[0]);
     pn.screen(c);
     // behind: the dark creeps in from the top (cut tone), then rays at the roar
@@ -10469,39 +10525,59 @@ MANGA.dragon = (function () {
     const mp = pn.p(m[0], m[1]);
     if (t >= H0) mgFocus(c, mp[0], mp[1], Math.hypot(pn.w, pn.h), t * 0.0006, 0.75 * (1 - 0.5 * fe(H0, 3300, t)));
     mgSpeed(c, pn.cx, pn.cy, pn.w, pn.h * 0.5, 0, -t * 0.4 * FIN.dir, 0.35 * fe(2500, 2800, t) * (1 - fe(H0, H0 + 60, t)), false, 1);
-    const burnX = (x) => len > 20 && Math.abs(x - FIN.wx) / 1 < len * 0.9 + 20 && (x - FIN.wx) * FIN.dir > 60;
+    const burnX = (x) => len > 20 && Math.abs(x - FIN.wx) < len * 0.9 + 20 && (x - FIN.wx) * FIN.dir > 60;
     ground(c, pn, t, burnX);
     pn.world(c);
-    if (len > 4) drawCone(c, m, ang, len, t, false);
+    if (len > 4) drawCone(c, m, ang, len, t, false, 0);
     // the smear of the lunge (the one place with ghosts of the Dragon)
-    if (t > 2840 && t < 3040 && !MG.slow) { mgPuppet(c, pn, W, t - 60, { sc: s, a: 0.18, light: dirAng(-0.6) }); mgPuppet(c, pn, W, t - 30, { sc: s, a: 0.35, light: dirAng(-0.6) }); }
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s) });
-    if (!MG.broke) S_.drawLoser(c, pn, t);
+    if (t > 2840 && t < 3040 && !MG.slow) { mgPuppet(c, pn, W, t - 60, { sc: s, a: 0.18, light: dirAng(-0.6), tone: false }); mgPuppet(c, pn, W, t - 30, { sc: s, a: 0.35, light: dirAng(-0.6), tone: false }); }
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t) });
+    // the loser stands in the fire as a black shape, then pops out of the far end
+    if (!MG.broke) drawLoserFn(c, pn, t);
     pn.world(c);
-    if (len > 4) drawCone(c, m, ang, len, t, true);
+    if (len > 4) {   // the white-hot core runs from his mouth up to the victim, and on past it once he is gone
+      const dl = Math.hypot(FIN.lx - m[0], -30 - m[1]);
+      drawCone(c, m, ang, len, t, true, t < pop + 40 ? Math.min(len, dl - 26) : len);
+    }
     // first flames lick between his teeth
     if (t > 2400 && t < H0) {
       const q = fe(2400, 2780, t);
       for (let i = 0; i < 3; i++) { const f = 0.6 + 0.4 * Math.sin(t * 0.03 + i * 2); tongue(c, m[0] + FIN.dir * (3 + i * 3.2), m[1] - 1, (5 + 11 * q) * f, 2.2, FIN.dir * 1.5, COL, CORE); }
     }
-    // the grass takes fire along the cone
-    if (len > 20) for (let x = FIN.wx + FIN.dir * 80; Math.abs(x - FIN.wx) < len * 0.9 + 70; x += FIN.dir * 17) {
-      const k = clamp((len * 0.9 + 70 - Math.abs(x - FIN.wx)) / 60, 0, 1), h = (13 + ((x * 31) % 11)) * k * (0.75 + 0.25 * Math.sin(t * 0.03 + x));
+    // the victim burns: tongues licking up his body, one small flame on the sprout
+    if (t >= H0 && t < pop + 120 && !MG.broke) {
+      const lp = loserAt(t), hh = L_().s.h, fade = 1 - fe(pop, pop + 120, t);
+      for (let i = 0; i < 6; i++) {
+        const fx_ = lp[0] + (i - 2.5) * 8 * FIN.dir, h = (16 + 12 * Math.sin(t * 0.03 + i * 1.7)) * fade * (1 - 0.35 * (i % 3) * 0.5), y = lp[1] - 4 - (i % 3) * hh * 0.2;
+        tongue(c, fx_, y, h * 1.15, 6.4, Math.sin(t * 0.02 + i) * 2, MG_INK, null); tongue(c, fx_, y, h, 4.6, Math.sin(t * 0.02 + i) * 2.5, COL, CORE);
+      }
+      const hd = headL(Math.min(t, pop)), top = hd[1] - hh * 0.34, f2 = 0.8 + 0.2 * Math.sin(t * 0.04);
+      tongue(c, hd[0], top, 15 * f2 * fade, 7.4, 0, MG_INK, null); tongue(c, hd[0], top, 12 * f2 * fade, 5.2, 0, COL, CORE);
+    }
+    // the grass takes fire along the cone and goes on burning, lower, after the cone is gone; smoke rises from it
+    const reach = 400 * easeOut(fe(H0, H0 + 140, t)) * 0.9 + 70, calm = 1 - 0.55 * fe(3300, 3500, t);
+    if (reach > 80) for (let x = FIN.wx + FIN.dir * 80; Math.abs(x - FIN.wx) < reach; x += FIN.dir * 17) {
+      const k = clamp((reach - Math.abs(x - FIN.wx)) / 60, 0, 1), h = (13 + ((x * 31) % 11)) * k * calm * (0.75 + 0.25 * Math.sin(t * 0.03 + x));
       c.save(); c.translate(x, 0); tongue(c, 0, 1, h * 1.12, 6.4, 0, MG_INK, null); tongue(c, 0, 0, h, 4.6, Math.sin(t * 0.02 + x) * 2.5, COL, CORE); c.restore();
+    }
+    if (t > 3250) {
+      pn.screen(c);
+      for (let i = 0; i < 3; i++) {
+        const k = clamp((t - 3250 - i * 90) / 400, 0, 1), q = pn.p(FIN.wx + FIN.dir * (150 + i * 105), -4);
+        smokeRing(c, q[0] + Math.sin(i * 2.3) * 8, q[1] - 30 - 90 * k, (11 + 18 * k) * pn.z * 0.5, 0.3 * (i - 1), 0.9 * (1 - 0.3 * k));
+      }
     }
   }
   // the flame cone: an ink-edged wedge from the mouth, white core, accent body, tongues along the edges
-  function drawCone(c, m, ang, len, t, front) {
+  function drawCone(c, m, ang, len, t, front, coreLen) {
     const N = 16, ca = Math.cos(ang), sa = Math.sin(ang), hw = (s) => 7 + 52 * (s / 400);
-    const edge = (sgn, grow_) => { const o = []; for (let i = 0; i <= N; i++) { const s = (len * i) / N, tf = 1 + 0.16 * Math.sin(t * 0.024 + i * 2.1 + sgn), w = hw(s) * tf * grow_ * (i % 2 ? 1.22 : 0.9); o.push([m[0] + ca * s - sa * w * sgn, m[1] + sa * s + ca * w * sgn]); } return o; };
-    const poly = (g) => { const a = edge(1, g), b = edge(-1, g).reverse(); return a.concat(b); };
+    const edge = (sgn, grow_, L_) => { const o = []; for (let i = 0; i <= N; i++) { const s = (L_ * i) / N, tf = 1 + 0.16 * Math.sin(t * 0.024 + i * 2.1 + sgn), w = hw(s) * tf * grow_ * (i % 2 ? 1.22 : 0.9); o.push([m[0] + ca * s - sa * w * sgn, m[1] + sa * s + ca * w * sgn]); } return o; };
+    const poly = (g, L_) => edge(1, g, L_).concat(edge(-1, g, L_).reverse());
     if (!front) {
-      const P = poly(1);
-      c.lineJoin = "miter"; c.lineWidth = 3.4; c.strokeStyle = MG_INK; c.fillStyle = COL; mgPoly(c, P); c.fill(); c.stroke();
-      const Q = poly(0.62); c.fillStyle = "#ffc27a"; mgPoly(c, Q); c.fill();
-    } else {
-      const R_ = (() => { const a = edge(1, 0.34), b = edge(-1, 0.34).reverse(); return a.slice(0, 13).concat(b.slice(b.length - 13)); })();
-      c.fillStyle = "rgba(255,244,214,0.92)"; mgPoly(c, R_); c.fill();
+      c.lineJoin = "miter"; c.lineWidth = 3.4; c.strokeStyle = MG_INK; c.fillStyle = COL; mgPoly(c, poly(1, len)); c.fill(); c.stroke();
+      c.fillStyle = "#ffc27a"; mgPoly(c, poly(0.62, len)); c.fill();
+    } else if (coreLen > 12) {
+      c.fillStyle = "rgba(255,244,214,0.95)"; mgPoly(c, poly(0.34, coreLen)); c.fill();
     }
   }
 
@@ -10510,10 +10586,12 @@ MANGA.dragon = (function () {
     if (tt < FIN.launch) return [FIN.lx - (tt >= FIN.hit ? FIN.dir * 5 : 0), 0];
     const tr = finTrav((tt - FIN.launch) / FMS); return [FIN.lx + FIN.ldx * tr, FIN.ldy * tr];
   }
+  // as he flies he swells toward the reader
+  const loserSc = (t) => 1 + 0.5 * easeOut(fe(S_.pop, S_.pop + 300, t));
   function drawLoserFn(c, pn, t) {
     const Lp = L_();
     if (FIN.out || Lp.state === "gone") { drawTrail(c, pn, t); return; }
-    const fl = t >= FIN.launch, char = fe(FIN.hit, FIN.launch, t);
+    const fl = t >= FIN.launch, char = fe(FIN.hit, FIN.launch, t), sc = loserSc(t);
     // the comet's tail first, behind it
     if (fl) drawTrail(c, pn, t);
     const post = fl || char > 0 ? (lc, X) => {
@@ -10524,40 +10602,75 @@ MANGA.dragon = (function () {
         lc.stroke();
       }
     } : null;
-    const base = { sc: 1, light: dirAng(-0.6) };
+    const base = { sc, light: dirAng(-0.6), free: MG.broke, halo: fl ? 3 : 0 };
     if (fl && !MG.slow) for (const dt of [70, 46, 23]) {   // three ghosts
       const [gx, gy] = loserAt(t - dt), ox = Lp.x, oy = Lp.y; Lp.x = gx; Lp.y = gy;
-      mgPuppet(c, pn, Lp, t - dt, Object.assign({}, base, { a: 0.3 - dt * 0.003, wash: [MG_INK, 0.85], tone: false }));
+      mgPuppet(c, pn, Lp, t - dt, Object.assign({}, base, { sc: loserSc(t - dt), a: 0.3 - dt * 0.003, wash: [MG_INK, 0.85], tone: false, halo: 0 }));
       Lp.x = ox; Lp.y = oy;
     }
-    mgPuppet(c, pn, Lp, t, Object.assign({}, base, { wash: [MG_INK, 0.85 * Math.max(char, fl ? 1 : 0)], post, flash: Lp.flash > 0 }));
+    mgPuppet(c, pn, Lp, t, Object.assign({}, base, { wash: [MG_INK, 0.95 * Math.max(char, fl ? 1 : 0)], post, flash: Lp.flash > 0 }));
+  }
+  // the comet's tail: widest at the loser, tapering to a point (ink edge, accent body, white core), and a screen of dots for the smoke behind it
+  function cometStroke(c, pts, w) {
+    const n = pts.length - 1, Lp = [], Rp = [];
+    for (let i = 0; i <= n; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n, i + 1)];
+      let dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+      const wd = Math.max(0.3, w * 0.5 * Math.pow(i / n, 0.85));
+      Lp.push([pts[i][0] - dy * wd, pts[i][1] + dx * wd]); Rp.push([pts[i][0] + dy * wd, pts[i][1] - dx * wd]);
+    }
+    c.beginPath(); c.moveTo(Lp[0][0], Lp[0][1]);
+    for (let i = 1; i <= n; i++) c.lineTo(Lp[i][0], Lp[i][1]);
+    for (let i = n; i >= 0; i--) c.lineTo(Rp[i][0], Rp[i][1]);
+    c.closePath(); c.fill();
   }
   function drawTrail(c, pn, t) {
     const tr = FIN.trail;
-    if (tr.length < 2) return;
+    if (tr.length < 3) return;
+    const w = L_().s.w * loserSc(t);
+    if (!MG.slow) {   // the smoke: a wider band of dots that spreads toward the tail
+      const n = tr.length - 1, Lq = [], Rq = [];
+      for (let i = 0; i <= n; i++) {
+        const q = pn.sp(tr[i][0], tr[i][1]), a = pn.sp(tr[Math.max(0, i - 1)][0], tr[Math.max(0, i - 1)][1]), b = pn.sp(tr[Math.min(n, i + 1)][0], tr[Math.min(n, i + 1)][1]);
+        let dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+        const wd = w * pn.z * (0.25 + 0.75 * Math.pow(1 - i / n, 0.7)) * Math.pow(Math.max(i / n, 0.04), 0.4);
+        Lq.push([q[0] - dy * wd, q[1] + dx * wd]); Rq.push([q[0] + dy * wd, q[1] - dx * wd]);
+      }
+      mgToneFill(c, Lq.concat(Rq.reverse()), 6, 0.42);
+    }
     c.save(); pn.world(c);
-    const pts = tr.map((q) => [q[0], q[1]]), w = L_().s.w;
-    c.fillStyle = MG_INK; brush(c, pts, w * 1.15, pts.length - 1);
-    c.fillStyle = COL; brush(c, pts, w * 0.8, pts.length - 1);
-    c.fillStyle = CORE; brush(c, pts, w * 0.32, pts.length - 1);
+    const pts = tr.map((q) => [q[0], q[1]]);
+    c.fillStyle = MG_INK; cometStroke(c, pts, w * 0.82);
+    c.fillStyle = COL; cometStroke(c, pts, w * 0.56);
+    c.fillStyle = CORE; cometStroke(c, pts, w * 0.2);
     c.restore();
   }
 
   /* ---- panel 4: the aftermath ---- */
+  // a ring of smoke: an ellipse of dot tone with an ink edge (the hole shows the paper)
+  function smokeRing(c, cx, cy, r, rot, a) {
+    c.save(); c.globalAlpha = a; c.translate(cx, cy); c.rotate(rot);
+    c.beginPath(); c.ellipse(0, 0, r * 1.25, r * 0.78, 0, 0, Math.PI * 2); c.ellipse(0, 0, r * 0.66, r * 0.36, 0, 0, Math.PI * 2, true);
+    c.save(); c.clip("evenodd"); c.rotate(-rot); c.translate(-cx, -cy); mgToneFill(c, [[0, 0], [L.gw, 0], [L.gw, L.gh], [0, L.gh]], 6, 0.38); c.restore();
+    c.lineWidth = 2.6; c.strokeStyle = MG_INK; c.lineJoin = "round"; c.stroke();
+    c.restore();
+  }
   function drawAfter(c, pn, t) {
     const W = W_(), s = grow(t), u = fe(MT.AFTER, MT.END, t);
     pn.screen(c);
-    const [fx, fy] = pn.p(...bodyPt(W, t, s, "head"));
+    const hd = bodyPt(W, t, s, "head"), [fx, fy] = pn.p(hd[0], hd[1]);
+    // behind him: the same dots-and-paper disc as in his first panel, now calm, with the focus lines turning slowly
+    mgToneFill(c, discPoly(fx, fy, pn.h * 0.74, 40), 10, 0.2, [t * 0.001, -t * 0.001]);
+    c.beginPath(); c.arc(fx, fy, pn.h * 0.5, 0, Math.PI * 2); c.fillStyle = MG_PAPER; c.fill();
     mgFocus(c, fx, fy, Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.5);
     ground(c, pn, t);
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s) });
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t) });
+    pn.screen(c);
     // the smoke ring: an ellipse of tone, growing and fading toward the reader
-    const k = fe(3900 - 200, 4500, t);
+    const k = fe(3700, 4500, t);
     if (k > 0 && k < 1) {
-      const m = pn.p(...mouthW(t)), r = (6 + 62 * easeOut(k)) * pn.z * 0.5, a = 1 - fe(0.55, 1, k), cx = m[0] + FIN.dir * (14 + 60 * k) * pn.z * 0.5, cy = m[1] - 20 * k * pn.z * 0.5;
-      c.save(); c.globalAlpha = a; c.translate(cx, cy); c.rotate(-0.25 * FIN.dir);
-      c.beginPath(); c.ellipse(0, 0, r * 1.2, r * 0.8, 0, 0, Math.PI * 2); c.ellipse(0, 0, r * 0.62, r * 0.38, 0, 0, Math.PI * 2, true);
-      c.fillStyle = "#f1ece2"; c.fill("evenodd"); c.lineWidth = 2.4; c.strokeStyle = MG_INK; c.stroke(); c.restore();
+      const z = pn.z * s, mx = hd[0] + FIN.dir * 5 * s, my = hd[1] + 11 * s, m = pn.p(mx, my), r = (5 + 40 * easeOut(k)) * pn.z * 0.9;
+      smokeRing(c, m[0] + FIN.dir * (16 + 95 * easeOut(k)) * pn.z * 0.5, m[1] - 8 * k * pn.z - 4, r, -0.3 * FIN.dir, 1 - fe(0.6, 1, k));
     }
   }
 
@@ -10568,19 +10681,25 @@ MANGA.dragon = (function () {
     words(lay) {
       const ev = FIN.ev, heavy = ev && /^h/.test(ev.mv || ""), txt = ev && ev.fin ? "FWOOSH" : heavy ? "DOOM" : "KRAK", D = FIN.dir;
       const P2 = () => MG.byId.look, P3 = () => MG.byId.strike;
+      const at3 = (fx, fy) => (() => { const q = pg(fx, fy); return [q[0], q[1]]; });
       return [
         { text: txt, t0: 600, t1: 1330, size: 0.24, rot: -0.12 * D, at: () => [clamp(MG.ix + D * L.gw * 0.04, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.24, L.gh * 0.2, L.gh * 0.5)] },
         { text: "GRRRR", t0: 1330, t1: 2250, size: 0.1, jag: 0.22, rot: -0.1 * D, at: () => { const p = P2(); return [p.x0 + p.w * 0.3, p.y0 + p.h * 0.1]; } },
         { text: "hhhhhh", t0: 1760, t1: 2350, size: 0.075, jit: 0.1, rot: 0.08 * D, at: (t) => { const p = P2(), m = p.sp(...mouthW(t)); return [m[0] + D * p.w * 0.12, m[1] + p.h * 0.08]; } },
-        { text: "BWOOOM", t0: FIN.hit, t1: 3560, size: 0.22, arc: 9, rot: -0.07 * D, at: () => { const p = P3(); return [p.cx + D * p.w * 0.04, p.y0 + p.h * 0.16 + p.oy]; } },
-        { text: "FWOOOSH", t0: 3080, t1: 3640, size: 0.19, arc: 8, rot: Math.atan2(FIN.ldy, FIN.ldx) * 0.5, stretch: { ang: Math.atan2(FIN.ldy, FIN.ldx), k: 0.9 },
-          at: () => { const p = P3(), q = p.sp(FIN.lx + FIN.ldx * 70, FIN.ldy * 70 - 40); return [q[0] - FIN.ldx * 20, q[1] - FIN.ldy * 20]; } },
+        { text: "BWOOOM", t0: FIN.hit, t1: 3420, size: 0.2, arc: 9, rot: -0.06 * D, at: at3(0.3, 0.33) },
+        { text: "FWOOOSH", t0: 3080, t1: 3640, size: 0.17, arc: 8, rot: clamp(Math.atan(FIN.ldy / (Math.abs(FIN.ldx) < 0.02 ? 0.02 : FIN.ldx)), -1.25, 1.25) * 0.85, stretch: { ang: Math.atan2(FIN.ldy, FIN.ldx), k: 0.9 },
+          // beside the comet's path, on the side away from him, so the loser flies clear of it
+          at: () => {
+            const p = P3(), nx = (FIN.ldy < 0 ? -FIN.ldy : FIN.ldy) * 0 + (FIN.ldx * 0 + -FIN.ldy), ny = FIN.ldx, sg = nx * D >= 0 ? 1 : -1;
+            const q = p.sp(FIN.lx + FIN.ldx * 120 + sg * nx * 46, FIN.ldy * 120 - 30 + sg * ny * 46);
+            return [clamp(q[0], L.gw * 0.2, L.gw * 0.8), clamp(q[1], L.gh * 0.16, L.gh * 0.86)];
+          } },
       ];
     },
     build(lay) {
       const r = mgRng(2026), g = L.gw, h = L.gh;
       ash = Array.from({ length: 46 }, () => ({ x: r() * g, y: r() * h, v: 12 + r() * 26, s: 1.2 + r() * 2.4, ph: r() * 6.28 }));
-      embers = [];
+      embers = []; rnd = mgRng(99);
       MG.dEmbers = 0;
     },
     step(t, k) {
@@ -10589,7 +10708,7 @@ MANGA.dragon = (function () {
       // embers: from 1700, from all over the page into his mouth
       if (t > 1700 && t < 2330) {
         const want = Math.floor((t - 1700) / 12) * (MG.slow ? 1 : 2);
-        while (MG.dEmbers < want) { MG.dEmbers++; embers.push({ t0: t, life: 520 + Math.random() * 380, a: Math.random() * 6.283, r0: 90 + Math.random() * 260, s: 0.6 + Math.random() * 0.9, hot: Math.random() < 0.3 }); }
+        while (MG.dEmbers < want) { MG.dEmbers++; embers.push({ t0: t, life: Math.min(520 + rnd() * 380, 2345 - t), a: rnd() * 6.283, r0: 120 + rnd() * 320, s: 0.6 + rnd() * 0.9, hot: rnd() < 0.3 }); }
       }
       // the loser after the pop: white flash at the pop, none before it
       MG.pt = t;
@@ -10606,7 +10725,7 @@ MANGA.dragon = (function () {
         const tip = tailTip(t, w, leg, tor); if (tip) P.tailTo = tip;
         let lean = -0.32 * ease(fe(1700, 2050, t));
         if (t >= H0 - 60) lean = lean + (0.54) * easeOut(fe(H0 - 60, H0 + 60, t)) - 0.22 * ease(fe(3250, 3600, t));
-        if (t >= 3500) lean = 0.2 * (1 - ease(fe(3500, 3900, t)));
+        if (t >= 3500) lean = 0.05 * (1 - ease(fe(3500, 3900, t)));
         P.lean = lean;
         let mouth = 0.1;
         if (t >= 1700) mouth = 0.15 + 0.5 * fe(1700, 2350, t);
@@ -10616,6 +10735,7 @@ MANGA.dragon = (function () {
         P.mouth = mouth;
         P.expr = t >= 3500 ? "grin" : t >= 1700 ? "rage" : undefined; P.exK = 1;
         if (t >= 3500) P.crouch = 0;
+        if (t >= 3500) { const r = ease(fe(3500, 3900, t)); return { hF: [w * (0.8 - 0.05 * r), -leg - tor * (0.78 - 0.26 * r) + 4 * r], hB: [w * (-0.8 + 0.27 * r), -leg - tor * (0.78 - 0.36 * r) + 4 * r] }; }   // the game's own idle arms, hanging outside the round body
         return { hF: [w * 0.8, -leg - tor * 0.78], hB: [-w * 0.8, -leg - tor * 0.78] };
       }
       // the loser
@@ -10630,6 +10750,16 @@ MANGA.dragon = (function () {
     },
     // ash (grey dots) drifting up over the whole page; the comet's speed lines
     over(o, t) {
+      // embers pulled into his mouth from all over the page
+      if (t > 1700 && t < 2350 && MG.byId.look) {
+        const m = MG.byId.look.sp(...mouthW(Math.min(t, 2330)));
+        for (const e of embers) {
+          const k = (t - e.t0) / e.life; if (k < 0 || k > 1) continue;
+          const r = e.r0 * Math.pow(1 - ease(k), 1.6), x = m[0] + Math.cos(e.a + k * 1.2) * r, y = m[1] + Math.sin(e.a + k * 1.2) * r * 0.8, sz = 2 + 2.2 * e.s * (1 - k * 0.5);
+          o.fillStyle = MG_INK; o.beginPath(); o.arc(x, y, sz + 1.3, 0, 7); o.fill();
+          o.fillStyle = e.hot ? CORE : COL; o.beginPath(); o.arc(x, y, sz, 0, 7); o.fill();
+        }
+      }
       if (t > 800 && t < MT.FADE) {
         const a = fe(800, 1100, t) * (1 - fe(3600, 4200, t)), u = (t - 800) / 1000;
         o.fillStyle = "rgba(40,36,50,0.5)"; o.globalAlpha = a;
@@ -10640,7 +10770,9 @@ MANGA.dragon = (function () {
         const Lp = L_(), pn = MG.byId.strike, a = 1 - fe(this.pop + 200, this.pop + 420, t);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
-        mgSpeed(o, q[0] - Math.cos(ang) * len * 0.45, q[1] - Math.sin(ang) * len * 0.45, len, Math.min(L.gw, L.gh) * 0.34, ang, -(t - this.pop) * 1.4, 0.8 * a, false, 1);
+        const sx_ = q[0] - Math.cos(ang) * len * 0.45, sy_ = q[1] - Math.sin(ang) * len * 0.45, hh_ = Math.min(L.gw, L.gh) * 0.34;
+        mgSpeed(o, sx_, sy_, len, hh_, ang, -(t - this.pop) * 1.4, 0.8 * a, false, 1);
+        mgSpeed(o, sx_, sy_, len, hh_, ang, -(t - this.pop) * 1.1 + 90, 0.55 * a, true, 1);   // white ones too: they show on the dark panels
         o.restore();
       }
     },
@@ -10649,8 +10781,8 @@ MANGA.dragon = (function () {
     impact(o, pn, sil, t) {
       const W = W_(), Lp = L_();
       const m = mouthW(FIN.hit);
-      mgPuppet(o, pn, W, FIN.hit + 10, { sc: grow(FIN.hit), sil });
-      mgPuppet(o, pn, Lp, FIN.hit + 10, { sc: 1, sil });
+      mgPuppet(o, pn, W, FIN.hit + 10, { sc: grow(FIN.hit), sil, free: true });
+      mgPuppet(o, pn, Lp, FIN.hit + 10, { sc: 1, sil, free: true });
       // the cone as a flat wedge
       const len = coneLen(Math.max(t, FIN.hit + 40)) * 0.6, ang = Math.atan2(-30 - m[1], FIN.lx - m[0]);
       o.save(); pn.world(o); o.fillStyle = sil;
