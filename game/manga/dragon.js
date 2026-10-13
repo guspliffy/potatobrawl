@@ -6,6 +6,7 @@
    Script fields: col, name, hit, pop, flight (id of the panel the loser flies out of), panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p),
    after(t), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). */
 MANGA.dragon = (function () {
+  const WBOX = [-84, -130, 82, 12];   // what the Dragon with his wings can cover (measured over the whole page), a little tighter than the engine's default box
   const COL = "#ff8a3d", CORE = "#fff4d6", FLAME_DARK = "#d93a24";
   let ash = [], embers = [], smoke = [], rnd = Math.random;
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
@@ -98,7 +99,7 @@ MANGA.dragon = (function () {
       if (pts.length > 2) { c.fillStyle = `rgba(40,34,48,${(0.38 * (1 - fe(1950, 2250, t))).toFixed(3)})`; brush(c, pts, 16 * s, pts.length - 1); }
     }
     // him
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t) });
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX });
     pn.screen(c);
     // the squint: nothing drawn, it is in the face (pose). The edge of the page darkens as the power gathers: a 70% screen creeping in from the corners
     if (power > 0.3) {
@@ -155,7 +156,7 @@ MANGA.dragon = (function () {
     // the smear of the lunge (the one place with ghosts of the Dragon)
     let smear = null;
     if (t > 2840 && t < 3040 && !MG.slow) { const h0 = pn.p(...bodyPt(W, t, s, "head")), gh = (dt, a) => { const q = pn.p(...bodyPt(W, t - dt, grow(t - dt), "head")); return [q[0] - h0[0], q[1] - h0[1], a]; }; smear = [gh(60, 0.18), gh(30, 0.35)]; }
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), ghosts: smear });
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX, ghosts: smear });
     // the loser stands in the fire as a black shape, then pops out of the far end
     if (!MG.broke) drawLoserFn(c, pn, t);
     pn.world(c);
@@ -288,7 +289,7 @@ MANGA.dragon = (function () {
     c.beginPath(); c.arc(fx, fy, pn.h * 0.5, 0, Math.PI * 2); c.fillStyle = MG_PAPER; c.fill();
     mgFocus(c, fx, fy, Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.5);
     ground(c, pn, t);
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t) });
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX });
     pn.screen(c);
     // the smoke ring: an ellipse of tone, growing and fading toward the reader
     const k = fe(3700, 4500, t);

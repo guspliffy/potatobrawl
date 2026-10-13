@@ -147,12 +147,14 @@ function mgCel(g) {
   };
   return g;
 }
-function mgInkOn(c, k) {
-  Object.defineProperty(c, "fillStyle", { configurable: true, get() { return MG_FS.get.call(this); }, set(v) { MG_FS.set.call(this, typeof v === "string" ? mgTintCss(v, MG.tintK) : v); } });
-  Object.defineProperty(c, "strokeStyle", { configurable: true, get() { return MG_SS.get.call(this); }, set(v) { MG_SS.set.call(this, typeof v === "string" ? (v === OUT ? MG_INK : mgTintCss(v, MG.tintK)) : v); } });
+// hal > 0 draws the halo pass instead: everything flat white, every line widened by 2 * hal (world units), meant for destination-over, behind the picture
+function mgInkOn(c, k, hal) {
+  Object.defineProperty(c, "fillStyle", { configurable: true, get() { return MG_FS.get.call(this); }, set(v) { MG_FS.set.call(this, hal ? "#ffffff" : typeof v === "string" ? mgTintCss(v, MG.tintK) : v); } });
+  Object.defineProperty(c, "strokeStyle", { configurable: true, get() { return MG_SS.get.call(this); }, set(v) { MG_SS.set.call(this, hal ? "#ffffff" : typeof v === "string" ? (v === OUT ? MG_INK : mgTintCss(v, MG.tintK)) : v); } });
   c.stroke = function () {
     const lw = this.lineWidth;
-    if (this.strokeStyle === MG_INK) this.lineWidth = lw <= 4 ? lw * k : lw + 3.5 * (k - 1);
+    if (hal) this.lineWidth = (lw <= 4 ? lw * k : lw + 3.5 * (k - 1)) + 2 * hal;
+    else if (this.strokeStyle === MG_INK) this.lineWidth = lw <= 4 ? lw * k : lw + 3.5 * (k - 1);
     MG_CTX.stroke.apply(this, arguments);
     this.lineWidth = lw;
   };
@@ -428,16 +430,23 @@ function mgPuppet(c, pn, p, tt, o) {
   }
   lc.globalCompositeOperation = "source-over";
   lc.restore();
-  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = o.a === undefined ? 1 : o.a;
-  if (o.ghosts) { for (const g of o.ghosts) { c.globalAlpha = g[2] * (o.a === undefined ? 1 : o.a); c.drawImage(MG.layer, bx, by, bw, bh, bx + g[0] * D, by + g[1] * D, bw, bh); } c.globalAlpha = o.a === undefined ? 1 : o.a; }   // earlier positions, as copies of this same picture: [dx, dy (css px), alpha]
-  if (o.halo) {   // a white edge round the shape (a black fighter on a dark panel stays readable): its silhouette drawn at four diagonal offsets behind it
-    const h = o.halo * D, l2 = MG.l2 || (MG.l2 = mgCanvas(MG.cw, MG.ch)), x2 = MG.l2c || (MG.l2c = l2.getContext("2d"));
-    x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = "source-over"; x2.clearRect(bx, by, bw, bh);
-    x2.drawImage(MG.layer, bx, by, bw, bh, bx, by, bw, bh);
-    x2.globalCompositeOperation = "source-in"; x2.fillStyle = "#ffffff"; x2.fillRect(bx, by, bw, bh);
-    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; c.drawImage(l2, bx, by, bw, bh, bx + Math.cos(a) * h * 1.35, by + Math.sin(a) * h * 1.35, bw, bh); }
+  const a0 = o.a === undefined ? 1 : o.a;
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = a0;
+  if (o.ghosts) {   // earlier positions, as copies of this same picture: [dx, dy (css px), alpha]
+    for (const g of o.ghosts) { c.globalAlpha = g[2] * a0; c.drawImage(MG.layer, bx, by, bw, bh, bx + Math.round(g[0] * D), by + Math.round(g[1] * D), bw, bh); }
+    c.globalAlpha = a0;
   }
-  c.globalAlpha = o.a === undefined ? 1 : o.a;
+  if (o.halo && !o.sil) {   // a white edge round the shape (a black fighter on a dark panel stays readable): the fighter once more, flat white with wide lines, drawn behind its own picture
+    lc.save(); lc.beginPath(); lc.rect(bx, by, bw, bh); lc.clip();
+    lc.globalCompositeOperation = "destination-over";
+    lc.setTransform(D * ze, 0, 0, D * ze, D * (sx + pn.ox), D * (sy + pn.oy));
+    mgInkOn(lc, k, o.halo / ze);
+    try {
+      if (o.under) { lc.save(); lc.scale(p.facing, 1); o.under(lc, p); lc.restore(); }
+      drawFighter(lc, p, mgTk(tt), [0, 0]);
+    } finally { mgInkOff(lc); }
+    lc.restore();
+  }
   c.drawImage(MG.layer, bx, by, bw, bh, bx, by, bw, bh);
   c.restore();
 }
@@ -529,7 +538,7 @@ function mangaStart(g) {
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    MG.slow = (R3.q | 0) >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
+    MG.slow = (R3.q | 0) >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0; MG.gap = 16.7; MG.lw = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
     if (S.start) S.start(g);
     FIN.hit = S.hit || MT.HIT; FIN.launch = S.pop || FIN.hit + FLAUNCH;
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
@@ -687,7 +696,11 @@ function mangaOverlay(o, tk) {
   if (MG.snap) {   // the page's drawing time counts both layers; a device that cannot keep up drops the smears and the tone on the fighters (the cheap tier)
     const st = MG.stat, ms = mgClock() - t0; st.sum += ms; st.last += ms; if (st.last > st.max) st.max = st.last;
     MG.avg = MG.avg * 0.9 + st.last * 0.1;
-    if (!MG.fixed && !MG.slow && st.n > 24 && MG.avg > 11) MG.slow = true;
+    // the browser's own pace counts too: on a GPU the drawing calls return at once and the work lands later, so the gap between frames is the honest number
+    const wall = performance.now();   // (the game's clock; the tests step it)
+    if (MG.lw) MG.gap = MG.gap * 0.9 + clamp(wall - MG.lw, 0, 120) * 0.1;
+    MG.lw = wall;
+    if (!MG.fixed && !MG.slow && st.n > 30 && (MG.avg > 11 || MG.gap > 36)) MG.slow = true;
   }
 }
 // the loser, once it has burst through its panel's border, is drawn over the whole page
