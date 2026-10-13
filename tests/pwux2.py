@@ -40,7 +40,26 @@ async def fresh(b, tag, vp, mob, errs):
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)
     await frames(pg, 20); await pg.screenshot(path=f'{OUT}/{tag}_t1.png')
     await ctx.close()
-# --- touch controls: Heavy/Special sizes, spacing, Special boost in the air after a jump ---
+# --- start page: rating + chips card in the top right corner; touch controls: Heavy/Special sizes, spacing, jump boost ---
+MENU_CHECK = """(() => {
+  const q = (s) => document.querySelector(s).getBoundingClientRect();
+  const R = q('#mRank'), G = q('#bSettings'), W = innerWidth, H = innerHeight;
+  const hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  const bad = [];
+  if (hit(R, G)) bad.push('settings gear');
+  const ink = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };   // the h1 box is as wide as the column, its letters are not
+  if (hit(R, ink(document.querySelector('.brand h1')))) bad.push('brand');
+  for (const el of document.querySelectorAll('.menu-actions .btn, #rotHint:not([hidden])')) if (hit(R, el.getBoundingClientRect())) bad.push(el.id || el.textContent.trim().slice(0, 12));
+  if (R.left < 0 || R.right > W || R.top < 0) bad.push('off screen');
+  if (R.right > G.left) bad.push('not left of the gear');
+  if (R.top > 40 || W - R.right > 80 + 20) bad.push('not in the top right corner');
+  const ids = ['mBadge', 'mTier', 'mSub', 'mTokens'].filter((i) => { const r = q('#' + i); return r.width < 4 || r.right > R.right + 1 || r.left < R.left - 1; });
+  if (ids.length) bad.push('clipped: ' + ids.join(','));
+  const btns = [...document.querySelectorAll('.menu-actions .btn')].map((b) => b.getBoundingClientRect());
+  if (btns[0].top < q('.brand').bottom) bad.push('buttons start inside the brand');
+  if (btns[btns.length - 1].bottom > H) bad.push('buttons run off the bottom');
+  return bad;
+})()"""
 PAD_RECTS = """(() => { const o = {}; for (const b of document.querySelectorAll('.pb')) { const r = b.getBoundingClientRect(); o[b.dataset.k] = { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; } return o; })()"""
 SP = "document.querySelector('.pb[data-k=special]')"
 def layout(tag, what, rc, vp, top, errs):
@@ -59,6 +78,8 @@ async def hud(b, tag, vp, up, errs):
     pg = await ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
     await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true"); await pg.wait_for_timeout(900)
+    for bad in await pg.evaluate(MENU_CHECK): errs.append(f'{tag} menu: {bad}')
+    await pg.screenshot(path=f'{OUT}/{tag}_menu.png')
     # practice against the Dummy, so nothing hits the player while the jump is measured
     await pg.tap('#bPractice'); await pg.wait_for_timeout(500)
     await pg.tap('#lvlPick'); await pg.wait_for_timeout(200)
