@@ -5,7 +5,11 @@ build = root/'build'          # test pages, git-ignored
 build.mkdir(exist_ok=True)
 shell = (d/'shell.html').read_text()
 core = (d/'core.js').read_text()
-ui = (d/'ui.js').read_text()
+# ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
+# base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
+UI_PARTS = ['base', 'input', 'view', 'draw-fighters', 'draw-world', 'effects',
+            'screens', 'online', 'menus', 'tutorial', 'loop']
+ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 ui = ui.replace('/*PORTRAITS*/{}', (d/'portraits'/'portraits.json').read_text())
 ui = ui.replace('/*SKINFX*/', (d/'skinfx.js').read_text())
 ui = ui.replace('/*GFX3D*/', (d/'gfx3d.js').read_text())
