@@ -54,14 +54,19 @@ SRV=$!
 sleep 1
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 
 # 6. Screens on small phone, phone and desktop, without page errors.
 (cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
 if grep -q "^no errors" "$LOGS/screens.log"; then pass "screens 667x320, 844x390, 1280x760 (shots in build/shots/)"
 else fail "screens" "$LOGS/screens.log"; fi
+
+# 7. KO finisher: one played through to the results screen, one skipped by a tap.
+(cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1
+if [ "$(grep -c "^no errors" "$LOGS/finisher.log")" = 2 ]; then pass "KO finisher (plays through, skips, results screen after)"
+else fail "KO finisher" "$LOGS/finisher.log"; fi
 
 echo "--- $FAILS failed"
 exit $((FAILS > 0))

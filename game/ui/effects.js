@@ -150,12 +150,19 @@ function drawBubbles(c, g, tk, img) {
 /*GFX3D*/
 
 function render(g, tk) {
-  if (use3D()) { render3D(g, tk); return; }
+  // during the KO finisher the scene shows its two stand-ins instead of the real fighters
+  const fin = FIN.on && mode === "match";
+  if (fin) g = finFrame(g, tk);
+  if (use3D()) render3D(g, tk); else render2D(g, tk);
+  if (fin) finOverlay(use3D() ? octx : ctx, tk);
+}
+function render2D(g, tk) {
   r3Layers(false);
   const c = ctx;
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip();
   drawBackground(c, tk);
+  finSkyTint(c);
   const ox = L.gw / 2 - cam.x * cam.z + cam.sx, oy = L.gh / 2 - cam.y * cam.z + cam.sy;
   c.setTransform(DPR * cam.z, 0, 0, DPR * cam.z, DPR * ox, DPR * oy);
   drawStage(c, tk);
@@ -167,7 +174,7 @@ function render(g, tk) {
   const order = [...g.fighters].sort((a, b) => (a.slot === 0 ? 1 : 0) - (b.slot === 0 ? 1 : 0));
   for (const f of order) if (f.state !== "dead" && f.state !== "gone") drawFighter(c, f, tk);
   drawFx(c);
-  if (mode === "match") {
+  if (mode === "match" && !FIN.on) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
@@ -227,8 +234,12 @@ function handleEvent(g, e, live) {
       if (live) { showBanner("Sudden death", "Next KO wins", "game", 1700); Sfx.count(true); }
       camStep(g, true);
       break;
-    case "game": if (live) { showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0); } break;
-    case "over": if (live) { if (match && match.online) finishOnline(false); else finishMatch(false); } else newAttract(); break;
+    case "game": if (live) { showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0); if (finWanted(g)) finStart(g); } break;
+    case "over":
+      if (!live) { newAttract(); break; }
+      if (finHold(() => { if (match && match.online) finishOnline(false); else finishMatch(false); })) break;
+      if (match && match.online) finishOnline(false); else finishMatch(false);
+      break;
   }
 }
 

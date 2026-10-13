@@ -35,8 +35,9 @@
 ## Milestones
 - **M0, setup:** sources from the zip into the repo; `CLAUDE.md`; split `ui.js` into modules (byte-identical build output); `check.sh` (one command, PASS/FAIL lines); beta subdomain on the server.
 - **M1:** light-attack lock fix + fullscreen / home-screen app.
-- **M2:** accounts with sync codes + server housekeeping (close :8080, nightly backup).
-- **M3:** hit-feel polish + KO finisher Phase 1.
+- **M2:** KO finisher Phase 1 (moved ahead of accounts by Jonny, 2026-10-13; shipped together with M1 in PR #2).
+- **M3:** accounts with sync codes + server housekeeping (close :8080, nightly backup).
+- **M4:** hit-feel polish + KO finisher Phase 2/3.
 - **Then** the backlog, in the order of Jonny's answer to decision 8 in the plan doc, plus the FEEDBACK doc.
 
 ## Session start and end

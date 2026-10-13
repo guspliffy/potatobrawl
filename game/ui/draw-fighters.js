@@ -11,7 +11,7 @@ function pose(f, tk) {
   let hF = [w * 0.5, -leg - tor * 0.52], hB = [w * 0.2, -leg - tor * 0.42];
   const st = f.state;
   let bob = 0;
-  if (st === "idle" || st === "getup" || st === "respawn") bob = Math.sin(tk * 0.09 + f.slot * 2) * 1.6;
+  if (st === "idle" || st === "getup" || st === "respawn" || st === "fin") bob = Math.sin(tk * 0.09 + f.slot * 2) * 1.6;
   if (st === "land" || st === "jumpsquat" || st === "getup") P.crouch = 0.35;
   if (st === "run") {
     const ph = f.anim.run;
@@ -80,6 +80,12 @@ function pose(f, tk) {
     const fast = st === "attack" && f.move && (f.move.rec || f.mid === "spec");
     P.flap = f.grounded || st === "ledge" ? 0 : Math.sin(tk * (fast ? 0.9 : 0.35)) * (f.vy < 0 || fast ? 0.6 : 0.3);
   }
+  // KO finisher stand-ins bend their own skeleton (ui/finisher.js)
+  let finArms = false;
+  if (f.finPose) {
+    const o = f.finPose(P, { w, leg, tor });
+    if (o) { finArms = !!(o.hF || o.hB); if (o.fF) fF = o.fF; if (o.fB) fB = o.fB; if (o.hF) hF = o.hF; if (o.hB) hB = o.hB; }
+  }
   // assemble skeleton
   const drop = P.crouch * leg * 0.45 - bob;
   P.hip = [0, -leg + drop];
@@ -95,7 +101,7 @@ function pose(f, tk) {
     P.head = [w * 0.16, P.cy - P.ry * 0.28];
     P.mouthPt = [w * 0.16, P.cy - P.ry * 0.28 + w * 0.23];
     // arms hang outside the round body when they're not doing something
-    if (st !== "attack" && st !== "ledge" && st !== "hitstun") {
+    if (st !== "attack" && st !== "ledge" && st !== "hitstun" && !finArms) {
       if (P.hF[0] < w * 0.75) P.hF = [w * 0.75 + (P.hF[0] - w * 0.5) * 0.4, P.hF[1] + 4];
       if (P.hB[0] > -w * 0.68) P.hB = [-w * 0.68 + (P.hB[0] + w * 0.3) * 0.3, P.hB[1] + 4];
     }

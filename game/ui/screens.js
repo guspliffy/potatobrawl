@@ -43,7 +43,7 @@ function onlineAvailable() {
 function goMenu() {
   if (NET.mr) leaveMatchRoom();
   if (NET.phase !== "idle") { resetNet(); NET.phase = "idle"; lobbyPresence(); }
-  tutEnd();
+  tutEnd(); finStop();
   mode = "menu"; paused = false; G = null; match = null; meSlot = 0;
   $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
   modal("pause", false); modal("help", false); modal("settings", false);
@@ -212,6 +212,7 @@ function startMatch() {
   enterMatchUI();
 }
 function enterMatchUI() {
+  finStop();
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false);
   $("hud").hidden = false; $("ctl").hidden = !touchUI; $("netBadge").hidden = true; $("pingBadge").hidden = true; $("pingBadge").textContent = "";
@@ -257,7 +258,7 @@ function updateHud() {
   document.querySelector('.pb[data-k="special"]').style.setProperty("--cd", (me.specCd / cd).toFixed(3));
 }
 function togglePause(force) {
-  if (mode !== "match" || (G && G.phase === "over")) return;
+  if (mode !== "match" || (G && G.phase === "over") || FIN.on) return;
   const open = force !== undefined ? force : screens.pause.hidden;
   paused = match && match.online ? false : open;
   modal("pause", open); modal("help", false);
@@ -300,6 +301,7 @@ function finishMatch(forfeit) {
   showResults(R);
 }
 function showResults(R) {
+  finStop();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();

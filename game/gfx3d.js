@@ -1068,11 +1068,14 @@ function r3Projectiles(g, tk) {
   }
   for (const kind of Object.keys(R3.proj)) for (let k = used[kind]; k < R3.proj[kind].length; k++) R3.proj[kind][k].visible = false;
 }
-function r3Camera(camObj, cx, cy, viewH, aspect) {
+function r3Camera(camObj, cx, cy, viewH, aspect, yaw) {
   const D = viewH / 2 / Math.tan((R3.fov * Math.PI) / 360);
   camObj.aspect = aspect; camObj.near = Math.max(20, D - 1600); camObj.far = D + 2600;
-  camObj.position.set(cx, -cy, D);
+  // yaw (KO finisher only) swings the camera round the point it looks at
+  if (yaw) { camObj.position.set(cx + D * Math.sin(yaw), -cy, D * Math.cos(yaw)); camObj.lookAt(cx, -cy, 0); }
+  else { camObj.position.set(cx, -cy, D); camObj.rotation.set(0, 0, 0); }
   camObj.updateProjectionMatrix();
+  camObj.updateMatrixWorld();
 }
 
 /* ---------- small views: card previews, online screen, off-screen bubbles ---------- */
@@ -1200,7 +1203,7 @@ function render3D(g, tk) {
   // sky and sea on the bottom canvas
   const c = ctx;
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip(); drawBackground(c, tk); c.restore();
+  c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip(); drawBackground(c, tk); finSkyTint(c); c.restore();
   // 3D scene
   const poses = g.fighters.map((f) => (f.state === "dead" || f.state === "gone" ? null : pose(f, tk)));
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
@@ -1208,7 +1211,7 @@ function render3D(g, tk) {
   r3Projectiles(g, tk);
   if (mode === "select" || mode === "online") r3Previews(tk);
   const bub = r3Bubbles(g);
-  r3Camera(R3.camera, cam.x - cam.sx / cam.z, cam.y - cam.sy / cam.z, L.gh / cam.z, L.gw / L.gh);
+  r3Camera(R3.camera, cam.x - cam.sx / cam.z, cam.y - cam.sy / cam.z, L.gh / cam.z, L.gw / L.gh, cam.yaw || 0);
   const r = R3.renderer;
   r.setScissorTest(false); r.setViewport(0, 0, L.gw, L.gh); r.setClearColor(0x000000, 0);
   r.shadowMap.needsUpdate = true;
@@ -1224,7 +1227,7 @@ function render3D(g, tk) {
   for (const p of g.projs) drawProjFx(o, p, tk);
   g.fighters.forEach((f, i) => { if (poses[i]) drawFighterFx(o, f, tk, poses[i]); });
   drawFx(o);
-  if (mode === "match") {
+  if (mode === "match" && !FIN.on) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(o, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(o, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);

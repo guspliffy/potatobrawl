@@ -4,6 +4,7 @@ const L = { gw: 1, gh: 1, panel: 0, portrait: false };
 /* Sideways mode: when the viewer stays upright (the Claude app's artifact view does not rotate),
    the whole game is rotated 90 degrees so it plays in landscape with the phone turned. */
 let rotMode = 0;
+let finFull = false; // the KO finisher uses the whole screen, also where the upright controls panel sits
 const rotBox = { W0: 1, H0: 1 };
 function toApp(cx, cy) {
   if (!rotMode) { const r = app.getBoundingClientRect(); return [cx - r.left, cy - r.top]; }
@@ -26,7 +27,7 @@ function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   L.portrait = H > W * 1.05;
-  L.panel = L.portrait && mode === "match" && touchUI ? Math.round(clamp(H * 0.36, 200, 300)) : 0;
+  L.panel = L.portrait && mode === "match" && touchUI && !finFull ? Math.round(clamp(H * 0.36, 200, 300)) : 0;
   L.gw = W; L.gh = H - L.panel;
   app.classList.toggle("portrait", L.portrait);
   app.style.setProperty("--panelH", L.panel + "px");

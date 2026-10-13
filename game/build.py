@@ -7,7 +7,7 @@ shell = (d/'shell.html').read_text()
 core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
-UI_PARTS = ['base', 'input', 'view', 'draw-fighters', 'draw-world', 'effects',
+UI_PARTS = ['base', 'input', 'view', 'draw-fighters', 'draw-world', 'effects', 'finisher',
             'screens', 'online', 'menus', 'tutorial', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 ui = ui.replace('/*PORTRAITS*/{}', (d/'portraits'/'portraits.json').read_text())
