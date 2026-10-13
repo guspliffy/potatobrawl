@@ -609,12 +609,13 @@ function finScene(o, t) {
       o.beginPath(); o.ellipse(0, 0, r, r * 0.55, 0, 0, Math.PI * 2); o.fill(); o.restore();
     } else if (p.kind === "fry") {
       o.globalAlpha = Math.min(1, a * 4); o.save(); o.translate(x, y); o.rotate(p.rot);
-      o.fillStyle = p.col; o.strokeStyle = "rgba(14,16,34,0.85)"; o.lineWidth = 1.5;
+      o.fillStyle = FIN.manga ? MG_PAPER : p.col; o.strokeStyle = FIN.manga ? MG_INK : "rgba(14,16,34,0.85)"; o.lineWidth = FIN.manga ? 2 : 1.5;   // (on a manga page: ink and paper)
       o.beginPath(); o.roundRect(-r, -r * 0.22, r * 2, r * 0.44, r * 0.12); o.fill(); o.stroke(); o.restore();
     } else if (p.kind === "chip") {
       o.globalAlpha = Math.min(1, a * 2); o.save(); o.translate(x, y); o.rotate(p.rot); o.scale(1, 0.4 + 0.6 * Math.abs(Math.cos(p.t * 0.25)));
-      o.fillStyle = "#f2c14e"; o.strokeStyle = "#9a6a1e"; o.lineWidth = 1.5; o.beginPath(); o.ellipse(0, 0, r, r * 0.8, 0, 0, Math.PI * 2); o.fill(); o.stroke();
-      o.strokeStyle = "rgba(255,255,255,0.6)"; o.beginPath(); o.arc(-r * 0.2, -r * 0.2, r * 0.45, Math.PI, Math.PI * 1.6); o.stroke(); o.restore();
+      o.fillStyle = FIN.manga ? MG_PAPER : "#f2c14e"; o.strokeStyle = FIN.manga ? MG_INK : "#9a6a1e"; o.lineWidth = FIN.manga ? 2 : 1.5; o.beginPath(); o.ellipse(0, 0, r, r * 0.8, 0, 0, Math.PI * 2); o.fill(); o.stroke();
+      if (!FIN.manga) { o.strokeStyle = "rgba(255,255,255,0.6)"; o.beginPath(); o.arc(-r * 0.2, -r * 0.2, r * 0.45, Math.PI, Math.PI * 1.6); o.stroke(); }
+      o.restore();
     }
   }
   o.globalAlpha = 1; o.globalCompositeOperation = "source-over";

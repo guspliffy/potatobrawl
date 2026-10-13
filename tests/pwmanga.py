@@ -7,6 +7,8 @@
 # exact moment of the page however slow the headless browser is. Pictures are named by ms after the final hit.
 #   --at=...      freeze frames at those ms (default 600,1500,2200,2900,2950,3100,3700,4300)
 #   --skip        tap mid-page (at 1300 ms) and check that the results follow at once
+#   --fail        make the page throw while it builds: the 2D finisher must take over and the results must still follow (a warning is expected)
+#   --sound       sound on (the page's cues then run for real; with the default sound off they are skipped)
 #   --reduced     prefers-reduced-motion: the impact frames become one white frame
 #   --sheet       stitch the pictures of all opponents into manga-sheet-<size>.jpg (rows: opponents, columns: moments)
 #   --slow / --adaptive  the cheap tier / let the page choose its tier by its own timing (the default pins the full tier)
@@ -19,7 +21,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 args = sys.argv[1:]
 opt = lambda k, d=None: next((a.split("=", 1)[1] for a in args if a.startswith(k + "=")), d)
 screen = "up" if "--up" in args else "cw"
-skip, sheet, reduced = "--skip" in args, "--sheet" in args, "--reduced" in args
+skip, sheet, reduced, fail = "--skip" in args, "--sheet" in args, "--reduced" in args, "--fail" in args
 aim = opt("--aim", "side")
 dsf = float(opt("--dsf", "1"))
 video = opt("--video")
@@ -69,11 +71,16 @@ def shot(pg, name):
 
 def run(b, fid, opp):
     ctx = b.new_context(viewport={"width": W, "height": H}, has_touch=True, is_mobile=True, device_scale_factor=dsf, reduced_motion="reduce" if reduced else "no-preference")
-    ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": "2d", "sound": False, "fs": False, "screen": screen}))
+    ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": "2d", "sound": "--sound" in args, "fs": False, "screen": screen}))
     ctx.add_init_script(CLOCK)
     ctx.add_init_script("window.__mangaSlow = %s;" % ("true" if "--slow" in args else "undefined" if "--adaptive" in args else "false"))   # pin the quality tier so the pictures do not depend on the machine's speed
+    ctx.add_init_script("(() => { const o = CanvasRenderingContext2D.prototype.createPattern; CanvasRenderingContext2D.prototype.createPattern = function (...a) { if (window.__fail) throw new Error('forced failure'); return o.apply(this, a); }; })();")
+    warned = []
     pg = ctx.new_page(); pg.on("pageerror", lambda e: errs.append(f"{fid}/{opp}: {e}"))
-    pg.on("console", lambda m: errs.append(f"{fid}/{opp}: console {m.text}") if m.type in ("error", "warning") and "KO film" not in m.text else None)
+    def on_console(m):
+        if m.type in ("error", "warning") and "KO film" not in m.text:
+            (warned if fail and "Manga finisher failed" in m.text else errs).append(m.text if fail and "Manga finisher failed" in m.text else f"{fid}/{opp}: console {m.text}")
+    pg.on("console", on_console)
     if throttle > 1:
         ctx.new_cdp_session(pg).send("Emulation.setCPUThrottlingRate", {"rate": throttle})
     pg.goto((ROOT / "build" / "test.html").as_uri()); pg.wait_for_timeout(1200)
@@ -103,6 +110,7 @@ def run(b, fid, opp):
     if not info["on"] or not info["ev"] or not info["ev"]["final"]: bad.append(f"{fid}/{opp}: no finisher on the lethal hit ({info})")
     if not info["manga"] and "--nopage" not in args: bad.append(f"{fid}/{opp}: the manga page did not start")
     files = []
+    if fail: pg.evaluate("() => { window.__fail = true; }")
     if video:
         frames = pathlib.Path.cwd() / (pathlib.Path(video).stem + "-frames")
         shutil.rmtree(frames, ignore_errors=True); frames.mkdir(parents=True)
@@ -121,11 +129,13 @@ def run(b, fid, opp):
         cdp = ctx.new_cdp_session(pg); cdp.send("Profiler.enable"); cdp.send("Profiler.setSamplingInterval", {"interval": 200}); cdp.send("Profiler.start")
     if "--prof" in args:
         # the draw time of the page over its life: the average and the worst of every 250 ms window, stepped at 60 fps
-        rows = {}
+        rows, outl = {}, []
         for _ in range(400):
             f = pg.evaluate("() => { const f = window.__blastline.fin; return f.on ? [f.t, f.mgStat ? f.mgStat.last : 0] : null; }")
             if f is None: break
             rows.setdefault(int(f[0] // 250) * 250, []).append(f[1]); ff(pg, 1000 / 60)
+            if f[1] > 14: outl.append((int(f[0]), f[1]))
+        print("frames over 14 ms: " + ", ".join(f"{t}:{v:.0f}" for t, v in outl))
         print("draw ms per 250 ms window (avg/max): " + "  ".join(f"{k}:{sum(v) / len(v):.1f}/{max(v):.1f}" for k, v in sorted(rows.items())))
     for ms in AT:
         until_t(pg, ms)
@@ -162,8 +172,11 @@ def run(b, fid, opp):
     ev = info["ev"] or {}
     print(f"{fid} vs {opp}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) page={info['manga']} results after {took:.0f} ms; draw ms: " + (f"avg {st['avg']:.2f} max {st['max']:.2f} over {st['frames']} frames" if st else "-"))
     if not ok: bad.append(f"{fid}/{opp}: no results screen")
+    if fail:
+        if not warned: bad.append(f"{fid}/{opp}: the forced failure was never reported (the page did not fall back?)")
+        else: print("fallback worked:", warned[0][:110])
     if skip and took > 1700: bad.append(f"{fid}/{opp}: skip didn't end it ({took:.0f} ms)")
-    if not skip and not video and not (4400 <= took <= 5000): bad.append(f"{fid}/{opp}: results at {took:.0f} ms, wanted 4400-5000")
+    if not skip and not video and not fail and not (4400 <= took <= 5000): bad.append(f"{fid}/{opp}: results at {took:.0f} ms, wanted 4400-5000")
     made[opp] = files
     ctx.close()
 

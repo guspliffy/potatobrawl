@@ -51,7 +51,7 @@ MANGA.dragon = (function () {
         poly: port ? [[0, 0], [1, 0], [1, 0.40], [0, 0.43]] : [[0, 0], [0.47, 0], [0.43, 1], [0, 1]],
         cam: (t) => { const vh = 105 * grow(t) * (1 - 0.07 * fe(MT.LOOK, MT.STRIKE, t)); return { wx: FIN.wx + D * 6, wy: -0.36 * vh, vh }; },
         draw: drawLook },
-      { id: "inset", t0: MT.INSET, from: "l", slide: 140, live: true,
+      { id: "inset", t0: MT.INSET, from: "l", slide: 140, freeze: MT.STRIKE, cover: MT.STRIKE,
         poly: port ? [[0.5, 0.3], [0.98, 0.28], [0.98, 0.5], [0.5, 0.52]] : [[0.37, 0.05], [0.64, 0.02], [0.61, 0.4], [0.34, 0.43]],
         cam: (t) => { const h = headL(Math.min(t, 2350)); return { wx: h[0], wy: h[1], vh: 24 - 3 * fe(MT.INSET, MT.STRIKE, t) }; },
         draw: drawInset },
@@ -153,8 +153,9 @@ MANGA.dragon = (function () {
     pn.world(c);
     if (len > 4) drawCone(c, m, ang, len, t, false, 0);
     // the smear of the lunge (the one place with ghosts of the Dragon)
-    if (t > 2840 && t < 3040 && !MG.slow) { mgPuppet(c, pn, W, t - 60, { sc: s, a: 0.18, light: dirAng(-0.6), tone: false }); mgPuppet(c, pn, W, t - 30, { sc: s, a: 0.35, light: dirAng(-0.6), tone: false }); }
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t) });
+    let smear = null;
+    if (t > 2840 && t < 3040 && !MG.slow) { const h0 = pn.p(...bodyPt(W, t, s, "head")), gh = (dt, a) => { const q = pn.p(...bodyPt(W, t - dt, grow(t - dt), "head")); return [q[0] - h0[0], q[1] - h0[1], a]; }; smear = [gh(60, 0.18), gh(30, 0.35)]; }
+    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), ghosts: smear });
     // the loser stands in the fire as a black shape, then pops out of the far end
     if (!MG.broke) drawLoserFn(c, pn, t);
     pn.world(c);
@@ -225,12 +226,12 @@ MANGA.dragon = (function () {
         lc.stroke();
       }
     } : null;
-    const base = { sc, light: dirAng(-0.6), free: MG.broke, halo: fl ? 3 : 0 };
-    if (fl && !MG.slow) for (const dt of [70, 46, 23]) {   // three ghosts
-      const [gx, gy] = loserAt(t - dt), ox = Lp.x, oy = Lp.y; Lp.x = gx; Lp.y = gy;
-      mgPuppet(c, pn, Lp, t - dt, Object.assign({}, base, { sc: loserSc(t - dt), a: 0.3 - dt * 0.003, wash: [MG_INK, 0.85], tone: false, halo: 0 }));
-      Lp.x = ox; Lp.y = oy;
+    let ghosts = null;
+    if (fl && !MG.slow) {   // three ghosts: the same picture at where he was 70, 46 and 23 ms ago
+      const b = pn.p(...loserAt(t));
+      ghosts = [70, 46, 23].map((dt) => { const a = pn.p(...loserAt(t - dt)); return [a[0] - b[0], a[1] - b[1], 0.26 - dt * 0.0026]; });
     }
+    const base = { sc, light: dirAng(-0.6), free: MG.broke, halo: fl ? 3 : 0, ghosts };
     mgPuppet(c, pn, Lp, t, Object.assign({}, base, { wash: [MG_INK, 0.95 * Math.max(char, fl ? 1 : 0)], post, flash: Lp.flash > 0 }));
   }
   // the comet's tail: widest at the loser, tapering to a point (ink edge, accent body, white core), and a screen of dots for the smoke behind it
@@ -310,7 +311,7 @@ MANGA.dragon = (function () {
         { text: "GRRRR", t0: 1330, t1: 2250, size: 0.1, jag: 0.22, rot: -0.1 * D, at: () => { const p = P2(); return [p.x0 + p.w * 0.3, p.y0 + p.h * 0.1]; } },
         { text: "hhhhhh", t0: 1760, t1: 2350, size: 0.075, jit: 0.1, rot: 0.08 * D, at: (t) => { const p = P2(), m = p.sp(...mouthW(t)); return [m[0] + D * p.w * 0.12, m[1] + p.h * 0.08]; } },
         { text: "BWOOOM", t0: FIN.hit, t1: 3420, size: 0.2, arc: 9, rot: -0.06 * D, at: at3(0.3, 0.33) },
-        { text: "FWOOOSH", t0: 3080, t1: 3640, size: 0.17, arc: 8, rot: clamp(Math.atan(FIN.ldy / (Math.abs(FIN.ldx) < 0.02 ? 0.02 : FIN.ldx)), -1.25, 1.25) * 0.85, stretch: { ang: Math.atan2(FIN.ldy, FIN.ldx), k: 0.9 },
+        { text: "FWOOOSH", t0: 3080, t1: 3640, size: 0.17, arc: 8, rot: clamp(Math.atan(FIN.ldy / (Math.abs(FIN.ldx) < 0.02 ? 0.02 : FIN.ldx)), -1.25, 1.25) * 0.85, stretch: { ang: Math.atan2(FIN.ldy, FIN.ldx), k: 0.6 },
           // beside the comet's path, on the side away from him, so the loser flies clear of it
           at: () => {
             const p = P3(), nx = (FIN.ldy < 0 ? -FIN.ldy : FIN.ldy) * 0 + (FIN.ldx * 0 + -FIN.ldy), ny = FIN.ldx, sg = nx * D >= 0 ? 1 : -1;
