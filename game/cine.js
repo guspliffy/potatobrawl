@@ -448,7 +448,8 @@ function cinePost() {
   if (cfg.msaa && r.capabilities.isWebGL2 && T.WebGLMultisampleRenderTarget) { rt = new T.WebGLMultisampleRenderTarget(64, 64, opt); rt.samples = cfg.msaa; }
   else rt = new T.WebGLRenderTarget(64, 64, opt);
   const comp = new T.EffectComposer(r, rt);
-  comp.addPass(new T.RenderPass(CINE.scene, CINE.camera));
+  CINE.rpass = new T.RenderPass(CINE.scene, CINE.camera);
+  comp.addPass(CINE.rpass);
   const bloom = new T.UnrealBloomPass(new T.Vector2(64, 64), 0.9, 0.55, 0.78);
   if (cfg.hdr) { for (const q of [bloom.renderTargetBright, ...bloom.renderTargetsHorizontal, ...bloom.renderTargetsVertical]) q.texture.type = T.HalfFloatType; }
   bloom.enabled = cfg.bloom > 0;
@@ -959,11 +960,30 @@ function cineLayers(on) {
   ovcv.style.display = FIN.cine || on ? "block" : "none";
 }
 function cineHas(g) { for (const f of g.fighters) if (FILMS[f.spec.id]) return f.spec.id; return ""; }
+// every film this match may need (both fighters can win): one "world" each (scene, set, lights, env map, the film's own objects).
+// The renderer, camera, post chain, textures and the two hero rigs are shared; the rigs move into the winner's world at the start.
+function cineFilmIds(g) { const ids = []; for (const f of g.fighters) if (FILMS[f.spec.id] && !ids.includes(f.spec.id)) ids.push(f.spec.id); return ids; }
+function cineUse(fid) {
+  const C = CINE, w = C.worlds[fid];
+  C.film = w.film; C.scene = w.scene; C.set = w.set; C.lights = w.lights; C.env = w.env; C.fx = w.fx;
+  if (C.rpass) C.rpass.scene = w.scene;
+  if (C.renderer) C.renderer.toneMappingExposure = w.film.exposure || 1;
+  for (const rig of C.rigs) if (rig) { w.scene.add(rig.root); if (rig.blob) w.scene.add(rig.blob); }
+}
+function cineWorld(fid) {
+  const C = CINE, T = C.T, w = { film: FILMS[fid], scene: new T.Scene(), ready: false };
+  C.worlds[fid] = w; C.worldIds.push(fid);
+  C.scene = w.scene; C.film = w.film;
+  return w;
+}
+function cineWorldFill(w) {   // what cineStage3 made for the current world, kept with it
+  w.set = CINE.set; w.lights = CINE.lights; w.env = CINE.env; w.fx = CINE.fx;
+}
 function cineLost(e) { e.preventDefault(); cineFail("WebGL context lost"); }
 // one step per frame while a match runs (the countdown covers it), so the KO frame never has to build or compile anything
 function cineWarmStep(g) {
   if (CINE.ready || CINE.failed || !CINE.libs || CINE.warming) return;
-  const fid = cineHas(g);
+  const ids = cineFilmIds(g), fid = ids[0];
   if (!fid) return;
   const key = rigKey(g.fighters[0]) + "/" + rigKey(g.fighters[1]);
   if (CINE.slots && CINE.slots !== key) cineFree();
@@ -978,15 +998,26 @@ function cineWarmStep(g) {
     else if (S === 4) cineRigAt(g, 0);
     else if (S === 5) cineRigAt(g, 1);
     else if (S === 6) { CINE.film.build(CINE); }
-    else if (S === 7) cineWarmRender();
-    if (!CINE.failed) { CINE.stage = S + 1; CINE.ms.push(Math.round(performance.now() - t0)); }
+    else if (S === 7) { cineWarmRender(); cineWorldFill(CINE.worlds[fid]); CINE.worlds[fid].ready = true; }
+    else {
+      // the other fighter's film, if it has one: its own world, built and compiled in three more steps
+      const k = Math.floor((S - 8) / 3), sub = (S - 8) % 3, fid2 = ids[1 + k];
+      if (sub === 0) { cineWorld(fid2); cineStage3(); cineWorldFill(CINE.worlds[fid2]); }
+      else if (sub === 1) { cineUse(fid2); CINE.film.build(CINE); }
+      else { cineUse(fid2); cineWarmRender(); CINE.worlds[fid2].ready = true; }
+    }
+    if (!CINE.failed) {
+      CINE.stage = S + 1; CINE.ms.push(Math.round(performance.now() - t0));
+      // every film this match needs is warm: back to the first world, ready
+      if (CINE.stage >= 8 + 3 * (ids.length - 1)) { cineUse(fid); CINE.ready = true; }
+    }
   } catch (e) { CINE.warming = false; cineFail(e && e.stack ? e.stack.split("\n").slice(0, 3).join(" | ") : e); return; }
   CINE.warming = false;
 }
 function cineStage0(g, key, fid) {
   const T = CINE.T;
   CINE.tier = cineTierName(); CINE.cfg = CT_TIERS[CINE.tier];
-  CINE.slots = key; CINE.hasRes = true; CINE.ms = []; CINE.film = FILMS[fid];
+  CINE.slots = key; CINE.hasRes = true; CINE.ms = []; CINE.film = FILMS[fid]; CINE.fid0 = fid; CINE.worlds = {}; CINE.worldIds = [];
   if (!CINE.renderer) {
     // probe on a throw-away canvas first: three.js logs a console error when it cannot get a context, and a phone without WebGL is a normal case, not an error
     const pc = document.createElement("canvas"); let px = null;
@@ -1013,7 +1044,7 @@ function cineStage0(g, key, fid) {
 }
 function cineStage1() {
   const T = CINE.T;
-  CINE.scene = new T.Scene();
+  cineWorld(CINE.fid0);   // the first film's world; cineStage3 fills it
   CINE.camera = new T.PerspectiveCamera(30, 1, 4, 7000);
   CINE.noise = cnNoiseTex(); CINE.atlas = cnAtlas();
   R3.T = T;
@@ -1064,7 +1095,6 @@ function cineWarmRender() {
   C.rigs.forEach((rig) => { rig.root.visible = false; });
   // a shader that failed to link would show up here
   for (const p of r.info.programs || []) if (p.diagnostics && p.diagnostics.runnable === false) throw new Error("shader failed: " + (p.name || "") + " " + String(p.diagnostics.programLog || "").slice(0, 160));
-  C.ready = true;
 }
 // give everything back (end of the film, or the match was left)
 function cineFree() {
@@ -1072,19 +1102,20 @@ function cineFree() {
   if (!C.hasRes && !C.ready && C.stage === 0) return;
   try {
     cinePaneDrop();
-    if (C.scene) {
-      for (const rig of C.rigs) if (rig) { C.scene.remove(rig.root); disposeObj(rig.root); }
-      C.scene.traverse((o) => { if (o.isLight && o.shadow && o.shadow.map) o.shadow.map.dispose(); });
-      C.scene.clear && C.scene.clear();
+    for (const rig of C.rigs) if (rig) { if (rig.root.parent) rig.root.parent.remove(rig.root); disposeObj(rig.root); }
+    for (const w of Object.values(C.worlds || {})) {
+      w.scene.traverse((o) => { if (o.isLight && o.shadow && o.shadow.map) o.shadow.map.dispose(); });
+      w.scene.clear && w.scene.clear();
+      if (w.env) w.env.dispose();
     }
-    if (C.env) C.env.dispose();
     for (const o of C.own) { try { o.dispose(); } catch (e) { /* already gone */ } }
     if (R3.G) { for (const g of R3.G.bodies.values()) g.dispose(); for (const k of ["sph", "sphLo", "cyl", "cone", "oct", "leaf", "feather"]) R3.G[k].dispose(); R3.G = null; }
     if (R3.M) { for (const m of Object.values(R3.M)) m.dispose(); R3.M = null; }
     if (R3.tex) { if (R3.tex.skin) R3.tex.skin.dispose(); R3.tex = null; }
     if (C.renderer) { C.renderer.renderLists.dispose(); C.renderer.setRenderTarget(null); C.renderer.setSize(1, 1, false); }
   } catch (e) { /* best effort */ }
-  C.own = []; C.rigs = [null, null]; C.scene = C.camera = C.composer = C.bloom = C.gradePass = C.gu = null; C.set = C.lights = C.env = C.fx = C.film = null; C.pane = null;
+  C.own = []; C.rigs = [null, null]; C.scene = C.camera = C.composer = C.bloom = C.gradePass = C.gu = C.rpass = null; C.set = C.lights = C.env = C.fx = C.film = null; C.pane = null;
+  C.worlds = {}; C.worldIds = [];
   C.stage = 0; C.blobTex = null; C.ready = false; C.slots = ""; C.hasRes = false; C.warming = false; C.w = C.h = C.pr = 0; C.active = false; C.bo = null; C.layers = null;
   R3.G = null; R3.M = null; R3.tex = null;
 }
@@ -1098,12 +1129,14 @@ function cineIdle(g) {
 /* ---------- starting a film (finStart calls this once the puppets are staged) ---------- */
 function cineWanted(g) {
   const W = g.fighters[g.winner], film = FILMS[W.spec.id];
-  return !!(film && CINE.ready && !CINE.failed && CINE.film === film && CINE.rigs[0] && CINE.rigs[1]);
+  const w = CINE.worlds && CINE.worlds[W.spec.id];
+  return !!(film && w && w.ready && !CINE.failed && !CINE.warming && CINE.rigs[0] && CINE.rigs[1]);
 }
 function cineStart(g) {
   if (!cineWanted(g)) return false;
   const C = CINE, film = FILMS[g.fighters[g.winner].spec.id];
   try {
+    cineUse(g.fighters[g.winner].spec.id);
     C.active = true; C.dir = FIN.dir; C.t = 0; C.tw = 0; C.wSlot = FIN.w; C.lSlot = FIN.l; C.frames = 0; C.lastNow = 0; C.slow = 0;
     C.kick.amp = 0; C.bo = null; C.pane = null; C.flare = null; C.cardSub = "";
     cineLightsDir(C.lights, C.dir);
