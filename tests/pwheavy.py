@@ -282,7 +282,8 @@ with sync_playwright() as p:
                     pg.screenshot(path=str(OUT / f"{fid}-live-charge-hold-{TAG}.png"), clip=wideclip())
                     stage = "hit"
                     # keep holding: the charge tops out at 60 frames and releases itself, so the hit is a full-charge one
-                    pg.evaluate("() => { window.__trap = null; window.__cw.rel = true; }")
+                    # the Dummy steps in front while the game is still paused (a slow 3D frame rate must not let the move finish before it is there)
+                    pg.evaluate("() => new Promise((res) => { window.__trap = null; window.__cw.rel = true; window.__near = true; requestAnimationFrame(() => requestAnimationFrame(res)); })")
                     pg.keyboard.press("KeyP")
                     pg.evaluate("() => requestAnimationFrame(window.__cwatch)")
                     pg.wait_for_function("() => window.__trap === 'hit'", timeout=60000)   # (3D on a software GL box can run at a few fps)
