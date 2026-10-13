@@ -46,10 +46,12 @@ function tutTick(evs) {
   // nobody runs out of lives or gets launched far while learning
   me.stocks = Math.max(me.stocks, 5); me.percent = Math.min(me.percent, 60);
   // The CPU is a real Easy CPU, but it stands still while there is nothing it should punish: in the first two steps,
-  // and for TUT_CALM ticks after the player walks up to it in the steps that need a hit to land.
+  // and for TUT_CALM ticks after the player walks up to it (again after every hit) in the steps that need a hit to land.
   const near = Math.abs(me.x - op.x) < 170 && Math.abs(me.y - op.y) < 90;
-  if ((id === "light" || id === "charge") && near && TUT.calm > 0) TUT.calm--;
-  const calm = id === "move" || id === "jump" || ((id === "light" || id === "charge") && TUT.calm > 0);
+  const hitStep = id === "light" || id === "charge";
+  if (hitStep && evs.some((e) => e.type === "hit" && e.def !== undefined)) TUT.calm = TUT_CALM;   // every hit, either way, gives the player another quiet spell
+  if (hitStep && near && TUT.calm > 0) TUT.calm--;
+  const calm = id === "move" || id === "jump" || (hitStep && TUT.calm > 0);
   match.bot.d = calm ? -1 : match.d;
   if (TUT.hold > 0) {
     if (--TUT.hold === 0) {
