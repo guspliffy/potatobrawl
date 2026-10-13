@@ -38,6 +38,15 @@ const FILES = {
   "/three.min.js": asset("three.min.js", "text/javascript; charset=utf-8", "public, max-age=604800"),
 };
 FILES["/index.html"] = FILES["/"];
+// Home-screen app files (manifest and icons, from web/). Optional: the game still runs without them.
+for (const [file, type, cache] of [
+  ["manifest.webmanifest", "application/manifest+json; charset=utf-8", "no-cache"],
+  ["icon-192.png", "image/png", "public, max-age=604800"],
+  ["icon-512.png", "image/png", "public, max-age=604800"],
+  ["apple-touch-icon.png", "image/png", "public, max-age=604800"],
+]) {
+  try { FILES["/" + file] = asset(file, type, cache); } catch (e) { console.warn(`public/${file} missing: not served`); }
+}
 
 const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];

@@ -102,6 +102,9 @@ button { font: inherit; color: inherit; }
 #stickBase.on { opacity: 1; transition: none; }
 #stickKnob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(243, 217, 164, 0.88); box-shadow: 0 2px 0 rgba(14, 16, 34, 0.5); }
 .pad { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: 8px; width: 262px; height: 182px; pointer-events: none; }
+/* sideways mode with browser bars: keep thumbs about 28px away from the bar edge */
+#app.barside #stickBase { left: calc(max(16px, env(safe-area-inset-left, 0px)) + 98px); }
+#app.barside .pad { right: calc(max(10px, env(safe-area-inset-right, 0px)) + 28px); }
 .pb {
   --bc: var(--text);
   position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; padding: 0; cursor: pointer;
@@ -160,6 +163,13 @@ button { font: inherit; color: inherit; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn:disabled:hover { background: var(--raise); }
 .hint { font-size: 13px; color: var(--sand); }
+/* iPhone: one-time Add to Home Screen tip, floating bottom-right over the demo match */
+.a2hs { position: absolute; z-index: 1; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: min(270px, 42%);
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: rgba(14, 16, 34, 0.86); border: 1px solid rgba(243, 217, 164, 0.35);
+  font-size: 12px; line-height: 1.35; color: var(--sand); }
+.a2hs b { color: var(--text); font-weight: 600; }
+.a2hs .link { flex: none; }
+#app.portrait .a2hs { width: auto; left: 14px; }
 .iconbtn { appearance: none; border: 1px solid var(--line); background: rgba(35, 39, 70, 0.85); color: var(--text); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .iconbtn svg { width: 22px; height: 22px; display: block; }
 .iconbtn:hover { background: #2c3156; }
@@ -455,6 +465,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
       </div>
     </div>
+    <div class="a2hs" id="a2hsHint" hidden><span>Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress.</span><button class="link" id="a2hsOk">OK</button></div>
   </section>
 
   <section id="scrSelect" class="screen select" hidden>
@@ -596,6 +607,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="x-row"><h3>Settings</h3><button class="link" id="setClose">Close</button></div>
       <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
       <div class="set-row"><span>Graphics</span><span class="chips" id="setGfx"></span><small id="setGfxNote" hidden></small></div>
+      <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
       <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
       <div class="set-row"><span>Progress</span><span class="chips"><button class="chip" id="setReset">Reset progress</button></span></div>
       <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>

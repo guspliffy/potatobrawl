@@ -98,4 +98,26 @@ function releaseTouch() { for (const b of padBtns) { touch[b.dataset.k] = false;
 app.addEventListener("contextmenu", (e) => { if (mode === "match") e.preventDefault(); });
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 const touchUI = (window.matchMedia && matchMedia("(pointer: coarse)").matches) || navigator.maxTouchPoints > 0;
+/* ----- fullscreen (Android, computers) and the home-screen app (iPhone) -----
+   Only the website build can go fullscreen; the Claude artifact view can't. iPhone Safari has no
+   fullscreen for pages, so there the way out of the browser bars is Add to Home Screen. */
+const FS = {
+  web: !!window.__blStandalone && /^https?:$/.test(location.protocol),
+  app: !!((window.matchMedia && (matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: standalone)").matches)) || navigator.standalone),
+  ios: /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+};
+FS.can = FS.web && !FS.app && !/iPhone|iPod/.test(navigator.userAgent) && !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+const fsWanted = () => (P.fs === undefined ? touchUI : !!P.fs);
+const isFull = () => !!document.fullscreenElement;
+// Called from taps that start play (Fight, Rematch, Host, Join): browsers only allow fullscreen from a tap.
+function goFull() {
+  if (!FS.can || !fsWanted() || isFull()) return;
+  try {
+    document.documentElement.requestFullscreen({ navigationUI: "hide" }).then(() => {
+      if (touchUI && P.screen !== "up" && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
+    }, () => {});
+  } catch (e) { /* not allowed here */ }
+}
+function leaveFull() { if (isFull()) document.exitFullscreen().catch(() => {}); }
+document.addEventListener("fullscreenchange", () => setTimeout(resize, 60));
 

@@ -6,7 +6,7 @@ BRANCH=main
 cd /opt/potatobrawl-beta
 git fetch -q origin "$BRANCH"
 git checkout -q -B beta FETCH_HEAD
-cp -f index.html three.min.js public/
+cp -f index.html three.min.js web/* public/
 chown -R potatobrawl:potatobrawl /opt/potatobrawl-beta
 systemctl restart potatobrawl-beta
 sleep 2

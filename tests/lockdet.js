@@ -1,5 +1,5 @@
 // serialize/restore round trip + checksum equality on the patched core, with bots fighting (strings happen)
-const { BL } = require(process.env.CORE || require("path").join(__dirname, "../../game/core.js"));
+const { BL } = require(process.env.CORE || "../game/core.js");
 const { FIGHTERS, newGame, step, makeBot, botInput, serialize, restore, checksum } = BL;
 let mismatches = 0, launches = 0, safeFrames = 0, checks = 0;
 for (let seed = 1; seed <= 40; seed++) {
