@@ -377,6 +377,8 @@ function potatoFace(c, f, P, look) {
   const w = P.w, [hx, hy] = P.head, er = w * 0.1;
   const e1 = [hx - w * 0.14, hy], e2 = [hx + w * 0.13, hy];
   const hurt = f.state === "hitstun", style = look.face, cos = look.costume;
+  // P.expr (manga finisher, ui/manga.js): terror | grin | rage | calm | dazed | ko; P.exK 0..1 is how far into it the face is. Unset: the face is drawn as always.
+  const ex = P.expr || "", xk = P.exK === undefined ? 1 : P.exK;
   c.fillStyle = "rgba(255,105,105,0.5)";
   c.beginPath(); c.ellipse(e1[0] - er * 0.4, hy + er * 1.75, er * 0.85, er * 0.5, 0, 0, Math.PI * 2); c.fill();
   c.beginPath(); c.ellipse(e2[0] + er * 0.55, hy + er * 1.75, er * 0.85, er * 0.5, 0, 0, Math.PI * 2); c.fill();
@@ -394,14 +396,33 @@ function potatoFace(c, f, P, look) {
       c.strokeStyle = "#2a1d18"; c.lineWidth = 1.8; c.beginPath(); c.moveTo(e[0] - er * 0.6, e[1] - er * 0.7); c.lineTo(e[0] - er * 2.2, e[1] - er * 3.2); c.moveTo(e[0] + er * 0.7, e[1] - er * 0.6); c.lineTo(e[0] + er * 2.4, e[1] - er * 2.6); c.stroke();
       return;
     }
-    const k = style === "eager" ? 1.1 : 1, hk = style === "focused" ? 0.8 : 1;
+    if (ex === "ko") {
+      c.strokeStyle = OUT; c.lineWidth = 2.4; c.beginPath();
+      c.moveTo(e[0] - er * 0.8, e[1] - er * 0.8); c.lineTo(e[0] + er * 0.8, e[1] + er * 0.8); c.moveTo(e[0] + er * 0.8, e[1] - er * 0.8); c.lineTo(e[0] - er * 0.8, e[1] + er * 0.8); c.stroke();
+      return;
+    }
+    if (ex === "calm") {   // closed eyes: a soft downward arc
+      c.strokeStyle = OUT; c.lineWidth = 2.4; c.beginPath(); c.arc(e[0], e[1] - er * 0.55, er * 1.05, 0.35, Math.PI - 0.35); c.stroke();
+      return;
+    }
+    // terror: the eyes grow and the pupils shrink to pinpoints (xk 0..1); rage / grin: narrowed
+    let k = style === "eager" ? 1.1 : 1, hk = style === "focused" ? 0.8 : 1, pk = 1;
+    if (ex === "terror") { k *= 1 + 0.5 * xk; hk = 1; pk = 1 - 0.7 * xk; }
+    else if (ex === "rage") hk = 0.8;
+    else if (ex === "grin") hk = 0.88;
     c.beginPath(); c.ellipse(e[0], e[1], er * k, er * 1.15 * k * hk, 0, 0, Math.PI * 2); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
-    c.beginPath(); c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.68 * k * hk, 0, Math.PI * 2); c.fillStyle = cos === "dragon" ? "#e6a52a" : "#4a1f14"; c.fill();
+    if (ex === "dazed") {   // spiral eyes, no pupils
+      c.strokeStyle = OUT; c.lineWidth = 1.5; c.beginPath();
+      for (let a = 0; a <= Math.PI * 5; a += 0.25) { const r = er * (0.12 + 0.82 * a / (Math.PI * 5)), x = e[0] + Math.cos(a + (i ? 2 : 0)) * r, y = e[1] + Math.sin(a + (i ? 2 : 0)) * r; if (a) c.lineTo(x, y); else c.moveTo(x, y); }
+      c.stroke();
+      return;
+    }
+    c.beginPath(); c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.68 * k * hk * (ex === "terror" ? 0.5 + 0.5 * pk : 1), 0, Math.PI * 2); c.fillStyle = cos === "dragon" ? "#e6a52a" : "#4a1f14"; c.fill();
     c.beginPath();
-    if (cos === "dragon") c.ellipse(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.13, er * 0.55, 0, 0, Math.PI * 2); else c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.38 * k * hk, 0, Math.PI * 2);
+    if (cos === "dragon") c.ellipse(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.13 * pk, er * 0.55 * pk, 0, 0, Math.PI * 2); else c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.38 * k * hk * pk, 0, Math.PI * 2);
     c.fillStyle = "#120a08"; c.fill();
     c.beginPath(); c.arc(e[0] + er * 0.4, e[1] - er * 0.25, er * 0.22, 0, Math.PI * 2); c.fillStyle = "#ffffff"; c.fill();
-    if (style === "focused" || style === "fierce") {
+    if (ex ? (ex === "rage" || ex === "grin") : (style === "focused" || style === "fierce")) {
       // heavy upper lid in skin colour
       const s = i ? 1 : -1;
       c.save(); c.beginPath(); c.ellipse(e[0], e[1], er * k * 1.05, er * 1.2 * hk, 0, 0, Math.PI * 2); c.clip();
@@ -416,7 +437,12 @@ function potatoFace(c, f, P, look) {
   c.lineWidth = style === "stern" ? 3.4 : 2.2;
   [[e1, -1], [e2, 1]].forEach(([e, side]) => {
     c.beginPath();
-    if (style === "evil" || style === "fierce" || style === "focused") { c.moveTo(e[0] + side * er * 0.9, e[1] - er * (style === "focused" ? 1.6 : 1.8)); c.lineTo(e[0] - side * er * 0.7, e[1] - er * (style === "focused" ? 1.15 : 1.2)); }
+    if (ex === "terror") { c.moveTo(e[0] + side * er * 1.0, e[1] - er * (1.7 + 0.5 * xk)); c.lineTo(e[0] - side * er * 0.8, e[1] - er * (2.1 + 0.9 * xk)); }   // raised, inner ends up: worried
+    else if (ex === "rage") { c.lineWidth = 3.4; c.moveTo(e[0] + side * er * 1.1, e[1] - er * 2.0); c.lineTo(e[0] - side * er * 0.9, e[1] - er * 0.95); }   // hard down
+    else if (ex === "grin") { c.moveTo(e[0] + side * er * 0.9, e[1] - er * (side > 0 ? 1.9 : 1.5)); c.lineTo(e[0] - side * er * 0.7, e[1] - er * (side > 0 ? 1.55 : 1.15)); }   // one brow up
+    else if (ex === "ko") { c.moveTo(e[0] - er * 1.0, e[1] - er * 1.3); c.lineTo(e[0] + er * 1.0, e[1] - er * 1.3); }
+    else if (ex === "calm" || ex === "dazed") c.arc(e[0], e[1] - er * 0.6, er * 1.1, -2.4, -0.75);
+    else if (style === "evil" || style === "fierce" || style === "focused") { c.moveTo(e[0] + side * er * 0.9, e[1] - er * (style === "focused" ? 1.6 : 1.8)); c.lineTo(e[0] - side * er * 0.7, e[1] - er * (style === "focused" ? 1.15 : 1.2)); }
     else if (style === "stern") { c.moveTo(e[0] - er * 1.1, e[1] - er * 1.45); c.lineTo(e[0] + er * 1.1, e[1] - er * 1.3); }
     else c.arc(e[0], e[1] - er * 0.6, er * 1.1, -2.4, -0.75);
     c.stroke();
@@ -424,6 +450,30 @@ function potatoFace(c, f, P, look) {
   if (style === "stern") return;
   const mx = hx, my = hy + er * 2.3;
   c.strokeStyle = OUT;
+  if (ex) {
+    c.lineWidth = 1.8;
+    if (ex === "terror") {
+      c.beginPath(); c.ellipse(mx, my + er * 0.3, er * (0.7 + 0.35 * xk), er * (0.6 + 0.55 * xk), 0, 0, Math.PI * 2); c.fillStyle = "#5a1a14"; c.fill(); c.stroke();
+    } else if (ex === "rage") {   // clenched teeth at P.mouth 0, a roaring mouth at 1; fangs on the Dragon
+      const pm = clamp(P.mouth, 0, 1), mw = er * (1.5 + 0.9 * pm), mh = er * (0.35 + 1.6 * pm);
+      c.beginPath(); c.moveTo(mx - mw, my - er * 0.2); c.quadraticCurveTo(mx, my - er * 0.5, mx + mw, my - er * 0.2); c.quadraticCurveTo(mx + mw * 0.8, my - er * 0.2 + mh, mx, my - er * 0.2 + mh * 1.1);
+      c.quadraticCurveTo(mx - mw * 0.8, my - er * 0.2 + mh, mx - mw, my - er * 0.2); c.closePath();
+      c.fillStyle = pm < 0.2 ? "#ffffff" : "#5a1a14"; c.fill(); c.stroke();
+      c.fillStyle = "#ffffff";
+      if (cos === "dragon" && pm >= 0.2) { for (const s of [-1, 1]) { c.beginPath(); c.moveTo(mx + s * mw * 0.55, my - er * 0.3); c.lineTo(mx + s * mw * 0.3, my - er * 0.3); c.lineTo(mx + s * mw * 0.45, my + er * (0.2 + 0.5 * pm)); c.closePath(); c.fill(); c.lineWidth = 0.9; c.stroke(); } }
+      else if (pm < 0.2) { c.lineWidth = 1; c.beginPath(); for (let q = -2; q <= 2; q++) { c.moveTo(mx + q * mw * 0.38, my - er * 0.2); c.lineTo(mx + q * mw * 0.38, my - er * 0.2 + mh); } c.stroke(); }
+    } else if (ex === "grin") {   // a lopsided smirk, a fang on the Dragon
+      c.beginPath(); c.moveTo(mx - er * 1.1, my - er * 0.15); c.quadraticCurveTo(mx + er * 0.2, my + er * 1.2, mx + er * 1.5, my - er * 0.75); c.lineWidth = 2.2; c.stroke();
+      if (cos === "dragon") { c.fillStyle = "#ffffff"; c.beginPath(); c.moveTo(mx + er * 0.45, my + er * 0.28); c.lineTo(mx + er * 0.75, my + er * 0.3); c.lineTo(mx + er * 0.66, my + er * 0.85); c.closePath(); c.fill(); c.lineWidth = 0.9; c.stroke(); }
+    } else if (ex === "dazed") {
+      c.beginPath(); c.moveTo(mx - er * 1.0, my); for (let q = 1; q <= 4; q++) c.lineTo(mx - er * 1.0 + q * er * 0.5, my + (q % 2 ? er * 0.35 : -er * 0.1)); c.stroke();
+    } else if (ex === "ko") {
+      c.beginPath(); c.ellipse(mx, my + er * 0.4, er * 0.55, er * 0.7, 0, 0, Math.PI * 2); c.fillStyle = "#5a1a14"; c.fill(); c.stroke();
+    } else {   // calm
+      c.beginPath(); c.arc(mx, my - er * 0.7, er * 0.85, 0.4, Math.PI - 0.4); c.stroke();
+    }
+    return;
+  }
   if (P.mouth > 0.5 || hurt) {
     c.beginPath(); c.ellipse(mx, my + 1, er * 0.75, er * (hurt ? 0.5 : 0.65), 0, 0, Math.PI * 2);
     c.fillStyle = "#5a1a14"; c.fill(); c.lineWidth = 1.5; c.stroke();
