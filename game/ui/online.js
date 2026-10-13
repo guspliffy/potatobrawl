@@ -177,7 +177,7 @@ async function renderOnline() {
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
     btn.textContent = joining ? "Joining" : "Join";
     btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected;
-    btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); netJoin(h.presence.host); });
+    btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); netJoin(h.presence.host); });
     li.dataset.h = h.presence.host; li.append(who, btn); frag.appendChild(li);
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");

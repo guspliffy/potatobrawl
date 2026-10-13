@@ -33,6 +33,7 @@ function renderMenu() {
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
+  $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {

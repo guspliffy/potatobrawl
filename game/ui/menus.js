@@ -6,7 +6,7 @@ tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 tap("selBack", goMenu);
 tap("selUp", buyPending);
-tap("selGo", () => { if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -20,6 +20,7 @@ tap("pQuit", () => {
   finishMatch(true);
 });
 tap("rAgain", () => {
+  goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
   if (match && match.online) {
     NET.rm = NET.matchId + 1;
@@ -41,7 +42,7 @@ tap("rMenu", goMenu);
 tap("bOnline", openOnline);
 tap("onBack", goMenu);
 tap("onChange", () => openSelect("online"));
-tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else netHost(); });
+tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else { goFull(); netHost(); } });
 {
   const nameIn = $("onName");
   const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; renderOnline(); } };
@@ -57,7 +58,7 @@ tap("onCopy", () => {
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
 tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
-/* ----- settings: sound, graphics, screen turning, reset ----- */
+/* ----- settings: sound, graphics, fullscreen, screen turning, reset ----- */
 let resetArmed = false;
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
@@ -72,6 +73,8 @@ function renderSettings() {
   chipRow("setSound", [[true, "On"], [false, "Off"]], !!P.sound, (v) => { P.sound = v; saveProfile(); });
   chipRow("setGfx", [["3d", "3D"], ["2d", "2D"]], R3.failed ? "2d" : P.gfx === "2d" ? "2d" : "3d", (v) => { P.gfx = v; saveProfile(); }, (v) => R3.failed && v === "3d");
   $("setGfxNote").hidden = !R3.failed; $("setGfxNote").textContent = "3D isn't supported on this device.";
+  $("setFullRow").hidden = !FS.can;
+  chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   const rb = $("setReset");
@@ -81,6 +84,7 @@ function openSettings() { resetArmed = false; renderSettings(); modal("settings"
 tap("bSettings", openSettings);
 tap("pSettings", openSettings);
 tap("setClose", () => { modal("settings", false); if (mode === "menu") renderMenu(); });
+tap("a2hsOk", () => { P.a2hs = true; saveProfile(); renderMenu(); });
 tap("setReset", () => {
   if (!resetArmed) { resetArmed = true; renderSettings(); return; }
   resetArmed = false; P = defProfile(); P.tut = true; saveProfile(); sel.fighter = P.last; renderSettings(); renderMenu();

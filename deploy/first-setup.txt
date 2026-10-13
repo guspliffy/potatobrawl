@@ -19,7 +19,7 @@ else
 fi
 cd /opt/potatobrawl
 mkdir -p public
-for f in index.html three.min.js; do [ -f "$f" ] && cp -f "$f" public/; done
+for f in index.html three.min.js web/*; do [ -f "$f" ] && cp -f "$f" public/; done
 [ -f public/index.html ] && [ -f public/three.min.js ] || { echo "index.html or three.min.js is missing on GitHub."; exit 1; }
 npm install --omit=dev
 chown -R potatobrawl:potatobrawl /opt/potatobrawl

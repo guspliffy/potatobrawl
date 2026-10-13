@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0e1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser."><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>PotatoBrawl</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0e1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="PotatoBrawl"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" type="image/png" href="/icon-192.png"><meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser."><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>PotatoBrawl</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&family=Barlow:wght@400;500;600&display=swap">
@@ -102,6 +102,9 @@ button { font: inherit; color: inherit; }
 #stickBase.on { opacity: 1; transition: none; }
 #stickKnob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(243, 217, 164, 0.88); box-shadow: 0 2px 0 rgba(14, 16, 34, 0.5); }
 .pad { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: 8px; width: 262px; height: 182px; pointer-events: none; }
+/* sideways mode with browser bars: keep thumbs about 28px away from the bar edge */
+#app.barside #stickBase { left: calc(max(16px, env(safe-area-inset-left, 0px)) + 98px); }
+#app.barside .pad { right: calc(max(10px, env(safe-area-inset-right, 0px)) + 28px); }
 .pb {
   --bc: var(--text);
   position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; padding: 0; cursor: pointer;
@@ -160,6 +163,13 @@ button { font: inherit; color: inherit; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn:disabled:hover { background: var(--raise); }
 .hint { font-size: 13px; color: var(--sand); }
+/* iPhone: one-time Add to Home Screen tip, floating bottom-right over the demo match */
+.a2hs { position: absolute; z-index: 1; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: min(270px, 42%);
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: rgba(14, 16, 34, 0.86); border: 1px solid rgba(243, 217, 164, 0.35);
+  font-size: 12px; line-height: 1.35; color: var(--sand); }
+.a2hs b { color: var(--text); font-weight: 600; }
+.a2hs .link { flex: none; }
+#app.portrait .a2hs { width: auto; left: 14px; }
 .iconbtn { appearance: none; border: 1px solid var(--line); background: rgba(35, 39, 70, 0.85); color: var(--text); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .iconbtn svg { width: 22px; height: 22px; display: block; }
 .iconbtn:hover { background: #2c3156; }
@@ -455,6 +465,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
       </div>
     </div>
+    <div class="a2hs" id="a2hsHint" hidden><span>Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress.</span><button class="link" id="a2hsOk">OK</button></div>
   </section>
 
   <section id="scrSelect" class="screen select" hidden>
@@ -596,6 +607,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="x-row"><h3>Settings</h3><button class="link" id="setClose">Close</button></div>
       <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
       <div class="set-row"><span>Graphics</span><span class="chips" id="setGfx"></span><small id="setGfxNote" hidden></small></div>
+      <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
       <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
       <div class="set-row"><span>Progress</span><span class="chips"><button class="chip" id="setReset">Reset progress</button></span></div>
       <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
@@ -2096,6 +2108,28 @@ function releaseTouch() { for (const b of padBtns) { touch[b.dataset.k] = false;
 app.addEventListener("contextmenu", (e) => { if (mode === "match") e.preventDefault(); });
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 const touchUI = (window.matchMedia && matchMedia("(pointer: coarse)").matches) || navigator.maxTouchPoints > 0;
+/* ----- fullscreen (Android, computers) and the home-screen app (iPhone) -----
+   Only the website build can go fullscreen; the Claude artifact view can't. iPhone Safari has no
+   fullscreen for pages, so there the way out of the browser bars is Add to Home Screen. */
+const FS = {
+  web: !!window.__blStandalone && /^https?:$/.test(location.protocol),
+  app: !!((window.matchMedia && (matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: standalone)").matches)) || navigator.standalone),
+  ios: /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+};
+FS.can = FS.web && !FS.app && !/iPhone|iPod/.test(navigator.userAgent) && !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+const fsWanted = () => (P.fs === undefined ? touchUI : !!P.fs);
+const isFull = () => !!document.fullscreenElement;
+// Called from taps that start play (Fight, Rematch, Host, Join): browsers only allow fullscreen from a tap.
+function goFull() {
+  if (!FS.can || !fsWanted() || isFull()) return;
+  try {
+    document.documentElement.requestFullscreen({ navigationUI: "hide" }).then(() => {
+      if (touchUI && P.screen !== "up" && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
+    }, () => {});
+  } catch (e) { /* not allowed here */ }
+}
+function leaveFull() { if (isFull()) document.exitFullscreen().catch(() => {}); }
+document.addEventListener("fullscreenchange", () => setTimeout(resize, 60));
 
 /* ===================== layout & camera ===================== */
 let W = 1, H = 1, DPR = 1;
@@ -2119,6 +2153,8 @@ function resize() {
     app.style.transform = rotMode === 1 ? `translate(${W0}px, 0) rotate(90deg)` : `translate(0, ${H0}px) rotate(-90deg)`;
   } else { app.style.width = ""; app.style.height = ""; app.style.transform = ""; }
   app.classList.toggle("rot", !!rotMode);
+  // sideways mode with the browser bars showing: one of them runs along the stick or button edge
+  app.classList.toggle("barside", !!rotMode && !FS.app && !isFull());
   W = Math.max(1, app.clientWidth); H = Math.max(1, app.clientHeight);
   DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
@@ -4843,6 +4879,7 @@ function renderMenu() {
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
+  $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
@@ -5350,7 +5387,7 @@ async function renderOnline() {
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
     btn.textContent = joining ? "Joining" : "Join";
     btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected;
-    btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); netJoin(h.presence.host); });
+    btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); netJoin(h.presence.host); });
     li.dataset.h = h.presence.host; li.append(who, btn); frag.appendChild(li);
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
@@ -5703,7 +5740,7 @@ tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 tap("selBack", goMenu);
 tap("selUp", buyPending);
-tap("selGo", () => { if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -5717,6 +5754,7 @@ tap("pQuit", () => {
   finishMatch(true);
 });
 tap("rAgain", () => {
+  goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
   if (match && match.online) {
     NET.rm = NET.matchId + 1;
@@ -5738,7 +5776,7 @@ tap("rMenu", goMenu);
 tap("bOnline", openOnline);
 tap("onBack", goMenu);
 tap("onChange", () => openSelect("online"));
-tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else netHost(); });
+tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else { goFull(); netHost(); } });
 {
   const nameIn = $("onName");
   const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; renderOnline(); } };
@@ -5754,7 +5792,7 @@ tap("onCopy", () => {
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
 tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
-/* ----- settings: sound, graphics, screen turning, reset ----- */
+/* ----- settings: sound, graphics, fullscreen, screen turning, reset ----- */
 let resetArmed = false;
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
@@ -5769,6 +5807,8 @@ function renderSettings() {
   chipRow("setSound", [[true, "On"], [false, "Off"]], !!P.sound, (v) => { P.sound = v; saveProfile(); });
   chipRow("setGfx", [["3d", "3D"], ["2d", "2D"]], R3.failed ? "2d" : P.gfx === "2d" ? "2d" : "3d", (v) => { P.gfx = v; saveProfile(); }, (v) => R3.failed && v === "3d");
   $("setGfxNote").hidden = !R3.failed; $("setGfxNote").textContent = "3D isn't supported on this device.";
+  $("setFullRow").hidden = !FS.can;
+  chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   const rb = $("setReset");
@@ -5778,6 +5818,7 @@ function openSettings() { resetArmed = false; renderSettings(); modal("settings"
 tap("bSettings", openSettings);
 tap("pSettings", openSettings);
 tap("setClose", () => { modal("settings", false); if (mode === "menu") renderMenu(); });
+tap("a2hsOk", () => { P.a2hs = true; saveProfile(); renderMenu(); });
 tap("setReset", () => {
   if (!resetArmed) { resetArmed = true; renderSettings(); return; }
   resetArmed = false; P = defProfile(); P.tut = true; saveProfile(); sel.fighter = P.last; renderSettings(); renderMenu();

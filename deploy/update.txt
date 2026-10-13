@@ -4,7 +4,7 @@ bash <<'EOF'
 set -e
 cd /opt/potatobrawl
 git pull --ff-only
-cp -f index.html three.min.js public/
+cp -f index.html three.min.js web/* public/
 chown -R potatobrawl:potatobrawl /opt/potatobrawl
 systemctl restart potatobrawl
 sleep 2

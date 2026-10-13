@@ -20,6 +20,8 @@ function resize() {
     app.style.transform = rotMode === 1 ? `translate(${W0}px, 0) rotate(90deg)` : `translate(0, ${H0}px) rotate(-90deg)`;
   } else { app.style.width = ""; app.style.height = ""; app.style.transform = ""; }
   app.classList.toggle("rot", !!rotMode);
+  // sideways mode with the browser bars showing: one of them runs along the stick or button edge
+  app.classList.toggle("barside", !!rotMode && !FS.app && !isFull());
   W = Math.max(1, app.clientWidth); H = Math.max(1, app.clientHeight);
   DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);

@@ -31,6 +31,10 @@ body_part = body_part[:first_script] + '<script>' + shim + '</script>\n' + body_
 web = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
        '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
        '<meta name="theme-color" content="#0e1022"><meta name="apple-mobile-web-app-capable" content="yes">'
+       '<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
+       '<meta name="apple-mobile-web-app-title" content="PotatoBrawl">'
+       '<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png">'
+       '<link rel="icon" type="image/png" href="/icon-192.png">'
        '<meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser.">'
        '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
        + head_part + '</head><body>' + body_part + '</body></html>')
@@ -44,3 +48,6 @@ pub = root/'public'
 pub.mkdir(exist_ok=True)
 (pub/'index.html').write_text(web)
 (pub/'three.min.js').write_bytes(three)
+# web/ holds the home-screen app files (manifest, icons); the server serves them from public/ too.
+for f in (root/'web').iterdir():
+    (pub/f.name).write_bytes(f.read_bytes())
