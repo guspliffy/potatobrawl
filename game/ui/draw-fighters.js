@@ -8,7 +8,9 @@ function pose(f, tk) {
   const leg = h * L_.leg, tor = h * L_.torso, hr = h * L_.headR;
   const P = { leg, tor, hr, w, h, crouch: 0, lean: 0, spin: 0, swoosh: null, dim: false, mouth: 0, tailTo: null, flap: 0,
     // heavy-attack extras (see HEAVY_LOOK): glint, wings, hop, weapon angle, sheathed blade, tail whirl, crystal, raven, flask
-    pre: 0, hv: null, wingUp: 0, hop: 0, holdAng: null, sheath: 0, tailSwing: null, tailLift: 0, cryK: 1, ravenK: 0, ravenTo: null, flask: 0, hornFlash: 0, glintAt: null };
+    pre: 0, hv: null, wingUp: 0, hop: 0, holdAng: null, sheath: 0, tailSwing: null, tailLift: 0, cryK: 1, ravenK: 0, ravenTo: null, flask: 0, hornFlash: 0, glintAt: null,
+    // charge-up (a ground heavy held at its hold point): chg frames, whether it is waiting right now, the 1 px jitter at full charge
+    chg: 0, hold: false, jit: [0, 0] };
   let fF = [w * 0.24, 0], fB = [-w * 0.2, 0];
   let hF = [w * 0.5, -leg - tor * 0.52], hB = [w * 0.2, -leg - tor * 0.42];
   const st = f.state;
@@ -84,16 +86,21 @@ function pose(f, tk) {
       const air = !f.grounded, wk = phase === 0 ? ease(clamp(f.mt / Math.max(1, m.startup - 1), 0, 1)) : 1;
       P.crouch = Math.max(P.crouch, phase === 0 ? (air ? 0.12 : 0.25) * wk : phase === 2 ? (air ? 0.1 : 0.2) * (1 - ease(k)) : 0);
       P.pre = phase === 0 && f.mt >= m.startup - 1 ? (f.mt >= m.startup ? 1 : 0.6) : 0;
+      if (f.chg > 0 && m.charge) {
+        P.chg = f.chg; P.hold = f.mt === m.startup - BL.TUNE.chgHold;
+        if (P.hold && f.chg > 40) P.jit = [(tk & 1 ? 1 : -1) * 0.9, ((tk >> 1) & 1 ? 1 : -1) * 0.6];   // stage 3: the body shakes, 1 px (UI only)
+        if (P.hold) P.cryK = 1 + (f.chg > 40 ? 0.7 : f.chg > 20 ? 0.4 : 0.15);   // the Wizard's crystal swells with the charge
+      }
       look = HEAVY_LOOK[f.spec.id] && HEAVY_LOOK[f.spec.id][hk] || null;
       const X = { P, f, m, key: hk, phase, k, u: phase === 0 ? 0 : phase === 1 ? (m.active > 1 ? (f.mt - a0) / (m.active - 1) : 1) : 1, wk, mt: f.mt, startup: m.startup, active: m.active, a0, a1, age: f.mt - a0,
         tx, ty, b, w, h, leg, tor, air, hF, hB, fF, fB, replace: false };
       if (look && look.pose) look.pose(X);
       hF = X.hF; hB = X.hB; fF = X.fF; fB = X.fB; replace = X.replace;
-      P.hv = { id: f.spec.id, key: hk, look, phase, k, u: X.u, wk, age: X.age, startup: m.startup, active: m.active, a0, a1, tx, ty, b, trail: X.trail || null };
+      P.hv = { id: f.spec.id, key: hk, look, phase, k, u: X.u, wk, age: X.age, ck: P.chg ? P.chg / BL.TUNE.chgMax : 0, startup: m.startup, active: m.active, a0, a1, tx, ty, b, trail: X.trail || null };
     }
     const lingerEnd = a1 + (look && look.linger != null ? look.linger : 0);
     if (b && !replace && (phase === 1 || (phase === 2 && f.mt <= lingerEnd && look && look.keepSwoosh))) {
-      P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire, hv: !!hk, linger: phase === 2, age: f.mt - a0, key: hk };
+      P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire, hv: !!hk, linger: phase === 2, age: f.mt - a0, key: hk, ck: P.chg ? P.chg / BL.TUNE.chgMax : 0 };
     }
   }
   if (L_.wings) {
@@ -487,14 +494,14 @@ function capeShape(c, P, f, tk, color, long) {
   c.lineTo(w * 0.05, botY - 2); c.closePath();
   c.fillStyle = color; c.fill(); c.lineWidth = 2.2; c.strokeStyle = OUT; c.stroke();
 }
-function ravenShape(c, x, y, s, flap) {
+function ravenShape(c, x, y, s, flap, rdy) {
   c.save(); c.translate(x, y); c.scale(s, s);
   c.lineWidth = 1.4; c.strokeStyle = OUT;
   c.fillStyle = "#16151c"; c.beginPath(); c.moveTo(-6, 2); c.lineTo(-17, 8); c.lineTo(-15, 1); c.closePath(); c.fill(); c.stroke();
   c.beginPath(); c.ellipse(0, 0, 9, 6.5, -0.15, 0, Math.PI * 2); c.fill(); c.stroke();
   c.beginPath(); c.arc(7, -5, 4.6, 0, Math.PI * 2); c.fill(); c.stroke();
   c.fillStyle = "#3a3844"; c.beginPath(); c.moveTo(10.5, -6.5); c.lineTo(16.5, -4.5); c.lineTo(10.5, -3); c.closePath(); c.fill();
-  c.fillStyle = "#e33b3b"; c.beginPath(); c.arc(8, -6, 1.2, 0, Math.PI * 2); c.fill();
+  c.fillStyle = rdy ? "#ff2a2a" : "#e33b3b"; c.beginPath(); c.arc(8, -6, rdy ? 2 : 1.2, 0, Math.PI * 2); c.fill();   // rdy: finish-ready, the eyes burn
   c.fillStyle = "#24232c"; c.beginPath(); c.ellipse(-2, -2 - flap * 4, 8, 4, -0.35 - flap, 0, Math.PI * 2); c.fill(); c.stroke();
   c.restore();
 }
@@ -656,7 +663,7 @@ function drawPotato(c, f, tk, at) {
   const pal = flash ? { body: "#ffffff", trim: "#ffffff", accent: "#ffffff" } : P.dim ? { body: mix(pal0.body, "#6a6a7a", 0.45), trim: pal0.trim, accent: mix(pal0.accent, "#6a6a7a", 0.45) } : pal0;
   const limbF = flash ? "#ffffff" : LIMB, limbB = flash ? "#e8e8f0" : LIMB_BACK;
   c.save();
-  c.translate(ox, oy - P.hop); c.globalAlpha = alpha; c.scale(f.facing, 1);
+  c.translate(ox + P.jit[0], oy - P.hop + P.jit[1]); c.globalAlpha = alpha; c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
@@ -741,6 +748,7 @@ function drawPotato(c, f, tk, at) {
   }
   drawSwooshes(c, f, P, tk, alpha);
   drawHeavyFx(c, f, P, tk);
+  drawFinishFx(c, f, P, tk);
   c.restore();
   if (!at) drawHx(c, f.slot);
 }
@@ -766,11 +774,13 @@ function drawSwoosh(c, f, P, S) {
   };
   const lw = S.body ? 5 : S.sweep ? S.r * 0.6 : S.r * (S.heavy ? 0.5 : 0.35);
   if (S.hv && !S.body) {
-    // heavies: dark edge, accent core, white hairline
-    const ga = c.globalAlpha;
-    c.globalAlpha = ga; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lw * 1.3; path(); c.stroke();
-    c.strokeStyle = f.pal.accent; c.lineWidth = lw * 0.62; path(); c.stroke();
-    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = Math.max(1.2, lw * 0.14); path(); c.stroke();
+    // heavies: dark edge, accent core, white hairline (a charged heavy: thicker, with a light second tone round it)
+    const ga = c.globalAlpha, ck = S.ck || 0, lw0 = lw;
+    const lwk = lw0 * (1 + 0.7 * ck);
+    if (ck > 0.04) { c.globalAlpha = ga * 0.6; c.strokeStyle = mix(f.pal.accent, "#ffffff", 0.6); c.lineWidth = lwk * 1.3 + 4 + 5 * ck; path(); c.stroke(); }
+    c.globalAlpha = ga; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lwk * 1.3; path(); c.stroke();
+    c.strokeStyle = f.pal.accent; c.lineWidth = lwk * 0.62; path(); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = Math.max(1.2, lwk * 0.14); path(); c.stroke();
     return;
   }
   if (ink) {
@@ -851,7 +861,7 @@ function drawFighter(c, f, tk, at) {
      linger              frames fx() keeps drawing after the hit window closes
      swing(f)            one-shot world effects when the hit window opens (dust, shards, rings)
      hit(att, e)         one-shot world effects when the move connects
-   To add something per heavy (for example a charge-up glow while holding), add a field here and read it in pose() / drawHeavyFx(). */
+   To add something per heavy, add a field here and read it in pose() / drawHeavyFx(). The charge-up glow (held heavies) lives in its own section at the end of this file. */
 const HEAVY_KEYS = { hSide: 1, hUp: 1, hDown: 1, hAir: 1 };
 const isHeavyKey = (k) => HEAVY_KEYS[k] === 1;
 const mixv = (a, b, t) => (typeof a === "number" ? a + (b - a) * t : lerp2(a, b, t));
@@ -865,6 +875,7 @@ function hpath(X, rest, wind, strike, strike2) {
 }
 
 /* ---- small drawing helpers (fighter space) ---- */
+let HV_K = 0;   // charge (0..1) of the heavy being drawn: brush() thickens every stroke, duoStroke() adds a second tone
 function star4(c, x, y, s, colr) {
   c.fillStyle = colr || "#ffffff";
   c.beginPath(); c.moveTo(x, y - s); c.lineTo(x + s * 0.2, y - s * 0.2); c.lineTo(x + s, y); c.lineTo(x + s * 0.2, y + s * 0.2);
@@ -877,6 +888,7 @@ function lpts(a, b, n) { const o = []; for (let i = 0; i <= n; i++) o.push(lerp2
 function brush(c, pts, wmax, n) {
   n = Math.min(n, pts.length - 1);
   if (n < 1) return;
+  wmax *= 1 + 0.7 * HV_K;   // a charged heavy: every stroke is thicker
   const Lp = [], Rp = [];
   for (let i = 0; i <= n; i++) {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
@@ -891,6 +903,7 @@ function brush(c, pts, wmax, n) {
 }
 // the double stroke every heavy swoosh shares: dark edge, element colour, bright core
 function duoStroke(c, pts, n, wmax, colr, core, a) {
+  if (HV_K > 0.04) { c.globalAlpha = a * 0.6; c.fillStyle = /^#/.test(colr) ? mix(colr, "#ffffff", 0.6) : "#fff6d8"; brush(c, pts, wmax * 1.3 + 7, n); }   // second tone, charged heavies only
   c.globalAlpha = a * 0.9; c.fillStyle = "rgba(20,15,30,0.85)"; brush(c, pts, wmax * 1.3 + 2, n);
   c.globalAlpha = a; c.fillStyle = colr; brush(c, pts, wmax, n);
   c.fillStyle = core; brush(c, pts, wmax * 0.4, n);
@@ -966,8 +979,10 @@ function drawHeavyFx(c, f, P, tk) {
   const L = hv.look;
   c.save(); c.lineCap = "round"; c.lineJoin = "round";
   if (P.flask) flaskShape(c, P.hF[0] + 3, P.hF[1] - 10, 1.15, hv.phase === 0 ? Math.sin(tk * 0.5) * 0.12 : 0.2, "#7dff62");
-  if (L && L.fx && (hv.phase === 1 || (hv.phase === 2 && hv.post <= (L.linger || 0)) || L.fxStartup)) L.fx(c, f, P, hv, tk);
+  HV_K = hv.ck || 0;
+  try { if (L && L.fx && (hv.phase === 1 || (hv.phase === 2 && hv.post <= (L.linger || 0)) || L.fxStartup)) L.fx(c, f, P, hv, tk); } finally { HV_K = 0; }
   c.restore();
+  drawCharge(c, f, P, tk);
   drawGlint(c, f, P, tk);
 }
 // world-space marks that outlive the swing (claw slashes, rune glyphs); they ride in the shared fx list and are drawn by their owner
@@ -995,24 +1010,28 @@ function drawHx(c, slot) {
 }
 
 /* ---- one-shot world effects, called from handleEvent (effects.js) ---- */
-// Runs when a heavy starts: waits for the hit window, then shakes the camera and plays the heavy sound.
+// Runs when a heavy starts: waits for the hit window (a charging heavy holds at its hold point first), then shakes the camera and plays the heavy sound.
 function heavySwing(g, f, live) {
   const key = f.mid, mv = f.move, moveT = f.moveT, slot = f.slot;
-  setTimeout(() => {
+  let tries = 0;
+  const poll = () => {
     const q = g.fighters[slot];
-    if (!q || q.state !== "attack" || q.mid !== key || q.moveT !== moveT || paused) return;
-    cam.shake = Math.max(cam.shake, 3);
+    if (!q || q.state !== "attack" || q.mid !== key || q.moveT !== moveT || ++tries > 400) return;   // hit out of it, or done
+    if (paused || q.mt < mv.startup) { setTimeout(poll, 16); return; }
+    cam.shake = Math.max(cam.shake, 3 + 3 * (q.chg / BL.TUNE.chgMax));
     const L = HEAVY_LOOK[q.spec.id] && HEAVY_LOOK[q.spec.id][key];
     if (L && L.swing) L.swing(q);
     if (live) Sfx.heavy(q.spec.id, key);
-  }, Math.max(0, mv.startup * STEP - 8));
+  };
+  setTimeout(poll, Math.max(0, (mv.startup - 4) * STEP));
 }
 // Runs when a heavy connects: the ring is half as big again, plus the fighter's own sparks.
 function heavyHit(att, e) {
-  const kb = e.kb || 10, c0 = e.fire ? "#ff8a3d" : col(e.pal);
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 18, r0: 12, r1: (26 + kb * 2.4) * 1.5, col: c0 });
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 12, r0: 4, r1: (26 + kb * 2.4) * 0.8, col: "#ffffff" });
-  if (kb <= 14) addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: 36 + kb * 1.6 });
+  const kb = e.kb || 10, c0 = e.fire ? "#ff8a3d" : col(e.pal), ck = (e.chg || 0) / BL.TUNE.chgMax, big = 1 + 0.5 * ck;
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 18, r0: 12, r1: (26 + kb * 2.4) * 1.5 * big, col: c0 });
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 12, r0: 4, r1: (26 + kb * 2.4) * 0.8 * big, col: "#ffffff" });
+  if (kb <= 14 || ck > 0.3) addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: (36 + kb * 1.6) * (1 + 0.25 * ck) });
+  if (ck > 0.1) burstLines(e.x, e.y, 4 + Math.round(8 * ck), [c0, "#ffffff"], 6 + 4 * ck);
   const L = HEAVY_LOOK[att.spec.id] && HEAVY_LOOK[att.spec.id][att.mid];
   if (L && L.hit) L.hit(att, e);
 }
@@ -1491,4 +1510,137 @@ function fireArc(c, f, P, hv) {
     c.globalAlpha = al * q; c.fillStyle = i % 2 ? "#ffe08a" : "#ff8a3d";
     c.beginPath(); c.arc(p[0] + Math.sin(i * 3 + age * 0.3) * 4, p[1] + 6 + fall * 3.2, 2.6 - (i % 3) * 0.5, 0, Math.PI * 2); c.fill();
   }
+}
+
+/* ===================== charge-up glow =====================
+   A ground heavy that is held at its hold point (f.chg counts 1..BL.TUNE.chgMax) reads in three stages: wound (1-20), loaded (21-40), max (41-60).
+   Stage 1: a soft glow in the accent colour at the striking limb or weapon. Stage 2: the fighter's own element gathers (CHARGE_GATHER[id]).
+   Stage 3: the glow doubles, a rim light runs round the body and the body shakes 1 px (pose() sets P.jit; both renderers apply it).
+   UI only: everything is a function of f.chg and the tick, so it works with a frozen sim and in 2D and 3D alike.
+   On release, P.hv.ck (= chg / chgMax) makes the heavy's strokes thicker and two-toned (see brush(), duoStroke(), drawSwoosh()).
+   To change what a fighter shows: chargePts() says where the glow sits, CHARGE_GATHER[id] draws the stage 2 and 3 element. */
+const bp = (P, p) => rot(p, P.hip, P.lean);   // a point on the leaning body, in fighter space
+const nz = (n) => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
+function glowDot(c, x, y, r, a, colr) {
+  if (a <= 0 || r <= 0) return;
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgba(colr, Math.min(1, a))); g.addColorStop(0.45, rgba(colr, Math.min(1, a * 0.6))); g.addColorStop(1, rgba(colr, 0));
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+}
+function tongue(c, x, y, h, wd, lean, colr, core) {
+  c.fillStyle = colr; c.beginPath(); c.moveTo(x - wd, y);
+  c.quadraticCurveTo(x - wd * 0.9 + lean * 0.3, y - h * 0.55, x + lean, y - h); c.quadraticCurveTo(x + wd * 0.9 + lean * 0.3, y - h * 0.5, x + wd, y); c.closePath(); c.fill();
+  if (core) {
+    c.fillStyle = core; c.beginPath(); c.moveTo(x - wd * 0.5, y);
+    c.quadraticCurveTo(x - wd * 0.4 + lean * 0.2, y - h * 0.35, x + lean * 0.7, y - h * 0.62); c.quadraticCurveTo(x + wd * 0.4 + lean * 0.2, y - h * 0.3, x + wd * 0.5, y); c.closePath(); c.fill();
+  }
+}
+// flame tongues rising from a point, each flickering on its own
+function flameCluster(c, x, y, n, h, spread, tk, q, colr, core) {
+  for (let i = 0; i < n; i++) {
+    const m = i - (n - 1) / 2, fl = 0.72 + 0.28 * Math.sin(tk * 0.55 + i * 2.3);
+    tongue(c, x + m * spread, y, h * fl * (1 - Math.abs(m) * 0.16), 3.2 + q * 1.8, Math.sin(tk * 0.32 + i * 1.7) * 2.6, colr, core);
+  }
+}
+// green-white forks round a point, re-rolled every other tick
+function crackle(c, x, y, tk, q, r) {
+  const seed = (tk >> 1) * 7.13, n = 3 + (q > 0.55 ? 2 : 0);
+  c.lineJoin = "round";
+  for (let i = 0; i < n; i++) {
+    const a0 = nz(seed + i * 3.1) * Math.PI * 2, len = r * (0.7 + 0.8 * nz(seed + i * 5.7)), ca = Math.cos(a0), sa = Math.sin(a0), pts = [[x + ca * 4, y + sa * 4]];
+    for (let j = 1; j <= 4; j++) { const t = j / 4, jt = (nz(seed + i * 9.1 + j * 2.7) - 0.5) * 9; pts.push([x + ca * (4 + len * t) - sa * jt, y + sa * (4 + len * t) + ca * jt]); }
+    for (const [colr, wd] of [["rgba(160,255,140,0.5)", 4.2], ["#f1ffe6", 1.5]]) {
+      c.strokeStyle = colr; c.lineWidth = wd; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts) c.lineTo(p[0], p[1]); c.stroke();
+    }
+  }
+}
+// pale-blue breath rising off a fist, with a twinkle or two
+function frost(c, x, y, tk, q, n) {
+  for (let i = 0; i < n; i++) {
+    const ph = (tk * 0.045 + i / n) % 1, r = 3.6 + ph * 8 * (0.75 + q * 0.5), px = x + Math.sin(i * 4.1 + tk * 0.03) * 9, py = y - 3 - ph * 26;
+    c.globalAlpha = (1 - ph) * 0.85; c.fillStyle = i % 2 ? "#e9f8ff" : "#b9e3ff";
+    c.beginPath(); c.arc(px, py, r, 0, Math.PI * 2); c.fill();
+    if (i % 2 === 0) star4(c, px + 7, py - 6, 1.6 + 4 * (1 - ph), "#ffffff");
+  }
+  c.globalAlpha = 1;
+}
+// motes spiralling up off a point (the Wizard's crystal)
+function motes(c, x, y, tk, q, n) {
+  for (let i = 0; i < n; i++) {
+    const ph = (tk * 0.04 + i / n) % 1, ang = i * 2.4 + tk * 0.09, rr = 7 + 11 * ph;
+    c.globalAlpha = Math.min(1, (1 - ph) * 1.4);
+    star4(c, x + Math.cos(ang) * rr * 1.3, y - 3 - ph * 30 + Math.sin(ang) * 4, 2.4 + 2.4 * (1 - ph) * (0.6 + q * 0.6), i % 2 ? "#fff6d8" : "#bff3ff");
+  }
+  c.globalAlpha = 1;
+}
+// a white glint sliding hilt to tip along the blade
+function bladeGlint(c, f, P, tk, st, q) {
+  const sh = bp(P, P.sh), a = heldDir(f, P, sh, -0.8), L = P.w * 1.35, ca = Math.cos(a), sa = Math.sin(a), n = st === 3 ? 2 : 1;
+  for (let i = 0; i < n; i++) {
+    const t = (tk * 0.032 + i * 0.5) % 1, d = 8 + t * (L - 10), x = P.hF[0] + ca * d, y = P.hF[1] + sa * d, fade = Math.sin(Math.PI * t);
+    c.globalAlpha = 0.35 * fade; c.strokeStyle = "#ffffff"; c.lineWidth = 3; c.beginPath(); c.moveTo(x - ca * 9, y - sa * 9); c.lineTo(x + ca * 9, y + sa * 9); c.stroke();
+    c.globalAlpha = Math.min(1, 0.4 + fade); star4(c, x, y, 7 + 7 * fade * (0.7 + q * 0.5), "#ffffff");
+  }
+  c.globalAlpha = 1;
+}
+// where the stage 1 glow sits: the striking limb or weapon
+function chargePts(f, P, key) {
+  const hand = P.hF, foot = P.fF;
+  switch (f.spec.id) {
+    case "phoenix": return key === "hSide" ? [bp(P, P.mouthPt || P.head)] : key === "hUp" ? [hand] : [foot];
+    case "alchemist": return [hand];
+    case "odin": return key === "hUp" ? [hand] : [hand, P.hB];
+    case "wizard": return [P.staffTip || hand];
+    case "samurai": { const a = heldDir(f, P, bp(P, P.sh), -0.8), L = P.w * 1.35; return [hand, [hand[0] + Math.cos(a) * L * 0.6, hand[1] + Math.sin(a) * L * 0.6]]; }
+    default: return key === "hUp" ? [hand, bp(P, [-P.w * 0.05 - 9, P.top - 14])] : key === "hDown" ? [hand, P.hB] : [hand];   // dragon: claws (and the horns for the toss)
+  }
+}
+// stage 2 and 3: the element gathers. q = progress through the stage (0..1)
+const CHARGE_GATHER = {
+  phoenix(c, f, P, tk, st, q) { const o = bp(P, [-P.w * 0.1, P.top + P.ry * 0.25]); flameCluster(c, o[0], o[1], st === 3 ? 5 : 3, 15 + 10 * q + (st === 3 ? 8 : 0), 6, tk, q, "#ff7a2b", "#ffe08a"); },
+  dragon(c, f, P, tk, st, q, pts) { for (const p of pts) flameCluster(c, p[0], p[1] - 1, st === 3 ? 4 : 3, 11 + 6 * q + (st === 3 ? 6 : 0), 4.4, tk, q, "#ff8a2b", "#ffe08a"); },
+  alchemist(c, f, P, tk, st, q, pts) { for (const p of pts) crackle(c, p[0], p[1], tk, st === 3 ? 1 : q * 0.5, 20 + 10 * q + (st === 3 ? 10 : 0)); },
+  odin(c, f, P, tk, st, q, pts) { for (const p of pts) frost(c, p[0], p[1], tk, st === 3 ? 1 : q, st === 3 ? 6 : 4); },
+  wizard(c, f, P, tk, st, q, pts) {
+    const [x, y] = pts[0], fl = Math.sin(tk * 0.3) * 2;
+    star4(c, x, y, 14 + 8 * q + (st === 3 ? 10 : 0) + fl, "#fff6d8");   // the crystal flares
+    if (st === 3) { c.globalAlpha = 0.8; c.fillStyle = "#bff3ff"; c.fillRect(x - 0.9, y - 26, 1.8, 52); c.fillRect(x - 26, y - 0.9, 52, 1.8); c.globalAlpha = 1; }
+    motes(c, x, y, tk, q, st === 3 ? 7 : 5);
+  },
+  samurai(c, f, P, tk, st, q) { bladeGlint(c, f, P, tk, st, q); },
+};
+function drawCharge(c, f, P, tk) {
+  if (!P.hold || P.chg <= 0 || !P.rx || !P.hv) return;
+  const n = P.chg, st = n > 40 ? 3 : n > 20 ? 2 : 1, q = st === 1 ? n / 20 : st === 2 ? (n - 20) / 20 : 1;
+  const acc = f.pal.accent, ramp = Math.min(1, n / 4), pulse = 0.88 + 0.12 * Math.sin(tk * 0.5);
+  const a = st === 1 ? 0.55 + 0.25 * q : st === 2 ? 0.7 + 0.2 * q : 1, r = (st === 1 ? 20 + 8 * q : st === 2 ? 28 + 8 * q : 40) * pulse;
+  const pts = chargePts(f, P, P.hv.key);
+  c.save(); c.lineCap = "round"; c.lineJoin = "round";
+  if (st === 3) {
+    // rim light round the whole body
+    c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    const kx = R3.on ? 0.9 : 1, ky = R3.on ? 0.96 : 1;
+    c.globalAlpha = 0.22 + 0.1 * Math.sin(tk * 0.6); c.strokeStyle = acc; c.lineWidth = 8; c.beginPath(); c.ellipse(0, P.cy, P.rx * kx + 2, P.ry * ky + 2, 0, 0, Math.PI * 2); c.stroke();
+    c.restore();
+  }
+  for (const p of pts) {
+    glowDot(c, p[0], p[1], r, a * ramp, acc);
+    glowDot(c, p[0], p[1], r * (st === 3 ? 0.5 : 0.4), (st === 3 ? 0.85 : 0.55) * ramp, mix(acc, "#ffffff", 0.65));   // a pale core, so the glow reads on a body of the same colour
+  }
+  if (st >= 2 && CHARGE_GATHER[f.spec.id]) { c.globalAlpha = 1; CHARGE_GATHER[f.spec.id](c, f, P, tk, st, q, pts); }
+  c.restore();
+}
+
+/* ===================== finish-ready: the fighter side =====================
+   While the opponent is at BL.TUNE.finishPct or more, Samurai's Quick Draw leaves the white flash line (the world-space part is finDashTick in effects.js;
+   the projectiles and the ring under the feet are in draw-world.js and gfx3d.js). */
+function drawFinishFx(c, f, P, tk) {
+  const m = f.move;
+  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot)) return;
+  if (f.mt < m.startup + 1 || f.mt > m.startup + m.active) return;   // after the dash the finDashTick line takes over
+  const dist = Math.min(260, (m.speed || 15) * (f.mt - m.startup)), y = -P.h * 0.45, pts = lpts([-dist - 6, y], [-6, y], 8);
+  c.save(); c.lineCap = "round";
+  c.globalAlpha = 0.5; c.fillStyle = f.pal.accent; brush(c, pts, 15, 8);
+  c.globalAlpha = 1; c.fillStyle = "#ffffff"; brush(c, pts, 5, 8);
+  c.restore();
 }

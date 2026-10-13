@@ -105,7 +105,26 @@ function drawStage(c, tk) {
   }
 }
 
+/* ---- finish-ready looks (UI only: hitboxes and the simulation never change) ----
+   A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
+   Ring under the feet: here for the 2D renderer, a flat mesh in gfx3d.js (r3FinRings) for 3D. Projectile extras: finOrbFx / finRavenFx / finBoltFx / finFireFx below. */
+let RG = null;
+function finishReady(slot) {
+  const f = RG && RG.fighters[slot];
+  return !!f && f.percent >= BL.TUNE.finishPct && f.state !== "dead" && f.state !== "gone";
+}
+const finRingCol = (slot) => (RG && RG.fighters[1 - slot] ? col(RG.fighters[1 - slot].pal) : "#ffffff");   // the colour of the fighter who can finish
+function drawFinRing(c, f) {
+  if (!finishReady(f.slot)) return;
+  const colr = finRingCol(f.slot), w = f.s.w, ph = (tick % 54) / 54, r0 = w * 0.78;
+  c.save(); c.strokeStyle = colr; c.lineWidth = 2.2;
+  c.globalAlpha = 0.5 + 0.25 * Math.sin(tick * 0.2); c.beginPath(); c.ellipse(f.x, f.y + 1, r0, r0 * 0.24, 0, 0, Math.PI * 2); c.stroke();
+  const r = r0 + w * 0.5 * ph; c.globalAlpha = 0.85 * (1 - ph); c.beginPath(); c.ellipse(f.x, f.y + 1, r, r * 0.24, 0, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
+
 function drawShadow(c, f) {
+  drawFinRing(c, f);
   const S = STAGE.main;
   if (f.state === "dead" || f.state === "gone" || f.x < S.x1 || f.x > S.x2) return;
   let gy = S.top;
@@ -123,10 +142,62 @@ function drawRespawnPlat(c, f, tk) {
   c.beginPath(); c.roundRect(f.x - 40, f.y, 80, 8, 4); c.fillStyle = col(f.pal); c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
 }
 
+// Finish-ready projectile extras. K scales the drawing (never the hitbox).
+const FIN_K = { orb: 1.25, bolt: 1.35, raven: 1, phoenix: 1.6, dragon: 1.5 };
+function finProjK(p, rdy) { if (!rdy) return 1; if (p.style === "fire") return FIN_K[RG && RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix"] || 1.6; return FIN_K[p.style] || 1; }
+function teardrop(c, x, y, s) { c.beginPath(); c.moveTo(x, y - s * 1.6); c.quadraticCurveTo(x + s, y + s * 0.3, x, y + s); c.quadraticCurveTo(x - s, y + s * 0.3, x, y - s * 1.6); c.fill(); }
+function finOrbFx(c, p, tk) {   // the toxic orb trails a green comet tail and drips as it flies
+  c.save();
+  const a = Math.atan2(p.vy, p.vx), r = p.r * 1.25, len = r * 4.2;
+  c.save(); c.translate(p.x, p.y); c.rotate(a);
+  const g = c.createLinearGradient(0, 0, -len, 0); g.addColorStop(0, "rgba(150,255,120,0.6)"); g.addColorStop(1, "rgba(80,255,90,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(0, -r * 0.9); c.quadraticCurveTo(-len * 0.5, -r * 0.55, -len, 0); c.quadraticCurveTo(-len * 0.5, r * 0.55, 0, r * 0.9); c.closePath(); c.fill(); c.restore();
+  for (let i = 0; i < 7; i++) {
+    const ph = (tk * 0.045 + i / 7 + nz(i * 3.3) * 0.2) % 1, x = p.x - p.vx * (1.2 + i * 1.7) + (nz(i * 9.7) - 0.5) * 8, y = p.y + r * 0.55 + ph * 34 + i;
+    c.globalAlpha = Math.min(1, (1 - ph) * 1.3); c.fillStyle = i % 2 ? "#d4ffbc" : "#46d83f"; teardrop(c, x, y, 3.6 + (i % 3) * 0.7);
+    c.lineWidth = 1; c.strokeStyle = "rgba(20,90,30,0.6)"; c.stroke();
+  }
+  c.restore();
+}
+function finRavenFx(c, p, tk, ov) {   // ov: drawn over the 3D bird, so start behind its tail   // a pale-blue streak behind the raven, and its eyes burn red
+  const s = p.vx >= 0 ? 1 : -1, o = ov ? 16 : 0;
+  c.save(); c.translate(p.x, p.y);
+  const g = c.createLinearGradient(-s * o, 0, -s * (110 + o), 0); g.addColorStop(0, "rgba(200,236,255,0.8)"); g.addColorStop(1, "rgba(200,236,255,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(-s * (6 + o), -11); c.quadraticCurveTo(-s * (50 + o), -9, -s * (112 + o), 0); c.quadraticCurveTo(-s * (50 + o), 11, -s * (6 + o), 11); c.closePath(); c.fill();
+  c.strokeStyle = "rgba(235,248,255,0.8)"; c.lineWidth = 1.6; c.lineCap = "round";
+  for (const [dy, len] of [[-4, 70], [2, 90], [7, 56]]) { c.beginPath(); c.moveTo(-s * (12 + o), dy); c.lineTo(-s * (12 + o + len), dy * 0.5); c.stroke(); }
+  c.restore();
+}
+function finRavenEyes(c, p) {   // the red glow over the eye (the 3D bird has red eye meshes; this lights them)
+  const s = p.vx >= 0 ? 1 : -1; glowDot(c, p.x + s * 11, p.y - 7.5, 11, 0.9, "#ff2a2a"); glowDot(c, p.x + s * 11, p.y - 7.5, 4, 1, "#ffd0d0");
+}
+function finBoltFx(c, p, tk) {   // the crystal bolt trails stars
+  c.save();
+  const g = c.createLinearGradient(p.x, p.y, p.x - p.vx * 12, p.y - p.vy * 12); g.addColorStop(0, "rgba(255,244,200,0.7)"); g.addColorStop(1, "rgba(150,230,255,0)");
+  c.strokeStyle = g; c.lineWidth = p.r * 0.9; c.lineCap = "round"; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx * 12, p.y - p.vy * 12); c.stroke();
+  for (let i = 1; i <= 5; i++) {
+    c.globalAlpha = 1 - i / 6;
+    star4(c, p.x - p.vx * (1.6 + i * 2.4), p.y + Math.sin(tk * 0.4 + i * 1.9) * p.r * 0.5, p.r * (0.95 - i * 0.1), i % 2 ? "#fff6d8" : "#bff3ff");
+  }
+  c.restore();
+}
+function finFireFx(c, p, tk, who) {   // Phoenix: a long comet tail. Dragon: every puff drags a short fat cone, together one thick stream
+  const a = Math.atan2(p.vy, p.vx), dragon = who === "dragon", r = p.r * (dragon ? 1.5 : 1.6), fl = 1 + Math.sin(tk * 0.9 + p.x * 0.05) * 0.06;
+  c.save(); c.translate(p.x, p.y); c.rotate(a);
+  const len = (dragon ? r * 3.3 : r * 5.6) * fl, hw = dragon ? r * 1.15 : r * 0.92, tail = dragon ? hw * 1.5 : hw * 0.22;
+  const g = c.createLinearGradient(0, 0, -len, 0);
+  g.addColorStop(0, dragon ? "rgba(255,214,120,0.9)" : "rgba(255,236,160,0.95)"); g.addColorStop(0.45, "rgba(255,122,43,0.65)"); g.addColorStop(1, "rgba(255,60,20,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(0, -hw); c.quadraticCurveTo(-len * 0.5, -hw * (dragon ? 1.1 : 0.62), -len, -tail); c.lineTo(-len, tail); c.quadraticCurveTo(-len * 0.5, hw * (dragon ? 1.1 : 0.62), 0, hw); c.closePath(); c.fill();
+  if (!dragon) { c.fillStyle = "rgba(255,250,225,0.8)"; c.beginPath(); c.moveTo(0, -hw * 0.4); c.quadraticCurveTo(-len * 0.35, -hw * 0.25, -len * 0.62, 0); c.quadraticCurveTo(-len * 0.35, hw * 0.25, 0, hw * 0.4); c.closePath(); c.fill(); }
+  c.restore();
+}
+
 function drawProj(c, p, tk) {
+  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
   if (p.style === "orb") {
-    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15), 0, Math.PI * 2); c.fill(); }
-    greenOrb(c, p.x, p.y, p.r * 0.9, tk);
+    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
+    if (rdy) finOrbFx(c, p, tk);
+    greenOrb(c, p.x, p.y, p.r * 0.9 * K, tk);
     return;
   }
   if (p.style === "burst") {
@@ -137,13 +208,16 @@ function drawProj(c, p, tk) {
     return;
   }
   if (p.style === "raven") {
+    if (rdy) finRavenFx(c, p, tk);
     c.save(); c.translate(p.x, p.y); c.scale(p.vx >= 0 ? 1 : -1, 1);
-    ravenShape(c, 0, 0, 1.25, Math.sin(tk * 0.6) * 0.7);
+    ravenShape(c, 0, 0, 1.25, Math.sin(tk * 0.6) * 0.7, rdy);
     c.restore();
+    if (rdy) finRavenEyes(c, p);
     return;
   }
   if (p.style === "bolt") {
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    if (rdy) finBoltFx(c, p, tk);
+    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.scale(K, K);
     const g = c.createRadialGradient(0, 0, 2, 0, 0, p.r * 2);
     g.addColorStop(0, "rgba(255,240,180,0.9)"); g.addColorStop(1, "rgba(120,220,255,0)");
     c.fillStyle = g; c.beginPath(); c.ellipse(-p.r * 0.6, 0, p.r * 2.4, p.r * 1.1, 0, 0, Math.PI * 2); c.fill();
@@ -153,14 +227,15 @@ function drawProj(c, p, tk) {
     return;
   }
   if (p.style === "fire") {
-    const fl = Math.sin(tk * 0.9 + p.x * 0.05);
+    const fl = Math.sin(tk * 0.9 + p.x * 0.05), R = p.r * K;
+    if (rdy) finFireFx(c, p, tk, RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix");
     for (let i = 4; i >= 1; i--) {
       c.fillStyle = `rgba(255,${110 + i * 18},40,${0.2 * (5 - i) / 4})`;
-      c.beginPath(); c.arc(p.x - p.vx * i * 1.7, p.y - p.vy * i * 1.7, p.r * (1 - i * 0.13), 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(p.x - p.vx * i * 1.7, p.y - p.vy * i * 1.7, R * (1 - i * 0.13), 0, Math.PI * 2); c.fill();
     }
-    const gr = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 1.5);
+    const gr = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 1.5);
     gr.addColorStop(0, "#fffbe0"); gr.addColorStop(0.3, "#ffd166"); gr.addColorStop(0.65, "#ff7a2b"); gr.addColorStop(1, "rgba(255,70,30,0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(p.x, p.y, p.r * 1.5 + fl * 1.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = gr; c.beginPath(); c.arc(p.x, p.y, R * 1.5 + fl * 1.5, 0, Math.PI * 2); c.fill();
     return;
   }
   if (p.style === "fry") {

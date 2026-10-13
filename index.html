@@ -2116,7 +2116,7 @@ function paintBadge(el, i) { el.style.setProperty("--tc", TIERS[i].col); el.text
 
 /* ===================== sound (WebAudio, synthesized) ===================== */
 const Sfx = {
-  ctx: null, out: null, noiseBuf: null,
+  ctx: null, out: null, noiseBuf: null, humO: null, humG: null, humT: 0,
   init() {
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {}); return; }
     try {
@@ -2165,6 +2165,28 @@ const Sfx = {
     this.env(g, t, vol, dur); s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
   },
   later(ms, fn) { setTimeout(() => { if (this.ok()) fn(); }, ms); },
+  // Charge hum: ONE oscillator rising 140 -> 420 Hz across the charge. humStep() (effects.js) calls hum(frames) every rendered frame while a
+  // heavy is held; hum(0) stops it. A dead-man timer stops it by itself when the frames stop coming (hidden tab), so it can never keep droning.
+  hum(chg) {
+    if (!(chg > 0) || !this.ok()) { this.humOff(); return; }
+    const c = this.ctx, t = c.currentTime, k = Math.min(1, chg / 60), fr = 140 + 280 * k, v = 0.04 + 0.03 * k;
+    if (!this.humO) {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "triangle"; o.frequency.setValueAtTime(fr, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.06);
+      o.connect(g); g.connect(this.out); o.start(t);
+      this.humO = o; this.humG = g;
+    } else { this.humO.frequency.setTargetAtTime(fr, t, 0.03); this.humG.gain.setTargetAtTime(v, t, 0.04); }
+    clearTimeout(this.humT); this.humT = setTimeout(() => this.humOff(), 260);
+  },
+  humOff() {
+    clearTimeout(this.humT); this.humT = 0;
+    const o = this.humO, g = this.humG;
+    if (!o) return;
+    this.humO = this.humG = null;
+    try { const t = this.ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.0001, t, 0.02); o.stop(t + 0.1); } catch (e) { /* already stopped */ }
+    setTimeout(() => { try { o.disconnect(); g.disconnect(); } catch (e) { /* gone */ } }, 300);
+  },
   // Heavy attacks: a low "whoomp" under every heavy, then a signature per fighter and move (id = fighter, key = hSide / hUp / hDown / hAir)
   heavy(id, key) {
     if (!this.ok()) return;
@@ -2448,7 +2470,9 @@ function pose(f, tk) {
   const leg = h * L_.leg, tor = h * L_.torso, hr = h * L_.headR;
   const P = { leg, tor, hr, w, h, crouch: 0, lean: 0, spin: 0, swoosh: null, dim: false, mouth: 0, tailTo: null, flap: 0,
     // heavy-attack extras (see HEAVY_LOOK): glint, wings, hop, weapon angle, sheathed blade, tail whirl, crystal, raven, flask
-    pre: 0, hv: null, wingUp: 0, hop: 0, holdAng: null, sheath: 0, tailSwing: null, tailLift: 0, cryK: 1, ravenK: 0, ravenTo: null, flask: 0, hornFlash: 0, glintAt: null };
+    pre: 0, hv: null, wingUp: 0, hop: 0, holdAng: null, sheath: 0, tailSwing: null, tailLift: 0, cryK: 1, ravenK: 0, ravenTo: null, flask: 0, hornFlash: 0, glintAt: null,
+    // charge-up (a ground heavy held at its hold point): chg frames, whether it is waiting right now, the 1 px jitter at full charge
+    chg: 0, hold: false, jit: [0, 0] };
   let fF = [w * 0.24, 0], fB = [-w * 0.2, 0];
   let hF = [w * 0.5, -leg - tor * 0.52], hB = [w * 0.2, -leg - tor * 0.42];
   const st = f.state;
@@ -2524,16 +2548,21 @@ function pose(f, tk) {
       const air = !f.grounded, wk = phase === 0 ? ease(clamp(f.mt / Math.max(1, m.startup - 1), 0, 1)) : 1;
       P.crouch = Math.max(P.crouch, phase === 0 ? (air ? 0.12 : 0.25) * wk : phase === 2 ? (air ? 0.1 : 0.2) * (1 - ease(k)) : 0);
       P.pre = phase === 0 && f.mt >= m.startup - 1 ? (f.mt >= m.startup ? 1 : 0.6) : 0;
+      if (f.chg > 0 && m.charge) {
+        P.chg = f.chg; P.hold = f.mt === m.startup - BL.TUNE.chgHold;
+        if (P.hold && f.chg > 40) P.jit = [(tk & 1 ? 1 : -1) * 0.9, ((tk >> 1) & 1 ? 1 : -1) * 0.6];   // stage 3: the body shakes, 1 px (UI only)
+        if (P.hold) P.cryK = 1 + (f.chg > 40 ? 0.7 : f.chg > 20 ? 0.4 : 0.15);   // the Wizard's crystal swells with the charge
+      }
       look = HEAVY_LOOK[f.spec.id] && HEAVY_LOOK[f.spec.id][hk] || null;
       const X = { P, f, m, key: hk, phase, k, u: phase === 0 ? 0 : phase === 1 ? (m.active > 1 ? (f.mt - a0) / (m.active - 1) : 1) : 1, wk, mt: f.mt, startup: m.startup, active: m.active, a0, a1, age: f.mt - a0,
         tx, ty, b, w, h, leg, tor, air, hF, hB, fF, fB, replace: false };
       if (look && look.pose) look.pose(X);
       hF = X.hF; hB = X.hB; fF = X.fF; fB = X.fB; replace = X.replace;
-      P.hv = { id: f.spec.id, key: hk, look, phase, k, u: X.u, wk, age: X.age, startup: m.startup, active: m.active, a0, a1, tx, ty, b, trail: X.trail || null };
+      P.hv = { id: f.spec.id, key: hk, look, phase, k, u: X.u, wk, age: X.age, ck: P.chg ? P.chg / BL.TUNE.chgMax : 0, startup: m.startup, active: m.active, a0, a1, tx, ty, b, trail: X.trail || null };
     }
     const lingerEnd = a1 + (look && look.linger != null ? look.linger : 0);
     if (b && !replace && (phase === 1 || (phase === 2 && f.mt <= lingerEnd && look && look.keepSwoosh))) {
-      P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire, hv: !!hk, linger: phase === 2, age: f.mt - a0, key: hk };
+      P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire, hv: !!hk, linger: phase === 2, age: f.mt - a0, key: hk, ck: P.chg ? P.chg / BL.TUNE.chgMax : 0 };
     }
   }
   if (L_.wings) {
@@ -2927,14 +2956,14 @@ function capeShape(c, P, f, tk, color, long) {
   c.lineTo(w * 0.05, botY - 2); c.closePath();
   c.fillStyle = color; c.fill(); c.lineWidth = 2.2; c.strokeStyle = OUT; c.stroke();
 }
-function ravenShape(c, x, y, s, flap) {
+function ravenShape(c, x, y, s, flap, rdy) {
   c.save(); c.translate(x, y); c.scale(s, s);
   c.lineWidth = 1.4; c.strokeStyle = OUT;
   c.fillStyle = "#16151c"; c.beginPath(); c.moveTo(-6, 2); c.lineTo(-17, 8); c.lineTo(-15, 1); c.closePath(); c.fill(); c.stroke();
   c.beginPath(); c.ellipse(0, 0, 9, 6.5, -0.15, 0, Math.PI * 2); c.fill(); c.stroke();
   c.beginPath(); c.arc(7, -5, 4.6, 0, Math.PI * 2); c.fill(); c.stroke();
   c.fillStyle = "#3a3844"; c.beginPath(); c.moveTo(10.5, -6.5); c.lineTo(16.5, -4.5); c.lineTo(10.5, -3); c.closePath(); c.fill();
-  c.fillStyle = "#e33b3b"; c.beginPath(); c.arc(8, -6, 1.2, 0, Math.PI * 2); c.fill();
+  c.fillStyle = rdy ? "#ff2a2a" : "#e33b3b"; c.beginPath(); c.arc(8, -6, rdy ? 2 : 1.2, 0, Math.PI * 2); c.fill();   // rdy: finish-ready, the eyes burn
   c.fillStyle = "#24232c"; c.beginPath(); c.ellipse(-2, -2 - flap * 4, 8, 4, -0.35 - flap, 0, Math.PI * 2); c.fill(); c.stroke();
   c.restore();
 }
@@ -3096,7 +3125,7 @@ function drawPotato(c, f, tk, at) {
   const pal = flash ? { body: "#ffffff", trim: "#ffffff", accent: "#ffffff" } : P.dim ? { body: mix(pal0.body, "#6a6a7a", 0.45), trim: pal0.trim, accent: mix(pal0.accent, "#6a6a7a", 0.45) } : pal0;
   const limbF = flash ? "#ffffff" : LIMB, limbB = flash ? "#e8e8f0" : LIMB_BACK;
   c.save();
-  c.translate(ox, oy - P.hop); c.globalAlpha = alpha; c.scale(f.facing, 1);
+  c.translate(ox + P.jit[0], oy - P.hop + P.jit[1]); c.globalAlpha = alpha; c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
@@ -3181,6 +3210,7 @@ function drawPotato(c, f, tk, at) {
   }
   drawSwooshes(c, f, P, tk, alpha);
   drawHeavyFx(c, f, P, tk);
+  drawFinishFx(c, f, P, tk);
   c.restore();
   if (!at) drawHx(c, f.slot);
 }
@@ -3206,11 +3236,13 @@ function drawSwoosh(c, f, P, S) {
   };
   const lw = S.body ? 5 : S.sweep ? S.r * 0.6 : S.r * (S.heavy ? 0.5 : 0.35);
   if (S.hv && !S.body) {
-    // heavies: dark edge, accent core, white hairline
-    const ga = c.globalAlpha;
-    c.globalAlpha = ga; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lw * 1.3; path(); c.stroke();
-    c.strokeStyle = f.pal.accent; c.lineWidth = lw * 0.62; path(); c.stroke();
-    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = Math.max(1.2, lw * 0.14); path(); c.stroke();
+    // heavies: dark edge, accent core, white hairline (a charged heavy: thicker, with a light second tone round it)
+    const ga = c.globalAlpha, ck = S.ck || 0, lw0 = lw;
+    const lwk = lw0 * (1 + 0.7 * ck);
+    if (ck > 0.04) { c.globalAlpha = ga * 0.6; c.strokeStyle = mix(f.pal.accent, "#ffffff", 0.6); c.lineWidth = lwk * 1.3 + 4 + 5 * ck; path(); c.stroke(); }
+    c.globalAlpha = ga; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lwk * 1.3; path(); c.stroke();
+    c.strokeStyle = f.pal.accent; c.lineWidth = lwk * 0.62; path(); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = Math.max(1.2, lwk * 0.14); path(); c.stroke();
     return;
   }
   if (ink) {
@@ -3291,7 +3323,7 @@ function drawFighter(c, f, tk, at) {
      linger              frames fx() keeps drawing after the hit window closes
      swing(f)            one-shot world effects when the hit window opens (dust, shards, rings)
      hit(att, e)         one-shot world effects when the move connects
-   To add something per heavy (for example a charge-up glow while holding), add a field here and read it in pose() / drawHeavyFx(). */
+   To add something per heavy, add a field here and read it in pose() / drawHeavyFx(). The charge-up glow (held heavies) lives in its own section at the end of this file. */
 const HEAVY_KEYS = { hSide: 1, hUp: 1, hDown: 1, hAir: 1 };
 const isHeavyKey = (k) => HEAVY_KEYS[k] === 1;
 const mixv = (a, b, t) => (typeof a === "number" ? a + (b - a) * t : lerp2(a, b, t));
@@ -3305,6 +3337,7 @@ function hpath(X, rest, wind, strike, strike2) {
 }
 
 /* ---- small drawing helpers (fighter space) ---- */
+let HV_K = 0;   // charge (0..1) of the heavy being drawn: brush() thickens every stroke, duoStroke() adds a second tone
 function star4(c, x, y, s, colr) {
   c.fillStyle = colr || "#ffffff";
   c.beginPath(); c.moveTo(x, y - s); c.lineTo(x + s * 0.2, y - s * 0.2); c.lineTo(x + s, y); c.lineTo(x + s * 0.2, y + s * 0.2);
@@ -3317,6 +3350,7 @@ function lpts(a, b, n) { const o = []; for (let i = 0; i <= n; i++) o.push(lerp2
 function brush(c, pts, wmax, n) {
   n = Math.min(n, pts.length - 1);
   if (n < 1) return;
+  wmax *= 1 + 0.7 * HV_K;   // a charged heavy: every stroke is thicker
   const Lp = [], Rp = [];
   for (let i = 0; i <= n; i++) {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
@@ -3331,6 +3365,7 @@ function brush(c, pts, wmax, n) {
 }
 // the double stroke every heavy swoosh shares: dark edge, element colour, bright core
 function duoStroke(c, pts, n, wmax, colr, core, a) {
+  if (HV_K > 0.04) { c.globalAlpha = a * 0.6; c.fillStyle = /^#/.test(colr) ? mix(colr, "#ffffff", 0.6) : "#fff6d8"; brush(c, pts, wmax * 1.3 + 7, n); }   // second tone, charged heavies only
   c.globalAlpha = a * 0.9; c.fillStyle = "rgba(20,15,30,0.85)"; brush(c, pts, wmax * 1.3 + 2, n);
   c.globalAlpha = a; c.fillStyle = colr; brush(c, pts, wmax, n);
   c.fillStyle = core; brush(c, pts, wmax * 0.4, n);
@@ -3406,8 +3441,10 @@ function drawHeavyFx(c, f, P, tk) {
   const L = hv.look;
   c.save(); c.lineCap = "round"; c.lineJoin = "round";
   if (P.flask) flaskShape(c, P.hF[0] + 3, P.hF[1] - 10, 1.15, hv.phase === 0 ? Math.sin(tk * 0.5) * 0.12 : 0.2, "#7dff62");
-  if (L && L.fx && (hv.phase === 1 || (hv.phase === 2 && hv.post <= (L.linger || 0)) || L.fxStartup)) L.fx(c, f, P, hv, tk);
+  HV_K = hv.ck || 0;
+  try { if (L && L.fx && (hv.phase === 1 || (hv.phase === 2 && hv.post <= (L.linger || 0)) || L.fxStartup)) L.fx(c, f, P, hv, tk); } finally { HV_K = 0; }
   c.restore();
+  drawCharge(c, f, P, tk);
   drawGlint(c, f, P, tk);
 }
 // world-space marks that outlive the swing (claw slashes, rune glyphs); they ride in the shared fx list and are drawn by their owner
@@ -3435,24 +3472,28 @@ function drawHx(c, slot) {
 }
 
 /* ---- one-shot world effects, called from handleEvent (effects.js) ---- */
-// Runs when a heavy starts: waits for the hit window, then shakes the camera and plays the heavy sound.
+// Runs when a heavy starts: waits for the hit window (a charging heavy holds at its hold point first), then shakes the camera and plays the heavy sound.
 function heavySwing(g, f, live) {
   const key = f.mid, mv = f.move, moveT = f.moveT, slot = f.slot;
-  setTimeout(() => {
+  let tries = 0;
+  const poll = () => {
     const q = g.fighters[slot];
-    if (!q || q.state !== "attack" || q.mid !== key || q.moveT !== moveT || paused) return;
-    cam.shake = Math.max(cam.shake, 3);
+    if (!q || q.state !== "attack" || q.mid !== key || q.moveT !== moveT || ++tries > 400) return;   // hit out of it, or done
+    if (paused || q.mt < mv.startup) { setTimeout(poll, 16); return; }
+    cam.shake = Math.max(cam.shake, 3 + 3 * (q.chg / BL.TUNE.chgMax));
     const L = HEAVY_LOOK[q.spec.id] && HEAVY_LOOK[q.spec.id][key];
     if (L && L.swing) L.swing(q);
     if (live) Sfx.heavy(q.spec.id, key);
-  }, Math.max(0, mv.startup * STEP - 8));
+  };
+  setTimeout(poll, Math.max(0, (mv.startup - 4) * STEP));
 }
 // Runs when a heavy connects: the ring is half as big again, plus the fighter's own sparks.
 function heavyHit(att, e) {
-  const kb = e.kb || 10, c0 = e.fire ? "#ff8a3d" : col(e.pal);
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 18, r0: 12, r1: (26 + kb * 2.4) * 1.5, col: c0 });
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 12, r0: 4, r1: (26 + kb * 2.4) * 0.8, col: "#ffffff" });
-  if (kb <= 14) addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: 36 + kb * 1.6 });
+  const kb = e.kb || 10, c0 = e.fire ? "#ff8a3d" : col(e.pal), ck = (e.chg || 0) / BL.TUNE.chgMax, big = 1 + 0.5 * ck;
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 18, r0: 12, r1: (26 + kb * 2.4) * 1.5 * big, col: c0 });
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 12, r0: 4, r1: (26 + kb * 2.4) * 0.8 * big, col: "#ffffff" });
+  if (kb <= 14 || ck > 0.3) addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: (36 + kb * 1.6) * (1 + 0.25 * ck) });
+  if (ck > 0.1) burstLines(e.x, e.y, 4 + Math.round(8 * ck), [c0, "#ffffff"], 6 + 4 * ck);
   const L = HEAVY_LOOK[att.spec.id] && HEAVY_LOOK[att.spec.id][att.mid];
   if (L && L.hit) L.hit(att, e);
 }
@@ -3932,6 +3973,139 @@ function fireArc(c, f, P, hv) {
     c.beginPath(); c.arc(p[0] + Math.sin(i * 3 + age * 0.3) * 4, p[1] + 6 + fall * 3.2, 2.6 - (i % 3) * 0.5, 0, Math.PI * 2); c.fill();
   }
 }
+
+/* ===================== charge-up glow =====================
+   A ground heavy that is held at its hold point (f.chg counts 1..BL.TUNE.chgMax) reads in three stages: wound (1-20), loaded (21-40), max (41-60).
+   Stage 1: a soft glow in the accent colour at the striking limb or weapon. Stage 2: the fighter's own element gathers (CHARGE_GATHER[id]).
+   Stage 3: the glow doubles, a rim light runs round the body and the body shakes 1 px (pose() sets P.jit; both renderers apply it).
+   UI only: everything is a function of f.chg and the tick, so it works with a frozen sim and in 2D and 3D alike.
+   On release, P.hv.ck (= chg / chgMax) makes the heavy's strokes thicker and two-toned (see brush(), duoStroke(), drawSwoosh()).
+   To change what a fighter shows: chargePts() says where the glow sits, CHARGE_GATHER[id] draws the stage 2 and 3 element. */
+const bp = (P, p) => rot(p, P.hip, P.lean);   // a point on the leaning body, in fighter space
+const nz = (n) => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
+function glowDot(c, x, y, r, a, colr) {
+  if (a <= 0 || r <= 0) return;
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgba(colr, Math.min(1, a))); g.addColorStop(0.45, rgba(colr, Math.min(1, a * 0.6))); g.addColorStop(1, rgba(colr, 0));
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+}
+function tongue(c, x, y, h, wd, lean, colr, core) {
+  c.fillStyle = colr; c.beginPath(); c.moveTo(x - wd, y);
+  c.quadraticCurveTo(x - wd * 0.9 + lean * 0.3, y - h * 0.55, x + lean, y - h); c.quadraticCurveTo(x + wd * 0.9 + lean * 0.3, y - h * 0.5, x + wd, y); c.closePath(); c.fill();
+  if (core) {
+    c.fillStyle = core; c.beginPath(); c.moveTo(x - wd * 0.5, y);
+    c.quadraticCurveTo(x - wd * 0.4 + lean * 0.2, y - h * 0.35, x + lean * 0.7, y - h * 0.62); c.quadraticCurveTo(x + wd * 0.4 + lean * 0.2, y - h * 0.3, x + wd * 0.5, y); c.closePath(); c.fill();
+  }
+}
+// flame tongues rising from a point, each flickering on its own
+function flameCluster(c, x, y, n, h, spread, tk, q, colr, core) {
+  for (let i = 0; i < n; i++) {
+    const m = i - (n - 1) / 2, fl = 0.72 + 0.28 * Math.sin(tk * 0.55 + i * 2.3);
+    tongue(c, x + m * spread, y, h * fl * (1 - Math.abs(m) * 0.16), 3.2 + q * 1.8, Math.sin(tk * 0.32 + i * 1.7) * 2.6, colr, core);
+  }
+}
+// green-white forks round a point, re-rolled every other tick
+function crackle(c, x, y, tk, q, r) {
+  const seed = (tk >> 1) * 7.13, n = 3 + (q > 0.55 ? 2 : 0);
+  c.lineJoin = "round";
+  for (let i = 0; i < n; i++) {
+    const a0 = nz(seed + i * 3.1) * Math.PI * 2, len = r * (0.7 + 0.8 * nz(seed + i * 5.7)), ca = Math.cos(a0), sa = Math.sin(a0), pts = [[x + ca * 4, y + sa * 4]];
+    for (let j = 1; j <= 4; j++) { const t = j / 4, jt = (nz(seed + i * 9.1 + j * 2.7) - 0.5) * 9; pts.push([x + ca * (4 + len * t) - sa * jt, y + sa * (4 + len * t) + ca * jt]); }
+    for (const [colr, wd] of [["rgba(160,255,140,0.5)", 4.2], ["#f1ffe6", 1.5]]) {
+      c.strokeStyle = colr; c.lineWidth = wd; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts) c.lineTo(p[0], p[1]); c.stroke();
+    }
+  }
+}
+// pale-blue breath rising off a fist, with a twinkle or two
+function frost(c, x, y, tk, q, n) {
+  for (let i = 0; i < n; i++) {
+    const ph = (tk * 0.045 + i / n) % 1, r = 3.6 + ph * 8 * (0.75 + q * 0.5), px = x + Math.sin(i * 4.1 + tk * 0.03) * 9, py = y - 3 - ph * 26;
+    c.globalAlpha = (1 - ph) * 0.85; c.fillStyle = i % 2 ? "#e9f8ff" : "#b9e3ff";
+    c.beginPath(); c.arc(px, py, r, 0, Math.PI * 2); c.fill();
+    if (i % 2 === 0) star4(c, px + 7, py - 6, 1.6 + 4 * (1 - ph), "#ffffff");
+  }
+  c.globalAlpha = 1;
+}
+// motes spiralling up off a point (the Wizard's crystal)
+function motes(c, x, y, tk, q, n) {
+  for (let i = 0; i < n; i++) {
+    const ph = (tk * 0.04 + i / n) % 1, ang = i * 2.4 + tk * 0.09, rr = 7 + 11 * ph;
+    c.globalAlpha = Math.min(1, (1 - ph) * 1.4);
+    star4(c, x + Math.cos(ang) * rr * 1.3, y - 3 - ph * 30 + Math.sin(ang) * 4, 2.4 + 2.4 * (1 - ph) * (0.6 + q * 0.6), i % 2 ? "#fff6d8" : "#bff3ff");
+  }
+  c.globalAlpha = 1;
+}
+// a white glint sliding hilt to tip along the blade
+function bladeGlint(c, f, P, tk, st, q) {
+  const sh = bp(P, P.sh), a = heldDir(f, P, sh, -0.8), L = P.w * 1.35, ca = Math.cos(a), sa = Math.sin(a), n = st === 3 ? 2 : 1;
+  for (let i = 0; i < n; i++) {
+    const t = (tk * 0.032 + i * 0.5) % 1, d = 8 + t * (L - 10), x = P.hF[0] + ca * d, y = P.hF[1] + sa * d, fade = Math.sin(Math.PI * t);
+    c.globalAlpha = 0.35 * fade; c.strokeStyle = "#ffffff"; c.lineWidth = 3; c.beginPath(); c.moveTo(x - ca * 9, y - sa * 9); c.lineTo(x + ca * 9, y + sa * 9); c.stroke();
+    c.globalAlpha = Math.min(1, 0.4 + fade); star4(c, x, y, 7 + 7 * fade * (0.7 + q * 0.5), "#ffffff");
+  }
+  c.globalAlpha = 1;
+}
+// where the stage 1 glow sits: the striking limb or weapon
+function chargePts(f, P, key) {
+  const hand = P.hF, foot = P.fF;
+  switch (f.spec.id) {
+    case "phoenix": return key === "hSide" ? [bp(P, P.mouthPt || P.head)] : key === "hUp" ? [hand] : [foot];
+    case "alchemist": return [hand];
+    case "odin": return key === "hUp" ? [hand] : [hand, P.hB];
+    case "wizard": return [P.staffTip || hand];
+    case "samurai": { const a = heldDir(f, P, bp(P, P.sh), -0.8), L = P.w * 1.35; return [hand, [hand[0] + Math.cos(a) * L * 0.6, hand[1] + Math.sin(a) * L * 0.6]]; }
+    default: return key === "hUp" ? [hand, bp(P, [-P.w * 0.05 - 9, P.top - 14])] : key === "hDown" ? [hand, P.hB] : [hand];   // dragon: claws (and the horns for the toss)
+  }
+}
+// stage 2 and 3: the element gathers. q = progress through the stage (0..1)
+const CHARGE_GATHER = {
+  phoenix(c, f, P, tk, st, q) { const o = bp(P, [-P.w * 0.1, P.top + P.ry * 0.25]); flameCluster(c, o[0], o[1], st === 3 ? 5 : 3, 15 + 10 * q + (st === 3 ? 8 : 0), 6, tk, q, "#ff7a2b", "#ffe08a"); },
+  dragon(c, f, P, tk, st, q, pts) { for (const p of pts) flameCluster(c, p[0], p[1] - 1, st === 3 ? 4 : 3, 11 + 6 * q + (st === 3 ? 6 : 0), 4.4, tk, q, "#ff8a2b", "#ffe08a"); },
+  alchemist(c, f, P, tk, st, q, pts) { for (const p of pts) crackle(c, p[0], p[1], tk, st === 3 ? 1 : q * 0.5, 20 + 10 * q + (st === 3 ? 10 : 0)); },
+  odin(c, f, P, tk, st, q, pts) { for (const p of pts) frost(c, p[0], p[1], tk, st === 3 ? 1 : q, st === 3 ? 6 : 4); },
+  wizard(c, f, P, tk, st, q, pts) {
+    const [x, y] = pts[0], fl = Math.sin(tk * 0.3) * 2;
+    star4(c, x, y, 14 + 8 * q + (st === 3 ? 10 : 0) + fl, "#fff6d8");   // the crystal flares
+    if (st === 3) { c.globalAlpha = 0.8; c.fillStyle = "#bff3ff"; c.fillRect(x - 0.9, y - 26, 1.8, 52); c.fillRect(x - 26, y - 0.9, 52, 1.8); c.globalAlpha = 1; }
+    motes(c, x, y, tk, q, st === 3 ? 7 : 5);
+  },
+  samurai(c, f, P, tk, st, q) { bladeGlint(c, f, P, tk, st, q); },
+};
+function drawCharge(c, f, P, tk) {
+  if (!P.hold || P.chg <= 0 || !P.rx || !P.hv) return;
+  const n = P.chg, st = n > 40 ? 3 : n > 20 ? 2 : 1, q = st === 1 ? n / 20 : st === 2 ? (n - 20) / 20 : 1;
+  const acc = f.pal.accent, ramp = Math.min(1, n / 4), pulse = 0.88 + 0.12 * Math.sin(tk * 0.5);
+  const a = st === 1 ? 0.55 + 0.25 * q : st === 2 ? 0.7 + 0.2 * q : 1, r = (st === 1 ? 20 + 8 * q : st === 2 ? 28 + 8 * q : 40) * pulse;
+  const pts = chargePts(f, P, P.hv.key);
+  c.save(); c.lineCap = "round"; c.lineJoin = "round";
+  if (st === 3) {
+    // rim light round the whole body
+    c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    const kx = R3.on ? 0.9 : 1, ky = R3.on ? 0.96 : 1;
+    c.globalAlpha = 0.22 + 0.1 * Math.sin(tk * 0.6); c.strokeStyle = acc; c.lineWidth = 8; c.beginPath(); c.ellipse(0, P.cy, P.rx * kx + 2, P.ry * ky + 2, 0, 0, Math.PI * 2); c.stroke();
+    c.restore();
+  }
+  for (const p of pts) {
+    glowDot(c, p[0], p[1], r, a * ramp, acc);
+    glowDot(c, p[0], p[1], r * (st === 3 ? 0.5 : 0.4), (st === 3 ? 0.85 : 0.55) * ramp, mix(acc, "#ffffff", 0.65));   // a pale core, so the glow reads on a body of the same colour
+  }
+  if (st >= 2 && CHARGE_GATHER[f.spec.id]) { c.globalAlpha = 1; CHARGE_GATHER[f.spec.id](c, f, P, tk, st, q, pts); }
+  c.restore();
+}
+
+/* ===================== finish-ready: the fighter side =====================
+   While the opponent is at BL.TUNE.finishPct or more, Samurai's Quick Draw leaves the white flash line (the world-space part is finDashTick in effects.js;
+   the projectiles and the ring under the feet are in draw-world.js and gfx3d.js). */
+function drawFinishFx(c, f, P, tk) {
+  const m = f.move;
+  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot)) return;
+  if (f.mt < m.startup + 1 || f.mt > m.startup + m.active) return;   // after the dash the finDashTick line takes over
+  const dist = Math.min(260, (m.speed || 15) * (f.mt - m.startup)), y = -P.h * 0.45, pts = lpts([-dist - 6, y], [-6, y], 8);
+  c.save(); c.lineCap = "round";
+  c.globalAlpha = 0.5; c.fillStyle = f.pal.accent; brush(c, pts, 15, 8);
+  c.globalAlpha = 1; c.fillStyle = "#ffffff"; brush(c, pts, 5, 8);
+  c.restore();
+}
 /* ===================== drawing: world ===================== */
 const STARS = Array.from({ length: 70 }, (_, i) => { const r = (n) => ((Math.sin(i * 127.1 + n * 311.7) * 43758.5453) % 1 + 1) % 1; return { x: r(1), y: r(2), s: r(3) < 0.2 ? 2 : 1, a: 0.25 + r(4) * 0.5 }; });
 const ISLES = [{ x: 0.08, w: 0.2, h: 0.05 }, { x: 0.33, w: 0.12, h: 0.03 }, { x: 0.86, w: 0.24, h: 0.065 }, { x: 0.58, w: 0.08, h: 0.02 }];
@@ -4039,7 +4213,26 @@ function drawStage(c, tk) {
   }
 }
 
+/* ---- finish-ready looks (UI only: hitboxes and the simulation never change) ----
+   A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
+   Ring under the feet: here for the 2D renderer, a flat mesh in gfx3d.js (r3FinRings) for 3D. Projectile extras: finOrbFx / finRavenFx / finBoltFx / finFireFx below. */
+let RG = null;
+function finishReady(slot) {
+  const f = RG && RG.fighters[slot];
+  return !!f && f.percent >= BL.TUNE.finishPct && f.state !== "dead" && f.state !== "gone";
+}
+const finRingCol = (slot) => (RG && RG.fighters[1 - slot] ? col(RG.fighters[1 - slot].pal) : "#ffffff");   // the colour of the fighter who can finish
+function drawFinRing(c, f) {
+  if (!finishReady(f.slot)) return;
+  const colr = finRingCol(f.slot), w = f.s.w, ph = (tick % 54) / 54, r0 = w * 0.78;
+  c.save(); c.strokeStyle = colr; c.lineWidth = 2.2;
+  c.globalAlpha = 0.5 + 0.25 * Math.sin(tick * 0.2); c.beginPath(); c.ellipse(f.x, f.y + 1, r0, r0 * 0.24, 0, 0, Math.PI * 2); c.stroke();
+  const r = r0 + w * 0.5 * ph; c.globalAlpha = 0.85 * (1 - ph); c.beginPath(); c.ellipse(f.x, f.y + 1, r, r * 0.24, 0, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
+
 function drawShadow(c, f) {
+  drawFinRing(c, f);
   const S = STAGE.main;
   if (f.state === "dead" || f.state === "gone" || f.x < S.x1 || f.x > S.x2) return;
   let gy = S.top;
@@ -4057,10 +4250,62 @@ function drawRespawnPlat(c, f, tk) {
   c.beginPath(); c.roundRect(f.x - 40, f.y, 80, 8, 4); c.fillStyle = col(f.pal); c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
 }
 
+// Finish-ready projectile extras. K scales the drawing (never the hitbox).
+const FIN_K = { orb: 1.25, bolt: 1.35, raven: 1, phoenix: 1.6, dragon: 1.5 };
+function finProjK(p, rdy) { if (!rdy) return 1; if (p.style === "fire") return FIN_K[RG && RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix"] || 1.6; return FIN_K[p.style] || 1; }
+function teardrop(c, x, y, s) { c.beginPath(); c.moveTo(x, y - s * 1.6); c.quadraticCurveTo(x + s, y + s * 0.3, x, y + s); c.quadraticCurveTo(x - s, y + s * 0.3, x, y - s * 1.6); c.fill(); }
+function finOrbFx(c, p, tk) {   // the toxic orb trails a green comet tail and drips as it flies
+  c.save();
+  const a = Math.atan2(p.vy, p.vx), r = p.r * 1.25, len = r * 4.2;
+  c.save(); c.translate(p.x, p.y); c.rotate(a);
+  const g = c.createLinearGradient(0, 0, -len, 0); g.addColorStop(0, "rgba(150,255,120,0.6)"); g.addColorStop(1, "rgba(80,255,90,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(0, -r * 0.9); c.quadraticCurveTo(-len * 0.5, -r * 0.55, -len, 0); c.quadraticCurveTo(-len * 0.5, r * 0.55, 0, r * 0.9); c.closePath(); c.fill(); c.restore();
+  for (let i = 0; i < 7; i++) {
+    const ph = (tk * 0.045 + i / 7 + nz(i * 3.3) * 0.2) % 1, x = p.x - p.vx * (1.2 + i * 1.7) + (nz(i * 9.7) - 0.5) * 8, y = p.y + r * 0.55 + ph * 34 + i;
+    c.globalAlpha = Math.min(1, (1 - ph) * 1.3); c.fillStyle = i % 2 ? "#d4ffbc" : "#46d83f"; teardrop(c, x, y, 3.6 + (i % 3) * 0.7);
+    c.lineWidth = 1; c.strokeStyle = "rgba(20,90,30,0.6)"; c.stroke();
+  }
+  c.restore();
+}
+function finRavenFx(c, p, tk, ov) {   // ov: drawn over the 3D bird, so start behind its tail   // a pale-blue streak behind the raven, and its eyes burn red
+  const s = p.vx >= 0 ? 1 : -1, o = ov ? 16 : 0;
+  c.save(); c.translate(p.x, p.y);
+  const g = c.createLinearGradient(-s * o, 0, -s * (110 + o), 0); g.addColorStop(0, "rgba(200,236,255,0.8)"); g.addColorStop(1, "rgba(200,236,255,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(-s * (6 + o), -11); c.quadraticCurveTo(-s * (50 + o), -9, -s * (112 + o), 0); c.quadraticCurveTo(-s * (50 + o), 11, -s * (6 + o), 11); c.closePath(); c.fill();
+  c.strokeStyle = "rgba(235,248,255,0.8)"; c.lineWidth = 1.6; c.lineCap = "round";
+  for (const [dy, len] of [[-4, 70], [2, 90], [7, 56]]) { c.beginPath(); c.moveTo(-s * (12 + o), dy); c.lineTo(-s * (12 + o + len), dy * 0.5); c.stroke(); }
+  c.restore();
+}
+function finRavenEyes(c, p) {   // the red glow over the eye (the 3D bird has red eye meshes; this lights them)
+  const s = p.vx >= 0 ? 1 : -1; glowDot(c, p.x + s * 11, p.y - 7.5, 11, 0.9, "#ff2a2a"); glowDot(c, p.x + s * 11, p.y - 7.5, 4, 1, "#ffd0d0");
+}
+function finBoltFx(c, p, tk) {   // the crystal bolt trails stars
+  c.save();
+  const g = c.createLinearGradient(p.x, p.y, p.x - p.vx * 12, p.y - p.vy * 12); g.addColorStop(0, "rgba(255,244,200,0.7)"); g.addColorStop(1, "rgba(150,230,255,0)");
+  c.strokeStyle = g; c.lineWidth = p.r * 0.9; c.lineCap = "round"; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx * 12, p.y - p.vy * 12); c.stroke();
+  for (let i = 1; i <= 5; i++) {
+    c.globalAlpha = 1 - i / 6;
+    star4(c, p.x - p.vx * (1.6 + i * 2.4), p.y + Math.sin(tk * 0.4 + i * 1.9) * p.r * 0.5, p.r * (0.95 - i * 0.1), i % 2 ? "#fff6d8" : "#bff3ff");
+  }
+  c.restore();
+}
+function finFireFx(c, p, tk, who) {   // Phoenix: a long comet tail. Dragon: every puff drags a short fat cone, together one thick stream
+  const a = Math.atan2(p.vy, p.vx), dragon = who === "dragon", r = p.r * (dragon ? 1.5 : 1.6), fl = 1 + Math.sin(tk * 0.9 + p.x * 0.05) * 0.06;
+  c.save(); c.translate(p.x, p.y); c.rotate(a);
+  const len = (dragon ? r * 3.3 : r * 5.6) * fl, hw = dragon ? r * 1.15 : r * 0.92, tail = dragon ? hw * 1.5 : hw * 0.22;
+  const g = c.createLinearGradient(0, 0, -len, 0);
+  g.addColorStop(0, dragon ? "rgba(255,214,120,0.9)" : "rgba(255,236,160,0.95)"); g.addColorStop(0.45, "rgba(255,122,43,0.65)"); g.addColorStop(1, "rgba(255,60,20,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(0, -hw); c.quadraticCurveTo(-len * 0.5, -hw * (dragon ? 1.1 : 0.62), -len, -tail); c.lineTo(-len, tail); c.quadraticCurveTo(-len * 0.5, hw * (dragon ? 1.1 : 0.62), 0, hw); c.closePath(); c.fill();
+  if (!dragon) { c.fillStyle = "rgba(255,250,225,0.8)"; c.beginPath(); c.moveTo(0, -hw * 0.4); c.quadraticCurveTo(-len * 0.35, -hw * 0.25, -len * 0.62, 0); c.quadraticCurveTo(-len * 0.35, hw * 0.25, 0, hw * 0.4); c.closePath(); c.fill(); }
+  c.restore();
+}
+
 function drawProj(c, p, tk) {
+  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
   if (p.style === "orb") {
-    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15), 0, Math.PI * 2); c.fill(); }
-    greenOrb(c, p.x, p.y, p.r * 0.9, tk);
+    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
+    if (rdy) finOrbFx(c, p, tk);
+    greenOrb(c, p.x, p.y, p.r * 0.9 * K, tk);
     return;
   }
   if (p.style === "burst") {
@@ -4071,13 +4316,16 @@ function drawProj(c, p, tk) {
     return;
   }
   if (p.style === "raven") {
+    if (rdy) finRavenFx(c, p, tk);
     c.save(); c.translate(p.x, p.y); c.scale(p.vx >= 0 ? 1 : -1, 1);
-    ravenShape(c, 0, 0, 1.25, Math.sin(tk * 0.6) * 0.7);
+    ravenShape(c, 0, 0, 1.25, Math.sin(tk * 0.6) * 0.7, rdy);
     c.restore();
+    if (rdy) finRavenEyes(c, p);
     return;
   }
   if (p.style === "bolt") {
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    if (rdy) finBoltFx(c, p, tk);
+    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.scale(K, K);
     const g = c.createRadialGradient(0, 0, 2, 0, 0, p.r * 2);
     g.addColorStop(0, "rgba(255,240,180,0.9)"); g.addColorStop(1, "rgba(120,220,255,0)");
     c.fillStyle = g; c.beginPath(); c.ellipse(-p.r * 0.6, 0, p.r * 2.4, p.r * 1.1, 0, 0, Math.PI * 2); c.fill();
@@ -4087,14 +4335,15 @@ function drawProj(c, p, tk) {
     return;
   }
   if (p.style === "fire") {
-    const fl = Math.sin(tk * 0.9 + p.x * 0.05);
+    const fl = Math.sin(tk * 0.9 + p.x * 0.05), R = p.r * K;
+    if (rdy) finFireFx(c, p, tk, RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix");
     for (let i = 4; i >= 1; i--) {
       c.fillStyle = `rgba(255,${110 + i * 18},40,${0.2 * (5 - i) / 4})`;
-      c.beginPath(); c.arc(p.x - p.vx * i * 1.7, p.y - p.vy * i * 1.7, p.r * (1 - i * 0.13), 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(p.x - p.vx * i * 1.7, p.y - p.vy * i * 1.7, R * (1 - i * 0.13), 0, Math.PI * 2); c.fill();
     }
-    const gr = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 1.5);
+    const gr = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 1.5);
     gr.addColorStop(0, "#fffbe0"); gr.addColorStop(0.3, "#ffd166"); gr.addColorStop(0.65, "#ff7a2b"); gr.addColorStop(1, "rgba(255,70,30,0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(p.x, p.y, p.r * 1.5 + fl * 1.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = gr; c.beginPath(); c.arc(p.x, p.y, R * 1.5 + fl * 1.5, 0, Math.PI * 2); c.fill();
     return;
   }
   if (p.style === "fry") {
@@ -4131,7 +4380,7 @@ function drawTag(c, f, isP1, lift) {
 }
 
 /* ===================== effects ===================== */
-const fx = [], sfx = [], trails = [[], []], combos = [null, null];
+const fx = [], sfx = [], trails = [[], []], combos = [null, null], chgPops = [], finDash = [null, null];
 function addFx(o) { if (fx.length < 260) fx.push(o); }
 function spark(x, y, col, kb, dx, dy) {
   const n = 6 + Math.min(10, (kb * 0.35) | 0);
@@ -4162,6 +4411,8 @@ function updateFx(g) {
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].t >= fx[i].life) fx.splice(i, 1);
   for (const e of sfx) e.t++;
   for (let i = 0; i < 2; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
+  for (let i = chgPops.length - 1; i >= 0; i--) { const q = chgPops[i]; q.t++; q.pop *= 0.8; if (q.t > 56) chgPops.splice(i, 1); }
+  finDashTick(g);
   for (let i = sfx.length - 1; i >= 0; i--) if (sfx[i].t >= sfx[i].life) sfx.splice(i, 1);
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
@@ -4253,6 +4504,38 @@ function drawCombos(c, g) {
     c.lineWidth = 4; c.strokeText(sub, 0, 16); c.fillStyle = "#f3efe6"; c.fillText(sub, 0, 16);
     c.restore();
   }
+  drawChargedPops(c);
+}
+// "CHARGED" pops at the spot of a full-charge hit: same pop-up style as the combo counter, rising and fading
+function chargedPop(e) { chgPops.push({ x: e.x, y: e.y, t: 0, pop: 1, col: col(e.pal) }); }
+function drawChargedPops(c) {
+  for (const q of chgPops) {
+    const [sx, sy] = toScreen(q.x, q.y - 46), x = clamp(sx, 56, L.gw - 56), y = clamp(sy - q.t * 0.7, 56, L.gh - 40);
+    const a = q.t < 38 ? 1 : 1 - (q.t - 38) / 18, sc = 1 + q.pop * 0.55;
+    c.save(); c.globalAlpha = Math.max(0, a); c.translate(x, y); c.scale(sc, sc);
+    c.textAlign = "center"; c.lineJoin = "round";
+    c.font = 'italic 900 22px "Barlow Condensed", "Arial Narrow", sans-serif';
+    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText("CHARGED", 0, 0);
+    c.fillStyle = q.col; c.fillText("CHARGED", 0, 0);
+    c.restore();
+  }
+}
+// the charge hum follows the strongest charge on the field; anything but a live, unpaused match silences it
+function humStep(g) {
+  let n = 0;
+  if (mode === "match" && !paused && !FIN.on && !document.hidden && g && g.phase === "play") {
+    for (const f of g.fighters) if (f.state === "attack" && f.move && f.move.charge && f.mt === f.move.startup - BL.TUNE.chgHold && f.chg > n) n = f.chg;
+  }
+  Sfx.hum(n >= 4 ? n : 0);
+}
+// Samurai's Quick Draw while the opponent is finish-ready: the white flash line stays on the path (the 200-chip skin draws its own)
+function finDashTick(g) {
+  g.fighters.forEach((f, i) => {
+    const m = f.move;
+    if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot) || skinLvl(f) >= 3) { finDash[i] = null; return; }
+    if (f.mt === m.startup + 1) finDash[i] = f.x;
+    if (f.mt === m.startup + m.active && finDash[i] !== null) { addFx({ k: "flashline", x1: finDash[i], x2: f.x, y: f.y - f.s.h * 0.45, col: "#ffffff", t: 0, life: 26 }); finDash[i] = null; }
+  });
 }
 function drawBubbles(c, g, tk, img) {
   for (const f of g.fighters) {
@@ -4476,7 +4759,7 @@ const glcv = $("gl"), ovcv = $("ov"), octx = ovcv.getContext("2d");
 const R3 = {
   ready: false, failed: false, on: false, T: null, renderer: null, scene: null, camera: null, key: null,
   rigs: [null, null], fov: 30, w: 0, h: 0, pr: 0, q: 0, perf: { t0: 0, n: 0, sum: 0 }, G: null, M: null,
-  proj: { orb: [], bolt: [], raven: [] }, respawn: [null, null], bub: [null, null], pv: null, pvRigs: new Map(), frame: 0,
+  proj: { orb: [], bolt: [], raven: [] }, respawn: [null, null], finRing: [null, null], bub: [null, null], pv: null, pvRigs: new Map(), frame: 0,
 };
 const YAW = 0.5;          // how far fighters turn toward the camera (radians)
 const AZ0 = 0.62;         // face direction on the body, from forward (+x) toward the camera (+z)
@@ -5279,7 +5562,8 @@ function makeRaven() {
   const body = mesh(G.sph, M.raven); body.scale.set(9, 6.4, 5.6); body.rotation.z = 0.15; g.add(body);
   const head = mesh(G.sph, M.raven); head.scale.setScalar(4.6); head.position.set(7, 5, 0); g.add(head);
   const beak = mesh(G.cone, M.beak); beak.scale.set(1.7, 6.5, 1.5); beak.rotation.z = -Math.PI / 2 - 0.12; beak.position.set(13.2, 4.2, 0); g.add(beak);
-  for (const s of [1, -1]) { const e = mesh(G.sphLo, M.redEye, false); e.scale.setScalar(0.95); e.position.set(9.2, 6.2, s * 3.4); g.add(e); }
+  const eyes = [];
+  for (const s of [1, -1]) { const e = mesh(G.sphLo, M.redEye, false); e.scale.setScalar(0.95); e.position.set(9.2, 6.2, s * 3.4); g.add(e); eyes.push(e); }
   const tail = mesh(G.cone, M.ravenDark); tail.scale.set(3.5, 11, 1.4); tail.rotation.z = Math.PI / 2 + 0.35; tail.position.set(-12, -2.5, 0); g.add(tail);
   const wings = [];
   for (const s of [1, -1]) {
@@ -5287,7 +5571,7 @@ function makeRaven() {
     const wm = mesh(G.sph, M.ravenDark); wm.scale.set(9, 1.2, 4.8); wm.position.set(-3.5, 0, s * 3.2); wm.rotation.y = s * 0.25;
     piv.add(wm); g.add(piv); wings.push(piv);
   }
-  return { g, wings };
+  return { g, wings, eyes };
 }
 function disposeObj(obj) {
   obj.traverse((o) => {
@@ -5394,7 +5678,7 @@ function syncRig(rig, f, P, tk, at) {
     if (P.spin) { const cy = -h * 0.5, dx = x, dy = y - cy, cs = Math.cos(P.spin), sn = Math.sin(P.spin); x = dx * cs - dy * sn; y = cy + dx * sn + dy * cs; }
     return out.set(x * fc, -y, z);
   };
-  rig.root.position.set(at ? at[0] : f.x, (at ? -at[1] : -f.y) + P.hop, 0);   // P.hop: the small hop of a Wing flare / Horn toss
+  rig.root.position.set((at ? at[0] : f.x) + P.jit[0], (at ? -at[1] : -f.y) + P.hop - P.jit[1], 0);   // P.hop: the small hop of a Wing flare / Horn toss; P.jit: the 1 px shake of a full charge
   // body
   toR(P.hip, 0, rig.body.position);
   rig.body.rotation.z = -fc * (P.spin + P.lean);
@@ -5529,6 +5813,25 @@ function r3Fighters(g, tk, poses) {
     if (rp.visible) { rp.material.color.copy(lin(col(f.pal))); rp.material.emissive.copy(rp.material.color); rp.position.set(f.x, -f.y - 4, 0); rp.scale.z = 0.45; }
   });
 }
+// finish-ready: a thin ring pulsing flat on the ground under the feet of a fighter the opponent's special can finish (the 2D version is drawFinRing)
+function r3FinRings(g, tk) {
+  const T = R3.T;
+  g.fighters.forEach((f, i) => {
+    let fr = R3.finRing[i];
+    if (!fr) {
+      const geo = new T.RingGeometry(0.87, 1, 56); geo.rotateX(-Math.PI / 2);
+      const mk = () => { const m = new T.Mesh(geo, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, side: T.DoubleSide })); m.renderOrder = 2; R3.scene.add(m); return m; };
+      fr = R3.finRing[i] = { a: mk(), b: mk() };
+    }
+    const on = finishReady(i);
+    fr.a.visible = fr.b.visible = on;
+    if (!on) return;
+    const c0 = lin(finRingCol(i)), w = f.s.w, ph = (tk % 54) / 54, r0 = w * 0.78;
+    for (const m of [fr.a, fr.b]) { m.material.color.copy(c0); m.position.set(f.x, -f.y + 1.4, 0); }
+    fr.a.scale.setScalar(r0); fr.a.material.opacity = 0.7 + 0.25 * Math.sin(tk * 0.2);
+    fr.b.scale.setScalar(r0 + w * 0.5 * ph); fr.b.material.opacity = 0.85 * (1 - ph);
+  });
+}
 function r3Projectiles(g, tk) {
   const T = R3.T, used = { orb: 0, bolt: 0, raven: 0 };
   for (const p of g.projs) {
@@ -5539,15 +5842,17 @@ function r3Projectiles(g, tk) {
     if (!o) {
       if (kind === "orb") o = mesh(R3.G.sph, R3.M.orb);
       else if (kind === "bolt") { o = mesh(R3.G.oct, R3.M.crystal); o.rotation.order = "ZYX"; }
-      else { const rv = makeRaven(); o = rv.g; o.userData.wings = rv.wings; }
+      else { const rv = makeRaven(); o = rv.g; o.userData.wings = rv.wings; o.userData.eyes = rv.eyes; }
       pool.push(o); R3.scene.add(o);
     }
     o.visible = true;
     o.position.set(p.x, -p.y, 0);
-    if (kind === "orb") o.scale.setScalar(p.r * 0.9);
-    else if (kind === "bolt") { o.scale.set(p.r * 1.15, p.r * 0.55, p.r * 0.55); o.rotation.set(tk * 0.3, 0, Math.atan2(-p.vy, p.vx)); }
+    const rdy = finishReady(1 - p.owner), K = finProjK(p, rdy);   // finish-ready: drawn bigger (the hitbox stays as it is)
+    if (kind === "orb") o.scale.setScalar(p.r * 0.9 * K);
+    else if (kind === "bolt") { o.scale.set(p.r * 1.15 * K, p.r * 0.55 * K, p.r * 0.55 * K); o.rotation.set(tk * 0.3, 0, Math.atan2(-p.vy, p.vx)); }
     else {
       const s = p.vx >= 0 ? 1 : -1, fl = Math.sin(tk * 0.6) * 0.7;
+      for (const e of o.userData.eyes) e.scale.setScalar(rdy ? 2.1 : 0.95);   // the red eyes burn
       o.scale.set(1.25 * s, 1.25, 1.25); o.rotation.y = s * 0.3;
       o.userData.wings[0].rotation.x = -fl - 0.2; o.userData.wings[1].rotation.x = fl + 0.2;
     }
@@ -5627,7 +5932,7 @@ function r3Bubbles(g) {
 /* ---------- overlay drawing (2D, in world space) ---------- */
 function drawFighterFx(c, f, tk, P) {
   const look = f.spec.look, cos = look.costume, flash = f.flash > 0 && f.flash % 2 === 0;
-  c.save(); c.translate(f.x, f.y - P.hop); c.scale(f.facing, 1);
+  c.save(); c.translate(f.x + P.jit[0], f.y - P.hop + P.jit[1]); c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   const shR = rot(P.sh, P.hip, P.lean);
   if (cos === "wizard") {
@@ -5654,20 +5959,24 @@ function drawFighterFx(c, f, tk, P) {
   }
   drawSwooshes(c, f, P, tk, 1);
   drawHeavyFx(c, f, P, tk);
+  drawFinishFx(c, f, P, tk);
   c.restore();
   drawHx(c, f.slot);
 }
 function drawProjFx(c, p, tk) {
+  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
   if (p.style === "orb") {
-    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15), 0, Math.PI * 2); c.fill(); }
-    const fl = 1 + Math.sin(tk * 0.25) * 0.08, r = p.r * 0.9;
+    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
+    if (rdy) finOrbFx(c, p, tk);
+    const fl = 1 + Math.sin(tk * 0.25) * 0.08, r = p.r * 0.9 * K;
     const gl = c.createRadialGradient(p.x, p.y, r * 0.6, p.x, p.y, r * 2.4 * fl);
     gl.addColorStop(0, "rgba(140,255,120,0.45)"); gl.addColorStop(1, "rgba(80,255,90,0)");
     c.fillStyle = gl; c.beginPath(); c.arc(p.x, p.y, r * 2.4 * fl, 0, Math.PI * 2); c.fill();
     return;
   }
   if (p.style === "bolt") {
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    if (rdy) finBoltFx(c, p, tk);
+    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.scale(K, K);
     const g = c.createRadialGradient(0, 0, 2, 0, 0, p.r * 2);
     g.addColorStop(0, "rgba(255,240,180,0.75)"); g.addColorStop(1, "rgba(120,220,255,0)");
     c.fillStyle = g; c.beginPath(); c.ellipse(-p.r * 0.8, 0, p.r * 2.6, p.r * 1.1, 0, 0, Math.PI * 2); c.fill();
@@ -5678,6 +5987,7 @@ function drawProjFx(c, p, tk) {
     c.strokeStyle = "rgba(200,200,230,0.3)"; c.lineWidth = 2; c.lineCap = "round";
     const s = Math.sign(p.vx) || 1;
     for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(p.x - s * (14 + i * 4), p.y - 6 + i * 6); c.lineTo(p.x - s * (26 + i * 8), p.y - 6 + i * 6); c.stroke(); }
+    if (rdy) { finRavenFx(c, p, tk, true); finRavenEyes(c, p); }
     return;
   }
   drawProj(c, p, tk);
@@ -5694,6 +6004,7 @@ function render3D(g, tk) {
   const poses = g.fighters.map((f) => (f.state === "dead" || f.state === "gone" ? null : pose(f, tk)));
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
   r3Fighters(g, tk, poses);
+  r3FinRings(g, tk);
   r3Projectiles(g, tk);
   if (mode === "select" || mode === "online") r3Previews(tk);
   const bub = r3Bubbles(g);
@@ -5728,6 +6039,7 @@ function render3D(g, tk) {
 
 
 function render(g, tk) {
+  RG = g; humStep(g);   // RG: the game drawn this frame (finish-ready looks read it); humStep: the charge hum
   // during the KO finisher the scene shows its two stand-ins instead of the real fighters
   const fin = FIN.on && mode === "match";
   if (fin) g = finFrame(g, tk);
@@ -5770,6 +6082,7 @@ function handleEvent(g, e, live) {
   switch (e.type) {
     case "hit": {
       if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
+      if (e.chg >= BL.TUNE.chgMax) chargedPop(e);   // a full-charge heavy: the "CHARGED" pop
       spark(e.x, e.y, e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);
       const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);

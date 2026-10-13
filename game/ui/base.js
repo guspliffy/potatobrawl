@@ -66,7 +66,7 @@ function paintBadge(el, i) { el.style.setProperty("--tc", TIERS[i].col); el.text
 
 /* ===================== sound (WebAudio, synthesized) ===================== */
 const Sfx = {
-  ctx: null, out: null, noiseBuf: null,
+  ctx: null, out: null, noiseBuf: null, humO: null, humG: null, humT: 0,
   init() {
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {}); return; }
     try {
@@ -115,6 +115,28 @@ const Sfx = {
     this.env(g, t, vol, dur); s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
   },
   later(ms, fn) { setTimeout(() => { if (this.ok()) fn(); }, ms); },
+  // Charge hum: ONE oscillator rising 140 -> 420 Hz across the charge. humStep() (effects.js) calls hum(frames) every rendered frame while a
+  // heavy is held; hum(0) stops it. A dead-man timer stops it by itself when the frames stop coming (hidden tab), so it can never keep droning.
+  hum(chg) {
+    if (!(chg > 0) || !this.ok()) { this.humOff(); return; }
+    const c = this.ctx, t = c.currentTime, k = Math.min(1, chg / 60), fr = 140 + 280 * k, v = 0.04 + 0.03 * k;
+    if (!this.humO) {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "triangle"; o.frequency.setValueAtTime(fr, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.06);
+      o.connect(g); g.connect(this.out); o.start(t);
+      this.humO = o; this.humG = g;
+    } else { this.humO.frequency.setTargetAtTime(fr, t, 0.03); this.humG.gain.setTargetAtTime(v, t, 0.04); }
+    clearTimeout(this.humT); this.humT = setTimeout(() => this.humOff(), 260);
+  },
+  humOff() {
+    clearTimeout(this.humT); this.humT = 0;
+    const o = this.humO, g = this.humG;
+    if (!o) return;
+    this.humO = this.humG = null;
+    try { const t = this.ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.0001, t, 0.02); o.stop(t + 0.1); } catch (e) { /* already stopped */ }
+    setTimeout(() => { try { o.disconnect(); g.disconnect(); } catch (e) { /* gone */ } }, 300);
+  },
   // Heavy attacks: a low "whoomp" under every heavy, then a signature per fighter and move (id = fighter, key = hSide / hUp / hDown / hAir)
   heavy(id, key) {
     if (!this.ok()) return;

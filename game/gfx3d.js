@@ -9,7 +9,7 @@ const glcv = $("gl"), ovcv = $("ov"), octx = ovcv.getContext("2d");
 const R3 = {
   ready: false, failed: false, on: false, T: null, renderer: null, scene: null, camera: null, key: null,
   rigs: [null, null], fov: 30, w: 0, h: 0, pr: 0, q: 0, perf: { t0: 0, n: 0, sum: 0 }, G: null, M: null,
-  proj: { orb: [], bolt: [], raven: [] }, respawn: [null, null], bub: [null, null], pv: null, pvRigs: new Map(), frame: 0,
+  proj: { orb: [], bolt: [], raven: [] }, respawn: [null, null], finRing: [null, null], bub: [null, null], pv: null, pvRigs: new Map(), frame: 0,
 };
 const YAW = 0.5;          // how far fighters turn toward the camera (radians)
 const AZ0 = 0.62;         // face direction on the body, from forward (+x) toward the camera (+z)
@@ -812,7 +812,8 @@ function makeRaven() {
   const body = mesh(G.sph, M.raven); body.scale.set(9, 6.4, 5.6); body.rotation.z = 0.15; g.add(body);
   const head = mesh(G.sph, M.raven); head.scale.setScalar(4.6); head.position.set(7, 5, 0); g.add(head);
   const beak = mesh(G.cone, M.beak); beak.scale.set(1.7, 6.5, 1.5); beak.rotation.z = -Math.PI / 2 - 0.12; beak.position.set(13.2, 4.2, 0); g.add(beak);
-  for (const s of [1, -1]) { const e = mesh(G.sphLo, M.redEye, false); e.scale.setScalar(0.95); e.position.set(9.2, 6.2, s * 3.4); g.add(e); }
+  const eyes = [];
+  for (const s of [1, -1]) { const e = mesh(G.sphLo, M.redEye, false); e.scale.setScalar(0.95); e.position.set(9.2, 6.2, s * 3.4); g.add(e); eyes.push(e); }
   const tail = mesh(G.cone, M.ravenDark); tail.scale.set(3.5, 11, 1.4); tail.rotation.z = Math.PI / 2 + 0.35; tail.position.set(-12, -2.5, 0); g.add(tail);
   const wings = [];
   for (const s of [1, -1]) {
@@ -820,7 +821,7 @@ function makeRaven() {
     const wm = mesh(G.sph, M.ravenDark); wm.scale.set(9, 1.2, 4.8); wm.position.set(-3.5, 0, s * 3.2); wm.rotation.y = s * 0.25;
     piv.add(wm); g.add(piv); wings.push(piv);
   }
-  return { g, wings };
+  return { g, wings, eyes };
 }
 function disposeObj(obj) {
   obj.traverse((o) => {
@@ -927,7 +928,7 @@ function syncRig(rig, f, P, tk, at) {
     if (P.spin) { const cy = -h * 0.5, dx = x, dy = y - cy, cs = Math.cos(P.spin), sn = Math.sin(P.spin); x = dx * cs - dy * sn; y = cy + dx * sn + dy * cs; }
     return out.set(x * fc, -y, z);
   };
-  rig.root.position.set(at ? at[0] : f.x, (at ? -at[1] : -f.y) + P.hop, 0);   // P.hop: the small hop of a Wing flare / Horn toss
+  rig.root.position.set((at ? at[0] : f.x) + P.jit[0], (at ? -at[1] : -f.y) + P.hop - P.jit[1], 0);   // P.hop: the small hop of a Wing flare / Horn toss; P.jit: the 1 px shake of a full charge
   // body
   toR(P.hip, 0, rig.body.position);
   rig.body.rotation.z = -fc * (P.spin + P.lean);
@@ -1062,6 +1063,25 @@ function r3Fighters(g, tk, poses) {
     if (rp.visible) { rp.material.color.copy(lin(col(f.pal))); rp.material.emissive.copy(rp.material.color); rp.position.set(f.x, -f.y - 4, 0); rp.scale.z = 0.45; }
   });
 }
+// finish-ready: a thin ring pulsing flat on the ground under the feet of a fighter the opponent's special can finish (the 2D version is drawFinRing)
+function r3FinRings(g, tk) {
+  const T = R3.T;
+  g.fighters.forEach((f, i) => {
+    let fr = R3.finRing[i];
+    if (!fr) {
+      const geo = new T.RingGeometry(0.87, 1, 56); geo.rotateX(-Math.PI / 2);
+      const mk = () => { const m = new T.Mesh(geo, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, side: T.DoubleSide })); m.renderOrder = 2; R3.scene.add(m); return m; };
+      fr = R3.finRing[i] = { a: mk(), b: mk() };
+    }
+    const on = finishReady(i);
+    fr.a.visible = fr.b.visible = on;
+    if (!on) return;
+    const c0 = lin(finRingCol(i)), w = f.s.w, ph = (tk % 54) / 54, r0 = w * 0.78;
+    for (const m of [fr.a, fr.b]) { m.material.color.copy(c0); m.position.set(f.x, -f.y + 1.4, 0); }
+    fr.a.scale.setScalar(r0); fr.a.material.opacity = 0.7 + 0.25 * Math.sin(tk * 0.2);
+    fr.b.scale.setScalar(r0 + w * 0.5 * ph); fr.b.material.opacity = 0.85 * (1 - ph);
+  });
+}
 function r3Projectiles(g, tk) {
   const T = R3.T, used = { orb: 0, bolt: 0, raven: 0 };
   for (const p of g.projs) {
@@ -1072,15 +1092,17 @@ function r3Projectiles(g, tk) {
     if (!o) {
       if (kind === "orb") o = mesh(R3.G.sph, R3.M.orb);
       else if (kind === "bolt") { o = mesh(R3.G.oct, R3.M.crystal); o.rotation.order = "ZYX"; }
-      else { const rv = makeRaven(); o = rv.g; o.userData.wings = rv.wings; }
+      else { const rv = makeRaven(); o = rv.g; o.userData.wings = rv.wings; o.userData.eyes = rv.eyes; }
       pool.push(o); R3.scene.add(o);
     }
     o.visible = true;
     o.position.set(p.x, -p.y, 0);
-    if (kind === "orb") o.scale.setScalar(p.r * 0.9);
-    else if (kind === "bolt") { o.scale.set(p.r * 1.15, p.r * 0.55, p.r * 0.55); o.rotation.set(tk * 0.3, 0, Math.atan2(-p.vy, p.vx)); }
+    const rdy = finishReady(1 - p.owner), K = finProjK(p, rdy);   // finish-ready: drawn bigger (the hitbox stays as it is)
+    if (kind === "orb") o.scale.setScalar(p.r * 0.9 * K);
+    else if (kind === "bolt") { o.scale.set(p.r * 1.15 * K, p.r * 0.55 * K, p.r * 0.55 * K); o.rotation.set(tk * 0.3, 0, Math.atan2(-p.vy, p.vx)); }
     else {
       const s = p.vx >= 0 ? 1 : -1, fl = Math.sin(tk * 0.6) * 0.7;
+      for (const e of o.userData.eyes) e.scale.setScalar(rdy ? 2.1 : 0.95);   // the red eyes burn
       o.scale.set(1.25 * s, 1.25, 1.25); o.rotation.y = s * 0.3;
       o.userData.wings[0].rotation.x = -fl - 0.2; o.userData.wings[1].rotation.x = fl + 0.2;
     }
@@ -1160,7 +1182,7 @@ function r3Bubbles(g) {
 /* ---------- overlay drawing (2D, in world space) ---------- */
 function drawFighterFx(c, f, tk, P) {
   const look = f.spec.look, cos = look.costume, flash = f.flash > 0 && f.flash % 2 === 0;
-  c.save(); c.translate(f.x, f.y - P.hop); c.scale(f.facing, 1);
+  c.save(); c.translate(f.x + P.jit[0], f.y - P.hop + P.jit[1]); c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   const shR = rot(P.sh, P.hip, P.lean);
   if (cos === "wizard") {
@@ -1187,20 +1209,24 @@ function drawFighterFx(c, f, tk, P) {
   }
   drawSwooshes(c, f, P, tk, 1);
   drawHeavyFx(c, f, P, tk);
+  drawFinishFx(c, f, P, tk);
   c.restore();
   drawHx(c, f.slot);
 }
 function drawProjFx(c, p, tk) {
+  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
   if (p.style === "orb") {
-    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15), 0, Math.PI * 2); c.fill(); }
-    const fl = 1 + Math.sin(tk * 0.25) * 0.08, r = p.r * 0.9;
+    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
+    if (rdy) finOrbFx(c, p, tk);
+    const fl = 1 + Math.sin(tk * 0.25) * 0.08, r = p.r * 0.9 * K;
     const gl = c.createRadialGradient(p.x, p.y, r * 0.6, p.x, p.y, r * 2.4 * fl);
     gl.addColorStop(0, "rgba(140,255,120,0.45)"); gl.addColorStop(1, "rgba(80,255,90,0)");
     c.fillStyle = gl; c.beginPath(); c.arc(p.x, p.y, r * 2.4 * fl, 0, Math.PI * 2); c.fill();
     return;
   }
   if (p.style === "bolt") {
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    if (rdy) finBoltFx(c, p, tk);
+    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.scale(K, K);
     const g = c.createRadialGradient(0, 0, 2, 0, 0, p.r * 2);
     g.addColorStop(0, "rgba(255,240,180,0.75)"); g.addColorStop(1, "rgba(120,220,255,0)");
     c.fillStyle = g; c.beginPath(); c.ellipse(-p.r * 0.8, 0, p.r * 2.6, p.r * 1.1, 0, 0, Math.PI * 2); c.fill();
@@ -1211,6 +1237,7 @@ function drawProjFx(c, p, tk) {
     c.strokeStyle = "rgba(200,200,230,0.3)"; c.lineWidth = 2; c.lineCap = "round";
     const s = Math.sign(p.vx) || 1;
     for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(p.x - s * (14 + i * 4), p.y - 6 + i * 6); c.lineTo(p.x - s * (26 + i * 8), p.y - 6 + i * 6); c.stroke(); }
+    if (rdy) { finRavenFx(c, p, tk, true); finRavenEyes(c, p); }
     return;
   }
   drawProj(c, p, tk);
@@ -1227,6 +1254,7 @@ function render3D(g, tk) {
   const poses = g.fighters.map((f) => (f.state === "dead" || f.state === "gone" ? null : pose(f, tk)));
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
   r3Fighters(g, tk, poses);
+  r3FinRings(g, tk);
   r3Projectiles(g, tk);
   if (mode === "select" || mode === "online") r3Previews(tk);
   const bub = r3Bubbles(g);
