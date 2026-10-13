@@ -195,11 +195,17 @@ function mgSpeedStrip(white) {
   return c;
 }
 // focus lines centred on (cx, cy), reaching out to R css px, turning slowly; the caller clips
+// the shared pictures are made when first asked for (or by the queue after the freeze, whichever comes first), so a script never meets a missing one
+function mgNeedLayer() { if (!MG.layer) { MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d"); } }
+function mgNeedDisc(white) { if (white) { if (!MG.discW) MG.discW = mgFocusDisc(true); } else if (!MG.disc) MG.disc = mgFocusDisc(false); }
+function mgNeedStrip(white) { if (white) { if (!MG.stripW) MG.stripW = mgSpeedStrip(true); } else if (!MG.strip) MG.strip = mgSpeedStrip(false); }
 function mgFocus(c, cx, cy, R, rot, alpha, white) {
+  mgNeedDisc(white);
   c.save(); c.globalAlpha = alpha; c.translate(cx, cy); c.rotate(rot); c.drawImage(white ? MG.discW : MG.disc, -R, -R, R * 2, R * 2); c.restore();
 }
 // speed lines in a w x h box centred on (x, y), running along `ang`, scrolling by `off` px; the caller sets the clip if it wants one
 function mgSpeed(c, x, y, w, h, ang, off, alpha, white, th) {
+  mgNeedStrip(white);
   const strip = white ? MG.stripW : MG.strip, sc = th || 1, sw = 512 * sc, sh = 64 * sc;
   c.save(); c.globalAlpha = alpha; c.translate(x, y); c.rotate(ang); c.beginPath(); c.rect(-w / 2, -h / 2, w, h); c.clip();
   const o = ((off % sw) + sw) % sw;
@@ -400,6 +406,7 @@ function mgPuppet(c, pn, p, tt, o) {
   if (!(o.free === undefined ? c !== ctx : o.free)) { x0 = Math.max(x0, pn.x0 + pn.ox - 2); x1 = Math.min(x1, pn.x1 + pn.ox + 2); y0 = Math.max(y0, pn.y0 + pn.oy - 2); y1 = Math.min(y1, pn.y1 + pn.oy + 2); }
   const bx = Math.max(0, Math.floor(x0 * D)), by = Math.max(0, Math.floor(y0 * D)), bw = Math.min(MG.cw - bx, Math.ceil((x1 - x0) * D) + 1), bh = Math.min(MG.ch - by, Math.ceil((y1 - y0) * D) + 1);
   if (bw <= 2 || bh <= 2) return;
+  mgNeedLayer();
   const lc = MG.lc, k = o.k || clamp(10 / (2.5 * ze), 1, 2.2);
   lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(bx, by, bw, bh);
   lc.save(); lc.beginPath(); lc.rect(bx, by, bw, bh); lc.clip();
@@ -472,41 +479,40 @@ function mgInkC(which) {
   t.fillStyle = mgTile(8, which ? 0.7 : 0.4); t.fillRect(0, 0, W, H);
   t.globalCompositeOperation = "destination-in"; t.imageSmoothingEnabled = true; t.drawImage(mask, 0, 0, W, H);
   S.x.drawImage(tl, 0, 0);
-  if (which) { MG.ink = S.ik; MG.inkT = MG.pt; MG.inkS = null; }
+  if (which) { MG.ink = S.ik; MG.inkOK = true; MG.inkT = MG.pt; MG.inkS = null; }
 }
 
 /* ---------- building the page (at the freeze) ---------- */
 // panel 1 is the engine's own: the real hit, frozen and inked, the whole page
 function mgFirstPanel() { return { id: "hit", t0: MT.FREEZE, slide: 0, live: true, poly: [[0, 0], [1, 0], [1, 1], [0, 1]], draw: mgDrawHit }; }
 function mgDrawHit(c, pn, t) {
-  const ink = MG.ink ? easeOut(fe(MT.FREEZE + 30, MT.INKED - 40, t)) : 0, life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
+  const ink = MG.inkOK ? easeOut(fe(MT.FREEZE + 30, MT.INKED - 40, t)) : 0, life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
   c.save(); c.translate(ix, iy); c.scale(s, s); c.translate(-ix, -iy);
   if (ink < 1) c.drawImage(MG.snap, 0, 0, L.gw, L.gh);
   if (ink > 0) { c.globalAlpha = ink; c.drawImage(MG.ink, 0, 0, L.gw, L.gh); }
   c.restore();
-  if (MG.disc) { const R = Math.hypot(Math.max(ix, L.gw - ix), Math.max(iy, L.gh - iy)); mgFocus(c, ix, iy, R, t * 0.00035, 0.9 * ink); }
+  if (ink > 0) { const R = Math.hypot(Math.max(ix, L.gw - ix), Math.max(iy, L.gh - iy)); mgFocus(c, ix, iy, R, t * 0.00035, 0.9 * ink); }
 }
 // at the freeze: the screen is copied (cheap) and a queue of small build tasks is set up; mgWork runs them one or two per frame while the first panel holds
 function mgSnapshot() {
   const S = MG.script, gw = L.gw, gh = L.gh;
   MG.snap = mgCanvas(cv.width, cv.height); MG.snap.getContext("2d").drawImage(cv, 0, 0);
+  MG.ink = MG.snap; MG.inkOK = false;   // until the inked copy is done, a page that draws MG.ink gets the plain picture
   const ev = FIN.ev, d = FIN.P[FIN.l], q = ev ? toScreen(ev.x, ev.y - d.s.h * 0.5) : [gw / 2, gh / 2];
   MG.ix = clamp(q[0], gw * 0.2, gw * 0.8); MG.iy = clamp(q[1], gh * 0.25, gh * 0.75);
   MG.cw = cv.width; MG.ch = cv.height;
   MG.m = clamp(Math.min(gw, gh) * 0.026, 6, 16); MG.bw = clamp(Math.min(gw, gh) * 0.0105, 3, 9);
   MG.page = { x: MG.m, y: MG.m, w: gw - 2 * MG.m, h: gh - 2 * MG.m };
   MG.lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh };
-  MG.panels = [mgPanel(mgFirstPanel(), 0)]; MG.byId = { hit: MG.panels[0] };
+  // the script's panels, words and build() are made right now, so every hook of the script (step, over, cues...) finds them; the heavy canvas work is queued below
+  MG.panels = [mgFirstPanel()].concat(S.panels(MG.lay)).map((dd, i) => mgPanel(dd, i));
+  MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
+  MG.words = mgWordDefs(S).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+  if (S.build) S.build(MG.lay);
   MG.todo = [
-    () => { MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d"); MG.disc = mgFocusDisc(false); },
-    () => { MG.discW = mgFocusDisc(true); MG.strip = mgSpeedStrip(false); MG.stripW = mgSpeedStrip(true); },
+    () => { mgNeedLayer(); mgNeedDisc(false); },
+    () => { mgNeedDisc(true); mgNeedStrip(false); mgNeedStrip(true); },
     mgInkA, mgInkB, () => mgInkC(0), () => mgInkC(1),
-    () => {
-      MG.panels = MG.panels.concat(S.panels(MG.lay).map((dd, i) => mgPanel(dd, i + 1)));
-      MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
-      MG.words = mgWordDefs(S).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
-      if (S.build) S.build(MG.lay);
-    },
   ];
   MG.todo.push(() => { for (const w of MG.words.slice(0, 2)) mgWordPrep(w); }, () => { for (const w of MG.words.slice(2, 4)) mgWordPrep(w); }, () => { for (const w of MG.words.slice(4)) mgWordPrep(w); }, mgCardPrep);
 }
