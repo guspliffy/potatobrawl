@@ -162,16 +162,18 @@ button { font: inherit; color: inherit; }
   display: grid; place-items: center; overflow: hidden;
 }
 .pb.on { background: var(--bc); color: var(--ink); }
-.pb[data-k="light"] { --bc: var(--sand); width: 80px; height: 80px; right: 86px; bottom: 10px; font-size: 15px; }
-.pb[data-k="heavy"] { --bc: var(--ember); width: 66px; height: 66px; right: 178px; bottom: 26px; }
+.pb[data-k="light"] { --bc: var(--sand); width: 80px; height: 80px; right: 82px; bottom: 10px; font-size: 15px; }
+.pb[data-k="heavy"] { --bc: var(--ember); width: 73px; height: 73px; right: 171px; bottom: 22px; font-size: 14px; }
 .pb[data-k="jump"] { --bc: #eef0fa; width: 70px; height: 70px; right: 8px; bottom: 92px; }
-.pb[data-k="special"] { --bc: var(--fc, #8fb6ff); width: 58px; height: 58px; right: 100px; bottom: 108px; font-size: 11px; }
+.pb[data-k="special"] { --bc: var(--fc, #8fb6ff); width: 64px; height: 64px; right: 97px; bottom: 105px; font-size: 12px; transition: transform 90ms ease-out; }
+/* in the air after a jump (a ground jump or an air jump) the special is 15% bigger, growing from its centre so nothing else moves */
+.pb[data-k="special"].jb { transform: scale(1.15); }
 .pb[data-k="dodge"] { --bc: var(--mute); width: 54px; height: 54px; right: 16px; bottom: 18px; font-size: 11px; }
 .pb[data-k="special"]::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(14, 16, 34, 0.78) calc(var(--cd, 0) * 360deg), transparent 0); pointer-events: none; }
 .pb > span { position: relative; z-index: 1; }
 /* the special can finish: it glows and shows its name (the opponent is at finish percent) */
 .pb[data-k="special"].fin { animation: specFin 0.7s ease-in-out infinite; }
-.pb[data-k="special"].fin > span { font-size: 10px; line-height: 1; letter-spacing: 0.02em; text-align: center; padding: 0 3px; white-space: normal; }
+.pb[data-k="special"].fin > span { font-size: 11px; line-height: 1; letter-spacing: 0.02em; text-align: center; padding: 0 3px; white-space: normal; }
 @keyframes specFin { 0%, 100% { box-shadow: 0 0 6px 1px var(--bc), inset 0 0 8px rgba(255, 255, 255, 0.15); } 50% { box-shadow: 0 0 20px 6px var(--bc), inset 0 0 14px rgba(255, 255, 255, 0.45); } }
 /* heavy charge: a ring fills inside the button while the heavy is held */
 .pb[data-k="heavy"]::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; pointer-events: none; opacity: 0; background: conic-gradient(#fff calc(var(--ch, 0) * 360deg), rgba(14, 16, 34, 0.5) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); }
@@ -213,7 +215,18 @@ button { font: inherit; color: inherit; }
 .brand h1 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(50px, calc(var(--um) * 12), 78px); line-height: 0.85; letter-spacing: -0.015em; text-transform: uppercase; }
 .brand h1 span { color: var(--sand); display: block; }
 .brand .slash { display: block; height: 6px; width: 70%; margin: 10px 0 0; background: linear-gradient(90deg, var(--ember), var(--sand) 55%, rgba(243, 217, 164, 0)); transform: skewX(-35deg); transform-origin: left; }
-.rank { --tc: #9097ad; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; background: rgba(35, 39, 70, 0.72); border: 1px solid var(--line); border-radius: 6px; }
+/* rating + chips: a compact card in the top right corner of the start page, left of the settings gear (same height as the gear) */
+.rank { --tc: #9097ad; position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--gear) + 10px); max-width: calc(100% - var(--gear) - 40px); height: var(--gear); overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px 3px 8px; background: rgba(35, 39, 70, 0.78); border: 1px solid var(--line); border-radius: calc(var(--gear) / 2); }
+#app { --gear: 42px; }
+#app.short { --gear: 38px; }
+.rank > div:nth-child(2) { min-width: 0; }
+#app #mRank .badge { width: 25px; height: 28px; font-size: 14px; }
+.rank .rk-tier { font-size: 17px; letter-spacing: 0.03em; }
+.rank .rk-sub { font-size: 12px; margin-top: 1px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank .bar { position: absolute; left: 22px; right: 22px; bottom: 0; height: 3px; margin: 0; border-radius: 2px 2px 0 0; }
+.rank .tok { padding-left: 10px; border-left: 1px solid var(--line); flex: none; }
+.rank .tok b { font-size: 21px; }
+.rank .tok div { font-size: 10px; letter-spacing: 0.14em; }
 .rk-tier { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--tc); }
 .rk-sub { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .tok { text-align: right; font-family: var(--display); line-height: 1.05; }
@@ -407,7 +420,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #tut .tut-n { grid-column: 1; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
 #tut .tut-t { grid-column: 1; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(20px, calc(var(--uh) * 6), 30px); line-height: 1; text-transform: uppercase; }
 #tut .tut-h { grid-column: 1; font-size: 14px; color: var(--mute); }
-#tut .chip { grid-column: 2; grid-row: 1 / span 3; pointer-events: auto; min-height: 32px; padding: 3px 12px; font-size: 13px; }
+#tut .chip { grid-column: 2; grid-row: 1 / span 3; align-self: start; pointer-events: auto; min-height: 32px; padding: 3px 12px; font-size: 13px; }
+/* sideways with touch buttons: centre the prompt in the space left of the button cluster so it never sits under Special or Jump */
+#app.tutpad:not(.portrait) #tut { left: calc((100% - 190px) / 2); max-width: min(560px, 62%, calc(100% - 206px)); }
+#app.portrait #tut { top: auto; bottom: calc(var(--panelH) + 12px); max-width: calc(100% - 24px); }
 #tut.done { border-left-color: var(--mint); }
 #tut.done .tut-t { color: var(--mint); }
 .pb.tutpulse { animation: tutPulse 1.1s ease-in-out infinite; }
@@ -420,7 +436,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .brand h1 { font-size: 44px; line-height: 0.9; }
 #app.short .brand h1 span { display: inline; }
 #app.short .brand .slash { margin-top: 6px; height: 4px; }
-#app.short .rank { padding: 8px 12px; }
 #app.short .badge { width: 44px; height: 48px; font-size: 21px; }
 #app.short .rk-tier { font-size: 21px; }
 #app.short .btn { min-height: 42px; font-size: 18px; padding: 7px 20px; }
@@ -437,9 +452,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .brand h1 { font-size: 36px; }
 #app.tiny .brand .slash { display: none; }
 #app.tiny .menu-inner { gap: 8px; }
-#app.tiny .rank { padding: 6px 10px; gap: 10px; }
 #app.tiny .badge { width: 36px; height: 40px; font-size: 18px; }
-#app.tiny .bar { margin-top: 5px; }
 #app.tiny .btn { min-height: 38px; font-size: 17px; padding: 6px 18px; }
 #app.tiny .menu-actions { gap: 6px; }
 #app.tiny .sel-head h2 { font-size: 24px; }
@@ -463,7 +476,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
-@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } }
 </style>
 
 </head><body><div id="app">
@@ -504,21 +517,21 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
+    <div class="rank" id="mRank">
+      <div class="badge" id="mBadge">B</div>
+      <div>
+        <div class="rk-tier" id="mTier">Bronze</div>
+        <div class="rk-sub" id="mSub">1000 rating</div>
+        <div class="bar"><i id="mBar"></i></div>
+      </div>
+      <div class="tok"><b id="mTokens"><span class="tokglyph"></span>0</b><div>chips</div></div>
+    </div>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
           <h1>Potato<span> Brawl</span></h1>
           <i class="slash"></i>
         </header>
-        <div class="rank" id="mRank">
-          <div class="badge" id="mBadge">B</div>
-          <div>
-            <div class="rk-tier" id="mTier">Bronze</div>
-            <div class="rk-sub" id="mSub">1000 rating</div>
-            <div class="bar"><i id="mBar"></i></div>
-          </div>
-          <div class="tok"><b id="mTokens"><span class="tokglyph"></span>0</b><div>chips</div></div>
-        </div>
         <div class="menu-actions">
           <button class="btn primary" id="bRanked"><span>Ranked match<small id="mRec">0W · 0L</small></span></button>
           <button class="btn" id="bOnline"><span>Play friends<small id="mOnline">online</small></span></button>
@@ -4391,7 +4404,7 @@ function drawProj(c, p, tk) {
 
 function drawTag(c, f, isP1, lift) {
   if (f.state === "dead" || f.state === "gone") return;
-  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : match && match.tutorial ? "DUMMY" : "CPU";
+  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.translate(f.x, y); c.scale(k, k);
   c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8";
@@ -7532,7 +7545,8 @@ function cinePost() {
   if (cfg.msaa && r.capabilities.isWebGL2 && T.WebGLMultisampleRenderTarget) { rt = new T.WebGLMultisampleRenderTarget(64, 64, opt); rt.samples = cfg.msaa; }
   else rt = new T.WebGLRenderTarget(64, 64, opt);
   const comp = new T.EffectComposer(r, rt);
-  comp.addPass(new T.RenderPass(CINE.scene, CINE.camera));
+  CINE.rpass = new T.RenderPass(CINE.scene, CINE.camera);
+  comp.addPass(CINE.rpass);
   const bloom = new T.UnrealBloomPass(new T.Vector2(64, 64), 0.9, 0.55, 0.78);
   if (cfg.hdr) { for (const q of [bloom.renderTargetBright, ...bloom.renderTargetsHorizontal, ...bloom.renderTargetsVertical]) q.texture.type = T.HalfFloatType; }
   bloom.enabled = cfg.bloom > 0;
@@ -8043,11 +8057,30 @@ function cineLayers(on) {
   ovcv.style.display = FIN.cine || on ? "block" : "none";
 }
 function cineHas(g) { for (const f of g.fighters) if (FILMS[f.spec.id]) return f.spec.id; return ""; }
+// every film this match may need (both fighters can win): one "world" each (scene, set, lights, env map, the film's own objects).
+// The renderer, camera, post chain, textures and the two hero rigs are shared; the rigs move into the winner's world at the start.
+function cineFilmIds(g) { const ids = []; for (const f of g.fighters) if (FILMS[f.spec.id] && !ids.includes(f.spec.id)) ids.push(f.spec.id); return ids; }
+function cineUse(fid) {
+  const C = CINE, w = C.worlds[fid];
+  C.film = w.film; C.scene = w.scene; C.set = w.set; C.lights = w.lights; C.env = w.env; C.fx = w.fx;
+  if (C.rpass) C.rpass.scene = w.scene;
+  if (C.renderer) C.renderer.toneMappingExposure = w.film.exposure || 1;
+  for (const rig of C.rigs) if (rig) { w.scene.add(rig.root); if (rig.blob) w.scene.add(rig.blob); }
+}
+function cineWorld(fid) {
+  const C = CINE, T = C.T, w = { film: FILMS[fid], scene: new T.Scene(), ready: false };
+  C.worlds[fid] = w; C.worldIds.push(fid);
+  C.scene = w.scene; C.film = w.film;
+  return w;
+}
+function cineWorldFill(w) {   // what cineStage3 made for the current world, kept with it
+  w.set = CINE.set; w.lights = CINE.lights; w.env = CINE.env; w.fx = CINE.fx;
+}
 function cineLost(e) { e.preventDefault(); cineFail("WebGL context lost"); }
 // one step per frame while a match runs (the countdown covers it), so the KO frame never has to build or compile anything
 function cineWarmStep(g) {
   if (CINE.ready || CINE.failed || !CINE.libs || CINE.warming) return;
-  const fid = cineHas(g);
+  const ids = cineFilmIds(g), fid = ids[0];
   if (!fid) return;
   const key = rigKey(g.fighters[0]) + "/" + rigKey(g.fighters[1]);
   if (CINE.slots && CINE.slots !== key) cineFree();
@@ -8062,15 +8095,26 @@ function cineWarmStep(g) {
     else if (S === 4) cineRigAt(g, 0);
     else if (S === 5) cineRigAt(g, 1);
     else if (S === 6) { CINE.film.build(CINE); }
-    else if (S === 7) cineWarmRender();
-    if (!CINE.failed) { CINE.stage = S + 1; CINE.ms.push(Math.round(performance.now() - t0)); }
+    else if (S === 7) { cineWarmRender(); cineWorldFill(CINE.worlds[fid]); CINE.worlds[fid].ready = true; }
+    else {
+      // the other fighter's film, if it has one: its own world, built and compiled in three more steps
+      const k = Math.floor((S - 8) / 3), sub = (S - 8) % 3, fid2 = ids[1 + k];
+      if (sub === 0) { cineWorld(fid2); cineStage3(); cineWorldFill(CINE.worlds[fid2]); }
+      else if (sub === 1) { cineUse(fid2); CINE.film.build(CINE); }
+      else { cineUse(fid2); cineWarmRender(); CINE.worlds[fid2].ready = true; }
+    }
+    if (!CINE.failed) {
+      CINE.stage = S + 1; CINE.ms.push(Math.round(performance.now() - t0));
+      // every film this match needs is warm: back to the first world, ready
+      if (CINE.stage >= 8 + 3 * (ids.length - 1)) { cineUse(fid); CINE.ready = true; }
+    }
   } catch (e) { CINE.warming = false; cineFail(e && e.stack ? e.stack.split("\n").slice(0, 3).join(" | ") : e); return; }
   CINE.warming = false;
 }
 function cineStage0(g, key, fid) {
   const T = CINE.T;
   CINE.tier = cineTierName(); CINE.cfg = CT_TIERS[CINE.tier];
-  CINE.slots = key; CINE.hasRes = true; CINE.ms = []; CINE.film = FILMS[fid];
+  CINE.slots = key; CINE.hasRes = true; CINE.ms = []; CINE.film = FILMS[fid]; CINE.fid0 = fid; CINE.worlds = {}; CINE.worldIds = [];
   if (!CINE.renderer) {
     // probe on a throw-away canvas first: three.js logs a console error when it cannot get a context, and a phone without WebGL is a normal case, not an error
     const pc = document.createElement("canvas"); let px = null;
@@ -8097,7 +8141,7 @@ function cineStage0(g, key, fid) {
 }
 function cineStage1() {
   const T = CINE.T;
-  CINE.scene = new T.Scene();
+  cineWorld(CINE.fid0);   // the first film's world; cineStage3 fills it
   CINE.camera = new T.PerspectiveCamera(30, 1, 4, 7000);
   CINE.noise = cnNoiseTex(); CINE.atlas = cnAtlas();
   R3.T = T;
@@ -8148,7 +8192,6 @@ function cineWarmRender() {
   C.rigs.forEach((rig) => { rig.root.visible = false; });
   // a shader that failed to link would show up here
   for (const p of r.info.programs || []) if (p.diagnostics && p.diagnostics.runnable === false) throw new Error("shader failed: " + (p.name || "") + " " + String(p.diagnostics.programLog || "").slice(0, 160));
-  C.ready = true;
 }
 // give everything back (end of the film, or the match was left)
 function cineFree() {
@@ -8156,19 +8199,20 @@ function cineFree() {
   if (!C.hasRes && !C.ready && C.stage === 0) return;
   try {
     cinePaneDrop();
-    if (C.scene) {
-      for (const rig of C.rigs) if (rig) { C.scene.remove(rig.root); disposeObj(rig.root); }
-      C.scene.traverse((o) => { if (o.isLight && o.shadow && o.shadow.map) o.shadow.map.dispose(); });
-      C.scene.clear && C.scene.clear();
+    for (const rig of C.rigs) if (rig) { if (rig.root.parent) rig.root.parent.remove(rig.root); disposeObj(rig.root); }
+    for (const w of Object.values(C.worlds || {})) {
+      w.scene.traverse((o) => { if (o.isLight && o.shadow && o.shadow.map) o.shadow.map.dispose(); });
+      w.scene.clear && w.scene.clear();
+      if (w.env) w.env.dispose();
     }
-    if (C.env) C.env.dispose();
     for (const o of C.own) { try { o.dispose(); } catch (e) { /* already gone */ } }
     if (R3.G) { for (const g of R3.G.bodies.values()) g.dispose(); for (const k of ["sph", "sphLo", "cyl", "cone", "oct", "leaf", "feather"]) R3.G[k].dispose(); R3.G = null; }
     if (R3.M) { for (const m of Object.values(R3.M)) m.dispose(); R3.M = null; }
     if (R3.tex) { if (R3.tex.skin) R3.tex.skin.dispose(); R3.tex = null; }
     if (C.renderer) { C.renderer.renderLists.dispose(); C.renderer.setRenderTarget(null); C.renderer.setSize(1, 1, false); }
   } catch (e) { /* best effort */ }
-  C.own = []; C.rigs = [null, null]; C.scene = C.camera = C.composer = C.bloom = C.gradePass = C.gu = null; C.set = C.lights = C.env = C.fx = C.film = null; C.pane = null;
+  C.own = []; C.rigs = [null, null]; C.scene = C.camera = C.composer = C.bloom = C.gradePass = C.gu = C.rpass = null; C.set = C.lights = C.env = C.fx = C.film = null; C.pane = null;
+  C.worlds = {}; C.worldIds = [];
   C.stage = 0; C.blobTex = null; C.ready = false; C.slots = ""; C.hasRes = false; C.warming = false; C.w = C.h = C.pr = 0; C.active = false; C.bo = null; C.layers = null;
   R3.G = null; R3.M = null; R3.tex = null;
 }
@@ -8182,12 +8226,14 @@ function cineIdle(g) {
 /* ---------- starting a film (finStart calls this once the puppets are staged) ---------- */
 function cineWanted(g) {
   const W = g.fighters[g.winner], film = FILMS[W.spec.id];
-  return !!(film && CINE.ready && !CINE.failed && CINE.film === film && CINE.rigs[0] && CINE.rigs[1]);
+  const w = CINE.worlds && CINE.worlds[W.spec.id];
+  return !!(film && w && w.ready && !CINE.failed && !CINE.warming && CINE.rigs[0] && CINE.rigs[1]);
 }
 function cineStart(g) {
   if (!cineWanted(g)) return false;
   const C = CINE, film = FILMS[g.fighters[g.winner].spec.id];
   try {
+    cineUse(g.fighters[g.winner].spec.id);
     C.active = true; C.dir = FIN.dir; C.t = 0; C.tw = 0; C.wSlot = FIN.w; C.lSlot = FIN.l; C.frames = 0; C.lastNow = 0; C.slow = 0;
     C.kick.amp = 0; C.bo = null; C.pane = null; C.flare = null; C.cardSub = "";
     cineLightsDir(C.lights, C.dir);
@@ -8857,7 +8903,8 @@ function handleEvent(g, e, live) {
       cam.shake = 20; trails[e.slot].length = 0;
       if (live) Sfx.ko();
       break;
-    case "jump": if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
+    case "jump": if (live && !e.rec && e.slot === meSlot) hudX.jb = true;   // the Special button grows while this jump lasts (updateHud)
+      if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "land": dust(e.x, e.y, 3, 22); break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
     case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
@@ -9802,18 +9849,18 @@ function enterMatchUI() {
     const f = G.fighters[i], el = $("pc" + i);
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
-    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : match.tutorial ? "Dummy" : "CPU";
+    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
-  hudX.spFin = null; hudX.ch = -1; btnSpec.classList.remove("fin"); btnSpec.querySelector("span").textContent = "Special";
+  hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
   for (const e of document.querySelectorAll(".pcard")) e.classList.remove("finr");
   fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
-const hudCache = [{}, {}], hudX = { spFin: null, ch: -1 };
+const hudCache = [{}, {}], hudX = { spFin: null, ch: -1, jb: false };
 const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
 // A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
 function finReady(i) {
@@ -9868,6 +9915,12 @@ function updateHud() {
   // touch: the special glows and names itself while the opponent is at finish percent
   const sf = !!hudCache[1 - meSlot].fin;
   if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? me.spec.signature.name : "Special"; }
+  // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
+  // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,
+  // being hit (hitstun, tumble), the ledge, a KO or respawn, so a walk-off or a knock-up never boosts it.
+  const jumpAir = !me.grounded && !me.tumble && (me.state === "air" || me.state === "attack" || me.state === "dodge");
+  if (hudX.jb && !jumpAir) hudX.jb = false;
+  if (btnSpec.classList.contains("jb") !== hudX.jb) btnSpec.classList.toggle("jb", hudX.jb);
   // touch: a ring fills on the Heavy button while a ground heavy is held and charging
   const mv = me.move, charging = me.state === "attack" && !!mv && !!mv.charge && me.chg > 0 && me.mt <= mv.startup - BL.TUNE.chgHold;
   const chv = charging ? Math.min(1, me.chg / BL.TUNE.chgMax) : 0;
@@ -10676,16 +10729,18 @@ function openHelp() {
 
 /* ----- guided practice: short prompts the first time someone plays ----- */
 const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
-const TUT = { on: false, i: 0, x0: 0, lights: 0, hold: 0 };
+const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0 };
+const TUT_CALM = 240;   // sim ticks the CPU waits (4 s) once the player is next to it, in the steps that need a hit to land
 function tutSteps() {
   const t = touchUI, spec = G.fighters[0].spec;
   return [
-    { t: "Move", h: t ? "Drag on the left side of the screen." : "A and D, or the arrow keys.", b: null },
-    { t: "Jump, then jump again", h: t ? "Tap Jump twice. The second jump happens in the air." : "Space twice. The second jump happens in the air.", b: "jump" },
-    { t: "Three light hits", h: `${t ? "Tap Light" : "Press J"} three times next to the dummy. The third hit launches.`, b: "light" },
-    { t: "Heavy attack", h: `${t ? "Tap Heavy" : "Press K"}. Slower, but it hits hard. Hold up or down to aim it.`, b: "heavy" },
-    { t: spec.signature.name, h: `${t ? "Tap Special" : "Press L"} for your signature move. It recharges after each use.`, b: "special" },
-    { t: "Knock them off", h: "Their damage is high now, so they fly far. Hit them off the screen.", b: null },
+    { id: "move", t: "Move", h: t ? "Drag on the left side of the screen." : "A and D, or the arrow keys.", b: null },
+    { id: "jump", t: "Jump, then jump again", h: t ? "Tap Jump twice. The second jump happens in the air." : "Space twice. The second jump happens in the air.", b: "jump" },
+    { id: "light", t: "Three light hits", h: `${t ? "Tap Light" : "Press J"} three times next to the CPU. The third hit launches.`, b: "light" },
+    { id: "heavy", t: "Heavy attack", h: `${t ? "Tap Heavy" : "Press K"}. Slower, but it hits hard. Hold up or down to aim it.`, b: "heavy" },
+    { id: "charge", t: "Hold to charge", h: t ? "Hold Heavy until its ring fills, then let go. Land one on the CPU." : "Hold K to power up, then let go. Land one on the CPU.", b: "heavy" },
+    { id: "special", t: spec.signature.name, h: `${t ? "Tap Special" : "Press L"} for your signature move. It recharges after each use.`, b: "special" },
+    { id: "off", t: "Knock them off", h: "Their damage is high now, so they fly far. Hit them off the screen.", b: null },
   ];
 }
 function startTutorial() {
@@ -10694,42 +10749,54 @@ function startTutorial() {
   const me = FIG[sel.fighter] || FIGHTERS[0], opp = me.id === "odin" ? FIG.wizard : FIG.odin;
   const myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: opp.palettes[0] }], stocks: 9, time: 0, countdown: 120 });
-  match = { ranked: false, tutorial: true, d: -1, bot: makeBot(-1), level: "Tutorial" };
+  const easy = LEVELS.find((l) => l.name === "Easy").d;   // the same CPU as Practice > Easy
+  match = { ranked: false, tutorial: true, d: easy, bot: makeBot(easy), level: "Tutorial" };
   meSlot = 0;
-  Object.assign(TUT, { on: true, i: 0, x0: G.fighters[0].x, lights: 0, hold: 0 });
+  Object.assign(TUT, { on: true, i: 0, x0: G.fighters[0].x, lights: 0, hold: 0, calm: TUT_CALM });
   enterMatchUI();
+  app.classList.toggle("tutpad", touchUI);
   tutShow();
 }
 function tutShow() {
   const st = tutSteps(), s = st[TUT.i], el = $("tut");
   el.classList.remove("done");
+  TUT.calm = TUT_CALM; TUT.id = s.id;
   $("tutN").textContent = `Tutorial · ${TUT.i + 1} of ${st.length}`;
   $("tutT").textContent = s.t; $("tutH").textContent = s.h;
   for (const b of padBtns) b.classList.toggle("tutpulse", b.dataset.k === s.b);
 }
 function tutEnd() {
-  TUT.on = false; $("tut").hidden = true; app.classList.remove("tut");
+  TUT.on = false; $("tut").hidden = true; app.classList.remove("tut", "tutpad");
   for (const b of padBtns) b.classList.remove("tutpulse");
 }
 function tutTick(evs) {
   if (!TUT.on || !match || !match.tutorial || !G || G.phase !== "play") return;
-  const me = G.fighters[0], op = G.fighters[1];
-  me.stocks = Math.max(me.stocks, 5); // nobody runs out of lives while learning
+  const me = G.fighters[0], op = G.fighters[1], id = TUT.id;
+  // nobody runs out of lives or gets launched far while learning
+  me.stocks = Math.max(me.stocks, 5); me.percent = Math.min(me.percent, 60);
+  // The CPU is a real Easy CPU, but it stands still while there is nothing it should punish: in the first two steps,
+  // and for TUT_CALM ticks after the player walks up to it (again after every hit) in the steps that need a hit to land.
+  const near = Math.abs(me.x - op.x) < 170 && Math.abs(me.y - op.y) < 90;
+  const hitStep = id === "light" || id === "charge";
+  if (hitStep && evs.some((e) => e.type === "hit" && e.def !== undefined)) TUT.calm = TUT_CALM;   // every hit, either way, gives the player another quiet spell
+  if (hitStep && near && TUT.calm > 0) TUT.calm--;
+  const calm = id === "move" || id === "jump" || (hitStep && TUT.calm > 0);
+  match.bot.d = calm ? -1 : match.d;
   if (TUT.hold > 0) {
     if (--TUT.hold === 0) {
-      TUT.i++;
-      if (TUT.i === 5) { op.percent = Math.max(op.percent, 120); op.stocks = 1; }
-      tutShow();
+      TUT.i++; tutShow();
+      if (TUT.id === "off") { op.percent = Math.max(op.percent, 120); op.stocks = 1; }
     }
     return;
   }
   let done = false;
-  switch (TUT.i) {
-    case 0: done = Math.abs(me.x - TUT.x0) > 110; break;
-    case 1: done = evs.some((e) => e.type === "jump" && e.slot === 0 && !e.ground); break;
-    case 2: for (const e of evs) if (e.type === "hit" && e.slot === 0 && LIGHTK.has(me.mid)) TUT.lights++; done = TUT.lights >= 3; break;
-    case 3: done = me.state === "attack" && !!me.mid && !LIGHTK.has(me.mid) && me.mid !== "spec"; break;
-    case 4: done = me.mid === "spec"; break;
+  switch (id) {
+    case "move": done = Math.abs(me.x - TUT.x0) > 110; break;
+    case "jump": done = evs.some((e) => e.type === "jump" && e.slot === 0 && !e.ground); break;
+    case "light": for (const e of evs) if (e.type === "hit" && e.slot === 0 && LIGHTK.has(me.mid)) TUT.lights++; done = TUT.lights >= 3; break;
+    case "heavy": done = me.state === "attack" && !!me.mid && !LIGHTK.has(me.mid) && me.mid !== "spec"; break;
+    case "charge": done = evs.some((e) => e.type === "hit" && e.slot === 0 && e.chg > 0); break;   // "hit" carries chg > 0 for a charged heavy
+    case "special": done = me.mid === "spec"; break;
   }
   if (done) {
     TUT.hold = 50; $("tut").classList.add("done"); $("tutT").textContent = "Nice!";

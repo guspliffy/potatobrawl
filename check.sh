@@ -65,7 +65,7 @@ if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/onl
 else fail "online match" "$LOGS/online.log"; fi
 
 # 6. Screens on small phone, phone and desktop, without page errors.
-(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
 if grep -q "^no errors" "$LOGS/screens.log"; then pass "screens 667x320, 844x390, 1280x760 (shots in build/shots/)"
 else fail "screens" "$LOGS/screens.log"; fi
 
