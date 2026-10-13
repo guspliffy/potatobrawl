@@ -214,7 +214,6 @@ function onlineArtFighter() {
   return o.f;
 }
 function drawOnlineArt(tk) {
-  if (R3.on) return;
   const cvA = $("onArt"); if (!cvA || !cvA.clientWidth) return;
   onlineArtFighter();
   const w = Math.round(cvA.clientWidth * DPR), h = Math.round(cvA.clientHeight * DPR);

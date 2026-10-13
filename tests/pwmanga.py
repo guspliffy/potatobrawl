@@ -77,8 +77,9 @@ def run(b, fid, opp):
     ctx.add_init_script("(() => { const o = CanvasRenderingContext2D.prototype.createPattern; CanvasRenderingContext2D.prototype.createPattern = function (...a) { if (window.__fail) throw new Error('forced failure'); return o.apply(this, a); }; })();")
     warned = []
     pg = ctx.new_page(); pg.on("pageerror", lambda e: errs.append(f"{fid}/{opp}: {e}"))
+    pg.on("request", lambda r: errs.append(f"{fid}/{opp}: requested {r.url}") if "three" in r.url.lower() else None)   # three.js is not part of the game any more
     def on_console(m):
-        if m.type in ("error", "warning") and "KO film" not in m.text:
+        if m.type in ("error", "warning"):
             (warned if fail and "Manga finisher failed" in m.text else errs).append(m.text if fail and "Manga finisher failed" in m.text else f"{fid}/{opp}: console {m.text}")
     pg.on("console", on_console)
     if throttle > 1:
@@ -172,6 +173,7 @@ def run(b, fid, opp):
     ev = info["ev"] or {}
     print(f"{fid} vs {opp}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) page={info['manga']} results after {took:.0f} ms; draw ms: " + (f"avg {st['avg']:.2f} max {st['max']:.2f} over {st['frames']} frames" if st else "-"))
     if not ok: bad.append(f"{fid}/{opp}: no results screen")
+    if pg.evaluate("() => typeof THREE") != "undefined": bad.append(f"{fid}/{opp}: three.js is loaded")
     if fail:
         if not warned: bad.append(f"{fid}/{opp}: the forced failure was never reported (the page did not fall back?)")
         else: print("fallback worked:", warned[0][:110])

@@ -9,7 +9,7 @@ online matches.
 | File | What it does |
 |---|---|
 | `public/index.html` | The game: menus, six potato fighters, CPU ranked ladder, practice, online play |
-| `public/three.min.js` | three.js r128 (MIT licence), the 3D graphics library. Served from your own server, not a CDN |
+| `public/three.min.js` | three.js r128 (MIT licence). The game no longer uses it; it is still copied so the update steps stay the same |
 | `server.js` | Serves the page, relays online matches over WebSocket (`/ws`), keeps itself awake |
 | `package.json` | One dependency: `ws` (pinned to 8.21.3) |
 | `render.yaml` | Render setup: free web service in Frankfurt |
@@ -34,10 +34,7 @@ on its own after each commit.
 
 ### Graphics
 
-The fighters and stage are drawn in 3D (WebGL). Phones that can't keep up drop to a lower
-resolution and then turn off shadows on their own. If 3D isn't available at all, the game
-switches to its 2D drawings. Players can also switch by hand with *Graphics: 3D / 2D* at the
-bottom of the main menu or in the pause menu. Graphics never affect online play: both
+The fighters and stage are drawn in 2D on a canvas. Graphics never affect online play: both
 browsers simulate the same game regardless of what each one draws.
 
 ### Staying awake for free

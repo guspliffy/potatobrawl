@@ -146,7 +146,6 @@ function buyPending() {
 // a tall, narrow stage (desktop) shows the model smaller so wings and tails stay in view
 function artFit(a) { const w = a.cv.clientWidth, h = a.cv.clientHeight || 1; return Math.min(a.fit || 0.7, Math.max(0.42, (a.fit || 0.7) * 1.1 * w / h)); }
 function drawCards(tk) {
-  if (R3.on) return;
   for (const a of cardArt) {
     const r = { width: a.cv.clientWidth, height: a.cv.clientHeight };
     if (!r.width) continue;

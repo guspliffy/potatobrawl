@@ -3,7 +3,7 @@
 # then makes contact sheets with PIL. A live pass plays real heavies against a pinned opponent (swing timer, heavy sound,
 # hit effects) and photographs the swing and the hit.
 # Usage: python3 tests/pwheavy.py [fighter ...] [--2d] [WxH] [--nolive] [--rows side,up,down,air] [--cols light,wind,glint,hit1,hit2,hit3,end] [--nofrozen] [--nocharge] [--nofinish] [--nohum] [--out DIR]
-#   defaults: all six fighters, 3D, 844x390, live pass on. Screenshots go to the scratchpad folder, not the repo.
+#   defaults: all six fighters, 844x390, live pass on. Screenshots go to the scratchpad folder, not the repo.
 #   Also (each can be skipped with --nocharge / --nofinish / --nohum):
 #   charge stills   every fighter's ground heavies at the hold point with no charge, at charge stages 1 / 2 / 3 (chg 12 / 32 / 56) and released
 #                   at the hit window with chg 0 and chg 60, plus a live hold to full charge and the CHARGED pop on the hit (chg-*.png, chg-all-*.png)
@@ -282,11 +282,11 @@ with sync_playwright() as p:
                     pg.screenshot(path=str(OUT / f"{fid}-live-charge-hold-{TAG}.png"), clip=wideclip())
                     stage = "hit"
                     # keep holding: the charge tops out at 60 frames and releases itself, so the hit is a full-charge one
-                    # the Dummy steps in front while the game is still paused (a slow 3D frame rate must not let the move finish before it is there)
+                    # the Dummy steps in front while the game is still paused (a slow frame rate must not let the move finish before it is there)
                     pg.evaluate("() => new Promise((res) => { window.__trap = null; window.__cw.rel = true; window.__near = true; requestAnimationFrame(() => requestAnimationFrame(res)); })")
                     pg.keyboard.press("KeyP")
                     pg.evaluate("() => requestAnimationFrame(window.__cwatch)")
-                    pg.wait_for_function("() => window.__trap === 'hit'", timeout=60000)   # (3D on a software GL box can run at a few fps)
+                    pg.wait_for_function("() => window.__trap === 'hit'", timeout=60000)   # (a software GL box can run at a few fps)
                     pg.keyboard.up("KeyK"); pg.keyboard.up("KeyD")
                     pg.wait_for_timeout(200)
                     pg.screenshot(path=str(OUT / f"{fid}-live-charge-hit-{TAG}.png"), clip=wideclip())

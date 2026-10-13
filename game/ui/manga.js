@@ -30,7 +30,7 @@ const Cin = {
     try { if (this.duck && Sfx.out) { Sfx.out.gain.cancelScheduledValues(0); Sfx.out.gain.value = 0.55; } } catch (e) { /* gone */ }
     this.duck = false;
   },
-  // the game's own sounds dip to a hum while the film plays; the film's bus is untouched
+  // the game's own sounds dip to a hum while the page plays; the page's bus is untouched
   dipGame(to, sec) {
     if (!Sfx.ok()) return; const g = Sfx.out.gain, t = Sfx.ctx.currentTime;
     g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + sec); this.duck = true;
@@ -50,7 +50,7 @@ const Cin = {
     if (p) { g.connect(p); p.connect(this.bus); } else g.connect(this.bus);
     s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.1); return s;
   },
-  // the silence before a blast: the film's bus dips to 10% in 60 ms, holds, then snaps back
+  // the silence before a blast: the page's bus dips to 10% in 60 ms, holds, then snaps back
   drop(hold) { if (!this.bus) return; const g = this.bus.gain, t = Sfx.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0.1, t + 0.06); g.setValueAtTime(0.1, t + 0.06 + hold); g.linearRampToValueAtTime(0.85, t + 0.08 + hold); },
   go(fn) { try { if (this.open()) fn(); } catch (e) { /* sound off or not ready */ } },
   sub(f0, f1, dur, vol) { this._osc("sine", f0 || 55, f1 || 28, dur || 0.5, vol || 0.7, 0.01); },
@@ -538,7 +538,7 @@ function mangaStart(g) {
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    MG.slow = (R3.q | 0) >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0; MG.gap = 16.7; MG.lw = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
+    MG.slow = PERF.q >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0; MG.gap = 16.7; MG.lw = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
     if (S.start) S.start(g);
     FIN.hit = S.hit || MT.HIT; FIN.launch = S.pop || FIN.hit + FLAUNCH;
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
@@ -633,7 +633,7 @@ function mangaBail(e) {
   const id = FIN.P[FIN.w] ? FIN.P[FIN.w].spec.id : "phoenix";
   mangaEnd();
   FIN.t = FT.CUT - 1; FIN.cut = false; FIN.cue = {}; FIN.parts.length = 0; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.beam = null; FIN.out = false; FIN.lastIn = null;
-  FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.kit = FINS[id] || FINS.phoenix; FIN.cine = false; FIN.cardSub = "";
+  FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.kit = FINS[id] || FINS.phoenix; FIN.cardSub = "";
   for (const p of FIN.P) if (p) { p.finPose = (P, sk) => finPose(p, P, sk); p.mk = null; p.flash = 0; p.state = "fin"; }
   if (FIN.P[FIN.l]) { FIN.P[FIN.l].x = FIN.lx; FIN.P[FIN.l].y = 0; }
   fxHitOff(); try { cam.sx = cam.sy = 0; } catch (x) { /* ok */ }

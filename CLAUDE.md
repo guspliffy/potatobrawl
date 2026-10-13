@@ -5,11 +5,12 @@ Read docs/WORKFLOW.md (how we work) and docs/HANDOFF.md (state, rules, next step
 
 ## Layout
 - `game/` source. `core.js` deterministic simulation (exported as `BL`, also a node module); `ui/*.js` page logic (one script split into parts, joined in order by build.py; PROTO lives in `ui/online.js`);
-  `ui/finisher.js` KO finisher cinematic (UI only, never touches the sim); `ui/manga.js` + `manga/*.js` the 2D manga KO finisher pages, one per fighter (UI only); `cine.js` + `films/*.js` + `vendor/three-addons.js` the old 3D KO films (switched off, three.js never loads; to be removed); `gfx3d.js` old 3D renderer whose rigs the films reuse; `skinfx.js` skin effects; `shell.html` markup + CSS; `net-ws.js` WebSocket
+  `ui/finisher.js` KO finisher cinematic (UI only, never touches the sim); `ui/manga.js` + `manga/*.js` the 2D manga KO finisher pages, one per fighter (UI only); `skinfx.js` skin effects; `shell.html` markup + CSS; `net-ws.js` WebSocket
   shim for the server build; `mock-room.js` two-tab test room; `portraits/`.
 - `python3 game/build.py` writes `index.html` (repo root, the deployed file), `public/` (local server) and
   `build/` (test pages). Commit the rebuilt `index.html` together with the source change.
 - `web/` manifest + icons for the home-screen app (copied into `public/` by build.py and the deploy blocks).
+- `three.min.js` (repo root) is not loaded by anything any more; build.py and the deploy blocks still copy it. Drop it in one change next round.
 - `server.js` serves `public/` + WebSocket rooms. `deploy/` holds the server paste blocks.
 - `tests/` node + Playwright checks, `experiments/` prototypes not yet in the game.
 
