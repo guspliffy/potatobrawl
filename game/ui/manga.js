@@ -654,7 +654,7 @@ function mgStarburst(o, x, y, R, rot) {
 // the two impact frames (50 ms each): the scene as white silhouettes on black, then black silhouettes on white with the rays; then a white flash falls off
 function mgImpact(o, t) {
   const S = MG.script, H0 = FIN.hit, pn = MG.byId[S.flight];
-  if (!pn || t < H0) return;
+  if (!pn || t < H0 || S.noImpact) return;   // S.noImpact (the Samurai page): no impact frames, the page holds instead
   if (MG.reduced) { const a = 0.85 * (1 - fe(H0, H0 + 240, t)); if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); } return; }
   if (t < H0 + 100) {
     const white = t >= H0 + 50;   // the second frame
