@@ -102,7 +102,7 @@ with sync_playwright() as p:
                 bad.append(f"{fid}: the forced heavy never ended the game"); ctx.close(); continue
         if selfkill: until(pg, "() => window.__blastline.game.phase !== 'play'", 1000, 16)
         t0 = pg.evaluate("() => performance.now()")
-        info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, ev: f.ev ? { final: f.ev.final, fin: f.ev.fin, mv: f.ev.mv, dirx: f.ev.dirx, diry: f.ev.diry } : null, cine: !!f.cine }; }")
+        info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, ev: f.ev ? { final: f.ev.final, fin: f.ev.fin, mv: f.ev.mv, dirx: f.ev.dirx, diry: f.ev.diry } : null, cine: !!f.cine, manga: !!f.manga }; }")
         if selfkill:
             # the old teleport is a self-destruct: no finisher at any moment, "Game!" banner, results appear
             seen_fin = info["on"]
@@ -134,10 +134,10 @@ with sync_playwright() as p:
         ff(pg, 500)
         shot(pg, f"{fid}-{tag}-result")
         ev = info["ev"] or {}
-        print(f"{fid}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) fin={ev.get('fin')}, results after {took:.0f} ms{' (3D film)' if info.get('cine') else ''}")
+        print(f"{fid}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) fin={ev.get('fin')}, results after {took:.0f} ms{' (3D film)' if info.get('cine') else ' (manga page)' if info.get('manga') else ''}")
         if not ok: bad.append(f"{fid}: no results screen")
         if skip and took > 1700: bad.append(f"{fid}: skip didn't end it ({took:.0f} ms)")
-        lo, hi = (4100, 4700) if info.get("cine") else (3600, 4300)   # the 3D film is a little longer than the 2D staging
+        lo, hi = (4400, 5000) if info.get("manga") else (4100, 4700) if info.get("cine") else (3600, 4300)   # the manga page (4.7 s) and the 3D film are a little longer than the 2D staging
         if not skip and not (lo <= took <= hi): bad.append(f"{fid}: results at {took:.0f} ms, wanted {lo}-{hi}")
         ctx.close()
     b.close()
