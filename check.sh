@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -30,6 +30,13 @@ else fail "PROTO: game has '$P', deploy/update.txt greps something else" "deploy
 (cd tests && node snap.js) > "$LOGS/snap.log" 2>&1
 if grep -q "mismatches: 0 /" "$LOGS/snap.log"; then pass "replay determinism (snap.js 0 mismatches)"
 else fail "replay determinism" "$LOGS/snap.log"; fi
+
+# 3b. Light-attack lock: longest run of unreactable jabs (defender reacts 14 frames after it can move),
+#     plus save/restore checks while light-string launches happen.
+(cd tests && node lockrun.js 14 && node lockdet.js) > "$LOGS/lock.log" 2>&1
+RUN=$(grep -o 'longest run of hits[^:]*: [0-9]*' "$LOGS/lock.log" | grep -o '[0-9]*$')
+if [ -n "$RUN" ] && [ "$RUN" -le 3 ] && grep -q "mismatches: 0," "$LOGS/lock.log"; then pass "light-attack lock (longest unreactable run $RUN hits, 0 save/restore mismatches)"
+else fail "light-attack lock (longest run '${RUN:-?}', want 3 or less)" "$LOGS/lock.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 

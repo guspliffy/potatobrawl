@@ -1,5 +1,7 @@
+// Light-attack lock (M1 fix): jab spam vs a defender that jumps away R frames after it can move.
+// Usage: node lockrun.js [R list, default 8,14,20,26]. check.sh runs R=14 and wants a longest run of 3 or less.
 // worst-case hits/launches over all attacker/defender/pct for a given core and R; also count defender SDs separately
-const { BL } = require(process.env.CORE || require("path").join(__dirname, "../../game/core.js"));
+const { BL } = require(process.env.CORE || "../game/core.js");
 const { FIGHTERS, newGame, step } = BL;
 function run(attId, defId, R, pct) {
   const A = FIGHTERS.find((f) => f.id === attId), D = FIGHTERS.find((f) => f.id === defId);
@@ -30,7 +32,8 @@ function run(attId, defId, R, pct) {
   return { hits, launches, maxGapless };
 }
 const ids = FIGHTERS.map((f) => f.id);
-for (const R of [8, 14, 20, 26]) {
+const RS = (process.argv[2] || "8,14,20,26").split(",").map(Number);
+for (const R of RS) {
   let worst = 0, worstGapless = 0, tag = "";
   for (const att of ids) for (const def of ids) for (const pct of [0, 15, 30, 45, 60, 80]) {
     const r = run(att, def, R, pct);

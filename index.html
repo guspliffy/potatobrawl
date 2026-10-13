@@ -801,7 +801,8 @@ const TUNE = {
   buffer: 7,
   // Light-attack strings: the third light hit in a row launches. "In a row" means the defender
   // had fewer than strGap free frames since its last hitstun (every escape needs 3).
-  strGap: 5,
+  strGap: 20,
+  strSafe: 30,
   strLaunchKb: 9.5,
   strLaunchAngle: 48,
   // Knockback steering: holding the stick when launched bends the launch angle by up to this many degrees.
@@ -1050,7 +1051,7 @@ function newFighter(spec, slot, pal, x, facing) {
     flash: 0, armorFlash: 0, dead: 0,
     inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
-    freeT: 99, strN: 0, strBy: -1, strMv: -1, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
+    freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
     techT: 0, techLock: 0, techDir: 0,
     anim: { run: 0 },
   };
@@ -1072,6 +1073,7 @@ function newGame(o) {
 }
 
 function setState(f, s) { f.state = s; f.st = 0; }
+function endLaunch(f) { if (f.strLaunched) { f.strLaunched = false; f.invuln = Math.max(f.invuln, TUNE.strSafe); } }
 function consume(f, k) { f.buf[k] = 0; }
 function faceStick(f) { if (Math.abs(f.inp.x) > 0.3) f.facing = sign(f.inp.x); }
 function dirOf(inp) {
@@ -1176,7 +1178,7 @@ function updateFighter(g, f) {
       if (f.buf.dodge && f.techLock <= 0) { consume(f, "dodge"); f.techT = TUNE.techWindow; f.techLock = TUNE.techLock; }
       f.hitstun--;
       if (f.grounded) f.vx *= 0.8; else { f.vx += f.inp.x * 0.08; f.vx *= 0.98; }
-      if (f.hitstun <= 0) setState(f, f.grounded ? "idle" : "air");
+      if (f.hitstun <= 0) { setState(f, f.grounded ? "idle" : "air"); endLaunch(f); }
       break;
     case "helpless": airDrift(f, 0.6); break;
   }
@@ -1419,6 +1421,7 @@ function land(g, f, y, plat) {
     setState(f, "tech"); f.hitstun = 0; f.techT = 0;
     f.invuln = Math.max(f.invuln, f.techDir ? 18 : 12);
     g.events.push({ type: "tech", x: f.x, y, slot: f.slot, roll: f.techDir });
+    endLaunch(f);
     return;
   }
   if (f.state === "hitstun" && dist(f.kbx, f.kby) > 4.5 && f.kby + f.vy > 2) {
@@ -1429,7 +1432,10 @@ function land(g, f, y, plat) {
   f.y = y; f.grounded = true; f.plat = plat; f.vy = 0; f.kby = 0; f.ff = false; f.tumble = false;
   f.airJumps = f.s.airJumps; f.airDodged = false; f.recUsed = false; f.ledgeInv = false;
   const st = f.state;
-  if (st === "hitstun") { setState(f, "land"); f.landT = 12; f.hitstun = 0; f.freeT = -12; }
+  if (st === "hitstun") {
+    if (f.strLaunched) { setState(f, "land"); f.landT = 4; f.hitstun = 0; f.freeT = -4; endLaunch(f); }
+    else { setState(f, "land"); f.landT = 12; f.hitstun = 0; f.freeT = -12; }
+  }
   else if (st === "attack") {
     const m = f.move;
     if (m.air) {
@@ -1606,7 +1612,7 @@ function applyHit(g, h) {
     def.strBy = att.slot; def.strMv = att.moveT;
     if (def.strN >= 3) {
       // third light hit in a row: launch the defender away so a fourth can't connect
-      finisher = true; def.strN = 0;
+      finisher = true; def.strN = 0; def.strLaunched = true;
       tr = trig(TUNE.strLaunchAngle);
       dx = tr[0] * (sign(def.x - att.x) || att.facing); dy = -tr[1];
       kb = Math.max(kb * 1.25, TUNE.strLaunchKb);
@@ -1661,7 +1667,7 @@ function ko(g, f) {
   if (killer) killer.kos++; else f.sds++;
   g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: !killer });
   g.hitstop = Math.max(g.hitstop, 6);
-  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null });
+  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
@@ -1695,7 +1701,7 @@ function startSudden(g) {
     Object.assign(f, {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
-      recUsed: false, airDodged: false, ff: false, strN: 0, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0,
+      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0,
     });
     setState(f, "idle");
   });
@@ -1833,7 +1839,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "airJumps", "airDodged", "ff", "dropT", "downHold", "dodgeKind", "dodgeDir", "landT", "percent", "stocks", "invuln",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
-  "freeT", "strN", "strBy", "strMv", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir"];
+  "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -1870,7 +1876,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "techT"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
@@ -5174,7 +5180,7 @@ function buildNextPick() {
    Checksums every second catch any divergence; the host then sends a full snapshot. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 2;
+const PROTO = 3;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
