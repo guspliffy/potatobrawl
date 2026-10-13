@@ -107,7 +107,7 @@ function drawStage(c, tk) {
 
 /* ---- finish-ready looks (UI only: hitboxes and the simulation never change) ----
    A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
-   Ring under the feet: here for the 2D renderer, a flat mesh in gfx3d.js (r3FinRings) for 3D. Projectile extras: finOrbFx / finRavenFx / finBoltFx / finFireFx below. */
+   Ring under the feet: drawFinRing below. Projectile extras: finOrbFx / finRavenFx / finBoltFx / finFireFx below. */
 let RG = null;
 function finishReady(slot) {
   const f = RG && RG.fighters[slot];
@@ -159,16 +159,16 @@ function finOrbFx(c, p, tk) {   // the toxic orb trails a green comet tail and d
   }
   c.restore();
 }
-function finRavenFx(c, p, tk, ov) {   // ov: drawn over the 3D bird, so start behind its tail   // a pale-blue streak behind the raven, and its eyes burn red
-  const s = p.vx >= 0 ? 1 : -1, o = ov ? 16 : 0;
+function finRavenFx(c, p, tk) {   // a pale-blue streak behind the raven, and its eyes burn red
+  const s = p.vx >= 0 ? 1 : -1;
   c.save(); c.translate(p.x, p.y);
-  const g = c.createLinearGradient(-s * o, 0, -s * (110 + o), 0); g.addColorStop(0, "rgba(200,236,255,0.8)"); g.addColorStop(1, "rgba(200,236,255,0)");
-  c.fillStyle = g; c.beginPath(); c.moveTo(-s * (6 + o), -11); c.quadraticCurveTo(-s * (50 + o), -9, -s * (112 + o), 0); c.quadraticCurveTo(-s * (50 + o), 11, -s * (6 + o), 11); c.closePath(); c.fill();
+  const g = c.createLinearGradient(0, 0, -s * 110, 0); g.addColorStop(0, "rgba(200,236,255,0.8)"); g.addColorStop(1, "rgba(200,236,255,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(-s * 6, -11); c.quadraticCurveTo(-s * 50, -9, -s * 112, 0); c.quadraticCurveTo(-s * 50, 11, -s * 6, 11); c.closePath(); c.fill();
   c.strokeStyle = "rgba(235,248,255,0.8)"; c.lineWidth = 1.6; c.lineCap = "round";
-  for (const [dy, len] of [[-4, 70], [2, 90], [7, 56]]) { c.beginPath(); c.moveTo(-s * (12 + o), dy); c.lineTo(-s * (12 + o + len), dy * 0.5); c.stroke(); }
+  for (const [dy, len] of [[-4, 70], [2, 90], [7, 56]]) { c.beginPath(); c.moveTo(-s * 12, dy); c.lineTo(-s * (12 + len), dy * 0.5); c.stroke(); }
   c.restore();
 }
-function finRavenEyes(c, p) {   // the red glow over the eye (the 3D bird has red eye meshes; this lights them)
+function finRavenEyes(c, p) {   // the red glow over the raven's eye
   const s = p.vx >= 0 ? 1 : -1; glowDot(c, p.x + s * 11, p.y - 7.5, 11, 0.9, "#ff2a2a"); glowDot(c, p.x + s * 11, p.y - 7.5, 4, 1, "#ffd0d0");
 }
 function finBoltFx(c, p, tk) {   // the crystal bolt trails stars

@@ -181,23 +181,32 @@ function drawBubbles(c, g, tk, img) {
 
 /*SKINFX*/
 
-/*GFX3D*/
-
-/*CINE*/
+/* Frame-time watchdog: if a match can't hold ~45 fps for a few seconds, q steps up from 0 to 3 (it never steps back
+   down). The manga KO page reads it to pick its cheap tier. Tests pin it with window.__blastline.r3.lockQ = true. */
+const PERF = { q: 0, lockQ: false, last: 0, n: 0, sum: 0 };
+function perfStep(now) {
+  const p = PERF;
+  if (!p.last) { p.last = now; return; }
+  const dt = now - p.last; p.last = now;
+  if (document.hidden || dt > 120 || p.q >= 3 || p.lockQ) { p.n = 0; p.sum = 0; return; }
+  p.n++; p.sum += dt;
+  if (p.sum > 2500) {
+    if (p.sum / p.n > 22) p.q++;
+    p.n = 0; p.sum = 0;
+  }
+}
 
 function render(g, tk) {
   RG = g; humStep(g);   // RG: the game drawn this frame (finish-ready looks read it); humStep: the charge hum
   // during the KO finisher the scene shows its two stand-ins instead of the real fighters
   const fin = FIN.on && mode === "match";
   if (fin) g = finFrame(g, tk);
-  if (fin && FIN.on && FIN.cine) cineDraw(g, tk);
-  else if (fin && FIN.on && FIN.manga) mangaDraw(g, tk);
-  else if (use3D()) render3D(g, tk); else render2D(g, tk);
-  if (fin) finOverlay(FIN.cine && FIN.cut ? octx : use3D() ? octx : ctx, tk);
-  else { if (mode === "match") r3Perf(performance.now()); cineIdle(g); }   // match frames feed the tier watchdog; the KO film warms up (or lets go) here
+  if (fin && FIN.on && FIN.manga) mangaDraw(g, tk);
+  else render2D(g, tk);
+  if (fin) finOverlay(ctx, tk);
+  else if (mode === "match") perfStep(performance.now());   // match frames feed the watchdog
 }
 function render2D(g, tk) {
-  r3Layers(false);
   const c = ctx;
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip();
