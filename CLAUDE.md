@@ -5,7 +5,7 @@ Read docs/WORKFLOW.md (how we work) and docs/HANDOFF.md (state, rules, next step
 
 ## Layout
 - `game/` source. `core.js` deterministic simulation (exported as `BL`, also a node module); `ui/*.js` page logic (one script split into parts, joined in order by build.py; PROTO lives in `ui/online.js`);
-  `ui/finisher.js` KO finisher cinematic (UI only, never touches the sim); `gfx3d.js` three.js renderer; `skinfx.js` skin effects; `shell.html` markup + CSS; `net-ws.js` WebSocket
+  `ui/finisher.js` KO finisher cinematic (UI only, never touches the sim); `cine.js` + `films/*.js` + `vendor/three-addons.js` the 3D KO films (UI only; matches are 2D); `gfx3d.js` old 3D renderer whose rigs the films reuse; `skinfx.js` skin effects; `shell.html` markup + CSS; `net-ws.js` WebSocket
   shim for the server build; `mock-room.js` two-tab test room; `portraits/`.
 - `python3 game/build.py` writes `index.html` (repo root, the deployed file), `public/` (local server) and
   `build/` (test pages). Commit the rebuilt `index.html` together with the source change.

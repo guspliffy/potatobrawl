@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-13, M4 step 1: 2D only + hearts)
+# PotatoBrawl handoff (updated 2026-10-13, M4 step 2: 3D film engine + the Dragon's film)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -17,7 +17,8 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 - M4 (Jonny, 2026-10-13, after playing M3): matches are 2D only (he finds 2D more fun; the Graphics setting is
   gone and `use3D()` returns false), lives are red hearts, and the KO finisher becomes a live 3D film per
   fighter (three.js; the 2D picture shatters like glass into a 3D "dimension"). Plan and Fable's film design:
-  /mnt/project-files/finisher-films/plan.md and fable-cinematics.md. Step 1 (2D only + hearts) is this PR.
+  /mnt/project-files/finisher-films/plan.md and fable-cinematics.md. Step 1 (2D only + hearts) = PR #4, merged
+  (f4d060f). Step 2 (the film engine + Dragon "Inferno") is this PR; video: finisher-films/dragon-inferno-v1.mp4.
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
   and opens a pull request. Claude merges its own PRs once ./check.sh passes (Jonny's standing rule since
   2026-10-13); deploying stays Jonny's paste.
@@ -65,7 +66,15 @@ index.html is committed with every source change (check.sh flags a stale one).
   ("puppets", copies with state "fin" and a finPose hook that pose() calls), its own camera (cam.yaw swings
   the 3D camera), particles and shapes on the effects layer, name card, skip, and it holds the results
   screen (finHold) until it ends. Timeline constants FT; one entry per fighter in FINS.
-- gfx3d.js three.js r128 renderer · skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
+- cine.js (spliced at /*CINE*/ after /*GFX3D*/ in effects, together with vendor/three-addons.js and films/*.js):
+  the KO films, live three.js cutscenes. finStart calls cineStart; when the winner has a film in FILMS and the
+  film is warmed up, FIN.cine is set and cineTick/cineDraw/cineOverlay take over from the 2D staging: crack web
+  over the 2D hit, the 2D picture as a pane that shatters, the 3D film, shutters, results (~4.2 s). Anything
+  missing (no WebGL, three.js not loaded yet, a fighter without a film yet, a failure) plays the 2D finisher.
+  three.js now loads in the background (cineLoadThree, page idle) instead of a blocking script tag; warm-up
+  (both hero rigs, set, env map, shader compile) runs in steps during the match countdown (cineIdle). Tiers
+  A/B/C (window.__cineTier pins one in tests). Pure UI: never writes G. Films so far: films/dragon.js.
+- gfx3d.js the old 3D match renderer (unused since M4 step 1; its rigs feed the films) · skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
 - web/ (repo root): manifest.webmanifest + icons. server.js serves them from public/ if present; build.py and
@@ -88,7 +97,8 @@ finish.js (finish mode per fighter and weight, charge frame data, every lethal c
 in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real lethal hit; --2d, --up, --skip,
 --self = self-destruct plays no finisher, --aim=left/up, WxH; steps requestAnimationFrame and
 performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing special, KO zoom, charge
-ring) · pwheavy.py (contact sheets of lights vs heavies) · lockhuman.js /
+ring) · pwheavy.py (contact sheets of lights vs heavies) · pwcine.py (the 3D KO films: freeze frames
+at chosen ms, --tier, --nogl, --skip, --sheet, --video=out.mp4 steps the film at 30 fps and encodes with ffmpeg) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
 breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · pwux2.py (all screens, 3 sizes) ·
 pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs

@@ -202,12 +202,12 @@ function orientTo(obj, n, roll) {
   obj.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(xA, yA, n));
   if (roll) obj.rotateZ(roll);
 }
-function bodyGeom(B) {
-  const key = `${B.rx.toFixed(2)}|${B.ry.toFixed(2)}|${B.rz.toFixed(2)}|${B.taper}`;
+function bodyGeom(B, seg) {
+  const sg = seg || [48, 32], key = `${B.rx.toFixed(2)}|${B.ry.toFixed(2)}|${B.rz.toFixed(2)}|${B.taper}|${sg[0]}x${sg[1]}`;
   let g = R3.G.bodies.get(key);
   if (g) return g;
   const T = R3.T;
-  g = new T.SphereGeometry(1, 48, 32);
+  g = new T.SphereGeometry(1, sg[0], sg[1]);
   const p = g.attributes.position, d = new T.Vector3(), o = new T.Vector3();
   for (let i = 0; i < p.count; i++) {
     d.set(p.getX(i), p.getY(i), p.getZ(i)).normalize();
@@ -391,30 +391,48 @@ function rigDims(f) {
   const rx = w * 0.56, ry = (h - leg + 3) / 2;
   return { w, h, leg, rx, ry, rz: rx * 0.9, yC: (h - leg - 7) / 2, taper: look.costume === "samurai" ? 0.16 : 0.09 };
 }
-function buildRig(f) {
+/* opts.hero: the KO films' version of the same rig (physical materials with a clear coat and wet eyes, 512 px face, rim and char
+   hooks on the skin, handles for the expressions); opts.seg: body segments. Without opts it is the old match rig. */
+function buildRig(f, opts) {
+  const hero = !!(opts && opts.hero), seg = (opts && opts.seg) || [48, 32];
   const T = R3.T, spec = f.spec, look = spec.look, pal = f.pal, cos = look.costume, G = R3.G, M = R3.M;
   const B = rigDims(f), w = B.w, lvl = skinLvl(f);
-  const rig = { key: rigKey(f), B, cos, lvl, mats: [], root: new T.Group(), face: 0, turn: 0, sq: 0, tint: "", expr: "", blink: 0, glow: [] };
+  const rig = { key: rigKey(f), B, cos, lvl, mats: [], root: new T.Group(), face: 0, turn: 0, sq: 0, tint: "", expr: "", blink: 0, glow: [], xl: "", eyeK: 1, fN: hero ? 512 : FACE.N,
+    hero: hero ? { brows: [], pupils: [], u: null, sprout: null, bone: null, belly: null, memb: null, ptr: null } : null };
   const own = (m) => { rig.mats.push({ m, c0: m.color.clone(), e0: m.emissive ? m.emissive.clone() : null, ei: m.emissiveIntensity }); return m; };
-  const std = (hex, o) => own(new T.MeshStandardMaterial(Object.assign({ color: lin(hex), roughness: 0.7 }, o || {})));
+  const Std = hero ? T.MeshPhysicalMaterial : T.MeshStandardMaterial;
+  const heroOpt = (o) => { if (!hero) return o || {}; const q = Object.assign({ envMapIntensity: 0.9 }, o); if (q.metalness >= 0.4) { q.metalness = 1; q.roughness = Math.min(q.roughness === undefined ? 0.3 : q.roughness, 0.3); } return q; };
+  const std = (hex, o) => own(new Std(Object.assign({ color: lin(hex), roughness: 0.7 }, heroOpt(o))));
+  const wet = (o) => own(new Std(Object.assign({ roughness: 0.15 }, hero ? { clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.5 } : null, o)));
   // hierarchy: root -> body (hip, lean/spin) -> mirror (facing) -> yaw -> bodyC (body centre)
   rig.body = new T.Group(); rig.mirror = new T.Group(); rig.yaw = new T.Group(); rig.bodyC = new T.Group();
   rig.root.add(rig.body); rig.body.add(rig.mirror); rig.mirror.add(rig.yaw); rig.yaw.add(rig.bodyC);
   const C = rig.bodyC;
   // a little emissive warmth stands in for light scattering through the skin
-  rig.skin = own(new T.MeshStandardMaterial({ color: lin(pal.body), map: R3.tex.skin, bumpMap: R3.tex.skin, bumpScale: 0.45, roughness: 0.68, emissive: lin(pal.body), emissiveIntensity: 0.1 }));
-  const body = mesh(bodyGeom(B), rig.skin); body.receiveShadow = true; C.add(body);
+  if (hero) {
+    // waxy skin: soft clear coat, a faint warm glow in the shadows, a fresnel rim that takes the light colour, and a char hook
+    rig.skin = own(new T.MeshPhysicalMaterial({ color: lin(pal.body), map: R3.tex.skin, bumpMap: R3.tex.skin, bumpScale: 0.6, roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.5, envMapIntensity: 0.8, emissive: lin(pal.body), emissiveIntensity: 0.06 }));
+    const hu = rig.hero.u = { rim: { value: new T.Color(0, 0, 0) }, char: { value: 0 }, crack: { value: R3.tex.crack || null } };
+    rig.skin.onBeforeCompile = (sh) => {
+      sh.uniforms.uRim = hu.rim; sh.uniforms.uChar = hu.char; sh.uniforms.uCrack = hu.crack;
+      sh.fragmentShader = sh.fragmentShader.replace("void main() {", "uniform vec3 uRim; uniform float uChar; uniform sampler2D uCrack;\nvoid main() {")
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += texture2D( uCrack, vUv ).rgb * uChar * 2.2;")
+        .replace("vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;", "vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;\n outgoingLight += uRim * pow( 1.0 - clamp( dot( normalize( normal ), normalize( vViewPosition ) ), 0.0, 1.0 ), 3.0 );");
+    };
+  } else rig.skin = own(new T.MeshStandardMaterial({ color: lin(pal.body), map: R3.tex.skin, bumpMap: R3.tex.skin, bumpScale: 0.45, roughness: 0.68, emissive: lin(pal.body), emissiveIntensity: 0.1 }));
+  const body = mesh(bodyGeom(B, seg), rig.skin); body.receiveShadow = true; C.add(body);
   const d = new T.Vector3(), o = new T.Vector3(), n = new T.Vector3();
   const put = (obj, az, el, k, out) => { dirAE(az, el, d); surf(B, d, k, o); surfN(B, d, n); obj.position.copy(o).addScaledVector(n, out || 0); orientTo(obj, n); return obj; };
   // eyes: each fighter gets its own eye shape (eager, narrowed, slit pupils, one eye under a patch)
   const er = w * 0.105, style = look.face;
   rig.eyes = [];
-  let irisMat = M.iris;
+  let irisMat = hero ? wet({ color: lin("#5a2a14"), roughness: 0.12 }) : M.iris;
+  const scleraM = hero ? wet({ color: lin("#fbfaf6"), roughness: 0.14 }) : M.sclera;
   if (cos === "alchemist" && lvl >= 3) {
-    irisMat = own(new T.MeshStandardMaterial({ color: lin(mix(pal.accent, "#7dff62", 0.55)), emissive: lin(mix(pal.accent, "#5dff4a", 0.6)), emissiveIntensity: 0.9, roughness: 0.2 }));
+    irisMat = wet({ color: lin(mix(pal.accent, "#7dff62", 0.55)), emissive: lin(mix(pal.accent, "#5dff4a", 0.6)), emissiveIntensity: 0.9, roughness: 0.2 });
     rig.glow.push({ m: irisMat, base: 0.75, amp: 0.25, sp: 0.09 });
-  } else if (cos === "dragon") irisMat = own(new T.MeshStandardMaterial({ color: lin("#e6a52a"), emissive: lin("#ff9a1f"), emissiveIntensity: 0.3, roughness: 0.2 }));
-  else if (cos === "phoenix") irisMat = own(new T.MeshStandardMaterial({ color: lin("#8a3c12"), roughness: 0.15 }));
+  } else if (cos === "dragon") irisMat = wet({ color: lin("#e6a52a"), emissive: lin("#ff9a1f"), emissiveIntensity: 0.3, roughness: 0.2 });
+  else if (cos === "phoenix") irisMat = wet({ color: lin("#8a3c12"), roughness: 0.15 });
   const eyeK = style === "eager" ? 1.1 : 1, eyeH = style === "focused" ? 0.8 : 1;
   for (const s of [1, -1]) {
     if (cos === "odin" && s === -1) {
@@ -426,7 +444,7 @@ function buildRig(f) {
       C.add(mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 40, 0.9, 6, false), leather));
     } else {
       const eg = new T.Group();
-      const sc = mesh(G.sph, M.sclera, false); sc.scale.set(er * eyeK, er * 1.16 * eyeK * eyeH, er * 0.62);
+      const sc = mesh(G.sph, scleraM, false); sc.scale.set(er * eyeK, er * 1.16 * eyeK * eyeH, er * 0.62);
       const ir = mesh(G.sph, irisMat, false); ir.scale.set(er * 0.66 * eyeK, er * 0.72 * eyeK, er * 0.34); ir.position.set(er * 0.17, -er * 0.03, er * 0.42);
       const pu = mesh(G.sph, M.pupil, false);
       if (cos === "dragon") pu.scale.set(er * 0.13, er * 0.55, er * 0.2); else pu.scale.set(er * 0.38 * eyeK, er * 0.43 * eyeK, er * 0.2);
@@ -434,6 +452,7 @@ function buildRig(f) {
       const gl = mesh(G.sphLo, M.glint, false); gl.scale.setScalar(er * 0.17); gl.position.set(er * 0.42, er * 0.32, er * 0.66);
       const gl2 = mesh(G.sphLo, M.glint, false); gl2.scale.setScalar(er * 0.08); gl2.position.set(er * 0.02, -er * 0.3, er * 0.7);
       eg.add(sc, ir, pu, gl, gl2);
+      if (hero) rig.hero.pupils.push({ pu, ir, s0: pu.scale.clone(), p0: pu.position.clone(), i0: ir.position.clone(), gl, gl2, g0: gl.position.clone(), g20: gl2.position.clone() });
       if (style === "focused" || style === "fierce") {
         // a heavy upper lid in skin colour narrows the eye into a determined squint
         const lid = mesh(G.sph, rig.skin, false); lid.scale.set(er * 1.12, er * 0.62, er * 0.7); lid.position.set(0, er * (style === "focused" ? 0.78 : 0.95), er * 0.05); lid.rotation.z = s * (style === "focused" ? 0.22 : 0.32);
@@ -445,14 +464,16 @@ function buildRig(f) {
     // brows
     const bm = style === "stern" ? std("#efebe4", { roughness: 0.95 }) : style === "focused" ? std("#16110f", { roughness: 0.75 }) : std("#24160f", { roughness: 0.6 });
     const br = mesh(G.sph, bm, false);
-    if (style === "stern") { br.scale.set(er * 1.25, er * 0.45, er * 0.5); put(br, AZ0 - s * 0.27, EL_EYE + 0.29, 1, er * 0.15); br.rotateZ(-s * 0.32); }
-    else if (style === "evil") { br.scale.set(er * 1.15, er * 0.3, er * 0.34); put(br, AZ0 - s * 0.26, EL_EYE + 0.25, 1, er * 0.1); br.rotateZ(s * 0.5); }
-    else if (style === "focused") { br.scale.set(er * 1.2, er * 0.32, er * 0.38); put(br, AZ0 - s * 0.26, EL_EYE + 0.2, 1, er * 0.12); br.rotateZ(s * 0.3); }
-    else if (style === "fierce") { br.scale.set(er * 1.12, er * 0.28, er * 0.34); put(br, AZ0 - s * 0.27, EL_EYE + 0.23, 1, er * 0.1); br.rotateZ(s * 0.42); }
-    else if (style === "eager") { br.scale.set(er * 0.9, er * 0.21, er * 0.26); put(br, AZ0 - s * 0.26, EL_EYE + 0.34, 1, er * 0.1); br.rotateZ(-s * 0.24); }
-    else if (style === "kind") { br.scale.set(er * 0.95, er * 0.19, er * 0.26); put(br, AZ0 - s * 0.26, EL_EYE + 0.31, 1, er * 0.1); br.rotateZ(-s * 0.08); }
-    else { br.scale.set(er * 0.95, er * 0.2, er * 0.26); put(br, AZ0 - s * 0.26, EL_EYE + 0.27, 1, er * 0.1); br.rotateZ(-s * 0.18); }
+    let a0 = 0; const bz = (a) => { a0 = a; br.rotateZ(a); };
+    if (style === "stern") { br.scale.set(er * 1.25, er * 0.45, er * 0.5); put(br, AZ0 - s * 0.27, EL_EYE + 0.29, 1, er * 0.15); bz(-s * 0.32); }
+    else if (style === "evil") { br.scale.set(er * 1.15, er * 0.3, er * 0.34); put(br, AZ0 - s * 0.26, EL_EYE + 0.25, 1, er * 0.1); bz(s * 0.5); }
+    else if (style === "focused") { br.scale.set(er * 1.2, er * 0.32, er * 0.38); put(br, AZ0 - s * 0.26, EL_EYE + 0.2, 1, er * 0.12); bz(s * 0.3); }
+    else if (style === "fierce") { br.scale.set(er * 1.12, er * 0.28, er * 0.34); put(br, AZ0 - s * 0.27, EL_EYE + 0.23, 1, er * 0.1); bz(s * 0.42); }
+    else if (style === "eager") { br.scale.set(er * 0.9, er * 0.21, er * 0.26); put(br, AZ0 - s * 0.26, EL_EYE + 0.34, 1, er * 0.1); bz(-s * 0.24); }
+    else if (style === "kind") { br.scale.set(er * 0.95, er * 0.19, er * 0.26); put(br, AZ0 - s * 0.26, EL_EYE + 0.31, 1, er * 0.1); bz(-s * 0.08); }
+    else { br.scale.set(er * 0.95, er * 0.2, er * 0.26); put(br, AZ0 - s * 0.26, EL_EYE + 0.27, 1, er * 0.1); bz(-s * 0.18); }
     C.add(br);
+    if (hero) rig.hero.brows.push({ m: br, p0: br.position.clone(), q0: br.quaternion.clone(), s, k: er, a0 });
   }
   if (cos === "wizard") {
     // round gold-rimmed glasses
@@ -463,7 +484,7 @@ function buildRig(f) {
     const bridge = mesh(G.cyl, rim, false); segTo(bridge, pa, pb, 0.7); C.add(bridge);
   }
   // face decal: mouth, cheeks, and the squinting eyes shown while hurt
-  const fN = FACE.N, faceC = document.createElement("canvas"); faceC.width = faceC.height = fN;
+  const fN = rig.fN, faceC = document.createElement("canvas"); faceC.width = faceC.height = fN;
   rig.faceCtx = faceC.getContext("2d");
   rig.faceTex = new T.CanvasTexture(faceC); rig.faceTex.encoding = T.sRGBEncoding; rig.faceTex.anisotropy = 4;
   const ps = Math.PI - (AZ0 + FACE.span / 2), ts = Math.PI / 2 - FACE.top;
@@ -483,7 +504,7 @@ function buildRig(f) {
     return g;
   };
   const top = surf(B, d.set(0, 1, 0), 1, new T.Vector3());
-  if (cos === "phoenix" || cos === "dragon") C.add(sprout(top.x - w * 0.02, top.y - 1, 0, 1));
+  if (cos === "phoenix" || cos === "dragon") { const sp0 = sprout(top.x - w * 0.02, top.y - 1, 0, 1); C.add(sp0); if (hero) rig.hero.sprout = sp0; }
   // limbs (in root space, driven by the 2D pose each frame)
   rig.limbMat = own(new T.MeshStandardMaterial({ color: lin("#22202b"), roughness: 0.42 }));
   const limb = (r, end) => {
@@ -705,8 +726,9 @@ function buildRig(f) {
   if (cos === "dragon") {
     const memb = std(acc, { roughness: 0.6, side: T.DoubleSide });
     const boneOpt = lvl >= 3 ? { roughness: 0.45, emissive: lin(mix(acc, "#ffb347", 0.55)), emissiveIntensity: 0.7 } : { roughness: 0.5 };
-    const bone = std(mix(acc, "#2a1a14", 0.45), boneOpt);
+    const bone = std(mix(acc, "#2a1a14", 0.45), hero ? { roughness: 0.45, emissive: lin(mix(acc, "#ffb347", 0.55)), emissiveIntensity: 0.5 } : boneOpt);
     if (lvl >= 3) rig.glow.push({ m: bone, base: 0.7, amp: 0.3, sp: 0.15 });
+    if (hero) { rig.hero.bone = bone; rig.hero.memb = memb; }
     // bat wing: leading edge up to the tip, scalloped trailing edge between three finger bones (unit length)
     const ws = new T.Shape();
     ws.moveTo(0, 0); ws.quadraticCurveTo(0.42, 0.44, 1, 0.42);
@@ -764,7 +786,9 @@ function buildRig(f) {
     const spikeM = std(mix(acc, "#2a1a14", 0.25), { roughness: 0.5 });
     [[1.05, 0.8], [0.7, 1], [0.32, 1.05], [-0.08, 0.95], [-0.45, 0.75]].forEach(([el, k]) => { const sp = mesh(spikeG, spikeM); sp.scale.set(3.6 * k, 3.6 * k, 8.5 * k); put(sp, Math.PI + 0.15, el, 0.98, 0); C.add(sp); });
     const bellyC = dirAE(AZ0 + 0.05, -0.78, new T.Vector3());
-    C.add(mesh(capGeom(B, bellyC, () => 0, ellipseR(0.58, 0.42), 1.014, 40, 8), std(mix(pal.body, "#fff0c6", 0.45), { roughness: 0.6 })));
+    const bellyM = std(mix(pal.body, "#fff0c6", 0.45), { roughness: 0.6 });
+    if (hero) rig.hero.belly = bellyM;
+    C.add(mesh(capGeom(B, bellyC, () => 0, ellipseR(0.58, 0.42), 1.014, 40, 8), bellyM));
     const ridgeM = std(mix(pal.body, "#7a4a22", 0.4), { roughness: 0.6 });
     for (const el of [-0.55, -0.74, -0.93]) {
       const half = 0.5 * Math.sqrt(Math.max(0, 1 - ((el + 0.78) / 0.42) ** 2)) + 0.05, rp = [];
@@ -834,7 +858,7 @@ function disposeObj(obj) {
 
 /* face decal drawing: canvas x/y map to azimuth/elevation on the body */
 function drawFaceDecal(rig, expr) {
-  const c = rig.faceCtx, N = FACE.N, B = rig.B, w = B.w, style = rig.faceStyle;
+  const c = rig.faceCtx, N = rig.fN || FACE.N, B = rig.B, w = B.w, style = rig.faceStyle;
   const U = (az) => ((AZ0 + FACE.span / 2 - az) / FACE.span) * N, V = (el) => ((FACE.top - el) / FACE.hgt) * N;
   const kx = N / FACE.span / ((B.rx + B.rz) / 2), ky = N / FACE.hgt / B.ry; // canvas px per world unit
   c.clearRect(0, 0, N, N);
@@ -850,6 +874,7 @@ function drawFaceDecal(rig, expr) {
       c.beginPath(); c.moveTo(x - s * a, y - b); c.lineTo(x + s * a * 0.7, y); c.lineTo(x - s * a, y + b); c.stroke();
     }
   }
+  if (expr === "terror" || expr === "rage" || expr === "grin" || expr === "dazed" || expr === "ko") { drawFaceExtra(c, expr, U, V, kx, ky, er, rig); rig.faceTex.needsUpdate = true; return; }
   if (style === "stern") { rig.faceTex.needsUpdate = true; return; }
   const mx = U(AZ0 - 0.02), my = V(-0.12), ew = er * kx, eh = er * ky;
   c.strokeStyle = "#2a130d";
@@ -898,6 +923,66 @@ function drawFaceDecal(rig, expr) {
     c.beginPath(); c.arc(mx, my - eh * 0.75, ew * 1.05, 0.4, Math.PI - 0.4); c.stroke();
   }
   rig.faceTex.needsUpdate = true;
+}
+
+/* the KO films' extra faces: terror (round mouth, a sweat drop), rage (open roar with teeth), grin (wide, toothy), dazed (spiral eyes,
+   tongue out), ko (X eyes). Eyes of dazed and ko are drawn here (the 3D eyes hide); the others use the 3D eyes. */
+function drawFaceExtra(c, expr, U, V, kx, ky, er, rig) {
+  const mx = U(AZ0 - 0.02), my = V(-0.12), ew = er * kx, eh = er * ky, lw = kx * 0.5, glowy = rig && rig.cos === "dragon";
+  c.strokeStyle = "#2a130d"; c.lineJoin = "round"; c.lineCap = "round";
+  if (expr === "terror") {
+    c.beginPath(); c.ellipse(mx, my + eh * 0.2, ew * 0.62, eh * 1.0, 0, 0, Math.PI * 2);
+    c.fillStyle = "#3a0f0c"; c.fill(); c.lineWidth = 2 * lw; c.stroke();
+    c.fillStyle = "#e0606a"; c.beginPath(); c.ellipse(mx, my + eh * 0.7, ew * 0.4, eh * 0.28, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#fffaf0"; c.fillRect(mx - ew * 0.4, my - eh * 0.72, ew * 0.8, eh * 0.2);
+    // a sweat drop at the temple
+    const dx = U(AZ0 + 0.52), dy = V(EL_EYE + 0.32);
+    c.fillStyle = "rgba(190,230,255,0.95)"; c.strokeStyle = "rgba(60,110,160,0.9)"; c.lineWidth = 1.2 * lw;
+    c.beginPath(); c.moveTo(dx, dy - eh * 0.55); c.quadraticCurveTo(dx + ew * 0.5, dy + eh * 0.2, dx, dy + eh * 0.45); c.quadraticCurveTo(dx - ew * 0.5, dy + eh * 0.2, dx, dy - eh * 0.55); c.fill(); c.stroke();
+    return;
+  }
+  if (expr === "rage") {
+    c.save();
+    c.beginPath(); c.moveTo(mx - ew * 1.5, my - eh * 0.75); c.quadraticCurveTo(mx, my - eh * 0.35, mx + ew * 1.5, my - eh * 0.75);
+    c.quadraticCurveTo(mx + ew * 1.3, my + eh * 1.9, mx, my + eh * 2.0); c.quadraticCurveTo(mx - ew * 1.3, my + eh * 1.9, mx - ew * 1.5, my - eh * 0.75); c.closePath();
+    const g = c.createRadialGradient(mx, my + eh * 0.9, 0, mx, my + eh * 0.9, ew * 1.5);
+    if (glowy) { g.addColorStop(0, "#fff2b0"); g.addColorStop(0.35, "#ffa030"); g.addColorStop(1, "#6a1608"); } else { g.addColorStop(0, "#8a2a24"); g.addColorStop(1, "#4a120e"); }
+    c.fillStyle = g; c.fill(); c.clip();
+    c.fillStyle = "#e0606a"; c.beginPath(); c.ellipse(mx, my + eh * 1.55, ew * 0.8, eh * 0.55, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#fffaf0";
+    for (let i = -3; i <= 3; i++) { const x = mx + i * ew * 0.4, h = i % 2 ? 0.4 : 0.62; c.beginPath(); c.moveTo(x - ew * 0.19, my - eh * 0.6); c.lineTo(x, my - eh * 0.6 + eh * h); c.lineTo(x + ew * 0.19, my - eh * 0.6); c.closePath(); c.fill(); }
+    for (let i = -2; i <= 2; i++) { const x = mx + i * ew * 0.45, h = i % 2 ? 0.3 : 0.52; c.beginPath(); c.moveTo(x - ew * 0.19, my + eh * 1.95); c.lineTo(x, my + eh * 1.95 - eh * h); c.lineTo(x + ew * 0.19, my + eh * 1.95); c.closePath(); c.fill(); }
+    c.restore();
+    c.beginPath(); c.moveTo(mx - ew * 1.5, my - eh * 0.75); c.quadraticCurveTo(mx, my - eh * 0.35, mx + ew * 1.5, my - eh * 0.75);
+    c.quadraticCurveTo(mx + ew * 1.3, my + eh * 1.9, mx, my + eh * 2.0); c.quadraticCurveTo(mx - ew * 1.3, my + eh * 1.9, mx - ew * 1.5, my - eh * 0.75); c.closePath(); c.lineWidth = 2.2 * lw; c.stroke();
+    c.fillStyle = "#3a1c10";
+    for (const s of [1, -1]) { c.beginPath(); c.ellipse(mx + s * ew * 0.34, my - eh * 1.1, ew * 0.13, eh * 0.1, s * 0.4, 0, Math.PI * 2); c.fill(); }
+    return;
+  }
+  if (expr === "grin") {
+    c.beginPath(); c.moveTo(mx - ew * 1.7, my - eh * 0.5); c.quadraticCurveTo(mx, my + eh * 2.1, mx + ew * 1.7, my - eh * 0.5); c.quadraticCurveTo(mx, my + eh * 0.05, mx - ew * 1.7, my - eh * 0.5);
+    c.fillStyle = "#fffaf0"; c.fill(); c.lineWidth = 2 * lw; c.stroke();
+    c.lineWidth = lw;
+    for (let t = -3; t <= 3; t++) { c.beginPath(); c.moveTo(mx + t * ew * 0.4, my - eh * 0.2 - Math.abs(t) * eh * 0.1); c.lineTo(mx + t * ew * 0.4, my + eh * 0.85 - Math.abs(t) * eh * 0.3); c.stroke(); }
+    return;
+  }
+  // dazed + ko: the eyes are drawn on the face
+  for (const s of [1, -1]) {
+    const x = U(AZ0 - s * 0.25), y = V(EL_EYE), a = er * 0.85 * kx, b = er * 0.85 * ky;
+    c.strokeStyle = "#1a0f0c"; c.lineWidth = 3.2 * lw;
+    if (expr === "ko") { c.beginPath(); c.moveTo(x - a, y - b); c.lineTo(x + a, y + b); c.moveTo(x + a, y - b); c.lineTo(x - a, y + b); c.stroke(); }
+    else {
+      c.beginPath();
+      for (let i = 0; i <= 36; i++) { const th = i * 0.55 * s, r = (i / 36) * a; i ? c.lineTo(x + Math.cos(th) * r, y + Math.sin(th) * r * (b / a)) : c.moveTo(x, y); }
+      c.stroke();
+    }
+  }
+  c.strokeStyle = "#2a130d";
+  if (expr === "ko") { c.beginPath(); c.ellipse(mx + ew * 0.1, my + eh * 0.3, ew * 0.5, eh * 0.55, 0, 0, Math.PI * 2); c.fillStyle = "#3a0f0c"; c.fill(); c.lineWidth = 1.8 * lw; c.stroke(); c.fillStyle = "#e0606a"; c.beginPath(); c.ellipse(mx + ew * 0.55, my + eh * 0.75, ew * 0.3, eh * 0.45, 0.3, 0, Math.PI * 2); c.fill(); c.stroke(); }
+  else {
+    c.beginPath(); c.moveTo(mx - ew * 0.7, my); c.quadraticCurveTo(mx - ew * 0.2, my + eh * 0.5, mx + ew * 0.2, my); c.quadraticCurveTo(mx + ew * 0.5, my - eh * 0.3, mx + ew * 0.8, my + eh * 0.1); c.lineWidth = 1.8 * lw; c.stroke();
+    c.fillStyle = "#e0606a"; c.beginPath(); c.ellipse(mx + ew * 0.35, my + eh * 0.55, ew * 0.28, eh * 0.55, 0.15, 0, Math.PI * 2); c.fill(); c.stroke();
+  }
 }
 
 /* ---------- per-frame rig update ---------- */
@@ -957,11 +1042,11 @@ function syncRig(rig, f, P, tk, at) {
   setLimb(rig.armB, shB, P.hB, armLen, "down", -rz * 0.5, -rz * 0.72, -rz * 0.8, false);
   setLimb(rig.armF, shR, P.hF, armLen, "down", rz * 0.5, rz * 0.78, rz * 0.88, false);
   // eyes: blink now and then, hide while hurt
-  const hurt = st === "hitstun";
+  const xl = rig.xl, hurt = st === "hitstun" && !xl;   // xl: a KO film pins an expression (terror, rage, ko ...)
   rig.blink = rig.blink > 0 ? rig.blink - 1 : ((tk + f.slot * 97) % 211 === 0 ? 7 : 0);
-  const ey = rig.blink > 0 ? 0.12 : 1;
-  for (const e of rig.eyes) { e.visible = !hurt; e.scale.y = ey; }
-  const expr = hurt ? "hurt" : P.mouth > 0.5 ? "open" : "rest";
+  const ey = rig.blink > 0 && !xl ? 0.12 : 1;
+  for (const e of rig.eyes) { e.visible = !hurt && xl !== "ko" && xl !== "dazed"; e.scale.set(rig.eyeK, rig.eyeK * ey, rig.eyeK); }
+  const expr = xl || (hurt ? "hurt" : P.mouth > 0.5 ? "open" : "rest");
   if (rig.expr !== expr) { rig.expr = expr; drawFaceDecal(rig, expr); }
   // costume animation
   const cos = rig.cos;

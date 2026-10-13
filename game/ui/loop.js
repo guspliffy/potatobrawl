@@ -44,7 +44,7 @@ function frame(now) {
   if (mode === "online") drawOnlineArt(tick);
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: R3, fin: FIN };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: R3, fin: FIN, cine: CINE, films: FILMS };
 newAttract();
 goMenu();
 if (NET.invite) openOnline();
