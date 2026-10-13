@@ -1,0 +1,14 @@
+# Put a branch on https://beta.potatobrawl.cloud to try it before it goes live (paste as root).
+# Change BRANCH to the branch Claude names (or main). The live game is not touched.
+bash <<'EOF'
+set -e
+BRANCH=main
+cd /opt/potatobrawl-beta
+git fetch -q origin "$BRANCH"
+git checkout -q -B beta FETCH_HEAD
+cp -f index.html three.min.js public/
+chown -R potatobrawl:potatobrawl /opt/potatobrawl-beta
+systemctl restart potatobrawl-beta
+sleep 2
+curl -sf https://beta.potatobrawl.cloud/health >/dev/null && echo "beta is running: $(git log -1 --format='%h %s')" || echo "beta didn't come up. Send me: journalctl -u potatobrawl-beta --no-pager | tail -30"
+EOF

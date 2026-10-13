@@ -1,0 +1,53 @@
+# One-time setup of the test address https://beta.potatobrawl.cloud (paste on the server as root).
+# Before pasting: in hPanel DNS add an A record, name `beta`, pointing to 187.124.173.121.
+# What it adds to the VPS: a second copy of the game in /opt/potatobrawl-beta, a systemd unit
+# potatobrawl-beta listening on 127.0.0.1:8081 only (not reachable from outside), and one more
+# site block in /etc/caddy/Caddyfile. The live game and the trading bot are not touched.
+# BRANCH is the GitHub branch the beta runs; it must contain HOST support in server.js.
+bash <<'EOF'
+set -e
+BRANCH=main
+DOMAIN=beta.potatobrawl.cloud
+[ "$(id -u)" = 0 ] || { echo "Please run as root (type: sudo -i), then paste again."; exit 1; }
+MYIP=$(hostname -I | tr ' ' '\n' | grep -E '^[0-9]+\.' | head -1)
+DNSIP=$(getent ahostsv4 "$DOMAIN" | awk 'NR==1{print $1}')
+if [ "$DNSIP" != "$MYIP" ]; then
+  echo "$DOMAIN points to '${DNSIP:-nothing yet}', but this server is $MYIP."
+  echo "Add the A record 'beta' in hPanel, wait 10-30 minutes, then paste this again."
+  exit 1
+fi
+systemctl is-active --quiet caddy || { echo "Caddy isn't running. Send me: systemctl status caddy"; exit 1; }
+if ! systemctl is-active --quiet potatobrawl-beta && (exec 3<>/dev/tcp/127.0.0.1/8081) 2>/dev/null; then
+  echo "Something already uses port 8081. Send me: ss -ltnp | grep 8081"; exit 1
+fi
+git config --global --add safe.directory /opt/potatobrawl-beta
+[ -d /opt/potatobrawl-beta/.git ] || git clone -q https://github.com/guspliffy/potatobrawl /opt/potatobrawl-beta
+cd /opt/potatobrawl-beta
+git fetch -q origin "$BRANCH"
+git checkout -q -B beta FETCH_HEAD
+grep -q "process.env.HOST" server.js || { echo "Branch $BRANCH has no HOST support in server.js yet. Use the branch from the pull request."; exit 1; }
+mkdir -p public
+cp -f index.html three.min.js public/
+npm install --omit=dev --silent
+chown -R potatobrawl:potatobrawl /opt/potatobrawl-beta
+sed -e 's#^Description=.*#Description=PotatoBrawl beta server#' \
+    -e 's#/opt/potatobrawl#/opt/potatobrawl-beta#g' \
+    -e 's#^Environment=PORT=.*#Environment=PORT=8081\nEnvironment=HOST=127.0.0.1#' \
+    potatobrawl.service > /etc/systemd/system/potatobrawl-beta.service
+systemctl daemon-reload
+systemctl enable potatobrawl-beta >/dev/null 2>&1
+systemctl restart potatobrawl-beta
+if ! grep -q "^$DOMAIN" /etc/caddy/Caddyfile; then
+  cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.before-beta
+  printf '\n%s {\n    reverse_proxy 127.0.0.1:8081\n}\n' "$DOMAIN" >> /etc/caddy/Caddyfile
+fi
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || { cp /etc/caddy/Caddyfile.before-beta /etc/caddy/Caddyfile; echo "Caddy config check failed, put the old one back. Send me this output."; exit 1; }
+systemctl reload caddy
+echo "Getting the certificate, this can take up to a minute..."
+for i in $(seq 1 30); do curl -sf "https://$DOMAIN/health" >/dev/null && break; sleep 3; done
+echo "----- beta health -----"
+curl -s "https://$DOMAIN/health" || echo "Not reachable yet. Send me: journalctl -u caddy --no-pager | tail -30"
+echo "----- live health (should be unchanged) -----"
+curl -s https://potatobrawl.cloud/health
+echo "beta runs: $(git log -1 --format='%h %s')"
+EOF
