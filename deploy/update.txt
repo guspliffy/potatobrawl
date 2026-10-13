@@ -8,5 +8,5 @@ cp -f index.html three.min.js web/* public/
 chown -R potatobrawl:potatobrawl /opt/potatobrawl
 systemctl restart potatobrawl
 sleep 2
-grep -q "const PROTO = 4" public/index.html && echo "new version is live" || echo "still the old version: upload index.html to GitHub first"
+grep -q "const PROTO = 5" public/index.html && echo "new version is live" || echo "still the old version: upload index.html to GitHub first"
 EOF

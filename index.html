@@ -1134,6 +1134,41 @@ const FIGHTERS = [
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 42 } } }),
     },
   },
+  {
+    id: "gunslinger", name: "Gunslinger", role: "Sharpshooter",
+    blurb: "Two pistols and a wide hat. Chips away from afar, then finishes up close.",
+    signature: { name: "Twin Shot", text: "Fires two fast shots that barely push. 0.8 s cooldown." },
+    look: { build: "potato", costume: "gunslinger", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 5, face: "cocky" },
+    stats: { w: 44, h: 64, weight: 93, run: 6.3, accel: 1.2, airSpeed: 5.0, airAccel: 0.5, gravity: 0.66, fallSpeed: 12, fastFall: 17, jump: 14.0, airJump: 12.6, airJumps: 2 },
+    palettes: [
+      { name: "Desert", price: 0, body: "#e8b066", trim: "#1f1d26", accent: "#c27a3a", ui: "#e8964a" },
+      { name: "Outlaw", price: 60, body: "#e3aa60", trim: "#1f1d26", accent: "#3b3542", ui: "#a99cc4" },
+      { name: "Sheriff", price: 120, body: "#ebb46a", trim: "#1f1d26", accent: "#e6dfcd", ui: "#8fc0ea" },
+      { name: "Gold Rush", price: 200, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
+    ],
+    moves: {
+      jab:   M(3, 3, 9,   3, 4, 2, 40, [28, -36, 16], { limb: "arm" }),
+      side:  M(6, 4, 13,  7, 4.5, 9, 32, [36, -32, 19], { limb: "arm" }),
+      up:    M(5, 5, 12,  6, 5, 8, 86, [16, -70, 20, -16, -72], { limb: "arm" }),
+      down:  M(5, 3, 11,  5, 4, 7, 18, [32, -6, 16], { limb: "leg" }),
+      // Fan the hammer: a point-blank blast that kicks him back in a small hop
+      hSide: M(13, 4, 26, 15, 7, 19, 34, [36, -38, 21, 56, -36], { limb: "arm", impulse: [-5, -3] }),
+      hUp:   M(11, 6, 22, 13, 7, 18, 88, [10, -88, 26], { limb: "arm" }),
+      hDown: M(11, 4, 24, 12, 6.5, 16, 25, [[38, -10, 19], [-38, -10, 19]], { limb: "arm" }),
+      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [0, -32, 30], { limb: "body", landLag: 6 }),
+      sair:  M(6, 4, 14,  8, 5, 12, 40, [36, -32, 19], { limb: "arm", landLag: 8 }),
+      uair:  M(5, 5, 12,  7, 5, 12, 82, [14, -70, 21, -14, -70], { limb: "arm", landLag: 7 }),
+      dair:  M(9, 5, 16,  9, 5, 10, -65, [4, 0, 19], { limb: "leg", landLag: 11 }),
+      hAir:  M(12, 4, 22, 13, 6.5, 16, 36, [36, -36, 21, 54, -34], { limb: "arm", impulse: [-3, -1], landLag: 15 }),
+      // Powder jump: a shot fired down at his feet lifts him; the blast under him knocks down and away
+      rec:   M(5, 6, 14, 5, 4.5, 4, -60, [0, 6, 24], { limb: "leg", rec: true, vyStart: -15.5, vxStick: 4.5, helpless: true, landLag: 10 }),
+      pound: M(9, 1, 18,  10, 6, 11, -78, [0, -6, 22], { limb: "leg", pound: true, vyStart: 17, landLag: 15 }),
+      // two quick weak shots; against a finish-ready opponent one golden bullet instead ("High Noon", see finCount)
+      spec:  M(8, 9, 12, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 48,
+               proj: { style: "bullet", speed: 15, life: 30, r: 8, ox: 34, oy: -38, count: 2, interval: 8, dmg: 3, bkb: 2.5, kbg: 1.5, angle: 20,
+                       finCount: 1, finStyle: "gold", fin: { dmg: 10, bkb: 10, kbg: 14, angle: 30 } } }),
+    },
+  },
 ];
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
 for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
@@ -1157,7 +1192,7 @@ function newFighter(spec, slot, pal, x, facing) {
     inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
-    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false,
+    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false,
     anim: { run: 0 },
   };
 }
@@ -1383,6 +1418,8 @@ function startMove(g, f, key) {
   setState(f, "attack");
   f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0;
   if (key === "spec") f.specCd = m.cooldown || 0;
+  // a projectile special with finCount fires only finCount shots, in finStyle, when it starts against a finish-ready opponent
+  if (key === "spec") f.finShot = !!(m.proj && m.proj.finCount && g.fighters.some((o) => o !== f && o.percent >= TUNE.finishPct));
   if (m.rec) { f.recUsed = true; faceStick(f); f.ff = false; }
   if (m.pound) f.ff = false;
   g.events.push({ type: "swing", heavy: key[0] === "h" || key === "spec" || key === "pound", slot: f.slot });
@@ -1418,7 +1455,7 @@ function updateAttack(g, f) {
     if (m.kind === "charge" && f.mt === m.startup) f.vx = f.facing * m.slide;
     if (m.kind === "projectile") {
       const pr = m.proj, iv = pr.interval || 1, k = f.mt - m.startup;
-      if (k >= 0 && k % iv === 0 && k / iv < (pr.count || 1)) spawnProj(g, f, m, k / iv);
+      if (k >= 0 && k % iv === 0 && k / iv < (f.finShot ? pr.finCount : pr.count || 1)) spawnProj(g, f, m, k / iv);
     }
     if (f.grounded) f.vx *= m.kind === "charge" && f.mt >= m.startup && f.mt <= a1 ? 0.95 : 0.82;
     else { airDrift(f, 0.85); fastFallCheck(f); }
@@ -1625,7 +1662,7 @@ function activeBoxes(f) {
 }
 
 function spawnProj(g, f, m, i) {
-  const p = m.proj, style = p.style || "disc";
+  const p = m.proj, style = (f.finShot && p.finStyle) || p.style || "disc";
   g.projs.push({
     owner: f.slot, x: f.x + f.facing * p.ox, y: f.y + p.oy, dir: f.facing, vx: f.facing * p.speed,
     vy: p.spreadVy ? p.spreadVy[i] || 0 : p.vy0 || 0, grav: p.grav || 0, boomer: !!p.boomer, style, burst: p.burst || null,
@@ -2036,7 +2073,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed"];
+  "chg", "doomed", "finShot"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -2073,7 +2110,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
@@ -14159,7 +14196,7 @@ function buildNextPick() {
    Checksums every second catch any divergence; the host then sends a full snapshot. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 4;
+const PROTO = 5;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
