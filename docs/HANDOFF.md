@@ -15,15 +15,17 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   design: /mnt/project-files/fight-ideas/plan.md (Project files). Merged (PR #3, 61492cb) and live since
   2026-10-13 16:25 UTC.
 - M4 (Jonny, 2026-10-13, after playing M3): matches are 2D only (he finds 2D more fun; the Graphics setting is
-  gone and `use3D()` returns false), lives are red hearts, and the KO finisher becomes a live 3D film per
+  gone), lives are red hearts, and the KO finisher became a live 3D film per
   fighter (three.js; the 2D picture shatters like glass into a 3D "dimension"). Plan and Fable's film design:
   /mnt/project-files/finisher-films/plan.md and fable-cinematics.md. Step 1 (2D only + hearts) = PR #4, merged
   (f4d060f). Step 2 (the film engine + Dragon "Inferno") = PR #5, merged (9ee741b).
 - After playing the 3D film, Jonny (2026-10-13 19:57 UTC) asked for 2D comic/manga finishers "like Naruto", calmer,
   4-5 s, and picked "2D manga" on a decision card. Fable's design: /mnt/project-files/finisher-films/fable-manga.md.
   The manga engine (ui/manga.js) and all six pages (manga/<id>.js) are this PR; videos:
-  finisher-films/<fighter>-<title>-manga-v1.mp4. The 3D films are switched off (three.js never loads); the five
-  unfinished 3D films are saved as patches in finisher-films/3d-wip/.
+  finisher-films/<fighter>-<title>-manga-v1.mp4. The 3D code (gfx3d.js, cine.js, films/, vendor/three-addons.js,
+  the GL canvases, tests/pwcine.py) was removed in the night clean-up (index.html 1142072 -> 912772 bytes); the five
+  unfinished 3D films stay saved as patches in finisher-films/3d-wip/ (not in the repo). three.min.js is still in the
+  repo root and still copied, but nothing loads it.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -64,24 +66,15 @@ index.html is committed with every source change (check.sh flags a stale one).
   closes it, so a part alone is not valid JS.
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
-  · effects (fx, /*SKINFX*/ and /*GFX3D*/ placeholders, render, sim events) · screens (menu, select, match,
+  · effects (fx, /*SKINFX*/ placeholder, the frame-time watchdog PERF, render, sim events) · screens (menu, select, match,
   results; CPU_NAMES + the CPU's name under its HUD card) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
 - ui/finisher.js (between effects and screens): KO finisher cinematic, started by the final lethal hit (no
   finisher for a self-destruct or a failed recovery). Beat 0 is the real impact, then the staged scene ends
   with the loser launched out of the arena. Also the KO zoom on earlier lives (finLethal), the finishing-
   special band (finHit) and the FINISH! / charge feedback helpers. Pure UI: two stand-in fighters
-  ("puppets", copies with state "fin" and a finPose hook that pose() calls), its own camera (cam.yaw swings
-  the 3D camera), particles and shapes on the effects layer, name card, skip, and it holds the results
+  ("puppets", copies with state "fin" and a finPose hook that pose() calls), its own camera, particles and shapes on the effects layer, name card, skip, and it holds the results
   screen (finHold) until it ends. Timeline constants FT; one entry per fighter in FINS.
-- cine.js (spliced at /*CINE*/ after /*GFX3D*/ in effects, together with vendor/three-addons.js and films/*.js):
-  the KO films, live three.js cutscenes. finStart calls cineStart; when the winner has a film in FILMS and the
-  film is warmed up, FIN.cine is set and cineTick/cineDraw/cineOverlay take over from the 2D staging: crack web
-  over the 2D hit, the 2D picture as a pane that shatters, the 3D film, shutters, results (~4.2 s). Anything
-  missing (no WebGL, three.js not loaded yet, a fighter without a film yet, a failure) plays the 2D finisher.
-  three.js now loads in the background (cineLoadThree, page idle) instead of a blocking script tag; warm-up
-  (both hero rigs, set, env map, shader compile) runs in steps during the match countdown (cineIdle). Tiers
-  A/B/C (window.__cineTier pins one in tests). Pure UI: never writes G. Films so far: films/dragon.js.
 - ui/manga.js (after finisher.js; manga/*.js spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
   finStart plays MANGA[winner] before anything else: the real hit, the frozen frame inked (paper tint, dot tone,
   border, focus lines, sound word), panels sliding in over each other (the old ones stay visible), a face inset, the
@@ -89,8 +82,10 @@ index.html is committed with every source change (check.sh flags a stale one).
   direction, the title block with the K.O. seal, results at 4720 ms, skip from 1000 ms. Timeline MT; a page is
   data + small functions (MANGA.<id>: panels(lay), words(lay), build, start, step, pose, impact, ...; dragon.js is
   the template). Puppets via mgPuppet, faces via P.expr in draw-fighters.js (terror grin rage calm dazed ko).
-  The Cin sound kit lives here now. Any throw falls back to the 2D finisher (FINS). Pure UI: never writes G.
-- gfx3d.js the old 3D match renderer (unused since M4 step 1; its rigs feed the films) · skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
+  The Cin sound kit lives here. Any throw falls back to the 2D finisher (FINS). Pure UI: never writes G.
+  The frame-time watchdog PERF (effects.js) steps q up when matches run slow; the page reads it to pick its cheap
+  tier. Tests pin it with window.__blastline.r3.lockQ = true (r3 is an old name; perf is the same object).
+- skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
 - web/ (repo root): manifest.webmanifest + icons. server.js serves them from public/ if present; build.py and
@@ -116,8 +111,7 @@ in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real l
 --self = self-destruct plays no finisher, --aim=left/up, WxH; steps requestAnimationFrame and
 performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing special, KO zoom, charge
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
-WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms) · pwcine.py (the old 3D KO films: freeze frames
-at chosen ms, --tier, --nogl, --skip, --sheet, --video=out.mp4 steps the film at 30 fps and encodes with ffmpeg) · lockhuman.js /
+WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
 breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · pwux2.py (all screens, 3 sizes) ·
 pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
@@ -146,8 +140,10 @@ that differ from lights, a charged heavy, and the finisher starting on the KO hi
 accounts (1 s charge).
 - M3 fight feel: live; Jonny's phone test (sounds) still pending.
 - M4 now: 2D manga KO finishers for all six (this PR). Next: Jonny's notes on the videos, a real-phone check of the
-  page's draw time (budget 6 ms/frame), then remove the 3D code (gfx3d.js, cine.js, films/, vendor/, three.min.js;
-  the deploy block copies three.min.js, so drop it there in the same change).
+  page's draw time (budget 6 ms/frame). The 3D code is removed (night clean-up). Next round: drop three.min.js from
+  the repo root, from build.py (the copies into build/ and public/), from server.js (the /three.min.js asset) and from
+  the deploy lines `cp -f index.html three.min.js web/* public/` (update.txt, beta-update.txt, beta-setup.txt,
+  first-setup.txt), all in one change, so Jonny's paste stays in step.
 - M4 history (finisher-films/plan.md): 1. 2D only + red hearts (display only). 2. The 3D film engine + the
   Dragon's "Inferno" film, sent to Jonny as a video before the rest. 3. The other five films (Phoenix, then
   Wizard + Alchemist, then Odin + Samurai). UI only, no PROTO bump. The Potatalities move to a later finisher

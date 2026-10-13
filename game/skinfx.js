@@ -1,7 +1,7 @@
 /* ===================== skin effects =====================
    Each fighter's four skins add effects step by step (free, 60, 120, 200 chips): 60 adds a small
    effect around the fighter, 120 adds one tied to a move, 200 adds a change on the figure itself
-   (drawn by the 3D layer) and a KO effect. The rules: effects are decoration only and never
+   and a KO effect. The rules: effects are decoration only and never
    change a fighter's size or an attack's size or timing; they avoid the colours the game uses as
    signals (white hit flash, blue invincibility glow, gold armour ring); they stay close to the
    fighter; and they are the first thing dropped when a phone can't keep up. Both players' skins
@@ -15,8 +15,8 @@ const FXTEXT = {
   dragon: ["", "Smoke curls from his mouth", "Smoke, plus a gust ring on every wing flap", "Smoke, gusts, glowing wing bones and a fire roar on every KO"],
 };
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 ? 0 : i; };
-const fxAmbient = () => !R3.on || R3.q < 2; // 60-chip effects go first on slow phones
-const fxMoves = () => !R3.on || R3.q < 3;   // then the 120-chip ones; KO effects always stay
+const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
+const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [{ flare: 0, raven: false, dashX: null }, { flare: 0, raven: false, dashX: null }];
 const rnd = (a, b) => a + Math.random() * (b - a);
 function mote(x, y, vx, vy, col, r, life, grav) { addFx({ k: "mote", x, y, vx, vy, col, r, t: 0, life, g: grav || 0, damp: 0.95 }); }
