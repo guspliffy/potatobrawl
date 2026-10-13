@@ -23,13 +23,7 @@ function newAttract() {
 }
 
 function renderMenu() {
-  const ti = tierInfo(P.rating);
-  const rank = $("mRank"); rank.style.setProperty("--tc", ti.t.col);
-  paintBadge($("mBadge"), ti.i);
-  $("mTier").textContent = ti.t.name;
-  $("mSub").textContent = ti.next ? `${P.rating} rating · ${ti.need} to ${ti.next.name}` : `${P.rating} rating · top tier`;
-  $("mBar").style.setProperty("--p", ti.p);
-  $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
+  renderPill();   // profile pill, ui/acct.js
   $("mRec").textContent = `${P.wins}W · ${P.losses}L${P.streak > 1 ? ` · ${P.streak} streak` : ""}`;
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;

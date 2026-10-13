@@ -17,6 +17,7 @@ async def shoot(b, tag, vp, mob, errs):
     clk = (lambda sel: pg.tap(sel)) if mob else (lambda sel: pg.click(sel))
     await pg.screenshot(path=f'{OUT}/{tag}_1_menu.png')
     await clk('#bSettings'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_1b_settings.png'); await clk('#setClose'); await pg.wait_for_timeout(200)
+    await clk('#mRank'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_1c_account.png'); await clk('#acClose'); await pg.wait_for_timeout(200)
     await clk('#bHelp'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_2_help.png'); await clk('#hClose'); await pg.wait_for_timeout(200)
     await clk('#bRanked'); await pg.wait_for_timeout(700); await pg.screenshot(path=f'{OUT}/{tag}_3_select.png')
     await pg.evaluate("document.querySelectorAll('.tile')[5].click()"); await pg.wait_for_timeout(200)
@@ -40,7 +41,7 @@ async def fresh(b, tag, vp, mob, errs):
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)
     await frames(pg, 20); await pg.screenshot(path=f'{OUT}/{tag}_t1.png')
     await ctx.close()
-# --- start page: rating + chips card in the top right corner; touch controls: Heavy/Special sizes, spacing, jump boost ---
+# --- start page: the profile pill (avatar, name, tier ring + rating, chips) in the top right corner; touch controls: Heavy/Special sizes, spacing, jump boost ---
 MENU_CHECK = """(() => {
   const q = (s) => document.querySelector(s).getBoundingClientRect();
   const R = q('#mRank'), G = q('#bSettings'), W = innerWidth, H = innerHeight;
@@ -53,7 +54,8 @@ MENU_CHECK = """(() => {
   if (R.left < 0 || R.right > W || R.top < 0) bad.push('off screen');
   if (R.right > G.left) bad.push('not left of the gear');
   if (R.top > 40 || W - R.right > 80 + 20) bad.push('not in the top right corner');
-  const ids = ['mBadge', 'mTier', 'mSub', 'mTokens'].filter((i) => { const r = q('#' + i); return r.width < 4 || r.right > R.right + 1 || r.left < R.left - 1; });
+  if (Math.abs(R.height - G.height) > 1) bad.push('not the height of the gear');
+  const ids = ['mAvatar', 'mBadge', 'mRating', 'mTokens'].filter((i) => { const r = q('#' + i); return r.width < 4 || r.right > R.right + 1 || r.left < R.left - 1; });
   if (ids.length) bad.push('clipped: ' + ids.join(','));
   const btns = [...document.querySelectorAll('.menu-actions .btn')].map((b) => b.getBoundingClientRect());
   if (btns[0].top < q('.brand').bottom) bad.push('buttons start inside the brand');

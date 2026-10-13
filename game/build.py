@@ -8,12 +8,13 @@ core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
 UI_PARTS = ['base', 'input', 'view', 'draw-fighters', 'draw-world', 'effects', 'finisher', 'manga',
-            'screens', 'online', 'menus', 'tutorial', 'loop']
+            'screens', 'online', 'menus', 'acct', 'tutorial', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
 ui = ui.replace('/*PORTRAITS*/{}', (d/'portraits'/'portraits.json').read_text())
 ui = ui.replace('/*SKINFX*/', (d/'skinfx.js').read_text())
+ui = ui.replace('/*SYNC*/', (d/'sync.js').read_text())   # account sync, the pure part (also a node module)
 ui = ui.replace('/*GFX3D*/', (d/'gfx3d.js').read_text())
 # the KO film engine: the vendored three.js add-ons (wrapped, run once three.js has loaded) + cine.js
 ui = ui.replace('/*CINE*/', (d/'vendor'/'three-addons.js').read_text() + '\n' + (d/'cine.js').read_text() + '\n' + '\n'.join(f.read_text() for f in sorted((d/'films').glob('*.js'))))
