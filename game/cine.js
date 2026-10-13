@@ -30,6 +30,7 @@ const CT_TIERS = {
 /* ---------- loading three.js in the background ---------- */
 function cineLoadThree() {
   if (CINE.libs || CINE.loading || CINE.failed) return;
+  if (!Object.keys(FILMS).some((id) => !MANGA[id])) return;   // every fighter with a film also has a manga page: three.js is not needed at all
   if (window.THREE && window.THREE.WebGLRenderer) { cineLibsUp(); return; }
   CINE.loading = true;
   const s = document.createElement("script");
@@ -892,65 +893,7 @@ function cnRibbonStep(R, p, tw, width, camPos) {
   R.g.attributes.position.needsUpdate = true;
 }
 
-/* ===================== B13: the cinema sound kit (Web Audio synth, one compressed bus) ===================== */
-const Cin = {
-  bus: null, comp: null, duck: false,
-  ok() { return Sfx.ok(); },
-  open() {
-    if (!Sfx.ok()) return false;
-    if (this.bus && this.bus.context === Sfx.ctx) return true;
-    const c = Sfx.ctx;
-    this.bus = c.createGain(); this.bus.gain.value = 0.85;
-    this.comp = c.createDynamicsCompressor();
-    this.comp.threshold.value = -18; this.comp.knee.value = 12; this.comp.ratio.value = 4; this.comp.attack.value = 0.004; this.comp.release.value = 0.18;
-    this.bus.connect(this.comp); this.comp.connect(c.destination);
-    return true;
-  },
-  close() {
-    try { if (this.bus) { this.bus.disconnect(); this.comp.disconnect(); } } catch (e) { /* gone */ }
-    this.bus = null; this.comp = null;
-    try { if (this.duck && Sfx.out) { Sfx.out.gain.cancelScheduledValues(0); Sfx.out.gain.value = 0.55; } } catch (e) { /* gone */ }
-    this.duck = false;
-  },
-  // the game's own sounds dip to a hum while the film plays; the film's bus is untouched
-  dipGame(to, sec) {
-    if (!Sfx.ok()) return; const g = Sfx.out.gain, t = Sfx.ctx.currentTime;
-    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + sec); this.duck = true;
-  },
-  _pan(c, v) { if (!c.createStereoPanner) return null; const p = c.createStereoPanner(); p.pan.value = v; return p; },
-  _env(g, t, a, peak, dur, tail) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + (tail || 0)); },
-  _osc(type, f0, f1, dur, vol, a, when, detune) {
-    const c = Sfx.ctx, t = c.currentTime + (when || 0), o = c.createOscillator(), g = c.createGain();
-    o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(18, f1), t + dur); if (detune) o.detune.value = detune;
-    this._env(g, t, a || 0.01, vol, dur); o.connect(g); g.connect(this.bus); o.start(t); o.stop(t + dur + 0.1); return o;
-  },
-  _noise(dur, vol, f0, f1, type, q, when, pan) {
-    const c = Sfx.ctx, t = c.currentTime + (when || 0), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-    s.buffer = Sfx.noiseBuf; f.type = type || "lowpass"; f.Q.value = q || 0.7; f.frequency.setValueAtTime(f0, t); if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
-    this._env(g, t, Math.min(0.05, dur * 0.3), vol, dur); s.connect(f); f.connect(g);
-    const p = pan === undefined ? null : this._pan(c, pan);
-    if (p) { g.connect(p); p.connect(this.bus); } else g.connect(this.bus);
-    s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.1); return s;
-  },
-  // the silence before a blast: the film's bus dips to 10% in 60 ms, holds, then snaps back
-  drop(hold) { if (!this.bus) return; const g = this.bus.gain, t = Sfx.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0.1, t + 0.06); g.setValueAtTime(0.1, t + 0.06 + hold); g.linearRampToValueAtTime(0.85, t + 0.08 + hold); },
-  go(fn) { try { if (this.open()) fn(); } catch (e) { /* sound off or not ready */ } },
-  sub(f0, f1, dur, vol) { this._osc("sine", f0 || 55, f1 || 28, dur || 0.5, vol || 0.7, 0.01); },
-  riser(dur, vol) { this._noise(dur, (vol || 0.3), 300, 5200, "bandpass", 1.2); this._osc("sawtooth", 180, 520, dur, (vol || 0.3) * 0.25, dur * 0.8); this._osc("sawtooth", 184, 528, dur, (vol || 0.3) * 0.25, dur * 0.8, 0, 8); },
-  impact(vol) { const v = vol || 1; this._osc("sine", 90, 26, 0.9, 0.9 * v, 0.004); this._noise(0.5, 0.6 * v, 3200, 200, "lowpass", 0.7); this._noise(0.9, 0.18 * v, 1200, 400, "lowpass", 0.5, 0.12); },
-  stab(f, dur) { for (const d of [-9, 0, 9]) this._osc("sawtooth", (f || 110) * 1.5, (f || 110) * 1.5 * 0.7, dur || 0.7, 0.07, 0.01, 0, d); },
-  shimmer(f, dur) { for (let i = 0; i < 6; i++) this._osc("sine", (f || 880) * (1 + i * 0.5), (f || 880) * (1 + i * 0.5) * 0.99, dur || 1.6, 0.035, 0.2, 0, i * 6); },
-  whoosh(dur, from, to, vol) { this._noise(dur, vol || 0.4, 400, 3600, "bandpass", 0.9, 0, from); if (to !== undefined) { /* pan sweep is approximated by two overlapping sweeps */ this._noise(dur, (vol || 0.4) * 0.7, 3600, 500, "bandpass", 0.9, dur * 0.35, to); } },
-  chime(f) { this._osc("sine", f || 1760, f || 1760, 0.9, 0.08, 0.004); this._osc("sine", (f || 1760) * 2, (f || 1760) * 2, 0.5, 0.04, 0.004); },
-  growl(dur) { const o = this._osc("sawtooth", 55, 50, dur || 1, 0.22, 0.2); try { const c = Sfx.ctx, l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 9; lg.gain.value = 9; l.connect(lg); lg.connect(o.frequency); l.start(); l.stop(c.currentTime + (dur || 1) + 0.2); } catch (e) { /* no lfo */ } this._noise(dur || 1, 0.1, 260, 120, "lowpass"); },
-  rumble(dur) { this._osc("sawtooth", 40, 36, dur || 1, 0.3, 0.05); this._noise(dur || 1, 0.35, 420, 140, "lowpass"); },
-  inhale(dur) { this._noise(dur, 0.45, 500, 3400, "bandpass", 1.6); this._osc("sawtooth", 120, 400, dur, 0.1, dur * 0.85); },
-  roar(dur) { this._noise(dur, 0.55, 1400, 700, "bandpass", 0.8); this._osc("sawtooth", 70, 58, dur, 0.28, 0.06); this._osc("square", 140, 110, dur, 0.06, 0.06); },
-  tick(f) { this._osc("triangle", f || 2600, (f || 2600) * 0.4, 0.05, 0.12, 0.002); this._noise(0.03, 0.2, 7000, 3000, "highpass"); },
-  glass() { this._noise(0.35, 0.5, 9000, 2400, "highpass"); this._osc("triangle", 3200, 900, 0.3, 0.1, 0.002); this._noise(0.9, 0.2, 6000, 1800, "bandpass", 2, 0.05); },
-  clack() { this._noise(0.05, 0.5, 5200, 1400, "highpass"); this._osc("square", 300, 90, 0.08, 0.12, 0.002); },
-  boom(vol) { this.sub(70, 24, 0.9, vol || 0.9); this._noise(0.6, 0.4 * (vol || 1), 900, 120, "lowpass"); },
-};
+/* B13, the cinema sound kit (Cin), moved to ui/manga.js: the manga finisher uses it too */
 
 /* ===================== the orchestrator: warm-up, start, frame, end ===================== */
 function cineLayers(on) {
@@ -959,10 +902,12 @@ function cineLayers(on) {
   glcv.style.display = on ? "block" : "none";
   ovcv.style.display = FIN.cine || on ? "block" : "none";
 }
-function cineHas(g) { for (const f of g.fighters) if (FILMS[f.spec.id]) return f.spec.id; return ""; }
+// a fighter with a manga page (MANGA, ui/manga.js) plays that instead: it is never a film candidate, and needs no warm-up
+const cineFilm = (id) => !!FILMS[id] && !MANGA[id];
+function cineHas(g) { for (const f of g.fighters) if (cineFilm(f.spec.id)) return f.spec.id; return ""; }
 // every film this match may need (both fighters can win): one "world" each (scene, set, lights, env map, the film's own objects).
 // The renderer, camera, post chain, textures and the two hero rigs are shared; the rigs move into the winner's world at the start.
-function cineFilmIds(g) { const ids = []; for (const f of g.fighters) if (FILMS[f.spec.id] && !ids.includes(f.spec.id)) ids.push(f.spec.id); return ids; }
+function cineFilmIds(g) { const ids = []; for (const f of g.fighters) if (cineFilm(f.spec.id) && !ids.includes(f.spec.id)) ids.push(f.spec.id); return ids; }
 function cineUse(fid) {
   const C = CINE, w = C.worlds[fid];
   C.film = w.film; C.scene = w.scene; C.set = w.set; C.lights = w.lights; C.env = w.env; C.fx = w.fx;
@@ -1128,7 +1073,7 @@ function cineIdle(g) {
 
 /* ---------- starting a film (finStart calls this once the puppets are staged) ---------- */
 function cineWanted(g) {
-  const W = g.fighters[g.winner], film = FILMS[W.spec.id];
+  const W = g.fighters[g.winner], film = cineFilm(W.spec.id) ? FILMS[W.spec.id] : null;
   const w = CINE.worlds && CINE.worlds[W.spec.id];
   return !!(film && w && w.ready && !CINE.failed && !CINE.warming && CINE.rigs[0] && CINE.rigs[1]);
 }

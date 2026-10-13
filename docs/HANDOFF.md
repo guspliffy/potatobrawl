@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-13, M4 step 2: 3D film engine + the Dragon's film)
+# PotatoBrawl handoff (updated 2026-10-13, M4: 2D manga KO finishers for all six fighters)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -18,7 +18,14 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   gone and `use3D()` returns false), lives are red hearts, and the KO finisher becomes a live 3D film per
   fighter (three.js; the 2D picture shatters like glass into a 3D "dimension"). Plan and Fable's film design:
   /mnt/project-files/finisher-films/plan.md and fable-cinematics.md. Step 1 (2D only + hearts) = PR #4, merged
-  (f4d060f). Step 2 (the film engine + Dragon "Inferno") is this PR; video: finisher-films/dragon-inferno-v1.mp4.
+  (f4d060f). Step 2 (the film engine + Dragon "Inferno") = PR #5, merged (9ee741b).
+- After playing the 3D film, Jonny (2026-10-13 19:57 UTC) asked for 2D comic/manga finishers "like Naruto", calmer,
+  4-5 s, and picked "2D manga" on a decision card. Fable's design: /mnt/project-files/finisher-films/fable-manga.md.
+  The manga engine (ui/manga.js) and all six pages (manga/<id>.js) are this PR; videos:
+  finisher-films/<fighter>-<title>-manga-v1.mp4. The 3D films are switched off (three.js never loads); the five
+  unfinished 3D films are saved as patches in finisher-films/3d-wip/.
+- PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
+  charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
   and opens a pull request. Claude merges its own PRs once ./check.sh passes (Jonny's standing rule since
   2026-10-13); deploying stays Jonny's paste.
@@ -74,6 +81,14 @@ index.html is committed with every source change (check.sh flags a stale one).
   three.js now loads in the background (cineLoadThree, page idle) instead of a blocking script tag; warm-up
   (both hero rigs, set, env map, shader compile) runs in steps during the match countdown (cineIdle). Tiers
   A/B/C (window.__cineTier pins one in tests). Pure UI: never writes G. Films so far: films/dragon.js.
+- ui/manga.js (after finisher.js; manga/*.js spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
+  finStart plays MANGA[winner] before anything else: the real hit, the frozen frame inked (paper tint, dot tone,
+  border, focus lines, sound word), panels sliding in over each other (the old ones stay visible), a face inset, the
+  strike with a 120 ms drop and two impact frames, the loser tearing through the border along the real launch
+  direction, the title block with the K.O. seal, results at 4720 ms, skip from 1000 ms. Timeline MT; a page is
+  data + small functions (MANGA.<id>: panels(lay), words(lay), build, start, step, pose, impact, ...; dragon.js is
+  the template). Puppets via mgPuppet, faces via P.expr in draw-fighters.js (terror grin rage calm dazed ko).
+  The Cin sound kit lives here now. Any throw falls back to the 2D finisher (FINS). Pure UI: never writes G.
 - gfx3d.js the old 3D match renderer (unused since M4 step 1; its rigs feed the films) · skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
@@ -97,7 +112,8 @@ finish.js (finish mode per fighter and weight, charge frame data, every lethal c
 in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real lethal hit; --2d, --up, --skip,
 --self = self-destruct plays no finisher, --aim=left/up, WxH; steps requestAnimationFrame and
 performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing special, KO zoom, charge
-ring) · pwheavy.py (contact sheets of lights vs heavies) · pwcine.py (the 3D KO films: freeze frames
+ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
+WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms) · pwcine.py (the old 3D KO films: freeze frames
 at chosen ms, --tier, --nogl, --skip, --sheet, --video=out.mp4 steps the film at 30 fps and encodes with ffmpeg) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
 breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · pwux2.py (all screens, 3 sizes) ·
@@ -126,7 +142,10 @@ On 2026-10-13, after playing M1 + M2, Jonny asked for special finishes, Mortal-K
 that differ from lights, a charged heavy, and the finisher starting on the KO hit. He chose to do this before
 accounts (1 s charge).
 - M3 fight feel: live; Jonny's phone test (sounds) still pending.
-- M4 (finisher-films/plan.md): 1. 2D only + red hearts (this PR, display only). 2. The 3D film engine + the
+- M4 now: 2D manga KO finishers for all six (this PR). Next: Jonny's notes on the videos, a real-phone check of the
+  page's draw time (budget 6 ms/frame), then remove the 3D code (gfx3d.js, cine.js, films/, vendor/, three.min.js;
+  the deploy block copies three.min.js, so drop it there in the same change).
+- M4 history (finisher-films/plan.md): 1. 2D only + red hearts (display only). 2. The 3D film engine + the
   Dragon's "Inferno" film, sent to Jonny as a video before the rest. 3. The other five films (Phoenix, then
   Wizard + Alchemist, then Odin + Samurai). UI only, no PROTO bump. The Potatalities move to a later finisher
   shop that sells alternates for chips (the existing currency) next to the skins.

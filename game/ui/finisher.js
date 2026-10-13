@@ -9,7 +9,7 @@
    launch direction, spinning. It leaves the screen, the KO beam and a burst of fries and chips mark the
    edge, then the name card. A tap or key skips it; the results screen opens when it ends. */
 const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null], parts: [], shake: 0, out: false,
-  cue: {}, finish: null, cine: false, cardSub: "", k: 1, use3D: false, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
+  cue: {}, finish: null, cine: false, manga: false, hit: 1520, launch: 1610, cardSub: "", k: 1, use3D: false, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
 // timeline, in ms after the final hit. The loser stays put FLAUNCH ms after HIT (impact freeze), then flies.
 const FT = { CUT: 520, ACT: 920, HIT: 1520, OUT: 2020, CARD: 2400, END: 3800 };
 const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
@@ -33,15 +33,16 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false;
+  FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
   FIN.P = [null, null];
   FIN.P[FIN.w] = finPuppet(W, FIN.wx, FIN.dir, "w");
   FIN.P[FIN.l] = finPuppet(Lf, FIN.lx, -FIN.dir, "l");
-  // a winner with a 3D film (cine.js) plays that instead of the 2D staging below; anything missing or broken falls back to it
+  // a winner with a manga page (manga.js, MANGA[id]) plays that; else one with a 3D film (cine.js) plays that; anything missing or broken falls back to the 2D staging below
   FIN.cine = false; FIN.cardSub = "";
-  FIN.cine = cineStart(g);
+  if (MANGA[W.spec.id]) FIN.manga = mangaStart(g);
+  if (!FIN.manga) FIN.cine = cineStart(g);
 }
 function finPuppet(f, x, facing, role) {
   const p = Object.assign({}, f, { x, y: 0, vx: 0, vy: 0, kbx: 0, kby: 0, facing, grounded: true, plat: 0, state: "fin", st: 0,
@@ -61,6 +62,7 @@ function finEnd() {
 function finStop() { finClear(); FIN.finish = null; FIN.pend = null; }
 function finClear() {
   if (FIN.cine) cineEnd();
+  if (FIN.manga) mangaEnd();
   FIN.on = false; cam.yaw = 0; FIN.parts.length = 0; FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; finFilter(0); fxHitOff();
   if (finFull) { finFull = false; resize(); }
 }
@@ -72,8 +74,9 @@ function finFilter(v) {
 }
 // Skipping only counts once the cinematic is on screen, so buttons still being mashed at the KO don't skip it.
 function finSkip(e) {
-  if (!FIN.on || FIN.t < (FIN.cine ? CT.SKIP : FT.CUT + 400)) return;
+  if (!FIN.on || FIN.t < (FIN.manga ? MT.SKIP : FIN.cine ? CT.SKIP : FT.CUT + 400)) return;
   if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (FIN.manga) { mangaFinish(); return; }
   if (FIN.cine) { cineFinish(); return; }
   FIN.skipAt = performance.now();
   finEnd();
@@ -473,6 +476,7 @@ function finFrame(g, tk) {
   const now = performance.now(), dt = Math.min(80, now - FIN.last) * FIN.rate; FIN.last = now;
   if (!paused) FIN.t += dt;
   const t = FIN.t, k = dt / FMS;
+  if (FIN.manga) return mangaTick(g, t, k);
   if (FIN.cine) return cineTick(g, t);
   if (t >= FT.END) { finEnd(); return g; }
   if (t < FT.CUT) return g; // beat 0: the real hit plays (hitstop, then slow motion) under the camera punch-in
@@ -519,24 +523,24 @@ function finFrame(g, tk) {
 // the loser: dazed on the spot, a short impact freeze, then launched along the real launch direction, spinning, until it leaves the picture
 function finLoser(Lp, t, lf, trav) {
   if (FIN.out) { if (FIN.trail.length) FIN.trail.shift(); return; }
-  Lp.flash = t >= FT.HIT && t < FLAUNCH_T ? 2 : 0;   // white silhouette during the impact freeze
-  if (t < FLAUNCH_T) { Lp.x = FIN.lx - (t >= FT.HIT ? FIN.dir * 5 : 0); Lp.y = 0; return; }
+  Lp.flash = t >= FIN.hit && t < FIN.launch ? 2 : 0;   // white silhouette during the impact freeze
+  if (t < FIN.launch) { Lp.x = FIN.lx - (t >= FIN.hit ? FIN.dir * 5 : 0); Lp.y = 0; return; }
   Lp.x = FIN.lx + FIN.ldx * trav; Lp.y = FIN.ldy * trav;
   const mid = [Lp.x, Lp.y - Lp.s.h * 0.5];
   const [sx, sy] = finProj(mid[0], mid[1]);
-  const barH = easeOut(fe(0, 240, t)) * L.gh * 0.11, m = Lp.s.h * 0.3 * FIN.k;
+  const barH = FIN.manga ? 0 : easeOut(fe(0, 240, t)) * L.gh * 0.11, m = Lp.s.h * 0.3 * FIN.k;
   if (sx > m && sx < L.gw - m && sy > barH + m && sy < L.gh - barH - m) {
     FIN.lastIn = mid;
     if (FIN.trail.push(mid) > 14) FIN.trail.shift();
-    cueOnce("whoosh", FLAUNCH_T, () => finSfx(() => { Sfx.noise(0.4, 0.45, 2600); Sfx.tone(260, 1000, 0.3, "triangle", 0.05); }));
-    if (t < FT.HIT + 800) return;   // (past that it is sent out regardless)
+    cueOnce("whoosh", FIN.launch, () => finSfx(() => { Sfx.noise(0.4, 0.45, 2600); Sfx.tone(260, 1000, 0.3, "triangle", 0.05); }));
+    if (t < FIN.hit + 800) return;   // (past that it is sent out regardless)
   }
   finOut(Lp, sx, sy);
 }
 // the loser crosses the edge of the picture: KO beam and flash there, fries and chips burst back into the shot
 function finOut(Lp, sx, sy) {
   FIN.out = true; Lp.state = "gone";
-  const barH = easeOut(fe(0, 240, FIN.t)) * L.gh * 0.11;
+  const barH = FIN.manga ? 0 : easeOut(fe(0, 240, FIN.t)) * L.gh * 0.11;
   const ex = clamp(sx, 0, L.gw), ey = clamp(sy, barH, L.gh - barH);
   FIN.beam = { sx: ex, sy: ey, t0: FIN.t, col: col(Lp.pal),
     fries: Array.from({ length: 8 }, () => ({ da: (Math.random() - 0.5) * 1.1, sp: 5 + Math.random() * 7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, len: 12 + Math.random() * 8 })) };
@@ -569,7 +573,7 @@ function finSkyTint(c) {
 // the staged scene's own shapes: the loser's trail and dizzy stars, particles, the kit's shapes
 function finScene(o, t) {
   // streak behind the flying loser
-  if (FIN.trail.length > 1) {
+  if (FIN.trail.length > 1 && !FIN.manga) {
     const col_ = col(FIN.P[FIN.l].pal);
     o.lineCap = "round"; o.lineJoin = "round";
     for (let i = 1; i < FIN.trail.length; i++) {
@@ -579,7 +583,7 @@ function finScene(o, t) {
     }
   }
   // the loser's dizzy stars
-  if (t < FT.HIT) { const Lp = FIN.P[FIN.l]; for (let i = 0; i < 3; i++) { const a = t * 0.006 + (i / 3) * Math.PI * 2, [sx, sy] = finProj(Lp.x + Math.cos(a) * 18, headY(Lp) - 26 + Math.sin(a) * 5); finStar(o, sx, sy, 5 * FIN.k, "#f6d77a"); } }
+  if (t < FT.HIT && !FIN.manga) { const Lp = FIN.P[FIN.l]; for (let i = 0; i < 3; i++) { const a = t * 0.006 + (i / 3) * Math.PI * 2, [sx, sy] = finProj(Lp.x + Math.cos(a) * 18, headY(Lp) - 26 + Math.sin(a) * 5); finStar(o, sx, sy, 5 * FIN.k, "#f6d77a"); } }
   // particles
   for (const p of FIN.parts) {
     if (p.delay > 0) continue;
@@ -605,12 +609,13 @@ function finScene(o, t) {
       o.beginPath(); o.ellipse(0, 0, r, r * 0.55, 0, 0, Math.PI * 2); o.fill(); o.restore();
     } else if (p.kind === "fry") {
       o.globalAlpha = Math.min(1, a * 4); o.save(); o.translate(x, y); o.rotate(p.rot);
-      o.fillStyle = p.col; o.strokeStyle = "rgba(14,16,34,0.85)"; o.lineWidth = 1.5;
+      o.fillStyle = FIN.manga ? MG_PAPER : p.col; o.strokeStyle = FIN.manga ? MG_INK : "rgba(14,16,34,0.85)"; o.lineWidth = FIN.manga ? 2 : 1.5;   // (on a manga page: ink and paper)
       o.beginPath(); o.roundRect(-r, -r * 0.22, r * 2, r * 0.44, r * 0.12); o.fill(); o.stroke(); o.restore();
     } else if (p.kind === "chip") {
       o.globalAlpha = Math.min(1, a * 2); o.save(); o.translate(x, y); o.rotate(p.rot); o.scale(1, 0.4 + 0.6 * Math.abs(Math.cos(p.t * 0.25)));
-      o.fillStyle = "#f2c14e"; o.strokeStyle = "#9a6a1e"; o.lineWidth = 1.5; o.beginPath(); o.ellipse(0, 0, r, r * 0.8, 0, 0, Math.PI * 2); o.fill(); o.stroke();
-      o.strokeStyle = "rgba(255,255,255,0.6)"; o.beginPath(); o.arc(-r * 0.2, -r * 0.2, r * 0.45, Math.PI, Math.PI * 1.6); o.stroke(); o.restore();
+      o.fillStyle = FIN.manga ? MG_PAPER : "#f2c14e"; o.strokeStyle = FIN.manga ? MG_INK : "#9a6a1e"; o.lineWidth = FIN.manga ? 2 : 1.5; o.beginPath(); o.ellipse(0, 0, r, r * 0.8, 0, 0, Math.PI * 2); o.fill(); o.stroke();
+      if (!FIN.manga) { o.strokeStyle = "rgba(255,255,255,0.6)"; o.beginPath(); o.arc(-r * 0.2, -r * 0.2, r * 0.45, Math.PI, Math.PI * 1.6); o.stroke(); }
+      o.restore();
     }
   }
   o.globalAlpha = 1; o.globalCompositeOperation = "source-over";
@@ -618,6 +623,7 @@ function finScene(o, t) {
 }
 function finOverlay(o, tk) {
   if (!FIN.on) return;
+  if (FIN.manga) { mangaOverlay(o, tk); return; }
   if (FIN.cine) { cineOverlay(o, tk); return; }
   const t = FIN.t;
   o.save(); o.setTransform(DPR, 0, 0, DPR, 0, 0);
