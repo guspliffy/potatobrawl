@@ -92,6 +92,32 @@ button { font: inherit; color: inherit; }
 #banner.game .b-main { color: var(--ember); }
 #banner.show .b-main { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pop { from { transform: scale(1.9) skewX(-8deg); opacity: 0; } to { transform: scale(1) skewX(-8deg); opacity: 1; } }
+/* FINISH! banner: smaller than the big ones, coloured by the fighter who can finish (inline colour) */
+#banner.fin .b-main { font-size: clamp(40px, calc(var(--um) * 11), 92px); -webkit-text-stroke: 2px rgba(14, 16, 34, 0.7); paint-order: stroke fill; }
+#banner.fin .b-sub { color: var(--text); }
+
+/* ---------- KO zoom / finishing special (UI only, drawn above the arena) ---------- */
+#fxHit { position: absolute; inset: 0; z-index: 5; pointer-events: none; --hx: 50%; --hy: 50%; }
+#fxHit i { position: absolute; inset: 0; opacity: 0; }
+#fxHit .fh-w { background: #fff; }
+#fxHit .fh-v { background: radial-gradient(circle at var(--hx) var(--hy), transparent 30%, rgba(5, 5, 14, 0.62) 100%); }
+#fxHit .fh-l { background: repeating-conic-gradient(from 3deg at var(--hx) var(--hy), rgba(255, 255, 255, 0.9) 0 0.7deg, transparent 0.7deg 7.5deg); -webkit-mask-image: radial-gradient(circle at var(--hx) var(--hy), transparent 16%, #000 62%); mask-image: radial-gradient(circle at var(--hx) var(--hy), transparent 16%, #000 62%); }
+#fxHit.go .fh-w { animation: fhW 0.2s ease-out both; }
+#fxHit.go .fh-v { animation: fhV var(--hd, 0.5s) ease-out both; }
+#fxHit.go.big .fh-l { animation: fhL 0.34s ease-out both; }
+@keyframes fhW { 0% { opacity: var(--hw, 0.8); } 100% { opacity: 0; } }
+@keyframes fhV { 0% { opacity: 0; } 14% { opacity: 1; } 62% { opacity: 0.85; } 100% { opacity: 0; } }
+@keyframes fhL { 0% { opacity: 0.55; transform: scale(1.12); } 100% { opacity: 0; transform: scale(1); } }
+/* diagonal band: "<SPECIAL> FINISH" in the winner's colour */
+#finBan { position: absolute; left: -12%; right: -12%; top: calc((100% - var(--panelH)) * 0.2); z-index: 5; pointer-events: none; transform: rotate(-7deg); --fb: #f3d9a4; }
+#finBan .fb { padding: 0.06em 0 0.02em; text-align: center; background: linear-gradient(90deg, transparent 0, var(--fb) 9%, var(--fb) 91%, transparent 100%); box-shadow: 0 -3px 0 rgba(255, 255, 255, 0.85), 0 3px 0 rgba(14, 16, 34, 0.8); }
+#finBan .fb-t { display: inline-block; font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; font-size: clamp(30px, calc(var(--um) * 9.5), 76px); color: #fff; -webkit-text-stroke: 3px rgba(14, 16, 34, 0.78); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(14, 16, 34, 0.5); transform: skewX(-8deg); }
+#finBan.go { animation: fbIn 0.62s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+@keyframes fbIn { 0% { transform: translateX(-70%) rotate(-7deg); opacity: 0; } 14% { transform: translateX(2%) rotate(-7deg); opacity: 1; } 22% { transform: translateX(0) rotate(-7deg); } 80% { transform: translateX(1.5%) rotate(-7deg); opacity: 1; } 100% { transform: translateX(55%) rotate(-7deg); opacity: 0; } }
+/* a fighter at finish percent: the percent pulses red and white */
+.pcard.finr .pc-pct { animation: finPulse 0.62s ease-in-out infinite; }
+.pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
+@keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 0 rgba(255, 70, 50, 0); } 50% { color: #fff; text-shadow: 0 0 16px rgba(255, 90, 60, 0.95), 0 0 3px rgba(255, 255, 255, 0.9); } }
 
 /* ---------- touch controls ---------- */
 #ctl { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
@@ -120,6 +146,17 @@ button { font: inherit; color: inherit; }
 .pb[data-k="dodge"] { --bc: var(--mute); width: 54px; height: 54px; right: 16px; bottom: 18px; font-size: 11px; }
 .pb[data-k="special"]::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(14, 16, 34, 0.78) calc(var(--cd, 0) * 360deg), transparent 0); pointer-events: none; }
 .pb > span { position: relative; z-index: 1; }
+/* the special can finish: it glows and shows its name (the opponent is at finish percent) */
+.pb[data-k="special"].fin { animation: specFin 0.7s ease-in-out infinite; }
+.pb[data-k="special"].fin > span { font-size: 10px; line-height: 1; letter-spacing: 0.02em; text-align: center; padding: 0 3px; white-space: normal; }
+@keyframes specFin { 0%, 100% { box-shadow: 0 0 6px 1px var(--bc), inset 0 0 8px rgba(255, 255, 255, 0.15); } 50% { box-shadow: 0 0 20px 6px var(--bc), inset 0 0 14px rgba(255, 255, 255, 0.45); } }
+/* heavy charge: a ring fills inside the button while the heavy is held */
+.pb[data-k="heavy"]::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; pointer-events: none; opacity: 0; background: conic-gradient(#fff calc(var(--ch, 0) * 360deg), rgba(14, 16, 34, 0.5) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px)); }
+.pb[data-k="heavy"].chg::after { opacity: 1; }
+.pb[data-k="heavy"].chg { box-shadow: 0 0 calc(var(--ch, 0) * 14px) calc(var(--ch, 0) * 3px) var(--bc); }
+.pb[data-k="heavy"].chgfull { animation: chgFull 0.4s ease-out; }
+.pb[data-k="heavy"].chgfull::after { opacity: 1; background: #fff; }
+@keyframes chgFull { 0% { transform: scale(1.22); box-shadow: 0 0 26px 10px var(--bc); } 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--bc); } }
 #app.narrow .pad { transform: scale(0.9); transform-origin: right bottom; }
 
 /* ---------- shared UI ---------- */
@@ -403,7 +440,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
-@media (prefers-reduced-motion: reduce) { #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } }
 </style>
 
 <div id="app">
@@ -424,6 +461,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </div>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>
+  <div id="fxHit" aria-hidden="true"><i class="fh-v"></i><i class="fh-l"></i><i class="fh-w"></i></div>
+  <div id="finBan" hidden aria-hidden="true"><div class="fb"><span class="fb-t"></span></div></div>
 
   <div id="ctl" hidden>
     <div class="panelbg"></div>

@@ -6,8 +6,9 @@ function modal(name, on) { screens[name].hidden = !on; }
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
 let bannerT = 0;
-function showBanner(main, sub, cls, ms) {
+function showBanner(main, sub, cls, ms, color) {
   bannerEl.className = cls || ""; bMain.textContent = main; bSub.textContent = sub || ""; bannerEl.hidden = false;
+  bMain.style.color = color || "";
   void bannerEl.offsetWidth; bannerEl.classList.add("show");
   clearTimeout(bannerT); if (ms) bannerT = setTimeout(() => { bannerEl.hidden = true; }, ms);
 }
@@ -223,12 +224,23 @@ function enterMatchUI() {
     el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : match.tutorial ? "Dummy" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
-  document.querySelector('.pb[data-k="special"]').style.setProperty("--fc", col(G.fighters[meSlot].pal));
+  btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
+  hudX.spFin = null; hudX.ch = -1; btnSpec.classList.remove("fin"); btnSpec.querySelector("span").textContent = "Special";
+  btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
+  for (const e of document.querySelectorAll(".pcard")) e.classList.remove("finr");
   fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
-const hudCache = [{}, {}];
+const hudCache = [{}, {}], hudX = { spFin: null, ch: -1 };
+const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
+// A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
+function finReady(i) {
+  if (!G || G.phase !== "play" || (match && match.tutorial)) return;
+  const att = G.fighters[1 - i];
+  showBanner("Finish!", `${att.spec.signature.name} KOs now`, "fin", 1100, col(att.pal));
+  Sfx.tone(330, 740, 0.22, "sawtooth", 0.06); Sfx.noise(0.16, 0.22, 3200);
+}
 function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
@@ -241,6 +253,8 @@ function updateHud() {
     const pct = Math.floor(f.percent);
     const num = el.querySelector(".num"), wrap = el.querySelector(".pc-pct");
     if (hc.pct !== pct) { num.textContent = pct; wrap.style.color = pctColor(pct); hc.pct = pct; }
+    const fin = pct >= BL.TUNE.finishPct && f.state !== "dead" && f.state !== "gone";
+    if (hc.fin !== fin) { const first = fin && !hc.fin; hc.fin = fin; el.classList.toggle("finr", fin); if (first) finReady(i); }
     const fl = f.flash;
     wrap.style.transform = fl > 0 ? `scale(${1 + fl * 0.035}) translateX(${(Math.random() - 0.5) * fl * 0.8}px)` : "";
     if (hc.stocks !== f.stocks) { el.querySelector(".pc-stocks").innerHTML = "<i></i>".repeat(Math.max(0, f.stocks)); hc.stocks = f.stocks; }
@@ -255,7 +269,14 @@ function updateHud() {
   const ptxt = ms ? `${Math.round(ms)} ms` : "";
   if (pb.textContent !== ptxt) { pb.textContent = ptxt; pb.hidden = !ptxt; pb.className = ms < 90 ? "good" : ms < 170 ? "ok" : "bad"; }
   const me = G.fighters[meSlot], cd = me.spec.moves.spec.cooldown || 1;
-  document.querySelector('.pb[data-k="special"]').style.setProperty("--cd", (me.specCd / cd).toFixed(3));
+  btnSpec.style.setProperty("--cd", (me.specCd / cd).toFixed(3));
+  // touch: the special glows and names itself while the opponent is at finish percent
+  const sf = !!hudCache[1 - meSlot].fin;
+  if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? me.spec.signature.name : "Special"; }
+  // touch: a ring fills on the Heavy button while a ground heavy is held and charging
+  const mv = me.move, charging = me.state === "attack" && !!mv && !!mv.charge && me.chg > 0 && me.mt <= mv.startup - BL.TUNE.chgHold;
+  const chv = charging ? Math.min(1, me.chg / BL.TUNE.chgMax) : 0;
+  if (hudX.ch !== chv) { hudX.ch = chv; btnHeavy.style.setProperty("--ch", chv.toFixed(3)); btnHeavy.classList.toggle("chg", charging); }
 }
 function togglePause(force) {
   if (mode !== "match" || (G && G.phase === "over") || FIN.on) return;

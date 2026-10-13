@@ -190,15 +190,22 @@ function render2D(g, tk) {
 function handleEvent(g, e, live) {
   skinEvent(g, e);
   switch (e.type) {
-    case "hit":
+    case "hit": {
+      if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
       spark(e.x, e.y, e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);
+      const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
+      if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: 1, at: combos[e.def] && combos[e.def].at };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
       if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
+    }
+    case "lethal": if (live) finLethal(g, e); break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
+      if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
       sfx.push({ k: "beam", wx: e.x, wy: e.y, t: 0, life: 50, col: col(e.pal),
         fries: Array.from({ length: 8 }, () => ({ da: (Math.random() - 0.5) * 1.1, sp: 5 + Math.random() * 7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, len: 12 + Math.random() * 8 })) });
       sfx.push({ k: "flash", t: 0, life: 10 });
@@ -209,7 +216,12 @@ function handleEvent(g, e, live) {
     case "land": dust(e.x, e.y, 3, 22); break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
     case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
-    case "swing": if (live) Sfx.swing(e.heavy); break;
+    case "swing": {
+      if (live) Sfx.swing(e.heavy);
+      const hSw = g.fighters[e.slot];   // a heavy: camera shake and the low heavy sound arrive when the hit window opens
+      if (hSw && isHeavyKey(hSw.mid)) heavySwing(g, hSw, live);
+      break;
+    }
     case "proj":
       if (e.style === "orb" || e.style === "bolt") { if (live) Sfx.bolt(e.style === "orb"); }
       else if (e.style === "raven") { if (live) Sfx.caw(); }
@@ -234,7 +246,12 @@ function handleEvent(g, e, live) {
       if (live) { showBanner("Sudden death", "Next KO wins", "game", 1700); Sfx.count(true); }
       camStep(g, true);
       break;
-    case "game": if (live) { showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0); if (finWanted(g)) finStart(g); } break;
+    case "game":
+      if (!live) break;
+      // the last life lost to a lethal hit starts the finisher on that hit; a self-destruct, a time-out or the tutorial keep the banner
+      if (e.hit && finWanted(g)) finStart(g);
+      else showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0);
+      break;
     case "over":
       if (!live) { newAttract(); break; }
       if (finHold(() => { if (match && match.online) finishOnline(false); else finishMatch(false); })) break;

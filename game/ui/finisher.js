@@ -1,25 +1,40 @@
 /* ===================== KO finisher cinematic =====================
-   Plays on the KO that ends a match (not on time-outs, draws or the tutorial). It is only a show:
-   the simulation has already decided the match, so nothing here touches G or online sync.
-   Two stand-ins ("puppets") copy the winner and the loser onto the main stage, the camera pushes in
-   behind black bars, the winner does a big version of their signature move, the loser pops into
-   fries, then a name card. A tap or key skips it; the results screen opens when it ends. */
-const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null],
-  parts: [], shake: 0, popped: false, done: false, cue: {}, finish: null, k: 1, use3D: false, rnd: [], rate: 1 }; // rate: tests slow or freeze it
-// timeline, in ms after the final KO
-const FT = { CUT: 550, ACT: 1150, HIT: 1750, POP: 2100, CARD: 2450, END: 3600 };
+   Plays on the final lethal hit that decides a match (the engine's "lethal" event with final:true, then "game"
+   with hit:true; not on time-outs, draws, the tutorial or a last life lost without a lethal hit). It is only a
+   show: the simulation has already decided the match, so nothing here touches G or online sync.
+   Beat 0, the real hit: the engine is in hitstop and then slow motion; the camera punches in on the impact
+   (view.js camPunch), a white frame, black bars slide in. Then a smash cut to the stage: two stand-ins
+   ("puppets") copy the winner and the loser onto the main stage, the camera pushes in, the winner does a big
+   version of their signature move, and on its impact the loser is launched out of the arena in the real
+   launch direction, spinning. It leaves the screen, the KO beam and a burst of fries and chips mark the
+   edge, then the name card. A tap or key skips it; the results screen opens when it ends. */
+const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null], parts: [], shake: 0, out: false,
+  cue: {}, finish: null, k: 1, use3D: false, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
+// timeline, in ms after the final hit. The loser stays put FLAUNCH ms after HIT (impact freeze), then flies.
+const FT = { CUT: 520, ACT: 920, HIT: 1520, OUT: 2020, CARD: 2400, END: 3800 };
+const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
+// finish line of the loser's flight: world units travelled, `f` frames after the launch
+const finTrav = (f) => 17 * f + 0.6 * f * f;
 function finWanted(g) {
   return mode === "match" && match && !match.tutorial && g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
 }
 function finStart(g) {
   const W = g.fighters[g.winner], Lf = g.fighters[1 - g.winner];
+  const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
+  FIN.pend = null; FIN.ev = ev;
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = g.winner; FIN.l = 1 - g.winner;
   FIN.wx = clamp(Math.round(W.x), -190, 190);
-  FIN.dir = Lf.x >= W.x ? 1 : -1;
-  if (Math.abs(FIN.wx + FIN.dir * 130) > 250) FIN.dir = -FIN.dir;
+  // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
+  const rdx = ev ? ev.dirx : (Lf.x >= W.x ? 0.8 : -0.8), rdy = ev ? ev.diry : -0.6;
+  FIN.dir = Math.abs(rdx) > 0.2 ? sign(rdx) : (Lf.x >= W.x ? 1 : -1);
+  if (Math.abs(FIN.wx + FIN.dir * 130) > 250) FIN.dir = -FIN.dir;   // too close to the stage edge: mirror the whole staging
   FIN.lx = FIN.wx + FIN.dir * 130;
+  // on the stage the loser always flies away from the winner and up (a spike or flat launch would go through the floor)
+  const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
+  FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  FIN.parts.length = 0; FIN.shake = 0; FIN.popped = false; FIN.done = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false;
+  FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false;
+  FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
   FIN.P = [null, null];
   FIN.P[FIN.w] = finPuppet(W, FIN.wx, FIN.dir, "w");
@@ -35,13 +50,16 @@ function finPuppet(f, x, facing, role) {
 function finHold(fn) { if (!FIN.on) return false; FIN.finish = fn; return true; }
 function finEnd() {
   if (!FIN.on) return;
-  FIN.on = false; cam.yaw = 0; FIN.parts.length = 0; finFilter(0);
-  if (finFull) { finFull = false; resize(); }
+  finClear();
   const fn = FIN.finish || (() => { if (match && match.online) finishOnline(false); else finishMatch(false); });
   FIN.finish = null;
   if (mode === "match") fn();
 }
-function finStop() { FIN.on = false; FIN.finish = null; cam.yaw = 0; FIN.parts.length = 0; finFilter(0); if (finFull) { finFull = false; resize(); } }
+function finStop() { finClear(); FIN.finish = null; FIN.pend = null; }
+function finClear() {
+  FIN.on = false; cam.yaw = 0; FIN.parts.length = 0; FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; finFilter(0); fxHitOff();
+  if (finFull) { finFull = false; resize(); }
+}
 // Samurai's ink frame turns the scene itself black and white (the canvases under the effects layer)
 function finFilter(v) {
   const f = v > 0 ? `grayscale(${v.toFixed(2)}) contrast(${(1 + 0.9 * v).toFixed(2)}) brightness(${(1 + 0.2 * v).toFixed(2)})` : "";
@@ -59,6 +77,57 @@ app.addEventListener("pointerdown", finSkip, true);
 // the tap that skipped must not also press a button on the results screen that opens under the finger
 app.addEventListener("click", (e) => { if (performance.now() - (FIN.skipAt || 0) < 450) { e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener("keydown", (e) => { if (FIN.on && !e.repeat) finSkip(e); }, true);
+
+/* ---------- the hit itself: KO zoom, white frame, finishing-special banner (all UI, DOM layers above the arena) ---------- */
+const fxHitEl = $("fxHit"), finBanEl = $("finBan"), finBanT = finBanEl.querySelector(".fb-t");
+let finBanAt = -1e9;
+function fxRestart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+// white frame + vignette (+ speed lines when big) centred on a world point; the punch-in pulls that point towards the middle
+function fxHit(wx, wy, big) {
+  const [sx, sy] = toScreen(wx, wy);
+  fxHitEl.style.setProperty("--hx", lerp(sx, L.gw / 2, 0.45).toFixed(0) + "px"); fxHitEl.style.setProperty("--hy", lerp(sy, L.gh / 2, 0.45).toFixed(0) + "px");
+  fxHitEl.style.setProperty("--hw", big ? "0.9" : "0.7"); fxHitEl.style.setProperty("--hd", big ? "0.75s" : "0.5s");
+  fxHitEl.classList.toggle("big", !!big);
+  fxRestart(fxHitEl, "go");
+}
+function fxHitOff() { fxHitEl.classList.remove("go"); finBanEl.hidden = true; finBanEl.classList.remove("go"); }
+finBanEl.addEventListener("animationend", () => { finBanEl.hidden = true; });
+// diagonal "<SPECIAL> FINISH" band in the attacker's colour, a crunch, and a white frame
+function finishBan(g, attSlot) {
+  const now = performance.now();
+  if (now - finBanAt < 400) return;      // the hit event and the lethal event of the same hit both call this
+  finBanAt = now;
+  const a = g.fighters[attSlot];
+  if (!a) return;
+  finBanEl.style.setProperty("--fb", col(a.pal)); finBanT.textContent = `${a.spec.signature.name} finish`;
+  finBanEl.hidden = false; fxRestart(finBanEl, "go");
+  finSfx(() => { Sfx.noise(0.07, 0.9, 6500); Sfx.noise(0.55, 0.85, 1000); Sfx.tone(150, 34, 0.6, "sawtooth", 0.3); Sfx.tone(2300, 260, 0.14, "square", 0.06); });
+}
+// "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
+function finHit(g, e) {
+  if (!e.fin) return;
+  finishBan(g, e.slot);
+  fxHit(e.x, e.y, true);
+}
+// "lethal" event: this hit kills whatever the defender tries. Last life: it starts the finisher (finStart on the game event);
+// earlier lives: a short punch-in on the impact and back.
+function finLethal(g, e) {
+  const d = g.fighters[e.slot];
+  if (!d) return;
+  const hx = e.x, hy = e.y - d.s.h * 0.5;
+  if (e.final) { FIN.pend = e; hideBanner(); }   // the cinematic owns the screen from the hit
+  camPunch(hx, hy, e.final ? 1.25 : 1, e.final ? 36 : 21);
+  cam.shake = Math.max(cam.shake, e.final ? 16 : 10);
+  fxHit(hx, hy, e.final);
+  if (e.fin) finishBan(g, e.by);
+  finSfx(() => { Sfx.tone(120, 36, 0.34, "sine", 0.55); Sfx.noise(0.14, 0.5, 2200); if (e.final) Sfx.tone(70, 28, 0.8, "sine", 0.35); });
+}
+// "chargeMax" event of the local fighter: the Heavy button's ring is full
+function finChargeMax() {
+  finSfx(() => { Sfx.tone(1175, 1175, 0.12, "triangle", 0.12); setTimeout(() => Sfx.tone(1760, 1760, 0.2, "triangle", 0.1), 70); });
+  try { navigator.vibrate && navigator.vibrate(12); } catch (e) { /* no haptics */ }
+  fxRestart(btnHeavy, "chgfull"); setTimeout(() => btnHeavy.classList.remove("chgfull"), 450);
+}
 
 /* ---------- helpers ---------- */
 const fe = (a, b, t) => clamp((t - a) / (b - a), 0, 1);   // 0..1 progress of t through [a, b]
@@ -384,13 +453,13 @@ function finBolt(o, x0, y0, x1, y1, seed, a) {
 function finPose(p, P, sk) {
   const t = FIN.t;
   if (p.finRole === "l") {
-    // dazed until the hit, then knocked back
+    // dazed until the hit; then flung, spinning, along the launch
     if (t < FT.HIT) { P.lean = Math.sin(t * 0.006) * 0.12; P.mouth = 0.3; return { hF: [sk.w * 0.75, -sk.leg - sk.tor * 0.3], hB: [-sk.w * 0.7, -sk.leg - sk.tor * 0.3] }; }
-    P.lean = -0.5; P.mouth = 1; P.spin = 0;
+    P.lean = -0.5; P.mouth = 1; P.spin = t >= FLAUNCH_T ? ((t - FLAUNCH_T) / FMS) * 0.3 : 0;   // same spin the real tumble has
     return { hF: [sk.w * 0.6, -sk.leg - sk.tor * 1.2], hB: [-sk.w * 0.6, -sk.leg - sk.tor * 1.2], fF: [sk.w * 0.45, -sk.leg * 0.35] };
   }
   const o = FIN.kit.pose(P, sk, t);
-  if (!o && t > FT.POP) { P.mouth = 0.7; P.lean = -0.08; return { hF: [sk.w * 0.55, -sk.leg - sk.tor * 1.35] }; } // victory fist
+  if (!o && t > FT.OUT) { P.mouth = 0.7; P.lean = -0.08; return { hF: [sk.w * 0.55, -sk.leg - sk.tor * 1.35] }; } // victory fist
   return o;
 }
 
@@ -398,13 +467,14 @@ function finPose(p, P, sk) {
 function finFrame(g, tk) {
   const now = performance.now(), dt = Math.min(80, now - FIN.last) * FIN.rate; FIN.last = now;
   if (!paused) FIN.t += dt;
-  const t = FIN.t, k = dt / (1000 / 60);
+  const t = FIN.t, k = dt / FMS;
   if (t >= FT.END) { finEnd(); return g; }
-  if (t < FT.CUT) return g; // the real KO plays first
+  if (t < FT.CUT) return g; // beat 0: the real hit plays (hitstop, then slow motion) under the camera punch-in
   if (!FIN.cut) {
     FIN.cut = true; fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
-    hideBanner(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
+    hideBanner(); fxHitOff(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
     if (L.panel) { finFull = true; resize(); }
+    finSfx(() => { Sfx.noise(0.18, 0.4, 3000); Sfx.tone(300, 1100, 0.14, "triangle", 0.06); });
   }
   FIN.use3D = use3D();
   fx.length = 0; sfx.length = 0; // the real match keeps running underneath: keep its dust and sparks out of the shot
@@ -412,20 +482,26 @@ function finFrame(g, tk) {
   W.x = FIN.wx; W.y = 0;
   FIN.kit.step(t, k);
   finFilter(FIN.kit.ink ? FIN.kit.ink(t) : 0);
-  // loser: knocked back at the hit, pops into fries a moment later
-  if (t >= FT.HIT && !FIN.popped) { const q = fe(FT.HIT, FT.POP, t); Lp.x = FIN.lx + FIN.dir * 40 * easeOut(q); Lp.y = -26 * Math.sin(q * Math.PI); Lp.flash = (Math.floor(t / 50) % 2) * 2; }
-  if (t >= FT.POP && !FIN.popped) finPop(Lp);
-  W.st++; Lp.st++;
-  // camera: push in on the pair, swing a little round, then ease back for the name card
-  const push = easeOut(fe(FT.CUT, FT.HIT, t)), back = fe(FT.POP, FT.END, t);
-  const viewH = lerp(lerp(430, 245, push), 300, easeOut(back)), viewW = viewH * 1.45;
-  const cx = (FIN.wx + FIN.lx) / 2 + FIN.dir * 10, cy = -80;
-  cam.x = cx; cam.y = cy;
+  // where the loser would be if it kept flying (the camera follows this point even after the puppet has left)
+  const lf = Math.max(0, (t - FLAUNCH_T) / FMS), trav = finTrav(lf), ctrav = Math.min(trav, 300), flx = FIN.lx + FIN.ldx * ctrav, fly = FIN.ldy * ctrav - 30;
+  // camera: push in on the pair, follow the launch for a moment, then ease back for the name card
+  const push = easeOut(fe(FT.CUT, FT.HIT, t)), wide = easeOut(fe(FLAUNCH_T, FLAUNCH_T + 420, t)), back = fe(FLAUNCH_T + 500, FT.END, t);
+  const viewH = lerp(lerp(lerp(430, 245, push), 330, wide), 300, easeOut(back)), viewW = viewH * 1.45;
+  const follow = 0.42 * easeOut(fe(FLAUNCH_T, FLAUNCH_T + 260, t)) * (1 - easeOut(fe(FLAUNCH_T + 380, FT.CARD + 200, t)));
+  const bx = (FIN.wx + FIN.lx) / 2 + FIN.dir * 10, by = -80;
+  cam.x = bx + (flx - bx) * follow; cam.y = by + (fly - by) * follow;
   cam.z = Math.min(L.gh / viewH, L.gw / Math.max(380, viewW * (L.portrait ? 0.62 : 1)));
   cam.yaw = FIN.use3D ? -FIN.dir * 0.2 * easeOut(fe(FT.CUT, FT.CARD, t)) : 0;
   FIN.shake *= Math.pow(0.86, k);
   cam.sx = (Math.random() - 0.5) * FIN.shake * 2; cam.sy = (Math.random() - 0.5) * FIN.shake * 2;
   FIN.k = cam.z;
+  finLoser(Lp, t, lf, trav);
+  W.st++; Lp.st++;
+  if (FIN.beam) {
+    // the KO beam is pinned to the screen edge where the loser left; the effects layer takes world coordinates, so map the screen point back
+    const bm = FIN.beam, bt = (t - bm.t0) / FMS;
+    if (bt < 50) sfx.push({ k: "beam", wx: cam.x + (bm.sx - L.gw / 2 - cam.sx) / cam.z, wy: cam.y + (bm.sy - L.gh / 2 - cam.sy) / cam.z, t: bt, life: 50, col: bm.col, fries: bm.fries });
+  }
   for (const p of FIN.parts) {
     if (p.delay > 0) { p.delay -= k; continue; }
     p.t += k; p.vy += p.g * k; p.vx *= Math.pow(p.drag, k); p.vy *= Math.pow(p.drag, k);
@@ -434,17 +510,46 @@ function finFrame(g, tk) {
   for (let i = FIN.parts.length - 1; i >= 0; i--) if (FIN.parts[i].t >= FIN.parts[i].life) FIN.parts.splice(i, 1);
   return { fighters: FIN.P, projs: [], hitstop: 0, phase: "end", t: g.t };
 }
-function finPop(Lp) {
-  FIN.popped = true; Lp.state = "gone";
-  finSfx(() => Sfx.fry());
-  part({ kind: "puff", col: "#ffffff", wx: Lp.x, wy: -30, life: 24, r: 20, grow: 2.2 });
-  for (let i = 0; i < 10; i++) part({ kind: "puff", col: "#d9d4ea", wx: Lp.x + (Math.random() - 0.5) * 40, wy: -20 - Math.random() * 30, vx: (Math.random() - 0.5) * 4, vy: -Math.random() * 3, drag: 0.92, life: 30, r: 10, grow: 0.5 });
-  for (let i = 0; i < 9; i++) part({ kind: "fry", col: "#f2c14e", wx: Lp.x + (Math.random() - 0.5) * 24, wy: -30, vx: (Math.random() - 0.5) * 7, vy: -6 - Math.random() * 5, g: 0.45, life: 300, r: 9 + Math.random() * 5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, floor: -3 });
-  for (let i = 0; i < 8; i++) part({ kind: "chip", col: "#f2c14e", wx: Lp.x, wy: -40, vx: FIN.dir * (1 + Math.random() * 4) + (Math.random() - 0.5) * 4, vy: -9 - Math.random() * 6, g: 0.32, life: 70, r: 7, rot: Math.random() * 6, vr: 0.25, delay: i * 2 });
+// the loser: dazed on the spot, a short impact freeze, then launched along the real launch direction, spinning, until it leaves the picture
+function finLoser(Lp, t, lf, trav) {
+  if (FIN.out) { if (FIN.trail.length) FIN.trail.shift(); return; }
+  Lp.flash = t >= FT.HIT && t < FLAUNCH_T ? 2 : 0;   // white silhouette during the impact freeze
+  if (t < FLAUNCH_T) { Lp.x = FIN.lx - (t >= FT.HIT ? FIN.dir * 5 : 0); Lp.y = 0; return; }
+  Lp.x = FIN.lx + FIN.ldx * trav; Lp.y = FIN.ldy * trav;
+  const mid = [Lp.x, Lp.y - Lp.s.h * 0.5];
+  const [sx, sy] = finProj(mid[0], mid[1]);
+  const barH = easeOut(fe(0, 240, t)) * L.gh * 0.11, m = Lp.s.h * 0.3 * FIN.k;
+  if (sx > m && sx < L.gw - m && sy > barH + m && sy < L.gh - barH - m) {
+    FIN.lastIn = mid;
+    if (FIN.trail.push(mid) > 14) FIN.trail.shift();
+    cueOnce("whoosh", FLAUNCH_T, () => finSfx(() => { Sfx.noise(0.4, 0.45, 2600); Sfx.tone(260, 1000, 0.3, "triangle", 0.05); }));
+    if (t < FT.HIT + 800) return;   // (past that it is sent out regardless)
+  }
+  finOut(Lp, sx, sy);
 }
-// fries land and stay in a little pile
-function finFloor() { for (const p of FIN.parts) if (p.floor !== undefined && p.wy > p.floor) { p.wy = p.floor; p.vy = 0; p.vx *= 0.6; p.vr *= 0.5; } }
-
+// the loser crosses the edge of the picture: KO beam and flash there, fries and chips burst back into the shot
+function finOut(Lp, sx, sy) {
+  FIN.out = true; Lp.state = "gone";
+  const barH = easeOut(fe(0, 240, FIN.t)) * L.gh * 0.11;
+  const ex = clamp(sx, 0, L.gw), ey = clamp(sy, barH, L.gh - barH);
+  FIN.beam = { sx: ex, sy: ey, t0: FIN.t, col: col(Lp.pal),
+    fries: Array.from({ length: 8 }, () => ({ da: (Math.random() - 0.5) * 1.1, sp: 5 + Math.random() * 7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, len: 12 + Math.random() * 8 })) };
+  FIN.flashes.push({ t0: FIN.t, dur: 230, a: 0.5 });
+  FIN.shake = 22;
+  const [wx, wy] = FIN.lastIn || [Lp.x, Lp.y - Lp.s.h * 0.5], back = Math.atan2(-FIN.ldy, -FIN.ldx);
+  finRing(wx, wy, "#ffffff", 150);
+  part({ kind: "puff", col: "#ffffff", wx, wy, life: 22, r: 22, grow: 2.4 });
+  for (let i = 0; i < 9; i++) part({ kind: "puff", col: "#d9d4ea", wx: wx + (Math.random() - 0.5) * 40, wy: wy + (Math.random() - 0.5) * 40, vx: Math.cos(back) * 3 + (Math.random() - 0.5) * 3, vy: Math.sin(back) * 3 + (Math.random() - 0.5) * 3, drag: 0.92, life: 30, r: 10, grow: 0.5 });
+  for (let i = 0; i < 14; i++) {
+    const a = back + (Math.random() - 0.5) * 1.9, sp = 4 + Math.random() * 8;
+    part({ kind: "fry", col: "#f2c14e", wx, wy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1, g: 0.34, life: 110 + Math.random() * 30, r: 9 + Math.random() * 5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4 });
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = back + (Math.random() - 0.5) * 2.2, sp = 3 + Math.random() * 7;
+    part({ kind: "chip", col: "#f2c14e", wx, wy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2, g: 0.3, life: 80, r: 7, rot: Math.random() * 6, vr: 0.25, delay: i * 1.5 });
+  }
+  finSfx(() => { Sfx.ko(); setTimeout(() => Sfx.fry(), 70); });
+}
 /* ---------- drawing ---------- */
 // behind the stage: darken the sky and light the winner from behind
 function finSkyTint(c) {
@@ -455,12 +560,18 @@ function finSkyTint(c) {
   const gr = c.createRadialGradient(x, y, 0, x, y, R); gr.addColorStop(0, rgba(FIN.kit.col, 0.35 * a)); gr.addColorStop(1, rgba(FIN.kit.col, 0));
   c.fillStyle = gr; c.fillRect(0, 0, L.gw, L.gh);
 }
-function finOverlay(o, tk) {
-  if (!FIN.on || !FIN.cut) return;
-  const t = FIN.t;
-  finFloor();
-  o.save(); o.setTransform(DPR, 0, 0, DPR, 0, 0);
-  o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
+// the staged scene's own shapes: the loser's trail and dizzy stars, particles, the kit's shapes
+function finScene(o, t) {
+  // streak behind the flying loser
+  if (FIN.trail.length > 1) {
+    const col_ = col(FIN.P[FIN.l].pal);
+    o.lineCap = "round"; o.lineJoin = "round";
+    for (let i = 1; i < FIN.trail.length; i++) {
+      const a = i / FIN.trail.length, [x0, y0] = finProj(FIN.trail[i - 1][0], FIN.trail[i - 1][1]), [x1, y1] = finProj(FIN.trail[i][0], FIN.trail[i][1]);
+      o.strokeStyle = rgba(col_, 0.45 * a); o.lineWidth = FIN.P[FIN.l].s.w * 0.9 * a * FIN.k; o.beginPath(); o.moveTo(x0, y0); o.lineTo(x1, y1); o.stroke();
+      o.strokeStyle = `rgba(255,255,255,${0.7 * a})`; o.lineWidth = 3 * a * FIN.k + 0.5; o.stroke();
+    }
+  }
   // the loser's dizzy stars
   if (t < FT.HIT) { const Lp = FIN.P[FIN.l]; for (let i = 0; i < 3; i++) { const a = t * 0.006 + (i / 3) * Math.PI * 2, [sx, sy] = finProj(Lp.x + Math.cos(a) * 18, headY(Lp) - 26 + Math.sin(a) * 5); finStar(o, sx, sy, 5 * FIN.k, "#f6d77a"); } }
   // particles
@@ -498,14 +609,23 @@ function finOverlay(o, tk) {
   }
   o.globalAlpha = 1; o.globalCompositeOperation = "source-over";
   FIN.kit.draw(o, t);
-  // impact flash
-  const fl = 1 - fe(FT.HIT, FT.HIT + 140, t);
-  if (t >= FT.HIT && fl > 0) { o.fillStyle = `rgba(255,250,240,${0.32 * fl})`; o.fillRect(0, 0, L.gw, L.gh); }
-  finCard(o, t);
-  // black bars
-  const bar = easeOut(fe(FT.CUT, FT.CUT + 260, t)) * L.gh * 0.11;
+}
+function finOverlay(o, tk) {
+  if (!FIN.on) return;
+  const t = FIN.t;
+  o.save(); o.setTransform(DPR, 0, 0, DPR, 0, 0);
+  o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
+  if (FIN.cut) finScene(o, t);
+  // white frames: the cut (rises just before it, falls after), the winner's impact, the loser leaving the picture
+  let fl = fe(FT.CUT - 90, FT.CUT, t) * (1 - fe(FT.CUT, FT.CUT + 220, t)) * 0.95;
+  if (t >= FT.HIT) fl = Math.max(fl, (1 - fe(FT.HIT, FT.HIT + 140, t)) * 0.45);
+  for (const f of FIN.flashes) fl = Math.max(fl, f.a * (1 - fe(f.t0, f.t0 + f.dur, t)));
+  if (fl > 0.01) { o.fillStyle = `rgba(255,250,240,${fl.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
+  if (FIN.cut) finCard(o, t);
+  // black bars (they slide in with the real hit, before the cut)
+  const bar = easeOut(fe(0, 240, t)) * L.gh * 0.11;
   o.fillStyle = "#05050b"; o.fillRect(0, 0, L.gw, bar); o.fillRect(0, L.gh - bar, L.gw, bar);
-  if (bar > 14) {
+  if (bar > 14 && FIN.cut) {
     o.font = `600 ${Math.round(clamp(bar * 0.34, 10, 14))}px system-ui, sans-serif`; o.textAlign = "right"; o.textBaseline = "middle";
     o.fillStyle = "rgba(217,212,234,0.6)"; o.fillText(touchUI ? "Tap to skip" : "Click or press a key to skip", L.gw - 16, L.gh - bar / 2);
   }
