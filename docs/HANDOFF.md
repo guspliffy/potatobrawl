@@ -48,7 +48,8 @@ index.html is committed with every source change (check.sh flags a stale one).
 ## File map (game/)
 - core.js: deterministic sim (no Math.random/sin in sim; `trig(deg)` Taylor series; integer angles).
   TUNE, STAGE, FIGHTERS (moves `M(startup, active, endlag, dmg, bkb, kbg, angle, boxes, opts)`, palettes,
-  look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot/botInput),
+  look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot(level, style)/botInput; BOT_STYLES = one style per fighter id, a few numbers
+  that bias the bot's decisions; no style = the neutral bot, input for input as before),
   serialize/restore/FKEYS/checksum. Exported as `BL` (also a node module).
   - Finish mode: a move or projectile with a `fin` block (all six specials) uses those numbers when the
     defender had >= TUNE.finishPct (175) before the hit; hitstop TUNE.finishStop; "hit" event `fin: true`.
@@ -64,7 +65,7 @@ index.html is committed with every source change (check.sh flags a stale one).
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
   · effects (fx, /*SKINFX*/ and /*GFX3D*/ placeholders, render, sim events) · screens (menu, select, match,
-  results) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
+  results; CPU_NAMES + the CPU's name under its HUD card) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
 - ui/finisher.js (between effects and screens): KO finisher cinematic, started by the final lethal hit (no
   finisher for a self-destruct or a failed recovery). Beat 0 is the real impact, then the staged scene ends
@@ -106,7 +107,9 @@ index.html is committed with every source change (check.sh flags a stale one).
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
 
 ## Tests (tests/, run from anywhere)
-snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core) · lockrun.js (longest
+snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core; always the neutral bot) · botstyle.js (each CPU style
+against the neutral bot, same fighter, levels 0.5/0.8: win rate 35-65% plus what the style does; STYLE='{"wizard":{"gap":2}}' tries
+numbers, ONLY=wizard one fighter; check.sh step 4b) · lockrun.js (longest
 unreactable jab run, check.sh wants <= 3 at R=14) · lockdet.js (save/restore while string launches happen) ·
 finish.js (finish mode per fighter and weight, charge frame data, every lethal call in 30 bot matches ends
 in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real lethal hit; --2d, --up, --skip,

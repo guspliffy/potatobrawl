@@ -56,6 +56,12 @@ button { font: inherit; color: inherit; }
 .pc-top { display: flex; gap: 8px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .pcard.right .pc-top { justify-content: flex-end; }
 .pc-tag { color: var(--fc); }
+/* a CPU opponent's potato name (and rating tier in ranked) under the CPU tag; the tier drops out on narrow screens */
+.pc-sub { margin-top: -2px; font-size: 12px; line-height: 1.2; font-weight: 500; letter-spacing: 0.02em; color: var(--mute); white-space: nowrap; }
+.pc-sub .tr { opacity: 0.8; }
+.pc-sub .tr:empty { display: none; }
+.pc-sub .tr::before { content: " · "; }
+#app.narrow .pc-sub .tr { display: none; }
 .pc-row { display: flex; align-items: flex-end; gap: 10px; }
 .pcard.right .pc-row { flex-direction: row-reverse; }
 .pc-pct { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(30px, calc(var(--uh) * 7), 46px); line-height: 0.95; font-variant-numeric: tabular-nums; display: inline-block; transform-origin: 30% 70%; }
@@ -492,6 +498,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="hud-mid" style="position: relative"><div id="clock">4:00</div><div id="pingBadge" hidden></div><button id="pauseBtn" aria-label="Pause"></button><div id="netBadge" hidden></div></div>
     <div class="pcard right" id="pc1"><div>
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div></div>
   </div>
@@ -1894,13 +1901,38 @@ function startSudden(g) {
 }
 
 /* ---------- Bot: drives the same virtual controller a human uses ---------- */
-function makeBot(level) {
-  return { d: level, mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
+/* Fighting styles: a few numbers that bias the decisions in botInput (not a second brain). BOT_NEUTRAL is what every number
+   means when it is left out, and it is exactly the old bot: makeBot(level) with no style plays input for input as before.
+   Offline only (tutorial, ranked, practice, tournament, attract), so none of this touches the online protocol. */
+const BOT_NEUTRAL = {
+  gap: 1,        // preferred distance, times the old walk-in distance
+  back: 0,       // steps back when closer than this share of the preferred distance (0 = never)
+  shuffle: 0.3,  // chance per decision to step back instead of holding still when in range
+  rng: 0,        // starts a melee attack this many px further out
+  poke: 0.55,    // chance that a ground light is a sideways tilt instead of a jab
+  atk: 1,        // melee attack rate, times
+  heavy: 1,      // heavy rate, times
+  charge: 0.3,   // chance that a heavy is charged
+  spec: 1,       // special rate, times
+  air: 0,        // chance per decision to take to the air near the opponent (and to jump again to stay up)
+  edge: 0,       // chance per decision to jump out after an opponent knocked past the ledge and swing at them
+};
+// by fighter id; tests/botstyle.js keeps each of them about as strong as the neutral bot
+const BOT_STYLES = {
+  samurai:   { gap: 0.4, shuffle: 0, spec: 1.3, atk: 0.8 },                            // rushes in
+  alchemist: { gap: 1.7, back: 0.4, spec: 1.7, atk: 1.15, heavy: 1.3 },                // stays back and lobs
+  odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
+  phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
+  wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
+  dragon:    { edge: 0.6 },                                                            // guards the edge
+};
+function makeBot(level, style) {
+  return { d: level, st: Object.assign({}, BOT_NEUTRAL, style), mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
 }
 function botInput(g, me, opp, bot) {
   const out = blankInput();
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
-  const d = bot.d, R = g.rng, S = STAGE.main;
+  const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
   bot.mem.push({
     x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
     gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn", inv: intangible(opp),
@@ -1954,6 +1986,7 @@ function botInput(g, me, opp, bot) {
     } else toward = -out_;
     bot.hold.x = toward; bot.hold.y = 0; out.x = toward;
     if (!canAct(me)) return out;
+    if (st.edge && bot.cool <= 0 && !belowBottom && (Math.abs(o.x) > S.x2 || o.y > S.top + 40) && Math.abs(o.x - me.x) < hw + 64 && Math.abs(o.y - me.y) < 70) return press("light", sign(o.x - me.x), 0, 6);
     const vyT = me.vy + me.kby;
     const clear = (me.x - edgeX) * out_ > hw + 10;
     if (belowBottom && !clear) {
@@ -1989,22 +2022,22 @@ function botInput(g, me, opp, bot) {
       // finish-ready opponent: go for the special more often and from further away
       const fr = o.pct >= TUNE.finishPct, spx = fr ? 2 : 1;
       const short = k === "projectile" && me.spec.moves.spec.proj.short;
-      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
-      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
+      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx * st.spec) return press("special", sx, 0, 10);
+      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx * st.spec) return press("special", sx, 0, 10);
       const dashEnd = me.x + sx * 200;
-      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx) return press("special", sx, 0, 12);
-      if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d)) return press("special", sx, 0, 12);
+      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx * st.spec) return press("special", sx, 0, 12);
+      if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d) * st.spec) return press("special", sx, 0, 12);
     }
-    if (adx < reach + 18 && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d)) {
+    if (adx < reach + 18 + st.rng && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d) * st.atk) {
       if (me.grounded) {
         const killPct = lerp(150, 95, d) * (100 / me.s.weight);
-        if ((o.pct > killPct && R() < 0.65) || R() < 0.12) {
+        if ((o.pct > killPct && R() < 0.65) || R() < 0.12 * st.heavy) {
           // sometimes charge: weak bots too long (easy to punish), strong bots a short top-up
-          if (R() < 0.3) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
+          if (R() < st.charge) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
           return press("heavy", sx, R() < 0.2 ? 1 : 0, 10);
         }
         const r = R();
-        return press("light", r < 0.55 ? sx : 0, r > 0.85 ? 1 : 0, 6);
+        return press("light", r < st.poke ? sx : 0, r > 0.85 ? 1 : 0, 6);
       }
       if (dy < -26) return press("light", 0, -1, 6);
       if (dy > 26) return press(o.pct > 90 && R() < 0.4 ? "heavy" : "light", 0, 1, 6);
@@ -2016,7 +2049,17 @@ function botInput(g, me, opp, bot) {
     }
     if (me.grounded && dy < -80 && adx < 160 && R() < 0.6) return press("jump", sx, 0, 12);
   }
-  let hx = adx > reach * 0.8 ? sx : R() < 0.3 ? -sx : 0;
+  // air style: take off near the opponent, and jump again to stay up
+  if (st.air && act && bot.cool <= 0 && adx < 260) {
+    if (me.grounded && R() < st.air) return press("jump", sx, 0, 12);
+    if (!me.grounded && me.airJumps > 0 && me.vy > 0 && dy < 40 && R() < st.air) return press("jump", sx, 0, 14);
+  }
+  // edge style: an opponent knocked out past the ledge is followed out (the off-stage code below swings at them in reach)
+  if (st.edge && act && bot.cool <= 0 && me.grounded && me.plat < 0 && o.pct > 60 && Math.abs(o.x) > S.x2 && Math.abs(o.x) < S.x2 + 170 && Math.abs(o.y - me.y) < 130 &&
+      Math.abs(me.x - sign(o.x) * S.x2) < 70 && R() < st.edge) return press("jump", sign(o.x), 0, 14);
+  const want = reach * 0.8 * st.gap;
+  let hx = adx > want ? sx : R() < st.shuffle ? -sx : 0;
+  if (st.back && adx < want * st.back) hx = sign(me.x) === -sx && Math.abs(me.x) > S.x2 - 80 ? 0 : -sx;   // keeps its distance unless cornered
   let hy = 0;
   if (me.grounded && me.plat >= 0 && dy > 50) hy = 1;
   // hold up while the opponent swings nearby: steers a launch upward if it connects
@@ -2078,7 +2121,7 @@ function checksum(g) {
   return h >>> 0;
 }
 
-root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
 
 </script>
@@ -13801,6 +13844,20 @@ function goMenu() {
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
 const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, pending: null };
+/* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
+const CPU_NAMES = [
+  "Spud Muffin", "Tater Tot", "Hash Brown", "Mash Master", "Sir Fries-a-Lot", "Lady Latke", "Chip Chomp", "Wedge Wally",
+  "Russet Rex", "Couch Potato", "Sweet Pete", "Fingerling Finn", "Gnocchi Gus", "Pommes Pierre", "Rosti Rosa", "Tuber Tom",
+  "Sprout Sam", "Starch Stan", "Papa Pomme", "Crispy Cris", "Salty Sal", "Gravy Gail", "Duchess Dot", "Lumpy Lou",
+  "Grandpa Spud", "Baron Baked", "Tater Tyrant", "Mr. Mash", "Curly Fry", "Waffle Walt", "Jacket Jim", "Butter Boris",
+  "Peel Appeal", "Eyes Ivy", "Smash Brown", "Yukon Yolanda",
+];
+let lastCpuName = "";
+function cpuName() {
+  let n;
+  do n = CPU_NAMES[(Math.random() * CPU_NAMES.length) | 0]; while (n === lastCpuName);
+  return (lastCpuName = n);
+}
 const cardArt = [];
 function statBars(spec) {
   const s = spec.stats, mv = spec.moves;
@@ -13953,7 +14010,7 @@ function startMatch() {
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150 });
-  match = { ranked, d, oppRating, bot: makeBot(d), level: ranked ? null : LEVELS[sel.level].name };
+  match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
 }
@@ -13969,6 +14026,12 @@ function enterMatchUI() {
     el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
+  { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
+    const sub = $("pc1").querySelector(".pc-sub");
+    sub.hidden = !(match.cpu && !match.online);
+    sub.querySelector(".nm").textContent = match.cpu || "";
+    sub.querySelector(".tr").textContent = match.ranked ? cpuTier() : "";
+  }
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
@@ -13989,9 +14052,10 @@ function finReady(i) {
 function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
-  if (match.ranked) { const ti = tierInfo(match.oppRating); return `${me} vs ${op} · CPU ${ti.t.name} ${match.oppRating}`; }
-  return `${me} vs ${op} · ${match.level}`;
+  if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
+  return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
 }
+function cpuTier() { return `${tierInfo(match.oppRating).t.name} ${match.oppRating}`; }
 // Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
 function setHearts(box, n, prev) {
   if (prev < 0) box.innerHTML = "<i></i>".repeat(n);
@@ -14098,13 +14162,14 @@ function showResults(R) {
   $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
   const mn = R.me.spec.name, on = R.op.spec.name;
   const who = R.online ? NET.oppName || "Your friend" : on;
+  const cpu = match.cpu && !R.online ? `${match.cpu} (${on}${R.ranked ? `, ${cpuTier()}` : ""})` : on;   // the CPU's potato name, and its tier in ranked
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   $("rSub").textContent = R.lost ? `The connection to ${who} dropped.` : R.left ? `${who} left the match.` :
     R.online && R.res === 1 ? `You beat ${who}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
     R.online && R.res === 0 ? `${who} beat you${how}.` :
     R.forfeit ? "You left the match. It counts as a loss." :
-    R.res === 1 ? `${mn} beat ${on}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.res === 0 ? `${on} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
+    R.res === 1 ? `${mn} beat ${cpu}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
+    R.res === 0 ? `${cpu} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     $("rSub").textContent += !R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`;

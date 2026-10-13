@@ -56,6 +56,12 @@ button { font: inherit; color: inherit; }
 .pc-top { display: flex; gap: 8px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .pcard.right .pc-top { justify-content: flex-end; }
 .pc-tag { color: var(--fc); }
+/* a CPU opponent's potato name (and rating tier in ranked) under the CPU tag; the tier drops out on narrow screens */
+.pc-sub { margin-top: -2px; font-size: 12px; line-height: 1.2; font-weight: 500; letter-spacing: 0.02em; color: var(--mute); white-space: nowrap; }
+.pc-sub .tr { opacity: 0.8; }
+.pc-sub .tr:empty { display: none; }
+.pc-sub .tr::before { content: " · "; }
+#app.narrow .pc-sub .tr { display: none; }
 .pc-row { display: flex; align-items: flex-end; gap: 10px; }
 .pcard.right .pc-row { flex-direction: row-reverse; }
 .pc-pct { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(30px, calc(var(--uh) * 7), 46px); line-height: 0.95; font-variant-numeric: tabular-nums; display: inline-block; transform-origin: 30% 70%; }
@@ -492,6 +498,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="hud-mid" style="position: relative"><div id="clock">4:00</div><div id="pingBadge" hidden></div><button id="pauseBtn" aria-label="Pause"></button><div id="netBadge" hidden></div></div>
     <div class="pcard right" id="pc1"><div>
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div></div>
   </div>
