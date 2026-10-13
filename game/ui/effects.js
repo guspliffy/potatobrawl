@@ -1,5 +1,5 @@
 /* ===================== effects ===================== */
-const fx = [], sfx = [], trails = [[], []], combos = [null, null];
+const fx = [], sfx = [], trails = [[], []], combos = [null, null], chgPops = [], finDash = [null, null];
 function addFx(o) { if (fx.length < 260) fx.push(o); }
 function spark(x, y, col, kb, dx, dy) {
   const n = 6 + Math.min(10, (kb * 0.35) | 0);
@@ -30,6 +30,8 @@ function updateFx(g) {
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].t >= fx[i].life) fx.splice(i, 1);
   for (const e of sfx) e.t++;
   for (let i = 0; i < 2; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
+  for (let i = chgPops.length - 1; i >= 0; i--) { const q = chgPops[i]; q.t++; q.pop *= 0.8; if (q.t > 56) chgPops.splice(i, 1); }
+  finDashTick(g);
   for (let i = sfx.length - 1; i >= 0; i--) if (sfx[i].t >= sfx[i].life) sfx.splice(i, 1);
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
@@ -121,6 +123,38 @@ function drawCombos(c, g) {
     c.lineWidth = 4; c.strokeText(sub, 0, 16); c.fillStyle = "#f3efe6"; c.fillText(sub, 0, 16);
     c.restore();
   }
+  drawChargedPops(c);
+}
+// "CHARGED" pops at the spot of a full-charge hit: same pop-up style as the combo counter, rising and fading
+function chargedPop(e) { chgPops.push({ x: e.x, y: e.y, t: 0, pop: 1, col: col(e.pal) }); }
+function drawChargedPops(c) {
+  for (const q of chgPops) {
+    const [sx, sy] = toScreen(q.x, q.y - 46), x = clamp(sx, 56, L.gw - 56), y = clamp(sy - q.t * 0.7, 56, L.gh - 40);
+    const a = q.t < 38 ? 1 : 1 - (q.t - 38) / 18, sc = 1 + q.pop * 0.55;
+    c.save(); c.globalAlpha = Math.max(0, a); c.translate(x, y); c.scale(sc, sc);
+    c.textAlign = "center"; c.lineJoin = "round";
+    c.font = 'italic 900 22px "Barlow Condensed", "Arial Narrow", sans-serif';
+    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText("CHARGED", 0, 0);
+    c.fillStyle = q.col; c.fillText("CHARGED", 0, 0);
+    c.restore();
+  }
+}
+// the charge hum follows the strongest charge on the field; anything but a live, unpaused match silences it
+function humStep(g) {
+  let n = 0;
+  if (mode === "match" && !paused && !FIN.on && !document.hidden && g && g.phase === "play") {
+    for (const f of g.fighters) if (f.state === "attack" && f.move && f.move.charge && f.mt === f.move.startup - BL.TUNE.chgHold && f.chg > n) n = f.chg;
+  }
+  Sfx.hum(n >= 4 ? n : 0);
+}
+// Samurai's Quick Draw while the opponent is finish-ready: the white flash line stays on the path (the 200-chip skin draws its own)
+function finDashTick(g) {
+  g.fighters.forEach((f, i) => {
+    const m = f.move;
+    if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot) || skinLvl(f) >= 3) { finDash[i] = null; return; }
+    if (f.mt === m.startup + 1) finDash[i] = f.x;
+    if (f.mt === m.startup + m.active && finDash[i] !== null) { addFx({ k: "flashline", x1: finDash[i], x2: f.x, y: f.y - f.s.h * 0.45, col: "#ffffff", t: 0, life: 26 }); finDash[i] = null; }
+  });
 }
 function drawBubbles(c, g, tk, img) {
   for (const f of g.fighters) {
@@ -150,6 +184,7 @@ function drawBubbles(c, g, tk, img) {
 /*GFX3D*/
 
 function render(g, tk) {
+  RG = g; humStep(g);   // RG: the game drawn this frame (finish-ready looks read it); humStep: the charge hum
   // during the KO finisher the scene shows its two stand-ins instead of the real fighters
   const fin = FIN.on && mode === "match";
   if (fin) g = finFrame(g, tk);
@@ -190,15 +225,23 @@ function render2D(g, tk) {
 function handleEvent(g, e, live) {
   skinEvent(g, e);
   switch (e.type) {
-    case "hit":
+    case "hit": {
+      if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
+      if (e.chg >= BL.TUNE.chgMax) chargedPop(e);   // a full-charge heavy: the "CHARGED" pop
       spark(e.x, e.y, e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);
+      const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
+      if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: 1, at: combos[e.def] && combos[e.def].at };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
       if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
+    }
+    case "lethal": if (live) finLethal(g, e); break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
+      if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
       sfx.push({ k: "beam", wx: e.x, wy: e.y, t: 0, life: 50, col: col(e.pal),
         fries: Array.from({ length: 8 }, () => ({ da: (Math.random() - 0.5) * 1.1, sp: 5 + Math.random() * 7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, len: 12 + Math.random() * 8 })) });
       sfx.push({ k: "flash", t: 0, life: 10 });
@@ -209,7 +252,12 @@ function handleEvent(g, e, live) {
     case "land": dust(e.x, e.y, 3, 22); break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
     case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
-    case "swing": if (live) Sfx.swing(e.heavy); break;
+    case "swing": {
+      if (live) Sfx.swing(e.heavy);
+      const hSw = g.fighters[e.slot];   // a heavy: camera shake and the low heavy sound arrive when the hit window opens
+      if (hSw && isHeavyKey(hSw.mid)) heavySwing(g, hSw, live);
+      break;
+    }
     case "proj":
       if (e.style === "orb" || e.style === "bolt") { if (live) Sfx.bolt(e.style === "orb"); }
       else if (e.style === "raven") { if (live) Sfx.caw(); }
@@ -234,7 +282,12 @@ function handleEvent(g, e, live) {
       if (live) { showBanner("Sudden death", "Next KO wins", "game", 1700); Sfx.count(true); }
       camStep(g, true);
       break;
-    case "game": if (live) { showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0); if (finWanted(g)) finStart(g); } break;
+    case "game":
+      if (!live) break;
+      // the last life lost to a lethal hit starts the finisher on that hit; a self-destruct, a time-out or the tutorial keep the banner
+      if (e.hit && finWanted(g)) finStart(g);
+      else showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0);
+      break;
     case "over":
       if (!live) { newAttract(); break; }
       if (finHold(() => { if (match && match.online) finishOnline(false); else finishMatch(false); })) break;

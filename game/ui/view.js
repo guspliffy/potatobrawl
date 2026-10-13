@@ -43,7 +43,8 @@ function resize() {
 window.addEventListener("resize", resize);
 window.addEventListener("orientationchange", () => setTimeout(resize, 120));
 
-const cam = { x: 0, y: -110, z: 0.6, shake: 0, sx: 0, sy: 0 };
+// x, y, z are what the renderers read. bx/by/bz are the eased follow-camera; the KO punch-in (UI only) is added on top.
+const cam = { x: 0, y: -110, z: 0.6, shake: 0, sx: 0, sy: 0, bx: 0, by: -110, bz: 0.6, pt: 99, pn: 1, px: 0, py: 0, pk: 1 };
 function camTarget(g) {
   const B = STAGE.blast;
   const base = L.portrait ? 250 : 360, pad = L.portrait ? 110 : 150;
@@ -60,9 +61,22 @@ function camTarget(g) {
   const zMax = L.portrait ? Math.min(L.gw / 540, L.gh / 420) : Math.min(L.gw / 740, L.gh / 470);
   return { x: (x1 + x2) / 2, y: (y1 + y2) / 2, z: clamp(zFit, zMin, Math.max(zMin, zMax)) };
 }
+// KO zoom: push the camera towards a world point for `ticks` sim ticks (60 per second) and ease back. Pure view, never read by the sim.
+function camPunch(wx, wy, k, ticks) { cam.px = wx; cam.py = wy; cam.pk = k; cam.pt = 0; cam.pn = ticks; }
+function camPunchK() {
+  if (cam.pt >= cam.pn) return 0;
+  const q = cam.pt / cam.pn;
+  if (q < 0.18) { const a = q / 0.18; return 1 - (1 - a) * (1 - a); }   // snaps in
+  if (q < 0.5) return 1;                                                 // holds through the freeze
+  const a = (q - 0.5) / 0.5; return 1 - a * a * (3 - 2 * a);            // eases back out
+}
 function camStep(g, snap) {
   const t = camTarget(g), k = snap ? 1 : 0.075;
-  cam.x += (t.x - cam.x) * k; cam.y += (t.y - cam.y) * k; cam.z += (t.z - cam.z) * k;
+  cam.bx += (t.x - cam.bx) * k; cam.by += (t.y - cam.by) * k; cam.bz += (t.z - cam.bz) * k;
+  if (snap) cam.pt = cam.pn;
+  const pk = camPunchK() * cam.pk, mv = Math.min(1, pk) * 0.6;
+  cam.x = cam.bx + (cam.px - cam.bx) * mv; cam.y = cam.by + (cam.py - cam.by) * mv; cam.z = cam.bz * (1 + 0.45 * pk);
+  if (cam.pt < cam.pn) cam.pt++;
   cam.shake *= 0.85; if (cam.shake < 0.3) cam.shake = 0;
   cam.sx = (Math.random() - 0.5) * cam.shake * 2; cam.sy = (Math.random() - 0.5) * cam.shake * 2;
 }

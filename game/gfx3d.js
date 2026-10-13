@@ -9,7 +9,7 @@ const glcv = $("gl"), ovcv = $("ov"), octx = ovcv.getContext("2d");
 const R3 = {
   ready: false, failed: false, on: false, T: null, renderer: null, scene: null, camera: null, key: null,
   rigs: [null, null], fov: 30, w: 0, h: 0, pr: 0, q: 0, perf: { t0: 0, n: 0, sum: 0 }, G: null, M: null,
-  proj: { orb: [], bolt: [], raven: [] }, respawn: [null, null], bub: [null, null], pv: null, pvRigs: new Map(), frame: 0,
+  proj: { orb: [], bolt: [], raven: [] }, respawn: [null, null], finRing: [null, null], bub: [null, null], pv: null, pvRigs: new Map(), frame: 0,
 };
 const YAW = 0.5;          // how far fighters turn toward the camera (radians)
 const AZ0 = 0.62;         // face direction on the body, from forward (+x) toward the camera (+z)
@@ -619,6 +619,7 @@ function buildRig(f) {
     rig.cape = makeCape(rig, B, std(acc, { roughness: 0.75, side: T.DoubleSide }), true);
     rig.raven = makeRaven(); rig.raven.g.scale.setScalar(0.85);
     put(rig.raven.g, Math.PI * 0.78, 0.5, 1, 6); rig.raven.g.quaternion.identity(); rig.raven.g.rotation.y = -0.35;
+    rig.raven.base = rig.raven.g.position.clone();
     C.add(rig.raven.g);
   }
   if (cos === "wizard") {
@@ -692,7 +693,12 @@ function buildRig(f) {
     blade.translate(0, 0, -0.3);
     const bladeMat = std(acc, { roughness: 0.22, metalness: 0.45, emissive: lin(acc), emissiveIntensity: 0.28 });
     if (lvl >= 3) rig.glow.push({ m: bladeMat, base: 0.6, amp: 0.2, sp: 0.22 });
-    k.add(mesh(blade, bladeMat));
+    rig.blade = mesh(blade, bladeMat); k.add(rig.blade);
+    rig.scab = new T.Group();   // the scabbard shown while the blade is sheathed (Iaido)
+    const sc = mesh(G.cyl, lacq); sc.scale.set(2.6, L * 0.95, 2.6); sc.rotation.z = Math.PI / 2; sc.position.x = 4 + L * 0.475; rig.scab.add(sc);
+    const stp = mesh(G.sphLo, M.gold, false); stp.scale.setScalar(3); stp.position.x = 4 + L * 0.95; rig.scab.add(stp);
+    const smo = mesh(G.cyl, M.gold, false); smo.scale.set(2.9, 4, 2.9); smo.rotation.z = Math.PI / 2; smo.position.x = 6; rig.scab.add(smo);
+    rig.scab.visible = false; k.add(rig.scab);
     rig.katana = k; rig.root.add(k);
   }
   if (cos === "dragon") {
@@ -806,7 +812,8 @@ function makeRaven() {
   const body = mesh(G.sph, M.raven); body.scale.set(9, 6.4, 5.6); body.rotation.z = 0.15; g.add(body);
   const head = mesh(G.sph, M.raven); head.scale.setScalar(4.6); head.position.set(7, 5, 0); g.add(head);
   const beak = mesh(G.cone, M.beak); beak.scale.set(1.7, 6.5, 1.5); beak.rotation.z = -Math.PI / 2 - 0.12; beak.position.set(13.2, 4.2, 0); g.add(beak);
-  for (const s of [1, -1]) { const e = mesh(G.sphLo, M.redEye, false); e.scale.setScalar(0.95); e.position.set(9.2, 6.2, s * 3.4); g.add(e); }
+  const eyes = [];
+  for (const s of [1, -1]) { const e = mesh(G.sphLo, M.redEye, false); e.scale.setScalar(0.95); e.position.set(9.2, 6.2, s * 3.4); g.add(e); eyes.push(e); }
   const tail = mesh(G.cone, M.ravenDark); tail.scale.set(3.5, 11, 1.4); tail.rotation.z = Math.PI / 2 + 0.35; tail.position.set(-12, -2.5, 0); g.add(tail);
   const wings = [];
   for (const s of [1, -1]) {
@@ -814,7 +821,7 @@ function makeRaven() {
     const wm = mesh(G.sph, M.ravenDark); wm.scale.set(9, 1.2, 4.8); wm.position.set(-3.5, 0, s * 3.2); wm.rotation.y = s * 0.25;
     piv.add(wm); g.add(piv); wings.push(piv);
   }
-  return { g, wings };
+  return { g, wings, eyes };
 }
 function disposeObj(obj) {
   obj.traverse((o) => {
@@ -921,7 +928,7 @@ function syncRig(rig, f, P, tk, at) {
     if (P.spin) { const cy = -h * 0.5, dx = x, dy = y - cy, cs = Math.cos(P.spin), sn = Math.sin(P.spin); x = dx * cs - dy * sn; y = cy + dx * sn + dy * cs; }
     return out.set(x * fc, -y, z);
   };
-  rig.root.position.set(at ? at[0] : f.x, at ? -at[1] : -f.y, 0);
+  rig.root.position.set((at ? at[0] : f.x) + P.jit[0], (at ? -at[1] : -f.y) + P.hop - P.jit[1], 0);   // P.hop: the small hop of a Wing flare / Horn toss; P.jit: the 1 px shake of a full charge
   // body
   toR(P.hip, 0, rig.body.position);
   rig.body.rotation.z = -fc * (P.spin + P.lean);
@@ -962,7 +969,7 @@ function syncRig(rig, f, P, tk, at) {
     const { R: Rv, F: Fv } = rig.wingAxes;
     for (const W of rig.wings) {
       // back wing / front wing elevation; flapping lifts both
-      const el = (air ? wc.elA : wc.elG)[W.s < 0 ? 0 : 1] + P.flap * wc.flap;
+      const el = (air ? wc.elA : wc.elG)[W.s < 0 ? 0 : 1] + (P.flap + P.wingUp * 0.9) * wc.flap;   // wingUp: heavy looks fold or snap the wings
       // x axis = spread direction, z axis = wing surface normal (facing the camera)
       const dx = tv(10).copy(Rv).multiplyScalar(W.s * Math.cos(el)).add(tv(13).set(0, Math.sin(el), 0)).addScaledVector(Fv, -0.2).normalize();
       const nz = tv(11).copy(Fv).addScaledVector(dx, -dx.dot(Fv)).normalize();
@@ -971,11 +978,18 @@ function syncRig(rig, f, P, tk, at) {
       W.g.scale.setScalar(len);
     }
   }
-  if (rig.tail) { rig.tail.rotation.y = Math.sin(tk * 0.07 + f.slot) * 0.16; rig.tail.rotation.z = (f.grounded ? 0 : 0.25) + Math.sin(tk * 0.11) * 0.04; }
+  if (rig.tail) {
+    if (P.tailSwing !== null) { rig.tail.rotation.y = P.tailSwing; rig.tail.rotation.z = P.tailLift; }   // Tail sweep: whirls round the body
+    else { rig.tail.rotation.y = Math.sin(tk * 0.07 + f.slot) * 0.16; rig.tail.rotation.z = (f.grounded ? 0 : 0.25) + Math.sin(tk * 0.11) * 0.04; }
+  }
   if (rig.cape) updateCape(rig.cape, Math.sin(tk * 0.12 + f.slot) * 2 - clamp((f.vx + f.kbx) * fc * 0.8, -8, 8), tk);
   if (rig.raven) {
     rig.raven.g.visible = !f._ravenOut;
-    const fl = Math.sin(tk * 0.08) > 0.95 ? 0.6 : 0.05;
+    // Raven rise: it lifts off the shoulder to follow the fist (offset worked out in the 2D pose, then mapped into body space)
+    const rk = P.ravenTo && P.ravenK > 0 ? P.ravenK : 0, perch = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
+    if (rk > 0) rig.raven.g.position.set(rig.raven.base.x + (P.ravenTo[0] - perch[0]) * rk / Math.cos(YAW), rig.raven.base.y - (P.ravenTo[1] - perch[1]) * rk, rig.raven.base.z);
+    else rig.raven.g.position.copy(rig.raven.base);
+    const fl = rk > 0.3 ? Math.sin(tk * 1.1) * 0.8 : Math.sin(tk * 0.08) > 0.95 ? 0.6 : 0.05;
     rig.raven.wings[0].rotation.x = -fl; rig.raven.wings[1].rotation.x = fl;
   }
   const flash = f.flash > 0 && f.flash % 2 === 0;
@@ -989,11 +1003,17 @@ function syncRig(rig, f, P, tk, at) {
     const b = toR([hx - dx * 34, hy - dy * 34], rz * 0.95, tv(4)), t = toR([hx + dx * 40, hy + dy * 40], rz * 0.95, tv(5));
     segTo(rig.staff, b, t, 1.9);
     rig.crystal.position.copy(t); rig.crystal.rotation.set(0, tk * 0.05, -fc * (a + P.spin + Math.PI / 2));
+    rig.crystal.scale.set(5, 9, 5).multiplyScalar(1 + (P.cryK - 1) * 0.5);
   }
   if (rig.katana) {
     const a = held(-0.8);
     toR(P.hF, rz * 1.0, rig.katana.position);
     rig.katana.scale.x = fc; rig.katana.rotation.z = -fc * (a + P.spin);
+    // Iaido: blade rests in the scabbard until the draw, and slides home in the endlag
+    const sh = P.sheath;
+    rig.scab.visible = sh > 0;
+    rig.blade.visible = sh < 0.97;
+    rig.blade.scale.x = Math.max(0.03, 1 - sh); rig.blade.position.x = 4 * sh;
   }
   // tint: hit flash, dodge and invincibility glow, helpless dim
   let ghost = 0;
@@ -1043,6 +1063,25 @@ function r3Fighters(g, tk, poses) {
     if (rp.visible) { rp.material.color.copy(lin(col(f.pal))); rp.material.emissive.copy(rp.material.color); rp.position.set(f.x, -f.y - 4, 0); rp.scale.z = 0.45; }
   });
 }
+// finish-ready: a thin ring pulsing flat on the ground under the feet of a fighter the opponent's special can finish (the 2D version is drawFinRing)
+function r3FinRings(g, tk) {
+  const T = R3.T;
+  g.fighters.forEach((f, i) => {
+    let fr = R3.finRing[i];
+    if (!fr) {
+      const geo = new T.RingGeometry(0.87, 1, 56); geo.rotateX(-Math.PI / 2);
+      const mk = () => { const m = new T.Mesh(geo, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, side: T.DoubleSide })); m.renderOrder = 2; R3.scene.add(m); return m; };
+      fr = R3.finRing[i] = { a: mk(), b: mk() };
+    }
+    const on = finishReady(i);
+    fr.a.visible = fr.b.visible = on;
+    if (!on) return;
+    const c0 = lin(finRingCol(i)), w = f.s.w, ph = (tk % 54) / 54, r0 = w * 0.78;
+    for (const m of [fr.a, fr.b]) { m.material.color.copy(c0); m.position.set(f.x, -f.y + 1.4, 0); }
+    fr.a.scale.setScalar(r0); fr.a.material.opacity = 0.7 + 0.25 * Math.sin(tk * 0.2);
+    fr.b.scale.setScalar(r0 + w * 0.5 * ph); fr.b.material.opacity = 0.85 * (1 - ph);
+  });
+}
 function r3Projectiles(g, tk) {
   const T = R3.T, used = { orb: 0, bolt: 0, raven: 0 };
   for (const p of g.projs) {
@@ -1053,15 +1092,17 @@ function r3Projectiles(g, tk) {
     if (!o) {
       if (kind === "orb") o = mesh(R3.G.sph, R3.M.orb);
       else if (kind === "bolt") { o = mesh(R3.G.oct, R3.M.crystal); o.rotation.order = "ZYX"; }
-      else { const rv = makeRaven(); o = rv.g; o.userData.wings = rv.wings; }
+      else { const rv = makeRaven(); o = rv.g; o.userData.wings = rv.wings; o.userData.eyes = rv.eyes; }
       pool.push(o); R3.scene.add(o);
     }
     o.visible = true;
     o.position.set(p.x, -p.y, 0);
-    if (kind === "orb") o.scale.setScalar(p.r * 0.9);
-    else if (kind === "bolt") { o.scale.set(p.r * 1.15, p.r * 0.55, p.r * 0.55); o.rotation.set(tk * 0.3, 0, Math.atan2(-p.vy, p.vx)); }
+    const rdy = finishReady(1 - p.owner), K = finProjK(p, rdy);   // finish-ready: drawn bigger (the hitbox stays as it is)
+    if (kind === "orb") o.scale.setScalar(p.r * 0.9 * K);
+    else if (kind === "bolt") { o.scale.set(p.r * 1.15 * K, p.r * 0.55 * K, p.r * 0.55 * K); o.rotation.set(tk * 0.3, 0, Math.atan2(-p.vy, p.vx)); }
     else {
       const s = p.vx >= 0 ? 1 : -1, fl = Math.sin(tk * 0.6) * 0.7;
+      for (const e of o.userData.eyes) e.scale.setScalar(rdy ? 2.1 : 0.95);   // the red eyes burn
       o.scale.set(1.25 * s, 1.25, 1.25); o.rotation.y = s * 0.3;
       o.userData.wings[0].rotation.x = -fl - 0.2; o.userData.wings[1].rotation.x = fl + 0.2;
     }
@@ -1141,15 +1182,16 @@ function r3Bubbles(g) {
 /* ---------- overlay drawing (2D, in world space) ---------- */
 function drawFighterFx(c, f, tk, P) {
   const look = f.spec.look, cos = look.costume, flash = f.flash > 0 && f.flash % 2 === 0;
-  c.save(); c.translate(f.x, f.y); c.scale(f.facing, 1);
+  c.save(); c.translate(f.x + P.jit[0], f.y - P.hop + P.jit[1]); c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   const shR = rot(P.sh, P.hip, P.lean);
   if (cos === "wizard") {
     const a = heldDir(f, P, shR, -Math.PI / 2 + 0.12), t = [P.hF[0] + Math.cos(a) * 40, P.hF[1] + Math.sin(a) * 40], fl = 1 + Math.sin(tk * 0.3) * 0.08;
     P.staffTip = t;
-    const gl = c.createRadialGradient(t[0], t[1], 1, t[0], t[1], 18 * fl);
+    const gr = 18 * fl * P.cryK;
+    const gl = c.createRadialGradient(t[0], t[1], 1, t[0], t[1], gr);
     gl.addColorStop(0, "rgba(255,226,140,0.7)"); gl.addColorStop(1, "rgba(255,200,90,0)");
-    c.fillStyle = gl; c.beginPath(); c.arc(t[0], t[1], 18 * fl, 0, Math.PI * 2); c.fill();
+    c.fillStyle = gl; c.beginPath(); c.arc(t[0], t[1], gr, 0, Math.PI * 2); c.fill();
   }
   if (cos === "alchemist" && f.specCd <= 0 && !flash) {
     const x = P.hF[0] + 2, y = P.hF[1] - 4, r = P.w * 0.15, fl = 1 + Math.sin(tk * 0.25) * 0.08;
@@ -1160,28 +1202,31 @@ function drawFighterFx(c, f, tk, P) {
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
   }
-  if (P.swoosh) {
-    const S = P.swoosh, m = f.move;
-    c.globalAlpha = S.heavy ? 0.75 : 0.55;
-    c.strokeStyle = f.pal.accent; c.lineCap = "round";
-    if (S.fire) { c.globalAlpha = 1; drawFlame(c, P, S, tk); }
-    else if (m && m.zap) { c.globalAlpha = 1; drawZap(c, [P.hF[0], P.hF[1] - 4], S, tk, skinLvl(f) >= 3 ? f.pal.accent : null); }
-    else if (m && m.magic) { c.globalAlpha = 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
-    else drawSwoosh(c, f, P, S);
+  if (cos === "odin" && P.ravenTo && P.ravenK > 0.05) {
+    // feathers trail the raven as it rises (the bird itself is a 3D mesh)
+    c.fillStyle = "#24232c";
+    for (let i = 0; i < 3; i++) { const q = P.ravenTo; c.save(); c.translate(q[0] - 10 - i * 7, q[1] + 8 + i * 5); c.rotate(0.6 + i); c.globalAlpha = P.ravenK * (0.8 - i * 0.2); c.beginPath(); c.ellipse(0, 0, 5, 1.8, 0, 0, Math.PI * 2); c.fill(); c.restore(); }
   }
+  drawSwooshes(c, f, P, tk, 1);
+  drawHeavyFx(c, f, P, tk);
+  drawFinishFx(c, f, P, tk);
   c.restore();
+  drawHx(c, f.slot);
 }
 function drawProjFx(c, p, tk) {
+  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
   if (p.style === "orb") {
-    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15), 0, Math.PI * 2); c.fill(); }
-    const fl = 1 + Math.sin(tk * 0.25) * 0.08, r = p.r * 0.9;
+    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
+    if (rdy) finOrbFx(c, p, tk);
+    const fl = 1 + Math.sin(tk * 0.25) * 0.08, r = p.r * 0.9 * K;
     const gl = c.createRadialGradient(p.x, p.y, r * 0.6, p.x, p.y, r * 2.4 * fl);
     gl.addColorStop(0, "rgba(140,255,120,0.45)"); gl.addColorStop(1, "rgba(80,255,90,0)");
     c.fillStyle = gl; c.beginPath(); c.arc(p.x, p.y, r * 2.4 * fl, 0, Math.PI * 2); c.fill();
     return;
   }
   if (p.style === "bolt") {
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    if (rdy) finBoltFx(c, p, tk);
+    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.scale(K, K);
     const g = c.createRadialGradient(0, 0, 2, 0, 0, p.r * 2);
     g.addColorStop(0, "rgba(255,240,180,0.75)"); g.addColorStop(1, "rgba(120,220,255,0)");
     c.fillStyle = g; c.beginPath(); c.ellipse(-p.r * 0.8, 0, p.r * 2.6, p.r * 1.1, 0, 0, Math.PI * 2); c.fill();
@@ -1192,6 +1237,7 @@ function drawProjFx(c, p, tk) {
     c.strokeStyle = "rgba(200,200,230,0.3)"; c.lineWidth = 2; c.lineCap = "round";
     const s = Math.sign(p.vx) || 1;
     for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(p.x - s * (14 + i * 4), p.y - 6 + i * 6); c.lineTo(p.x - s * (26 + i * 8), p.y - 6 + i * 6); c.stroke(); }
+    if (rdy) { finRavenFx(c, p, tk, true); finRavenEyes(c, p); }
     return;
   }
   drawProj(c, p, tk);
@@ -1208,6 +1254,7 @@ function render3D(g, tk) {
   const poses = g.fighters.map((f) => (f.state === "dead" || f.state === "gone" ? null : pose(f, tk)));
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
   r3Fighters(g, tk, poses);
+  r3FinRings(g, tk);
   r3Projectiles(g, tk);
   if (mode === "select" || mode === "online") r3Previews(tk);
   const bub = r3Bubbles(g);

@@ -55,6 +55,18 @@ const TUNE = {
   techWindow: 10,
   techLock: 30,
   suddenTime: 45 * 60,
+  // Finish mode: a special that hits an opponent at finishPct or more (before its damage) uses the move's
+  // fin numbers and freezes the game for finishStop frames.
+  finishPct: 175,
+  finishStop: 22,
+  // Charge: a ground heavy still held chgHold frames before its hitbox waits there and charges, up to chgMax
+  // frames; at full charge +chgDmg damage and +chgKb knockback.
+  chgHold: 3,
+  chgMax: 60,
+  chgDmg: 0.25,
+  chgKb: 0.2,
+  // KO at the hit: a launch is played this many frames ahead against every escape before it counts as lethal.
+  lookFrames: 360,
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -115,7 +127,8 @@ const FIGHTERS = [
       rec:   M(6, 10, 10, 6, 5, 7, 80, [0, -40, 30], { limb: "body", rec: true, vyStart: -14.5, vxStick: 4, helpless: true, glide: true, landLag: 8 }),
       pound: M(9, 1, 18,  10, 6, 11, -78, [0, -6, 22], { limb: "leg", pound: true, vyStart: 16, landLag: 14 }),
       spec:  M(12, 1, 16, 0, 0, 0, 0, [], { limb: "head", kind: "projectile", cooldown: 75,
-               proj: { style: "fire", speed: 8.5, life: 76, r: 15, ox: 36, oy: -40, grav: 0.03, dmg: 8, bkb: 5.5, kbg: 8, angle: 38 } }),
+               proj: { style: "fire", speed: 8.5, life: 76, r: 15, ox: 36, oy: -40, grav: 0.03, dmg: 8, bkb: 5.5, kbg: 8, angle: 38,
+                       fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
     },
   },
   {
@@ -147,7 +160,8 @@ const FIGHTERS = [
       pound: M(8, 1, 18,  11, 6, 12, -80, [0, -4, 24], { limb: "leg", pound: true, vyStart: 18, landLag: 16 }),
       spec:  M(10, 1, 16, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 120,
                proj: { style: "orb", speed: 7, vy0: -3.5, life: 90, r: 15, ox: 26, oy: -40, grav: 0.3, dmg: 8, bkb: 5, kbg: 6, angle: 50,
-                       burst: { r: 46, life: 12, dmg: 8, bkb: 6, kbg: 8, angle: 70 } } }),
+                       fin: { dmg: 10, bkb: 10, kbg: 14, angle: 60 },
+                       burst: { r: 46, life: 12, dmg: 8, bkb: 6, kbg: 8, angle: 70, fin: { dmg: 10, bkb: 10, kbg: 14, angle: 70 } } } }),
     },
   },
   {
@@ -178,7 +192,8 @@ const FIGHTERS = [
       rec:   M(5, 12, 16, 9, 6.5, 9, 78, [18, -64, 26], { limb: "arm", rec: true, vyStart: -17, vxStick: 3.5, helpless: true, landLag: 12 }),
       pound: M(10, 1, 22, 14, 7, 14, -80, [0, -6, 28], { limb: "leg", pound: true, vyStart: 20, landLag: 22 }),
       spec:  M(12, 1, 18, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 150,
-               proj: { style: "raven", boomer: true, speed: 9.5, life: 80, r: 16, ox: 24, oy: -60, dmg: 7, bkb: 5, kbg: 7, angle: 40 } }),
+               proj: { style: "raven", boomer: true, speed: 9.5, life: 80, r: 16, ox: 24, oy: -60, dmg: 7, bkb: 5, kbg: 7, angle: 40,
+                       fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
     },
   },
   {
@@ -209,7 +224,8 @@ const FIGHTERS = [
       rec:   M(5, 14, 14, 6, 5, 7, 80, [0, -40, 28], { limb: "body", rec: true, vyStart: -15.5, vxStick: 4.5, multi: 6, helpless: true, landLag: 10 }),
       pound: M(10, 1, 20, 12, 6.5, 13, -80, [0, -6, 26], { limb: "leg", pound: true, vyStart: 19, landLag: 20 }),
       spec:  M(12, 1, 16, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 65,
-               proj: { style: "bolt", speed: 12, life: 50, r: 13, ox: 46, oy: -52, dmg: 9, bkb: 5.5, kbg: 8, angle: 35 } }),
+               proj: { style: "bolt", speed: 12, life: 50, r: 13, ox: 46, oy: -52, dmg: 9, bkb: 5.5, kbg: 8, angle: 35,
+                       fin: { dmg: 10, bkb: 10, kbg: 14, angle: 38 } } }),
     },
   },
   {
@@ -239,7 +255,8 @@ const FIGHTERS = [
       hAir:  M(12, 4, 20, 13, 6.5, 16, 36, [46, -36, 24], { limb: "arm", landLag: 14 }),
       rec:   M(4, 14, 12, 4, 5, 6, 80, [0, -36, 28], { limb: "body", rec: true, vyStart: -15.5, vxStick: 5, multi: 5, helpless: true, landLag: 10 }),
       pound: M(8, 1, 18,  10, 6, 12, -80, [0, -6, 22], { limb: "leg", pound: true, vyStart: 18, landLag: 16 }),
-      spec:  M(9, 10, 20, 8, 6, 10, 30, [10, -32, 24], { limb: "arm", kind: "dash", speed: 15, cooldown: 155 }),
+      spec:  M(9, 10, 20, 8, 6, 10, 30, [10, -32, 24], { limb: "arm", kind: "dash", speed: 15, cooldown: 155,
+               fin: { dmg: 10, bkb: 10, kbg: 14, angle: 32 } }),
     },
   },
   {
@@ -271,11 +288,13 @@ const FIGHTERS = [
       pound: M(9, 1, 19,  11, 6.5, 12, -78, [0, -6, 24], { limb: "leg", pound: true, vyStart: 17, landLag: 16 }),
       // a short stream of five small fire puffs from the mouth
       spec:  M(10, 17, 8, 0, 0, 0, 0, [], { limb: "head", kind: "projectile", cooldown: 150,
-               proj: { style: "fire", speed: 6.5, life: 16, r: 12, ox: 30, oy: -38, count: 5, interval: 4, spreadVy: [-0.5, 0.3, -0.2, 0.5, 0], dmg: 2, bkb: 3.5, kbg: 3, angle: 35, short: true } }),
+               proj: { style: "fire", speed: 6.5, life: 16, r: 12, ox: 30, oy: -38, count: 5, interval: 4, spreadVy: [-0.5, 0.3, -0.2, 0.5, 0], dmg: 2, bkb: 3.5, kbg: 3, angle: 35, short: true,
+                       fin: { dmg: 10, bkb: 10, kbg: 14, angle: 42 } } }),
     },
   },
 ];
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
+for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
 
 /* ---------- state ---------- */
 const BTN = ["jump", "light", "heavy", "special", "dodge"];
@@ -296,7 +315,7 @@ function newFighter(spec, slot, pal, x, facing) {
     inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
-    techT: 0, techLock: 0, techDir: 0,
+    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false,
     anim: { run: 0 },
   };
 }
@@ -328,13 +347,15 @@ function dirOf(inp) {
 }
 function canAct(f) { return f.state === "idle" || f.state === "run" || f.state === "air"; }
 function intangible(f) {
-  if (f.invuln > 0) return true;
+  if (f.invuln > 0 || f.doomed) return true;
   const s = f.state;
   if (s === "respawn" || s === "getup" || s === "dead" || s === "gone") return true;
   if (s === "dodge") { const end = f.dodgeKind === "air" ? 20 : 16; return f.st >= 3 && f.st <= end; }
   return false;
 }
 function armored(f) {
+  // no armour while a heavy waits charging (it would make a charging Odin unstoppable for over a second)
+  if (f.chg > 0 && f.move && f.mt === f.move.startup - TUNE.chgHold) return false;
   return f.state === "attack" && f.move && f.move.armor && f.mt >= f.move.armor[0] && f.mt <= f.move.armor[1];
 }
 function hurt(f) { const hw = f.s.w / 2; return { x1: f.x - hw, x2: f.x + hw, y1: f.y - f.s.h, y2: f.y }; }
@@ -362,11 +383,13 @@ function step(g, inputs) {
     if (g.endT % 2) return; // half-speed slow motion
   }
   g.t++;
+  g.launches = [];
   for (const f of g.fighters) updateFighter(g, f);
   updateProjs(g);
   detectHits(g);
   for (const f of g.fighters) checkBlast(g, f);
-  if (live && g.timed) { g.timer--; if (g.timer <= 0) endByTime(g); }
+  if (live && !g.look) for (const L of g.launches) checkLethal(g, L);
+  if (live && g.timed && g.phase === "play") { g.timer--; if (g.timer <= 0) endByTime(g); }
 }
 
 function readInput(f, inp, frozen) {
@@ -516,7 +539,7 @@ function airJump(g, f) {
 function startMove(g, f, key) {
   const m = f.spec.moves[key];
   setState(f, "attack");
-  f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t;
+  f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0;
   if (key === "spec") f.specCd = m.cooldown || 0;
   if (m.rec) { f.recUsed = true; faceStick(f); f.ff = false; }
   if (m.pound) f.ff = false;
@@ -525,6 +548,12 @@ function startMove(g, f, key) {
 
 function updateAttack(g, f) {
   const m = f.move;
+  // a ground heavy still held at the end of its wind-up waits there and charges
+  if (m.charge && f.grounded && f.mt === m.startup - TUNE.chgHold && f.inp.heavy && f.chg < TUNE.chgMax) {
+    f.chg++; f.vx *= 0.82;
+    if (f.chg === TUNE.chgMax) g.events.push({ type: "chargeMax", slot: f.slot });
+    return;
+  }
   f.mt++;
   const a0 = m.startup + 1, a1 = m.startup + m.active, total = m.startup + m.active + m.endlag;
   if (m.rec) {
@@ -759,14 +788,14 @@ function spawnProj(g, f, m, i) {
     owner: f.slot, x: f.x + f.facing * p.ox, y: f.y + p.oy, dir: f.facing, vx: f.facing * p.speed,
     vy: p.spreadVy ? p.spreadVy[i] || 0 : p.vy0 || 0, grav: p.grav || 0, boomer: !!p.boomer, style, burst: p.burst || null,
     speed: p.speed, r: p.r, life: p.life, t: 0, pal: f.pal,
-    hit: { dmg: p.dmg, bkb: p.bkb, kbg: p.kbg, angle: p.angle, fire: style === "fire" },
+    hit: { dmg: p.dmg, bkb: p.bkb, kbg: p.kbg, angle: p.angle, fire: style === "fire", fin: p.fin || null },
   });
   g.events.push({ type: "proj", slot: f.slot, style, x: f.x + f.facing * p.ox, y: f.y + p.oy });
 }
 function spawnBurst(g, p, x, y) {
   const b = p.burst;
   g.projs.push({ owner: p.owner, x, y, dir: p.dir, vx: 0, vy: 0, grav: 0, boomer: false, style: "burst", burst: null,
-    speed: 0, r: b.r, life: b.life, t: 0, pal: p.pal, hit: { dmg: b.dmg, bkb: b.bkb, kbg: b.kbg, angle: b.angle, fire: false } });
+    speed: 0, r: b.r, life: b.life, t: 0, pal: p.pal, hit: { dmg: b.dmg, bkb: b.bkb, kbg: b.kbg, angle: b.angle, fire: false, fin: b.fin || null } });
   g.events.push({ type: "burst", x, y, r: b.r, slot: p.owner });
 }
 function updateProjs(g) {
@@ -826,10 +855,17 @@ function knockback(hit, percent, weight) {
 }
 
 function applyHit(g, h) {
-  const { att, def, hit } = h;
-  def.percent = Math.min(999, def.percent + hit.dmg);
-  att.dmgDealt += hit.dmg;
+  const { att, def } = h;
+  // finish mode: a special on an opponent at finishPct or more (the number shown before the hit) finishes
+  const fin = !!(h.hit.fin && def.percent >= TUNE.finishPct);
+  const hit = fin ? Object.assign({}, h.hit, h.hit.fin) : h.hit;
+  // charge: up to +chgDmg damage and +chgKb knockback for a fully charged heavy
+  const ck = !h.proj && att.chg > 0 ? att.chg / TUNE.chgMax : 0;
+  const dmg = ck ? Math.round(hit.dmg * (1 + TUNE.chgDmg * ck)) : hit.dmg;
+  def.percent = Math.min(999, def.percent + dmg);
+  att.dmgDealt += dmg;
   let kb = knockback(hit, def.percent, def.s.weight);
+  if (ck) kb *= 1 + TUNE.chgKb * ck;
   let hdir;
   if (h.proj) hdir = sign(h.proj.vx) || h.proj.dir;
   else if (Math.abs(h.lx) < 8) hdir = sign(def.x - att.x) || att.facing;
@@ -841,13 +877,13 @@ function applyHit(g, h) {
   if (armored(def) && kb < TUNE.armorKb) {
     def.armorFlash = 12; def.flash = 4;
     g.hitstop = Math.max(g.hitstop, 5);
-    g.events.push({ type: "hit", x: ex, y: ey, dmg: hit.dmg, kb: 3, armor: true, slot: att.slot, pal: att.pal, fire: !!hit.fire });
+    g.events.push({ type: "hit", x: ex, y: ey, dmg, kb: 3, armor: true, slot: att.slot, pal: att.pal, fire: !!hit.fire });
     return;
   }
   // combo counter (all hits) and light-attack strings
   const chained = def.comboBy === att.slot && def.freeT < TUNE.strGap;
   def.combo = chained ? def.combo + 1 : 1;
-  def.comboDmg = (chained ? def.comboDmg : 0) + hit.dmg;
+  def.comboDmg = (chained ? def.comboDmg : 0) + dmg;
   def.comboBy = att.slot;
   let finisher = false;
   if (!h.proj && LIGHT.has(att.mid)) {
@@ -889,8 +925,64 @@ function applyHit(g, h) {
   def.recUsed = false; def.airDodged = false; if (def.airJumps < 1) def.airJumps = 1;
   def.ledgeCd = Math.max(def.ledgeCd, 20);
   def.flash = 8;
-  g.hitstop = Math.max(g.hitstop, Math.min(16, Math.round(3 + hit.dmg * 0.45 + kb * 0.12)));
-  g.events.push({ type: "hit", x: ex, y: ey, dmg: hit.dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null });
+  g.hitstop = Math.max(g.hitstop, Math.min(16, Math.round(3 + dmg * 0.45 + kb * 0.12)));
+  if (fin) g.hitstop = Math.max(g.hitstop, TUNE.finishStop);
+  const mv = h.proj ? "spec" : att.mid;
+  if (def.tumble) g.launches.push({ att, def, mv, fin, chg: att.chg, kb, dirx: dx, diry: dy });
+  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0 });
+}
+
+/* ---------- KO at the hit ----------
+   After a launching hit the next lookFrames frames are played on a scratch copy with the defender trying
+   four escapes (steer home and recover; steer up; air dodge home; ride the launch out, then recover) and the
+   attacker idle. Only when every escape still ends at a blast line is the hit lethal. Lethal on the last life
+   decides the match right there: the loser is "doomed" (no more input or hits) and the KO finisher can play
+   from the hit itself. */
+function escapeInput(f, t, kind) {
+  const i = blankInput();
+  const home = f.x > 0 ? -1 : 1;
+  if (f.state === "hitstun") { if (kind !== 3) { i.x = home; if (kind === 1) i.y = -1; } return i; }
+  if (f.grounded || f.state === "ledge") return i;
+  i.x = home;
+  if (kind === 2 && !f.airDodged && f.state === "air") { if (t & 1) { i.dodge = true; i.y = -0.5; } return i; }
+  if (kind === 3 && dist(f.kbx, f.kby) > 0.5) return i;
+  if (f.state === "air") {
+    if (f.airJumps > 0 && f.vy > -2 && (t & 1)) i.jump = true;
+    else if (f.airJumps === 0 && !f.recUsed && (t & 1)) { i.heavy = true; i.y = -1; }
+  }
+  return i;
+}
+function lethal(g, slot) {
+  const snap = serialize(g);
+  for (let kind = 0; kind < 4; kind++) {
+    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0 });
+    restore(h, snap);
+    h.look = true; h.timed = false; h.projs = [];
+    let died = false;
+    for (let t = 0; t < TUNE.lookFrames && !died; t++) {
+      const ins = [blankInput(), blankInput()];
+      ins[slot] = escapeInput(h.fighters[slot], t, kind);
+      step(h, ins);
+      for (const e of h.events) if (e.type === "ko" && e.slot === slot) died = true;
+      h.events.length = 0;
+      const f = h.fighters[slot];
+      if (!died && (f.grounded || f.state === "ledge") && f.state !== "hitstun") return false;
+    }
+    if (!died) return false;
+  }
+  return true;
+}
+function checkLethal(g, L) {
+  const { att, def } = L;
+  if (def.state !== "hitstun" || def.doomed || att.state === "dead" || att.state === "gone") return;
+  if (!lethal(g, def.slot)) return;
+  const final = def.stocks === 1 && g.phase === "play";
+  g.events.push({ type: "lethal", slot: def.slot, by: att.slot, final, mv: L.mv, fin: L.fin, chg: L.chg, kb: L.kb, dirx: L.dirx, diry: L.diry, x: def.x, y: def.y });
+  if (!final) return;
+  // the match is decided at the hit: count the KO now; the launch plays out and the blast line only removes the loser
+  def.doomed = true;
+  def.stocks = 0; def.falls++; att.kos++;
+  endGame(g, att.slot, "stocks", true);
 }
 
 /* ---------- KO / match end ---------- */
@@ -906,12 +998,18 @@ function checkBlast(g, f) {
   }
 }
 function ko(g, f) {
+  if (f.doomed) {
+    g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: false, doomed: true });
+    Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, tumble: false, ledge: 0 });
+    setState(f, "gone");
+    return;
+  }
   f.stocks--; f.falls++;
   const killer = f.lastHitBy && f.lastHitBy !== f && g.t - f.lastHitT < 480 ? f.lastHitBy : null;
   if (killer) killer.kos++; else f.sds++;
   g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: !killer });
   g.hitstop = Math.max(g.hitstop, 6);
-  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false });
+  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0 });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
@@ -926,10 +1024,10 @@ function respawn(g, f) {
   f.percent = 0; f.airJumps = f.s.airJumps; f.recUsed = false; f.airDodged = false; f.ff = false;
   f.facing = f.slot === 0 ? 1 : -1; f.move = null; f.specCd = 0;
 }
-function endGame(g, winner, reason) {
+function endGame(g, winner, reason, hit) {
   if (g.phase === "end" || g.phase === "over") return;
   g.phase = "end"; g.winner = winner; g.endT = 0; g.endReason = reason;
-  g.events.push({ type: "game", winner });
+  g.events.push({ type: "game", winner, hit: !!hit });
 }
 function endByTime(g) {
   const [a, b] = g.fighters;
@@ -946,6 +1044,7 @@ function startSudden(g) {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
       recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0,
+      chg: 0, doomed: false,
     });
     setState(f, "idle");
   });
@@ -954,7 +1053,7 @@ function startSudden(g) {
 
 /* ---------- Bot: drives the same virtual controller a human uses ---------- */
 function makeBot(level) {
-  return { d: level, mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1 };
+  return { d: level, mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
 }
 function botInput(g, me, opp, bot) {
   const out = blankInput();
@@ -968,6 +1067,11 @@ function botInput(g, me, opp, bot) {
   while (bot.mem.length > delay + 1) bot.mem.shift();
   const o = bot.mem[0];
   if (bot.cool > 0) bot.cool--;
+  // keep holding heavy while a charge is wanted (any interruption ends it)
+  if (bot.chg > 0) {
+    if (me.state === "attack" && me.move && me.move.charge) { bot.chg--; bot.wasPress = false; out.heavy = true; out.x = bot.hold.x; out.y = bot.hold.y; return out; }
+    bot.chg = 0;
+  }
   if (bot.wasPress) { bot.wasPress = false; out.x = bot.hold.x; out.y = bot.hold.y; return out; }
   const press = (k, x, y, cool) => {
     bot.hold.x = x; bot.hold.y = y; out.x = x; out.y = y; out[k] = true;
@@ -1040,17 +1144,23 @@ function botInput(g, me, opp, bot) {
   if (act && bot.cool <= 0 && !o.inv) {
     const k = me.spec.moves.spec.kind;
     if (me.specCd <= 0) {
+      // finish-ready opponent: go for the special more often and from further away
+      const fr = o.pct >= TUNE.finishPct, spx = fr ? 2 : 1;
       const short = k === "projectile" && me.spec.moves.spec.proj.short;
-      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d)) return press("special", sx, 0, 10);
-      if (k === "projectile" && !short && adx > 110 && adx < 300 && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d)) return press("special", sx, 0, 10);
+      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
+      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
       const dashEnd = me.x + sx * 200;
-      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d)) return press("special", sx, 0, 12);
+      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx) return press("special", sx, 0, 12);
       if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d)) return press("special", sx, 0, 12);
     }
     if (adx < reach + 18 && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d)) {
       if (me.grounded) {
         const killPct = lerp(150, 95, d) * (100 / me.s.weight);
-        if ((o.pct > killPct && R() < 0.65) || R() < 0.12) return press("heavy", sx, R() < 0.2 ? 1 : 0, 10);
+        if ((o.pct > killPct && R() < 0.65) || R() < 0.12) {
+          // sometimes charge: weak bots too long (easy to punish), strong bots a short top-up
+          if (R() < 0.3) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
+          return press("heavy", sx, R() < 0.2 ? 1 : 0, 10);
+        }
         const r = R();
         return press("light", r < 0.55 ? sx : 0, r > 0.85 ? 1 : 0, 6);
       }
@@ -1083,7 +1193,8 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "airJumps", "airDodged", "ff", "dropT", "downHold", "dodgeKind", "dodgeDir", "landT", "percent", "stocks", "invuln",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
-  "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir"];
+  "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
+  "chg", "doomed"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -1120,7 +1231,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
