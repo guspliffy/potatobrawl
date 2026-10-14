@@ -104,10 +104,13 @@ function finishBan(g, attSlot) {
   finBanAt = now;
   const a = g.fighters[attSlot];
   if (!a) return;
-  finBanEl.style.setProperty("--fb", col(a.pal)); finBanT.textContent = `${a.spec.signature.name} finish`;
+  finBanEl.style.setProperty("--fb", col(a.pal)); finBanT.textContent = FIN_NAME[a.spec.id] || `${a.spec.signature.name} finish`;
   finBanEl.hidden = false; fxRestart(finBanEl, "go");
   finSfx(() => { Sfx.noise(0.07, 0.9, 6500); Sfx.noise(0.55, 0.85, 1000); Sfx.tone(150, 34, 0.6, "sawtooth", 0.3); Sfx.tone(2300, 260, 0.14, "square", 0.06); });
 }
+// a finishing special with its own name on the band, the Finish! banner and the Special button (the Gunslinger's golden bullet)
+const FIN_NAME = { gunslinger: "High Noon" };
+const finName = (spec) => FIN_NAME[spec.id] || spec.signature.name;
 // "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
 function finHit(g, e) {
   if (!e.fin) return;
@@ -423,6 +426,75 @@ const FINS = {
         o.stroke();
       }
       o.restore();
+    },
+  },
+  gunslinger: {
+    // High Noon: a stand-off under a white sun, a tumbleweed rolls between them, the draw, one golden bullet, smoke blown off the barrel
+    col: "#ffd27a",
+    muzzle: () => { const W = FIN.P[FIN.w]; return [W.x + FIN.dir * 63, -43]; },
+    step(t, k) {
+      const W = FIN.P[FIN.w];
+      W.x = FIN.wx - FIN.dir * 5 * fe(FT.HIT, FT.HIT + 60, t) * (1 - fe(FT.HIT + 60, FT.HIT + 300, t));   // the kick of the shot
+      if (t > FT.HIT + 420 && t < FT.CARD + 900) for (let i = 0; i < 0.5 * k; i++) {
+        const [mx, my] = [W.x + FIN.dir * 30, -74];
+        part({ kind: "smoke", col: "#e6e0ee", wx: mx + (Math.random() - 0.5) * 4, wy: my, vx: (Math.random() - 0.5) * 0.4, vy: -0.7 - Math.random() * 0.4, life: 70, r: 5 + Math.random() * 3, grow: 0.12 });
+      }
+      cueOnce("wind", FT.ACT, () => finSfx(() => Sfx.noiseF(1.2, 0.18, "bandpass", 500, 900, 0.8)));
+      cueOnce("draw", FT.HIT - 170, () => finSfx(() => { Sfx.tone(1500, 900, 0.04, "square", 0.07); Sfx.noise(0.03, 0.2, 5000); }));
+      cueOnce("hit", FT.HIT, () => {
+        FIN.shake = 16; finSfx(() => { Sfx.shot(true); Sfx.ko(); });
+        const [mx, my] = FINS.gunslinger.muzzle();
+        finRing(FIN.lx, -32, "#ffcf3d", 160);
+        part({ kind: "glow", col: "#fff4c8", wx: mx, wy: my, life: 12, r: 26, grow: 1.5 });
+        for (let i = 0; i < 18; i++) { const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 7;
+          part({ kind: "star", col: i % 2 ? "#ffcf3d" : "#fff4c8", wx: FIN.lx, wy: -32, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, drag: 0.93, life: 26 + Math.random() * 14, r: 4 + Math.random() * 4 }); }
+        for (let i = 0; i < 6; i++) part({ kind: "smoke", col: "#e6e0ee", wx: mx + FIN.dir * Math.random() * 20, wy: my + (Math.random() - 0.5) * 8, vx: FIN.dir * (0.5 + Math.random()), vy: -0.4 - Math.random() * 0.5, life: 60, r: 8 + Math.random() * 6, grow: 0.25 });
+      });
+    },
+    pose(P, sk, t) {
+      const low = [sk.w * 0.66, -sk.leg - sk.tor * 0.08], aim = [sk.w * 1.02, -sk.leg - sk.tor * 0.64], restB = [-sk.w * 0.62, -sk.leg - sk.tor * 0.3];
+      if (t > FT.ACT && t < FT.HIT - 170) { P.crouch = 0.22; P.lean = 0.06; P.holdAng = 1.35; P.gunB = Math.PI - 1.35; return { hF: low, hB: [-sk.w * 0.5, -sk.leg - sk.tor * 0.08] }; }   // hands over the holsters
+      if (t >= FT.HIT - 170 && t < FT.HIT + 420) {
+        const d = easeOut(fe(FT.HIT - 170, FT.HIT - 110, t)), kick = fe(FT.HIT, FT.HIT + 50, t) * (1 - fe(FT.HIT + 50, FT.HIT + 260, t));
+        P.crouch = 0.22 * (1 - d) + 0.1; P.lean = -0.04 - 0.12 * kick; P.holdAng = lerp(1.35, 0, d) - kick * 0.6; P.gunB = Math.PI - 1.35;
+        if (t >= FT.HIT && t < FT.HIT + 50) P.shotF = Math.floor((t - FT.HIT) / FMS);
+        return { hF: [lerp(low[0], aim[0], d), lerp(low[1], aim[1], d) - kick * 6], hB: [-sk.w * 0.5, -sk.leg - sk.tor * 0.08] };
+      }
+      if (t >= FT.HIT + 420 && t < FT.END) {   // blows the smoke off the barrel
+        const q = easeOut(fe(FT.HIT + 420, FT.HIT + 620, t));
+        P.mouth = 0.7 * q; P.lean = -0.05; P.holdAng = lerp(0, -1.95, q); P.gunB = Math.PI + 0.35;
+        return { hF: [lerp(aim[0], sk.w * 0.6, q), lerp(aim[1], -sk.leg - sk.tor * 0.55, q)], hB: restB };
+      }
+      return null;
+    },
+    draw(o, t) {
+      // a white noon sun behind them
+      const sun = fe(FT.CUT, FT.ACT, t) * (1 - fe(FT.CARD, FT.END, t));
+      if (sun > 0) {
+        const [sx, sy] = toScreen((FIN.wx + FIN.lx) / 2, -250), R = 64 * FIN.k;
+        o.save(); o.globalCompositeOperation = "lighter"; o.globalAlpha = 0.5 * sun;
+        o.drawImage(glowSprite("#ffd27a"), sx - R * 2.4, sy - R * 2.4, R * 4.8, R * 4.8);
+        o.globalAlpha = 0.85 * sun; o.fillStyle = "#fff6dc"; o.beginPath(); o.arc(sx, sy, R * 0.55, 0, Math.PI * 2); o.fill();
+        o.restore();
+      }
+      // a tumbleweed rolls between them during the stand-off
+      const tw = fe(FT.ACT, FT.HIT - 200, t);
+      if (tw > 0 && tw < 1) {
+        const x = lerp(FIN.wx - FIN.dir * 300, FIN.lx + FIN.dir * 300, tw), y = -13 - Math.abs(Math.sin(tw * Math.PI * 4)) * 16;
+        const [px_, py] = toScreen(x, y), r = 13 * FIN.k, rot = tw * 14 * FIN.dir;
+        o.save(); o.translate(px_, py); o.rotate(rot); o.strokeStyle = "#8a6238"; o.lineWidth = Math.max(1, 1.6 * FIN.k * 0.6); o.lineCap = "round";
+        for (let i = 0; i < 7; i++) { const a = i * 0.9; o.beginPath(); o.ellipse(0, 0, r, r * (0.45 + 0.08 * i), a, 0, Math.PI * 2); o.stroke(); }
+        o.restore();
+      }
+      // the golden bullet's line from the muzzle through the loser
+      const ln = fe(FT.HIT - 10, FT.HIT + 30, t) * (1 - fe(FT.HIT + 120, FT.HIT + 320, t));
+      if (ln > 0) {
+        const [mx, my] = FINS.gunslinger.muzzle(), [ax, ay] = toScreen(mx, my), [bx, by] = toScreen(FIN.lx + FIN.dir * 40, -32);
+        o.save(); o.lineCap = "round"; o.globalCompositeOperation = "lighter";
+        o.globalAlpha = 0.5 * ln; o.strokeStyle = "#ffcf3d"; o.lineWidth = 10 * FIN.k * 0.6; o.beginPath(); o.moveTo(ax, ay); o.lineTo(bx, by); o.stroke();
+        o.globalAlpha = ln; o.strokeStyle = "#fff8dc"; o.lineWidth = 3 * FIN.k * 0.6; o.stroke();
+        o.restore();
+      }
     },
   },
 };

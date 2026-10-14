@@ -13,12 +13,13 @@ args = sys.argv[1:]
 gfx = "2d"   # matches are 2D only since M4 (the flag is ignored by the game)
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
-ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon"]
+ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]
 fid = next((a for a in args if a in ALL), "dragon")
 opp = ALL[(ALL.index(fid) + 1) % len(ALL)]
 tag = f"{fid}-{gfx}-{W}x{H}"
 errs, bad = [], []
-SPEC = {"phoenix": "Fireball", "alchemist": "Toxic Orb", "odin": "Raven", "wizard": "Crystal Bolt", "samurai": "Quick Draw", "dragon": "Flame Breath"}
+SPEC = {"phoenix": "Fireball", "alchemist": "Toxic Orb", "odin": "Raven", "wizard": "Crystal Bolt", "samurai": "Quick Draw", "dragon": "Flame Breath", "gunslinger": "High Noon"}
+BAND = {"gunslinger": "High Noon"}   # a finishing special with its own name: the band shows just that name (finisher.js FIN_NAME)
 
 CLOCK = """(() => {
   const realRAF = window.requestAnimationFrame.bind(window), realNow = performance.now.bind(performance);
@@ -145,7 +146,7 @@ with sync_playwright() as p:
         info = pg.evaluate("() => ({ ban: document.getElementById('finBan').hidden ? '' : document.querySelector('#finBan .fb-t').textContent, fin: window.__blastline.fin.on })")
         print(what, info)
         check(not info["fin"], f"{what}: the finisher started on a hit that is not the last life")
-        if what == "special": check(info["ban"].lower() == f"{SPEC[fid].lower()} finish", f"band text '{info['ban']}'")
+        if what == "special": check(info["ban"].lower() == BAND.get(fid, f"{SPEC[fid]} finish").lower(), f"band text '{info['ban']}'")
         for ms in (60, 160, 300, 450):
             run(pg, 60 if ms == 60 else 100 if ms == 160 else 140 if ms == 300 else 150)
             shot(pg, f"{what}-{ms:03d}", ms)

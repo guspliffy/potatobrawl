@@ -62,7 +62,7 @@ for (const f of FIGHTERS) {
 let calls = 0, finals = 0, wrong = 0, endsAtHit = 0, otherEnds = 0;
 const N = +(process.argv[2] || 30);
 for (let seed = 1; seed <= N; seed++) {
-  const a = FIGHTERS[seed % 6], b = FIGHTERS[(seed * 5 + 1) % 6];
+  const n = FIGHTERS.length, a = FIGHTERS[seed % n], b = FIGHTERS[(seed + 1 + (seed * 5) % (n - 1)) % n];   // every pair, never a mirror match
   const g = newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[0] }], seed, countdown: 10 });
   const bots = [makeBot(0.85), makeBot(0.6)], open = [null, null];
   for (let t = 0; t < 20000 && g.phase !== "over"; t++) {

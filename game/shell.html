@@ -273,7 +273,7 @@ button { font: inherit; color: inherit; }
 .pop button:hover { background: var(--raise); }
 .pop button.on { background: var(--sand); color: var(--ink); }
 
-.tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; height: clamp(56px, calc(var(--uh) * 20), 168px); }
+.tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; height: clamp(56px, calc(var(--uh) * 20), 168px); }
 .tile { --fc: var(--sand); appearance: none; position: relative; padding: 0; border: 0; border-radius: 7px; overflow: hidden; cursor: pointer; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); min-width: 0; transition: transform 0.12s; }
 .tile img, .tile canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; filter: saturate(0.55) brightness(0.62); transition: filter 0.15s; }
 .tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(14, 16, 34, 0) 50%, rgba(14, 16, 34, 0.9)); pointer-events: none; }
@@ -283,6 +283,9 @@ button { font: inherit; color: inherit; }
 .tile.on img, .tile.on canvas { filter: none; }
 .tile.on span { color: var(--text); }
 .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+/* seven fighters (Gunslinger): on narrow screens a long name shrinks to fit its tile instead of being cut off */
+.tile { container-type: inline-size; }
+.tile span { font-size: min(clamp(14px, calc(var(--uh) * 4.2), 22px), 18cqw); }
 
 .detail { --fc: var(--sand); min-height: 0; display: grid; grid-template-columns: minmax(140px, 0.85fr) minmax(0, 1.3fr) minmax(210px, 1fr); gap: 16px; padding: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 10px; }
 .d-stage { position: relative; min-height: 0; border-radius: 8px; overflow: hidden; background: radial-gradient(ellipse 70% 60% at 50% 62%, var(--fcglow, rgba(243, 217, 164, 0.3)), transparent 70%), linear-gradient(180deg, #1d2142, #14172e); }
@@ -406,6 +409,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .ac-grid, #app.narrow .ac-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "me" "sync" "foot"; grid-template-rows: none; }
 .ac-me { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ac-id { display: flex; gap: 12px; align-items: center; }
+.av[data-f="gunslinger"] { background-position: 53% 67%; background-size: auto 190%; }   /* his face sits lower, under the hat brim */
 .ac-id .av { --d: 58px; }
 .ac-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .ac-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 18ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
@@ -542,9 +546,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .help-go .btn { min-height: 36px; }
 /* phone held upright with the sideways view turned off: stack everything and scroll */
 #app.portrait .sel2, #app.portrait .on2 { display: flex; flex-direction: column; overflow-y: auto; touch-action: pan-y; }
-#app.portrait .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); height: auto; flex: none; }
+#app.portrait .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); height: auto; flex: none; }
 #app.portrait .tile { height: 72px; }
 #app.portrait .tile span { font-size: 16px; }
+#app.portrait .tile span { left: 6px; right: 4px; font-size: clamp(12px, 18cqw, 16px); }   /* Gunslinger: four tiles a row, see .tile above */
+#app.portrait #oppPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
 #app.portrait .detail { grid-template-columns: 1fr; flex: none; }
 #app.portrait .d-stage { height: 200px; }
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }

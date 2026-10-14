@@ -26,6 +26,11 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   the GL canvases, tests/pwcine.py) was removed in the night clean-up (index.html 1142072 -> 912772 bytes); the five
   unfinished 3D films stay saved as patches in finisher-films/3d-wip/ (not in the repo). three.min.js is still in the
   repo root and still copied, but nothing loads it.
+- Night track (branch night-gun, PROTO 5): the Gunslinger, a seventh fighter ("Sharpshooter": Twin Shot, two weak fast
+  shots, 0.8 s cooldown; Fan the hammer with a recoil hop; High Noon, one golden finishing bullet; Powder jump).
+  Jonny's picture: /mnt/project-files/overnight/concept-gunslinger.jpg, Fable's design: overnight/fable-ideas.md
+  section 5. He has no manga page yet: when he wins, the 2D finisher (FINS.gunslinger) plays. Video and move sheet:
+  overnight/gunslinger-v1.mp4, gunslinger-v1-sheet.jpg.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -53,8 +58,11 @@ index.html is committed with every source change (check.sh flags a stale one).
   look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot(level, style)/botInput; BOT_STYLES = one style per fighter id, a few numbers
   that bias the bot's decisions; no style = the neutral bot, input for input as before),
   serialize/restore/FKEYS/checksum. Exported as `BL` (also a node module).
-  - Finish mode: a move or projectile with a `fin` block (all six specials) uses those numbers when the
+  - Finish mode: a move or projectile with a `fin` block (all seven specials) uses those numbers when the
     defender had >= TUNE.finishPct (175) before the hit; hitstop TUNE.finishStop; "hit" event `fin: true`.
+    `proj.finCount` / `proj.finStyle` (Gunslinger only): fired against a finish-ready opponent the special
+    spawns finCount projectiles drawn as finStyle (one "gold" bullet); decided at the start of the move and
+    kept in the fighter field `finShot` (defaults, FKEYS, checksum). Specials without finCount are unchanged.
   - Charge: moves with `charge` (ground hSide/hUp/hDown) wait at mt = startup - chgHold while heavy is held;
     `f.chg` 0..chgMax (60); +chgDmg/+chgKb at full; no armour while waiting; event "chargeMax".
   - KO at the hit: every launching hit (tumble) is checked by `lethal()`: serialize, then play lookFrames (360)
@@ -87,7 +95,9 @@ index.html is committed with every source change (check.sh flags a stale one).
   with the loser launched out of the arena. Also the KO zoom on earlier lives (finLethal), the finishing-
   special band (finHit) and the FINISH! / charge feedback helpers. Pure UI: two stand-in fighters
   ("puppets", copies with state "fin" and a finPose hook that pose() calls), its own camera, particles and shapes on the effects layer, name card, skip, and it holds the results
-  screen (finHold) until it ends. Timeline constants FT; one entry per fighter in FINS.
+  screen (finHold) until it ends. Timeline constants FT; one entry per fighter in FINS. FIN_NAME / finName():
+  a finishing special with its own name (Gunslinger: "High Noon") on the band, the Finish! banner and the
+  Special button; the others show their signature name.
 - ui/manga.js (after finisher.js; manga/*.js spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
   finStart plays MANGA[winner] before anything else: the real hit, the frozen frame inked (paper tint, dot tone,
   border, focus lines, sound word), panels sliding in over each other (the old ones stay visible), a face inset, the
@@ -137,6 +147,10 @@ index.html is committed with every source change (check.sh flags a stale one).
 - No service worker (a cached old build would desync matches).
 - Balance band in check.sh is 44-57% (M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
+  With the Gunslinger (night-gun, `bal7.js 80 0.5,0.8`): phoenix 50.4, alchemist 44.6, odin 52.7, wizard 50.7,
+  samurai 51.5, dragon 51.0, gunslinger 49.1. The six old fighters play exactly as before (same bot matches
+  frame by frame); their numbers moved only because adding a fighter shifts the seeds. Alchemist is close to
+  the floor (about 44 against the other five alone, from the same table).
 
 ## Tests (tests/, run from anywhere)
 snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core; always the neutral bot) · botstyle.js (each CPU style
@@ -157,6 +171,9 @@ pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-brows
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
 pwon.py now also asks both browsers for a rematch after the KO (prints "rematch ok").
+finish.js, lockdet.js and snap.js pick their pairings from FIGHTERS.length (every pair, never a mirror match:
+a mirror Dragon match found that lethal() drops projectiles in its look-ahead, so a later flame puff could
+re-hit; see Next work). pwfin / pwfinish / pwheavy / pwmanga list all seven fighters.
 experiments/lockfix-prototype/ was removed once the fix went into core.js (its checks are lockrun/lockdet).
 
 ## Deploy
@@ -190,6 +207,10 @@ accounts (1 s charge).
   Dragon's "Inferno" film, sent to Jonny as a video before the rest. 3. The other five films (Phoenix, then
   Wizard + Alchemist, then Odin + Samurai). UI only, no PROTO bump. The Potatalities move to a later finisher
   shop that sells alternates for chips (the existing currency) next to the skins.
+- Gunslinger follow-ups: his manga KO page (manga/gunslinger.js), Jonny's notes on the
+  video. lethal() empties the projectile list in its look-ahead (h.projs = []), so a projectile still in the
+  air (Dragon's flame puffs, a bullet in flight) is not part of the KO call; harmless so far
+  (finish.js passes) but a mirror Dragon match once called a KO that a later puff then changed.
 - M5: accounts via sync code: built (night-acct, see "Accounts" above). Live once Jonny has merged it, pasted update.txt and then
   accounts-setup.txt. Not done: a way to recover a lost code (by design there is none), several accounts per device, syncing the settings.
 - Then hit-feel polish, finisher Phase 3 (bloom on strong phones, music stingers), upgraded finishers for top

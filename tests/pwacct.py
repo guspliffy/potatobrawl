@@ -93,7 +93,8 @@ async def functional(b, d):
     await open_sheet(A)
     sy = await text(A, '#acSync')
     expect(has(sy, 'Save my progress', 'I have a code'), f'A: unlinked sheet offers Save my progress and I have a code ({sy!r})')
-    expect(await A.input_value('#acName') != '' and (await text(A, '#acSkins')).startswith('7'), 'A: the sheet shows a name and the 7 skins (6 base + 1)')
+    nf = await A.evaluate("window.BL.FIGHTERS.length")   # one base skin per fighter, plus the one bought
+    expect(await A.input_value('#acName') != '' and (await text(A, '#acSkins')).startswith(str(nf + 1)), f'A: the sheet shows a name and the {nf + 1} skins ({nf} base + 1)')
     await btn(A, 'Save my progress'); await A.wait_for_selector('.ac-code', timeout=10000)
     st = await acst(A); code = st['code']
     expect(re.fullmatch(r'[0-9A-HJKMNP-TV-Z]{16}', code or '') is not None, f'A: a code was created ({code})')

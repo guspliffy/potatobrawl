@@ -238,6 +238,24 @@ function drawProj(c, p, tk) {
     c.fillStyle = gr; c.beginPath(); c.arc(p.x, p.y, R * 1.5 + fl * 1.5, 0, Math.PI * 2); c.fill();
     return;
   }
+  if (p.style === "bullet" || p.style === "gold") {
+    // a small bright tracer; High Noon's bullet is golden, bigger, with a long trail and a glow (the drawing only, the hitbox is the same)
+    const gold = p.style === "gold", sp = Math.hypot(p.vx, p.vy) || 1, r = gold ? 5.4 : 3;
+    const len = Math.min(gold ? sp * 6 : sp * 2.6, p.t * sp + 4);
+    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
+    if (gold) glowDot(c, 0, 0, r * 4.2, 0.55, "#ffcf3d");
+    const gr = c.createLinearGradient(-len, 0, 0, 0);
+    gr.addColorStop(0, gold ? "rgba(255,190,50,0)" : "rgba(255,180,80,0)"); gr.addColorStop(1, gold ? "rgba(255,226,120,0.95)" : "rgba(255,242,210,0.9)");
+    c.fillStyle = gr; c.beginPath(); c.moveTo(0, -r * 0.85); c.lineTo(-len, -r * 0.2); c.lineTo(-len, r * 0.2); c.lineTo(0, r * 0.85); c.closePath(); c.fill();
+    c.fillStyle = gold ? "#ffd84a" : "#fff6dc"; c.beginPath(); c.ellipse(0, 0, r * 1.6, r, 0, 0, Math.PI * 2); c.fill();
+    if (gold) {
+      c.lineWidth = 1.2; c.strokeStyle = "#9c6c16"; c.stroke();
+      c.fillStyle = "#fffbe6"; c.beginPath(); c.ellipse(r * 0.3, -r * 0.3, r * 0.7, r * 0.3, 0, 0, Math.PI * 2); c.fill();
+      for (let i = 1; i <= 3; i++) star4(c, -len * (0.2 + i * 0.22), Math.sin(tk * 0.5 + i * 2) * r * 0.9, 4.2 - i * 0.7, "#fff4c8");
+    }
+    c.restore();
+    return;
+  }
   if (p.style === "fry") {
     c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx) + Math.sin(p.t * 0.6) * 0.08);
     c.strokeStyle = "rgba(255,240,200,0.45)"; c.lineWidth = 2; c.lineCap = "round";

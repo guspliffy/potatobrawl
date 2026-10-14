@@ -29,7 +29,7 @@ fighter = opt("--fighter", "dragon")
 throttle = float(opt("--throttle", "1"))
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
-ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon"]
+ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]
 vs = opt("--vs", "wizard").split(",")
 AT = [int(x) for x in opt("--at", "600,1500,2200,2900,2950,3100,3700,4300").split(",")] if not (skip or video) else []
 tag = f"{W}x{H}" + ("-up" if screen == "up" else "") + ("" if aim == "side" else "-" + aim) + ("-reduced" if reduced else "")

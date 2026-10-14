@@ -41,6 +41,13 @@ function updateFx(g) {
     if (f.state === "dead" || f.state === "gone") tr.length = 0;
   });
 }
+// Gunslinger's Powder jump: a flash, a tracer and smoke under him, and a shot sound in place of the jump sound
+function powderJump(e, dir, live) {
+  addFx({ k: "ring", x: e.x + dir * 14, y: e.y + 6, t: 0, life: 12, r0: 4, r1: 24, col: "#ffd27a" });
+  addFx({ k: "line", x: e.x + dir * 14, y: e.y + 46, vx: 0, vy: 22, w: 2.5, col: "#fff2c4", t: 0, life: 6 });
+  for (let i = 0; i < 6; i++) addFx({ k: "puff", x: e.x + dir * 14 + frand(-10, 10), y: e.y + frand(2, 12), vx: frand(-1.2, 1.2), vy: frand(0.1, 0.8), r: frand(4, 6.5), t: 0, life: frand(22, 34), col: "#cfc8d8" });
+  if (live) Sfx.shot(false);
+}
 function drawFx(c) {
   for (const e of fx) {
     const a = 1 - e.t / e.life;
@@ -263,6 +270,7 @@ function handleEvent(g, e, live) {
       if (live) Sfx.ko();
       break;
     case "jump": if (live && !e.rec && e.slot === meSlot) hudX.jb = true;   // the Special button grows while this jump lasts (updateHud)
+      if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "gunslinger") { powderJump(e, g.fighters[e.slot].facing, live); break; }   // Gunslinger: the recovery is a shot fired down
       if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "land": dust(e.x, e.y, 3, 22); break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
@@ -278,6 +286,12 @@ function handleEvent(g, e, live) {
       else if (e.style === "raven") { if (live) Sfx.caw(); }
       else if (e.style === "fire") { for (let i = 0; i < 6; i++) ember(e.x, e.y, (Math.random() - 0.5) * 3, -Math.random() * 2); if (live) Sfx.fire(); }
       else if (e.style === "fry") { if (live) Sfx.fry(); }
+      else if (e.style === "bullet" || e.style === "gold") {
+        const sh = g.fighters[e.slot], d = sh ? sh.facing : 1, gold = e.style === "gold";
+        for (let i = 0; i < (gold ? 6 : 2); i++) addFx({ k: "puff", x: e.x + d * (8 + Math.random() * 10), y: e.y + (Math.random() - 0.5) * 6, vx: d * (0.4 + Math.random()), vy: -0.3 - Math.random() * 0.6, r: 2.5 + Math.random() * (gold ? 4 : 2), t: 0, life: 20 + Math.random() * 12, col: "#d6cfdc" });
+        if (gold) { addFx({ k: "ring", x: e.x + d * 10, y: e.y, t: 0, life: 14, r0: 4, r1: 40, col: "#ffcf3d" }); cam.shake = Math.max(cam.shake, 5); }
+        if (live) Sfx.shot(gold);
+      }
       else if (live) Sfx.swing(true);
       break;
     case "burst":

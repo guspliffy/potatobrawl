@@ -52,7 +52,7 @@ function acctOnlineName(n) { const v = SYNC.cleanName(n); if (v && v !== P.name)
 /* ----- the pill ----- */
 function acSetAvatar(node, id) {
   const src = PORTRAITS[id] || "";
-  if (node._src !== src) { node._src = src; node.style.backgroundImage = src ? `url("${src}")` : ""; }
+  if (node._src !== src) { node._src = src; node.style.backgroundImage = src ? `url("${src}")` : ""; node.dataset.f = id; }
 }
 function acRing(ringBox, arc, ti) {
   ringBox.style.setProperty("--tc", ti.t.col);
