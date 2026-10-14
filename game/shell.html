@@ -62,7 +62,7 @@ button { font: inherit; color: inherit; }
 #app.narrow .pc-sub .tr { display: none; }
 .pc-row { display: flex; align-items: flex-end; gap: 10px; }
 .pcard.right .pc-row { flex-direction: row-reverse; }
-.pc-pct { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(30px, calc(var(--uh) * 7), 46px); line-height: 0.95; font-variant-numeric: tabular-nums; display: inline-block; transform-origin: 30% 70%; }
+.pc-pct { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(34px, calc(var(--uh) * 8), 52px); line-height: 0.95; font-variant-numeric: tabular-nums; display: inline-block; transform-origin: 30% 70%; }
 .pc-pct small { font-size: 0.5em; margin-left: 1px; }
 .pc-stocks { display: flex; gap: 4px; padding-bottom: 6px; }
 /* lives are red hearts: a lost one cracks in two and falls away while the others thump, the last one beats (faster when finish-ready) */
@@ -81,12 +81,24 @@ button { font: inherit; color: inherit; }
 @keyframes heartThump { 50% { transform: scale(1.2); } }
 @keyframes heartPop { from { transform: scale(0); } }
 @keyframes heartFade { to { opacity: 0; } }
-.hud-mid { display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: auto; }
-#clock { font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; padding: 1px 10px; background: rgba(14, 16, 34, 0.6); border-radius: 3px; }
-#clock.warn { color: var(--ember); }
-#pauseBtn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: rgba(14, 16, 34, 0.6); display: grid; place-items: center; cursor: pointer; padding: 0; }
-#pauseBtn::before { content: ""; width: 12px; height: 14px; border-left: 4px solid var(--text); border-right: 4px solid var(--text); }
+/* calmer match screen: the timer is a slim strip between the two cards, the pause is a small icon under the opponent's card */
+.hud-mid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+#clock { min-width: 64px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 17px; line-height: 1.25; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; padding: 2px 12px 1px; background: rgba(14, 16, 34, 0.62); border-bottom: 2px solid rgba(206, 210, 255, 0.2); border-radius: 2px 2px 4px 4px; }
+#clock.warn { color: var(--ember); border-bottom-color: rgba(239, 122, 82, 0.55); }
+.hud-r { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 0; }
+#pauseBtn { position: relative; flex: none; width: 36px; height: 36px; margin-right: 8px; border-radius: 50%; border: 1px solid var(--line); background: rgba(14, 16, 34, 0.6); display: grid; place-items: center; cursor: pointer; padding: 0; pointer-events: auto; }
+#pauseBtn::before { content: ""; width: 10px; height: 12px; border-left: 3.5px solid var(--text); border-right: 3.5px solid var(--text); opacity: 0.85; }
+#pauseBtn::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; }   /* the touch target is 46px */
 #pauseBtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+/* upright phones: no room between the cards, so the hearts go under the percent and the timer hangs from the top edge above them */
+#app.narrow #hud { padding-top: 32px; }
+#app.narrow .hud-mid { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+#app.narrow #clock { border-radius: 0 0 4px 4px; }
+#app.narrow.tut #hud { padding-top: 8px; }   /* the tutorial hides the timer, so the cards need no room above them */
+#app.narrow .pc-row, #app.narrow .pcard.right .pc-row { flex-direction: column; gap: 0; align-items: flex-start; }
+#app.narrow .pcard.right .pc-row { align-items: flex-end; }
+#app.narrow .pc-stocks { padding-bottom: 1px; }
+#app.narrow .pc-pct { font-size: clamp(32px, calc(var(--um) * 9.5), 42px); }
 
 /* ---------- banner ---------- */
 #banner { position: absolute; left: 0; right: 0; top: calc((100% - var(--panelH)) * 0.42); transform: translateY(-50%); text-align: center; pointer-events: none; z-index: 3; }
@@ -132,10 +144,18 @@ button { font: inherit; color: inherit; }
 #finBan .fb-t { display: inline-block; font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; font-size: clamp(30px, calc(var(--um) * 9.5), 76px); color: #fff; -webkit-text-stroke: 3px rgba(14, 16, 34, 0.78); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(14, 16, 34, 0.5); transform: skewX(-8deg); }
 #finBan.go { animation: fbIn 0.62s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
 @keyframes fbIn { 0% { transform: translateX(-70%) rotate(-7deg); opacity: 0; } 14% { transform: translateX(2%) rotate(-7deg); opacity: 1; } 22% { transform: translateX(0) rotate(-7deg); } 80% { transform: translateX(1.5%) rotate(-7deg); opacity: 1; } 100% { transform: translateX(55%) rotate(-7deg); opacity: 0; } }
-/* a fighter at finish percent: the percent pulses red and white */
-.pcard.finr .pc-pct { animation: finPulse 0.62s ease-in-out infinite; }
+/* a fighter at finish percent: the percent pulses (gently) between two reds; the colour matches the red the percent tint reaches at 175 */
+.pcard.finr .pc-pct { animation: finPulse 0.9s ease-in-out infinite; }
 .pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
-@keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 0 rgba(255, 70, 50, 0); } 50% { color: #fff; text-shadow: 0 0 16px rgba(255, 90, 60, 0.95), 0 0 3px rgba(255, 255, 255, 0.9); } }
+@keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 3px rgba(255, 70, 50, 0.3); } 50% { color: #ff8a7c; text-shadow: 0 0 14px rgba(255, 90, 60, 0.85); } }
+
+/* ---------- danger edge glow (UI only, own fighter): a thin red glow on the side a hard launch is heading for; opacity is set by screens.js ---------- */
+#dgr { position: absolute; left: 0; right: 0; top: 0; bottom: var(--panelH); z-index: 1; overflow: hidden; pointer-events: none; --dw: clamp(26px, calc(var(--um) * 9), 84px); }
+#dgr i { position: absolute; opacity: 0; }
+#dgr .l { left: 0; top: 0; bottom: 0; width: var(--dw); background: linear-gradient(90deg, rgba(255, 56, 44, 0.72) 0, rgba(255, 44, 36, 0.3) 32%, rgba(255, 44, 36, 0)); }
+#dgr .r { right: 0; top: 0; bottom: 0; width: var(--dw); background: linear-gradient(270deg, rgba(255, 56, 44, 0.72) 0, rgba(255, 44, 36, 0.3) 32%, rgba(255, 44, 36, 0)); }
+#dgr .t { left: 0; right: 0; top: 0; height: var(--dw); background: linear-gradient(180deg, rgba(255, 56, 44, 0.72) 0, rgba(255, 44, 36, 0.3) 32%, rgba(255, 44, 36, 0)); }
+#dgr .b { left: 0; right: 0; bottom: 0; height: var(--dw); background: linear-gradient(0deg, rgba(255, 56, 44, 0.72) 0, rgba(255, 44, 36, 0.3) 32%, rgba(255, 44, 36, 0)); }
 
 /* ---------- touch controls ---------- */
 #ctl { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
@@ -641,18 +661,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 <div id="app">
   <canvas id="cv" aria-label="Arena"></canvas>
+  <div id="dgr" aria-hidden="true"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i></div>
 
   <div id="hud" hidden>
     <div class="pcard" id="pc0"><div>
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div></div>
-    <div class="hud-mid" style="position: relative"><div id="clock">4:00</div><div id="pingBadge" hidden></div><button id="pauseBtn" aria-label="Pause"></button><div id="netBadge" hidden></div></div>
-    <div class="pcard right" id="pc1"><div>
-      <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
-      <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
-      <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div></div>
+    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div></div>
+    <div class="hud-r">
+      <div class="pcard right" id="pc1"><div>
+        <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+        <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
+        <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
+      </div></div>
+      <button id="pauseBtn" aria-label="Pause"></button>
+    </div>
   </div>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>

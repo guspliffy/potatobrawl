@@ -100,8 +100,10 @@ function px(p) {
 }
 const col = (p) => p.ui || p.body;
 const PORTRAITS = /*PORTRAITS*/{};
+// The percent stays white until about 90, warms to yellow by 130, and runs to red between 150 and 175, where finish mode starts
+// (BL.TUNE.finishPct) and the HUD card pulses. The card's pulse and the off-screen bubble's number share this red.
 function pctColor(p) {
-  const stops = [[0, "#f4f2ec"], [50, "#f6d77a"], [100, "#f39a4c"], [150, "#e8503a"], [220, "#b8263a"]];
+  const F = BL.TUNE.finishPct, stops = [[0, "#f4f2ec"], [90, "#f4f2ec"], [130, "#ffd84a"], [F - 25, "#ffd84a"], [F, "#ff3b32"], [F + 65, "#e0202c"]];
   for (let i = 1; i < stops.length; i++) if (p <= stops[i][0]) { const [a, ca] = stops[i - 1], [b, cb] = stops[i]; return mix(ca, cb, (p - a) / (b - a)); }
   return stops[stops.length - 1][1];
 }

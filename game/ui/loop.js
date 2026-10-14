@@ -39,12 +39,12 @@ function frame(now) {
   if (n === 5) acc = 0;
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   render(g, tick);
-  if (mode === "match" && G) updateHud();
+  if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") drawCards(tick);
   if (mode === "online") drawOnlineArt(tick);
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 newAttract();
 goMenu();
 if (NET.invite) openOnline();
