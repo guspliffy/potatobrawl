@@ -47,7 +47,7 @@ DRIVER = r"""(() => {
     if (D.start >= 0) { D.prev = D.start; D.start = -1; }   // that one whiffed: go again
     const m = a.spec.moves[mk], reach = m && m.boxes.length ? Math.max(...m.boxes.map((b) => Math.max(b.x + b.r, b.x2 + b.r))) + d.s.w / 2 - 6 : 160;
     const far = Math.abs(d.x - a.x) - Math.abs(a.vx) * 5 > reach;
-    if (far && a.grounded && tr.k === 0) { if (BL.canAct(a)) inp.x = toward; return inp; }
+    if (far && a.grounded && !(a.link > 0)) { if (BL.canAct(a)) inp.x = toward; return inp; }   // step in, as a player would, unless the link is open
     if (G.t % 4 === 0) inp[btn] = true;
     inp.y = dir === "up" ? -1 : dir === "down" ? 1 : 0; if (dir === "side") inp.x = toward;
     return inp;

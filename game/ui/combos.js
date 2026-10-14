@@ -26,19 +26,19 @@ function routeKeysHTML(r, lit) {   // each key after the first keeps its dash in
   }).join("");
 }
 const ROUTE_HINT = {
-  three: "Three light hits in a row, close in. The third one launches.",
+  three: "Light, Light, then push the stick toward them and Light again. The third hit sends them flying.",
   lift: "Side light, up light, then up + Heavy the moment the up light lands.",
   trip: "Down light, side light, then down + Heavy right away. Works at low damage.",
-  rising: "Jump the moment the up light lands, then Light with no direction in the air.",
+  rising: "Stick toward them + Light, stick up + Light, Jump the moment it lands, then Light in the air with no direction.",
   sig: "Two side lights, then Special the moment the second one lands.",
-  skyburn: "Two up lights, jump the moment the second lands, then Heavy with no direction in the air.",
+  skyburn: "Stick up + Light twice, Jump right as the second one hits, then Heavy in the air for the fiery headbutt.",
   lab: "Down light, up light, then up + Heavy right away.",
   hammer: "Two jabs, then side + Heavy and keep holding it a moment before you let go.",
   staff: "Two side lights, then side + Heavy the moment the second one lands.",
   blink: "Side light, up light, then Special the moment the up light lands.",
   tail: "Down light, side light, then Special right away.",
   whip: "Two jabs, then Special the moment the second one lands.",
-  reap: "Two down lights, then Special the moment the second one lands.",
+  reap: "Stick down + Light twice, then Special for Harvest the moment the second one lands. The spin is the finisher.",
 };
 const routesDone = () => (Array.isArray(P.routes) ? P.routes : []);
 const ROUTE_TOTAL = ROUTES.ALL.length;

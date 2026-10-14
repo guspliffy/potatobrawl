@@ -21,6 +21,7 @@ function defProfile() {
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
     last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
     daily: { d: "", r: 0, s: 0, w: "", b: 0 },   // Daily Potato (ui/daily.js)
+    routes: [], comboPaid: false,                // combo routes cleared in the Combo trial (ui/combos.js)
   };
 }
 let firstRun = false;

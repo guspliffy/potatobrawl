@@ -87,6 +87,9 @@ const SYNC = (function () {
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
+    if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
+    if (typeof p.comboPaid === "boolean") out.comboPaid = p.comboPaid;
     out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
@@ -113,6 +116,8 @@ const SYNC = (function () {
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
+    if (S.routes !== undefined) P.routes = S.routes.slice();
+    if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -178,6 +183,9 @@ const SYNC = (function () {
       }
       out.daily = Object.assign({}, v);
     }
+    // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
+    if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
+    if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);
     return out;
   }
 

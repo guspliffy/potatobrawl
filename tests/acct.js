@@ -202,6 +202,19 @@ function pureTests() {
   check(eq(dev2.daily, dy("2026-10-14", 1, 2, "2026-10-14", 2)), "daily apply: a prof without it leaves this device's record");
   SYNC.applyTo(dev2, dS);
   check(eq(dev2.daily, dS.daily) && dev2.daily !== dS.daily, "daily apply: a prof with it replaces it (a copy)");
+  // combo routes (ui/combos.js): a set of route ids, merged as a union; the 30 chips for all of them stay paid once paid anywhere
+  const rc = SYNC.sanitize({ routes: ["sig", "three", "sig", "Bad!", 7, "lift"], comboPaid: true }, FIGHTERS);
+  check(eq(rc.routes, ["lift", "sig", "three"]) && rc.comboPaid === true && eq(SYNC.sanitize(rc, FIGHTERS), rc), "routes: cleaned to a sorted set of ids, cleaning twice changes nothing");
+  check(!("routes" in o1) && !("comboPaid" in o1) && !("routes" in SYNC.sanitize({ routes: "sig" }, FIGHTERS)), "routes: not a list, or not there (an older page), counts as missing");
+  const rB = prof({ routes: ["three"], comboPaid: false }), rL = prof({ routes: ["three", "sig"], comboPaid: false }), rS = prof({ routes: ["lift", "three"], comboPaid: true });
+  const rm = SYNC.mergeProf(rL, rB, rS, false);
+  check(eq(rm.routes, ["lift", "sig", "three"]) && rm.comboPaid === true, "routes: two devices -> every route either cleared; paid on one = paid");
+  check(eq(SYNC.mergeProf(rL, rB, o1, true).routes, rL.routes) && eq(SYNC.mergeProf(SYNC.sanitize(oldPage(fb), FIGHTERS), fb, rS, true).routes, rS.routes), "routes: one side has none (an older page) -> the other side's stay");
+  const dev3 = { tokens: 1, owned: {}, pal: {}, routes: ["sig"], comboPaid: false };
+  SYNC.applyTo(dev3, o1);
+  check(eq(dev3.routes, ["sig"]) && dev3.comboPaid === false, "routes apply: a prof without them leaves this device's");
+  SYNC.applyTo(dev3, rm);
+  check(eq(dev3.routes, rm.routes) && dev3.routes !== rm.routes && dev3.comboPaid === true, "routes apply: a prof with them replaces them (a copy)");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }

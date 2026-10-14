@@ -114,5 +114,11 @@ else fail "tournament" "$LOGS/cup.log"; fi
 if grep -q "^no errors" "$LOGS/combo-ui.log"; then pass "Combo trial in the browser (cards, trial, reward; shots in build/shots/combo)"
 else fail "Combo trial in the browser" "$LOGS/combo-ui.log"; fi
 
+# 8c. Daily Potato: the day's matchup on the menu, one try, a win pays 40 chips and grows the streak on the pill, a reload or a
+#     forfeit can't give a second try, the next day brings a new matchup. Shots in build/shots/daily.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwdaily.py" daily) > "$LOGS/daily-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/daily-ui.log"; then pass "Daily Potato in the browser (one try, chips, streak; shots in build/shots/daily)"
+else fail "Daily Potato in the browser" "$LOGS/daily-ui.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
