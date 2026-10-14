@@ -108,6 +108,11 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     TUNE.linkPop (13) knockback. Before it the defender rose about 15-30 px at 0%. Now up, up, jump, nair is a true combo at 0-50%
     for every fighter (Odin from 30%: his up light can't chain into itself at 0%), hAir lands for 7 of 8, uair for 4 (tests/combos.js
     checks the nair version; `node combos.js try up,up,jump,uair` for the rest). 14 still passed, 15 broke other routes.
+  - Gunslinger's lights are point-blank shots (Jonny, 14:38 UTC: "low range shots, not punches"): every light has `shot: true` and
+    a thin box (r 10-11) sweeping out from the muzzle over its active frames (jab to 62 px, side 80, up/uair straight up to -112,
+    down at the feet to 70, nair both pistols to +-64, dair straight down to 50); side 6 dmg, sair 7 (were 7/8). First try at
+    longer ranges put him at 61%. Hellfire's stream boxes went to y-50 r 40-46 (Dragon had dropped to 42.9%).
+    Balance after both: phoenix 52.7, alchemist 47.7, odin 52.2, wizard 53.1, samurai 53.7, dragon 45.3, gunslinger 47.5, reaper 47.9.
   - Online: encIn uses the spare codes 2592-3887 for frames with ULTI held (stick x 16, dodge dropped on those frames); decIn and
     the receiver's range check know them. Still two characters per frame.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
