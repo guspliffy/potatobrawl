@@ -11,6 +11,7 @@
  *   KEEPALIVE_MINUTES  how often the server pings its own public URL so a free host
  *                      doesn't put it to sleep (default 4; 0 turns it off)
  *   KEEPALIVE_URL      the public URL to ping; on Render, RENDER_EXTERNAL_URL is used
+ *   ACCOUNTS_DIR       folder for sync-code accounts (see accounts.js). Accounts are off unless it exists and is writable.
  */
 const http = require("http");
 const fs = require("fs");
@@ -48,8 +49,16 @@ for (const [file, type, cache] of [
   try { FILES["/" + file] = asset(file, type, cache); } catch (e) { console.warn(`public/${file} missing: not served`); }
 }
 
+// Accounts (sync codes) live in accounts.js and are off unless ACCOUNTS_DIR is set. A problem there never stops the game server.
+let accounts = null;
+try {
+  accounts = require("./accounts.js").init(process.env.ACCOUNTS_DIR);
+  console.log(accounts ? `Accounts: on (${accounts.count()} saved in ${accounts.dir})` : process.env.ACCOUNTS_DIR ? "Accounts: off (ACCOUNTS_DIR is not a folder this server can write to)" : "Accounts: off");
+} catch (e) { console.warn("Accounts: off,", e.message); }
+
 const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];
+  if (accounts && accounts.handle(req, res, url)) return;
   const file = (req.method === "GET" || req.method === "HEAD") && FILES[url];
   if (file) {
     const gzip = /\bgzip\b/.test(req.headers["accept-encoding"] || "");

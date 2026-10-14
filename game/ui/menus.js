@@ -2,11 +2,12 @@
 const tap = (id, fn) => $(id).addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e); });
 tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
+tap("bCup", cupOpen);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 tap("selBack", goMenu);
 tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -15,7 +16,7 @@ tap("pQuit", () => {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
-  if (!match.ranked) { goMenu(); return; }
+  if (!match.ranked && !match.cup) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
 });
@@ -45,7 +46,7 @@ tap("onChange", () => openSelect("online"));
 tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else { goFull(); netHost(); } });
 {
   const nameIn = $("onName");
-  const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; renderOnline(); } };
+  const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; acctOnlineName(NET.myName); renderOnline(); } };
   nameIn.addEventListener("change", commit);
   nameIn.addEventListener("blur", commit);
   nameIn.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") nameIn.blur(); });
@@ -58,8 +59,7 @@ tap("onCopy", () => {
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
 tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
-/* ----- settings: sound, fullscreen, screen turning, reset ----- */
-let resetArmed = false;
+/* ----- settings: sound, fullscreen, screen turning (Reset progress is in the Account sheet, ui/acct.js) ----- */
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
   for (const [v, label] of items) {
@@ -75,18 +75,12 @@ function renderSettings() {
   chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
-  const rb = $("setReset");
-  rb.textContent = resetArmed ? "Tap again to erase rating, chips and skins" : "Reset progress";
 }
-function openSettings() { resetArmed = false; renderSettings(); modal("settings", true); }
+function openSettings() { renderSettings(); modal("settings", true); }
 tap("bSettings", openSettings);
 tap("pSettings", openSettings);
 tap("setClose", () => { modal("settings", false); if (mode === "menu") renderMenu(); });
 tap("a2hsOk", () => { P.a2hs = true; saveProfile(); renderMenu(); });
-tap("setReset", () => {
-  if (!resetArmed) { resetArmed = true; renderSettings(); return; }
-  resetArmed = false; P = defProfile(); P.tut = true; saveProfile(); sel.fighter = P.last; renderSettings(); renderMenu();
-});
 
 /* In sideways mode the browser's own touch scrolling would run along the wrong axis,
    so scrollable panels are dragged by hand, with a little momentum. */

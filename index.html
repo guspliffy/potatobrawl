@@ -54,6 +54,12 @@ button { font: inherit; color: inherit; }
 .pc-top { display: flex; gap: 8px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .pcard.right .pc-top { justify-content: flex-end; }
 .pc-tag { color: var(--fc); }
+/* a CPU opponent's potato name (and rating tier in ranked) under the CPU tag; the tier drops out on narrow screens */
+.pc-sub { margin-top: -2px; font-size: 12px; line-height: 1.2; font-weight: 500; letter-spacing: 0.02em; color: var(--mute); white-space: nowrap; }
+.pc-sub .tr { opacity: 0.8; }
+.pc-sub .tr:empty { display: none; }
+.pc-sub .tr::before { content: " · "; }
+#app.narrow .pc-sub .tr { display: none; }
 .pc-row { display: flex; align-items: flex-end; gap: 10px; }
 .pcard.right .pc-row { flex-direction: row-reverse; }
 .pc-pct { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(30px, calc(var(--uh) * 7), 46px); line-height: 0.95; font-variant-numeric: tabular-nums; display: inline-block; transform-origin: 30% 70%; }
@@ -204,23 +210,32 @@ button { font: inherit; color: inherit; }
 .brand h1 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(50px, calc(var(--um) * 12), 78px); line-height: 0.85; letter-spacing: -0.015em; text-transform: uppercase; }
 .brand h1 span { color: var(--sand); display: block; }
 .brand .slash { display: block; height: 6px; width: 70%; margin: 10px 0 0; background: linear-gradient(90deg, var(--ember), var(--sand) 55%, rgba(243, 217, 164, 0)); transform: skewX(-35deg); transform-origin: left; }
-/* rating + chips: a compact card in the top right corner of the start page, left of the settings gear (same height as the gear) */
-.rank { --tc: #9097ad; position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--gear) + 10px); max-width: calc(100% - var(--gear) - 40px); height: var(--gear); overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px 3px 8px; background: rgba(35, 39, 70, 0.78); border: 1px solid var(--line); border-radius: calc(var(--gear) / 2); }
+/* accounts: the profile pill in the top right corner of the start page, left of the settings gear (same height as the gear).
+   Tap it for the Account sheet. Avatar + name, tier badge in a progress ring + rating, chips, cups when there are any. */
 #app { --gear: 42px; }
 #app.short { --gear: 38px; }
-.rank > div:nth-child(2) { min-width: 0; }
-#app #mRank .badge { width: 25px; height: 28px; font-size: 14px; }
-.rank .rk-tier { font-size: 17px; letter-spacing: 0.03em; }
-.rank .rk-sub { font-size: 12px; margin-top: 1px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rank .bar { position: absolute; left: 22px; right: 22px; bottom: 0; height: 3px; margin: 0; border-radius: 2px 2px 0 0; }
-.rank .tok { padding-left: 10px; border-left: 1px solid var(--line); flex: none; }
-.rank .tok b { font-size: 21px; }
-.rank .tok div { font-size: 10px; letter-spacing: 0.14em; }
+.pill { --tc: #9097ad; appearance: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--gear) + 10px); max-width: calc(100% - var(--gear) - 40px); height: var(--gear); overflow: hidden; display: flex; align-items: center; gap: 9px; padding: 0 14px 0 4px; background: rgba(35, 39, 70, 0.78); border: 1px solid var(--line); border-radius: calc(var(--gear) / 2); }
+.pill:hover { background: #2c3156; }
+.pill:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+.pill > * { flex: none; }
+.av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
+.pill .pn { flex: 0 1 auto; min-width: 0; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.pill .sep { width: 1px; height: 56%; background: var(--line); }
+.pill .pr, .pill .pc, .pill .pcup { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 800; font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pill .pc { color: var(--sand); }
+.pill .pcup { color: var(--sand); font-size: 18px; }
+.ring { --tc: #9097ad; --d: calc(var(--gear) - 10px); position: relative; width: var(--d); height: var(--d); flex: none; display: grid; place-items: center; }
+.ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 3.4; }
+.ring .rt { stroke: rgba(255, 255, 255, 0.14); }
+.ring .rp { stroke: var(--tc); stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+#app .ring i.badge { width: 54%; height: 60%; font-size: calc(var(--d) * 0.36); }
+.cupglyph { display: inline-block; width: 0.95em; height: 0.95em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%23a8661f' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%23a8661f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* 667-wide phones and upright phones: no room for the name */
+#app.tiny .pill .pn, #app.tiny .pill .sep.s1, #app.narrow .pill .pn, #app.narrow .pill .sep.s1 { display: none; }
+#app.tiny .pill, #app.narrow .pill { gap: 8px; padding-right: 12px; }
 .rk-tier { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--tc); }
 .rk-sub { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; margin-top: 2px; }
-.tok { text-align: right; font-family: var(--display); line-height: 1.05; }
-.tok b { font-size: 27px; font-weight: 800; color: var(--sand); font-variant-numeric: tabular-nums; }
-.tok div { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
 .menu-actions { display: flex; flex-direction: column; gap: 10px; padding-left: 6px; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn:disabled:hover { background: var(--raise); }
@@ -387,6 +402,52 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .set-row small { grid-column: 2; font-size: 12px; color: var(--mute); margin-top: -4px; }
 .set-fine { font-size: 12px; }
 
+/* accounts: the Account sheet (tap the profile pill) */
+.acct-sheet { width: min(780px, 100%); gap: 12px; }
+.ac-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "me sync" "foot sync"; grid-template-rows: auto 1fr; gap: 12px 22px; align-items: start; }
+.ac-me { grid-area: me; } .ac-sync { grid-area: sync; } .ac-foot { grid-area: foot; align-self: end; }
+#app.portrait .ac-grid, #app.narrow .ac-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "me" "sync" "foot"; grid-template-rows: none; }
+.ac-me { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ac-id { display: flex; gap: 12px; align-items: center; }
+.ac-id .av { --d: 58px; }
+.ac-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.ac-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 18ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.ac-name:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
+.ac-rank { --tc: #9097ad; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; background: var(--raise); border-radius: 6px; }
+.ac-rank .ring { --d: 46px; }
+.ac-rank .rk-sub { margin-top: 3px; }
+.ac-stats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ac-stats > div { background: var(--raise); border-radius: 6px; padding: 6px 8px 7px; min-width: 0; }
+.ac-stats dt { font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+.ac-stats dd { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ac-stats dd small { font-size: 13px; font-weight: 700; color: var(--mute); }
+.ac-line { margin: 0; font-size: 13px; color: var(--mute); }
+.ac-line b { color: var(--text); font-weight: 600; }
+.ac-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.ac-extra:empty { display: none; }
+.ac-form { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ac-form .ac-line { margin-right: 4px; }
+.ac-form i { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 13px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 4px; color: var(--ink); background: var(--mute); }
+.ac-form i.w { background: var(--mint); } .ac-form i.l { background: var(--ember); }
+.ac-sync { background: var(--raise); border-radius: 8px; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-sync p { margin: 0; font-size: 14px; line-height: 1.4; }
+.ac-sync .btn { padding-left: 22px; }
+.ac-sync .link { align-self: flex-start; }
+.ac-code { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 800 20px/1.1 var(--display); letter-spacing: 0.08em; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 6px 6px 6px 10px; }
+.ac-code > span { user-select: text; -webkit-user-select: text; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.ac-sync { container-type: inline-size; }
+.ac-code { font-size: clamp(14px, 6.4cqw, 20px); }   /* the 19 characters stay on one line in a half-width column */
+.ac-code .chip { min-height: 28px; padding: 2px 10px; font-size: 13px; flex: none; }
+.ac-in { font: 800 20px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; width: 100%; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.ac-in:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
+.ac-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ac-row .chip { min-height: 32px; padding: 3px 14px; }
+.ac-msg { margin: 0; font-size: 13px; color: var(--mute); }
+.ac-msg:empty { display: none; }
+.ac-msg.bad { color: var(--ember); } .ac-msg.ok { color: var(--mint); }
+.ac-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); min-width: 0; }
+.ac-foot .chip { min-height: 32px; padding: 3px 14px; }
+
 /* how to play */
 .help-sheet { width: min(760px, 100%); gap: 10px; }
 .help-lead { font-size: 15px; max-width: 70ch; }
@@ -441,6 +502,30 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .d-blurb, #app.short .d-sig { font-size: 13px; line-height: 1.35; }
 #app.short .on-card { padding: 10px 12px; gap: 8px; }
 #app.short .res2 { gap: 10px 20px; }
+#app.short .acct-sheet { gap: 8px; }
+#app.short .ac-me { gap: 8px; }
+#app.short .ac-id .av { --d: 46px; }
+#app.short .ac-name { font-size: 19px; }
+#app.short .ac-rank { padding: 5px 10px 5px 6px; }
+#app.short .ac-rank .ring { --d: 38px; }
+#app.short .ac-sync { padding: 9px 12px 11px; gap: 7px; }
+#app.short .ac-sync p { font-size: 13px; line-height: 1.3; }
+#app.short .ac-stats dd { font-size: 19px; }
+#app.short .ac-foot { padding-top: 6px; }
+#app.tiny .acct-sheet { padding: 8px 14px 10px; gap: 4px; }
+#app.tiny .ac-grid { gap: 6px 18px; }
+#app.tiny .ac-me { gap: 6px; }
+#app.tiny .ac-who .kicker, #app.tiny #acPlays { display: none; }
+#app.tiny .ac-id .av { --d: 38px; }
+#app.tiny .ac-name { font-size: 18px; padding: 2px 8px; }
+#app.tiny .ac-rank .ring { --d: 34px; }
+#app.tiny .ac-rank { padding: 3px 10px 3px 5px; }
+#app.tiny .ac-stats > div { padding: 3px 8px 4px; }
+#app.tiny .ac-stats dd { font-size: 17px; }
+#app.tiny .ac-sync { padding: 8px 12px 10px; gap: 6px; }
+#app.tiny .ac-sync p.ac-note:not(.keep) { display: none; }
+#app.tiny .ac-foot { padding-top: 4px; }
+#app.tiny .ac-foot .chip, #app.tiny .ac-row .chip { min-height: 28px; padding: 2px 12px; }
 #app.tiny .brand h1 { font-size: 36px; }
 #app.tiny .brand .slash { display: none; }
 #app.tiny .menu-inner { gap: 8px; }
@@ -470,6 +555,86 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
+/* ---------- tournament (ui/cup.js): bracket screen ---------- */
+.cup { background: rgba(14, 16, 34, 0.97); --me: var(--sand); --meg: rgba(243, 217, 164, 0.4); }
+.cup2 { position: absolute; inset: 0; max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+#app.short .cup2 { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
+.cup-main { flex: 1; min-height: 0; position: relative; }
+.cup-grid { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr 1.1fr 1fr 1fr; grid-template-rows: auto minmax(0, 1fr); column-gap: clamp(12px, 2.4vw, 30px); }
+.cc-l { font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); text-align: center; padding-bottom: 2px; }
+.cc { display: flex; flex-direction: column; justify-content: space-around; min-width: 0; }
+.cc.fin { justify-content: center; gap: clamp(4px, calc(var(--uh) * 2), 14px); position: relative; }
+.cup-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.cup-lines path { fill: none; stroke: rgba(206, 210, 255, 0.22); stroke-width: 2; stroke-linejoin: round; }
+.cup-lines path.lit { stroke: var(--me); filter: drop-shadow(0 0 3px var(--meg)); }
+.cs { --fc: var(--mute); position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; min-width: 0; height: clamp(38px, calc(var(--uh) * 9.6), 62px);
+  padding: 3px 7px 3px 3px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); transition: opacity 0.3s, border-color 0.3s, box-shadow 0.3s; }
+.rt .cs { flex-direction: row-reverse; padding: 3px 3px 3px 7px; text-align: right; }
+.cs-ph { position: relative; height: 100%; aspect-ratio: 1; flex: none; border-radius: 6px; overflow: hidden; background: var(--ink); box-shadow: 0 0 0 2px var(--fc); }
+.cs-ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; display: block; }
+.cs-ph.q { display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-style: italic; font-size: 20px; color: var(--mute); box-shadow: none; }
+.cs-t { min-width: 0; display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
+.cs-n { font-family: var(--display); font-weight: 800; font-size: clamp(12px, calc(var(--uh) * 3.6), 17px); letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-r { display: flex; align-items: center; gap: 4px; font-size: clamp(11px, calc(var(--uh) * 1.9), 13px); font-weight: 500; color: var(--mute); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.rt .cs-r { justify-content: flex-end; }
+.cs-tn { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* a long tier name gives way, the rating digits never get cut */
+.cs-rn { flex: none; }
+.cs-b { --tc: var(--mute); width: 10px; height: 11px; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--tc); }
+.cs.me { border-color: var(--me); }
+.cs.path { border-color: var(--me); box-shadow: 0 0 0 1px var(--me), 0 0 14px var(--meg); }
+.cs.me .cs-n { color: var(--me); }
+.cs.out { opacity: 0.42; }
+.cs.out .cs-ph img { filter: grayscale(1); }
+.cs.tbd { background: transparent; border-style: dashed; }
+.cs.tbd .cs-n { color: var(--mute); font-weight: 600; }
+.cs.fell { border-color: var(--ember); border-style: dashed; box-shadow: none; opacity: 0.9; }
+.cs.fell .cs-n { color: var(--ember); }
+.cs.champ { border-color: #f4c95d; box-shadow: 0 0 0 1px #f4c95d, 0 0 16px rgba(244, 201, 93, 0.5); opacity: 1; }
+.cc-l.now { color: var(--me); }
+.cs.pop { animation: csPop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes csPop { from { transform: scale(0.7); opacity: 0; } }
+.trophy { display: block; margin: 0 auto; height: clamp(46px, calc(var(--uh) * 17), 120px); width: auto; filter: grayscale(1) brightness(0.65); transition: filter 0.5s; }
+.trophy.live { filter: grayscale(0.55) brightness(0.9); }
+.trophy.won { filter: drop-shadow(0 0 14px rgba(244, 201, 93, 0.8)); animation: trophyWin 1.1s cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes trophyWin { 0% { transform: scale(0.6) rotate(-8deg); } 60% { transform: scale(1.18) rotate(3deg); } 100% { transform: none; } }
+.spark { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.spark i { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #f4c95d; opacity: 0; animation: sparkOut 1.3s ease-out forwards; animation-delay: calc(var(--d) * 1ms); }
+@keyframes sparkOut { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.4); } }
+.cup-foot { flex: none; overflow: hidden; padding-top: 4px; margin-top: -4px; }
+.cf { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: var(--night); border: 1px solid var(--line); transform: translateY(150%); opacity: 0; transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.25, 1), opacity 0.25s; }
+.cup-foot.in .cf { transform: none; opacity: 1; }
+.cf .cs-ph { height: clamp(40px, calc(var(--uh) * 12), 64px); }
+.cf-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cf-t b { font-family: var(--display); font-weight: 900; font-style: italic; font-size: clamp(20px, calc(var(--uh) * 5.4), 30px); line-height: 1; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-t small { font-size: 13px; color: var(--mute); line-height: 1.25; }
+.cf-t .tokglyph { vertical-align: -1px; }
+.cf-acts { display: flex; gap: 8px; flex: none; }
+.cf .btn { width: auto; min-width: 140px; flex: none; }
+.cf.win { border-color: #f4c95d; }
+.cf.win .cf-t b { color: #f4c95d; }
+.cf.lose .cf-t b { color: var(--ember); }
+.cf-chips { font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--sand); font-variant-numeric: tabular-nums; }
+.cl-cup { position: relative; padding: 6px 0 2px; }
+.cl-cup .trophy { height: 64px; }
+.cup-list { display: none; position: absolute; inset: 0; padding-bottom: 6px; }
+.cl-h { margin: 6px 0 4px; }
+.cl-m { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
+.cl-m::after { content: "vs"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; color: var(--mute); background: var(--ink); border-radius: 8px; padding: 0 3px; }
+.cl-m .cs { height: 46px; }
+.cl-m .cs-n { font-size: 14px; }
+#app.portrait .cup-grid { display: none; }
+#app.portrait .cup-list { display: block; }
+#app.portrait .cf { flex-wrap: wrap; }
+#app.portrait .cf-t { flex: 1 1 140px; }
+#app.portrait .cf-t b { font-size: 24px; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }   /* a long name wraps instead of being cut */
+#app.portrait .cf-acts { flex: 1 1 100%; }
+#app.portrait .cf .btn { flex: 1 1 0; min-width: 0; }
+#app.tiny .cup .sel-head h2 { font-size: 22px; }
+#app.tiny .cs-r { font-size: 10px; }
+#app.tiny .cf .btn { min-height: 38px; font-size: 17px; }
+@media (prefers-reduced-motion: reduce) { .cs.pop, .trophy.won, .spark i { animation: none; } .cf { transition: none; } }
+/* ---------- end tournament ---------- */
 @media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } }
 </style>
 
@@ -484,6 +649,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="hud-mid" style="position: relative"><div id="clock">4:00</div><div id="pingBadge" hidden></div><button id="pauseBtn" aria-label="Pause"></button><div id="netBadge" hidden></div></div>
     <div class="pcard right" id="pc1"><div>
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div></div>
   </div>
@@ -508,15 +674,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <div class="rank" id="mRank">
-      <div class="badge" id="mBadge">B</div>
-      <div>
-        <div class="rk-tier" id="mTier">Bronze</div>
-        <div class="rk-sub" id="mSub">1000 rating</div>
-        <div class="bar"><i id="mBar"></i></div>
-      </div>
-      <div class="tok"><b id="mTokens"><span class="tokglyph"></span>0</b><div>chips</div></div>
-    </div>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pn" id="mName"></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -525,6 +683,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </header>
         <div class="menu-actions">
           <button class="btn primary" id="bRanked"><span>Ranked match<small id="mRec">0W · 0L</small></span></button>
+          <button class="btn" id="bCup"><span>Tournament<small id="mCup">8 players</small></span></button>
           <button class="btn" id="bOnline"><span>Play friends<small id="mOnline">online</small></span></button>
           <button class="btn" id="bPractice"><span>Practice</span></button>
           <button class="btn" id="bHelp"><span>How to play</span></button>
@@ -564,6 +723,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- tournament bracket (ui/cup.js) -->
+  <section id="scrCup" class="screen cup" hidden>
+    <div class="cup2">
+      <header class="sel-head">
+        <button class="back" id="cupBack" aria-label="Menu"></button>
+        <div class="grow"><div class="kicker" id="cupKick">Tournament</div><h2 id="cupTitle">Quarter-final</h2></div>
+        <div class="tokpill"><span class="tokglyph"></span><span id="cupTokens">0</span></div>
+      </header>
+      <div class="cup-main">
+        <div class="cup-grid" id="cupGrid"></div>
+        <div class="cup-list scroll" id="cupList"></div>
+      </div>
+      <div class="cup-foot" id="cupFoot"><div class="cf" id="cupCard"></div></div>
     </div>
   </section>
 
@@ -675,8 +850,34 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
       <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
       <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
-      <div class="set-row"><span>Progress</span><span class="chips"><button class="chip" id="setReset">Reset progress</button></span></div>
       <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+    </div>
+  </section>
+
+  <section id="scrAccount" class="screen modal" hidden>
+    <div class="sheet acct-sheet scroll">
+      <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <div class="ac-grid">
+        <div class="ac-me">
+          <div class="ac-id">
+            <span class="av" id="acAvatar"></span>
+            <div class="ac-who"><label class="kicker" for="acName">Name</label><input id="acName" class="ac-name" maxlength="16" autocomplete="nickname" spellcheck="false"><span class="ac-line" id="acPlays"></span></div>
+          </div>
+          <div class="ac-rank" id="acRank">
+            <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge">B</i></span>
+            <div><div class="rk-tier" id="acTier">Bronze</div><div class="rk-sub" id="acRating"></div></div>
+          </div>
+          <dl class="ac-stats">
+            <div><dt>Wins</dt><dd id="acW">0</dd></div>
+            <div><dt>Losses</dt><dd id="acL">0</dd></div>
+            <div><dt>Chips</dt><dd id="acChips"></dd></div>
+            <div><dt>Skins</dt><dd id="acSkins"></dd></div>
+          </dl>
+          <div class="ac-extra"><span class="ac-line" id="acMore"></span><div class="ac-form" id="acForm" aria-label="Last ranked results"></div></div>
+        </div>
+        <div class="ac-sync" id="acSync"></div>
+        <div class="ac-foot"><span class="kicker">Progress</span><button class="chip" id="acReset">Reset progress</button></div>
+      </div>
     </div>
   </section>
 </div>
@@ -1922,13 +2123,38 @@ function startSudden(g) {
 }
 
 /* ---------- Bot: drives the same virtual controller a human uses ---------- */
-function makeBot(level) {
-  return { d: level, mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
+/* Fighting styles: a few numbers that bias the decisions in botInput (not a second brain). BOT_NEUTRAL is what every number
+   means when it is left out, and it is exactly the old bot: makeBot(level) with no style plays input for input as before.
+   Offline only (tutorial, ranked, practice, tournament, attract), so none of this touches the online protocol. */
+const BOT_NEUTRAL = {
+  gap: 1,        // preferred distance, times the old walk-in distance
+  back: 0,       // steps back when closer than this share of the preferred distance (0 = never)
+  shuffle: 0.3,  // chance per decision to step back instead of holding still when in range
+  rng: 0,        // starts a melee attack this many px further out
+  poke: 0.55,    // chance that a ground light is a sideways tilt instead of a jab
+  atk: 1,        // melee attack rate, times
+  heavy: 1,      // heavy rate, times
+  charge: 0.3,   // chance that a heavy is charged
+  spec: 1,       // special rate, times
+  air: 0,        // chance per decision to take to the air near the opponent (and to jump again to stay up)
+  edge: 0,       // chance per decision to jump out after an opponent knocked past the ledge and swing at them
+};
+// by fighter id; tests/botstyle.js keeps each of them about as strong as the neutral bot
+const BOT_STYLES = {
+  samurai:   { gap: 0.4, shuffle: 0, spec: 1.3, atk: 0.8 },                            // rushes in
+  alchemist: { gap: 1.7, back: 0.4, spec: 1.7, atk: 1.15, heavy: 1.3 },                // stays back and lobs
+  odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
+  phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
+  wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
+  dragon:    { edge: 0.6 },                                                            // guards the edge
+};
+function makeBot(level, style) {
+  return { d: level, st: Object.assign({}, BOT_NEUTRAL, style), mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
 }
 function botInput(g, me, opp, bot) {
   const out = blankInput();
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
-  const d = bot.d, R = g.rng, S = STAGE.main;
+  const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
   bot.mem.push({
     x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
     gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn", inv: intangible(opp),
@@ -1982,6 +2208,7 @@ function botInput(g, me, opp, bot) {
     } else toward = -out_;
     bot.hold.x = toward; bot.hold.y = 0; out.x = toward;
     if (!canAct(me)) return out;
+    if (st.edge && bot.cool <= 0 && !belowBottom && (Math.abs(o.x) > S.x2 || o.y > S.top + 40) && Math.abs(o.x - me.x) < hw + 64 && Math.abs(o.y - me.y) < 70) return press("light", sign(o.x - me.x), 0, 6);
     const vyT = me.vy + me.kby;
     const clear = (me.x - edgeX) * out_ > hw + 10;
     if (belowBottom && !clear) {
@@ -2017,22 +2244,22 @@ function botInput(g, me, opp, bot) {
       // finish-ready opponent: go for the special more often and from further away
       const fr = o.pct >= TUNE.finishPct, spx = fr ? 2 : 1;
       const short = k === "projectile" && me.spec.moves.spec.proj.short;
-      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
-      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
+      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx * st.spec) return press("special", sx, 0, 10);
+      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx * st.spec) return press("special", sx, 0, 10);
       const dashEnd = me.x + sx * 200;
-      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx) return press("special", sx, 0, 12);
-      if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d)) return press("special", sx, 0, 12);
+      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx * st.spec) return press("special", sx, 0, 12);
+      if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d) * st.spec) return press("special", sx, 0, 12);
     }
-    if (adx < reach + 18 && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d)) {
+    if (adx < reach + 18 + st.rng && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d) * st.atk) {
       if (me.grounded) {
         const killPct = lerp(150, 95, d) * (100 / me.s.weight);
-        if ((o.pct > killPct && R() < 0.65) || R() < 0.12) {
+        if ((o.pct > killPct && R() < 0.65) || R() < 0.12 * st.heavy) {
           // sometimes charge: weak bots too long (easy to punish), strong bots a short top-up
-          if (R() < 0.3) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
+          if (R() < st.charge) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
           return press("heavy", sx, R() < 0.2 ? 1 : 0, 10);
         }
         const r = R();
-        return press("light", r < 0.55 ? sx : 0, r > 0.85 ? 1 : 0, 6);
+        return press("light", r < st.poke ? sx : 0, r > 0.85 ? 1 : 0, 6);
       }
       if (dy < -26) return press("light", 0, -1, 6);
       if (dy > 26) return press(o.pct > 90 && R() < 0.4 ? "heavy" : "light", 0, 1, 6);
@@ -2044,7 +2271,17 @@ function botInput(g, me, opp, bot) {
     }
     if (me.grounded && dy < -80 && adx < 160 && R() < 0.6) return press("jump", sx, 0, 12);
   }
-  let hx = adx > reach * 0.8 ? sx : R() < 0.3 ? -sx : 0;
+  // air style: take off near the opponent, and jump again to stay up
+  if (st.air && act && bot.cool <= 0 && adx < 260) {
+    if (me.grounded && R() < st.air) return press("jump", sx, 0, 12);
+    if (!me.grounded && me.airJumps > 0 && me.vy > 0 && dy < 40 && R() < st.air) return press("jump", sx, 0, 14);
+  }
+  // edge style: an opponent knocked out past the ledge is followed out (the off-stage code below swings at them in reach)
+  if (st.edge && act && bot.cool <= 0 && me.grounded && me.plat < 0 && o.pct > 60 && Math.abs(o.x) > S.x2 && Math.abs(o.x) < S.x2 + 170 && Math.abs(o.y - me.y) < 130 &&
+      Math.abs(me.x - sign(o.x) * S.x2) < 70 && R() < st.edge) return press("jump", sign(o.x), 0, 14);
+  const want = reach * 0.8 * st.gap;
+  let hx = adx > want ? sx : R() < st.shuffle ? -sx : 0;
+  if (st.back && adx < want * st.back) hx = sign(me.x) === -sx && Math.abs(me.x) > S.x2 - 80 ? 0 : -sx;   // keeps its distance unless cornered
   let hy = 0;
   if (me.grounded && me.plat >= 0 && dy > 50) hy = 1;
   // hold up while the opponent swings nearby: steers a launch upward if it connects
@@ -2106,7 +2343,7 @@ function checksum(g) {
   return h >>> 0;
 }
 
-root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
 
 </script>
@@ -2156,7 +2393,10 @@ function loadProfile() {
 const RULES = { l: [1, 3, 5], t: [2, 4, 0], b: [1, 3] };
 function validRules(r) { return !!r && typeof r === "object" && RULES.l.includes(r.l) && RULES.t.includes(r.t) && RULES.b.includes(r.b); }
 function ruleText(r) { return `${r.l} ${r.l === 1 ? "life" : "lives"} · ${r.t ? r.t + " min" : "no time limit"} · ${r.b === 3 ? "best of 3" : "single match"}`; }
-function saveProfile() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(P)); } catch (e) { /* ignore */ } }
+function saveProfile() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(P)); } catch (e) { /* ignore */ }
+  try { acctDirty(); } catch (e) { /* accounts (ui/acct.js) not set up yet */ }   // a linked account saves itself shortly after
+}
 let P = loadProfile();
 
 const TIERS = [
@@ -10149,8 +10389,8 @@ MANGA.wizard = (function () {
 
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
-const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline") };
-function show(name) { for (const k of ["menu", "select", "result", "online"]) screens[k].hidden = k !== name; }
+const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
+function show(name) { for (const k of ["menu", "select", "result", "online", "cup"]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; }
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
@@ -10172,18 +10412,13 @@ function newAttract() {
 }
 
 function renderMenu() {
-  const ti = tierInfo(P.rating);
-  const rank = $("mRank"); rank.style.setProperty("--tc", ti.t.col);
-  paintBadge($("mBadge"), ti.i);
-  $("mTier").textContent = ti.t.name;
-  $("mSub").textContent = ti.next ? `${P.rating} rating · ${ti.need} to ${ti.next.name}` : `${P.rating} rating · top tier`;
-  $("mBar").style.setProperty("--p", ti.p);
-  $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
+  renderPill();   // profile pill, ui/acct.js
   $("mRec").textContent = `${P.wins}W · ${P.losses}L${P.streak > 1 ? ` · ${P.streak} streak` : ""}`;
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
+  cupMenu();
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
@@ -10205,6 +10440,20 @@ function goMenu() {
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
 const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, pending: null };
+/* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
+const CPU_NAMES = [
+  "Spud Muffin", "Tater Tot", "Hash Brown", "Mash Master", "Sir Fries-a-Lot", "Lady Latke", "Chip Chomp", "Wedge Wally",
+  "Russet Rex", "Couch Potato", "Sweet Pete", "Fingerling Finn", "Gnocchi Gus", "Pommes Pierre", "Rosti Rosa", "Tuber Tom",
+  "Sprout Sam", "Starch Stan", "Papa Pomme", "Crispy Cris", "Salty Sal", "Gravy Gail", "Duchess Dot", "Lumpy Lou",
+  "Grandpa Spud", "Baron Baked", "Tater Tyrant", "Mr. Mash", "Curly Fry", "Waffle Walt", "Jacket Jim", "Butter Boris",
+  "Peel Appeal", "Eyes Ivy", "Smash Brown", "Yukon Yolanda",
+];
+let lastCpuName = "";
+function cpuName() {
+  let n;
+  do n = CPU_NAMES[(Math.random() * CPU_NAMES.length) | 0]; while (n === lastCpuName);
+  return (lastCpuName = n);
+}
 const cardArt = [];
 function statBars(spec) {
   const s = spec.stats, mv = spec.moves;
@@ -10332,9 +10581,9 @@ function openSelect(m) {
   sel.mode = m; sel.pending = null;
   mode = "select";
   const ti = tierInfo(P.rating);
-  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : "Practice · no rating, no chips";
+  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · no rating, no chips";
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -10356,7 +10605,7 @@ function startMatch() {
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150 });
-  match = { ranked, d, oppRating, bot: makeBot(d), level: ranked ? null : LEVELS[sel.level].name };
+  match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
 }
@@ -10372,6 +10621,12 @@ function enterMatchUI() {
     el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
+  { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
+    const sub = $("pc1").querySelector(".pc-sub");
+    sub.hidden = !(match.cpu && !match.online);
+    sub.querySelector(".nm").textContent = match.cpu || "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : "";
+  }
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
@@ -10392,9 +10647,11 @@ function finReady(i) {
 function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
-  if (match.ranked) { const ti = tierInfo(match.oppRating); return `${me} vs ${op} · CPU ${ti.t.name} ${match.oppRating}`; }
-  return `${me} vs ${op} · ${match.level}`;
+  if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
+  if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
+  return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
 }
+function cpuTier() { return `${tierInfo(match.oppRating).t.name} ${match.oppRating}`; }
 // Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
 function setHearts(box, n, prev) {
   if (prev < 0) box.innerHTML = "<i></i>".repeat(n);
@@ -10453,14 +10710,15 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && match.ranked ? "Forfeit" : "Quit to menu";
-  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup) ? "Forfeit" : "Quit to menu";
+  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   releaseTouch();
 }
 let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
   if (match && match.tutorial) { tutDone(); return; }
+  if (match && match.cup) { cupMatchEnd(forfeit); return; }
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -10501,13 +10759,14 @@ function showResults(R) {
   $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
   const mn = R.me.spec.name, on = R.op.spec.name;
   const who = R.online ? NET.oppName || "Your friend" : on;
+  const cpu = match.cpu && !R.online ? `${match.cpu} (${on}${R.ranked ? `, ${cpuTier()}` : ""})` : on;   // the CPU's potato name, and its tier in ranked
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   $("rSub").textContent = R.lost ? `The connection to ${who} dropped.` : R.left ? `${who} left the match.` :
     R.online && R.res === 1 ? `You beat ${who}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
     R.online && R.res === 0 ? `${who} beat you${how}.` :
     R.forfeit ? "You left the match. It counts as a loss." :
-    R.res === 1 ? `${mn} beat ${on}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.res === 0 ? `${on} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
+    R.res === 1 ? `${mn} beat ${cpu}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
+    R.res === 0 ? `${cpu} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     $("rSub").textContent += !R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`;
@@ -10553,6 +10812,290 @@ function buildNextPick() {
   }
 }
 
+/* ===================== tournament: an offline 8-player cup =====================
+   UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
+   final (2 lives / 2 min, 2 lives / 2 min, 3 lives / 3 min). The cup in progress is P.cup (saved with the profile), so a reload
+   returns to the bracket. Pause or quit inside a cup match counts as a loss. Chips: 15 / 25 / 60 per round won, +30 for a cup won
+   without losing a life. No rating change. P.cups counts the cups won.
+   P.cup = { v, seed, mi (your seat 0-7), fid, pal, slots: [{n, f, pal, r}], p: [8, 4, 2, 1 seats per round, -1 = not decided],
+             round (the one you play next), out (round you lost in, -1), by (who beat you), fold (you left), earned (chips), flawless } */
+const CUP = { names: ["Quarter-final", "Semi-final", "Final"], lives: [2, 2, 3], secs: [120, 120, 180], chips: [15, 25, 60], flawless: 30 };
+const CU = { hide: new Set(), pop: "", cheer: false, confirm: false, note: "", timers: [] };
+
+/* ----- the draw ----- */
+function cupRng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function cupShuffle(arr, R) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (R() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function cupOk(c) {
+  return !!c && c.v === 1 && !!FIG[c.fid] && Array.isArray(c.slots) && c.slots.length === 8 && c.slots.every((s) => s && FIG[s.f]) &&
+    Array.isArray(c.p) && c.p.length === 4 && c.p.every((r, i) => Array.isArray(r) && r.length === 8 >> i) && c.mi >= 0 && c.mi < 8;
+}
+const cupOver = (c) => c.out >= 0 || c.p[3][0] >= 0;
+// Seats 0-7 are the bracket from top to bottom: seats 2i and 2i+1 meet in quarter-final i. Ratings climb with every round on your path:
+// your quarter-final opponent is a little below you, the semi-final opponent comes from the other quarter in your half (about +40),
+// the final opponent from the other half (about +150).
+function cupNew(fid) {
+  const seed = (Math.random() * 2147483647) | 0, R = cupRng(seed), base = P.rating;
+  const jit = (n) => clamp(Math.round(base + n + (R() * 2 - 1) * 10), 600, 2100);
+  const mi = (R() * 8) | 0, pair = mi >> 1, half = mi >> 2, rate = new Array(8);
+  rate[mi] = base;
+  rate[mi ^ 1] = jit(-30);
+  const near = cupShuffle([jit(10), jit(55)], R);
+  rate[(pair ^ 1) * 2] = near[0]; rate[(pair ^ 1) * 2 + 1] = near[1];
+  const far = cupShuffle([jit(95), jit(125), jit(155), jit(185)], R);
+  for (let k = 0; k < 4; k++) rate[(half ^ 1) * 4 + k] = far[k];
+  const names = cupShuffle(CPU_NAMES, R), ids = cupShuffle(FIGHTERS.map((f) => f.id), R), pal = P.pal[fid] || 0;
+  const used = new Set([fid + ":" + pal]), slots = [];
+  let k = 0;
+  for (let i = 0; i < 8; i++) {
+    if (i === mi) { slots.push({ n: "You", f: fid, pal, r: base }); continue; }
+    const f = ids[k % ids.length], np = FIG[f].palettes.length;
+    let pl = (R() * np) | 0;
+    for (let t = 0; t < np && used.has(f + ":" + pl); t++) pl = (pl + 1) % np;
+    used.add(f + ":" + pl);
+    slots.push({ n: names[k], f, pal: pl, r: rate[i] });
+    k++;
+  }
+  return { v: 1, seed, mi, fid, pal, slots, p: [[0, 1, 2, 3, 4, 5, 6, 7], [-1, -1, -1, -1], [-1, -1], [-1]], round: 0, out: -1, by: -1, fold: 0, earned: 0, flawless: true };
+}
+// the other matches of a round are decided by rating (Elo odds) and the cup's seed: the same cup always plays out the same way
+function cupDecide(c, r) {
+  const cur = c.p[r], nxt = c.p[r + 1];
+  for (let i = 0; i < cur.length / 2; i++) {
+    const a = cur[2 * i], b = cur[2 * i + 1];
+    if (nxt[i] >= 0 || a < 0 || b < 0 || a === c.mi || b === c.mi) continue;   // your own match is decided by playing it
+    const pa = 1 / (1 + Math.pow(10, (c.slots[b].r - c.slots[a].r) / 400));
+    nxt[i] = cupRng(c.seed + 7919 * (r + 1) + 104729 * (i + 1))() < pa ? a : b;
+  }
+}
+// you won or lost your match of the current round: record it, decide the other matches (all the rest of the cup after a loss)
+function cupAdvance(c, won) {
+  const r = c.round, idx = c.p[r].indexOf(c.mi), opp = c.p[r][idx ^ 1];
+  c.p[r + 1][idx >> 1] = won ? c.mi : opp;
+  cupDecide(c, r);
+  if (won) { if (r < 2) c.round = r + 1; return; }
+  c.out = r; c.by = opp;
+  for (let k = r + 1; k < 3; k++) cupDecide(c, k);
+}
+// the pairs whose result is revealed one by one on the bracket screen (all but your own match)
+function cupKeys(c, r) {
+  const mine = c.p[r].indexOf(c.mi) >> 1, keys = [];
+  for (let k = r; k < 3; k++) for (let i = 0; i < c.p[k].length / 2; i++) if (!(k === r && i === mine) && c.p[k + 1][i] >= 0) keys.push(k + ":" + i);
+  return keys;
+}
+const cupOppOf = (c) => { const r = c.round, idx = c.p[r].indexOf(c.mi); return c.p[r][idx ^ 1]; };
+
+/* ----- entry, start, leave ----- */
+function cupMenu() { $("mCup").textContent = cupOk(P.cup) ? "resume" : P.cups ? `${P.cups} won` : "8 players"; }
+function cupOpen() { if (cupOk(P.cup)) cupShow({ quick: true }); else openSelect("cup"); }
+function cupBegin(fid) {
+  fid = fid || sel.fighter;
+  P.last = fid; P.cup = cupNew(fid); saveProfile();
+  cupShow({});
+}
+function cupLeave() { P.cup = null; saveProfile(); goMenu(); }
+
+/* ----- one cup match ----- */
+function cupFight() {
+  const c = P.cup, r = c.round, os = c.slots[cupOppOf(c)];
+  const me = FIG[c.fid], opp = FIG[os.f], myPal = me.palettes[c.pal] || me.palettes[0], oppPal = opp.palettes[os.pal] || opp.palettes[0];
+  Sfx.init();
+  const d = clamp((os.r - 750) / 1000, 0.08, 0.98);
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150 });
+  match = { ranked: false, cup: true, round: r, d, oppRating: os.r, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: null, cpu: os.n };
+  meSlot = 0;
+  enterMatchUI();
+}
+// finishMatch calls this for a cup match: a win moves you on, a loss (also a forfeit) ends the cup, a draw is fought again
+function cupMatchEnd(forfeit) {
+  const c = P.cup, r = c.round, g = G, me = g.fighters[0];
+  if (!forfeit && g.winner < 0) { cupShow({ note: "That one was a draw. Fight it again." }); return; }
+  const won = !forfeit && g.winner === 0;
+  if (won) {
+    if (me.stocks < g.stocks) c.flawless = false;
+    const chips = CUP.chips[r] + (r === 2 && c.flawless ? CUP.flawless : 0);
+    P.tokens += chips; c.earned += chips;
+    if (r === 2) P.cups = (P.cups | 0) + 1;
+  } else c.fold = forfeit ? 1 : 0;
+  const pos = c.p[r].indexOf(c.mi) >> 1;
+  cupAdvance(c, won);
+  saveProfile();
+  cupShow({ reveal: cupKeys(c, r), pop: won && r < 2 ? (r + 1) + ":" + pos : "", cheer: won && r === 2 });
+}
+
+/* ----- the bracket screen ----- */
+const cupEsc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+let cupSvgN = 0;   // each trophy drawing gets its own gradient id (a hidden copy must not own the gradient the visible one uses)
+const TROPHY = `<svg class="trophy %C" viewBox="0 0 64 76" aria-hidden="true"><defs><linearGradient id="%G" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#e0983a"/></linearGradient></defs>
+  <path d="M17 12H6c0 13 5 20 13 22" fill="none" stroke="#e0983a" stroke-width="4.5" stroke-linecap="round"/><path d="M47 12h11c0 13-5 20-13 22" fill="none" stroke="#e0983a" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M15 4h34v18c0 14-8 24-17 24S15 36 15 22z" fill="url(#%G)" stroke="#1f1d26" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M22 10v12c0 8 3 14 7 17" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M28 45h8v10h-8z" fill="url(#%G)" stroke="#1f1d26" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M19 56h26l4 16H15z" fill="url(#%G)" stroke="#1f1d26" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M32 15l3 6.4 7 .9-5.1 4.8 1.3 6.9-6.2-3.4-6.2 3.4 1.3-6.9-5.1-4.8 7-.9z" fill="#fff6d0" stroke="#1f1d26" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+
+function cupSlot(c, r, pos) {
+  const key = r + ":" + pos, hid = r > 0 && CU.hide.has((r - 1) + ":" + pos), s = hid ? -1 : c.p[r][pos];   // slot (r, pos) is the winner of pair pos in the round before
+  if (s < 0) return `<div class="cs tbd" data-k="${key}"><span class="cs-ph q">?</span><span class="cs-t"><span class="cs-n">Winner</span><span class="cs-r">to be decided</span></span></div>`;
+  const sl = c.slots[s], spec = FIG[sl.f], pal = spec.palettes[sl.pal] || spec.palettes[0], ti = tierInfo(sl.r), me = s === c.mi;
+  const dec = c.p[r + 1][pos >> 1], shown = !CU.hide.has(r + ":" + (pos >> 1)), done = dec >= 0 && shown;
+  const out = done && dec !== s, champ = done && r === 2 && dec === s;
+  const cls = ["cs", me ? "me" : "", me && !out ? "path" : "", out && !(me && c.out === r) ? "out" : "", me && out ? "fell" : "", champ ? "champ" : "", CU.pop === key ? "pop" : ""].filter(Boolean).join(" ");
+  return `<div class="${cls}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(pal)}"><span class="cs-ph">${PORTRAITS[sl.f] ? `<img src="${PORTRAITS[sl.f]}" alt="">` : ""}</span>` +
+    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r"><i class="cs-b" style="--tc:${ti.t.col}"></i><span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
+}
+function cupTrophy(c) {
+  const champ = c.p[3][0] >= 0 && !CU.hide.has("2:0");
+  let h = TROPHY.replace("%C", champ && c.p[3][0] === c.mi ? "won" : champ ? "" : "live").replace(/%G/g, "trG" + ++cupSvgN);
+  if (CU.cheer) {
+    h += '<div class="spark">';
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + 0.2, rr = 50 + (i % 3) * 22; h += `<i style="--x:${Math.round(Math.cos(a) * rr)}px;--y:${Math.round(Math.sin(a) * rr * 0.8)}px;--d:${(i % 4) * 90}"></i>`; }
+    h += "</div>";
+  }
+  return h;
+}
+function cupGridHTML(c) {
+  const colm = (cls, r, from, n) => `<div class="cc ${cls}">${Array.from({ length: n }, (_, k) => cupSlot(c, r, from + k)).join("")}</div>`;
+  const lab = (t, now) => `<div class="cc-l${now ? " now" : ""}">${t}</div>`, r = cupOver(c) ? -1 : c.round;
+  return lab("Quarter-final", r === 0) + lab("Semi-final", r === 1) + lab("Final", r === 2) + lab("Semi-final", r === 1) + lab("Quarter-final", r === 0) +
+    colm("q", 0, 0, 4) + colm("s", 1, 0, 2) + `<div class="cc fin">${cupSlot(c, 2, 0)}${cupTrophy(c)}${cupSlot(c, 2, 1)}</div>` + colm("s rt", 1, 2, 2) + colm("q rt", 0, 4, 4) +
+    '<svg class="cup-lines"></svg>';
+}
+function cupListHTML(c) {
+  const sec = (r, label) => {
+    let h = `<div class="kicker cl-h">${label}</div>`;
+    for (let i = 0; i < 4 >> r; i++) h += `<div class="cl-m">${cupSlot(c, r, 2 * i)}${cupSlot(c, r, 2 * i + 1)}</div>`;
+    return h;
+  };
+  return sec(0, "Quarter-finals") + sec(1, "Semi-finals") + sec(2, "Final") + `<div class="cl-cup">${cupTrophy(c)}</div>`;
+}
+// bracket lines: each pair joins into the slot its winner goes to; your own path is lit in your palette colour
+function cupLines(c) {
+  const grid = $("cupGrid"), svg = grid.querySelector(".cup-lines"), W = grid.offsetWidth, H = grid.offsetHeight;
+  if (!svg || !W) return;
+  svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const at = (r, pos) => {
+    const el = grid.querySelector(`[data-k="${r}:${pos}"]`);
+    if (!el) return null;
+    let x = 0, y = 0, e = el;   // offset*, not getBoundingClientRect, so a turned (sideways) screen measures right too
+    while (e && e !== grid) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; }
+    return { l: x, r: x + el.offsetWidth, y: y + el.offsetHeight / 2 };
+  };
+  const dim = [], lit = [];
+  for (let r = 0; r < 2; r++) for (let i = 0; i < 4 >> r; i++) {
+    const left = i < 2 >> r, dst = at(r + 1, i);
+    for (const pos of [2 * i, 2 * i + 1]) {
+      const src = at(r, pos);
+      if (!src || !dst) continue;
+      const x0 = left ? src.r : src.l, x1 = left ? dst.l : dst.r, xm = Math.round((x0 + x1) / 2);
+      (c.p[r][pos] === c.mi && c.p[r + 1][i] === c.mi && !CU.hide.has(r + ":" + i) ? lit : dim).push(`M${x0} ${src.y}H${xm}V${dst.y}H${x1}`);
+    }
+  }
+  svg.innerHTML = [...dim.map((d) => `<path d="${d}"/>`), ...lit.map((d) => `<path class="lit" d="${d}"/>`)].join("");
+}
+function cupHead(c) {
+  if (c.out >= 0) return ["Tournament · over", "Cup over"];
+  if (c.p[3][0] >= 0) return ["Tournament · over", "Champion"];
+  return [`Tournament · round ${c.round + 1} of 3`, CUP.names[c.round]];
+}
+function cupRender() {
+  const c = P.cup;
+  if (!cupOk(c)) return;
+  const [kick, title] = cupHead(c);
+  $("cupKick").textContent = kick; $("cupTitle").textContent = title; $("cupTokens").textContent = P.tokens;
+  $("cupGrid").innerHTML = cupGridHTML(c);
+  $("cupList").innerHTML = cupListHTML(c);
+  cupLines(c);
+}
+
+/* the strip under the bracket: next opponent (slides in), the end of the cup, or the leave question */
+function cupFootRender() {
+  const c = P.cup, card = $("cupCard");
+  const btn = (id, label, primary) => `<button class="btn${primary ? " primary" : ""}" id="${id}"><span>${label}</span></button>`;
+  card.className = "cf";
+  if (CU.confirm) {
+    card.innerHTML = `<div class="cf-t"><b>Leave the cup?</b><small>It ends here. Chips you already won stay.</small></div><div class="cf-acts">${btn("cfKeep", "Keep playing")}${btn("cfLeave", "Leave", true)}</div>`;
+    $("cfKeep").addEventListener("click", () => { Sfx.ui(); CU.confirm = false; cupFootRender(); cupFootIn(); });
+    $("cfLeave").addEventListener("click", () => { Sfx.ui(); cupLeave(); });
+    return;
+  }
+  if (cupOver(c)) {
+    const won = c.p[3][0] === c.mi, champ = c.slots[c.p[3][0]];
+    if (won) {
+      card.classList.add("win");
+      card.innerHTML = `<div class="cf-t"><b>Champion!</b><small><span class="cf-chips"><span class="tokglyph"></span>+<span id="cupChipsN">0</span></span> chips from this cup${c.flawless ? " · flawless, no life lost" : ""}</small></div>` +
+        `<div class="cf-acts">${btn("cfAgain", "Run it back", true)}${btn("cfMenu", "Menu")}</div>`;
+    } else {
+      const by = c.slots[c.by];
+      card.classList.add("lose");
+      card.innerHTML = `<div class="cf-t"><b>Out in the ${CUP.names[c.out].toLowerCase()}</b><small>${c.fold ? `You left the match. ${cupEsc(by.n)} goes through.` : `${cupEsc(by.n)} (${FIG[by.f].name}) beat you.`} ${cupEsc(champ.n)} won the cup. ${c.earned ? `+${c.earned} chips from this cup.` : "No chips this time."}</small></div>` +
+        `<div class="cf-acts">${btn("cfAgain", "Run it back", true)}${btn("cfMenu", "Menu")}</div>`;
+    }
+    $("cfAgain").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); cupBegin(c.fid); });
+    $("cfMenu").addEventListener("click", () => { Sfx.init(); Sfx.ui(); cupLeave(); });
+    return;
+  }
+  const oi = cupOppOf(c), os = c.slots[oi], spec = FIG[os.f], pal = spec.palettes[os.pal] || spec.palettes[0], ti = tierInfo(os.r);
+  card.innerHTML = `<span class="cs-ph" style="--fc:${col(pal)}">${PORTRAITS[os.f] ? `<img src="${PORTRAITS[os.f]}" alt="">` : ""}</span>` +
+    `<div class="cf-t"><span class="kicker">${CUP.names[c.round]} · ${CUP.lives[c.round]} lives</span><b>${spec.name} “${cupEsc(os.n)}”</b><small>${CU.note ? cupEsc(CU.note) : `${ti.t.name} ${os.r}`}</small></div>` +
+    `<div class="cf-acts">${btn("cupGo", "Fight", true)}</div>`;
+  $("cupGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); cupFight(); });
+}
+function cupFootIn() { const f = $("cupFoot"); f.classList.remove("in"); void f.offsetWidth; f.classList.add("in"); }
+
+// Show the bracket. o.reveal = pair keys ("round:pair") whose results tick in one by one; o.pop = the slot that pops in; o.cheer = the cup moment.
+function cupShow(o) {
+  o = o || {};
+  const c = P.cup;
+  if (!cupOk(c)) { P.cup = null; saveProfile(); goMenu(); return; }
+  finStop(); hideBanner(); modal("pause", false); modal("help", false); modal("settings", false);
+  mode = "cup"; paused = false; G = null; match = null; meSlot = 0;
+  $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
+  CU.timers.forEach(clearTimeout); CU.timers = [];
+  Object.assign(CU, { hide: new Set(o.reveal || []), pop: o.pop || "", cheer: false, confirm: false, note: o.note || "" });
+  const pal = FIG[c.fid].palettes[c.pal] || FIG[c.fid].palettes[0];
+  $("scrCup").style.setProperty("--me", col(pal)); $("scrCup").style.setProperty("--meg", rgba(col(pal), 0.4));
+  show("cup"); resize();
+  $("cupFoot").classList.remove("in");
+  cupFootRender(); cupRender();   // the strip first: its height decides how tall the bracket is
+  const later = (ms, fn) => CU.timers.push(setTimeout(() => { if (mode === "cup") fn(); }, ms));
+  const keys = [...CU.hide], gap = keys.length ? clamp(Math.round(1000 / keys.length), 150, 420) : 0;
+  if (o.pop) Sfx.later(0, () => Sfx.tone(660, 990, 0.12, "triangle", 0.07));
+  keys.forEach((k, n) => later(450 + n * gap, () => {
+    CU.hide.delete(k); CU.pop = "";
+    cupRender();
+    Sfx.later(0, () => Sfx.tone(520 + n * 40, 520 + n * 40, 0.05, "triangle", 0.05));
+  }));
+  const ready = o.quick ? 0 : 450 + keys.length * gap + (keys.length ? 250 : 100);
+  later(ready, () => {
+    if (o.cheer) {
+      CU.cheer = true; cupRender(); cupJingle();
+      const total = c.earned, t0 = performance.now();
+      const count = () => { const n = $("cupChipsN"); if (!n || mode !== "cup") return; const k = Math.min(1, (performance.now() - t0) / 1200); n.textContent = Math.round(total * k); if (k < 1) requestAnimationFrame(count); };
+      count();
+    } else if (cupOver(c) && c.out >= 0) Sfx.later(0, () => Sfx.tone(300, 110, 0.4, "sawtooth", 0.07));
+    cupFootIn();
+  });
+}
+function cupJingle() {
+  Sfx.later(0, () => Sfx.tone(523, 523, 0.14, "triangle", 0.09));
+  Sfx.later(130, () => Sfx.tone(659, 659, 0.14, "triangle", 0.09));
+  Sfx.later(260, () => { Sfx.tone(784, 784, 0.34, "triangle", 0.1); Sfx.noise(0.3, 0.12, 5000); });
+}
+
+$("cupBack").addEventListener("click", () => {
+  Sfx.init(); Sfx.ui();
+  const c = P.cup;
+  if (!cupOk(c) || cupOver(c)) { cupLeave(); return; }
+  CU.confirm = !CU.confirm; cupFootRender(); cupFootIn();   // "Menu" in the middle of a cup asks first: leaving ends the cup
+});
+// the lines follow the slots whenever the bracket area changes size (turning the phone, the strip under it changing height)
+if (window.ResizeObserver) new ResizeObserver(() => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); }).observe($("cupGrid"));
+else window.addEventListener("resize", () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); });
+// a reload during a cup comes back to its bracket (menus and the tutorial have run by then; an invite link or a first-time tutorial win)
+setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true }); }, 0);
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in
@@ -11080,11 +11623,12 @@ function finishOnline(left, lost) {
 const tap = (id, fn) => $(id).addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e); });
 tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
+tap("bCup", cupOpen);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 tap("selBack", goMenu);
 tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -11093,7 +11637,7 @@ tap("pQuit", () => {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
-  if (!match.ranked) { goMenu(); return; }
+  if (!match.ranked && !match.cup) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
 });
@@ -11123,7 +11667,7 @@ tap("onChange", () => openSelect("online"));
 tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else { goFull(); netHost(); } });
 {
   const nameIn = $("onName");
-  const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; renderOnline(); } };
+  const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; acctOnlineName(NET.myName); renderOnline(); } };
   nameIn.addEventListener("change", commit);
   nameIn.addEventListener("blur", commit);
   nameIn.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") nameIn.blur(); });
@@ -11136,8 +11680,7 @@ tap("onCopy", () => {
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
 tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
-/* ----- settings: sound, fullscreen, screen turning, reset ----- */
-let resetArmed = false;
+/* ----- settings: sound, fullscreen, screen turning (Reset progress is in the Account sheet, ui/acct.js) ----- */
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
   for (const [v, label] of items) {
@@ -11153,18 +11696,12 @@ function renderSettings() {
   chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
-  const rb = $("setReset");
-  rb.textContent = resetArmed ? "Tap again to erase rating, chips and skins" : "Reset progress";
 }
-function openSettings() { resetArmed = false; renderSettings(); modal("settings", true); }
+function openSettings() { renderSettings(); modal("settings", true); }
 tap("bSettings", openSettings);
 tap("pSettings", openSettings);
 tap("setClose", () => { modal("settings", false); if (mode === "menu") renderMenu(); });
 tap("a2hsOk", () => { P.a2hs = true; saveProfile(); renderMenu(); });
-tap("setReset", () => {
-  if (!resetArmed) { resetArmed = true; renderSettings(); return; }
-  resetArmed = false; P = defProfile(); P.tut = true; saveProfile(); sel.fighter = P.last; renderSettings(); renderMenu();
-});
 
 /* In sideways mode the browser's own touch scrolling would run along the wrong axis,
    so scrollable panels are dragged by hand, with a little momentum. */
@@ -11246,6 +11783,564 @@ function openHelp() {
   modal("help", true);
 }
 
+/* ===================== accounts: profile pill, Account sheet, sync code =====================
+   The pill (top right of the start page) shows who you are; tapping it opens the Account sheet with your numbers and the sync
+   section. The code format, the clean-up of a profile and the merge live in sync.js (pure, tested in node). Nothing here ever
+   blocks the menu on the network: calls have a short timeout and a failure shows one quiet line. */
+/* Account sync, the pure part: no page, no network, no storage. It is spliced into the page by build.py (at the SYNC
+   marker in ui/acct.js) and is also a node module, so tests/acct.js can test the merge. A "prof" is the part of the profile that follows the
+   player to another device. Sound, screen, fullscreen and match rules stay on each device. */
+const SYNC = (function () {
+  // Numbers that only go up by playing or down by spending: two devices add their changes together.
+  const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
+  const MAXN = 1e9;
+  const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
+  const ID_RE = /^[a-z0-9][a-z0-9_-]{0,23}$/;
+  const CTRL_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
+  const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+  const num = (v, lo, hi, d) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
+
+  /* ----- the sync code: 16 characters of Crockford base32, shown as 7K3F-9QXM-2PLA-W8RT ----- */
+  // What a player may type: any case, dashes and spaces optional, O read as 0, I and L as 1. "" when it cannot be a code.
+  // A whole link (https://.../#sync=CODE) pasted in is fine too.
+  function normCode(s) {
+    if (typeof s !== "string" || s.length > 300) return "";
+    const m = /sync=([0-9A-Za-z-]+)/.exec(s);
+    const c = (m ? m[1] : s).toUpperCase().replace(/[\s-]/g, "").replace(/O/g, "0").replace(/[IL]/g, "1");
+    return CODE_RE.test(c) ? c : "";
+  }
+  const fmtCode = (c) => String(c).replace(/(.{4})(?=.)/g, "$1-");
+  // While typing: keep only what could be part of a code, upper case, a dash after every four characters.
+  function typing(s) {
+    s = String(s || "").slice(0, 300);
+    const m = /sync=([0-9A-Za-z-]+)/.exec(s);
+    const c = (m ? m[1] : s).toUpperCase().replace(/[^0-9A-Z]/g, "").replace(/O/g, "0").replace(/[IL]/g, "1").slice(0, 16);
+    return fmtCode(c);
+  }
+
+  /* ----- a clean prof ----- */
+  const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])])) : v);
+  const canon = (v) => String(JSON.stringify(sortKeys(v)));
+  const same = (a, b) => canon(a) === canon(b);
+  function cleanName(s) {
+    return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
+  }
+  /* Anything (the page's profile, or what the server sent) -> a prof with every field present and in range, or null.
+     `figs` is the page's fighter list: it fixes how many skins each fighter has. A fighter this copy of the game does not
+     know (an account used on a newer copy) is kept as it is, so an older copy never wipes its skins. */
+  function sanitize(p, figs) {
+    if (!isObj(p)) return null;
+    const out = {};
+    for (const k of COUNTERS) out[k] = num(p[k], 0, MAXN, 0);
+    out.rating = num(p.rating, 0, 10000, 1000);
+    out.peak = Math.max(num(p.peak, 0, 10000, 1000), out.rating);
+    out.streak = num(p.streak, 0, 1e6, 0);
+    const name = cleanName(p.name); if (name) out.name = name;
+    const known = new Map((figs || []).map((f) => [f.id, f.palettes.length]));
+    out.last = typeof p.last === "string" && known.has(p.last) ? p.last : figs && figs.length ? figs[0].id : "";
+    if (p.tut) out.tut = true;
+    const owned = {}, pal = {};
+    const po = isObj(p.owned) ? p.owned : {}, pp = isObj(p.pal) ? p.pal : {};
+    const ids = new Set([...known.keys(), ...Object.keys(po).filter((k) => ID_RE.test(k)).slice(0, 24), ...Object.keys(pp).filter((k) => ID_RE.test(k)).slice(0, 24)]);
+    for (const id of [...ids].sort()) {
+      const n = known.has(id) ? known.get(id) : 16;
+      const list = Array.isArray(po[id]) ? po[id] : [];
+      owned[id] = [...new Set([0, ...list.filter((i) => Number.isInteger(i) && i >= 0 && i < n)])].sort((a, b) => a - b);
+      pal[id] = num(pp[id], 0, n - 1, 0);
+    }
+    out.owned = owned; out.pal = pal;
+    out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, 20).map((h) => ({
+      r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
+      me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
+      opr: num(h.opr, 0, 10000, 0), t: num(h.t, 0, 9e15, 0),
+    }));
+    return out;
+  }
+  // the page's profile -> a clean prof (the device-only settings are left out here)
+  function snapshot(P, figs) { return sanitize(P, figs); }
+  // copy a clean prof into the page's profile (device-only settings stay as they are)
+  function applyTo(P, S) {
+    for (const k of COUNTERS) P[k] = S[k];
+    P.rating = S.rating; P.peak = S.peak; P.streak = S.streak;
+    if (S.name) P.name = S.name; else delete P.name;
+    P.last = S.last;
+    if (S.tut) P.tut = true;
+    P.owned = Object.assign({}, P.owned, Object.fromEntries(Object.entries(S.owned).map(([k, v]) => [k, v.slice()])));
+    P.pal = Object.assign({}, P.pal, S.pal);
+    P.history = S.history.map((h) => Object.assign({}, h));
+    return P;
+  }
+  // does this profile hold anything worth a "replace it?" question
+  function hasProgress(P) {
+    if (!P) return false;
+    const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
+    return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
+      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra);
+  }
+
+  /* ----- the merge -----
+     local = this device now, base = the copy the server had when this device last synced, server = the server's newer copy.
+     Counters: the server's value plus what this device changed since base (so chips won on two devices both count).
+     Skins owned: everything either side has. Everything else (rating, streak, name, skin picked, last fighter, history; peak keeps the higher one):
+     if only one side changed it, that side; if both did, the newer side (localNewer says whether this device changed last). */
+  function mergeProf(local, base, server, localNewer) {
+    const L = local, S = server, B = base || {};
+    const out = {};
+    for (const k of COUNTERS) out[k] = Math.min(MAXN, Math.max(0, (S[k] || 0) + (L[k] || 0) - (B[k] || 0)));
+    const pick = (l, b, s) => (same(l, b) ? s : same(s, b) ? l : localNewer ? l : s);
+    out.rating = pick(L.rating, B.rating, S.rating);
+    // the best rating ever is a high-water mark: if both sides raised it, the higher one stays
+    out.peak = Math.max(same(L.peak, B.peak) ? S.peak : same(S.peak, B.peak) ? L.peak : Math.max(L.peak, S.peak), out.rating);
+    out.streak = pick(L.streak, B.streak, S.streak);
+    const name = pick(L.name, B.name, S.name); if (name) out.name = name;
+    out.last = pick(L.last, B.last, S.last);
+    if (L.tut || S.tut) out.tut = true;
+    const ids = [...new Set([...Object.keys(L.owned || {}), ...Object.keys(S.owned || {}), ...Object.keys(L.pal || {}), ...Object.keys(S.pal || {})])].sort();
+    out.owned = {}; out.pal = {};
+    for (const id of ids) {
+      out.owned[id] = [...new Set([0, ...((L.owned || {})[id] || []), ...((S.owned || {})[id] || [])])].sort((a, b) => a - b);
+      out.pal[id] = pick((L.pal || {})[id], (B.pal || {})[id], (S.pal || {})[id]) | 0;
+    }
+    out.history = pick(L.history, B.history, S.history) || [];
+    return out;
+  }
+
+  return { COUNTERS, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+})();
+if (typeof module !== "undefined") module.exports = SYNC;
+
+const ACCT_KEY = "potatobrawl.acct.v1";
+// Saved on this device (ACCT_KEY): the code, the server's revision we last synced, the copy the server had then (base),
+// when we last synced (t), when this device last changed its progress (lt), and a pending reset (force).
+const ACCT = { code: "", rev: 0, base: null, t: 0, lt: 0, force: false, avail: null, pingFailed: false, hash: "", lastC: "", op: "" };
+// What the sheet is showing right now (not saved).
+const acUI = { view: "main", pend: null, code: "", showCode: false, fresh: false, msg: "", cls: "", err: "", busy: false, manual: "", resetArmed: false, unlinkArmed: false };
+const acctOk = !!window.__blStandalone && /^https?:$/.test(location.protocol);   // a copy served by our own server can ask it for accounts
+let acctBusy = false, acctAgain = false, acctApplying = false, acctTimer = 0, acctRetryMs = 0, acctPinging = false, acShowT = 0, acResetT = 0, acUnlinkT = 0;
+
+(function acctLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(ACCT_KEY) || "null");
+    const code = s ? SYNC.normCode(s.code) : "";
+    if (code && Number.isSafeInteger(s.rev) && s.rev >= 1 && s.base && typeof s.base === "object") {
+      ACCT.code = code; ACCT.rev = s.rev; ACCT.base = SYNC.sanitize(s.base, FIGHTERS);
+      ACCT.t = +s.t || 0; ACCT.lt = +s.lt || 0; ACCT.force = !!s.force;
+    }
+  } catch (e) { /* storage unavailable: linking lasts until the page closes */ }
+  // a link like https://potatobrawl.cloud/#sync=CODE
+  const m = /^#sync=(.{1,80})$/.exec(location.hash || "");
+  if (m) { let v = m[1]; try { v = decodeURIComponent(v); } catch (e) { /* use as is */ } ACCT.hash = SYNC.normCode(v) || "bad"; }
+})();
+function acctStore() {
+  try {
+    if (!ACCT.code) localStorage.removeItem(ACCT_KEY);
+    else localStorage.setItem(ACCT_KEY, JSON.stringify({ code: ACCT.code, rev: ACCT.rev, base: ACCT.base, t: ACCT.t, lt: ACCT.lt, force: ACCT.force }));
+  } catch (e) { /* ignore */ }
+}
+function acctStripHash() { if (/^#sync=/.test(location.hash || "")) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* sandboxed */ } } }
+
+/* ----- name ----- */
+function acctDefaultName() {
+  let n = "";
+  try { n = SYNC.cleanName(localStorage.getItem("potatobrawl.name") || localStorage.getItem("blastline.name")); } catch (e) { /* none */ }
+  return n || "Potato " + (10 + Math.floor(Math.random() * 90));
+}
+function acctName() { if (!P.name) P.name = acctDefaultName(); return P.name; }
+function acctSetName(v) {
+  const n = SYNC.cleanName(v) || acctDefaultName();
+  if (n === P.name) return;
+  P.name = n;
+  if (window.__blSetName) NET.myName = window.__blSetName(n);   // the name friends see online follows
+  saveProfile(); renderPill(); renderAccount();
+}
+function acctOnlineName(n) { const v = SYNC.cleanName(n); if (v && v !== P.name) { P.name = v; saveProfile(); renderPill(); } }   // the name field on the online screen
+
+/* ----- the pill ----- */
+function acSetAvatar(node, id) {
+  const src = PORTRAITS[id] || "";
+  if (node._src !== src) { node._src = src; node.style.backgroundImage = src ? `url("${src}")` : ""; }
+}
+function acRing(ringBox, arc, ti) {
+  ringBox.style.setProperty("--tc", ti.t.col);
+  arc.style.strokeDashoffset = String(94.25 * (1 - ti.p));
+}
+function renderPill() {
+  const ti = tierInfo(P.rating), name = acctName(), cups = P.cups | 0;
+  acSetAvatar($("mAvatar"), P.last);
+  $("mName").textContent = name;
+  paintBadge($("mBadge"), ti.i);
+  acRing($("mRingBox"), $("mRing"), ti);
+  $("mRating").textContent = P.rating;
+  $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
+  const cb = $("mCups"); cb.hidden = !(cups > 0);
+  if (cups > 0) cb.innerHTML = `<span class="cupglyph"></span>${cups}`;
+  $("mRank").setAttribute("aria-label", `Account. ${name}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}`);
+}
+
+/* ----- the sheet: your numbers ----- */
+function acMk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function acBtn(label, cls, fn) {
+  const b = acMk("button", cls, label);
+  if (/\bbtn\b/.test(cls)) { b.textContent = ""; b.appendChild(acMk("span", "", label)); }
+  b.addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e, b); });
+  return b;
+}
+function acAgo(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 45) return "just now";
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} d ago`;
+}
+function acSkinCount(p) { return FIGHTERS.reduce((a, f) => a + (p.owned && p.owned[f.id] ? p.owned[f.id].length : 1), 0); }
+const acSkinTotal = () => FIGHTERS.reduce((a, f) => a + f.palettes.length, 0);
+function acSum(p) {   // one line about a profile, for the "replace it?" question
+  const ti = tierInfo(p.rating);
+  return `${ti.t.name} ${p.rating} · ${p.tokens} chips · ${acSkinCount(p)} skins`;
+}
+function renderAccount() {
+  if (screens.account.hidden) return;
+  const ti = tierInfo(P.rating), name = acctName();
+  acSetAvatar($("acAvatar"), P.last);
+  const inp = $("acName"); if (document.activeElement !== inp) inp.value = name;
+  $("acPlays").textContent = FIG[P.last] ? `Plays ${FIG[P.last].name}` : "";
+  paintBadge($("acBadge"), ti.i);
+  acRing($("acRank").querySelector(".ring"), $("acRing"), ti);
+  $("acRank").style.setProperty("--tc", ti.t.col);
+  $("acTier").textContent = ti.t.name;
+  $("acRating").textContent = `${P.rating} rating · best ${P.peak}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}`;
+  $("acW").textContent = P.wins; $("acL").textContent = P.losses;
+  $("acChips").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
+  $("acSkins").innerHTML = `${acSkinCount(P)}<small> / ${acSkinTotal()}</small>`;
+  const more = [];
+  const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
+  if (fw + fl > 0) more.push(`Friend matches: ${fw} won, ${fl} lost`);
+  if (cups > 0) more.push(`Cups won: ${cups}`);
+  $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
+  const form = $("acForm"); form.innerHTML = "";
+  const hist = (P.history || []).slice(0, 10);
+  if (hist.length) {
+    form.appendChild(acMk("span", "ac-line", "Recent ranked"));
+    for (const h of hist) { const i = acMk("i", h.r === 1 ? "w" : h.r === 0 ? "l" : "", h.r === 1 ? "W" : h.r === 0 ? "L" : "D"); i.title = `${h.d > 0 ? "+" : ""}${h.d}`; form.appendChild(i); }
+  }
+  form.hidden = !hist.length;
+  $("acReset").textContent = acUI.resetArmed ? (ACCT.code ? "Tap again to erase it everywhere" : "Tap again to erase rating, chips and skins") : "Reset progress";
+  renderSync();
+}
+
+/* ----- the sheet: the sync section ----- */
+function acMsg(text, cls) { acUI.msg = text || ""; acUI.cls = cls || ""; const m = document.getElementById("acMsg"); if (m) { m.textContent = acUI.msg; m.className = "ac-msg" + (acUI.cls ? " " + acUI.cls : ""); } }
+function acStatusText() {
+  if (ACCT.op === "saving") return "Saving...";
+  if (acUI.err) return acUI.err;
+  return ACCT.t ? `Saved ${acAgo(ACCT.t)}` : "Not saved yet";
+}
+function renderStatus() { const s = document.getElementById("acStat"); if (s && !screens.account.hidden) s.textContent = acStatusText(); }
+function acctLink() { return location.origin + location.pathname.replace(/index\.html$/, "") + "#sync=" + ACCT.code; }
+function acCopy(text, btn, idle) {
+  const done = (ok) => { if (!ok) { acUI.manual = text; renderSync(); return; } btn.textContent = "Copied"; setTimeout(() => { if (btn.isConnected) btn.textContent = idle; }, 1800); };
+  try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+}
+function acSyncView() {
+  const box = $("acSync"); box.innerHTML = "";
+  const head = (t) => box.appendChild(acMk("div", "kicker", t));
+  const msg = (alt) => { const m = acMk("p", "ac-msg" + (acUI.cls ? " " + acUI.cls : ""), acUI.msg || alt || ""); m.id = "acMsg"; m.setAttribute("aria-live", "polite"); box.appendChild(m); };
+  if (ACCT.code) {   // ----- linked
+    head("Saved to an account");
+    const code = acMk("div", "ac-code");
+    const flip = () => {   // tap the code or the button: show it for a while, tap again to hide it
+      acUI.showCode = !acUI.showCode; clearTimeout(acShowT);
+      if (acUI.showCode) acShowT = setTimeout(() => { acUI.showCode = false; acUI.fresh = false; renderSync(); }, 30000);
+      renderSync();
+    };
+    const cs = acMk("span", "", acUI.showCode ? SYNC.fmtCode(ACCT.code) : "\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022");
+    if (!acUI.showCode) cs.addEventListener("click", () => { Sfx.init(); Sfx.ui(); flip(); });
+    code.appendChild(cs);
+    code.appendChild(acBtn(acUI.showCode ? "Hide" : "Show", "chip", flip));
+    box.appendChild(code);
+    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? "Write this code down and keep it private. It is the only way to get your progress back." : "This code gets your progress onto another device. Keep it private."));
+    const st = acMk("p", "ac-msg"); const sv = acMk("span", "", acStatusText()); sv.id = "acStat"; st.appendChild(sv);
+    st.appendChild(document.createTextNode(" · "));
+    st.appendChild(acBtn("Sync now", "link", () => { acctSync(true); }));
+    box.appendChild(st);
+    const row = acMk("div", "ac-row");
+    row.appendChild(acBtn("Copy code", "chip", (e, b) => acCopy(SYNC.fmtCode(ACCT.code), b, "Copy code")));
+    row.appendChild(acBtn("Copy link", "chip", (e, b) => acCopy(acctLink(), b, "Copy link")));
+    box.appendChild(row);
+    if (acUI.manual) { const t = acMk("div", "on-link", acUI.manual); box.appendChild(t); }
+    box.appendChild(acBtn(acUI.unlinkArmed ? "Tap again to unlink" : "Unlink this device", "link", () => {
+      if (!acUI.unlinkArmed) { acUI.unlinkArmed = true; clearTimeout(acUnlinkT); acUnlinkT = setTimeout(() => { acUI.unlinkArmed = false; renderSync(); }, 6000); renderSync(); return; }
+      acUI.unlinkArmed = false; acctUnlink();
+    }));
+    msg();
+    return;
+  }
+  head("Save your progress");
+  if (!acctOk || ACCT.avail === false) {   // ----- no accounts here (local file, test page, or the server has them off)
+    box.appendChild(acMk("p", "ac-note keep", "Saving to an account isn't available yet."));
+    return;
+  }
+  if (ACCT.avail === null && !ACCT.pingFailed) {   // ----- asking the server whether it has accounts
+    box.appendChild(acMk("p", "ac-note keep", "Checking..."));
+    return;
+  }
+  if (acUI.view === "replace" && acUI.pend) {   // ----- linking would replace what this device has
+    const pd = acUI.pend;
+    box.appendChild(acMk("p", "", "This device already has progress. Linking replaces it with the account's."));
+    const a = acMk("p", "ac-line"); a.appendChild(acMk("b", "", "This device: ")); a.appendChild(document.createTextNode(acSum(P))); box.appendChild(a);
+    const b = acMk("p", "ac-line"); b.appendChild(acMk("b", "", "Account: ")); b.appendChild(document.createTextNode(acSum(pd.S))); box.appendChild(b);
+    const row = acMk("div", "ac-row");
+    row.appendChild(acBtn("Use the account's", "chip on", () => { acUI.view = "main"; acctLinkNow(pd); }));
+    row.appendChild(acBtn("Cancel", "chip", () => { acUI.view = "main"; acUI.pend = null; acMsg(""); renderSync(); acctStripHash(); }));
+    box.appendChild(row);
+    msg();
+    return;
+  }
+  if (acUI.view === "enter") {   // ----- typing a code
+    box.appendChild(acMk("p", "", "Type the code from your other device, or paste its link."));
+    const inp = acMk("input", "ac-in"); inp.id = "acCode"; inp.placeholder = "XXXX-XXXX-XXXX-XXXX"; inp.maxLength = 300;
+    inp.autocomplete = "off"; inp.spellcheck = false; inp.setAttribute("autocapitalize", "characters"); inp.setAttribute("aria-label", "Sync code");
+    inp.value = acUI.code;
+    inp.addEventListener("input", () => { inp.value = acUI.code = SYNC.typing(inp.value); if (acUI.cls === "bad") acMsg(""); });
+    inp.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") go.click(); });
+    inp.addEventListener("keyup", (e) => e.stopPropagation());
+    box.appendChild(inp);
+    const row = acMk("div", "ac-row");
+    const go = acBtn("Link this device", "chip on", () => acctTryLink(inp.value));
+    go.disabled = acUI.busy;
+    row.appendChild(go);
+    row.appendChild(acBtn("Cancel", "chip", () => { acUI.view = "main"; acUI.code = ""; acMsg(""); renderSync(); }));
+    box.appendChild(row);
+    msg();
+    return;
+  }
+  // ----- not linked
+  box.appendChild(acMk("p", "ac-note keep", "Get a code to keep your rating, chips and skins safe, and to play on another device."));
+  const make = acBtn("Save my progress", "btn primary", () => acctCreate());
+  make.disabled = acUI.busy; box.appendChild(make);
+  const row = acMk("div", "ac-row");
+  row.appendChild(acBtn("I have a code", "link", () => { acUI.view = "enter"; acMsg(""); renderSync(); const i = document.getElementById("acCode"); if (i) i.focus(); }));
+  if (ACCT.pingFailed) row.appendChild(acBtn("Try again", "link", () => acctPing(true)));
+  box.appendChild(row);
+  msg(ACCT.pingFailed ? "Couldn't reach the server. Try again later." : "");
+}
+function renderSync() { if (!screens.account.hidden) acSyncView(); }
+
+/* ----- talking to the server ----- */
+async function acctCall(path, body, ms) {
+  const ctl = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = setTimeout(() => { if (ctl) ctl.abort(); }, ms || 7000);
+  try {
+    const post = body !== undefined;
+    const r = await fetch("/api/acct/" + path, {
+      method: post ? "POST" : "GET", headers: post ? { "content-type": "application/json" } : {}, body: post ? JSON.stringify(body) : undefined,
+      cache: "no-store", referrerPolicy: "no-referrer", signal: ctl ? ctl.signal : undefined,
+    });
+    let j = null; try { j = await r.json(); } catch (e) { j = null; }
+    return { s: r.status, j };
+  } catch (e) { return { s: 0, j: null }; } finally { clearTimeout(timer); }
+}
+async function acctPing(again) {
+  if (!acctOk) { ACCT.avail = false; return; }
+  if (ACCT.code || acctPinging) return;
+  acctPinging = true;
+  const r = await acctCall("ping", undefined, 4000);
+  acctPinging = false;
+  if (r.s === 200) { ACCT.avail = true; ACCT.pingFailed = false; }
+  else if (r.s === 0) { ACCT.avail = null; ACCT.pingFailed = true; }
+  else { ACCT.avail = false; ACCT.pingFailed = false; }
+  renderSync();
+}
+function acctFail(r, what) {   // the words for a call that did not work
+  if (r.s === 400) return ["That code doesn't look right.", "bad"];
+  if (r.s === 404 && r.j && r.j.error === "unknown") return ["No account has that code.", "bad"];
+  if (r.s === 404) { ACCT.avail = false; return ["Saving to an account isn't available yet.", ""]; }
+  if (r.s === 429) return ["Too many tries. Please wait a minute.", ""];
+  if (r.s === 503) return ["The server is full right now.", ""];
+  return [what || "Couldn't reach the server. Try again later.", ""];
+}
+
+/* ----- linking ----- */
+function acctApplyProf(S) {   // the account's copy (or a merge) becomes this device's progress
+  SYNC.applyTo(P, S);
+  if (P.name && window.__blSetName) NET.myName = window.__blSetName(P.name);
+  if (mode === "menu") sel.fighter = P.last;
+  saveProfile();
+  if (mode === "menu") renderMenu();
+  renderAccount();
+}
+function acctLinkNow(d) {
+  ACCT.code = d.code; ACCT.rev = d.rev; ACCT.base = d.S; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.op = "";
+  acUI.err = ""; acUI.pend = null; acUI.view = "main"; acUI.code = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = "";
+  acctApplying = true;
+  try { acctApplyProf(d.S); } finally { acctApplying = false; }
+  ACCT.lastC = SYNC.canon(acctSnap());
+  acctStore(); acctStripHash();
+  acMsg("Linked. Your progress is now on this device.", "ok");
+  renderMenu(); renderSync();
+  if (!SYNC.same(acctSnap(), ACCT.base)) acctSoon(300);   // e.g. the account had no name yet
+}
+async function acctTryLink(raw) {
+  const code = SYNC.normCode(raw);
+  if (!code) { acMsg("That code doesn't look right.", "bad"); return; }
+  if (acUI.busy) return;
+  acUI.busy = true; acMsg("Looking...", ""); renderSync();
+  const r = await acctCall("load", { code });
+  acUI.busy = false;
+  if (r.s === 200 && r.j && r.j.prof && Number.isSafeInteger(r.j.rev)) {
+    ACCT.avail = true;
+    const S = SYNC.sanitize(r.j.prof, FIGHTERS);
+    const d = { code, S, rev: r.j.rev };
+    if (SYNC.hasProgress(P) && !SYNC.same(S, acctSnap())) { acMsg(""); acUI.view = "replace"; acUI.pend = d; renderSync(); return; }
+    acctLinkNow(d);
+    return;
+  }
+  const [t, c] = acctFail(r);
+  acMsg(t, c); renderSync();
+}
+async function acctCreate() {
+  if (acUI.busy) return;
+  acUI.busy = true; acMsg("Saving...", ""); renderSync();
+  const prof = acctSnap();
+  const r = await acctCall("new", { prof });
+  acUI.busy = false;
+  const code = r.s === 200 && r.j ? SYNC.normCode(r.j.code) : "";
+  if (code && Number.isSafeInteger(r.j.rev)) {
+    ACCT.avail = true;
+    ACCT.code = code; ACCT.rev = r.j.rev; ACCT.base = prof; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.lastC = SYNC.canon(prof);
+    acctStore();
+    acUI.fresh = true; acUI.showCode = true; acUI.manual = ""; acMsg("");
+    clearTimeout(acShowT); acShowT = setTimeout(() => { acUI.showCode = false; acUI.fresh = false; renderSync(); }, 60000);
+    renderSync();
+    return;
+  }
+  const [t, c] = acctFail(r, "Couldn't save. Try again later.");
+  acMsg(t, c); renderSync();
+}
+function acctUnlink() {
+  clearTimeout(acctTimer); clearTimeout(acShowT); acctRetryMs = 0; acctAgain = false;
+  ACCT.code = ""; ACCT.rev = 0; ACCT.base = null; ACCT.t = 0; ACCT.lt = 0; ACCT.force = false; ACCT.op = "";
+  acUI.err = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = ""; acUI.view = "main";
+  acctStore(); acMsg("This device is no longer linked. Its progress stays here.", "");
+  renderAccount(); acctPing();
+}
+
+/* ----- keeping in step ----- */
+function acctSnap() { return SYNC.snapshot(P, FIGHTERS); }
+function acctSoon(ms) { clearTimeout(acctTimer); acctTimer = setTimeout(acctSync, ms); }
+function acctDirty() {   // saveProfile() calls this after every change
+  if (!ACCT.code || acctApplying) return;
+  const c = SYNC.canon(acctSnap());
+  if (c !== ACCT.lastC) { ACCT.lastC = c; ACCT.lt = Date.now(); acctStore(); }
+  if (ACCT.force || c !== SYNC.canon(ACCT.base)) acctSoon(1200);
+}
+// The server has a newer copy: merge it with what this device changed since the last sync.
+function acctTake(S, rev, t) {
+  const local = acctSnap();
+  const merged = SYNC.same(local, ACCT.base) ? S : SYNC.mergeProf(local, ACCT.base, S, ACCT.lt > (+t || 0));
+  acctApplying = true;
+  try { acctApplyProf(merged); } finally { acctApplying = false; }
+  ACCT.base = S; ACCT.rev = rev; ACCT.t = Date.now(); ACCT.lastC = SYNC.canon(acctSnap());
+  acctStore();
+}
+// Save if this device has changes, otherwise look for the server's. Never while a match is on.
+async function acctSync(now) {
+  if (!ACCT.code || !acctOk) return;
+  if (acctBusy) { acctAgain = true; return; }
+  if (mode === "match") { acctSoon(4000); return; }
+  clearTimeout(acctTimer);
+  acctBusy = true; acUI.err = "";
+  let retry = 0;
+  try {
+    for (let i = 0; i < 6 && ACCT.code; i++) {
+      const local = acctSnap();
+      const forced = ACCT.force, dirty = forced || !SYNC.same(local, ACCT.base);
+      ACCT.op = dirty ? "saving" : ""; renderStatus();
+      const r = dirty ? await acctCall("save", { code: ACCT.code, rev: ACCT.rev, prof: local }) : await acctCall("load", { code: ACCT.code });
+      if (!ACCT.code) break;                           // unlinked while we waited
+      if (mode === "match") { retry = 4000; break; }   // a match started while we waited: change nothing now
+      if (r.s === 200 && r.j && dirty && Number.isSafeInteger(r.j.rev)) {
+        ACCT.rev = r.j.rev; ACCT.base = local; ACCT.t = Date.now(); if (forced) ACCT.force = false; acctStore(); acctRetryMs = 0; ACCT.avail = true;
+      } else if (r.s === 200 && r.j && !dirty && r.j.prof && Number.isSafeInteger(r.j.rev)) {
+        acctRetryMs = 0; ACCT.avail = true;
+        if (r.j.rev !== ACCT.rev) acctTake(SYNC.sanitize(r.j.prof, FIGHTERS), r.j.rev, r.j.t);
+        else { ACCT.t = Date.now(); acctStore(); }
+      } else if (r.s === 409 && dirty && r.j && r.j.prof && Number.isSafeInteger(r.j.rev)) {
+        if (forced) { ACCT.rev = r.j.rev; acctStore(); }                                      // a reset: this device's copy wins
+        else acctTake(SYNC.sanitize(r.j.prof, FIGHTERS), r.j.rev, r.j.t);
+      } else {   // one quiet line, and another try later
+        if (r.s === 404 && r.j && r.j.error === "unknown") { acUI.err = "This account isn't on the server any more."; }
+        else if (r.s === 0) { acUI.err = "Couldn't reach the server. Will try again."; retry = acctRetryMs = Math.min(300000, (acctRetryMs || 15000) * 2); }
+        else if (r.s === 404) { ACCT.avail = false; acUI.err = "Saving to an account isn't available right now."; retry = 300000; }
+        else if (r.s === 429) { acUI.err = "Too many requests. Will try again soon."; retry = 90000; }
+        else { acUI.err = "Couldn't save. Will try again."; retry = 60000; }
+        break;
+      }
+      if (!(ACCT.force || !SYNC.same(acctSnap(), ACCT.base))) break;   // nothing left to send
+    }
+  } catch (e) { acUI.err = "Couldn't save. Will try again."; retry = 60000; }
+  ACCT.op = ""; acctBusy = false;
+  renderStatus(); renderSync();
+  if (acctAgain) { acctAgain = false; acctSoon(300); } else if (retry) acctSoon(retry);
+}
+
+/* ----- the sheet: open, close, reset ----- */
+function openAccount() {
+  acUI.resetArmed = false; acUI.unlinkArmed = false; acUI.view = "main"; acUI.pend = null; acMsg("");
+  modal("account", true); renderAccount();
+  if (ACCT.code) { if (Date.now() - ACCT.t > 10000) acctSync(); } else acctPing();
+}
+function acctDoReset() {
+  const old = P, name = P.name;
+  P = defProfile(); P.tut = true; if (name) P.name = name;
+  for (const k of ["sound", "screen", "fs", "a2hs", "rules"]) if (k in old) P[k] = old[k];   // settings belong to the device, not to the progress
+  if (ACCT.code) { ACCT.force = true; acctStore(); }
+  saveProfile(); sel.fighter = P.last;
+  renderMenu(); renderAccount();
+}
+tap("mRank", openAccount);
+tap("acClose", () => {
+  modal("account", false); clearTimeout(acShowT);
+  if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"
+  acUI.view = "main"; acUI.pend = null; acUI.code = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = ""; acUI.resetArmed = false; acUI.unlinkArmed = false;
+  renderMenu();
+});
+tap("acReset", () => {
+  if (!acUI.resetArmed) { acUI.resetArmed = true; clearTimeout(acResetT); acResetT = setTimeout(() => { acUI.resetArmed = false; renderAccount(); }, 6000); renderAccount(); return; }
+  acUI.resetArmed = false; acctDoReset();
+});
+{
+  const inp = $("acName");
+  const commit = () => { acctSetName(inp.value); inp.value = P.name; };
+  inp.addEventListener("change", commit);
+  inp.addEventListener("blur", commit);
+  inp.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") inp.blur(); });
+  inp.addEventListener("keyup", (e) => e.stopPropagation());
+}
+screens.account = $("scrAccount");
+setInterval(renderStatus, 15000);
+document.addEventListener("visibilitychange", () => {
+  if (!ACCT.code) return;
+  if (document.hidden) { if (ACCT.force || !SYNC.same(acctSnap(), ACCT.base)) acctSync(); }   // the page may be gone soon: send what we have
+  else if (Date.now() - ACCT.t > 4000) acctSync();                                              // back again: look for the other device's changes
+});
+window.addEventListener("online", () => { if (ACCT.code) acctSync(); });
+acctName();
+if (ACCT.code) ACCT.lastC = SYNC.canon(acctSnap());
+window.__blAcct = { get P() { return P; }, get st() { return ACCT; }, get ui() { return acUI; }, sync: acctSync, save: () => saveProfile(), ok: acctOk };
+// once the page is up: catch up with the account, and open a #sync= link
+setTimeout(() => {
+  if (ACCT.code) acctSync();
+  if (!ACCT.hash) return;
+  const code = ACCT.hash;
+  if (!acctOk) { acctStripHash(); return; }
+  if (ACCT.code) {   // already linked
+    openAccount(); acMsg(ACCT.code === code ? "This device is already linked to that account." : "This device is linked to another account. Unlink it first to use a different code.", ""); renderSync(); acctStripHash(); return;
+  }
+  openAccount();
+  acctTryLink(code).then(() => { if (acUI.view !== "replace") acctStripHash(); });
+}, 0);
 /* ----- guided practice: short prompts the first time someone plays ----- */
 const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0 };
@@ -11392,7 +12487,7 @@ window.__blastline = { get game() { return G; }, get mode() { return mode; }, ge
 newAttract();
 goMenu();
 if (NET.invite) openOnline();
-else if (firstRun) startTutorial(); // a brand-new player starts with the guided round
+else if (firstRun && !ACCT.hash) startTutorial(); // a brand-new player starts with the guided round
 camStep(attract.g, true);
 requestAnimationFrame(frame);
 })();
