@@ -319,6 +319,12 @@ button { font: inherit; color: inherit; }
 .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
 .tokpill { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--sand); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sel-opts { display: flex; gap: 8px; align-items: center; }
+/* three pickers (vs, CPU, Map): smaller chips on short screens, and their own row under the heading when upright */
+.sel-head .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.short .chip.pick, #app.tiny .chip.pick { min-height: 32px; padding: 3px 10px; font-size: 13px; gap: 4px; }
+#app.short .chip.pick small, #app.tiny .chip.pick small { font-size: 11px; }
+#app.portrait .sel-head { flex-wrap: wrap; row-gap: 8px; }
+#app.portrait .sel-opts { order: 3; flex-basis: 100%; flex-wrap: wrap; }
 .pickwrap { position: relative; }
 .chip.pick { display: inline-flex; align-items: center; gap: 6px; }
 .chip.pick small { font-family: var(--body); font-weight: 500; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--mute); }
@@ -716,7 +722,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .tile { height: 72px; }
 #app.portrait .tile span { font-size: 16px; }
 #app.portrait .tile span { left: 6px; right: 4px; font-size: clamp(12px, 18cqw, 16px); }   /* Gunslinger: four tiles a row, see .tile above */
-#app.portrait #oppPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
+#app.portrait #oppPop, #app.portrait #mapPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
 #app.portrait .detail { grid-template-columns: 1fr; flex: none; }
 #app.portrait .d-stage { height: 200px; }
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
