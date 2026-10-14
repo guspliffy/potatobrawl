@@ -2416,7 +2416,8 @@ function lethal(g, slot) {
   for (let kind = 0; kind < 4; kind++) {
     const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0 });
     restore(h, snap);
-    h.look = true; h.timed = false; h.projs = [];
+    // projectiles still in the air stay in the look-ahead (a Meteor Shower star or a flame puff still coming is part of the call)
+    h.look = true; h.timed = false;
     let died = false;
     for (let t = 0; t < TUNE.lookFrames && !died; t++) {
       const ins = [blankInput(), blankInput()];
@@ -2536,7 +2537,7 @@ const BOT_STYLES = {
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
   wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.3, atk: 0.9, heavy: 1.2 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.3, heavy: 1.2 },                           // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
