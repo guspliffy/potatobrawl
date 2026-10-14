@@ -19,7 +19,7 @@ function defProfile() {
   return {
     rating: 1000, peak: 1000, wins: 0, losses: 0, draws: 0, matches: 0, tokens: 0, streak: 0,
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
-    last: FIGHTERS[0].id, sound: true, history: [], screen: "cw", rules: { l: 3, t: 4, b: 1 },
+    last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
   };
 }
 let firstRun = false;
@@ -35,6 +35,7 @@ function loadProfile() {
       p.pal = Object.assign(defProfile().pal, s.pal || {});
       p.rules = validRules(s.rules) ? s.rules : defProfile().rules;
       if (!FIG[p.last]) p.last = FIGHTERS[0].id;
+      if (!p.fstats || typeof p.fstats !== "object" || Array.isArray(p.fstats)) p.fstats = {};
     }
   } catch (e) { /* storage unavailable: play without saving */ }
   return p;

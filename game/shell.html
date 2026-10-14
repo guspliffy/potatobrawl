@@ -240,6 +240,9 @@ button { font: inherit; color: inherit; }
 .pill > * { flex: none; }
 .av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
 .pill .pn { flex: 0 1 auto; min-width: 0; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.pill .pnw { flex: 0 1 auto; min-width: 0; max-width: 9.5em; display: flex; flex-direction: column; gap: 3px; }
+.pill .pnw .pn { max-width: none; }
+.pill .pt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; color: var(--sand); }
 .pill .sep { width: 1px; height: 56%; background: var(--line); }
 .pill .pr, .pill .pc, .pill .pcup { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 800; font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; }
 .pill .pc { color: var(--sand); }
@@ -252,7 +255,7 @@ button { font: inherit; color: inherit; }
 #app .ring i.badge { width: 54%; height: 60%; font-size: calc(var(--d) * 0.36); }
 .cupglyph { display: inline-block; width: 0.95em; height: 0.95em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%23a8661f' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%23a8661f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
 /* 667-wide phones and upright phones: no room for the name */
-#app.tiny .pill .pn, #app.tiny .pill .sep.s1, #app.narrow .pill .pn, #app.narrow .pill .sep.s1 { display: none; }
+#app.tiny .pill .pnw, #app.tiny .pill .sep.s1, #app.narrow .pill .pnw, #app.narrow .pill .sep.s1 { display: none; }
 #app.tiny .pill, #app.narrow .pill { gap: 8px; padding-right: 12px; }
 .rk-tier { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--tc); }
 .rk-sub { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; margin-top: 2px; }
@@ -504,6 +507,68 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 @keyframes tutPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(243, 217, 164, 0.75); } 50% { box-shadow: 0 0 0 10px rgba(243, 217, 164, 0); } }
 #app.tut .pc-stocks, #app.tut #clock { visibility: hidden; }
 
+/* accounts hub: tabs, picture and title pickers, stats table, match list, locker */
+.ac-tabs { display: flex; gap: 6px; }
+.ac-tabs .chip { min-height: 34px; padding: 3px 18px; }
+.av-btn { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; flex: none; }
+.av-btn:focus-visible, .ac-pk:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+.av { border-color: var(--ab, rgba(206, 210, 255, 0.28)); }
+.ac-ttl { font: 700 13px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+.ac-ttl:empty { display: none; }
+.ac-pick { background: var(--raise); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ac-pick[hidden] { display: none; }
+.ac-pk-av { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.ac-pk-av .ac-line { flex: none; width: 5.4em; }
+.ac-pk { appearance: none; padding: 0; background: none; border: 0; cursor: pointer; border-radius: 50%; }
+.ac-pk .av { --d: 34px; border-width: 3px; }
+.ac-pk.on .av { box-shadow: 0 0 0 2px var(--text); }
+.ac-pk-grp { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+.ac-tl { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.ac-t { appearance: none; text-align: left; font: inherit; color: var(--text); cursor: pointer; background: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-t b { font: 800 14px/1.1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.ac-t small { font-size: 12px; line-height: 1.25; color: var(--mute); }
+.ac-t.on { border-color: var(--sand); box-shadow: inset 0 0 0 1px var(--sand); }
+.ac-t.lock { cursor: default; opacity: 0.62; }
+.ac-t.lock b::after { content: " (locked)"; font-size: 10px; letter-spacing: 0.1em; color: var(--mute); }
+.ac-pan { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-pan[hidden] { display: none; }
+.ac-pan h4 { margin: 0; }
+.fs-fav { display: flex; align-items: center; gap: 12px; background: var(--raise); border-radius: 6px; padding: 8px 12px; }
+.fs-fav .av { --d: 46px; }
+.fs-fav b { font: 800 20px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.03em; display: block; }
+.fs-tab { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.fs-tab th { font: 700 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); text-align: right; padding: 4px 8px; }
+.fs-tab th:first-child { text-align: left; }
+.fs-tab td { padding: 4px 8px; text-align: right; font: 800 17px/1.1 var(--display); border-top: 1px solid var(--line); }
+.fs-tab td:first-child { text-align: left; }
+.fs-tab td.z { color: var(--mute); }
+.fs-tab .fn { display: flex; align-items: center; gap: 9px; font: 700 15px/1.1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.fs-tab .av { --d: 28px; }
+.fs-tab tr.fav td:first-child .fn::after { content: "\2605"; color: var(--sand); }
+.hx-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px 12px; }
+.hx { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--raise); border-radius: 6px; min-width: 0; font-size: 12px; color: var(--mute); }
+.hx .av { --d: 28px; border-width: 2px; }
+.hx i.r { font: 800 13px/1 var(--display); font-style: normal; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 4px; color: var(--ink); background: var(--mute); flex: none; }
+.hx i.r.w { background: var(--mint); } .hx i.r.l { background: var(--ember); }
+.hx .vs { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hx b { font: 800 15px/1 var(--display); color: var(--text); font-variant-numeric: tabular-nums; flex: none; }
+.hx b.up { color: var(--mint); } .hx b.down { color: var(--ember); }
+.lk { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.lk-f { background: var(--raise); border-radius: 8px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.lk-h { display: flex; align-items: center; gap: 9px; font: 800 17px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
+.lk-h .av { --d: 34px; }
+.lk-h small { margin-left: auto; font: 700 12px/1 var(--display); letter-spacing: 0.1em; color: var(--mute); }
+.lk-s { display: flex; gap: 4px; }
+.lk-s .sw { flex: 1 1 0; }
+.lk-s .sw:disabled { cursor: default; }
+#app.portrait .lk, #app.narrow .lk { grid-template-columns: minmax(0, 1fr); }
+#app.short .ac-pan, #app.short .ac-pick { gap: 6px; }
+#app.short .fs-tab td { padding-block: 2px; }
+#app.tiny .ac-tabs .chip { min-height: 28px; padding: 2px 16px; }
+#app.tiny .ac-pick { padding: 6px 10px; }
+#app.tiny .ac-t { padding: 4px 8px; }
+#app.tiny .lk-f { padding: 6px 8px 8px; }
+
 /* ---------- short and upright screens ---------- */
 #app.short .menu-panel { padding-block: 12px; }
 #app.short .menu-inner { gap: 10px; }
@@ -699,7 +764,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pn" id="mName"></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -882,12 +947,20 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <section id="scrAccount" class="screen modal" hidden>
     <div class="sheet acct-sheet scroll">
       <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <div class="ac-tabs" role="tablist" aria-label="Account sections">
+        <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
+        <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
+        <button class="chip" role="tab" id="acTabL" data-t="l" aria-selected="false" aria-controls="acPanL" tabindex="-1">Locker</button>
+      </div>
+      <div id="acPanP" role="tabpanel" aria-labelledby="acTabP">
       <div class="ac-grid">
         <div class="ac-me">
           <div class="ac-id">
-            <span class="av" id="acAvatar"></span>
-            <div class="ac-who"><label class="kicker" for="acName">Name</label><input id="acName" class="ac-name" maxlength="16" autocomplete="nickname" spellcheck="false"><span class="ac-line" id="acPlays"></span></div>
+            <button class="av-btn" id="acAvBtn" aria-label="Change picture"><span class="av" id="acAvatar"></span></button>
+            <div class="ac-who"><label class="kicker" for="acName">Name</label><input id="acName" class="ac-name" maxlength="16" autocomplete="nickname" spellcheck="false"><span class="ac-ttl" id="acTitleLine"></span><span class="ac-line" id="acPlays"></span></div>
           </div>
+          <div class="ac-row"><button class="chip" id="acPicBtn" aria-expanded="false">Picture</button><button class="chip" id="acTitBtn" aria-expanded="false">Title</button></div>
+          <div class="ac-pick" id="acPick" hidden></div>
           <div class="ac-rank" id="acRank">
             <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge">B</i></span>
             <div><div class="rk-tier" id="acTier">Bronze</div><div class="rk-sub" id="acRating"></div></div>
@@ -903,6 +976,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="ac-sync" id="acSync"></div>
         <div class="ac-foot"><span class="kicker">Progress</span><button class="chip" id="acReset">Reset progress</button></div>
       </div>
+      </div>
+      <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
+      <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
     </div>
   </section>
 </div>

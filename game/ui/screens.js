@@ -73,6 +73,8 @@ function statBars(spec) {
   const q = (v, a, b) => clamp(Math.round(1 + ((v - a) / (b - a)) * 4), 1, 5);
   return [["Power", q(heavy, 11, 18)], ["Speed", q(s.run, 4.6, 7.4)], ["Weight", q(s.weight, 82, 120)], ["Air", q(airH, 260, 560)]];
 }
+// put an owned skin on a fighter (the select screen's swatches and the Account locker both do this)
+function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
 function selPalIdx(spec) { return sel.pending && sel.pending.id === spec.id ? sel.pending.i : P.pal[spec.id] || 0; }
 function buildTiles() {
   const wrap = $("tiles"); wrap.innerHTML = "";
@@ -112,7 +114,7 @@ function buildDetail() {
     b.innerHTML = `<i>${i ? `<em>${"✦".repeat(i)}</em>` : ""}</i>${own ? p.name : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
-      if (own) { P.pal[spec.id] = i; sel.pending = null; saveProfile(); }
+      if (own) { equipSkin(spec.id, i); sel.pending = null; }
       else sel.pending = { id: spec.id, i }; // locked: preview it on the model; the Upgrade button buys it
       buildTiles(); buildDetail();
     });
@@ -352,7 +354,11 @@ function finishMatch(forfeit) {
     R.total = R.lines.reduce((a, l) => a + l[1], 0);
     P.tokens += R.total;
     P.history.unshift({ r: res, d: delta, me: me.spec.id, op: op.spec.id, opr: match.oppRating, t: Date.now() });
-    P.history = P.history.slice(0, 20);
+    P.history = P.history.slice(0, 50);
+    // per-fighter record (Account > Stats): exactly the matches that count above, so the table adds up to wins / losses / draws
+    const fs = P.fstats[me.spec.id] || (P.fstats[me.spec.id] = { w: 0, l: 0, d: 0 });
+    fs[res === 1 ? "w" : res === 0 ? "l" : "d"]++;
+    if (!P.fsince) P.fsince = Date.now();
     Object.assign(R, { before, after: P.rating, delta, tb: tierIdx(before), ta: tierIdx(P.rating) });
     saveProfile();
   }

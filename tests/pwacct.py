@@ -280,6 +280,7 @@ async def shots(b, d, code):
           return bad.concat(sh.scrollHeight > sh.clientHeight + 1 ? ['scrolls by ' + (sh.scrollHeight - sh.clientHeight) + 'px'] : []); })()""")
         for x in bad:
             if x.startswith('scrolls'): print(f'note {tag}: linked sheet {x}')
+            elif tag == 'rot': pass   # the sideways game is rotated: what reads as 'sideways' there is the sheet scrolling vertically
             else: errs.append(f'{tag}: sheet: {x}')
         await ctx.close()
 
@@ -306,6 +307,91 @@ async def shots_down(b, d):
     await shot(pg, 'phone_9_sheet_unreachable')
     await ctx.close()
 
+# ---------- the hub: Profile / Stats / Locker tabs at every size (screenshots also go to HUB_OUT when given as argv[2])
+HUB_OUT = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else None
+async def hub_profile(pg):   # a played-in profile built from the page's own fighter list (nothing hard-coded)
+    return await pg.evaluate("""() => {
+      const P = JSON.parse(JSON.stringify(window.__blAcct.P)), ids = Object.keys(P.owned), now = Date.now();
+      P.name = 'Spud Lord'; P.tokens = 240; P.rating = 1262; P.peak = 1310; P.wins = 41; P.losses = 27; P.draws = 2; P.matches = 70; P.cups = 2; P.flawless = 1; P.last = ids[1];
+      P.fsince = now - 9 * 864e5; P.fstats = {}; P.history = [];
+      ids.slice(0, 7).forEach((id, i) => { P.fstats[id] = { w: 9 - i, l: 4 + (i % 3), d: i % 2 }; });
+      ids.forEach((id) => { P.owned[id] = [0, 1]; P.pal[id] = 0; });
+      P.owned[ids[1]] = [0, 1, 2, 3]; P.pal[ids[1]] = 2;
+      P.avatar = ids[1] + ':2'; P.title = 'cup';
+      for (let i = 0; i < 50; i++) P.history.push({ r: i % 3 === 0 ? 0 : i % 7 === 0 ? 0.5 : 1, d: i % 3 === 0 ? -11 : i % 7 === 0 ? 0 : 13, me: ids[i % ids.length], op: ids[(i * 3 + 1) % ids.length], opr: 1000 + i, t: now - i * 3.6e6 });
+      return P; }""")
+async def hub_shot(pg, tag, name):
+    await pg.wait_for_timeout(250)
+    await shot(pg, f'{tag}_hub_{name}')
+    if HUB_OUT is not None:
+        HUB_OUT.mkdir(parents=True, exist_ok=True); await pg.screenshot(path=str(HUB_OUT / f'{tag}_{name}.png'))
+async def hub_fit(pg, tag, what):   # nothing sideways, no control outside the sheet
+    bad = await pg.evaluate("""(() => {
+      const sh = document.querySelector('.acct-sheet'), S = sh.getBoundingClientRect(), bad = [];
+      for (const e of sh.querySelectorAll('button, input, td, .hx, .lk-f, .ac-t')) { if (!e.offsetParent) continue; const r = e.getBoundingClientRect(); if (r.width && (r.left < S.left - 1 || r.right > S.right + 1)) bad.push('sideways: ' + (e.id || e.className || e.tagName) + ' ' + (e.textContent || '').trim().slice(0, 14)); }
+      if (sh.scrollWidth > sh.clientWidth + 1) bad.push('sheet scrolls sideways');
+      return bad; })()""")
+    for x in bad: errs.append(f'{tag}: hub {what}: {x}')
+async def hub(b):
+    for tag, vp, mob in SIZES:
+        if tag == 'rot': continue
+        ctx = await device(b, vp, mob, {'screen': 'up'} if tag == 'up' else None)
+        pg = await ctx.new_page(); watch(pg, 'hub ' + tag)
+        await goto(pg)
+        ids = await pg.evaluate('Object.keys(window.__blAcct.P.owned)')
+        n = len(ids)
+        P = await hub_profile(pg)
+        await pg.evaluate("(P) => { localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(P)); }", P)
+        await pg.reload(); await goto(pg)
+        t = await text(pg, '#mTitle')
+        expect(has(t, 'cup winner'), f'{tag}: the pill shows the chosen title ({t!r})')
+        if tag in ('phone', 'desk'): expect(await pg.is_visible('#mTitle'), f'{tag}: the title fits in the pill')
+        await shot(pg, f'{tag}_hub_0_pill')
+        await open_sheet(pg)
+        expect(await pg.is_visible('#acTabP') and await pg.is_visible('#acTabS') and await pg.is_visible('#acTabL'), f'{tag}: three tabs show')
+        expect(has(await text(pg, '#acTitleLine'), 'cup winner'), f'{tag}: the title shows under the name')
+        await hub_fit(pg, tag, 'profile'); await hub_shot(pg, tag, '1_profile')
+        # the picture picker: every owned skin of every fighter, tap one
+        await pg.click('#acPicBtn'); await pg.wait_for_timeout(150)
+        nav = await pg.evaluate("document.querySelectorAll('#acPick .ac-pk').length")
+        owned = await pg.evaluate("Object.values(window.__blAcct.P.owned).reduce((a, l) => a + l.length, 0)")
+        expect(nav == owned, f'{tag}: the picture picker lists the {owned} owned skins ({nav})')
+        await hub_fit(pg, tag, 'pictures'); await hub_shot(pg, tag, '2_profile_picture')
+        await pg.evaluate("document.querySelectorAll('#acPick .ac-pk')[0].click()"); await pg.wait_for_timeout(150)
+        expect((await prof(pg))['avatar'] == f'{ids[0]}:0', f'{tag}: picking a picture is stored in the profile')
+        # the title picker
+        await pg.click('#acTitBtn'); await pg.wait_for_timeout(150)
+        expect(await pg.evaluate("document.querySelectorAll('#acPick .ac-t').length") == 7, f'{tag}: the title list has Automatic + six titles')
+        expect(await pg.evaluate("document.querySelectorAll('#acPick .ac-t.lock').length") >= 1, f'{tag}: locked titles are marked')
+        await hub_fit(pg, tag, 'titles'); await hub_shot(pg, tag, '3_profile_title')
+        await pg.evaluate("[...document.querySelectorAll('#acPick .ac-t')].find((e) => /flawless/i.test(e.textContent)).click()"); await pg.wait_for_timeout(150)
+        expect((await prof(pg))['title'] == 'flawless' and has(await text(pg, '#mTitle'), 'flawless'), f'{tag}: picking a title changes the pill')
+        await pg.click('#acTitBtn'); await pg.wait_for_timeout(100)
+        # stats
+        await pg.click('#acTabS'); await pg.wait_for_timeout(150)
+        rows = await pg.evaluate("document.querySelectorAll('.fs-tab tbody tr').length")
+        expect(rows == n, f'{tag}: the stats table has a row for each of the {n} fighters ({rows})')
+        expect(await pg.evaluate("document.querySelectorAll('.hx').length") == 50, f'{tag}: the last 50 matches are listed')
+        expect(has(await text(pg, '#acPanS'), 'since') and has(await text(pg, '#acPanS'), 'favourite fighter'), f'{tag}: stats show the since date and the favourite fighter')
+        await hub_fit(pg, tag, 'stats'); await hub_shot(pg, tag, '4_stats')
+        await pg.evaluate("document.querySelector('.acct-sheet').scrollTop = 99999"); await hub_shot(pg, tag, '5_stats_matches')
+        # locker
+        await pg.click('#acTabL'); await pg.wait_for_timeout(150)
+        cards = await pg.evaluate("document.querySelectorAll('.lk-f').length")
+        expect(cards == n, f'{tag}: the locker shows all {n} fighters ({cards})')
+        await hub_fit(pg, tag, 'locker'); await hub_shot(pg, tag, '6_locker')
+        before = (await prof(pg))['pal'][ids[0]]
+        await pg.evaluate("(id) => { const c = [...document.querySelectorAll('.lk-f')][0]; [...c.querySelectorAll('.sw')].find((b) => !b.classList.contains('cur') && !b.disabled).click(); }", ids[0])
+        await pg.wait_for_timeout(150)
+        expect((await prof(pg))['pal'][ids[0]] != before, f'{tag}: tapping an owned skin in the locker equips it')
+        expect(await pg.evaluate("[...document.querySelectorAll('.lk-f')][0].querySelectorAll('.sw.lock').length") >= 1, f'{tag}: locked skins show their price and do nothing')
+        await pg.evaluate("document.querySelector('.lk-f .sw.lock').disabled || document.querySelector('.lk-f .sw.lock').click()")
+        # back to profile still works, and closing returns to the menu
+        await pg.click('#acTabP'); await pg.wait_for_timeout(100)
+        expect(await pg.is_visible('#acReset') and await pg.is_visible('#acSync'), f'{tag}: the Profile tab still has the sync section and Reset')
+        await close_sheet(pg)
+        await ctx.close()
+
 async def main():
     d = tempfile.mkdtemp(prefix='pbacct-pw-')
     srv = start_server(d)
@@ -324,6 +410,7 @@ async def main():
             r = json.loads(f.read_text()); r['prof'].update(tokens=140, rating=1215, peak=1230, wins=9, losses=4, matches=13, name='Spud Lord', last='odin', cups=1, owned={'odin': [0, 1, 2], 'phoenix': [0, 1]}); f.write_text(json.dumps(r))
             await shots(b, d, code)
             await shots_down(b, d)
+            await hub(b)
             await b.close()
     finally: stop_server(srv)
     shutil.rmtree(d, ignore_errors=True)

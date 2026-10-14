@@ -240,6 +240,9 @@ button { font: inherit; color: inherit; }
 .pill > * { flex: none; }
 .av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
 .pill .pn { flex: 0 1 auto; min-width: 0; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.pill .pnw { flex: 0 1 auto; min-width: 0; max-width: 9.5em; display: flex; flex-direction: column; gap: 3px; }
+.pill .pnw .pn { max-width: none; }
+.pill .pt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; color: var(--sand); }
 .pill .sep { width: 1px; height: 56%; background: var(--line); }
 .pill .pr, .pill .pc, .pill .pcup { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 800; font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; }
 .pill .pc { color: var(--sand); }
@@ -252,7 +255,7 @@ button { font: inherit; color: inherit; }
 #app .ring i.badge { width: 54%; height: 60%; font-size: calc(var(--d) * 0.36); }
 .cupglyph { display: inline-block; width: 0.95em; height: 0.95em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%23a8661f' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%23a8661f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
 /* 667-wide phones and upright phones: no room for the name */
-#app.tiny .pill .pn, #app.tiny .pill .sep.s1, #app.narrow .pill .pn, #app.narrow .pill .sep.s1 { display: none; }
+#app.tiny .pill .pnw, #app.tiny .pill .sep.s1, #app.narrow .pill .pnw, #app.narrow .pill .sep.s1 { display: none; }
 #app.tiny .pill, #app.narrow .pill { gap: 8px; padding-right: 12px; }
 .rk-tier { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--tc); }
 .rk-sub { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; margin-top: 2px; }
@@ -504,6 +507,68 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 @keyframes tutPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(243, 217, 164, 0.75); } 50% { box-shadow: 0 0 0 10px rgba(243, 217, 164, 0); } }
 #app.tut .pc-stocks, #app.tut #clock { visibility: hidden; }
 
+/* accounts hub: tabs, picture and title pickers, stats table, match list, locker */
+.ac-tabs { display: flex; gap: 6px; }
+.ac-tabs .chip { min-height: 34px; padding: 3px 18px; }
+.av-btn { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; flex: none; }
+.av-btn:focus-visible, .ac-pk:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+.av { border-color: var(--ab, rgba(206, 210, 255, 0.28)); }
+.ac-ttl { font: 700 13px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+.ac-ttl:empty { display: none; }
+.ac-pick { background: var(--raise); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ac-pick[hidden] { display: none; }
+.ac-pk-av { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.ac-pk-av .ac-line { flex: none; width: 5.4em; }
+.ac-pk { appearance: none; padding: 0; background: none; border: 0; cursor: pointer; border-radius: 50%; }
+.ac-pk .av { --d: 34px; border-width: 3px; }
+.ac-pk.on .av { box-shadow: 0 0 0 2px var(--text); }
+.ac-pk-grp { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+.ac-tl { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.ac-t { appearance: none; text-align: left; font: inherit; color: var(--text); cursor: pointer; background: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-t b { font: 800 14px/1.1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.ac-t small { font-size: 12px; line-height: 1.25; color: var(--mute); }
+.ac-t.on { border-color: var(--sand); box-shadow: inset 0 0 0 1px var(--sand); }
+.ac-t.lock { cursor: default; opacity: 0.62; }
+.ac-t.lock b::after { content: " (locked)"; font-size: 10px; letter-spacing: 0.1em; color: var(--mute); }
+.ac-pan { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-pan[hidden] { display: none; }
+.ac-pan h4 { margin: 0; }
+.fs-fav { display: flex; align-items: center; gap: 12px; background: var(--raise); border-radius: 6px; padding: 8px 12px; }
+.fs-fav .av { --d: 46px; }
+.fs-fav b { font: 800 20px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.03em; display: block; }
+.fs-tab { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.fs-tab th { font: 700 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); text-align: right; padding: 4px 8px; }
+.fs-tab th:first-child { text-align: left; }
+.fs-tab td { padding: 4px 8px; text-align: right; font: 800 17px/1.1 var(--display); border-top: 1px solid var(--line); }
+.fs-tab td:first-child { text-align: left; }
+.fs-tab td.z { color: var(--mute); }
+.fs-tab .fn { display: flex; align-items: center; gap: 9px; font: 700 15px/1.1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.fs-tab .av { --d: 28px; }
+.fs-tab tr.fav td:first-child .fn::after { content: "\2605"; color: var(--sand); }
+.hx-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px 12px; }
+.hx { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--raise); border-radius: 6px; min-width: 0; font-size: 12px; color: var(--mute); }
+.hx .av { --d: 28px; border-width: 2px; }
+.hx i.r { font: 800 13px/1 var(--display); font-style: normal; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 4px; color: var(--ink); background: var(--mute); flex: none; }
+.hx i.r.w { background: var(--mint); } .hx i.r.l { background: var(--ember); }
+.hx .vs { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hx b { font: 800 15px/1 var(--display); color: var(--text); font-variant-numeric: tabular-nums; flex: none; }
+.hx b.up { color: var(--mint); } .hx b.down { color: var(--ember); }
+.lk { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.lk-f { background: var(--raise); border-radius: 8px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.lk-h { display: flex; align-items: center; gap: 9px; font: 800 17px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
+.lk-h .av { --d: 34px; }
+.lk-h small { margin-left: auto; font: 700 12px/1 var(--display); letter-spacing: 0.1em; color: var(--mute); }
+.lk-s { display: flex; gap: 4px; }
+.lk-s .sw { flex: 1 1 0; }
+.lk-s .sw:disabled { cursor: default; }
+#app.portrait .lk, #app.narrow .lk { grid-template-columns: minmax(0, 1fr); }
+#app.short .ac-pan, #app.short .ac-pick { gap: 6px; }
+#app.short .fs-tab td { padding-block: 2px; }
+#app.tiny .ac-tabs .chip { min-height: 28px; padding: 2px 16px; }
+#app.tiny .ac-pick { padding: 6px 10px; }
+#app.tiny .ac-t { padding: 4px 8px; }
+#app.tiny .lk-f { padding: 6px 8px 8px; }
+
 /* ---------- short and upright screens ---------- */
 #app.short .menu-panel { padding-block: 12px; }
 #app.short .menu-inner { gap: 10px; }
@@ -699,7 +764,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pn" id="mName"></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -882,12 +947,20 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <section id="scrAccount" class="screen modal" hidden>
     <div class="sheet acct-sheet scroll">
       <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <div class="ac-tabs" role="tablist" aria-label="Account sections">
+        <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
+        <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
+        <button class="chip" role="tab" id="acTabL" data-t="l" aria-selected="false" aria-controls="acPanL" tabindex="-1">Locker</button>
+      </div>
+      <div id="acPanP" role="tabpanel" aria-labelledby="acTabP">
       <div class="ac-grid">
         <div class="ac-me">
           <div class="ac-id">
-            <span class="av" id="acAvatar"></span>
-            <div class="ac-who"><label class="kicker" for="acName">Name</label><input id="acName" class="ac-name" maxlength="16" autocomplete="nickname" spellcheck="false"><span class="ac-line" id="acPlays"></span></div>
+            <button class="av-btn" id="acAvBtn" aria-label="Change picture"><span class="av" id="acAvatar"></span></button>
+            <div class="ac-who"><label class="kicker" for="acName">Name</label><input id="acName" class="ac-name" maxlength="16" autocomplete="nickname" spellcheck="false"><span class="ac-ttl" id="acTitleLine"></span><span class="ac-line" id="acPlays"></span></div>
           </div>
+          <div class="ac-row"><button class="chip" id="acPicBtn" aria-expanded="false">Picture</button><button class="chip" id="acTitBtn" aria-expanded="false">Title</button></div>
+          <div class="ac-pick" id="acPick" hidden></div>
           <div class="ac-rank" id="acRank">
             <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge">B</i></span>
             <div><div class="rk-tier" id="acTier">Bronze</div><div class="rk-sub" id="acRating"></div></div>
@@ -903,6 +976,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="ac-sync" id="acSync"></div>
         <div class="ac-foot"><span class="kicker">Progress</span><button class="chip" id="acReset">Reset progress</button></div>
       </div>
+      </div>
+      <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
+      <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
     </div>
   </section>
 </div>
@@ -2394,7 +2470,7 @@ function defProfile() {
   return {
     rating: 1000, peak: 1000, wins: 0, losses: 0, draws: 0, matches: 0, tokens: 0, streak: 0,
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
-    last: FIGHTERS[0].id, sound: true, history: [], screen: "cw", rules: { l: 3, t: 4, b: 1 },
+    last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
   };
 }
 let firstRun = false;
@@ -2410,6 +2486,7 @@ function loadProfile() {
       p.pal = Object.assign(defProfile().pal, s.pal || {});
       p.rules = validRules(s.rules) ? s.rules : defProfile().rules;
       if (!FIG[p.last]) p.last = FIGHTERS[0].id;
+      if (!p.fstats || typeof p.fstats !== "object" || Array.isArray(p.fstats)) p.fstats = {};
     }
   } catch (e) { /* storage unavailable: play without saving */ }
   return p;
@@ -11046,6 +11123,8 @@ function statBars(spec) {
   const q = (v, a, b) => clamp(Math.round(1 + ((v - a) / (b - a)) * 4), 1, 5);
   return [["Power", q(heavy, 11, 18)], ["Speed", q(s.run, 4.6, 7.4)], ["Weight", q(s.weight, 82, 120)], ["Air", q(airH, 260, 560)]];
 }
+// put an owned skin on a fighter (the select screen's swatches and the Account locker both do this)
+function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
 function selPalIdx(spec) { return sel.pending && sel.pending.id === spec.id ? sel.pending.i : P.pal[spec.id] || 0; }
 function buildTiles() {
   const wrap = $("tiles"); wrap.innerHTML = "";
@@ -11085,7 +11164,7 @@ function buildDetail() {
     b.innerHTML = `<i>${i ? `<em>${"✦".repeat(i)}</em>` : ""}</i>${own ? p.name : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
-      if (own) { P.pal[spec.id] = i; sel.pending = null; saveProfile(); }
+      if (own) { equipSkin(spec.id, i); sel.pending = null; }
       else sel.pending = { id: spec.id, i }; // locked: preview it on the model; the Upgrade button buys it
       buildTiles(); buildDetail();
     });
@@ -11325,7 +11404,11 @@ function finishMatch(forfeit) {
     R.total = R.lines.reduce((a, l) => a + l[1], 0);
     P.tokens += R.total;
     P.history.unshift({ r: res, d: delta, me: me.spec.id, op: op.spec.id, opr: match.oppRating, t: Date.now() });
-    P.history = P.history.slice(0, 20);
+    P.history = P.history.slice(0, 50);
+    // per-fighter record (Account > Stats): exactly the matches that count above, so the table adds up to wins / losses / draws
+    const fs = P.fstats[me.spec.id] || (P.fstats[me.spec.id] = { w: 0, l: 0, d: 0 });
+    fs[res === 1 ? "w" : res === 0 ? "l" : "d"]++;
+    if (!P.fsince) P.fsince = Date.now();
     Object.assign(R, { before, after: P.rating, delta, tb: tierIdx(before), ta: tierIdx(P.rating) });
     saveProfile();
   }
@@ -11596,7 +11679,7 @@ function cupMatchEnd(forfeit) {
     if (me.stocks < g.stocks) c.flawless = false;
     const chips = CUP.chips[r] + (r === 2 && c.flawless ? CUP.flawless : 0);
     P.tokens += chips; c.earned += chips;
-    if (r === 2) P.cups = (P.cups | 0) + 1;
+    if (r === 2) { P.cups = (P.cups | 0) + 1; if (c.flawless) P.flawless = (P.flawless | 0) + 1; }
   } else c.fold = forfeit ? 1 : 0;
   const pos = c.p[r].indexOf(c.mi) >> 1;
   cupAdvance(c, won);
@@ -12472,7 +12555,11 @@ function openHelp() {
 const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
+  // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
+  const OPT_COUNTERS = ["flawless"];
+  const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
+  const HIST = 50;
   const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
   const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
   const ID_RE = /^[a-z0-9][a-z0-9_-]{0,23}$/;
@@ -12529,7 +12616,20 @@ const SYNC = (function () {
       pal[id] = num(pp[id], 0, n - 1, 0);
     }
     out.owned = owned; out.pal = pal;
-    out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, 20).map((h) => ({
+    for (const k of OPT_COUNTERS) if (typeof p[k] === "number") out[k] = num(p[k], 0, MAXN, 0);
+    if (isObj(p.fstats)) {   // per fighter: wins, losses, draws (all-zero rows are left out, so a prof has one spelling)
+      const fs = {};
+      for (const id of Object.keys(p.fstats).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) {
+        const e = isObj(p.fstats[id]) ? p.fstats[id] : {}, r = {};
+        for (const k of FS_KEYS) r[k] = num(e[k], 0, MAXN, 0);
+        if (r.w + r.l + r.d > 0) fs[id] = r;
+      }
+      out.fstats = fs;
+    }
+    if (typeof p.fsince === "number" && p.fsince > 0) out.fsince = num(p.fsince, 0, 9e15, 0);
+    if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
+    if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
+    out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
       opr: num(h.opr, 0, 10000, 0), t: num(h.t, 0, 9e15, 0),
@@ -12548,6 +12648,12 @@ const SYNC = (function () {
     P.owned = Object.assign({}, P.owned, Object.fromEntries(Object.entries(S.owned).map(([k, v]) => [k, v.slice()])));
     P.pal = Object.assign({}, P.pal, S.pal);
     P.history = S.history.map((h) => Object.assign({}, h));
+    // fields an older page never sent stay as this device has them
+    for (const k of OPT_COUNTERS) if (S[k] !== undefined) P[k] = S[k];
+    if (S.fstats !== undefined) P.fstats = Object.fromEntries(Object.entries(S.fstats).map(([k, v]) => [k, Object.assign({}, v)]));
+    if (S.fsince !== undefined) P.fsince = S.fsince; else if (S.fstats !== undefined) delete P.fsince;
+    if (S.avatar !== undefined) P.avatar = S.avatar;
+    if (S.title !== undefined) P.title = S.title;
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -12582,10 +12688,30 @@ const SYNC = (function () {
       out.pal[id] = pick((L.pal || {})[id], (B.pal || {})[id], (S.pal || {})[id]) | 0;
     }
     out.history = pick(L.history, B.history, S.history) || [];
+    // Newer fields. A side that does not have the field at all (a prof from an older page) is "unchanged", so the other side's value stays.
+    const have = (v) => v !== undefined;
+    const pickOpt = (k) => (!have(S[k]) ? L[k] : !have(L[k]) ? S[k] : !have(B[k]) ? (localNewer ? L[k] : S[k]) : pick(L[k], B[k], S[k]));
+    for (const k of OPT_COUNTERS) { const v = !have(S[k]) ? L[k] : !have(L[k]) ? S[k] : Math.min(MAXN, Math.max(0, S[k] + L[k] - (B[k] || 0))); if (have(v)) out[k] = v; }
+    if (have(S.fstats) || have(L.fstats)) {
+      const fs = {}, bf = B.fstats || {};
+      const ids = [...new Set([...Object.keys(L.fstats || {}), ...Object.keys(S.fstats || {})])].sort();
+      for (const id of ids) {
+        const r = {};
+        for (const k of FS_KEYS) {
+          const l = have(L.fstats) ? ((L.fstats[id] || {})[k] || 0) : null, s = have(S.fstats) ? ((S.fstats[id] || {})[k] || 0) : null;
+          r[k] = l === null ? s : s === null ? l : Math.min(MAXN, Math.max(0, s + l - (((bf[id] || {})[k]) || 0)));
+        }
+        if (r.w + r.l + r.d > 0) fs[id] = r;
+      }
+      out.fstats = fs;
+    }
+    { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
+    { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
+    { const v = pickOpt("title"); if (have(v)) out.title = v; }
     return out;
   }
 
-  return { COUNTERS, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;
 
@@ -12594,7 +12720,7 @@ const ACCT_KEY = "potatobrawl.acct.v1";
 // when we last synced (t), when this device last changed its progress (lt), and a pending reset (force).
 const ACCT = { code: "", rev: 0, base: null, t: 0, lt: 0, force: false, avail: null, pingFailed: false, hash: "", lastC: "", op: "" };
 // What the sheet is showing right now (not saved).
-const acUI = { view: "main", pend: null, code: "", showCode: false, fresh: false, msg: "", cls: "", err: "", busy: false, manual: "", resetArmed: false, unlinkArmed: false };
+const acUI = { tab: "p", pick: "", view: "main", pend: null, code: "", showCode: false, fresh: false, msg: "", cls: "", err: "", busy: false, manual: "", resetArmed: false, unlinkArmed: false };
 const acctOk = !!window.__blStandalone && /^https?:$/.test(location.protocol);   // a copy served by our own server can ask it for accounts
 let acctBusy = false, acctAgain = false, acctApplying = false, acctTimer = 0, acctRetryMs = 0, acctPinging = false, acShowT = 0, acResetT = 0, acUnlinkT = 0;
 
@@ -12635,26 +12761,56 @@ function acctSetName(v) {
 }
 function acctOnlineName(n) { const v = SYNC.cleanName(n); if (v && v !== P.name) { P.name = v; saveProfile(); renderPill(); } }   // the name field on the online screen
 
-/* ----- the pill ----- */
-function acSetAvatar(node, id) {
+/* ----- avatar and titles ----- */
+// The picture is a fighter plus one of the skins the player owns (P.avatar = "fighter:skin"); "" = the fighter played last.
+function acAvatar() {
+  const m = /^([a-z0-9_-]+):(\d+)$/.exec(P.avatar || "");
+  if (m && FIG[m[1]] && (P.owned[m[1]] || []).includes(+m[2]) && FIG[m[1]].palettes[+m[2]]) return { f: m[1], p: +m[2], own: true };
+  return { f: P.last, p: P.pal[P.last] || 0, own: false };
+}
+function acSetAvatar(node, id, pal) {   // pal (optional): the ring takes the skin's colour
   const src = PORTRAITS[id] || "";
   if (node._src !== src) { node._src = src; node.style.backgroundImage = src ? `url("${src}")` : ""; node.dataset.f = id; }
+  const c = FIG[id] && FIG[id].palettes[pal] ? rgba(col(FIG[id].palettes[pal]), 0.95) : "";
+  if (node._ab !== c) { node._ab = c; if (c) node.style.setProperty("--ab", c); else node.style.removeProperty("--ab"); }
 }
+function acSetMe(node) { const a = acAvatar(); acSetAvatar(node, a.f, a.p); }
+const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {});
+const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
+// Six titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
+const ACT = [
+  { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
+  { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
+  { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
+  { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
+  { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
+  { id: "tier", name: () => tierInfo(P.peak).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
+];
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "collector", "wanderer"];   // the order of the list
+function acTitle() {   // the one that shows: the chosen one if earned, else the best earned, else none
+  const pick = ACT.find((t) => t.id === P.title && t.ok());
+  const t = pick || ACT.find((t) => t.ok());
+  return t ? { id: t.id, name: t.name(), auto: !pick } : null;
+}
+
+/* ----- the pill ----- */
+
 function acRing(ringBox, arc, ti) {
   ringBox.style.setProperty("--tc", ti.t.col);
   arc.style.strokeDashoffset = String(94.25 * (1 - ti.p));
 }
 function renderPill() {
   const ti = tierInfo(P.rating), name = acctName(), cups = P.cups | 0;
-  acSetAvatar($("mAvatar"), P.last);
+  acSetMe($("mAvatar"));
   $("mName").textContent = name;
+  const tt = acTitle(), mt = $("mTitle"); mt.hidden = !tt; mt.textContent = tt ? tt.name : "";
   paintBadge($("mBadge"), ti.i);
   acRing($("mRingBox"), $("mRing"), ti);
   $("mRating").textContent = P.rating;
   $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
   const cb = $("mCups"); cb.hidden = !(cups > 0);
   if (cups > 0) cb.innerHTML = `<span class="cupglyph"></span>${cups}`;
-  $("mRank").setAttribute("aria-label", `Account. ${name}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}`);
+  $("mRank").setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}`);
 }
 
 /* ----- the sheet: your numbers ----- */
@@ -12680,10 +12836,18 @@ function acSum(p) {   // one line about a profile, for the "replace it?" questio
 }
 function renderAccount() {
   if (screens.account.hidden) return;
+  for (const b of document.querySelectorAll(".ac-tabs .chip")) { const on = b.dataset.t === acUI.tab; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
+  $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l";
+  if (acUI.tab === "s") { renderStats(); return; }
+  if (acUI.tab === "l") { renderLocker(); return; }
   const ti = tierInfo(P.rating), name = acctName();
-  acSetAvatar($("acAvatar"), P.last);
+  acSetMe($("acAvatar"));
+  const tt = acTitle(); $("acTitleLine").textContent = tt ? tt.name : "";
+  renderPick();
   const inp = $("acName"); if (document.activeElement !== inp) inp.value = name;
   $("acPlays").textContent = FIG[P.last] ? `Plays ${FIG[P.last].name}` : "";
+  $("acPicBtn").setAttribute("aria-expanded", String(acUI.pick === "av")); $("acTitBtn").setAttribute("aria-expanded", String(acUI.pick === "ti"));
+  $("acPicBtn").classList.toggle("on", acUI.pick === "av"); $("acTitBtn").classList.toggle("on", acUI.pick === "ti");
   paintBadge($("acBadge"), ti.i);
   acRing($("acRank").querySelector(".ring"), $("acRing"), ti);
   $("acRank").style.setProperty("--tc", ti.t.col);
@@ -12695,7 +12859,7 @@ function renderAccount() {
   const more = [];
   const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
   if (fw + fl > 0) more.push(`Friend matches: ${fw} won, ${fl} lost`);
-  if (cups > 0) more.push(`Cups won: ${cups}`);
+  if (cups > 0) more.push(`Cups won: ${cups}${(P.flawless | 0) > 0 ? ` (${P.flawless} flawless)` : ""}`);
   $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
   const form = $("acForm"); form.innerHTML = "";
   const hist = (P.history || []).slice(0, 10);
@@ -12706,6 +12870,133 @@ function renderAccount() {
   form.hidden = !hist.length;
   $("acReset").textContent = acUI.resetArmed ? (ACCT.code ? "Tap again to erase it everywhere" : "Tap again to erase rating, chips and skins") : "Reset progress";
   renderSync();
+}
+
+/* ----- Profile: picture and title pickers ----- */
+function renderPick() {
+  const box = $("acPick"); box.innerHTML = ""; box.hidden = !acUI.pick;
+  if (acUI.pick === "av") {
+    const cur = acAvatar();
+    const row = acMk("div", "ac-row");
+    row.appendChild(acBtn("Fighter I played last", "chip" + (cur.own ? "" : " on"), () => { P.avatar = ""; saveProfile(); renderPill(); renderAccount(); }));
+    box.appendChild(row);
+    const all = acMk("div", "ac-pk-av");
+    for (const f of FIGHTERS) {
+      const g = acMk("span", "ac-pk-grp");
+      for (const i of P.owned[f.id] || [0]) {
+        if (!f.palettes[i]) continue;
+        const b = acMk("button", "ac-pk" + (cur.own && cur.f === f.id && cur.p === i ? " on" : ""));
+        b.setAttribute("aria-label", `${f.name}, ${f.palettes[i].name}`); b.setAttribute("aria-pressed", String(cur.own && cur.f === f.id && cur.p === i)); b.title = `${f.name}, ${f.palettes[i].name}`;
+        const a = acMk("span", "av"); acSetAvatar(a, f.id, i); b.appendChild(a);
+        b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.avatar = f.id + ":" + i; saveProfile(); renderPill(); renderAccount(); });
+        g.appendChild(b);
+      }
+      all.appendChild(g);
+    }
+    box.appendChild(all);
+  } else if (acUI.pick === "ti") {
+    const cur = acTitle();
+    const list = acMk("div", "ac-tl");
+    const auto = acMk("button", "ac-t" + (!P.title || (cur && cur.auto) ? " on" : ""));
+    auto.appendChild(acMk("b", "", "Automatic")); auto.appendChild(acMk("small", "", "Shows the best title you have earned."));
+    auto.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.title = ""; saveProfile(); renderPill(); renderAccount(); });
+    list.appendChild(auto);
+    for (const id of ACT_SHOWN) {
+      const t = ACT.find((x) => x.id === id), ok = t.ok();
+      const b = acMk("button", "ac-t" + (ok ? "" : " lock") + (ok && cur && !cur.auto && cur.id === id ? " on" : ""));
+      b.appendChild(acMk("b", "", t.name())); b.appendChild(acMk("small", "", ok ? "Earned." : t.how));
+      if (ok) b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.title = id; saveProfile(); renderPill(); renderAccount(); });
+      else { b.setAttribute("aria-disabled", "true"); }
+      list.appendChild(b);
+    }
+    box.appendChild(list);
+  }
+}
+tap("acPicBtn", () => { acUI.pick = acUI.pick === "av" ? "" : "av"; renderAccount(); });
+tap("acTitBtn", () => { acUI.pick = acUI.pick === "ti" ? "" : "ti"; renderAccount(); });
+tap("acAvBtn", () => { acUI.pick = acUI.pick === "av" ? "" : "av"; renderAccount(); });
+
+/* ----- Stats tab ----- */
+function acDate(t) { try { return new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return ""; } }
+function acFav() {   // the fighter with the most counted matches (ties: the earlier in the roster)
+  let best = null, n = 0;
+  for (const f of FIGHTERS) { const m = acPlayed(acFstats()[f.id]); if (m > n) { n = m; best = f; } }
+  return best ? { f: best, n } : null;
+}
+function renderStats() {
+  const pan = $("acPanS"); pan.innerHTML = "";
+  const st = acFstats(), fav = acFav();
+  pan.appendChild(acMk("p", "ac-line", P.fsince ? `Per-fighter records count ranked matches since ${acDate(P.fsince)}. Friend and cup matches are not counted.` : "Per-fighter records start with your next ranked match. Friend and cup matches are not counted."));
+  if (fav) {
+    const d = acMk("div", "fs-fav"); const a = acMk("span", "av"); acSetAvatar(a, fav.f.id, P.pal[fav.f.id] || 0); d.appendChild(a);
+    const w = acMk("div"); w.appendChild(acMk("span", "kicker", "Favourite fighter")); w.appendChild(acMk("b", "", fav.f.name)); w.appendChild(acMk("span", "ac-line", `${fav.n} ${fav.n === 1 ? "match" : "matches"}`));
+    d.appendChild(w); pan.appendChild(d);
+  }
+  const t = acMk("table", "fs-tab"), hd = acMk("tr");
+  for (const h of ["Fighter", "Wins", "Losses", "Win rate"]) hd.appendChild(acMk("th", "", h));
+  t.appendChild(acMk("thead")).appendChild(hd);
+  const tb = acMk("tbody");
+  for (const f of FIGHTERS) {
+    const e = st[f.id] || {}, w = e.w | 0, l = e.l | 0, d = e.d | 0, m = w + l + d;
+    const tr = acMk("tr", fav && fav.f.id === f.id ? "fav" : ""), c0 = acMk("td"), fn = acMk("span", "fn"), a = acMk("span", "av");
+    acSetAvatar(a, f.id, P.pal[f.id] || 0); fn.appendChild(a); fn.appendChild(acMk("span", "", f.name)); c0.appendChild(fn); tr.appendChild(c0);
+    tr.appendChild(acMk("td", m ? "" : "z", m ? String(w) : "0")); tr.appendChild(acMk("td", m ? "" : "z", m ? String(l) : "0"));
+    tr.appendChild(acMk("td", m ? "" : "z", m ? Math.round((100 * w) / m) + "%" : "\u2013"));
+    tb.appendChild(tr);
+  }
+  t.appendChild(tb); pan.appendChild(t);
+  const hist = (P.history || []).slice(0, SYNC.HIST);
+  pan.appendChild(acMk("div", "kicker", `Last ${SYNC.HIST} ranked matches`));
+  if (!hist.length) { pan.appendChild(acMk("p", "ac-line", "No ranked matches yet.")); return; }
+  const ul = acMk("ul", "hx-list");
+  for (const h of hist) {
+    const me = FIG[h.me], op = FIG[h.op], li = acMk("li", "hx");
+    li.appendChild(acMk("i", "r " + (h.r === 1 ? "w" : h.r === 0 ? "l" : ""), h.r === 1 ? "W" : h.r === 0 ? "L" : "D"));
+    const a = acMk("span", "av"); acSetAvatar(a, h.me, 0); li.appendChild(a);
+    const b2 = acMk("span", "av"); acSetAvatar(b2, h.op, 0); li.appendChild(b2);
+    li.appendChild(acMk("span", "vs", `${me ? me.name : h.me} vs ${op ? op.name : h.op}${h.opr ? ` ${h.opr}` : ""}`));
+    li.appendChild(acMk("b", h.d > 0 ? "up" : h.d < 0 ? "down" : "", (h.d > 0 ? "+" : "") + h.d));
+    li.appendChild(acMk("small", "", h.t ? acAgo(h.t) : ""));
+    ul.appendChild(li);
+  }
+  pan.appendChild(ul);
+}
+
+/* ----- Locker tab: every fighter with every skin; tap one you own to wear it ----- */
+function renderLocker() {
+  const pan = $("acPanL"); pan.innerHTML = "";
+  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen."));
+  const grid = acMk("div", "lk");
+  for (const f of FIGHTERS) {
+    const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
+    const h = acMk("div", "lk-h"), a = acMk("span", "av"); acSetAvatar(a, f.id, cur); h.appendChild(a);
+    h.appendChild(acMk("span", "", f.name)); h.appendChild(acMk("small", "", `${f.palettes.filter((p, i) => own.includes(i)).length} / ${f.palettes.length}`));
+    card.appendChild(h);
+    const row = acMk("div", "lk-s");
+    f.palettes.forEach((p, i) => {
+      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock"));
+      b.style.setProperty("--c", col(p));
+      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : `, locked, ${p.price} chips`}`);
+      b.innerHTML = `<i>${i ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
+      if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
+      if (has) b.addEventListener("click", () => {
+        Sfx.init(); Sfx.ui();
+        if (equipSkin(f.id, i)) { if (typeof sel === "object" && sel.pending && sel.pending.id === f.id) sel.pending = null; renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
+      });
+      row.appendChild(b);
+    });
+    card.appendChild(row); grid.appendChild(card);
+  }
+  pan.appendChild(grid);
+}
+function acSetTab(t) { acUI.tab = t; renderAccount(); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
+for (const b of document.querySelectorAll(".ac-tabs .chip")) {
+  b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); acSetTab(b.dataset.t); });
+  b.addEventListener("keydown", (e) => {
+    const tabs = [...document.querySelectorAll(".ac-tabs .chip")], i = tabs.indexOf(b), d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    e.stopPropagation(); if (!d) return; e.preventDefault();
+    const n = tabs[(i + d + tabs.length) % tabs.length]; acSetTab(n.dataset.t); n.focus();
+  });
 }
 
 /* ----- the sheet: the sync section ----- */
@@ -12966,6 +13257,7 @@ async function acctSync(now) {
 
 /* ----- the sheet: open, close, reset ----- */
 function openAccount() {
+  acUI.tab = "p"; acUI.pick = "";
   acUI.resetArmed = false; acUI.unlinkArmed = false; acUI.view = "main"; acUI.pend = null; acMsg("");
   modal("account", true); renderAccount();
   if (ACCT.code) { if (Date.now() - ACCT.t > 10000) acctSync(); } else acctPing();

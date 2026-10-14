@@ -103,7 +103,7 @@ function cupMatchEnd(forfeit) {
     if (me.stocks < g.stocks) c.flawless = false;
     const chips = CUP.chips[r] + (r === 2 && c.flawless ? CUP.flawless : 0);
     P.tokens += chips; c.earned += chips;
-    if (r === 2) P.cups = (P.cups | 0) + 1;
+    if (r === 2) { P.cups = (P.cups | 0) + 1; if (c.flawless) P.flawless = (P.flawless | 0) + 1; }
   } else c.fold = forfeit ? 1 : 0;
   const pos = c.p[r].indexOf(c.mi) >> 1;
   cupAdvance(c, won);
