@@ -36,7 +36,6 @@ function asset(file, type, cache) {
 }
 const FILES = {
   "/": asset("index.html", "text/html; charset=utf-8", "no-cache"),
-  "/three.min.js": asset("three.min.js", "text/javascript; charset=utf-8", "public, max-age=604800"),
 };
 FILES["/index.html"] = FILES["/"];
 // Home-screen app files (manifest and icons, from web/). Optional: the game still runs without them.
