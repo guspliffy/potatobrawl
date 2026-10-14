@@ -1,11 +1,16 @@
 # Manga KO finisher (game/ui/manga.js + game/manga/<id>.js): win a practice match with a real lethal final hit and look at the page.
 # Usage (from the folder that should get the pictures):
-#   python3 tests/pwmanga.py [--fighter=dragon] [--vs=wizard,odin,...] [--at=600,1500,...] [WxH] [--dsf=N] [--up] [--aim=side|left|up]
-#                            [--skip] [--reduced] [--sheet] [--throttle=4] [--video=path.mp4] [--nopage]
+#   python3 tests/pwmanga.py [--fighter=dragon|all] [--vs=wizard,odin,...] [--at=600,1500,...] [WxH] [--dsf=N] [--up] [--aim=side|left|up]
+#                            [--skip] [--reduced] [--sheet] [--throttle=4] [--video=path.mp4] [--nopage] [--ult]
 # The CPU is a Dummy at 1 life and 400%; the chosen fighter stands next to it and a heavy is pressed, so the engine reports a lethal hit on the
 # last life and the finisher starts on that hit. From then on the page clock only moves when the test steps it, so every picture is taken at an
 # exact moment of the page however slow the headless browser is. Pictures are named by ms after the final hit.
-#   --at=...      freeze frames at those ms (default 600,1500,2200,2900,2950,3100,3700,4300)
+#   --at=...      freeze frames at those ms (default 600,1500,2200,2900,2950,3100,3700,4300; with --ult 600,1500,2200,2900,2950,3000,3100,3700,4300)
+#   --fighter=all every fighter once (the first of --vs that is not the fighter itself): `--ult --fighter=all --at=3100` checks the eight Ultimate pages
+#   --pct=N       with --ult: the dummy's percent (default: 150, then 190, 250 ... on every attempt that did not end the game)
+#   --ult         the Ultimate version: the attacker's bar is filled and the ulti is pressed (window.__blInput) with the dummy at that ulti's reach, so the
+#                 final lethal hit is a real Ultimate hit (event mv "ulti") and the page plays its Ultimate cut (a page with MANGA[id].ulti, on the long
+#                 timeline) or the generic gold layer (the others). Checks FIN.ulti, the "Ultimate: <name>" card line and the results time (FIN.endT).
 #   --skip        tap mid-page (at 1300 ms) and check that the results follow at once
 #   --fail        make the page throw while it builds: the 2D finisher must take over and the results must still follow (a warning is expected)
 #   --sound       sound on (the page's cues then run for real; with the default sound off they are skipped)
@@ -23,6 +28,7 @@ opt = lambda k, d=None: next((a.split("=", 1)[1] for a in args if a.startswith(k
 screen = "up" if "--up" in args else "cw"
 skip, sheet, reduced, fail = "--skip" in args, "--sheet" in args, "--reduced" in args, "--fail" in args
 aim = opt("--aim", "side")
+ult = "--ult" in args
 dsf = float(opt("--dsf", "1"))
 video = opt("--video")
 fighter = opt("--fighter", "dragon")
@@ -32,10 +38,15 @@ W, H = int(size[0]), int(size[1])
 ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger", "reaper"]
 # a fighter whose page (game/manga/<id>.js) is not written yet (the Reaper, for now) gets the 2D finisher: the run then checks that
 # the 2D fallback played and the results followed, instead of failing on the missing page. Once the file exists the page is required.
-HAS_PAGE = (ROOT / "game" / "manga" / f"{fighter}.js").exists()
+has_page = lambda fid: (ROOT / "game" / "manga" / f"{fid}.js").exists()
 vs = opt("--vs", "wizard").split(",")
-AT = [int(x) for x in opt("--at", "600,1500,2200,2900,2950,3100,3700,4300").split(",")] if not (skip or video) else []
-tag = f"{W}x{H}" + ("-up" if screen == "up" else "") + ("" if aim == "side" else "-" + aim) + ("-reduced" if reduced else "")
+AT = [int(x) for x in opt("--at", "600,1500,2200,2900,2950,3000,3100,3700,4300" if ult else "600,1500,2200,2900,2950,3100,3700,4300").split(",")] if not (skip or video) else []
+tag = f"{W}x{H}" + ("-up" if screen == "up" else "") + ("" if aim == "side" else "-" + aim) + ("-reduced" if reduced else "") + ("-ult" if ult else "")
+# --ult: how far the dummy stands from the attacker (px) for each fighter's ulti to reach it (the numbers of tests/ulti.js)
+# the dummy's percent, per attempt: a real ulti KOs a standing defender from about 90% (a light one) to 150% (a heavy one), see tests/ulti.js; much higher and the pushes of a
+# multi-hit ulti carry the dummy out of it before the KO hit, so the first attempt is low and a miss tries more (--pct=N: always N)
+ULT_PCTS = [float(opt("--pct"))] * 6 if opt("--pct") else [150, 190, 250, 320, 400, 400]
+ULT_DIST = {"phoenix": 160, "alchemist": 100, "odin": 220, "wizard": 160, "samurai": 140, "dragon": 160, "gunslinger": 220, "reaper": 220}
 errs, bad, made = [], [], {}
 
 CLOCK = """(() => {
@@ -73,6 +84,7 @@ def shot(pg, name):
     pg.screenshot(path=name)
 
 def run(b, fid, opp):
+    HAS_PAGE = has_page(fid)
     ctx = b.new_context(viewport={"width": W, "height": H}, has_touch=True, is_mobile=True, device_scale_factor=dsf, reduced_motion="reduce" if reduced else "no-preference")
     ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": "2d", "sound": "--sound" in args, "fs": False, "screen": screen}))
     ctx.add_init_script(CLOCK)
@@ -97,6 +109,17 @@ def run(b, fid, opp):
     pg.evaluate("() => window.__clock.freeze()")
     ff(pg, 100)
     for attempt in range(6):
+        if ult:
+            # a real Ultimate: bar full, the dummy at the ulti's reach, the ulti pressed for a moment; the engine reports the lethal hit with mv "ulti"
+            # (--aim=left: the attacker stands on the right, so the staging is mirrored)
+            pg.evaluate("""([dist, sg, pct]) => { const g = window.__blastline.game, a = g.fighters[0], d = g.fighters[1];
+              d.stocks = 1; d.percent = pct; a.vx = a.vy = d.vx = d.vy = 0; a.ult = 100; a.ultN = 0;
+              a.x = -150 * sg; a.facing = sg; d.x = -150 * sg + dist * sg; d.facing = -sg; window.__blInput = () => ({}); }""", [ULT_DIST[fid], -1 if aim == "left" else 1, ULT_PCTS[attempt]])
+            until(pg, "() => { const a = window.__blastline.game.fighters[0]; return a.mid !== 'ulti' && a.state === 'idle'; }", 4000, 32)
+            ff(pg, 32); pg.wait_for_timeout(300)
+            pg.evaluate("() => { window.__blInput = () => ({ ulti: true }); }"); ff(pg, 48); pg.evaluate("() => { window.__blInput = () => ({}); }")
+            if until(pg, "() => window.__blastline.game.phase !== 'play'", 9000, 32): break
+            continue
         pg.evaluate("""(aim) => { const g = window.__blastline.game, a = g.fighters[0], d = g.fighters[1];
           d.stocks = 1; d.percent = 400; a.vx = a.vy = d.vx = d.vy = 0;
           if (aim === 'left') { a.x = 10; a.facing = -1; d.x = -40; d.facing = 1; }
@@ -110,8 +133,13 @@ def run(b, fid, opp):
     else:
         bad.append(f"{fid}/{opp}: the forced heavy never ended the game"); ctx.close(); return
     t0 = pg.evaluate("() => performance.now()")
-    info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, manga: f.manga, ev: f.ev ? { final: f.ev.final, mv: f.ev.mv, fin: f.ev.fin, dirx: f.ev.dirx, diry: f.ev.diry } : null }; }")
+    info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, manga: f.manga, ulti: f.ulti, endT: f.endT, sub: f.cardSub, ev: f.ev ? { final: f.ev.final, mv: f.ev.mv, fin: f.ev.fin, dirx: f.ev.dirx, diry: f.ev.diry } : null }; }")
     if not info["on"] or not info["ev"] or not info["ev"]["final"]: bad.append(f"{fid}/{opp}: no finisher on the lethal hit ({info})")
+    if ult:
+        if not info["ev"] or info["ev"]["mv"] != "ulti": bad.append(f"{fid}/{opp}: the lethal hit was not an Ultimate hit ({info['ev']})")
+        if not info["ulti"]: bad.append(f"{fid}/{opp}: FIN.ulti was not set")
+        if not (info["sub"] or "").startswith("Ultimate: "): bad.append(f"{fid}/{opp}: card line is {info['sub']!r}, wanted 'Ultimate: <name>'")
+        else: print(f"{fid}: ultimate page, card '{info['sub']}', ends at {info['endT']} ms")
     if not info["manga"] and "--nopage" not in args and HAS_PAGE: bad.append(f"{fid}/{opp}: the manga page did not start")
     if not HAS_PAGE: print(f"{fid}: no manga page yet (game/manga/{fid}.js), the 2D finisher plays: page={info['manga']}")
     if not HAS_PAGE and info["manga"]: bad.append(f"{fid}/{opp}: a manga page started although game/manga/{fid}.js does not exist")
@@ -183,15 +211,17 @@ def run(b, fid, opp):
         if not warned: bad.append(f"{fid}/{opp}: the forced failure was never reported (the page did not fall back?)")
         else: print("fallback worked:", warned[0][:110])
     if skip and took > 1700: bad.append(f"{fid}/{opp}: skip didn't end it ({took:.0f} ms)")
-    if not skip and not video and not fail and HAS_PAGE and not (4400 <= took <= 5000): bad.append(f"{fid}/{opp}: results at {took:.0f} ms, wanted 4400-5000")
+    end_t = info["endT"] if (ult and info.get("endT")) else 4700   # an Ultimate cut runs on the long timeline (FIN.endT = MT.END)
+    if not skip and not video and not fail and HAS_PAGE and not (end_t - 300 <= took <= end_t + 300): bad.append(f"{fid}/{opp}: results at {took:.0f} ms, wanted {end_t - 300}-{end_t + 300}")
     if not skip and not video and not fail and not HAS_PAGE and not (3600 <= took <= 4600): bad.append(f"{fid}/{opp}: 2D finisher results at {took:.0f} ms, wanted 3600-4600")
-    made[opp] = files
+    made[f"{fid} vs {opp}" if fighter == "all" else opp] = files
     ctx.close()
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
-    for opp in vs:
-        run(b, fighter, opp)
+    for fid in (ALL if fighter == "all" else [fighter]):
+        for opp in (vs if fighter != "all" else [next((o for o in vs if o != fid), ALL[0])]):
+            run(b, fid, opp)
     b.close()
 
 if sheet and made:
