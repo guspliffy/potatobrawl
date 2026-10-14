@@ -243,7 +243,7 @@ async def shots(b, d, code):
         pg = await ctx.new_page(); watch(pg, 'shots ' + tag)
         await goto(pg)
         await shot(pg, f'{tag}_1_start')
-        # the pill must not run into the title, the buttons or the gear
+        # the profile plate + coins (#mRank) must not run into the logo, the menu cards or the gear
         bad = await pg.evaluate("""(() => {
           const q = (s) => document.querySelector(s).getBoundingClientRect(), R = q('#mRank'), G = q('#bSettings'), W = innerWidth, H = innerHeight;   // screen boxes (the sideways game is rotated); sizes below use layout px
           const hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
@@ -252,13 +252,15 @@ async def shots(b, d, code):
           if (R.left < 0 || R.right > W || R.top < 0 || R.bottom > H) bad.push('off screen');
           const pe = document.getElementById('mRank'), ge = document.getElementById('bSettings');
           if (Math.abs(pe.offsetHeight - ge.offsetHeight) > 1) bad.push('height ' + pe.offsetHeight + ' vs gear ' + ge.offsetHeight);
-          const r = document.createRange(); r.selectNodeContents(document.querySelector('.brand h1')); if (hit(R, r.getBoundingClientRect())) bad.push('brand');
-          for (const e of document.querySelectorAll('.menu-actions .btn')) if (hit(R, e.getBoundingClientRect())) bad.push(e.textContent.trim().slice(0, 10));
-          for (const id of ['mAvatar', 'mBadge', 'mRating', 'mTokens', 'mCups']) { const e = document.getElementById(id); if (e && !e.hidden) { const x = e.getBoundingClientRect(); if (x.width < 4 || x.right > R.right + 1 || x.left < R.left - 1) bad.push('clipped ' + id); } }
+          const r = document.createRange(); r.selectNodeContents(document.querySelector('#scrMenu h1')); if (hit(R, r.getBoundingClientRect())) bad.push('logo');
+          for (const e of document.querySelectorAll('#scrMenu .mm-col button')) if (hit(R, e.getBoundingClientRect())) bad.push(e.textContent.trim().slice(0, 10));
+          // the compact plate (667x320, or a full bar) is the picture and the emblem only, by design: the rating is checked where it shows
+          const compact = document.getElementById('app').classList.contains('tiny') || pe.classList.contains('fit2');
+          for (const id of ['mAvatar', 'mBadge', 'mRating', 'mTokens', 'mCups']) { const e = document.getElementById(id); if (e && !e.hidden && !(compact && id === 'mRating')) { const x = e.getBoundingClientRect(); if (x.width < 4 || x.right > R.right + 1 || x.left < R.left - 1) bad.push('clipped ' + id); } }
           return bad; })()""")
         for x in bad: errs.append(f'{tag}: pill: {x}')
         nm = await pg.is_visible('#mName')
-        expect(nm == (tag in ('phone', 'desk', 'rot')), f'{tag}: the name is {"shown" if nm else "hidden"} in the pill')
+        expect(nm == (tag in ('phone', 'desk', 'rot', 'up')), f'{tag}: the name is {"shown" if nm else "hidden"} on the plate')   # 667x320: the picture + emblem only
         await open_sheet(pg)
         await shot(pg, f'{tag}_2_sheet_unlinked')
         await btn(pg, 'I have a code'); await pg.fill('#acCode', code); await pg.wait_for_timeout(150)

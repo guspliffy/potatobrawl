@@ -20,17 +20,61 @@ function newAttract() {
   const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   trails[0].length = trails[1].length = 0;
+  $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
 }
 
+/* ----- the main menu (Fable's design; markup in shell.html #scrMenu, styles in game/css/20-menu.css) ----- */
+// a portrait <img> on the menu, set only when the fighter changes (the portraits are inlined data URLs)
+function menuImg(img, id) {
+  const src = PORTRAITS[id] || "";
+  if (img._src !== src) { img._src = src; if (src) img.src = src; else img.removeAttribute("src"); }
+  img.dataset.f = id;
+}
 function renderMenu() {
-  renderPill();   // profile pill, ui/acct.js
-  $("mRec").textContent = `${P.wins}W · ${P.losses}L${P.streak > 1 ? ` · ${P.streak} streak` : ""}`;
+  renderPill();   // the profile plate and the coins, ui/acct.js
+  // the Ranked hero: the fighter you play (P.last) in the slanted mask, your tier, your record and the rating to the next tier
+  const ti = tierInfo(P.rating), spec = FIG[P.last] || FIGHTERS[0], pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0], hero = $("bRanked");
+  hero.style.setProperty("--fc", col(pal)); hero.dataset.f = spec.id;
+  menuImg($("mHeroArt"), spec.id);
+  $("mRankKick").innerHTML = `Ranked<span class="mm-km"> match</span> · ${ti.t.name} ${+P.rating || 0}`;   // small screens drop "match"
+  // the line wraps only after a " · " (no-break spaces inside each part and before each dot)
+  const rec = P.matches > 0 ? [`${P.wins}W`, `${P.losses}L`].concat(P.streak > 1 ? [`${P.streak} streak`] : []) : ["First match"];
+  rec.push(ti.next ? `${ti.need} to ${ti.next.name}` : "top tier");
+  $("mRec").textContent = rec.map((t) => t.replace(/ /g, "\u00a0")).join("\u00a0· ");
+  // Tournament: a cup in progress, the cups won, or what a cup pays
+  const c = cupOk(P.cup) ? P.cup : null, cups = P.cups | 0;
+  $("mCup").innerHTML = c ? `<em>Resume</em>${c.out < 0 ? ` · ${CUP.names[c.round].toLowerCase()}` : ""}`
+    : cups ? `<em>${cups} ${cups === 1 ? "cup" : "cups"} won</em>` : `<em>Up to ${CUP.chips.reduce((a, n) => a + n, CUP.flawless)} chips</em>`;
+  // Play friends: the mint dot when online play is there, greyed out with the reason when not
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
-  $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
+  $("mOnline").textContent = onOk ? "" : "needs the web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
-  cupMenu(); dailyMenu();
+  dailyMenu(); menuDaily();
 }
+// the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
+function menuDaily() {
+  const key = dailyKey(), st = dailyGet(), done = st.d === key, pk = dailyPick(key), tile = $("bDaily"), tag = $("mDailyTag");
+  menuImg($("mDailyA"), pk.me); menuImg($("mDailyB"), pk.opp);
+  tile.classList.toggle("done", done);
+  $("mDailyR").innerHTML = done ? "" : `<em>+${DAILY.win} chips</em> · one try`;
+  const won = done && st.r === 1;
+  tag.textContent = done ? (won ? "Won" : "Done") : "Today";
+  tag.className = `tag ${won ? "mint" : done ? "done" : "ember"} mm-today`;
+}
+// The top bar: when the plate and the coins do not fit beside the logo (or across an upright phone), first the coins get
+// tighter (.fit1), then the plate drops the name (.fit2). Runs after renderPill and whenever the menu changes size.
+function menuFit() {
+  const me = $("mRank"), bar = me.closest(".mm-bar"), top = me.parentNode;
+  if (screens.menu.hidden) return;
+  const crowded = () => bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1;
+  me.classList.remove("fit1", "fit2");
+  for (const k of ["fit1", "fit2"]) { if (!crowded()) break; me.classList.add(k); }
+}
+if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe(screens.menu);
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => menuFit());   // the web fonts change the widths
+// the Daily tile turns over to the next matchup at midnight while the menu stays open (daily.js turns its line over too)
+setInterval(() => { if (mode === "menu") menuDaily(); }, 30000);
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
   const c = window.claude && typeof window.claude.use === "function";

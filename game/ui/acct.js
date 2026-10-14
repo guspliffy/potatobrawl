@@ -82,26 +82,30 @@ function acTitle() {   // the one that shows: the chosen one if earned, else the
   return t ? { id: t.id, name: t.name(), auto: !pick } : null;
 }
 
-/* ----- the pill ----- */
+/* ----- the profile plate (top right of the start page) ----- */
 
-function acRing(ringBox, arc, ti) {
+function acRing(ringBox, arc, ti) {   // the Account sheet's tier ring
   ringBox.style.setProperty("--tc", ti.t.col);
   arc.style.strokeDashoffset = String(94.25 * (1 - ti.p));
 }
+// #mRank is one button: the plate (picture with the rank emblem on its corner, name, tier + rating, the chosen title as a sticker)
+// and the coins beside it (chips; the Daily Potato streak while there is one; cups once one is won). Styles: game/css/20-menu.css.
 function renderPill() {
-  const ti = tierInfo(P.rating), name = acctName(), cups = P.cups | 0;
+  const ti = tierInfo(P.rating), name = acctName(), cups = P.cups | 0, me = $("mRank");
   acSetMe($("mAvatar"));
   $("mName").textContent = name;
-  const tt = acTitle(), mt = $("mTitle"); mt.hidden = !tt; mt.textContent = tt ? tt.name : "";
-  paintBadge($("mBadge"), ti.i);
-  acRing($("mRingBox"), $("mRing"), ti);
+  me.querySelector(".plate").style.setProperty("--tc", ti.t.col);
+  $("mTier").textContent = ti.t.name;
   $("mRating").textContent = P.rating;
-  $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
-  const cb = $("mCups"); cb.hidden = !(cups > 0);
-  if (cups > 0) cb.innerHTML = `<span class="cupglyph"></span>${cups}`;
-  const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); $("mRank").classList.toggle("stk", ds > 0);   // Daily Potato streak (ui/daily.js)
-  if (ds > 0) sb.innerHTML = `<span class="stkglyph"></span>${ds}`;
-  $("mRank").setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
+  const tt = acTitle(), mt = $("mTitle");
+  mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
+  const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
+  $("mTokens").textContent = P.tokens;
+  const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
+  const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
 /* ----- the sheet: your numbers ----- */
