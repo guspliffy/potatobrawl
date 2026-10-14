@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -44,6 +44,12 @@ else fail "light-attack lock (longest run '${RUN:-?}', want 3 or less)" "$LOGS/l
 (cd tests && node finish.js 30) > "$LOGS/finish.log" 2>&1
 if grep -q "^finish ok" "$LOGS/finish.log"; then pass "finish mode + charge + KO at the hit ($(grep -o 'lethal calls [0-9]*' "$LOGS/finish.log"), 0 wrong)"
 else fail "finish mode / charge / KO at the hit" "$LOGS/finish.log"; fi
+
+# 3d. Combo routes and the link: every fighter lands each of its six routes on a standing CPU at the trial's damage, light,
+#     light, special is a true combo at 0% and 30% (no jump or dodge escape after the second light), and combo damage scales.
+(cd tests && node combos.js) > "$LOGS/combos.log" 2>&1
+if grep -q "^combos ok" "$LOGS/combos.log"; then pass "combo routes + the link (all 13 routes land on every fighter that has them)"
+else fail "combo routes / the link" "$LOGS/combos.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 
@@ -101,6 +107,12 @@ else fail "KO finisher" "$LOGS/finisher.log"; fi
 (cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwcup.py" cup flow) > "$LOGS/cup.log" 2>&1
 if grep -q "^no errors" "$LOGS/cup.log"; then pass "tournament (bracket, chips, loss, run it back, reload, forfeit; no page errors)"
 else fail "tournament" "$LOGS/cup.log"; fi
+
+# 8b. Combos in the browser: route cards in How to play, the Combo trial (keys light up, cleared routes saved, hint after three
+#     misses, Next, Exit), the Combo Potato reward paid once. Shots in build/shots/combo.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwcombo.py" combo) > "$LOGS/combo-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/combo-ui.log"; then pass "Combo trial in the browser (cards, trial, reward; shots in build/shots/combo)"
+else fail "Combo trial in the browser" "$LOGS/combo-ui.log"; fi
 
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
