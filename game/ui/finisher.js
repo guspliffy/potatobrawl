@@ -9,7 +9,7 @@
    launch direction, spinning. It leaves the screen, the KO beam and a burst of fries and chips mark the
    edge, then the name card. A tap or key skips it; the results screen opens when it ends. */
 const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null], parts: [], shake: 0, out: false,
-  cue: {}, finish: null, manga: false, hit: 1520, launch: 1610, cardSub: "", k: 1, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
+  cue: {}, finish: null, manga: false, ulti: false, hit: 1520, launch: 1610, cardSub: "", k: 1, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
 // timeline, in ms after the final hit. The loser stays put FLAUNCH ms after HIT (impact freeze), then flies.
 const FT = { CUT: 520, ACT: 920, HIT: 1520, OUT: 2020, CARD: 2400, END: 3800 };
 const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
@@ -22,6 +22,7 @@ function finStart(g) {
   const W = g.fighters[g.winner], Lf = g.fighters[1 - g.winner];
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
+  FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = g.winner; FIN.l = 1 - g.winner;
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
@@ -33,7 +34,7 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  match.finBy = finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
+  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
@@ -114,6 +115,8 @@ const FIN_NAME = { gunslinger: "High Noon", reaper: "Last Rites" };
 const finName = (spec) => FIN_NAME[spec.id] || spec.signature.name;
 // what the results screen calls the finisher: the finishing special's own name, else the title of the fighter's manga page (Inferno, One Cut ...)
 const finTitle = (spec) => FIN_NAME[spec.id] || (MANGA[spec.id] && MANGA[spec.id].name) || spec.signature.name;
+// an Ultimate KO: the title of the fighter's own Ultimate page (Hundred Petals ...), else the ultimate's name (Mutagen Cloud ...)
+const finUltiTitle = (spec) => (MANGA[spec.id] && MANGA[spec.id].ulti && MANGA[spec.id].ulti.name) || (spec.ultimate && spec.ultimate.name) || finTitle(spec);
 // "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
 function finHit(g, e) {
   if (!e.fin) return;
