@@ -331,7 +331,7 @@ const FIGHTERS = [
                proj: { style: "fire", speed: 6.5, life: 16, r: 12, ox: 30, oy: -38, count: 5, interval: 4, spreadVy: [-0.5, 0.3, -0.2, 0.5, 0], dmg: 2, bkb: 3.5, kbg: 3, angle: 35, short: true,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 42 } } }),
       // Hellfire: a long, low fire stream ticking every 7 frames; the last 6 frames blast
-      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -46, 34], [130, -46, 38], [210, -46, 40], [290, -46, 40], [370, -46, 38]],
+      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -50, 40], [130, -50, 44], [210, -50, 46], [290, -50, 46], [370, -50, 44]],
                { limb: "head", ult: "hellfire", fire: true, multi: 7, armor: [1, 24], last: { from: 61, dmg: 16, bkb: 8, kbg: 17, angle: 40 } }),
     },
   },
@@ -349,18 +349,19 @@ const FIGHTERS = [
       { name: "Gold Rush", price: 200, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
     ],
     moves: {
-      jab:   M(3, 3, 9,   3, 4, 2, 40, [28, -36, 16], { limb: "arm" }),
-      side:  M(6, 4, 13,  7, 4.5, 9, 32, [36, -32, 19], { limb: "arm" }),
-      up:    M(5, 5, 12,  6, 5, 8, 86, [16, -70, 20, -16, -72], { limb: "arm" }),
-      down:  M(5, 3, 11,  5, 4, 7, 18, [32, -6, 16], { limb: "leg" }),
+      // the lights are point-blank shots: a short tracer (the box sweeps out from the muzzle over the active frames)
+      jab:   M(3, 3, 9,   3, 4, 2, 40, [24, -38, 10, 62, -38, 10], { limb: "arm", shot: true }),
+      side:  M(6, 4, 13,  6, 4.5, 9, 32, [28, -36, 11, 80, -36, 11], { limb: "arm", shot: true }),
+      up:    M(5, 5, 12,  6, 5, 8, 86, [12, -60, 11, 12, -112, 11], { limb: "arm", shot: true }),
+      down:  M(5, 3, 11,  5, 4, 7, 18, [26, -10, 11, 70, -8, 11], { limb: "arm", shot: true }),
       // Fan the hammer: a point-blank blast that kicks him back in a small hop
       hSide: M(13, 4, 24, 15, 7, 20, 34, [36, -38, 21, 56, -36], { limb: "arm", impulse: [-5, -3] }),
       hUp:   M(11, 6, 22, 13, 7, 18, 88, [10, -88, 26], { limb: "arm" }),
       hDown: M(11, 4, 24, 12, 6.5, 16, 25, [[38, -10, 19], [-38, -10, 19]], { limb: "arm" }),
-      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [0, -32, 30], { limb: "body", landLag: 6 }),
-      sair:  M(6, 4, 14,  8, 5, 12, 40, [36, -32, 19], { limb: "arm", landLag: 8 }),
-      uair:  M(5, 5, 12,  7, 5, 12, 82, [14, -70, 21, -14, -70], { limb: "arm", landLag: 7 }),
-      dair:  M(9, 5, 16,  9, 5, 10, -65, [4, 0, 19], { limb: "leg", landLag: 11 }),
+      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [[22, -36, 11, 64, -36, 11], [-22, -36, 11, -64, -36, 11]], { limb: "body", shot: true, landLag: 6 }),
+      sair:  M(6, 4, 14,  7, 5, 12, 40, [28, -36, 11, 78, -36, 11], { limb: "arm", shot: true, landLag: 8 }),
+      uair:  M(5, 5, 12,  7, 5, 12, 82, [10, -60, 11, 10, -112, 11], { limb: "arm", shot: true, landLag: 7 }),
+      dair:  M(9, 5, 16,  9, 5, 10, -65, [6, 2, 11, 6, 50, 11], { limb: "arm", shot: true, landLag: 11 }),
       hAir:  M(12, 4, 22, 13, 6.5, 16, 36, [36, -36, 21, 54, -34], { limb: "arm", impulse: [-3, -1], landLag: 15 }),
       // Powder jump: a shot fired down at his feet lifts him; the blast under him knocks down and away
       rec:   M(5, 6, 14, 5, 4.5, 4, -60, [0, 6, 24], { limb: "leg", rec: true, vyStart: -15.5, vxStick: 4.5, helpless: true, landLag: 10 }),
