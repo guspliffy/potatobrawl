@@ -108,6 +108,10 @@ const MAPS = [
   { id: "fryer", main: { x1: -320, x2: 320, top: 0, bottom: 64 },
     plats: [{ x1: -250, x2: -130, y: -105 }, { x1: 130, x2: 250, y: -105 }, { x1: -190, x2: -80, y: -225 }, { x1: 80, x2: 190, y: -225 }],
     blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
+  // The Field (Old Scratch's arena, also a normal map): the widest floor, two low side platforms, no top platform
+  { id: "field", main: { x1: -400, x2: 400, top: 0, bottom: 64 },
+    plats: [{ x1: -330, x2: -190, y: -125 }, { x1: 190, x2: 330, y: -125 }],
+    blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
 ];
 const STAGE = { id: "", map: 0, main: null, plats: null, blast: null, spawns: null, respawnY: 0 };
 function useStage(g) {
@@ -438,6 +442,43 @@ const FIGHTERS = [
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
 for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
 
+/* ---------- Bosses (2v1): not in the roster. A boss is a fighter spec with a `boss` block; the engine gives him HP and
+   poise instead of percent, keeps him on the main floor, and drives him with bossAct (his brain, on g.br, so every phone
+   agrees). Lights never interrupt him; full poise staggers him (x stagK damage); at 0 HP he is "broken" and the next
+   non-light hit sends him out (bossDown: the KO decided at the hit, like a final lethal launch). ---------- */
+const BOSSES = [
+  {
+    id: "scratch", name: "Old Scratch", role: "The Devil",
+    blurb: "A roasted red potato with horns, a pitchfork and a temper. Owns The Field.",
+    look: { build: "boss", costume: "devil", scale: 2.5 },
+    stats: { w: 100, h: 156, weight: 400, run: 2.6, accel: 0.35, airSpeed: 2, airAccel: 0.2, gravity: 0.75, fallSpeed: 14, fastFall: 14, jump: 10, airJump: 0, airJumps: 0 },
+    palettes: [{ name: "Brimstone", price: 0, body: "#b8332a", trim: "#1f1d26", accent: "#ff8a2b", ui: "#ff4a36" }],
+    // Per difficulty [Normal, Hard, Nightmare] (Fable's design): hp x lvHp; poise to fill for a stagger of stagger[lv] frames;
+    // rage from rageAt[lv] % HP (stagger x rageStag, gaps x rageGap, fast wind-ups skip rageFast more); gap[lv] = idle frames between
+    // moves (base + rng x span); fast moves skip lvFast[lv] of their wind-up; Horn Charge from chargeAt[lv] % HP; rainN[lv] fireballs;
+    // the charge's fire burns trailLife[lv] frames. stagK = damage x while staggered, lightK = lights' damage x.
+    boss: { hp: 900, lvHp: [1, 1.33, 1.67], poise: 40, stagger: [150, 135, 120], rageAt: [20, 30, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
+            stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [22, 24], [14, 18]], lvFast: [0, 0.15, 0.2], chargeAt: [50, 50, 100],
+            rainN: [6, 8, 8], trailLife: [84, 84, 150] },
+    moves: {
+      // Pitchfork Stab: the tines glow, then a long poke at waist height (jump it or step out)
+      stab:   M(24, 6, 30, 14, 7, 17, 30, [70, -78, 26, 215, -74], { limb: "fork", boss: "stab", fast: true }),
+      // Tail Whip: he turns his back, the tail sweeps out on both sides low (jump it)
+      whip:   M(26, 8, 26, 12, 7, 17, 42, [[-60, -40, 40, -150, -36], [60, -40, 40, 150, -36]], { limb: "tail", boss: "whip", fast: true }),
+      // Hellfire Stomp: a hop (shadow ring where he lands), a shockwave around him and two floor flames running out (jump them)
+      stomp:  M(30, 4, 30, 13, 7, 16, 75, [[-70, -24, 46], [70, -24, 46], [0, -10, 60]], { limb: "body", boss: "stomp", hop: 10.5,
+                flame: { dx: 70, vx: 6.5, r: 20, life: 56, dmg: 9, bkb: 6, kbg: 10, angle: 75 } }),
+      // Brimstone Rain: he points up, six fireballs fall on spots marked on the floor (one on each player, one near, the rest anywhere)
+      rain:   M(40, 1, 34, 0, 0, 0, 0, [], { limb: "fork", boss: "rain", fast: true,
+                ball: { r: 26, vy: 15, life: 90, dmg: 11, bkb: 6.5, kbg: 13, angle: 85, burst: { r: 46, life: 6, dmg: 8, bkb: 6, kbg: 12, angle: 80 } } }),
+      // Horn Charge (from half HP): he paws the ground, then runs to the far wall leaving fire (a platform or a double jump escapes)
+      charge: M(40, 70, 40, 16, 8, 17, 35, [[50, -70, 44], [20, -40, 46]], { limb: "body", boss: "charge", fast: true, speed: 10.5,
+                trail: { every: 6, r: 22, life: 84, pulse: 12, dmg: 5, bkb: 5.5, kbg: 6, angle: 75 } }),
+    },
+  },
+];
+const BOSS_MOVES = ["stab", "whip", "stomp", "rain", "charge"];
+
 /* ---------- state ---------- */
 const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti"];
 const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false });
@@ -459,22 +500,34 @@ function newFighter(spec, slot, pal, x, facing) {
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
     techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false,
     ult: 0, ultN: 0, ultX: 0, ultTgt: -1,
+    // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
+    // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
+    team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1,
     anim: { run: 0 },
   };
 }
 
+// o: players [{spec, pal, team?}], seed, stocks, time (s, 0 = none), countdown, map, level (boss difficulty 0-2), hpMul (boss HP x).
+// g.winner is the winning TEAM (1v1: team = slot). With a boss in the game: the boss is team 1, everyone else team 0.
 function newGame(o) {
+  const seed = o.seed ?? ((Math.random() * 1e9) | 0);
   const g = {
     t: 0, phase: "countdown", cd: o.countdown ?? 150, hitstop: 0, timer: (o.time ?? 240) * 60, timed: (o.time ?? 240) > 0, sudden: false,
     fighters: [], projs: [], events: [], winner: -1, endT: 0, endReason: "",
-    rng: mulberry32(o.seed ?? ((Math.random() * 1e9) | 0)), stocks: o.stocks ?? 3,
-    map: MAPS[o.map | 0] ? o.map | 0 : 0,
+    rng: mulberry32(seed), stocks: o.stocks ?? 3,
+    map: MAPS[o.map | 0] ? o.map | 0 : 0, lv: clamp(o.level | 0, 0, 2), br: (seed ^ 0x5bd1e995) | 0,
   };
   useStage(g);
+  const bossGame = o.players.some((p) => p.spec.boss);
+  const tm = o.players.map((p, i) => p.team ?? (bossGame ? (p.spec.boss ? 1 : 0) : i));
   o.players.forEach((p, i) => {
-    const sp = STAGE.spawns[i];
+    // three or more on stage: each team lines up on its own side (team 0 left); 1v1 keeps the map's spawns
+    const k = tm.slice(0, i).filter((t) => t === tm[i]).length, S = STAGE.main;
+    const sp = o.players.length > 2 ? (tm[i] === 0 ? { x: Math.round(S.x1 * 0.575) + k * 90, f: 1 } : { x: Math.round(S.x2 * 0.5) - k * 90, f: -1 }) : STAGE.spawns[i];
     const f = newFighter(p.spec, i, p.pal, sp.x, sp.f);
+    f.team = tm[i];
     f.stocks = g.stocks;
+    if (p.spec.boss) { const B = p.spec.boss; f.stocks = 1; f.hp = f.hpMax = Math.round(B.hp * B.lvHp[g.lv] * (o.hpMul ?? 1)); }
     g.fighters.push(f);
   });
   return g;
@@ -518,7 +571,8 @@ function step(g, inputs) {
   const live = g.phase === "play";
   const frozen = g.hitstop > 0;
   // Inputs are read even during hitstop so presses made in the freeze are buffered, not lost.
-  g.fighters.forEach((f, i) => readInput(f, live && f.state !== "dead" ? inputs[i] || blankInput() : blankInput(), frozen));
+  // a boss takes no input: his brain (bossAct) moves him
+  g.fighters.forEach((f, i) => readInput(f, live && f.state !== "dead" && !f.spec.boss ? inputs[i] || blankInput() : blankInput(), frozen));
   if (frozen) { g.hitstop--; return; }
   if (g.phase === "countdown") {
     g.cd--;
@@ -571,7 +625,9 @@ function updateFighter(g, f) {
       return;
     }
     case "ledge": updateLedge(g, f); return;
-    case "idle": case "run": case "air": actOrMove(g, f); break;
+    case "idle": case "run": case "air": if (f.spec.boss) bossAct(g, f); else actOrMove(g, f); break;
+    case "stagger": f.vx *= 0.8; if (--f.stag <= 0) { f.poise = 0; setState(f, "idle"); } break;
+    case "broken": f.vx *= 0.8; break;
     case "jumpsquat":
       f.vx *= 0.9;
       if (f.st >= 3) {
@@ -641,7 +697,7 @@ function startUlti(g, f) {
   g.hitstop = Math.max(g.hitstop, TUNE.ultFreeze);
   g.events.push({ type: "ulti", slot: f.slot, x: f.x, y: f.y, n: f.ultN, name: f.spec.ultimate.name, id: f.spec.id });
 }
-const foe = (g, f) => g.fighters.find((o) => o !== f && o.state !== "gone");
+const foe = (g, f) => g.fighters.find((o) => o.team !== f.team && o.state !== "gone");
 // what each ulti does beyond the plain move: runs after mt++ in updateAttack; true = it moved the fighter itself
 function ultStep(g, f, m) {
   const S = STAGE.main, k = m.ult, mt = f.mt;
@@ -686,14 +742,14 @@ function ultStep(g, f, m) {
     if (t && mt < m.cutAt) { t.vx = 0; t.vy = 0; t.kbx = 0; t.kby = 0; }
     if (mt === m.cutAt && t) {
       f.ultTgt = -1;
-      if (t.state === "hitstun" && !t.doomed) applyHit(g, { att: f, def: t, hit: Object.assign({ ult: true }, m.cut), lx: 0, bx: t.x, by: t.y - t.s.h * 0.5 });
+      if ((t.state === "hitstun" || t.spec.boss) && !t.doomed) applyHit(g, { att: f, def: t, hit: Object.assign({ ult: true }, m.cut), lx: 0, bx: t.x, by: t.y - t.s.h * 0.5 });
     }
     return false;
   }
   if (k === "harvest" && mt >= m.pull[0] && mt <= m.pull[1]) {
     // the tug: strong on the ground, weak in the air; it stops close to him
     for (const o of g.fighters) {
-      if (o === f || intangible(o) || o.state === "ledge" || o.state === "dead" || o.state === "gone") continue;
+      if (o.team === f.team || o.spec.boss || intangible(o) || o.state === "ledge" || o.state === "dead" || o.state === "gone") continue;
       const dx = f.x - o.x, ad = Math.abs(dx);
       if (ad > 520 || ad < 56) continue;
       o.x += sign(dx) * Math.min(ad - 56, o.grounded ? 10 : 5);
@@ -783,7 +839,7 @@ function startMove(g, f, key) {
   f.lk = f.link > 0 && !LIGHT.has(key) && key !== "ulti";
   if (f.lk) { f.mt = Math.max(0, Math.min(TUNE.linkFast, m.startup - (m.charge ? TUNE.chgHold : 1))); f.link = 0; }
   // a projectile special with finCount fires only finCount shots, in finStyle, when it starts against a finish-ready opponent
-  if (key === "spec") f.finShot = !!(m.proj && m.proj.finCount && g.fighters.some((o) => o !== f && o.percent >= TUNE.finishPct));
+  if (key === "spec") f.finShot = !!(m.proj && m.proj.finCount && g.fighters.some((o) => o.team !== f.team && o.percent >= TUNE.finishPct));
   if (m.rec) { f.recUsed = true; faceStick(f); f.ff = false; }
   if (m.pound) f.ff = false;
   g.events.push({ type: "swing", heavy: key[0] === "h" || key === "spec" || key === "pound" || key === "ulti", slot: f.slot, ult: key === "ulti" });
@@ -809,6 +865,7 @@ function updateAttack(g, f) {
   f.mt++;
   const a0 = m.startup + 1, a1 = m.startup + m.active, total = m.startup + m.active + m.endlag;
   if (m.ult && ultStep(g, f, m)) return;
+  if (m.boss && bossStep(g, f, m)) return;
   if (m.rec) {
     if (f.mt < m.startup) { f.vy = Math.min(f.vy, 0.5); f.vx *= 0.85; }
     else if (f.mt === m.startup) {
@@ -925,7 +982,7 @@ function collide(g, f, px, py) {
   if (!f.grounded) {
     const down = f.y >= py;
     if (down && py <= S.top + 0.5 && f.y >= S.top && f.x >= S.x1 - 2 && f.x <= S.x2 + 2) land(g, f, S.top, -1);
-    else if (down && f.dropT <= 0) {
+    else if (down && f.dropT <= 0 && !f.spec.boss) {
       for (let i = 0; i < STAGE.plats.length; i++) {
         const p = STAGE.plats[i];
         if (py <= p.y + 0.5 && f.y >= p.y && f.x >= p.x1 - 2 && f.x <= p.x2 + 2) { land(g, f, p.y, i); break; }
@@ -936,6 +993,11 @@ function collide(g, f, px, py) {
       else if (f.x < 0) { f.x = S.x1 - hw; if (f.vx > 0) f.vx = 0; if (f.kbx > 0) f.kbx = -f.kbx * 0.5; }
       else { f.x = S.x2 + hw; if (f.vx < 0) f.vx = 0; if (f.kbx < 0) f.kbx = -f.kbx * 0.5; }
     }
+  }
+  // a boss never leaves the main floor (until the launch that ends him)
+  if (f.spec.boss && !f.doomed) {
+    if (f.x < S.x1 + hw) { f.x = S.x1 + hw; if (f.vx < 0) f.vx = 0; }
+    else if (f.x > S.x2 - hw) { f.x = S.x2 - hw; if (f.vx > 0) f.vx = 0; }
   }
 }
 
@@ -976,7 +1038,7 @@ function land(g, f, y, plat) {
 }
 
 function tryLedge(g, f) {
-  if (f.ledgeCd > 0 || f.vy + f.kby < 0) return;
+  if (f.ledgeCd > 0 || f.vy + f.kby < 0 || f.spec.boss) return;
   const st = f.state;
   const ok = st === "air" || st === "helpless" || (st === "attack" && f.move && f.move.rec && f.mt > f.move.startup + 2);
   if (!ok) return;
@@ -1068,7 +1130,7 @@ function updateProjs(g) {
     } else {
       p.vy += p.grav; p.x += p.vx; p.y += p.vy;
     }
-    if (p.t >= p.life) p.done = true;
+    if (p.t >= p.life || (p.style === "flame" && (p.x < S.x1 || p.x > S.x2))) p.done = true;
     if (p.style !== "burst" && !p.pulse && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
       p.done = true;
       if (!p.boomer) g.events.push({ type: "projEnd", x: p.x, y: Math.min(p.y, S.top), style: p.style, slot: p.owner });
@@ -1084,7 +1146,7 @@ function detectHits(g) {
     const boxes = activeBoxes(att);
     if (!boxes) continue;
     for (const def of g.fighters) {
-      if (def === att || intangible(def)) continue;
+      if (def.team === att.team || intangible(def)) continue;
       const mv = att.move, last = att.hitLog[def.slot];
       // a move with a `last` block hits once more with those numbers from its frame `from`
       const blast = mv.last && att.mt >= mv.last.from;
@@ -1100,7 +1162,7 @@ function detectHits(g) {
     // a pulsing cloud only hurts on its pulses, stays after a hit, and its last pulse uses the `last` numbers
     if (p.pulse && p.t % p.pulse !== 0) continue;
     for (const def of g.fighters) {
-      if (def.slot === p.owner || intangible(def)) continue;
+      if (def.team === g.fighters[p.owner].team || intangible(def)) continue;
       if (circRect(p.x, p.y, p.r, hurt(def))) {
         const hit = p.pulse && p.last && p.t + p.pulse > p.life ? Object.assign({}, p.hit, p.last) : p.hit;
         hits.push({ att: g.fighters[p.owner], def, hit, proj: p, bx: p.x, by: p.y });
@@ -1119,6 +1181,7 @@ function knockback(hit, percent, weight) {
 
 function applyHit(g, h) {
   const { att, def } = h;
+  if (def.spec.boss) return bossHit(g, h);
   if (h.hit.mark) return ultMark(g, att, def);
   // finish mode: a special on an opponent at finishPct or more (the number shown before the hit) finishes
   const fin = !!(h.hit.fin && def.percent >= TUNE.finishPct);
@@ -1204,6 +1267,168 @@ function applyHit(g, h) {
   g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0, link, lk: !h.proj && att.lk, mi: h.proj ? -1 : att.moveT, ult: ultHit });
 }
 
+/* ---------- Bosses: the brain (bossAct, on g.br), his moves (bossStep), hits on him (bossHit) and his end (bossDown) ---------- */
+// the boss's own random numbers: a mulberry32 step on g.br (an integer in the game state, so snapshots and the KO look-ahead carry it)
+function brand(g) {
+  const a = (g.br = (g.br + 0x6D2B79F5) | 0);
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const bossRage = (g, f) => f.hp * 100 <= f.hpMax * f.spec.boss.rageAt[g.lv];
+const bossLive = (o) => o.state !== "gone" && o.state !== "dead" && o.state !== "respawn" && !o.doomed;
+// who he goes after next: the nearest player most of the time, the other one sometimes
+function bossAim(g, f) {
+  const c = g.fighters.filter((o) => o.team !== f.team && bossLive(o));
+  if (!c.length) return -1;
+  c.sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x) || a.slot - b.slot);
+  return c.length > 1 && brand(g) >= 0.7 ? c[1].slot : c[0].slot;
+}
+function bossAct(g, f) {
+  f.inp.x = 0;
+  if (!f.grounded) { if (f.state !== "air") setState(f, "air"); airDrift(f, 0.5); return; }
+  // the KO look-ahead and the countdown: he stands (an attack already running plays out)
+  if (g.look || g.phase !== "play") return groundMove(g, f);
+  let t = f.aim >= 0 ? g.fighters[f.aim] : null;
+  if (!t || !bossLive(t)) { f.aim = bossAim(g, f); t = f.aim >= 0 ? g.fighters[f.aim] : null; }
+  if (!t) return groundMove(g, f);
+  const dx = t.x - f.x, adx = Math.abs(dx), up = f.y - t.y;
+  if (f.bt > 0) f.bt--;
+  else {
+    const key = bossPick(g, f, t, dx, up);
+    if (key) { f.facing = sign(dx) || f.facing; return bossStart(g, f, key); }
+  }
+  if (adx > f.spec.boss.near) f.inp.x = sign(dx);
+  groundMove(g, f);
+  if (!f.inp.x && dx) f.facing = sign(dx);
+}
+// the next move, weighted by where the target is (BOSS_MOVES order); "" = walk in first
+function bossPick(g, f, t, dx, up) {
+  const S = STAGE.main, adx = Math.abs(dx), half = f.hp * 100 <= f.hpMax * f.spec.boss.chargeAt[g.lv];
+  const back = g.fighters.some((o) => o.team !== f.team && o !== t && bossLive(o) && Math.abs(o.x - f.x) < 170 && sign(o.x - f.x) !== sign(dx));
+  const room = dx > 0 ? S.x2 - f.x : f.x - S.x1;
+  const w = [
+    adx < 250 && up < 110 ? 3 : 0,                     // stab
+    adx < 170 && up < 100 ? (back ? 6 : 2.5) : 0,      // whip
+    adx < 300 && up < 140 ? 2 : 0,                     // stomp
+    up > 70 || adx > 320 ? 3 : 1,                      // rain
+    half && adx > 180 && up < 90 && room > 320 ? 2.5 : 0,   // charge
+  ];
+  if (adx > 330 && !w[4] && brand(g) < 0.6) return "";
+  const last = BOSS_MOVES.indexOf(f.bq);
+  if (last >= 0) w[last] /= 3;
+  let sum = 0;
+  for (const v of w) sum += v;
+  let r = brand(g) * sum;
+  for (let i = 0; i < w.length; i++) { r -= w[i]; if (w[i] > 0 && r < 0) return BOSS_MOVES[i]; }
+  return "";
+}
+function bossStart(g, f, key) {
+  const B = f.spec.boss, m = f.spec.moves[key], rage = bossRage(g, f);
+  startMove(g, f, key);
+  f.bq = key;
+  // harder levels and rage skip part of the wind-up (the tell is shorter, the hit frames are the same)
+  if (m.fast) f.mt = Math.round(m.startup * (B.lvFast[g.lv] + (rage ? B.rageFast : 0)));
+  if (m.hop) { f.vy = -m.hop; f.grounded = false; f.plat = -1; }
+  const gp = B.gap[g.lv];
+  f.bt = Math.round((gp[0] + brand(g) * gp[1]) * (rage ? B.rageGap : 1));
+  f.aim = bossAim(g, f);
+  g.events.push({ type: "bossMove", slot: f.slot, mv: key, x: f.x, y: f.y, rage });
+}
+function bossProj(f, x, y, vx, vy, style, o, extra) {
+  return Object.assign({ owner: f.slot, x, y, dir: f.facing, vx, vy, grav: 0, boomer: false, style, burst: null, speed: Math.abs(vx), r: o.r, life: o.life,
+    t: 0, pal: f.pal, pulse: 0, last: null, hit: { dmg: o.dmg, bkb: o.bkb, kbg: o.kbg, angle: o.angle, fire: true, fin: null } }, extra);
+}
+// per-move behaviour after mt++ in updateAttack; true = it moved him itself this frame
+function bossStep(g, f, m) {
+  const S = STAGE.main, k = m.boss, mt = f.mt, a0 = m.startup + 1, a1 = m.startup + m.active;
+  if (k === "stomp" && mt === a0) {
+    // still in the air at the end of the hop: wait for the landing (a cap ends the wait)
+    if (!f.grounded && f.poundT++ < 40) { f.mt = m.startup; return false; }
+    const fl = m.flame;
+    for (const d of [-1, 1]) g.projs.push(bossProj(f, f.x + d * fl.dx, S.top - fl.r + 2, d * fl.vx, 0, "flame", fl, { dir: d }));
+    g.events.push({ type: "bossStomp", slot: f.slot, x: f.x, y: f.y });
+  }
+  if (k === "rain" && mt === a0) {
+    // a fireball on every player, one near each, the rest anywhere on the floor; they land one after another
+    const xs = [];
+    for (const o of g.fighters) if (o.team !== f.team && bossLive(o)) xs.push(o.x, o.x + (brand(g) < 0.5 ? -1 : 1) * (70 + brand(g) * 60));
+    const n = f.spec.boss.rainN[g.lv];
+    while (xs.length < n) xs.push(S.x1 + 40 + brand(g) * (S.x2 - S.x1 - 80));
+    const b = m.ball;
+    xs.slice(0, n).forEach((x, i) => g.projs.push(bossProj(f, clamp(x, S.x1 + 30, S.x2 - 30), S.top - 520 - i * 36, 0, b.vy, "brim", b, { burst: b.burst })));
+    g.events.push({ type: "bossRain", slot: f.slot, x: f.x, y: f.y });
+  }
+  if (k === "charge" && mt >= a0 && mt <= a1) {
+    // the run: to the far wall, a fire trail behind him
+    const hw = f.s.w / 2, wall = f.facing > 0 ? S.x2 - hw - 12 : S.x1 + hw + 12, tr = m.trail;
+    f.vx = f.facing * m.speed;
+    if ((mt - a0) % tr.every === 0) g.projs.push(bossProj(f, f.x - f.facing * 30, S.top - tr.r + 4, 0, 0, "trail", tr, { pulse: tr.pulse, life: f.spec.boss.trailLife[g.lv] }));
+    if ((f.x - wall) * f.facing >= 0) f.mt = a1;
+    return true;
+  }
+  return false;
+}
+// a hit on the boss: HP instead of percent, poise, no flinch (lights or not) until poise is full; never launched until he is broken
+function bossHit(g, h) {
+  const { att, def } = h, B = def.spec.boss;
+  // Thousand Cuts: the dash marks him, the cut lands at the sheath click (ultStep)
+  if (h.hit.mark) { if (att.ultTgt < 0) att.ultTgt = def.slot; return; }
+  const ultHit = !!h.hit.ult || (!h.proj && att.mid === "ulti");
+  const light = !ultHit && !h.proj && (LIGHT.has(att.mid) || att.mid === "rec");
+  const mv = ultHit ? "ulti" : h.proj ? "spec" : att.mid;
+  const hdir = h.proj ? sign(h.proj.vx) || h.proj.dir : Math.abs(h.lx) < 8 ? sign(def.x - att.x) || att.facing : h.lx >= 0 ? att.facing : -att.facing;
+  const ex = (h.bx + def.x) / 2, ey = (h.by + (def.y - def.s.h * 0.5)) / 2;
+  if (def.state === "broken") {
+    if (!light) return bossDown(g, att, def, h, mv, hdir, ex, ey);
+    def.flash = 4;
+    g.events.push({ type: "hit", x: ex, y: ey, dmg: 0, kb: 1, dirx: hdir, diry: 0, slot: att.slot, def: def.slot, pal: att.pal, fire: !!h.hit.fire, combo: 0, comboDmg: 0, finisher: false, ps: h.proj ? h.proj.style : null, mv, fin: false, chg: 0, link: false, lk: false, mi: h.proj ? -1 : att.moveT, ult: ultHit, boss: true, broken: true });
+    return;
+  }
+  const stag = def.state === "stagger", rage = bossRage(g, def);
+  const ck = !h.proj && att.chg > 0 ? att.chg / TUNE.chgMax : 0;
+  let dmg = ck ? Math.round(h.hit.dmg * (1 + TUNE.chgDmg * ck)) : h.hit.dmg;
+  dmg = Math.max(1, Math.round(dmg * (light ? B.lightK : 1) * (stag ? B.stagK : 1)));
+  def.hp = Math.max(0, def.hp - dmg);
+  att.dmgDealt += dmg;
+  if (!ultHit) ultGain(att, dmg * TUNE.ultDealt);
+  // the combo pop-up counts everyone's hits on him within strGap frames of each other
+  const chained = def.combo > 0 && g.t - def.lastHitT < TUNE.strGap;
+  def.combo = chained ? def.combo + 1 : 1;
+  def.comboDmg = (chained ? def.comboDmg : 0) + dmg;
+  def.comboBy = att.slot; def.lastHitBy = att; def.lastHitT = g.t;
+  def.flash = 6; def.armorFlash = stag ? 0 : 8;
+  if (!stag) def.poise = Math.min(B.poise, def.poise + (ultHit ? 10 : h.proj || att.mid === "spec" ? 4 : light ? 1 : 3));
+  g.hitstop = Math.max(g.hitstop, Math.min(8, Math.round(2 + dmg * 0.3)));
+  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb: light ? 2 : 5, dirx: hdir, diry: 0, slot: att.slot, def: def.slot, pal: att.pal, fire: !!h.hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher: false, ps: h.proj ? h.proj.style : null, mv, fin: false, chg: ck ? att.chg : 0, link: false, lk: !h.proj && att.lk, mi: h.proj ? -1 : att.moveT, ult: ultHit, boss: true, stag });
+  if (def.hp <= 0) {
+    // broken: he kneels, his fire goes out; the next non-light hit ends him
+    def.move = null; def.mid = null; def.poise = 0; def.stag = 0; def.vx = 0;
+    setState(def, "broken");
+    g.projs = g.projs.filter((p) => p.owner !== def.slot);
+    g.events.push({ type: "bossBroken", slot: def.slot, by: att.slot, x: def.x, y: def.y });
+  } else if (!stag && def.poise >= B.poise) {
+    def.move = null; def.mid = null; def.vx = 0;
+    setState(def, "stagger");
+    def.stag = Math.round(B.stagger[g.lv] * (rage ? B.rageStag : 1));
+    g.events.push({ type: "bossStagger", slot: def.slot, by: att.slot, x: def.x, y: def.y, n: def.stag });
+  }
+}
+// the end: launched out of the arena; decided at the hit like a final lethal launch, so the KO page plays from it
+function bossDown(g, att, def, h, mv, hdir, ex, ey) {
+  const tr = trig(50), dx = tr[0] * hdir, dy = -tr[1], kb = 46;
+  def.doomed = true; def.stocks = 0; def.falls++; att.kos++;
+  def.move = null; def.mid = null; def.poise = 0;
+  setState(def, "hitstun");
+  def.hitstun = 999; def.tumble = true; def.grounded = false; def.y -= 1;
+  def.vx = 0; def.vy = 0; def.kbx = dx * kb; def.kby = dy * kb;
+  def.lastHitBy = att; def.lastHitT = g.t; def.flash = 8;
+  g.hitstop = Math.max(g.hitstop, TUNE.finishStop);
+  g.events.push({ type: "hit", x: ex, y: ey, dmg: 0, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!h.hit.fire, combo: 0, comboDmg: 0, finisher: true, ps: h.proj ? h.proj.style : null, mv, fin: false, chg: 0, link: false, lk: false, mi: h.proj ? -1 : att.moveT, ult: mv === "ulti", boss: true, down: true });
+  g.events.push({ type: "lethal", slot: def.slot, by: att.slot, final: true, mv, fin: false, chg: 0, kb, dirx: dx, diry: dy, x: def.x, y: def.y, boss: true });
+  endGame(g, att.team, "boss", true);
+}
+
 /* ---------- KO at the hit ----------
    After a launching hit the next lookFrames frames are played on a scratch copy with the defender trying
    four escapes (steer home and recover; steer up; air dodge home; ride the launch out, then recover) and the
@@ -1227,13 +1452,13 @@ function escapeInput(f, t, kind) {
 function lethal(g, slot) {
   const snap = serialize(g);
   for (let kind = 0; kind < 4; kind++) {
-    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0, map: g.map });
+    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal, team: f.team })), seed: 1, stocks: g.stocks, countdown: 0, map: g.map, level: g.lv });
     restore(h, snap);
     // projectiles still in the air stay in the look-ahead (a Meteor Shower star or a flame puff still coming is part of the call)
     h.look = true; h.timed = false;
     let died = false;
     for (let t = 0; t < TUNE.lookFrames && !died; t++) {
-      const ins = [blankInput(), blankInput()];
+      const ins = h.fighters.map(() => blankInput());
       ins[slot] = escapeInput(h.fighters[slot], t, kind);
       step(h, ins);
       for (const e of h.events) if (e.type === "ko" && e.slot === slot) died = true;
@@ -1249,13 +1474,14 @@ function checkLethal(g, L) {
   const { att, def } = L;
   if (def.state !== "hitstun" || def.doomed || att.state === "dead" || att.state === "gone") return;
   if (!lethal(g, def.slot)) return;
-  const final = def.stocks === 1 && g.phase === "play";
+  // the last life of the last one standing on that team
+  const final = def.stocks === 1 && g.phase === "play" && g.fighters.every((o) => o === def || o.team !== def.team || o.state === "gone");
   g.events.push({ type: "lethal", slot: def.slot, by: att.slot, final, mv: L.mv, fin: L.fin, chg: L.chg, kb: L.kb, dirx: L.dirx, diry: L.diry, x: def.x, y: def.y });
   if (!final) return;
   // the match is decided at the hit: count the KO now; the launch plays out and the blast line only removes the loser
   def.doomed = true;
   def.stocks = 0; def.falls++; att.kos++;
-  endGame(g, att.slot, "stocks", true);
+  endGame(g, att.team, "stocks", true);
 }
 
 /* ---------- KO / match end ---------- */
@@ -1287,8 +1513,11 @@ function ko(g, f) {
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
-    const other = g.fighters.find((o) => o !== f);
-    endGame(g, other ? other.slot : -1, "stocks");
+    // the team is out when all of it is gone
+    if (g.fighters.every((o) => o.team !== f.team || o.state === "gone")) {
+      const other = g.fighters.find((o) => o.team !== f.team && o.state !== "gone");
+      endGame(g, other ? other.team : -1, "stocks");
+    }
   } else { setState(f, "dead"); f.dead = 70; }
 }
 function respawn(g, f) {
@@ -1304,6 +1533,9 @@ function endGame(g, winner, reason, hit) {
   g.events.push({ type: "game", winner, hit: !!hit });
 }
 function endByTime(g) {
+  // a boss fight that runs out of time is the boss's
+  const boss = g.fighters.find((f) => f.spec.boss);
+  if (boss) return endGame(g, boss.team, "time");
   const [a, b] = g.fighters;
   if (a.stocks !== b.stocks) return endGame(g, a.stocks > b.stocks ? 0 : 1, "time");
   if (g.sudden) return endGame(g, -1, "time"); // sudden death ran out too: draw
@@ -1364,6 +1596,8 @@ function botInput(g, me, opp, bot) {
   bot.mem.push({
     x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
     gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn", inv: intangible(opp),
+    // a boss target: 0 fighting, 1 staggered, 2 broken (-1 = not a boss)
+    bs: opp.spec.boss ? (opp.state === "broken" ? 2 : opp.state === "stagger" ? 1 : 0) : -1,
   });
   const delay = Math.round(lerp(18, 4, d));
   while (bot.mem.length > delay + 1) bot.mem.shift();
@@ -1458,9 +1692,11 @@ function botInput(g, me, opp, bot) {
       : uk === "deadeye" ? adx < 520 && ady < 50
       : adx < 320 && ady < 60;
     const late = g.timed && g.timer < 40 * 60 && o.pct > 40;
-    if (fits && (o.pct >= lerp(150, 105, d) || late) && R() < lerp(0.08, 0.35, d)) return press("ulti", sx, 0, 20);
+    if (fits && (o.pct >= lerp(150, 105, d) || late || o.bs >= 0) && R() < lerp(0.08, 0.35, d)) return press("ulti", sx, 0, 20);
   }
-  if (act && bot.cool <= 0 && o.st === "attack" && o.mv && o.mt <= o.mv.startup && adx < 120 && Math.abs(dy) < 100 && R() < lerp(0.04, 0.5, d)) {
+  // a boss's long wind-ups: dodge late, when the hit is about to come (and from further away: his reach is long)
+  const bw = o.mv && o.mv.boss ? o.mt >= o.mv.startup - 10 && adx < 260 : adx < 120;
+  if (act && bot.cool <= 0 && o.st === "attack" && o.mv && o.mt <= o.mv.startup && bw && Math.abs(dy) < 100 && R() < lerp(0.04, 0.5, d)) {
     return press("dodge", me.grounded && R() < 0.6 ? -sx : 0, 0, 20);
   }
   if (act && bot.cool <= 0 && !o.inv) {
@@ -1478,7 +1714,7 @@ function botInput(g, me, opp, bot) {
     if (adx < reach + 18 + st.rng && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d) * st.atk) {
       if (me.grounded) {
         const killPct = lerp(150, 95, d) * (100 / me.s.weight);
-        if ((o.pct > killPct && R() < 0.65) || R() < 0.12 * st.heavy) {
+        if ((o.pct > killPct && R() < 0.65) || R() < 0.12 * st.heavy || o.bs >= 1) {
           // sometimes charge: weak bots too long (easy to punish), strong bots a short top-up
           if (R() < st.charge) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
           return press("heavy", sx, R() < 0.2 ? 1 : 0, 10);
@@ -1526,22 +1762,22 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
   return {
-    g: [g.t, g.phase, g.cd, g.hitstop, g.timer, g.winner, g.endT, g.endReason, g.timed, g.sudden],
+    g: [g.t, g.phase, g.cd, g.hitstop, g.timer, g.winner, g.endT, g.endReason, g.timed, g.sudden, g.br],
     f: g.fighters.map((f) => [
       ...FKEYS.map((k) => copy(f[k])),
       f.lastHitBy ? f.lastHitBy.slot : -1,
-      [0, 1].map((i) => (f.hitLog[i] === undefined ? null : f.hitLog[i])),
+      g.fighters.map((o, i) => (f.hitLog[i] === undefined ? null : f.hitLog[i])),
     ]),
     p: g.projs.map((p) => PKEYS.map((k) => copy(p[k]))),
   };
 }
 function restore(g, s) {
-  [g.t, g.phase, g.cd, g.hitstop, g.timer, g.winner, g.endT, g.endReason, g.timed, g.sudden] = s.g;
+  [g.t, g.phase, g.cd, g.hitstop, g.timer, g.winner, g.endT, g.endReason, g.timed, g.sudden, g.br] = s.g;
   g.fighters.forEach((f, i) => {
     const a = s.f[i];
     FKEYS.forEach((k, j) => { f[k] = copy(a[j]); });
@@ -1562,11 +1798,11 @@ function restore(g, s) {
 function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
-  mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt"]) mix(f[k]);
+  mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
 
-root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, useStage, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
