@@ -42,6 +42,27 @@ function updateFx(g) {
     if (f.state === "dead" || f.state === "gone") tr.length = 0;
   });
 }
+// Reaper's Grave rise: a dark wisp cloud billows out under him (pale on the Bone skin, embers in it on Ember Wake), a low rush in place of the jump sound
+function graveRise(e, f, live) {
+  const lvl = skinLvl(f), col = lvl === 3 ? "#d6d0c2" : "#4a4458";
+  addFx({ k: "ring", x: e.x, y: e.y + 4, t: 0, life: 14, r0: 6, r1: 34, col: lvl === 3 ? "#efeadc" : "#6a6478" });
+  for (let i = 0; i < 9; i++) addFx({ k: "puff", x: e.x + frand(-18, 18), y: e.y + frand(0, 10), vx: frand(-1.6, 1.6), vy: frand(0.2, 1.1), r: frand(5, 8), t: 0, life: frand(26, 40), col });
+  if (lvl === 2) for (let i = 0; i < 4; i++) ember(e.x + frand(-14, 14), e.y + 6, frand(-1, 1), frand(-0.4, 0.6));
+  if (live) Sfx.graveRise();
+}
+// Harvest: when the spin starts (after the wind-up), the low whoosh and a little dust kicked up behind the slide
+function harvestSwing(g, f, live) {
+  const mv = f.move, moveT = f.moveT, slot = f.slot;
+  let tries = 0;
+  const poll = () => {
+    const q = g.fighters[slot];
+    if (!q || q.state !== "attack" || q.mid !== "spec" || q.moveT !== moveT || ++tries > 400) return;
+    if (paused || q.mt < mv.startup) { setTimeout(poll, 16); return; }
+    if (q.grounded) for (let i = 0; i < 4; i++) addFx({ k: "puff", x: q.x - q.facing * frand(6, 22), y: q.y - 2, vx: -q.facing * frand(0.5, 1.6), vy: frand(-0.8, -0.1), r: frand(3.5, 6), t: 0, life: frand(18, 28) });
+    if (live) Sfx.harvest();
+  };
+  setTimeout(poll, Math.max(0, (mv.startup - 4) * STEP));
+}
 // Gunslinger's Powder jump: a flash, a tracer and smoke under him, and a shot sound in place of the jump sound
 function powderJump(e, dir, live) {
   addFx({ k: "ring", x: e.x + dir * 14, y: e.y + 6, t: 0, life: 12, r0: 4, r1: 24, col: "#ffd27a" });
@@ -273,6 +294,7 @@ function handleEvent(g, e, live) {
       break;
     case "jump": if (live && !e.rec && e.slot === meSlot) hudX.jb = true;   // the Special button grows while this jump lasts (updateHud)
       if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "gunslinger") { powderJump(e, g.fighters[e.slot].facing, live); break; }   // Gunslinger: the recovery is a shot fired down
+      if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "reaper") { graveRise(e, g.fighters[e.slot], live); break; }   // Reaper: a dark cloud lifts him
       if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "land": dust(e.x, e.y, 3, 22); break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
@@ -281,6 +303,7 @@ function handleEvent(g, e, live) {
       if (live) Sfx.swing(e.heavy);
       const hSw = g.fighters[e.slot];   // a heavy: camera shake and the low heavy sound arrive when the hit window opens
       if (hSw && isHeavyKey(hSw.mid)) heavySwing(g, hSw, live);
+      if (hSw && hSw.mid === "spec" && hSw.spec.look.costume === "reaper") harvestSwing(g, hSw, live);
       break;
     }
     case "proj":

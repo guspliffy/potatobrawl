@@ -108,8 +108,8 @@ function finishBan(g, attSlot) {
   finBanEl.hidden = false; fxRestart(finBanEl, "go");
   finSfx(() => { Sfx.noise(0.07, 0.9, 6500); Sfx.noise(0.55, 0.85, 1000); Sfx.tone(150, 34, 0.6, "sawtooth", 0.3); Sfx.tone(2300, 260, 0.14, "square", 0.06); });
 }
-// a finishing special with its own name on the band, the Finish! banner and the Special button (the Gunslinger's golden bullet)
-const FIN_NAME = { gunslinger: "High Noon" };
+// a finishing special with its own name on the band, the Finish! banner and the Special button (the Gunslinger's golden bullet, the Reaper's hook)
+const FIN_NAME = { gunslinger: "High Noon", reaper: "Last Rites" };
 const finName = (spec) => FIN_NAME[spec.id] || spec.signature.name;
 // "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
 function finHit(g, e) {
@@ -495,6 +495,72 @@ const FINS = {
         o.globalAlpha = ln; o.strokeStyle = "#fff8dc"; o.lineWidth = 3 * FIN.k * 0.6; o.stroke();
         o.restore();
       }
+    },
+  },
+  reaper: {
+    // Last Rites: the light goes cold under a pale moon, wisps rise round his feet, the scythe comes from behind and under in one
+    // rising hook; a huge pale crescent sweeps up through the loser, little souls float off, and he sets the scythe back on his shoulder
+    col: "#c8ffe0",
+    // the crescent: world points on an arc round his feet that passes through the loser (q 0..1 along it)
+    arc: (q) => { const R = 150, cx = FIN.lx - FIN.dir * 145, a = lerp(0.02, -2.05, q); return [cx + FIN.dir * Math.cos(a) * R, 5 + Math.sin(a) * R]; },
+    step(t, k) {
+      const W = FIN.P[FIN.w];
+      W.x = FIN.wx + FIN.dir * 24 * easeOut(fe(FT.HIT - 160, FT.HIT, t));
+      if (t > FT.ACT && t < FT.HIT + 200) for (let i = 0; i < 0.6 * k; i++) part({ kind: "smoke", col: "#4a4458", wx: W.x + (Math.random() - 0.5) * 70, wy: -2, vx: (Math.random() - 0.5) * 0.3, vy: -0.5 - Math.random() * 0.5, life: 70, r: 7 + Math.random() * 5, grow: 0.1 });
+      if (t > FT.HIT && t < FT.CARD) for (let i = 0; i < 0.25 * k; i++) part({ kind: "glow", col: "#c8ffe0", wx: FIN.lx + (Math.random() - 0.5) * 60, wy: -30 - Math.random() * 40, vx: (Math.random() - 0.5) * 0.6, vy: -0.8 - Math.random() * 0.7, life: 70, r: 4 + Math.random() * 3 });
+      cueOnce("wind", FT.ACT, () => finSfx(() => Sfx.graveRise()));
+      cueOnce("swing", FT.HIT - 160, () => finSfx(() => Sfx.harvest()));
+      cueOnce("hit", FT.HIT, () => {
+        FIN.shake = 14; finSfx(() => { Sfx.heavy("reaper", "hUp"); Sfx.ko(); });
+        finRing(FIN.lx, -32, "#c8ffe0", 150);
+        part({ kind: "glow", col: "#ffffff", wx: FIN.lx, wy: -32, life: 14, r: 30, grow: 1.6 });
+        for (let i = 0; i < 16; i++) { const a = Math.random() * Math.PI * 2, sp = 2.5 + Math.random() * 6;
+          part({ kind: "star", col: i % 3 ? "#ffffff" : "#c8ffe0", wx: FIN.lx, wy: -32, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2, drag: 0.93, life: 26 + Math.random() * 14, r: 3 + Math.random() * 4 }); }
+      });
+    },
+    pose(P, sk, t) {
+      const back = [sk.w * 0.05, -sk.leg - sk.tor * 0.22], high = [sk.w * 0.75, -sk.leg - sk.tor * 1.05];
+      if (t > FT.ACT && t < FT.HIT - 160) { P.crouch = 0.28; P.lean = -0.12; P.holdAng = Math.PI - 0.2; P.bladeS = 1; P.scyBack = true; return { hF: back, hB: [-sk.w * 0.3, -sk.leg - sk.tor * 0.3] }; }
+      if (t >= FT.HIT - 160 && t < FT.HIT + 420) {
+        const d = easeOut(fe(FT.HIT - 160, FT.HIT - 10, t));
+        P.crouch = 0.28 * (1 - d); P.lean = -0.12 + 0.3 * d; P.holdAng = lerp(Math.PI - 0.2, -1.35, d); P.bladeS = lerp(1, -1, Math.min(1, d * 3)); P.scyBack = d < 0.3; P.mouth = d > 0.5 ? 1 : 0;
+        const h = lerp2(back, high, d);
+        return { hF: h, hB: [h[0] - Math.cos(P.holdAng) * 13, h[1] - Math.sin(P.holdAng) * 13], fF: [sk.w * 0.5, 0], fB: [-sk.w * 0.35, 0] };
+      }
+      if (t >= FT.HIT + 420 && t < FT.END) {   // the scythe back over his shoulder
+        const q = easeOut(fe(FT.HIT + 420, FT.HIT + 650, t));
+        P.holdAng = lerp(-1.35, -2.25, q); P.bladeS = lerp(-1, 1, q); P.lean = 0.18 * (1 - q) - 0.04;
+        return { hF: lerp2(high, [sk.w * 0.62, -sk.leg - sk.tor * 0.75], q) };
+      }
+      return null;
+    },
+    draw(o, t) {
+      // the light goes cold, a pale moon behind them
+      const dim = fe(FT.CUT, FT.ACT, t) * (1 - fe(FT.CARD, FT.END, t));
+      if (dim > 0) {
+        o.save(); o.fillStyle = `rgba(16,14,36,${0.32 * dim})`; o.fillRect(0, 0, L.gw, L.gh);
+        const [sx, sy] = toScreen((FIN.wx + FIN.lx) / 2 - FIN.dir * 60, -240), R = 46 * FIN.k;
+        o.globalCompositeOperation = "lighter"; o.globalAlpha = 0.35 * dim; o.drawImage(glowSprite("#dfe8ff"), sx - R * 2.6, sy - R * 2.6, R * 5.2, R * 5.2);
+        o.globalCompositeOperation = "source-over"; o.globalAlpha = 0.9 * dim; o.fillStyle = "#eef2ff"; o.beginPath(); o.arc(sx, sy, R * 0.6, 0, Math.PI * 2); o.fill();
+        o.fillStyle = `rgba(16,14,36,${0.9 * dim})`; o.beginPath(); o.arc(sx + R * 0.26, sy - R * 0.12, R * 0.5, 0, Math.PI * 2); o.fill();   // a crescent moon
+        o.restore();
+      }
+      // the reaping crescent, drawn as it sweeps (the tip leads), then fading
+      const grow = fe(FT.HIT - 70, FT.HIT + 40, t), fade = 1 - fe(FT.HIT + 260, FT.HIT + 700, t);
+      if (grow <= 0 || fade <= 0) return;
+      const n = 24, thick = 26 * FIN.k * 0.6, Lp = [], Rp = [], arc = FINS.reaper.arc;
+      for (let i = 0; i <= n; i++) {
+        const q = (i / n) * grow, [x, y] = toScreen(...arc(q)), [x2, y2] = toScreen(...arc(Math.min(1, q + 0.01)));
+        let dx = x2 - x, dy = y2 - y; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+        const wd = thick * Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * i / n)), 0.6);
+        Lp.push([x - dy * wd, y + dx * wd]); Rp.push([x + dy * wd * 0.25, y - dx * wd * 0.25]);
+      }
+      const shape = () => { o.beginPath(); Lp.forEach(([x, y], i) => (i ? o.lineTo(x, y) : o.moveTo(x, y))); for (let i = Rp.length - 1; i >= 0; i--) o.lineTo(Rp[i][0], Rp[i][1]); o.closePath(); };
+      o.save();
+      o.globalCompositeOperation = "lighter"; o.globalAlpha = 0.35 * fade; o.fillStyle = "#c8ffe0"; o.lineWidth = 10 * FIN.k * 0.6; o.lineJoin = "round"; o.strokeStyle = "#c8ffe0"; shape(); o.stroke();
+      o.globalCompositeOperation = "source-over"; o.globalAlpha = 0.95 * fade; o.fillStyle = "#eef1f8"; shape(); o.fill();
+      o.globalAlpha = fade; o.strokeStyle = "#ffffff"; o.lineWidth = 2.4 * FIN.k * 0.6; o.beginPath(); Rp.forEach(([x, y], i) => (i ? o.lineTo(x, y) : o.moveTo(x, y))); o.stroke();
+      o.restore();
     },
   },
 };

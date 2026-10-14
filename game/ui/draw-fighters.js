@@ -810,7 +810,7 @@ function reapCols(f, P, flash) {
   const lvl = skinLvl(f), ac = f.pal.accent;
   const c = {
     hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55),
-    trim: lvl === 3 ? "#1f1d26" : null, handle: lvl === 3 ? "#2a2630" : "#3b3530", band: lvl === 2 ? "#f08a3c" : "#7d7f88", blade: "#a7acb6", spine: "#6d717c",
+    trim: lvl === 3 ? "#1f1d26" : null, ghost: lvl === 3 && !flash && !P.dim ? 1 : null, handle: lvl === 3 ? "#2a2630" : "#3b3530", band: lvl === 2 ? "#f08a3c" : "#7d7f88", blade: "#a7acb6", spine: "#6d717c",
   };
   if (flash) { for (const k in c) if (c[k]) c[k] = "#ffffff"; }
   else if (P.dim) { for (const k in c) if (c[k]) c[k] = mix(c[k], "#6a6a7a", 0.45); }
@@ -875,6 +875,7 @@ function scythe(c, f, P, RC, limb, lw) {
     c.quadraticCurveTo(lb * 0.16, lb * 0.44, -3, 3.5); c.closePath();                                // the cutting edge back to the collar
     c.fillStyle = RC.blade; c.fill(); c.lineWidth = 1.6 / Math.max(0.4, Math.abs(s)); c.strokeStyle = OUT; c.stroke();
     c.save(); c.clip(); c.fillStyle = RC.spine; c.beginPath(); c.moveTo(3, -3); c.quadraticCurveTo(lb * 0.58, lb * 0.3, -lb * 0.28, lb); c.quadraticCurveTo(lb * 0.42, lb * 0.32, 2, 2); c.closePath(); c.fill(); c.restore();
+    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // 200 chips: a ghost-lit edge
     c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = 1.2 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke();
     c.restore();
   }
