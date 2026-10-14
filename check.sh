@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -51,6 +51,12 @@ else fail "finish mode / charge / KO at the hit" "$LOGS/finish.log"; fi
 if grep -q "^combos ok" "$LOGS/combos.log"; then pass "combo routes + the link (all 13 routes land on every fighter that has them)"
 else fail "combo routes / the link" "$LOGS/combos.log"; fi
 
+# 3e. Ultimates: every ulti KOs the lightest and the heaviest fighter in its percent band (never from 0), the first hit lands 24+
+#     frames after the freeze, the bar is spent on the press, a third use is refused, and save/restore mid-ulti matches.
+(cd tests && node ulti.js) > "$LOGS/ulti.log" 2>&1
+if grep -q "^ulti ok" "$LOGS/ulti.log"; then pass "ultimates (KO bands, first hit after the freeze, bar spent, save/restore mid-ulti)"
+else fail "ultimates" "$LOGS/ulti.log"; fi
+
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 
 # 4. Balance: every fighter's bot win rate inside the band.
@@ -96,6 +102,17 @@ else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwhud.py" hud) > "$LOGS/hud.log" 2>&1
 if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow; shots in build/shots/hud)"
 else fail "match HUD" "$LOGS/hud.log"; fi
+
+# 6d. Ultimates on the HUD: the bar under both cards (empty, half, full, spent), the ULTI button only while full and clear of the
+#     other buttons, a press by tap / U key / gamepad Y starts the ulti, reduced motion. Shots in build/shots/ult.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwult.py" ult) > "$LOGS/ult-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/ult-ui.log"; then pass "ulti bar + ULTI button (tap, U key, gamepad Y; shots in build/shots/ult)"
+else fail "ulti bar + ULTI button" "$LOGS/ult-ui.log"; fi
+
+# 6e. The guided first round: nine steps (Move ... Dodge, Ultimate, Knock them off) on desktop and four touch sizes. Shots in build/shots/tut.
+(cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwtut.py" tut) > "$LOGS/tutorial.log" 2>&1
+if grep -q "^no errors" "$LOGS/tutorial.log"; then pass "tutorial (nine steps incl. Dodge and Ultimate; shots in build/shots/tut)"
+else fail "tutorial" "$LOGS/tutorial.log"; fi
 
 # 7. KO finisher: one played through to the results screen, one skipped by a tap.
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1
