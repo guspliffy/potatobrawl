@@ -1,5 +1,5 @@
-# Paste on the server as root after uploading index.html to GitHub.
-# When PROTO changes in ui.js, change the grep string below to the new value.
+# Paste on the server as root after a pull request is merged. The same block works for every version: it checks that the
+# game now serves exactly the page that came from GitHub, so it never needs editing when PROTO changes.
 bash <<'EOF'
 set -e
 cd /opt/potatobrawl
@@ -7,6 +7,11 @@ git pull --ff-only
 cp -f index.html three.min.js web/* public/
 chown -R potatobrawl:potatobrawl /opt/potatobrawl
 systemctl restart potatobrawl
-sleep 2
-grep -q "const PROTO = 5" public/index.html && echo "new version is live" || echo "still the old version: upload index.html to GitHub first"
+LIVE=no
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  sleep 1
+  if curl -s http://127.0.0.1:8080/ | cmp -s - index.html; then LIVE=yes; break; fi
+done
+if [ "$LIVE" = yes ]; then echo "new version is live: $(git log -1 --format='%h %s')"
+else echo "the game is not serving the new page yet. Send me: journalctl -u potatobrawl --no-pager | tail -30"; fi
 EOF

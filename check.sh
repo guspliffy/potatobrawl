@@ -21,10 +21,11 @@ if python3 game/build.py > "$LOGS/build.log" 2>&1; then
   else pass "build (index.html changed: commit it with the source change)"; fi
 else fail "build" "$LOGS/build.log"; fi
 
-# 2. PROTO in the game must match the line deploy/update.txt looks for.
+# 2. The deploy block checks the served page against GitHub's index.html, so it carries no PROTO to keep in step
+#    (an old copy that grepped a PROTO number printed "still the old version" after every bump).
 P=$(grep -o 'const PROTO = [0-9]*' game/ui/online.js)
-if [ -n "$P" ] && grep -q "$P" deploy/update.txt; then pass "PROTO (${P#const }) matches deploy/update.txt"
-else fail "PROTO: game has '$P', deploy/update.txt greps something else" "deploy/update.txt"; fi
+if [ -n "$P" ] && grep -q "$P" index.html && ! grep -q 'const PROTO' deploy/update.txt && grep -q 'cmp -s - index.html' deploy/update.txt; then pass "PROTO (${P#const }) is in index.html; deploy/update.txt checks the served page"
+else fail "PROTO / deploy block: index.html must carry '$P' and deploy/update.txt must compare the served page, not grep a PROTO" "deploy/update.txt"; fi
 
 # 3. Replay determinism.
 (cd tests && node snap.js) > "$LOGS/snap.log" 2>&1
