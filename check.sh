@@ -84,6 +84,12 @@ else fail "screens" "$LOGS/screens.log"; fi
 if grep -q "^no errors" "$LOGS/accounts-ui.log"; then pass "accounts in the browser (pill, sheet, two devices, conflict merge, accounts off; shots in build/shots/acct)"
 else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
 
+# 6c. Match HUD (UI only): timer strip, pause icon under the opponent's card, YOU/CPU markers fading and coming back, percent tint,
+#     danger edge glow for a hard launch of the player's own fighter, none in the KO finisher. Pictures in build/shots/hud.
+(cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwhud.py" hud) > "$LOGS/hud.log" 2>&1
+if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow; shots in build/shots/hud)"
+else fail "match HUD" "$LOGS/hud.log"; fi
+
 # 7. KO finisher: one played through to the results screen, one skipped by a tap.
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1
 if [ "$(grep -c "^no errors" "$LOGS/finisher.log")" = 2 ]; then pass "KO finisher (plays through, skips, results screen after)"

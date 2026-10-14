@@ -279,9 +279,11 @@ function drawProj(c, p, tk) {
 
 function drawTag(c, f, isP1, lift) {
   if (f.state === "dead" || f.state === "gone") return;
+  const fade = tagAlpha();   // hud.js: off 3 s after the start, back for 3 s after a respawn
+  if (fade < 0.02) return;
   const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
-  c.save(); c.translate(f.x, y); c.scale(k, k);
+  c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8";
   c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.fill();
   c.font = '800 12px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center";

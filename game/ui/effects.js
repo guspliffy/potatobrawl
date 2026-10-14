@@ -15,6 +15,7 @@ function dust(x, y, n, spread) {
 }
 function ember(x, y, vx, vy) { addFx({ k: "ember", x, y, vx, vy, t: 0, life: 12 + Math.random() * 10, r: 1.8 + Math.random() * 2.4 }); }
 function updateFx(g) {
+  if (mode === "match" && g === G) tagStep(g);   // hud.js: when the YOU / CPU markers show
   skinTick(g, tick);
   for (const p of g.projs) if (p.style === "fire" && Math.random() < 0.7) ember(p.x - p.vx * 0.6 + (Math.random() - 0.5) * 10, p.y + (Math.random() - 0.5) * 10, -p.vx * 0.12 + (Math.random() - 0.5), -0.6 - Math.random());
   for (const f of g.fighters) {
@@ -169,7 +170,8 @@ function drawBubbles(c, g, tk, img) {
     const [sx, sy] = toScreen(f.x, f.y - f.s.h * 0.5);
     const m = 6;
     if (sx > m && sx < L.gw - m && sy > m && sy < L.gh - m) continue;
-    const R = 28, bx = clamp(sx, R + 10, L.gw - R - 10), by = clamp(sy, R + 64, L.gh - R - 10);
+    const R = 28, bx = clamp(sx, R + 10, L.gw - R - 10), pz = hudPauseZone();   // the pause icon sits under the opponent's card (hud.js)
+    const by = clamp(sy, R + (pz && bx + R > pz.x ? Math.max(64, pz.b) : 64), L.gh - R - 10);
     const ang = Math.atan2(sy - by, sx - bx);
     c.save();
     c.fillStyle = col(f.pal);

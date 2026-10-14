@@ -70,12 +70,12 @@ index.html is committed with every source change (check.sh flags a stale one).
     (`escapeInput`); lethal only if all four die. Event "lethal" {slot, by, final, mv, fin, chg, kb, dirx,
     diry}. On the last life (`final`) the loser is `doomed` (intangible, KO counted at once) and endGame runs
     on that frame ("game" event `hit: true`); the blast line later only removes the doomed loser.
-- ui/: one script in 11 parts, joined in order by build.py (UI_PARTS); base.js opens the IIFE and loop.js
+- ui/: one script in 16 parts, joined in order by build.py (UI_PARTS); base.js opens the IIFE and loop.js
   closes it, so a part alone is not valid JS.
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
   · effects (fx, /*SKINFX*/ placeholder, the frame-time watchdog PERF, render, sim events) · screens (menu, select, match,
-  results; CPU_NAMES + the CPU's name under its HUD card) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
+  results; CPU_NAMES + the CPU's name under its HUD card) · hud (match HUD extras, below) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
 - ui/cup.js (after screens): the offline tournament, UI only. You + 7 CPUs (potato names, fighters, ratings seeded around yours:
   quarter-final opponent about -30, semi-final opponent from the other quarter in your half about +40, final opponent from the other
@@ -90,6 +90,21 @@ index.html is committed with every source change (check.sh flags a stale one).
   togglePause texts, finishMatch -> cupMatchEnd, vsLine), menus.js (bCup, selGo, pQuit), shell.html (menu button, `#scrCup`, one marked
   CSS block), build.py (UI_PARTS). Landscape: Quarter | Semi | Final + cup | Semi | Quarter with lines drawn by cupLines from the
   slots' offsets; upright phones get a stacked list (`#app.portrait`). New cup mode value `mode === "cup"`.
+- ui/hud.js (after screens.js): the calmer match screen and danger readability, UI only (reads G, never writes it).
+  Layout (shell.html, the HUD block): the timer `#clock` is a slim strip between the two cards (hung from the top edge above them on
+  `#app.narrow`, upright phones, where the cards need the whole width and the hearts go under the percent); the pause icon `#pauseBtn`
+  (same id, same tap) sits under the opponent's card inside `.hud-r`, 36px with a 46px touch target; the percent is the biggest text
+  on a card (`.pc-pct`). The percent tint is `pctColor` (view.js): white to about 90%, yellow by 130%, red between 150% and
+  `TUNE.finishPct` (175), from where the card pulses (`.pcard.finr`, the old finish cue made gentler: two reds, 0.9 s).
+  Markers: `tagAlpha()` is read by `drawTag` (draw-world.js); `tagStep(g)` (called from `updateFx` once per sim tick) keeps them on during
+  the countdown, 3 s after the match starts (TAG_HOLD 180 ticks), fades out in 0.5 s, and shows both again for 3 s after any respawn and at
+  the start of sudden death; the tutorial keeps them on. Danger edge glow: `hudDanger()` (called each frame from loop.js, `hudIdle()`
+  outside a match) walks the own fighter's launch forward (`launchReach`, the sim's knockback decay and hitstun gravity, stage ignored)
+  and lights `#dgr` (four edge gradients, z-index 1 under the HUD and touch buttons) on the side(s) it heads for: 0 at the stage edge /
+  a head height of -300, 1 at the blast line, glow from 0.45 to full at 0.95. Calibrated on 28,000 bot launches: every launch the sim
+  called lethal ends at 1.15 or more, 99% of the non-KOs end below 1.02. Own fighter only, nothing in the KO finisher (FIN.on), nothing
+  while paused, steady (no pulse) with reduced motion. `hudPauseZone()` keeps the off-screen bubble (effects.js drawBubbles) off the pause
+  icon. Test hook: `window.__blastline.hud` = { tag, glow[4], reach[4], tick }.
 - ui/finisher.js (between effects and screens): KO finisher cinematic, started by the final lethal hit (no
   finisher for a self-destruct or a failed recovery). Beat 0 is the real impact, then the staged scene ends
   with the loser launched out of the arena. Also the KO zoom on earlier lives (finLethal), the finishing-
@@ -166,6 +181,8 @@ WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's dr
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
 breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
+pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
+return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
 pwux2.py (all screens, 3 sizes) ·
 pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
