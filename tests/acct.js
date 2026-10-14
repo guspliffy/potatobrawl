@@ -133,6 +133,52 @@ function pureTests() {
   server = merged; devB.base = merged; devB.cur = merged;
   const back = SYNC.mergeProf(devA.cur, devA.base, server, false);                // A pulls
   check(back.tokens === 65 && eq(back.owned.odin, [0, 1]) && eq(back.owned.dragon, [0, 2]), "merge: two devices, in turn and in conflict: chips 10 +40 +15 = 65, both skins kept");
+
+  // ----- the accounts hub: per-fighter stats, flawless cups, picture, title
+  const F0 = ids[0], F1 = ids[1];
+  const fb = prof({ fstats: { [F0]: { w: 3, l: 1, d: 0 } }, fsince: 1000, flawless: 1, avatar: F0 + ":0", title: "cup" });
+  const fA = prof(Object.assign({}, fb, { fstats: { [F0]: { w: 5, l: 1, d: 0 }, [F1]: { w: 1, l: 0, d: 0 } } }));            // device A: +2 wins with F0, a new fighter
+  const fB = prof(Object.assign({}, fb, { fstats: { [F0]: { w: 3, l: 4, d: 1 } }, flawless: 2, fsince: 900 }));            // device B: +3 losses, +1 draw, one more flawless cup
+  const fm = SYNC.mergeProf(fB, fb, fA, true);
+  check(eq(fm.fstats[F0], { w: 5, l: 4, d: 1 }) && eq(fm.fstats[F1], { w: 1, l: 0, d: 0 }), "fstats: two devices add what each changed per fighter (3+2 wins, 1+3 losses, 0+1 draws; a fighter only one side played is kept)");
+  check(fm.flawless === 2 && fm.fsince === 900, "fstats: the flawless counter adds, 'since' keeps the earlier date");
+  // an older page: it syncs a prof WITHOUT the new fields. Missing = unchanged, never zero.
+  const oldPage = (p) => { const o = Object.assign({}, p); for (const k of ["fstats", "fsince", "flawless", "avatar", "title"]) delete o[k]; return o; };
+  const o1 = SYNC.sanitize(oldPage(fb), FIGHTERS);
+  check(!("fstats" in o1) && !("flawless" in o1) && !("avatar" in o1) && !("title" in o1) && !("fsince" in o1), "old page: sanitize does not invent the new fields (a missing one stays missing)");
+  const keep1 = SYNC.mergeProf(fA, fb, o1, true);
+  check(eq(keep1.fstats, fA.fstats) && keep1.flawless === fA.flawless && keep1.fsince === fA.fsince && keep1.avatar === fA.avatar && keep1.title === fA.title, "old page: the server copy lost the fields -> this device keeps its stats, flawless count, picture and title");
+  const keep2 = SYNC.mergeProf(fA, fb, o1, false);
+  check(eq(keep2.fstats, fA.fstats) && keep2.avatar === fb.avatar && keep2.title === "cup", "old page: same when the server copy is the newer one");
+  const oldLocal = SYNC.mergeProf(oldPage(fb), oldPage(fb), fA, true);
+  check(eq(oldLocal.fstats, fA.fstats) && oldLocal.flawless === fA.flawless && oldLocal.title === fA.title, "old page: this side lacks the fields -> the server's stats are kept");
+  const wiped = SYNC.mergeProf(prof({ fstats: {}, flawless: 0 }), prof({ fstats: {}, flawless: 0 }), fA, false);
+  check(eq(wiped.fstats, fA.fstats) && wiped.flawless === fA.flawless, "merge: a device with empty stats just takes the server's");
+  // applyTo from an old-page prof leaves the device's new fields alone
+  const dev = { tokens: 1, owned: {}, pal: {}, fstats: { [F0]: { w: 2, l: 0, d: 0 } }, fsince: 5, flawless: 3, avatar: F1 + ":0", title: "flawless" };
+  SYNC.applyTo(dev, o1);
+  check(eq(dev.fstats, { [F0]: { w: 2, l: 0, d: 0 } }) && dev.flawless === 3 && dev.avatar === F1 + ":0" && dev.title === "flawless" && dev.fsince === 5, "apply: a prof without the new fields leaves this device's stats, picture and title as they are");
+  SYNC.applyTo(dev, fA);
+  check(eq(dev.fstats, fA.fstats) && dev.flawless === fA.flawless && dev.title === fA.title, "apply: a prof with them replaces them");
+  // sanitize of bad values
+  const bad = SYNC.sanitize({ fstats: { [F0]: { w: -4, l: 1e12, d: "x" }, "Bad Id": { w: 1 }, "__proto__": { w: 9 }, zero: { w: 0, l: 0, d: 0 }, mystery: { w: 2 }, junk: 5 }, fsince: -3, flawless: "many", avatar: "../x", title: "Not A Title!" }, FIGHTERS);
+  check(eq(bad.fstats, { [F0]: { w: 0, l: 1e9, d: 0 }, mystery: { w: 2, l: 0, d: 0 } }), "sanitize: fstats numbers are clamped, odd ids and all-zero rows dropped, an unknown fighter id kept");
+  check(!("fsince" in bad) && !("flawless" in bad) && bad.avatar === "" && bad.title === "", "sanitize: bad fsince/flawless are left out, a bad picture or title becomes the default (empty)");
+  check(!Object.prototype.hasOwnProperty.call(bad.fstats, "__proto__") && Object.getPrototypeOf(bad.fstats) === Object.prototype, "sanitize: fstats has no __proto__ key");
+  const many = SYNC.sanitize({ fstats: Object.fromEntries(Array.from({ length: 80 }, (_, i) => ["f" + String(i).padStart(2, "0"), { w: 1 }])) }, FIGHTERS);
+  check(Object.keys(many.fstats).length === 24, "sanitize: at most 24 fighters in fstats");
+  check(SYNC.sanitize({ fstats: [1], avatar: 5, title: null }, FIGHTERS).fstats === undefined && SYNC.sanitize({ avatar: 5 }, FIGHTERS).avatar === undefined, "sanitize: fstats that is not an object, or an avatar that is not text, counts as missing");
+  const good = SYNC.sanitize({ avatar: F1 + ":2", title: "flawless", fsince: 123456.7, flawless: 4 }, FIGHTERS);
+  check(good.avatar === F1 + ":2" && good.title === "flawless" && good.fsince === 123457 && good.flawless === 4 && eq(SYNC.sanitize(good, FIGHTERS), good), "sanitize: good picture, title, since and flawless pass, cleaning twice changes nothing");
+  // picture and title follow the newer side when both changed, and only the changing side when one did
+  const pa = SYNC.mergeProf(prof({ avatar: F1 + ":0", title: "cup" }), prof({ avatar: "", title: "" }), prof({ avatar: F0 + ":1", title: "" }), true);
+  check(pa.avatar === F1 + ":0" && pa.title === "cup", "picture/title: both changed -> the newer side");
+  const pb = SYNC.mergeProf(prof({ avatar: "", title: "" }), prof({ avatar: "", title: "" }), prof({ avatar: F0 + ":1", title: "centurion" }), false);
+  check(pb.avatar === F0 + ":1" && pb.title === "centurion", "picture/title: only the other device changed them -> theirs");
+  const pc = SYNC.mergeProf(prof({ avatar: "", title: "" }), prof({ avatar: F0 + ":1", title: "cup" }), prof({ avatar: F0 + ":1", title: "cup" }), true);
+  check(pc.avatar === "" && pc.title === "", "picture/title: cleared on this device -> stays cleared");
+  const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
+  check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }
 
 // ---------------------------------------------------------------- the server through server.js

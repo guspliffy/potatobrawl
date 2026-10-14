@@ -4,7 +4,11 @@
 const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
+  // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
+  const OPT_COUNTERS = ["flawless"];
+  const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
+  const HIST = 50;
   const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
   const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
   const ID_RE = /^[a-z0-9][a-z0-9_-]{0,23}$/;
@@ -61,7 +65,20 @@ const SYNC = (function () {
       pal[id] = num(pp[id], 0, n - 1, 0);
     }
     out.owned = owned; out.pal = pal;
-    out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, 20).map((h) => ({
+    for (const k of OPT_COUNTERS) if (typeof p[k] === "number") out[k] = num(p[k], 0, MAXN, 0);
+    if (isObj(p.fstats)) {   // per fighter: wins, losses, draws (all-zero rows are left out, so a prof has one spelling)
+      const fs = {};
+      for (const id of Object.keys(p.fstats).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) {
+        const e = isObj(p.fstats[id]) ? p.fstats[id] : {}, r = {};
+        for (const k of FS_KEYS) r[k] = num(e[k], 0, MAXN, 0);
+        if (r.w + r.l + r.d > 0) fs[id] = r;
+      }
+      out.fstats = fs;
+    }
+    if (typeof p.fsince === "number" && p.fsince > 0) out.fsince = num(p.fsince, 0, 9e15, 0);
+    if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
+    if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
+    out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
       opr: num(h.opr, 0, 10000, 0), t: num(h.t, 0, 9e15, 0),
@@ -80,6 +97,12 @@ const SYNC = (function () {
     P.owned = Object.assign({}, P.owned, Object.fromEntries(Object.entries(S.owned).map(([k, v]) => [k, v.slice()])));
     P.pal = Object.assign({}, P.pal, S.pal);
     P.history = S.history.map((h) => Object.assign({}, h));
+    // fields an older page never sent stay as this device has them
+    for (const k of OPT_COUNTERS) if (S[k] !== undefined) P[k] = S[k];
+    if (S.fstats !== undefined) P.fstats = Object.fromEntries(Object.entries(S.fstats).map(([k, v]) => [k, Object.assign({}, v)]));
+    if (S.fsince !== undefined) P.fsince = S.fsince; else if (S.fstats !== undefined) delete P.fsince;
+    if (S.avatar !== undefined) P.avatar = S.avatar;
+    if (S.title !== undefined) P.title = S.title;
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -114,9 +137,29 @@ const SYNC = (function () {
       out.pal[id] = pick((L.pal || {})[id], (B.pal || {})[id], (S.pal || {})[id]) | 0;
     }
     out.history = pick(L.history, B.history, S.history) || [];
+    // Newer fields. A side that does not have the field at all (a prof from an older page) is "unchanged", so the other side's value stays.
+    const have = (v) => v !== undefined;
+    const pickOpt = (k) => (!have(S[k]) ? L[k] : !have(L[k]) ? S[k] : !have(B[k]) ? (localNewer ? L[k] : S[k]) : pick(L[k], B[k], S[k]));
+    for (const k of OPT_COUNTERS) { const v = !have(S[k]) ? L[k] : !have(L[k]) ? S[k] : Math.min(MAXN, Math.max(0, S[k] + L[k] - (B[k] || 0))); if (have(v)) out[k] = v; }
+    if (have(S.fstats) || have(L.fstats)) {
+      const fs = {}, bf = B.fstats || {};
+      const ids = [...new Set([...Object.keys(L.fstats || {}), ...Object.keys(S.fstats || {})])].sort();
+      for (const id of ids) {
+        const r = {};
+        for (const k of FS_KEYS) {
+          const l = have(L.fstats) ? ((L.fstats[id] || {})[k] || 0) : null, s = have(S.fstats) ? ((S.fstats[id] || {})[k] || 0) : null;
+          r[k] = l === null ? s : s === null ? l : Math.min(MAXN, Math.max(0, s + l - (((bf[id] || {})[k]) || 0)));
+        }
+        if (r.w + r.l + r.d > 0) fs[id] = r;
+      }
+      out.fstats = fs;
+    }
+    { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
+    { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
+    { const v = pickOpt("title"); if (have(v)) out.title = v; }
     return out;
   }
 
-  return { COUNTERS, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;

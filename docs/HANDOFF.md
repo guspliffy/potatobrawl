@@ -174,7 +174,15 @@ index.html is committed with every source change (check.sh flags a stale one).
   unknown code = 404 after 350 ms). One file per account in that folder: `<sha256(code)>.json` = `{rev, t, prof}`, mode 600, written
   by temp file + rename. The code itself is never stored (it is 16 characters of Crockford base32, 80 bits, shown XXXX-XXXX-XXXX-XXXX).
   `prof` = rating, peak, streak, wins, losses, draws, matches, chips, friend wins/losses, cups, name, last fighter, owned skins, picked
-  skins, tutorial done, last 20 results. No email, no password, no IP is stored.
+  skins, tutorial done, last 50 results (+ per-fighter stats, flawless cups, picture, title). No email, no password, no IP is stored.
+- Accounts hub (the Account sheet has three tabs: Profile, Stats, Locker). Profile: picture = any owned fighter + skin (`P.avatar` "id:skin",
+  "" = fighter played last; the pill uses it too), title (`P.title`; "" = best earned; six titles in `ACT` in acct.js: tier = best tier reached
+  after a first ranked match, Centurion 100 wins, Cup winner, Flawless = `P.flawless` counted in cup.js where the +30 is given, Collector,
+  Wanderer = 7 fighters with ranked matches), shown under the name and on the pill when it fits. Stats: `P.fstats` {id:{w,l,d}} + `P.fsince`,
+  counted in finishMatch only for ranked matches (the ones that already count in wins/losses/history, forfeits as losses); cup and friend matches
+  are not counted. History keeps 50. Locker: every fighter and skin; owned ones equip via `equipSkin` (screens.js, shared with the select screen).
+  Sync: new fields are optional in sync.js; a MISSING one (older page) is "unchanged", never zero (`OPT_COUNTERS`, fstats, avatar, title).
+  Wanderer needs 7 although there are more fighters (the number is fixed on purpose, not the roster size).
 - Live: deploy/accounts-setup.txt (Jonny pastes it once, after update.txt) makes /var/lib/potatobrawl/accounts, adds the systemd drop-in
   (ACCOUNTS_DIR, HOST=127.0.0.1, ReadWritePaths), installs the nightly backup (/var/backups/potatobrawl, 14 days) and closes port 8080.
   Until then the Account sheet says "Saving to an account isn't available yet." and nothing else changes.
