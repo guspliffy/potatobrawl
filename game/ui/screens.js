@@ -105,6 +105,7 @@ function buildDetail() {
   $("dBlurb").textContent = spec.blurb;
   $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="seg" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
   $("dSig").innerHTML = `<b>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
+  $("dUlt").innerHTML = `<em>Ulti</em><b>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   const pals = $("dPals"); pals.innerHTML = "";
   spec.palettes.forEach((p, i) => {
     const own = P.owned[spec.id].includes(i), cur = (P.pal[spec.id] || 0) === i, pend = !!sel.pending && sel.pending.id === spec.id && sel.pending.i === i;
@@ -319,6 +320,7 @@ function updateHud() {
   const mv = me.move, charging = me.state === "attack" && !!mv && !!mv.charge && me.chg > 0 && me.mt <= mv.startup - BL.TUNE.chgHold;
   const chv = charging ? Math.min(1, me.chg / BL.TUNE.chgMax) : 0;
   if (hudX.ch !== chv) { hudX.ch = chv; btnHeavy.style.setProperty("--ch", chv.toFixed(3)); btnHeavy.classList.toggle("chg", charging); }
+  hudUlt();   // hud.js: the ultimate bars under the cards and the ULTI button
 }
 function togglePause(force) {
   if (mode !== "match" || (G && G.phase === "over") || FIN.on) return;

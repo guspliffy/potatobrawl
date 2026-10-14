@@ -44,15 +44,17 @@ window.addEventListener("resize", resize);
 window.addEventListener("orientationchange", () => setTimeout(resize, 120));
 
 // x, y, z are what the renderers read. bx/by/bz are the eased follow-camera; the KO punch-in (UI only) is added on top.
-const cam = { x: 0, y: -110, z: 0.6, shake: 0, sx: 0, sy: 0, bx: 0, by: -110, bz: 0.6, pt: 99, pn: 1, px: 0, py: 0, pk: 1 };
+const cam = { x: 0, y: -110, z: 0.6, shake: 0, sx: 0, sy: 0, bx: 0, by: -110, bz: 0.6, pt: 99, pn: 1, px: 0, py: 0, pk: 1, pa: 0.18, ph: 0.5 };
 function camTarget(g) {
   const B = STAGE.blast;
   const base = L.portrait ? 250 : 360, pad = L.portrait ? 110 : 150;
   let x1 = -base, x2 = base, y1 = -300, y2 = 110;
   for (const f of g.fighters) {
     if (f.state === "dead" || f.state === "gone") continue;
+    // Ultimates (UI only): Phoenix's dive goes far above the screen, the camera stays on the stage; the Dragon is drawn 1.6x
+    const fy = uvCamY(f), fh = f.s.h * uvScale(f);
     x1 = Math.min(x1, f.x - pad); x2 = Math.max(x2, f.x + pad);
-    y1 = Math.min(y1, f.y - f.s.h - 130); y2 = Math.max(y2, f.y + 90);
+    y1 = Math.min(y1, fy - fh - 130); y2 = Math.max(y2, fy + 90);
   }
   x1 = Math.max(x1, B.left + 40); x2 = Math.min(x2, B.right - 40);
   y1 = Math.max(y1, B.top + 40); y2 = Math.min(y2, B.bottom - 20);
@@ -62,13 +64,14 @@ function camTarget(g) {
   return { x: (x1 + x2) / 2, y: (y1 + y2) / 2, z: clamp(zFit, zMin, Math.max(zMin, zMax)) };
 }
 // KO zoom: push the camera towards a world point for `ticks` sim ticks (60 per second) and ease back. Pure view, never read by the sim.
-function camPunch(wx, wy, k, ticks) { cam.px = wx; cam.py = wy; cam.pk = k; cam.pt = 0; cam.pn = ticks; }
+// qa / qh (optional, fractions of the ticks): where the snap-in ends and where the hold ends (the super freeze holds for its 30 ticks).
+function camPunch(wx, wy, k, ticks, qa, qh) { cam.px = wx; cam.py = wy; cam.pk = k; cam.pt = 0; cam.pn = ticks; cam.pa = qa || 0.18; cam.ph = qh || 0.5; }
 function camPunchK() {
   if (cam.pt >= cam.pn) return 0;
   const q = cam.pt / cam.pn;
-  if (q < 0.18) { const a = q / 0.18; return 1 - (1 - a) * (1 - a); }   // snaps in
-  if (q < 0.5) return 1;                                                 // holds through the freeze
-  const a = (q - 0.5) / 0.5; return 1 - a * a * (3 - 2 * a);            // eases back out
+  if (q < cam.pa) { const a = q / cam.pa; return 1 - (1 - a) * (1 - a); }   // snaps in
+  if (q < cam.ph) return 1;                                                  // holds through the freeze
+  const a = (q - cam.ph) / (1 - cam.ph); return 1 - a * a * (3 - 2 * a);    // eases back out
 }
 function camStep(g, snap) {
   const t = camTarget(g), k = snap ? 1 : 0.075;

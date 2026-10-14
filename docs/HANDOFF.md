@@ -79,6 +79,59 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     Tournament with today's matchup; the sheet `#scrDaily`; results "Menu" instead of Rematch.
   - CPU styles: Alchemist spec 1.3 heavy 1.25, Gunslinger spec 1.3 heavy 1.2 (styled CPUs link specials now; botstyle was
     above 65% at the old numbers).
+- Ultimates (2026-10-14, branch claude/ultimates-kq8h4u, PROTO 8), session 2 of the big-features plan. Engine contract for the UI:
+  /mnt/project-files/ultimates/interface.md (Project files); designs: next-ideas/fable-ideas.md section 2, Ultimate KO pages
+  ultimates/fable-ultimate-pages.md.
+  - Bar (core.js): `f.ult` fills TUNE.ultDealt (1) per % dealt, ultTaken (0.5) per % taken, ultHeart (10) per heart lost, up to
+    `ultNeed(f)` = TUNE.ultNeed[f.ultN] (100, then 120); `f.ultN` uses, max TUNE.ultMax (2). An ulti's own hits don't fill it.
+    The 6th button `ulti` (BTN, blankInput, buf). `ultReady(g, f)`; actOrMove starts it first (idle/run/air only, not in hitstun
+    or endlag): the bar is spent on the press, `startUlti` starts move key "ulti" and sets g.hitstop = TUNE.ultFreeze (30, the super
+    freeze; presses made in it are buffered, so a mashed dodge is over before any ulti's first hit, which is 25+ frames in).
+    Event "ulti" {slot, n, name, id}. Every ulti has armour through its wind-up.
+  - Moves: `moves.ulti` per fighter with `ult` = the kind; `spec.ultimate` {name, text}. Generic additions used by them: `inv`
+    [a, b] (intangible frames, intangible()), `last` {from, ...} (a multi-hit move hits once more with these numbers from frame
+    `from`), proj `pulse` (hurts every `pulse` ticks, stays after a hit, `last` numbers on its final pulse), proj `lastShot`
+    (the count-th shot's numbers and style), proj/hit `ult` flag, `mark`/`cut`/`cutAt` (Samurai), `pull` (Reaper), `star`/`big`
+    (Wizard). Per-kind code is `ultStep()` (runs after mt++ in updateAttack) and `ultMark()`. Fields `ult`, `ultN`, `ultX`
+    (Phoenix's comet spot), `ultTgt` (Samurai's held opponent; for Phoenix the platform the comet may land on, -1 = falls through
+    platforms) are in defaults, FKEYS and checksum; PKEYS gained `pulse`, `last`.
+  - Numbers: finishing hits bkb 8 / kbg 16 (Samurai's cut kbg 17 at 42 degrees, the golden Dead Eye shot kbg 14, Phoenix 26 dmg
+    kbg 15): tests/ulti.js KO% against a standing Samurai (91) / Odin (108): phoenix 110/150, alchemist 100/135, odin 95/130, wizard
+    115/120, samurai 95/130, dragon 90/120, gunslinger 90/130, reaper 100/135; first hit 25-66 frames after the freeze.
+  - The KO-at-the-hit look-ahead now keeps projectiles in flight (it used to empty them): Meteor Shower stars still falling were
+    re-hitting a launched defender after a "lethal" call. finish.js counts a re-hit by a projectile or an ulti hit as part of the
+    call (the KO must still follow).
+  - CPU (botInput): uses its ulti when the bar is full, the opponent is in that ulti's reach (per kind) and at lerp(150, 105, d)%
+    or more (or 40%+ in the last 40 s); answers an opponent's ulti by jumping (stepping away from the cloud and the stars).
+  - The pop-up (Jonny, 2026-10-14 14:28 UTC: up light, up light, jump, air attack never connected, the opponent was back on the
+    ground): a linked up light (the 2nd light in a row aimed up, `link && dy < -0.9` in applyHit) launches with at least
+    TUNE.linkPop (13) knockback. Before it the defender rose about 15-30 px at 0%. Now up, up, jump, nair is a true combo at 0-50%
+    for every fighter (Odin from 30%: his up light can't chain into itself at 0%), hAir lands for 7 of 8, uair for 4 (tests/combos.js
+    checks the nair version; `node combos.js try up,up,jump,uair` for the rest). 14 still passed, 15 broke other routes.
+  - Gunslinger's lights are point-blank shots (Jonny, 14:38 UTC: "low range shots, not punches"): every light has `shot: true` and
+    a thin box (r 10-11) sweeping out from the muzzle over its active frames (jab to 62 px, side 80, up/uair straight up to -112,
+    down at the feet to 70, nair both pistols to +-64, dair straight down to 50); side 6 dmg, sair 7 (were 7/8). First try at
+    longer ranges put him at 61%. Hellfire's stream boxes went to y-50 r 40-46 (Dragon had dropped to 42.9%).
+    Balance after both: phoenix 52.7, alchemist 47.7, odin 52.2, wizard 53.1, samurai 53.7, dragon 45.3, gunslinger 47.5, reaper 47.9.
+  - Online: encIn uses the spare codes 2592-3887 for frames with ULTI held (stick x 16, dodge dropped on those frames); decIn and
+    the receiver's range check know them. Still two characters per frame.
+  - Controls + HUD (ui/input.js, hud.js, shell.html): keyboard U, gamepad Y (button 3; it was a second jump, X is still jump), a
+    round 54 px ULTI touch button above-left of Special that shows only while the own bar is full (straight above Special hit the
+    opponent's bar at 667x320). `hudUlt()` (called from updateHud) draws the bar under both cards: fill in the fighter's colour, gold
+    with a flash and Sfx.ultFull when full, two pips for the uses left, dimmed once both are spent; a keyboard player gets a U key
+    by the own bar. No bar in the Combo trial. At 568x320 the card hides its role and tag; short landscape select cards hide the
+    flavour text (container query) so the select screen's Ulti row fits. How to play has an Ultimates section.
+  - Tutorial (ui/tutorial.js): nine steps, Move, Jump, Light, Heavy, Charge, Special, Dodge (the CPU swings; a dodge while it
+    swings, or two dodges), Ultimate (the bar is filled, ULTI / U pulses, the step ends on the ulti), Knock them off.
+  - Looks (ui/effects.js `uv*`, draw-fighters.js, draw-world.js, view.js; UI only): the super freeze (punch-in, a flash on the user,
+    the name), per-ulti drawing and sounds (Sfx.ulti, ultFull, hellBlast, ...), the Gunslinger's light shots (`gunLightPose`, a
+    tracer from the muzzle to the sweeping box, smoke, a shell, Sfx.pop instead of the swing sound). tests/pwultreel.py records
+    every ulti + the eight light shots at 844x390 and 390x844 (stills + a video, needs ffmpeg).
+  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
+    a page with `MANGA[id].ulti` plays its 5.9 s Ultimate script (a fifth, full-page splash panel, MT_U timeline, three impact
+    frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova". The other five play their normal page with
+    the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
+    pwmanga.py --ult plays an Ultimate page.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -258,8 +311,11 @@ escaped at 0 and 30%; damage scaling; `node combos.js try k1,k2,...` tries a can
 through window.__blInput, misses + hint, Next/Exit, the all-13 reward paid once; tags flow s667 d1280 up390; check.sh 8b) ·
 pwcomboreel.py (a half-speed video of trial routes on a frozen clock; needs ffmpeg) · pwdaily.py (Daily Potato with a Date stand-in:
 one try, chips, streak, reload, next day, midnight; tags flow s667 p844 d1280 up390; check.sh 8c) ·
-pwux2.py (all screens, 3 sizes) ·
-pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
+pwux2.py (all screens, 3 sizes) · ulti.js (every ulti's KO% vs Samurai and Odin, first hit after the freeze, bar spent, no third use,
+save/restore mid-ulti; check.sh 3e, also in --quick) · pwult.py (the ulti bar empty/half/full/spent, the ULTI button only while full and
+clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone desk up kbd pad; check.sh 6d) · pwtut.py (the nine tutorial
+steps, desktop through to the results, touch sizes up to the ulti; tags desk desktouch se phone up; check.sh 6e) · pwultreel.py (above) ·
+pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
 pwon.py now also asks both browsers for a rematch after the KO (prints "rematch ok").
@@ -285,12 +341,19 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: session 2 of the big-features plan, Ultimates (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the
-  bar under the name card, the button, the freeze, all eight ultis, CPUs that use them, balance, the first two or three Ultimate
-  KO pages; one reload (PROTO 8). Also the tutorial gets a Dodge step (it never had one; Jonny noticed on PC) and an
-  Ulti step, both in this session. Online encIn is full: the ULTI button needs a third input character or a reuse (decide first).
-  Then 3. the rest of the Ultimate KO pages + fighter mastery; 4. boss engine + the Devil + The Field + the Road's first 8 stops;
-  5. Alien + Sea Monster, their stages, Road skins; 6. online 2v1; 7. 2v2 (offline, then online).
+- NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the other five
+  Ultimate KO pages (Alchemist Mutagen Cloud, Odin Gungnir, Wizard Meteor Shower, Dragon Hellfire, Reaper Soul Harvest: Fable's
+  twists in next-ideas/fable-ideas.md section 2, the page engine's Ultimate script as built for the first three) + fighter
+  mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
+  seen). Then 4. boss engine + the Devil + The Field + the Road's first 8 stops; 5. Alien + Sea Monster, their stages, Road
+  skins; 6. online 2v1; 7. 2v2 (offline, then online).
+- Ultimates leftovers: Odin's shared combo routes mostly miss lighter fighters (a lever if Jonny wants Odin to combo more); an
+  ulti can KO without a "lethal" call when escapes would have survived it (no finisher then, by design); finish.js at 60 seeds
+  still finds a rare wrong call where a bot attacker acts after the call (the same class as the old Dragon case).
+- Flaky browser tests seen on 2026-10-14 (each passed when run alone, the Daily one also fails now and then on main): pwdaily.py
+  flow sometimes comes back from a reload with the starting profile (chips 85, the Daily open again), pwcup.py flow once missed
+  the bracket after a reload, pwcombo.py timed out waiting for the trial. Worth a look: a localStorage write right before
+  pg.reload() may not have reached the store yet.
 - Combos/Daily leftovers: the Daily's Brutal (0.87) is still below Practice Hard (0.9); changing the device clock gives an extra
   Daily try (accepted, offline game); a player who clears all 13 routes on two devices before they sync is paid twice.
 - The big-features plan (Jonny, 2026-10-14), approved with its default decisions:

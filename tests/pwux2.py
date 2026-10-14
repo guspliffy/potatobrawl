@@ -62,7 +62,8 @@ MENU_CHECK = """(() => {
   if (btns[btns.length - 1].bottom > H) bad.push('buttons run off the bottom');
   return bad;
 })()"""
-PAD_RECTS = """(() => { const o = {}; for (const b of document.querySelectorAll('.pb')) { const r = b.getBoundingClientRect(); o[b.dataset.k] = { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; } return o; })()"""
+# hidden buttons (ULTI until the bar is full; pwult.py checks its place once it shows) are left out
+PAD_RECTS = """(() => { const o = {}; for (const b of document.querySelectorAll('.pb')) { const r = b.getBoundingClientRect(); if (!r.width) continue; o[b.dataset.k] = { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; } return o; })()"""
 SP = "document.querySelector('.pb[data-k=special]')"
 def layout(tag, what, rc, vp, top, errs):
     ks = list(rc)
