@@ -247,6 +247,19 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
+- NEXT (Jonny, 2026-10-14): the big-features plan, ideas only until he answers its decisions table:
+  https://claude.ai/code/artifact/52412947-3a3c-4d13-80ae-8e441903fd1b (Fable's design: /mnt/project-files/next-ideas/fable-ideas.md).
+  Default order: 1. combos ("the link": an ender within 12 frames of the 2nd light starts 6 frames faster, +8 hitstun; named
+  routes; a Combo trial in How to play) + Daily Potato; 2. ultimates (bar under the name card, ULTI button when full, max 2, a
+  freeze, a 6th input button: online encIn is full at 2 base64 chars); 3. Ultimate KO pages + fighter mastery; 4. 3+ fighters on
+  stage + boss engine (HP + poise/stagger, brain in core.js on g.rng) + the Devil + "The Road" story map; 5. Alien + Sea Monster;
+  6. online 2v1; 7. 2v2 (offline first, online last). Code check: rooms already allow 64 players (no server change); the
+  two-fighter assumptions are spawns, respawn, ko() winner, checkLethal final, endByTime, serialize hitLog [0,1], HUD #pc0/#pc1,
+  finisher puppets, online.js's single opponent.
+- Small leftovers from the Reaper session: the shared charge-glow centre draws black for every fighter except the Reaper (mix()
+  returns rgb() that glowDot reads as black; worked around for the Reaper only); the Reaper's select preview is drawn smaller;
+  the upright "Practice · no rating" heading wraps at 390x844; finishing-special KOs label the manga card with the signature name
+  (Reaper and Gunslinger pages set their own text); pwhud's KO-finisher setup can time out under load (the CPU never lands the hit).
 - Tournament (night of 2026-10-13): offline against 7 CPUs is in. Next: online (the host runs the bracket, friends join by link, CPUs
   fill empty seats, each pair plays on a room code; after accounts), a cup counter on the profile pill (P.cups is written), the Dragon's
   edge-guard style could get an aerial chase, an "all fighters" cup variant.
