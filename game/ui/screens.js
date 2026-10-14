@@ -17,7 +17,7 @@ function hideBanner() { clearTimeout(bannerT); bannerEl.hidden = true; }
 function newAttract() {
   const pick = () => FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
   const a = pick(), b = pick();
-  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2 });
+  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   trails[0].length = trails[1].length = 0;
 }
@@ -51,7 +51,8 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, pending: null };
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", pending: null };
+const randMap = () => (Math.random() * BL.MAPS.length) | 0;
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
   "Spud Muffin", "Tater Tot", "Hash Brown", "Mash Master", "Sir Fries-a-Lot", "Lady Latke", "Chip Chomp", "Wedge Wally",
@@ -174,10 +175,11 @@ function drawCards(tk) {
   }
 }
 /* practice: opponent and CPU level are small pickers in the header */
-function closePops() { $("oppPop").hidden = true; $("lvlPop").hidden = true; }
+function closePops() { $("oppPop").hidden = true; $("lvlPop").hidden = true; $("mapPop").hidden = true; }
 function buildPractice() {
   $("oppPick").innerHTML = `<small>vs</small>${sel.opp === "random" ? "Random" : FIG[sel.opp].name}`;
   $("lvlPick").innerHTML = `<small>CPU</small>${LEVELS[sel.level].name}`;
+  $("mapPick").innerHTML = `<small>Map</small>${sel.map === "random" ? "Random" : mapName(sel.map)}`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
@@ -189,8 +191,9 @@ function buildPractice() {
   };
   fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
+  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
 }
-for (const [btn, pop] of [["oppPick", "oppPop"], ["lvlPick", "lvlPop"]]) {
+for (const [btn, pop] of [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]]) {
   $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; });
 }
 app.addEventListener("click", (e) => { if (!e.target.closest(".pickwrap")) closePops(); });
@@ -206,22 +209,30 @@ function openSelect(m) {
 }
 
 /* ----- match ----- */
+// a random CPU fighter: your own fighter is 4x less likely than each other one (about 3% instead of 1 in 8; Jonny, 2026-10-14)
+function cpuFoe(me) {
+  const w = FIGHTERS.map((f) => (f.id === me.id ? 0.25 : 1)), sum = w.reduce((a, b) => a + b, 0);
+  let r = Math.random() * sum;
+  for (let i = 0; i < FIGHTERS.length; i++) { r -= w[i]; if (r < 0) return FIGHTERS[i]; }
+  return FIGHTERS[FIGHTERS.length - 1];
+}
 function startMatch() {
   Sfx.init();
   const ranked = sel.mode === "ranked";
   const me = FIG[sel.fighter], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   let opp, d, oppRating = 0;
   if (ranked) {
-    opp = FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
+    opp = cpuFoe(me);
     oppRating = clamp(Math.round(P.rating + (Math.random() - 0.5) * 140), 600, 2100);
     d = clamp((oppRating - 750) / 1000, 0.08, 0.98);
   } else {
-    opp = sel.opp === "random" ? FIGHTERS[(Math.random() * FIGHTERS.length) | 0] : FIG[sel.opp];
+    opp = sel.opp === "random" ? cpuFoe(me) : FIG[sel.opp];
     d = LEVELS[sel.level].d;
   }
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150 });
+  const map = !ranked && sel.map !== "random" ? sel.map : randMap();   // ranked always draws a map; practice can pick one
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map });
   match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
@@ -429,7 +440,7 @@ function showResults(R) {
   if (R.ranked) {
     const ti = tierInfo(R.after);
     $("rRank").style.setProperty("--tc", ti.t.col);
-    paintBadge($("rBadge"), ti.i);
+    paintBadge($("rBadge"), ti.i, R.ta > R.tb ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
     $("rTier").textContent = ti.t.name;
     const rt = $("rRating"), tail = ti.next ? ` · ${ti.need} to ${ti.next.name}` : "";
     rt.textContent = ""; const rn = document.createElement("span"); rn.textContent = R.before; rt.append(`${R.before} → `, rn, tail);

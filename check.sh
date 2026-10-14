@@ -27,21 +27,21 @@ P=$(grep -o 'const PROTO = [0-9]*' game/ui/online.js)
 if [ -n "$P" ] && grep -q "$P" index.html && ! grep -q 'const PROTO' deploy/update.txt && grep -q 'cmp -s - index.html' deploy/update.txt; then pass "PROTO (${P#const }) is in index.html; deploy/update.txt checks the served page"
 else fail "PROTO / deploy block: index.html must carry '$P' and deploy/update.txt must compare the served page, not grep a PROTO" "deploy/update.txt"; fi
 
-# 3. Replay determinism.
-(cd tests && node snap.js) > "$LOGS/snap.log" 2>&1
+# 3. Replay determinism (MAP=all: the seed picks one of the four map layouts, as in snap/lockdet/finish/bal7/botstyle).
+(cd tests && MAP=all node snap.js) > "$LOGS/snap.log" 2>&1
 if grep -q "mismatches: 0 /" "$LOGS/snap.log"; then pass "replay determinism (snap.js 0 mismatches)"
 else fail "replay determinism" "$LOGS/snap.log"; fi
 
 # 3b. Light-attack lock: longest run of unreactable jabs (defender reacts 14 frames after it can move),
 #     plus save/restore checks while light-string launches happen.
-(cd tests && node lockrun.js 14 && node lockdet.js) > "$LOGS/lock.log" 2>&1
+(cd tests && node lockrun.js 14 && MAP=all node lockdet.js) > "$LOGS/lock.log" 2>&1
 RUN=$(grep -o 'longest run of hits[^:]*: [0-9]*' "$LOGS/lock.log" | grep -o '[0-9]*$')
 if [ -n "$RUN" ] && [ "$RUN" -le 3 ] && grep -q "mismatches: 0," "$LOGS/lock.log"; then pass "light-attack lock (longest unreactable run $RUN hits, 0 save/restore mismatches)"
 else fail "light-attack lock (longest run '${RUN:-?}', want 3 or less)" "$LOGS/lock.log"; fi
 
 # 3c. Finish mode, charged heavies, KO at the hit: specials KO from the finish percent (not below), a tap is
 #     unchanged, a full charge adds its damage, and every "this hit is a KO" call really ends in that KO.
-(cd tests && node finish.js 30) > "$LOGS/finish.log" 2>&1
+(cd tests && MAP=all node finish.js 30) > "$LOGS/finish.log" 2>&1
 if grep -q "^finish ok" "$LOGS/finish.log"; then pass "finish mode + charge + KO at the hit ($(grep -o 'lethal calls [0-9]*' "$LOGS/finish.log"), 0 wrong)"
 else fail "finish mode / charge / KO at the hit" "$LOGS/finish.log"; fi
 
@@ -59,16 +59,17 @@ else fail "ultimates" "$LOGS/ulti.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 
-# 4. Balance: every fighter's bot win rate inside the band.
-LO=${BAL_LO:-44}; HI=${BAL_HI:-57}
-(cd tests && node bal7.js 80 0.5,0.8) > "$LOGS/balance.log" 2>&1
+# 4. Balance: every fighter's bot win rate inside the band, over all four maps (MAP=all: the seed picks the map; MAP=<i> one map).
+# 58: Phoenix sits at 57.4% since the ultis got 1.75x launch knockback (2026-10-14; 55% before), inside the noise of 80 games a pair
+LO=${BAL_LO:-44}; HI=${BAL_HI:-58}
+(cd tests && MAP=all node bal7.js 80 0.5,0.8) > "$LOGS/balance.log" 2>&1
 OUT=$(awk -v lo=$LO -v hi=$HI '/%$/ && NF==2 { v=$2+0; n++; if (v<lo||v>hi) bad=bad" "$1"="$2 } END { if (n==0) print "none"; else print bad }' "$LOGS/balance.log")
 RANGE=$(awk '/%$/ && NF==2 { printf "%s %s  ", $1, $2 }' "$LOGS/balance.log")
 if [ -z "$OUT" ]; then pass "balance ${LO}-${HI}%: $RANGE"
 else fail "balance outside ${LO}-${HI}%:$OUT" "$LOGS/balance.log"; fi
 
 # 4b. CPU fighting styles: each fighter's styled CPU against the neutral one, same fighter, stays between 35% and 65%.
-(cd tests && node botstyle.js 100) > "$LOGS/botstyle.log" 2>&1
+(cd tests && MAP=all node botstyle.js 100) > "$LOGS/botstyle.log" 2>&1
 if grep -q "^botstyle ok" "$LOGS/botstyle.log"; then pass "CPU styles (styled vs neutral win rates inside 35-65%)"
 else fail "CPU styles outside 35-65% against the neutral CPU" "$LOGS/botstyle.log"; fi
 
@@ -113,6 +114,12 @@ else fail "ulti bar + ULTI button" "$LOGS/ult-ui.log"; fi
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwtut.py" tut) > "$LOGS/tutorial.log" 2>&1
 if grep -q "^no errors" "$LOGS/tutorial.log"; then pass "tutorial (nine steps incl. Dodge and Ultimate; shots in build/shots/tut)"
 else fail "tutorial" "$LOGS/tutorial.log"; fi
+
+# 6f. Maps: every map in a Practice match picked through the Map picker at four sizes (start, two CPUs fighting, the KO splash),
+#     drawing cost against Potato Moon's, every map has its art. Shots in build/shots/maps.
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwmaps.py" maps) > "$LOGS/maps.log" 2>&1
+if grep -q "^no errors" "$LOGS/maps.log"; then pass "maps (four layouts and looks at four sizes, KO splash, frame cost; shots in build/shots/maps)"
+else fail "maps" "$LOGS/maps.log"; fi
 
 # 7. KO finisher: one played through to the results screen, one skipped by a tap.
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1

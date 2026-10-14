@@ -89,7 +89,8 @@ function cupFight() {
   const me = FIG[c.fid], opp = FIG[os.f], myPal = me.palettes[c.pal] || me.palettes[0], oppPal = opp.palettes[os.pal] || opp.palettes[0];
   Sfx.init();
   const d = clamp((os.r - 750) / 1000, 0.08, 0.98);
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150 });
+  const map = (((c.seed % BL.MAPS.length) + BL.MAPS.length) % BL.MAPS.length + r) % BL.MAPS.length;   // quarter, semi and final on different maps
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150, map });
   match = { ranked: false, cup: true, round: r, d, oppRating: os.r, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: null, cpu: os.n };
   meSlot = 0;
   enterMatchUI();
@@ -130,7 +131,7 @@ function cupSlot(c, r, pos) {
   const out = done && dec !== s, champ = done && r === 2 && dec === s;
   const cls = ["cs", me ? "me" : "", me && !out ? "path" : "", out && !(me && c.out === r) ? "out" : "", me && out ? "fell" : "", champ ? "champ" : "", CU.pop === key ? "pop" : ""].filter(Boolean).join(" ");
   return `<div class="${cls}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(pal)}"><span class="cs-ph">${PORTRAITS[sl.f] ? `<img src="${PORTRAITS[sl.f]}" alt="">` : ""}</span>` +
-    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r"><i class="cs-b" style="--tc:${ti.t.col}"></i><span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
+    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r">${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
 }
 function cupTrophy(c) {
   const champ = c.p[3][0] >= 0 && !CU.hide.has("2:0");

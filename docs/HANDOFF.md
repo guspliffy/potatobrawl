@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-14: combos + Daily Potato, PROTO 7)
+# PotatoBrawl handoff (updated 2026-10-14: maps + rank emblems, PROTO 9)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -132,6 +132,30 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova". The other five play their normal page with
     the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
     pwmanga.py --ult plays an Ultimate page.
+- Maps + rank emblems (2026-10-14, same branch, PROTO 9; Jonny's asks after the Ultimates merge):
+  - Ulti bar fills at 0.6x (TUNE ultDealt 0.6, ultTaken 0.3, ultHeart 6). A random CPU picks the player's own fighter 4x less
+    often (`cpuFoe` in screens.js, weight 0.25; ranked and Practice "random").
+  - Four maps with their own layouts (core MAPS: moon Potato Moon, bay Spudset Bay, castle Hashbrown Keep, fryer Deep Fryday): own
+    main stage width and platforms, same blast zones. `g.map` is in the checksum; `useStage(g)` points the shared STAGE object at
+    the game's map at every entry point (newGame, step, botInput, render2D, updateFx) and lethal() passes the map to its scratch game.
+    Which map: online `st.seed % MAPS.length`, Daily from its seed, cup (seed + round) % 4, ranked random, Practice has a Map picker
+    (Random by default), tutorial and Combo trial always Potato Moon, the menu's attract match random.
+  - Map looks are UI only: game/maps/<id>.js registers `MAP_ART[id] = { name, bg(c, tk), stage(c, tk), tick?(g, live), ko?(e, live) }`
+    (spliced into draw-world.js at /*MAPS*/ by build.py); tick runs in updateFx (live = a real match, not the finisher), ko on every
+    KO event (bay/castle/fryer splash on a bottom KO). Ambient sounds only while live. YOU/CPU tags got an ink outline for the
+    daylight maps.
+  - Rank emblems (ui/base.js `tierEmblem(i, cls)`, `tierBadge(i, cls)`, `paintBadge(el, i, from)`): tin lid, bronze medal, silver
+    medal + laurel, gold crown, platinum trophy, diamond, Blastmaster bomb-tater; on the pill, Account sheet, results (promotion
+    spin-out/pop-in) and cup slots. `.ring > svg` is scoped so the ring's CSS no longer hits the emblem.
+  - Tests: snap / lockdet / finish / bal7 / botstyle take MAP=<i> or MAP=all (seed % 4; check.sh uses all); tests/pwmaps.py plays
+    every map at four sizes (start / fight / KO shots, frame cost vs Potato Moon, fails a map with no MAP_ART); pwux2 and pwhud pin
+    Potato Moon (their jump/launch setups are placed for it). Per-map balance is 42-57%, mixed over maps inside 44-57%. The
+    Gunslinger's CPU style went to specials 1.15x / heavies 1.1x (it beat the neutral CPU 65% over all maps).
+  - Ultis 1.75x stronger (Jonny 20:45 UTC: "close to impossible to KO with a ulti"): TUNE.ultKb multiplies the knockback of every
+    ulti hit that launches (kb >= tumbleKb), so multi-hit ultis still carry the target into the finale. A standing defender is KO'd
+    from about 20-45% (light) / 35-55% (heavy), was 90-115 / 120-150. Phoenix's Solar Dive homes in, so it got less (bkb 6, kbg 10:
+    80 / 110%); Phoenix still sits at 57.4% (55 before), so check.sh's balance band top is 58. Wizard's CPU style toned down
+    (gap 1.4, back 0.4, rng 10, poke 0.8; it beat the neutral CPU 68-74%). tests/ulti.js bands: no KO below 15%, all by 110%.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -278,7 +302,7 @@ index.html is committed with every source change (check.sh flags a stale one).
   the newFighter defaults, FKEYS and checksum, reset them where needed (ko, startSudden), bump `PROTO` in
   game/ui/online.js (deploy/update.txt has no PROTO: it compares the page the game serves with GitHub's index.html).
 - No service worker (a cached old build would desync matches).
-- Balance band in check.sh is 44-57% (M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
+- Balance band in check.sh is 44-58% (58 since the ulti boost, 2026-10-14; M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
   With the Gunslinger (night-gun, `bal7.js 80 0.5,0.8`): phoenix 50.4, alchemist 44.6, odin 52.7, wizard 50.7,
   samurai 51.5, dragon 51.0, gunslinger 49.1. The six old fighters play exactly as before (same bot matches

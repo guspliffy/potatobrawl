@@ -1,10 +1,11 @@
 const { BL } = require("../game/core.js");
 const { FIGHTERS, newGame, step, makeBot, botInput, serialize, restore, checksum } = BL;
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 let maxErr = 0; for (let d = -90; d <= 90; d++) { const [c, s] = [Math.cos(d*Math.PI/180), Math.sin(d*Math.PI/180)]; const g = newGame({players:[{spec:FIGHTERS[0],pal:FIGHTERS[0].palettes[0]},{spec:FIGHTERS[1],pal:FIGHTERS[1].palettes[0]}]}); }
 let worst = 0, maxSize = 0, fails = 0;
 for (let seed = 1; seed <= 30; seed++) {
   const a = FIGHTERS[seed % FIGHTERS.length], b = FIGHTERS[(seed * 3) % FIGHTERS.length];
-  const mk = () => newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[1] }], seed, countdown: 10 });
+  const mk = () => newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[1] }], seed, countdown: 10, map: mapOf(seed) });
   const g = mk(); const b0 = makeBot(0.8), b1 = makeBot(0.8);
   const log = [];
   let snap = null, snapAt = 0;

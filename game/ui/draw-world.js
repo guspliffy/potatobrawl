@@ -41,7 +41,7 @@ function farFries(c, gw, gh, hz) {
   fry(gw * 0.5 + px, hz + 2, u * 0.09, u * 0.022, -0.1);
   fry(gw * 0.95 + px, hz + 2, u * 0.11, u * 0.024, -0.12);
 }
-function drawBackground(c, tk) {
+function moonBg(c, tk) {
   const gw = L.gw, gh = L.gh;
   const hz = gh * 0.7 - (cam.y + 110) * cam.z * 0.16;
   const sky = c.createLinearGradient(0, 0, 0, hz);
@@ -74,7 +74,7 @@ function drawBackground(c, tk) {
   }
 }
 
-function drawStage(c, tk) {
+function moonStage(c, tk) {
   const S = STAGE.main;
   // hanging rock body
   c.beginPath();
@@ -104,6 +104,18 @@ function drawStage(c, tk) {
     c.fillStyle = "#d8d2f0"; c.fillRect(p.x1 + 4, p.y, p.x2 - p.x1 - 8, 2.5);
   }
 }
+
+/* ---- maps (Jonny, 2026-10-14): each map has its own fight layout (core.js MAPS, read through STAGE after BL.useStage(g)) and its own
+   look. MAP_ART[id] = { name, bg(c, tk) (screen space, parallax from cam), stage(c, tk) (world space: STAGE.main and STAGE.plats),
+   tick?(g, live) (once per sim frame: ambient particles via addFx / sfx, quiet sounds only when live), ko?(e, live) (the "ko" event
+   {slot, x, y, pal}: a fighter left the blast zone; a map-flavoured splash on top of the usual beam) }. Potato Moon is drawn above; the other maps are in
+   game/maps/<id>.js (spliced in at the MAPS marker below). UI only: nothing here touches the simulation. */
+const MAP_ART = { moon: { name: "Potato Moon", bg: moonBg, stage: moonStage } };
+const mapArt = () => MAP_ART[STAGE.id] || MAP_ART.moon;
+const mapName = (i) => { const m = BL.MAPS[i]; return m && MAP_ART[m.id] ? MAP_ART[m.id].name : "Potato Moon"; };
+function drawBackground(c, tk) { mapArt().bg(c, tk); }
+function drawStage(c, tk) { mapArt().stage(c, tk); }
+/*MAPS*/
 
 /* ---- finish-ready looks (UI only: hitboxes and the simulation never change) ----
    A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
@@ -289,10 +301,11 @@ function drawTag(c, f, isP1, lift) {
   const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
-  c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8";
-  c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.fill();
+  // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
+  c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
+  c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.stroke(); c.fill();
   c.font = '800 12px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center";
-  c.fillText(label, 0, -6);
+  c.strokeText(label, 0, -6); c.fillText(label, 0, -6);
   c.restore();
 }
 

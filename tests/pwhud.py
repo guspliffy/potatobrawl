@@ -45,6 +45,8 @@ async def start(b, tag, vp, up, errs, level='Dummy', reduced=False, tut=False):
         await pg.tap('#bPractice'); await pg.wait_for_timeout(500)
         await pg.tap('#lvlPick'); await pg.wait_for_timeout(200)
         await pg.evaluate("(n) => [...document.querySelectorAll('#lvlPop button')].find((x) => x.textContent === n).click()", level); await pg.wait_for_timeout(200)
+        # on Potato Moon: the launch and finisher setups below are placed for its layout (Practice picks a random map otherwise)
+        await pg.evaluate("document.querySelectorAll('#mapPop button')[1].click()"); await pg.wait_for_timeout(100)
         await pg.tap('#selGo'); await pg.wait_for_timeout(700)
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=60000)
     return ctx, pg

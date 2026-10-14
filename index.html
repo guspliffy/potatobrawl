@@ -250,7 +250,30 @@ button { font: inherit; color: inherit; }
 .link { appearance: none; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--mute); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { color: var(--text); }
 .tokglyph { display: inline-block; width: 1.05em; height: 0.85em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.6'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E") center / contain no-repeat; margin-right: 0.3em; vertical-align: -0.08em; }
-.badge { --tc: #9097ad; width: 54px; height: 60px; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--tc); display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-style: italic; font-size: 26px; color: var(--ink); }
+/* rank emblems: one inline SVG per tier (paintBadge / tierEmblem in ui/base.js). Platinum's trophy sheen, Diamond's twinkle and
+   the Blastmaster's turning burst + fuse spark; a promotion on the results screen spins the old emblem out and pops the new one in. */
+.badge { --tc: #9097ad; position: relative; width: 60px; height: 60px; flex: none; display: block; }
+.em { display: block; width: 100%; height: 100%; overflow: visible; }
+.em-sheen { animation: emSheen 3s ease-in-out infinite; }
+@keyframes emSheen { 0%, 40% { transform: translateX(0); } 80%, 100% { transform: translateX(58px); } }
+.em-tw { transform-box: fill-box; transform-origin: center; animation: emTw 0.8s ease-in-out infinite alternate; }
+.em-tw.b { animation-delay: -0.8s; }
+@keyframes emTw { from { opacity: 0.3; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+.em-burst { transform-box: fill-box; transform-origin: center; animation: emSpin 12s linear infinite, emPulse 0.6s ease-in-out infinite alternate; }
+@keyframes emSpin { to { transform: rotate(360deg); } }
+@keyframes emPulse { from { opacity: 0.75; } to { opacity: 1; } }
+.em-spark { transform-box: fill-box; transform-origin: center; animation: emFlick 0.15s ease-in-out infinite alternate; }
+@keyframes emFlick { from { transform: scale(0.8); } to { transform: scale(1.2); } }
+.badge.promo .em { animation: emIn 0.6s 0.95s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.badge.promo .em.was { position: absolute; inset: 0; animation: emOut 0.5s 0.45s ease-in both; }
+@keyframes emIn { from { transform: scale(0.25) rotate(-30deg); opacity: 0; } }
+@keyframes emOut { 35% { transform: scale(1.12); opacity: 1; } to { transform: scale(0.2) rotate(40deg); opacity: 0; } }
+.badge.promo::before, .badge.promo::after { content: ""; position: absolute; inset: -14%; border-radius: 50%; pointer-events: none; opacity: 0; }
+.badge.promo::before { border: 3px solid var(--tc); animation: emRing 0.7s 1s ease-out; }
+.badge.promo::after { background: repeating-conic-gradient(var(--tc) 0 7deg, transparent 7deg 30deg); -webkit-mask: radial-gradient(closest-side, transparent 58%, #000 62%, #000 78%, transparent); mask: radial-gradient(closest-side, transparent 58%, #000 62%, #000 78%, transparent); animation: emRays 0.8s 1s ease-out; }
+@keyframes emRing { from { opacity: 1; transform: scale(0.55); } to { opacity: 0; transform: scale(1.45); } }
+@keyframes emRays { from { opacity: 1; transform: scale(0.6) rotate(0); } to { opacity: 0; transform: scale(1.4) rotate(20deg); } }
+@media (prefers-reduced-motion: reduce) { .em *, .badge.promo .em { animation: none !important; } .badge .em.was, .badge.promo::before, .badge.promo::after { display: none; } }
 .bar { height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; margin-top: 8px; }
 .bar i { display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--tc); transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .scroll { overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -280,11 +303,11 @@ button { font: inherit; color: inherit; }
 .pill .pc { color: var(--sand); }
 .pill .pcup { color: var(--sand); font-size: 18px; }
 .ring { --tc: #9097ad; --d: calc(var(--gear) - 10px); position: relative; width: var(--d); height: var(--d); flex: none; display: grid; place-items: center; }
-.ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.ring circle { fill: none; stroke-width: 3.4; }
+.ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring > svg circle { fill: none; stroke-width: 3.4; }
 .ring .rt { stroke: rgba(255, 255, 255, 0.14); }
 .ring .rp { stroke: var(--tc); stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
-#app .ring i.badge { width: 54%; height: 60%; font-size: calc(var(--d) * 0.36); }
+#app .ring i.badge { width: 84%; height: 84%; }
 .cupglyph { display: inline-block; width: 0.95em; height: 0.95em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%23a8661f' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%23a8661f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
 /* 667-wide phones and upright phones: no room for the name */
 #app.tiny .pill .pnw, #app.tiny .pill .sep.s1, #app.narrow .pill .pnw, #app.narrow .pill .sep.s1 { display: none; }
@@ -319,6 +342,12 @@ button { font: inherit; color: inherit; }
 .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
 .tokpill { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--sand); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sel-opts { display: flex; gap: 8px; align-items: center; }
+/* three pickers (vs, CPU, Map): smaller chips on short screens, and their own row under the heading when upright */
+.sel-head .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.short .chip.pick, #app.tiny .chip.pick { min-height: 32px; padding: 3px 10px; font-size: 13px; gap: 4px; }
+#app.short .chip.pick small, #app.tiny .chip.pick small { font-size: 11px; }
+#app.portrait .sel-head { flex-wrap: wrap; row-gap: 8px; }
+#app.portrait .sel-opts { order: 3; flex-basis: 100%; flex-wrap: wrap; }
 .pickwrap { position: relative; }
 .chip.pick { display: inline-flex; align-items: center; gap: 6px; }
 .chip.pick small { font-family: var(--body); font-weight: 500; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--mute); }
@@ -656,7 +685,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .brand h1 { font-size: 44px; line-height: 0.9; }
 #app.short .brand h1 span { display: inline; }
 #app.short .brand .slash { margin-top: 6px; height: 4px; }
-#app.short .badge { width: 44px; height: 48px; font-size: 21px; }
+#app.short .badge { width: 50px; height: 50px; }
 #app.short .rk-tier { font-size: 21px; }
 #app.short .btn { min-height: 42px; font-size: 18px; padding: 7px 20px; }
 #app.short .menu-actions { gap: 8px; }
@@ -696,7 +725,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .brand h1 { font-size: 36px; }
 #app.tiny .brand .slash { display: none; }
 #app.tiny .menu-inner { gap: 8px; }
-#app.tiny .badge { width: 36px; height: 40px; font-size: 18px; }
+#app.tiny .badge { width: 42px; height: 42px; }
 #app.tiny .btn { min-height: 38px; font-size: 17px; padding: 6px 18px; }
 #app.tiny .menu-actions { gap: 6px; }
 #app.tiny .sel-head h2 { font-size: 24px; }
@@ -716,7 +745,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .tile { height: 72px; }
 #app.portrait .tile span { font-size: 16px; }
 #app.portrait .tile span { left: 6px; right: 4px; font-size: clamp(12px, 18cqw, 16px); }   /* Gunslinger: four tiles a row, see .tile above */
-#app.portrait #oppPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
+#app.portrait #oppPop, #app.portrait #mapPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
 #app.portrait .detail { grid-template-columns: 1fr; flex: none; }
 #app.portrait .d-stage { height: 200px; }
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
@@ -747,7 +776,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .rt .cs-r { justify-content: flex-end; }
 .cs-tn { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* a long tier name gives way, the rating digits never get cut */
 .cs-rn { flex: none; }
-.cs-b { --tc: var(--mute); width: 10px; height: 11px; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--tc); }
+.cs-b { width: 17px; height: 17px; margin-block: -2px; flex: none; display: block; }
 .cs.me { border-color: var(--me); }
 .cs.path { border-color: var(--me); box-shadow: 0 0 0 1px var(--me), 0 0 14px var(--meg); }
 .cs.me .cs-n { color: var(--me); }
@@ -878,7 +907,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pstk" id="mStreak" hidden><span class="stkglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge"></i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pstk" id="mStreak" hidden><span class="stkglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -907,6 +936,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="sel-opts" id="pracOpts" hidden>
           <div class="pickwrap"><button class="chip pick" id="oppPick"></button><div class="pop" id="oppPop" hidden></div></div>
           <div class="pickwrap"><button class="chip pick" id="lvlPick"></button><div class="pop" id="lvlPop" hidden></div></div>
+          <div class="pickwrap"><button class="chip pick" id="mapPick"></button><div class="pop" id="mapPop" hidden></div></div>
         </div>
         <div class="tokpill"><span class="tokglyph"></span><span id="selTokens">0</span></div>
       </header>
@@ -1009,7 +1039,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div class="res-side">
         <div class="res-rank" id="rRank">
-          <div class="badge" id="rBadge">B</div>
+          <div class="badge" id="rBadge"></div>
           <div>
             <div class="rk-tier" id="rTier">Bronze</div>
             <div class="rk-sub" id="rRating"></div>
@@ -1091,7 +1121,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="ac-row"><button class="chip" id="acPicBtn" aria-expanded="false">Picture</button><button class="chip" id="acTitBtn" aria-expanded="false">Title</button></div>
           <div class="ac-pick" id="acPick" hidden></div>
           <div class="ac-rank" id="acRank">
-            <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge">B</i></span>
+            <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge"></i></span>
             <div><div class="rk-tier" id="acTier">Bronze</div><div class="rk-sub" id="acRating"></div></div>
           </div>
           <dl class="ac-stats">
@@ -1346,24 +1376,43 @@ const TUNE = {
   // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
   ultNeed: [100, 120],
   ultMax: 2,
-  ultDealt: 1,
-  ultTaken: 0.5,
-  ultHeart: 10,
+  // (Jonny, 2026-10-14 16:37 UTC: the bar filled too fast; 0.6x of the first numbers 1 / 0.5 / 10)
+  ultDealt: 0.6,
+  ultTaken: 0.3,
+  ultHeart: 6,
   ultFreeze: 30,
+  ultKb: 1.75,     // every ulti hit's knockback, times (Jonny 2026-10-14 20:45 UTC: 75-80% stronger, they hardly ever KO'd)
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
-const STAGE = {
-  main: { x1: -330, x2: 330, top: 0, bottom: 64 },
-  plats: [
-    { x1: -250, x2: -110, y: -125 },
-    { x1: 110, x2: 250, y: -125 },
-    { x1: -70, x2: 70, y: -245 },
-  ],
-  blast: { left: -760, right: 760, top: -650, bottom: 460 },
-  spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }],
-  respawnY: -330,
-};
+// Maps (Jonny, 2026-10-14): each map has its own fight layout; the blast zones are the same everywhere, so KO percents stay fair.
+// main = the one flat floor (grabbable ledges at x1/x2), plats = soft drop-through platforms (inside main's x range).
+// STAGE is the layout in use: useStage(g) points it at g.map's layout at every entry point (newGame, step, botInput), so the
+// rest of the simulation (and the UI, after BL.useStage(G)) reads STAGE as before. g.map is fixed for a match.
+const BLAST = { left: -760, right: 760, top: -650, bottom: 460 };
+const MAPS = [
+  { id: "moon", main: { x1: -330, x2: 330, top: 0, bottom: 64 },
+    plats: [{ x1: -250, x2: -110, y: -125 }, { x1: 110, x2: 250, y: -125 }, { x1: -70, x2: 70, y: -245 }],
+    blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
+  { id: "bay", main: { x1: -280, x2: 280, top: 0, bottom: 64 },
+    plats: [{ x1: -160, x2: 160, y: -110 }, { x1: -55, x2: 55, y: -250 }],
+    blast: BLAST, spawns: [{ x: -150, f: 1 }, { x: 150, f: -1 }], respawnY: -330 },
+  { id: "castle", main: { x1: -380, x2: 380, top: 0, bottom: 64 },
+    plats: [{ x1: -340, x2: -200, y: -165 }, { x1: 200, x2: 340, y: -165 }],
+    blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
+  { id: "fryer", main: { x1: -320, x2: 320, top: 0, bottom: 64 },
+    plats: [{ x1: -250, x2: -130, y: -105 }, { x1: 130, x2: 250, y: -105 }, { x1: -190, x2: -80, y: -225 }, { x1: 80, x2: 190, y: -225 }],
+    blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
+];
+const STAGE = { id: "", map: 0, main: null, plats: null, blast: null, spawns: null, respawnY: 0 };
+function useStage(g) {
+  const i = g && MAPS[g.map] ? g.map : 0;
+  if (STAGE.map === i && STAGE.main) return STAGE;
+  const m = MAPS[i];
+  Object.assign(STAGE, { id: m.id, map: i, main: m.main, plats: m.plats, blast: m.blast, spawns: m.spawns, respawnY: m.respawnY });
+  return STAGE;
+}
+useStage(null);
 
 /* Move constructor. Boxes are circles relative to the fighter's feet:
    [x, y, r] or a sweep [x, y, r, x2, y2]; x points forward, negative y is up.
@@ -1414,7 +1463,7 @@ const FIGHTERS = [
                proj: { style: "fire", speed: 8.5, life: 76, r: 15, ox: 36, oy: -40, grav: 0.03, dmg: 8, bkb: 5.5, kbg: 8, angle: 38,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
       // Solar Dive: up and out of sight (intangible), the spot is picked at mt 15, a comet dive, the blast where it lands
-      ulti:  M(60, 6, 34, 26, 8, 15, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
+      ulti:  M(60, 6, 34, 26, 6, 10, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
     },
   },
   {
@@ -1714,7 +1763,9 @@ function newGame(o) {
     t: 0, phase: "countdown", cd: o.countdown ?? 150, hitstop: 0, timer: (o.time ?? 240) * 60, timed: (o.time ?? 240) > 0, sudden: false,
     fighters: [], projs: [], events: [], winner: -1, endT: 0, endReason: "",
     rng: mulberry32(o.seed ?? ((Math.random() * 1e9) | 0)), stocks: o.stocks ?? 3,
+    map: MAPS[o.map | 0] ? o.map | 0 : 0,
   };
+  useStage(g);
   o.players.forEach((p, i) => {
     const sp = STAGE.spawns[i];
     const f = newFighter(p.spec, i, p.pal, sp.x, sp.f);
@@ -1758,6 +1809,7 @@ function circRect(cx, cy, r, b) {
 /* ---------- main step ---------- */
 function step(g, inputs) {
   if (g.phase === "over") return;
+  useStage(g);
   const live = g.phase === "play";
   const frozen = g.hitstop > 0;
   // Inputs are read even during hitstop so presses made in the freeze are buffered, not lost.
@@ -2380,6 +2432,7 @@ function applyHit(g, h) {
   if (!ultHit) { ultGain(att, dmg * TUNE.ultDealt); ultGain(def, dmg * TUNE.ultTaken); }
   let kb = knockback(hit, def.percent, def.s.weight);
   if (ck) kb *= 1 + TUNE.chgKb * ck;
+  if (ultHit && kb >= TUNE.tumbleKb) kb *= TUNE.ultKb;   // only the launching hits, so a multi-hit ulti still carries its target into the last hit
   let hdir;
   if (h.proj) hdir = sign(h.proj.vx) || h.proj.dir;
   else if (Math.abs(h.lx) < 8) hdir = sign(def.x - att.x) || att.facing;
@@ -2470,7 +2523,7 @@ function escapeInput(f, t, kind) {
 function lethal(g, slot) {
   const snap = serialize(g);
   for (let kind = 0; kind < 4; kind++) {
-    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0 });
+    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0, map: g.map });
     restore(h, snap);
     // projectiles still in the air stay in the look-ahead (a Meteor Shower star or a flame puff still coming is part of the call)
     h.look = true; h.timed = false;
@@ -2591,9 +2644,9 @@ const BOT_STYLES = {
   alchemist: { gap: 1.6, back: 0.4, spec: 1.3, atk: 1.15, heavy: 1.25 },               // stays back and lobs
   odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
-  wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
+  wizard:    { gap: 1.4, back: 0.4, rng: 10, poke: 0.8 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.3, heavy: 1.2 },                           // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.15, heavy: 1.1 },                          // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
@@ -2602,6 +2655,7 @@ function makeBot(level, style) {
 function botInput(g, me, opp, bot) {
   const out = blankInput();
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
+  useStage(g);
   const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
   bot.mem.push({
     x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
@@ -2804,13 +2858,13 @@ function restore(g, s) {
 function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
-  mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
+  mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map);
   for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
 
-root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, useStage, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
 
 </script>
@@ -2885,7 +2939,139 @@ function tierInfo(r) {
   const lo = i === 0 ? 750 : t.min, hi = TIERS[i + 1].min;
   return { i, t, p: clamp((r - lo) / (hi - lo), 0, 1), next: TIERS[i + 1], need: hi - r };
 }
-function paintBadge(el, i) { el.style.setProperty("--tc", TIERS[i].col); el.textContent = TIERS[i].name[0]; }
+/* Rank emblems (Fable's design): one flat cartoon icon per tier, an inline SVG on a 60x60 viewBox. The ladder: a tin lid, a medal,
+   a medal + laurel, a crown, a trophy (sheen), a gem (twinkle), the bomb-tater (turning burst). Outline #1f2238 2.5, one shade, one
+   highlight top-left, everything inside r 27 of the centre so it sits inside the profile pill's progress ring. Platinum and up move
+   a little (.em-* in shell.html, still under prefers-reduced-motion). Each emblem is built once; %U is the per-copy clip-path id. */
+const EM_O = "#1f2238";
+const emN = (v) => Math.round(v * 10) / 10;
+const emP = (x, y) => emN(x) + " " + emN(y);
+// a lumpy potato outline (the Potato Moon's), centre (x, y), size r, turned by a radians
+function emPot(x, y, r, a, sx = 1.2, sy = 0.88) {
+  let d = "";
+  for (let i = 0; i < 30; i++) {
+    const t = (i / 30) * Math.PI * 2, k = 1 + 0.05 * Math.sin(t * 3 + 0.6) + 0.035 * Math.sin(t * 5 + 1.9);
+    const px = Math.cos(t) * r * sx * k, py = Math.sin(t) * r * sy * k;
+    d += (i ? "L" : "M") + emP(x + px * Math.cos(a) - py * Math.sin(a), y + px * Math.sin(a) + py * Math.cos(a));
+  }
+  return d + "Z";
+}
+// a crescent along the inside of circle (x, y, r) from angle a0 to a1 (degrees, 0 = right, 90 = down), w thick in the middle
+function emCres(x, y, r, a0, a1, w) {
+  const pt = (a, rr) => [x + Math.cos(a * Math.PI / 180) * rr, y + Math.sin(a * Math.PI / 180) * rr];
+  const p0 = pt(a0, r), p1 = pt(a1, r), m = pt((a0 + a1) / 2, r - w);
+  return `M${emP(...p0)}A${r} ${r} 0 0 1 ${emP(...p1)}Q${emP(2 * m[0] - (p0[0] + p1[0]) / 2, 2 * m[1] - (p0[1] + p1[1]) / 2)} ${emP(...p0)}Z`;
+}
+// an n-point star (r1 tips, r2 notches), first tip straight up
+function emStar(x, y, n, r1, r2) {
+  let d = "";
+  for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + (i * Math.PI) / n, r = i % 2 ? r2 : r1; d += (i ? "L" : "M") + emP(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  return d + "Z";
+}
+// a disc with a dent pushed into its rim at the top right
+function emDent(x, y, r) {
+  let d = "";
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2, g = Math.atan2(Math.sin(a + 0.86), Math.cos(a + 0.86)), rr = r - 3 * Math.exp(-((g / 0.24) ** 2));
+    d += (i ? "L" : "M") + emP(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  return d + "Z";
+}
+const emDot = (x, y, r, f) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`;
+const emLine = (d, s, w) => `<path d="${d}" fill="none" stroke="${s}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+// a round medal at (x, y), radius r: shade under a slightly smaller face shifted up-left, a highlight crescent, an inner ring
+// (its outline, emRim, goes on last, over whatever sits on the face)
+const emMedal = (x, y, r, col, sh, hi, ring) =>
+  emDot(x, y, r, sh) + emDot(emN(x - 1.1), emN(y - 1.1), emN(r - 2.4), col) + `<path d="${emCres(x, y, r - 3.2, 195, 283, 3)}" fill="${hi}"/>` +
+  `<circle cx="${x}" cy="${y}" r="${ring}" fill="none" stroke="${sh}" stroke-width="2"/>`;
+const emRim = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${EM_O}" stroke-width="2.5"/>`;
+const EMB = [
+  // Tin: a pressed tin lid with a dent in its rim, an embossed potato in the middle
+  () => `<path d="${emDent(30, 30, 23)}" fill="#6c7390"/><path d="${emDent(28.9, 28.9, 20.6)}" fill="#9097ad"/>` +
+    `<path d="${emCres(30, 30, 19.8, 160, 268, 3)}" fill="#c3c8d8"/><circle cx="30" cy="30" r="16" fill="none" stroke="#6c7390" stroke-width="2"/>` +
+    `<path d="${emPot(31, 31, 7.6, -0.35)}" fill="#c3c8d8"/><path d="${emPot(30, 30, 7.6, -0.35)}" fill="#7d849c"/>` +
+    emDot(26.6, 29.4, 1.3, "#6c7390") + emDot(32.8, 28, 1.2, "#6c7390") +
+    emLine("M40.2 17.6q-1.8 1.4-2.4 3.4", "#6c7390", 2) +
+    `<path d="${emDent(30, 30, 23)}" fill="none" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>`,
+  // Bronze: a medal on a ribbon, a potato on its face
+  () => `<g stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"><path d="M33 7h10l-7 18h-10z" fill="#a3472e"/><path d="M17 7h10l7 18h-10z" fill="#c25a3a"/></g>` +
+    `<path d="M21.8 9.5h3.4l5.3 13" fill="none" stroke="#e07a56" stroke-width="2" stroke-linecap="round"/>` +
+    emMedal(30, 37, 16.5, "#cd8f5b", "#a86a3b", "#ecb98a", 11.6) +
+    `<path d="${emPot(30, 37, 5.6, -0.3)}" fill="#a86a3b"/>` + emDot(27.6, 35.6, 1.1, "#cd8f5b") + emDot(32.4, 37.6, 1.1, "#cd8f5b") + emRim(30, 37, 16.5),
+  // Silver: a medal with a star, a laurel around it and a sprout on top
+  () => {
+    const lv = [];   // two laurel branches of 4 leaves, from the bottom up both sides, each leaf along the branch tipped outwards
+    const pt = (a) => emP(30 + Math.cos(a * Math.PI / 180) * 20.5, 33 + Math.sin(a * Math.PI / 180) * 20.5);
+    const stem = `M${pt(118)}A20.5 20.5 0 0 1 ${pt(208)}M${pt(62)}A20.5 20.5 0 0 0 ${pt(-28)}`;
+    for (const s of [1, -1]) for (let k = 0; k < 4; k++) {
+      const a = 90 + s * (30 + k * 31), x = 30 + Math.cos(a * Math.PI / 180) * 20.5, y = 33 + Math.sin(a * Math.PI / 180) * 20.5;
+      lv.push(`<path d="M0 0Q4.6-4.4 10 0Q4.6 4.4 0 0Z" transform="translate(${emN(x)} ${emN(y)}) rotate(${emN(a + s * 90 - s * 34)}) translate(-2.4 0)"/>`);
+    }
+    return `<path d="${stem}" fill="none" stroke="${EM_O}" stroke-width="6.4" stroke-linecap="round"/><g fill="${EM_O}" stroke="${EM_O}" stroke-width="4.4" stroke-linejoin="round">${lv.join("")}</g>` +
+      `<path d="${stem}" fill="none" stroke="#a9b2cc" stroke-width="2" stroke-linecap="round"/><g fill="#a9b2cc">${lv.join("")}</g>` +
+      `<g stroke="${EM_O}" stroke-width="2.2" stroke-linejoin="round"><path d="M30 16c-1-4-4-7-9-8 0 5 3 8 9 8z" fill="#7fbf72"/><path d="M30 16c1-5 4-8 9-9 0 6-3 9-9 9z" fill="#7fbf72"/></g>` +
+      emMedal(30, 33, 17.5, "#c9d0e4", "#8f9ab8", "#f4f6fb", 12.8) +
+      `<path d="${emStar(30, 33.6, 5, 9, 3.9)}" fill="#f4f6fb" stroke="#8f9ab8" stroke-width="2" stroke-linejoin="round"/>` + emRim(30, 33, 17.5);
+  },
+  // Gold: a three-point crown, red gems on the outer tips, a potato for the centre jewel
+  () => `<path d="M12 41L15 18L23.5 30.5L30 12L36.5 30.5L45 18L48 41Z" fill="#f0c35a" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<path d="M16.6 24.5L17.4 38.5H15L15.9 25Z" fill="#fff1b3"/><path d="M29.6 19L27.4 30.5L28.6 38.5H26.2L25.4 31Z" fill="#fff1b3"/>` +
+    `<path d="M45 18L48 41H42.8Z" fill="#c9931c"/><path d="M36.5 30.5L38.3 41H34.6Z" fill="#c9931c"/>` +
+    `<rect x="10.5" y="39" width="39" height="11" rx="2.5" fill="#f0c35a" stroke="${EM_O}" stroke-width="2.5"/><path d="M11.8 45.2H48.2V47.5Q48.2 48.7 47 48.7H13Q11.8 48.7 11.8 47.5Z" fill="#c9931c"/>` +
+    `<path d="M13 41.3H25" stroke="#fff1b3" stroke-width="2" stroke-linecap="round"/>` +
+    `<g stroke="${EM_O}" stroke-width="2.2">${emDot(15, 16.5, 3.4, "#c24747")}${emDot(45, 16.5, 3.4, "#c24747")}${emDot(30, 10.5, 3.6, "#f0c35a")}<path d="${emPot(30, 44.5, 4.6, -0.2)}" fill="#a86a3b"/></g>` +
+    emDot(13.9, 15.4, 1.1, "#ff9d8f") + emDot(28.9, 9.4, 1.2, "#fff1b3") + emDot(28.4, 43.8, 0.9, "#5e3618") + emDot(31.8, 44.6, 0.9, "#5e3618"),
+  // Platinum: a trophy, a potato engraved on the bowl, a sheen sweeping across it
+  (u) => `<defs><clipPath id="emc${u}"><path d="M14 11H46C46 27 39 37 30 39C21 37 14 27 14 11Z"/></clipPath></defs>` +
+    `<path d="M15 14C5 13 5 28 18.5 29M45 14C55 13 55 28 41.5 29" fill="none" stroke="${EM_O}" stroke-width="8" stroke-linecap="round"/>` +
+    `<path d="M15 14C5 13 5 28 18.5 29M45 14C55 13 55 28 41.5 29" fill="none" stroke="#7fd6c8" stroke-width="3" stroke-linecap="round"/>` +
+    `<path d="M26 38h8l2 9h-12z" fill="#7fd6c8" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/><path d="M31.5 38.5h2.3l1.6 8h-2.6z" fill="#3f9d90"/>` +
+    `<rect x="17.5" y="46" width="25" height="8" rx="2" fill="#7fd6c8" stroke="${EM_O}" stroke-width="2.5"/><path d="M34 47.3h6.9v5.4H34z" fill="#3f9d90"/>` +
+    `<g clip-path="url(#emc${u})"><path d="M14 11H46V40H14Z" fill="#7fd6c8"/><path d="M36.5 10H48V40H36.5Q41 27 36.5 10Z" fill="#3f9d90"/>` +
+    `<path d="${emPot(29.5, 22.5, 5.4, -0.3)}" fill="#3f9d90"/>${emDot(27, 21, 1, "#7fd6c8")}${emDot(31.6, 23.4, 1, "#7fd6c8")}` +
+    `<path d="M18.8 14.5C18.8 22 21 28.5 25 32.5" fill="none" stroke="#d9fbf5" stroke-width="3" stroke-linecap="round"/>` +
+    `<g class="em-sheen"><path d="M2 9H11L4 41H-5Z" fill="#fff" opacity="0.38"/></g></g>` +
+    `<path d="M14 11H46C46 27 39 37 30 39C21 37 14 27 14 11Z" fill="none" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<rect x="12" y="8.5" width="36" height="5" rx="2" fill="#7fd6c8" stroke="${EM_O}" stroke-width="2.5"/><path d="M14 10.2H21" stroke="#d9fbf5" stroke-width="2" stroke-linecap="round"/>`,
+  // Diamond: a cut gem set on a potato, two sparkles twinkling
+  () => `<path d="${emPot(30, 49.6, 6, 0.05, 1.25, 0.8)}" fill="#a86a3b" stroke="${EM_O}" stroke-width="2.4"/>` + emDot(25, 51, 1.1, "#5e3618") + emDot(35.2, 50.6, 1.1, "#5e3618") +
+    `<path d="M24.6 46.8q-1.6 1.2-1.4 2.6" fill="none" stroke="#d39a63" stroke-width="1.6" stroke-linecap="round"/>` +
+    `<path d="M20 13H40L48 23L30 48L12 23Z" fill="${EM_O}" stroke="${EM_O}" stroke-width="5" stroke-linejoin="round"/>` +
+    `<path d="M12 23L20 13L24 23Z" fill="#8fb6ff"/><path d="M40 13L48 23H36Z" fill="#5a86e0"/><path d="M20 13H40L36 23H24Z" fill="#c4dbff"/>` +
+    `<path d="M12 23H24L30 48Z" fill="#8fb6ff"/><path d="M36 23H48L30 48Z" fill="#5a86e0"/><path d="M24 23H36L30 48Z" fill="#e4efff"/>` +
+    `<path d="M12 23H48M20 13L24 23L30 48L36 23L40 13" fill="none" stroke="#2a4a9a" stroke-width="1.6" stroke-linejoin="round" opacity="0.75"/>` +
+    `<path d="M22.6 15.2H28.4L26.6 20.5H21.3Z" fill="#fff"/>` +
+    `<path class="em-tw" d="${emStar(46, 9.5, 4, 4.6, 1.3)}" fill="#fff"/><path class="em-tw b" d="${emStar(12.5, 12.5, 4, 3.6, 1.1)}" fill="#fff"/>`,
+  // Blastmaster: the bomb-tater, a lit fuse, a turning burst behind it
+  (u) => `<path class="em-burst" d="${emStar(30, 30, 12, 27, 19.5)}" fill="#ffb347" opacity="0.9"/>` +
+    `<path d="${emStar(30, 30, 12, 23.5, 17)}" fill="#ffe08a" opacity="0.55"/>` +
+    `<defs><clipPath id="emc${u}"><path d="${emPot(29.5, 35, 15, -0.2, 1.14, 0.9)}"/></clipPath></defs>` +
+    `<path d="M37 23C38.5 16.5 43 18 43.5 14" fill="none" stroke="#3b2b2b" stroke-width="3.2" stroke-linecap="round"/>` +
+    `<path d="M32.6 20.6l5.8 0.9-0.8 4.8-5.8-0.9z" fill="#5a4a52" stroke="${EM_O}" stroke-width="2" stroke-linejoin="round"/>` +
+    `<g clip-path="url(#emc${u})"><path d="M0 0H60V60H0Z" fill="#b8432a"/><path d="${emPot(27.8, 33.2, 13.6, -0.2, 1.14, 0.9)}" fill="#ef7a52"/>` +
+    `<path d="${emCres(27.4, 33.6, 12, 190, 258, 2.8)}" fill="#ffb08a"/></g>` +
+    `<path d="M33.5 41.5q2.2 1.6 4.5 0.4M38.5 31.5q1.8 1.4 3.6 0.2M19 39q1.8 1.3 3.8 0.4" fill="none" stroke="#b8432a" stroke-width="2" stroke-linecap="round"/>` +
+    emLine("M23.5 24L26 29L22.5 32.5L27.5 36.5L26 41", "#fff1d6", 2.2) +
+    `<path d="${emPot(29.5, 35, 15, -0.2, 1.14, 0.9)}" fill="none" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<g class="em-spark"><path d="${emStar(43.5, 13, 4, 6, 1.8)}" fill="#ffe08a" stroke="#ef7a52" stroke-width="1"/>${emDot(43.5, 13, 1.6, "#fff")}</g>`,
+];
+let emSvg = null, emSeq = 0;
+// the emblem of tier i as SVG markup (cls: extra classes on the <svg>)
+function tierEmblem(i, cls) {
+  if (!emSvg) emSvg = EMB.map((f) => f("%U"));
+  return `<svg class="em em${i}${cls ? " " + cls : ""}" viewBox="0 0 60 60" aria-hidden="true" focusable="false">${emSvg[i].replace(/%U/g, String(++emSeq))}</svg>`;
+}
+// the emblem as a small labelled badge in markup (the cup bracket)
+const tierBadge = (i, cls) => `<i class="${cls}" role="img" aria-label="${TIERS[i].name} tier" title="${TIERS[i].name}">${tierEmblem(i)}</i>`;
+// paint tier i's emblem into el (the pill, the Account sheet, the results). from < i: a promotion, the old emblem spins out first.
+function paintBadge(el, i, from) {
+  const t = TIERS[i], up = from != null && from >= 0 && from < i;
+  el.style.setProperty("--tc", t.col);
+  el.setAttribute("role", "img"); el.setAttribute("aria-label", `${t.name} tier`); el.title = t.name;
+  el.innerHTML = tierEmblem(i) + (up ? tierEmblem(from, "was") : "");
+  el.classList.remove("promo");
+  if (up) { void el.offsetWidth; el.classList.add("promo"); }
+}
 
 /* ===================== sound (WebAudio, synthesized) ===================== */
 const Sfx = {
@@ -6162,7 +6348,7 @@ function farFries(c, gw, gh, hz) {
   fry(gw * 0.5 + px, hz + 2, u * 0.09, u * 0.022, -0.1);
   fry(gw * 0.95 + px, hz + 2, u * 0.11, u * 0.024, -0.12);
 }
-function drawBackground(c, tk) {
+function moonBg(c, tk) {
   const gw = L.gw, gh = L.gh;
   const hz = gh * 0.7 - (cam.y + 110) * cam.z * 0.16;
   const sky = c.createLinearGradient(0, 0, 0, hz);
@@ -6195,7 +6381,7 @@ function drawBackground(c, tk) {
   }
 }
 
-function drawStage(c, tk) {
+function moonStage(c, tk) {
   const S = STAGE.main;
   // hanging rock body
   c.beginPath();
@@ -6225,6 +6411,1107 @@ function drawStage(c, tk) {
     c.fillStyle = "#d8d2f0"; c.fillRect(p.x1 + 4, p.y, p.x2 - p.x1 - 8, 2.5);
   }
 }
+
+/* ---- maps (Jonny, 2026-10-14): each map has its own fight layout (core.js MAPS, read through STAGE after BL.useStage(g)) and its own
+   look. MAP_ART[id] = { name, bg(c, tk) (screen space, parallax from cam), stage(c, tk) (world space: STAGE.main and STAGE.plats),
+   tick?(g, live) (once per sim frame: ambient particles via addFx / sfx, quiet sounds only when live), ko?(e, live) (the "ko" event
+   {slot, x, y, pal}: a fighter left the blast zone; a map-flavoured splash on top of the usual beam) }. Potato Moon is drawn above; the other maps are in
+   game/maps/<id>.js (spliced in at the MAPS marker below). UI only: nothing here touches the simulation. */
+const MAP_ART = { moon: { name: "Potato Moon", bg: moonBg, stage: moonStage } };
+const mapArt = () => MAP_ART[STAGE.id] || MAP_ART.moon;
+const mapName = (i) => { const m = BL.MAPS[i]; return m && MAP_ART[m.id] ? MAP_ART[m.id].name : "Potato Moon"; };
+function drawBackground(c, tk) { mapArt().bg(c, tk); }
+function drawStage(c, tk) { mapArt().stage(c, tk); }
+/* ---- Spudset Bay (map "bay"): a fishing boat, the "Sweet Potato", on the water at a bright sundown. Fable's design "Map 1: Spudset Bay".
+   bg (screen space, back to front): the sky, the setting sun (glow + disc), long sunset clouds, the sea, the horizon haze, the headland with
+   the salt-shaker lighthouse and two far sails, the sun path, the wave rows, a buoy. stage (world space): the mast, the boom and the crow's
+   nest (the two platforms), the hull with its deck, then the KO splashes (screen space, so they sit on the water at the bottom edge).
+   Gradients are cached by (gw, gh, round(hz)); the clouds are one pre-rendered sprite. UI only: nothing here writes to the game. */
+const BAY = { key: "", sky: null, sea: null, haze: null, glow: null, disc: null, beam: null, refl: null, hull: null, hullP: null, hullK: "", cloud: null, splash: [], wave: 0, gull: 0 };
+function bayGrads(c, gw, gh, hz, u) {
+  const key = gw + "x" + gh + "x" + Math.round(hz);
+  if (BAY.key === key) return BAY;
+  BAY.key = key;
+  const sky = c.createLinearGradient(0, 0, 0, hz);
+  sky.addColorStop(0, "#2b3f7d"); sky.addColorStop(0.4, "#7c5f9c"); sky.addColorStop(0.75, "#e58a68"); sky.addColorStop(1, "#ffd38c");
+  const sea = c.createLinearGradient(0, hz, 0, gh);
+  sea.addColorStop(0, "#e3955f"); sea.addColorStop(0.25, "#3f5f93"); sea.addColorStop(1, "#1b2b52");
+  const haze = c.createLinearGradient(0, hz - u * 0.06, 0, hz + u * 0.03);
+  haze.addColorStop(0, "rgba(255,214,140,0)"); haze.addColorStop(0.67, "rgba(255,214,140,0.35)"); haze.addColorStop(1, "rgba(255,214,140,0)");
+  // the sun's gradients sit at the origin: bayBg translates to the sun, so they only change with u
+  const r = u * 0.17, glow = c.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 3);
+  glow.addColorStop(0, "rgba(255,200,120,0.35)"); glow.addColorStop(1, "rgba(255,200,120,0)");
+  const disc = c.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.1, 0, 0, r);
+  disc.addColorStop(0, "#fff3d6"); disc.addColorStop(0.55, "#ffe9b8"); disc.addColorStop(1, "#ffcf7a");
+  const beam = c.createLinearGradient(0, 0, u * 0.3, 0);
+  beam.addColorStop(0, "rgba(255,230,160,0.32)"); beam.addColorStop(1, "rgba(255,230,160,0)");
+  const refl = c.createRadialGradient(0, 0, 0, 0, 0, r * 1.3);   // the sun's warm reflection on the water (drawn squashed tall)
+  refl.addColorStop(0, "rgba(255,214,140,0.42)"); refl.addColorStop(0.5, "rgba(255,190,110,0.18)"); refl.addColorStop(1, "rgba(255,190,110,0)");
+  Object.assign(BAY, { sky, sea, haze, glow, disc, beam, refl });
+  return BAY;
+}
+// one long flat sunset cloud (seven puffs), lit from below by the sun
+function bayCloudSprite() {
+  if (BAY.cloud) return BAY.cloud;
+  const W = 320, H = 72, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d"), E = [[0.5, 0.7, 0.46, 0.15], [0.12, 0.66, 0.09, 0.14], [0.23, 0.56, 0.12, 0.25], [0.37, 0.46, 0.15, 0.33], [0.53, 0.4, 0.13, 0.35], [0.67, 0.5, 0.13, 0.27], [0.81, 0.6, 0.11, 0.18]];
+  const blob = (dy) => { x.beginPath(); for (const [a, b, rx, ry] of E) { x.moveTo(a * W + rx * W, b * H + dy); x.ellipse(a * W, b * H + dy, rx * W, ry * H, 0, 0, Math.PI * 2); } x.fill(); };
+  x.fillStyle = "#ffc989"; blob(6);   // lit from below by the sun: a gold underside, a coral band, the mauve body, a darker top
+  x.fillStyle = "#ec9888"; blob(3);
+  x.fillStyle = "#b5698c"; blob(0);
+  x.globalCompositeOperation = "source-atop"; x.fillStyle = "rgba(110,66,128,0.26)"; blob(-10);
+  return (BAY.cloud = cv);
+}
+// the lighthouse is a chip-shop salt shaker: a glass body full of salt, a domed cap with six holes; the top hole is the lamp
+// (1 s on, 2 s off), and a grain of salt drops off the cap at every blink. (x, base): the foot; h: the height.
+function bayShaker(c, x, base, h, tk) {
+  const bw = h * 0.6, tw = h * 0.48, gh = h * 0.66, top = base - gh, ph = tk % 180, on = ph < 60;
+  c.save();
+  if (on) {   // the lamp's beam out over the sea, fading in and out
+    const a = Math.min(1, ph / 6, (60 - ph) / 10);
+    c.globalAlpha = a; c.save(); c.translate(x, top - h * 0.24); c.fillStyle = BAY.beam;
+    c.beginPath(); c.moveTo(0, -1); c.lineTo(h * 6, -h * 0.55); c.lineTo(h * 6, h * 0.35); c.closePath(); c.fill(); c.restore();
+    c.globalAlpha = 1;
+  }
+  // glass body with the salt in it
+  c.beginPath(); c.moveTo(x - bw / 2, base); c.lineTo(x - tw / 2, top); c.lineTo(x + tw / 2, top); c.lineTo(x + bw / 2, base); c.closePath();
+  c.fillStyle = "#cdb9d2"; c.fill();
+  c.fillStyle = "#f6eef0"; c.beginPath(); c.moveTo(x - bw / 2, base); c.lineTo(x - bw / 2 + (bw - tw) * 0.35, base - gh * 0.7); c.lineTo(x + bw / 2 - (bw - tw) * 0.35, base - gh * 0.7); c.lineTo(x + bw / 2, base); c.closePath(); c.fill();
+  c.fillStyle = "rgba(255,255,255,0.7)"; c.fillRect(x - tw * 0.32, top + gh * 0.1, Math.max(1, h * 0.06), gh * 0.75);
+  c.lineWidth = Math.max(1, h * 0.05); c.strokeStyle = "#4b3566";
+  c.beginPath(); c.moveTo(x - bw / 2, base); c.lineTo(x - tw / 2, top); c.lineTo(x + tw / 2, top); c.lineTo(x + bw / 2, base); c.closePath(); c.stroke();
+  // the cap: a band and a dome
+  c.fillStyle = "#aeb3c6"; c.fillRect(x - tw / 2 - h * 0.03, top - h * 0.08, tw + h * 0.06, h * 0.09);
+  c.beginPath(); c.ellipse(x, top - h * 0.08, tw / 2, h * 0.22, 0, Math.PI, Math.PI * 2); c.fillStyle = "#c9cddb"; c.fill(); c.stroke();
+  c.fillStyle = "#4b3566";
+  for (const [dx, dy] of [[-0.14, 0.13], [0, 0.13], [0.14, 0.13], [-0.08, 0.2], [0.08, 0.2]]) { c.beginPath(); c.arc(x + dx * h, top - h * dy, Math.max(0.7, h * 0.03), 0, Math.PI * 2); c.fill(); }
+  const lx = x, ly = top - h * 0.255;
+  if (on) { glowDot(c, lx, ly, h * 0.6, 0.85, "#ffe6a0"); c.fillStyle = "#fff6d6"; c.beginPath(); c.arc(lx, ly, Math.max(1.2, h * 0.05), 0, Math.PI * 2); c.fill(); }
+  else { c.fillStyle = "#4b3566"; c.beginPath(); c.arc(lx, ly, Math.max(0.7, h * 0.035), 0, Math.PI * 2); c.fill(); }
+  // the grain of salt, falling off the cap's edge to the foot of the shaker
+  if (ph < 40) { const gy = top - h * 0.06 + 0.018 * ph * ph * (h / 20); if (gy < base) { c.fillStyle = "#ffffff"; c.fillRect(x + tw / 2 + h * 0.06, gy, 2, 2); } }
+  c.restore();
+}
+// a far sail: a small hull and a triangle, tilting on a 4 s swell
+function baySail(c, x, y, s, tk, seed) {
+  c.save(); c.translate(x, y); c.rotate(Math.sin(tk * 0.026 + seed) * 0.05);
+  c.beginPath(); c.moveTo(-s * 0.55, 0); c.lineTo(s * 0.55, 0); c.lineTo(s * 0.4, s * 0.18); c.lineTo(-s * 0.42, s * 0.18); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(-s * 0.05, -s); c.lineTo(-s * 0.05, -s * 0.06); c.lineTo(-s * 0.48, -s * 0.06); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(s * 0.04, -s * 0.86); c.lineTo(s * 0.04, -s * 0.06); c.lineTo(s * 0.38, -s * 0.06); c.closePath(); c.fill();
+  c.restore();
+}
+function bayBg(c, tk) {
+  const gw = L.gw, gh = L.gh, u = Math.min(gw, gh), up = L.portrait, z = cam.z, s = u / 390;
+  const hz = gh * 0.7 - (cam.y + 110) * z * 0.16, par = (k) => -cam.x * z * k;
+  const B = bayGrads(c, gw, gh, hz, u);
+  c.fillStyle = B.sky; c.fillRect(0, 0, gw, Math.max(0, hz) + 1);
+  // the sun: half set, pale gold, the glow does the brightness
+  const r = u * 0.17, sx = gw * (up ? 0.72 : 0.78) + par(0.04), sy = hz - r * 0.2;
+  c.save(); c.translate(sx, sy);
+  c.fillStyle = B.glow; c.fillRect(-r * 3, -r * 3, r * 6, r * 6);
+  c.fillStyle = B.disc; c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fill();
+  const spr = bayCloudSprite();   // two thin streaks of cloud across the sun (the same sprite, stretched flat)
+  c.globalAlpha = 0.85; c.drawImage(spr, -r * 1.5, -r * 0.62, r * 2.6, r * 0.2); c.drawImage(spr, -r * 0.4, -r * 0.3, r * 1.9, r * 0.14);
+  c.globalAlpha = 1;
+  c.restore();
+  // clouds: long and flat, drifting right and wrapping
+  const CL = up ? [[0.3, 0.15, 0.1], [0.2, 0.3, 0.6], [0.25, 0.45, 0.25], [0.22, 0.6, 0.8]] : [[0.3, 0.25, 0.12], [0.2, 0.4, 0.62], [0.25, 0.55, 0.36]];
+  CL.forEach(([w, yk, x0], i) => {
+    const cw = u * w, ch = cw * 0.22, span = gw + cw, x = ((((x0 * gw + tk * 0.05 * s + par(0.03)) % span) + span) % span) - cw;
+    if (i % 2) { c.save(); c.translate(x + cw, 0); c.scale(-1, 1); c.drawImage(spr, 0, hz * yk - ch / 2, cw, ch); c.restore(); }
+    else c.drawImage(spr, x, hz * yk - ch / 2, cw, ch);
+  });
+  // the sea (the haze along the horizon goes over the far shore, below)
+  c.fillStyle = B.sea; c.fillRect(0, hz, gw, gh - hz + 1);
+  // the far shore: a headland on the left with the salt-shaker lighthouse; two sails out on the water
+  // (upright the deck sits ~40 px above the horizon and the hull hides it: the headland is a taller cliff there so it shows behind the bow)
+  const hw = gw * (up ? 0.4 : 0.28), hh = gh * (up ? 0.13 : 0.07), hx = par(0.07) - hw * 0.08;
+  c.fillStyle = "#4b3566";
+  c.beginPath(); c.moveTo(hx - hw * 0.1, hz + 1); c.lineTo(hx - hw * 0.1, hz - hh * 0.75);
+  c.quadraticCurveTo(hx + hw * 0.25, hz - hh * 1.15, hx + hw * 0.62, hz - hh); c.quadraticCurveTo(hx + hw * 0.74, hz - hh * 0.98, hx + hw * 0.78, hz - hh * 0.6);
+  c.quadraticCurveTo(hx + hw * 0.86, hz - hh * 0.1, hx + hw, hz + 1); c.closePath(); c.fill();
+  const shH = u * (up ? 0.06 : 0.065);
+  bayShaker(c, hx + hw * 0.6, hz - hh * 0.99, shH, tk);
+  // the sails sit on the horizon, which is the deck line in landscape: behind the boat they would read as things on the deck, so they
+  // fade out over the boat's span on screen. They drift in from the right edge, past the sun.
+  c.fillStyle = "#4b3566";
+  const S = STAGE.main, b1 = gw / 2 + (S.x1 - 30 - cam.x) * z, b2 = gw / 2 + (S.x2 + 30 - cam.x) * z, fw = gw * 0.03;
+  for (let i = 0; i < (up ? 1 : 2); i++) {
+    const rng = gw * 0.5, d = (((i * 0.5 + 0.16) * rng + tk * 0.02 * s) % rng), x = gw * 1.04 - d + par(0.07);
+    const a = Math.min(1, d / fw, (rng - d) / fw, Math.max(0, b1 - x, x - b2) / fw);
+    if (a <= 0.02) continue;
+    c.globalAlpha = a; baySail(c, x, hz - 1, u * (i ? 0.026 : 0.032), tk, i * 2.3);
+  }
+  c.globalAlpha = 1;
+  c.fillStyle = B.haze; c.fillRect(0, hz - u * 0.06, gw, u * 0.09);
+  // the sun path: a warm glow on the water under the sun and shimmer bars in it
+  c.save(); c.translate(sx, hz); c.scale(1, up ? 3 : 2.4); c.fillStyle = B.refl; c.fillRect(-r * 1.3, 0, r * 2.6, r * 1.3); c.restore();
+  for (let i = 0; i < 10; i++) {
+    const y = hz + 3 + (i * i * 2.6 + i * 3) * (up ? 1.4 : 1) * Math.max(0.8, s);
+    if (y > gh) break;
+    const wd = r * (1.5 - i * 0.11) * (0.75 + 0.25 * Math.sin(tk * 0.035 + i * 1.7));
+    c.fillStyle = `rgba(255,224,168,${0.5 - i * 0.04})`; c.fillRect(sx - wd / 2 + Math.sin(tk * 0.02 + i * 2.3) * r * 0.08, y, wd, 2);
+  }
+  // wave crests: rows of short bumps sliding left, each row with its own parallax
+  const WV = [[0.05, 0.12, 0.3, 0.5, 1.6, 0.22], [0.12, 0.18, 0.45, 0.62, 2.2, 0.26], [0.22, 0.25, 0.6, 0.75, 2.8, 0.28]];
+  if (up) WV.push([0.36, 0.32, 0.75, 0.85, 3.2, 0.26]);
+  const bw = gw / 10;
+  c.lineWidth = 1.5; c.lineCap = "round";
+  WV.forEach(([yk, k, sp, wk, amp, al], row) => {
+    const y = hz + u * yk;
+    if (y > gh) return;
+    const off = tk * sp * s - par(k), j0 = Math.floor(off / bw) - 1, j1 = Math.floor((off + gw) / bw) + 1;
+    c.strokeStyle = `rgba(255,230,200,${al})`; c.beginPath();
+    for (let j = j0; j <= j1; j++) {
+      const n = nz(j * 3.7 + row * 11.3);
+      if (n < 0.28) continue;
+      const w = bw * wk * (0.7 + 0.3 * n), x = j * bw - off + (n - 0.5) * bw * 0.4, a = amp * s * (0.75 + 0.25 * n);
+      c.moveTo(x, y); c.quadraticCurveTo(x + w / 2, y - a * 2, x + w, y);
+    }
+    c.stroke();
+  });
+  // a red-and-white buoy, close by, bobbing
+  const bx = gw * 0.9 + par(0.6), by = hz + u * (up ? 0.2 : 0.17) + Math.sin(tk * 0.035) * 2 * s, br = u * 0.03;
+  if (bx > -br * 3 && bx < gw + br * 3) {
+    c.fillStyle = "rgba(223,246,255,0.35)"; c.beginPath(); c.ellipse(bx, by + br * 0.2, br * 1.6, br * 0.35, 0, 0, Math.PI * 2); c.fill();
+    c.lineWidth = Math.max(1.2, br * 0.12); c.strokeStyle = OUT;
+    c.beginPath(); c.moveTo(bx, by - br * 1.1); c.lineTo(bx, by - br * 1.9); c.stroke();
+    c.beginPath(); c.moveTo(bx - br, by + br * 0.2); c.quadraticCurveTo(bx - br, by - br * 1.3, bx, by - br * 1.3); c.quadraticCurveTo(bx + br, by - br * 1.3, bx + br, by + br * 0.2); c.closePath();
+    c.fillStyle = "#d24a3a"; c.fill();
+    c.save(); c.clip(); c.fillStyle = "#f6efe2"; c.fillRect(bx - br, by - br * 0.75, br * 2, br * 0.42); c.restore();
+    c.stroke();
+    glowDot(c, bx, by - br * 2, br * 0.9, 0.5 + 0.4 * Math.sin(tk * 0.09), "#ffd38c");
+  }
+}
+
+// the boat. Platforms: the wide low one is the boom (a round yard with a furled sail under it), the high one the crow's nest.
+function bayStage(c, tk) {
+  const S = STAGE.main, P = STAGE.plats;
+  let top = P[0];
+  for (const p of P) if (p.y < top.y) top = p;
+  // the mast (behind everything, thin and mid-dark; nothing on it in the fighters' band), up to the nest's underside
+  c.beginPath(); c.rect(-3.5, top.y + 10, 7, -top.y - 10);
+  c.fillStyle = "#7f5a35"; c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
+  c.fillStyle = "rgba(255,214,150,0.35)"; c.fillRect(-2.2, top.y + 12, 1.6, -top.y - 14);
+  // stays from under the nest to the bow and stern, faint
+  c.strokeStyle = "rgba(60,36,30,0.4)"; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(-2, top.y + 14); c.lineTo(S.x1 + 14, S.top - 3); c.moveTo(2, top.y + 14); c.lineTo(S.x2 - 14, S.top - 3); c.stroke();
+  // the rope coil at the mast's foot
+  c.lineWidth = 1.4; c.strokeStyle = OUT;
+  for (const [y, rx] of [[-3, 13], [-6.5, 11], [-10, 8.5]]) { c.beginPath(); c.ellipse(0, y, rx, 3.2, 0, 0, Math.PI * 2); c.fillStyle = "#d9b77c"; c.fill(); c.stroke(); }
+  // platforms
+  for (const p of P) {
+    const w = p.x2 - p.x1, mx = (p.x1 + p.x2) / 2, gy = p.y + 18 + Math.sin(tk * 0.03 + p.x1) * 2, nest = p === top && P.length > 1;
+    c.fillStyle = "rgba(255,200,140,0.14)"; c.beginPath(); c.ellipse(mx, gy, w * 0.4, 5, 0, 0, Math.PI * 2); c.fill();
+    if (!nest) {
+      // the furled sail: cloth rolled and hanging in scallops under the yard
+      c.beginPath(); c.moveTo(p.x1 + 8, p.y + 8);
+      const n = Math.max(3, Math.round((w - 16) / 26)), sw = (w - 16) / n;
+      for (let i = 0; i < n; i++) c.quadraticCurveTo(p.x1 + 8 + sw * (i + 0.5), p.y + 20, p.x1 + 8 + sw * (i + 1), p.y + 8);
+      c.closePath(); c.fillStyle = "#f1e4c8"; c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
+      c.beginPath(); c.roundRect(p.x1, p.y - 1, w, 11, 5.5);
+      c.fillStyle = "#a67a48"; c.fill();
+      c.fillStyle = "rgba(94,65,38,0.55)"; c.fillRect(p.x1 + 3, p.y + 6, w - 6, 3);
+      c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+      c.fillStyle = "#e8c384"; c.fillRect(p.x1 + 4, p.y, w - 8, 2.5);
+      // rope lashings round the yard and the sail
+      c.strokeStyle = "rgba(17,16,28,0.4)"; c.lineWidth = 1.2;
+      for (const lx of [p.x1 + w * 0.18, mx, p.x2 - w * 0.18]) { c.beginPath(); for (const d of [-3, 0, 3]) { c.moveTo(lx + d - 1, p.y + 2.5); c.lineTo(lx + d + 1, p.y + 14); } c.stroke(); }
+    } else {
+      // the crow's nest: a round-ended plank with a rope trim, a pennant flapping at its left end
+      const fx = p.x1 + 5, fy = p.y - 1, fl = Math.sin(tk * 0.12);
+      c.lineWidth = 1.6; c.strokeStyle = OUT; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx, fy - 26); c.stroke();
+      c.beginPath(); c.moveTo(fx, fy - 26); c.quadraticCurveTo(fx - 9, fy - 23 + fl * 2, fx - 17, fy - 21 + fl * 3.5); c.quadraticCurveTo(fx - 9, fy - 18 + fl * 1.5, fx, fy - 16); c.closePath();
+      c.fillStyle = "#b4533c"; c.fill(); c.lineWidth = 1.4; c.stroke();
+      c.beginPath(); c.roundRect(p.x1, p.y - 1, w, 11, 5.5);
+      c.fillStyle = "#c89a5e"; c.fill(); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+      c.fillStyle = "#e8c384"; c.fillRect(p.x1 + 4, p.y, w - 8, 2.5);
+      c.strokeStyle = "#f3d9a4"; c.lineWidth = 2; c.beginPath(); c.moveTo(p.x1 + 6, p.y + 6.5); c.lineTo(p.x2 - 6, p.y + 6.5); c.stroke();
+      c.strokeStyle = "rgba(127,90,53,0.8)"; c.lineWidth = 1; c.beginPath();
+      for (let x = p.x1 + 9; x < p.x2 - 6; x += 5) { c.moveTo(x, p.y + 5.4); c.lineTo(x - 2, p.y + 7.6); }
+      c.stroke();
+    }
+  }
+  // the hull
+  if (!BAY.hull) { BAY.hull = c.createLinearGradient(0, 0, 0, 64); BAY.hull.addColorStop(0, "#a67a48"); BAY.hull.addColorStop(1, "#5e4126"); }
+  const X2 = S.x2, X1 = S.x1, T = S.top, hk = X1 + "," + X2 + "," + T;
+  if (BAY.hullK !== hk) {   // the hull's outline only changes with the layout
+    const h = new Path2D();
+    h.moveTo(X1, T); h.lineTo(X2, T); h.lineTo(X2 + 6, T + 14); h.lineTo(X2 - 8, T + 48); h.lineTo(X2 - 50, T + 64);
+    h.lineTo(X1 + 50, T + 64); h.lineTo(X1 + 8, T + 48); h.lineTo(X1 - 6, T + 14); h.closePath();
+    BAY.hullP = h; BAY.hullK = hk;
+  }
+  // its shadow on the water, then the hull: planks, the bumper stripe, the red waterline
+  c.fillStyle = "rgba(20,28,60,0.3)"; c.beginPath(); c.ellipse((X1 + X2) / 2, T + 68, (X2 - X1) / 2 - 30, 7, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = BAY.hull; c.fill(BAY.hullP);
+  c.save(); c.clip(BAY.hullP);
+  c.strokeStyle = "rgba(17,16,28,0.35)"; c.lineWidth = 2; c.beginPath();
+  for (const y of [16, 32, 48]) { c.moveTo(X1 - 10, T + y); c.lineTo(X2 + 10, T + y); }
+  c.stroke();
+  c.strokeStyle = "rgba(255,214,150,0.18)"; c.lineWidth = 1; c.beginPath();
+  for (const y of [17.5, 33.5]) { c.moveTo(X1 - 10, T + y); c.lineTo(X2 + 10, T + y); }
+  c.stroke();
+  c.fillStyle = "#f1e4c8"; c.fillRect(X1 - 10, T + 10.5, X2 - X1 + 20, 3);
+  c.fillStyle = "#b4533c"; c.fillRect(X1 - 10, T + 52, X2 - X1 + 20, 13);
+  c.fillStyle = "rgba(255,190,140,0.35)"; c.fillRect(X1 - 10, T + 52, X2 - X1 + 20, 1.5);
+  c.restore();
+  c.lineWidth = 3; c.lineJoin = "round"; c.strokeStyle = OUT; c.stroke(BAY.hullP);
+  // her name on the bow
+  c.font = '800 11px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center"; c.fillStyle = "rgba(241,228,200,0.9)";
+  c.fillText("SWEET POTATO", X2 - 135, T + 44);
+  // portholes and tyre fenders
+  for (const px of [-200, -90, 90, 200]) {
+    c.beginPath(); c.arc(px, T + 30, 6, 0, Math.PI * 2); c.fillStyle = "#c4c8d2"; c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
+    c.beginPath(); c.arc(px, T + 30, 3.8, 0, Math.PI * 2); c.fillStyle = "#3f5f93"; c.fill();
+    c.fillStyle = "#ffd38c"; c.beginPath(); c.arc(px - 1.2, T + 28.8, 1.3, 0, Math.PI * 2); c.fill();
+  }
+  for (const tx of [X1 + 30, X2 - 30]) {
+    c.strokeStyle = "#d9b77c"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(tx, T + 4); c.lineTo(tx, T + 13); c.stroke();
+    c.beginPath(); c.arc(tx, T + 22, 9, 0, Math.PI * 2); c.lineWidth = 7; c.strokeStyle = OUT; c.stroke(); c.lineWidth = 4.5; c.strokeStyle = "#2e2a33"; c.stroke();
+    c.beginPath(); c.arc(tx, T + 22, 9, Math.PI * 1.1, Math.PI * 1.5); c.lineWidth = 1.5; c.strokeStyle = "rgba(255,214,150,0.45)"; c.stroke();
+  }
+  // foam along the waterline (y 58..66), drifting, tapering where the water meets the hull's ends: the boat floats
+  const fa = X1 + 38, fb = X2 - 38, off = tk * 0.2;
+  c.beginPath();
+  for (let i = Math.floor(off / 11), x = fa + i * 11 - off; x < fb; i++, x += 11) {
+    const k = Math.min(1, (x - fa) / 34, (fb - x) / 34);
+    if (k <= 0.05) continue;
+    const n = nz(i * 1.37), rx = (7 + 2.5 * n) * k, ry = (2.2 + 1.2 * n) * k, cy = T + 61.5 + (n - 0.5) * 1.6;
+    c.moveTo(x + rx, cy); c.ellipse(x, cy, rx, ry, 0, 0, Math.PI * 2);
+  }
+  c.fillStyle = "rgba(223,246,255,0.62)"; c.fill();
+  // the deck edge (the lip), plank gaps, cleats on the corners as the ledge marks
+  c.beginPath(); c.roundRect(X1 - 4, T - 3, X2 - X1 + 8, 12, 5);
+  c.fillStyle = "#c89a5e"; c.fill(); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+  c.fillStyle = "#e8c384"; c.fillRect(X1, T - 2, X2 - X1, 3);
+  c.strokeStyle = "rgba(17,16,28,0.3)"; c.lineWidth = 1.2; c.beginPath();
+  for (let x = X1 + 40; x < X2 - 10; x += 40) { c.moveTo(x, T + 1.5); c.lineTo(x, T + 8); }
+  c.stroke();
+  for (const cx of [X1, X2]) { c.beginPath(); c.roundRect(cx - 5, T - 6, 10, 4, 2); c.fillStyle = "#f3d9a4"; c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke(); }
+  baySplashes(c, tk);
+}
+
+// a bottom KO: a splash on the water at the screen's bottom edge, under where the fighter went down (ring, spout, 8 drops)
+function bayKo(e, live) {
+  if (e.y <= STAGE.blast.bottom - 40) return;
+  BAY.splash.push({ x: e.x, t0: tick, d: Array.from({ length: 8 }, (_, i) => ({ a: -Math.PI / 2 + (i / 7 - 0.5) * 1.9 + (Math.random() - 0.5) * 0.15, v: 4 + Math.random() * 3.2, r: 3 + Math.random() * 2 })) });
+  if (BAY.splash.length > 4) BAY.splash.shift();
+  if (live) { Sfx.noise(0.15, 0.2, 600); Sfx.tone(320, 110, 0.18, "sine", 0.2); }
+}
+function baySplashes(c, tk) {
+  if (!BAY.splash.length) return;
+  const gw = L.gw, gh = L.gh, u = Math.min(gw, gh), s = u / 390, y0 = gh - u * 0.08;
+  c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  for (let i = BAY.splash.length - 1; i >= 0; i--) {
+    const q = BAY.splash[i], t = tk - q.t0;
+    if (t < 0 || t > 40) { BAY.splash.splice(i, 1); continue; }
+    const x = clamp(gw / 2 + (q.x - cam.x) * cam.z, u * 0.1, gw - u * 0.1);
+    if (t <= 25) {
+      const k = t / 25, r = (10 + 50 * (1 - (1 - k) * (1 - k))) * s;
+      c.globalAlpha = 1 - k; c.strokeStyle = "#dff6ff"; c.lineWidth = 3 * (1 - k) + 1;
+      c.beginPath(); c.ellipse(x, y0, r, r * 0.32, 0, 0, Math.PI * 2); c.stroke();
+    }
+    if (t <= 24) {   // the spout
+      const k = t / 24, hgt = 46 * s * Math.sin(k * Math.PI), wd = 9 * s * (1 - k * 0.5);
+      c.globalAlpha = 0.85 * (1 - k * 0.6); c.fillStyle = "#dff6ff";
+      c.beginPath(); c.moveTo(x - wd, y0); c.quadraticCurveTo(x - wd * 0.3, y0 - hgt * 0.6, x, y0 - hgt); c.quadraticCurveTo(x + wd * 0.3, y0 - hgt * 0.6, x + wd, y0); c.closePath(); c.fill();
+    }
+    if (t <= 30) {
+      c.globalAlpha = Math.min(1, (30 - t) / 10); c.fillStyle = "#dff6ff";
+      for (const d of q.d) {
+        const dx = x + Math.cos(d.a) * d.v * s * t, dy = y0 + Math.sin(d.a) * d.v * s * t + 0.15 * s * t * t;
+        if (dy > y0 + 4) continue;
+        c.beginPath(); c.arc(dx, dy, d.r * s, 0, Math.PI * 2); c.fill();
+      }
+    }
+  }
+  c.restore();
+}
+// ambience, only in a live match with the sound on: a soft wash of waves swelling every 5 s, a gull now and then
+function bayTick(g, live) {
+  if (!live || !Sfx.ok()) return;
+  if (tick >= BAY.wave || BAY.wave - tick > 600) { bayWash(); BAY.wave = tick + 300; }
+  if (!BAY.gull || BAY.gull - tick > 1300 || tick - BAY.gull > 30) BAY.gull = tick + 300 + Math.random() * 600;   // first one 5-15 s in
+  else if (tick >= BAY.gull) { Sfx.tone(1700, 1150, 0.12, "sine", 0.03); Sfx.later(200, () => Sfx.tone(1650, 1100, 0.12, "sine", 0.026)); BAY.gull = tick + 720 + Math.random() * 480; }
+}
+function bayWash() {
+  const A = Sfx, ac = A.ctx, t = ac.currentTime, src = ac.createBufferSource(), f = ac.createBiquadFilter(), gn = ac.createGain(), v = 0.032;
+  src.buffer = A.noiseBuf; src.loop = true; f.type = "lowpass"; f.frequency.value = 400; f.Q.value = 0.5;
+  gn.gain.setValueAtTime(0.0001, t); gn.gain.linearRampToValueAtTime(v * 0.3, t + 0.4); gn.gain.linearRampToValueAtTime(v, t + 2.5);
+  gn.gain.linearRampToValueAtTime(v * 0.3, t + 4.8); gn.gain.linearRampToValueAtTime(0.0001, t + 5.3);
+  src.connect(f); f.connect(gn); gn.connect(A.out); src.start(t, Math.random() * 0.5); src.stop(t + 5.4);
+}
+MAP_ART.bay = { name: "Spudset Bay", bg: bayBg, stage: bayStage, tick: bayTick, ko: bayKo };
+
+/* ---- Hashbrown Keep (Jonny: "one in a castle style at day light"; Fable's design: maps-ranks/fable-design.md, Map 2) ----
+   A castle on a summer day. Back to front: a blue sky with a small sun and cumulus clouds, green hills with a trebuchet on the far left
+   one (it lobs a potato over the keep every 8 s), a tree line, the keep (a roofed central tower, a curtain wall and two flanking
+   towers whose tops were blasted off), the moat with lily pads and a duck. The stage is the wall walk (ashlar, arches underneath,
+   banners); the two side platforms are the blasted tower tops, hovering on the court wizard's spell. Daylight that still reads: the
+   sky top stays a mid blue (white sparks and the HUD read on it) and the band the fighters stand in keeps mid, saturated colours.
+   UI only: nothing here touches the simulation. Gradients are cached by size and horizon, the clouds and the sun are sprites. */
+MAP_ART.castle = (() => {
+  const SKY = [[0, "#4f8ed6"], [0.7, "#8fc2ea"], [1, "#b8dcf2"]], CLOUD = "#eef4fa", CLOUD_SH = "#c3d4e2", HILL_FAR = "#6f9d64", HILL = "#4e7f4a", TREE = "#3f6b3c";
+  const KEEP_HI = "#c3aa80", KEEP_SH = "#9c845f";   // the keep, a shade under the stage's stone so the fighters stand out on it
+  const STONE_HI = "#cdb68b", STONE = "#a8906a", STONE_SH = "#7d6a4c", FLAG_TOP = "#ebdcb4", ROOF = "#b4533c", ROOF_SH = "#8e3f2d";
+  const BANNER = "#c23f3a", GOLD = "#f0c35a", MOAT = "#4f8aa6", MOAT_DEEP = "#28506a", SPLASH = "#d8eef5";
+  const C = { g: null, skyK: "", sky: null, moat: null, body: null, cloud: null, sun: null, sunU: 0, splash: [], flap: 0, duckOn: false, bird: 300, gust: 90, gustSrc: null };
+  const TAU = Math.PI * 2;
+
+  // ---- sprites (made once) ----
+  function cloudSprite() {
+    if (C.cloud) return C.cloud;
+    const cv = document.createElement("canvas"); cv.width = 256; cv.height = 112;
+    const x = cv.getContext("2d");
+    const puffs = [[70, 72, 30], [108, 52, 38], [150, 46, 34], [186, 66, 28], [126, 74, 30]];
+    x.fillStyle = CLOUD_SH;   // the shaded base, a little lower
+    for (const [px, py, r] of puffs) { x.beginPath(); x.arc(px, py + 8, r, 0, TAU); x.fill(); }
+    x.beginPath(); x.roundRect(42, 70, 172, 30, 15); x.fill();
+    x.fillStyle = CLOUD;
+    for (const [px, py, r] of puffs) { x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill(); }
+    C.cloud = cv;
+    return cv;
+  }
+  function sunSprite(r) {
+    if (C.sun && Math.abs(C.sunU - r) < 0.5) return C.sun;
+    const S = Math.ceil(r * 5 * 2) + 4, cv = document.createElement("canvas"); cv.width = cv.height = S;
+    const x = cv.getContext("2d"), m = S / 2, k = 2;   // drawn at 2x
+    const g = x.createRadialGradient(m, m, r * k * 0.8, m, m, r * k * 2.5);
+    g.addColorStop(0, "rgba(255,240,190,0.3)"); g.addColorStop(1, "rgba(255,240,190,0)");
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+    x.fillStyle = "#fff0bc"; x.beginPath(); x.arc(m, m, r * k, 0, TAU); x.fill();   // pale gold, not white: white is for the sparks
+    C.sun = cv; C.sunU = r;
+    return cv;
+  }
+
+  // ---- background (screen space) ----
+  // the HUD cards sit in the top corners over a see-through panel: a cloud fades out before it drifts in behind one
+  function hudFade(x, y, w, h, gw, up) {
+    const cw = up ? gw * 0.35 : clamp(gw * 0.21, 140, 200), ch = up ? 132 : 100;
+    if (y - h * 0.4 > ch) return 1;
+    return clamp((Math.min(x - w * 0.5 - cw, gw - cw - (x + w * 0.5)) + 6) / 40, 0, 1);
+  }
+  function bg(c, tk) {
+    const gw = L.gw, gh = L.gh, u = Math.min(gw, gh), s = u / 390, up = L.portrait;
+    const hz = gh * 0.7 - (cam.y + 110) * cam.z * 0.16, P = (k) => -cam.x * cam.z * k;
+    const bank = gh * 0.012, lift = up ? u * 0.12 : 0;   // upright, the stage sits ~40 px above the horizon: the far scenery stands taller
+    if (C.gustSrc && (paused || mode !== "match" || FIN.on)) gustStop();   // the breeze never outlives the match
+    // sky
+    const key = gw + "x" + gh + ":" + Math.round(hz);
+    if (C.skyK !== key) {
+      C.skyK = key;
+      C.sky = c.createLinearGradient(0, 0, 0, hz); for (const [k, v] of SKY) C.sky.addColorStop(k, v);
+      C.moat = c.createLinearGradient(0, hz + bank, 0, gh); C.moat.addColorStop(0, MOAT); C.moat.addColorStop(1, MOAT_DEEP);
+    }
+    c.fillStyle = C.sky; c.fillRect(0, 0, gw, Math.max(0, hz) + 1);
+    // the sun: small and pale, high up between the HUD cards
+    { const r = u * 0.05, sp = sunSprite(r), d = sp.width / 2; c.drawImage(sp, gw * (up ? 0.49 : 0.27) + P(0.01) - d / 2, hz * (up ? 0.2 : 0.17) - d / 2, d, d); }
+    // clouds, above the fight
+    const cs = cloudSprite();
+    for (const [x0, yk, wk] of up ? [[0.1, 0.4, 0.26], [0.5, 0.47, 0.2], [0.8, 0.36, 0.24]] : [[0.1, 0.12, 0.26], [0.44, 0.2, 0.22], [0.68, 0.36, 0.16], [0.9, 0.46, 0.2]]) {
+      const w = u * wk, h = w * (112 / 256), span = gw + w * 2;
+      const x = ((((x0 * span + tk * 0.06 * s + P(0.03)) % span) + span) % span) - w, y = hz * yk, a = hudFade(x + w / 2, y, w, h, gw, up);
+      if (a <= 0) continue;
+      c.globalAlpha = a; c.drawImage(cs, x, y - h * 0.5, w, h);
+    }
+    c.globalAlpha = 1;
+    // far hills, the trebuchet on the left one
+    c.fillStyle = HILL_FAR;
+    const hills = up ? [[0.18, 0.8, 0.07], [0.86, 0.75, 0.05]] : [[0.1, 0.5, 0.11], [0.5, 0.55, 0.08], [0.9, 0.5, 0.12]];
+    for (const [hx, hw, hh] of hills) {
+      const x = hx * gw + P(0.06), w = hw * gw, h = hh * gh + lift;
+      c.beginPath(); c.moveTo(x - w * 0.7, hz + bank);
+      c.bezierCurveTo(x - w * 0.35, hz - h * 0.2, x - w * 0.25, hz - h, x, hz - h);
+      c.bezierCurveTo(x + w * 0.25, hz - h, x + w * 0.35, hz - h * 0.2, x + w * 0.7, hz + bank); c.fill();
+    }
+    const h0 = hills[0], tbx = h0[0] * gw + P(0.06), tby = hz - h0[2] * gh - lift + 1;
+    const kx = gw * 0.5 + P(0.3), kw = u * 0.2, kH = Math.min(u * 0.42, hz * 0.55);
+    const tOff = up ? gw * 0.3 : u * 0.24, wallH = u * 0.11 + lift;
+    trebuchet(c, tbx, tby, s, tk, kx - (tOff + kw * 0.5) * 0.52, hz - wallH * 0.45, hz * 0.35);
+    // near hills and the tree line (the far bank of the moat)
+    { const bh = gh * 0.04 + lift * 0.8, ox = P(0.1), per = 260 * s, top = (wx) => hz - bh * (0.75 + 0.25 * Math.sin(wx / per * TAU));
+      c.fillStyle = HILL; c.beginPath(); c.moveTo(0, hz + bank);
+      for (let x = 0; x <= gw + 20; x += 20) c.lineTo(x, top(x - ox));
+      c.lineTo(gw, hz + bank); c.closePath(); c.fill();
+      c.fillStyle = TREE; const span = gw + 60;
+      for (let i = 0; i < 12; i++) {
+        const r = u * (0.012 + 0.008 * nz(i * 3.7 + 1)), x = ((((i / 12) * span + nz(i * 5.1) * 30 + ox) % span) + span) % span - 30, y = top(x - ox);
+        c.beginPath(); c.arc(x, y - r * 0.6, r, 0, TAU); c.arc(x + r * 0.8, y - r * 0.2, r * 0.75, 0, TAU); c.fill();
+      }
+    }
+    keep(c, tk, kx, hz + bank, u, s, kw, kH + bank, tOff, wallH + bank, u * 0.26 + bank + lift * 0.4);
+    // the moat
+    c.fillStyle = C.moat; c.fillRect(0, hz + bank, gw, gh - hz - bank);
+    const wt = hz + bank, wh = gh - wt;
+    c.strokeStyle = "rgba(220,240,250,0.25)"; c.lineWidth = 1.5;
+    for (const [f, k, sp] of up ? [[0.08, 0.12, 0.15], [0.4, 0.2, 0.25], [0.72, 0.28, 0.32]] : [[0.1, 0.12, 0.15], [0.62, 0.2, 0.25]]) {
+      const y = wt + wh * f, bw = gw / 10, off = (((tk * sp * s - P(k)) % bw) + bw) % bw, a = 2 + f * 2;
+      c.beginPath(); c.moveTo(-bw - off, y);
+      for (let x = -bw - off; x < gw + bw; x += bw) c.quadraticCurveTo(x + bw * 0.5, y - a, x + bw, y);
+      c.stroke();
+    }
+    // lily pads
+    const pads = up ? [[0.1, 0.3], [0.78, 0.62], [0.32, 0.88]] : [[0.05, 0.22], [0.24, 0.8], [0.8, 0.7], [0.95, 0.3]];
+    pads.forEach(([x0, yf], i) => {
+      const span = gw + 60, x = ((((x0 * span + P(0.5)) % span) + span) % span) - 30, y = wt + wh * yf + Math.sin(tk * 0.05 + i * 2) * 1;
+      const r = u * 0.02 * (0.85 + 0.3 * yf);
+      c.save(); c.translate(x, y); c.scale(1, 0.42);
+      c.fillStyle = "#5e9a4e"; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, -1.2 + i, -1.2 + i + TAU - 0.55); c.closePath(); c.fill();
+      c.fillStyle = "rgba(255,255,255,0.18)"; c.beginPath(); c.arc(-r * 0.25, -r * 0.3, r * 0.45, 0, TAU); c.fill();
+      c.restore();
+      if (i === 1) { c.fillStyle = "#f6a3c0"; c.beginPath(); c.arc(x + r * 0.2, y - r * 0.25, r * 0.28, 0, TAU); c.fill(); }   // a water lily
+    });
+    // the duck
+    { const span = gw + 80, x = ((((0.3 * span + tk * 0.1 * s + P(0.6)) % span) + span) % span) - 40, y = wt + wh * (up ? 0.55 : 0.6);
+      C.duckOn = x > -10 && x < gw + 10;
+      duck(c, x, y, s, tk, C.flap > 0 && C.flap <= 10); }
+  }
+  function keep(c, tk, kx, hz, u, s, kw, kH, tOff, wallH, th) {
+    // curtain wall between the towers, crenellated
+    const ww = tOff * 2, wl = kx - tOff, wTop = hz - wallH, mw = u * 0.022;
+    c.fillStyle = KEEP_SH; c.fillRect(wl, wTop, ww, wallH + 1);
+    for (let x = wl + mw * 0.5; x < wl + ww - mw; x += mw * 2) c.fillRect(x, wTop - mw * 0.8, mw, mw * 0.8 + 1);
+    c.fillStyle = "rgba(110,92,64,0.55)"; c.fillRect(wl, wTop + wallH * 0.35, ww, 2);
+    // the flanking towers, tops blasted off (jagged), lit from the left
+    const tw = u * 0.09;
+    for (const sd of [-1, 1]) {
+      const cx = kx + sd * tOff, l = cx - tw / 2, top = hz - th;
+      const jag = sd < 0 ? [0.1, -0.02, 0.07, 0.0, 0.12, 0.03, 0.09, 0.02] : [0.04, 0.11, 0.02, 0.09, -0.01, 0.06, 0.1, 0.08];
+      c.beginPath(); c.moveTo(l, hz + 1); c.lineTo(l, top + jag[0] * th);
+      for (let i = 1; i < jag.length; i++) c.lineTo(l + (tw * i) / (jag.length - 1), top + jag[i] * th);
+      c.lineTo(l + tw, hz + 1); c.closePath();
+      c.fillStyle = KEEP_HI; c.fill();
+      c.save(); c.clip(); c.fillStyle = KEEP_SH; c.fillRect(cx, top - 10, tw, th + 12);
+      c.fillStyle = "rgba(110,92,64,0.5)"; c.fillRect(l, top + th * 0.42, tw, 2); c.fillRect(l, top + th * 0.72, tw, 2);
+      c.restore();
+      c.fillStyle = "#3a3340"; c.fillRect(cx - 1.5 * s, top + th * 0.5, 3 * s, 9 * s);   // an arrow slit
+    }
+    // the keep: a roofed central tower
+    const l = kx - kw / 2, top = hz - kH;
+    c.fillStyle = KEEP_HI; c.fillRect(l, top, kw / 2, kH + 1);
+    c.fillStyle = KEEP_SH; c.fillRect(kx, top, kw / 2, kH + 1);
+    c.fillStyle = "rgba(110,92,64,0.5)"; c.fillRect(l, top + kH * 0.55, kw, 2);
+    c.fillStyle = "#3a3340";
+    for (const dx of [-0.24, 0.24]) c.fillRect(kx + dx * kw - 1.5 * s, hz - kH * 0.36, 3 * s, 11 * s);   // arrow slits, lower half only
+    // conical roof (behind the parapet), the pennant on top
+    const rb = top - 6 * s, rw = kw * 0.5, rh = u * 0.15;
+    c.fillStyle = ROOF; c.beginPath(); c.moveTo(kx - rw, rb); c.lineTo(kx, rb - rh); c.lineTo(kx, rb); c.closePath(); c.fill();
+    c.fillStyle = ROOF_SH; c.beginPath(); c.moveTo(kx + rw, rb); c.lineTo(kx, rb - rh); c.lineTo(kx, rb); c.closePath(); c.fill();
+    const pt = rb - rh - 12 * s, fl = Math.sin(tk * 0.12);
+    c.strokeStyle = "#4a4653"; c.lineWidth = 1.5 * s; c.beginPath(); c.moveTo(kx, rb - rh + 1); c.lineTo(kx, pt); c.stroke();
+    c.fillStyle = BANNER; c.beginPath(); c.moveTo(kx, pt);
+    c.quadraticCurveTo(kx + 7 * s, pt + 1 + fl * 2 * s, kx + 14 * s, pt + 3 * s + fl * 1.2 * s);
+    c.quadraticCurveTo(kx + 7 * s, pt + 5 * s - fl * 1.5 * s, kx, pt + 6 * s); c.closePath(); c.fill();
+    // the parapet: a corbelled band and five merlons
+    const bw = kw * 1.12, bl = kx - bw / 2, bh = 7 * s, m = bw / 9;
+    c.fillStyle = KEEP_HI; c.fillRect(bl, top - bh * 0.4, bw / 2, bh);
+    c.fillStyle = KEEP_SH; c.fillRect(kx, top - bh * 0.4, bw / 2, bh);
+    for (let i = 0; i < 5; i++) { const x = bl + m * i * 2; c.fillStyle = x + m / 2 < kx ? KEEP_HI : KEEP_SH; c.fillRect(x, top - bh * 0.4 - 8 * s, m, 8 * s + 1); }
+  }
+  // the trebuchet (a dark silhouette on the hill top) and its potato: every 8 s the arm swings over in 20 ticks, the potato flies 150 ticks
+  // over the keep and lands behind the curtain wall in a puff of dust
+  function trebuchet(c, x, y, s, tk, lx, ly, ay) {
+    const ph = tk % 480;
+    let a;   // the long arm's angle (y points down): 150 deg rests down-left, 315 deg is the release up-right
+    if (ph < 20) a = 150 + 165 * ease(ph / 20);
+    else if (ph < 70) a = 315;
+    else if (ph < 370) a = 315 - 165 * ease((ph - 70) / 300);
+    else a = 150;
+    a *= Math.PI / 180;
+    const px = x, py = y - 15 * s, ca = Math.cos(a), sa = Math.sin(a), La = 19 * s, Ls = 6 * s;
+    const tx = px + ca * La, ty = py + sa * La, cx = px - ca * Ls, cy = py - sa * Ls;
+    c.fillStyle = TREE; c.strokeStyle = TREE; c.lineCap = "round";
+    c.fillRect(x - 11 * s, y - 2.5 * s, 22 * s, 3 * s);                                                       // base
+    c.lineWidth = 2.4 * s; c.beginPath(); c.moveTo(x - 8 * s, y - 1); c.lineTo(px, py); c.lineTo(x + 8 * s, y - 1); c.stroke();   // A-frame
+    c.lineWidth = 2 * s; c.beginPath(); c.moveTo(cx, cy); c.lineTo(tx, ty); c.stroke();                       // arm
+    c.fillRect(cx - 3.5 * s, cy, 7 * s, 6 * s);                                                                // counterweight
+    c.lineWidth = 1; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + (ph < 20 ? -ca : 0) * 3 * s, ty + 5 * s); c.stroke();   // sling
+    c.lineCap = "butt";
+    const spud = (qx, qy, rot) => {
+      c.save(); c.translate(qx, qy); c.rotate(rot);
+      c.fillStyle = "#a86a3b"; c.beginPath(); c.ellipse(0, 0, 4.4 * s, 3.3 * s, 0, 0, TAU); c.fill();
+      c.fillStyle = "#6e4223"; c.fillRect(-1.8 * s, -1.2 * s, 1.2 * s, 1.2 * s); c.fillRect(1.2 * s, 0.3 * s, 1.2 * s, 1.2 * s);
+      c.restore();
+    };
+    if (ph >= 400 || ph < 20) spud(tx, ty + 5 * s, 0);   // loaded in the sling
+    else if (ph >= 20 && ph < 170) {
+      const q = (ph - 20) / 150, hgt = (ty + ly) * 0.5 - ay;
+      spud(tx + (lx - tx) * q, ty + (ly - ty) * q - hgt * 4 * q * (1 - q), q * 14);
+    } else if (ph >= 170 && ph < 190) {   // the landing: a puff of dust over the wall
+      const k = (ph - 170) / 20;
+      c.fillStyle = `rgba(214,200,170,${0.7 * (1 - k)})`;
+      for (const [dx, r] of [[-5, 4], [0, 5.5], [5, 4]]) { c.beginPath(); c.arc(lx + dx * s * (1 + k), ly - (4 + k * 8) * s, r * s * (0.6 + k * 0.7), 0, TAU); c.fill(); }
+    }
+  }
+  function duck(c, x, y, s, tk, flap) {
+    const bob = Math.sin(tk * 0.08) * 0.8 * s;
+    c.save(); c.translate(x, y + bob);
+    c.strokeStyle = "rgba(220,240,250,0.35)"; c.lineWidth = 1; c.beginPath(); c.moveTo(-9 * s, 1.5 * s); c.lineTo(-16 * s, 3 * s); c.moveTo(-9 * s, 2.5 * s); c.lineTo(-14 * s, 5 * s); c.stroke();   // the wake
+    c.fillStyle = "#f3efe0"; c.beginPath(); c.ellipse(0, 0, 8 * s, 4.2 * s, 0, 0, TAU); c.fill();
+    c.beginPath(); c.arc(6 * s, -5.5 * s, 3.4 * s, 0, TAU); c.fill();
+    c.fillStyle = "#f29a2e"; c.beginPath(); c.moveTo(9 * s, -6 * s); c.lineTo(13 * s, -4.8 * s); c.lineTo(9 * s, -3.8 * s); c.closePath(); c.fill();
+    c.fillStyle = "#22202c"; c.fillRect(6.6 * s, -6.8 * s, 1.3 * s, 1.3 * s);
+    c.fillStyle = "#d9d2bd";
+    if (flap) { c.beginPath(); c.moveTo(-2 * s, -2 * s); c.lineTo(-7 * s, -11 * s); c.lineTo(2 * s, -3 * s); c.closePath(); c.fill(); }
+    else { c.beginPath(); c.ellipse(-1.5 * s, -0.8 * s, 4.5 * s, 2 * s, -0.15, 0, TAU); c.fill(); }
+    c.restore();
+  }
+
+  // ---- the stage (world space): the wall walk and the two blasted tower tops ----
+  function stage(c, tk) {
+    const S = STAGE.main, x1 = S.x1, x2 = S.x2, W = x2 - x1, B = 64;
+    if (!C.body) {
+      C.body = c.createLinearGradient(0, 0, 0, B); C.body.addColorStop(0, STONE); C.body.addColorStop(1, STONE_SH);
+    }
+    // the body: ashlar, with ten shallow arches along the bottom between eleven piers
+    const n = 10, pw = 9, step = (W - 20) / n, crown = 14;
+    const body = () => {
+      c.beginPath(); c.moveTo(x1, S.top); c.lineTo(x2, S.top); c.lineTo(x2, B);
+      for (let j = n; j >= 1; j--) {
+        const pr = x1 + 10 + j * step, pl = x1 + 10 + (j - 1) * step;
+        c.lineTo(pr - pw, B); c.quadraticCurveTo((pr + pl) / 2, B - crown * 2, pl + pw, B);
+      }
+      c.lineTo(x1, B); c.closePath();
+    };
+    body(); c.fillStyle = C.body; c.fill();
+    c.save(); c.clip();
+    for (let i = 0; i < 14; i++) {   // a few lighter / darker blocks
+      const row = 1 + (i % 3), col = Math.floor(nz(i * 7.3 + 2) * (W / 44)), off = row % 2 ? 22 : 0;
+      c.fillStyle = i % 2 ? "rgba(255,240,210,0.12)" : "rgba(60,44,30,0.12)"; c.fillRect(x1 + col * 44 + off, row * 16, 44, 16);
+    }
+    c.strokeStyle = "rgba(17,16,28,0.35)"; c.lineWidth = 2; c.beginPath();
+    for (const y of [16, 32, 48]) { c.moveTo(x1, y); c.lineTo(x2, y); }
+    for (let r = 0; r < 4; r++) for (let x = x1 + (r % 2 ? 22 : 0); x < x2; x += 44) { c.moveTo(x, r * 16); c.lineTo(x, r * 16 + 16); }
+    c.stroke();
+    c.strokeStyle = "rgba(60,44,28,0.3)"; c.lineWidth = 6; c.beginPath();   // the arch rings
+    for (let j = 1; j <= n; j++) { const pr = x1 + 10 + j * step, pl = x1 + 10 + (j - 1) * step; c.moveTo(pl + pw - 1, B); c.quadraticCurveTo((pr + pl) / 2, B - crown * 2 - 6, pr - pw + 1, B); }
+    c.stroke();
+    c.restore();
+    body(); c.lineWidth = 3; c.strokeStyle = OUT; c.stroke();
+    // banners hanging from the walk: red, a gold stripe and a gold potato
+    for (const bx of [-340, -120, 120, 340]) banner(c, bx, tk);
+    // the lip: flagstones
+    c.beginPath(); c.roundRect(x1 - 4, S.top - 3, W + 8, 12, 5);
+    c.fillStyle = STONE_HI; c.fill(); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = FLAG_TOP; c.fillRect(x1, S.top - 2, W, 3);
+    c.strokeStyle = "rgba(17,16,28,0.3)"; c.lineWidth = 1.5; c.beginPath();
+    for (let x = x1 + 50; x < x2 - 10; x += 50) { c.moveTo(x, S.top + 1); c.lineTo(x, S.top + 8); }
+    c.stroke();
+    c.fillStyle = "#f5ecd2"; c.fillRect(x1 - 4, S.top - 3, 8, 3); c.fillRect(x2 - 4, S.top - 3, 8, 3);
+    // the tower tops
+    for (const p of STAGE.plats) towerTop(c, p, tk);
+    // the moat splash of a bottom KO (screen space, over the stage, under the fighters)
+    if (C.splash.length) drawSplash(c);
+  }
+  function banner(c, bx, tk) {
+    const sw = Math.sin(tk * 0.035 + bx * 0.05) * 1.4, y0 = 6, y1 = 40, w = 20;
+    c.beginPath(); c.moveTo(bx - w / 2, y0); c.lineTo(bx + w / 2, y0); c.lineTo(bx + w / 2 + sw * 0.4, y1 - 7); c.lineTo(bx + sw, y1); c.lineTo(bx - w / 2 + sw * 0.4, y1 - 7); c.closePath();
+    c.fillStyle = BANNER; c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = GOLD; c.fillRect(bx - w / 2 + 1, y0 + 3, w - 2, 3);
+    c.beginPath(); c.ellipse(bx + sw * 0.4, 21, 5, 3.6, -0.3, 0, TAU); c.fill();   // the house's arms: a golden potato
+    c.fillStyle = BANNER; c.fillRect(bx - 2.2 + sw * 0.4, 19.5, 1.4, 1.4); c.fillRect(bx + 1 + sw * 0.4, 21.2, 1.4, 1.4);
+    c.fillStyle = "#4a4653"; c.fillRect(bx - w / 2 - 2, y0 - 1.5, w + 4, 3);   // the rod
+  }
+  function towerTop(c, p, tk) {
+    const cx = (p.x1 + p.x2) / 2, w = p.x2 - p.x1, out = cx < 0 ? -1 : 1, gy = p.y + 18 + Math.sin(tk * 0.03 + p.x1) * 2;
+    // the spell holding it up: a pale gold glow and a dashed gold ring turning under it, three sparks riding the ring
+    const rx = w * 0.45, ry = 7, ra = tk * 0.01;
+    c.fillStyle = "rgba(255,226,140,0.26)"; c.beginPath(); c.ellipse(cx, gy, w * 0.4, 5, 0, 0, TAU); c.fill();
+    c.save(); c.setLineDash([7, 6]); c.lineDashOffset = -ra * rx; c.strokeStyle = "rgba(226,166,48,0.6)"; c.lineWidth = 1.5;
+    c.beginPath(); c.ellipse(cx, gy + 2, rx, ry, 0, 0, TAU); c.stroke(); c.restore();
+    for (let i = 0; i < 3; i++) {
+      const a = ra * 3 + (i * TAU) / 3, tw = 0.5 + 0.5 * Math.sin(tk * 0.09 + i * 2.1);
+      c.globalAlpha = 0.35 + 0.65 * tw; star4(c, cx + Math.cos(a) * rx, gy + 2 + Math.sin(a) * ry, 2.2 + 1.6 * tw, "#ffe08a");
+    }
+    c.globalAlpha = 1;
+    for (let i = 0; i < 2; i++) {   // two loose pebbles going round below it
+      const a = tk * (TAU / 120) + i * Math.PI;
+      c.fillStyle = i ? STONE : STONE_SH; c.beginPath(); c.arc(cx + Math.cos(a) * w * 0.28, p.y + 21 + Math.sin(a) * 3, 2, 0, TAU); c.fill();
+    }
+    // a broken merlon at the outer end, behind the feet
+    const mx = out < 0 ? p.x1 + 8 : p.x2 - 14;
+    c.beginPath(); c.moveTo(mx, p.y); c.lineTo(mx, p.y - 6); c.lineTo(mx + 2.5, p.y - 4.5); c.lineTo(mx + 4, p.y - 7); c.lineTo(mx + 6, p.y - 5); c.lineTo(mx + 6, p.y); c.closePath();
+    c.fillStyle = STONE; c.fill(); c.lineWidth = 1.5; c.strokeStyle = OUT; c.stroke();
+    // three small stone chunks hanging under it
+    c.fillStyle = STONE; c.lineWidth = 1.5;
+    for (const [dx, d, hw] of [[-0.3, 5, 8], [0.04, 6, 6], [0.32, 4, 7]]) {
+      const x = cx + dx * w;
+      c.beginPath(); c.moveTo(x - hw, p.y + 8); c.lineTo(x + hw, p.y + 8); c.lineTo(x + hw * 0.5, p.y + 9 + d); c.lineTo(x - hw * 0.2, p.y + 10 + d * 0.8); c.lineTo(x - hw * 0.7, p.y + 9 + d * 0.5); c.closePath();
+      c.fill(); c.strokeStyle = OUT; c.stroke();
+    }
+    // the slab: light on top, its underside in shade
+    c.beginPath(); c.roundRect(p.x1, p.y - 1, w, 11, 5);
+    c.fillStyle = STONE_HI; c.fill();
+    c.save(); c.clip(); c.fillStyle = STONE; c.fillRect(p.x1, p.y + 6, w, 5); c.restore();
+    c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = FLAG_TOP; c.fillRect(p.x1 + 4, p.y, w - 8, 2.5);
+    c.strokeStyle = "rgba(17,16,28,0.3)"; c.lineWidth = 1.5; c.beginPath();
+    for (const k of [0.33, 0.66]) { c.moveTo(p.x1 + w * k, p.y + 3); c.lineTo(p.x1 + w * k, p.y + 9); }
+    c.stroke();
+  }
+
+  // ---- the moat splash (bottom KO) ----
+  // a beat after the fighter drops out of the bottom of the screen (so it is not lost under the root of the KO beam): a column of
+  // water, two rings and ten drops fanning out wider than the beam; 40 ticks in all
+  function drawSplash(c) {
+    const u = Math.min(L.gw, L.gh), s = u / 390, y = L.gh - u * 0.08;
+    c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0); c.fillStyle = SPLASH; c.strokeStyle = SPLASH;
+    for (const q of C.splash) {
+      const x = clamp(toScreen(q.x, 0)[0], 24, L.gw - 24), t = q.t - 6;
+      if (t < 0) continue;
+      for (const [d, r0, r1] of [[0, 14, 100], [7, 8, 56]]) {   // the rings on the water
+        const k = (t - d) / 26;
+        if (k < 0 || k >= 1) continue;
+        const r = (r0 + (r1 - r0) * ease(k)) * s;
+        c.globalAlpha = 0.95 * (1 - k); c.lineWidth = (3.5 * (1 - k) + 1) * s;
+        c.beginPath(); c.ellipse(x, y, r, r * 0.28, 0, 0, TAU); c.stroke();
+      }
+      if (t < 24) {   // the column, foam at its foot
+        const k = t / 24, h = 76 * Math.sin(Math.min(1, k * 2.2) * Math.PI * 0.5) * (1 - k * k) * s, w = (12 - 5 * k) * s;
+        c.globalAlpha = 0.92 * (1 - k * 0.5);
+        c.beginPath(); c.moveTo(x - w, y); c.quadraticCurveTo(x - w * 0.35, y - h * 0.65, x - w * 0.25, y - h); c.quadraticCurveTo(x, y - h - 6 * s, x + w * 0.25, y - h);
+        c.quadraticCurveTo(x + w * 0.35, y - h * 0.65, x + w, y); c.closePath(); c.fill();
+        c.beginPath(); c.ellipse(x, y, w * 1.9, w * 0.45, 0, 0, TAU); c.fill();
+      }
+      if (t < 34) {   // the drops, gravity 0.3 px a tick
+        c.globalAlpha = Math.min(1, (34 - t) / 10);
+        for (const d of q.drops) {
+          const dx = x + d.vx * t * s, dy = y - 6 * s + (d.vy * t + 0.15 * t * t) * s;
+          if (dy > y) continue;
+          c.beginPath(); c.ellipse(dx, dy, d.r * s * 0.8, d.r * s, 0, 0, TAU); c.fill();
+        }
+      }
+    }
+    c.restore();
+  }
+
+  // ---- once per sim frame: the splash clock, the duck, quiet ambience (birds, a breeze) ----
+  function tick(g, live) {
+    if (C.g !== g) { C.g = g; C.splash.length = 0; C.flap = 0; }   // a new game (or the menu's attract match): no leftover splash
+    for (let i = C.splash.length - 1; i >= 0; i--) if (++C.splash[i].t >= 40) C.splash.splice(i, 1);
+    if (C.flap > 0) C.flap--;
+    if (!live) return;
+    if (--C.bird <= 0) { C.bird = 360 + Math.random() * 240; birds(); }
+    if (--C.gust <= 0) { C.gust = 420 + Math.random() * 120; gust(); }
+  }
+  function ko(e, live) {
+    if (!(e.y > STAGE.blast.bottom - 40)) return;   // only a fall into the moat
+    C.splash.push({ x: e.x, t: 0, drops: Array.from({ length: 10 }, (_, i) => ({ vx: (i - 4.5) * 1.05 + (Math.random() - 0.5) * 0.6, vy: -(3.6 + Math.random() * 1.8 - Math.abs(i - 4.5) * 0.12), r: 3 + Math.random() * 2.5 })) });
+    if (C.duckOn) C.flap = 16;   // the duck flaps once when the water goes up (ticks 10..1)
+    if (live) Sfx.later(100, () => { Sfx.noise(0.15, 0.2, 566); Sfx.tone(302, 104, 0.18, "sine", 0.2); });   // the plop (a semitone under the bay's), with the splash
+  }
+  // birds: two or three short high chirps, very quiet (about -34 dB)
+  function birds() {
+    if (!Sfx.ok()) return;
+    const n = 2 + (Math.random() < 0.5 ? 1 : 0), f = 2200 + Math.random() * 600;
+    for (let i = 0; i < n; i++) Sfx.later(i * (70 + Math.random() * 50), () => Sfx.tone(f * (1 + i * 0.04), f * (1.12 + i * 0.04), 0.04, "sine", 0.02));
+  }
+  // a breeze: low-passed noise swelling up and down over 7 s (one source at a time, stopped when the match pauses or ends)
+  function gust() {
+    if (!Sfx.ok() || C.gustSrc) return;
+    try {
+      const a = Sfx.ctx, t = a.currentTime, src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+      src.buffer = Sfx.noiseBuf; src.loop = true; f.type = "lowpass"; f.frequency.value = 300;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.022, t + 3.5); g.gain.linearRampToValueAtTime(0.0001, t + 7);
+      src.connect(f); f.connect(g); g.connect(Sfx.out); src.start(t, Math.random() * 0.5); src.stop(t + 7.05);
+      C.gustSrc = { src, g }; src.onended = () => { if (C.gustSrc && C.gustSrc.src === src) C.gustSrc = null; };
+    } catch (e) { C.gustSrc = null; }
+  }
+  function gustStop() {
+    const q = C.gustSrc; C.gustSrc = null;
+    try { const t = Sfx.ctx.currentTime; q.g.gain.cancelScheduledValues(t); q.g.gain.setTargetAtTime(0.0001, t, 0.05); q.src.stop(t + 0.3); } catch (e) { /* already stopped */ }
+  }
+
+  return { name: "Hashbrown Keep", bg, stage, tick, ko };
+})();
+
+/* ---- Deep Fryday (fable-design.md "Map 3"): inside a giant deep fryer. We look over the fryer's far rim into a dark kitchen (the
+   extractor hood and its two lamps); the steel inner wall is the backdrop of the fight; the stage is a wire fry basket dipped into
+   boiling fat; the four platforms are golden fries. The fat bubbles, spits and steams, purely as decoration: it never hurts anyone.
+   bg: screen space, every layer offset by -cam.x * cam.z * k (parallax); the big gradients are cached on (gw, gh, round(rimY),
+   round(fatY)), the steam puff and the lamp glow are pre-rendered sprites. stage: world space (STAGE.main, STAGE.plats); the fries keep
+   the platforms' standable signature (11-unit body, light top line, glow underneath). tick: the bottom-KO splashes and the quiet
+   ambience (bubbling, the element's hum, the hood), sounds only while the match is live. ko: a bottom KO splashes fat and sizzles.
+   Joke: a raw potato in swim goggles and a swim cap sits on the rim, legs dangling, shivering, peeking down. Next in. UI only. */
+MAP_ART.fryer = (() => {
+  const TAU = Math.PI * 2;
+  const C = {
+    kit: "#2a1d22", kitWarm: "#4a2f2e", hood: "#6a6e7c", lamp: "#ffb86a", wall: "#5a5e6c", wallShade: "#3a3d48", rim: "#8a8f9c", rimHi: "#d8dce6",
+    fatTop: "#e8b24a", fat: "#c07e24", fatMid: "#8a5218", fatDeep: "#4e2c0c", splash: "#f6c45c", fry: "#f2c14e", fryHi: "#ffe48f", crust: "#c9862b", bubble: "#fff0c0",
+  };
+  const K = { key: "", kit: null, wall: null, warm: null, spill: null, fat: null, steam: null, glow: null, body: null, mesh: null, dip: null, bodyFor: null };
+  const WL = 46;   // the waterline on the basket (world units under the floor): only its bottom dips into the fat
+  const hash = (n) => { const x = Math.sin(n * 91.73 + 17.31) * 43758.5453; return x - Math.floor(x); };
+  // 14 bubbles (k 0.4): x as a fraction of the width, depth d (0 = the far line of the fat, 1 = near the bottom edge), period, top radius.
+  // The biggest sit beside the basket (0.15-0.25 and 0.75-0.85).
+  const BUB = [
+    [0.18, 0.05, 74, 7], [0.82, 0.08, 66, 7], [0.22, 0.3, 58, 6], [0.77, 0.26, 82, 6], [0.06, 0.18, 46, 4], [0.94, 0.12, 52, 4],
+    [0.4, 0.75, 88, 5], [0.62, 0.68, 62, 5], [0.12, 0.55, 70, 5], [0.88, 0.5, 44, 4],
+    [0.3, 0.45, 40, 4], [0.7, 0.4, 56, 4], [0.5, 0.88, 78, 4], [0.02, 0.4, 64, 3],
+  ].map(([x, d, per, r], i) => ({ x, d, per, r, off: (hash(i * 3.3) * per) | 0 }));
+  // floating fries (k 0.5): x, depth (fraction of the fat's height), bob period, tilt
+  const FLOAT = [[0.07, 0.12, 200, 0.2], [0.93, 0.2, 230, -0.15], [0.27, 0.62, 190, -0.1], [0.72, 0.5, 215, 0.12], [0.5, 0.95, 205, 0.05]];
+
+  function sprite(S, draw) { const cv = document.createElement("canvas"); cv.width = cv.height = S; draw(cv.getContext("2d"), S); return cv; }
+  function sprites() {
+    if (K.steam) return;
+    K.steam = sprite(96, (x, S) => {
+      const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+      g.addColorStop(0, "rgba(255,240,220,0.18)"); g.addColorStop(0.55, "rgba(255,240,220,0.1)"); g.addColorStop(1, "rgba(255,240,220,0)");
+      x.fillStyle = g; x.fillRect(0, 0, S, S);
+    });
+    K.glow = sprite(96, (x, S) => {
+      const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+      g.addColorStop(0, "rgba(255,184,106,1)"); g.addColorStop(0.4, "rgba(255,184,106,0.5)"); g.addColorStop(1, "rgba(255,184,106,0)");
+      x.fillStyle = g; x.fillRect(0, 0, S, S);
+    });
+  }
+  function grads(c, gw, gh, hz, rimY, fatY, u) {
+    const key = gw + "," + gh + "," + Math.round(rimY) + "," + Math.round(fatY);
+    if (K.key === key) return;
+    K.key = key;
+    K.kit = c.createLinearGradient(0, 0, 0, Math.max(1, rimY));
+    K.kit.addColorStop(0, C.kit); K.kit.addColorStop(1, C.kitWarm);
+    K.wall = c.createLinearGradient(0, rimY, 0, fatY);
+    K.wall.addColorStop(0, C.wall); K.wall.addColorStop(1, C.wallShade);
+    K.spill = c.createLinearGradient(0, rimY, 0, rimY + u * 0.16);   // the hood lamps' light falling on the top of the wall
+    K.spill.addColorStop(0, "rgba(255,184,106,0.1)"); K.spill.addColorStop(1, "rgba(255,184,106,0)");
+    K.warm = c.createLinearGradient(0, fatY - u * 0.22, 0, fatY);   // the fat's glow on the bottom of the wall
+    K.warm.addColorStop(0, "rgba(255,160,60,0)"); K.warm.addColorStop(1, "rgba(255,160,60,0.2)");
+    K.fat = c.createLinearGradient(0, fatY, 0, gh);
+    K.fat.addColorStop(0, C.fatTop); K.fat.addColorStop(0.12, C.fat); K.fat.addColorStop(0.5, C.fatMid); K.fat.addColorStop(1, C.fatDeep);
+  }
+
+  // the raw potato in goggles and a swim cap, sitting on the rim at (x, y), legs dangling into the fryer; k = size unit
+  function swimmer(c, x, y, k, tk) {
+    const jit = ((tk / 20) | 0) % 2 ? 0.5 : -0.5, pq = tk % 360, peek = pq < 60 ? Math.sin((pq / 60) * Math.PI) * 0.1 : 0, kick = Math.sin((tk / 60) * TAU);
+    c.save(); c.translate(x + jit, y);
+    // two stubby legs over the inner wall, kicking; two little arms holding the rim
+    const limbs = () => {
+      c.beginPath();
+      c.moveTo(-k * 1.1, -k * 0.4); c.lineTo(-k * 1.1 + kick * k * 0.5, k * 1.9); c.moveTo(k * 1.1, -k * 0.4); c.lineTo(k * 1.1 - kick * k * 0.5, k * 1.9);
+      c.moveTo(-k * 2.3, -k * 1.6); c.lineTo(-k * 3.1, k * 0.1); c.moveTo(k * 2.3, -k * 1.6); c.lineTo(k * 3.1, k * 0.1);
+      c.stroke();
+    };
+    c.lineCap = "round"; c.strokeStyle = OUT; c.lineWidth = k * 1.15 + 1.6; limbs();
+    c.strokeStyle = "#c79a62"; c.lineWidth = k * 1.15; limbs();
+    c.rotate(peek);
+    // body: a lumpy raw potato
+    c.beginPath();
+    for (let i = 0; i <= 20; i++) { const a = (i / 20) * TAU, w = 1 + 0.06 * Math.sin(a * 3 + 1) + 0.04 * Math.sin(a * 5); const px = Math.cos(a) * k * 2.5 * w, py = -k * 3 + Math.sin(a) * k * 3 * w; i ? c.lineTo(px, py) : c.moveTo(px, py); }
+    c.closePath(); c.fillStyle = "#d4a868"; c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = "rgba(140,92,44,0.55)";
+    for (const [ex, ey] of [[-1.3, -1.5], [1.1, -1], [0.1, -0.5], [-0.6, -2.4]]) { c.beginPath(); c.ellipse(ex * k, ey * k, k * 0.32, k * 0.22, 0, 0, TAU); c.fill(); }
+    // swim cap
+    c.beginPath(); c.moveTo(-k * 2.5, -k * 3.6); c.quadraticCurveTo(-k * 2.4, -k * 6.4, 0, -k * 6.45); c.quadraticCurveTo(k * 2.4, -k * 6.4, k * 2.5, -k * 3.6); c.closePath();
+    c.fillStyle = "#e5505e"; c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = "rgba(255,255,255,0.75)"; c.fillRect(-k * 0.3, -k * 6.3, k * 0.6, k * 2.6);
+    // goggles: a strap and two lenses
+    c.fillStyle = OUT; c.fillRect(-k * 2.5, -k * 3.65, k * 5, k * 0.55);
+    for (const s of [-1, 1]) {
+      c.beginPath(); c.arc(s * k * 0.95, -k * 3.35, k * 0.85, 0, TAU); c.fillStyle = "#7fd8ff"; c.fill(); c.lineWidth = 1.3; c.strokeStyle = OUT; c.stroke();
+      c.fillStyle = "rgba(255,255,255,0.85)"; c.beginPath(); c.arc(s * k * 0.95 - k * 0.3, -k * 3.6, k * 0.22, 0, TAU); c.fill();
+    }
+    c.restore();
+  }
+  // one bubble of hot fat sitting on the surface at (x, y): a pale dome, a light rim, a glint
+  function bubble(c, x, y, r) {
+    c.beginPath(); c.arc(x, y - r * 0.7, r, 0, TAU);
+    c.fillStyle = "rgba(255,226,150,0.4)"; c.fill(); c.lineWidth = 1.1; c.strokeStyle = "rgba(255,240,192,0.9)"; c.stroke();
+    if (r > 2) { c.fillStyle = "rgba(255,255,240,0.95)"; c.beginPath(); c.arc(x - r * 0.38, y - r * 1.08, r * 0.24, 0, TAU); c.fill(); }
+  }
+  // a fry lying flat, centred on (x, y), len x wd, turned by a
+  // (half sunk, with a brown outline instead of the black one, so it stays background and never reads as a thrown fry)
+  function lyingFry(c, x, y, len, wd, a) {
+    c.save(); c.translate(x, y); c.rotate(a);
+    c.beginPath(); c.roundRect(-len / 2, -wd / 2, len, wd, wd * 0.3); c.fillStyle = C.fry; c.fill();
+    c.fillStyle = C.crust; c.fillRect(-len / 2, -wd / 2, wd * 0.6, wd); c.fillRect(len / 2 - wd * 0.6, -wd / 2, wd * 0.6, wd);
+    c.fillStyle = C.fryHi; c.fillRect(-len / 2 + wd * 0.7, -wd / 2 + 1, len - wd * 1.4, wd * 0.28);
+    c.fillStyle = "rgba(192,126,36,0.6)"; c.fillRect(-len / 2, wd * 0.05, len, wd * 0.45);   // the fat over its lower half
+    c.lineWidth = 1.2; c.strokeStyle = "rgba(70,36,10,0.85)"; c.beginPath(); c.roundRect(-len / 2, -wd / 2, len, wd, wd * 0.3); c.stroke();
+    c.restore();
+  }
+
+  function bg(c, tk) {
+    const gw = L.gw, gh = L.gh, u = Math.min(gw, gh), s = u / 390, up = L.portrait;
+    const hz = gh * 0.7 - (cam.y + 110) * cam.z * 0.16;
+    // the fat line: hz + gh * 0.1, but never below the basket's waterline (so the basket always dips in, also upright and with the
+    // camera low; from above, the far edge of the fat shows a little higher than the waterline, as a surface seen from above does)
+    const oy = gh / 2 - cam.y * cam.z + cam.sy;
+    const rimY = Math.min(hz - u * 0.62, gh * 0.1), fatY = Math.min(hz + gh * 0.1, oy + WL * cam.z);
+    sprites(); grads(c, gw, gh, hz, rimY, fatY, u);
+    const pk = (k) => -cam.x * cam.z * k;
+    // 1. the kitchen beyond the rim, the extractor hood and its two lamps
+    if (rimY > 0) {
+      c.fillStyle = K.kit; c.fillRect(0, 0, gw, rimY + 1);
+      const hx = gw / 2 + pk(0.02), hw = gw * (up ? 0.9 : 0.6), hh = Math.min(u * 0.12, rimY * 0.72);
+      c.fillStyle = "rgba(255,255,255,0.035)";
+      for (let x = ((pk(0.02) % (u * 0.08)) + u * 0.08) % (u * 0.08); x < gw; x += u * 0.08) c.fillRect(x, 0, 1, rimY);   // wall tiles
+      c.fillStyle = C.hood;
+      c.beginPath(); c.moveTo(hx - hw * 0.4, 0); c.lineTo(hx + hw * 0.4, 0); c.lineTo(hx + hw / 2, hh); c.lineTo(hx - hw / 2, hh); c.closePath(); c.fill();
+      c.fillStyle = "#4e515d"; c.fillRect(hx - hw / 2, hh - Math.max(2, hh * 0.16), hw, Math.max(2, hh * 0.16));
+      c.fillStyle = "rgba(255,255,255,0.12)"; c.fillRect(hx - hw * 0.4, 0, hw * 0.8, 1);
+      const pulse = 0.45 + 0.05 * Math.sin((tk / 120) * TAU), gr = u * 0.05 * 2.2;
+      for (const sd of [-1, 1]) {
+        const lx = hx + sd * hw * 0.42, ly = hh;
+        c.globalAlpha = pulse; c.drawImage(K.glow, lx - gr, ly - gr, gr * 2, gr * 2); c.globalAlpha = 1;
+        c.fillStyle = "#ffe2b0"; c.beginPath(); c.ellipse(lx, ly, u * 0.012, u * 0.005, 0, 0, TAU); c.fill();
+      }
+    }
+    // 2. the rim and the inner wall
+    const rb = u * 0.03, wy = rimY + rb;   // the rim band, then the wall below it
+    c.fillStyle = K.wall; c.fillRect(0, wy, gw, fatY - wy + 1);
+    c.fillStyle = K.spill; c.fillRect(0, wy, gw, u * 0.16);
+    c.fillStyle = K.warm; c.fillRect(0, fatY - u * 0.22, gw, u * 0.22 + 1);
+    c.fillStyle = "rgba(255,255,255,0.06)";
+    for (const f of [0.22, 0.47, 0.71]) c.fillRect(0, wy + (fatY - wy) * f, gw, 1);   // brushed steel
+    { // the two lamps' light pooling on the top of the wall
+      const hx = gw / 2 + pk(0.02), hw = gw * (up ? 0.9 : 0.6), R = u * 0.3;
+      c.globalAlpha = 0.09; for (const sd of [-1, 1]) c.drawImage(K.glow, hx + sd * hw * 0.42 - R, wy - R * 0.5, R * 2, R * 1.3); c.globalAlpha = 1;
+    }
+    // the light off the fat dancing on the bottom of the wall (two wavy lines)
+    c.lineWidth = Math.max(1.5, u * 0.004);
+    for (let j = 0; j < 2; j++) {
+      const y0 = fatY - u * (0.05 + j * 0.06), amp = u * (0.008 + j * 0.004), wl = u * (0.16 + j * 0.07), ph = tk * (0.02 + j * 0.013);
+      c.strokeStyle = `rgba(255,205,120,${0.13 - j * 0.04})`; c.beginPath();
+      for (let x = -4; x <= gw + wl / 8; x += wl / 8) { const y = y0 + Math.sin(x / wl * TAU + ph) * amp + Math.sin(x / (wl * 0.37) - ph * 1.7) * amp * 0.5; x < 0 ? c.moveTo(x, y) : c.lineTo(x, y); }
+      c.stroke();
+    }
+    if (!up) {   // the side walls, seen at an angle, their rim running up out of the picture
+      const sw = gw * 0.05, dip = u * 0.07;
+      c.fillStyle = C.wallShade;
+      c.beginPath(); c.moveTo(0, rimY - dip); c.lineTo(sw, rimY); c.lineTo(sw, fatY); c.lineTo(0, fatY + dip * 0.4); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(gw, rimY - dip); c.lineTo(gw - sw, rimY); c.lineTo(gw - sw, fatY); c.lineTo(gw, fatY + dip * 0.4); c.closePath(); c.fill();
+      c.fillStyle = "rgba(216,220,230,0.22)"; c.fillRect(sw - 1.5, rimY, 1.5, fatY - rimY); c.fillRect(gw - sw, rimY, 1.5, fatY - rimY);
+      c.fillStyle = C.rim;
+      c.beginPath(); c.moveTo(0, rimY - dip - rb); c.lineTo(sw, rimY); c.lineTo(sw, wy); c.lineTo(0, rimY - dip); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(gw, rimY - dip - rb); c.lineTo(gw - sw, rimY); c.lineTo(gw - sw, wy); c.lineTo(gw, rimY - dip); c.closePath(); c.fill();
+    }
+    c.fillStyle = C.rim; c.fillRect(up ? 0 : gw * 0.05, rimY, up ? gw : gw * 0.9, rb);
+    c.fillStyle = C.rimHi; c.fillRect(0, rimY, gw, 1);
+    c.fillStyle = "rgba(0,0,0,0.3)"; c.fillRect(0, wy, gw, 2);
+    // the swimmer on the rim (between the name card and the clock, where the HUD leaves the rim free)
+    swimmer(c, gw * (up ? 0.5 : 0.31) + pk(0.05), rimY + 1, u * (up ? 0.012 : 0.0105), tk);
+    // 3. steam rising off the fat at the edges
+    for (let i = 0; i < 5; i++) {
+      const L_ = 180, a = (tk + i * 36) % L_, cyc = Math.floor((tk + i * 36) / L_), left = i % 2 === 0;
+      const x = gw * (left ? 0.01 + 0.16 * hash(cyc * 7 + i) : 0.83 + 0.16 * hash(cyc * 7 + i)) + pk(0.05) + Math.sin(a * 0.04 + i) * u * 0.01;
+      const y = fatY - a * 0.35 * s, r = u * 0.09 * (1 + 0.6 * (a / L_)), al = Math.min(1, a / 25) * (1 - a / L_);
+      c.globalAlpha = al * 1.6 > 1 ? 1 : al * 1.6; c.drawImage(K.steam, x - r, y - r, r * 2, r * 2);
+    }
+    c.globalAlpha = 1;
+    // 4. a second basket at the back, its handle hooked on a peg (a little faded: it is far behind the stage)
+    {
+      c.globalAlpha = 0.82;
+      const bx = gw * (up ? 0.06 : 0.1) + pk(0.15), bw = u * (up ? 0.1 : 0.12), bh = u * 0.1, top = fatY - u * 0.06;
+      // the handle: a short steel rod up to a peg on the wall, curled over it, a black grip
+      const R = u * 0.01, hx = bx + bw * 0.62, hy = top - u * 0.13, hw = Math.max(2.2, u * 0.008), ax = bx + bw * 0.3, ex = hx - R, ey = hy + R * 2.5;
+      c.fillStyle = "#4e515d"; c.beginPath(); c.arc(hx, hy, R * 1.7, 0, TAU); c.fill();   // the peg's plate
+      c.fillStyle = "#8a8f9c"; c.beginPath(); c.arc(hx, hy, R * 0.6, 0, TAU); c.fill();
+      c.lineCap = "round"; c.lineJoin = "round";
+      c.beginPath(); c.moveTo(ax, top); c.lineTo(ex, ey); c.lineTo(ex, hy); c.arc(hx, hy, R, Math.PI, 0); c.lineTo(hx + R, hy + R * 0.9);
+      c.strokeStyle = OUT; c.lineWidth = hw + 2; c.stroke();
+      c.strokeStyle = "#8a8f9c"; c.lineWidth = hw; c.stroke();
+      c.strokeStyle = "#1d1e25"; c.lineWidth = hw * 2;
+      c.beginPath(); c.moveTo(ax + (ex - ax) * 0.35, top + (ey - top) * 0.35); c.lineTo(ax + (ex - ax) * 0.8, top + (ey - top) * 0.8); c.stroke();
+      for (const [dx, len, ang] of [[-0.32, 0.075, -0.2], [-0.14, 0.09, -0.06], [0.04, 0.08, 0.05], [0.2, 0.07, 0.16], [0.34, 0.06, 0.28]]) {
+        c.save(); c.translate(bx + dx * bw, top + 2); c.rotate(ang);
+        c.fillStyle = C.crust; c.fillRect(-u * 0.007, -u * len, u * 0.014, u * len);
+        c.fillStyle = "rgba(255,228,143,0.35)"; c.fillRect(-u * 0.007, -u * len, u * 0.005, u * len);
+        c.restore();
+      }
+      c.fillStyle = "#2c2e38"; c.fillRect(bx - bw / 2, top, bw, bh);
+      c.strokeStyle = "rgba(190,200,220,0.2)"; c.lineWidth = 1;
+      c.beginPath();
+      for (let x = bx - bw / 2 + bw / 8; x < bx + bw / 2 - 1; x += bw / 8) { c.moveTo(x, top); c.lineTo(x, top + bh); }
+      for (let y = top + bh / 4; y < top + bh; y += bh / 4) { c.moveTo(bx - bw / 2, y); c.lineTo(bx + bw / 2, y); }
+      c.stroke();
+      c.fillStyle = "#6a6e7c"; c.fillRect(bx - bw / 2 - 1, top - 2, bw + 2, 3);
+      c.globalAlpha = 1;
+    }
+    // 5. the fat
+    c.fillStyle = K.fat; c.fillRect(0, fatY, gw, gh - fatY + 1);
+    const fh = gh - fatY;
+    // the bright surface line at the back, slowly sliding
+    {
+      const n = 12, bw = gw / n, ph = (tk * 0.2 * s) % bw;
+      c.strokeStyle = C.bubble; c.lineWidth = 3; c.beginPath(); c.moveTo(-bw + ph, fatY);
+      for (let i = 0; i <= n + 1; i++) { const x0 = -bw + ph + i * bw; c.quadraticCurveTo(x0 + bw / 2, fatY - 2, x0 + bw, fatY); }
+      c.stroke();
+      // the froth along it: tiny bubbles riding the same slide, swelling and popping in turn (one path)
+      c.beginPath();
+      for (let i = 0; i < 28; i++) {
+        const q = (tk * 0.03 + hash(i * 3.7)) % 1, x = ((hash(i * 9.1) * gw + tk * 0.2 * s) % (gw + 8)) - 4, y = fatY + 2 + hash(i * 5.3) * 5 * s, r = (0.8 + 1.8 * q) * s;
+        c.moveTo(x + r, y); c.arc(x, y, r, 0, TAU);
+      }
+      c.fillStyle = "rgba(255,230,160,0.35)"; c.fill(); c.lineWidth = 1; c.strokeStyle = "rgba(255,240,192,0.75)"; c.stroke();
+    }
+    // floating fries (k 0.5)
+    for (let i = 0; i < (up ? 5 : 4); i++) {
+      const F = FLOAT[i], x = F[0] * gw + pk(0.5);
+      const yy = (up ? fatY + fh * (0.05 + 0.25 * (i / 4)) : fatY + u * (0.04 + 0.08 * F[1])) + Math.sin((tk / F[2]) * TAU) * 1.5;
+      c.strokeStyle = "rgba(255,240,200,0.22)"; c.lineWidth = 1; c.beginPath(); c.ellipse(x, yy + 2, 20 * s, 4 * s, 0, 0, TAU); c.stroke();
+      lyingFry(c, x, yy, 28 * s, 7 * s, F[3] * 0.4 + Math.sin((tk / (F[2] * 1.1)) * TAU) * 0.06);
+      // a frying fry: small bubbles keep coming up round it
+      c.beginPath();
+      for (let j = 0; j < 5; j++) {
+        const q = (tk * 0.04 + hash(i * 7.7 + j * 1.3)) % 1, bx = x + (hash(i * 3.1 + j * 2.9) - 0.5) * 34 * s, by = yy + (j % 2 ? 5 : -4) * s, r = (0.6 + 2 * q) * s;
+        c.moveTo(bx + r, by); c.arc(bx, by, r, 0, TAU);
+      }
+      c.fillStyle = "rgba(255,230,160,0.4)"; c.fill(); c.strokeStyle = "rgba(255,240,192,0.8)"; c.stroke();
+    }
+    // bubbles (k 0.4): grow, then pop into a ring
+    for (let i = 0; i < 14; i++) {
+      const B = BUB[i], q = tk + B.off, cyc = Math.floor(q / B.per), k = q % B.per, grow = B.per - 5;
+      const x = (B.x + (hash(i * 13.7 + cyc * 1.37) - 0.5) * 0.05) * gw + pk(0.4), y = fatY + 3 + B.d * fh * 0.8, sc = (0.7 + 0.6 * B.d) * s;
+      if (k < grow) bubble(c, x, y, (1 + (B.r * 1.35 - 1) * (k / grow)) * sc);
+      else {
+        const p = (k - grow) / 5, r = (B.r * 1.35 + 3 * p) * sc;
+        c.strokeStyle = `rgba(255,240,200,${0.7 * (1 - p)})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(x, y - 1, r * 1.3, r * 0.45, 0, 0, TAU); c.stroke();
+      }
+    }
+    // spitting fat: little drops hop out of the surface and fall back
+    c.fillStyle = "#ffe9a8";
+    for (let j = 0; j < 8; j++) {
+      const per = 50 + 30 * hash(j * 5.1), q = tk + hash(j * 2.7) * per, cyc = Math.floor(q / per), k = (q % per) / per;
+      if (k > 0.35) continue;
+      const h = Math.sin((k / 0.35) * Math.PI) * (6 + 12 * hash(cyc + j)) * s;
+      const x = gw * (j % 2 ? 0.6 + 0.4 * hash(cyc * 3.1 + j) : 0.4 * hash(cyc * 3.1 + j)) + pk(0.4), y = fatY + 2 + hash(cyc * 1.9 + j) * fh * 0.5;
+      c.beginPath(); c.arc(x, y - h, 2 * s, 0, TAU); c.fill();
+    }
+    // bottom-KO splashes
+    for (const S of splash) drawSplash(c, S, gw, gh, u, s);
+    c.lineCap = "butt"; c.lineJoin = "miter";
+  }
+
+  // the stage: the fry basket
+  function body(c) {
+    const S = STAGE.main;
+    c.beginPath();
+    c.moveTo(S.x1, S.top); c.lineTo(S.x2, S.top); c.lineTo(S.x2 - 6, 48); c.quadraticCurveTo(S.x2 - 10, 62, S.x2 - 26, 62);
+    c.lineTo(S.x1 + 26, 62); c.quadraticCurveTo(S.x1 + 10, 62, S.x1 + 6, 48); c.closePath();
+  }
+  function stage(c, tk) {
+    const S = STAGE.main, w = S.x2 - S.x1;
+    if (K.bodyFor !== S) {   // the body's gradient, the mesh path and the fat's gradient are in world units: built once
+      K.bodyFor = S;
+      K.body = c.createLinearGradient(0, S.top, 0, 64); K.body.addColorStop(0, "#4a4e5c"); K.body.addColorStop(1, "#262833");
+      const m = new Path2D();
+      for (let x = S.x1 + 14; x < S.x2; x += 14) { m.moveTo(x, 0); m.lineTo(x, 64); }
+      for (const y of [14, 28, 42, 56]) { m.moveTo(S.x1, y); m.lineTo(S.x2, y); }
+      K.mesh = m;
+      K.dip = c.createLinearGradient(0, WL, 0, 66); K.dip.addColorStop(0, "rgba(232,178,74,0.92)"); K.dip.addColorStop(0.4, "rgba(192,126,36,0.9)"); K.dip.addColorStop(1, "rgba(110,62,18,0.92)");
+    }
+    body(c); c.fillStyle = K.body; c.fill();
+    c.save(); c.clip();
+    c.strokeStyle = "rgba(190,200,220,0.16)"; c.lineWidth = 1.5; c.stroke(K.mesh);
+    c.strokeStyle = "#6a6e7c"; c.lineWidth = 4;   // the steel bar round the bottom
+    c.beginPath(); c.moveTo(S.x2 - 3, 24); c.lineTo(S.x2 - 7, 48); c.quadraticCurveTo(S.x2 - 11, 60, S.x2 - 26, 60); c.lineTo(S.x1 + 26, 60); c.quadraticCurveTo(S.x1 + 11, 60, S.x1 + 7, 48); c.lineTo(S.x1 + 3, 24); c.stroke();
+    // the dip: the bottom of the basket sits in the fat (the wires show faintly under the surface), a bright line at the waterline
+    c.fillStyle = K.dip; c.fillRect(S.x1 - 4, WL, w + 8, 70 - WL);
+    c.beginPath(); c.rect(S.x1 - 4, WL, w + 8, 70 - WL); c.clip();
+    c.strokeStyle = "rgba(60,34,10,0.25)"; c.lineWidth = 1.5; c.stroke(K.mesh);
+    c.restore();
+    c.fillStyle = "rgba(255,240,192,0.9)"; c.fillRect(S.x1 + 4, WL - 1, w - 8, 2.2);
+    body(c); c.lineWidth = 3; c.strokeStyle = OUT; c.stroke();
+    // the boil along the waterline and where the basket's ends go into the fat
+    for (let i = 0; i < 10; i++) {
+      const per = 34 + 30 * hash(i * 4.1), q = tk + hash(i * 8.3) * per, cyc = Math.floor(q / per), k = (q % per) / per;
+      const x = i < 3 ? S.x1 - 4 - 24 * hash(cyc + i * 2.2) : i < 6 ? S.x2 + 4 + 24 * hash(cyc + i * 2.2) : S.x1 + 30 + (w - 60) * hash(cyc * 1.3 + i);
+      const r = (1.5 + 3.5 * k) * (i < 6 ? 1.1 : 0.7);
+      if (k < 0.88) bubble(c, x, WL + 1, r);
+      else { c.strokeStyle = `rgba(255,240,200,${(1 - k) / 0.12})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(x, WL - 1, r * 1.6, r * 0.5, 0, 0, TAU); c.stroke(); }
+    }
+    // the lip: the basket's steel rim, rivets, orange rubber grips on the corners (the ledges)
+    c.beginPath(); c.roundRect(S.x1 - 4, S.top - 3, w + 8, 12, 5);
+    c.fillStyle = C.rim; c.fill(); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = C.rimHi; c.fillRect(S.x1, S.top - 2, w, 3);
+    c.fillStyle = OUT;
+    for (let x = S.x1 + 30; x < S.x2 - 10; x += 60) { c.beginPath(); c.arc(x, S.top + 4.5, 1.5, 0, TAU); c.fill(); }
+    for (const x of [S.x1, S.x2]) {
+      c.beginPath(); c.roundRect(x - 5, S.top - 3.5, 10, 4, 2); c.fillStyle = "#ff9a3d"; c.fill(); c.lineWidth = 1; c.strokeStyle = OUT; c.stroke();
+    }
+    // the four fries (soft platforms): same 11-unit body, light top line and glow as everywhere, dressed as golden fries
+    for (const p of STAGE.plats) {
+      const pw = p.x2 - p.x1, gy = p.y + 18 + Math.sin(tk * 0.03 + p.x1) * 2;
+      c.fillStyle = "rgba(255,200,100,0.14)"; c.beginPath(); c.ellipse((p.x1 + p.x2) / 2, gy, pw * 0.4, 5, 0, 0, TAU); c.fill();
+      c.beginPath(); c.roundRect(p.x1, p.y - 1, pw, 11, 4);
+      c.fillStyle = C.fry; c.fill();
+      c.save(); c.clip();
+      c.fillStyle = "rgba(201,134,43,0.45)"; c.fillRect(p.x1, p.y + 6, pw, 5);   // the shaded side face
+      c.fillStyle = C.crust; c.fillRect(p.x1, p.y - 1, 6, 12); c.fillRect(p.x2 - 6, p.y - 1, 6, 12);
+      c.restore();
+      c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
+      c.fillStyle = C.fryHi; c.fillRect(p.x1 + 6, p.y, pw - 12, 2.5);
+      c.fillStyle = C.crust;
+      for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(p.x1 + pw * (0.2 + 0.2 * i) + hash(p.x1 + i) * 8, p.y + 4.5 + hash(p.x2 + i) * 2, 1, 0, TAU); c.fill(); }
+      c.fillStyle = "#ffffff";
+      for (let i = 0; i < 3; i++) c.fillRect(p.x1 + pw * (0.28 + 0.22 * i) + hash(p.y + i * 7) * 10, p.y + 0.2, 1.2, 1.2);   // salt
+    }
+  }
+
+  // bottom KO: a splash of fat from the bottom edge, a puff of steam, a sizzle
+  const splash = [];
+  function drawSplash(c, S, gw, gh, u, s) {
+    const t = S.t, a = 1 - t / 40, y0 = gh - u * 0.03;
+    if (t < 16) { c.strokeStyle = `rgba(255,240,192,${0.8 * (1 - t / 16)})`; c.lineWidth = 2; c.beginPath(); c.ellipse(S.x, y0, (10 + t * 3.5) * s, (3 + t) * s, 0, 0, TAU); c.stroke(); }
+    const r = u * 0.08 * (1 + t / 30);
+    c.globalAlpha = Math.min(1, a * 2); c.drawImage(K.steam, S.x - r, y0 - u * 0.04 - t * 1.1 * s - r, r * 2, r * 2); c.drawImage(K.steam, S.x - r * 0.7, y0 - u * 0.06 - t * 1.4 * s - r * 0.7, r * 1.4, r * 1.4);
+    c.globalAlpha = 1;
+    if (t < 14) {   // the crown of fat thrown up where the fighter went in
+      const k = t / 14, h = Math.sin(k * Math.PI) * u * 0.08, bw = u * 0.009;
+      c.fillStyle = C.splash; c.strokeStyle = "rgba(60,30,8,0.8)"; c.lineWidth = 1.2;
+      for (let i = -2; i <= 2; i++) {
+        const bx = S.x + i * u * 0.02, hh = h * (1 - Math.abs(i) * 0.25), lean = i * u * 0.014 * (0.4 + k);
+        c.beginPath(); c.moveTo(bx - bw, y0 + 2); c.quadraticCurveTo(bx + lean * 0.4 - bw * 0.4, y0 - hh * 0.6, bx + lean, y0 - hh); c.quadraticCurveTo(bx + lean * 0.4 + bw * 0.4, y0 - hh * 0.6, bx + bw, y0 + 2); c.closePath(); c.fill(); c.stroke();
+      }
+    }
+    for (const d of S.d) {
+      const x = S.x + d.vx * t * s, y = y0 + (d.vy * t + 0.15 * t * t) * s;
+      if (y > gh + 8) continue;
+      c.globalAlpha = Math.min(1, a * 1.6);
+      c.fillStyle = C.splash; c.beginPath(); c.arc(x, y, d.r * s, 0, TAU); c.fill(); c.lineWidth = 1.2; c.strokeStyle = "rgba(60,30,8,0.8)"; c.stroke();
+      c.fillStyle = "#fff6d8"; c.fillRect(x - d.r * 0.4 * s, y - d.r * 0.5 * s, Math.max(1, d.r * 0.35 * s), Math.max(1, d.r * 0.35 * s));
+    }
+    c.globalAlpha = 1;
+  }
+  function sizzle() {
+    if (!Sfx.ok()) return;
+    Sfx.noiseF(0.45, 0.16, "highpass", 2000, 2400, 0.7);
+    for (let i = 0; i < 6; i++) Sfx.later(20 + Math.random() * 400, () => Sfx.noiseF(0.012, 0.28, "highpass", 2600, 4200, 0.8));
+  }
+  function ko(e, live) {
+    if (!(e.y > STAGE.blast.bottom - 40)) return;
+    const u = Math.min(L.gw, L.gh), x = clamp(toScreen(e.x, e.y)[0], u * 0.06, L.gw - u * 0.06);
+    if (splash.length > 3) splash.shift();
+    splash.push({ x, t: 0, d: Array.from({ length: 8 }, (_, i) => { const a = -Math.PI / 2 + (i / 7 - 0.5) * 1.3 + (Math.random() - 0.5) * 0.15, sp = 4 + Math.random() * 3; return { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 3 + Math.random() * 3 }; }) });
+    if (live) sizzle();
+  }
+
+  // ambience: one quiet bed (the element's hum, the hood's rumble), re-laid every second with soft fades so it dies by itself
+  // within 1.5 s when the ticks stop (pause, menu, hidden tab); and the bubbling: short band-passed pops every 150-400 ms
+  const amb = { pop: 0, bed: 0 };
+  function bed(a, t) {
+    const D = 1.5, g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(1, t + 0.5); g.gain.setValueAtTime(1, t + D - 0.5); g.gain.linearRampToValueAtTime(0.0001, t + D);
+    g.connect(Sfx.out);
+    for (const [f, v] of [[60, 0.012], [120, 0.007]]) { const o = a.createOscillator(), og = a.createGain(); o.frequency.value = f; og.gain.value = v; o.connect(og); og.connect(g); o.start(t); o.stop(t + D + 0.05); }
+    const n = a.createBufferSource(), lp = a.createBiquadFilter(), ng = a.createGain();
+    n.buffer = Sfx.noiseBuf; n.loop = true; lp.type = "lowpass"; lp.frequency.value = 200; ng.gain.value = 0.2;
+    n.connect(lp); lp.connect(ng); ng.connect(g); n.start(t, Math.random() * 0.5); n.stop(t + D + 0.05);
+    setTimeout(() => { try { g.disconnect(); } catch (e) { /* gone */ } }, (D + 0.3) * 1000);
+  }
+  function tick(g, live) {
+    for (let i = splash.length - 1; i >= 0; i--) if (++splash[i].t >= 40) splash.splice(i, 1);
+    if (!live || !Sfx.ok()) return;
+    const a = Sfx.ctx, t = a.currentTime;
+    if (t >= amb.pop) { amb.pop = t + 0.15 + Math.random() * 0.25; const f = 300 + Math.random() * 600; Sfx.noiseF(0.02 + Math.random() * 0.02, 0.35, "bandpass", f, f * 0.85, 2.5); }
+    if (t >= amb.bed) { amb.bed = t + 1; bed(a, t); }
+  }
+
+  return { name: "Deep Fryday", bg, stage, tick, ko };
+})();
+
 
 /* ---- finish-ready looks (UI only: hitboxes and the simulation never change) ----
    A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
@@ -6410,10 +7697,11 @@ function drawTag(c, f, isP1, lift) {
   const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
-  c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8";
-  c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.fill();
+  // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
+  c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
+  c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.stroke(); c.fill();
   c.font = '800 12px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center";
-  c.fillText(label, 0, -6);
+  c.strokeText(label, 0, -6); c.fillText(label, 0, -6);
   c.restore();
 }
 
@@ -6568,6 +7856,7 @@ function updateFx(g) {
   if (mode === "match" && g === G) tagStep(g);   // hud.js: when the YOU / CPU markers show
   skinTick(g, tick);
   uvTick(g);   // Ultimates: the super freeze clock, particles and cues of the ulti being played
+  { BL.useStage(g); const ma = mapArt(); if (ma.tick) ma.tick(g, mode === "match" && g === G && !FIN.on); }   // the map's ambient particles / sounds (draw-world.js MAP_ART)
   for (const p of g.projs) if (p.style === "fire" && Math.random() < 0.7) ember(p.x - p.vx * 0.6 + (Math.random() - 0.5) * 10, p.y + (Math.random() - 0.5) * 10, -p.vx * 0.12 + (Math.random() - 0.5), -0.6 - Math.random());
   for (const f of g.fighters) {
     if (f.state !== "attack" || !f.move || !f.move.fire) continue;
@@ -7023,6 +8312,7 @@ function render(g, tk) {
 }
 function render2D(g, tk) {
   const c = ctx;
+  BL.useStage(g);   // the layout (and look) of the map this game is played on
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip();
   drawBackground(c, tk);
@@ -7087,6 +8377,7 @@ function handleEvent(g, e, live) {
         fries: Array.from({ length: 8 }, () => ({ da: (Math.random() - 0.5) * 1.1, sp: 5 + Math.random() * 7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, len: 12 + Math.random() * 8 })) });
       sfx.push({ k: "flash", t: 0, life: 10 });
       cam.shake = 20; trails[e.slot].length = 0;
+      { const ma = mapArt(); if (ma.ko) ma.ko(e, live); }   // the map's own KO splash (draw-world.js MAP_ART)
       if (live) Sfx.ko();
       break;
     case "jump": if (live && !e.rec && e.slot === meSlot) hudX.jb = true;   // the Special button grows while this jump lasts (updateHud)
@@ -14261,7 +15552,7 @@ function hideBanner() { clearTimeout(bannerT); bannerEl.hidden = true; }
 function newAttract() {
   const pick = () => FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
   const a = pick(), b = pick();
-  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2 });
+  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   trails[0].length = trails[1].length = 0;
 }
@@ -14295,7 +15586,8 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, pending: null };
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", pending: null };
+const randMap = () => (Math.random() * BL.MAPS.length) | 0;
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
   "Spud Muffin", "Tater Tot", "Hash Brown", "Mash Master", "Sir Fries-a-Lot", "Lady Latke", "Chip Chomp", "Wedge Wally",
@@ -14418,10 +15710,11 @@ function drawCards(tk) {
   }
 }
 /* practice: opponent and CPU level are small pickers in the header */
-function closePops() { $("oppPop").hidden = true; $("lvlPop").hidden = true; }
+function closePops() { $("oppPop").hidden = true; $("lvlPop").hidden = true; $("mapPop").hidden = true; }
 function buildPractice() {
   $("oppPick").innerHTML = `<small>vs</small>${sel.opp === "random" ? "Random" : FIG[sel.opp].name}`;
   $("lvlPick").innerHTML = `<small>CPU</small>${LEVELS[sel.level].name}`;
+  $("mapPick").innerHTML = `<small>Map</small>${sel.map === "random" ? "Random" : mapName(sel.map)}`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
@@ -14433,8 +15726,9 @@ function buildPractice() {
   };
   fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
+  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
 }
-for (const [btn, pop] of [["oppPick", "oppPop"], ["lvlPick", "lvlPop"]]) {
+for (const [btn, pop] of [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]]) {
   $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; });
 }
 app.addEventListener("click", (e) => { if (!e.target.closest(".pickwrap")) closePops(); });
@@ -14450,22 +15744,30 @@ function openSelect(m) {
 }
 
 /* ----- match ----- */
+// a random CPU fighter: your own fighter is 4x less likely than each other one (about 3% instead of 1 in 8; Jonny, 2026-10-14)
+function cpuFoe(me) {
+  const w = FIGHTERS.map((f) => (f.id === me.id ? 0.25 : 1)), sum = w.reduce((a, b) => a + b, 0);
+  let r = Math.random() * sum;
+  for (let i = 0; i < FIGHTERS.length; i++) { r -= w[i]; if (r < 0) return FIGHTERS[i]; }
+  return FIGHTERS[FIGHTERS.length - 1];
+}
 function startMatch() {
   Sfx.init();
   const ranked = sel.mode === "ranked";
   const me = FIG[sel.fighter], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   let opp, d, oppRating = 0;
   if (ranked) {
-    opp = FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
+    opp = cpuFoe(me);
     oppRating = clamp(Math.round(P.rating + (Math.random() - 0.5) * 140), 600, 2100);
     d = clamp((oppRating - 750) / 1000, 0.08, 0.98);
   } else {
-    opp = sel.opp === "random" ? FIGHTERS[(Math.random() * FIGHTERS.length) | 0] : FIG[sel.opp];
+    opp = sel.opp === "random" ? cpuFoe(me) : FIG[sel.opp];
     d = LEVELS[sel.level].d;
   }
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150 });
+  const map = !ranked && sel.map !== "random" ? sel.map : randMap();   // ranked always draws a map; practice can pick one
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map });
   match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
@@ -14673,7 +15975,7 @@ function showResults(R) {
   if (R.ranked) {
     const ti = tierInfo(R.after);
     $("rRank").style.setProperty("--tc", ti.t.col);
-    paintBadge($("rBadge"), ti.i);
+    paintBadge($("rBadge"), ti.i, R.ta > R.tb ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
     $("rTier").textContent = ti.t.name;
     const rt = $("rRating"), tail = ti.next ? ` · ${ti.need} to ${ti.next.name}` : "";
     rt.textContent = ""; const rn = document.createElement("span"); rn.textContent = R.before; rt.append(`${R.before} → `, rn, tail);
@@ -14942,7 +16244,8 @@ function cupFight() {
   const me = FIG[c.fid], opp = FIG[os.f], myPal = me.palettes[c.pal] || me.palettes[0], oppPal = opp.palettes[os.pal] || opp.palettes[0];
   Sfx.init();
   const d = clamp((os.r - 750) / 1000, 0.08, 0.98);
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150 });
+  const map = (((c.seed % BL.MAPS.length) + BL.MAPS.length) % BL.MAPS.length + r) % BL.MAPS.length;   // quarter, semi and final on different maps
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150, map });
   match = { ranked: false, cup: true, round: r, d, oppRating: os.r, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: null, cpu: os.n };
   meSlot = 0;
   enterMatchUI();
@@ -14983,7 +16286,7 @@ function cupSlot(c, r, pos) {
   const out = done && dec !== s, champ = done && r === 2 && dec === s;
   const cls = ["cs", me ? "me" : "", me && !out ? "path" : "", out && !(me && c.out === r) ? "out" : "", me && out ? "fell" : "", champ ? "champ" : "", CU.pop === key ? "pop" : ""].filter(Boolean).join(" ");
   return `<div class="${cls}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(pal)}"><span class="cs-ph">${PORTRAITS[sl.f] ? `<img src="${PORTRAITS[sl.f]}" alt="">` : ""}</span>` +
-    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r"><i class="cs-b" style="--tc:${ti.t.col}"></i><span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
+    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r">${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
 }
 function cupTrophy(c) {
   const champ = c.p[3][0] >= 0 && !CU.hide.has("2:0");
@@ -15214,7 +16517,7 @@ function dailyFight() {
   P.daily = { d: key, r: -1, s: 0, w: st.w, b: st.b };   // tried from the first frame: a quit, a forfeit or a reload counts as a loss
   saveProfile();
   Sfx.init(); modal("daily", false);
-  G = newGame({ players: [{ spec: me, pal: me.palettes[mi] || me.palettes[0] }, { spec: opp, pal: opp.palettes[oi] || opp.palettes[0] }], stocks: DAILY.lives, time: DAILY.secs, countdown: 150, seed: pk.seed });
+  G = newGame({ players: [{ spec: me, pal: me.palettes[mi] || me.palettes[0] }, { spec: opp, pal: opp.palettes[oi] || opp.palettes[0] }], stocks: DAILY.lives, time: DAILY.secs, countdown: 150, seed: pk.seed, map: ((pk.seed % BL.MAPS.length) + BL.MAPS.length) % BL.MAPS.length });
   match = { ranked: false, daily: { key, prev }, d: pk.d, oppRating: 0, bot: makeBot(pk.d, BL.BOT_STYLES[opp.id]), level: pk.word, cpu: pk.cpu };
   meSlot = 0;
   enterMatchUI();
@@ -15246,7 +16549,7 @@ window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: d
    Checksums every second catch any divergence; the host then sends a full snapshot. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 8;
+const PROTO = 9;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -15597,7 +16900,8 @@ function startOnlineMatch(st) {
   for (let i = 0; i < NET.D; i++) { NET.myLog.push(NEUTRAL); NET.opLog.push(NEUTRAL); }
   const specs = st.f.map((id) => FIG[id]);
   meSlot = NET.role === "host" ? 0 : 1;
-  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed });
+  // the map comes from the match seed, so both phones play the same one with no new field in the start message
+  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.MAPS.length });
   match = { online: true, ranked: false, level: null };
   NET.phase = "match";
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, rm: null, pg: null, po: null, nf: null, np: null });

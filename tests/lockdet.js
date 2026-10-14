@@ -1,10 +1,11 @@
 // serialize/restore round trip + checksum equality on the patched core, with bots fighting (strings happen)
 const { BL } = require(process.env.CORE || "../game/core.js");
 const { FIGHTERS, newGame, step, makeBot, botInput, serialize, restore, checksum } = BL;
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 let mismatches = 0, launches = 0, safeFrames = 0, checks = 0;
 for (let seed = 1; seed <= 40; seed++) {
   const n = FIGHTERS.length, A = FIGHTERS[seed % n], B = FIGHTERS[(seed + 1 + (seed * 5) % (n - 1)) % n];   // every pair, never a mirror match
-  const mk = () => newGame({ players: [{ spec: A, pal: A.palettes[0] }, { spec: B, pal: B.palettes[1] }], seed, countdown: 10, time: 240 });
+  const mk = () => newGame({ players: [{ spec: A, pal: A.palettes[0] }, { spec: B, pal: B.palettes[1] }], seed, countdown: 10, time: 240, map: mapOf(seed) });
   const g1 = mk(), g2 = mk();
   const ba = makeBot(0.9), bb = makeBot(0.9);
   const inputs = [];

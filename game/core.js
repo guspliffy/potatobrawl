@@ -82,24 +82,43 @@ const TUNE = {
   // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
   ultNeed: [100, 120],
   ultMax: 2,
-  ultDealt: 1,
-  ultTaken: 0.5,
-  ultHeart: 10,
+  // (Jonny, 2026-10-14 16:37 UTC: the bar filled too fast; 0.6x of the first numbers 1 / 0.5 / 10)
+  ultDealt: 0.6,
+  ultTaken: 0.3,
+  ultHeart: 6,
   ultFreeze: 30,
+  ultKb: 1.75,     // every ulti hit's knockback, times (Jonny 2026-10-14 20:45 UTC: 75-80% stronger, they hardly ever KO'd)
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
-const STAGE = {
-  main: { x1: -330, x2: 330, top: 0, bottom: 64 },
-  plats: [
-    { x1: -250, x2: -110, y: -125 },
-    { x1: 110, x2: 250, y: -125 },
-    { x1: -70, x2: 70, y: -245 },
-  ],
-  blast: { left: -760, right: 760, top: -650, bottom: 460 },
-  spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }],
-  respawnY: -330,
-};
+// Maps (Jonny, 2026-10-14): each map has its own fight layout; the blast zones are the same everywhere, so KO percents stay fair.
+// main = the one flat floor (grabbable ledges at x1/x2), plats = soft drop-through platforms (inside main's x range).
+// STAGE is the layout in use: useStage(g) points it at g.map's layout at every entry point (newGame, step, botInput), so the
+// rest of the simulation (and the UI, after BL.useStage(G)) reads STAGE as before. g.map is fixed for a match.
+const BLAST = { left: -760, right: 760, top: -650, bottom: 460 };
+const MAPS = [
+  { id: "moon", main: { x1: -330, x2: 330, top: 0, bottom: 64 },
+    plats: [{ x1: -250, x2: -110, y: -125 }, { x1: 110, x2: 250, y: -125 }, { x1: -70, x2: 70, y: -245 }],
+    blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
+  { id: "bay", main: { x1: -280, x2: 280, top: 0, bottom: 64 },
+    plats: [{ x1: -160, x2: 160, y: -110 }, { x1: -55, x2: 55, y: -250 }],
+    blast: BLAST, spawns: [{ x: -150, f: 1 }, { x: 150, f: -1 }], respawnY: -330 },
+  { id: "castle", main: { x1: -380, x2: 380, top: 0, bottom: 64 },
+    plats: [{ x1: -340, x2: -200, y: -165 }, { x1: 200, x2: 340, y: -165 }],
+    blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
+  { id: "fryer", main: { x1: -320, x2: 320, top: 0, bottom: 64 },
+    plats: [{ x1: -250, x2: -130, y: -105 }, { x1: 130, x2: 250, y: -105 }, { x1: -190, x2: -80, y: -225 }, { x1: 80, x2: 190, y: -225 }],
+    blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
+];
+const STAGE = { id: "", map: 0, main: null, plats: null, blast: null, spawns: null, respawnY: 0 };
+function useStage(g) {
+  const i = g && MAPS[g.map] ? g.map : 0;
+  if (STAGE.map === i && STAGE.main) return STAGE;
+  const m = MAPS[i];
+  Object.assign(STAGE, { id: m.id, map: i, main: m.main, plats: m.plats, blast: m.blast, spawns: m.spawns, respawnY: m.respawnY });
+  return STAGE;
+}
+useStage(null);
 
 /* Move constructor. Boxes are circles relative to the fighter's feet:
    [x, y, r] or a sweep [x, y, r, x2, y2]; x points forward, negative y is up.
@@ -150,7 +169,7 @@ const FIGHTERS = [
                proj: { style: "fire", speed: 8.5, life: 76, r: 15, ox: 36, oy: -40, grav: 0.03, dmg: 8, bkb: 5.5, kbg: 8, angle: 38,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
       // Solar Dive: up and out of sight (intangible), the spot is picked at mt 15, a comet dive, the blast where it lands
-      ulti:  M(60, 6, 34, 26, 8, 15, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
+      ulti:  M(60, 6, 34, 26, 6, 10, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
     },
   },
   {
@@ -450,7 +469,9 @@ function newGame(o) {
     t: 0, phase: "countdown", cd: o.countdown ?? 150, hitstop: 0, timer: (o.time ?? 240) * 60, timed: (o.time ?? 240) > 0, sudden: false,
     fighters: [], projs: [], events: [], winner: -1, endT: 0, endReason: "",
     rng: mulberry32(o.seed ?? ((Math.random() * 1e9) | 0)), stocks: o.stocks ?? 3,
+    map: MAPS[o.map | 0] ? o.map | 0 : 0,
   };
+  useStage(g);
   o.players.forEach((p, i) => {
     const sp = STAGE.spawns[i];
     const f = newFighter(p.spec, i, p.pal, sp.x, sp.f);
@@ -494,6 +515,7 @@ function circRect(cx, cy, r, b) {
 /* ---------- main step ---------- */
 function step(g, inputs) {
   if (g.phase === "over") return;
+  useStage(g);
   const live = g.phase === "play";
   const frozen = g.hitstop > 0;
   // Inputs are read even during hitstop so presses made in the freeze are buffered, not lost.
@@ -1116,6 +1138,7 @@ function applyHit(g, h) {
   if (!ultHit) { ultGain(att, dmg * TUNE.ultDealt); ultGain(def, dmg * TUNE.ultTaken); }
   let kb = knockback(hit, def.percent, def.s.weight);
   if (ck) kb *= 1 + TUNE.chgKb * ck;
+  if (ultHit && kb >= TUNE.tumbleKb) kb *= TUNE.ultKb;   // only the launching hits, so a multi-hit ulti still carries its target into the last hit
   let hdir;
   if (h.proj) hdir = sign(h.proj.vx) || h.proj.dir;
   else if (Math.abs(h.lx) < 8) hdir = sign(def.x - att.x) || att.facing;
@@ -1206,7 +1229,7 @@ function escapeInput(f, t, kind) {
 function lethal(g, slot) {
   const snap = serialize(g);
   for (let kind = 0; kind < 4; kind++) {
-    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0 });
+    const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0, map: g.map });
     restore(h, snap);
     // projectiles still in the air stay in the look-ahead (a Meteor Shower star or a flame puff still coming is part of the call)
     h.look = true; h.timed = false;
@@ -1327,9 +1350,9 @@ const BOT_STYLES = {
   alchemist: { gap: 1.6, back: 0.4, spec: 1.3, atk: 1.15, heavy: 1.25 },               // stays back and lobs
   odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
-  wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
+  wizard:    { gap: 1.4, back: 0.4, rng: 10, poke: 0.8 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.3, heavy: 1.2 },                           // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.15, heavy: 1.1 },                          // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
@@ -1338,6 +1361,7 @@ function makeBot(level, style) {
 function botInput(g, me, opp, bot) {
   const out = blankInput();
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
+  useStage(g);
   const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
   bot.mem.push({
     x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
@@ -1540,11 +1564,11 @@ function restore(g, s) {
 function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
-  mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
+  mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map);
   for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
 
-root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, useStage, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
