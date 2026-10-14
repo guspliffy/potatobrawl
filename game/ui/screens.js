@@ -1,7 +1,7 @@
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
-const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline") };
-function show(name) { for (const k of ["menu", "select", "result", "online"]) screens[k].hidden = k !== name; }
+const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
+function show(name) { for (const k of ["menu", "select", "result", "online", "cup"]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; }
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
@@ -29,6 +29,7 @@ function renderMenu() {
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
+  cupMenu();
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
@@ -50,6 +51,20 @@ function goMenu() {
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
 const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, pending: null };
+/* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
+const CPU_NAMES = [
+  "Spud Muffin", "Tater Tot", "Hash Brown", "Mash Master", "Sir Fries-a-Lot", "Lady Latke", "Chip Chomp", "Wedge Wally",
+  "Russet Rex", "Couch Potato", "Sweet Pete", "Fingerling Finn", "Gnocchi Gus", "Pommes Pierre", "Rosti Rosa", "Tuber Tom",
+  "Sprout Sam", "Starch Stan", "Papa Pomme", "Crispy Cris", "Salty Sal", "Gravy Gail", "Duchess Dot", "Lumpy Lou",
+  "Grandpa Spud", "Baron Baked", "Tater Tyrant", "Mr. Mash", "Curly Fry", "Waffle Walt", "Jacket Jim", "Butter Boris",
+  "Peel Appeal", "Eyes Ivy", "Smash Brown", "Yukon Yolanda",
+];
+let lastCpuName = "";
+function cpuName() {
+  let n;
+  do n = CPU_NAMES[(Math.random() * CPU_NAMES.length) | 0]; while (n === lastCpuName);
+  return (lastCpuName = n);
+}
 const cardArt = [];
 function statBars(spec) {
   const s = spec.stats, mv = spec.moves;
@@ -177,9 +192,9 @@ function openSelect(m) {
   sel.mode = m; sel.pending = null;
   mode = "select";
   const ti = tierInfo(P.rating);
-  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : "Practice · no rating, no chips";
+  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · no rating, no chips";
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -201,7 +216,7 @@ function startMatch() {
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150 });
-  match = { ranked, d, oppRating, bot: makeBot(d), level: ranked ? null : LEVELS[sel.level].name };
+  match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
 }
@@ -217,6 +232,12 @@ function enterMatchUI() {
     el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
+  { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
+    const sub = $("pc1").querySelector(".pc-sub");
+    sub.hidden = !(match.cpu && !match.online);
+    sub.querySelector(".nm").textContent = match.cpu || "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : "";
+  }
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
@@ -237,9 +258,11 @@ function finReady(i) {
 function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
-  if (match.ranked) { const ti = tierInfo(match.oppRating); return `${me} vs ${op} · CPU ${ti.t.name} ${match.oppRating}`; }
-  return `${me} vs ${op} · ${match.level}`;
+  if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
+  if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
+  return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
 }
+function cpuTier() { return `${tierInfo(match.oppRating).t.name} ${match.oppRating}`; }
 // Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
 function setHearts(box, n, prev) {
   if (prev < 0) box.innerHTML = "<i></i>".repeat(n);
@@ -298,14 +321,15 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && match.ranked ? "Forfeit" : "Quit to menu";
-  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup) ? "Forfeit" : "Quit to menu";
+  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   releaseTouch();
 }
 let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
   if (match && match.tutorial) { tutDone(); return; }
+  if (match && match.cup) { cupMatchEnd(forfeit); return; }
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -346,13 +370,14 @@ function showResults(R) {
   $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
   const mn = R.me.spec.name, on = R.op.spec.name;
   const who = R.online ? NET.oppName || "Your friend" : on;
+  const cpu = match.cpu && !R.online ? `${match.cpu} (${on}${R.ranked ? `, ${cpuTier()}` : ""})` : on;   // the CPU's potato name, and its tier in ranked
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   $("rSub").textContent = R.lost ? `The connection to ${who} dropped.` : R.left ? `${who} left the match.` :
     R.online && R.res === 1 ? `You beat ${who}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
     R.online && R.res === 0 ? `${who} beat you${how}.` :
     R.forfeit ? "You left the match. It counts as a loss." :
-    R.res === 1 ? `${mn} beat ${on}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.res === 0 ? `${on} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
+    R.res === 1 ? `${mn} beat ${cpu}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
+    R.res === 0 ? `${cpu} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     $("rSub").textContent += !R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`;

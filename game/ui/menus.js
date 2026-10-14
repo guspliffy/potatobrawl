@@ -2,11 +2,12 @@
 const tap = (id, fn) => $(id).addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e); });
 tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
+tap("bCup", cupOpen);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 tap("selBack", goMenu);
 tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -15,7 +16,7 @@ tap("pQuit", () => {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
-  if (!match.ranked) { goMenu(); return; }
+  if (!match.ranked && !match.cup) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
 });

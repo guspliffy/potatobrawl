@@ -50,7 +50,8 @@ index.html is committed with every source change (check.sh flags a stale one).
 ## File map (game/)
 - core.js: deterministic sim (no Math.random/sin in sim; `trig(deg)` Taylor series; integer angles).
   TUNE, STAGE, FIGHTERS (moves `M(startup, active, endlag, dmg, bkb, kbg, angle, boxes, opts)`, palettes,
-  look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot/botInput),
+  look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot(level, style)/botInput; BOT_STYLES = one style per fighter id, a few numbers
+  that bias the bot's decisions; no style = the neutral bot, input for input as before),
   serialize/restore/FKEYS/checksum. Exported as `BL` (also a node module).
   - Finish mode: a move or projectile with a `fin` block (all six specials) uses those numbers when the
     defender had >= TUNE.finishPct (175) before the hit; hitstop TUNE.finishStop; "hit" event `fin: true`.
@@ -66,8 +67,21 @@ index.html is committed with every source change (check.sh flags a stale one).
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
   · effects (fx, /*SKINFX*/ placeholder, the frame-time watchdog PERF, render, sim events) · screens (menu, select, match,
-  results) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
+  results; CPU_NAMES + the CPU's name under its HUD card) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
+- ui/cup.js (after screens): the offline tournament, UI only. You + 7 CPUs (potato names, fighters, ratings seeded around yours:
+  quarter-final opponent about -30, semi-final opponent from the other quarter in your half about +40, final opponent from the other
+  half about +150), quarter-final 2 lives / 2 min, semi-final 2 lives / 2 min, final 3 lives / 3 min. CPU strength from the opponent's
+  rating as in ranked (d = (rating - 750) / 1000), each CPU plays its fighter's style. The cup lives in `P.cup` (seats 0-7, `p` = the
+  seats still in each round, `round`, `out`, `earned`; saved with the profile, so a reload returns to the bracket; a match that was
+  running at the reload is simply fought again). The other matches of a round are decided when you finish yours, by Elo odds and the
+  cup's seed (cupDecide), and tick in on the bracket one by one. Chips 15 / 25 / 60 per round won, +30 for a cup won without losing a
+  life, added to `P.tokens`; no rating, record or history change; `P.cups` counts cups won (you only write it). Pause > Forfeit or a
+  lost match ends the cup (the rest of it is played out so a champion shows); "Run it back" starts a new cup with the same fighter;
+  Menu in a running cup asks before leaving. Hooks outside the file: screens.js (`show`, openSelect text for the "cup" mode,
+  togglePause texts, finishMatch -> cupMatchEnd, vsLine), menus.js (bCup, selGo, pQuit), shell.html (menu button, `#scrCup`, one marked
+  CSS block), build.py (UI_PARTS). Landscape: Quarter | Semi | Final + cup | Semi | Quarter with lines drawn by cupLines from the
+  slots' offsets; upright phones get a stacked list (`#app.portrait`). New cup mode value `mode === "cup"`.
 - ui/finisher.js (between effects and screens): KO finisher cinematic, started by the final lethal hit (no
   finisher for a self-destruct or a failed recovery). Beat 0 is the real impact, then the staged scene ends
   with the loser launched out of the arena. Also the KO zoom on earlier lives (finLethal), the finishing-
@@ -125,7 +139,9 @@ index.html is committed with every source change (check.sh flags a stale one).
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
 
 ## Tests (tests/, run from anywhere)
-snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core) · lockrun.js (longest
+snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core; always the neutral bot) · botstyle.js (each CPU style
+against the neutral bot, same fighter, levels 0.5/0.8: win rate 35-65% plus what the style does; STYLE='{"wizard":{"gap":2}}' tries
+numbers, ONLY=wizard one fighter; check.sh step 4b) · lockrun.js (longest
 unreactable jab run, check.sh wants <= 3 at R=14) · lockdet.js (save/restore while string launches happen) ·
 finish.js (finish mode per fighter and weight, charge frame data, every lethal call in 30 bot matches ends
 in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real lethal hit; --2d, --up, --skip,
@@ -134,7 +150,9 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwux2.py (all screens, 3 sizes) ·
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
+pwux2.py (all screens, 3 sizes) ·
 pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
@@ -156,6 +174,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
+- Tournament (night of 2026-10-13): offline against 7 CPUs is in. Next: online (the host runs the bracket, friends join by link, CPUs
+  fill empty seats, each pair plays on a room code; after accounts), a cup counter on the profile pill (P.cups is written), the Dragon's
+  edge-guard style could get an aerial chase, an "all fighters" cup variant.
 On 2026-10-13, after playing M1 + M2, Jonny asked for special finishes, Mortal-Kombat-style finishers, heavies
 that differ from lights, a charged heavy, and the finisher starting on the KO hit. He chose to do this before
 accounts (1 s charge).

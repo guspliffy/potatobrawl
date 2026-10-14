@@ -54,6 +54,11 @@ RANGE=$(awk '/%$/ && NF==2 { printf "%s %s  ", $1, $2 }' "$LOGS/balance.log")
 if [ -z "$OUT" ]; then pass "balance ${LO}-${HI}%: $RANGE"
 else fail "balance outside ${LO}-${HI}%:$OUT" "$LOGS/balance.log"; fi
 
+# 4b. CPU fighting styles: each fighter's styled CPU against the neutral one, same fighter, stays between 35% and 65%.
+(cd tests && node botstyle.js 100) > "$LOGS/botstyle.log" 2>&1
+if grep -q "^botstyle ok" "$LOGS/botstyle.log"; then pass "CPU styles (styled vs neutral win rates inside 35-65%)"
+else fail "CPU styles outside 35-65% against the neutral CPU" "$LOGS/botstyle.log"; fi
+
 # 5. Online: two browsers play a match through a local server.
 PORT=8091 KEEPALIVE_MINUTES=0 node server.js > "$LOGS/server.log" 2>&1 &
 SRV=$!
@@ -83,6 +88,12 @@ else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1
 if [ "$(grep -c "^no errors" "$LOGS/finisher.log")" = 2 ]; then pass "KO finisher (plays through, skips, results screen after)"
 else fail "KO finisher" "$LOGS/finisher.log"; fi
+
+# 8. Tournament: start a cup, win the quarter-final (chips paid, bracket moves on), lose the semi-final (no rating change), run it back,
+#    leave, reload into a cup, forfeit from the pause menu.
+(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwcup.py" cup flow) > "$LOGS/cup.log" 2>&1
+if grep -q "^no errors" "$LOGS/cup.log"; then pass "tournament (bracket, chips, loss, run it back, reload, forfeit; no page errors)"
+else fail "tournament" "$LOGS/cup.log"; fi
 
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
