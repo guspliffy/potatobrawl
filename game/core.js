@@ -1089,13 +1089,38 @@ function startSudden(g) {
 }
 
 /* ---------- Bot: drives the same virtual controller a human uses ---------- */
-function makeBot(level) {
-  return { d: level, mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
+/* Fighting styles: a few numbers that bias the decisions in botInput (not a second brain). BOT_NEUTRAL is what every number
+   means when it is left out, and it is exactly the old bot: makeBot(level) with no style plays input for input as before.
+   Offline only (tutorial, ranked, practice, tournament, attract), so none of this touches the online protocol. */
+const BOT_NEUTRAL = {
+  gap: 1,        // preferred distance, times the old walk-in distance
+  back: 0,       // steps back when closer than this share of the preferred distance (0 = never)
+  shuffle: 0.3,  // chance per decision to step back instead of holding still when in range
+  rng: 0,        // starts a melee attack this many px further out
+  poke: 0.55,    // chance that a ground light is a sideways tilt instead of a jab
+  atk: 1,        // melee attack rate, times
+  heavy: 1,      // heavy rate, times
+  charge: 0.3,   // chance that a heavy is charged
+  spec: 1,       // special rate, times
+  air: 0,        // chance per decision to take to the air near the opponent (and to jump again to stay up)
+  edge: 0,       // chance per decision to jump out after an opponent knocked past the ledge and swing at them
+};
+// by fighter id; tests/botstyle.js keeps each of them about as strong as the neutral bot
+const BOT_STYLES = {
+  samurai:   { gap: 0.4, shuffle: 0, spec: 1.3, atk: 0.8 },                            // rushes in
+  alchemist: { gap: 1.7, back: 0.4, spec: 1.7, atk: 1.15, heavy: 1.3 },                // stays back and lobs
+  odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
+  phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
+  wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
+  dragon:    { edge: 0.6 },                                                            // guards the edge
+};
+function makeBot(level, style) {
+  return { d: level, st: Object.assign({}, BOT_NEUTRAL, style), mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
 }
 function botInput(g, me, opp, bot) {
   const out = blankInput();
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
-  const d = bot.d, R = g.rng, S = STAGE.main;
+  const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
   bot.mem.push({
     x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
     gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn", inv: intangible(opp),
@@ -1149,6 +1174,7 @@ function botInput(g, me, opp, bot) {
     } else toward = -out_;
     bot.hold.x = toward; bot.hold.y = 0; out.x = toward;
     if (!canAct(me)) return out;
+    if (st.edge && bot.cool <= 0 && !belowBottom && (Math.abs(o.x) > S.x2 || o.y > S.top + 40) && Math.abs(o.x - me.x) < hw + 64 && Math.abs(o.y - me.y) < 70) return press("light", sign(o.x - me.x), 0, 6);
     const vyT = me.vy + me.kby;
     const clear = (me.x - edgeX) * out_ > hw + 10;
     if (belowBottom && !clear) {
@@ -1184,22 +1210,22 @@ function botInput(g, me, opp, bot) {
       // finish-ready opponent: go for the special more often and from further away
       const fr = o.pct >= TUNE.finishPct, spx = fr ? 2 : 1;
       const short = k === "projectile" && me.spec.moves.spec.proj.short;
-      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
-      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx) return press("special", sx, 0, 10);
+      if (short && adx < 115 && Math.abs(dy) < 40 && R() < lerp(0.15, 0.5, d) * spx * st.spec) return press("special", sx, 0, 10);
+      if (k === "projectile" && !short && adx > (fr ? 80 : 110) && adx < (fr ? 340 : 300) && Math.abs(dy) < 50 && R() < lerp(0.15, 0.5, d) * spx * st.spec) return press("special", sx, 0, 10);
       const dashEnd = me.x + sx * 200;
-      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx) return press("special", sx, 0, 12);
-      if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d)) return press("special", sx, 0, 12);
+      if (k === "dash" && adx > 70 && adx < 230 && Math.abs(dy) < 36 && dashEnd > S.x1 && dashEnd < S.x2 && R() < lerp(0.1, 0.4, d) * spx * st.spec) return press("special", sx, 0, 12);
+      if (k === "charge" && adx < reach + 40 && Math.abs(dy) < 40 && R() < lerp(0.08, 0.3, d) * st.spec) return press("special", sx, 0, 12);
     }
-    if (adx < reach + 18 && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d)) {
+    if (adx < reach + 18 + st.rng && Math.abs(dy) < 56 && R() < lerp(0.3, 0.9, d) * st.atk) {
       if (me.grounded) {
         const killPct = lerp(150, 95, d) * (100 / me.s.weight);
-        if ((o.pct > killPct && R() < 0.65) || R() < 0.12) {
+        if ((o.pct > killPct && R() < 0.65) || R() < 0.12 * st.heavy) {
           // sometimes charge: weak bots too long (easy to punish), strong bots a short top-up
-          if (R() < 0.3) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
+          if (R() < st.charge) bot.chg = Math.round(lerp(40, 8, d) + R() * lerp(20, 12, d));
           return press("heavy", sx, R() < 0.2 ? 1 : 0, 10);
         }
         const r = R();
-        return press("light", r < 0.55 ? sx : 0, r > 0.85 ? 1 : 0, 6);
+        return press("light", r < st.poke ? sx : 0, r > 0.85 ? 1 : 0, 6);
       }
       if (dy < -26) return press("light", 0, -1, 6);
       if (dy > 26) return press(o.pct > 90 && R() < 0.4 ? "heavy" : "light", 0, 1, 6);
@@ -1211,7 +1237,17 @@ function botInput(g, me, opp, bot) {
     }
     if (me.grounded && dy < -80 && adx < 160 && R() < 0.6) return press("jump", sx, 0, 12);
   }
-  let hx = adx > reach * 0.8 ? sx : R() < 0.3 ? -sx : 0;
+  // air style: take off near the opponent, and jump again to stay up
+  if (st.air && act && bot.cool <= 0 && adx < 260) {
+    if (me.grounded && R() < st.air) return press("jump", sx, 0, 12);
+    if (!me.grounded && me.airJumps > 0 && me.vy > 0 && dy < 40 && R() < st.air) return press("jump", sx, 0, 14);
+  }
+  // edge style: an opponent knocked out past the ledge is followed out (the off-stage code below swings at them in reach)
+  if (st.edge && act && bot.cool <= 0 && me.grounded && me.plat < 0 && o.pct > 60 && Math.abs(o.x) > S.x2 && Math.abs(o.x) < S.x2 + 170 && Math.abs(o.y - me.y) < 130 &&
+      Math.abs(me.x - sign(o.x) * S.x2) < 70 && R() < st.edge) return press("jump", sign(o.x), 0, 14);
+  const want = reach * 0.8 * st.gap;
+  let hx = adx > want ? sx : R() < st.shuffle ? -sx : 0;
+  if (st.back && adx < want * st.back) hx = sign(me.x) === -sx && Math.abs(me.x) > S.x2 - 80 ? 0 : -sx;   // keeps its distance unless cornered
   let hy = 0;
   if (me.grounded && me.plat >= 0 && dy > 50) hy = 1;
   // hold up while the opponent swings nearby: steers a launch upward if it connects
@@ -1273,5 +1309,5 @@ function checksum(g) {
   return h >>> 0;
 }
 
-root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);

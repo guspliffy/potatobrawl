@@ -6,7 +6,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 ## State
 - Live: https://potatobrawl.cloud (Hostinger VPS srv1519994, 187.124.173.121, Ubuntu 24.04, Node 20).
   Caddy terminates HTTPS and proxies to the game server on 127.0.0.1:8080 (systemd unit `potatobrawl`,
-  checkout in /opt/potatobrawl). Old http://187.124.173.121:8080 still answers (plan says close it in M2).
+  checkout in /opt/potatobrawl). Old http://187.124.173.121:8080 still answers (deploy/accounts-setup.txt closes it).
 - PR #2 (M1 + M2: light-attack lock fix, PROTO 3, Android fullscreen, iPhone home-screen app, KO finisher
   Phase 1) was merged 2026-10-13 (9915ae6); live once Jonny pasted deploy/update.txt.
 - M3 "fight feel" (branch claude/m1-dragon-lock-fullscreen-u9pkgz restarted from main, PROTO 4): heavies get
@@ -55,7 +55,8 @@ index.html is committed with every source change (check.sh flags a stale one).
 ## File map (game/)
 - core.js: deterministic sim (no Math.random/sin in sim; `trig(deg)` Taylor series; integer angles).
   TUNE, STAGE, FIGHTERS (moves `M(startup, active, endlag, dmg, bkb, kbg, angle, boxes, opts)`, palettes,
-  look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot/botInput),
+  look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot(level, style)/botInput; BOT_STYLES = one style per fighter id, a few numbers
+  that bias the bot's decisions; no style = the neutral bot, input for input as before),
   serialize/restore/FKEYS/checksum. Exported as `BL` (also a node module).
   - Finish mode: a move or projectile with a `fin` block (all seven specials) uses those numbers when the
     defender had >= TUNE.finishPct (175) before the hit; hitstop TUNE.finishStop; "hit" event `fin: true`.
@@ -74,8 +75,21 @@ index.html is committed with every source change (check.sh flags a stale one).
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
   · effects (fx, /*SKINFX*/ placeholder, the frame-time watchdog PERF, render, sim events) · screens (menu, select, match,
-  results) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
+  results; CPU_NAMES + the CPU's name under its HUD card) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
+- ui/cup.js (after screens): the offline tournament, UI only. You + 7 CPUs (potato names, fighters, ratings seeded around yours:
+  quarter-final opponent about -30, semi-final opponent from the other quarter in your half about +40, final opponent from the other
+  half about +150), quarter-final 2 lives / 2 min, semi-final 2 lives / 2 min, final 3 lives / 3 min. CPU strength from the opponent's
+  rating as in ranked (d = (rating - 750) / 1000), each CPU plays its fighter's style. The cup lives in `P.cup` (seats 0-7, `p` = the
+  seats still in each round, `round`, `out`, `earned`; saved with the profile, so a reload returns to the bracket; a match that was
+  running at the reload is simply fought again). The other matches of a round are decided when you finish yours, by Elo odds and the
+  cup's seed (cupDecide), and tick in on the bracket one by one. Chips 15 / 25 / 60 per round won, +30 for a cup won without losing a
+  life, added to `P.tokens`; no rating, record or history change; `P.cups` counts cups won (you only write it). Pause > Forfeit or a
+  lost match ends the cup (the rest of it is played out so a champion shows); "Run it back" starts a new cup with the same fighter;
+  Menu in a running cup asks before leaving. Hooks outside the file: screens.js (`show`, openSelect text for the "cup" mode,
+  togglePause texts, finishMatch -> cupMatchEnd, vsLine), menus.js (bCup, selGo, pQuit), shell.html (menu button, `#scrCup`, one marked
+  CSS block), build.py (UI_PARTS). Landscape: Quarter | Semi | Final + cup | Semi | Quarter with lines drawn by cupLines from the
+  slots' offsets; upright phones get a stacked list (`#app.portrait`). New cup mode value `mode === "cup"`.
 - ui/finisher.js (between effects and screens): KO finisher cinematic, started by the final lethal hit (no
   finisher for a self-destruct or a failed recovery). Beat 0 is the real impact, then the staged scene ends
   with the loser launched out of the arena. Also the KO zoom on earlier lives (finLethal), the finishing-
@@ -94,6 +108,16 @@ index.html is committed with every source change (check.sh flags a stale one).
   The Cin sound kit lives here. Any throw falls back to the 2D finisher (FINS). Pure UI: never writes G.
   The frame-time watchdog PERF (effects.js) steps q up when matches run slow; the page reads it to pick its cheap
   tier. Tests pin it with window.__blastline.r3.lockQ = true (r3 is an old name; perf is the same object).
+- ui/acct.js (after menus.js) + sync.js: the profile pill (top right of the start page, replaces the rating/chips card: avatar of
+  `P.last`, name, tier badge in a progress ring + rating, chips, cups when `P.cups > 0`) and the Account sheet (`#scrAccount`, opened by
+  tapping the pill: name, tier/rating/peak, wins/losses/chips/skins, recent results, the sync section, Reset progress, which moved
+  here from Settings). `saveProfile()` (base.js) calls `acctDirty()`, so every change of a linked device is saved by itself ~1.2 s
+  later; a pull runs when the page opens, comes back from the background or the sheet opens. No network during a match. sync.js is
+  pure (code format `normCode`/`fmtCode`, `sanitize`, `mergeProf`, `applyTo`, `hasProgress`) and also a node module; build.py
+  splices it at the SYNC marker in acct.js. A new profile field that should follow the player goes into sync.js (COUNTERS, or
+  `sanitize` + `mergeProf` for other kinds) and `applyTo`. Device-only fields (sound, screen, fs, rules, a2hs) are never synced.
+  The link to an account is stored on the device under `potatobrawl.acct.v1` (code, revision, base copy, last sync time, a pending
+  reset), not in the profile. Test hooks: `window.__blAcct` (P, st, ui, sync, save).
 - skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
@@ -101,6 +125,20 @@ index.html is committed with every source change (check.sh flags a stale one).
   the deploy blocks copy them there.
 - Fullscreen helpers (FS, goFull, leaveFull) live in ui/input.js next to touchUI; the Fullscreen setting is
   P.fs (undefined = on for touch devices); the iPhone tip is dismissed with P.a2hs.
+
+## Accounts (sync codes): what is stored and where
+- Server side is accounts.js (called from server.js), off unless `ACCOUNTS_DIR` names a writable folder; then `/api/acct/ping|new|load|save`
+  (JSON POST, 16 KB body, per-IP 60 requests/min and 10 new accounts/hour, X-Forwarded-For only from 127.0.0.1, 20,000 accounts / 200 MB,
+  unknown code = 404 after 350 ms). One file per account in that folder: `<sha256(code)>.json` = `{rev, t, prof}`, mode 600, written
+  by temp file + rename. The code itself is never stored (it is 16 characters of Crockford base32, 80 bits, shown XXXX-XXXX-XXXX-XXXX).
+  `prof` = rating, peak, streak, wins, losses, draws, matches, chips, friend wins/losses, cups, name, last fighter, owned skins, picked
+  skins, tutorial done, last 20 results. No email, no password, no IP is stored.
+- Live: deploy/accounts-setup.txt (Jonny pastes it once, after update.txt) makes /var/lib/potatobrawl/accounts, adds the systemd drop-in
+  (ACCOUNTS_DIR, HOST=127.0.0.1, ReadWritePaths), installs the nightly backup (/var/backups/potatobrawl, 14 days) and closes port 8080.
+  Until then the Account sheet says "Saving to an account isn't available yet." and nothing else changes.
+- Two devices: the server keeps a revision; a stale save gets 409 with the newer copy and the page merges (counters add what each side
+  changed since the last sync, skins are a union, everything else takes the side that changed it, the newer one if both did) and saves
+  again. A reset on a linked device is a forced save that wins. Linking a device that has progress asks first and the account wins.
 
 ## Rules that keep online play working
 - A core.js change that can change simulation results must stay deterministic, add new fighter fields to
@@ -115,7 +153,9 @@ index.html is committed with every source change (check.sh flags a stale one).
   the floor (about 44 against the other five alone, from the same table).
 
 ## Tests (tests/, run from anywhere)
-snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core) · lockrun.js (longest
+snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core; always the neutral bot) · botstyle.js (each CPU style
+against the neutral bot, same fighter, levels 0.5/0.8: win rate 35-65% plus what the style does; STYLE='{"wizard":{"gap":2}}' tries
+numbers, ONLY=wizard one fighter; check.sh step 4b) · lockrun.js (longest
 unreactable jab run, check.sh wants <= 3 at R=14) · lockdet.js (save/restore while string launches happen) ·
 finish.js (finish mode per fighter and weight, charge frame data, every lethal call in 30 bot matches ends
 in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real lethal hit; --2d, --up, --skip,
@@ -124,7 +164,9 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · pwux2.py (all screens, 3 sizes) ·
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
+pwux2.py (all screens, 3 sizes) ·
 pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
@@ -149,6 +191,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
+- Tournament (night of 2026-10-13): offline against 7 CPUs is in. Next: online (the host runs the bracket, friends join by link, CPUs
+  fill empty seats, each pair plays on a room code; after accounts), a cup counter on the profile pill (P.cups is written), the Dragon's
+  edge-guard style could get an aerial chase, an "all fighters" cup variant.
 On 2026-10-13, after playing M1 + M2, Jonny asked for special finishes, Mortal-Kombat-style finishers, heavies
 that differ from lights, a charged heavy, and the finisher starting on the KO hit. He chose to do this before
 accounts (1 s charge).
@@ -166,8 +211,8 @@ accounts (1 s charge).
   video. lethal() empties the projectile list in its look-ahead (h.projs = []), so a projectile still in the
   air (Dragon's flame puffs, a bullet in flight) is not part of the KO call; harmless so far
   (finish.js passes) but a mirror Dragon match once called a KO that a later puff then changed.
-- M5: accounts via sync code (server endpoints, StateDirectory=potatobrawl, limits, nightly backup, close
-  :8080). Still needs Jonny's answers to plan-doc decisions 3 and 5.
+- M5: accounts via sync code: built (night-acct, see "Accounts" above). Live once Jonny has merged it, pasted update.txt and then
+  accounts-setup.txt. Not done: a way to recover a lost code (by design there is none), several accounts per device, syncing the settings.
 - Then hit-feel polish, finisher Phase 3 (bloom on strong phones, music stingers), upgraded finishers for top
   skins.
 - Then the backlog, ordered by Jonny's answers (plan doc, decision 8) and the Project's FEEDBACK doc.

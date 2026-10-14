@@ -48,7 +48,7 @@ window.__blastline = { get game() { return G; }, get mode() { return mode; }, ge
 newAttract();
 goMenu();
 if (NET.invite) openOnline();
-else if (firstRun) startTutorial(); // a brand-new player starts with the guided round
+else if (firstRun && !ACCT.hash) startTutorial(); // a brand-new player starts with the guided round
 camStep(attract.g, true);
 requestAnimationFrame(frame);
 })();

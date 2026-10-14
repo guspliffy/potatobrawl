@@ -54,6 +54,11 @@ RANGE=$(awk '/%$/ && NF==2 { printf "%s %s  ", $1, $2 }' "$LOGS/balance.log")
 if [ -z "$OUT" ]; then pass "balance ${LO}-${HI}%: $RANGE"
 else fail "balance outside ${LO}-${HI}%:$OUT" "$LOGS/balance.log"; fi
 
+# 4b. CPU fighting styles: each fighter's styled CPU against the neutral one, same fighter, stays between 35% and 65%.
+(cd tests && node botstyle.js 100) > "$LOGS/botstyle.log" 2>&1
+if grep -q "^botstyle ok" "$LOGS/botstyle.log"; then pass "CPU styles (styled vs neutral win rates inside 35-65%)"
+else fail "CPU styles outside 35-65% against the neutral CPU" "$LOGS/botstyle.log"; fi
+
 # 5. Online: two browsers play a match through a local server.
 PORT=8091 KEEPALIVE_MINUTES=0 node server.js > "$LOGS/server.log" 2>&1 &
 SRV=$!
@@ -64,15 +69,31 @@ if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/onl
   pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 
+# 5b. Accounts (sync codes): the server's endpoints and limits on port 8094 with a temporary folder, and the merge. Node only.
+timeout 120 node tests/acct.js > "$LOGS/acct.log" 2>&1
+if grep -q "^acct ok" "$LOGS/acct.log"; then pass "accounts server + merge ($(grep -c '^PASS' "$LOGS/acct.log") checks)"
+else fail "accounts server + merge" "$LOGS/acct.log"; fi
+
 # 6. Screens on small phone, phone and desktop, without page errors.
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
 if grep -q "^no errors" "$LOGS/screens.log"; then pass "screens 667x320, 844x390, 1280x760 (shots in build/shots/)"
 else fail "screens" "$LOGS/screens.log"; fi
 
+# 6b. Accounts in the browser: profile pill, Account sheet, two devices syncing through a real server (port 8093).
+(cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwacct.py" acct) > "$LOGS/accounts-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/accounts-ui.log"; then pass "accounts in the browser (pill, sheet, two devices, conflict merge, accounts off; shots in build/shots/acct)"
+else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
+
 # 7. KO finisher: one played through to the results screen, one skipped by a tap.
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1
 if [ "$(grep -c "^no errors" "$LOGS/finisher.log")" = 2 ]; then pass "KO finisher (plays through, skips, results screen after)"
 else fail "KO finisher" "$LOGS/finisher.log"; fi
+
+# 8. Tournament: start a cup, win the quarter-final (chips paid, bracket moves on), lose the semi-final (no rating change), run it back,
+#    leave, reload into a cup, forfeit from the pause menu.
+(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwcup.py" cup flow) > "$LOGS/cup.log" 2>&1
+if grep -q "^no errors" "$LOGS/cup.log"; then pass "tournament (bracket, chips, loss, run it back, reload, forfeit; no page errors)"
+else fail "tournament" "$LOGS/cup.log"; fi
 
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
