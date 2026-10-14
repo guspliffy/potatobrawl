@@ -156,6 +156,8 @@ function buyPending() {
 }
 // a tall, narrow stage (desktop) shows the model smaller so wings and tails stay in view
 function artFit(a) { const w = a.cv.clientWidth, h = a.cv.clientHeight || 1; return Math.min(a.fit || 0.7, Math.max(0.42, (a.fit || 0.7) * 1.1 * w / h)); }
+// models much wider than tall (the Reaper's scythe): how wide the drawing is and how far its middle sits off the feet, in world units; the model shrinks to fit that width
+const ART_SPAN = { reaper: { span: 118, dx: 25 } };
 function drawCards(tk) {
   for (const a of cardArt) {
     const r = { width: a.cv.clientWidth, height: a.cv.clientHeight };
@@ -164,8 +166,8 @@ function drawCards(tk) {
     if (a.cv.width !== w || a.cv.height !== h) { a.cv.width = w; a.cv.height = h; }
     const c = a.cv.getContext("2d");
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
-    const sc = (h * artFit(a)) / a.f.s.h;
-    c.setTransform(sc, 0, 0, sc, w * 0.5, h * (a.bottom || 0.95));
+    const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
+    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc : 0), h * (a.bottom || 0.95));
     drawFighter(c, a.f, tk);
   }
 }

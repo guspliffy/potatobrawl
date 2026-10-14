@@ -14,6 +14,7 @@ const FXTEXT = {
   samurai: ["", "Petals drift while running", "Petals, plus ink-brush slashes", "Petals, ink slashes, a glowing blade and a flash line on Quick Draw"],
   dragon: ["", "Smoke curls from his mouth", "Smoke, plus a gust ring on every wing flap", "Smoke, gusts, glowing wing bones and a fire roar on every KO"],
   gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
+  reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
 };
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 ? 0 : i; };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
@@ -57,6 +58,9 @@ function skinTick(g, tk) {
       if (cos === "gunslinger" && f.state === "idle" && tk % 14 === (slot * 5) % 14) {
         addFx({ k: "puff", x: f.x + fc * w * rnd(0.95, 1.1), y: f.y - h * 0.58 + rnd(-2, 2), vx: fc * rnd(0, 0.3), vy: rnd(-0.6, -0.35), r: rnd(1.6, 2.4), t: 0, life: 34, col: "#cfc8d8" });
       }
+      if (cos === "reaper" && tk % 11 === (slot * 4) % 11 && f.state !== "attack") {   // a wisp slips off the back of the hood and drifts up
+        addFx({ k: "wisp", x: f.x - fc * w * rnd(0.45, 0.65), y: f.y - h * rnd(0.45, 0.7), vx: -fc * rnd(0.1, 0.4), vy: rnd(-0.7, -0.35), r: rnd(2.6, 3.6), t: 0, life: rnd(34, 46), col: lvl >= 3 ? "#d8d2c4" : "#3f3a4c", ph: rnd(0, 6) });
+      }
       if (cos === "samurai" && f.state === "run" && tk % 5 === 0) {
         addFx({ k: "petal", x: f.x - fc * w * 0.3 + rnd(-6, 6), y: f.y - h * rnd(0.4, 0.75), vx: -fc * rnd(0.6, 1.4), vy: rnd(-1, -0.2), rot: rnd(0, 6), vr: rnd(-0.15, 0.15), col: mix(ac, "#ffb7c9", 0.6), r: rnd(2.2, 3), t: 0, life: rnd(34, 48), g: 0.035, damp: 0.97 });
       }
@@ -70,6 +74,11 @@ function skinTick(g, tk) {
         if (p.style === "orb" && tk % 2 === 0) addFx({ k: "puff", x: p.x - p.vx * 1.5 + rnd(-3, 3), y: p.y - p.vy * 1.5 + rnd(-3, 3), vx: 0, vy: -0.25, r: rnd(3, 5), t: 0, life: 22, col: mix(ac, "#7dff62", 0.5) });
         if (p.style === "bolt") mote(p.x - p.vx * rnd(0.5, 1.5), p.y + rnd(-4, 4), -p.vx * 0.05, rnd(-0.5, 0.5), Math.random() < 0.5 ? "#ffe08a" : mix(ac, "#ffe08a", 0.4), rnd(1, 1.7), 16);
       }
+    }
+    // Reaper 120: candle-amber soul sparks fly off the scythe's hitboxes while it swings
+    if (lvl >= 2 && cos === "reaper" && fxMoves() && f.state === "attack" && f.move && f.move.scythe && tk % 2 === 0) {
+      const bx = BL.activeBoxes(f);
+      if (bx) for (const b of bx) mote(b.x + rnd(-0.5, 0.5) * b.r, b.y + rnd(-0.5, 0.5) * b.r, rnd(-1, 1), rnd(-1.6, -0.6), Math.random() < 0.5 ? "#ffb35c" : "#ffd9a0", rnd(1.2, 2), rnd(18, 26), -0.02);
     }
     // Samurai 200: a flash line along the Quick Draw path
     if (lvl >= 3 && cos === "samurai" && f.state === "attack" && f.move && f.move.kind === "dash") {
@@ -128,6 +137,9 @@ function skinEvent(g, e) {
       } else if (cos === "gunslinger") {
         addFx({ k: "ring", x: k.x, y: k.y - k.s.h * 0.6, t: 0, life: 18, r0: 8, r1: 46, col: mix(ac, "#ffcf3d", 0.6) });
         for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; mote(k.x + Math.cos(a) * 14, k.y - k.s.h * 0.6 + Math.sin(a) * 14, Math.cos(a) * 1.8, Math.sin(a) * 1.8 - 0.4, i % 2 ? "#ffcf3d" : "#fff4c8", rnd(1.4, 2.2), 26); }
+      } else if (cos === "reaper") {   // a ring of pale light and three little souls rising off him
+        addFx({ k: "ring", x: k.x, y: k.y - k.s.h * 0.6, t: 0, life: 18, r0: 8, r1: 44, col: "#c8ffe0" });
+        for (let i = 0; i < 3; i++) addFx({ k: "ghost", x: k.x + (i - 1) * 16, y: k.y - k.s.h * (0.7 + (i % 2) * 0.15), vx: (i - 1) * 0.4, vy: rnd(-1.2, -0.8), r: rnd(6, 8), t: 0, life: rnd(50, 64), ph: i * 2, damp: 0.99 });
       } else if (cos === "odin") {
         addFx({ k: "runering", x: k.x, y: k.y, col: mix(ac, "#ffb347", 0.35), t: 0, life: 60, r: k.s.w * 1.1 });
       } else if (cos === "wizard") {
@@ -176,6 +188,23 @@ function drawSkinFx(c, e, a) {
         const ang = (i / 10) * Math.PI * 2 + q * 1.5, x = e.x + Math.cos(ang) * r, y = e.y + Math.sin(ang) * r * 0.26;
         c.beginPath(); c.moveTo(x, y - 4); c.lineTo(x, y + 2); c.moveTo(x - 2, y - 2); c.lineTo(x + 2, y - 4); c.stroke();
       }
+      return true;
+    }
+    case "wisp": {   // a soft smoky curl that sways as it rises
+      const q = e.t / e.life, sx = Math.sin(e.t * 0.18 + e.ph) * 2.5;
+      c.globalAlpha = a * 0.45; c.fillStyle = e.col;
+      c.beginPath(); c.arc(e.x + sx, e.y, e.r * (1 + q * 0.8), 0, Math.PI * 2); c.fill();
+      c.globalAlpha = a * 0.3; c.beginPath(); c.arc(e.x - sx * 0.6, e.y + e.r * 1.4, e.r * 0.7 * (1 + q), 0, Math.PI * 2); c.fill();
+      return true;
+    }
+    case "ghost": {   // a little soul: a round head, a wavy tail, two dot eyes
+      const sx = Math.sin(e.t * 0.15 + e.ph) * 3, x = e.x + sx, y = e.y, r = e.r;
+      c.globalAlpha = a * 0.85; c.fillStyle = "#eefff4";
+      c.beginPath(); c.arc(x, y, r, Math.PI, 0); c.lineTo(x + r, y + r * 1.2);
+      for (let i = 0; i < 3; i++) { const xx = x + r - (i + 0.5) * (2 * r / 3); c.quadraticCurveTo(xx + r / 3, y + r * (i % 2 ? 1.0 : 1.6), xx - r / 3 + 0.01, y + r * 1.2); }
+      c.closePath(); c.fill();
+      c.globalAlpha = a * 0.35; c.strokeStyle = "#8fe8b8"; c.lineWidth = 2; c.stroke();
+      c.globalAlpha = a; c.fillStyle = "#2a2a3a"; c.beginPath(); c.arc(x - r * 0.35, y - r * 0.05, r * 0.16, 0, Math.PI * 2); c.arc(x + r * 0.35, y - r * 0.05, r * 0.16, 0, Math.PI * 2); c.fill();
       return true;
     }
     case "flashline": {

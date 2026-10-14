@@ -134,7 +134,7 @@ const FIGHTERS = [
   {
     id: "alchemist", name: "Alchemist", role: "Potion zoner",
     blurb: "Hooded and grinning. Lobs toxic orbs and zaps anyone who gets close.",
-    signature: { name: "Toxic Orb", text: "Lobs an orb in an arc. It bursts where it lands. 2 s cooldown." },
+    signature: { name: "Toxic Orb", text: "Lobs an orb in an arc. It bursts where it lands. 1.75 s cooldown." },
     look: { build: "potato", costume: "alchemist", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 5, face: "evil" },
     stats: { w: 42, h: 62, weight: 95, run: 6.1, accel: 1.15, airSpeed: 4.9, airAccel: 0.5, gravity: 0.66, fallSpeed: 12, fastFall: 17, jump: 13.8, airJump: 12.4, airJumps: 2 },
     palettes: [
@@ -158,7 +158,7 @@ const FIGHTERS = [
       hAir:  M(12, 4, 20, 13, 6.5, 16, 38, [38, -30, 22], { limb: "arm", zap: true, landLag: 14 }),
       rec:   M(5, 12, 12, 5, 5, 7, 80, [0, -30, 26], { limb: "body", rec: true, vyStart: -15.5, vxStick: 5, helpless: true, landLag: 10 }),
       pound: M(8, 1, 18,  11, 6, 12, -80, [0, -4, 24], { limb: "leg", pound: true, vyStart: 18, landLag: 16 }),
-      spec:  M(10, 1, 16, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 120,
+      spec:  M(10, 1, 16, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 105,
                proj: { style: "orb", speed: 7, vy0: -3.5, life: 90, r: 15, ox: 26, oy: -40, grav: 0.3, dmg: 8, bkb: 5, kbg: 6, angle: 50,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 60 },
                        burst: { r: 46, life: 12, dmg: 8, bkb: 6, kbg: 8, angle: 70, fin: { dmg: 10, bkb: 10, kbg: 14, angle: 70 } } } }),
@@ -325,6 +325,43 @@ const FIGHTERS = [
       spec:  M(8, 9, 12, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 48,
                proj: { style: "bullet", speed: 15, life: 30, r: 8, ox: 34, oy: -38, count: 2, interval: 8, dmg: 4, bkb: 2.5, kbg: 1.5, angle: 20,
                        finCount: 1, finStyle: "gold", fin: { dmg: 10, bkb: 10, kbg: 14, angle: 30 } } }),
+    },
+  },
+  {
+    id: "reaper", name: "Reaper", role: "Soul harvester",
+    blurb: "Hood, sprouts and a farm scythe. Slow on his feet, long in the reach, and he hits behind him too.",
+    signature: { name: "Harvest", text: "A sliding spin that tugs the opponent in towards him. 2.5 s cooldown." },
+    look: { build: "potato", costume: "reaper", leg: 0.2, torso: 0.68, headR: 0.13, limbW: 5, face: "sly" },
+    stats: { w: 46, h: 68, weight: 104, run: 5.6, accel: 1.0, airSpeed: 4.6, airAccel: 0.44, gravity: 0.56, fallSpeed: 9.5, fastFall: 15, jump: 14.2, airJump: 13.2, airJumps: 1 },
+    palettes: [
+      { name: "Shroud", price: 0, body: "#e2a95c", trim: "#1f1d26", accent: "#5d5a66", ui: "#a9a6b8" },
+      { name: "Moss", price: 60, body: "#e2a95c", trim: "#1f1d26", accent: "#3f6b3a", ui: "#6fbf62" },
+      { name: "Ember Wake", price: 120, body: "#dfa456", trim: "#1f1d26", accent: "#3a3440", ui: "#f08a3c" },
+      { name: "Bone", price: 200, body: "#e8b466", trim: "#1f1d26", accent: "#e9e4d6", ui: "#f0ece0" },
+    ],
+    moves: {
+      // handle pokes: the longest light thrust to the side
+      jab:   M(4, 3, 10,  4, 4, 3, 40, [38, -36, 18], { limb: "arm" }),
+      side:  M(6, 4, 15,  8, 5, 9, 32, [58, -32, 19], { limb: "arm" }),
+      up:    M(7, 5, 15,  7, 5.5, 9, 86, [26, -84, 22, -22, -86], { limb: "arm" }),
+      down:  M(6, 4, 14,  6, 4.5, 8, 18, [50, -6, 17], { limb: "arm" }),
+      // Reap: the full scythe arc, in front and behind him
+      hSide: M(14, 6, 28, 15, 7.5, 19, 36, [[40, -40, 23, 74, -30], [-46, -34, 21]], { limb: "arm", scythe: true }),
+      // overhead arc, his anti-air: both sides
+      hUp:   M(11, 7, 25, 14, 7.5, 19, 88, [36, -64, 24, -36, -64], { limb: "arm", scythe: true }),
+      // grave sweep: in front and behind at once
+      hDown: M(12, 5, 27, 14, 7, 18, 28, [[54, -10, 22], [-54, -10, 22]], { limb: "arm", scythe: true }),
+      nair:  M(6, 8, 13,  8, 4.5, 9, 45, [0, -36, 38], { limb: "arm", landLag: 8 }),
+      sair:  M(9, 4, 17,  10, 5.5, 13, 40, [52, -36, 22], { limb: "arm", landLag: 10 }),
+      uair:  M(7, 5, 15,  9, 5.5, 12, 84, [22, -82, 24, -22, -82], { limb: "arm", landLag: 9 }),
+      dair:  M(12, 4, 19, 11, 5.5, 10, -75, [6, 6, 22], { limb: "arm", landLag: 14 }),
+      hAir:  M(15, 5, 24, 14, 6.5, 16, 38, [[42, -42, 23, 70, -34], [-40, -34, 20]], { limb: "arm", scythe: true, landLag: 17 }),
+      // grave rise: a dark cloud lifts him, then he drifts down like the gliders
+      rec:   M(6, 12, 14, 6, 5, 7, 80, [0, -40, 30], { limb: "body", rec: true, vyStart: -15, vxStick: 4.5, helpless: true, glide: true, landLag: 10 }),
+      pound: M(10, 1, 20, 12, 6.5, 13, -80, [0, -6, 26], { limb: "arm", pound: true, vyStart: 18, landLag: 18 }),
+      // Harvest: a slow sliding spin whose hit points back towards him (a tug); Last Rites hooks the finish-ready straight up
+      spec:  M(12, 12, 22, 7, 5, 4, 160, [16, -34, 28], { limb: "arm", kind: "dash", speed: 8, cooldown: 150, scythe: true,
+               fin: { dmg: 12, bkb: 12, kbg: 17, angle: 80 } }),
     },
   },
 ];
@@ -1108,12 +1145,13 @@ const BOT_NEUTRAL = {
 // by fighter id; tests/botstyle.js keeps each of them about as strong as the neutral bot
 const BOT_STYLES = {
   samurai:   { gap: 0.4, shuffle: 0, spec: 1.3, atk: 0.8 },                            // rushes in
-  alchemist: { gap: 1.7, back: 0.4, spec: 1.7, atk: 1.15, heavy: 1.3 },                // stays back and lobs
+  alchemist: { gap: 1.6, back: 0.4, spec: 1.4, atk: 1.15, heavy: 1.3 },                // stays back and lobs
   odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
   wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
   gunslinger:{ gap: 1.4, back: 0.5, spec: 1.4, atk: 0.9, heavy: 1.3 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
   return { d: level, st: Object.assign({}, BOT_NEUTRAL, style), mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };

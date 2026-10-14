@@ -115,6 +115,12 @@ const Sfx = {
     this.noiseF(0.07, 0.5, "highpass", 2400, 900, 0.7); this.noise(0.09, 0.3, 2600); this.tone(260, 55, 0.1, "sine", 0.3);
     if (gold) { this.noise(0.35, 0.4, 1200); this.tone(150, 38, 0.35, "sine", 0.45); this.later(90, () => this.tone(2600, 1300, 0.3, "sine", 0.04)); }
   },
+  // Reaper: Harvest is a low whoosh with two passing swishes as the scythe comes round; Grave rise a soft dark rush
+  harvest() {
+    this.noiseF(0.55, 0.26, "bandpass", 260, 820, 0.9); this.tone(92, 58, 0.45, "sine", 0.2);
+    for (let i = 1; i <= 2; i++) this.later(i * 120, () => this.noiseF(0.12, 0.16, "highpass", 1400, 3800, 1.1));
+  },
+  graveRise() { this.noiseF(0.5, 0.22, "lowpass", 700, 180, 0.8); this.tone(70, 110, 0.4, "sine", 0.16); },
   // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"
   noiseF(dur, vol, type, f0, f1, q) {
     if (!this.ok()) return;
@@ -182,6 +188,11 @@ const Sfx = {
         for (let i = 0; i < (up || dn ? 2 : 3); i++) this.later(i * (up || dn ? 30 : 55), () => { this.noiseF(0.06, 0.45, "highpass", 2600, 1000, 0.7); this.tone(240, 60, 0.08, "sine", 0.22); });
         if (dn) this.later(40, () => this.noise(0.25, 0.2, 500));
         if (!up && !dn && !air) this.later(170, () => this.tone(1800, 1500, 0.06, "triangle", 0.03));   // a spent shell rings on the floor
+        break;
+      case "reaper": // "shhk": a fast hiss rising through the swing, a thin metal ring off the blade; a second swish for the full turns, earth for the grave sweep
+        this.noiseF(0.16, 0.34, "highpass", 1600, 5600, 1.3); this.later(70, () => this.tone(3100, 2500, 0.12, "sine", 0.045));
+        if (!up) this.later(110, () => this.noiseF(0.14, 0.24, "highpass", 2200, 5200, 1.3));
+        if (dn) this.later(60, () => this.noise(0.28, 0.2, 480));
         break;
       case "alchemist": // zap crackle; glass and a burst for the flask
         if (dn) {

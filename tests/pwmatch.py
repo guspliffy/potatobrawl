@@ -3,7 +3,7 @@ import pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
 from playwright.async_api import async_playwright
 ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
-PAIRS = [('samurai', 'dragon'), ('odin', 'wizard'), ('phoenix', 'alchemist')]
+PAIRS = [('samurai', 'dragon'), ('odin', 'wizard'), ('phoenix', 'alchemist'), ('reaper', 'gunslinger')]
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(args=ARGS)
@@ -15,10 +15,10 @@ async def main():
             await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true"); await pg.wait_for_timeout(600)
             for a, o in PAIRS:
                 await pg.evaluate(f"(() => {{ document.getElementById('bPractice').click(); }})()"); await pg.wait_for_timeout(200)
-                idx = ['phoenix','alchemist','odin','wizard','samurai','dragon'].index(a)
+                idx = ['phoenix','alchemist','odin','wizard','samurai','dragon','gunslinger','reaper'].index(a)
                 await pg.evaluate(f"document.querySelectorAll('.tile')[{idx}].click()")
                 await pg.evaluate(f"(() => {{ document.getElementById('oppPick').click(); }})()"); await pg.wait_for_timeout(100)
-                oi = ['random','phoenix','alchemist','odin','wizard','samurai','dragon'].index(o)
+                oi = ['random','phoenix','alchemist','odin','wizard','samurai','dragon','gunslinger','reaper'].index(o)
                 await pg.evaluate(f"document.querySelectorAll('#oppPop button')[{oi}].click()")
                 await pg.evaluate("document.getElementById('selGo').click()")
                 await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)

@@ -8,7 +8,7 @@ online matches.
 
 | File | What it does |
 |---|---|
-| `public/index.html` | The game: menus, six potato fighters, CPU ranked ladder, practice, online play |
+| `public/index.html` | The game: menus, eight potato fighters, CPU ranked ladder, tournament, practice, online play |
 | `server.js` | Serves the page, relays online matches over WebSocket (`/ws`), keeps itself awake |
 | `package.json` | One dependency: `ws` (pinned to 8.21.3) |
 | `render.yaml` | Render setup: free web service in Frankfurt |
