@@ -724,6 +724,38 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .cf .btn { min-height: 38px; font-size: 17px; }
 @media (prefers-reduced-motion: reduce) { .cs.pop, .trophy.won, .spark i { animation: none; } .cf { transition: none; } }
 /* ---------- end tournament ---------- */
+/* ---------- Daily Potato (ui/daily.js): the menu button, the streak on the pill, the sheet ---------- */
+.pill .pstk { display: flex; align-items: center; gap: 4px; font-family: var(--display); font-weight: 800; font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; color: #ffb36b; }
+.stkglyph { display: inline-block; width: 0.9em; height: 1em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8c1 3.7 6.5 6.2 6.5 12.2a6.5 6.5 0 0 1-13 0c0-3.2 1.8-5 3.1-6.4.2 2 1 3.2 2.2 3.8-.4-3.8.2-6.8 1.2-9.6z' fill='%23ff8a3d' stroke='%23a8451f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M12 12.2c1.4 1.6 3 3 3 5.1a3 3 0 0 1-6 0c0-1.7 1.3-2.9 3-5.1z' fill='%23ffd66b'/%3E%3C/svg%3E") center / contain no-repeat; }
+#bDaily.won small { color: var(--sand); }
+#app.narrow #bDaily small { display: block; margin: 3px 0 0; }   /* upright: the line sits under the name instead of wrapping */
+#app.tiny .menu-actions .btn { min-height: 36px; }               /* six buttons fit 320 high */
+/* upright with a streak showing: a tighter pill, so big chip and cup counts still fit a 360-wide phone */
+#app.narrow .pill.stk { gap: 4px; padding-right: 10px; }
+#app.narrow .pill.stk .sep { display: none; }
+#app.narrow .pill.stk .pr, #app.narrow .pill.stk .pc { font-size: 18px; }
+#app.narrow .pill.stk .pcup, #app.narrow .pill.stk .pstk { font-size: 16px; gap: 3px; }
+.res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
+.dly-sheet { width: min(500px, 100%); gap: 12px; }
+.dly-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.dly-x { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase; color: var(--mute); }
+.dly-f { --fc: var(--mute); display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px; border-radius: 8px; background: var(--raise); }
+.dly-f.r { flex-direction: row-reverse; text-align: right; }
+.dly-ph { width: 54px; height: 54px; flex: none; border-radius: 6px; overflow: hidden; background: var(--ink); box-shadow: 0 0 0 2px var(--fc); }
+.dly-ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; display: block; }
+.dly-t { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dly-t b { font-family: var(--display); font-weight: 800; font-size: 19px; line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dly-t small { font-size: 13px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dly-sheet .dly-rule { color: var(--text); font-size: 16px; }
+.dly-rule b { color: var(--sand); font-weight: 700; }
+.dly-sheet .dly-line { font-size: 14px; }
+.dly-acts { display: flex; gap: 10px; padding-left: 6px; }
+.dly-acts .btn { flex: 1; }
+#app.short .dly-sheet { gap: 9px; }
+#app.short .dly-ph { width: 44px; height: 44px; }
+#app.tiny .dly-ph { width: 38px; height: 38px; }
+#app.narrow .dly-f, #app.narrow .dly-f.r { flex-direction: column; text-align: center; }
+/* ---------- end Daily Potato ---------- */
 @media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } }
 </style>
 
@@ -767,7 +799,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pstk" id="mStreak" hidden><span class="stkglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -776,6 +808,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </header>
         <div class="menu-actions">
           <button class="btn primary" id="bRanked"><span>Ranked match<small id="mRec">0W · 0L</small></span></button>
+          <button class="btn" id="bDaily"><span>Daily Potato<small id="mDaily">today's match</small></span></button>
           <button class="btn" id="bCup"><span>Tournament<small id="mCup">8 players</small></span></button>
           <button class="btn" id="bOnline"><span>Play friends<small id="mOnline">online</small></span></button>
           <button class="btn" id="bPractice"><span>Practice</span></button>
@@ -832,6 +865,17 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="cup-list scroll" id="cupList"></div>
       </div>
       <div class="cup-foot" id="cupFoot"><div class="cf" id="cupCard"></div></div>
+    </div>
+  </section>
+
+  <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
+  <section id="scrDaily" class="screen modal" hidden>
+    <div class="sheet dly-sheet scroll">
+      <div class="x-row"><h3>Daily Potato</h3><span class="kicker" id="dlyDate"></span></div>
+      <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
+      <p class="dly-rule" id="dlyRule"></p>
+      <p class="dly-line" id="dlyLine"></p>
+      <div class="dly-acts"><button class="btn primary" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
     </div>
   </section>
 

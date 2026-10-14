@@ -724,6 +724,38 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .cf .btn { min-height: 38px; font-size: 17px; }
 @media (prefers-reduced-motion: reduce) { .cs.pop, .trophy.won, .spark i { animation: none; } .cf { transition: none; } }
 /* ---------- end tournament ---------- */
+/* ---------- Daily Potato (ui/daily.js): the menu button, the streak on the pill, the sheet ---------- */
+.pill .pstk { display: flex; align-items: center; gap: 4px; font-family: var(--display); font-weight: 800; font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; color: #ffb36b; }
+.stkglyph { display: inline-block; width: 0.9em; height: 1em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8c1 3.7 6.5 6.2 6.5 12.2a6.5 6.5 0 0 1-13 0c0-3.2 1.8-5 3.1-6.4.2 2 1 3.2 2.2 3.8-.4-3.8.2-6.8 1.2-9.6z' fill='%23ff8a3d' stroke='%23a8451f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M12 12.2c1.4 1.6 3 3 3 5.1a3 3 0 0 1-6 0c0-1.7 1.3-2.9 3-5.1z' fill='%23ffd66b'/%3E%3C/svg%3E") center / contain no-repeat; }
+#bDaily.won small { color: var(--sand); }
+#app.narrow #bDaily small { display: block; margin: 3px 0 0; }   /* upright: the line sits under the name instead of wrapping */
+#app.tiny .menu-actions .btn { min-height: 36px; }               /* six buttons fit 320 high */
+/* upright with a streak showing: a tighter pill, so big chip and cup counts still fit a 360-wide phone */
+#app.narrow .pill.stk { gap: 4px; padding-right: 10px; }
+#app.narrow .pill.stk .sep { display: none; }
+#app.narrow .pill.stk .pr, #app.narrow .pill.stk .pc { font-size: 18px; }
+#app.narrow .pill.stk .pcup, #app.narrow .pill.stk .pstk { font-size: 16px; gap: 3px; }
+.res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
+.dly-sheet { width: min(500px, 100%); gap: 12px; }
+.dly-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.dly-x { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase; color: var(--mute); }
+.dly-f { --fc: var(--mute); display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px; border-radius: 8px; background: var(--raise); }
+.dly-f.r { flex-direction: row-reverse; text-align: right; }
+.dly-ph { width: 54px; height: 54px; flex: none; border-radius: 6px; overflow: hidden; background: var(--ink); box-shadow: 0 0 0 2px var(--fc); }
+.dly-ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; display: block; }
+.dly-t { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dly-t b { font-family: var(--display); font-weight: 800; font-size: 19px; line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dly-t small { font-size: 13px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dly-sheet .dly-rule { color: var(--text); font-size: 16px; }
+.dly-rule b { color: var(--sand); font-weight: 700; }
+.dly-sheet .dly-line { font-size: 14px; }
+.dly-acts { display: flex; gap: 10px; padding-left: 6px; }
+.dly-acts .btn { flex: 1; }
+#app.short .dly-sheet { gap: 9px; }
+#app.short .dly-ph { width: 44px; height: 44px; }
+#app.tiny .dly-ph { width: 38px; height: 38px; }
+#app.narrow .dly-f, #app.narrow .dly-f.r { flex-direction: column; text-align: center; }
+/* ---------- end Daily Potato ---------- */
 @media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } }
 </style>
 
@@ -767,7 +799,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pstk" id="mStreak" hidden><span class="stkglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -776,6 +808,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </header>
         <div class="menu-actions">
           <button class="btn primary" id="bRanked"><span>Ranked match<small id="mRec">0W · 0L</small></span></button>
+          <button class="btn" id="bDaily"><span>Daily Potato<small id="mDaily">today's match</small></span></button>
           <button class="btn" id="bCup"><span>Tournament<small id="mCup">8 players</small></span></button>
           <button class="btn" id="bOnline"><span>Play friends<small id="mOnline">online</small></span></button>
           <button class="btn" id="bPractice"><span>Practice</span></button>
@@ -832,6 +865,17 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="cup-list scroll" id="cupList"></div>
       </div>
       <div class="cup-foot" id="cupFoot"><div class="cf" id="cupCard"></div></div>
+    </div>
+  </section>
+
+  <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
+  <section id="scrDaily" class="screen modal" hidden>
+    <div class="sheet dly-sheet scroll">
+      <div class="x-row"><h3>Daily Potato</h3><span class="kicker" id="dlyDate"></span></div>
+      <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
+      <p class="dly-rule" id="dlyRule"></p>
+      <p class="dly-line" id="dlyLine"></p>
+      <div class="dly-acts"><button class="btn primary" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
     </div>
   </section>
 
@@ -2514,6 +2558,7 @@ function defProfile() {
     rating: 1000, peak: 1000, wins: 0, losses: 0, draws: 0, matches: 0, tokens: 0, streak: 0,
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
     last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
+    daily: { d: "", r: 0, s: 0, w: "", b: 0 },   // Daily Potato (ui/daily.js)
   };
 }
 let firstRun = false;
@@ -12179,7 +12224,7 @@ function renderMenu() {
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
-  cupMenu();
+  cupMenu(); dailyMenu();
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
@@ -12193,6 +12238,7 @@ function goMenu() {
   mode = "menu"; paused = false; G = null; match = null; meSlot = 0;
   $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
   modal("pause", false); modal("help", false); modal("settings", false);
+  $("rMenu").hidden = false;   // the Daily Potato's results hide it (their again button is "Menu"); the tutorial's results need it back
   renderMenu(); show("menu"); resize();
   trails[0].length = trails[1].length = 0; fx.length = 0; sfx.length = 0;
   if (!attract) newAttract();
@@ -12390,7 +12436,7 @@ function enterMatchUI() {
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
     sub.querySelector(".nm").textContent = match.cpu || "";
-    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : "";
   }
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
@@ -12413,6 +12459,7 @@ function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
   if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
+  if (match.daily) return `Daily Potato · ${me} vs ${op} · ${match.cpu}, ${match.level}`;
   if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
   return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
 }
@@ -12475,8 +12522,8 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup) ? "Forfeit" : "Quit to menu";
-  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : "Quit to menu";
+  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   releaseTouch();
 }
 let quitArmed = false;
@@ -12484,6 +12531,7 @@ function finishMatch(forfeit) {
   if (mode !== "match") return;
   if (match && match.tutorial) { tutDone(); return; }
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
+  if (match && match.daily) { dailyMatchEnd(forfeit); return; }
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -12548,7 +12596,7 @@ function showResults(R) {
   const sheet = $("resSheet");
   sheet.classList.remove("solo");
   sheet.classList.toggle("win", R.res === 1); sheet.classList.toggle("loss", R.res === 0);
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
   const mn = R.me.spec.name, on = R.op.spec.name;
   const who = R.online ? NET.oppName || "Your friend" : on;
@@ -12586,16 +12634,18 @@ function showResults(R) {
   }
   const k = R.me.kos, fl = R.me.falls;
   $("rStats").innerHTML = `<b>${k}</b> KO${k === 1 ? "" : "s"} · <b>${Math.round(R.me.dmgDealt)}%</b> damage dealt · <b>${fl}</b> fall${fl === 1 ? "" : "s"}`;
-  const why = R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "";
-  const chipsOn = R.ranked || (R.online && R.lines.length);
+  const why = R.why || (R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "");   // R.why: the Daily Potato's own line
+  const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
   $("rChips").innerHTML = chipsOn
     ? `<b><span class="tokglyph"></span>+<span id="rChipN">${R.total}</span> chips</b>${why}`
+    : R.daily ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : "Practice doesn't change your rating or earn chips.";
   if (chipsOn) resCount($("rChipN"), 0, R.total, "");
-  $("rAgain").querySelector("span").textContent = R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";
+  $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   show("result");
 }
 
@@ -12991,6 +13041,108 @@ if (window.ResizeObserver) new ResizeObserver(() => { if (mode === "cup" && cupO
 else window.addEventListener("resize", () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); });
 // a reload during a cup comes back to its bracket (menus and the tutorial have run by then; an invite link or a first-time tutorial win)
 setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true }); }, 0);
+/* ===================== Daily Potato: one fixed matchup a day =====================
+   UI only: the simulation, the bot and the online code are not touched. The day is the player's local date "YYYY-MM-DD"; a hash of it
+   picks your fighter, the CPU's fighter, its potato name and the match seed, so everyone gets the same matchup that day. The CPU gets
+   stronger through the week (Monday 0.45 ... Sunday 0.87; Normal Mon-Wed, Hard Thu-Sat, Brutal on Sunday). 3 lives, 3 minutes.
+   One try: starting the match writes the day down as tried (r = -1), so quitting, a forfeit or a reload counts as a loss.
+   Chips: a win 40 (streak +1), a draw 15 (streak kept), a finished loss 5, a forfeit or an unfinished match nothing; any loss ends the
+   streak. No rating, record, history or per-fighter stats change.
+   P.daily = { d (last day tried), r (1 / 0.5 / 0, -1 = started, not finished), s (streak), w (the last day that kept the streak going:
+             a win, or a draw while a streak runs), b (best streak) }, synced (sync.js). The streak shows while w is today or yesterday. */
+const DAILY = {
+  lives: 3, secs: 180, win: 40, draw: 15, loss: 5,
+  d: [0.45, 0.52, 0.59, 0.66, 0.73, 0.8, 0.87],                          // CPU strength, Monday to Sunday in equal steps
+  words: ["Normal", "Normal", "Normal", "Hard", "Hard", "Hard", "Brutal"],
+};
+const DAY_N = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON_N = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DLY = { key: "" };   // the day the sheet shows
+
+/* ----- the day and its matchup ----- */
+const dPad = (n) => String(n).padStart(2, "0");
+function dailyKey(t) { t = t || new Date(); return `${t.getFullYear()}-${dPad(t.getMonth() + 1)}-${dPad(t.getDate())}`; }
+function dailyDate(key) { const [y, m, d] = key.split("-").map(Number); return new Date(y, m - 1, d); }   // local midnight
+function dailyShift(key, n) { const t = dailyDate(key); t.setDate(t.getDate() + n); return dailyKey(t); }
+function dailyLabel(key) { const t = dailyDate(key); return `${DAY_N[t.getDay()]} ${t.getDate()} ${MON_N[t.getMonth()]}`; }
+function dailyHash(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h >>> 0; }   // FNV-1a
+// the same date gives the same matchup on every device (cupRng: cup.js)
+function dailyPick(key) {
+  const R = cupRng(dailyHash("daily " + key)), n = FIGHTERS.length;
+  const me = FIGHTERS[(R() * n) | 0].id, opp = FIGHTERS[(R() * n) | 0].id, cpu = CPU_NAMES[(R() * CPU_NAMES.length) | 0], seed = (R() * 2147483647) | 0;
+  const wd = (dailyDate(key).getDay() + 6) % 7;   // Monday 0 ... Sunday 6
+  return { key, me, opp, cpu, seed, wd, d: DAILY.d[wd], word: DAILY.words[wd] };
+}
+// your equipped skin; the CPU's first skin, or the next one after yours in a mirror match (as startMatch does)
+function dailyPals(pk) { const mi = P.pal[pk.me] || 0; return [mi, pk.opp === pk.me ? (mi + 1) % FIG[pk.opp].palettes.length : 0]; }
+function dailyNextIn() {   // until the next local midnight
+  const ms = dailyDate(dailyShift(dailyKey(), 1)) - Date.now();
+  return ms < 3600000 ? `${Math.max(1, Math.ceil(ms / 60000))} min` : `${Math.round(ms / 3600000)} h`;
+}
+
+/* ----- the record ----- */
+function dailyGet() { return SYNC.cleanDaily(P.daily) || { d: "", r: 0, s: 0, w: "", b: 0 }; }   // tidy (sync.js); an old profile has none
+const dailyStreak = (st, key) => (st.w && st.w >= dailyShift(key, -1) ? st.s : 0);   // a streak lasts while its last day is today or yesterday
+const dailyStreakNow = () => dailyStreak(dailyGet(), dailyKey());
+// what a finished match does to the record: res 1 / 0.5 / 0, prev = the streak that showed when it started
+function dailyAfter(st, key, prev, res, forfeit) {
+  const won = res === 1, draw = res === 0.5, s = won ? prev + 1 : draw ? prev : 0;
+  return { st: { d: key, r: res, s, w: won || (draw && s > 0) ? key : st.w, b: Math.max(st.b, s) }, chips: won ? DAILY.win : draw ? DAILY.draw : forfeit ? 0 : DAILY.loss };
+}
+const dailyRes = (r) => (r === 1 ? "Won" : r === 0.5 ? "Draw" : "Lost");   // -1 (left unfinished) is a loss
+
+/* ----- the menu button and the sheet ----- */
+function dailyMenu() {
+  const key = dailyKey(), st = dailyGet(), done = st.d === key, s = dailyStreak(st, key);
+  const pk = done ? null : dailyPick(key);
+  $("mDaily").textContent = pk ? `${FIG[pk.me].name} vs ${FIG[pk.opp].name} · ${pk.word}` : `${dailyRes(st.r)}${s > 0 && st.r > 0 ? ` · ${s}-day streak` : ""} · next in ${dailyNextIn()}`;
+  $("bDaily").classList.toggle("won", done && st.r === 1);
+}
+function dailyCard(el, id, pi, who) {
+  const spec = FIG[id], pal = spec.palettes[pi] || spec.palettes[0];
+  el.style.setProperty("--fc", col(pal));
+  el.innerHTML = `<span class="dly-ph">${PORTRAITS[id] ? `<img src="${PORTRAITS[id]}" alt="">` : ""}</span><span class="dly-t"><b>${spec.name}</b><small>${cupEsc(who)}</small></span>`;
+}
+function dailyOpen() {
+  const key = dailyKey(), st = dailyGet(), pk = dailyPick(key), [mi, oi] = dailyPals(pk), done = st.d === key, s = dailyStreak(st, key);
+  DLY.key = key;
+  $("dlyDate").textContent = dailyLabel(key);
+  dailyCard($("dlyMe"), pk.me, mi, "You"); dailyCard($("dlyOp"), pk.opp, oi, pk.cpu);
+  const best = st.b > 0 ? ` Best streak: ${st.b} ${st.b === 1 ? "day" : "days"}.` : "";
+  $("dlyRule").innerHTML = done ? `<b>${dailyRes(st.r)} today.</b>${s > 0 ? ` ${s}-day streak.` : ""}` : `<b>One try.</b> Win: ${DAILY.win} chips${s > 0 ? ` and a ${s + 1}-day streak` : ""}.`;
+  $("dlyLine").textContent = done ? `The next Daily Potato opens in ${dailyNextIn()}.${best}` : `CPU: ${pk.word} · ${DAILY.lives} lives · ${DAILY.secs / 60} min · the same matchup for everyone today.`;
+  $("dlyGo").hidden = done;
+  modal("daily", true);
+}
+function dailyFight() {
+  const key = dailyKey(), st = dailyGet();
+  if (key !== DLY.key || st.d === key) { dailyOpen(); return; }   // midnight passed while the sheet was open, or today's try went elsewhere (a sync)
+  const pk = dailyPick(key), [mi, oi] = dailyPals(pk), me = FIG[pk.me], opp = FIG[pk.opp], prev = dailyStreak(st, key);
+  P.daily = { d: key, r: -1, s: 0, w: st.w, b: st.b };   // tried from the first frame: a quit, a forfeit or a reload counts as a loss
+  saveProfile();
+  Sfx.init(); modal("daily", false);
+  G = newGame({ players: [{ spec: me, pal: me.palettes[mi] || me.palettes[0] }, { spec: opp, pal: opp.palettes[oi] || opp.palettes[0] }], stocks: DAILY.lives, time: DAILY.secs, countdown: 150, seed: pk.seed });
+  match = { ranked: false, daily: { key, prev }, d: pk.d, oppRating: 0, bot: makeBot(pk.d, BL.BOT_STYLES[opp.id]), level: pk.word, cpu: pk.cpu };
+  meSlot = 0;
+  enterMatchUI();
+}
+// finishMatch calls this for the Daily Potato (a forfeit too)
+function dailyMatchEnd(forfeit) {
+  const dm = match.daily, me = G.fighters[0], op = G.fighters[1];
+  const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
+  const { st, chips } = dailyAfter(dailyGet(), dm.key, dm.prev, res, forfeit);
+  P.daily = st; P.tokens += chips;
+  saveProfile();
+  const sk = ` · ${st.s}-day streak`, reset = dm.prev > 0 ? " · streak reset" : "";
+  const why = res === 1 ? `Daily win +${chips}${sk}` : res === 0.5 ? `Daily draw +${chips}${st.s > 0 ? sk : ""}` : forfeit ? `No chips for a forfeit${reset}` : `Daily played +${chips}${reset}`;
+  showResults({ res, forfeit, ranked: false, daily: dm, me, op, lines: [], total: chips, why });
+}
+
+screens.daily = $("scrDaily");
+$("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); dailyFight(); });
+$("dlyBack").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("daily", false); });
+// the button line counts down to midnight and turns over to the next matchup while the menu stays open
+setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
+window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in
@@ -13519,6 +13671,7 @@ const tap = (id, fn) => $(id).addEventListener("click", (e) => { Sfx.init(); Sfx
 tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
 tap("bCup", cupOpen);
+tap("bDaily", dailyOpen);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 tap("selBack", goMenu);
@@ -13532,11 +13685,12 @@ tap("pQuit", () => {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
-  if (!match.ranked && !match.cup) { goMenu(); return; }
+  if (!match.ranked && !match.cup && !match.daily) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
 });
 tap("rAgain", () => {
+  if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
   if (match && match.online) {
@@ -13696,6 +13850,7 @@ const SYNC = (function () {
   const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
   const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
   const ID_RE = /^[a-z0-9][a-z0-9_-]{0,23}$/;
+  const DAY_RE = /^2\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;   // a local date, "YYYY-MM-DD"
   const CTRL_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
   const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   const num = (v, lo, hi, d) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
@@ -13722,6 +13877,13 @@ const SYNC = (function () {
   const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])])) : v);
   const canon = (v) => String(JSON.stringify(sortKeys(v)));
   const same = (a, b) => canon(a) === canon(b);
+  // Daily Potato (ui/daily.js): { d: last day tried, r: 1 / 0.5 / 0 (-1 = started, not finished), s: streak, w: the last day that kept
+  // the streak going, b: best streak }. Not an object -> null (missing).
+  function cleanDaily(q) {
+    if (!isObj(q)) return null;
+    const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
+    return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
+  }
   function cleanName(s) {
     return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
   }
@@ -13762,6 +13924,7 @@ const SYNC = (function () {
     if (typeof p.fsince === "number" && p.fsince > 0) out.fsince = num(p.fsince, 0, 9e15, 0);
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
+    { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
     out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
@@ -13787,6 +13950,7 @@ const SYNC = (function () {
     if (S.fsince !== undefined) P.fsince = S.fsince; else if (S.fstats !== undefined) delete P.fsince;
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
+    if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -13841,10 +14005,21 @@ const SYNC = (function () {
     { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
     { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
     { const v = pickOpt("title"); if (have(v)) out.title = v; }
+    // Daily Potato: the side that changed it; if both did, the later day, then (same day) a finished try over one still running (-1),
+    // then the newer side. The best streak keeps the higher one.
+    if (have(S.daily) || have(L.daily)) {
+      const l = L.daily, s = S.daily, b = B.daily;
+      let v = !have(s) ? l : !have(l) ? s : have(b) && same(l, b) ? s : have(b) && same(s, b) ? l : null;
+      if (!v) {
+        const w = l.d !== s.d ? (l.d > s.d ? l : s) : (l.r === -1) !== (s.r === -1) ? (l.r === -1 ? s : l) : localNewer ? l : s;
+        v = Object.assign({}, w, { b: Math.max(l.b, s.b) });
+      }
+      out.daily = Object.assign({}, v);
+    }
     return out;
   }
 
-  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;
 
@@ -13943,7 +14118,9 @@ function renderPill() {
   $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
   const cb = $("mCups"); cb.hidden = !(cups > 0);
   if (cups > 0) cb.innerHTML = `<span class="cupglyph"></span>${cups}`;
-  $("mRank").setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}`);
+  const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); $("mRank").classList.toggle("stk", ds > 0);   // Daily Potato streak (ui/daily.js)
+  if (ds > 0) sb.innerHTML = `<span class="stkglyph"></span>${ds}`;
+  $("mRank").setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
 }
 
 /* ----- the sheet: your numbers ----- */

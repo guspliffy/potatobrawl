@@ -98,7 +98,9 @@ function renderPill() {
   $("mTokens").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
   const cb = $("mCups"); cb.hidden = !(cups > 0);
   if (cups > 0) cb.innerHTML = `<span class="cupglyph"></span>${cups}`;
-  $("mRank").setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}`);
+  const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); $("mRank").classList.toggle("stk", ds > 0);   // Daily Potato streak (ui/daily.js)
+  if (ds > 0) sb.innerHTML = `<span class="stkglyph"></span>${ds}`;
+  $("mRank").setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
 }
 
 /* ----- the sheet: your numbers ----- */
