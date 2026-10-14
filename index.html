@@ -17047,7 +17047,8 @@ function tutTick(evs) {
     case "ult": done = evs.some((e) => e.type === "ulti" && e.slot === 0); break;
   }
   if (done) {
-    TUT.hold = id === "ult" ? 170 : 50;   // the ulti plays out (freeze 30 + up to 100 frames) before the last step starts $("tut").classList.add("done"); $("tutT").textContent = "Nice!";
+    TUT.hold = id === "ult" ? 170 : 50;   // the ulti plays out (freeze 30 + up to 100 frames) before the last step starts
+    $("tut").classList.add("done"); $("tutT").textContent = "Nice!";
     for (const b of padBtns) b.classList.remove("tutpulse");
     Sfx.ui();
   }
