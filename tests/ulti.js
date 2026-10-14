@@ -1,7 +1,8 @@
 /* Ultimates: for every fighter's ulti, against a light and a heavy defender who stands still (and one who only holds
    away), the lowest percent at which the ulti's hit is a KO; the first hit's frame after the super freeze (must be >= 24);
    and the bar (fills, spent on the press, max two uses). `node ulti.js` prints a table and "ulti ok" when every check holds.
-   KO bands: no ulti KOs below 80%, every ulti KOs a standing defender by 150%. */
+   KO bands (since the launching hits got 1.75x knockback, Jonny 2026-10-14): no ulti KOs below 15%, every ulti KOs a standing
+   defender by 110% (Phoenix's Solar Dive, which homes in on the opponent, got a smaller boost: 80% / 110%). */
 const { FIGHTERS, newGame, step, blankInput, TUNE, serialize, restore, checksum } = require("../game/core.js").BL;
 const DIST = { phoenix: 160, alchemist: 100, odin: 220, wizard: 160, samurai: 140, dragon: 160, gunslinger: 220, reaper: 220 };
 function run(att, def, pct, hold) {
@@ -35,8 +36,8 @@ for (const a of FIGHTERS) {
   if (!r0.spent) bad.push(a.id + " bar not spent");
   const ko = (d, hold) => { for (let p = 0; p <= 300; p += 5) if (run(a, d, p, hold).lethal) return p; return 999; };
   const kl = ko(light, false), kh = ko(heavy, false), kr = ko(heavy, true);
-  if (kl < 80 || kh < 80) bad.push(a.id + " KOs below 80%");
-  if (kl > 150 || kh > 150) bad.push(a.id + " needs more than 150%");
+  if (kl < 15 || kh < 15) bad.push(a.id + " KOs below 15%");
+  if (kl > 110 || kh > 110) bad.push(a.id + " needs more than 110%");
   console.log(a.id.padEnd(12), String(r0.first).padStart(5), String(r0.dmg).padStart(4), String(kl).padStart(8), String(kh).padStart(12), String(kr).padStart(14));
 }
 // save/restore in the middle of every ulti (online desync recovery): the copy plays on exactly like the original
