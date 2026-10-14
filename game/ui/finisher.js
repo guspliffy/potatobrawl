@@ -33,6 +33,7 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
+  match.finBy = finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
@@ -111,6 +112,8 @@ function finishBan(g, attSlot) {
 // a finishing special with its own name on the band, the Finish! banner and the Special button (the Gunslinger's golden bullet)
 const FIN_NAME = { gunslinger: "High Noon" };
 const finName = (spec) => FIN_NAME[spec.id] || spec.signature.name;
+// what the results screen calls the finisher: the finishing special's own name, else the title of the fighter's manga page (Inferno, One Cut ...)
+const finTitle = (spec) => FIN_NAME[spec.id] || (MANGA[spec.id] && MANGA[spec.id].name) || spec.signature.name;
 // "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
 function finHit(g, e) {
   if (!e.fin) return;
