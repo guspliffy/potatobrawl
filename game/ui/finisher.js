@@ -539,7 +539,7 @@ const FINS = {
       const dim = fe(FT.CUT, FT.ACT, t) * (1 - fe(FT.CARD, FT.END, t));
       if (dim > 0) {
         o.save(); o.fillStyle = `rgba(16,14,36,${0.32 * dim})`; o.fillRect(0, 0, L.gw, L.gh);
-        const [sx, sy] = toScreen((FIN.wx + FIN.lx) / 2 - FIN.dir * 60, -240), R = 46 * FIN.k;
+        const [sx, sy] = toScreen((FIN.wx + FIN.lx) / 2 - FIN.dir * 110, -160), R = 40 * FIN.k;
         o.globalCompositeOperation = "lighter"; o.globalAlpha = 0.35 * dim; o.drawImage(glowSprite("#dfe8ff"), sx - R * 2.6, sy - R * 2.6, R * 5.2, R * 5.2);
         o.globalCompositeOperation = "source-over"; o.globalAlpha = 0.9 * dim; o.fillStyle = "#eef2ff"; o.beginPath(); o.arc(sx, sy, R * 0.6, 0, Math.PI * 2); o.fill();
         o.fillStyle = `rgba(16,14,36,${0.9 * dim})`; o.beginPath(); o.arc(sx + R * 0.26, sy - R * 0.12, R * 0.5, 0, Math.PI * 2); o.fill();   // a crescent moon
