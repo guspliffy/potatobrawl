@@ -15,7 +15,7 @@ START = {'tokens': 50, 'tut': True, 'last': 'samurai'}
 
 # the scripted player: presses the current trial route's next key when it is in reach, holds a charged heavy, jumps where the route jumps
 DRIVER = r"""(() => {
-  const D = { start: -1, prev: -1, rid: null, k: -1, held: 0 };
+  const D = { start: -1, prev: -1, rid: null, k: -1, held: 0, lp: -99 };
   const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
   window.__drvWrong = 0;   // 1: land only each try's first hit, so every try is a miss
   window.__blInput = (G) => {
@@ -33,7 +33,9 @@ DRIVER = r"""(() => {
     }
     if (idx < 0) return inp;
     const k = tr.keys[idx], key = k.replace("!", "");
-    if (key === "jump") { if (G.t % 2 === 0) inp.jump = true; return inp; }
+    const dx = Math.abs(d.x - a.x);
+    if (key === "jump") { if (G.t % 2 === 0) inp.jump = true; if (dx > 44) inp.x = toward; return inp; }
+    if (!a.grounded && (key === "nair" || key === "hAir") && a.state !== "attack" && dx > 44) { inp.x = toward; return inp; }   // drift in, then the aerial with no direction
     const btn = key === "spec" ? "special" : key[0] === "h" ? "heavy" : "light";
     const base = key[0] === "h" ? key[1].toLowerCase() + key.slice(2) : key;
     const dir = base === "side" ? "side" : base === "up" || base === "uair" ? "up" : base === "down" ? "down" : "n";
@@ -46,9 +48,9 @@ DRIVER = r"""(() => {
     }
     if (D.start >= 0) { D.prev = D.start; D.start = -1; }   // that one whiffed: go again
     const m = a.spec.moves[mk], reach = m && m.boxes.length ? Math.max(...m.boxes.map((b) => Math.max(b.x + b.r, b.x2 + b.r))) + d.s.w / 2 - 6 : 160;
-    const far = Math.abs(d.x - a.x) - Math.abs(a.vx) * 5 > reach;
+    const far = Math.abs(d.x - a.x) - Math.abs(a.vx) * 5 + (tr.k > 0 ? 16 : 0) > reach;   // after the first hit, step in a bit closer
     if (far && a.grounded && !(a.link > 0)) { if (BL.canAct(a)) inp.x = toward; return inp; }   // step in, as a player would, unless the link is open
-    if (G.t % 4 === 0) inp[btn] = true;
+    if (G.t - D.lp >= 4) { inp[btn] = true; D.lp = G.t; }   // press at once, then again every 4 ticks until it comes out
     inp.y = dir === "up" ? -1 : dir === "down" ? 1 : 0; if (dir === "side") inp.x = toward;
     return inp;
   };

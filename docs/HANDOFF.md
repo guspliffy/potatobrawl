@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-14: the Reaper, fighter 8, PROTO 6)
+# PotatoBrawl handoff (updated 2026-10-14: combos + Daily Potato, PROTO 7)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -49,6 +49,36 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   /mnt/project-files/reaper-hub/reaper/reaper-v1.mp4, reaper-hub/manga/reaper-last-rites-manga-v1.mp4.
   tests/pwreel.py records a captioned move reel for any fighter (--fighter=id).
   Alchemist in the same PR: Toxic Orb cooldown 120 -> 105 frames, CPU style spec 1.7 -> 1.4.
+- Combos + Daily Potato (2026-10-14, branch claude/combos-daily-potato-ix1z7e, PROTO 7), session 1 of the big-features plan
+  (https://claude.ai/code/artifact/52412947-3a3c-4d13-80ae-8e441903fd1b). Wrap-up: /mnt/project-files/combos-daily/wrap-up.md.
+  - The link (core.js): the 2nd light hit in a row gives +TUNE.linkStun (8) hitstun and opens `f.link` = TUNE.linkWin (12) frames
+    for the attacker. While it is open the light's end lag cancels into a heavy, the special or a jump, and that heavy/special
+    starts at mt = min(TUNE.linkFast 6, startup - 1) (a chargeable heavy at its charge frame), flagged `f.lk` ("hit" event `lk`).
+    `heavyOrSpecial()` is the shared ground/air pick. New fighter fields `link`, `lk` (defaults, ko, startSudden, FKEYS, checksum).
+    Combo damage scaling: from the 4th hit of a combo x TUNE.comboK4 (0.85), from the 6th x comboK6 (0.7). "hit" events carry
+    `mi` (the move instance = moveT; projectiles -1) so the UI can count a multi-hit move once.
+  - Routes: game/routes.js (pure, node module, spliced at /*ROUTES*/ in ui/combos.js): 5 shared (Three-piece, Lift & Smash,
+    Trip & Spike, Rising, Signature) + 1 per fighter = 13. Keys are move ids (jab side up down nair hSide hUp hDown hAir spec;
+    "!" = charged heavy; "jump" is a display-only step); `pct` = the CPU's damage in the trial (Rising 30, Skyburn 70, others 0).
+    `ROUTES.track(t, e, fid)` follows a combo's hits and returns the longest route it ends with. Fable's first routes needed
+    four changes to land on every fighter (Three-piece jab jab side; Rising side up jump nair; Skyburn up up jump hAir; Reap
+    down down spec); names kept, hints rewritten by Fable.
+  - ui/combos.js: the route name on the combo pop-up (gold, a chime when a new route is made), the Combos part of How to play
+    (the link in one line, fighter chips, route cards with keys in the button colours, a count), and the Combo trial: the
+    tutorial's engine (match.trial) with a CPU that stands still 70 px in front at the route's damage (always Odin, the
+    fighter tests/combos.js checks every route on; Odin trains against Odin in another skin); keys light up as hits
+    land, a hint after 3 misses, Next / Exit, `P.routes` (cleared ids). All 13 = the title Combo Potato (ACT in acct.js) and
+    30 chips once (`P.comboPaid`). Both sync (sync.js: routes = union, comboPaid = paid anywhere). Test hook
+    `window.__blastline.trial`; `window.__blInput(G)` (input.js) lets a test script drive player 1 in any match.
+  - Daily Potato (ui/daily.js, UI only): a hash of the local date picks both fighters, the CPU's name and the seed (same
+    matchup for everyone that day); CPU strength Mon 0.45 ... Sun 0.87 in equal steps (Normal Mon-Wed, Hard Thu-Sat, Brutal Sun);
+    3 lives, 3 min, one try (starting writes the day as tried, so a reload or quit is a loss). Win +40 chips and streak +1, draw
+    +15 (streak kept), finished loss +5, forfeit 0; any loss ends the streak; best streak kept. `P.daily` {d, r, s, w, b} synced
+    (sync.js cleanDaily + mergeProf: the later day, a finished try over a running one, then the newer side; best = max). The
+    streak shows on the profile pill (flame) while its last day is today or yesterday. Menu button between Ranked and
+    Tournament with today's matchup; the sheet `#scrDaily`; results "Menu" instead of Rematch.
+  - CPU styles: Alchemist spec 1.3 heavy 1.25, Gunslinger spec 1.3 heavy 1.2 (styled CPUs link specials now; botstyle was
+    above 65% at the old numbers).
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -88,7 +118,7 @@ index.html is committed with every source change (check.sh flags a stale one).
     (`escapeInput`); lethal only if all four die. Event "lethal" {slot, by, final, mv, fin, chg, kb, dirx,
     diry}. On the last life (`final`) the loser is `doomed` (intangible, KO counted at once) and endGame runs
     on that frame ("game" event `hit: true`); the blast line later only removes the doomed loser.
-- ui/: one script in 16 parts, joined in order by build.py (UI_PARTS); base.js opens the IIFE and loop.js
+- ui/: one script in 18 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it); base.js opens the IIFE and loop.js
   closes it, so a part alone is not valid JS.
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
@@ -203,6 +233,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   the floor (about 44 against the other five alone, from the same table).
   With the Reaper and the Alchemist fix (2026-10-14, 80 games per pair at 0.5/0.8): phoenix 50.3, alchemist 48.6,
   odin 52.7, wizard 48.9, samurai 49.8, dragon 51.6, gunslinger 48.1, reaper 50.0.
+  With the link (PROTO 7, same run): phoenix 52.3, alchemist 46.5, odin 52.1, wizard 49.2, samurai 51.9, dragon 47.9,
+  gunslinger 49.3, reaper 50.8.
 
 ## Tests (tests/, run from anywhere)
 snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core; always the neutral bot) · botstyle.js (each CPU style
@@ -220,6 +252,12 @@ breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (a
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
 pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
 return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
+combos.js (every route lands on every fighter that has it at its trial damage, from one of a few spacings; Signature can't be
+escaped at 0 and 30%; damage scaling; `node combos.js try k1,k2,...` tries a candidate route, `node combos.js <fighter> <route> <pct>
+[1 jump | 2 dodge]` traces one run; check.sh step 3d, also in --quick) · pwcombo.py (route cards, the Combo trial driven by a script
+through window.__blInput, misses + hint, Next/Exit, the all-13 reward paid once; tags flow s667 d1280 up390; check.sh 8b) ·
+pwcomboreel.py (a half-speed video of trial routes on a frozen clock; needs ffmpeg) · pwdaily.py (Daily Potato with a Date stand-in:
+one try, chips, streak, reload, next day, midnight; tags flow s667 p844 d1280 up390; check.sh 8c) ·
 pwux2.py (all screens, 3 sizes) ·
 pwsel.py · pwtut.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
@@ -247,7 +285,15 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT (Jonny, 2026-10-14): the big-features plan, ideas only until he answers its decisions table:
+- NEXT: session 2 of the big-features plan, Ultimates (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the
+  bar under the name card, the button, the freeze, all eight ultis, CPUs that use them, balance, the first two or three Ultimate
+  KO pages; one reload (PROTO 8). Also the tutorial gets a Dodge step (it never had one; Jonny noticed on PC) and an
+  Ulti step, both in this session. Online encIn is full: the ULTI button needs a third input character or a reuse (decide first).
+  Then 3. the rest of the Ultimate KO pages + fighter mastery; 4. boss engine + the Devil + The Field + the Road's first 8 stops;
+  5. Alien + Sea Monster, their stages, Road skins; 6. online 2v1; 7. 2v2 (offline, then online).
+- Combos/Daily leftovers: the Daily's Brutal (0.87) is still below Practice Hard (0.9); changing the device clock gives an extra
+  Daily try (accepted, offline game); a player who clears all 13 routes on two devices before they sync is paid twice.
+- The big-features plan (Jonny, 2026-10-14), approved with its default decisions:
   https://claude.ai/code/artifact/52412947-3a3c-4d13-80ae-8e441903fd1b (Fable's design: /mnt/project-files/next-ideas/fable-ideas.md).
   Default order: 1. combos ("the link": an ender within 12 frames of the 2nd light starts 6 frames faster, +8 hitstun; named
   routes; a Combo trial in How to play) + Daily Potato; 2. ultimates (bar under the name card, ULTI button when full, max 2, a

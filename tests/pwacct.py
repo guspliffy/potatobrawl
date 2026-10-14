@@ -361,7 +361,7 @@ async def hub(b):
         expect((await prof(pg))['avatar'] == f'{ids[0]}:0', f'{tag}: picking a picture is stored in the profile')
         # the title picker
         await pg.click('#acTitBtn'); await pg.wait_for_timeout(150)
-        expect(await pg.evaluate("document.querySelectorAll('#acPick .ac-t').length") == 7, f'{tag}: the title list has Automatic + six titles')
+        expect(await pg.evaluate("document.querySelectorAll('#acPick .ac-t').length") == 8, f'{tag}: the title list has Automatic + seven titles')
         expect(await pg.evaluate("document.querySelectorAll('#acPick .ac-t.lock').length") >= 1, f'{tag}: locked titles are marked')
         await hub_fit(pg, tag, 'titles'); await hub_shot(pg, tag, '3_profile_title')
         await pg.evaluate("[...document.querySelectorAll('#acPick .ac-t')].find((e) => /flawless/i.test(e.textContent)).click()"); await pg.wait_for_timeout(150)

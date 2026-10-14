@@ -8,7 +8,7 @@ const ROUTES = (function () {
     { id: "three", name: "Three-piece", keys: ["jab", "jab", "side"], pct: 0 },
     { id: "lift", name: "Lift & Smash", keys: ["side", "up", "hUp"], pct: 0 },
     { id: "trip", name: "Trip & Spike", keys: ["down", "side", "hDown"], pct: 0 },
-    { id: "rising", name: "Rising", keys: ["side", "up", "jump", "nair"], pct: 40 },
+    { id: "rising", name: "Rising", keys: ["side", "up", "jump", "nair"], pct: 30 },
     { id: "sig", name: "Signature", keys: ["side", "side", "spec"], pct: 0 },
   ];
   const OWN = {
