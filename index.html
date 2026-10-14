@@ -8113,6 +8113,7 @@ MANGA.gunslinger = (function () {
   const gnsMin = (t) => 58 + gnsJump(t, TICK) + gnsJump(t, DONG);
   // tone in panel coordinates (mgToneFill wants the css px of the screen)
   const gnsTone = (c, pn, poly, size, cover, drift) => mgToneFill(c, poly.map(([x, y]) => [x + pn.ox, y + pn.oy]), size, cover, drift);
+  const gnsRng = (seed) => { const r = mgRng(Math.imul(seed + 1, 2654435761) >>> 0); r(); r(); return r; };
   const gnsDisc = (cx, cy, r, n) => Array.from({ length: n }, (_, i) => [cx + Math.cos((i / n) * TAU) * r, cy + Math.sin((i / n) * TAU) * r]);
 
   /* ---- panels ---- */
@@ -8121,20 +8122,20 @@ MANGA.gunslinger = (function () {
     return [
       { id: "look", t0: MT.LOOK, from: "w", freeze: MT.STRIKE, cover: MT.STRIKE,
         poly: port ? [[0, 0], [1, 0], [1, 0.39], [0, 0.42]] : [[0, 0], [0.45, 0], [0.41, 1], [0, 1]],
-        cam: (t, pn) => { const vh = 103 * (1 - 0.07 * fe(MT.LOOK, MT.STRIKE, t)), z = pn.h / vh; return { wx: FIN.wx + D * (port ? 0.14 : 0.12) * pn.w / z, wy: -53, vh }; },
+        cam: (t, pn) => { const vh = 103 * (1 - 0.07 * fe(MT.LOOK, MT.STRIKE, t)), z = pn.h / vh; return { wx: FIN.wx + D * (port ? 0.14 : 0.12) * pn.w / z, wy: port ? -57 : -53, vh }; },
         draw: drawLook },
       { id: "inset", t0: MT.INSET, from: "l", slide: 140, freeze: MT.STRIKE, cover: MT.STRIKE,
-        poly: port ? [[0.42, 0.27], [0.98, 0.25], [0.98, 0.49], [0.4, 0.51]] : [[0.36, 0.06], [0.65, 0.03], [0.63, 0.5], [0.34, 0.53]],
+        poly: port ? [[0.42, 0.27], [0.98, 0.25], [0.98, 0.49], [0.4, 0.51]] : [[0.635, 0.05], [0.975, 0.02], [0.96, 0.47], [0.615, 0.5]],
         cam: (t) => { const h = gnsPt(L_(), Math.min(t, MT.STRIKE), "head"), tr = Math.sin(t * 0.026) * 0.12 * fe(MT.INSET, MT.INSET + 200, t); return { wx: h[0] + tr, wy: h[1] + 1, vh: 27 - 3 * fe(MT.INSET, MT.STRIKE, t) }; },
         draw: drawInset },
       { id: "strike", t0: MT.STRIKE, from: "l", freeze: MT.AFTER, cover: MT.AFTER,
         poly: port ? [[0, 0.38], [1, 0.41], [1, 0.74], [0, 0.72]] : [[0, 0.31], [1, 0.37], [1, 1], [0, 1]],
-        cam: (t) => { const k = ease(fe(MT.STRIKE, HIT, t)), vh = (port ? 205 : 152) * (1 - 0.08 * k); return { wx: FIN.wx + D * 65, wy: -(port ? 0.34 : 0.28) * vh, vh }; },
+        cam: (t) => { const k = ease(fe(MT.STRIKE, HIT, t)), vh = (port ? 182 : 126) * (1 - 0.08 * k); return { wx: FIN.wx + D * 65, wy: -(port ? 0.34 : 0.3) * vh, vh }; },
         shake: (t) => { const a = 5 * fe(HIT + 100, HIT + 130, t) * (1 - fe(HIT + 130, HIT + 420, t)); return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a * 0.6] : [0, 0]; },
         draw: drawStrike },
       { id: "after", t0: MT.AFTER, from: "b", live: true,
         poly: port ? [[0, 0.69], [1, 0.67], [1, 1], [0, 1]] : [[0, 0.43], [0.63, 0.4], [0.59, 1], [0, 1]],
-        cam: (t) => { const vh = (port ? 112 : 102) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + D * (port ? 14 : 22), wy: -0.47 * vh, vh }; },
+        cam: (t) => { const vh = (port ? 92 : 82) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + D * (port ? 12 : 26), wy: -47, vh }; },
         draw: drawAfter },
     ];
   }
@@ -8257,8 +8258,8 @@ MANGA.gunslinger = (function () {
   /* ---- the street under the sunset (panels 3 and 4): sky tone, the sun cut by paper stripes, mesas, the ground ---- */
   function gnsStreet(c, pn, t, sunX, sunR, sink) {
     const D = FIN.dir, hz = pn.p(FIN.wx, -14)[1], gy = pn.p(FIN.wx, 0)[1];
-    gnsTone(c, pn, [[pn.x0 - 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 + pn.h * 0.13], [pn.x0 - 6, pn.y0 + pn.h * 0.17]], 7, 0.42, [t * 0.0008, 0]);
-    gnsTone(c, pn, [[pn.x0 - 6, pn.y0 + pn.h * 0.17], [pn.x1 + 6, pn.y0 + pn.h * 0.13], [pn.x1 + 6, pn.y0 + pn.h * 0.27], [pn.x0 - 6, pn.y0 + pn.h * 0.31]], 7, 0.18, [t * 0.0008, 0]);
+    if (!MG.slow) gnsTone(c, pn, [[pn.x0 - 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 + pn.h * 0.13], [pn.x0 - 6, pn.y0 + pn.h * 0.17]], 7, 0.42, [t * 0.0008, 0]);
+    if (!MG.slow) gnsTone(c, pn, [[pn.x0 - 6, pn.y0 + pn.h * 0.17], [pn.x1 + 6, pn.y0 + pn.h * 0.13], [pn.x1 + 6, pn.y0 + pn.h * 0.27], [pn.x0 - 6, pn.y0 + pn.h * 0.31]], 7, 0.18, [t * 0.0008, 0]);
     // the sun: a flat disc of the accent with an ink edge, sinking, cut by paper stripes that widen towards the horizon
     const [sx] = pn.p(sunX, 0), R = sunR * pn.z, sy = hz + R * (0.16 + sink);
     c.save(); c.beginPath(); c.rect(pn.x0 - 6, pn.y0 - 6, pn.w + 12, hz - pn.y0 + 6); c.clip();
@@ -8279,9 +8280,10 @@ MANGA.gunslinger = (function () {
     c.fillStyle = INK; c.fillRect(pn.x0 - 6, hz - 1, pn.w + 12, 2.2);
     pn.world(c);
     c.lineCap = "round"; c.strokeStyle = INK;
-    for (let i = 0; i < 18; i++) { const r = mgRng(610 + i), x = FIN.wx - 260 + r() * 640, y = -11 + (i % 6) * 4.2 + r() * 1.5, len = 18 + r() * 70; c.lineWidth = 0.7 + r() * 1.1; c.beginPath(); c.moveTo(x, y); c.lineTo(x + len, y + (r() - 0.5) * 0.8); c.stroke(); }
+    const rs = gnsRng(610);
+    for (let i = 0; i < 16; i++) { const x = FIN.wx + D * (-260 + rs() * 620), y = -10 + rs() * 22, len = 14 + rs() * 50; c.lineWidth = 0.6 + rs() * 0.8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + D * len, y + (rs() - 0.5) * 0.8); c.stroke(); }
     c.fillStyle = INK;
-    for (let i = 0; i < 10; i++) { const r = mgRng(660 + i), x = FIN.wx - 220 + r() * 560, y = 2 + r() * 14; c.beginPath(); c.ellipse(x, y, 1 + r() * 1.4, 0.7 + r() * 0.6, 0, 0, TAU); c.fill(); }
+    for (let i = 0; i < 10; i++) { const x = FIN.wx + D * (-220 + rs() * 560), y = 2 + rs() * 14, r = rs; c.beginPath(); c.ellipse(x, y, 1 + r() * 1.4, 0.7 + r() * 0.6, 0, 0, TAU); c.fill(); }
     // short noon shadows under their feet
     for (const p of [W_(), L_()]) if (p.state !== "gone" && Math.abs(p.y) < 1) { c.beginPath(); c.ellipse(p.x, 1.2, p.s.w * 0.5, 2.6, 0, 0, TAU); c.fill(); }
     pn.screen(c);
@@ -8293,7 +8295,8 @@ MANGA.gunslinger = (function () {
   function drawStrike(c, pn, t) {
     const W = W_(), D = FIN.dir;
     pn.screen(c);
-    gnsStreet(c, pn, t, FIN.wx + D * 65, 78, 0.1 * fe(MT.STRIKE, MT.AFTER, t));
+    gnsStreet(c, pn, t, FIN.wx + D * 65, 70, 0.1 * fe(MT.STRIKE, MT.AFTER, t));
+    gnsDrawArc(c, pn, t);
     mgPuppet(c, pn, W, t, { light: dirAng(-0.45), post: gnsBrim(W, t, 0.8) });
     gnsTwitch(c, pn, W, t, 2480, 2760);
     gnsShotLine(c, pn, t);
@@ -8304,22 +8307,34 @@ MANGA.gunslinger = (function () {
     if (hb > 0 && hb < 1) { const q = pn.p(FIN.lx - D * 6, shotY); mgStarburst(c, q[0], q[1], (34 - 26 * hb) * pn.z / 1.7, 0.3); }
     gnsMuzzleFx(c, pn, t);
   }
+  // the draw happened between two frames: a tapered ink stroke along the path of the gun, from the hip up to the aim, left behind for a moment
+  function gnsDrawArc(c, pn, t) {
+    const k = fe(HIT + 100, HIT + 330, t);
+    if (t < HIT + 100 || k >= 1) return;
+    const W = W_(), D = FIN.dir, sk = { w: W.s.w, leg: W.s.h * W.spec.look.leg, tor: W.s.h * W.spec.look.torso };
+    const a = [W.x + D * (sk.w * 0.9 + 6), -sk.leg + 8], b = gnsMuzzle(HIT), m = [W.x + D * sk.w * 1.5, (a[1] + b[1]) * 0.5 + 6];
+    const pts = qpts(a, m, b, 14);
+    pn.world(c); c.save(); c.globalAlpha = 1 - k;
+    c.fillStyle = INK; brush(c, pts, 7.5, 14);
+    c.fillStyle = PAPER; brush(c, pts.map(([x, y]) => [x - D * 0.6, y + 0.4]), 2.6, 14);
+    c.restore();
+  }
   // one smoking line: from the muzzle through the loser to the edge, ink with a hot core; it fades from the muzzle outward while smoke curls off it
   function gnsShotLine(c, pn, t) {
     if (t < HIT + 100 || t > 3500) return;
     const D = FIN.dir, len = 720, gone = ease(fe(3150, 3480, t)), xs = shotX0 + D * len * gone, xe = shotX0 + D * len, y = shotY;
     pn.world(c);
     c.lineCap = "butt";
-    c.strokeStyle = INK; c.lineWidth = 2.8; c.beginPath(); c.moveTo(xs, y); c.lineTo(xe, y); c.stroke();
-    c.strokeStyle = COL; c.lineWidth = 1.1; c.stroke();
+    c.strokeStyle = INK; c.lineWidth = 3.4; c.beginPath(); c.moveTo(xs, y); c.lineTo(xe, y); c.stroke();
+    c.strokeStyle = COL; c.lineWidth = 1.5; c.stroke();
     pn.screen(c);
     for (let i = 0; i < 10; i++) {   // the smoke: small puffs of tone rising off the line, born a little after one another
-      const r = mgRng(80 + i), x = shotX0 + D * (14 + i * 30 + r() * 12), age = t - (HIT + 110 + i * 22);
+      const r = gnsRng(80 + i), x = shotX0 + D * (14 + i * 30 + r() * 12), age = t - (HIT + 110 + i * 22);
       if (age <= 0 || (x - xs) * D < -40) continue;
       const k = clamp(age / 520, 0, 1), a = 1 - fe(0.55, 1, k);
       if (a <= 0) continue;
       const q = pn.p(x + Math.sin(age * 0.006 + i) * 3, y - 3 - age * 0.022 * (0.7 + r() * 0.6));
-      gnsPuff(c, pn, q[0], q[1], (1.6 + 4.5 * easeOut(k)) * pn.z, a);
+      gnsPuff(c, pn, q[0], q[1], (2.5 + 5.5 * easeOut(k)) * pn.z, a, 80 + i);
     }
   }
   // the muzzle after the shot: a flash in the accent, then smoke rising off the barrel until the panel freezes
@@ -8333,7 +8348,7 @@ MANGA.gunslinger = (function () {
       if (age <= 0) continue;
       const k = clamp(age / 650, 0, 1), a = 1 - fe(0.5, 1, k), b = pn.p(...gnsMuzzle(born));
       if (a <= 0) continue;
-      gnsPuff(c, pn, b[0] + Math.sin(age * 0.005 + i * 2) * 4 * z + D * 2 * z, b[1] - age * 0.03 * z, (1.5 + 4 * easeOut(k)) * z, a);
+      gnsPuff(c, pn, b[0] + Math.sin(age * 0.005 + i * 2) * 4 * z + D * 2 * z, b[1] - age * 0.03 * z, (2.4 + 5 * easeOut(k)) * z, a, 40 + i);
     }
   }
   function gnsFlash(c, s, a) {   // an eight-point star: ink edge, accent body, hot core (local x along the barrel)
@@ -8344,13 +8359,17 @@ MANGA.gunslinger = (function () {
     star(s * 0.45, s * 0.14); c.fillStyle = HOT; c.fill();
     c.globalAlpha = 1;
   }
-  // a puff of smoke: a disc of dot tone with an ink edge (panel coordinates)
-  function gnsPuff(c, pn, x, y, r, a) {
-    if (r < 1) return;
-    c.save(); c.globalAlpha = a;
-    gnsTone(c, pn, gnsDisc(x, y, r, 14), 6, 0.38);
-    c.lineWidth = Math.max(1.3, r * 0.14); c.strokeStyle = INK; c.beginPath(); c.arc(x, y, r, 0, TAU); c.stroke();
-    c.restore();
+  // a puff of smoke: a little cloud of three or four discs, one ink outline round all of them, paper and dot tone inside (panel coordinates).
+  // It thins out by shrinking, so the overlapping discs never show their seams.
+  function gnsPuff(c, pn, x, y, r, a, seed) {
+    r *= Math.min(1, a * 1.5);
+    if (r < 1.2) return;
+    const rn = gnsRng(seed || 7), lobes = [[0, 0, 1]];
+    for (let i = 0; i < 3; i++) { const an = rn() * TAU; lobes.push([Math.cos(an) * r * 0.62, Math.sin(an) * r * 0.5 - r * 0.15, 0.55 + rn() * 0.25]); }
+    const lw = Math.max(1.3, r * 0.13);
+    c.fillStyle = INK; for (const [dx, dy, k] of lobes) { c.beginPath(); c.arc(x + dx, y + dy, r * k + lw, 0, TAU); c.fill(); }
+    c.fillStyle = PAPER; for (const [dx, dy, k] of lobes) { c.beginPath(); c.arc(x + dx, y + dy, r * k, 0, TAU); c.fill(); }
+    gnsTone(c, pn, gnsDisc(x + r * 0.2, y + r * 0.25, r * 0.85, 12), 6, 0.4);
   }
 
   /* ---- the loser: terror, the white freeze of the hit, then out along the real launch direction with three ghosts ---- */
@@ -8367,7 +8386,7 @@ MANGA.gunslinger = (function () {
   function drawAfter(c, pn, t) {
     const W = W_(), D = FIN.dir;
     pn.screen(c);
-    gnsStreet(c, pn, t, FIN.wx + D * 60, 64, 0.22 + 0.12 * fe(MT.AFTER, MT.END, t));
+    gnsStreet(c, pn, t, FIN.wx + D * 52, 50, 0.2 + 0.12 * fe(MT.AFTER, MT.END, t));
     mgPuppet(c, pn, W, t, { light: dirAng(-0.45), post: gnsBrim(W, t, 0.8) });
     pn.screen(c);
     gnsWisp(c, pn, t);
@@ -8388,18 +8407,18 @@ MANGA.gunslinger = (function () {
     for (let i = 0; i <= keep; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(keep, i + 1)];
       let dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-      const wd = (0.8 + 2.6 * (i / n)) * z * 0.5;
+      const wd = (1.4 + 4.6 * (i / n)) * z * 0.5;
       L.push([pts[i][0] - dy * wd, pts[i][1] + dx * wd]); R.push([pts[i][0] + dy * wd, pts[i][1] - dx * wd]);
     }
     const poly = L.concat(R.reverse());
     c.save(); c.globalAlpha = fade;
-    gnsTone(c, pn, poly, 6, 0.4);
-    c.lineWidth = Math.max(1.2, 0.42 * z); c.strokeStyle = INK; c.lineJoin = "round"; mgPoly(c, poly); c.stroke();
+    gnsTone(c, pn, poly, 6, 0.5);
+    c.lineWidth = Math.max(1.4, 0.5 * z); c.strokeStyle = INK; c.lineJoin = "round"; mgPoly(c, poly); c.stroke();
     c.restore();
     // the torn-off part: puffs drifting on along the breath
     if (blow > 0) for (let i = 0; i < 4; i++) {
       const s = 0.35 + i * 0.2, p = pts[Math.min(n, Math.round(s * n))], dr = (t - BLOW) * 0.045 * z * (0.6 + 0.2 * i);
-      gnsPuff(c, pn, p[0] + bx * dr, p[1] + by * dr - (t - BLOW) * 0.008 * z, (2 + 2.2 * i * 0.5 + 3 * blow) * z * 0.6, fade * (1 - fe(BLOW + 300 + i * 60, BLOW + 700, t)));
+      gnsPuff(c, pn, p[0] + bx * dr, p[1] + by * dr - (t - BLOW) * 0.008 * z, (2.5 + 1.2 * i + 3 * blow) * z * 0.7, fade * (1 - fe(BLOW + 300 + i * 60, BLOW + 700, t)), 120 + i);
     }
   }
 
@@ -8416,23 +8435,29 @@ MANGA.gunslinger = (function () {
     }
     o.restore();
   }
-  // the tumbleweed: a ball of ink loops, drawn once, rolled across the bottom of the page (along the street of panel 3) with a few hops
+  // the tumbleweed: a ball of scribbled ink arcs over paper, drawn once; it rolls along the bottom edge of the page, and from panel 3 on along its street,
+  // slowly at first, then a gust takes it between the two and out before the silence
   function gnsWeedSprite() {
-    const R = 28, S = Math.ceil((R * 2 + 8) * DPR), cv_ = mgCanvas(S, S), x = cv_.getContext("2d"), r = mgRng(1881);
-    x.scale(DPR, DPR); x.translate(R + 4, R + 4); x.strokeStyle = INK; x.lineCap = "round";
-    for (let i = 0; i < 15; i++) { const rr = R * (0.45 + r() * 0.5); x.lineWidth = 1.3 + r() * 1.3; x.beginPath(); x.ellipse((r() - 0.5) * R * 0.3, (r() - 0.5) * R * 0.3, rr, rr * (0.3 + r() * 0.5), r() * Math.PI, 0, TAU); x.stroke(); }
-    x.lineWidth = 1.4;
-    for (let i = 0; i < 12; i++) { const a = r() * TAU, r0 = R * (0.7 + r() * 0.2); x.beginPath(); x.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); x.lineTo(Math.cos(a + 0.2) * R * 1.05, Math.sin(a + 0.2) * R * 1.05); x.stroke(); }
+    const R = 28, S = Math.ceil((R * 2 + 10) * DPR), cv_ = mgCanvas(S, S), x = cv_.getContext("2d"), r = mgRng(1881);
+    x.scale(DPR, DPR); x.translate(R + 5, R + 5); x.strokeStyle = INK; x.lineCap = "round";
+    x.fillStyle = PAPER; x.beginPath(); x.arc(0, 0, R * 0.86, 0, TAU); x.fill();
+    for (let i = 0; i < 26; i++) {
+      const rr = R * (0.35 + r() * 0.62), ox = (r() - 0.5) * R * 0.5, oy = (r() - 0.5) * R * 0.5, a0 = r() * TAU;
+      x.lineWidth = 1 + r() * 1.5; x.beginPath(); x.ellipse(ox, oy, rr, rr * (0.55 + r() * 0.4), r() * Math.PI, a0, a0 + 1.4 + r() * 2.2); x.stroke();
+    }
+    x.lineWidth = 1.2;
+    for (let i = 0; i < 14; i++) { const a = r() * TAU, r0 = R * (0.75 + r() * 0.15); x.beginPath(); x.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); x.lineTo(Math.cos(a + 0.25) * R * 1.08, Math.sin(a + 0.25) * R * 1.08); x.stroke(); }
     return { cv: cv_, R, S: S / DPR };
   }
+  const gnsWeedX = (t) => Math.pow(fe(1450, 2860, t), 1.35);   // share of the way across: a steady roll that picks up a little in the gust
   function gnsWeed(o, t) {
-    const t0 = 1350, t1 = 2760;
-    if (t < t0 || t > t1 || !MG.byId.strike) return;
+    if (t < 1450 || t > 2860 || !MG.byId.strike) return;
     if (!weed) weed = gnsWeedSprite();
-    const pn = MG.byId.strike, D = FIN.dir, k = (t - t0) / (t1 - t0), z = Math.max(1.2, pn.z), rr = 13 * z;
-    const xs = D > 0 ? -rr * 2 + (L.gw + rr * 4) * k : L.gw + rr * 2 - (L.gw + rr * 4) * k;
-    const hop = Math.abs(Math.sin(k * Math.PI * 5)) * rr * 1.1 * (0.6 + 0.4 * Math.cos(k * 3)), gy = pn.p(FIN.wx, 0)[1] + pn.oy;
-    o.save(); o.translate(xs, gy - rr - hop); o.rotate(D * ((L.gw + rr * 4) * k) / rr); const s = rr / weed.R;
+    const pn = MG.byId.strike, D = FIN.dir, z = Math.max(1.3, pn.z), rr = 15 * z, span = L.gw + rr * 4, d = span * gnsWeedX(t);
+    const xs = D > 0 ? -rr * 2 + d : L.gw + rr * 2 - d;
+    const street = pn.p(FIN.wx, 0)[1] + pn.oy, edge = L.gh - MG.m - 2, gy = edge + (street - edge) * ease(fe(MT.STRIKE, MT.STRIKE + 160, t));
+    const hop = Math.abs(Math.sin(d / (rr * 4.2))) * rr * (0.5 + 0.6 * fe(2300, 2500, t));
+    o.save(); o.translate(xs, gy - rr - hop); o.rotate(D * d / rr); const s = rr / weed.R;
     o.drawImage(weed.cv, -weed.S / 2 * s, -weed.S / 2 * s, weed.S * s, weed.S * s);
     o.restore();
   }
@@ -8487,13 +8512,14 @@ MANGA.gunslinger = (function () {
         { text: shot ? "BLAM" : "WHAK", t0: 600, t1: 1330, size: 0.24, rot: -0.12 * D, at: () => [clamp(MG.ix + D * L.gw * 0.04, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.24, L.gh * 0.2, L.gh * 0.5)] },
         // the clock strikes: beside the clock, across the border of panel 2
         { text: "DONG", t0: DONG, t1: 2330, size: 0.13, arc: 7, rot: 0.12 * D, jit: 0.14,
-          at: () => { const p = MG.byId.look, q = p.sp(FIN.wx + D * 36, -77); return [q[0] + D * p.z * 21.5 * 1.45, q[1] - p.z * 21.5 * 0.55]; } },
+          at: () => { if (lay.port) return [MG.page.x + MG.page.w * (D > 0 ? 0.24 : 0.76), MG.page.y + L.gh * 0.055];   // upright: the clock is at the edge, so in the open sky over his hat
+            const p = MG.byId.look, q = p.sp(FIN.wx + D * 36, -77); return [q[0] + D * p.z * 21.5 * 1.45, q[1] - p.z * 21.5 * 0.55]; } },
         // the shot: above the line, ahead of his gun, stretched along it
-        { text: "BANG", t0: HIT + 100, t1: 3560, size: 0.27, arc: 10, rot: -0.07 * D, fill: COL, stretch: { ang: D > 0 ? 0 : Math.PI, k: 0.35 },
-          at: () => { const p = MG.byId.strike, q = p.sp(FIN.wx + D * 50, -96); return [q[0], q[1]]; } },
+        { text: "BANG", t0: HIT + 100, t1: 3560, size: 0.24, arc: 10, rot: -0.07 * D, fill: COL, stretch: { ang: D > 0 ? 0 : Math.PI, k: 0.35 },
+          at: () => { const p = MG.byId.strike, q = p.sp(FIN.wx + D * 80, -104); return [q[0], q[1]]; } },
         // he blows the smoke off the barrel
         { text: "fuu", t0: BLOW + 20, t1: 4380, size: 0.085, jit: 0.12, rot: -0.14 * D, space: 0.1,
-          at: (t) => { const p = MG.byId.after, m = p.sp(...gnsMuzzle(Math.min(t, BLOW + 60))); return [m[0] + D * p.z * 24, m[1] - p.z * 14]; } },
+          at: (t) => { const p = MG.byId.after, m = p.sp(...gnsMuzzle(Math.min(t, BLOW + 60))); return [m[0] + D * p.z * 30, m[1] - p.z * 4]; } },
       ];
     },
     start(g) { dust = []; weed = null; hat = null; hatKind = "sprout"; },
@@ -8513,11 +8539,11 @@ MANGA.gunslinger = (function () {
     pose(P, sk, t, role, p) {
       const w = sk.w, leg = sk.leg, tor = sk.tor;
       if (role === "w") {
-        const low = [w * 0.66, -leg - tor * 0.08], aim = [w * 1.02, -leg - tor * 0.64], lowB = [-w * 0.5, -leg - tor * 0.08];
-        P.gunB = Math.PI - 1.35; P.exK = 1;
+        const low = [w * 0.9, -leg], aim = [w * 1.02, -leg - tor * 0.64], lowB = [-w * 0.72, -leg - tor * 0.06];
+        P.gunB = Math.PI - 1.15; P.exK = 1;
         if (t < HIT) {   // the stand-off: hands over the holsters
           const k = ease(fe(MT.LOOK, MT.LOOK + 400, t)), lift = Math.sin(Math.PI * fe(2050, 2600, t)) * 1.2;
-          P.crouch = 0.22 * k; P.lean = 0.06 * k; P.holdAng = 1.35;
+          P.crouch = 0.22 * k; P.lean = 0.06 * k; P.holdAng = 0.95;
           P.expr = t >= DONG ? "grin" : undefined;
           return { hF: [low[0], low[1] - lift], hB: lowB };
         }
@@ -8528,10 +8554,10 @@ MANGA.gunslinger = (function () {
           return { hF: [aim[0] - kick * 2, aim[1] - kick * 6], hB: lowB };
         }
         // the aftermath: the barrel up to his mouth, he blows, grins, and lowers it back to the holster
-        const q = ease(fe(RAISE, BLOW - 30, t)), d = ease(fe(LOWER, LOWER + 340, t)), up = [w * 0.56, -leg - tor * 0.3];
+        const q = ease(fe(RAISE, BLOW - 30, t)), d = ease(fe(LOWER, LOWER + 340, t)), up = [w * 0.7, -leg - tor * 0.35];
         P.crouch = 0.12 * (1 - q); P.lean = -0.04 * (1 - q) - 0.03 * q;
-        let hF = lerp2(aim, up, q), ang = lerp(0, -1.72, q);
-        if (d > 0) { hF = lerp2(up, low, d); ang = lerp(-1.72, 1.35, d); }
+        let hF = lerp2(aim, up, q), ang = lerp(0, -1.42, q);
+        if (d > 0) { hF = lerp2(up, low, d); ang = lerp(-1.42, 0.95, d); }
         P.holdAng = ang;
         const blowing = t >= BLOW - 20 && t < BLOW + 320;
         P.expr = blowing ? undefined : "grin"; P.mouth = blowing ? 0.75 : 0;
