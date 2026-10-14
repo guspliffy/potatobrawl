@@ -1,0 +1,91 @@
+# Switches on accounts (sync codes) on the live server. Paste ONCE, as root, after the update that brought accounts.js is live
+# (paste deploy/update.txt first). Safe to paste twice. It only touches the game (service "potatobrawl"), its own folder and
+# the firewall rule for port 8080. Nothing else on this server (the trading bot included) is changed.
+#
+# What it does:
+#   1. makes /var/lib/potatobrawl/accounts (owned by the potatobrawl user, mode 700): one small file per account, named by a
+#      hash of its code, so the folder never holds a code.
+#   2. adds a systemd drop-in for the game: ACCOUNTS_DIR (turns accounts on), HOST=127.0.0.1 (the game now listens on this
+#      machine only; Caddy still reaches it on 127.0.0.1:8080) and permission to write that one folder (the unit is otherwise
+#      read-only).
+#   3. installs a nightly backup (03:17, systemd timer) to /var/backups/potatobrawl/accounts-YYYYMMDD.tar.gz, keeping 14 days.
+#   4. restarts the game, checks that the site and accounts answer, and only then closes port 8080 in the firewall.
+# To restore a backup: stop the game, unpack the .tar.gz into /var/lib/potatobrawl/accounts, chown it to potatobrawl, start the game.
+# To switch accounts off again: delete /etc/systemd/system/potatobrawl.service.d/accounts.conf, then systemctl daemon-reload and
+# systemctl restart potatobrawl. The accounts folder is kept.
+bash <<'EOF'
+set -e
+[ "$(id -u)" = 0 ] || { echo "Please run as root (type: sudo -i), then paste again."; exit 1; }
+id potatobrawl >/dev/null 2>&1 || { echo "The potatobrawl user is missing. Paste the first-time setup block first."; exit 1; }
+[ -f /opt/potatobrawl/accounts.js ] || { echo "accounts.js is not on the server yet. Paste deploy/update.txt first (after the pull request is merged), then this block again."; exit 1; }
+DIR=/var/lib/potatobrawl/accounts
+BAK=/var/backups/potatobrawl
+
+# 1. the folder
+mkdir -p "$DIR"
+chown potatobrawl:potatobrawl /var/lib/potatobrawl "$DIR"
+chmod 700 "$DIR"
+
+# 2. the systemd drop-in for the game
+mkdir -p /etc/systemd/system/potatobrawl.service.d
+cat > /etc/systemd/system/potatobrawl.service.d/accounts.conf <<'UNIT'
+[Service]
+Environment=ACCOUNTS_DIR=/var/lib/potatobrawl/accounts
+Environment=HOST=127.0.0.1
+ReadWritePaths=-/var/lib/potatobrawl/accounts
+UNIT
+
+# 3. the nightly backup
+mkdir -p "$BAK"
+chmod 700 "$BAK"
+cat > /usr/local/sbin/potatobrawl-accounts-backup <<'SCRIPT'
+#!/bin/sh
+# Nightly copy of the PotatoBrawl accounts folder. Keeps 14 days.
+SRC=/var/lib/potatobrawl/accounts
+DST=/var/backups/potatobrawl
+mkdir -p "$DST" && chmod 700 "$DST" || exit 1
+NAME="accounts-$(date +%Y%m%d).tar.gz"
+rc=0
+tar -czf "$DST/.$NAME.part" --exclude='*.tmp' -C "$SRC" . || rc=$?
+[ "$rc" -le 1 ] || { rm -f "$DST/.$NAME.part"; echo "backup failed (tar exit $rc)" >&2; exit 1; }
+mv -f "$DST/.$NAME.part" "$DST/$NAME"
+find "$DST" -maxdepth 1 -name 'accounts-*.tar.gz' -mtime +14 -delete
+SCRIPT
+chmod 755 /usr/local/sbin/potatobrawl-accounts-backup
+cat > /etc/systemd/system/potatobrawl-accounts-backup.service <<'UNIT'
+[Unit]
+Description=Nightly backup of the PotatoBrawl accounts folder
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/potatobrawl-accounts-backup
+UNIT
+cat > /etc/systemd/system/potatobrawl-accounts-backup.timer <<'UNIT'
+[Unit]
+Description=Nightly backup of the PotatoBrawl accounts folder
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+# 4. start it
+systemctl daemon-reload
+systemctl enable --now potatobrawl-accounts-backup.timer >/dev/null 2>&1
+systemctl restart potatobrawl
+sleep 2
+/usr/local/sbin/potatobrawl-accounts-backup && echo "first backup made: $(ls "$BAK" | tail -1)" || echo "the backup did not run: send me the output of: journalctl -u potatobrawl-accounts-backup --no-pager | tail"
+echo "----- checks -----"
+OK=1
+if curl -s http://127.0.0.1:8080/api/acct/ping | grep -q '"ok":true'; then echo "accounts are on"; else OK=0; echo "accounts are NOT on. Send me: journalctl -u potatobrawl --no-pager | tail -30"; fi
+if curl -s --resolve potatobrawl.cloud:443:127.0.0.1 https://potatobrawl.cloud/health | grep -q '^ok'; then echo "the site still works"; else OK=0; echo "the site does not answer through Caddy. Send me: journalctl -u caddy --no-pager | tail -30"; fi
+if [ "$OK" = 1 ]; then
+  if command -v ufw >/dev/null 2>&1; then ufw delete allow 8080/tcp >/dev/null 2>&1 || true; echo "port 8080 is closed to the outside (the game only listens on this machine now)"; fi
+else
+  echo "Port 8080 was left as it was, because a check failed."
+fi
+EOF

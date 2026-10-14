@@ -69,10 +69,20 @@ if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/onl
   pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 
+# 5b. Accounts (sync codes): the server's endpoints and limits on port 8094 with a temporary folder, and the merge. Node only.
+timeout 120 node tests/acct.js > "$LOGS/acct.log" 2>&1
+if grep -q "^acct ok" "$LOGS/acct.log"; then pass "accounts server + merge ($(grep -c '^PASS' "$LOGS/acct.log") checks)"
+else fail "accounts server + merge" "$LOGS/acct.log"; fi
+
 # 6. Screens on small phone, phone and desktop, without page errors.
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
 if grep -q "^no errors" "$LOGS/screens.log"; then pass "screens 667x320, 844x390, 1280x760 (shots in build/shots/)"
 else fail "screens" "$LOGS/screens.log"; fi
+
+# 6b. Accounts in the browser: profile pill, Account sheet, two devices syncing through a real server (port 8093).
+(cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwacct.py" acct) > "$LOGS/accounts-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/accounts-ui.log"; then pass "accounts in the browser (pill, sheet, two devices, conflict merge, accounts off; shots in build/shots/acct)"
+else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
 
 # 7. KO finisher: one played through to the results screen, one skipped by a tap.
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfin.py" dragon && timeout 120 python3 "$ROOT/tests/pwfin.py" samurai --skip) > "$LOGS/finisher.log" 2>&1

@@ -210,23 +210,32 @@ button { font: inherit; color: inherit; }
 .brand h1 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(50px, calc(var(--um) * 12), 78px); line-height: 0.85; letter-spacing: -0.015em; text-transform: uppercase; }
 .brand h1 span { color: var(--sand); display: block; }
 .brand .slash { display: block; height: 6px; width: 70%; margin: 10px 0 0; background: linear-gradient(90deg, var(--ember), var(--sand) 55%, rgba(243, 217, 164, 0)); transform: skewX(-35deg); transform-origin: left; }
-/* rating + chips: a compact card in the top right corner of the start page, left of the settings gear (same height as the gear) */
-.rank { --tc: #9097ad; position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--gear) + 10px); max-width: calc(100% - var(--gear) - 40px); height: var(--gear); overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 12px 3px 8px; background: rgba(35, 39, 70, 0.78); border: 1px solid var(--line); border-radius: calc(var(--gear) / 2); }
+/* accounts: the profile pill in the top right corner of the start page, left of the settings gear (same height as the gear).
+   Tap it for the Account sheet. Avatar + name, tier badge in a progress ring + rating, chips, cups when there are any. */
 #app { --gear: 42px; }
 #app.short { --gear: 38px; }
-.rank > div:nth-child(2) { min-width: 0; }
-#app #mRank .badge { width: 25px; height: 28px; font-size: 14px; }
-.rank .rk-tier { font-size: 17px; letter-spacing: 0.03em; }
-.rank .rk-sub { font-size: 12px; margin-top: 1px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rank .bar { position: absolute; left: 22px; right: 22px; bottom: 0; height: 3px; margin: 0; border-radius: 2px 2px 0 0; }
-.rank .tok { padding-left: 10px; border-left: 1px solid var(--line); flex: none; }
-.rank .tok b { font-size: 21px; }
-.rank .tok div { font-size: 10px; letter-spacing: 0.14em; }
+.pill { --tc: #9097ad; appearance: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--gear) + 10px); max-width: calc(100% - var(--gear) - 40px); height: var(--gear); overflow: hidden; display: flex; align-items: center; gap: 9px; padding: 0 14px 0 4px; background: rgba(35, 39, 70, 0.78); border: 1px solid var(--line); border-radius: calc(var(--gear) / 2); }
+.pill:hover { background: #2c3156; }
+.pill:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+.pill > * { flex: none; }
+.av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
+.pill .pn { flex: 0 1 auto; min-width: 0; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.pill .sep { width: 1px; height: 56%; background: var(--line); }
+.pill .pr, .pill .pc, .pill .pcup { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 800; font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pill .pc { color: var(--sand); }
+.pill .pcup { color: var(--sand); font-size: 18px; }
+.ring { --tc: #9097ad; --d: calc(var(--gear) - 10px); position: relative; width: var(--d); height: var(--d); flex: none; display: grid; place-items: center; }
+.ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 3.4; }
+.ring .rt { stroke: rgba(255, 255, 255, 0.14); }
+.ring .rp { stroke: var(--tc); stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+#app .ring i.badge { width: 54%; height: 60%; font-size: calc(var(--d) * 0.36); }
+.cupglyph { display: inline-block; width: 0.95em; height: 0.95em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%23a8661f' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%23a8661f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* 667-wide phones and upright phones: no room for the name */
+#app.tiny .pill .pn, #app.tiny .pill .sep.s1, #app.narrow .pill .pn, #app.narrow .pill .sep.s1 { display: none; }
+#app.tiny .pill, #app.narrow .pill { gap: 8px; padding-right: 12px; }
 .rk-tier { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--tc); }
 .rk-sub { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; margin-top: 2px; }
-.tok { text-align: right; font-family: var(--display); line-height: 1.05; }
-.tok b { font-size: 27px; font-weight: 800; color: var(--sand); font-variant-numeric: tabular-nums; }
-.tok div { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
 .menu-actions { display: flex; flex-direction: column; gap: 10px; padding-left: 6px; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn:disabled:hover { background: var(--raise); }
@@ -390,6 +399,52 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .set-row small { grid-column: 2; font-size: 12px; color: var(--mute); margin-top: -4px; }
 .set-fine { font-size: 12px; }
 
+/* accounts: the Account sheet (tap the profile pill) */
+.acct-sheet { width: min(780px, 100%); gap: 12px; }
+.ac-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "me sync" "foot sync"; grid-template-rows: auto 1fr; gap: 12px 22px; align-items: start; }
+.ac-me { grid-area: me; } .ac-sync { grid-area: sync; } .ac-foot { grid-area: foot; align-self: end; }
+#app.portrait .ac-grid, #app.narrow .ac-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "me" "sync" "foot"; grid-template-rows: none; }
+.ac-me { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ac-id { display: flex; gap: 12px; align-items: center; }
+.ac-id .av { --d: 58px; }
+.ac-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.ac-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 18ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.ac-name:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
+.ac-rank { --tc: #9097ad; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; background: var(--raise); border-radius: 6px; }
+.ac-rank .ring { --d: 46px; }
+.ac-rank .rk-sub { margin-top: 3px; }
+.ac-stats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ac-stats > div { background: var(--raise); border-radius: 6px; padding: 6px 8px 7px; min-width: 0; }
+.ac-stats dt { font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+.ac-stats dd { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ac-stats dd small { font-size: 13px; font-weight: 700; color: var(--mute); }
+.ac-line { margin: 0; font-size: 13px; color: var(--mute); }
+.ac-line b { color: var(--text); font-weight: 600; }
+.ac-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.ac-extra:empty { display: none; }
+.ac-form { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ac-form .ac-line { margin-right: 4px; }
+.ac-form i { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 13px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 4px; color: var(--ink); background: var(--mute); }
+.ac-form i.w { background: var(--mint); } .ac-form i.l { background: var(--ember); }
+.ac-sync { background: var(--raise); border-radius: 8px; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-sync p { margin: 0; font-size: 14px; line-height: 1.4; }
+.ac-sync .btn { padding-left: 22px; }
+.ac-sync .link { align-self: flex-start; }
+.ac-code { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 800 20px/1.1 var(--display); letter-spacing: 0.08em; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 6px 6px 6px 10px; }
+.ac-code > span { user-select: text; -webkit-user-select: text; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.ac-sync { container-type: inline-size; }
+.ac-code { font-size: clamp(14px, 6.4cqw, 20px); }   /* the 19 characters stay on one line in a half-width column */
+.ac-code .chip { min-height: 28px; padding: 2px 10px; font-size: 13px; flex: none; }
+.ac-in { font: 800 20px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; width: 100%; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.ac-in:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
+.ac-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ac-row .chip { min-height: 32px; padding: 3px 14px; }
+.ac-msg { margin: 0; font-size: 13px; color: var(--mute); }
+.ac-msg:empty { display: none; }
+.ac-msg.bad { color: var(--ember); } .ac-msg.ok { color: var(--mint); }
+.ac-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); min-width: 0; }
+.ac-foot .chip { min-height: 32px; padding: 3px 14px; }
+
 /* how to play */
 .help-sheet { width: min(760px, 100%); gap: 10px; }
 .help-lead { font-size: 15px; max-width: 70ch; }
@@ -444,6 +499,30 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .d-blurb, #app.short .d-sig { font-size: 13px; line-height: 1.35; }
 #app.short .on-card { padding: 10px 12px; gap: 8px; }
 #app.short .res2 { gap: 10px 20px; }
+#app.short .acct-sheet { gap: 8px; }
+#app.short .ac-me { gap: 8px; }
+#app.short .ac-id .av { --d: 46px; }
+#app.short .ac-name { font-size: 19px; }
+#app.short .ac-rank { padding: 5px 10px 5px 6px; }
+#app.short .ac-rank .ring { --d: 38px; }
+#app.short .ac-sync { padding: 9px 12px 11px; gap: 7px; }
+#app.short .ac-sync p { font-size: 13px; line-height: 1.3; }
+#app.short .ac-stats dd { font-size: 19px; }
+#app.short .ac-foot { padding-top: 6px; }
+#app.tiny .acct-sheet { padding: 8px 14px 10px; gap: 4px; }
+#app.tiny .ac-grid { gap: 6px 18px; }
+#app.tiny .ac-me { gap: 6px; }
+#app.tiny .ac-who .kicker, #app.tiny #acPlays { display: none; }
+#app.tiny .ac-id .av { --d: 38px; }
+#app.tiny .ac-name { font-size: 18px; padding: 2px 8px; }
+#app.tiny .ac-rank .ring { --d: 34px; }
+#app.tiny .ac-rank { padding: 3px 10px 3px 5px; }
+#app.tiny .ac-stats > div { padding: 3px 8px 4px; }
+#app.tiny .ac-stats dd { font-size: 17px; }
+#app.tiny .ac-sync { padding: 8px 12px 10px; gap: 6px; }
+#app.tiny .ac-sync p.ac-note:not(.keep) { display: none; }
+#app.tiny .ac-foot { padding-top: 4px; }
+#app.tiny .ac-foot .chip, #app.tiny .ac-row .chip { min-height: 28px; padding: 2px 12px; }
 #app.tiny .brand h1 { font-size: 36px; }
 #app.tiny .brand .slash { display: none; }
 #app.tiny .menu-inner { gap: 8px; }
@@ -590,15 +669,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <div class="rank" id="mRank">
-      <div class="badge" id="mBadge">B</div>
-      <div>
-        <div class="rk-tier" id="mTier">Bronze</div>
-        <div class="rk-sub" id="mSub">1000 rating</div>
-        <div class="bar"><i id="mBar"></i></div>
-      </div>
-      <div class="tok"><b id="mTokens"><span class="tokglyph"></span>0</b><div>chips</div></div>
-    </div>
+    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pn" id="mName"></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge">B</i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
     <div class="menu-panel scroll">
       <div class="menu-inner">
         <header class="brand">
@@ -774,8 +845,34 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
       <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
       <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
-      <div class="set-row"><span>Progress</span><span class="chips"><button class="chip" id="setReset">Reset progress</button></span></div>
       <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+    </div>
+  </section>
+
+  <section id="scrAccount" class="screen modal" hidden>
+    <div class="sheet acct-sheet scroll">
+      <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <div class="ac-grid">
+        <div class="ac-me">
+          <div class="ac-id">
+            <span class="av" id="acAvatar"></span>
+            <div class="ac-who"><label class="kicker" for="acName">Name</label><input id="acName" class="ac-name" maxlength="16" autocomplete="nickname" spellcheck="false"><span class="ac-line" id="acPlays"></span></div>
+          </div>
+          <div class="ac-rank" id="acRank">
+            <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge">B</i></span>
+            <div><div class="rk-tier" id="acTier">Bronze</div><div class="rk-sub" id="acRating"></div></div>
+          </div>
+          <dl class="ac-stats">
+            <div><dt>Wins</dt><dd id="acW">0</dd></div>
+            <div><dt>Losses</dt><dd id="acL">0</dd></div>
+            <div><dt>Chips</dt><dd id="acChips"></dd></div>
+            <div><dt>Skins</dt><dd id="acSkins"></dd></div>
+          </dl>
+          <div class="ac-extra"><span class="ac-line" id="acMore"></span><div class="ac-form" id="acForm" aria-label="Last ranked results"></div></div>
+        </div>
+        <div class="ac-sync" id="acSync"></div>
+        <div class="ac-foot"><span class="kicker">Progress</span><button class="chip" id="acReset">Reset progress</button></div>
+      </div>
     </div>
   </section>
 </div>
