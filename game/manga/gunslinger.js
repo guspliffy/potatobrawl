@@ -17,7 +17,7 @@
    loser's mono portrait, DEAD OR FRIED, REWARD: 1,000,000 FRIES, two nails, a torn bottom under a 70% screen); five bullet holes in the poster (3950-4350, the fan
    order) and a sixth gold-rimmed one through the portrait's forehead at 4450 (his eyes turn to X); 4700 panel 4 as on the normal page (MT.AFTER + offsets). */
 MANGA.gunslinger = (function () {
-  const COL = "#ff4636", HOT = "#fff3d6", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2;
+  const COL = "#ff4636", HOT = "#fff3d6", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2, GOLD = MG_GOLD, GOLD_D = MG_GOLD_D;
   const TICK = 1480, DONG = 1750;
   // times that depend on the page in use (gnsMode): the lethal shot HIT, the end of its impact frames PH, the aftermath's beats (MT.AFTER is 3500 on the normal page, 4700 on the Ultimate's)
   let ULT = false, HIT = 2900, PH = 3000, RAISE = 3540, BLOW = 3800, LOWER = 4230, LAND = 4250;
@@ -551,10 +551,8 @@ MANGA.gunslinger = (function () {
   };
   function panelsU(lay) {
     const ps = panels(lay);   // look, inset, strike, after (gnsMode has already put the Ultimate's times in)
-    const st = ps.find((p) => p.id === "strike");
-    delete st.freeze; delete st.cover;   // the poster covers panel 3 whole from 3930: it is not frozen into a bitmap, it simply stops drawing
-    st.draw = (c, pn, t) => { if (t < SPLASH0 + 200) drawStrike(c, pn, t); };
-    ps.splice(ps.findIndex((p) => p.id === "after"), 0, { id: "wanted", t0: SPLASH0, from: "t", slide: 180, freeze: MT.AFTER, paper: "#e9d9a8", poly: [[0, 0], [1, 0], [1, 1], [0, 1]], shake: gnsPosterShake, draw: drawWanted });
+    // the engine's splash hook: a full-page panel, opaque (once it is in, the panels below it are no longer drawn), frozen at MT.AFTER; the poster comes in at 3750, not at MT.SPLASH
+    ps.splice(ps.findIndex((p) => p.id === "after"), 0, mgSplashPanel({ id: "wanted", t0: SPLASH0, from: "t", paper: "#e9d9a8", shake: gnsPosterShake, draw: drawWanted }));
     return ps;
   }
   // the poster is built in three small steps while the first panels play (layout and lettering, then the two portraits), never on the frame it slides in
@@ -710,7 +708,7 @@ MANGA.gunslinger = (function () {
       const bang = { text: ULT ? "BLAMM" : "BANG", t0: PH, t1: ULT ? SPLASH0 + 130 : PH + 560, size: 0.24, arc: 10, rot: -0.07 * D, fill: ULT ? GOLD : COL, stretch: { ang: D > 0 ? 0 : Math.PI, k: 0.35 },
         at: () => { const p = MG.byId.strike, q = p.sp(FIN.wx + D * 80, -104); return [q[0], q[1]]; } };
       // he blows the smoke off the barrel
-      const fuu = { text: "fuu", t0: BLOW + 20, t1: MT.AFTER + 880, size: 0.085, jit: 0.12, rot: -0.14 * D, space: 0.1,
+      const fuu = { text: "fuu", t0: BLOW + 20, t1: MT.AFTER + 880, size: 0.085, jit: 0.12, rot: -0.14 * D, space: 0.1, fill: "#ffffff",   // (white as on the normal page: the engine makes the unfilled words after the hit gold)
         at: (t) => { const p = MG.byId.after, m = p.sp(...gnsMuzzle(Math.min(t, BLOW + 60))); return [m[0] + D * p.z * 30, m[1] - p.z * 4]; } };
       if (!ULT) return [hitWord, dong, bang, fuu];
       // five BAMs fanned round the muzzle, one per shot, each in the direction of its shot (the angle opened up a little so the five do not overlap)
@@ -828,6 +826,7 @@ MANGA.gunslinger = (function () {
     name: "Wanted", hit: 3400, pop: 3550,   // the sixth shot is the lethal one; the loser is launched when its gold impact frame is over (the three frames are 3400-3550)
     panels: panelsU,
     start(g) { S_.start(g); gnsMode(true); },
+    end() { poster = null; loserCopy = null; fan = []; },   // the poster's lettering and portrait canvases
     cues(t) {
       S_.cues(t);
       for (let i = 0; i < 5; i++) cueOnce("fan" + i, fanT(i), () => Cin.go(() => gnsBang(0.6, false)));   // the five fanned shots
