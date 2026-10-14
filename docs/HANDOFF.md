@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-13, M4: 2D manga KO finishers for all six fighters)
+# PotatoBrawl handoff (updated 2026-10-14: the Reaper, fighter 8, PROTO 6)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -34,6 +34,21 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   hat (a sprout for the hatless) floats down onto the page, he blows the smoke off the barrel. Accent sunset red;
   video finisher-films/gunslinger-high-noon-manga-v1.mp4 + -sheet.jpg. His fighter video and move sheet:
   overnight/gunslinger-v1.mp4, gunslinger-v1-sheet.jpg.
+- Reaper (2026-10-14, branch claude/project-thread-a05g58, PROTO 6): the eighth fighter ("Soul harvester"), from Jonny's
+  picture /mnt/project-files/overnight/concept-reaper.jpg; plan doc https://claude.ai/code/artifact/7e8b5d81-2755-4cba-9581-2e0bae5f3458.
+  Weight 104, run 5.6 (5.4 failed lockrun: a faster runner caught him jab after jab), gravity 0.56, one air jump,
+  glide recovery (the same `rec.glide` drift as Phoenix/Dragon; no new float mechanic). Heavies carry `scythe: true`
+  (UI only) and hit in front AND behind (a second box at negative x). Harvest = a slow `kind: "dash"` special
+  (speed 8) whose hit angle 160 points back at him (a tug); its `fin` block (12/12/17, angle 80) is Last Rites,
+  which KOs every weight out the TOP from 175% (tests/finish.js). CPU style in BOT_STYLES. Look: hood + sprouts +
+  scythe in draw-fighters.js, a white reach crescent while a ground heavy charges, skinfx, portrait, FINS.reaper
+  fallback, FIN_NAME "Last Rites". Manga page "Last Rites" (manga/reaper.js): the one inverted page (near-black,
+  white ink, candle amber on cheeks and soul), shadow stretching up, smirk inset, one white SHHK stroke, soul out
+  through the top border, a tombstone with R.I.P. and the loser's name; manga.js got four small hooks (page(c,t),
+  hint(t), mgPuppet o.mono, panel dim colour) that other pages don't use. Videos:
+  /mnt/project-files/reaper-hub/reaper/reaper-v1.mp4, reaper-hub/manga/reaper-last-rites-manga-v1.mp4.
+  tests/pwreel.py records a captioned move reel for any fighter (--fighter=id).
+  Alchemist in the same PR: Toxic Orb cooldown 120 -> 105 frames, CPU style spec 1.7 -> 1.4.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -61,7 +76,7 @@ index.html is committed with every source change (check.sh flags a stale one).
   look), step(), applyHit (strings, DI, finish mode, charge), land/tech, checkBlast, bot (makeBot(level, style)/botInput; BOT_STYLES = one style per fighter id, a few numbers
   that bias the bot's decisions; no style = the neutral bot, input for input as before),
   serialize/restore/FKEYS/checksum. Exported as `BL` (also a node module).
-  - Finish mode: a move or projectile with a `fin` block (all seven specials) uses those numbers when the
+  - Finish mode: a move or projectile with a `fin` block (all eight specials) uses those numbers when the
     defender had >= TUNE.finishPct (175) before the hit; hitstop TUNE.finishStop; "hit" event `fin: true`.
     `proj.finCount` / `proj.finStyle` (Gunslinger only): fired against a finish-ready opponent the special
     spawns finCount projectiles drawn as finStyle (one "gold" bullet); decided at the start of the move and
@@ -178,6 +193,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   samurai 51.5, dragon 51.0, gunslinger 49.1. The six old fighters play exactly as before (same bot matches
   frame by frame); their numbers moved only because adding a fighter shifts the seeds. Alchemist is close to
   the floor (about 44 against the other five alone, from the same table).
+  With the Reaper and the Alchemist fix (2026-10-14, 80 games per pair at 0.5/0.8): phoenix 50.3, alchemist 48.6,
+  odin 52.7, wizard 48.9, samurai 49.8, dragon 51.6, gunslinger 48.1, reaper 50.0.
 
 ## Tests (tests/, run from anywhere)
 snap.js (replay determinism) · bal7.js (balance; CORE=path compares another core; always the neutral bot) · botstyle.js (each CPU style
