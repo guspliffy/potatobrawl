@@ -79,6 +79,42 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     Tournament with today's matchup; the sheet `#scrDaily`; results "Menu" instead of Rematch.
   - CPU styles: Alchemist spec 1.3 heavy 1.25, Gunslinger spec 1.3 heavy 1.2 (styled CPUs link specials now; botstyle was
     above 65% at the old numbers).
+- Ultimates (2026-10-14, branch claude/ultimates-kq8h4u, PROTO 8), session 2 of the big-features plan. Engine contract for the UI:
+  /mnt/project-files/ultimates/interface.md (Project files); designs: next-ideas/fable-ideas.md section 2, Ultimate KO pages
+  ultimates/fable-ultimate-pages.md.
+  - Bar (core.js): `f.ult` fills TUNE.ultDealt (1) per % dealt, ultTaken (0.5) per % taken, ultHeart (10) per heart lost, up to
+    `ultNeed(f)` = TUNE.ultNeed[f.ultN] (100, then 120); `f.ultN` uses, max TUNE.ultMax (2). An ulti's own hits don't fill it.
+    The 6th button `ulti` (BTN, blankInput, buf). `ultReady(g, f)`; actOrMove starts it first (idle/run/air only, not in hitstun
+    or endlag): the bar is spent on the press, `startUlti` starts move key "ulti" and sets g.hitstop = TUNE.ultFreeze (30, the super
+    freeze; presses made in it are buffered, so a mashed dodge is over before any ulti's first hit, which is 25+ frames in).
+    Event "ulti" {slot, n, name, id}. Every ulti has armour through its wind-up.
+  - Moves: `moves.ulti` per fighter with `ult` = the kind; `spec.ultimate` {name, text}. Generic additions used by them: `inv`
+    [a, b] (intangible frames, intangible()), `last` {from, ...} (a multi-hit move hits once more with these numbers from frame
+    `from`), proj `pulse` (hurts every `pulse` ticks, stays after a hit, `last` numbers on its final pulse), proj `lastShot`
+    (the count-th shot's numbers and style), proj/hit `ult` flag, `mark`/`cut`/`cutAt` (Samurai), `pull` (Reaper), `star`/`big`
+    (Wizard). Per-kind code is `ultStep()` (runs after mt++ in updateAttack) and `ultMark()`. Fields `ult`, `ultN`, `ultX`
+    (Phoenix's comet spot), `ultTgt` (Samurai's held opponent; for Phoenix the platform the comet may land on, -1 = falls through
+    platforms) are in defaults, FKEYS and checksum; PKEYS gained `pulse`, `last`.
+  - Numbers: finishing hits bkb 8 / kbg 16 (Samurai's cut kbg 17 at 42 degrees, the golden Dead Eye shot kbg 14, Phoenix 26 dmg
+    kbg 15): tests/ulti.js KO% against a standing Samurai (91) / Odin (108): phoenix 110/150, alchemist 100/135, odin 95/130, wizard
+    115/120, samurai 95/130, dragon 90/120, gunslinger 90/130, reaper 100/135; first hit 25-66 frames after the freeze.
+  - The KO-at-the-hit look-ahead now keeps projectiles in flight (it used to empty them): Meteor Shower stars still falling were
+    re-hitting a launched defender after a "lethal" call. finish.js counts a re-hit by a projectile or an ulti hit as part of the
+    call (the KO must still follow).
+  - CPU (botInput): uses its ulti when the bar is full, the opponent is in that ulti's reach (per kind) and at lerp(150, 105, d)%
+    or more (or 40%+ in the last 40 s); answers an opponent's ulti by jumping (stepping away from the cloud and the stars).
+  - The pop-up (Jonny, 2026-10-14 14:28 UTC: up light, up light, jump, air attack never connected, the opponent was back on the
+    ground): a linked up light (the 2nd light in a row aimed up, `link && dy < -0.9` in applyHit) launches with at least
+    TUNE.linkPop (13) knockback. Before it the defender rose about 15-30 px at 0%. Now up, up, jump, nair is a true combo at 0-50%
+    for every fighter (Odin from 30%: his up light can't chain into itself at 0%), hAir lands for 7 of 8, uair for 4 (tests/combos.js
+    checks the nair version; `node combos.js try up,up,jump,uair` for the rest). 14 still passed, 15 broke other routes.
+  - Gunslinger's lights are point-blank shots (Jonny, 14:38 UTC: "low range shots, not punches"): every light has `shot: true` and
+    a thin box (r 10-11) sweeping out from the muzzle over its active frames (jab to 62 px, side 80, up/uair straight up to -112,
+    down at the feet to 70, nair both pistols to +-64, dair straight down to 50); side 6 dmg, sair 7 (were 7/8). First try at
+    longer ranges put him at 61%. Hellfire's stream boxes went to y-50 r 40-46 (Dragon had dropped to 42.9%).
+    Balance after both: phoenix 52.7, alchemist 47.7, odin 52.2, wizard 53.1, samurai 53.7, dragon 45.3, gunslinger 47.5, reaper 47.9.
+  - Online: encIn uses the spare codes 2592-3887 for frames with ULTI held (stick x 16, dodge dropped on those frames); decIn and
+    the receiver's range check know them. Still two characters per frame.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch

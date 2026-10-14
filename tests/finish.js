@@ -70,7 +70,9 @@ for (let seed = 1; seed <= N; seed++) {
     for (const e of g.events) {
       if (e.type === "lethal") { calls++; if (e.final) finals++; else open[e.slot] = true; }
       if (e.type === "ko" && open[e.slot]) open[e.slot] = null;
-      if (e.type === "hit" && open[e.def] && !e.armor) { wrong++; open[e.def] = null; } // hit again before the KO: the call was wrong
+      // hit again before the KO by a new move: the call was wrong (projectiles already flying and the rest of an ulti are part
+      // of the look-ahead, so those may land; the KO must still follow, or the landing check below counts it)
+      if (e.type === "hit" && open[e.def] && !e.armor && !e.ps && !e.ult) { wrong++; open[e.def] = null; }
       if (e.type === "game") { if (e.hit) endsAtHit++; else otherEnds++; }
     }
     for (const s of [0, 1]) { const f = g.fighters[s]; if (open[s] && f.grounded && f.state !== "hitstun") { wrong++; open[s] = null; } }

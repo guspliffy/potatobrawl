@@ -1287,6 +1287,8 @@ const TUNE = {
   // Combo damage: hits from the 4th of a combo deal comboK4, from the 6th comboK6 (so combos can't loop damage forever).
   comboK4: 0.85,
   comboK6: 0.7,
+  // The pop-up: a linked up light (the second light in a row, aimed up) lifts at least this hard, so jump + an air attack can follow.
+  linkPop: 13,
   // Ultimates: the bar fills ultDealt per % dealt, ultTaken per % taken and ultHeart per heart lost, up to ultNeed[n] for the
   // n-th use (ultMax uses a match). Pressing ULTI with a full bar spends it and freezes the game for ultFreeze frames (the
   // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
@@ -1541,7 +1543,7 @@ const FIGHTERS = [
                proj: { style: "fire", speed: 6.5, life: 16, r: 12, ox: 30, oy: -38, count: 5, interval: 4, spreadVy: [-0.5, 0.3, -0.2, 0.5, 0], dmg: 2, bkb: 3.5, kbg: 3, angle: 35, short: true,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 42 } } }),
       // Hellfire: a long, low fire stream ticking every 7 frames; the last 6 frames blast
-      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -46, 34], [130, -46, 38], [210, -46, 40], [290, -46, 40], [370, -46, 38]],
+      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -50, 40], [130, -50, 44], [210, -50, 46], [290, -50, 46], [370, -50, 44]],
                { limb: "head", ult: "hellfire", fire: true, multi: 7, armor: [1, 24], last: { from: 61, dmg: 16, bkb: 8, kbg: 17, angle: 40 } }),
     },
   },
@@ -1559,18 +1561,19 @@ const FIGHTERS = [
       { name: "Gold Rush", price: 200, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
     ],
     moves: {
-      jab:   M(3, 3, 9,   3, 4, 2, 40, [28, -36, 16], { limb: "arm" }),
-      side:  M(6, 4, 13,  7, 4.5, 9, 32, [36, -32, 19], { limb: "arm" }),
-      up:    M(5, 5, 12,  6, 5, 8, 86, [16, -70, 20, -16, -72], { limb: "arm" }),
-      down:  M(5, 3, 11,  5, 4, 7, 18, [32, -6, 16], { limb: "leg" }),
+      // the lights are point-blank shots: a short tracer (the box sweeps out from the muzzle over the active frames)
+      jab:   M(3, 3, 9,   3, 4, 2, 40, [24, -38, 10, 62, -38, 10], { limb: "arm", shot: true }),
+      side:  M(6, 4, 13,  6, 4.5, 9, 32, [28, -36, 11, 80, -36, 11], { limb: "arm", shot: true }),
+      up:    M(5, 5, 12,  6, 5, 8, 86, [12, -60, 11, 12, -112, 11], { limb: "arm", shot: true }),
+      down:  M(5, 3, 11,  5, 4, 7, 18, [26, -10, 11, 70, -8, 11], { limb: "arm", shot: true }),
       // Fan the hammer: a point-blank blast that kicks him back in a small hop
       hSide: M(13, 4, 24, 15, 7, 20, 34, [36, -38, 21, 56, -36], { limb: "arm", impulse: [-5, -3] }),
       hUp:   M(11, 6, 22, 13, 7, 18, 88, [10, -88, 26], { limb: "arm" }),
       hDown: M(11, 4, 24, 12, 6.5, 16, 25, [[38, -10, 19], [-38, -10, 19]], { limb: "arm" }),
-      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [0, -32, 30], { limb: "body", landLag: 6 }),
-      sair:  M(6, 4, 14,  8, 5, 12, 40, [36, -32, 19], { limb: "arm", landLag: 8 }),
-      uair:  M(5, 5, 12,  7, 5, 12, 82, [14, -70, 21, -14, -70], { limb: "arm", landLag: 7 }),
-      dair:  M(9, 5, 16,  9, 5, 10, -65, [4, 0, 19], { limb: "leg", landLag: 11 }),
+      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [[22, -36, 11, 64, -36, 11], [-22, -36, 11, -64, -36, 11]], { limb: "body", shot: true, landLag: 6 }),
+      sair:  M(6, 4, 14,  7, 5, 12, 40, [28, -36, 11, 78, -36, 11], { limb: "arm", shot: true, landLag: 8 }),
+      uair:  M(5, 5, 12,  7, 5, 12, 82, [10, -60, 11, 10, -112, 11], { limb: "arm", shot: true, landLag: 7 }),
+      dair:  M(9, 5, 16,  9, 5, 10, -65, [6, 2, 11, 6, 50, 11], { limb: "arm", shot: true, landLag: 11 }),
       hAir:  M(12, 4, 22, 13, 6.5, 16, 36, [36, -36, 21, 54, -34], { limb: "arm", impulse: [-3, -1], landLag: 15 }),
       // Powder jump: a shot fired down at his feet lifts him; the blast under him knocks down and away
       rec:   M(5, 6, 14, 5, 4.5, 4, -60, [0, 6, 24], { limb: "leg", rec: true, vyStart: -15.5, vxStick: 4.5, helpless: true, landLag: 10 }),
@@ -2358,6 +2361,7 @@ function applyHit(g, h) {
   } else if (!chained) def.strN = 0;
 
   if (def.grounded && dy > 0.2) { dy = -dy * 0.75; kb *= 0.8; }
+  if (link && dy < -0.9) kb = Math.max(kb, TUNE.linkPop);
 
   def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
   setState(def, "hitstun");
@@ -2416,7 +2420,8 @@ function lethal(g, slot) {
   for (let kind = 0; kind < 4; kind++) {
     const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0 });
     restore(h, snap);
-    h.look = true; h.timed = false; h.projs = [];
+    // projectiles still in the air stay in the look-ahead (a Meteor Shower star or a flame puff still coming is part of the call)
+    h.look = true; h.timed = false;
     let died = false;
     for (let t = 0; t < TUNE.lookFrames && !died; t++) {
       const ins = [blankInput(), blankInput()];
@@ -2536,7 +2541,7 @@ const BOT_STYLES = {
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
   wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.3, atk: 0.9, heavy: 1.2 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.3, heavy: 1.2 },                           // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
@@ -7339,7 +7344,7 @@ function uvDrawFx(c, e, a) {
    launch direction, spinning. It leaves the screen, the KO beam and a burst of fries and chips mark the
    edge, then the name card. A tap or key skips it; the results screen opens when it ends. */
 const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null], parts: [], shake: 0, out: false,
-  cue: {}, finish: null, manga: false, hit: 1520, launch: 1610, cardSub: "", k: 1, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
+  cue: {}, finish: null, manga: false, ulti: false, hit: 1520, launch: 1610, cardSub: "", k: 1, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
 // timeline, in ms after the final hit. The loser stays put FLAUNCH ms after HIT (impact freeze), then flies.
 const FT = { CUT: 520, ACT: 920, HIT: 1520, OUT: 2020, CARD: 2400, END: 3800 };
 const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
@@ -7352,6 +7357,7 @@ function finStart(g) {
   const W = g.fighters[g.winner], Lf = g.fighters[1 - g.winner];
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
+  FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = g.winner; FIN.l = 1 - g.winner;
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
@@ -7363,7 +7369,7 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  match.finBy = finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
+  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
@@ -7444,6 +7450,8 @@ const FIN_NAME = { gunslinger: "High Noon", reaper: "Last Rites" };
 const finName = (spec) => FIN_NAME[spec.id] || spec.signature.name;
 // what the results screen calls the finisher: the finishing special's own name, else the title of the fighter's manga page (Inferno, One Cut ...)
 const finTitle = (spec) => FIN_NAME[spec.id] || (MANGA[spec.id] && MANGA[spec.id].name) || spec.signature.name;
+// an Ultimate KO: the title of the fighter's own Ultimate page (Hundred Petals ...), else the ultimate's name (Mutagen Cloud ...)
+const finUltiTitle = (spec) => (MANGA[spec.id] && MANGA[spec.id].ulti && MANGA[spec.id].ulti.name) || (spec.ultimate && spec.ultimate.name) || finTitle(spec);
 // "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
 function finHit(g, e) {
   if (!e.fin) return;
@@ -8144,7 +8152,18 @@ function finCard(o, t) {
    A fighter's page is a script, MANGA[id], in game/manga/<id>.js (spliced in by build.py at the marker at the end of this part). A fighter without one
    (and any error while the page plays) keeps the 2D finisher of finisher.js.
    Phone budget: no ctx.filter, no shadowBlur, no per-frame getImageData; patterns, the focus disc, speed strips and word canvases are
-   built once per page and freed at its end. */
+   built once per page and freed at its end.
+   ULTIMATES (design: ultimates/fable-ultimate-pages.md). When the lethal hit is an Ultimate (the event's mv === "ulti"; finisher.js sets FIN.ulti) the engine
+   sets MG.ulti = true and MG.ultiName = the fighter's ultimate name, and adds the GENERIC Ultimate layer to whatever page plays, all in this file:
+   a third impact frame (gold paper, ink silhouettes, white rays; 50 ms each, so the launch waits until hit + 150), the tear glows gold, every word that comes
+   at or after the hit and has no fill of its own is gold, the card says "ULTIMATE: <name>" in gold over a second, gold strip, the K.O. hanko is gold and chimes.
+   A page that has its own Ultimate cut puts a full script on MANGA[id].ulti (an object with the fields of any page, usually Object.assign({}, S_, {...})): the engine
+   then plays that script on the LONGER timeline MT_U (5.9 s: SPLASH 3250, AFTER 4700, CARD 4850, SEAL 5050, FADE 5600, END 5900; MT is overwritten from MT_N or MT_U
+   in mangaStart, so a page always reads MT.AFTER etc.; its own post-aftermath moments are MT.AFTER + offset). Its panels(lay) include one splash panel, a full
+   page panel from mgSplashPanel({ from, paper, cam, draw, ... }) at MT.SPLASH. Panel fields added for this: opaque (the panel covers the whole page once it has
+   slid in, so the panels below it are no longer drawn) and before(c, t, pn) (called once, on the first frame the panel is drawn, just before it is: c holds the
+   page so far, which the Samurai copies to cut it into slabs). A script may also define end() (called when the page ends or is skipped, to free its own canvases).
+   The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL. */
 
 /* ===================== B13: the cinema sound kit (Web Audio synth, one compressed bus) ===================== */
 const Cin = {
@@ -8243,10 +8262,15 @@ Object.assign(Cin, {
 /* ---------- constants, state ---------- */
 const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced in at the end of this part)
 // ms after the final hit. FREEZE: the picture stops (the loser has left the shot by 520, so the picture is taken while it is still in it); INKED: the ink is down.
-const MT = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
+// Two tables: MT_N (every normal page, and the generic Ultimate layer on a page without its own Ultimate cut, 4.7 s) and MT_U (a page with its own Ultimate cut,
+// 5.9 s: everything from the aftermath on is shifted by U = 1200 and the splash panel sits at 3250). mangaStart copies the right one into MT before the page is built.
+const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
+const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, FADE: 5600, END: 5900 };
+const MT = Object.assign({}, MT_N);
 const MG_BOX = [-100, -125, 100, 14];
+const MG_GOLD = "#f3c84a", MG_GOLD_D = "#b8860b", MG_GOLD_PALE = "#fff2c2", MG_GOLD_SEAL = "#e0b43a";   // the Ultimate's gold: it joins the page's accent, never replaces it
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
-const MG = { on: false, script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, strip: null, stripW: null,
+const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
   snapPending: false, tintK: 0.56, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, fixed: false, avg: 0, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
 const mgClock = () => (window.__realNow ? window.__realNow() : performance.now());   // the tests step performance.now themselves; this one stays real
 function mgRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -8314,10 +8338,11 @@ function mgTile(size, cover, colr) {
   return p;
 }
 function mgDrift(pat, dx, dy) { try { if (pat.setTransform) pat.setTransform(new DOMMatrix([1, 0, 0, 1, dx, dy])); } catch (e) { /* no pattern transforms */ } }
-// the burst of wedges from one point (focus lines); thin at the centre end, so the middle of the picture stays clear
+// the burst of wedges from one point (focus lines); thin at the centre end, so the middle of the picture stays clear.
+// `white`: false = ink, true = white, or a CSS colour string for a disc of that colour (one more cached canvas per colour, MG.discC)
 function mgFocusDisc(white) {
   const S = 1024, R = S / 2, c = mgCanvas(S, S), x = c.getContext("2d"), r = mgRng(777);
-  x.translate(R, R); x.fillStyle = white ? "#ffffff" : MG_INK;
+  x.translate(R, R); x.fillStyle = typeof white === "string" ? white : white ? "#ffffff" : MG_INK;
   for (let i = 0; i < 84; i++) {
     const a = (i / 84) * Math.PI * 2 + (r() - 0.5) * 0.05, hw = (0.3 + r() * 1.2) * Math.PI / 180 * (r() < 0.14 ? 2.4 : 1), rin = R * (0.3 + r() * 0.42);
     x.beginPath(); x.moveTo(Math.cos(a) * rin, Math.sin(a) * rin); x.lineTo(Math.cos(a - hw) * R, Math.sin(a - hw) * R); x.lineTo(Math.cos(a + hw) * R, Math.sin(a + hw) * R); x.closePath(); x.fill();
@@ -8337,11 +8362,11 @@ function mgSpeedStrip(white) {
 // focus lines centred on (cx, cy), reaching out to R css px, turning slowly; the caller clips
 // the shared pictures are made when first asked for (or by the queue after the freeze, whichever comes first), so a script never meets a missing one
 function mgNeedLayer() { if (!MG.layer) { MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d"); } }
-function mgNeedDisc(white) { if (white) { if (!MG.discW) MG.discW = mgFocusDisc(true); } else if (!MG.disc) MG.disc = mgFocusDisc(false); }
+function mgNeedDisc(white) { if (typeof white === "string") { if (!MG.discC[white]) MG.discC[white] = mgFocusDisc(white); } else if (white) { if (!MG.discW) MG.discW = mgFocusDisc(true); } else if (!MG.disc) MG.disc = mgFocusDisc(false); }
 function mgNeedStrip(white) { if (white) { if (!MG.stripW) MG.stripW = mgSpeedStrip(true); } else if (!MG.strip) MG.strip = mgSpeedStrip(false); }
 function mgFocus(c, cx, cy, R, rot, alpha, white) {
   mgNeedDisc(white);
-  c.save(); c.globalAlpha = alpha; c.translate(cx, cy); c.rotate(rot); c.drawImage(white ? MG.discW : MG.disc, -R, -R, R * 2, R * 2); c.restore();
+  c.save(); c.globalAlpha = alpha; c.translate(cx, cy); c.rotate(rot); c.drawImage(typeof white === "string" ? MG.discC[white] : white ? MG.discW : MG.disc, -R, -R, R * 2, R * 2); c.restore();
 }
 // speed lines in a w x h box centred on (x, y), running along `ang`, scrolling by `off` px; the caller sets the clip if it wants one
 function mgSpeed(c, x, y, w, h, ang, off, alpha, white, th) {
@@ -8422,7 +8447,8 @@ function mgWordDraw(c, w, t) {
 //   slide (ms), poly: [[x, y] x4] as shares of the page area drawn for a winner on the left (mirrored when the winner is on the right),
 //   cam(t, pn) -> { wx, wy, vh, px, py } (the world point at the panel's centre, the world height the panel shows, a pan in px),
 //   draw(c, pn, t), freeze (ms: the panel is drawn once into a bitmap and stays as it was), cover (ms: a later panel covers it from here: it dims),
-//   shake(t) -> [dx, dy], live (keep drawing every frame), paper, dim ("r,g,b" of the dimming once covered; ink by default) }
+//   shake(t) -> [dx, dy], live (keep drawing every frame), paper, dim ("r,g,b" of the dimming once covered; ink by default),
+//   opaque (a full-page panel: once it has slid in, the panels below it are not drawn any more), before(c, t, pn) (called once, just before the panel's first frame: c holds the page so far) }
 function mgPanel(d, idx) {
   const pg = MG.page, mx = (x) => (FIN.dir > 0 ? x : 1 - x);
   const poly = d.poly.map(([fx, fy]) => [pg.x + mx(fx) * pg.w, pg.y + fy * pg.h]);
@@ -8632,6 +8658,13 @@ function mgInkC(which) {
 /* ---------- building the page (at the freeze) ---------- */
 // panel 1 is the engine's own: the real hit, frozen and inked, the whole page
 function mgFirstPanel() { return { id: "hit", t0: MT.FREEZE, slide: 0, live: true, poly: [[0, 0], [1, 0], [1, 1], [0, 1]], draw: mgDrawHit }; }
+// THE HOOK for an Ultimate page's splash (panel 5): one full-page panel at MT.SPLASH that slides in over the page in 180 ms, opaque (nothing below it is drawn once it is in),
+// frozen into a bitmap when the aftermath panel arrives (MT.AFTER) and dimmed under it. A page's Ultimate script returns it from panels(lay) (the order of the list is
+// the order of drawing: ...strike, splash, aftermath) and fills in o: from ("t" | "b"), paper (the page's paper colour), cam(t, pn), draw(c, pn, t), and any panel field
+// (before, shake, dim, slide, freeze...). The slide direction is a share of the whole page, so on the upright layout it needs no change.
+function mgSplashPanel(o) {
+  return Object.assign({ id: "splash", t0: MT.SPLASH, from: "b", slide: 180, opaque: true, live: true, freeze: MT.AFTER, cover: MT.AFTER, poly: [[0, 0], [1, 0], [1, 1], [0, 1]] }, o);
+}
 function mgDrawHit(c, pn, t) {
   const ink = MG.inkOK ? easeOut(fe(MT.FREEZE + 30, MT.INKED - 40, t)) : 0, life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
   c.save(); c.translate(ix, iy); c.scale(s, s); c.translate(-ix, -iy);
@@ -8655,6 +8688,7 @@ function mgSnapshot() {
   MG.panels = [mgFirstPanel()].concat(S.panels(MG.lay)).map((dd, i) => mgPanel(dd, i));
   MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
   MG.words = mgWordDefs(S).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+  if (MG.ulti) for (const w of MG.words) if (w.t0 >= FIN.hit && !w.fill) w.fill = MG_GOLD;   // the Ultimate's strike words are gold unless the page colours them itself
   if (S.build) S.build(MG.lay);
   MG.todo = [
     () => { mgNeedLayer(); mgNeedDisc(false); },
@@ -8670,17 +8704,23 @@ function mgWork(t) {
 
 /* ---------- start, tick, draw, end ---------- */
 function mangaStart(g) {
-  const W = g.fighters[g.winner], S = MANGA[W.spec.id];
-  if (!S) return false;
+  const W = g.fighters[g.winner], base = MANGA[W.spec.id];
+  if (!base) return false;
+  // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
+  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
   try {
-    MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
+    Object.assign(MT, cut ? MT_U : MT_N);
+    MG.ulti = ulti; MG.ultiCut = cut; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
+    MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     MG.slow = PERF.q >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0; MG.gap = 16.7; MG.lw = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
     if (S.start) S.start(g);
     FIN.hit = S.hit || MT.HIT; FIN.launch = S.pop || FIN.hit + FLAUNCH;
+    if (ulti) FIN.launch = Math.max(FIN.launch, FIN.hit + 150);   // the launch waits for the third (gold) impact frame
+    FIN.endT = MT.END;   // (read by the tests: the page's length)
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
-    FIN.cardSub = FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
+    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
     for (const p of FIN.P) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
@@ -8745,7 +8785,7 @@ function mgBreak(t) {
     if (d < 0) inside = false;
     dmin = Math.min(dmin, d);
   }
-  if (!inside || dmin < r) { MG.broke = true; MG.brokeT = t; mgTear(pn, sx, sy, Lp.s.w * pn.z * 2.4, t, MG.script.col); }
+  if (!inside || dmin < r) { MG.broke = true; MG.brokeT = t; mgTear(pn, sx, sy, Lp.s.w * pn.z * 2.4, t, MG.ulti ? MG_GOLD : MG.script.col); }
 }
 function mangaDraw(g, tk) {
   const t0 = mgClock();
@@ -8762,7 +8802,14 @@ function mangaDraw(g, tk) {
 function mgPage(c, t) {
   c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
   c.fillStyle = MG_PAPER; c.fillRect(0, 0, L.gw, L.gh);
-  for (const pn of MG.panels) { if (t < pn.t0) break; mgPanelFrame(c, pn, t); }
+  const PN = MG.panels; let from = 0;
+  for (let i = 1; i < PN.length && t >= PN[i].t0; i++) if (PN[i].d.opaque && t >= PN[i].t0 + PN[i].slide) from = i;   // a full-page panel that is in covers everything below it
+  for (let i = from; i < PN.length; i++) {
+    const pn = PN[i];
+    if (t < pn.t0) break;
+    if (pn.d.before && !pn.grabbed) { pn.grabbed = true; pn.d.before(c, t, pn); }
+    mgPanelFrame(c, pn, t);
+  }
   if (MG.script.page) MG.script.page(c, t);   // a last pass over the whole page (the Reaper's page turns into a negative here)
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
@@ -8779,8 +8826,9 @@ function mangaBail(e) {
 }
 function mangaEnd() {
   FIN.manga = false; MG.on = false;
+  try { if (MG.script && MG.script.end) MG.script.end(); } catch (e) { /* a script that cannot tidy up */ }
   for (const pn of MG.panels) pn.cache = null;
-  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
+  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
   try { Cin.drone(false); Cin.close(); } catch (e) { /* sound off */ }
 }
 function mangaFinish() {
@@ -8800,7 +8848,8 @@ function mgCues(t) {
   cueOnce("drop", H0 - 120, () => Cin.go(() => Cin.drop(0.1)));
   cueOnce("taiko", H0, () => Cin.go(() => { Cin.taiko(1); Cin.impact(0.8); }));
   cueOnce("cardDrone", MT.CARD, () => Cin.go(() => Cin.drone(false)));
-  cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); }));
+  if (MG.ulti) cueOnce("gold", H0 + 100, () => Cin.go(() => { Cin.taiko(0.6); Cin.chime(1568); }));   // the third impact frame, the gold one
+  cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); if (MG.ulti) Cin.chime(1568); }));
   if (S.cues) S.cues(t);
 }
 
@@ -8875,34 +8924,36 @@ function mgStarburst(o, x, y, R, rot) {
   for (let i = 0; i < n * 2; i++) { const r = i % 2 ? R * 0.42 : R * (0.85 + 0.15 * ((i * 7919) % 5) / 4), a = (i / (n * 2)) * Math.PI * 2; i ? o.lineTo(Math.cos(a) * r, Math.sin(a) * r) : o.moveTo(r, 0); }
   o.closePath(); o.fillStyle = "#ffffff"; o.fill(); o.lineWidth = Math.max(2, R * 0.04); o.lineJoin = "miter"; o.strokeStyle = MG_INK; o.stroke(); o.restore();
 }
-// the two impact frames (50 ms each): the scene as white silhouettes on black, then black silhouettes on white with the rays; then a white flash falls off
+// the impact frames (50 ms each): the scene as white silhouettes on black, then black silhouettes on white with the rays; an Ultimate adds a third, gold one
+// (ink silhouettes on gold paper, white rays: S.impact gets sil = MG_INK); then a white flash falls off
 function mgImpact(o, t) {
   const S = MG.script, H0 = FIN.hit, pn = MG.byId[S.flight];
-  if (!pn || t < H0 || S.noImpact) return;   // S.noImpact (the Samurai page): no impact frames, the page holds instead
+  if (!pn || t < H0 || (S.noImpact && !MG.ultiCut)) return;   // S.noImpact (the Samurai page): no impact frames, the page holds instead (an Ultimate page with its own cut plays them)
   if (MG.reduced) { const a = 0.5 * (1 - fe(H0, H0 + 300, t)); if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); } return; }
-  if (t < H0 + 100) {
-    const white = t >= H0 + 50;   // the second frame
-    o.fillStyle = white ? "#ffffff" : "#000000"; o.fillRect(0, 0, L.gw, L.gh);
+  const span = MG.ulti ? 150 : 100;
+  if (t < H0 + span) {
+    const fr = Math.floor((t - H0) / 50);   // 0 black, 1 white, 2 gold (Ultimate)
+    o.fillStyle = fr === 0 ? "#000000" : fr === 1 ? "#ffffff" : MG_GOLD; o.fillRect(0, 0, L.gw, L.gh);
     mgPlace(pn, t);
     const hp = S.hitPt ? pn.sp(...S.hitPt()) : [L.gw / 2, L.gh / 2], R = Math.hypot(Math.max(hp[0], L.gw - hp[0]), Math.max(hp[1], L.gh - hp[1]));
-    mgFocus(o, hp[0], hp[1], R * 1.05, t * 0.001, 1, !white);
-    S.impact(o, pn, white ? "#000000" : "#ffffff", t);
+    mgFocus(o, hp[0], hp[1], R * 1.05, t * 0.001, 1, fr !== 1);
+    S.impact(o, pn, fr === 0 ? "#ffffff" : fr === 1 ? "#000000" : MG_INK, t);
   } else {
-    const a = 0.4 * (1 - fe(H0 + 100, H0 + 200, t));
+    const a = 0.4 * (1 - fe(H0 + span, H0 + span + 100, t));
     if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
   }
 }
 
 /* ---------- the title block: a slanted black band, the name in hand lettering, a screened accent strip, the red hanko K.O. seal ---------- */
 function mgCardPrep() {
-  const S = MG.script, W = FIN.P[FIN.w], accent = S.col;
+  const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold
   if (!MG.cards) {
     const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
     MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
-      sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: "#f1ece2" }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
+      sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
     // a line that is wider than the band (a long name on a narrow screen) is set again, smaller; on the upright phone the sub line also stays clear of the seal
     const x0 = Math.max(16, L.gw * 0.06), room = L.gw - x0 - 8, C = MG.cards;
-    if (C.sub.w > room) C.sub = mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27 * room / C.sub.w, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: "#f1ece2" });
+    if (C.sub.w > room) C.sub = mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27 * room / C.sub.w, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol });
     if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
   }
 }
@@ -8917,7 +8968,13 @@ function mgCard(o, t) {
   // the screened accent strip under the band
   const strip = [[-20, y + hh / 2 + sl], [L.gw + 20, y + hh / 2 - sl], [L.gw + 20, y + hh / 2 - sl + hh * 0.16], [-20, y + hh / 2 + sl + hh * 0.16]];
   o.fillStyle = accent; mgPoly(o, strip); o.fill();
-  mgToneFill(o, strip, 6, 0.38);
+  const at = (pl) => pl.map(([x, y]) => [x + slide, y]);   // (mgToneFill works in device px and ignores the translate, so the slide is added by hand)
+  mgToneFill(o, at(strip), 6, 0.38);
+  if (MG.ulti) {   // a second, gold strip under it, half as high
+    const g2 = [[-20, y + hh / 2 + sl + hh * 0.16], [L.gw + 20, y + hh / 2 - sl + hh * 0.16], [L.gw + 20, y + hh / 2 - sl + hh * 0.24], [-20, y + hh / 2 + sl + hh * 0.24]];
+    o.fillStyle = MG_GOLD; mgPoly(o, g2); o.fill();
+    mgToneFill(o, at(g2), 6, 0.38);
+  }
   const x0 = Math.max(16, L.gw * 0.06), nm = C.name;
   o.drawImage(nm.cv, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, nm.w, nm.h);
   o.drawImage(C.win.cv, x0 + nm.w * 0.86, y - C.win.h / 2 + hh * 0.2, C.win.w, C.win.h);
@@ -8930,8 +8987,8 @@ function mgCard(o, t) {
     o.save(); o.translate(kx, ky); o.rotate(-0.09); o.scale(sc, sc); o.globalAlpha = Math.min(1, s * 3);
     for (const [dx, dy, al] of [[2.2, 1.6, 0.55], [0, 0, 1]]) {   // misprinted: a faint second print, a hair off
       o.save(); o.translate(dx, dy); o.globalAlpha *= al;
-      o.fillStyle = "#c8281f"; o.beginPath(); o.roundRect(-sz / 2, -sz / 2, sz, sz, sz * 0.14); o.fill();
-      o.strokeStyle = "#f1ece2"; o.lineWidth = Math.max(2, sz * 0.045); o.beginPath(); o.roundRect(-sz / 2 + sz * 0.08, -sz / 2 + sz * 0.08, sz * 0.84, sz * 0.84, sz * 0.07); o.stroke();
+      o.fillStyle = MG.ulti ? (al < 1 ? MG_GOLD_D : MG_GOLD_SEAL) : "#c8281f"; o.beginPath(); o.roundRect(-sz / 2, -sz / 2, sz, sz, sz * 0.14); o.fill();   // the Ultimate's hanko is gold, its misprint ghost dark gold
+      o.strokeStyle = MG.ulti ? MG_INK : "#f1ece2"; o.lineWidth = Math.max(2, sz * 0.045); o.beginPath(); o.roundRect(-sz / 2 + sz * 0.08, -sz / 2 + sz * 0.08, sz * 0.84, sz * 0.84, sz * 0.07); o.stroke();
       o.drawImage(C.ko.cv, -C.ko.w * 0.5, -C.ko.h * 0.5, C.ko.w, C.ko.h);
       o.restore();
     }
@@ -9951,13 +10008,29 @@ MANGA.dragon = (function () {
    BANG, one smoking line through the loser, the loser's hat (or, bare-headed, its sprout) is shot off and floats down over the page while the loser
    flies out along the real launch direction . 3500 panel 4: he lifts the barrel to his mouth and blows the smoke off it (fuu), the hat lands on the page.
    Script fields: col, name, flight, panels(lay), words(lay), start(g), build(lay), step(t, k), pose(P, sk, t, role, p), over(o, t), cues(t),
-   drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed gns. */
+   drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed gns.
+
+   The Ultimate KO (MANGA.gunslinger.ulti, played when the lethal hit is the Dead Eye ulti: MG.ulti, the second MT table, see the end of the file): "Wanted".
+   The same page to 2780, then six shots. 2900-3300 five fanned shots (the barrel steps -0.22 .. +0.22, a muzzle star and a smoking line each, a hole punched
+   in the paper beside the loser, a flinch, a 2 px shake, BAM); 3280-3400 the drop (the hammer back, the barrel levels); 3400 the sixth, golden shot (three impact
+   frames, BLAMM in gold); 3550 the loser is launched and the hat shot off; 3750 panel 5, a full-page splash from the top: the WANTED poster (aged paper, the
+   loser's mono portrait, DEAD OR FRIED, REWARD: 1,000,000 FRIES, two nails, a torn bottom under a 70% screen); five bullet holes in the poster (3950-4350, the fan
+   order) and a sixth gold-rimmed one through the portrait's forehead at 4450 (his eyes turn to X); 4700 panel 4 as on the normal page (MT.AFTER + offsets). */
 MANGA.gunslinger = (function () {
-  const COL = "#ff4636", HOT = "#fff3d6", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2;
-  const HIT = MT.HIT, TICK = 1480, DONG = 1750, RAISE = 3540, BLOW = 3800, LOWER = 4230, LAND = 4250;
+  const COL = "#ff4636", HOT = "#fff3d6", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2, GOLD = MG_GOLD, GOLD_D = MG_GOLD_D;
+  const TICK = 1480, DONG = 1750;
+  // times that depend on the page in use (gnsMode): the lethal shot HIT, the end of its impact frames PH, the aftermath's beats (MT.AFTER is 3500 on the normal page, 4700 on the Ultimate's)
+  let ULT = false, HIT = 2900, PH = 3000, RAISE = 3540, BLOW = 3800, LOWER = 4230, LAND = 4250;
+  const SPLASH0 = 3750, FAN_A = [-0.22, -0.11, 0, 0.11, 0.22];   // the poster slides in at 3750; the barrel angle (+ = down) of the five fanned shots
+  const fanT = (i) => MT.HIT + i * 100;   // the fan: 2900 3000 3100 3200 3300 (the sixth is HIT = 3400)
+  function gnsMode(ult) {
+    ULT = ult; HIT = ult ? 3400 : MT.HIT; PH = HIT + (ult ? 150 : 100);
+    RAISE = MT.AFTER + 40; BLOW = MT.AFTER + 300; LOWER = MT.AFTER + 730; LAND = MT.AFTER + (ult ? 110 : 750);
+  }
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
   let dust = [], weed = null, hat = null, hatKind = "sprout", shotX0 = 0, shotY = -42;
+  let fan = [], poster = null, posterStage = 0, gnsPort = 0, loserCopy = null;   // the Ultimate: the five shots' muzzles and holes, the poster (layout, lettering, portraits), the portrait pose switch
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function gnsPt(p, t, key, dx, dy) {   // a point of the body (turned with the lean about the hip)
@@ -9972,6 +10045,20 @@ MANGA.gunslinger = (function () {
   }
   // the kick of the shot: the barrel is level on the shot frame, then jumps up and settles
   const gnsKick = (t) => easeOut(fe(HIT + 20, HIT + 70, t)) * (1 - ease(fe(HIT + 120, HIT + 520, t)));
+  // the Ultimate's fan, t before HIT: [barrel angle, recoil 0..1, index of the latest shot, ms since it]. The barrel steps to the next angle just before each shot
+  // (the last one levels in the silence of the drop, 3340-3395); a shot flips it up a little, back down before the next
+  function gnsFanAim(t) {
+    const i = clamp(Math.floor((t - MT.HIT) / 100), 0, 4), dt = t - fanT(i);
+    const k = easeOut(fe(8, 34, dt)) * (1 - ease(fe(44, 96, dt))), ap = i < 4 ? ease(fe(50, 100, dt)) : ease(fe(40, 95, dt));
+    return [lerp(FAN_A[i], i < 4 ? FAN_A[i + 1] : 0, ap) - 0.5 * k, k, i, dt];
+  }
+  // the front pistol after the draw: [barrel angle, recoil 0..1 (the arm jumps), frames since the shot while its flash shows (-1 = none)]
+  function gnsAim(t) {
+    if (ULT && t < HIT) { const [a, k, , dt] = gnsFanAim(t); return [a, k * 0.4, dt >= 0 && dt < 50 ? Math.floor(dt / FMS) : -1]; }
+    const k = gnsKick(t);
+    return [-k * 0.6, k, t < HIT + 50 ? Math.floor((t - HIT) / FMS) : -1];
+  }
+  const gnsFlinch = (t) => { if (!ULT) return 0; let f = 0; for (let i = 0; i < 5; i++) f = Math.max(f, Math.sin(Math.PI * fe(fanT(i), fanT(i) + 80, t))); return f; };   // the loser's 80 ms flinch at each fanned shot
   // the clock's minute hand: 11:58 at the look, 11:59 at TICK, twelve at DONG (each tick overshoots a little and springs back)
   const gnsJump = (t, t0) => (t < t0 ? 0 : easeOut(fe(t0, t0 + 60, t)) + 0.16 * Math.sin(Math.PI * fe(t0 + 60, t0 + 230, t)));
   const gnsMin = (t) => 58 + gnsJump(t, TICK) + gnsJump(t, DONG);
@@ -9983,6 +10070,7 @@ MANGA.gunslinger = (function () {
   /* ---- panels ---- */
   function panels(lay) {
     const port = lay.port, D = FIN.dir;
+    gnsMode(ULT);
     return [
       { id: "look", t0: MT.LOOK, from: "w", freeze: MT.STRIKE, cover: MT.STRIKE,
         poly: port ? [[0, 0], [1, 0], [1, 0.39], [0, 0.42]] : [[0, 0], [0.45, 0], [0.41, 1], [0, 1]],
@@ -9996,7 +10084,11 @@ MANGA.gunslinger = (function () {
       { id: "strike", t0: MT.STRIKE, from: "l", freeze: MT.AFTER, cover: MT.AFTER,
         poly: port ? [[0, 0.38], [1, 0.41], [1, 0.74], [0, 0.72]] : [[0, 0.31], [1, 0.37], [1, 1], [0, 1]],
         cam: (t) => { const k = ease(fe(MT.STRIKE, HIT, t)), vh = (port ? 182 : 126) * (1 - 0.08 * k); return { wx: FIN.wx + D * 65, wy: -(port ? 0.34 : 0.3) * vh, vh }; },
-        shake: (t) => { const a = 5 * fe(HIT + 100, HIT + 130, t) * (1 - fe(HIT + 130, HIT + 420, t)); return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a * 0.6] : [0, 0]; },
+        shake: (t) => {
+          let a = 5 * fe(PH, PH + 30, t) * (1 - fe(PH + 30, PH + 320, t));
+          if (ULT) for (let i = 0; i < 5; i++) a += 2 * fe(fanT(i), fanT(i) + 8, t) * (1 - fe(fanT(i) + 8, fanT(i) + 70, t));   // 2 px at each fanned shot
+          return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a * 0.6] : [0, 0];
+        },
         draw: drawStrike },
       { id: "after", t0: MT.AFTER, from: "b", live: true,
         poly: port ? [[0, 0.69], [1, 0.67], [1, 1], [0, 1]] : [[0, 0.43], [0.63, 0.4], [0.59, 1], [0, 1]],
@@ -10159,25 +10251,29 @@ MANGA.gunslinger = (function () {
   const loserAt = (tt) => { if (tt < FIN.launch) return [FIN.lx - (tt >= HIT ? FIN.dir * 5 : 0), 0]; const tr = finTrav((tt - FIN.launch) / FMS); return [FIN.lx + FIN.ldx * tr, FIN.ldy * tr]; };
   function drawStrike(c, pn, t) {
     const W = W_(), D = FIN.dir;
+    if (ULT && !MG.reduced && t >= HIT && t < PH) return;   // the three impact frames cover the whole page: nothing of the panel shows, so nothing is drawn
     pn.screen(c);
     gnsStreet(c, pn, t, FIN.wx + D * 65, 70, 0.1 * fe(MT.STRIKE, MT.AFTER, t));
+    if (ULT) gnsFanHoles(c, pn, t);
     gnsDrawArc(c, pn, t);
     mgPuppet(c, pn, W, t, { light: dirAng(-0.45), post: gnsBrim(W, t, 0.8) });
     gnsTwitch(c, pn, W, t, 2480, 2760);
+    if (ULT) gnsFanLines(c, pn, t);
     gnsShotLine(c, pn, t);
     if (!MG.broke) drawLoserFn(c, pn, t);
     pn.screen(c);
     // where the bullet hit: a white burst with an ink edge, after the impact frames
-    const hb = fe(HIT + 100, HIT + 280, t);
+    const hb = fe(PH, PH + 180, t);
     if (hb > 0 && hb < 1) { const q = pn.p(FIN.lx - D * 6, shotY); mgStarburst(c, q[0], q[1], (34 - 26 * hb) * pn.z / 1.7, 0.3); }
     gnsMuzzleFx(c, pn, t);
   }
   // the draw happened between two frames: a tapered ink stroke along the path of the gun, from the hip up to the aim, left behind for a moment
+  // (the Ultimate: at the first of the five shots, up to the first aim)
   function gnsDrawArc(c, pn, t) {
-    const k = fe(HIT + 100, HIT + 330, t);
-    if (t < HIT + 100 || k >= 1) return;
+    const t0 = ULT ? MT.HIT + 20 : PH, k = fe(t0, t0 + 230, t);
+    if (t < t0 || k >= 1) return;
     const W = W_(), D = FIN.dir, sk = { w: W.s.w, leg: W.s.h * W.spec.look.leg, tor: W.s.h * W.spec.look.torso };
-    const a = [W.x + D * (sk.w * 0.9 + 6), -sk.leg + 8], b = gnsMuzzle(HIT), m = [W.x + D * sk.w * 1.5, (a[1] + b[1]) * 0.5 + 6];
+    const a = [W.x + D * (sk.w * 0.9 + 6), -sk.leg + 8], b = gnsMuzzle(ULT ? fanT(0) : HIT), m = [W.x + D * sk.w * 1.5, (a[1] + b[1]) * 0.5 + 6];
     const pts = qpts(a, m, b, 14);
     pn.world(c); c.save(); c.globalAlpha = 1 - k;
     c.fillStyle = INK; brush(c, pts, 7.5, 14);
@@ -10186,15 +10282,15 @@ MANGA.gunslinger = (function () {
   }
   // one smoking line: from the muzzle through the loser to the edge, ink with a hot core; it fades from the muzzle outward while smoke curls off it
   function gnsShotLine(c, pn, t) {
-    if (t < HIT + 100 || t > 3500) return;
-    const D = FIN.dir, len = 720, gone = ease(fe(3150, 3480, t)), xs = shotX0 + D * len * gone, xe = shotX0 + D * len, y = shotY;
+    if (t < PH || t > PH + 500) return;
+    const D = FIN.dir, len = 720, gone = ease(fe(PH + 150, PH + 480, t)), xs = shotX0 + D * len * gone, xe = shotX0 + D * len, y = shotY;
     pn.world(c);
     c.lineCap = "butt";
     c.strokeStyle = INK; c.lineWidth = 3.4; c.beginPath(); c.moveTo(xs, y); c.lineTo(xe, y); c.stroke();
     c.strokeStyle = COL; c.lineWidth = 1.5; c.stroke();
     pn.screen(c);
     for (let i = 0; i < 10; i++) {   // the smoke: small puffs of tone rising off the line, born a little after one another
-      const r = gnsRng(80 + i), x = shotX0 + D * (14 + i * 30 + r() * 12), age = t - (HIT + 110 + i * 22);
+      const r = gnsRng(80 + i), x = shotX0 + D * (14 + i * 30 + r() * 12), age = t - (PH + 10 + i * 22);
       if (age <= 0 || (x - xs) * D < -40) continue;
       const k = clamp(age / 520, 0, 1), a = 1 - fe(0.55, 1, k);
       if (a <= 0) continue;
@@ -10204,12 +10300,13 @@ MANGA.gunslinger = (function () {
   }
   // the muzzle after the shot: a flash in the accent, then smoke rising off the barrel until the panel freezes
   function gnsMuzzleFx(c, pn, t) {
-    if (t < HIT + 100) return;
+    if (ULT) gnsFanMuzzleFx(c, pn, t);
+    if (t < PH) return;
     const m = pn.p(...gnsMuzzle(t)), z = pn.z, D = FIN.dir;
-    const f = 1 - fe(HIT + 100, HIT + 200, t);
+    const f = 1 - fe(PH, PH + 100, t);
     if (f > 0) { c.save(); c.translate(m[0] + D * 5 * z, m[1]); c.scale(D, 1); gnsFlash(c, (10 + 8 * f) * z, f); c.restore(); }
     for (let i = 0; i < 6; i++) {
-      const born = HIT + 110 + i * 75, age = t - born;
+      const born = PH + 10 + i * 75, age = t - born;
       if (age <= 0) continue;
       const k = clamp(age / 650, 0, 1), a = 1 - fe(0.5, 1, k), b = pn.p(...gnsMuzzle(born));
       if (a <= 0) continue;
@@ -10223,6 +10320,81 @@ MANGA.gunslinger = (function () {
     star(s * 0.8, s * 0.22); c.fillStyle = COL; c.fill();
     star(s * 0.45, s * 0.14); c.fillStyle = HOT; c.fill();
     c.globalAlpha = 1;
+  }
+  /* ---- the Ultimate: five fanned shots, a hole punched in the paper by each ---- */
+  // a hole through the paper at (x, y) in the units of the current transform (r its radius), `age` ms old: the paper torn up in a ragged white chip with an ink edge, the dark
+  // opening, flecks flying out for 170 ms; o.cracks: three cracks run out of it (the poster); o.gold: the sixth hole, a gold chip with a dark-gold ring
+  function gnsHole(c, x, y, r, age, o) {
+    if (age < 0) return;
+    o = o || {};
+    const pop = easeOut(fe(0, 70, age)), s = r * (0.5 + 0.5 * pop), lw = Math.max(0.5, r * 0.16), rn = gnsRng(o.seed || 5);
+    c.save(); c.translate(x, y); c.lineJoin = "miter"; c.lineCap = "round";
+    c.beginPath();
+    for (let i = 0; i < 14; i++) { const an = (i / 14) * TAU + rn() * 0.3, rr = (i % 2 ? 1.2 : 1.8 + rn() * 0.7) * s; i ? c.lineTo(Math.cos(an) * rr, Math.sin(an) * rr) : c.moveTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+    c.closePath(); c.fillStyle = o.gold ? GOLD : o.chip || "#ffffff"; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.arc(0, 0, s, 0, TAU); c.fillStyle = INK; c.fill();
+    if (o.gold) { c.lineWidth = lw * 1.7; c.strokeStyle = GOLD_D; c.beginPath(); c.arc(0, 0, s * 1.14, 0, TAU); c.stroke(); }
+    c.beginPath(); c.arc(-s * 0.2, -s * 0.2, s * 0.52, Math.PI * 0.95, Math.PI * 1.65); c.lineWidth = lw * 0.85; c.strokeStyle = o.chip || PAPER; c.stroke();   // a sliver of light through it
+    const fk = fe(0, 170, age);
+    if (fk < 1) for (let i = 0; i < 6; i++) {
+      const an = rn() * TAU, d = r * (1.7 + 3 * easeOut(fk)) * (0.75 + rn() * 0.5), q = r * (0.2 + rn() * 0.16);
+      c.save(); c.translate(Math.cos(an) * d, Math.sin(an) * d); c.rotate(an * 3); c.globalAlpha = 1 - fk;
+      c.fillStyle = i % 2 ? INK : o.chip || "#ffffff"; c.lineWidth = lw * 0.5; c.strokeStyle = INK; c.fillRect(-q, -q * 0.6, q * 2, q * 1.2); c.strokeRect(-q, -q * 0.6, q * 2, q * 1.2);
+      c.restore();
+    }
+    if (o.cracks) {   // three cracks, each with a kink, growing out in 90 ms
+      const ck = easeOut(fe(10, 100, age));
+      c.strokeStyle = INK; c.lineWidth = lw * 0.8; c.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const an = (i / 3) * TAU + 0.5 + rn() * 0.9, l0 = r * (2.2 + rn() * 0.8) * ck, l1 = r * (3.4 + rn() * 1.4) * ck, kn = (rn() - 0.5) * 1.1;
+        c.moveTo(Math.cos(an) * s * 1.2, Math.sin(an) * s * 1.2); c.lineTo(Math.cos(an) * l0, Math.sin(an) * l0); c.lineTo(Math.cos(an + kn) * l1, Math.sin(an + kn) * l1);
+      }
+      c.stroke();
+    }
+    c.restore();
+  }
+  // where each fanned shot starts (the muzzle at its moment) and where it ends: past the loser, on the paper beside him, the bullet's own line out to that column
+  function gnsFanBuild() {
+    const D = FIN.dir, Lp = L_();
+    fan = FAN_A.map((a, i) => {
+      const m = gnsMuzzle(fanT(i)), xh = FIN.lx + D * (Lp.s.w * 0.5 + 14 + [3, -1, 5, -2, 2][i]);
+      return { m, hole: [xh, m[1] + D * (xh - m[0]) * Math.tan(a)] };
+    });
+  }
+  function gnsFanHoles(c, pn, t) {
+    let on = false;
+    for (let i = 0; i < 5; i++) if (t >= fanT(i) + 40) { if (!on) { pn.world(c); on = true; } gnsHole(c, fan[i].hole[0], fan[i].hole[1], 6, t - fanT(i) - 40, { seed: 20 + i }); }
+    if (on) pn.screen(c);
+  }
+  // each shot's smoking line, muzzle to hole: it flies there in 40 ms, then rubs out from the muzzle end; two small puffs of smoke at the barrel
+  function gnsFanLines(c, pn, t) {
+    const D = FIN.dir, z = pn.z;
+    for (let i = 0; i < 5; i++) {
+      const dt = t - fanT(i);
+      if (dt < 0 || dt > 520) continue;
+      const f = fan[i];
+      if (dt < 360) {
+        const e = lerp2(f.m, f.hole, easeOut(fe(0, 40, dt))), s = lerp2(f.m, f.hole, ease(fe(110, 360, dt)));
+        pn.world(c); c.lineCap = "butt";
+        c.strokeStyle = INK; c.lineWidth = 2.8; c.beginPath(); c.moveTo(s[0], s[1]); c.lineTo(e[0], e[1]); c.stroke();
+        c.strokeStyle = COL; c.lineWidth = 1.2; c.stroke();
+      }
+      pn.screen(c);
+      for (let j = 0; j < (MG.slow ? 1 : 2); j++) {
+        const age = dt - 15 - j * 35, k = clamp(age / 480, 0, 1), a = 1 - fe(0.5, 1, k);
+        if (age <= 0 || a <= 0) continue;
+        const q = pn.p(f.m[0] + D * (3 + 5 * j), f.m[1]);
+        gnsPuff(c, pn, q[0] + Math.sin(age * 0.006 + i + j) * 2.5 * z, q[1] - age * 0.032 * z, (2 + 4 * easeOut(k)) * z, a, 140 + i * 2 + j);
+      }
+    }
+  }
+  // the star at the muzzle on each shot, turned with the barrel
+  function gnsFanMuzzleFx(c, pn, t) {
+    if (t < MT.HIT || t >= HIT) return;
+    const dt = t - fanT(clamp(Math.floor((t - MT.HIT) / 100), 0, 4)), f = 1 - fe(12, 80, dt);
+    if (f <= 0) return;
+    const m = pn.p(...gnsMuzzle(t)), z = pn.z, D = FIN.dir;
+    c.save(); c.translate(m[0] + D * 5 * z, m[1]); c.scale(D, 1); c.rotate(gnsAim(t)[0]); gnsFlash(c, (8 + 7 * f) * z, f); c.restore();
   }
   // a puff of smoke: a little cloud of three or four discs, one ink outline round all of them, paper and dot tone inside (panel coordinates).
   // It thins out by shrinking, so the overlapping discs never show their seams.
@@ -10290,8 +10462,8 @@ MANGA.gunslinger = (function () {
   /* ---- over the whole page: blowing dust, the tumbleweed, the loser's speed lines, the hat floating down ---- */
   const gnsClockT = (t) => t - Math.min(MT.HIT - MT.DROP, Math.max(0, t - MT.DROP));   // the dust holds in the silence before the shot
   function gnsDust(o, t) {
-    if (t < 900 || t > MT.FADE + 100) return;
-    const D = FIN.dir, u = (gnsClockT(t) - 900) / 1000, a = fe(900, 1200, t), gw = L.gw + 40;
+    if (t < 900 || t > (ULT ? SPLASH0 + 60 : MT.FADE + 100)) return;   // (the Ultimate: gone as the poster comes in)
+    const D = FIN.dir, u = (gnsClockT(t) - 900) / 1000, a = fe(900, 1200, t) * (ULT ? 1 - fe(SPLASH0 - 200, SPLASH0 + 60, t) : 1), gw = L.gw + 40;
     o.save(); o.globalAlpha = 0.6 * a; o.fillStyle = INK; o.strokeStyle = INK; o.lineCap = "round";
     for (const d of dust) {
       const x = (((d.x + D * d.v * u) % gw) + gw) % gw - 20, y = d.y + Math.sin(u * 2 + d.ph) * 6;
@@ -10333,7 +10505,9 @@ MANGA.gunslinger = (function () {
     const env = Math.sin(Math.PI * Math.min(1, f * 1.15)) * (1 - fe(0.85, 1, f)), yTop = hat.y - 70;
     const yEnd = L.gh - MG.m - hat.foot * hat.s * 1.3;
     let x = hat.x + D * 26 * pop - D * 34 * f + Math.sin(ph) * 46 * env, y = u < 300 ? hat.y - 70 * pop : yTop + (yEnd - yTop) * f + Math.cos(ph * 2) * 4 * env;
-    let a = -D * TAU * easeOut(fe(0, 420, u)) + 0.42 * Math.cos(ph) * env, s = hat.s * (1 + 0.3 * f), sq = 1;
+    // the Ultimate: it lands on the poster, in the strip of paper beside the portrait
+    if (ULT) x = hat.x + D * 26 * pop + (hat.xl - hat.x - D * 26) * ease(fe(0, 0.55, f)) + Math.sin(ph) * 22 * env;
+    let a = -D * TAU * easeOut(fe(0, 420, u)) + 0.42 * Math.cos(ph) * env, s = hat.s * (ULT ? 0.66 + 0.07 * f : 1 + 0.3 * f), sq = 1;   // (the Ultimate's is smaller: it has to fit the strip of paper beside the portrait)
     if (t >= LAND) { y = yEnd; a = D * 0.07; const b = fe(LAND, LAND + 220, t); sq = 1 - 0.12 * Math.sin(Math.PI * b); }
     return { x, y, a, s, sq };
   }
@@ -10364,41 +10538,199 @@ MANGA.gunslinger = (function () {
     MG.pt = tt;
     const P = pose(Lp, mgTk(tt)), lx = FIN.lx - FIN.dir * 5;
     const q = rot([P.rx * 0.08, hatKind === "sprout" ? P.top + 1 : P.top + P.ry * (hatKind === "wizard" ? 0.22 : 0.3)], P.hip, P.lean), s = pn.sp(lx + Lp.facing * q[0], q[1]);
-    hat = { t0: FIN.launch, x: s[0], y: s[1], s: pn.z * (pn.z < 1.6 ? 1.15 : 1), foot: hatKind === "sprout" ? 2.6 : P.ry * 0.22 };
+    hat = { t0: FIN.launch, x: s[0], y: s[1], s: pn.z * (pn.z < 1.6 ? 1.15 : 1), foot: hatKind === "sprout" ? 2.6 : P.ry * 0.22, xl: L.gw * (FIN.dir > 0 ? (L.portrait ? 0.9 : 0.93) : (L.portrait ? 0.1 : 0.07)) };
+  }
+
+  /* ---- the Ultimate's panel 5: the WANTED poster (a full-page splash, slides in from the top at 3750) ---- */
+  const HOLE_T = [3950, 4050, 4150, 4250, 4350], GOLD_T = 4450;   // the five bullet holes in the fan order, then the gold-rimmed one through the forehead
+  const gnsPosterShake = (t) => {
+    let a = 0;
+    for (const h of HOLE_T) a += 2 * fe(h, h + 8, t) * (1 - fe(h + 8, h + 70, t));
+    a += 3 * fe(GOLD_T, GOLD_T + 8, t) * (1 - fe(GOLD_T + 8, GOLD_T + 90, t));
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a * 0.6] : [0, 0];
+  };
+  function panelsU(lay) {
+    const ps = panels(lay);   // look, inset, strike, after (gnsMode has already put the Ultimate's times in)
+    // the engine's splash hook: a full-page panel, opaque (once it is in, the panels below it are no longer drawn), frozen at MT.AFTER; the poster comes in at 3750, not at MT.SPLASH
+    ps.splice(ps.findIndex((p) => p.id === "after"), 0, mgSplashPanel({ id: "wanted", t0: SPLASH0, from: "t", paper: "#e9d9a8", shake: gnsPosterShake, draw: drawWanted }));
+    return ps;
+  }
+  // the poster is built in three small steps while the first panels play (layout and lettering, then the two portraits), never on the frame it slides in
+  function gnsPosterStep(t) {
+    if (posterStage === 0 && t > 1400) { poster = gnsPosterLayout(); posterStage = 1; }
+    else if (posterStage === 1 && t > 1500) { poster.p1 = gnsPortrait(poster, 1); posterStage = 2; }
+    else if (posterStage === 2 && t > 1600) { poster.p2 = gnsPortrait(poster, 2); posterStage = 3; }
+  }
+  function gnsPosterCatchUp() { while (posterStage < 3) gnsPosterStep(1e9); }
+  // solid poster letters: ink, a hair of ink edge, an offset ghost (the misprint) in o.ghost; set on a slight arc, each letter nudged, like the page's words (mgWord)
+  function gnsLetters(text, o) {
+    const D = DPR, size = o.size, font = `900 italic ${size}px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
+    const m = mgCanvas(4, 4).getContext("2d"); m.font = font;
+    const chars = [...text], sp = size * (o.space === undefined ? 0.05 : o.space), adv = chars.map((ch) => m.measureText(ch).width + sp), tw = adv.reduce((a, b) => a + b, 0), R = tw * (o.arc || 20);
+    const cw = tw + size * 0.7, ch = size * 1.5, cvs = mgCanvas(cw * D, ch * D), x = cvs.getContext("2d"), rnd = mgRng(o.seed || 3);
+    x.scale(D, D); x.translate(cw / 2, ch / 2); x.font = font; x.textAlign = "center"; x.textBaseline = "alphabetic"; x.lineJoin = "round";
+    let s = -tw / 2;
+    chars.forEach((chr, i) => {
+      const mid = s + adv[i] / 2, th = mid / R; s += adv[i];
+      x.save(); x.translate(R * Math.sin(th), R * (1 - Math.cos(th)) + (rnd() - 0.5) * 0.08 * size + size * 0.28); x.rotate(th + (rnd() - 0.5) * (o.jit || 0.08));
+      if (o.ghost) { x.fillStyle = o.ghost; x.fillText(chr, size * 0.045, size * 0.045); }
+      x.lineWidth = size * (o.edge || 0.03); x.strokeStyle = INK; x.strokeText(chr, 0, 0);
+      x.fillStyle = INK; x.fillText(chr, 0, 0);
+      x.restore();
+    });
+    return { cv: cvs, w: cw, h: ch, vw: cw - size * 0.6, vis: size * 0.78 };
+  }
+  function gnsPosterLayout() {
+    const pg = MG.page, D = FIN.dir, port = L.portrait, gw = L.gw, gh = L.gh, base = Math.min(gw, gh), mulW = port ? 0.5 : 1, rn = gnsRng(4711);
+    const sx = (u) => pg.x + (D > 0 ? u : 1 - u) * pg.w;   // x at a share of the page width counted from the winner's side
+    const sz = (v) => Math.round(v * gh * mulW);
+    // the column the text and the portrait sit in: on the wide page clear of panel 4 (the lower left) and with a strip of paper beside it for the hat; upright: the whole width
+    const cx = port ? pg.x + pg.w / 2 : sx(0.74), colW = port ? pg.w * 0.96 : pg.w * 0.34;
+    // the lettering: panel 1's words (ink stroke, offset print) for the gold line; solid black letters for the title and the small type (an ink fill inside the words' ink stroke would be a black blob);
+    // a line wider than the column is set again, smaller
+    const word = (make, txt, v, o) => {
+      o = Object.assign({ jit: 0.08 }, o);
+      let w = make(txt, Object.assign({ size: sz(v) }, o));
+      if (w.vw > colW) w = make(txt, Object.assign({}, o, { size: Math.round(sz(v) * colW / w.vw) }));
+      return w;
+    };
+    const mw = (txt, o) => { const w = mgWord(txt, o); w.vw = w.w - o.size * 0.9; w.vis = w.h / 1.9 * 0.86; return w; };
+    const title = word(gnsLetters, "WANTED", 0.17, { seed: 29, arc: 20, ghost: GOLD_D, edge: 0.03 }), dead = word(mw, "DEAD OR FRIED", 0.09, { seed: 31, arc: 24, fill: GOLD });
+    const rew = word(gnsLetters, "REWARD: 1,000,000 FRIES", 0.06, { seed: 37, arc: 30, space: 0.03, edge: 0.012 });
+    const hv = (w) => w.vis;   // the visible height of a line of lettering
+    const bandH = pg.h * (port ? 0.045 : 0.075), gap = base * 0.013, top = pg.y + Math.max(5, base * 0.016);
+    const bottomLim = port ? pg.y + pg.h * 0.635 : pg.y + pg.h - bandH - base * 0.012;
+    let fw = port ? Math.min(gw * 0.8, gh * 0.36) : Math.min(gw * 0.46, gh * 0.5);
+    const room = bottomLim - top - hv(title) - hv(dead) - hv(rew) - gap * 4.5;
+    let fh = Math.min(fw * (port ? 1.3 : 1.15), room);
+    fw = Math.min(fw, fh * 1.3);
+    const used = hv(title) + fh + hv(dead) + hv(rew) + gap * 4.5, lift = Math.max(0, (bottomLim - top - used) * 0.4);   // spare room: a share of it above, the rest between the lines
+    const tY = top + lift + hv(title) / 2, fy0 = top + lift + hv(title) + gap, dY = fy0 + fh + gap * 1.5 + hv(dead) / 2, rY = dY + hv(dead) / 2 + gap + hv(rew) / 2;
+    const fx0 = cx - fw / 2, hr = Math.max(6, base * 0.02), Y = { cx, fw, fh, fx0, fy0, tY, dY, rY, title, dead, rew, hr, vh: 40, port };
+    // the holes beside the head (fan order from the top), mirrored with the winner's side; the gold one goes through the forehead (set when the portrait is made)
+    const hxs = [0.8, 0.87, 0.9, 0.87, 0.8], side = D > 0 ? 1 : -1;
+    Y.holes = hxs.map((u, i) => [fx0 + fw * (side > 0 ? u : 1 - u), fy0 + fh * (0.13 + i * 0.185)]);
+    // the torn bottom: a ragged edge under a 70% screen, with an ink line along it
+    const by = pg.y + pg.h - bandH, edge = [];
+    for (let x = pg.x - 6; x < pg.x + pg.w + 16; x += 14 + rn() * 8) edge.push([Math.min(x, pg.x + pg.w + 6), by + (rn() - 0.5) * bandH * 0.55 + (edge.length % 2 ? 3 : -3)]);
+    Y.edge = edge; Y.band = edge.concat([[pg.x + pg.w + 30, pg.y + pg.h + 30], [pg.x - 30, pg.y + pg.h + 30]]);   // (a margin the push cannot pull into view)
+    // fine print: rows of short grey bars (the small type of the poster) where there is room, and on the wide page a printed sheriff's badge on the left
+    const prints = [], rows = (x0, x1, y0, y1) => { for (let y = y0; y + 3 < y1; y += 9.5) { let x = x0; while (x < x1 - 14) { const w = Math.min(x1 - x, 14 + rn() * 34); prints.push([x, y, w]); x += w + 5 + rn() * 4; if (rn() < 0.12) x += 24; } } };
+    if (port) rows(pg.x + pg.w * 0.07, pg.x + pg.w * 0.93, rY + hv(rew) / 2 + gap * 2, bottomLim);
+    else { rows(sx(0.05), sx(0.54), pg.y + pg.h * 0.6, by - gap * 2); Y.badge = [sx(0.28), pg.y + pg.h * 0.26, pg.h * 0.2]; }
+    Y.print = prints;
+    Y.nails = [[pg.x + base * 0.05, pg.y + base * 0.05], [pg.x + pg.w - base * 0.05, pg.y + base * 0.05]];
+    return Y;
+  }
+  // the loser's portrait for the poster, drawn once: mono (every colour grey), the pose frozen at 2300 (kind 1: terror, kind 2: the X eyes), the head filling the frame
+  function gnsPortrait(Y, kind) {
+    if (!loserCopy) loserCopy = Object.assign({}, L_(), { x: 0, y: 0, vx: 0, vy: 0, state: "fin", flash: 0 });
+    const cp = loserCopy, tt = 2300, fw = Y.fw, fh = Y.fh;
+    mgNeedLayer();
+    const cvs = mgCanvas(fw * DPR, fh * DPR), x = cvs.getContext("2d");
+    gnsPort = kind;
+    try {
+      MG.pt = tt;
+      const P = pose(cp, mgTk(tt)), vh = P.w * 1.25 * fh / fw, z = fh / vh;   // the frame shows a little more than one body width
+      const hd = gnsPt(cp, tt, "head"), pn = { z, ox: 0, oy: 0, x0: 0, y0: 0, x1: fw, y1: fh, p: (wx, wy) => [fw / 2 + (wx - hd[0]) * z, fh * 0.55 + (wy - hd[1]) * z] };
+      if (kind === 1) { const q = pn.p(...gnsPt(cp, tt, "head", 0, -P.ry * 0.5)); Y.fore = [Y.fx0 + q[0], Y.fy0 + q[1]]; }   // the forehead, where the sixth hole goes
+      mgPuppet(x, pn, cp, tt, { mono: true, free: false, tint: 0.5, light: Math.PI - dirAng(-0.6), wash: ["#8a6a30", 0.16] });
+    } finally { gnsPort = 0; MG.mono = false; }
+    return cvs;
+  }
+  function gnsBadge(c, tone, x, y, R) {   // a sheriff's star in thin ink with a tone fill, ball tips and a ring, printed faintly on the paper
+    const pts = [];
+    for (let i = 0; i < 12; i++) { const an = -Math.PI / 2 + (i * Math.PI) / 6, r = i % 2 ? R * 0.5 : R; pts.push([x + Math.cos(an) * r, y + Math.sin(an) * r]); }
+    c.save(); c.globalAlpha = 0.5;
+    tone(pts, 6, 0.2);
+    c.strokeStyle = INK; c.fillStyle = INK; c.lineWidth = 2; c.lineJoin = "miter"; mgPoly(c, pts); c.stroke();
+    for (let i = 0; i < 12; i += 2) { c.beginPath(); c.arc(pts[i][0], pts[i][1], R * 0.075, 0, TAU); c.fill(); }
+    c.lineWidth = 1.6; c.beginPath(); c.arc(x, y, R * 1.12, 0, TAU); c.stroke(); c.beginPath(); c.arc(x, y, R * 0.3, 0, TAU); c.stroke();
+    c.restore();
+  }
+  function gnsNail(c, x, y, r, k) {   // a nail head: an ink disc with a paper glint and a short shadow; it is hammered in (squashed from big) at k 0..1
+    const s = 1 + 0.9 * (1 - easeOut(k));
+    c.save(); c.translate(x, y); c.scale(s, s); c.globalAlpha = Math.min(1, k * 6);
+    c.fillStyle = INK; const a0 = c.globalAlpha; c.globalAlpha = a0 * 0.3; c.beginPath(); c.arc(r * 0.4, r * 0.55, r * 1.1, 0, TAU); c.fill(); c.globalAlpha = a0;   // the shadow
+    c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
+    c.fillStyle = PAPER; c.beginPath(); c.arc(-r * 0.32, -r * 0.34, r * 0.3, 0, TAU); c.fill();
+    c.restore();
+  }
+  function drawWanted(c, pn, t) {
+    if (posterStage < 3) gnsPosterCatchUp();
+    const Y = poster, img = (w, x, y) => c.drawImage(w.cv, x - w.w / 2, y - w.h / 2, w.w, w.h);
+    // the camera: a 4% push on the whole poster about the middle of the page, 3750-4700 (the tone fills are placed by hand, the pattern fill ignores the transform)
+    const pg = MG.page, s = 1 + 0.04 * ease(fe(SPLASH0, MT.AFTER, t)), pcx = pg.x + pg.w / 2, pcy = pg.y + pg.h / 2;
+    const tone = (poly, size, cover) => gnsTone(c, pn, poly.map(([x, y]) => [pcx + (x - pcx) * s, pcy + (y - pcy) * s]), size, cover);
+    pn.screen(c);
+    c.save(); c.translate(pcx, pcy); c.scale(s, s); c.translate(-pcx, -pcy);
+    if (Y.badge) gnsBadge(c, tone, ...Y.badge);
+    c.fillStyle = INK; c.globalAlpha = 0.32; c.beginPath(); for (const [x, y, w] of Y.print) c.rect(x, y, w, 2.4); c.fill(); c.globalAlpha = 1;
+    // the torn bottom
+    tone(Y.band, 6, 0.7);
+    c.strokeStyle = INK; c.lineWidth = 2; c.lineJoin = "round"; c.beginPath(); Y.edge.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    // the lettering and the portrait in its frame
+    img(Y.title, Y.cx, Y.tY); img(Y.dead, Y.cx, Y.dY); img(Y.rew, Y.cx, Y.rY);
+    const { fx0, fy0, fw, fh } = Y, ko = t >= GOLD_T;
+    c.fillStyle = "#f6edcf"; c.fillRect(fx0, fy0, fw, fh);
+    tone([[fx0, fy0 + fh * 0.58], [fx0 + fw, fy0 + fh * 0.44], [fx0 + fw, fy0 + fh], [fx0, fy0 + fh]], 7, 0.16);
+    c.drawImage(ko ? Y.p2 : Y.p1, fx0, fy0, fw, fh);
+    c.strokeStyle = INK; c.lineJoin = "miter"; c.lineWidth = 3.4; c.strokeRect(fx0, fy0, fw, fh);
+    c.lineWidth = 1; c.strokeRect(fx0 + 5, fy0 + 5, fw - 10, fh - 10);
+    // the nails go in one after the other
+    Y.nails.forEach(([x, y], i) => { const k = fe(SPLASH0 + 40 + i * 40, SPLASH0 + 120 + i * 40, t); if (k > 0) gnsNail(c, x, y, Y.hr * 0.75, k); });
+    // the bullet holes: five beside the head, the sixth through the forehead (his eyes are X by then)
+    Y.holes.forEach(([x, y], i) => gnsHole(c, x, y, Y.hr, t - HOLE_T[i], { seed: 40 + i, cracks: true, chip: "#fff6dc" }));
+    if (Y.fore) gnsHole(c, Y.fore[0], Y.fore[1], Y.hr * 1.8, t - GOLD_T, { seed: 60, cracks: true, gold: true, chip: "#fff6dc" });
+    c.restore();
   }
 
   /* ---- the script ---- */
+  // the gunshot: a crack, a body, (two echoes off the mesas, a ricochet when it is the full shot); v is the volume
+  function gnsBang(v, full) {
+    Cin._noise(0.05, 0.7 * v, 9000, 3500, "highpass", 0.7); Cin._noise(0.3, 0.8 * v, 5200, 500, "lowpass", 0.7); Cin.sub(120, 40, full ? 0.35 : 0.2, 0.7 * v);
+    if (!full) return;
+    Cin._noise(0.3, 0.22, 1600, 400, "lowpass", 0.7, 0.32); Cin._noise(0.32, 0.11, 1300, 350, "lowpass", 0.7, 0.68);
+    Cin._osc("sine", 3600, 1500, 0.42, 0.045, 0.006, 0.12);
+  }
   const S_ = {
     col: COL, name: "High Noon", flight: "strike",
     panels,
     words(lay) {
-      const ev = FIN.ev, mv = ev ? ev.mv || "" : "", shot = !ev || ev.fin || mv === "spec" || /^h/.test(mv), D = FIN.dir;
-      return [
-        { text: shot ? "BLAM" : "WHAK", t0: 600, t1: 1330, size: 0.24, rot: -0.12 * D, at: () => [clamp(MG.ix + D * L.gw * 0.04, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.24, L.gh * 0.2, L.gh * 0.5)] },
-        // the clock strikes: beside the clock, across the border of panel 2
-        { text: "DONG", t0: DONG, t1: 2330, size: 0.13, arc: 7, rot: 0.12 * D, jit: 0.14,
-          at: () => { if (lay.port) return [MG.page.x + MG.page.w * (D > 0 ? 0.24 : 0.76), MG.page.y + L.gh * 0.055];   // upright: the clock is at the edge, so in the open sky over his hat
-            const p = MG.byId.look, q = p.sp(FIN.wx + D * 36, -77); return [q[0] + D * p.z * 21.5 * 1.45, q[1] - p.z * 21.5 * 0.55]; } },
-        // the shot: above the line, ahead of his gun, stretched along it
-        { text: "BANG", t0: HIT + 100, t1: 3560, size: 0.24, arc: 10, rot: -0.07 * D, fill: COL, stretch: { ang: D > 0 ? 0 : Math.PI, k: 0.35 },
-          at: () => { const p = MG.byId.strike, q = p.sp(FIN.wx + D * 80, -104); return [q[0], q[1]]; } },
-        // he blows the smoke off the barrel
-        { text: "fuu", t0: BLOW + 20, t1: 4380, size: 0.085, jit: 0.12, rot: -0.14 * D, space: 0.1,
-          at: (t) => { const p = MG.byId.after, m = p.sp(...gnsMuzzle(Math.min(t, BLOW + 60))); return [m[0] + D * p.z * 30, m[1] - p.z * 4]; } },
-      ];
+      gnsMode(ULT);
+      const ev = FIN.ev, mv = ev ? ev.mv || "" : "", shot = !ev || ev.fin || mv === "spec" || mv === "ulti" || /^h/.test(mv), D = FIN.dir;
+      const hitWord = { text: shot ? "BLAM" : "WHAK", t0: 600, t1: 1330, size: 0.24, rot: -0.12 * D, at: () => [clamp(MG.ix + D * L.gw * 0.04, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.24, L.gh * 0.2, L.gh * 0.5)] };
+      // the clock strikes: beside the clock, across the border of panel 2
+      const dong = { text: "DONG", t0: DONG, t1: 2330, size: 0.13, arc: 7, rot: 0.12 * D, jit: 0.14,
+        at: () => { if (lay.port) return [MG.page.x + MG.page.w * (D > 0 ? 0.24 : 0.76), MG.page.y + L.gh * 0.055];   // upright: the clock is at the edge, so in the open sky over his hat
+          const p = MG.byId.look, q = p.sp(FIN.wx + D * 36, -77); return [q[0] + D * p.z * 21.5 * 1.45, q[1] - p.z * 21.5 * 0.55]; } };
+      // the shot: above the line, ahead of his gun, stretched along it (the Ultimate's is gold: BLAMM)
+      const bang = { text: ULT ? "BLAMM" : "BANG", t0: PH, t1: ULT ? SPLASH0 + 130 : PH + 560, size: 0.24, arc: 10, rot: -0.07 * D, fill: ULT ? GOLD : COL, stretch: { ang: D > 0 ? 0 : Math.PI, k: 0.35 },
+        at: () => { const p = MG.byId.strike, q = p.sp(FIN.wx + D * 80, -104); return [q[0], q[1]]; } };
+      // he blows the smoke off the barrel
+      const fuu = { text: "fuu", t0: BLOW + 20, t1: MT.AFTER + 880, size: 0.085, jit: 0.12, rot: -0.14 * D, space: 0.1, fill: "#ffffff",   // (white as on the normal page: the engine makes the unfilled words after the hit gold)
+        at: (t) => { const p = MG.byId.after, m = p.sp(...gnsMuzzle(Math.min(t, BLOW + 60))); return [m[0] + D * p.z * 30, m[1] - p.z * 4]; } };
+      if (!ULT) return [hitWord, dong, bang, fuu];
+      // five BAMs fanned round the muzzle, one per shot, each in the direction of its shot (the angle opened up a little so the five do not overlap)
+      const bams = FAN_A.map((a, i) => ({ text: "BAM", t0: fanT(i), t1: fanT(i) + 400, size: 0.09, arc: 8, rot: a * 1.2 * D, jit: 0.12,
+        at: () => { const p = MG.byId.strike, m = fan[i].m, an = a * 3.4, r = 30; const q = p.sp(m[0] + D * (r * Math.cos(an) + 6), m[1] + r * Math.sin(an) * 1.6 - 4); return [q[0], q[1]]; } }));
+      return [hitWord, dong].concat(bams, [bang, fuu]);
     },
-    start(g) { dust = []; weed = null; hat = null; hatKind = "sprout"; },
+    start(g) { gnsMode(false); dust = []; weed = null; hat = null; hatKind = "sprout"; fan = []; poster = null; posterStage = 0; gnsPort = 0; loserCopy = null; },
     build(lay) {
+      gnsMode(ULT);
       const r = mgRng(1873);
       dust = Array.from({ length: MG.slow ? 22 : 40 }, () => ({ x: r() * (L.gw + 40), y: r() * L.gh, v: 70 + r() * 120, s: 0.8 + r() * 1.3, ph: r() * 6.28, dash: r() < 0.35 ? 6 + r() * 14 : 0 }));
       const cos = L_().spec.look.costume;
       hatKind = cos === "gunslinger" ? "cowboy" : cos === "wizard" ? "wizard" : "sprout";
       const m = gnsMuzzle(HIT); shotX0 = m[0]; shotY = m[1];
+      if (ULT) gnsFanBuild();
     },
     step(t, k) {
       const W = W_();
-      W.x = FIN.wx - FIN.dir * 3 * gnsKick(t);   // the recoil
+      W.x = FIN.wx - FIN.dir * 3 * gnsKick(t) - (ULT && t < HIT ? FIN.dir * 1.2 * gnsFanAim(t)[1] : 0);   // the recoil (a fanned shot kicks less)
       if (t > 2800 && weed) weed = null;
+      if (ULT) gnsPosterStep(t);
       MG.pt = t;
     },
     pose(P, sk, t, role, p) {
@@ -10406,16 +10738,16 @@ MANGA.gunslinger = (function () {
       if (role === "w") {
         const low = [w * 0.9, -leg], aim = [w * 1.02, -leg - tor * 0.64], lowB = [-w * 0.72, -leg - tor * 0.06];
         P.gunB = Math.PI - 1.15; P.exK = 1;
-        if (t < HIT) {   // the stand-off: hands over the holsters
+        if (t < MT.HIT) {   // the stand-off: hands over the holsters
           const k = ease(fe(MT.LOOK, MT.LOOK + 400, t)), lift = Math.sin(Math.PI * fe(2050, 2600, t)) * 1.2;
           P.crouch = 0.22 * k; P.lean = 0.06 * k; P.holdAng = 0.95;
           P.expr = t >= DONG ? "grin" : undefined;
           return { hF: [low[0], low[1] - lift], hB: lowB };
         }
-        if (t < MT.AFTER) {   // the draw, in one frame: the arm out, the barrel level; then the kick
-          const kick = gnsKick(t);
-          P.crouch = 0.12; P.lean = -0.04 - 0.12 * kick; P.holdAng = -kick * 0.6; P.expr = "grin";
-          if (t < HIT + 50) P.shotF = Math.floor((t - HIT) / FMS);
+        if (t < MT.AFTER) {   // the draw, in one frame: the arm out, the barrel level; then the kick (the Ultimate: the draw is the first of five fanned shots, the barrel steps with each)
+          const [ang, kick, sf] = gnsAim(t);
+          P.crouch = 0.12; P.lean = -0.04 - 0.12 * kick; P.holdAng = ang; P.expr = "grin";
+          if (sf >= 0) P.shotF = sf;
           return { hF: [aim[0] - kick * 2, aim[1] - kick * 6], hB: lowB };
         }
         // the aftermath: the barrel up to his mouth, he blows, grins, and lowers it back to the holster
@@ -10428,11 +10760,13 @@ MANGA.gunslinger = (function () {
         P.expr = blowing ? undefined : "grin"; P.mouth = blowing ? 0.75 : 0;
         return { hF, hB: lowB };
       }
+      // the Ultimate's poster portrait: the mugshot, terror (gnsPort 1) or the X eyes (2), frozen, upright
+      if (gnsPort) { P.expr = gnsPort === 2 ? "ko" : "terror"; P.exK = 1; P.mouth = gnsPort === 2 ? 1 : 0.35; return { hF: [w * 0.75, -leg - tor * 0.42], hB: [-w * 0.7, -leg - tor * 0.42] }; }
       // the loser: terror (the pupils shrink in the inset), then flung, spinning
       const fly = t >= FIN.launch;
       P.expr = fly ? "ko" : "terror"; P.exK = fe(MT.INSET, MT.STRIKE, t);
       if (!fly) {
-        P.lean = Math.sin(t * 0.025) * 0.03 * fe(2000, 2400, t); P.mouth = 0.3;
+        P.lean = Math.sin(t * 0.025) * 0.03 * fe(2000, 2400, t) - 0.12 * gnsFlinch(t); P.mouth = 0.3;
         return { hF: [w * 0.75, -leg - tor * 0.42], hB: [-w * 0.7, -leg - tor * 0.42] };
       }
       P.lean = -0.5; P.mouth = 1; P.spin = ((t - FIN.launch) / FMS) * 0.3;
@@ -10479,11 +10813,7 @@ MANGA.gunslinger = (function () {
       cueOnce("beat1", 2420, () => Cin.go(() => { Cin.sub(62, 40, 0.16, 0.45); Cin.sub(60, 38, 0.16, 0.35); }));
       cueOnce("beat2", 2620, () => Cin.go(() => { Cin.sub(62, 40, 0.16, 0.5); }));
       cueOnce("cock", 2700, () => Cin.go(() => { Cin.clack(); Cin.tick(2200); }));
-      cueOnce("shot", HIT, () => Cin.go(() => {   // the gunshot: a crack, a body, two echoes off the mesas, a ricochet
-        Cin._noise(0.05, 0.7, 9000, 3500, "highpass", 0.7); Cin._noise(0.3, 0.8, 5200, 500, "lowpass", 0.7); Cin.sub(120, 40, 0.35, 0.7);
-        Cin._noise(0.3, 0.22, 1600, 400, "lowpass", 0.7, 0.32); Cin._noise(0.32, 0.11, 1300, 350, "lowpass", 0.7, 0.68);
-        Cin._osc("sine", 3600, 1500, 0.42, 0.045, 0.006, 0.12);
-      }));
+      cueOnce("shot", HIT, () => Cin.go(() => gnsBang(1, true)));   // the gunshot: a crack, a body, two echoes off the mesas, a ricochet
       cueOnce("fly", FIN.launch, () => Cin.go(() => Cin.whoosh(0.35, -0.6, 0.9, 0.42)));
       cueOnce("blow", BLOW, () => Cin.go(() => Cin._noise(0.5, 0.14, 1300, 700, "bandpass", 0.8)));
       cueOnce("land", LAND, () => Cin.go(() => Cin._noise(0.08, 0.12, 900, 400, "lowpass", 0.8)));
@@ -10491,6 +10821,22 @@ MANGA.gunslinger = (function () {
       cueOnce("ching", LOWER + 420, () => Cin.go(() => Cin.chime(2093)));
     },
   };
+  /* ---- the Ultimate page, "Wanted": the same script with its own panels, cues and times (the engine plays MANGA.gunslinger.ulti when the KO is the Dead Eye ulti) ---- */
+  S_.ulti = Object.assign({}, S_, {
+    name: "Wanted", hit: 3400, pop: 3550,   // the sixth shot is the lethal one; the loser is launched when its gold impact frame is over (the three frames are 3400-3550)
+    panels: panelsU,
+    start(g) { S_.start(g); gnsMode(true); },
+    end() { poster = null; loserCopy = null; fan = []; },   // the poster's lettering and portrait canvases
+    cues(t) {
+      S_.cues(t);
+      for (let i = 0; i < 5; i++) cueOnce("fan" + i, fanT(i), () => Cin.go(() => gnsBang(0.6, false)));   // the five fanned shots
+      cueOnce("hammer", 3330, () => Cin.go(() => { Cin.clack(); Cin.tick(2200); }));   // the drop: the hammer back
+      cueOnce("flap", SPLASH0, () => Cin.go(() => Cin._noise(0.3, 0.12, 300, 900, "bandpass", 0.9)));   // the poster flaps down
+      cueOnce("nail0", SPLASH0 + 40, () => Cin.go(() => Cin.clack())); cueOnce("nail1", SPLASH0 + 80, () => Cin.go(() => Cin.clack()));   // nailed
+      HOLE_T.forEach((h, i) => cueOnce("hole" + i, h, () => Cin.go(() => { Cin.clack(); Cin.tick(900); })));
+      cueOnce("gold", GOLD_T, () => Cin.go(() => { gnsBang(0.5, false); Cin.chime(1568); Cin.tick(2600); }));
+    },
+  });
   return S_;
 })();
 
@@ -11137,11 +11483,17 @@ MANGA.odin = (function () {
    2000 inset on the loser's eyes (a sun in each pupil) . 2180 she shoots straight up through the top border of panel 2 . 2350 panel 3 "the strike": the loser alone,
    looking up, vertical speed lines; 2690-2900 the comet comes straight down the page (the one fast moment), 2900 the hit (impact frames, a six-pointed ink star),
    2990 the loser is launched burning along the real direction . 3500 panel 4: she crouches in the dust, wings cool from fire to ink, the grin, feathers settle.
+   The Ultimate KO (Solar Dive), "Supernova": MANGA.phoenix.ulti extends this script (design: ultimates/fable-ultimate-pages.md section 3). The same page to 2690, then a bigger
+   comet with a gold core and a tail to the top of the page, three impact frames (the gold one holds the star at 2x), the NOVA word, 3050 the loser leaves as ash (a black
+   silhouette erased from the feet up, flakes along the launch direction), 3250 panel 5: the white page (a huge sun disc with 12 gold wedges, she stands wings full as a white
+   silhouette with a gold edge, the ink bleeds back 3400-3800, a heap of ash with two eyes, ash falling), SUPERNOVA at 3600, 4700 panel 4 (the same aftermath, MT.AFTER + offset).
    Script fields: see game/manga/dragon.js. Everything here is prefixed phx / kept inside this closure. */
 MANGA.phoenix = (function () {
   const COL = "#ff7a3d", MIDC = "#ffb45e", CORE = "#fff3c4", ASH = "#2c2933", ASH2 = "#57525f";
   const T = { LAUNCH: 2180, DIVE: 2650, LAND: 3000 };
   let spr = null, fth = [], spk = [], torn = false, topWY = -220, hitY = -64, cmt = null;
+  let ult = false, ashF = [], inSplash = false;   // ult: this play is the Ultimate page (set by start())
+  const SPL = () => MT.SPLASH || 3250;
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
   const wcol = () => { const W = W_(); return (W && W.pal && W.pal.accent) || COL; };
@@ -11172,7 +11524,7 @@ MANGA.phoenix = (function () {
     if (t < T.LAUNCH) return [FIN.wx, -8 * ease(fe(1700, 2150, t)) - 1.3 * Math.sin(t * 0.004) * fe(1700, 2000, t)];
     if (t < T.DIVE) { const s = (t - T.LAUNCH) / 1000; return [FIN.wx, Math.max(-900, -8 - 2000 * s * s)]; }
     if (t < H0) { const k = Math.pow(fe(T.DIVE, H0, t), 1.06); return [FIN.lx - D * 4, lerp(topWY + 6, hitY, k) + hh * ds]; }
-    if (t < T.LAND) { const k = easeOut(fe(H0, T.LAND, t)); return [FIN.lx - D * (4 + 6 * k), lerp(hitY + hh * DIVE_SC, 0, k)]; }
+    if (t < T.LAND) { const k = easeOut(fe(H0, T.LAND, t)); return [FIN.lx - D * (4 + 6 * k), lerp(hitY + hh * DSC(), 0, k)]; }
     return [FIN.lx - D * 10, 0];
   }
   // her head where she stands (the sun and the glow stay put when she has shot up out of the panel)
@@ -11181,8 +11533,8 @@ MANGA.phoenix = (function () {
     const h = pt(W, Math.min(t, 2100), "head"); W.x = ox; W.y = oy; return h;
   }
   // she is bigger than life in the dive (scale about her feet) and shrinks back as she lands
-  const DIVE_SC = 1.28;
-  const diveSc = (t) => (t < T.DIVE ? 1 : t < FIN.hit ? DIVE_SC : lerp(DIVE_SC, 1, easeOut(fe(FIN.hit, T.LAND, t))));
+  const DSC = () => (ult ? 1.4 : 1.28);
+  const diveSc = (t) => (t < T.DIVE ? 1 : t < FIN.hit ? DSC() : lerp(DSC(), 1, easeOut(fe(FIN.hit, T.LAND, t))));
   const diving = (t) => t >= T.DIVE && t < FIN.hit + 90;
   const burstPt = () => [FIN.lx - FIN.dir * 6, -L_().s.h * 0.55];
 
@@ -11251,12 +11603,13 @@ MANGA.phoenix = (function () {
         const m = i - (wg.n - 1) / 2, ang = wg.ang + m * wg.gap, L = wg.L * (1 - Math.abs(m) * 0.1) * (1 + 0.035 * Math.sin(t * 0.017 + i * 1.7 + wg.n)), wd = L * 0.19;
         const ca = Math.cos(ang), sa = Math.sin(ang), nx = -sa, ny = ca, ax = wg.a[0], ay = wg.a[1], tx = ax + ca * L, ty = ay + sa * L;
         const leaf = (k, w2) => { const l = L * k, ex = ax + ca * l, ey = ay + sa * l; c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(ax + ca * l * 0.5 + nx * wd * w2, ay + sa * l * 0.5 + ny * wd * w2, ex, ey); c.quadraticCurveTo(ax + ca * l * 0.5 - nx * wd * w2 * 0.85, ay + sa * l * 0.5 - ny * wd * w2 * 0.85, ax, ay); };
+        if (o.sil) { leaf(1, 1); c.fillStyle = o.sil; c.fill(); tips.push([tx, ty, i]); continue; }
         leaf(1, 1); c.fillStyle = wg.dk ? phxMix(base, "#000000", wg.dk) : base; c.fill(); c.lineWidth = ink; c.strokeStyle = MG_INK; c.stroke();
         leaf(0.84, 0.58); c.fillStyle = mid; c.fill();
         leaf(0.6, 0.28); c.fillStyle = core; c.fill();
         tips.push([tx, ty, i]);
       }
-      if (o.flame > 0.02) for (const [tx, ty, i] of tips) {
+      if (o.flame > 0.02 && !o.sil) for (const [tx, ty, i] of tips) {
         const f = 0.7 + 0.3 * Math.sin(t * 0.03 + i * 2.1), h = (9 + (i % 3) * 3.5) * o.flame * f;
         phxTongue(c, tx, ty + 1, h, 2.6, Math.sin(t * 0.021 + i * 1.3) * 2.2, base, core, ink * 0.8);
       }
@@ -11407,7 +11760,7 @@ MANGA.phoenix = (function () {
 
   /* ---- the comet: a wedge of fire with her at its point ---- */
   // a flame wedge: tip at (x, y) pointing along `ang`, trailing back `len`, half-width `wd` near the tip; ink edge, accent body, pale core, tongues along the edges
-  function phxWedge(c, x, y, ang, len, wd, t, sil, ink) {
+  function phxWedge(c, x, y, ang, len, wd, t, sil, ink, core) {
     if (len < 4) return;
     const N = 14, ca = Math.cos(ang), sa = Math.sin(ang);
     const edge = (sgn, g) => {
@@ -11424,12 +11777,12 @@ MANGA.phoenix = (function () {
     c.lineJoin = "miter"; c.lineWidth = ink; c.strokeStyle = MG_INK; c.fillStyle = COL; mgPoly(c, poly(1)); c.fill(); c.stroke();
     c.fillStyle = MIDC; mgPoly(c, poly(0.66)); c.fill();
     const a = edge(1, 0.3), b = edge(-1, 0.3).reverse(), q = a.slice(5, 12).concat(b.slice(b.length - 12, b.length - 5));
-    c.fillStyle = "rgba(255,243,196,0.95)"; mgPoly(c, q); c.fill();
+    c.fillStyle = core || "rgba(255,243,196,0.95)"; mgPoly(c, q); c.fill();
     // tongues streaming off the edges, backwards
     for (let i = 1; i <= 5; i++) for (const sgn of [1, -1]) {
       const s = i / 6.5, h = wd * Math.pow(1 - s, 0.8) * Math.min(1, 0.2 + s * 7) * 0.92, bx = x - ca * len * s - sa * h * sgn, by = y - sa * len * s + ca * h * sgn;
       c.save(); c.translate(bx, by); c.rotate(Math.atan2(-ca, sa) + sgn * 0.18);
-      phxTongue(c, 0, 0, len * 0.13 * (0.7 + 0.3 * Math.sin(t * 0.04 + i * 3 + sgn)), 2.4 + wd * 0.04, 0, COL, MIDC, ink * 0.35);
+      phxTongue(c, 0, 0, Math.min(len, 230) * 0.13 * (0.7 + 0.3 * Math.sin(t * 0.04 + i * 3 + sgn)), 2.4 + wd * 0.04, 0, COL, MIDC, ink * 0.35);
       c.restore();
     }
   }
@@ -11437,8 +11790,8 @@ MANGA.phoenix = (function () {
   function comet(t) {
     if (t < T.DIVE || t >= T.LAND + 60) return null;
     const W = W_(), [x, y] = wPos(t), hh = W.s.h / 2 * diveSc(t);
-    const len = 210 * (1 - easeIn(fe(FIN.hit, FIN.hit + 150, t))) * easeOut(fe(T.DIVE, T.DIVE + 120, t));
-    return { x, cy: y - hh, tipY: y - hh + hh * 0.85, len };
+    const tipY = y - hh + hh * 0.85, len = (ult ? Math.max(210, tipY - topWY + 24) : 210) * (1 - easeIn(fe(FIN.hit, FIN.hit + 150, t))) * easeOut(fe(T.DIVE, T.DIVE + 120, t));
+    return { x, cy: y - hh, tipY, len };
   }
   // the winner's dive: spin so that her face leads, arms and feet swept back
   const DIVE_SPIN = 3.0;
@@ -11447,12 +11800,12 @@ MANGA.phoenix = (function () {
     if (!cm) return;
     pn.world(c);
     const wd = W.s.w * 0.92 * diveSc(t), ink = Math.max(2, 5.5 / pn.z);
-    phxWedge(c, cm.x, cm.tipY, Math.PI / 2, cm.len, wd, t, sil, ink);
+    phxWedge(c, cm.x, cm.tipY, Math.PI / 2, cm.len, wd, t, sil, ink, ult ? MG_GOLD : null);
     if (sil) return;
     // the smear: two earlier copies of her above
     if (!MG.slow && t < FIN.hit + 20) for (const [dt, al] of [[60, 0.16], [30, 0.34]]) {
       const ox = W.x, oy = W.y, [gx, gy] = wPos(t - dt); W.x = gx; W.y = gy;
-      mgPuppet(c, pn, W, t - dt, { sc: DIVE_SC, a: al, tone: false, light: dirAng(-1.57) });
+      mgPuppet(c, pn, W, t - dt, { sc: DSC(), a: al, tone: false, light: dirAng(-1.57) });
       W.x = ox; W.y = oy;
     }
     mgPuppet(c, pn, W, t, { sc: diveSc(t), light: dirAng(-1.57), tint: 0.26 });
@@ -11505,6 +11858,7 @@ MANGA.phoenix = (function () {
   function drawLoserFn(c, pn, t) {
     const Lp = L_(), ang = Math.atan2(FIN.ldy, FIN.ldx), fl = t >= FIN.launch, burn = fe(FIN.hit, FIN.launch + 60, t);
     const hh = Lp.s.h * 0.5, bo = FIN.beam ? 1 - fe(FIN.beam.t0, FIN.beam.t0 + 150, t) : 1;
+    if (ult && fl) { phxAshLoser(c, pn, t); return; }   // the Ultimate: no fire, the loser leaves as ash
     c.save(); pn.world(c);
     // the tail of fire behind the flying loser
     if (fl && bo > 0.02) {
@@ -11549,19 +11903,127 @@ MANGA.phoenix = (function () {
     c.beginPath(); c.arc(hd[0], hd[1], R * 0.82, 0, 7); c.fillStyle = "#ffffff"; c.fill();
     ground(c, pn, t, 1);
     pn.world(c);
-    const k = fe(MT.AFTER, 3900, t);
-    dust(c, pn, W.x, fe(MT.AFTER, 4100, t), 1 - fe(3900, 4300, t));
-    const heat = 1 - ease(fe(MT.AFTER, 3900, t));
-    phxWinner(c, pn, t, { light: dirAng(-0.8), spread: 0.7, droop: ease(fe(MT.AFTER + 100, 3950, t)), heat, flame: heat * 0.8 });
+    const A = MT.AFTER;
+    dust(c, pn, W.x, fe(A, A + 600, t), 1 - fe(A + 400, A + 800, t));
+    const heat = 1 - ease(fe(A, A + 400, t));
+    phxWinner(c, pn, t, { light: dirAng(-0.8), spread: 0.7, droop: ease(fe(A + 100, A + 450, t)), heat, flame: heat * 0.8 });
     // smoke curls off the cooling wings: tone puffs rising and fading
     pn.screen(c);
     if (heat < 0.98) for (let i = 0; i < 4; i++) {
-      const q = ((t - 3560 - i * 120) / 700), a = (1 - q) * (q > 0 && q < 1 ? 1 : 0) * 0.9; if (a <= 0.02) continue;
+      const q = ((t - (A + 60) - i * 120) / 700), a = (1 - q) * (q > 0 && q < 1 ? 1 : 0) * 0.9; if (a <= 0.02) continue;
       const px = hd[0] - D * (pn.w * (0.12 + 0.05 * i)) + Math.sin(q * 5 + i) * 7, py = hd[1] - pn.h * (0.05 + 0.5 * q), r = 7 + 12 * q;
       c.globalAlpha = a; c.beginPath(); c.arc(px, py, r, 0, 7); c.fillStyle = MG_PAPER; c.fill(); c.lineWidth = 2.2; c.strokeStyle = MG_INK; c.stroke();
       phxTone(c, pn, 5, 0.45, (g) => g.arc(px + r * 0.25, py + r * 0.2, r * 0.7, 0, 7)); c.globalAlpha = 1;
     }
   }
+
+  /* ---- the Ultimate: the loser leaves as ash ---- */
+  // a black silhouette, erased from the trailing end forward (the feet, for a launch straight up) by a plane that sweeps the body 3050-3300 along the launch direction
+  function phxAshLoser(c, pn, t) {
+    const Lp = L_(), k = easeOut(fe(FIN.launch, FIN.launch + 250, t));
+    if (k >= 1 || FIN.out || Lp.state === "gone") return;
+    const al = Math.hypot(FIN.ldx, FIN.ldy) || 1, dx = FIN.ldx / al, dy = FIN.ldy / al, px = -dy, py = dx, hh = Lp.s.h * 0.5, R = hh * 1.25;
+    const cx = Lp.x, cy = Lp.y - hh, s = -R + 2 * R * k, B = 420;   // kept: the points whose offset from the centre along d is at least s
+    c.save(); pn.world(c);
+    c.beginPath();
+    c.moveTo(cx + dx * s + px * B, cy + dy * s + py * B); c.lineTo(cx + dx * s - px * B, cy + dy * s - py * B);
+    c.lineTo(cx + dx * (s + B) - px * B, cy + dy * (s + B) - py * B); c.lineTo(cx + dx * (s + B) + px * B, cy + dy * (s + B) + py * B);
+    c.closePath(); c.clip();
+    mgPuppet(c, pn, Lp, t, { sc: 1, sil: "#000000" });
+    c.restore();
+  }
+  // 60 ash flakes (2-4 px squares), born on the body while the plane sweeps it, streaming off along the launch direction and slowing down; drawn over the page (css px, o is in the page transform)
+  function phxAshFlakes(o, t) {
+    if (!ult || !ashF.length || t < FIN.launch || t > FIN.launch + 720) return;
+    const pn = MG.byId[S_.flight], hh = L_().s.h * 0.5, al = Math.hypot(FIN.ldx, FIN.ldy) || 1, dx = FIN.ldx / al, dy = FIN.ldy / al, px = -dy, py = dx;
+    for (let i = 0; i < ashF.length; i++) {
+      if (MG.slow && (i & 1)) continue;
+      const f = ashF[i], tau = (t - (FIN.launch + f.tb)) / 1000;
+      if (tau < 0 || tau > f.life) continue;
+      const [lx, ly] = loserAt(FIN.launch + f.tb), s = f.v * 0.4 * (1 - Math.exp(-tau / 0.4)), fan = f.lat * s * 0.5;
+      const wx = lx + dx * (s + f.a * hh) + px * (fan + f.b * 20), wy = ly - hh + dy * (s + f.a * hh) + py * (fan + f.b * 20) + 150 * tau * tau;
+      const [sx, sy] = pn.sp(wx, wy), a = Math.pow(1 - tau / f.life, 0.7);
+      if (sx < -8 || sx > L.gw + 8 || sy < -8 || sy > L.gh + 8) continue;
+      o.globalAlpha = a * 0.8; o.fillStyle = "#f1ece2"; o.fillRect(sx - f.z / 2 - 1, sy - f.z / 2 - 1, f.z + 2, f.z + 2);   // a paper edge, so the grey squares read on the dark sky
+      o.globalAlpha = a; o.fillStyle = f.dk ? ASH : ASH2; o.fillRect(sx - f.z / 2, sy - f.z / 2, f.z, f.z);
+    }
+    o.globalAlpha = 1;
+  }
+
+  /* ---- the Ultimate, panel 5: the white page ---- */
+  // where she stands on the white page, and where the camera looks (between her and the loser's heap)
+  const splDx = () => (L.portrait ? 24 : 46);
+  const splX = () => FIN.lx - FIN.dir * splDx();
+  // the sun: centred on her landing point (the ground under her), a huge rising sun that fills the page
+  function phxSunGeo(pn, t) {
+    const [cx, cy] = pn.p(splX(), 0), t0 = SPL(), grow = 0.8 + 0.2 * easeOut(fe(t0, t0 + 260, t));
+    return { cx, cy, R: Math.min(pn.h * 0.72, pn.w * 0.95) * grow };
+  }
+  // the heap of ash where the loser stood, two eyes in it that open at 3800 and blink at 4100 and 4500
+  function phxHeap(c, pn, t) {
+    const k = easeOut(fe(SPL() + 80, 3880, t));
+    if (k <= 0.01) return;
+    const x = FIN.lx, w = 16 * k, h = 12 * k, ink = Math.max(1.6, 4 / pn.z), D = FIN.dir;
+    pn.world(c);
+    c.beginPath(); c.moveTo(x - w, 0.5);
+    c.bezierCurveTo(x - w * 0.95, -h * 0.5, x - w * 0.5, -h * 0.85, x - w * 0.12, -h);
+    c.bezierCurveTo(x + w * 0.14, -h * 1.12, x + w * 0.52, -h * 0.72, x + w * 0.66, -h * 0.5);
+    c.bezierCurveTo(x + w * 0.88, -h * 0.3, x + w * 1.0, -h * 0.12, x + w, 0.5); c.closePath();
+    c.fillStyle = ASH2; c.fill(); c.lineWidth = ink; c.lineJoin = "round"; c.strokeStyle = MG_INK; c.stroke();
+    c.save(); c.clip(); c.fillStyle = ASH; c.beginPath(); c.moveTo(x - w * 1.1, 1); c.lineTo(x - w * 1.1, -h * 0.28); c.lineTo(x + w * 1.1, -h * 0.4); c.lineTo(x + w * 1.1, 1); c.fill(); c.restore();
+    c.fillStyle = MG_INK; for (const [fx, fy, fr] of [[-0.55, -0.32, 0.7], [0.4, -0.2, 0.55], [0.1, -0.88, 0.5], [0.68, -0.4, 0.45]]) { c.beginPath(); c.arc(x + w * fx, h * fy, fr * k * 1.1, 0, 7); c.fill(); }
+    const op = fe(3800, 3900, t);
+    if (op > 0) {
+      const closed = (t >= 4100 && t < 4175) || (t >= 4500 && t < 4575), er = 2.7 * k;
+      for (const sg of [-1, 1]) {
+        const ex = x + sg * w * 0.3, ey = -h * 0.58;
+        if (closed) { c.beginPath(); c.moveTo(ex - er, ey); c.quadraticCurveTo(ex, ey + er * 0.55, ex + er, ey); c.lineWidth = ink * 0.9; c.lineCap = "round"; c.strokeStyle = MG_INK; c.stroke(); continue; }
+        c.beginPath(); c.ellipse(ex, ey, er, er * 1.2 * op, 0, 0, 7); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = ink * 0.75; c.strokeStyle = MG_INK; c.stroke();
+        c.beginPath(); c.arc(ex - D * er * 0.32, ey + er * 0.1, er * 0.5, 0, 7); c.fillStyle = MG_INK; c.fill();
+        c.beginPath(); c.arc(ex - D * er * 0.1, ey - er * 0.25, er * 0.17, 0, 7); c.fillStyle = "#ffffff"; c.fill();
+      }
+    }
+  }
+  // she stands, wings full: a white silhouette with a gold edge (a second print, 3 px off), then the ink bleeds back (3400-3800): the silhouette turns to colour.
+  // The picture of the fighter is a big layer blit, so every pass gets a tight box (her own size, not the 200 x 139 units of a spear fighter) and the silhouettes stop once they are faint.
+  const SPL_BOX = [-54, -86, 54, 6];
+  function phxStand(c, pn, t, bleed) {
+    const W = W_(), ox = W.x, oy = W.y, off = 3 / pn.z, gold = bleed < 0.8, white = bleed < 0.94;
+    W.x = splX(); W.y = 0; inSplash = true;
+    try {
+      if (white) {
+        pn.world(c);
+        if (gold) { W.x += off; W.y += off; c.globalAlpha = 1 - bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: MG_GOLD }); c.globalAlpha = 1; W.x -= off; W.y -= off; }
+        phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: "#ffffff" });
+      }
+      if (bleed > 0) { pn.world(c); c.globalAlpha = bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 1 }); c.globalAlpha = 1; }
+      if (gold) { W.x += off; W.y += off; mgPuppet(c, pn, W, t, { sc: 1, sil: MG_GOLD, a: 1 - bleed, box: SPL_BOX }); W.x -= off; W.y -= off; }
+      if (white) mgPuppet(c, pn, W, t, { sc: 1, sil: "#ffffff", box: SPL_BOX });
+      if (bleed > 0) mgPuppet(c, pn, W, t, { sc: 1, light: dirAng(-1.2), tint: 0.32, a: bleed, box: SPL_BOX });
+    } finally { W.x = ox; W.y = oy; c.globalAlpha = 1; inSplash = false; }
+  }
+  function drawSplash(c, pn, t) {
+    const bleed = fe(3400, 3800, t), sg = phxSunGeo(pn, t), cx = sg.cx, cy = sg.cy, R = sg.R;
+    pn.screen(c);
+    c.fillStyle = bleed > 0.001 ? phxMix("#ffffff", MG_GOLD_PALE, bleed) : "#ffffff"; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4);
+    // 12 gold wedges, wide at the rim, narrowing to a point (half transparent), turning slowly; then the disc with its gold ring (2% of the page height)
+    const far = Math.hypot(pn.w, pn.h) * 1.3, rt = t * 0.00012;
+    c.globalAlpha = 0.5; c.fillStyle = MG_GOLD; c.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = rt + (i / 12) * Math.PI * 2, hb = i % 2 ? 0.075 : 0.12;
+      c.moveTo(cx + Math.cos(a - hb) * R, cy + Math.sin(a - hb) * R); c.lineTo(cx + Math.cos(a) * far, cy + Math.sin(a) * far); c.lineTo(cx + Math.cos(a + hb) * R, cy + Math.sin(a + hb) * R); c.closePath();
+    }
+    c.fill(); c.globalAlpha = 1;
+    c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fillStyle = "#ffffff"; c.fill();
+    const rw = pn.h * 0.02;
+    c.lineWidth = rw; c.strokeStyle = MG_GOLD; c.stroke();
+    c.lineWidth = 2; c.strokeStyle = MG_INK; c.beginPath(); c.arc(cx, cy, R + rw / 2, 0, 7); c.stroke(); c.beginPath(); c.arc(cx, cy, R - rw / 2, 0, 7); c.stroke();
+    ground(c, pn, t, 0);
+    phxHeap(c, pn, t);
+    phxStand(c, pn, t, bleed);
+  }
+  const phxSplashPanel = (port) => mgSplashPanel({ from: "b", paper: "#ffffff", dim: "120,80,6",
+    cam: (t) => ({ wx: splX() + FIN.dir * splDx() * 0.35, wy: -W_().s.h * 0.55 - (port ? 190 : 104) * 0.06, vh: (port ? 190 : 104) * (1 + 0.06 * fe(SPL(), MT.AFTER, t)) }), draw: drawSplash });
 
   /* ---- the script ---- */
   const S_ = {
@@ -11578,7 +12040,8 @@ MANGA.phoenix = (function () {
       ];
     },
     // the loser's stand-in is a copy of a doomed fighter, which draws it half see-through and blinking: here it is solid
-    start() { spr = null; fth = []; spk = []; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    start() { ult = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    end() { spr = null; fth = []; spk = []; ashF = []; },
     build(lay) {
       const r = mgRng(31415), g = L.gw, h = L.gh, port = lay.port;
       torn = false; cmt = null;
@@ -11608,6 +12071,12 @@ MANGA.phoenix = (function () {
       topWY = pn.wy - (pn.cy + pn.py + pn.oy) / pn.z - 6;
       hitY = -L_().s.h * 0.95;
       pn.ox = pn.oy = 0;
+      if (!ult) return;
+      // the Ultimate: ash falls over the white page like the feathers (kind 3: 2-4 px squares), and 60 flakes stream off the loser along the launch direction
+      const na = MG.slow ? 18 : 36;
+      for (let i = 0; i < na; i++) fth.push({ kind: 3, x0: r() * g, y0: r() * h * 0.45, vy: 40 + r() * 60, sw: 5 + r() * 12, ph: r() * 6.28, w: 0.8 + r() * 1.2, tilt: r() * 6.28, sc: 1, sz: 2 + r() * 2, burst: false, t0: SPL() + 40 + r() * 500 });
+      ashF = [];
+      for (let i = 0; i < 60; i++) ashF.push({ tb: 160 * Math.pow(r(), 1.3), v: 110 + r() * 330, a: (r() - 0.5) * 1.6, b: (r() - 0.5) * 2, lat: (r() - 0.5) * 2, life: 0.3 + r() * 0.22, z: 2 + Math.round(r() * 2), dk: r() < 0.55 });
     },
     step(t, k) {
       const W = W_(), Lp = L_();
@@ -11627,7 +12096,11 @@ MANGA.phoenix = (function () {
         P.wingUp = open * 0.5; P.flap = 0.1 + Math.sin(t * 0.006) * 0.06;
         P.lean = -0.3 * ease(fe(1250, 1700, t));
         P.mouth = 0;
-        P.expr = t >= 3600 ? "grin" : t >= T.DIVE && t < T.LAND + 200 ? "rage" : t >= 1250 && t < T.LAUNCH ? "calm" : undefined; P.exK = 1;
+        if (ult && inSplash) {   // the white page: she stands tall, arms up in a V, wings full, eyes closed and calm
+          P.wingUp = 0.9; P.flap = 0.1 + Math.sin(t * 0.004) * 0.05; P.lean = -0.1 + 0.03 * Math.sin(t * 0.003); P.expr = "calm"; P.exK = 1;
+          return { hF: [w * 0.82, -leg - tor * 0.8], hB: [-w * 0.8, -leg - tor * 0.74] };
+        }
+        P.expr = t >= MT.AFTER + 100 ? "grin" : t >= T.DIVE && t < T.LAND + 200 ? "rage" : t >= 1250 && t < T.LAUNCH ? "calm" : undefined; P.exK = 1;
         // the lift-off and the rocket up: arms back, feet together, wings beating
         if (t >= T.LAUNCH && t < T.DIVE) { P.lean = 0; P.flap = Math.sin(t * 0.05) * 0.8; return { hF: [-w * 0.25, -leg - tor * 0.25], hB: [-w * 0.35, -leg - tor * 0.25], fF: [w * 0.05, -leg * 0.3], fB: [-w * 0.15, -leg * 0.3] }; }
         if (t >= T.DIVE && t < T.LAND) {
@@ -11639,7 +12112,7 @@ MANGA.phoenix = (function () {
         }
         if (t >= T.LAND) {
           // landed in a crouch, rises at panel 4
-          const up = ease(fe(MT.AFTER + 60, 3950, t));
+          const up = ease(fe(MT.AFTER + 60, MT.AFTER + 450, t));
           P.crouch = 0.45 * (1 - up); P.lean = 0.1 * (1 - up) - 0.05 * up; P.wingUp = 0.5 * (1 - up); P.flap = 0.05;
           return { hF: [w * 0.6, -leg * (1 - up * 0.2) - tor * (0.12 + 0.35 * up)], hB: [-w * 0.55, -leg - tor * (0.1 + 0.3 * up)], fF: [w * 0.5, 0], fB: [-w * 0.35, 0] };
         }
@@ -11668,10 +12141,19 @@ MANGA.phoenix = (function () {
       o.setTransform(DPR, 0, 0, DPR, 0, 0);
       if (spr && t > 700 && t < MT.FADE) {
         const gh = L.gh, gw = L.gw;
-        for (const f of fth) {
+        for (let fi = 0; fi < fth.length; fi++) {
+          const f = fth[fi];
           if (t < f.t0) continue;
+          if (f.kind === 3 && MG.slow && (fi & 1)) continue;
           const s = (t - f.t0) / 1000;
           let x, y, a;
+          if (f.kind === 3) {   // ash: a grey square, falling and turning
+            x = f.x0 + Math.sin(s * f.w + f.ph) * f.sw; y = (((f.y0 + f.vy * s) % (gh + 60)) + gh + 60) % (gh + 60) - 30; a = fe(f.t0, f.t0 + 300, t) * 0.9;
+            a *= 1 - fe(MT.AFTER + 500, MT.AFTER + 900, t);
+            if (a < 0.02 || y < -30 || y > gh + 30 || x < -30 || x > gw + 30) continue;
+            o.globalAlpha = a; o.save(); o.translate(x, y); o.rotate(f.tilt + s * f.w); o.fillStyle = f.sz > 3 ? ASH : ASH2; o.fillRect(-f.sz / 2, -f.sz / 2, f.sz, f.sz); o.restore();
+            continue;
+          }
           if (f.burst) {
             const T0 = 0.8, e = T0 * (1 - Math.exp(-s / T0));
             if (!f.ox) { const pn = MG.byId.look; mgPlace(pn, 2100); const q = pn.p(FIN.wx, -30); f.ox = q[0]; f.oy = q[1] - pn.h * 0.05; pn.ox = pn.oy = 0; }
@@ -11680,7 +12162,7 @@ MANGA.phoenix = (function () {
           } else {
             x = f.x0 + Math.sin(s * f.w + f.ph) * f.sw; y = (((f.y0 + f.vy * s) % (gh + 60)) + gh + 60) % (gh + 60) - 30; a = fe(700, 1100, t) * 0.8;
           }
-          a *= 1 - fe(4000, 4400, t);
+          a *= 1 - fe(MT.AFTER + 500, MT.AFTER + 900, t);
           if (a < 0.02 || y < -30 || y > gh + 30 || x < -30 || x > gw + 30) continue;
           const sp_ = spr[f.kind], flip = 0.35 + 0.65 * Math.abs(Math.cos(s * f.w * 1.6 + f.ph));
           o.globalAlpha = a; o.save(); o.translate(x, y); o.rotate(f.tilt + Math.sin(s * f.w + f.ph) * 0.9); o.scale(f.sc, f.sc * flip);
@@ -11688,6 +12170,7 @@ MANGA.phoenix = (function () {
         }
         o.globalAlpha = 1;
       }
+      phxAshFlakes(o, t);
       if (t > FIN.launch && t < FIN.launch + 420) {
         const Lp = L_(), pn = MG.byId.strike, a = 1 - fe(FIN.launch + 200, FIN.launch + 420, t);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
@@ -11707,7 +12190,7 @@ MANGA.phoenix = (function () {
       mgPuppet(o, pn, W, FIN.hit + 10, { sc: diveSc(FIN.hit + 10), sil });
       mgPuppet(o, pn, Lp, FIN.hit + 10, { sc: 1, sil });
       pn.world(o);
-      const [bx, by] = burstPt(); phxStar6(o, bx, by, 40, 0.3, sil, null);
+      const [bx, by] = burstPt(); phxStar6(o, bx, by, ult && sil === MG_INK ? 80 : 40, 0.3, sil, null);   // the Ultimate's third (gold) frame: the star at 2x
       o.restore();
     },
     cues(t) {
@@ -11720,8 +12203,15 @@ MANGA.phoenix = (function () {
       cueOnce("stab", this.hit, () => Cin.go(() => { Cin.stab(196, 0.8); Cin.rumble(0.5); }));
       cueOnce("burn", FIN.launch, () => Cin.go(() => { Cin.whoosh(0.35, -0.9, 0.9, 0.5); Cin.sub(66, 30, 0.3, 0.5); }));
       cueOnce("thud", MT.AFTER, () => Cin.go(() => { Cin.sub(80, 36, 0.3, 0.5); Cin._noise(0.18, 0.3, 900, 200, "lowpass"); }));
-      cueOnce("cool", 3620, () => Cin.go(() => Cin._noise(0.6, 0.12, 1800, 600, "bandpass", 1.2)));
-      cueOnce("chimeEnd", 3960, () => Cin.go(() => Cin.chime(880)));
+      cueOnce("cool", MT.AFTER + 120, () => Cin.go(() => Cin._noise(0.6, 0.12, 1800, 600, "bandpass", 1.2)));
+      cueOnce("chimeEnd", MT.AFTER + 460, () => Cin.go(() => Cin.chime(880)));
+      if (!ult) return;
+      cueOnce("riser", T.DIVE - 10, () => Cin.go(() => Cin.riser(0.25, 0.3)));
+      cueOnce("embers", FIN.launch, () => Cin.go(() => Cin._noise(0.4, 0.2, 2600, 900, "lowpass")));
+      cueOnce("nova", SPL() + 50, () => Cin.go(() => { Cin.shimmer(880, 1.6); Cin.sub(50, 40, 1.2, 0.3); }));
+      cueOnce("supernova", 3600, () => Cin.go(() => Cin.taiko(0.8)));
+      cueOnce("blink1", 4100, () => Cin.go(() => Cin.tick(2600)));
+      cueOnce("blink2", 4500, () => Cin.go(() => Cin.tick(2600)));
     },
   };
   // she rockets up out of panel 2: drawn over the borders, wings still beating
@@ -11730,6 +12220,31 @@ MANGA.phoenix = (function () {
     const k = fe(T.LAUNCH, T.DIVE, t);
     phxWinner(o, pn, t, { light: dirAng(-1.75), spread: lerp(1, 0.55, easeOut(fe(T.LAUNCH, T.LAUNCH + 200, t))), heat: 1, flame: 1 });
   }
+  /* ---- the Ultimate page, "Supernova": the same script, with the changes of the design (MT is the Ultimate table while it plays: AFTER 4700, SPLASH 3250) ---- */
+  S_.ulti = Object.assign({}, S_, {
+    name: "Supernova", pop: 3050,   // the launch waits for the gold impact frame
+    start(g) { S_.start(g); ult = true; },
+    // the KO beam where the loser left the screen is cut short once the white page is in (it would run through her for another half second)
+    after(t) { if (FIN.beam && t >= SPL() + 120 && FIN.beam.t0 > -1e5) FIN.beam.t0 = -1e6; },
+    panels(lay) {
+      const ps = panels(lay), inset = ps.find((q) => q.id === "inset");   // (the white page is opaque: the panels under it are not drawn once it has slid in)
+      inset.freeze = MT.STRIKE + 130;            // the strike panel has slid over it by then: drawn once, then a bitmap
+      ps.splice(ps.length - 1, 0, phxSplashPanel(lay.port));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, mul = lay.port ? 0.5 : 1, P3 = () => MG.byId.strike;
+      // NOVA takes the place of DOOOM
+      ws[3] = { text: "NOVA", t0: FIN.hit + 95, t1: 3420, size: 0.24, mul, arc: 9, fill: MG_GOLD, rot: -0.07 * D, at: () => { const p = P3(), hw = phxHalf("NOVA", 0.24, mul); return [clamp(p.cx - D * p.w * 0.06, hw + 4, L.gw - hw - 4), p.y0 + p.h * 0.2 + p.oy]; } };
+      // SUPERNOVA across the sun's upper rim (a nine-letter word has to fit the upright page)
+      const ms = lay.port ? Math.min(0.5, 0.86 * L.gw / (9 * 0.2 * L.gh * 0.72)) : 1;
+      ws.push({ text: "SUPERNOVA", t0: 3600, t1: MT.CARD + 120, size: 0.2, mul: ms, arc: 5, fill: MG_GOLD, rot: -0.05 * D, at: (t) => {
+        const p = MG.byId.splash, hw = phxHalf("SUPERNOVA", 0.2, ms); mgPlace(p, t);
+        const g = phxSunGeo(p, t); return [clamp(g.cx, hw + 4, L.gw - hw - 4), g.cy - g.R * 0.94 + p.oy];
+      } });
+      return ws;
+    },
+  });
   return S_;
 })();
 
@@ -12344,17 +12859,32 @@ MANGA.reaper = (function () {
    3000 the loser comes apart along the cut, both halves launched along the real direction . 3500 panel 4: he sheathes (click), turns away,
    the colour floods back from the blade (a growing circle), the petals turn pink.
    Script fields: col, name, hit, pop, flight, noImpact, panels(lay), words(lay), build(lay), start(g), step(t, k), pose(P, sk, t, role, p), after(t), over(o, t),
-   cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). */
+   cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt().
+   ULTIMATE: "Hundred Petals" = MANGA.samurai.ulti (S_.ulti, below the script; design: ultimates/fable-ultimate-pages.md section 1), played when the KO hit is his Ultimate
+   (Thousand Cuts), on the long timeline MT_U (see manga.js). The same page to 2350; 2560 the dash through, three ghosts along the path; 2600-2780 nothing moves, the loser
+   trembles; 2880 the hand starts the sheath; 2900 the click is the cut: three impact frames (black, white, gold: the gold one shows the hairline across the loser); 3000,
+   3080, 3160 three page-wide brush strokes through the hit point (ink with a white hairline core, SHK) while the loser comes apart (3050) and flies out; 3250 the SPLASH:
+   the page so far is cut by the three lines into seven slabs that part and fall away, under them pale gold paper, a hundred pink petals bursting from the sheath and
+   him full page in colour, sheathed, half turned; 3700 HUNDRED PETALS; 4700 the aftermath panel as in One Cut (shifted by 1200 ms: its moments are MT.AFTER + offset).
+   Both pages share their code: `ult` says which one is playing and setTimes() moves the few moments that differ. */
 MANGA.samurai = (function () {
   const COL = "#3fe0a8", EDGE = "#effff8", PINK = "#ffbdd3", PINK_D = "#b84a73", PAPER_G = "#dedad3";
-  const HIT = 2900, POP = 3000, CUT_T = 2560, STROKE_T = 2600, SHEATH0 = 3560, CLICK = 3780, FLOOD = 3780, TURN = 3850, TILT = 0.15;
+  const TILT = 0.15;
+  // the moments that differ between One Cut and Hundred Petals (setTimes, called by start): the post-aftermath ones are MT.AFTER + offset, so panel 4 serves both
+  let HIT = 2900, POP = 3000, CUT_T = 2560, STROKE_T = 2600, SHEATH0 = 3560, CLICK = 3780, FLOOD = 3780, TURN = 3850, ult = false;
+  function setTimes(u) {
+    ult = u; HIT = 2900; CUT_T = 2560;
+    if (u) { POP = 3050; STROKE_T = 3000; SHEATH0 = 2880; CLICK = 2900; FLOOD = MT.SPLASH; TURN = MT.AFTER + 350; }   // sheathed at the cut; the colour floods the page at the splash
+    else { POP = 3000; STROKE_T = 2600; SHEATH0 = MT.AFTER + 60; CLICK = MT.AFTER + 280; FLOOD = MT.AFTER + 280; TURN = MT.AFTER + 350; }
+  }
   const far = () => (L.portrait ? 92 : 140);   // how far past the loser he stands
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   let petals = [], snapC = null, half = null, flick = 0, floodAt = null;
   const scratch = new WeakMap();   // the grey pass's scratch canvas lives and dies with the page's layer canvas (freed by the engine at the end of the page)
   const D_ = () => FIN.dir;
   const wx_ = (t) => (t >= CUT_T ? FIN.lx + FIN.dir * far() : FIN.wx);   // where he stands: before the cut, and one frame later behind the loser
-  const faceK = (t) => { const k = fe(TURN, TURN + 220, t), c = Math.cos(Math.PI * k); return Math.abs(c) < 0.04 ? (k < 0.5 ? 0.04 : -0.04) : c; };   // facing as a squash: 1 -> -1 (he turns away)
+  // facing as a squash: 1 -> -1 (he turns away); on the Ultimate page he is half turned in the splash, the rest of the way at the aftermath
+  const faceK = (t) => { const k = ult ? 0.3 * ease(fe(MT.SPLASH + 100, MT.SPLASH + 800, t)) + 0.7 * ease(fe(TURN, TURN + 260, t)) : fe(TURN, TURN + 220, t), c = Math.cos(Math.PI * k); return Math.abs(c) < 0.04 ? (k < 0.5 ? 0.04 : -0.04) : c; };
 
   /* ---- grey: the puppets are drawn as always, then turned grey where they are opaque (a copy of the layer, the saturation blend with black = grey of the same luminance,
           drawn back with source-atop so the silhouette stays); the picture of the real hit gets the same treatment once, with more contrast ---- */
@@ -12429,10 +12959,15 @@ MANGA.samurai = (function () {
         poly: port ? [[0.34, 0.25], [0.98, 0.22], [0.96, 0.43], [0.32, 0.46]] : [[0.6, 0.05], [0.97, 0.02], [0.95, 0.44], [0.58, 0.47]],
         cam: (t) => { const h = bodyPt(L_(), Math.min(t, MT.STRIKE), "head"); return { wx: h[0], wy: h[1] + 0.8, vh: (port ? 19 : 21) - 2 * fe(MT.INSET, MT.STRIKE, t) }; },
         draw: drawInset },
-      { id: "strike", t0: MT.STRIKE, from: "l", freeze: MT.AFTER, cover: MT.AFTER,
+      { id: "strike", t0: MT.STRIKE, from: "l", freeze: ult ? MT.SPLASH : MT.AFTER, cover: ult ? MT.SPLASH : MT.AFTER,
         poly: port ? [[0, 0.44], [1, 0.41], [1, 0.74], [0, 0.77]] : [[0, 0.5], [1, 0.47], [1, 1], [0, 1]],
         cam: (t) => { const k = fe(MT.STRIKE, HIT, t), vh = (port ? 262 : 120) * (1 - 0.06 * k); return { wx: FIN.wx + D * (port ? 108 : 126), wy: -0.27 * vh, vh }; },
         draw: drawStrike },
+      ...(ult ? [mgSplashPanel({ from: "t", paper: MG_GOLD_PALE, before: grabSlabs, draw: drawSplash,
+        cam: (t, pn) => {   // him full page: tall on the page, a little left of the middle (to the right of the middle when the winner is on the right); a 6% pull-out
+          const vh = (port ? 150 : 116) * (1 - 0.06 * fe(MT.SPLASH, MT.AFTER, t)), z = pn.h / vh;   // (116, not 100: the name needs room above his sprout)
+          return { wx: wx_(t) + D * (port ? 0 : 0.13) * pn.w / z, wy: port ? -0.36 * vh : -0.44 * vh, vh };
+        } })] : []),
       { id: "after", t0: MT.AFTER, from: "b", live: true,
         poly: port ? [[0, 0.62], [1, 0.6], [1, 1], [0, 1]] : [[0, 0.4], [0.62, 0.37], [0.58, 1], [0, 1]],
         cam: (t) => { const vh = (port ? 120 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: wx_(t) - FIN.dir * 4, wy: -0.4 * vh, vh }; },
@@ -12483,7 +13018,7 @@ MANGA.samurai = (function () {
   };
 
   /* ---- the sakura petals: page-wide, drifting sideways (in the direction of the wind, towards the loser); grey until the colour floods back ---- */
-  const pClock = (t) => t - Math.min(100, Math.max(0, t - HIT));   // the page holds for 100 ms at SHING
+  const pClock = (t) => t - Math.min(ult ? 150 : 100, Math.max(0, t - HIT));   // the page holds for 100 ms at SHING (150 on the Ultimate: three impact frames)
   function petalShape(o, r) { o.beginPath(); o.moveTo(-r, 0); o.bezierCurveTo(-r * 0.5, -r * 0.95, r * 0.75, -r * 0.8, r, -r * 0.12); o.lineTo(r * 0.78, 0.02 * r); o.lineTo(r, r * 0.16); o.bezierCurveTo(r * 0.75, r * 0.8, -r * 0.5, r * 0.95, -r, 0); o.closePath(); }
   function drawPetal(o, x, y, r, rot, fl, pink) {
     o.save(); o.translate(x, y); o.rotate(rot); o.scale(1, fl); petalShape(o, r);
@@ -12582,6 +13117,7 @@ MANGA.samurai = (function () {
   }
   // the brush stroke of the cut: through the loser's hip, rising towards the launch side, a dry tail behind
   function cutStroke(c, pn, t) {
+    if (ult) return;   // (the Ultimate's strokes are the three page-wide ones, strokesOver)
     const k = easeOut(fe(STROKE_T, STROKE_T + 130, t));
     if (k <= 0) return;
     const D = FIN.dir, h = cutH(), pts = [], n = 22, x0 = FIN.wx - D * 30, x1 = FIN.lx + D * 330;
@@ -12602,12 +13138,14 @@ MANGA.samurai = (function () {
     ground(c, pn);
     cutStroke(c, pn, t);
     // him: the stance, then (one frame) behind the loser with the blade out
-    mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), post: grey(120) });
+    // (Ultimate: after the dash three ghosts of him trail along the path, 30 units apart, and fade out before the silence)
+    const gh = ult && t >= CUT_T && t < CUT_T + 260 ? 1 - fe(CUT_T + 140, CUT_T + 220, t) : 0;
+    mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), post: grey(120), ghosts: gh > 0.01 ? [[-D * 30 * pn.z, 0, 0.5 * gh], [-D * 60 * pn.z, 0, 0.3 * gh], [-D * 90 * pn.z, 0, 0.15 * gh]] : undefined });
     jade(c, pn, W, t, 1);
     pn.screen(c);
     if (!MG.broke) S_.drawLoser(c, pn, t);
     // the white line at hip height: one frame (two on a slow screen), no smear
-    if (t >= CUT_T && t < CUT_T + 40) {
+    if (!ult && t >= CUT_T && t < CUT_T + 40) {
       const a = 1 - fe(CUT_T + 8, CUT_T + 40, t), x0 = FIN.wx + D * 10, x1 = FIN.lx + D * (far() + 20), y = -cutH();
       pn.world(c); c.lineCap = "round"; c.globalAlpha = a;
       c.strokeStyle = MG_INK; c.lineWidth = 5.2; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke();
@@ -12625,9 +13163,13 @@ MANGA.samurai = (function () {
     const Lp = L_(), D = FIN.dir;
     if (FIN.out || Lp.state === "gone") return;
     if (t < POP) {
+      // (Ultimate: after the dash he stands whole, eyes wide, and trembles 2 px)
+      const ox_ = Lp.x, shake = ult && t >= CUT_T ? (Math.floor(t / FMS) % 2 ? 1 : -1) / pn.z : 0;
+      Lp.x += shake;
       mgPuppet(c, pn, Lp, t, { sc: 1, light: topLight(), post: grey(120) });
-      // the hairline of light opens across him, from the side the blade came from
-      if (t >= HIT) {
+      Lp.x = ox_;
+      // the hairline of light opens across him, from the side the blade came from (on the Ultimate it is in the gold impact frame instead)
+      if (!ult && t >= HIT) {
         const k = easeOut(fe(HIT, HIT + 80, t)), u = cutU(), cx = Lp.x, cy = Lp.y - cutH(), len = Lp.s.w * 0.62;
         const a = pn.sp(cx - u[0] * len, cy - u[1] * len), b = pn.sp(cx - u[0] * len + u[0] * 2 * len * k, cy - u[1] * len + u[1] * 2 * len * k);
         c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0); c.lineCap = "round"; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]);
@@ -12677,9 +13219,10 @@ MANGA.samurai = (function () {
   }
 
   /* ---- panel 4: he sheathes the blade, turns away; the colour floods back from the blade (a growing circle) ---- */
-  const NOFLOOD = { x: 0, y: 0, r: 0, full: false };
+  const NOFLOOD = { x: 0, y: 0, r: 0, full: false }, FULLFLOOD = { x: 0, y: 0, r: 1e5, full: true };
   function flood(t) {
     const pn = MG.byId.after;
+    if (ult) return t >= FLOOD ? FULLFLOOD : NOFLOOD;   // the splash is the flood: the whole page is in colour from 3250
     if (!pn || t < FLOOD) return NOFLOOD;
     if (floodAt && floodAt.t === t) return floodAt.v;
     const tip = bladeTip(W_(), FLOOD), q = pn.sp(tip[0], tip[1]), R = Math.hypot(Math.max(q[0], L.gw - q[0]), Math.max(q[1], L.gh - q[1])) * 1.02, r = R * easeOut(fe(FLOOD, FLOOD + 500, t));
@@ -12699,7 +13242,7 @@ MANGA.samurai = (function () {
     pn.screen(c);
     const bx = pn.p(wx_(t), 0), hd = pn.p(...bodyPt(W, t, "head"));
     mgFocus(c, hd[0], hd[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.28);
-    const ek = easeOut(fe(MT.AFTER + 60, 4150, t)), er = pn.h * 0.5;
+    const ek = easeOut(fe(MT.AFTER + 60, MT.AFTER + 650, t)), er = pn.h * 0.5;
     enso(c, bx[0] - D * 0, pn.cy - pn.h * 0.04, er, ek, MG_INK, pn.h * 0.1);
     // ground
     pn.world(c);
@@ -12708,7 +13251,7 @@ MANGA.samurai = (function () {
     for (let i = 0; i < 12; i++) { const r = mgRng(90 + i), x = wx_(t) - 160 + r() * 320, y = 5 + (i % 4) * 5.5 + r() * 2; c.lineWidth = 1 + r() * 1.2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 25 + r() * 70, y); c.stroke(); }
     if (!fl.full) mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), post: grey(120) });
     if (fl.r > 2) {   // colour: the puppet as he really looks, inside the circle
-      c.save(); pn.screen(c); c.beginPath(); c.arc(fl.x - pn.ox, fl.y - pn.oy, fl.r, 0, Math.PI * 2); c.clip();
+      c.save(); pn.screen(c); if (fl.r < 1e4) { c.beginPath(); c.arc(fl.x - pn.ox, fl.y - pn.oy, fl.r, 0, Math.PI * 2); c.clip(); }
       mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), tint: 0.32 });
       c.restore();
     }
@@ -12724,24 +13267,163 @@ MANGA.samurai = (function () {
     }
   }
 
+  /* ---- ULTIMATE: the three page-wide strokes, the slabs they cut the page into, the splash ---- */
+  const T_STROKE = [3000, 3080, 3160], A_STROKE = [-0.15, 0.95, -0.55];   // when each stroke starts (130 ms each) and its tilt (the screen angle with the winner on the left; mirrored with FIN.dir)
+  let lines = null, slab = null, burst = [], petalSpr = null;
+  // where the cut goes through the loser on the screen, from the strike panel's camera at the hit (it does not move after that)
+  function hitScreen() {
+    const pn = MG.byId.strike, cm = pn.camAt(HIT), z = pn.h / cm.vh;
+    return [pn.cx + (cm.px || 0) + (FIN.lx - cm.wx) * z, pn.cy + (cm.py || 0) + (-cutH() - cm.wy) * z];
+  }
+  // the three lines (two on a slow phone): each runs edge to edge through the hit point, the 2nd and 3rd a little to the side so that they make a small triangle (seven pieces, not six)
+  function LN() {
+    if (lines) return lines;
+    const D = FIN.dir, P = hitScreen(), gw = L.gw, gh = L.gh, m = Math.min(gw, gh), n = MG.slow ? 2 : 3, offs = [0, 0.05, -0.045];
+    lines = [];
+    for (let i = 0; i < n; i++) {
+      const a = A_STROKE[i], ux = D * Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux, off = offs[i] * m, px = P[0] + nx * off, py = P[1] + ny * off;
+      let lo = -1e9, hi = 1e9;   // the stretch of the line inside the screen
+      for (const [p0, u, g] of [[px, ux, gw], [py, uy, gh]]) if (Math.abs(u) > 1e-6) { const s1 = -p0 / u, s2 = (g - p0) / u; lo = Math.max(lo, Math.min(s1, s2)); hi = Math.min(hi, Math.max(s1, s2)); }
+      const pts = [];
+      for (let j = 0; j <= 26; j++) { const q = lo + (hi - lo) * (j / 26); pts.push([px + ux * q, py + uy * q]); }
+      lines.push({ t0: T_STROKE[i], px, py, ux, uy, nx, ny, pts, ang: Math.atan2(uy, ux), w: clamp(m * 0.045, 9, 24) });
+    }
+    return lines;
+  }
+  // the strokes: tapered ink brush with a white hairline core, growing over 130 ms each; `o` has the css transform
+  function drawStrokes(o, t) {
+    for (const ln of LN()) {
+      const k = fe(ln.t0, ln.t0 + 130, t);
+      if (k <= 0) continue;
+      const n = Math.max(1, Math.round((ln.pts.length - 1) * k));
+      o.fillStyle = MG_INK; brush(o, ln.pts, ln.w, n);
+      o.fillStyle = "#ffffff"; brush(o, ln.pts, Math.max(1.6, ln.w * 0.12), n);
+    }
+  }
+  function strokesOver(o, t) { if (t >= T_STROKE[0] && t < MT.SPLASH) drawStrokes(o, t); }   // from the splash on they are part of the slabs
+  const clipPoly = (poly, nx, ny, d) => {   // the part of a convex polygon with nx*x + ny*y >= d
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length], da = nx * a[0] + ny * a[1] - d, db = nx * b[0] + ny * b[1] - d;
+      if (da >= 0) out.push(a);
+      if ((da >= 0) !== (db >= 0)) { const k = da / (da - db); out.push([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]); }
+    }
+    return out;
+  };
+  // the splash's `before` hook: the page as it stands (panels, no splash yet) is copied once, the strokes drawn on it, and cut by the lines into the pieces (the sign
+  // combinations of the half-planes; one of the eight is empty)
+  function grabSlabs(c, t) {
+    const cvs = mgCanvas(MG.cw, MG.ch), x = cvs.getContext("2d"), D = DPR, ls = LN(), P = hitScreen(), pcs = [];
+    x.drawImage(c.canvas, 0, 0);
+    x.setTransform(D, 0, 0, D, 0, 0); drawStrokes(x, t);
+    for (let mask = 0; mask < 1 << ls.length; mask++) {
+      let poly = [[0, 0], [L.gw, 0], [L.gw, L.gh], [0, L.gh]];
+      for (let i = 0; i < ls.length && poly.length >= 3; i++) { const sg = (mask >> i) & 1 ? 1 : -1, ln = ls[i]; poly = clipPoly(poly, sg * ln.nx, sg * ln.ny, sg * (ln.nx * ln.px + ln.ny * ln.py)); }
+      if (poly.length < 3) continue;
+      let ar = 0, cx = 0, cy = 0, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i], b = poly[(i + 1) % poly.length], cr = a[0] * b[1] - b[0] * a[1];
+        ar += cr; cx += (a[0] + b[0]) * cr; cy += (a[1] + b[1]) * cr; x0 = Math.min(x0, a[0]); y0 = Math.min(y0, a[1]); x1 = Math.max(x1, a[0]); y1 = Math.max(y1, a[1]);
+      }
+      ar /= 2;
+      if (Math.abs(ar) < 30) continue;
+      cx /= 6 * ar; cy /= 6 * ar;
+      let vx = cx - P[0], vy = cy - P[1], vl = Math.hypot(vx, vy);
+      if (vl < 8) { vx = FIN.dir * 0.3; vy = -1; vl = Math.hypot(vx, vy); }   // the little triangle in the middle goes up and back
+      const sx = Math.max(0, Math.floor(x0 * D)), sy = Math.max(0, Math.floor(y0 * D)), sw = Math.min(MG.cw - sx, Math.ceil((x1 - x0) * D) + 2), sh = Math.min(MG.ch - sy, Math.ceil((y1 - y0) * D) + 2);
+      pcs.push({ poly, cx, cy, r: Math.max(x1 - x0, y1 - y0), nx: vx / vl, ny: vy / vl, sx, sy, sw, sh });
+    }
+    pcs.sort((a, b) => b.cy - a.cy);   // the lowest piece lets go first
+    pcs.forEach((q, i) => { q.delay = i * 16; q.rs = i % 2 ? 1 : -1; });
+    slab = { cv: cvs, pcs };
+  }
+  // the pieces part (16 px along their outward normal by 300 ms), then fall off the page (0.9 px/frame^2, turning +-0.25 rad), gone by about 4150
+  function drawSlabs(c, t) {
+    if (!slab || t < MT.SPLASH) return;
+    const D = DPR, g = Math.max(0.9, L.gh / 430);
+    let alive = false;
+    c.save(); c.setTransform(D, 0, 0, D, 0, 0); c.lineJoin = "round"; c.strokeStyle = MG_INK; c.lineWidth = 2.4;
+    for (const q of slab.pcs) {
+      let dx = 0, dy = 0, rot = 0, a = 1;
+      if (MG.reduced) a = 1 - fe(MT.SPLASH, MT.SPLASH + 400, t);   // reduced motion: they fade instead of falling
+      else {
+        const k = easeOut(fe(MT.SPLASH, MT.SPLASH + 300, t)), f = Math.max(0, t - MT.SPLASH - 300 - q.delay) / FMS;
+        dx = q.nx * (16 * k + 0.35 * f); dy = q.ny * (16 * k + 0.35 * f) + 0.5 * g * f * f; rot = MG.slow ? 0 : q.rs * 0.25 * easeIn(Math.min(1, f / 30));
+      }
+      if (a <= 0.01 || q.cy + dy - q.r > L.gh + 24) continue;
+      alive = true;
+      c.save(); c.translate(q.cx + dx, q.cy + dy); c.rotate(rot); c.translate(-q.cx, -q.cy);
+      mgPoly(c, q.poly); c.save(); c.clip(); c.globalAlpha = a;
+      c.drawImage(slab.cv, q.sx, q.sy, q.sw, q.sh, q.sx / D, q.sy / D, q.sw / D, q.sh / D);
+      c.restore(); c.globalAlpha = a; c.stroke();   // the edge of the paper
+      c.restore();
+    }
+    c.restore();
+    if (!alive) slab = null;   // all gone: the page copy is freed
+  }
+  // a hundred pink petals bursting from the sheath (350 ms, then the wind), as small sprites; drawn in the panel
+  function burstBuild() {
+    const r = mgRng(515), D = DPR, s = Math.max(5, L.gh * 0.014), w = Math.ceil(s * 2.6 * D), h = Math.ceil(s * 2.2 * D);
+    burst = Array.from({ length: MG.slow ? 50 : 100 }, () => ({ a: r() * 6.2832, d: 0.18 + 0.82 * Math.sqrt(r()), tt: 260 + r() * 200, ph: r() * 6.28, f: 1.3 + r() * 2, sc: 0.7 + r() * 0.8, sp: (r() - 0.5) * 7, wv: 0.6 + r() * 0.9 }));
+    petalSpr = mgCanvas(w, h);
+    const x = petalSpr.getContext("2d"); x.setTransform(D, 0, 0, D, w / 2, h / 2); petalShape(x, s); x.fillStyle = PINK; x.fill(); x.lineWidth = 1.3; x.strokeStyle = PINK_D; x.stroke();
+  }
+  function burstDraw(c, pn, t) {
+    const u = t - MT.SPLASH;
+    if (u < 0 || !petalSpr) return;
+    const D = FIN.dir, o = pn.p(...bladeTip(W_(), t)), R = Math.hypot(pn.w, pn.h) * 0.42, a0 = Math.min(1, u / 80) * (1 - fe(MT.AFTER - 450, MT.AFTER - 40, t)), sw = petalSpr.width / DPR, sh = petalSpr.height / DPR;
+    if (a0 <= 0.01) return;
+    c.save(); c.globalAlpha = a0;
+    for (const b of burst) {
+      const k = easeOut(Math.min(1, u / b.tt)), late = Math.max(0, u - b.tt), x = o[0] + Math.cos(b.a) * R * b.d * k + D * b.wv * late * 0.035 + Math.sin(late * 0.003 + b.ph) * 5 * Math.min(1, late / 300), y = o[1] + Math.sin(b.a) * R * b.d * k * 0.8 + late * 0.014 + Math.sin(late * 0.004 * b.f + b.ph) * 6 * Math.min(1, late / 300);
+      c.save(); c.translate(x, y); c.rotate(b.ph + u * 0.001 * b.sp); c.scale(b.sc, b.sc * (0.35 + 0.65 * Math.abs(Math.cos(u * 0.0035 * b.f + b.ph)))); c.drawImage(petalSpr, -sw / 2, -sh / 2, sw, sh); c.restore();
+    }
+    c.restore();
+  }
+  // panel 5, the splash: pale gold paper, white lines from his chest, the ground, him full page in colour (sheathed, half turned), the petals bursting
+  function drawSplash(c, pn, t) {
+    const W = W_();
+    pn.screen(c);
+    const ch = pn.p(...bodyPt(W, t, "hip", 0, -10));
+    mgFocus(c, ch[0], ch[1], Math.hypot(pn.w, pn.h) * 0.85, t * 0.00025, 0.6 * easeOut(fe(MT.SPLASH, MT.SPLASH + 300, t)), true);
+    pn.world(c);
+    c.fillStyle = MG_INK; c.fillRect(FIN.lx - 700, -1.4, 1700, 3.6);
+    c.lineCap = "round"; c.strokeStyle = MG_INK;
+    for (let i = 0; i < 12; i++) { const r = mgRng(90 + i), x = wx_(t) - 160 + r() * 320, y = 5 + (i % 4) * 5.5 + r() * 2; c.lineWidth = 1 + r() * 1.2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 25 + r() * 70, y); c.stroke(); }
+    mgPuppet(c, pn, W, t, { sc: 1, light: topLight(), tint: 0.32 });
+    jade(c, pn, W, t, 1);
+    pn.screen(c);
+    burstDraw(c, pn, t);
+  }
+
   /* ---- the script ---- */
   const S_ = {
     col: COL, name: "One Cut", hit: HIT, pop: POP, flight: "strike", noImpact: true,
     panels,
     words(lay) {
-      const D = FIN.dir, P3 = () => MG.byId.strike;
-      return [
-        { text: "...", t0: 600, t1: 1330, size: lay.port ? 0.085 : 0.15, rot: -0.06 * D, space: 0.12, at: () => [clamp(MG.ix + D * L.gw * 0.05, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.26, L.gh * 0.2, L.gh * 0.5)] },
-        { text: "SHING", t0: HIT, t1: 3560, size: lay.port ? 0.075 : 0.2, arc: 12, rot: -TILT * D, fill: COL, stretch: { ang: -TILT * D, k: 0.5 },
-          at: () => { const p = P3(), q = p.sp(FIN.lx - D * (lay.port ? 84 : 108), -cutH() - (lay.port ? 40 : 54)); return [q[0], q[1]]; } },
+      const D = FIN.dir, P3 = () => MG.byId.strike, port = lay.port;
+      const ws = [
+        { text: "...", t0: 600, t1: 1330, size: port ? 0.085 : 0.15, rot: -0.06 * D, space: 0.12, at: () => [clamp(MG.ix + D * L.gw * 0.05, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.26, L.gh * 0.2, L.gh * 0.5)] },
+        { text: "SHING", t0: ult ? 3050 : HIT, t1: ult ? MT.SPLASH + 250 : 3560, size: port ? 0.075 : 0.2, arc: 12, rot: -TILT * D, fill: COL, stretch: { ang: -TILT * D, k: 0.5 },   // (Ultimate: it lands when the impact frames end)
+          at: () => { const p = P3(), q = p.sp(FIN.lx - D * (port ? 84 : 108), -cutH() - (port ? 40 : 54)); return [q[0], q[1]]; } },
       ];
+      if (!ult) return ws;
+      // SHK at the far end of each stroke (gold: the engine's strike-word rule), then the name of the Ultimate above his head in the splash
+      for (let i = 0; i < (MG.slow ? 2 : 3); i++) {
+        ws.push({ text: "SHK", t0: T_STROKE[i], t1: T_STROKE[i] + 440, size: port ? 0.05 : 0.07, arc: 8, rot: (A_STROKE[i] * D) * 0.6, stretch: { ang: A_STROKE[i] * D, k: 0.3 },
+          at: () => { const ln = LN()[i], B = ln.pts[ln.pts.length - 1], m = Math.min(L.gw, L.gh) * 0.13; return [B[0] - ln.ux * m, B[1] - ln.uy * m]; } });
+      }
+      ws.push({ text: "HUNDRED PETALS", t0: 3700, t1: MT.AFTER + 100, size: port ? 0.048 : 0.16, arc: 10, rot: -0.06 * D, fill: COL,
+        at: (t) => { const sz = port ? 0.048 : 0.16, W = W_(), top = MG.byId.splash.sp(W.x, W.y - 82), h = MG.byId.splash.sp(...bodyPt(W, t, "head")); return [h[0] + D * L.gw * (port ? 0 : 0.05), top[1] - L.gh * (sz * 0.5 + 0.02)]; } });   // centred just above the sprout
+      return ws;
     },
-    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; petals = []; snapC = null; half = null; flick = 0; floodAt = null; },   // no drone (wind and petals only), no taiko (SHING is the hit)
+    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; setTimes(false); petals = []; snapC = null; half = null; flick = 0; floodAt = null; lines = slab = petalSpr = null; burst = []; },   // no drone (wind and petals only), no taiko (SHING is the hit)
     build(lay) {
       const r = mgRng(2026), g = L.gw, h = L.gh;
       petals = Array.from({ length: MG.slow ? 20 : 34 }, () => ({ x: r() * (g + 60), y: r() * (h + 60), vx: 24 + r() * 34, vy: 7 + r() * 15, a: 0.5 + r() * 1.5, f: 1.1 + r() * 1.6, ph: r() * 6.28, s: 3.6 + r() * 3.2, sp: (r() - 0.5) * 2.4 }));
       snapC = MG.snap; MG.snap = greyOf(snapC, 2);
       const p1 = MG.panels[0]; p1.d.draw = drawHit; p1.d.bw = MG.bw * 1.45;
+      if (ult) burstBuild();
     },
     step(t, k) {
       const W = W_(), Lp = L_();
@@ -12757,7 +13439,7 @@ MANGA.samurai = (function () {
     pose(P, sk, t, role, p) {
       const w = sk.w, leg = sk.leg, tor = sk.tor, D = FIN.dir;
       if (role === "w") {
-        P.expr = t >= TURN + 150 ? "calm" : undefined; P.exK = 1;
+        P.expr = (ult ? t >= MT.SPLASH : t >= TURN + 150) ? "calm" : undefined; P.exK = 1;
         if (t < CUT_T) {   // the stance: hand on the hilt at the front hip, the scabbard pointing back
           const k = ease(fe(MT.STRIKE - 100, MT.STRIKE + 200, t));
           P.sheath = 1; P.holdAng = Math.PI - 0.14; P.crouch = 0.32 * k; P.lean = 0.22 * k;
@@ -12767,7 +13449,7 @@ MANGA.samurai = (function () {
           P.sheath = 0; P.holdAng = 0.1; P.crouch = 0.28; P.lean = 0.2;
           return { hF: [w * 0.95, -leg - tor * 0.5], hB: [-w * 0.45, -leg - tor * 0.3], fF: [w * 0.55, 0], fB: [-w * 0.6, 0] };
         }
-        const q = ease(fe(SHEATH0, CLICK, t)), s = ease(fe(CLICK, TURN + 300, t));   // sheathes, stands tall, turns away
+        const q = ease(fe(SHEATH0, CLICK, t)), s = ease(fe(CLICK, ult ? MT.SPLASH + 400 : TURN + 300, t));   // sheathes, stands tall, turns away
         P.sheath = Math.max(0.001, q); P.holdAng = 0.1 + (Math.PI - 0.14 - 0.1) * q; P.crouch = 0.28 * (1 - s); P.lean = 0.2 * (1 - s);
         return { hF: [w * (0.95 - 0.33 * q), -leg - tor * (0.5 - 0.14 * q)], hB: [-w * 0.45 + w * 0.25 * s, -leg - tor * 0.32], fF: [w * (0.55 - 0.1 * s), 0], fB: [-w * (0.6 - 0.2 * s), 0] };
       }
@@ -12785,9 +13467,9 @@ MANGA.samurai = (function () {
     over(o, t) {
       petalsOver(o, t);
       trailOver(o, t);
-      flare(o, t);
+      if (ult) strokesOver(o, t); else flare(o, t);
       const fl = flood(t);
-      if (fl.r > 2) {
+      if (fl.r > 2 && !ult) {
         o.save(); o.beginPath(); o.arc(fl.x, fl.y, fl.r, 0, Math.PI * 2); o.clip();
         o.globalCompositeOperation = "multiply"; o.fillStyle = "#ffe6d2"; o.fillRect(0, 0, L.gw, L.gh);
         o.restore();
@@ -12797,23 +13479,46 @@ MANGA.samurai = (function () {
     },
     drawLoser: drawLoserFn,
     hitPt() { return [FIN.lx, -cutH()]; },
-    impact() { /* no impact frames on this page (noImpact) */ },
+    // One Cut has no impact frames (noImpact); the Ultimate's three show him and the loser as flat silhouettes, and the gold one the hairline of the cut across the loser
+    impact(o, pn, sil, t) {
+      if (!ult) return;
+      mgPuppet(o, pn, W_(), t, { sc: 1, sil });
+      mgPuppet(o, pn, L_(), t, { sc: 1, sil });
+      if (sil === MG_INK) {
+        const Lp = L_(), u = cutU(), len = Lp.s.w * 0.62, cx = Lp.x, cy = Lp.y - cutH(), a = pn.sp(cx - u[0] * len, cy - u[1] * len), b = pn.sp(cx + u[0] * len, cy + u[1] * len);
+        o.save(); o.lineCap = "round"; o.beginPath(); o.moveTo(a[0], a[1]); o.lineTo(b[0], b[1]); o.strokeStyle = "#ffffff"; o.lineWidth = 3.4; o.stroke(); o.restore();
+      }
+    },
     cues(t) {
       cueOnce("wind", 900, () => Cin.go(() => Cin._noise(1.6, 0.06, 420, 900, "bandpass", 0.9)));
       cueOnce("flute", 1500, () => Cin.go(() => Cin.flute(0.95)));
       cueOnce("pluck", 2000, () => Cin.go(() => Cin.pluck(1480)));
       cueOnce("whistle", 2000, () => Cin.go(() => Cin._noise(0.4, 0.14, 700, 2600, "bandpass", 11)));
       cueOnce("drum", 2200, () => Cin.go(() => { Cin.sub(66, 40, 0.5, 0.45); Cin._noise(0.1, 0.18, 500, 120, "lowpass"); }));
-      cueOnce("cutwhoosh", CUT_T, () => Cin.go(() => Cin._noise(0.1, 0.5, 8200, 2400, "highpass", 0.7)));
+      cueOnce("cutwhoosh", CUT_T, () => Cin.go(() => Cin._noise(ult ? 0.22 : 0.1, 0.5, 8200, 2400, "highpass", 0.7)));
       cueOnce("shing", HIT, () => Cin.go(() => {   // steel: partials ringing out, a spark of air on top; a little late, the silence before it has not quite ended
         for (const [f, v, d] of [[2637, 0.1, 1.1], [3951, 0.07, 0.8], [5274, 0.045, 0.6], [7458, 0.025, 0.4]]) Cin._osc("sine", f, f * 0.997, d, v, 0.002, 0.05);
         Cin._noise(0.06, 0.4, 9000, 3500, "highpass", 0.7, 0.05);
       }));
       cueOnce("parts", POP, () => Cin.go(() => { Cin.sub(58, 34, 0.38, 0.5); Cin.whoosh(0.35, -0.5, 0.7, 0.4); }));
       cueOnce("click", CLICK, () => Cin.go(() => { Cin.clack(); Cin.tick(3200); }));
-      cueOnce("flood", FLOOD + 40, () => Cin.go(() => { Cin.chime(1568); Cin.shimmer(1568, 1.3); }));
+      if (!ult) { cueOnce("flood", FLOOD + 40, () => Cin.go(() => { Cin.chime(1568); Cin.shimmer(1568, 1.3); })); return; }
+      // Ultimate: a cut whoosh per stroke, the slabs part (three page sounds, a low rise), the shimmer as the colour floods, the name lands with a taiko
+      LN().forEach((ln, i) => cueOnce("sk" + i, ln.t0, () => Cin.go(() => Cin._noise(0.14, 0.4, 8200 - i * 900, 2400, "highpass", 0.7))));
+      cueOnce("pg2", MT.SPLASH + 80, () => Cin.go(() => Cin.page()));
+      cueOnce("pg3", MT.SPLASH + 160, () => Cin.go(() => Cin.page()));
+      cueOnce("rise", MT.SPLASH, () => Cin.go(() => Cin.sub(58, 34, 0.5, 0.45)));
+      cueOnce("shim", MT.SPLASH + 50, () => Cin.go(() => Cin.shimmer(1568, 1.6)));
+      cueOnce("name", 3700, () => Cin.go(() => Cin.taiko(0.8)));
     },
   };
+  // the Ultimate cut: the same script with its own name, launch, panels, words, hooks (it reads `ult`, set by start)
+  S_.ulti = Object.assign({}, S_, {
+    name: "Hundred Petals", pop: 3050, noImpact: false,
+    start(g) { S_.start(g); setTimes(true); },   // (S_.start resets everything and says One Cut; this one then moves the moments)
+    page(c, t) { drawSlabs(c, t); },
+    end() { slab = null; lines = null; burst = []; petalSpr = null; },
+  });
   return S_;
 })();
 

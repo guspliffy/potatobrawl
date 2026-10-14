@@ -75,6 +75,8 @@ const TUNE = {
   // Combo damage: hits from the 4th of a combo deal comboK4, from the 6th comboK6 (so combos can't loop damage forever).
   comboK4: 0.85,
   comboK6: 0.7,
+  // The pop-up: a linked up light (the second light in a row, aimed up) lifts at least this hard, so jump + an air attack can follow.
+  linkPop: 13,
   // Ultimates: the bar fills ultDealt per % dealt, ultTaken per % taken and ultHeart per heart lost, up to ultNeed[n] for the
   // n-th use (ultMax uses a match). Pressing ULTI with a full bar spends it and freezes the game for ultFreeze frames (the
   // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
@@ -329,7 +331,7 @@ const FIGHTERS = [
                proj: { style: "fire", speed: 6.5, life: 16, r: 12, ox: 30, oy: -38, count: 5, interval: 4, spreadVy: [-0.5, 0.3, -0.2, 0.5, 0], dmg: 2, bkb: 3.5, kbg: 3, angle: 35, short: true,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 42 } } }),
       // Hellfire: a long, low fire stream ticking every 7 frames; the last 6 frames blast
-      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -46, 34], [130, -46, 38], [210, -46, 40], [290, -46, 40], [370, -46, 38]],
+      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -50, 40], [130, -50, 44], [210, -50, 46], [290, -50, 46], [370, -50, 44]],
                { limb: "head", ult: "hellfire", fire: true, multi: 7, armor: [1, 24], last: { from: 61, dmg: 16, bkb: 8, kbg: 17, angle: 40 } }),
     },
   },
@@ -347,18 +349,19 @@ const FIGHTERS = [
       { name: "Gold Rush", price: 200, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
     ],
     moves: {
-      jab:   M(3, 3, 9,   3, 4, 2, 40, [28, -36, 16], { limb: "arm" }),
-      side:  M(6, 4, 13,  7, 4.5, 9, 32, [36, -32, 19], { limb: "arm" }),
-      up:    M(5, 5, 12,  6, 5, 8, 86, [16, -70, 20, -16, -72], { limb: "arm" }),
-      down:  M(5, 3, 11,  5, 4, 7, 18, [32, -6, 16], { limb: "leg" }),
+      // the lights are point-blank shots: a short tracer (the box sweeps out from the muzzle over the active frames)
+      jab:   M(3, 3, 9,   3, 4, 2, 40, [24, -38, 10, 62, -38, 10], { limb: "arm", shot: true }),
+      side:  M(6, 4, 13,  6, 4.5, 9, 32, [28, -36, 11, 80, -36, 11], { limb: "arm", shot: true }),
+      up:    M(5, 5, 12,  6, 5, 8, 86, [12, -60, 11, 12, -112, 11], { limb: "arm", shot: true }),
+      down:  M(5, 3, 11,  5, 4, 7, 18, [26, -10, 11, 70, -8, 11], { limb: "arm", shot: true }),
       // Fan the hammer: a point-blank blast that kicks him back in a small hop
       hSide: M(13, 4, 24, 15, 7, 20, 34, [36, -38, 21, 56, -36], { limb: "arm", impulse: [-5, -3] }),
       hUp:   M(11, 6, 22, 13, 7, 18, 88, [10, -88, 26], { limb: "arm" }),
       hDown: M(11, 4, 24, 12, 6.5, 16, 25, [[38, -10, 19], [-38, -10, 19]], { limb: "arm" }),
-      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [0, -32, 30], { limb: "body", landLag: 6 }),
-      sair:  M(6, 4, 14,  8, 5, 12, 40, [36, -32, 19], { limb: "arm", landLag: 8 }),
-      uair:  M(5, 5, 12,  7, 5, 12, 82, [14, -70, 21, -14, -70], { limb: "arm", landLag: 7 }),
-      dair:  M(9, 5, 16,  9, 5, 10, -65, [4, 0, 19], { limb: "leg", landLag: 11 }),
+      nair:  M(4, 7, 10,  7, 4.5, 8, 45, [[22, -36, 11, 64, -36, 11], [-22, -36, 11, -64, -36, 11]], { limb: "body", shot: true, landLag: 6 }),
+      sair:  M(6, 4, 14,  7, 5, 12, 40, [28, -36, 11, 78, -36, 11], { limb: "arm", shot: true, landLag: 8 }),
+      uair:  M(5, 5, 12,  7, 5, 12, 82, [10, -60, 11, 10, -112, 11], { limb: "arm", shot: true, landLag: 7 }),
+      dair:  M(9, 5, 16,  9, 5, 10, -65, [6, 2, 11, 6, 50, 11], { limb: "arm", shot: true, landLag: 11 }),
       hAir:  M(12, 4, 22, 13, 6.5, 16, 36, [36, -36, 21, 54, -34], { limb: "arm", impulse: [-3, -1], landLag: 15 }),
       // Powder jump: a shot fired down at his feet lifts him; the blast under him knocks down and away
       rec:   M(5, 6, 14, 5, 4.5, 4, -60, [0, 6, 24], { limb: "leg", rec: true, vyStart: -15.5, vxStick: 4.5, helpless: true, landLag: 10 }),
@@ -1146,6 +1149,7 @@ function applyHit(g, h) {
   } else if (!chained) def.strN = 0;
 
   if (def.grounded && dy > 0.2) { dy = -dy * 0.75; kb *= 0.8; }
+  if (link && dy < -0.9) kb = Math.max(kb, TUNE.linkPop);
 
   def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
   setState(def, "hitstun");
@@ -1204,7 +1208,8 @@ function lethal(g, slot) {
   for (let kind = 0; kind < 4; kind++) {
     const h = newGame({ players: g.fighters.map((f) => ({ spec: f.spec, pal: f.pal })), seed: 1, stocks: g.stocks, countdown: 0 });
     restore(h, snap);
-    h.look = true; h.timed = false; h.projs = [];
+    // projectiles still in the air stay in the look-ahead (a Meteor Shower star or a flame puff still coming is part of the call)
+    h.look = true; h.timed = false;
     let died = false;
     for (let t = 0; t < TUNE.lookFrames && !died; t++) {
       const ins = [blankInput(), blankInput()];
@@ -1324,7 +1329,7 @@ const BOT_STYLES = {
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
   wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.3, atk: 0.9, heavy: 1.2 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.2, back: 0.3, spec: 1.3, heavy: 1.2 },                           // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
