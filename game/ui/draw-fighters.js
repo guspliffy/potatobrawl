@@ -1908,7 +1908,8 @@ const HEAVY_LOOK = {
         P.crouch = Math.max(P.crouch, X.phase === 0 ? 0.3 * X.wk : X.phase === 2 ? 0.15 * (1 - ease(X.k)) : 0);
         const rest = REAP_REST(w, leg, tor), h1 = [w * 0.45, -leg - tor * 0.85], h2 = [-w * 0.05, -leg - tor * 1.0];
         X.hF = hpath(X, rest, [w * 0.5, -leg - tor * 0.15], h1, h2);
-        P.holdAng = hpath(X, -1.75, 1.05, -0.3, -2.85);   // the low guard: blade down near the floor in front P.bladeS = hpath(X, 1, -1, -1, -1);
+        P.holdAng = hpath(X, -1.75, 1.05, -0.3, -2.85);   // the low guard: blade down near the floor in front
+        P.bladeS = hpath(X, 1, -1, -1, -1);
         P.lean = hpath(X, 0, 0.1, -0.12, -0.2);
         X.hB = reapGrip(X.hF, P.holdAng, 1, 14); X.fF = [w * 0.3, 0]; X.fB = [-w * 0.24, 0];
         X.trail = { h1, h2, a1: -0.3, a2: -2.85, s: -1 };
