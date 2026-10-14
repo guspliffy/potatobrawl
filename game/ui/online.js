@@ -7,7 +7,7 @@
    Checksums every second catch any divergence; the host then sends a full snapshot. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 7;
+const PROTO = 8;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -25,13 +25,17 @@ const NET = {
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 const NEUTRAL = 1280;
+// One frame of input in two base64 characters (0-4095). 0-2591: the stick (81 spots) x 32 button sets. ULTI held uses the
+// spare codes ULTI_BASE + stick x 16 (jump, light, heavy, special; dodge is dropped on those frames: the ulti wins anyway).
+const ULTI_BASE = 2592;
 function encIn(i) {
-  const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4);
-  return ((qx + 4) * 9 + (qy + 4)) * 32 + (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0) + (i.dodge ? 16 : 0);
+  const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4), q = (qx + 4) * 9 + (qy + 4);
+  const b4 = (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0);
+  return i.ulti ? ULTI_BASE + q * 16 + b4 : q * 32 + b4 + (i.dodge ? 16 : 0);
 }
 function decIn(v) {
-  const b = v & 31, q = v >> 5;
-  return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: !!(b & 1), light: !!(b & 2), heavy: !!(b & 4), special: !!(b & 8), dodge: !!(b & 16) };
+  const u = v >= ULTI_BASE, b = u ? (v - ULTI_BASE) & 15 : v & 31, q = u ? (v - ULTI_BASE) >> 4 : v >> 5;
+  return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: !!(b & 1), light: !!(b & 2), heavy: !!(b & 4), special: !!(b & 8), dodge: !!(b & 16), ulti: u };
 }
 const packIn = (v) => B64[v >> 6] + B64[v & 63];
 function palIdx(id) { const i = P.pal[id] || 0; return P.owned[id] && P.owned[id].includes(i) ? i : 0; }
@@ -379,7 +383,7 @@ function readOpp(pr) {
       const a = B64I[pr.i[k * 2]], b = B64I[pr.i[k * 2 + 1]];
       if (a === undefined || b === undefined) break;
       const v = a * 64 + b;
-      if (v > 2591) break;
+      if (v >= ULTI_BASE + 81 * 16) break;
       NET.opLog[fr] = v;
     }
   }

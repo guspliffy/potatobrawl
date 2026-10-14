@@ -75,6 +75,15 @@ const TUNE = {
   // Combo damage: hits from the 4th of a combo deal comboK4, from the 6th comboK6 (so combos can't loop damage forever).
   comboK4: 0.85,
   comboK6: 0.7,
+  // Ultimates: the bar fills ultDealt per % dealt, ultTaken per % taken and ultHeart per heart lost, up to ultNeed[n] for the
+  // n-th use (ultMax uses a match). Pressing ULTI with a full bar spends it and freezes the game for ultFreeze frames (the
+  // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
+  ultNeed: [100, 120],
+  ultMax: 2,
+  ultDealt: 1,
+  ultTaken: 0.5,
+  ultHeart: 10,
+  ultFreeze: 30,
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -111,6 +120,7 @@ const FIGHTERS = [
     id: "phoenix", name: "Phoenix", role: "Fire flyer",
     blurb: "Flame wings, three air jumps and a fireball. Rules the sky.",
     signature: { name: "Fireball", text: "Spits a fireball that flies far and slowly drops. 1.25 s cooldown." },
+    ultimate: { name: "Solar Dive", text: "Flies out the top and comes back as a comet on the opponent's spot. The landing blast hits the floor: be in the air." },
     look: { build: "potato", costume: "phoenix", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 5, face: "eager", wings: true },
     stats: { w: 44, h: 64, weight: 99, run: 6.1, accel: 1.15, airSpeed: 5.0, airAccel: 0.5, gravity: 0.48, fallSpeed: 8.8, fastFall: 13.5, jump: 12.4, airJump: 10.8, airJumps: 3 },
     palettes: [
@@ -137,12 +147,15 @@ const FIGHTERS = [
       spec:  M(12, 1, 16, 0, 0, 0, 0, [], { limb: "head", kind: "projectile", cooldown: 75,
                proj: { style: "fire", speed: 8.5, life: 76, r: 15, ox: 36, oy: -40, grav: 0.03, dmg: 8, bkb: 5.5, kbg: 8, angle: 38,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
+      // Solar Dive: up and out of sight (intangible), the spot is picked at mt 15, a comet dive, the blast where it lands
+      ulti:  M(60, 6, 34, 26, 8, 15, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
     },
   },
   {
     id: "alchemist", name: "Alchemist", role: "Potion zoner",
     blurb: "Hooded and grinning. Lobs toxic orbs and zaps anyone who gets close.",
     signature: { name: "Toxic Orb", text: "Lobs an orb in an arc. It bursts where it lands. 1.75 s cooldown." },
+    ultimate: { name: "Mutagen Cloud", text: "Leaves a green cloud in front of him for 2.5 s. It stings every half second and the last pulse launches: leave the cloud." },
     look: { build: "potato", costume: "alchemist", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 5, face: "evil" },
     stats: { w: 42, h: 62, weight: 95, run: 6.1, accel: 1.15, airSpeed: 4.9, airAccel: 0.5, gravity: 0.66, fallSpeed: 12, fastFall: 17, jump: 13.8, airJump: 12.4, airJumps: 2 },
     palettes: [
@@ -170,12 +183,17 @@ const FIGHTERS = [
                proj: { style: "orb", speed: 7, vy0: -3.5, life: 90, r: 15, ox: 26, oy: -40, grav: 0.3, dmg: 8, bkb: 5, kbg: 6, angle: 50,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 60 },
                        burst: { r: 46, life: 12, dmg: 8, bkb: 6, kbg: 8, angle: 70, fin: { dmg: 10, bkb: 10, kbg: 14, angle: 70 } } } }),
+      // Mutagen Cloud: a still cloud that pulses every 30 frames; the fifth pulse launches
+      ulti:  M(24, 1, 40, 0, 0, 0, 0, [], { limb: "arm", ult: "cloud", kind: "projectile", armor: [1, 24],
+               proj: { style: "cloud", speed: 0, life: 151, r: 96, ox: 100, oy: -44, pulse: 30, ult: true, dmg: 3, bkb: 3, kbg: 1, angle: 20,
+                       last: { dmg: 22, bkb: 8, kbg: 16, angle: 80 } } }),
     },
   },
   {
     id: "odin", name: "Odin", role: "Allfather",
     blurb: "Old, armored and very hard to launch. His raven does the scouting.",
     signature: { name: "Raven", text: "Sends his raven out and back. 2.5 s cooldown." },
+    ultimate: { name: "Gungnir", text: "Throws his spear low across the stage; it flies back to his hand. Stand on a platform or jump it." },
     look: { build: "potato", costume: "odin", leg: 0.2, torso: 0.66, headR: 0.12, limbW: 7, face: "stern", fist: true },
     stats: { w: 50, h: 72, weight: 108, run: 5.2, accel: 1.0, airSpeed: 4.4, airAccel: 0.4, gravity: 0.74, fallSpeed: 13, fastFall: 18, jump: 14.8, airJump: 13, airJumps: 1 },
     palettes: [
@@ -202,12 +220,16 @@ const FIGHTERS = [
       spec:  M(12, 1, 18, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 150,
                proj: { style: "raven", boomer: true, speed: 9.5, life: 80, r: 16, ox: 24, oy: -60, dmg: 7, bkb: 5, kbg: 7, angle: 40,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
+      // Gungnir: a low spear that crosses the stage and comes back (a boomerang, like the raven)
+      ulti:  M(26, 1, 40, 0, 0, 0, 0, [], { limb: "arm", ult: "spear", kind: "projectile", armor: [1, 26],
+               proj: { style: "spear", boomer: true, speed: 22, life: 100, r: 22, ox: 30, oy: -30, ult: true, dmg: 28, bkb: 8, kbg: 16, angle: 40 } }),
     },
   },
   {
     id: "wizard", name: "Wizard", role: "Staff mage",
     blurb: "Calm, patient, long reach. The crystal on his staff does the talking.",
     signature: { name: "Crystal Bolt", text: "Fires a fast bolt from the staff. 1.1 s cooldown." },
+    ultimate: { name: "Meteor Shower", text: "Calls five stars down around the opponent; each spot is marked before it lands. Read the marks and step out." },
     look: { build: "potato", costume: "wizard", leg: 0.2, torso: 0.68, headR: 0.13, limbW: 5, face: "kind" },
     stats: { w: 44, h: 68, weight: 104, run: 5.9, accel: 1.05, airSpeed: 4.7, airAccel: 0.44, gravity: 0.6, fallSpeed: 11, fastFall: 16, jump: 13.8, airJump: 12.4, airJumps: 2 },
     palettes: [
@@ -234,12 +256,16 @@ const FIGHTERS = [
       spec:  M(12, 1, 16, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 65,
                proj: { style: "bolt", speed: 12, life: 50, r: 13, ox: 46, oy: -52, dmg: 9, bkb: 5.5, kbg: 8, angle: 35,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 38 } } }),
+      // Meteor Shower: five stars spawned at mt 6, 14, 22, 30, 38 around the opponent, falling 31 frames; the last one on the spot
+      ulti:  M(40, 1, 30, 0, 0, 0, 0, [], { limb: "arm", ult: "stars", armor: [1, 40],
+               star: { dmg: 6, bkb: 6, kbg: 8, angle: 80 }, big: { dmg: 16, bkb: 8, kbg: 16, angle: 80 } }),
     },
   },
   {
     id: "samurai", name: "Samurai", role: "Swordmaster",
     blurb: "Fast feet, long blade. Closes the gap in a blink.",
     signature: { name: "Quick Draw", text: "Dashes forward with a draw-cut. Works in the air. 2.6 s cooldown." },
+    ultimate: { name: "Thousand Cuts", text: "An unseen dash through the opponent; the cut lands when the sword clicks back into its sheath. Jump the dash." },
     look: { build: "potato", costume: "samurai", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 5, face: "focused" },
     stats: { w: 42, h: 64, weight: 91, run: 6.8, accel: 1.3, airSpeed: 5.5, airAccel: 0.55, gravity: 0.7, fallSpeed: 12, fastFall: 17, jump: 14.6, airJump: 13, airJumps: 2 },
     palettes: [
@@ -265,12 +291,16 @@ const FIGHTERS = [
       pound: M(8, 1, 18,  10, 6, 12, -80, [0, -6, 22], { limb: "leg", pound: true, vyStart: 18, landLag: 16 }),
       spec:  M(9, 10, 20, 8, 6, 10, 30, [10, -32, 24], { limb: "arm", kind: "dash", speed: 15, cooldown: 155,
                fin: { dmg: 10, bkb: 10, kbg: 14, angle: 32 } }),
+      // Thousand Cuts: an intangible dash; whoever it passes is held still, and the cut lands at the sheath click (mt 66)
+      ulti:  M(23, 12, 45, 0, 0, 0, 0, [10, -32, 28], { limb: "arm", ult: "cuts", kind: "dash", speed: 22, mark: true, inv: [1, 70], cutAt: 66,
+               cut: { dmg: 30, bkb: 8, kbg: 17, angle: 42 } }),
     },
   },
   {
     id: "dragon", name: "Dragon", role: "Fire breather",
     blurb: "Leathery wings, claws and a tail. Breathes fire up close and glides back to the stage.",
     signature: { name: "Flame Breath", text: "Breathes a short stream of fire that hits several times. 2.5 s cooldown." },
+    ultimate: { name: "Hellfire", text: "Grows huge and breathes a fire stream across the stage that keeps burning, then blasts. Get above him." },
     look: { build: "potato", costume: "dragon", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 6, face: "fierce", wings: true, fist: true },
     stats: { w: 46, h: 66, weight: 106, run: 5.7, accel: 1.08, airSpeed: 4.8, airAccel: 0.46, gravity: 0.6, fallSpeed: 11, fastFall: 16, jump: 13.6, airJump: 12.2, airJumps: 2 },
     palettes: [
@@ -298,12 +328,16 @@ const FIGHTERS = [
       spec:  M(10, 17, 8, 0, 0, 0, 0, [], { limb: "head", kind: "projectile", cooldown: 150,
                proj: { style: "fire", speed: 6.5, life: 16, r: 12, ox: 30, oy: -38, count: 5, interval: 4, spreadVy: [-0.5, 0.3, -0.2, 0.5, 0], dmg: 2, bkb: 3.5, kbg: 3, angle: 35, short: true,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 42 } } }),
+      // Hellfire: a long, low fire stream ticking every 7 frames; the last 6 frames blast
+      ulti:  M(24, 42, 34, 4, 3, 1, 25, [[60, -46, 34], [130, -46, 38], [210, -46, 40], [290, -46, 40], [370, -46, 38]],
+               { limb: "head", ult: "hellfire", fire: true, multi: 7, armor: [1, 24], last: { from: 61, dmg: 16, bkb: 8, kbg: 17, angle: 40 } }),
     },
   },
   {
     id: "gunslinger", name: "Gunslinger", role: "Sharpshooter",
     blurb: "Two pistols and a wide hat. Chips away from afar, then finishes up close.",
     signature: { name: "Twin Shot", text: "Fires two fast shots that barely push. 0.8 s cooldown." },
+    ultimate: { name: "Dead Eye", text: "Six fanned shots, 8 frames apart; the sixth is golden and launches. Dodge between the shots." },
     look: { build: "potato", costume: "gunslinger", leg: 0.2, torso: 0.66, headR: 0.13, limbW: 5, face: "cocky" },
     stats: { w: 44, h: 64, weight: 93, run: 6.3, accel: 1.2, airSpeed: 5.0, airAccel: 0.5, gravity: 0.66, fallSpeed: 12, fastFall: 17, jump: 14.0, airJump: 12.6, airJumps: 2 },
     palettes: [
@@ -333,12 +367,17 @@ const FIGHTERS = [
       spec:  M(8, 9, 12, 0, 0, 0, 0, [], { limb: "arm", kind: "projectile", cooldown: 48,
                proj: { style: "bullet", speed: 15, life: 30, r: 8, ox: 34, oy: -38, count: 2, interval: 8, dmg: 4, bkb: 2.5, kbg: 1.5, angle: 20,
                        finCount: 1, finStyle: "gold", fin: { dmg: 10, bkb: 10, kbg: 14, angle: 30 } } }),
+      // Dead Eye: six fanned shots, the sixth a golden bullet
+      ulti:  M(24, 41, 30, 0, 0, 0, 0, [], { limb: "arm", ult: "deadeye", kind: "projectile", armor: [1, 24],
+               proj: { style: "bullet", speed: 16, life: 40, r: 9, ox: 34, oy: -38, count: 6, interval: 8, spreadVy: [-1.2, 0.9, -0.5, 1.4, 0.2, 0], ult: true,
+                       dmg: 4, bkb: 3, kbg: 2, angle: 20, lastShot: { style: "gold", dmg: 14, bkb: 8, kbg: 14, angle: 35 } } }),
     },
   },
   {
     id: "reaper", name: "Reaper", role: "Soul harvester",
     blurb: "Hood, sprouts and a farm scythe. Slow on his feet, long in the reach, and he hits behind him too.",
     signature: { name: "Harvest", text: "A sliding spin that tugs the opponent in towards him. 2.5 s cooldown." },
+    ultimate: { name: "Soul Harvest", text: "Tugs the opponent in from across the stage, then one scythe sweep up. Hold away and jump." },
     look: { build: "potato", costume: "reaper", leg: 0.2, torso: 0.68, headR: 0.13, limbW: 5, face: "sly" },
     stats: { w: 46, h: 68, weight: 104, run: 5.6, accel: 1.0, airSpeed: 4.6, airAccel: 0.44, gravity: 0.56, fallSpeed: 9.5, fastFall: 15, jump: 14.2, airJump: 13.2, airJumps: 1 },
     palettes: [
@@ -370,6 +409,8 @@ const FIGHTERS = [
       // Harvest: a slow sliding spin whose hit points back towards him (a tug); Last Rites hooks the finish-ready straight up
       spec:  M(12, 12, 22, 7, 5, 4, 160, [16, -34, 28], { limb: "arm", kind: "dash", speed: 8, cooldown: 150, scythe: true,
                fin: { dmg: 12, bkb: 12, kbg: 17, angle: 80 } }),
+      // Soul Harvest: a tug from mt 4 to 23 (strong on the ground, weak in the air), then a sweep up on both sides
+      ulti:  M(24, 7, 40, 30, 8, 16, 86, [[44, -44, 46], [-44, -44, 46]], { limb: "arm", ult: "harvest", scythe: true, armor: [1, 24], pull: [4, 23] }),
     },
   },
 ];
@@ -377,8 +418,8 @@ for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if
 for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
 
 /* ---------- state ---------- */
-const BTN = ["jump", "light", "heavy", "special", "dodge"];
-const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false });
+const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti"];
+const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false });
 
 function newFighter(spec, slot, pal, x, facing) {
   const s = spec.stats;
@@ -392,10 +433,11 @@ function newFighter(spec, slot, pal, x, facing) {
     percent: 0, stocks: 3, invuln: 0, hitstun: 0, tumble: false,
     specCd: 0, recUsed: false, ledge: 0, ledgeCd: 0, ledgeInv: false,
     flash: 0, armorFlash: 0, dead: 0,
-    inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0 },
+    inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0, ulti: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
     techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false,
+    ult: 0, ultN: 0, ultX: 0, ultTgt: -1,
     anim: { run: 0 },
   };
 }
@@ -430,6 +472,7 @@ function intangible(f) {
   if (f.invuln > 0 || f.doomed) return true;
   const s = f.state;
   if (s === "respawn" || s === "getup" || s === "dead" || s === "gone") return true;
+  if (s === "attack" && f.move && f.move.inv && f.mt >= f.move.inv[0] && f.mt <= f.move.inv[1]) return true;
   if (s === "dodge") { const end = f.dodgeKind === "air" ? 20 : 16; return f.st >= 3 && f.st <= end; }
   return false;
 }
@@ -474,7 +517,7 @@ function step(g, inputs) {
 
 function readInput(f, inp, frozen) {
   f.prevInp = f.inp;
-  f.inp = { x: clamp(inp.x || 0, -1, 1), y: clamp(inp.y || 0, -1, 1), jump: !!inp.jump, light: !!inp.light, heavy: !!inp.heavy, special: !!inp.special, dodge: !!inp.dodge };
+  f.inp = { x: clamp(inp.x || 0, -1, 1), y: clamp(inp.y || 0, -1, 1), jump: !!inp.jump, light: !!inp.light, heavy: !!inp.heavy, special: !!inp.special, dodge: !!inp.dodge, ulti: !!inp.ulti };
   for (const k of BTN) {
     if (f.inp[k] && !f.prevInp[k]) f.buf[k] = TUNE.buffer;
     else if (f.buf[k] > 0 && !frozen) f.buf[k]--;
@@ -536,6 +579,7 @@ function updateFighter(g, f) {
 
 function actOrMove(g, f) {
   const b = f.buf, dir = dirOf(f.inp);
+  if (b.ulti) { consume(f, "ulti"); if (ultReady(g, f)) return startUlti(g, f); }
   if (f.grounded) {
     if (b.dodge) { consume(f, "dodge"); return startDodge(g, f); }
     if (b.jump) { consume(f, "jump"); f.tumble = false; return setState(f, "jumpsquat"); }
@@ -559,6 +603,90 @@ function actOrMove(g, f) {
     airDrift(f, 1);
     fastFallCheck(f);
   }
+}
+
+/* ---------- Ultimates ---------- */
+const ultNeed = (f) => (f.ultN < TUNE.ultMax ? TUNE.ultNeed[f.ultN] : 0);
+function ultReady(g, f) { return g.phase === "play" && f.ultN < TUNE.ultMax && f.ult >= ultNeed(f); }
+function ultGain(f, v) { if (f.ultN < TUNE.ultMax) f.ult = Math.min(ultNeed(f), f.ult + v); }
+// the charge is spent on the press; the super freeze holds everyone (presses made in it are buffered, not lost)
+function startUlti(g, f) {
+  f.ult = 0; f.ultN++; f.ultTgt = -1; f.ultX = 0;
+  faceStick(f);
+  startMove(g, f, "ulti");
+  g.hitstop = Math.max(g.hitstop, TUNE.ultFreeze);
+  g.events.push({ type: "ulti", slot: f.slot, x: f.x, y: f.y, n: f.ultN, name: f.spec.ultimate.name, id: f.spec.id });
+}
+const foe = (g, f) => g.fighters.find((o) => o !== f && o.state !== "gone");
+// what each ulti does beyond the plain move: runs after mt++ in updateAttack; true = it moved the fighter itself
+function ultStep(g, f, m) {
+  const S = STAGE.main, k = m.ult, mt = f.mt;
+  if (k === "dive") {
+    if (mt < 15) {
+      // up and out of sight
+      if (mt === 1) { f.grounded = false; f.plat = -1; }
+      f.vx = 0; f.vy = -26;
+      return true;
+    }
+    if (mt < 31) {
+      // above the screen: the spot is picked at mt 15 (the opponent's x, kept on the stage), shown as a mark until the dive
+      // the comet falls through platforms unless the opponent stood on one (ultTgt = that platform)
+      if (mt === 15) { const o = foe(g, f); f.ultX = clamp(o ? o.x : 0, S.x1 + 40, S.x2 - 40); f.ultTgt = o && o.grounded ? o.plat : -1; g.events.push({ type: "ultMark", slot: f.slot, x: f.ultX }); }
+      f.x = f.ultX; f.y = STAGE.blast.top + f.s.h + 70; f.vx = 0; f.vy = 0;
+      return true;
+    }
+    if (mt < m.startup) {
+      if (f.grounded) { f.mt = m.startup; f.vx = 0; g.events.push({ type: "ultLand", slot: f.slot, x: f.x, y: f.y }); return true; }
+      f.vx = 0; f.vy = 30;
+      if (f.ultTgt < 0) f.dropT = 2;
+      // still falling at the end of the dive: wait here (a safety cap ends the move if nothing is ever landed on)
+      if (mt === m.startup - 1) { if (f.poundT++ < 90) f.mt = m.startup - 2; }
+      return true;
+    }
+    return false;
+  }
+  if (k === "stars") {
+    // five stars, each 31 frames from spawn to the floor; four around the opponent's spot, the last on it
+    const i = (mt - 6) / 8;
+    if (i >= 0 && i < 5 && i === Math.floor(i)) {
+      const o = foe(g, f), off = [-96, 96, -48, 48, 0][i];
+      const x = clamp((o ? o.x : f.x) + off, S.x1 + 10, S.x2 - 10), hit = Object.assign({ fire: false, fin: null, ult: true }, i === 4 ? m.big : m.star);
+      g.projs.push({ owner: f.slot, x, y: S.top - 558, dir: f.facing, vx: 0, vy: 18, grav: 0, boomer: false, style: i === 4 ? "bigstar" : "star", burst: null,
+        speed: 0, r: i === 4 ? 30 : 24, life: 40, t: 0, pal: f.pal, pulse: 0, last: null, hit });
+      g.events.push({ type: "proj", slot: f.slot, style: "star", x, y: S.top - 558 });
+    }
+    return false;
+  }
+  if (k === "cuts") {
+    const t = f.ultTgt >= 0 ? g.fighters[f.ultTgt] : null;
+    if (t && mt < m.cutAt) { t.vx = 0; t.vy = 0; t.kbx = 0; t.kby = 0; }
+    if (mt === m.cutAt && t) {
+      f.ultTgt = -1;
+      if (t.state === "hitstun" && !t.doomed) applyHit(g, { att: f, def: t, hit: Object.assign({ ult: true }, m.cut), lx: 0, bx: t.x, by: t.y - t.s.h * 0.5 });
+    }
+    return false;
+  }
+  if (k === "harvest" && mt >= m.pull[0] && mt <= m.pull[1]) {
+    // the tug: strong on the ground, weak in the air; it stops close to him
+    for (const o of g.fighters) {
+      if (o === f || intangible(o) || o.state === "ledge" || o.state === "dead" || o.state === "gone") continue;
+      const dx = f.x - o.x, ad = Math.abs(dx);
+      if (ad > 520 || ad < 56) continue;
+      o.x += sign(dx) * Math.min(ad - 56, o.grounded ? 10 : 5);
+    }
+  }
+  return false;
+}
+// Thousand Cuts: the dash passing someone holds them still until the cut (no damage yet)
+function ultMark(g, att, def) {
+  if (att.ultTgt >= 0) return;
+  att.ultTgt = def.slot;
+  def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
+  setState(def, "hitstun");
+  def.hitstun = att.move.cutAt - att.mt + 6;
+  def.vx = def.vy = def.kbx = def.kby = 0; def.tumble = false; def.flash = 6;
+  def.lastHitBy = att; def.lastHitT = g.t;
+  g.events.push({ type: "ultMark", slot: att.slot, def: def.slot, x: def.x, y: def.y });
 }
 
 // a buffered special or heavy starts here (also from a light's end lag while the link is open); true if one started
@@ -628,13 +756,13 @@ function startMove(g, f, key) {
   if (key === "spec") f.specCd = m.cooldown || 0;
   // the link: started from (or soon after) the second light hit in a row, the wind-up skips its first linkFast frames
   // (a charging heavy still reaches the frame where it charges)
-  f.lk = f.link > 0 && !LIGHT.has(key);
+  f.lk = f.link > 0 && !LIGHT.has(key) && key !== "ulti";
   if (f.lk) { f.mt = Math.max(0, Math.min(TUNE.linkFast, m.startup - (m.charge ? TUNE.chgHold : 1))); f.link = 0; }
   // a projectile special with finCount fires only finCount shots, in finStyle, when it starts against a finish-ready opponent
   if (key === "spec") f.finShot = !!(m.proj && m.proj.finCount && g.fighters.some((o) => o !== f && o.percent >= TUNE.finishPct));
   if (m.rec) { f.recUsed = true; faceStick(f); f.ff = false; }
   if (m.pound) f.ff = false;
-  g.events.push({ type: "swing", heavy: key[0] === "h" || key === "spec" || key === "pound", slot: f.slot });
+  g.events.push({ type: "swing", heavy: key[0] === "h" || key === "spec" || key === "pound" || key === "ulti", slot: f.slot, ult: key === "ulti" });
 }
 
 function updateAttack(g, f) {
@@ -656,6 +784,7 @@ function updateAttack(g, f) {
   }
   f.mt++;
   const a0 = m.startup + 1, a1 = m.startup + m.active, total = m.startup + m.active + m.endlag;
+  if (m.ult && ultStep(g, f, m)) return;
   if (m.rec) {
     if (f.mt < m.startup) { f.vy = Math.min(f.vy, 0.5); f.vx *= 0.85; }
     else if (f.mt === m.startup) {
@@ -736,6 +865,7 @@ function physics(g, f) {
     const m = f.move;
     if (f.state === "attack" && m) {
       if (m.kind === "dash" && f.mt > m.startup && f.mt <= m.startup + m.active) noGrav = true;
+      if (m.ult === "dive" && f.mt < m.startup) noGrav = true;
       if (m.pound && f.mt >= m.startup) maxFall = Math.max(maxFall, m.vyStart);
     }
     if (f.state === "dodge" && f.dodgeKind === "air" && f.st < 18 && (f.dodgeDir[0] || f.dodgeDir[1])) noGrav = true;
@@ -883,19 +1013,20 @@ function activeBoxes(f) {
 }
 
 function spawnProj(g, f, m, i) {
-  const p = m.proj, style = (f.finShot && p.finStyle) || p.style || "disc";
+  const p = m.proj, ls = p.lastShot && i === (p.count || 1) - 1 ? p.lastShot : null;
+  const style = (ls && ls.style) || (f.finShot && p.finStyle) || p.style || "disc", n = ls || p;
   g.projs.push({
     owner: f.slot, x: f.x + f.facing * p.ox, y: f.y + p.oy, dir: f.facing, vx: f.facing * p.speed,
     vy: p.spreadVy ? p.spreadVy[i] || 0 : p.vy0 || 0, grav: p.grav || 0, boomer: !!p.boomer, style, burst: p.burst || null,
-    speed: p.speed, r: p.r, life: p.life, t: 0, pal: f.pal,
-    hit: { dmg: p.dmg, bkb: p.bkb, kbg: p.kbg, angle: p.angle, fire: style === "fire", fin: p.fin || null },
+    speed: p.speed, r: p.r, life: p.life, t: 0, pal: f.pal, pulse: p.pulse || 0, last: p.last || null,
+    hit: { dmg: n.dmg, bkb: n.bkb, kbg: n.kbg, angle: n.angle, fire: style === "fire", fin: p.fin || null, ult: !!p.ult },
   });
   g.events.push({ type: "proj", slot: f.slot, style, x: f.x + f.facing * p.ox, y: f.y + p.oy });
 }
 function spawnBurst(g, p, x, y) {
   const b = p.burst;
   g.projs.push({ owner: p.owner, x, y, dir: p.dir, vx: 0, vy: 0, grav: 0, boomer: false, style: "burst", burst: null,
-    speed: 0, r: b.r, life: b.life, t: 0, pal: p.pal, hit: { dmg: b.dmg, bkb: b.bkb, kbg: b.kbg, angle: b.angle, fire: false, fin: b.fin || null } });
+    speed: 0, r: b.r, life: b.life, t: 0, pal: p.pal, pulse: 0, last: null, hit: { dmg: b.dmg, bkb: b.bkb, kbg: b.kbg, angle: b.angle, fire: false, fin: b.fin || null } });
   g.events.push({ type: "burst", x, y, r: b.r, slot: p.owner });
 }
 function updateProjs(g) {
@@ -914,7 +1045,7 @@ function updateProjs(g) {
       p.vy += p.grav; p.x += p.vx; p.y += p.vy;
     }
     if (p.t >= p.life) p.done = true;
-    if (p.style !== "burst" && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
+    if (p.style !== "burst" && !p.pulse && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
       p.done = true;
       if (!p.boomer) g.events.push({ type: "projEnd", x: p.x, y: Math.min(p.y, S.top), style: p.style, slot: p.owner });
       if (p.burst) spawnBurst(g, p, p.x, S.top - 6);
@@ -930,19 +1061,27 @@ function detectHits(g) {
     if (!boxes) continue;
     for (const def of g.fighters) {
       if (def === att || intangible(def)) continue;
-      const last = att.hitLog[def.slot];
-      if (last !== undefined && !(att.move.multi && att.mt - last >= att.move.multi)) continue;
+      const mv = att.move, last = att.hitLog[def.slot];
+      // a move with a `last` block hits once more with those numbers from its frame `from`
+      const blast = mv.last && att.mt >= mv.last.from;
+      if (last !== undefined && !(mv.multi && att.mt - last >= mv.multi) && !(blast && last < mv.last.from)) continue;
       const r = hurt(def);
       for (const b of boxes) {
-        if (circRect(b.x, b.y, b.r, r)) { hits.push({ att, def, hit: att.move, lx: b.lx, bx: b.x, by: b.y }); break; }
+        if (circRect(b.x, b.y, b.r, r)) { hits.push({ att, def, hit: blast ? Object.assign({}, mv, mv.last) : mv, lx: b.lx, bx: b.x, by: b.y }); break; }
       }
     }
   }
   for (const p of g.projs) {
     if (p.done) continue;
+    // a pulsing cloud only hurts on its pulses, stays after a hit, and its last pulse uses the `last` numbers
+    if (p.pulse && p.t % p.pulse !== 0) continue;
     for (const def of g.fighters) {
       if (def.slot === p.owner || intangible(def)) continue;
-      if (circRect(p.x, p.y, p.r, hurt(def))) { hits.push({ att: g.fighters[p.owner], def, hit: p.hit, proj: p, bx: p.x, by: p.y }); p.done = true; break; }
+      if (circRect(p.x, p.y, p.r, hurt(def))) {
+        const hit = p.pulse && p.last && p.t + p.pulse > p.life ? Object.assign({}, p.hit, p.last) : p.hit;
+        hits.push({ att: g.fighters[p.owner], def, hit, proj: p, bx: p.x, by: p.y });
+        if (!p.pulse) { p.done = true; break; }
+      }
     }
   }
   for (const h of hits) if (!h.proj) h.att.hitLog[h.def.slot] = h.att.mt;
@@ -956,6 +1095,7 @@ function knockback(hit, percent, weight) {
 
 function applyHit(g, h) {
   const { att, def } = h;
+  if (h.hit.mark) return ultMark(g, att, def);
   // finish mode: a special on an opponent at finishPct or more (the number shown before the hit) finishes
   const fin = !!(h.hit.fin && def.percent >= TUNE.finishPct);
   const hit = fin ? Object.assign({}, h.hit, h.hit.fin) : h.hit;
@@ -968,6 +1108,9 @@ function applyHit(g, h) {
   if (nth >= 4) dmg = Math.max(1, Math.round(dmg * (nth >= 6 ? TUNE.comboK6 : TUNE.comboK4)));
   def.percent = Math.min(999, def.percent + dmg);
   att.dmgDealt += dmg;
+  // the ulti bar: dealt and taken damage fill it (an ulti's own hits don't)
+  const ultHit = !!h.hit.ult || (!h.proj && att.mid === "ulti");
+  if (!ultHit) { ultGain(att, dmg * TUNE.ultDealt); ultGain(def, dmg * TUNE.ultTaken); }
   let kb = knockback(hit, def.percent, def.s.weight);
   if (ck) kb *= 1 + TUNE.chgKb * ck;
   let hdir;
@@ -1031,9 +1174,9 @@ function applyHit(g, h) {
   def.flash = 8;
   g.hitstop = Math.max(g.hitstop, Math.min(16, Math.round(3 + dmg * 0.45 + kb * 0.12)));
   if (fin) g.hitstop = Math.max(g.hitstop, TUNE.finishStop);
-  const mv = h.proj ? "spec" : att.mid;
+  const mv = ultHit ? "ulti" : h.proj ? "spec" : att.mid;
   if (def.tumble) g.launches.push({ att, def, mv, fin, chg: att.chg, kb, dirx: dx, diry: dy });
-  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0, link, lk: !h.proj && att.lk, mi: h.proj ? -1 : att.moveT });
+  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0, link, lk: !h.proj && att.lk, mi: h.proj ? -1 : att.moveT, ult: ultHit });
 }
 
 /* ---------- KO at the hit ----------
@@ -1109,11 +1252,12 @@ function ko(g, f) {
     return;
   }
   f.stocks--; f.falls++;
+  ultGain(f, TUNE.ultHeart);
   const killer = f.lastHitBy && f.lastHitBy !== f && g.t - f.lastHitT < 480 ? f.lastHitBy : null;
   if (killer) killer.kos++; else f.sds++;
   g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: !killer });
   g.hitstop = Math.max(g.hitstop, 6);
-  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false });
+  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false, ultTgt: -1 });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
@@ -1148,7 +1292,7 @@ function startSudden(g) {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
       recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0, link: 0, lk: false,
-      chg: 0, doomed: false,
+      chg: 0, doomed: false, ultTgt: -1,
     });
     setState(f, "idle");
   });
@@ -1270,6 +1414,25 @@ function botInput(g, me, opp, bot) {
   const reach = me.s.w / 2 + 34;
   const act = canAct(me);
 
+  // the opponent's ulti: jump the low ones, step away from the clouds and stars
+  if (act && bot.cool <= 0 && o.st === "attack" && o.mv && o.mv.ult && (o.mv.ult !== "dive" || o.mt > 24) && R() < lerp(0.08, 0.6, d)) {
+    const uk = o.mv.ult;
+    if (uk === "cloud" || uk === "stars") { bot.hold.x = -sx; out.x = -sx; avoidEdge(me, out); return out; }
+    if (me.grounded) return press("jump", uk === "harvest" ? -sx : 0, 0, 14);
+  }
+  // our ulti: when the bar is full, the opponent is in its reach and near KO (or time is running out)
+  if (act && bot.cool <= 0 && !o.inv && ultReady(g, me)) {
+    const uk = me.spec.moves.ulti.ult, ady = Math.abs(dy), onStage = Math.abs(o.x) < S.x2 && o.y <= S.top + 2 && o.y > S.top - 140;
+    const fits = uk === "dive" || uk === "stars" ? onStage
+      : uk === "cloud" ? adx < 150 && ady < 60
+      : uk === "spear" ? adx < 520 && ady < 24
+      : uk === "cuts" ? adx > 30 && adx < 230 && ady < 30 && Math.abs(me.x + sx * 270) < S.x2
+      : uk === "hellfire" ? adx < 380 && ady < 40
+      : uk === "deadeye" ? adx < 520 && ady < 50
+      : adx < 320 && ady < 60;
+    const late = g.timed && g.timer < 40 * 60 && o.pct > 40;
+    if (fits && (o.pct >= lerp(150, 105, d) || late) && R() < lerp(0.08, 0.35, d)) return press("ulti", sx, 0, 20);
+  }
   if (act && bot.cool <= 0 && o.st === "attack" && o.mv && o.mt <= o.mv.startup && adx < 120 && Math.abs(dy) < 100 && R() < lerp(0.04, 0.5, d)) {
     return press("dodge", me.grounded && R() < 0.6 ? -sx : 0, 0, 20);
   }
@@ -1336,8 +1499,8 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk"];
-const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt"];
+const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
   return {
@@ -1373,10 +1536,10 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
 
-root.BL = { serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, FIGHTERS, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
