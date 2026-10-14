@@ -93,3 +93,46 @@ function hudPauseZone() {
   }
   return HX.pz;
 }
+
+/* ---------- ultimate bar and ULTI button (reads the sim, never writes it) ----------
+   Under each name card (.pc-ult, shell.html): a strip that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a short
+   flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. The player's own button
+   (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard player gets a U key
+   next to the own bar instead. The own bar becoming full plays Sfx.ultFull (added by the sound coder; absent = silent). Called every
+   frame from updateHud (screens.js). */
+const HU = { g: null, c: [{}, {}], rdy: false, btn: document.querySelector('.pb[data-k="ulti"]') };
+function hudUltReset() {
+  HU.g = G; HU.rdy = false;
+  HU.c = [0, 1].map(() => ({ u: "", n: -1, full: false, off: null }));
+  HU.btn.classList.remove("rdy", "on");
+  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none");
+}
+function hudUlt() {
+  if (HU.g !== G) hudUltReset();
+  const trial = !!(match && match.trial);   // the Combo trial has no ultimates
+  for (let i = 0; i < 2; i++) {
+    const f = G.fighters[i], c = HU.c[i], el = $("pc" + i).querySelector(".pc-ult");
+    if (c.off !== trial) { c.off = trial; el.hidden = trial; }
+    if (trial) continue;
+    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need;
+    const us = (need ? Math.max(0, Math.min(1, f.ult / need)) : 0).toFixed(3);
+    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); }
+    const left = BL.TUNE.ultMax - f.ultN;
+    if (c.n !== left) { c.n = left; [...el.querySelectorAll(".up i")].forEach((p, k) => p.classList.toggle("sp", k >= left)); el.classList.toggle("none", left <= 0); }
+    if (c.full !== full) {
+      const was = c.full; c.full = full;
+      el.classList.toggle("full", full);
+      if (full && !was) {
+        el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 650);
+        if (i === meSlot && Sfx.ultFull) Sfx.ultFull();
+      }
+      el.querySelector(".uk").hidden = !(full && i === meSlot && !touchUI);
+    }
+  }
+  const me = G.fighters[meSlot], need = BL.ultNeed(me), rdy = !trial && G.phase !== "over" && (BL.ultReady(G, me) || (need > 0 && me.ult >= need));
+  if (rdy !== HU.rdy) {
+    HU.rdy = rdy; HU.btn.classList.toggle("rdy", rdy);
+    // the press has already been read by the sim; a finger still down on a hidden button must not leave the input held
+    if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
+  }
+}
