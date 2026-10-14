@@ -24,8 +24,8 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   The manga engine (ui/manga.js) and all six pages (manga/<id>.js) are this PR; videos:
   finisher-films/<fighter>-<title>-manga-v1.mp4. The 3D code (gfx3d.js, cine.js, films/, vendor/three-addons.js,
   the GL canvases, tests/pwcine.py) was removed in the night clean-up (index.html 1142072 -> 912772 bytes); the five
-  unfinished 3D films stay saved as patches in finisher-films/3d-wip/ (not in the repo). three.min.js is still in the
-  repo root and still copied, but nothing loads it.
+  unfinished 3D films stay saved as patches in finisher-films/3d-wip/ (not in the repo). three.min.js was removed from the
+  repo, build.py, server.js and the deploy blocks in one change (round after the clean-up).
 - Night track (branch night-gun, PROTO 5): the Gunslinger, a seventh fighter ("Sharpshooter": Twin Shot, two weak fast
   shots, 0.8 s cooldown; Fan the hammer with a recoil hop; High Noon, one golden finishing bullet; Powder jump).
   Jonny's picture: /mnt/project-files/overnight/concept-gunslinger.jpg, Fable's design: overnight/fable-ideas.md
@@ -230,10 +230,8 @@ that differ from lights, a charged heavy, and the finisher starting on the KO hi
 accounts (1 s charge).
 - M3 fight feel: live; Jonny's phone test (sounds) still pending.
 - M4 now: 2D manga KO finishers for all six (this PR). Next: Jonny's notes on the videos, a real-phone check of the
-  page's draw time (budget 6 ms/frame). The 3D code is removed (night clean-up). Next round: drop three.min.js from
-  the repo root, from build.py (the copies into build/ and public/), from server.js (the /three.min.js asset) and from
-  the deploy lines `cp -f index.html three.min.js web/* public/` (update.txt, beta-update.txt, beta-setup.txt,
-  first-setup.txt), all in one change, so Jonny's paste stays in step.
+  page's draw time (budget 6 ms/frame). The 3D code is removed (night clean-up). three.min.js is gone from the repo root,
+  build.py, server.js and the deploy lines (now `cp -f index.html web/* public/`).
 - M4 history (finisher-films/plan.md): 1. 2D only + red hearts (display only). 2. The 3D film engine + the
   Dragon's "Inferno" film, sent to Jonny as a video before the rest. 3. The other five films (Phoenix, then
   Wizard + Alchemist, then Odin + Samurai). UI only, no PROTO bump. The Potatalities move to a later finisher
