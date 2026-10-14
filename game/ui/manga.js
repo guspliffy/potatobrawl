@@ -8,7 +8,18 @@
    A fighter's page is a script, MANGA[id], in game/manga/<id>.js (spliced in by build.py at the marker at the end of this part). A fighter without one
    (and any error while the page plays) keeps the 2D finisher of finisher.js.
    Phone budget: no ctx.filter, no shadowBlur, no per-frame getImageData; patterns, the focus disc, speed strips and word canvases are
-   built once per page and freed at its end. */
+   built once per page and freed at its end.
+   ULTIMATES (design: ultimates/fable-ultimate-pages.md). When the lethal hit is an Ultimate (the event's mv === "ulti"; finisher.js sets FIN.ulti) the engine
+   sets MG.ulti = true and MG.ultiName = the fighter's ultimate name, and adds the GENERIC Ultimate layer to whatever page plays, all in this file:
+   a third impact frame (gold paper, ink silhouettes, white rays; 50 ms each, so the launch waits until hit + 150), the tear glows gold, every word that comes
+   at or after the hit and has no fill of its own is gold, the card says "ULTIMATE: <name>" in gold over a second, gold strip, the K.O. hanko is gold and chimes.
+   A page that has its own Ultimate cut puts a full script on MANGA[id].ulti (an object with the fields of any page, usually Object.assign({}, S_, {...})): the engine
+   then plays that script on the LONGER timeline MT_U (5.9 s: SPLASH 3250, AFTER 4700, CARD 4850, SEAL 5050, FADE 5600, END 5900; MT is overwritten from MT_N or MT_U
+   in mangaStart, so a page always reads MT.AFTER etc.; its own post-aftermath moments are MT.AFTER + offset). Its panels(lay) include one splash panel, a full
+   page panel from mgSplashPanel({ from, paper, cam, draw, ... }) at MT.SPLASH. Panel fields added for this: opaque (the panel covers the whole page once it has
+   slid in, so the panels below it are no longer drawn) and before(c, t, pn) (called once, on the first frame the panel is drawn, just before it is: c holds the
+   page so far, which the Samurai copies to cut it into slabs). A script may also define end() (called when the page ends or is skipped, to free its own canvases).
+   The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL. */
 
 /* ===================== B13: the cinema sound kit (Web Audio synth, one compressed bus) ===================== */
 const Cin = {
@@ -107,10 +118,15 @@ Object.assign(Cin, {
 /* ---------- constants, state ---------- */
 const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced in at the end of this part)
 // ms after the final hit. FREEZE: the picture stops (the loser has left the shot by 520, so the picture is taken while it is still in it); INKED: the ink is down.
-const MT = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
+// Two tables: MT_N (every normal page, and the generic Ultimate layer on a page without its own Ultimate cut, 4.7 s) and MT_U (a page with its own Ultimate cut,
+// 5.9 s: everything from the aftermath on is shifted by U = 1200 and the splash panel sits at 3250). mangaStart copies the right one into MT before the page is built.
+const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
+const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, FADE: 5600, END: 5900 };
+const MT = Object.assign({}, MT_N);
 const MG_BOX = [-100, -125, 100, 14];
+const MG_GOLD = "#f3c84a", MG_GOLD_D = "#b8860b", MG_GOLD_PALE = "#fff2c2", MG_GOLD_SEAL = "#e0b43a";   // the Ultimate's gold: it joins the page's accent, never replaces it
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
-const MG = { on: false, script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, strip: null, stripW: null,
+const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
   snapPending: false, tintK: 0.56, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, fixed: false, avg: 0, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
 const mgClock = () => (window.__realNow ? window.__realNow() : performance.now());   // the tests step performance.now themselves; this one stays real
 function mgRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -178,10 +194,11 @@ function mgTile(size, cover, colr) {
   return p;
 }
 function mgDrift(pat, dx, dy) { try { if (pat.setTransform) pat.setTransform(new DOMMatrix([1, 0, 0, 1, dx, dy])); } catch (e) { /* no pattern transforms */ } }
-// the burst of wedges from one point (focus lines); thin at the centre end, so the middle of the picture stays clear
+// the burst of wedges from one point (focus lines); thin at the centre end, so the middle of the picture stays clear.
+// `white`: false = ink, true = white, or a CSS colour string for a disc of that colour (one more cached canvas per colour, MG.discC)
 function mgFocusDisc(white) {
   const S = 1024, R = S / 2, c = mgCanvas(S, S), x = c.getContext("2d"), r = mgRng(777);
-  x.translate(R, R); x.fillStyle = white ? "#ffffff" : MG_INK;
+  x.translate(R, R); x.fillStyle = typeof white === "string" ? white : white ? "#ffffff" : MG_INK;
   for (let i = 0; i < 84; i++) {
     const a = (i / 84) * Math.PI * 2 + (r() - 0.5) * 0.05, hw = (0.3 + r() * 1.2) * Math.PI / 180 * (r() < 0.14 ? 2.4 : 1), rin = R * (0.3 + r() * 0.42);
     x.beginPath(); x.moveTo(Math.cos(a) * rin, Math.sin(a) * rin); x.lineTo(Math.cos(a - hw) * R, Math.sin(a - hw) * R); x.lineTo(Math.cos(a + hw) * R, Math.sin(a + hw) * R); x.closePath(); x.fill();
@@ -201,11 +218,11 @@ function mgSpeedStrip(white) {
 // focus lines centred on (cx, cy), reaching out to R css px, turning slowly; the caller clips
 // the shared pictures are made when first asked for (or by the queue after the freeze, whichever comes first), so a script never meets a missing one
 function mgNeedLayer() { if (!MG.layer) { MG.layer = mgCanvas(MG.cw, MG.ch); MG.lc = MG.layer.getContext("2d"); } }
-function mgNeedDisc(white) { if (white) { if (!MG.discW) MG.discW = mgFocusDisc(true); } else if (!MG.disc) MG.disc = mgFocusDisc(false); }
+function mgNeedDisc(white) { if (typeof white === "string") { if (!MG.discC[white]) MG.discC[white] = mgFocusDisc(white); } else if (white) { if (!MG.discW) MG.discW = mgFocusDisc(true); } else if (!MG.disc) MG.disc = mgFocusDisc(false); }
 function mgNeedStrip(white) { if (white) { if (!MG.stripW) MG.stripW = mgSpeedStrip(true); } else if (!MG.strip) MG.strip = mgSpeedStrip(false); }
 function mgFocus(c, cx, cy, R, rot, alpha, white) {
   mgNeedDisc(white);
-  c.save(); c.globalAlpha = alpha; c.translate(cx, cy); c.rotate(rot); c.drawImage(white ? MG.discW : MG.disc, -R, -R, R * 2, R * 2); c.restore();
+  c.save(); c.globalAlpha = alpha; c.translate(cx, cy); c.rotate(rot); c.drawImage(typeof white === "string" ? MG.discC[white] : white ? MG.discW : MG.disc, -R, -R, R * 2, R * 2); c.restore();
 }
 // speed lines in a w x h box centred on (x, y), running along `ang`, scrolling by `off` px; the caller sets the clip if it wants one
 function mgSpeed(c, x, y, w, h, ang, off, alpha, white, th) {
@@ -286,7 +303,8 @@ function mgWordDraw(c, w, t) {
 //   slide (ms), poly: [[x, y] x4] as shares of the page area drawn for a winner on the left (mirrored when the winner is on the right),
 //   cam(t, pn) -> { wx, wy, vh, px, py } (the world point at the panel's centre, the world height the panel shows, a pan in px),
 //   draw(c, pn, t), freeze (ms: the panel is drawn once into a bitmap and stays as it was), cover (ms: a later panel covers it from here: it dims),
-//   shake(t) -> [dx, dy], live (keep drawing every frame), paper, dim ("r,g,b" of the dimming once covered; ink by default) }
+//   shake(t) -> [dx, dy], live (keep drawing every frame), paper, dim ("r,g,b" of the dimming once covered; ink by default),
+//   opaque (a full-page panel: once it has slid in, the panels below it are not drawn any more), before(c, t, pn) (called once, just before the panel's first frame: c holds the page so far) }
 function mgPanel(d, idx) {
   const pg = MG.page, mx = (x) => (FIN.dir > 0 ? x : 1 - x);
   const poly = d.poly.map(([fx, fy]) => [pg.x + mx(fx) * pg.w, pg.y + fy * pg.h]);
@@ -496,6 +514,13 @@ function mgInkC(which) {
 /* ---------- building the page (at the freeze) ---------- */
 // panel 1 is the engine's own: the real hit, frozen and inked, the whole page
 function mgFirstPanel() { return { id: "hit", t0: MT.FREEZE, slide: 0, live: true, poly: [[0, 0], [1, 0], [1, 1], [0, 1]], draw: mgDrawHit }; }
+// THE HOOK for an Ultimate page's splash (panel 5): one full-page panel at MT.SPLASH that slides in over the page in 180 ms, opaque (nothing below it is drawn once it is in),
+// frozen into a bitmap when the aftermath panel arrives (MT.AFTER) and dimmed under it. A page's Ultimate script returns it from panels(lay) (the order of the list is
+// the order of drawing: ...strike, splash, aftermath) and fills in o: from ("t" | "b"), paper (the page's paper colour), cam(t, pn), draw(c, pn, t), and any panel field
+// (before, shake, dim, slide, freeze...). The slide direction is a share of the whole page, so on the upright layout it needs no change.
+function mgSplashPanel(o) {
+  return Object.assign({ id: "splash", t0: MT.SPLASH, from: "b", slide: 180, opaque: true, live: true, freeze: MT.AFTER, cover: MT.AFTER, poly: [[0, 0], [1, 0], [1, 1], [0, 1]] }, o);
+}
 function mgDrawHit(c, pn, t) {
   const ink = MG.inkOK ? easeOut(fe(MT.FREEZE + 30, MT.INKED - 40, t)) : 0, life = easeOut(fe(MT.FREEZE, MT.END, t)), s = 1 + 0.07 * life, ix = MG.ix, iy = MG.iy;
   c.save(); c.translate(ix, iy); c.scale(s, s); c.translate(-ix, -iy);
@@ -519,6 +544,7 @@ function mgSnapshot() {
   MG.panels = [mgFirstPanel()].concat(S.panels(MG.lay)).map((dd, i) => mgPanel(dd, i));
   MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
   MG.words = mgWordDefs(S).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+  if (MG.ulti) for (const w of MG.words) if (w.t0 >= FIN.hit && !w.fill) w.fill = MG_GOLD;   // the Ultimate's strike words are gold unless the page colours them itself
   if (S.build) S.build(MG.lay);
   MG.todo = [
     () => { mgNeedLayer(); mgNeedDisc(false); },
@@ -534,17 +560,23 @@ function mgWork(t) {
 
 /* ---------- start, tick, draw, end ---------- */
 function mangaStart(g) {
-  const W = g.fighters[g.winner], S = MANGA[W.spec.id];
-  if (!S) return false;
+  const W = g.fighters[g.winner], base = MANGA[W.spec.id];
+  if (!base) return false;
+  // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
+  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
   try {
-    MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
+    Object.assign(MT, cut ? MT_U : MT_N);
+    MG.ulti = ulti; MG.ultiCut = cut; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
+    MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     MG.slow = PERF.q >= 2 || window.__mangaSlow === true; MG.fixed = window.__mangaSlow !== undefined; MG.avg = 0; MG.gap = 16.7; MG.lw = 0;   // the tests pin the tier with window.__mangaSlow; otherwise a slow device drops to the cheap tier
     if (S.start) S.start(g);
     FIN.hit = S.hit || MT.HIT; FIN.launch = S.pop || FIN.hit + FLAUNCH;
+    if (ulti) FIN.launch = Math.max(FIN.launch, FIN.hit + 150);   // the launch waits for the third (gold) impact frame
+    FIN.endT = MT.END;   // (read by the tests: the page's length)
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
-    FIN.cardSub = FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
+    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
     for (const p of FIN.P) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
@@ -609,7 +641,7 @@ function mgBreak(t) {
     if (d < 0) inside = false;
     dmin = Math.min(dmin, d);
   }
-  if (!inside || dmin < r) { MG.broke = true; MG.brokeT = t; mgTear(pn, sx, sy, Lp.s.w * pn.z * 2.4, t, MG.script.col); }
+  if (!inside || dmin < r) { MG.broke = true; MG.brokeT = t; mgTear(pn, sx, sy, Lp.s.w * pn.z * 2.4, t, MG.ulti ? MG_GOLD : MG.script.col); }
 }
 function mangaDraw(g, tk) {
   const t0 = mgClock();
@@ -626,7 +658,14 @@ function mangaDraw(g, tk) {
 function mgPage(c, t) {
   c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
   c.fillStyle = MG_PAPER; c.fillRect(0, 0, L.gw, L.gh);
-  for (const pn of MG.panels) { if (t < pn.t0) break; mgPanelFrame(c, pn, t); }
+  const PN = MG.panels; let from = 0;
+  for (let i = 1; i < PN.length && t >= PN[i].t0; i++) if (PN[i].d.opaque && t >= PN[i].t0 + PN[i].slide) from = i;   // a full-page panel that is in covers everything below it
+  for (let i = from; i < PN.length; i++) {
+    const pn = PN[i];
+    if (t < pn.t0) break;
+    if (pn.d.before && !pn.grabbed) { pn.grabbed = true; pn.d.before(c, t, pn); }
+    mgPanelFrame(c, pn, t);
+  }
   if (MG.script.page) MG.script.page(c, t);   // a last pass over the whole page (the Reaper's page turns into a negative here)
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
@@ -643,8 +682,9 @@ function mangaBail(e) {
 }
 function mangaEnd() {
   FIN.manga = false; MG.on = false;
+  try { if (MG.script && MG.script.end) MG.script.end(); } catch (e) { /* a script that cannot tidy up */ }
   for (const pn of MG.panels) pn.cache = null;
-  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
+  MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
   try { Cin.drone(false); Cin.close(); } catch (e) { /* sound off */ }
 }
 function mangaFinish() {
@@ -664,7 +704,8 @@ function mgCues(t) {
   cueOnce("drop", H0 - 120, () => Cin.go(() => Cin.drop(0.1)));
   cueOnce("taiko", H0, () => Cin.go(() => { Cin.taiko(1); Cin.impact(0.8); }));
   cueOnce("cardDrone", MT.CARD, () => Cin.go(() => Cin.drone(false)));
-  cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); }));
+  if (MG.ulti) cueOnce("gold", H0 + 100, () => Cin.go(() => { Cin.taiko(0.6); Cin.chime(1568); }));   // the third impact frame, the gold one
+  cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); if (MG.ulti) Cin.chime(1568); }));
   if (S.cues) S.cues(t);
 }
 
@@ -739,34 +780,36 @@ function mgStarburst(o, x, y, R, rot) {
   for (let i = 0; i < n * 2; i++) { const r = i % 2 ? R * 0.42 : R * (0.85 + 0.15 * ((i * 7919) % 5) / 4), a = (i / (n * 2)) * Math.PI * 2; i ? o.lineTo(Math.cos(a) * r, Math.sin(a) * r) : o.moveTo(r, 0); }
   o.closePath(); o.fillStyle = "#ffffff"; o.fill(); o.lineWidth = Math.max(2, R * 0.04); o.lineJoin = "miter"; o.strokeStyle = MG_INK; o.stroke(); o.restore();
 }
-// the two impact frames (50 ms each): the scene as white silhouettes on black, then black silhouettes on white with the rays; then a white flash falls off
+// the impact frames (50 ms each): the scene as white silhouettes on black, then black silhouettes on white with the rays; an Ultimate adds a third, gold one
+// (ink silhouettes on gold paper, white rays: S.impact gets sil = MG_INK); then a white flash falls off
 function mgImpact(o, t) {
   const S = MG.script, H0 = FIN.hit, pn = MG.byId[S.flight];
-  if (!pn || t < H0 || S.noImpact) return;   // S.noImpact (the Samurai page): no impact frames, the page holds instead
+  if (!pn || t < H0 || (S.noImpact && !MG.ultiCut)) return;   // S.noImpact (the Samurai page): no impact frames, the page holds instead (an Ultimate page with its own cut plays them)
   if (MG.reduced) { const a = 0.5 * (1 - fe(H0, H0 + 300, t)); if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); } return; }
-  if (t < H0 + 100) {
-    const white = t >= H0 + 50;   // the second frame
-    o.fillStyle = white ? "#ffffff" : "#000000"; o.fillRect(0, 0, L.gw, L.gh);
+  const span = MG.ulti ? 150 : 100;
+  if (t < H0 + span) {
+    const fr = Math.floor((t - H0) / 50);   // 0 black, 1 white, 2 gold (Ultimate)
+    o.fillStyle = fr === 0 ? "#000000" : fr === 1 ? "#ffffff" : MG_GOLD; o.fillRect(0, 0, L.gw, L.gh);
     mgPlace(pn, t);
     const hp = S.hitPt ? pn.sp(...S.hitPt()) : [L.gw / 2, L.gh / 2], R = Math.hypot(Math.max(hp[0], L.gw - hp[0]), Math.max(hp[1], L.gh - hp[1]));
-    mgFocus(o, hp[0], hp[1], R * 1.05, t * 0.001, 1, !white);
-    S.impact(o, pn, white ? "#000000" : "#ffffff", t);
+    mgFocus(o, hp[0], hp[1], R * 1.05, t * 0.001, 1, fr !== 1);
+    S.impact(o, pn, fr === 0 ? "#ffffff" : fr === 1 ? "#000000" : MG_INK, t);
   } else {
-    const a = 0.4 * (1 - fe(H0 + 100, H0 + 200, t));
+    const a = 0.4 * (1 - fe(H0 + span, H0 + span + 100, t));
     if (a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
   }
 }
 
 /* ---------- the title block: a slanted black band, the name in hand lettering, a screened accent strip, the red hanko K.O. seal ---------- */
 function mgCardPrep() {
-  const S = MG.script, W = FIN.P[FIN.w], accent = S.col;
+  const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold
   if (!MG.cards) {
     const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
     MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
-      sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: "#f1ece2" }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
+      sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
     // a line that is wider than the band (a long name on a narrow screen) is set again, smaller; on the upright phone the sub line also stays clear of the seal
     const x0 = Math.max(16, L.gw * 0.06), room = L.gw - x0 - 8, C = MG.cards;
-    if (C.sub.w > room) C.sub = mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27 * room / C.sub.w, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: "#f1ece2" });
+    if (C.sub.w > room) C.sub = mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27 * room / C.sub.w, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol });
     if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
   }
 }
@@ -781,7 +824,13 @@ function mgCard(o, t) {
   // the screened accent strip under the band
   const strip = [[-20, y + hh / 2 + sl], [L.gw + 20, y + hh / 2 - sl], [L.gw + 20, y + hh / 2 - sl + hh * 0.16], [-20, y + hh / 2 + sl + hh * 0.16]];
   o.fillStyle = accent; mgPoly(o, strip); o.fill();
-  mgToneFill(o, strip, 6, 0.38);
+  const at = (pl) => pl.map(([x, y]) => [x + slide, y]);   // (mgToneFill works in device px and ignores the translate, so the slide is added by hand)
+  mgToneFill(o, at(strip), 6, 0.38);
+  if (MG.ulti) {   // a second, gold strip under it, half as high
+    const g2 = [[-20, y + hh / 2 + sl + hh * 0.16], [L.gw + 20, y + hh / 2 - sl + hh * 0.16], [L.gw + 20, y + hh / 2 - sl + hh * 0.24], [-20, y + hh / 2 + sl + hh * 0.24]];
+    o.fillStyle = MG_GOLD; mgPoly(o, g2); o.fill();
+    mgToneFill(o, at(g2), 6, 0.38);
+  }
   const x0 = Math.max(16, L.gw * 0.06), nm = C.name;
   o.drawImage(nm.cv, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, nm.w, nm.h);
   o.drawImage(C.win.cv, x0 + nm.w * 0.86, y - C.win.h / 2 + hh * 0.2, C.win.w, C.win.h);
@@ -794,8 +843,8 @@ function mgCard(o, t) {
     o.save(); o.translate(kx, ky); o.rotate(-0.09); o.scale(sc, sc); o.globalAlpha = Math.min(1, s * 3);
     for (const [dx, dy, al] of [[2.2, 1.6, 0.55], [0, 0, 1]]) {   // misprinted: a faint second print, a hair off
       o.save(); o.translate(dx, dy); o.globalAlpha *= al;
-      o.fillStyle = "#c8281f"; o.beginPath(); o.roundRect(-sz / 2, -sz / 2, sz, sz, sz * 0.14); o.fill();
-      o.strokeStyle = "#f1ece2"; o.lineWidth = Math.max(2, sz * 0.045); o.beginPath(); o.roundRect(-sz / 2 + sz * 0.08, -sz / 2 + sz * 0.08, sz * 0.84, sz * 0.84, sz * 0.07); o.stroke();
+      o.fillStyle = MG.ulti ? (al < 1 ? MG_GOLD_D : MG_GOLD_SEAL) : "#c8281f"; o.beginPath(); o.roundRect(-sz / 2, -sz / 2, sz, sz, sz * 0.14); o.fill();   // the Ultimate's hanko is gold, its misprint ghost dark gold
+      o.strokeStyle = MG.ulti ? MG_INK : "#f1ece2"; o.lineWidth = Math.max(2, sz * 0.045); o.beginPath(); o.roundRect(-sz / 2 + sz * 0.08, -sz / 2 + sz * 0.08, sz * 0.84, sz * 0.84, sz * 0.07); o.stroke();
       o.drawImage(C.ko.cv, -C.ko.w * 0.5, -C.ko.h * 0.5, C.ko.w, C.ko.h);
       o.restore();
     }
