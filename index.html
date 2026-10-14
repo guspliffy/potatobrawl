@@ -1287,6 +1287,8 @@ const TUNE = {
   // Combo damage: hits from the 4th of a combo deal comboK4, from the 6th comboK6 (so combos can't loop damage forever).
   comboK4: 0.85,
   comboK6: 0.7,
+  // The pop-up: a linked up light (the second light in a row, aimed up) lifts at least this hard, so jump + an air attack can follow.
+  linkPop: 13,
   // Ultimates: the bar fills ultDealt per % dealt, ultTaken per % taken and ultHeart per heart lost, up to ultNeed[n] for the
   // n-th use (ultMax uses a match). Pressing ULTI with a full bar spends it and freezes the game for ultFreeze frames (the
   // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
@@ -2358,6 +2360,7 @@ function applyHit(g, h) {
   } else if (!chained) def.strN = 0;
 
   if (def.grounded && dy > 0.2) { dy = -dy * 0.75; kb *= 0.8; }
+  if (link && dy < -0.9) kb = Math.max(kb, TUNE.linkPop);
 
   def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
   setState(def, "hitstun");

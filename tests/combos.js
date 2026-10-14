@@ -1,6 +1,6 @@
 // Combo routes (the link): every fighter plays each of its routes (its own + the five shared ones) against a standing CPU
 // and against one that escapes (jumps away, or air dodges, the first frame it can act), at several damage percents.
-//   node combos.js           the table + "combos ok" when every route lands on the standing CPU at 0%, the link makes
+//   node combos.js           the table + "combos ok" when every route lands on the standing CPU at 0%, up up jump nair (the pop-up) lands, the link makes
 //                            light, light, heavy/special a true combo at low percent and nothing loops
 //   node combos.js <fighter> <route> <pct> [escape]   one run, frame by frame
 const { BL } = require(process.env.CORE || "../game/core.js");
@@ -120,6 +120,10 @@ for (const f of FIGHTERS) {
   // the link: light, light, special is a true combo at low damage (no escape between the 2nd light and the special)
   const sig = ROUTES.byId("sig");
   for (const p of [0, 30]) for (const e of [1, 2]) if (!land(f.id, sig, p, e)) bad.push(`${f.id}: Signature is escapable at ${p}% (${e === 1 ? "jump" : "dodge"})`);
+  // the pop-up (TUNE.linkPop): up light, up light, jump, neutral air is a true combo at 0% (Odin's up light is too slow to chain
+  // into itself at 0%, so his starts at 30%)
+  const pop = { id: "pop", name: "pop-up", keys: ["up", "up", "jump", "nair"] };
+  for (const p of f.id === "odin" ? [30, 50] : [0, 30, 50]) for (const e of [0, 1, 2]) if (!tryRun(f.id, pop, p, e)) bad.push(`${f.id}: up, up, jump, nair misses at ${p}% (escape ${e})`);
 }
 // combo damage: hits from the 4th of a combo deal 85%, from the 6th 70%
 {

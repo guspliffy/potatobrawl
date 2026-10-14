@@ -103,6 +103,11 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     call (the KO must still follow).
   - CPU (botInput): uses its ulti when the bar is full, the opponent is in that ulti's reach (per kind) and at lerp(150, 105, d)%
     or more (or 40%+ in the last 40 s); answers an opponent's ulti by jumping (stepping away from the cloud and the stars).
+  - The pop-up (Jonny, 2026-10-14 14:28 UTC: up light, up light, jump, air attack never connected, the opponent was back on the
+    ground): a linked up light (the 2nd light in a row aimed up, `link && dy < -0.9` in applyHit) launches with at least
+    TUNE.linkPop (13) knockback. Before it the defender rose about 15-30 px at 0%. Now up, up, jump, nair is a true combo at 0-50%
+    for every fighter (Odin from 30%: his up light can't chain into itself at 0%), hAir lands for 7 of 8, uair for 4 (tests/combos.js
+    checks the nair version; `node combos.js try up,up,jump,uair` for the rest). 14 still passed, 15 broke other routes.
   - Online: encIn uses the spare codes 2592-3887 for frames with ULTI held (stick x 16, dodge dropped on those frames); decIn and
     the receiver's range check know them. Still two characters per frame.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
