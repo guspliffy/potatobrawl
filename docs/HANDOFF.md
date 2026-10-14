@@ -116,8 +116,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   screen (finHold) until it ends. Timeline constants FT; one entry per fighter in FINS. FIN_NAME / finName():
   a finishing special with its own name (Gunslinger: "High Noon") on the band, the Finish! banner and the
   Special button; the others show their signature name.
-- ui/manga.js (after finisher.js; the seven pages manga/<id>.js, one per fighter: alchemist dragon gunslinger odin
-  phoenix samurai wizard, spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
+- ui/manga.js (after finisher.js; the eight pages manga/<id>.js, one per fighter: alchemist dragon gunslinger odin
+  phoenix reaper samurai wizard, spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
   finStart plays MANGA[winner] before anything else: the real hit, the frozen frame inked (paper tint, dot tone,
   border, focus lines, sound word), panels sliding in over each other (the old ones stay visible), a face inset, the
   strike with a 120 ms drop and two impact frames, the loser tearing through the border along the real launch
@@ -127,6 +127,14 @@ index.html is committed with every source change (check.sh flags a stale one).
   The Cin sound kit lives here. Any throw falls back to the 2D finisher (FINS). Pure UI: never writes G.
   The frame-time watchdog PERF (effects.js) steps q up when matches run slow; the page reads it to pick its cheap
   tier. Tests pin it with window.__blastline.r3.lockQ = true (r3 is an old name; perf is the same object).
+  The Reaper's page "Last Rites" (manga/reaper.js) is the one negative page: a bell tolls and the page turns near-black
+  with white ink (drawn as usual, then turned over by a difference fill in its page(c, t) hook; the amber inside panels is
+  drawn in its complement), candle amber only on his cheeks and the soul. A look panel (the loser's hatched shadow
+  stretches up while the scythe rises behind the hood), a smirk inset, one white crescent stroke across
+  the page (SHHK), the amber soul drifting up through the top border, a tombstone with R.I.P. and the loser's name, a
+  whispered "shhh...". Engine hooks it added (each unset = the old behaviour): page(c, t) (a last pass over the page),
+  hint(t) (skip-hint colour), mgPuppet o.mono (every colour grey), panel dim ("r,g,b" of the covered dimming).
+  Video reaper-hub/manga/reaper-last-rites-manga-v1.mp4 + -sheet.jpg.
 - ui/acct.js (after menus.js) + sync.js: the profile pill (top right of the start page, replaces the rating/chips card: avatar of
   `P.last`, name, tier badge in a progress ring + rating, chips, cups when `P.cups > 0`) and the Account sheet (`#scrAccount`, opened by
   tapping the pill: name, tier/rating/peak, wins/losses/chips/skins, recent results, the sync section, Reset progress, which moved
@@ -194,7 +202,7 @@ screenshots into the current directory (check.sh uses build/shots/).
 pwon.py now also asks both browsers for a rematch after the KO (prints "rematch ok").
 finish.js, lockdet.js and snap.js pick their pairings from FIGHTERS.length (every pair, never a mirror match:
 a mirror Dragon match found that lethal() drops projectiles in its look-ahead, so a later flame puff could
-re-hit; see Next work). pwfin / pwfinish / pwheavy / pwmanga list all seven fighters.
+re-hit; see Next work). pwfin / pwfinish / pwheavy / pwmanga list all eight fighters.
 experiments/lockfix-prototype/ was removed once the fix went into core.js (its checks are lockrun/lockdet).
 
 ## Deploy
