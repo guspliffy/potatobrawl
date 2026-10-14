@@ -10526,7 +10526,7 @@ MANGA.phoenix = (function () {
     if (!cm) return;
     pn.world(c);
     const wd = W.s.w * 0.92 * diveSc(t), ink = Math.max(2, 5.5 / pn.z);
-    phxWedge(c, cm.x, cm.tipY, Math.PI / 2, cm.len, wd, t, sil, ink, ult ? GOLD : null);
+    phxWedge(c, cm.x, cm.tipY, Math.PI / 2, cm.len, wd, t, sil, ink, ult ? MG_GOLD : null);
     if (sil) return;
     // the smear: two earlier copies of her above
     if (!MG.slow && t < FIN.hit + 20) for (const [dt, al] of [[60, 0.16], [30, 0.34]]) {
@@ -10719,11 +10719,11 @@ MANGA.phoenix = (function () {
     try {
       if (white) {
         pn.world(c);
-        if (gold) { W.x += off; W.y += off; c.globalAlpha = 1 - bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: GOLD }); c.globalAlpha = 1; W.x -= off; W.y -= off; }
+        if (gold) { W.x += off; W.y += off; c.globalAlpha = 1 - bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: MG_GOLD }); c.globalAlpha = 1; W.x -= off; W.y -= off; }
         phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: "#ffffff" });
       }
       if (bleed > 0) { pn.world(c); c.globalAlpha = bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 1 }); c.globalAlpha = 1; }
-      if (gold) { W.x += off; W.y += off; mgPuppet(c, pn, W, t, { sc: 1, sil: GOLD, a: 1 - bleed, box: SPL_BOX }); W.x -= off; W.y -= off; }
+      if (gold) { W.x += off; W.y += off; mgPuppet(c, pn, W, t, { sc: 1, sil: MG_GOLD, a: 1 - bleed, box: SPL_BOX }); W.x -= off; W.y -= off; }
       if (white) mgPuppet(c, pn, W, t, { sc: 1, sil: "#ffffff", box: SPL_BOX });
       if (bleed > 0) mgPuppet(c, pn, W, t, { sc: 1, light: dirAng(-1.2), tint: 0.32, a: bleed, box: SPL_BOX });
     } finally { W.x = ox; W.y = oy; c.globalAlpha = 1; inSplash = false; }
@@ -10731,10 +10731,10 @@ MANGA.phoenix = (function () {
   function drawSplash(c, pn, t) {
     const bleed = fe(3400, 3800, t), sg = phxSunGeo(pn, t), cx = sg.cx, cy = sg.cy, R = sg.R;
     pn.screen(c);
-    c.fillStyle = bleed > 0.001 ? phxMix("#ffffff", GOLD_PALE, bleed) : "#ffffff"; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4);
+    c.fillStyle = bleed > 0.001 ? phxMix("#ffffff", MG_GOLD_PALE, bleed) : "#ffffff"; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4);
     // 12 gold wedges, wide at the rim, narrowing to a point (half transparent), turning slowly; then the disc with its gold ring (2% of the page height)
     const far = Math.hypot(pn.w, pn.h) * 1.3, rt = t * 0.00012;
-    c.globalAlpha = 0.5; c.fillStyle = GOLD; c.beginPath();
+    c.globalAlpha = 0.5; c.fillStyle = MG_GOLD; c.beginPath();
     for (let i = 0; i < 12; i++) {
       const a = rt + (i / 12) * Math.PI * 2, hb = i % 2 ? 0.075 : 0.12;
       c.moveTo(cx + Math.cos(a - hb) * R, cy + Math.sin(a - hb) * R); c.lineTo(cx + Math.cos(a) * far, cy + Math.sin(a) * far); c.lineTo(cx + Math.cos(a + hb) * R, cy + Math.sin(a + hb) * R); c.closePath();
@@ -10742,13 +10742,13 @@ MANGA.phoenix = (function () {
     c.fill(); c.globalAlpha = 1;
     c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fillStyle = "#ffffff"; c.fill();
     const rw = pn.h * 0.02;
-    c.lineWidth = rw; c.strokeStyle = GOLD; c.stroke();
+    c.lineWidth = rw; c.strokeStyle = MG_GOLD; c.stroke();
     c.lineWidth = 2; c.strokeStyle = MG_INK; c.beginPath(); c.arc(cx, cy, R + rw / 2, 0, 7); c.stroke(); c.beginPath(); c.arc(cx, cy, R - rw / 2, 0, 7); c.stroke();
     ground(c, pn, t, 0);
     phxHeap(c, pn, t);
     phxStand(c, pn, t, bleed);
   }
-  const phxSplashPanel = (port) => ({ id: "splash", t0: SPL(), from: "b", slide: 180, live: true, freeze: MT.AFTER, paper: "#ffffff", poly: [[0, 0], [1, 0], [1, 1], [0, 1]],
+  const phxSplashPanel = (port) => mgSplashPanel({ from: "b", paper: "#ffffff", dim: "120,80,6",
     cam: (t) => ({ wx: splX() + FIN.dir * splDx() * 0.35, wy: -W_().s.h * 0.55 - (port ? 190 : 104) * 0.06, vh: (port ? 190 : 104) * (1 + 0.06 * fe(SPL(), MT.AFTER, t)) }), draw: drawSplash });
 
   /* ---- the script ---- */
@@ -10766,7 +10766,8 @@ MANGA.phoenix = (function () {
       ];
     },
     // the loser's stand-in is a copy of a doomed fighter, which draws it half see-through and blinking: here it is solid
-    start() { ult = false; spr = null; fth = []; spk = []; ashF = []; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    start() { ult = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    end() { spr = null; fth = []; spk = []; ashF = []; },
     build(lay) {
       const r = mgRng(31415), g = L.gw, h = L.gh, port = lay.port;
       torn = false; cmt = null;
@@ -10915,7 +10916,7 @@ MANGA.phoenix = (function () {
       mgPuppet(o, pn, W, FIN.hit + 10, { sc: diveSc(FIN.hit + 10), sil });
       mgPuppet(o, pn, Lp, FIN.hit + 10, { sc: 1, sil });
       pn.world(o);
-      const [bx, by] = burstPt(); phxStar6(o, bx, by, ult && t >= FIN.hit + 100 ? 80 : 40, 0.3, sil, null);   // the Ultimate's third (gold) frame: the star at 2x
+      const [bx, by] = burstPt(); phxStar6(o, bx, by, ult && sil === MG_INK ? 80 : 40, 0.3, sil, null);   // the Ultimate's third (gold) frame: the star at 2x
       o.restore();
     },
     cues(t) {
@@ -10952,19 +10953,18 @@ MANGA.phoenix = (function () {
     // the KO beam where the loser left the screen is cut short once the white page is in (it would run through her for another half second)
     after(t) { if (FIN.beam && t >= SPL() + 120 && FIN.beam.t0 > -1e5) FIN.beam.t0 = -1e6; },
     panels(lay) {
-      const ps = panels(lay), strike = ps.find((q) => q.id === "strike"), inset = ps.find((q) => q.id === "inset");
-      strike.freeze = strike.cover = SPL();      // the white page covers it: drawn once, then a bitmap
-      inset.freeze = MT.STRIKE + 130;            // (the strike panel has slid over it by then)
+      const ps = panels(lay), inset = ps.find((q) => q.id === "inset");   // (the white page is opaque: the panels under it are not drawn once it has slid in)
+      inset.freeze = MT.STRIKE + 130;            // the strike panel has slid over it by then: drawn once, then a bitmap
       ps.splice(ps.length - 1, 0, phxSplashPanel(lay.port));
       return ps;
     },
     words(lay) {
       const ws = S_.words(lay), D = FIN.dir, mul = lay.port ? 0.5 : 1, P3 = () => MG.byId.strike;
       // NOVA takes the place of DOOOM
-      ws[3] = { text: "NOVA", t0: FIN.hit + 95, t1: 3420, size: 0.24, mul, arc: 9, fill: GOLD, rot: -0.07 * D, at: () => { const p = P3(), hw = phxHalf("NOVA", 0.24, mul); return [clamp(p.cx - D * p.w * 0.06, hw + 4, L.gw - hw - 4), p.y0 + p.h * 0.2 + p.oy]; } };
+      ws[3] = { text: "NOVA", t0: FIN.hit + 95, t1: 3420, size: 0.24, mul, arc: 9, fill: MG_GOLD, rot: -0.07 * D, at: () => { const p = P3(), hw = phxHalf("NOVA", 0.24, mul); return [clamp(p.cx - D * p.w * 0.06, hw + 4, L.gw - hw - 4), p.y0 + p.h * 0.2 + p.oy]; } };
       // SUPERNOVA across the sun's upper rim (a nine-letter word has to fit the upright page)
       const ms = lay.port ? Math.min(0.5, 0.86 * L.gw / (9 * 0.2 * L.gh * 0.72)) : 1;
-      ws.push({ text: "SUPERNOVA", t0: 3600, t1: MT.CARD + 120, size: 0.2, mul: ms, arc: 5, fill: GOLD, rot: -0.05 * D, at: (t) => {
+      ws.push({ text: "SUPERNOVA", t0: 3600, t1: MT.CARD + 120, size: 0.2, mul: ms, arc: 5, fill: MG_GOLD, rot: -0.05 * D, at: (t) => {
         const p = MG.byId.splash, hw = phxHalf("SUPERNOVA", 0.2, ms); mgPlace(p, t);
         const g = phxSunGeo(p, t); return [clamp(g.cx, hw + 4, L.gw - hw - 4), g.cy - g.R * 0.94 + p.oy];
       } });
