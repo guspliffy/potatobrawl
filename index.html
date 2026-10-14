@@ -10501,11 +10501,17 @@ MANGA.odin = (function () {
    2000 inset on the loser's eyes (a sun in each pupil) . 2180 she shoots straight up through the top border of panel 2 . 2350 panel 3 "the strike": the loser alone,
    looking up, vertical speed lines; 2690-2900 the comet comes straight down the page (the one fast moment), 2900 the hit (impact frames, a six-pointed ink star),
    2990 the loser is launched burning along the real direction . 3500 panel 4: she crouches in the dust, wings cool from fire to ink, the grin, feathers settle.
+   The Ultimate KO (Solar Dive), "Supernova": MANGA.phoenix.ulti extends this script (design: ultimates/fable-ultimate-pages.md section 3). The same page to 2690, then a bigger
+   comet with a gold core and a tail to the top of the page, three impact frames (the gold one holds the star at 2x), the NOVA word, 3050 the loser leaves as ash (a black
+   silhouette erased from the feet up, flakes along the launch direction), 3250 panel 5: the white page (a huge sun disc with 12 gold wedges, she stands wings full as a white
+   silhouette with a gold edge, the ink bleeds back 3400-3800, a heap of ash with two eyes, ash falling), SUPERNOVA at 3600, 4700 panel 4 (the same aftermath, MT.AFTER + offset).
    Script fields: see game/manga/dragon.js. Everything here is prefixed phx / kept inside this closure. */
 MANGA.phoenix = (function () {
   const COL = "#ff7a3d", MIDC = "#ffb45e", CORE = "#fff3c4", ASH = "#2c2933", ASH2 = "#57525f";
   const T = { LAUNCH: 2180, DIVE: 2650, LAND: 3000 };
   let spr = null, fth = [], spk = [], torn = false, topWY = -220, hitY = -64, cmt = null;
+  let ult = false, ashF = [], inSplash = false;   // ult: this play is the Ultimate page (set by start())
+  const SPL = () => MT.SPLASH || 3250;
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
   const wcol = () => { const W = W_(); return (W && W.pal && W.pal.accent) || COL; };
@@ -10536,7 +10542,7 @@ MANGA.phoenix = (function () {
     if (t < T.LAUNCH) return [FIN.wx, -8 * ease(fe(1700, 2150, t)) - 1.3 * Math.sin(t * 0.004) * fe(1700, 2000, t)];
     if (t < T.DIVE) { const s = (t - T.LAUNCH) / 1000; return [FIN.wx, Math.max(-900, -8 - 2000 * s * s)]; }
     if (t < H0) { const k = Math.pow(fe(T.DIVE, H0, t), 1.06); return [FIN.lx - D * 4, lerp(topWY + 6, hitY, k) + hh * ds]; }
-    if (t < T.LAND) { const k = easeOut(fe(H0, T.LAND, t)); return [FIN.lx - D * (4 + 6 * k), lerp(hitY + hh * DIVE_SC, 0, k)]; }
+    if (t < T.LAND) { const k = easeOut(fe(H0, T.LAND, t)); return [FIN.lx - D * (4 + 6 * k), lerp(hitY + hh * DSC(), 0, k)]; }
     return [FIN.lx - D * 10, 0];
   }
   // her head where she stands (the sun and the glow stay put when she has shot up out of the panel)
@@ -10545,8 +10551,8 @@ MANGA.phoenix = (function () {
     const h = pt(W, Math.min(t, 2100), "head"); W.x = ox; W.y = oy; return h;
   }
   // she is bigger than life in the dive (scale about her feet) and shrinks back as she lands
-  const DIVE_SC = 1.28;
-  const diveSc = (t) => (t < T.DIVE ? 1 : t < FIN.hit ? DIVE_SC : lerp(DIVE_SC, 1, easeOut(fe(FIN.hit, T.LAND, t))));
+  const DSC = () => (ult ? 1.4 : 1.28);
+  const diveSc = (t) => (t < T.DIVE ? 1 : t < FIN.hit ? DSC() : lerp(DSC(), 1, easeOut(fe(FIN.hit, T.LAND, t))));
   const diving = (t) => t >= T.DIVE && t < FIN.hit + 90;
   const burstPt = () => [FIN.lx - FIN.dir * 6, -L_().s.h * 0.55];
 
@@ -10615,12 +10621,13 @@ MANGA.phoenix = (function () {
         const m = i - (wg.n - 1) / 2, ang = wg.ang + m * wg.gap, L = wg.L * (1 - Math.abs(m) * 0.1) * (1 + 0.035 * Math.sin(t * 0.017 + i * 1.7 + wg.n)), wd = L * 0.19;
         const ca = Math.cos(ang), sa = Math.sin(ang), nx = -sa, ny = ca, ax = wg.a[0], ay = wg.a[1], tx = ax + ca * L, ty = ay + sa * L;
         const leaf = (k, w2) => { const l = L * k, ex = ax + ca * l, ey = ay + sa * l; c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(ax + ca * l * 0.5 + nx * wd * w2, ay + sa * l * 0.5 + ny * wd * w2, ex, ey); c.quadraticCurveTo(ax + ca * l * 0.5 - nx * wd * w2 * 0.85, ay + sa * l * 0.5 - ny * wd * w2 * 0.85, ax, ay); };
+        if (o.sil) { leaf(1, 1); c.fillStyle = o.sil; c.fill(); tips.push([tx, ty, i]); continue; }
         leaf(1, 1); c.fillStyle = wg.dk ? phxMix(base, "#000000", wg.dk) : base; c.fill(); c.lineWidth = ink; c.strokeStyle = MG_INK; c.stroke();
         leaf(0.84, 0.58); c.fillStyle = mid; c.fill();
         leaf(0.6, 0.28); c.fillStyle = core; c.fill();
         tips.push([tx, ty, i]);
       }
-      if (o.flame > 0.02) for (const [tx, ty, i] of tips) {
+      if (o.flame > 0.02 && !o.sil) for (const [tx, ty, i] of tips) {
         const f = 0.7 + 0.3 * Math.sin(t * 0.03 + i * 2.1), h = (9 + (i % 3) * 3.5) * o.flame * f;
         phxTongue(c, tx, ty + 1, h, 2.6, Math.sin(t * 0.021 + i * 1.3) * 2.2, base, core, ink * 0.8);
       }
@@ -10771,7 +10778,7 @@ MANGA.phoenix = (function () {
 
   /* ---- the comet: a wedge of fire with her at its point ---- */
   // a flame wedge: tip at (x, y) pointing along `ang`, trailing back `len`, half-width `wd` near the tip; ink edge, accent body, pale core, tongues along the edges
-  function phxWedge(c, x, y, ang, len, wd, t, sil, ink) {
+  function phxWedge(c, x, y, ang, len, wd, t, sil, ink, core) {
     if (len < 4) return;
     const N = 14, ca = Math.cos(ang), sa = Math.sin(ang);
     const edge = (sgn, g) => {
@@ -10788,12 +10795,12 @@ MANGA.phoenix = (function () {
     c.lineJoin = "miter"; c.lineWidth = ink; c.strokeStyle = MG_INK; c.fillStyle = COL; mgPoly(c, poly(1)); c.fill(); c.stroke();
     c.fillStyle = MIDC; mgPoly(c, poly(0.66)); c.fill();
     const a = edge(1, 0.3), b = edge(-1, 0.3).reverse(), q = a.slice(5, 12).concat(b.slice(b.length - 12, b.length - 5));
-    c.fillStyle = "rgba(255,243,196,0.95)"; mgPoly(c, q); c.fill();
+    c.fillStyle = core || "rgba(255,243,196,0.95)"; mgPoly(c, q); c.fill();
     // tongues streaming off the edges, backwards
     for (let i = 1; i <= 5; i++) for (const sgn of [1, -1]) {
       const s = i / 6.5, h = wd * Math.pow(1 - s, 0.8) * Math.min(1, 0.2 + s * 7) * 0.92, bx = x - ca * len * s - sa * h * sgn, by = y - sa * len * s + ca * h * sgn;
       c.save(); c.translate(bx, by); c.rotate(Math.atan2(-ca, sa) + sgn * 0.18);
-      phxTongue(c, 0, 0, len * 0.13 * (0.7 + 0.3 * Math.sin(t * 0.04 + i * 3 + sgn)), 2.4 + wd * 0.04, 0, COL, MIDC, ink * 0.35);
+      phxTongue(c, 0, 0, Math.min(len, 230) * 0.13 * (0.7 + 0.3 * Math.sin(t * 0.04 + i * 3 + sgn)), 2.4 + wd * 0.04, 0, COL, MIDC, ink * 0.35);
       c.restore();
     }
   }
@@ -10801,8 +10808,8 @@ MANGA.phoenix = (function () {
   function comet(t) {
     if (t < T.DIVE || t >= T.LAND + 60) return null;
     const W = W_(), [x, y] = wPos(t), hh = W.s.h / 2 * diveSc(t);
-    const len = 210 * (1 - easeIn(fe(FIN.hit, FIN.hit + 150, t))) * easeOut(fe(T.DIVE, T.DIVE + 120, t));
-    return { x, cy: y - hh, tipY: y - hh + hh * 0.85, len };
+    const tipY = y - hh + hh * 0.85, len = (ult ? Math.max(210, tipY - topWY + 24) : 210) * (1 - easeIn(fe(FIN.hit, FIN.hit + 150, t))) * easeOut(fe(T.DIVE, T.DIVE + 120, t));
+    return { x, cy: y - hh, tipY, len };
   }
   // the winner's dive: spin so that her face leads, arms and feet swept back
   const DIVE_SPIN = 3.0;
@@ -10811,12 +10818,12 @@ MANGA.phoenix = (function () {
     if (!cm) return;
     pn.world(c);
     const wd = W.s.w * 0.92 * diveSc(t), ink = Math.max(2, 5.5 / pn.z);
-    phxWedge(c, cm.x, cm.tipY, Math.PI / 2, cm.len, wd, t, sil, ink);
+    phxWedge(c, cm.x, cm.tipY, Math.PI / 2, cm.len, wd, t, sil, ink, ult ? MG_GOLD : null);
     if (sil) return;
     // the smear: two earlier copies of her above
     if (!MG.slow && t < FIN.hit + 20) for (const [dt, al] of [[60, 0.16], [30, 0.34]]) {
       const ox = W.x, oy = W.y, [gx, gy] = wPos(t - dt); W.x = gx; W.y = gy;
-      mgPuppet(c, pn, W, t - dt, { sc: DIVE_SC, a: al, tone: false, light: dirAng(-1.57) });
+      mgPuppet(c, pn, W, t - dt, { sc: DSC(), a: al, tone: false, light: dirAng(-1.57) });
       W.x = ox; W.y = oy;
     }
     mgPuppet(c, pn, W, t, { sc: diveSc(t), light: dirAng(-1.57), tint: 0.26 });
@@ -10869,6 +10876,7 @@ MANGA.phoenix = (function () {
   function drawLoserFn(c, pn, t) {
     const Lp = L_(), ang = Math.atan2(FIN.ldy, FIN.ldx), fl = t >= FIN.launch, burn = fe(FIN.hit, FIN.launch + 60, t);
     const hh = Lp.s.h * 0.5, bo = FIN.beam ? 1 - fe(FIN.beam.t0, FIN.beam.t0 + 150, t) : 1;
+    if (ult && fl) { phxAshLoser(c, pn, t); return; }   // the Ultimate: no fire, the loser leaves as ash
     c.save(); pn.world(c);
     // the tail of fire behind the flying loser
     if (fl && bo > 0.02) {
@@ -10913,19 +10921,127 @@ MANGA.phoenix = (function () {
     c.beginPath(); c.arc(hd[0], hd[1], R * 0.82, 0, 7); c.fillStyle = "#ffffff"; c.fill();
     ground(c, pn, t, 1);
     pn.world(c);
-    const k = fe(MT.AFTER, 3900, t);
-    dust(c, pn, W.x, fe(MT.AFTER, 4100, t), 1 - fe(3900, 4300, t));
-    const heat = 1 - ease(fe(MT.AFTER, 3900, t));
-    phxWinner(c, pn, t, { light: dirAng(-0.8), spread: 0.7, droop: ease(fe(MT.AFTER + 100, 3950, t)), heat, flame: heat * 0.8 });
+    const A = MT.AFTER;
+    dust(c, pn, W.x, fe(A, A + 600, t), 1 - fe(A + 400, A + 800, t));
+    const heat = 1 - ease(fe(A, A + 400, t));
+    phxWinner(c, pn, t, { light: dirAng(-0.8), spread: 0.7, droop: ease(fe(A + 100, A + 450, t)), heat, flame: heat * 0.8 });
     // smoke curls off the cooling wings: tone puffs rising and fading
     pn.screen(c);
     if (heat < 0.98) for (let i = 0; i < 4; i++) {
-      const q = ((t - 3560 - i * 120) / 700), a = (1 - q) * (q > 0 && q < 1 ? 1 : 0) * 0.9; if (a <= 0.02) continue;
+      const q = ((t - (A + 60) - i * 120) / 700), a = (1 - q) * (q > 0 && q < 1 ? 1 : 0) * 0.9; if (a <= 0.02) continue;
       const px = hd[0] - D * (pn.w * (0.12 + 0.05 * i)) + Math.sin(q * 5 + i) * 7, py = hd[1] - pn.h * (0.05 + 0.5 * q), r = 7 + 12 * q;
       c.globalAlpha = a; c.beginPath(); c.arc(px, py, r, 0, 7); c.fillStyle = MG_PAPER; c.fill(); c.lineWidth = 2.2; c.strokeStyle = MG_INK; c.stroke();
       phxTone(c, pn, 5, 0.45, (g) => g.arc(px + r * 0.25, py + r * 0.2, r * 0.7, 0, 7)); c.globalAlpha = 1;
     }
   }
+
+  /* ---- the Ultimate: the loser leaves as ash ---- */
+  // a black silhouette, erased from the trailing end forward (the feet, for a launch straight up) by a plane that sweeps the body 3050-3300 along the launch direction
+  function phxAshLoser(c, pn, t) {
+    const Lp = L_(), k = easeOut(fe(FIN.launch, FIN.launch + 250, t));
+    if (k >= 1 || FIN.out || Lp.state === "gone") return;
+    const al = Math.hypot(FIN.ldx, FIN.ldy) || 1, dx = FIN.ldx / al, dy = FIN.ldy / al, px = -dy, py = dx, hh = Lp.s.h * 0.5, R = hh * 1.25;
+    const cx = Lp.x, cy = Lp.y - hh, s = -R + 2 * R * k, B = 420;   // kept: the points whose offset from the centre along d is at least s
+    c.save(); pn.world(c);
+    c.beginPath();
+    c.moveTo(cx + dx * s + px * B, cy + dy * s + py * B); c.lineTo(cx + dx * s - px * B, cy + dy * s - py * B);
+    c.lineTo(cx + dx * (s + B) - px * B, cy + dy * (s + B) - py * B); c.lineTo(cx + dx * (s + B) + px * B, cy + dy * (s + B) + py * B);
+    c.closePath(); c.clip();
+    mgPuppet(c, pn, Lp, t, { sc: 1, sil: "#000000" });
+    c.restore();
+  }
+  // 60 ash flakes (2-4 px squares), born on the body while the plane sweeps it, streaming off along the launch direction and slowing down; drawn over the page (css px, o is in the page transform)
+  function phxAshFlakes(o, t) {
+    if (!ult || !ashF.length || t < FIN.launch || t > FIN.launch + 720) return;
+    const pn = MG.byId[S_.flight], hh = L_().s.h * 0.5, al = Math.hypot(FIN.ldx, FIN.ldy) || 1, dx = FIN.ldx / al, dy = FIN.ldy / al, px = -dy, py = dx;
+    for (let i = 0; i < ashF.length; i++) {
+      if (MG.slow && (i & 1)) continue;
+      const f = ashF[i], tau = (t - (FIN.launch + f.tb)) / 1000;
+      if (tau < 0 || tau > f.life) continue;
+      const [lx, ly] = loserAt(FIN.launch + f.tb), s = f.v * 0.4 * (1 - Math.exp(-tau / 0.4)), fan = f.lat * s * 0.5;
+      const wx = lx + dx * (s + f.a * hh) + px * (fan + f.b * 20), wy = ly - hh + dy * (s + f.a * hh) + py * (fan + f.b * 20) + 150 * tau * tau;
+      const [sx, sy] = pn.sp(wx, wy), a = Math.pow(1 - tau / f.life, 0.7);
+      if (sx < -8 || sx > L.gw + 8 || sy < -8 || sy > L.gh + 8) continue;
+      o.globalAlpha = a * 0.8; o.fillStyle = "#f1ece2"; o.fillRect(sx - f.z / 2 - 1, sy - f.z / 2 - 1, f.z + 2, f.z + 2);   // a paper edge, so the grey squares read on the dark sky
+      o.globalAlpha = a; o.fillStyle = f.dk ? ASH : ASH2; o.fillRect(sx - f.z / 2, sy - f.z / 2, f.z, f.z);
+    }
+    o.globalAlpha = 1;
+  }
+
+  /* ---- the Ultimate, panel 5: the white page ---- */
+  // where she stands on the white page, and where the camera looks (between her and the loser's heap)
+  const splDx = () => (L.portrait ? 24 : 46);
+  const splX = () => FIN.lx - FIN.dir * splDx();
+  // the sun: centred on her landing point (the ground under her), a huge rising sun that fills the page
+  function phxSunGeo(pn, t) {
+    const [cx, cy] = pn.p(splX(), 0), t0 = SPL(), grow = 0.8 + 0.2 * easeOut(fe(t0, t0 + 260, t));
+    return { cx, cy, R: Math.min(pn.h * 0.72, pn.w * 0.95) * grow };
+  }
+  // the heap of ash where the loser stood, two eyes in it that open at 3800 and blink at 4100 and 4500
+  function phxHeap(c, pn, t) {
+    const k = easeOut(fe(SPL() + 80, 3880, t));
+    if (k <= 0.01) return;
+    const x = FIN.lx, w = 16 * k, h = 12 * k, ink = Math.max(1.6, 4 / pn.z), D = FIN.dir;
+    pn.world(c);
+    c.beginPath(); c.moveTo(x - w, 0.5);
+    c.bezierCurveTo(x - w * 0.95, -h * 0.5, x - w * 0.5, -h * 0.85, x - w * 0.12, -h);
+    c.bezierCurveTo(x + w * 0.14, -h * 1.12, x + w * 0.52, -h * 0.72, x + w * 0.66, -h * 0.5);
+    c.bezierCurveTo(x + w * 0.88, -h * 0.3, x + w * 1.0, -h * 0.12, x + w, 0.5); c.closePath();
+    c.fillStyle = ASH2; c.fill(); c.lineWidth = ink; c.lineJoin = "round"; c.strokeStyle = MG_INK; c.stroke();
+    c.save(); c.clip(); c.fillStyle = ASH; c.beginPath(); c.moveTo(x - w * 1.1, 1); c.lineTo(x - w * 1.1, -h * 0.28); c.lineTo(x + w * 1.1, -h * 0.4); c.lineTo(x + w * 1.1, 1); c.fill(); c.restore();
+    c.fillStyle = MG_INK; for (const [fx, fy, fr] of [[-0.55, -0.32, 0.7], [0.4, -0.2, 0.55], [0.1, -0.88, 0.5], [0.68, -0.4, 0.45]]) { c.beginPath(); c.arc(x + w * fx, h * fy, fr * k * 1.1, 0, 7); c.fill(); }
+    const op = fe(3800, 3900, t);
+    if (op > 0) {
+      const closed = (t >= 4100 && t < 4175) || (t >= 4500 && t < 4575), er = 2.7 * k;
+      for (const sg of [-1, 1]) {
+        const ex = x + sg * w * 0.3, ey = -h * 0.58;
+        if (closed) { c.beginPath(); c.moveTo(ex - er, ey); c.quadraticCurveTo(ex, ey + er * 0.55, ex + er, ey); c.lineWidth = ink * 0.9; c.lineCap = "round"; c.strokeStyle = MG_INK; c.stroke(); continue; }
+        c.beginPath(); c.ellipse(ex, ey, er, er * 1.2 * op, 0, 0, 7); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = ink * 0.75; c.strokeStyle = MG_INK; c.stroke();
+        c.beginPath(); c.arc(ex - D * er * 0.32, ey + er * 0.1, er * 0.5, 0, 7); c.fillStyle = MG_INK; c.fill();
+        c.beginPath(); c.arc(ex - D * er * 0.1, ey - er * 0.25, er * 0.17, 0, 7); c.fillStyle = "#ffffff"; c.fill();
+      }
+    }
+  }
+  // she stands, wings full: a white silhouette with a gold edge (a second print, 3 px off), then the ink bleeds back (3400-3800): the silhouette turns to colour.
+  // The picture of the fighter is a big layer blit, so every pass gets a tight box (her own size, not the 200 x 139 units of a spear fighter) and the silhouettes stop once they are faint.
+  const SPL_BOX = [-54, -86, 54, 6];
+  function phxStand(c, pn, t, bleed) {
+    const W = W_(), ox = W.x, oy = W.y, off = 3 / pn.z, gold = bleed < 0.8, white = bleed < 0.94;
+    W.x = splX(); W.y = 0; inSplash = true;
+    try {
+      if (white) {
+        pn.world(c);
+        if (gold) { W.x += off; W.y += off; c.globalAlpha = 1 - bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: MG_GOLD }); c.globalAlpha = 1; W.x -= off; W.y -= off; }
+        phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 0, sil: "#ffffff" });
+      }
+      if (bleed > 0) { pn.world(c); c.globalAlpha = bleed; phxWings(c, pn, W, t, { spread: 1, heat: 1, flame: 1 }); c.globalAlpha = 1; }
+      if (gold) { W.x += off; W.y += off; mgPuppet(c, pn, W, t, { sc: 1, sil: MG_GOLD, a: 1 - bleed, box: SPL_BOX }); W.x -= off; W.y -= off; }
+      if (white) mgPuppet(c, pn, W, t, { sc: 1, sil: "#ffffff", box: SPL_BOX });
+      if (bleed > 0) mgPuppet(c, pn, W, t, { sc: 1, light: dirAng(-1.2), tint: 0.32, a: bleed, box: SPL_BOX });
+    } finally { W.x = ox; W.y = oy; c.globalAlpha = 1; inSplash = false; }
+  }
+  function drawSplash(c, pn, t) {
+    const bleed = fe(3400, 3800, t), sg = phxSunGeo(pn, t), cx = sg.cx, cy = sg.cy, R = sg.R;
+    pn.screen(c);
+    c.fillStyle = bleed > 0.001 ? phxMix("#ffffff", MG_GOLD_PALE, bleed) : "#ffffff"; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4);
+    // 12 gold wedges, wide at the rim, narrowing to a point (half transparent), turning slowly; then the disc with its gold ring (2% of the page height)
+    const far = Math.hypot(pn.w, pn.h) * 1.3, rt = t * 0.00012;
+    c.globalAlpha = 0.5; c.fillStyle = MG_GOLD; c.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = rt + (i / 12) * Math.PI * 2, hb = i % 2 ? 0.075 : 0.12;
+      c.moveTo(cx + Math.cos(a - hb) * R, cy + Math.sin(a - hb) * R); c.lineTo(cx + Math.cos(a) * far, cy + Math.sin(a) * far); c.lineTo(cx + Math.cos(a + hb) * R, cy + Math.sin(a + hb) * R); c.closePath();
+    }
+    c.fill(); c.globalAlpha = 1;
+    c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fillStyle = "#ffffff"; c.fill();
+    const rw = pn.h * 0.02;
+    c.lineWidth = rw; c.strokeStyle = MG_GOLD; c.stroke();
+    c.lineWidth = 2; c.strokeStyle = MG_INK; c.beginPath(); c.arc(cx, cy, R + rw / 2, 0, 7); c.stroke(); c.beginPath(); c.arc(cx, cy, R - rw / 2, 0, 7); c.stroke();
+    ground(c, pn, t, 0);
+    phxHeap(c, pn, t);
+    phxStand(c, pn, t, bleed);
+  }
+  const phxSplashPanel = (port) => mgSplashPanel({ from: "b", paper: "#ffffff", dim: "120,80,6",
+    cam: (t) => ({ wx: splX() + FIN.dir * splDx() * 0.35, wy: -W_().s.h * 0.55 - (port ? 190 : 104) * 0.06, vh: (port ? 190 : 104) * (1 + 0.06 * fe(SPL(), MT.AFTER, t)) }), draw: drawSplash });
 
   /* ---- the script ---- */
   const S_ = {
@@ -10942,7 +11058,8 @@ MANGA.phoenix = (function () {
       ];
     },
     // the loser's stand-in is a copy of a doomed fighter, which draws it half see-through and blinking: here it is solid
-    start() { spr = null; fth = []; spk = []; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    start() { ult = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    end() { spr = null; fth = []; spk = []; ashF = []; },
     build(lay) {
       const r = mgRng(31415), g = L.gw, h = L.gh, port = lay.port;
       torn = false; cmt = null;
@@ -10972,6 +11089,12 @@ MANGA.phoenix = (function () {
       topWY = pn.wy - (pn.cy + pn.py + pn.oy) / pn.z - 6;
       hitY = -L_().s.h * 0.95;
       pn.ox = pn.oy = 0;
+      if (!ult) return;
+      // the Ultimate: ash falls over the white page like the feathers (kind 3: 2-4 px squares), and 60 flakes stream off the loser along the launch direction
+      const na = MG.slow ? 18 : 36;
+      for (let i = 0; i < na; i++) fth.push({ kind: 3, x0: r() * g, y0: r() * h * 0.45, vy: 40 + r() * 60, sw: 5 + r() * 12, ph: r() * 6.28, w: 0.8 + r() * 1.2, tilt: r() * 6.28, sc: 1, sz: 2 + r() * 2, burst: false, t0: SPL() + 40 + r() * 500 });
+      ashF = [];
+      for (let i = 0; i < 60; i++) ashF.push({ tb: 160 * Math.pow(r(), 1.3), v: 110 + r() * 330, a: (r() - 0.5) * 1.6, b: (r() - 0.5) * 2, lat: (r() - 0.5) * 2, life: 0.3 + r() * 0.22, z: 2 + Math.round(r() * 2), dk: r() < 0.55 });
     },
     step(t, k) {
       const W = W_(), Lp = L_();
@@ -10991,7 +11114,11 @@ MANGA.phoenix = (function () {
         P.wingUp = open * 0.5; P.flap = 0.1 + Math.sin(t * 0.006) * 0.06;
         P.lean = -0.3 * ease(fe(1250, 1700, t));
         P.mouth = 0;
-        P.expr = t >= 3600 ? "grin" : t >= T.DIVE && t < T.LAND + 200 ? "rage" : t >= 1250 && t < T.LAUNCH ? "calm" : undefined; P.exK = 1;
+        if (ult && inSplash) {   // the white page: she stands tall, arms up in a V, wings full, eyes closed and calm
+          P.wingUp = 0.9; P.flap = 0.1 + Math.sin(t * 0.004) * 0.05; P.lean = -0.1 + 0.03 * Math.sin(t * 0.003); P.expr = "calm"; P.exK = 1;
+          return { hF: [w * 0.82, -leg - tor * 0.8], hB: [-w * 0.8, -leg - tor * 0.74] };
+        }
+        P.expr = t >= MT.AFTER + 100 ? "grin" : t >= T.DIVE && t < T.LAND + 200 ? "rage" : t >= 1250 && t < T.LAUNCH ? "calm" : undefined; P.exK = 1;
         // the lift-off and the rocket up: arms back, feet together, wings beating
         if (t >= T.LAUNCH && t < T.DIVE) { P.lean = 0; P.flap = Math.sin(t * 0.05) * 0.8; return { hF: [-w * 0.25, -leg - tor * 0.25], hB: [-w * 0.35, -leg - tor * 0.25], fF: [w * 0.05, -leg * 0.3], fB: [-w * 0.15, -leg * 0.3] }; }
         if (t >= T.DIVE && t < T.LAND) {
@@ -11003,7 +11130,7 @@ MANGA.phoenix = (function () {
         }
         if (t >= T.LAND) {
           // landed in a crouch, rises at panel 4
-          const up = ease(fe(MT.AFTER + 60, 3950, t));
+          const up = ease(fe(MT.AFTER + 60, MT.AFTER + 450, t));
           P.crouch = 0.45 * (1 - up); P.lean = 0.1 * (1 - up) - 0.05 * up; P.wingUp = 0.5 * (1 - up); P.flap = 0.05;
           return { hF: [w * 0.6, -leg * (1 - up * 0.2) - tor * (0.12 + 0.35 * up)], hB: [-w * 0.55, -leg - tor * (0.1 + 0.3 * up)], fF: [w * 0.5, 0], fB: [-w * 0.35, 0] };
         }
@@ -11032,10 +11159,19 @@ MANGA.phoenix = (function () {
       o.setTransform(DPR, 0, 0, DPR, 0, 0);
       if (spr && t > 700 && t < MT.FADE) {
         const gh = L.gh, gw = L.gw;
-        for (const f of fth) {
+        for (let fi = 0; fi < fth.length; fi++) {
+          const f = fth[fi];
           if (t < f.t0) continue;
+          if (f.kind === 3 && MG.slow && (fi & 1)) continue;
           const s = (t - f.t0) / 1000;
           let x, y, a;
+          if (f.kind === 3) {   // ash: a grey square, falling and turning
+            x = f.x0 + Math.sin(s * f.w + f.ph) * f.sw; y = (((f.y0 + f.vy * s) % (gh + 60)) + gh + 60) % (gh + 60) - 30; a = fe(f.t0, f.t0 + 300, t) * 0.9;
+            a *= 1 - fe(MT.AFTER + 500, MT.AFTER + 900, t);
+            if (a < 0.02 || y < -30 || y > gh + 30 || x < -30 || x > gw + 30) continue;
+            o.globalAlpha = a; o.save(); o.translate(x, y); o.rotate(f.tilt + s * f.w); o.fillStyle = f.sz > 3 ? ASH : ASH2; o.fillRect(-f.sz / 2, -f.sz / 2, f.sz, f.sz); o.restore();
+            continue;
+          }
           if (f.burst) {
             const T0 = 0.8, e = T0 * (1 - Math.exp(-s / T0));
             if (!f.ox) { const pn = MG.byId.look; mgPlace(pn, 2100); const q = pn.p(FIN.wx, -30); f.ox = q[0]; f.oy = q[1] - pn.h * 0.05; pn.ox = pn.oy = 0; }
@@ -11044,7 +11180,7 @@ MANGA.phoenix = (function () {
           } else {
             x = f.x0 + Math.sin(s * f.w + f.ph) * f.sw; y = (((f.y0 + f.vy * s) % (gh + 60)) + gh + 60) % (gh + 60) - 30; a = fe(700, 1100, t) * 0.8;
           }
-          a *= 1 - fe(4000, 4400, t);
+          a *= 1 - fe(MT.AFTER + 500, MT.AFTER + 900, t);
           if (a < 0.02 || y < -30 || y > gh + 30 || x < -30 || x > gw + 30) continue;
           const sp_ = spr[f.kind], flip = 0.35 + 0.65 * Math.abs(Math.cos(s * f.w * 1.6 + f.ph));
           o.globalAlpha = a; o.save(); o.translate(x, y); o.rotate(f.tilt + Math.sin(s * f.w + f.ph) * 0.9); o.scale(f.sc, f.sc * flip);
@@ -11052,6 +11188,7 @@ MANGA.phoenix = (function () {
         }
         o.globalAlpha = 1;
       }
+      phxAshFlakes(o, t);
       if (t > FIN.launch && t < FIN.launch + 420) {
         const Lp = L_(), pn = MG.byId.strike, a = 1 - fe(FIN.launch + 200, FIN.launch + 420, t);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
@@ -11071,7 +11208,7 @@ MANGA.phoenix = (function () {
       mgPuppet(o, pn, W, FIN.hit + 10, { sc: diveSc(FIN.hit + 10), sil });
       mgPuppet(o, pn, Lp, FIN.hit + 10, { sc: 1, sil });
       pn.world(o);
-      const [bx, by] = burstPt(); phxStar6(o, bx, by, 40, 0.3, sil, null);
+      const [bx, by] = burstPt(); phxStar6(o, bx, by, ult && sil === MG_INK ? 80 : 40, 0.3, sil, null);   // the Ultimate's third (gold) frame: the star at 2x
       o.restore();
     },
     cues(t) {
@@ -11084,8 +11221,15 @@ MANGA.phoenix = (function () {
       cueOnce("stab", this.hit, () => Cin.go(() => { Cin.stab(196, 0.8); Cin.rumble(0.5); }));
       cueOnce("burn", FIN.launch, () => Cin.go(() => { Cin.whoosh(0.35, -0.9, 0.9, 0.5); Cin.sub(66, 30, 0.3, 0.5); }));
       cueOnce("thud", MT.AFTER, () => Cin.go(() => { Cin.sub(80, 36, 0.3, 0.5); Cin._noise(0.18, 0.3, 900, 200, "lowpass"); }));
-      cueOnce("cool", 3620, () => Cin.go(() => Cin._noise(0.6, 0.12, 1800, 600, "bandpass", 1.2)));
-      cueOnce("chimeEnd", 3960, () => Cin.go(() => Cin.chime(880)));
+      cueOnce("cool", MT.AFTER + 120, () => Cin.go(() => Cin._noise(0.6, 0.12, 1800, 600, "bandpass", 1.2)));
+      cueOnce("chimeEnd", MT.AFTER + 460, () => Cin.go(() => Cin.chime(880)));
+      if (!ult) return;
+      cueOnce("riser", T.DIVE - 10, () => Cin.go(() => Cin.riser(0.25, 0.3)));
+      cueOnce("embers", FIN.launch, () => Cin.go(() => Cin._noise(0.4, 0.2, 2600, 900, "lowpass")));
+      cueOnce("nova", SPL() + 50, () => Cin.go(() => { Cin.shimmer(880, 1.6); Cin.sub(50, 40, 1.2, 0.3); }));
+      cueOnce("supernova", 3600, () => Cin.go(() => Cin.taiko(0.8)));
+      cueOnce("blink1", 4100, () => Cin.go(() => Cin.tick(2600)));
+      cueOnce("blink2", 4500, () => Cin.go(() => Cin.tick(2600)));
     },
   };
   // she rockets up out of panel 2: drawn over the borders, wings still beating
@@ -11094,6 +11238,31 @@ MANGA.phoenix = (function () {
     const k = fe(T.LAUNCH, T.DIVE, t);
     phxWinner(o, pn, t, { light: dirAng(-1.75), spread: lerp(1, 0.55, easeOut(fe(T.LAUNCH, T.LAUNCH + 200, t))), heat: 1, flame: 1 });
   }
+  /* ---- the Ultimate page, "Supernova": the same script, with the changes of the design (MT is the Ultimate table while it plays: AFTER 4700, SPLASH 3250) ---- */
+  S_.ulti = Object.assign({}, S_, {
+    name: "Supernova", pop: 3050,   // the launch waits for the gold impact frame
+    start(g) { S_.start(g); ult = true; },
+    // the KO beam where the loser left the screen is cut short once the white page is in (it would run through her for another half second)
+    after(t) { if (FIN.beam && t >= SPL() + 120 && FIN.beam.t0 > -1e5) FIN.beam.t0 = -1e6; },
+    panels(lay) {
+      const ps = panels(lay), inset = ps.find((q) => q.id === "inset");   // (the white page is opaque: the panels under it are not drawn once it has slid in)
+      inset.freeze = MT.STRIKE + 130;            // the strike panel has slid over it by then: drawn once, then a bitmap
+      ps.splice(ps.length - 1, 0, phxSplashPanel(lay.port));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, mul = lay.port ? 0.5 : 1, P3 = () => MG.byId.strike;
+      // NOVA takes the place of DOOOM
+      ws[3] = { text: "NOVA", t0: FIN.hit + 95, t1: 3420, size: 0.24, mul, arc: 9, fill: MG_GOLD, rot: -0.07 * D, at: () => { const p = P3(), hw = phxHalf("NOVA", 0.24, mul); return [clamp(p.cx - D * p.w * 0.06, hw + 4, L.gw - hw - 4), p.y0 + p.h * 0.2 + p.oy]; } };
+      // SUPERNOVA across the sun's upper rim (a nine-letter word has to fit the upright page)
+      const ms = lay.port ? Math.min(0.5, 0.86 * L.gw / (9 * 0.2 * L.gh * 0.72)) : 1;
+      ws.push({ text: "SUPERNOVA", t0: 3600, t1: MT.CARD + 120, size: 0.2, mul: ms, arc: 5, fill: MG_GOLD, rot: -0.05 * D, at: (t) => {
+        const p = MG.byId.splash, hw = phxHalf("SUPERNOVA", 0.2, ms); mgPlace(p, t);
+        const g = phxSunGeo(p, t); return [clamp(g.cx, hw + 4, L.gw - hw - 4), g.cy - g.R * 0.94 + p.oy];
+      } });
+      return ws;
+    },
+  });
   return S_;
 })();
 
