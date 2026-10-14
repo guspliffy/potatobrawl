@@ -162,7 +162,7 @@ index.html is committed with every source change (check.sh flags a stale one).
 ## Rules that keep online play working
 - A core.js change that can change simulation results must stay deterministic, add new fighter fields to
   the newFighter defaults, FKEYS and checksum, reset them where needed (ko, startSudden), bump `PROTO` in
-  game/ui/online.js and the grep line in deploy/update.txt (check.sh checks they match).
+  game/ui/online.js (deploy/update.txt has no PROTO: it compares the page the game serves with GitHub's index.html).
 - No service worker (a cached old build would desync matches).
 - Balance band in check.sh is 44-57% (M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
@@ -199,8 +199,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 
 ## Deploy
 - Live: Claude merges the pull request once all checks pass, then Jonny pastes deploy/update.txt on the server
-  (always the current file: an old saved copy checks an old PROTO); it must print
-  "new version is live". No more file uploads. Since M1 the block also copies web/* (manifest, icons).
+  (the current file: since 2026-10-14 it compares the page the game serves on 127.0.0.1:8080 with index.html
+  from GitHub instead of grepping a PROTO number, so it never needs editing; an older saved copy that greps
+  "const PROTO = N" prints "still the old version" after a bump even when the update went live). It must print
+  "new version is live: <commit> <subject>". No more file uploads. Since M1 the block also copies web/* (manifest, icons).
 - Beta (once set up): deploy/beta-update.txt with BRANCH set to the branch to try.
 
 ## Gotchas

@@ -16,7 +16,7 @@ Read docs/WORKFLOW.md (how we work) and docs/HANDOFF.md (state, rules, next step
 
 ## Rules
 - core.js must stay deterministic (no Math.random / Math.sin in the sim). A change that can alter simulation
-  results adds new fighter fields to defaults, FKEYS and checksum, and bumps `PROTO` in ui/online.js (and the PROTO line in deploy/update.txt).
+  results adds new fighter fields to defaults, FKEYS and checksum, and bumps `PROTO` in ui/online.js (deploy/update.txt needs no change: it compares the served page with GitHub's).
 - No service worker. Anything that adds ports, stored data or dependencies on the VPS is Jonny's call
   (it also runs his trading bot).
 - Present a plan to Jonny before changing game code.
