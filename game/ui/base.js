@@ -118,6 +118,8 @@ const Sfx = {
     this.noiseF(0.07, 0.5, "highpass", 2400, 900, 0.7); this.noise(0.09, 0.3, 2600); this.tone(260, 55, 0.1, "sine", 0.3);
     if (gold) { this.noise(0.35, 0.4, 1200); this.tone(150, 38, 0.35, "sine", 0.45); this.later(90, () => this.tone(2600, 1300, 0.3, "sine", 0.04)); }
   },
+  // the Gunslinger's light attacks are point-blank shots: a short dry pop, quieter than Twin Shot
+  pop() { this.noiseF(0.05, 0.26, "highpass", 2600, 1200, 0.7); this.noise(0.05, 0.14, 2800); this.tone(300, 80, 0.06, "sine", 0.14); },
   // Reaper: Harvest is a low whoosh with two passing swishes as the scythe comes round; Grave rise a soft dark rush
   harvest() {
     this.noiseF(0.55, 0.26, "bandpass", 260, 820, 0.9); this.tone(92, 58, 0.45, "sine", 0.2);

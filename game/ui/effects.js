@@ -291,6 +291,7 @@ function handleEvent(g, e, live) {
       if (e.ult) uvHit(g, e, live);
       const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
+      else if (hAtt && hAtt.move && hAtt.move.shot) gunSpark(e, 4);   // a Gunslinger light shot: a small gold spark where it lands
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
       if (rt && rt.fresh && live) Sfx.route();
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
@@ -318,8 +319,9 @@ function handleEvent(g, e, live) {
     case "bounce": dust(e.x, e.y, 6, 30); break;
     case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
     case "swing": {
-      if (live && !e.ult) Sfx.swing(e.heavy);   // an ulti has its own sound (Sfx.ulti on the "ulti" event)
       const hSw = g.fighters[e.slot];   // a heavy: camera shake and the low heavy sound arrive when the hit window opens
+      // an ulti has its own sound (Sfx.ulti on the "ulti" event), a Gunslinger light is a shot (Sfx.pop on its first active frame, uvShotTick)
+      if (live && !e.ult && !(hSw && hSw.move && hSw.move.shot)) Sfx.swing(e.heavy);
       if (hSw && isHeavyKey(hSw.mid)) heavySwing(g, hSw, live);
       if (hSw && hSw.mid === "spec" && hSw.spec.look.costume === "reaper") harvestSwing(g, hSw, live);
       break;
@@ -453,7 +455,10 @@ function uvTick(g) {
   if (UV.t < 999) UV.t++;
   if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false]; UV.dash = [null, null]; UV.at = [null, null]; }
   if (UV.t > 1 && UV.t < UV_FREEZE - 2 && uvLive(g)) cam.shake = Math.max(cam.shake, 1.8);   // the held screen trembles
-  for (const f of g.fighters) { if (uvHeld(f)) uvFighterTick(g, f); }
+  for (const f of g.fighters) {
+    if (uvHeld(f)) uvFighterTick(g, f);
+    else if (f.state === "attack" && f.move && f.move.shot && f.spec.look.costume === "gunslinger") uvShotTick(g, f);   // the Gunslinger's light shots
+  }
   for (const p of g.projs) if (p.style === "cloud") uvCloudTick(g, p);
   g.fighters.forEach((f, i) => {   // Odin's spear came home (a spear that hit is gone far from him): a small catch
     const sp = g.projs.find((p) => p.owner === i && p.style === "spear");

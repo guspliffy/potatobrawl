@@ -4,6 +4,7 @@
 # through the page and the ulti is pressed through window.__blInput (input.js).
 # Usage (writes into --out, default ./ultimates-reel):
 #   python3 tests/pwultreel.py [--fighter=all|phoenix,wizard] [--out=DIR] [--slow=0.5] [--dsf=2] [--vs=odin] [WxH]
+#   --lights       only the Gunslinger light-shot pass
 #   --no-video     only the stills and sheets          --no-stills   only the video and its sheet
 #   --at=h16,m22,m61+4,cloud:33   dev: grab these moments of one ulti (hN = N ticks of super freeze left, mN = the first frame the ulti is at frame N,
 #                        mN+k = k ticks after that, so a hit's hitstop can be stepped through) into DIR/dev-*.png
@@ -11,6 +12,8 @@
 # --slow is the game speed of the move (0.5 = half speed); the super freeze always runs at full speed.
 # Checks (a failure exits 1): no page errors; the ulti starts, spends the bar, freezes the game 30 ticks and hurts the CPU; the
 # frame cost of the ulti ticks stays within +8 ms of an idle tick (software canvas in headless Chromium, so a phone is cheaper).
+# The Gunslinger's lights are shots (jab, side, up, down, nair, sair, uair, dair): after the ultis a second pass plays each one on a
+# standing CPU (stills/gunslinger-light-<move>-844x390.png at the shot, gunslinger-lights.mp4 and gunslinger-lights-sheet.jpg); --no-lights skips it.
 # Needs /usr/bin/ffmpeg for the video. Prints "no errors" when every check held.
 import sys, json, pathlib, subprocess, shutil, statistics
 from playwright.sync_api import sync_playwright
@@ -75,10 +78,10 @@ DRIVER = """(keys) => {
 # both fighters on their marks; o = {d: distance, pct}
 RESET = """(o) => {
   const g = window.__blastline.game, a = g.fighters[0], d = g.fighters[1];
-  const put = (f, x, facing) => { Object.assign(f, { x, y: 0, vx: 0, vy: 0, kbx: 0, kby: 0, facing, grounded: true, plat: -1, state: 'idle', st: 0,
+  const put = (f, x, facing, y) => { Object.assign(f, { x, y: y || 0, vx: 0, vy: 0, kbx: 0, kby: 0, facing, grounded: !y, plat: -1, state: y ? 'air' : 'idle', st: 0,
     move: null, mid: null, mt: 0, hitstun: 0, tumble: false, flash: 0, chg: 0, invuln: 0, ledge: 0, recUsed: false, airDodged: false, hitLog: {} }); f.airJumps = f.s.airJumps; };
-  put(a, -o.d / 2, 1); a.percent = 0; a.stocks = 3; a.specCd = 0;
-  put(d, o.d / 2, -1); d.percent = o.pct; d.stocks = 3; d.specCd = 0;
+  put(a, -o.d / 2, 1, o.ay); a.percent = 0; a.stocks = 3; a.specCd = 0;
+  put(d, o.d / 2, -1, o.dy); d.percent = o.pct; d.stocks = 3; d.specCd = 0;
   g.projs.length = 0;
   a.ult = BL.ultNeed(a); a.ultN = 0;
 }"""
@@ -158,6 +161,54 @@ def check_run(fid, res, idle_dt):
         checks.append((fid, f"frame cost {mean:.1f} ms mean, {p95:.1f} ms p95 (idle {idle_dt:.1f} ms)", mean < idle_dt + 8 and p95 < idle_dt + 16))
 
 
+# key, the stick + light press, the user's feet above the floor, the CPU's feet above the floor, distance
+LIGHTS = [("jab", {"light": True}, 0, 0, 60), ("side", {"light": True, "x": 1}, 0, 0, 62), ("up", {"light": True, "y": -1}, 0, 0, 32),
+          ("down", {"light": True, "y": 1}, 0, 0, 50), ("nair", {"light": True}, -100, -100, 34), ("sair", {"light": True, "x": 1}, -100, -100, 62),
+          ("uair", {"light": True, "y": -1}, -100, -200, 30), ("dair", {"light": True, "y": 1}, -160, -60, 20)]
+
+
+def lights(b):
+    """Each Gunslinger light on a standing CPU: a still on the second active frame (the tracer and the flash), one clip of all eight."""
+    ctx, pg = start(b, "gunslinger", "odin", W, H, False)
+    ld = out / "frames-lights"
+    shutil.rmtree(ld, ignore_errors=True); ld.mkdir(parents=True)
+    n = 0
+    stills = []
+    for key, inp, ay, dy, dist in LIGHTS:
+        pg.evaluate(DRIVER, [f"A.mid==='{key}'&&A.mt===A.move.startup+2"])
+        pg.evaluate(RESET, {"d": dist, "pct": 40, "ay": ay, "dy": dy})
+        pg.evaluate(CAP, f"Gunslinger · {key} shot")
+        for _ in range(0 if ay else 10):
+            tick(pg); n += 1; pg.screenshot(path=str(ld / f"f{n:05d}.png"))
+        pg.evaluate("(i) => { window.__in = i; }", inp)
+        got, over, last = False, None, None
+        for i in range(120):
+            st = tick(pg); last = st
+            if i == 0: pg.evaluate("() => { window.__in = {}; }")
+            n += 1; pg.screenshot(path=str(ld / f"f{n:05d}.png"))
+            if st["hit"][0] and not got:
+                got = True
+                path = out / "stills" / f"gunslinger-light-{key}-{W}x{H}.png"
+                pg.screenshot(path=str(path)); stills.append((key, path))
+            if i > 2 and st["mid"] != key and over is None: over = i
+            if over is not None and i >= over + 10: break
+        checks.append(("gunslinger", f"the {key} shot was drawn and hurt the CPU ({last['dp'] - 40:.0f}%)", got and last["dp"] > 40))
+        print(f"gunslinger {key}: {n} frames so far", flush=True)
+    ctx.close()
+    subprocess.run(["/usr/bin/ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", str(ld / "f%05d.png"), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "24", "-preset", "medium",
+                    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", str(out / "gunslinger-lights.mp4")], check=True)
+    shutil.rmtree(ld, ignore_errors=True)
+    print("video", out / "gunslinger-lights.mp4")
+    if stills:
+        tw = 420
+        ims = [label(crop_pair(Image.open(pth).convert("RGB")).resize((tw, int((H * 0.84) * tw / (W * 0.76)))), f"Gunslinger · {k} shot") for k, pth in stills]
+        cols = 4
+        rows = (len(ims) + cols - 1) // cols
+        sh = Image.new("RGB", (tw * cols, ims[0].height * rows), (12, 12, 18))
+        for i, im in enumerate(ims): sh.paste(im, ((i % cols) * tw, (i // cols) * ims[0].height))
+        sh.save(out / "gunslinger-lights-sheet.jpg", quality=86); print("sheet", out / "gunslinger-lights-sheet.jpg")
+
+
 def crop_pair(im):
     return im.crop((int(im.width * 0.12), int(im.height * 0.08), int(im.width * 0.88), int(im.height * 0.92)))
 
@@ -177,7 +228,7 @@ with sync_playwright() as p:
     upr = {}       # fighter -> [(label, path)] 390x844
 
     # ---- pass 1: the reel at 844x390 (every tick is a frame, the freeze at full speed) and the landscape stills ----
-    for fid in fighters:
+    for fid in ([] if flag("--lights") else fighters):
         opp = vs_all or OPP[fid]
         ctx, pg = start(b, fid, opp, W, H, False)
         cap = f"{NAMES[fid][0]} · {NAMES[fid][1]}"
@@ -243,7 +294,7 @@ with sync_playwright() as p:
 
     # ---- pass 2: upright phone 390x844 stills ----
     if want_stills:
-        for fid in fighters:
+        for fid in ([] if flag("--lights") else fighters):
             ctx, pg = start(b, fid, vs_all or OPP[fid], UW, UH, True)
             labels = ["freeze"] + [l for l, _ in KEYS[fid]]
             seen = set()
@@ -258,6 +309,7 @@ with sync_playwright() as p:
             clip(pg, fid, vs_all or OPP[fid], NAMES, record, "")
             ctx.close()
             print(f"{fid}: upright stills done", flush=True)
+    if ("gunslinger" in fighters or flag("--lights")) and not dev_at and not flag("--no-lights"): lights(b)
     b.close()
 
 # ---- the video and the contact sheets ----

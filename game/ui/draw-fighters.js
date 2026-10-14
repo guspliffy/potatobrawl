@@ -87,6 +87,8 @@ function pose(f, tk) {
     if (phase === 1) P.mouth = Math.max(P.mouth, 1);
     if (m.kind === "projectile" && m.limb !== "head") { hF = phase === 0 ? lerp2(hF, [-w * 0.6, -leg - tor * 0.9], ease(k)) : lerp2([w * 1.1, -leg - tor * 0.7], hF, phase === 2 ? ease(k) : 0); }
     if (m.kind === "projectile" && L_.costume === "gunslinger") gunShotPose(f, P, m, phase, k, w, leg, tor, (a, b) => { hF = a; if (b) hB = b; });
+    // the Gunslinger's lights are point-blank shots (core: shot: true): the pistol points along the hitbox path
+    if (m.shot && L_.costume === "gunslinger") gunLightPose(f, P, m, phase, k, w, leg, tor, (a, b) => { if (a) hF = a; if (b) hB = b; });
     // Powder jump (Gunslinger): the front pistol points straight down and fires once as he lifts off
     if (m.rec && L_.costume === "gunslinger") {
       const sk = f.mt - m.startup;
@@ -1192,6 +1194,7 @@ function drawPotato(c, f, tk, at) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
   }
   drawSwooshes(c, f, P, tk, alpha);
+  if (f.move && f.move.shot && f.state === "attack") drawGunLightFx(c, f, P, tk);   // the Gunslinger's light shots: the tracer along the hitbox path
   drawHeavyFx(c, f, P, tk);
   drawFinishFx(c, f, P, tk);
   c.restore();
@@ -2547,14 +2550,14 @@ function uvDragonFire(c, f, tk) {
   if (mt < 25 || mt > 73) return;
   const blast = mt >= 61 && mt <= 66, len = mt <= 66 ? 408 * easeOut2(clamp((mt - 24) / 6, 0, 1)) : 408 * Math.max(0, 1 - (mt - 66) / 7);
   if (len < 12) return;
-  const [ox, oy] = uvMouthWorld(f, tk), ex = f.x + d * len, ey = f.y - 46;
+  const [ox, oy] = uvMouthWorld(f, tk), ex = f.x + d * len, ey = f.y - 50;
   // the floor under the stream glows
   c.save(); c.globalCompositeOperation = "lighter";
   const fg = c.createLinearGradient(f.x, 0, ex, 0); fg.addColorStop(0, "rgba(255,150,50,0.35)"); fg.addColorStop(1, "rgba(255,90,30,0.12)");
   c.fillStyle = fg; c.fillRect(Math.min(f.x + d * 50, ex), f.y - 5, Math.abs(ex - f.x - d * 50), 9);
   c.restore();
   c.save(); c.globalAlpha = mt > 66 ? Math.max(0, 1 - (mt - 66) / 7) : 1;
-  uvFlameStream(c, ox, oy, ex, ey, blast ? 58 : 40, tk);
+  uvFlameStream(c, ox, oy, ex, ey, blast ? 64 : 46, tk);
   // tongues licking up off the top edge of the stream
   for (let i = 0; i < 5; i++) { const u = 0.25 + i * 0.17, x = ox + (ex - ox) * u, y = oy + (ey - oy) * u - 26 * u; flameCluster(c, x, y, 1, (16 + 14 * u) * (1 + (blast ? 0.5 : 0)), 0, tk + i * 7, 0.6, "rgba(255,140,40,0.8)", "rgba(255,230,150,0.9)"); }
   if (blast) {   // the blast: the far end flares white-hot
@@ -2713,14 +2716,14 @@ function uvFighterTick(g, f) {
     if (mt >= 25 && mt <= 66) {
       cam.shake = Math.max(cam.shake, 2.4);
       const [ox] = uvMouthWorld(f, tick), len = 408 * easeOut2(clamp((mt - 24) / 6, 0, 1));
-      for (let i = 0; i < 3; i++) { const u = frand(0.1, 1); ember(f.x + d * (60 + (len - 60) * u), f.y - 46 + frand(-32, 32), d * frand(0, 2.4), -frand(0.4, 2.8)); }
-      if (mt % 3 === 0) addFx({ k: "puff", x: f.x + d * frand(70, len), y: f.y - 46 + frand(-30, 20), vx: d * frand(0, 1), vy: -frand(0.4, 1.2), r: frand(7, 12), t: 0, life: 32, col: "#6b5560" });
+      for (let i = 0; i < 3; i++) { const u = frand(0.1, 1); ember(f.x + d * (60 + (len - 60) * u), f.y - 50 + frand(-36, 36), d * frand(0, 2.4), -frand(0.4, 2.8)); }
+      if (mt % 3 === 0) addFx({ k: "puff", x: f.x + d * frand(70, len), y: f.y - 50 + frand(-34, 20), vx: d * frand(0, 1), vy: -frand(0.4, 1.2), r: frand(7, 12), t: 0, life: 32, col: "#6b5560" });
       void ox;
     }
     if (mt === 61 && uvCue(f, "blast")) {
       const ex = f.x + d * 380;
-      addFx({ k: "ring", x: ex, y: f.y - 46, t: 0, life: 16, r0: 10, r1: 120, col: UV_GOLD });
-      for (let i = 0; i < 22; i++) ember(ex + frand(-50, 20) * d, f.y - 46 + frand(-40, 40), frand(-6, 6), frand(-6, 2));
+      addFx({ k: "ring", x: ex, y: f.y - 50, t: 0, life: 16, r0: 10, r1: 120, col: UV_GOLD });
+      for (let i = 0; i < 22; i++) ember(ex + frand(-50, 20) * d, f.y - 50 + frand(-44, 44), frand(-6, 6), frand(-6, 2));
       cam.shake = Math.max(cam.shake, 12); sfx.push({ k: "flash", t: 0, life: 8 });
       if (live) Sfx.hellBlast();
     }
@@ -2735,4 +2738,72 @@ function uvFighterTick(g, f) {
       if (live) Sfx.reapSweep();
     }
   }
+}
+
+/* ===================== Gunslinger: the lights are point-blank shots (UI only) =====================
+   core.js gives every Gunslinger light shot: true and a thin hitbox that sweeps out from the muzzle over the active frames (jab, side and
+   sair level, up and uair straight up, down along the floor, dair straight down, nair to both sides with both pistols). So the pistol
+   is aimed along the box path (gunLightPose), flashes on the first active frame (P.shotF / P.shotB, the same flash as Twin Shot, small),
+   the hand kicks back, a bright tracer runs from the muzzle to the sweeping box (drawGunLightFx) and a puff of smoke and a shell
+   leave with a short "pop" (uvShotTick, once per move). */
+function gunLightPose(f, P, m, phase, k, w, leg, tor, set) {
+  const a0 = m.startup + 1, age = f.mt - a0, up = phase === 0 ? ease(k) : phase === 2 ? 1 - ease(k) : 1;
+  const kk = age >= 0 && age < 5 ? 1 - age / 5 : 0;   // the kick: full on the shot frame, gone five frames later
+  const restF = [w * 0.5, -leg - tor * 0.52], restB = [w * 0.2, -leg - tor * 0.42];
+  const dirOf = (b) => (b.x2 !== b.x || b.y2 !== b.y ? Math.atan2(b.y2 - b.y, b.x2 - b.x) : 0);
+  // where the hand goes so that a pistol held along a has its muzzle at the start of the box (kept in front of, or behind, the body)
+  const aim = (b, a, back) => {
+    const s = back ? 0.92 : 1, ca = Math.cos(a), sa = Math.sin(a);
+    let hx = b.x - (18.5 * ca + 2.7 * sa) * s, hy = b.y - (18.5 * sa - 2.7 * ca) * s;
+    hx = back ? Math.min(hx, -w * 0.55) : Math.abs(ca) > 0.5 ? Math.max(hx, w * 0.6) : Math.max(hx, w * 0.45);
+    return [hx - ca * 5 * kk, hy - sa * 5 * kk];   // the recoil pushes the hand back along the barrel
+  };
+  const flip = (a) => a + (Math.cos(a) >= 0 ? -1 : 1) * 0.45 * kk;   // the muzzle lifts on the kick
+  P.noSwoosh = true; P.spin = 0;
+  const b0 = m.boxes[0], a = dirOf(b0), two = m.boxes.length > 1;
+  const hF = lerp2(restF, aim(b0, a, false), up);
+  P.holdAng = lerp(-0.3, flip(a), up);
+  let hB = null;
+  if (two) {   // nair: the back pistol fires the other way
+    const b1 = m.boxes[1], a1 = dirOf(b1);
+    hB = lerp2(restB, aim(b1, a1, true), up); P.gunB = lerp(Math.PI + 0.35, flip(a1), up);
+    if (age >= 0 && age < 3) P.shotB = age;
+  }
+  P.lean = (Math.sin(a) < -0.7 ? -0.04 : -0.06) * up - 0.05 * kk;
+  if (Math.sin(a) > 0.7 && f.grounded) P.crouch = Math.max(P.crouch, 0.18 * up);   // down: the floor shot from a crouch
+  if (age >= 0 && age < 3) P.shotF = age;
+  set(hF, hB);
+}
+// the tracer: from the muzzle to the sweeping box, a dark edge, an orange body and a white core, a bright head; it fades in the three frames after the window
+function drawGunLightFx(c, f, P, tk) {
+  const m = f.move, a0 = m.startup + 1, a1 = m.startup + m.active, mt = f.mt;
+  if (mt < a0 || mt > a1 + 3) return;
+  const fade = mt <= a1 ? 1 : 1 - (mt - a1) / 4, t = m.active > 1 ? clamp((Math.min(mt, a1) - a0) / (m.active - 1), 0, 1) : 1;
+  c.save(); c.lineCap = "round";
+  m.boxes.forEach((b, i) => {
+    const back = i === 1, hand = back ? P.hB : P.hF, a = back ? P.gunB : P.holdAng;
+    if (a == null) return;
+    const [mx, my] = gunMuzzle(P, hand, a, back), hx = b.x + (b.x2 - b.x) * t, hy = b.y + (b.y2 - b.y) * t, ux = Math.cos(a), uy = Math.sin(a);
+    const len = (hx - mx) * ux + (hy - my) * uy;   // how far past the muzzle the head is
+    if (len > 3) {
+      const ex = mx + ux * len, ey = my + uy * len;
+      c.globalAlpha = 0.55 * fade; c.strokeStyle = "rgba(20,15,30,0.9)"; c.lineWidth = 6.5; c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
+      c.globalAlpha = 0.95 * fade; c.strokeStyle = "#ffb347"; c.lineWidth = 3.6; c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
+      c.strokeStyle = "#ffffff"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
+    }
+    c.globalAlpha = fade; glowDot(c, hx, hy, 15, 0.8, "#ffd27a"); star4(c, hx, hy, 5 + 2 * (1 - t), "#ffffff");
+  });
+  c.restore();
+}
+// once per shot, on the first active frame: a puff of smoke from each muzzle, a shell from the front pistol and a quiet "pop"
+function uvShotTick(g, f) {
+  const m = f.move;
+  if (f.mt !== m.startup + 1 || !uvCue(f, "shot")) return;
+  const P = pose(f, tick), live = mode === "match" && !FIN.on && g === G;
+  m.boxes.forEach((b, i) => {
+    const back = i === 1, [mx, my] = gunMuzzle(P, back ? P.hB : P.hF, (back ? P.gunB : P.holdAng) || 0, back);
+    gunSmoke(f, [[mx, my]], 2);
+  });
+  gunShell(f, P.hF[0], P.hF[1] - 2);
+  if (live) Sfx.pop();
 }
