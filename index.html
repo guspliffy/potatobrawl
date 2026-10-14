@@ -15963,8 +15963,10 @@ MANGA.reaper = (function () {
   // a colour drawn inside a panel comes out as its complement once the page is turned: so amber is painted as its complement
   const neg = (hex) => "#" + (0xffffff ^ parseInt(hex.slice(1), 16)).toString(16).padStart(6, "0");
   const NCOL = neg(COL), NHOT = neg(HOT), NIGHT = "#0e131d";   // NIGHT: the paper once turned (what the overlay paints to match the page)
-  const HIT = MT.HIT, TOLL = 840, TURNED = 1180, RISE0 = 1330, RISE1 = 2150, SMIRK = 2180, GLIDE0 = 2420, GLIDE1 = 2800, SETTLE = 3260,
-    HUSH = 3640, HUSH1 = 3990, STONE = 3720, GAP = 64;
+  const HIT = MT.HIT, TOLL = 840, TURNED = 1180, RISE0 = 1330, RISE1 = 2150, SMIRK = 2180, GLIDE0 = 2420, GLIDE1 = 2800, SETTLE = 3260, GAP = 64;
+  // the aftermath's moments are MT.AFTER + offset (3500 on Last Rites, 4700 on the Ultimate page), set by start()
+  let HUSH = 3640, HUSH1 = 3990, STONE = 3720, TOLL2 = 4150, SHHH1 = 4380;
+  const setTimes = () => { const A = MT.AFTER; HUSH = A + 140; HUSH1 = A + 490; STONE = A + 220; TOLL2 = A + 650; SHHH1 = A + 880; };
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
   const BOX = [-112, -132, 112, 20];   // what he and his scythe can cover (world units about the feet)
@@ -16404,11 +16406,11 @@ MANGA.reaper = (function () {
           rot: -0.42 * D,
           at: () => { const B = box(); if (!B.stroke) B.stroke = rprStrokePts(40); const p = B.stroke[Math.round(B.stroke.length * 0.62)], q = B.stroke[Math.round(B.stroke.length * 0.62) - 2]; let nx = -(p[1] - q[1]), ny = p[0] - q[0]; const d = Math.hypot(nx, ny) || 1; nx /= d; ny /= d; if (ny > 0) { nx = -nx; ny = -ny; } return [p[0] + nx * L.gh * 0.13, p[1] + ny * L.gh * 0.13]; } },
         // his whisper, eyes closed
-        { text: "shhh...", t0: HUSH + 30, t1: 4380, size: 0.075, jit: 0.12, rot: -0.1 * D, space: 0.08,
+        { text: "shhh...", t0: HUSH + 30, t1: SHHH1, size: 0.075, jit: 0.12, rot: -0.1 * D, space: 0.08,
           at: () => { const p = MG.byId.after, m = p.sp(...rprPt(W_(), HUSH + 60, "head")); return [m[0] - D * p.z * 34, m[1] - p.z * 22]; } },
       ];
     },
-    start(g) { dust = []; motes = []; soul = null; tear2 = null; },
+    start(g) { dust = []; motes = []; soul = null; tear2 = null; setTimes(); },
     build(lay) {
       const B = box(), gw = L.gw, gh = L.gh;
       MG.panels[0].d.draw = drawHit;
@@ -16423,7 +16425,7 @@ MANGA.reaper = (function () {
       const Lp = L_(); stoneName = Lp.spec.name.toUpperCase();
       const mc = mgCanvas(4, 4).getContext("2d"); mc.font = `800 10px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
       stoneFont = clamp(10 * 25 / Math.max(1, mc.measureText(stoneName).width), 3.2, 6);
-      FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special)
+      if (!MG.ulti) FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate keeps the engine's line
     },
     step(t, k) {
       const W = W_();
@@ -16535,7 +16537,7 @@ MANGA.reaper = (function () {
         Cin._noise(0.5, 0.035, 850, 700, "bandpass", 5, 0.5, -0.2); Cin._noise(0.5, 0.025, 2300, 2050, "bandpass", 6, 0.5, -0.2);
       }));
       cueOnce("stone", STONE, () => Cin.go(() => { Cin.stamp(0.7); Cin._noise(0.12, 0.12, 1800, 900, "bandpass", 1.2); }));
-      cueOnce("toll2", 4150, () => Cin.go(() => { for (const [f, v, d] of [[110, 0.05, 2.2], [131, 0.02, 1.6], [220, 0.02, 1.2]]) Cin._osc("sine", f, f * 0.997, d, v, 0.01); }));
+      cueOnce("toll2", TOLL2, () => Cin.go(() => { for (const [f, v, d] of [[110, 0.05, 2.2], [131, 0.02, 1.6], [220, 0.02, 1.2]]) Cin._osc("sine", f, f * 0.997, d, v, 0.01); }));
     },
   };
   return S_;
