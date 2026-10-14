@@ -1,10 +1,11 @@
 /* ===================== input ===================== */
-const touch = { x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, id: null, ox: 0, oy: 0 };
+const touch = { x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, id: null, ox: 0, oy: 0 };
 const latch = new Set();
 const keys = new Set();
 const KEYMAP = {
   Space: "jump", KeyJ: "light", KeyZ: "light", KeyK: "heavy", KeyX: "heavy", KeyL: "special", KeyC: "special",
   ShiftLeft: "dodge", ShiftRight: "dodge", KeyV: "dodge", Semicolon: "dodge",
+  KeyU: "ulti",
 };
 const GAMEKEYS = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", ...Object.keys(KEYMAP)]);
 window.addEventListener("keydown", (e) => {
@@ -27,7 +28,7 @@ function readPad() {
     const b = (i) => !!(p.buttons[i] && p.buttons[i].pressed);
     r.x = Math.abs(ax) > 0.2 ? ax : (b(15) ? 1 : 0) - (b(14) ? 1 : 0);
     r.y = Math.abs(ay) > 0.2 ? ay : (b(13) ? 1 : 0) - (b(12) ? 1 : 0);
-    r.light = b(0); r.special = b(1); r.jump = b(2) || b(3); r.heavy = b(4) || b(6); r.dodge = b(5) || b(7);
+    r.light = b(0); r.special = b(1); r.jump = b(2); r.ulti = b(3); r.heavy = b(4) || b(6); r.dodge = b(5) || b(7);
     break;
   }
   return r;
@@ -40,7 +41,7 @@ function readPlayer() {
   const held = (k) => touch[k] || latch.has(k) || !!pad[k] || Object.keys(KEYMAP).some((c) => KEYMAP[c] === k && keys.has(c));
   const inp = {
     x: clamp(touch.x + kx + pad.x, -1, 1), y: clamp(touch.y + ky + pad.y, -1, 1),
-    jump: held("jump"), light: held("light"), heavy: held("heavy"), special: held("special"), dodge: held("dodge"),
+    jump: held("jump"), light: held("light"), heavy: held("heavy"), special: held("special"), dodge: held("dodge"), ulti: held("ulti"),
   };
   latch.clear();
   return inp;

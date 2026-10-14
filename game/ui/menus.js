@@ -133,15 +133,16 @@ const CTRL = [
   { k: "special", name: "Special", col: "#8fb6ff", key: "L", text: "Signature move, then a short recharge." },
   { k: "jump", name: "Jump", col: "#eef0fa", key: "Space", text: "Works again in the air." },
   { k: "dodge", name: "Dodge", col: "#a4a9c8", key: "Shift", text: "Slip through attacks. Softens a hard landing." },
+  { k: "ulti", name: "Ulti", col: "#f3c84a", key: "U", text: "Only with a full gold bar. Freezes the game, then one huge move." },
 ];
 function phoneFig() {
   // positions follow the real touch layout; the empty middle of the screen is left out
-  const PAD = [["light", 708, 332, 40], ["heavy", 623, 323, 33], ["jump", 791, 255, 35], ["special", 705, 245, 29], ["dodge", 791, 337, 27]], sh = 280;
+  const PAD = [["light", 708, 332, 40], ["heavy", 623, 323, 33], ["jump", 791, 255, 35], ["special", 705, 245, 29], ["dodge", 791, 337, 27], ["ulti", 693, 178, 27]], sh = 280;
   const C = Object.fromEntries(CTRL.map((c) => [c.k, c]));
-  const btn = ([k, x, y, r]) => { const c = C[k], fs = k === "special" ? 11.5 : k === "dodge" ? 12 : 16;
-    return `<circle cx="${x - sh}" cy="${y}" r="${r}" fill="rgba(14,16,34,.55)" stroke="${c.col}" stroke-width="3"/><text x="${x - sh}" y="${y + fs * 0.36}" font-size="${fs}" fill="${c.col}" text-anchor="middle">${c.name}</text>`; };
-  return `<svg class="help-fig" viewBox="0 150 564 240" role="img" aria-label="Touch controls: stick on the left, five buttons on the right">
-    <rect x="2" y="152" width="560" height="236" rx="26" fill="#14172e" stroke="rgba(206,210,255,.18)" stroke-width="2"/>
+  const btn = ([k, x, y, r]) => { const c = C[k], fs = k === "special" ? 11.5 : k === "dodge" ? 12 : k === "ulti" ? 12.5 : 16;
+    return `<circle cx="${x - sh}" cy="${y}" r="${r}" fill="${k === "ulti" ? "rgba(243,200,74,.3)" : "rgba(14,16,34,.55)"}" stroke="${c.col}" stroke-width="3"/><text x="${x - sh}" y="${y + fs * 0.36}" font-size="${fs}" fill="${c.col}" text-anchor="middle">${c.name}</text>`; };
+  return `<svg class="help-fig" viewBox="0 120 564 270" role="img" aria-label="Touch controls: stick on the left, six buttons on the right; the gold Ulti button only shows when the bar is full">
+    <rect x="2" y="122" width="560" height="266" rx="26" fill="#14172e" stroke="rgba(206,210,255,.18)" stroke-width="2"/>
     <circle cx="120" cy="290" r="58" fill="rgba(14,16,34,.4)" stroke="rgba(243,217,164,.45)" stroke-width="3"/>
     <circle cx="142" cy="280" r="25" fill="#f3d9a4"/>
     <text x="120" y="210" font-size="16" fill="#f3d9a4" text-anchor="middle">Stick</text>
@@ -151,12 +152,19 @@ function keysFig() {
   const key = (x, y, w, label, sub, c) => `<rect x="${x}" y="${y}" width="${w}" height="52" rx="8" fill="#232746" stroke="${c}" stroke-width="2.5"/><rect x="${x + 3}" y="${y + 46}" width="${w - 6}" height="4" rx="2" fill="rgba(0,0,0,.3)"/>
     <text x="${x + w / 2}" y="${y + 27}" font-size="20" fill="#eef0fa" text-anchor="middle">${label}</text><text x="${x + w / 2}" y="${y + 43}" font-size="11" fill="${c}" text-anchor="middle">${sub}</text>`;
   const S = "#f3d9a4";
-  return `<svg class="help-fig" viewBox="0 0 470 186" role="img" aria-label="Keyboard controls">
+  return `<svg class="help-fig" viewBox="0 0 490 186" role="img" aria-label="Keyboard controls">
     ${key(64, 6, 52, "W", "up", S)}${key(6, 64, 52, "A", "left", S)}${key(64, 64, 52, "S", "down", S)}${key(122, 64, 52, "D", "right", S)}
-    ${key(256, 6, 52, "J", "light", "#f3d9a4")}${key(314, 6, 52, "K", "heavy", "#ef7a52")}${key(372, 6, 52, "L", "special", "#8fb6ff")}
+    ${key(256, 6, 52, "J", "light", "#f3d9a4")}${key(314, 6, 52, "K", "heavy", "#ef7a52")}${key(372, 6, 52, "L", "special", "#8fb6ff")}${key(430, 6, 52, "U", "ulti", "#f3c84a")}
     ${key(6, 128, 110, "Shift", "dodge", "#a4a9c8")}${key(126, 128, 240, "Space", "jump", "#eef0fa")}${key(376, 128, 88, "Esc", "pause", "#a4a9c8")}</svg>`;
 }
+// the Ultimates part: the bar, the button, the freeze, and how to escape each fighter's ulti (the "text" of spec.ultimate says it)
+function renderHelpUlt() {
+  $("helpUlt").innerHTML = `<h4>Ultimates</h4>
+    <p>The bar under your name fills when you hit, get hit and lose a heart. When it is full, ${touchUI ? "tap the gold <b>ULTI</b> button" : "press <b>U</b> (<b>Y</b> on a gamepad)"}: the game freezes for a moment, then your fighter does one huge move, up to twice a match. <b>Every ulti can be escaped</b>:</p>
+    <div class="ul-grid">${FIGHTERS.map((f) => `<div class="ul" style="--fc:${col(f.palettes[0])}"><div class="ul-n"><b>${f.name}</b>${f.ultimate.name}</div><span>${f.ultimate.text}</span></div>`).join("")}</div>`;
+}
 function openHelp() {
+  renderHelpUlt();
   $("helpFig").innerHTML = touchUI ? phoneFig() : keysFig();
   $("helpKeys").innerHTML = CTRL.map((c) => `<dt style="--kc:${c.col}">${c.name}${touchUI ? "" : `<kbd>${c.key}</kbd>`}</dt><dd>${c.text}</dd>`).join("");
   $("helpGo").hidden = mode === "match";
