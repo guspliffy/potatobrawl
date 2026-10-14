@@ -3,7 +3,7 @@
 # then makes contact sheets with PIL. A live pass plays real heavies against a pinned opponent (swing timer, heavy sound,
 # hit effects) and photographs the swing and the hit.
 # Usage: python3 tests/pwheavy.py [fighter ...] [--2d] [WxH] [--nolive] [--rows side,up,down,air] [--cols light,wind,glint,hit1,hit2,hit3,end] [--nofrozen] [--nocharge] [--nofinish] [--nohum] [--out DIR]
-#   defaults: all seven fighters, 844x390, live pass on. Screenshots go to the scratchpad folder, not the repo.
+#   defaults: all eight fighters, 844x390, live pass on. Screenshots go to the scratchpad folder, not the repo.
 #   Also (each can be skipped with --nocharge / --nofinish / --nohum):
 #   charge stills   every fighter's ground heavies at the hold point with no charge, at charge stages 1 / 2 / 3 (chg 12 / 32 / 56) and released
 #                   at the hit window with chg 0 and chg 60, plus a live hold to full charge and the CHARGED pop on the hit (chg-*.png, chg-all-*.png)
@@ -18,7 +18,7 @@ args = sys.argv[1:]
 gfx = "2d"   # matches are 2D only since M4 (the flag is ignored by the game)
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
-UPLIFT = {k: 30 for k in ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]}   # up heavies swing overhead; lift the pinned opponent so they connect
+UPLIFT = {k: 30 for k in ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger", "reaper"]}   # up heavies swing overhead; lift the pinned opponent so they connect
 live = "--nolive" not in args
 frozen = "--nofrozen" not in args
 charge = "--nocharge" not in args
@@ -29,7 +29,7 @@ out_arg = args[args.index("--out") + 1] if "--out" in args else None
 OUT = pathlib.Path(out_arg or "/tmp/claude-0/-home-claude-potatobrawl/ec9f61d4-22bf-58d1-982b-e0d89ca46890/scratchpad/heavies")
 OUT.mkdir(parents=True, exist_ok=True)
 skip = {x for x in (out_arg, args[args.index("--rows") + 1] if "--rows" in args else None, args[args.index("--cols") + 1] if "--cols" in args else None) if x}
-IDS = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]
+IDS = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger", "reaper"]
 ids = [a for a in args if not a.startswith("--") and not a[0].isdigit() and a not in skip] or IDS
 TAG = f"{gfx}-{W}x{H}"
 DSF = 1 if W > 1000 else 2

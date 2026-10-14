@@ -29,7 +29,10 @@ fighter = opt("--fighter", "dragon")
 throttle = float(opt("--throttle", "1"))
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
-ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]
+ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger", "reaper"]
+# a fighter whose page (game/manga/<id>.js) is not written yet (the Reaper, for now) gets the 2D finisher: the run then checks that
+# the 2D fallback played and the results followed, instead of failing on the missing page. Once the file exists the page is required.
+HAS_PAGE = (ROOT / "game" / "manga" / f"{fighter}.js").exists()
 vs = opt("--vs", "wizard").split(",")
 AT = [int(x) for x in opt("--at", "600,1500,2200,2900,2950,3100,3700,4300").split(",")] if not (skip or video) else []
 tag = f"{W}x{H}" + ("-up" if screen == "up" else "") + ("" if aim == "side" else "-" + aim) + ("-reduced" if reduced else "")
@@ -109,7 +112,9 @@ def run(b, fid, opp):
     t0 = pg.evaluate("() => performance.now()")
     info = pg.evaluate("() => { const f = window.__blastline.fin; return { on: f.on, manga: f.manga, ev: f.ev ? { final: f.ev.final, mv: f.ev.mv, fin: f.ev.fin, dirx: f.ev.dirx, diry: f.ev.diry } : null }; }")
     if not info["on"] or not info["ev"] or not info["ev"]["final"]: bad.append(f"{fid}/{opp}: no finisher on the lethal hit ({info})")
-    if not info["manga"] and "--nopage" not in args: bad.append(f"{fid}/{opp}: the manga page did not start")
+    if not info["manga"] and "--nopage" not in args and HAS_PAGE: bad.append(f"{fid}/{opp}: the manga page did not start")
+    if not HAS_PAGE: print(f"{fid}: no manga page yet (game/manga/{fid}.js), the 2D finisher plays: page={info['manga']}")
+    if not HAS_PAGE and info["manga"]: bad.append(f"{fid}/{opp}: a manga page started although game/manga/{fid}.js does not exist")
     files = []
     if fail: pg.evaluate("() => { window.__fail = true; }")
     if video:
@@ -178,7 +183,8 @@ def run(b, fid, opp):
         if not warned: bad.append(f"{fid}/{opp}: the forced failure was never reported (the page did not fall back?)")
         else: print("fallback worked:", warned[0][:110])
     if skip and took > 1700: bad.append(f"{fid}/{opp}: skip didn't end it ({took:.0f} ms)")
-    if not skip and not video and not fail and not (4400 <= took <= 5000): bad.append(f"{fid}/{opp}: results at {took:.0f} ms, wanted 4400-5000")
+    if not skip and not video and not fail and HAS_PAGE and not (4400 <= took <= 5000): bad.append(f"{fid}/{opp}: results at {took:.0f} ms, wanted 4400-5000")
+    if not skip and not video and not fail and not HAS_PAGE and not (3600 <= took <= 4600): bad.append(f"{fid}/{opp}: 2D finisher results at {took:.0f} ms, wanted 3600-4600")
     made[opp] = files
     ctx.close()
 

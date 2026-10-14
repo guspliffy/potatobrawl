@@ -9,13 +9,13 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(args=ARGS)
         ctx = await b.new_context(viewport={'width': 1000, 'height': 560}, device_scale_factor=2)
-        ids = "['phoenix','alchemist','odin','wizard','samurai','dragon']"
+        ids = "['phoenix','alchemist','odin','wizard','samurai','dragon','gunslinger','reaper']"
         await ctx.add_init_script(f"localStorage.setItem('potatobrawl.profile.v1', JSON.stringify({{tokens: 85, rating: 1080, matches: 5, owned: Object.fromEntries({ids}.map(k => [k, [0,1,2,3]])), pal: Object.fromEntries({ids}.map(k => [k, {PAL}])) }}))")
         pg = await ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true"); await pg.wait_for_timeout(700)
         await pg.click('#bRanked'); await pg.wait_for_timeout(300)
-        for i in range(6):
+        for i in range(8):
             await pg.evaluate(f"document.querySelectorAll('.tile')[{i}].click()"); await pg.wait_for_timeout(900)
             await pg.locator('.d-stage').screenshot(path=f'shots/line_{TAG}_{i}.png')
         print(errs or 'ok')

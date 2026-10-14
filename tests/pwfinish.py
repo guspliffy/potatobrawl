@@ -13,13 +13,13 @@ args = sys.argv[1:]
 gfx = "2d"   # matches are 2D only since M4 (the flag is ignored by the game)
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
-ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger"]
+ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger", "reaper"]
 fid = next((a for a in args if a in ALL), "dragon")
 opp = ALL[(ALL.index(fid) + 1) % len(ALL)]
 tag = f"{fid}-{gfx}-{W}x{H}"
 errs, bad = [], []
-SPEC = {"phoenix": "Fireball", "alchemist": "Toxic Orb", "odin": "Raven", "wizard": "Crystal Bolt", "samurai": "Quick Draw", "dragon": "Flame Breath", "gunslinger": "High Noon"}
-BAND = {"gunslinger": "High Noon"}   # a finishing special with its own name: the band shows just that name (finisher.js FIN_NAME)
+SPEC = {"phoenix": "Fireball", "alchemist": "Toxic Orb", "odin": "Raven", "wizard": "Crystal Bolt", "samurai": "Quick Draw", "dragon": "Flame Breath", "gunslinger": "High Noon", "reaper": "Last Rites"}
+BAND = {"gunslinger": "High Noon", "reaper": "Last Rites"}   # a finishing special with its own name: the band shows just that name (finisher.js FIN_NAME)
 
 CLOCK = """(() => {
   const realRAF = window.requestAnimationFrame.bind(window), realNow = performance.now.bind(performance);
