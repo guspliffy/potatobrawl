@@ -1,0 +1,300 @@
+/* ---------- Fighter select ("sunset ink", Fable's build step 3; menu-redesign/mockups/select_844x390.png) ----------
+   Three columns: the roster (2x4 portrait tiles, slanted ink name plates), the stage (the picked fighter's portrait over a sunburst
+   and speed lines in the fighter colour, the name stroked, a role plate, the skins strip on ink with the skin note) and the info
+   column (stats, the Special and Ulti cards, FIGHT + UPGRADE). Everything is scoped to #scrSelect (#scrOnline has its own block at
+   the end). The fighter colour is the looked-at skin's `ui` colour: buildDetail sets --sfc / --sfcg (glow) / --sfct (screen tint)
+   on #scrSelect; they are registered so the tint eases to a new pick. Phone landscape (844x390) is the base; #app.tiny (667x320,
+   568x320), the desktop (#app:not(.short):not(.portrait)) and upright phones (#app.portrait) adjust it below. */
+@property --sfc { syntax: "<color>"; inherits: true; initial-value: #f3d9a4; }
+@property --sfcg { syntax: "<color>"; inherits: true; initial-value: rgba(243, 217, 164, 0.42); }
+@property --sfct { syntax: "<color>"; inherits: true; initial-value: rgba(243, 217, 164, 0.13); }
+
+#scrSelect {
+  --rw: 196px; --iw: 288px;
+  background: radial-gradient(ellipse 62% 80% at 50% 55%, var(--sfct), transparent 74%), linear-gradient(180deg, rgba(10, 11, 28, 0.95), rgba(10, 11, 28, 0.91));
+  transition: --sfc 0.24s ease-out, --sfcg 0.24s ease-out, --sfct 0.24s ease-out;
+}
+#scrSelect .sl {
+  position: absolute; inset: 0; max-width: 1180px; margin: 0 auto; min-height: 0;
+  display: grid; grid-template-columns: var(--rw) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 10px 12px;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+
+/* ---- header: back, kicker + stroked title, the practice pickers as skewed dropdown chips, the chips coin ---- */
+#scrSelect .sl-head { grid-column: 1 / -1; position: relative; z-index: 5; display: flex; align-items: center; gap: 12px; min-width: 0; height: 44px; container-type: inline-size; }
+#scrSelect .sl-back { cursor: pointer; transition: transform 0.08s, box-shadow 0.08s; }
+#scrSelect .sl-back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
+#scrSelect .sl-back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrSelect .sl-ttl { display: flex; flex-direction: column; gap: 4px; flex: 1 0 auto; min-width: 0; }
+#scrSelect .sl-ttl .kick { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 3px 0; margin: -3px 0; }
+#scrSelect .sl-ttl .kick b { font-weight: 800; }
+#scrSelect .sl-em { display: inline-block; width: 17px; height: 17px; margin: -4px 3px -4px 1px; vertical-align: -4px; }
+#scrSelect .sl-ttl h2 { margin: 0; font: italic 900 28px/1 var(--display); letter-spacing: -0.005em; text-transform: uppercase; white-space: nowrap; color: #fff;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+/* when the header runs short the opponent's and the map's names truncate (the title and the CPU level never do) */
+#scrSelect .sl-opts { display: flex; gap: 8px; align-items: center; flex: 0 1 auto; min-width: 0; }
+#scrSelect .pickwrap { position: relative; flex: 0 1 auto; min-width: 0; }
+#scrSelect .pickwrap:nth-child(2) { flex-shrink: 0; }
+#scrSelect .sl-pick { appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 40px; max-width: 100%; padding: 0 12px; border: 2px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(180deg, #343b6a, #22264a); color: var(--text); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  font: 800 14px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; transform: skewX(-8deg); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrSelect .sl-pick > * { transform: skewX(8deg); flex: none; }
+#scrSelect .sl-pick small { font: 700 11px/1 var(--display); letter-spacing: 0.12em; color: var(--mute); }
+#scrSelect .sl-pick span { flex: 0 1 auto; min-width: 0; max-width: 8em; overflow: hidden; text-overflow: ellipsis; }
+#scrSelect .sl-pick img, #scrSelect .sl-pick .sl-q { width: 26px; height: 26px; margin: 0 -1px; border-radius: 50%; object-fit: cover; object-position: 50% 34%; border: 2px solid var(--ink); box-shadow: 0 1px 0 var(--ink); }
+#scrSelect .sl-pick .sl-q { display: grid; place-items: center; background: var(--raise); color: var(--sand); font: italic 900 14px/1 var(--display); }
+#scrSelect .sl-pick::after { content: ""; flex: none; width: 6px; height: 6px; margin-left: 1px; border-right: 2px solid var(--sand); border-bottom: 2px solid var(--sand); transform: skewX(8deg) translateY(-2px) rotate(45deg); }
+#scrSelect .sl-pick:hover { filter: brightness(1.08); }
+#scrSelect .sl-pick[aria-expanded="true"] { background: linear-gradient(180deg, #454f88, #2c3260); }
+#scrSelect .sl-pick:active { transform: skewX(-8deg) translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrSelect .sl-pick:focus-visible, #scrSelect .sl-back:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+/* the lists under the pickers (the shared .pop, dressed as an ink card here) */
+#scrSelect .pop { top: calc(100% + 9px); right: 0; z-index: 8; width: max-content; padding: 6px; gap: 4px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 4px 0 var(--ink), 0 14px 30px rgba(0, 0, 0, 0.5), var(--bevel); animation: slDrop 0.14s cubic-bezier(0.2, 0.9, 0.25, 1); }
+#scrSelect #oppPop { left: 0; right: auto; }
+#scrSelect .pop button { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 10px; border-radius: 6px; font: 800 15px/1 var(--display); letter-spacing: 0.05em; white-space: nowrap; }
+#scrSelect .pop button:hover { background: rgba(255, 255, 255, 0.08); }
+#scrSelect .pop button.on { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+#scrSelect .pop img { width: 26px; height: 26px; flex: none; border-radius: 50%; object-fit: cover; object-position: 50% 34%; border: 2px solid var(--ink); }
+@keyframes slDrop { from { opacity: 0; transform: translateY(-6px); } }
+#scrSelect .sl-coin { flex: none; }
+
+/* ---- roster: 2x4 portrait tiles; the unpicked ones dim and desaturated, the pick full colour, 1.06, a gold frame and a YOU tag ---- */
+#scrSelect .sl-roster { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 6px; min-height: 0; }
+#scrSelect .tile { --fc: var(--sand); appearance: none; cursor: pointer; position: relative; padding: 0; min-width: 0; min-height: 0; overflow: hidden; container-type: inline-size;
+  border: 2px solid var(--ink); border-radius: 9px; background: var(--raise); color: var(--mute); box-shadow: 0 3px 0 var(--ink);
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.18s; }
+#scrSelect .tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; filter: saturate(0.45) brightness(0.58); transition: filter 0.18s; }
+#scrSelect .tile span { position: absolute; left: -4px; bottom: 5px; max-width: calc(100% - 4px); padding: 3px 9px 2px 11px; background: var(--ink); transform: skewX(-12deg); text-align: left; transition: background 0.18s, color 0.18s; }
+#scrSelect .tile span b { display: block; transform: skewX(12deg); font: 800 min(12px, 12.5cqw)/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrSelect .tile:hover img { filter: saturate(0.75) brightness(0.8); }
+#scrSelect .tile.on { z-index: 2; transform: scale(1.06); color: var(--ink); box-shadow: 0 0 0 3px var(--gold), 0 5px 0 2px var(--ink), 0 0 18px rgba(244, 201, 93, 0.45); }
+#scrSelect .tile.on img { filter: none; }
+#scrSelect .tile.on span { background: var(--gold); }
+#scrSelect .tile.on::after { content: "YOU"; position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
+#scrSelect .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+/* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the skins strip ---- */
+#scrSelect .sl-detail { display: grid; grid-template-columns: minmax(0, 1fr) var(--iw); gap: 12px; min-height: 0; min-width: 0; }
+#scrSelect .sl-stage { position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; container-type: inline-size;
+  border: 2px solid var(--ink); border-radius: 12px; background: radial-gradient(ellipse 80% 70% at 55% 42%, var(--sfcg), transparent 72%), linear-gradient(180deg, #2a2f55, #15172e);
+  box-shadow: var(--hard), var(--soft); }
+#scrSelect .sl-top { position: relative; flex: 1 1 auto; min-height: 0; }
+#scrSelect .sl-scene { position: absolute; inset: 0; overflow: hidden; }
+#scrSelect .sl-scene .rays { opacity: 0.9; will-change: transform; background: repeating-conic-gradient(from 0deg, var(--sfcg) 0 4deg, transparent 4deg 12deg); }
+/* the portraits fade at the edges into the sunburst; the new pick fades in over the last one (180 ms) */
+#scrSelect .sl-por { position: absolute; inset: 0; }
+#scrSelect .sl-por img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; opacity: 0; visibility: hidden; transform: scale(1.05);
+  -webkit-mask: radial-gradient(ellipse 66% 80% at 50% 34%, #000 58%, transparent 100%); mask: radial-gradient(ellipse 66% 80% at 50% 34%, #000 58%, transparent 100%); }
+#scrSelect .sl-por img.was { visibility: visible; opacity: 1; transform: none; z-index: 1; }
+#scrSelect .sl-por img.on { visibility: visible; opacity: 1; transform: none; z-index: 2; transition: opacity 0.18s ease-out, transform 0.32s cubic-bezier(0.2, 0.9, 0.25, 1); }
+/* the lower edge darkens into the strip so the name reads; speed lines in the fighter colour behind the name */
+#scrSelect .sl-scene::after { content: ""; position: absolute; inset: 0; z-index: 3; background: linear-gradient(180deg, transparent 46%, rgba(14, 16, 34, 0.86)), linear-gradient(90deg, rgba(14, 16, 34, 0.4), transparent 34%); }
+#scrSelect .sl-scene .speed { z-index: 4; opacity: 0.7; background: repeating-linear-gradient(-18deg, transparent 0 9px, var(--sfcg) 9px 11px);
+  -webkit-mask: linear-gradient(180deg, transparent 52%, #000 80%), linear-gradient(90deg, #000, transparent 70%); -webkit-mask-composite: source-in;
+  mask: linear-gradient(180deg, transparent 52%, #000 80%) intersect, linear-gradient(90deg, #000, transparent 70%); }
+/* the model: the fighter as drawn in a match, in the skin being looked at (locked skins preview here) */
+#scrSelect .sl-art { position: absolute; right: 1%; bottom: 3px; width: 36%; height: 60%; z-index: 2; pointer-events: none; opacity: 0; transform: translateY(10px) scale(0.92);
+  transition: opacity 0.2s ease-out, transform 0.26s cubic-bezier(0.3, 1.5, 0.5, 1); }
+#scrSelect.sl-skin .sl-art { opacity: 1; transform: none; }
+#scrSelect .sl-top::after { content: ""; position: absolute; z-index: 1; right: 7%; width: 24%; bottom: 0; height: 12px; border-radius: 50%; background: rgba(0, 0, 0, 0.4); opacity: 0; transition: opacity 0.2s; }
+#scrSelect.sl-skin .sl-top::after { opacity: 1; }
+#scrSelect .sl-name { position: absolute; left: 12px; bottom: 12px; right: 30%; z-index: 3; display: flex; flex-direction: column; gap: 7px; align-items: flex-start; pointer-events: none; }
+#scrSelect .sl-name b { font: italic 900 min(54px, 16.5cqw)/0.85 var(--display); letter-spacing: -0.01em; text-transform: uppercase; color: #fff; white-space: nowrap;
+  -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink), 0 10px 24px rgba(0, 0, 0, 0.5); }
+#scrSelect .sl-name span { font: 800 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; color: var(--ink); background: var(--sfc);
+  border: 2px solid var(--ink); padding: 5px 10px 4px; transform: skewX(-10deg); box-shadow: 0 2px 0 var(--ink); }
+#scrSelect .sl-name.swap { animation: slSwap 0.24s cubic-bezier(0.2, 0.9, 0.25, 1) both; }
+#scrSelect.sl-skin .sl-art.swap { animation: slPop 0.26s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+@keyframes slSwap { from { opacity: 0; transform: translateX(-16px); } }
+@keyframes slPop { from { opacity: 0; transform: translateY(10px) scale(0.92); } }
+/* the skins strip on ink: round swatches, a gold ring on the equipped one, chip prices on the locked ones, a white ring on a preview */
+#scrSelect .sl-skins { flex: none; position: relative; z-index: 3; display: flex; flex-direction: column; gap: 3px; padding: 4px 10px 7px; background: var(--ink); border-top: 2px solid rgba(255, 255, 255, 0.08); }
+#scrSelect .sl-sws { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+#scrSelect .sw { flex: 0 1 auto; flex-direction: row; gap: 6px; min-width: 40px; min-height: 40px; padding: 0 2px; font: 700 12px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); }
+#scrSelect .sw > i { width: 28px; height: 28px; border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16), 0 2px 0 var(--ink); transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.16s; }
+#scrSelect .sw.cur > i { box-shadow: 0 0 0 3px var(--gold), 0 2px 0 var(--ink); }
+#scrSelect .sw.pending > i { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 12px var(--sfcg); }
+#scrSelect .sw.pending > i::after { opacity: 0; }
+#scrSelect .sw small { display: inline-flex; align-items: center; font: 700 12px/1 var(--display); letter-spacing: 0.04em; white-space: nowrap; color: inherit; }
+#scrSelect .sw.cur small { color: var(--text); }
+#scrSelect .sw.lock small { color: var(--gold); }
+#scrSelect .sw.pending small { color: #fff; }
+#scrSelect .sw .tokglyph { width: 1.15em; height: 0.92em; margin-right: 0.2em; }
+#scrSelect .sw:hover > i { transform: scale(1.06); }
+#scrSelect .sw.pending:hover > i { transform: scale(1.12); }
+#scrSelect .sl-note { font: 500 11.5px/1.3 var(--body); color: var(--sand); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#scrSelect.sl-pend .sl-note { color: #fff; }
+/* a narrow stage (small phones): the labels go under the swatches */
+@container (max-width: 268px) {
+  #scrSelect .sl-skins { padding-inline: 4px; }
+  #scrSelect .sl-sws { justify-content: space-around; gap: 2px; }
+  #scrSelect .sw { flex-direction: column; gap: 3px; min-width: 40px; padding: 0; }
+  #scrSelect .sw > i { width: 24px; height: 24px; }
+  #scrSelect .sw small { font-size: 10.5px; }
+  #scrSelect .sl-note { font-size: 10.5px; }
+}
+
+/* ---- info: stats, the Special and Ulti cards, FIGHT + UPGRADE ---- */
+#scrSelect .sl-info { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
+#scrSelect .sl-info .card { box-shadow: var(--hard), var(--bevel); }   /* no blurred shadow off the stage */
+#scrSelect .sl-blurb { display: none; margin: 0; font: 500 14px/1.4 var(--body); color: var(--mute); }
+#scrSelect .sl-stats { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px 10px; align-items: center; padding: 10px 12px; font: 700 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); }
+#scrSelect .sl-seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+#scrSelect .sl-seg i { height: 9px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(14, 16, 34, 0.5); transform: skewX(-14deg); }
+#scrSelect .sl-seg i.on { background: linear-gradient(180deg, #fff 0, var(--sfc) 42%); box-shadow: inset 0 0 0 1px var(--ink); }
+#scrSelect .sl-move { flex: 0 1 auto; min-height: 0; overflow: hidden; padding: 8px 12px 9px; border-left: 5px solid var(--sfc); font: 500 12px/1.3 var(--body); color: var(--mute); }
+#scrSelect .sl-move b { display: flex; align-items: center; gap: 7px; min-width: 0; margin-bottom: 4px; font: 800 15px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#scrSelect .sl-move em { flex: none; font: 800 10px/1 var(--display); font-style: normal; letter-spacing: 0.12em; color: var(--ink); background: var(--sfc); border: 1.5px solid var(--ink); border-radius: 3px; padding: 2px 5px 1px; }
+#scrSelect .sl-move span { display: block; }
+#scrSelect .sl-move.ult { border-left-color: var(--gold); }
+#scrSelect .sl-move.ult em { background: var(--gold); }
+#scrSelect .sl-go { flex: none; margin-top: auto; display: flex; gap: 10px; padding-top: 2px; }
+#scrSelect .sl-go .btn { appearance: none; cursor: pointer; flex: 1 1 0; width: auto; min-width: 0; min-height: 50px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #3a4170, #262b50); color: var(--text); box-shadow: var(--hard), var(--bevel);
+  font: 800 18px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; text-align: center; white-space: nowrap; transform: skewX(-8deg); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrSelect .sl-go .btn > span { display: inline-flex; align-items: center; gap: 6px; transform: skewX(8deg); }
+#scrSelect .sl-go .btn:hover:not(:disabled) { filter: brightness(1.06); }
+#scrSelect .sl-go .btn:active:not(:disabled) { transform: skewX(-8deg) translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrSelect .sl-go .btn:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+#scrSelect .sl-go .sl-fight { position: relative; overflow: hidden; flex-grow: 1.5; font-size: 26px; letter-spacing: 0.06em; color: var(--ink);
+  background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: var(--hard), 0 8px 16px rgba(244, 201, 93, 0.25), var(--bevelgold); }
+#scrSelect .sl-go .sl-fight:active { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+/* a slow sheen across the gold */
+#scrSelect .sl-go .sl-fight::after { content: ""; position: absolute; top: -10%; bottom: -10%; left: -40%; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); transform: translateX(0); animation: slSheen 6s ease-in-out 1.2s infinite; pointer-events: none; }
+@keyframes slSheen { 0%, 70% { transform: translateX(0); } 100% { transform: translateX(560%); } }
+#scrSelect .sl-up > span { flex-direction: column; gap: 3px; }
+#scrSelect .sl-up small { display: inline-flex; align-items: center; font: 800 15px/1 var(--display); letter-spacing: 0.02em; color: var(--gold); }
+#scrSelect .sl-up small .tokglyph { margin-right: 0.25em; }
+#scrSelect .sl-go .sl-up:disabled { cursor: default; opacity: 1; color: var(--mute); background: linear-gradient(180deg, #2c3156, #1e2240); }
+#scrSelect .sl-up:disabled small { color: var(--mute); }
+
+/* ---- motion: the screen comes in (stage first, then the roster and the cards, 40 ms apart), all off with reduced motion ---- */
+@keyframes slIn { from { opacity: 0; transform: translateY(16px); } }
+#scrSelect .sl-head, #scrSelect .sl-stage, #scrSelect .tile, #scrSelect .sl-info > * { animation: slIn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+#scrSelect .sl-head { animation-duration: 0.2s; }
+#scrSelect .tile:nth-child(2) { animation-delay: 0.03s; } #scrSelect .tile:nth-child(3) { animation-delay: 0.06s; } #scrSelect .tile:nth-child(4) { animation-delay: 0.09s; }
+#scrSelect .tile:nth-child(5) { animation-delay: 0.12s; } #scrSelect .tile:nth-child(6) { animation-delay: 0.15s; } #scrSelect .tile:nth-child(7) { animation-delay: 0.18s; } #scrSelect .tile:nth-child(8) { animation-delay: 0.21s; }
+#scrSelect .sl-info > :nth-child(2) { animation-delay: 0.04s; } #scrSelect .sl-info > :nth-child(3) { animation-delay: 0.08s; } #scrSelect .sl-info > :nth-child(4) { animation-delay: 0.12s; } #scrSelect .sl-info > :nth-child(5) { animation-delay: 0.16s; }
+@media (prefers-reduced-motion: reduce) {
+  #scrSelect, #scrSelect *, #scrSelect *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---- small phones (667x320, 568x320): smaller tiles, the move texts go (names stay), a 40 px name ---- */
+#app.tiny #scrSelect { --rw: clamp(136px, 25vw, 176px); --iw: clamp(188px, 33vw, 236px); }
+#app.tiny #scrSelect .sl { gap: 8px 10px; padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+#app.tiny #scrSelect .sl-head { height: 40px; gap: 10px; }
+#app.tiny #scrSelect .sl-ttl { gap: 3px; }
+#app.tiny #scrSelect .sl-ttl h2 { font-size: 24px; }
+#app.tiny #scrSelect .sl-detail { gap: 10px; }
+#app.tiny #scrSelect .sl-roster { gap: 5px; }
+#app.tiny #scrSelect .tile span { bottom: 4px; padding: 3px 7px 2px 9px; }
+#app.tiny #scrSelect .tile span b { font-size: min(11px, 12.5cqw); }
+#app.tiny #scrSelect .tile.on::after { padding: 3px 5px 2px; font-size: 9px; }
+#app.tiny #scrSelect .sl-name { left: 9px; bottom: 9px; gap: 5px; }
+#app.tiny #scrSelect .sl-name b { font-size: min(40px, 17cqw); -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink), 0 8px 18px rgba(0, 0, 0, 0.5); }
+#app.tiny #scrSelect .sl-name span { font-size: 10.5px; padding: 4px 8px 3px; }
+#app.tiny #scrSelect .sl-skins { padding: 3px 6px 5px; }
+#app.tiny #scrSelect .sl-info { gap: 7px; }
+/* the room the move texts leave takes the flavour line, as long as it fits */
+#app.tiny #scrSelect .sl-blurb { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex: 0 1 auto; min-height: 0; font-size: 12px; line-height: 1.3; padding: 0 2px; }
+#app.tiny #scrSelect .sl-stats { padding: 8px 10px; gap: 7px 8px; font-size: 10.5px; letter-spacing: 0.08em; }
+#app.tiny #scrSelect .sl-move { padding: 7px 10px; }
+#app.tiny #scrSelect .sl-move b { margin: 0; font-size: 14px; }
+#app.tiny #scrSelect .sl-move span { display: none; }
+#app.tiny #scrSelect .sl-go { gap: 8px; }
+#app.tiny #scrSelect .sl-go .btn { min-height: 44px; padding: 0 10px; font-size: 16px; }
+#app.tiny #scrSelect .sl-go .sl-fight { font-size: 22px; }
+#app.tiny #scrSelect .sl-up small { font-size: 13px; }
+/* tight headers: the pickers drop their small labels and the opponent's name (the avatar stays), then the title gives way to the kicker */
+@container (max-width: 700px) {
+  #scrSelect .sl-ttl h2 { font-size: 22px; }
+  #scrSelect .sl-coin { padding: 0 10px 0 6px; font-size: 17px; }
+  #scrSelect .sl-pick { padding: 0 9px; gap: 5px; }
+  #scrSelect #oppPick span, #scrSelect #mapPick small { display: none; }
+  #scrSelect .pickwrap:first-child { flex-shrink: 0; }   /* nothing left to truncate in it */
+  #scrSelect #mapPick::before { content: ""; flex: none; width: 11px; height: 14px; transform: skewX(8deg); background: var(--mute);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 1C5.6 1 2 4.5 2 9c0 5.8 8 14 8 14s8-8.2 8-14c0-4.5-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 1C5.6 1 2 4.5 2 9c0 5.8 8 14 8 14s8-8.2 8-14c0-4.5-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+}
+@container (max-width: 580px) {
+  #scrSelect.sl-prac .sl-ttl h2 { display: none; }
+  #scrSelect.sl-prac .sl-ttl { flex: 0 1 76px; }
+  #scrSelect.sl-prac .sl-ttl .kick { font-size: 12px; line-height: 1.25; white-space: normal; }
+  #scrSelect .sl-opts { gap: 6px; }
+}
+
+/* ---- desktop (1280x760): the same three columns, wider; the extra height goes to the stage, the blurb shows ---- */
+#app:not(.short):not(.portrait) #scrSelect { --rw: 260px; --iw: 360px; }
+#app:not(.short):not(.portrait) #scrSelect .sl { gap: 16px 18px; padding: 22px max(28px, env(safe-area-inset-right, 0px)) 24px max(28px, env(safe-area-inset-left, 0px)); max-height: 820px; margin-block: auto; }
+#app:not(.short):not(.portrait) #scrSelect .sl-head { height: 56px; gap: 14px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-ttl .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-ttl h2 { font-size: 40px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrSelect .sl-pick { height: 44px; padding: 0 14px; font-size: 16px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-pick img, #app:not(.short):not(.portrait) #scrSelect .sl-pick .sl-q { width: 30px; height: 30px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-coin { height: 44px; font-size: 21px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-roster { gap: 10px; }
+#app:not(.short):not(.portrait) #scrSelect .tile { border-radius: 11px; }
+#app:not(.short):not(.portrait) #scrSelect .tile span { bottom: 8px; padding: 4px 11px 3px 13px; }
+#app:not(.short):not(.portrait) #scrSelect .tile span b { font-size: min(15px, 12.5cqw); }
+#app:not(.short):not(.portrait) #scrSelect .tile.on::after { padding: 5px 9px 4px; font-size: 12px; border-radius: 0 9px 0 9px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-detail { gap: 18px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-stage { border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-name { left: 20px; bottom: 20px; gap: 10px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-name b { font-size: min(76px, 15cqw); -webkit-text-stroke-width: 6px; text-shadow: 0 6px 0 var(--ink), 0 12px 28px rgba(0, 0, 0, 0.5); }
+#app:not(.short):not(.portrait) #scrSelect .sl-name span { font-size: 14px; padding: 6px 12px 5px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-skins { padding: 8px 16px 10px; gap: 5px; }
+#app:not(.short):not(.portrait) #scrSelect .sw { gap: 8px; min-height: 44px; font-size: 14px; }
+#app:not(.short):not(.portrait) #scrSelect .sw > i { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #scrSelect .sw small { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-note { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-info { gap: 12px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-blurb { display: block; flex: none; }
+#app:not(.short):not(.portrait) #scrSelect .sl-stats { padding: 14px 16px; gap: 12px 14px; font-size: 13px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-seg i { height: 11px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-move { padding: 12px 16px 13px; font-size: 14px; line-height: 1.4; }
+#app:not(.short):not(.portrait) #scrSelect .sl-move b { font-size: 19px; margin-bottom: 6px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-move em { font-size: 11px; padding: 3px 6px 2px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-go .btn { min-height: 60px; font-size: 21px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-go .sl-fight { font-size: 32px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-up small { font-size: 17px; }
+
+/* ---- upright phones (390x844): the header wraps (pickers on their own row), the roster 4 across on top, a 220 px stage, the cards
+   stacked, FIGHT sticky at the bottom; the whole screen scrolls ---- */
+#app.portrait #scrSelect .sl { display: flex; flex-direction: column; gap: 10px; max-width: none; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px 0; }
+#app.portrait #scrSelect .sl-head { flex: none; flex-wrap: wrap; height: auto; row-gap: 10px; container-type: normal; }
+#app.portrait #scrSelect .sl-ttl h2 { font-size: 26px; }
+#app.portrait #scrSelect .sl-opts { order: 3; flex-basis: 100%; }
+#app.portrait #scrSelect .sl-opts .pickwrap:last-child { flex: 1 1 0; }
+#app.portrait #scrSelect .sl-opts .pickwrap:last-child .sl-pick { width: 100%; }
+#app.portrait #scrSelect .sl-opts .pickwrap:last-child .sl-pick::after { margin-left: auto; }
+#app.portrait #scrSelect .sl-opts .sl-pick { padding: 0 10px; gap: 5px; }
+#app.portrait #scrSelect .sl-opts .sl-pick span { max-width: none; }
+#app.portrait #scrSelect #oppPick span { display: none; }   /* the avatar says who */
+#app.portrait #scrSelect #lvlPop { left: 0; right: auto; }   /* opening leftwards it ran off the screen */
+#app.portrait #scrSelect #mapPop { left: auto; right: 0; }
+#app.portrait #scrSelect .sl-roster { flex: none; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: 66px; gap: 6px; padding-top: 4px; }
+#app.portrait #scrSelect .sl-detail, #app.portrait #scrSelect .sl-info { display: contents; }
+#app.portrait #scrSelect .sl-stage { flex: none; }
+#app.portrait #scrSelect .sl-top { flex: none; height: 220px; }
+#app.portrait #scrSelect .sl-info > * { flex: none; }
+#app.portrait #scrSelect .sl-blurb { display: block; padding: 0 2px; }
+#app.portrait #scrSelect .sl-move { font-size: 13px; }
+#app.portrait #scrSelect .sl-go { position: sticky; bottom: 0; z-index: 6; margin: auto -16px 0; padding: 14px 16px max(14px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(10, 11, 28, 0), rgba(10, 11, 28, 0.94) 34%); }
+#app.portrait #scrSelect .sl-go .btn { min-height: 54px; }
+
+/* ---------- Play friends (#scrOnline shares the select screen's classes): the same ink header, cards and frames ---------- */
+#scrOnline .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrOnline .sel-head .back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrOnline .sel-head h2 { color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrOnline .sel-head .kicker { color: var(--sand); font-size: 11px; }
+#scrOnline .tokpill { display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px 0 9px; border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #343b6a, #22264a);
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); font-size: 19px; color: var(--gold); }
+#scrOnline .on-card { border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+#scrOnline .on-art { border: 2px solid var(--ink); border-radius: 10px; background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(243, 217, 164, 0.25), transparent 70%), var(--night); box-shadow: 0 2px 0 var(--ink); }
+#scrOnline .on-list li { border: 2px solid var(--ink); border-radius: 9px; background: var(--raise); box-shadow: 0 2px 0 var(--ink); }
+#scrOnline .on-list li.empty { border: 0; box-shadow: none; }
+#scrOnline .on-invite { border: 2px solid var(--ink); border-radius: 10px; background: rgba(243, 217, 164, 0.1); box-shadow: inset 0 0 0 1px rgba(243, 217, 164, 0.3); }
+#scrOnline .kicker { color: var(--sand); }

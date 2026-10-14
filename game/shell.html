@@ -331,75 +331,21 @@ button { font: inherit; color: inherit; }
 .iconbtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
 #bSettings { position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); }
 
-/* ---------- fighter select: one row of tiles, one detail panel ---------- */
+/* ---------- fighter select: the screen itself is styled in game/css/30-select.css; these shared rules stay for the
+   online and cup screens (.select background, .sel-head, .back, .tokpill), the pickers' .pop lists and the locker's .sw swatches ---------- */
 .select { background: rgba(14, 16, 34, 0.93); }
-.sel2 { position: absolute; inset: 0; max-width: 1120px; margin: 0 auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px;
-  padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 .sel-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .sel-head h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(26px, calc(var(--um) * 6), 40px); line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .sel-head .grow { flex: 1; min-width: 0; }
 .back { appearance: none; border: 1px solid var(--line); background: var(--raise); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
 .tokpill { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--sand); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.sel-opts { display: flex; gap: 8px; align-items: center; }
-/* three pickers (vs, CPU, Map): smaller chips on short screens, and their own row under the heading when upright */
 .sel-head .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#app.short .chip.pick, #app.tiny .chip.pick { min-height: 32px; padding: 3px 10px; font-size: 13px; gap: 4px; }
-#app.short .chip.pick small, #app.tiny .chip.pick small { font-size: 11px; }
 #app.portrait .sel-head { flex-wrap: wrap; row-gap: 8px; }
-#app.portrait .sel-opts { order: 3; flex-basis: 100%; flex-wrap: wrap; }
-.pickwrap { position: relative; }
-.chip.pick { display: inline-flex; align-items: center; gap: 6px; }
-.chip.pick small { font-family: var(--body); font-weight: 500; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--mute); }
-.chip.pick::after { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); margin-left: 2px; }
 .pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 6; background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(110px, auto)); gap: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
 .pop button { appearance: none; border: 0; background: none; color: var(--text); text-align: left; padding: 7px 10px; border-radius: 5px; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
 .pop button:hover { background: var(--raise); }
 .pop button.on { background: var(--sand); color: var(--ink); }
-
-.tiles { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; height: clamp(56px, calc(var(--uh) * 20), 168px); }
-.tile { --fc: var(--sand); appearance: none; position: relative; padding: 0; border: 0; border-radius: 7px; overflow: hidden; cursor: pointer; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); min-width: 0; transition: transform 0.12s; }
-.tile img, .tile canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; filter: saturate(0.55) brightness(0.62); transition: filter 0.15s; }
-.tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(14, 16, 34, 0) 50%, rgba(14, 16, 34, 0.9)); pointer-events: none; }
-.tile span { position: absolute; left: 8px; right: 6px; bottom: 4px; z-index: 1; text-align: left; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(14px, calc(var(--uh) * 4.2), 22px); line-height: 1; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile:hover img { filter: saturate(0.8) brightness(0.82); }
-.tile.on { transform: translateY(-2px); box-shadow: inset 0 0 0 3px var(--fc), 0 6px 18px rgba(0, 0, 0, 0.35); }
-.tile.on img, .tile.on canvas { filter: none; }
-.tile.on span { color: var(--text); }
-.tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-/* seven, now eight fighters (Gunslinger, Reaper): on narrow screens a long name shrinks to fit its tile instead of being cut off */
-.tile { container-type: inline-size; }
-.tile span { font-size: min(clamp(14px, calc(var(--uh) * 4.2), 22px), 18cqw); }
-
-.detail { --fc: var(--sand); min-height: 0; display: grid; grid-template-columns: minmax(140px, 0.85fr) minmax(0, 1.3fr) minmax(210px, 1fr); gap: 16px; padding: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 10px; }
-.d-stage { position: relative; min-height: 0; border-radius: 8px; overflow: hidden; background: radial-gradient(ellipse 70% 60% at 50% 62%, var(--fcglow, rgba(243, 217, 164, 0.3)), transparent 70%), linear-gradient(180deg, #1d2142, #14172e); }
-.d-stage::before { content: ""; position: absolute; left: 18%; right: 18%; bottom: 5%; height: 9%; border-radius: 50%; background: rgba(0, 0, 0, 0.35); }
-.d-art { position: absolute; inset: 0; width: 100%; height: 100%; }
-.d-info { min-height: 0; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
-.d-name { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.d-name b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(28px, calc(var(--uh) * 8.5), 46px); line-height: 0.95; text-transform: uppercase; }
-.d-name span { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fc); }
-.d-blurb { margin: 0; font-size: clamp(13px, calc(var(--uh) * 2.2), 17px); color: var(--mute); max-width: 52ch; }
-.d-stats { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px 10px; align-items: center; font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); max-width: 460px; }
-.seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-.seg i { height: 6px; border-radius: 1px; background: rgba(255, 255, 255, 0.1); }
-.seg i.on { background: var(--fc); }
-.d-sig { font-size: clamp(13px, calc(var(--uh) * 2.1), 16px); color: var(--mute); border-left: 3px solid var(--fc); padding-left: 10px; max-width: 52ch; }
-.d-sig b { color: var(--text); font-family: var(--display); font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 6px; }
-/* the ultimate sits under the signature in the same style; a small gold "Ulti" tag and a gold rule tell them apart */
-.d-sigs { display: flex; flex-direction: column; gap: 9px; }
-#app.short .d-sigs { gap: 6px; }
-.d-ult { border-left-color: #f3c84a; }
-/* a landscape screen too short for the extra line: the card is a size container (its height comes from the grid row), the flavour text
-   gives way first, then the move texts (names stay), then the two names share a row */
-#app:not(.portrait) .detail { container-type: size; }
-@container (max-height: 262px) { .d-blurb { display: none; } }
-@container (max-height: 235px) and (max-width: 740px) { .d-sig span { display: none; } }
-@container (max-height: 190px) { .d-sigs { flex-direction: row; flex-wrap: wrap; gap: 4px 16px; } .d-info { gap: 4px; } }
-@container (max-height: 190px) and (max-width: 560px) { .d-name span, .d-ult em { display: none; } }
-.d-ult em { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #3a2a00; background: #f3c84a; padding: 1px 6px; border-radius: 2px; margin-right: 8px; vertical-align: 1px; }
-.d-side { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-.d-pals { display: flex; gap: 6px; justify-content: space-between; }
 .sw { appearance: none; padding: 0; cursor: pointer; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.04em; color: var(--mute); min-width: 0; flex: 1; }
 .sw i { width: 34px; height: 34px; border-radius: 50%; background: var(--c); border: 3px solid var(--night); box-shadow: 0 0 0 1px var(--line); position: relative; flex: none; }
 .sw.cur { color: var(--text); }
@@ -409,14 +355,6 @@ button { font: inherit; color: inherit; }
 .sw i em { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); font-style: normal; font-size: 8px; line-height: 1; letter-spacing: -1px; color: #f4c95d; text-shadow: 0 0 2px #0e1022, 0 0 2px #0e1022; z-index: 1; white-space: nowrap; }
 .sw .tokglyph { width: 1.2em; height: 0.95em; margin-right: 0.15em; }
 .sw:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
-.d-note { font-size: clamp(13px, calc(var(--uh) * 2.1), 16px); color: var(--sand); line-height: 1.35; min-height: 2.7em; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; flex: 0 1 auto; }
-.d-go { margin-top: auto; display: flex; gap: 8px; }
-.d-go .btn { width: auto; flex: 1 1 auto; min-width: 0; padding-inline: 18px; white-space: nowrap; }
-.d-go .btn.up { background: linear-gradient(100deg, #f4c95d, #e09a3a); color: var(--ink); }
-.d-go .btn.up:hover { background: linear-gradient(100deg, #f8d779, #eaa94a); }
-.d-go .btn.up:disabled { background: var(--raise); color: var(--mute); opacity: 1; }
-.d-go .btn.up span { white-space: nowrap; }
-.d-go .btn.up .tokglyph { margin-left: 0.15em; }
 
 /* ---------- online ---------- */
 .on2 { position: absolute; inset: 0; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
@@ -741,13 +679,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .help-go .btn { min-height: 36px; }
 /* phone held upright with the sideways view turned off: stack everything and scroll */
 #app.portrait .sel2, #app.portrait .on2 { display: flex; flex-direction: column; overflow-y: auto; touch-action: pan-y; }
-#app.portrait .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); height: auto; flex: none; }
-#app.portrait .tile { height: 72px; }
-#app.portrait .tile span { font-size: 16px; }
-#app.portrait .tile span { left: 6px; right: 4px; font-size: clamp(12px, 18cqw, 16px); }   /* Gunslinger: four tiles a row, see .tile above */
-#app.portrait #oppPop, #app.portrait #mapPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
-#app.portrait .detail { grid-template-columns: 1fr; flex: none; }
-#app.portrait .d-stage { height: 200px; }
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
@@ -929,33 +860,40 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="a2hs" id="a2hsHint" hidden><span>Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress.</span><button class="link" id="a2hsOk">OK</button></div>
   </section>
 
-  <section id="scrSelect" class="screen select" hidden>
-    <div class="sel2">
-      <header class="sel-head">
-        <button class="back" id="selBack" aria-label="Back"></button>
-        <div class="grow"><div class="kicker" id="selMode">Ranked match</div><h2>Choose your fighter</h2></div>
-        <div class="sel-opts" id="pracOpts" hidden>
-          <div class="pickwrap"><button class="chip pick" id="oppPick"></button><div class="pop" id="oppPop" hidden></div></div>
-          <div class="pickwrap"><button class="chip pick" id="lvlPick"></button><div class="pop" id="lvlPop" hidden></div></div>
-          <div class="pickwrap"><button class="chip pick" id="mapPick"></button><div class="pop" id="mapPop" hidden></div></div>
+  <!-- fighter select (game/css/30-select.css): roster | stage | info; the whole screen tints to the picked fighter (--sfc) -->
+  <section id="scrSelect" class="screen select sl-scr" hidden>
+    <div class="sl">
+      <header class="sl-head">
+        <button class="round sl-back" id="selBack" aria-label="Back"></button>
+        <div class="sl-ttl"><div class="kick" id="selMode">Ranked match</div><h2>Choose your fighter</h2></div>
+        <div class="sl-opts" id="pracOpts" hidden>
+          <div class="pickwrap"><button class="sl-pick" id="oppPick" aria-haspopup="true"></button><div class="pop" id="oppPop" hidden></div></div>
+          <div class="pickwrap"><button class="sl-pick" id="lvlPick" aria-haspopup="true"></button><div class="pop" id="lvlPop" hidden></div></div>
+          <div class="pickwrap"><button class="sl-pick" id="mapPick" aria-haspopup="true"></button><div class="pop" id="mapPop" hidden></div></div>
         </div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="selTokens">0</span></div>
+        <div class="coin chips sl-coin" aria-label="Chips"><span id="selTokens">0</span></div>
       </header>
-      <div class="tiles" id="tiles" role="group" aria-label="Fighters"></div>
-      <div class="detail" id="detail">
-        <div class="d-stage"><canvas class="d-art" id="dArt"></canvas></div>
-        <div class="d-info">
-          <div class="d-name"><b id="dName"></b><span id="dRole"></span></div>
-          <p class="d-blurb" id="dBlurb"></p>
-          <div class="d-stats" id="dStats"></div>
-          <div class="d-sigs"><div class="d-sig" id="dSig"></div><div class="d-sig d-ult" id="dUlt"></div></div>
+      <div class="sl-roster" id="tiles" role="group" aria-label="Fighters"></div>
+      <div class="sl-detail" id="detail">
+        <div class="sl-stage">
+          <div class="sl-top">
+            <div class="sl-scene" aria-hidden="true"><i class="rays"></i><div class="sl-por" id="dPor"></div><i class="speed"></i></div>
+            <canvas class="sl-art" id="dArt" aria-hidden="true"></canvas>
+            <div class="sl-name" id="dNameBox"><b id="dName"></b><span id="dRole"></span></div>
+          </div>
+          <div class="sl-skins">
+            <div class="sl-sws" id="dPals" role="group" aria-label="Skins"></div>
+            <div class="sl-note" id="dNote" aria-live="polite"></div>
+          </div>
         </div>
-        <div class="d-side">
-          <div class="d-pals" id="dPals"></div>
-          <div class="d-note" id="dNote"></div>
-          <div class="d-go">
-            <button class="btn primary" id="selGo"><span>Fight</span></button>
-            <button class="btn up" id="selUp" hidden><span>Upgrade</span></button>
+        <div class="sl-info">
+          <p class="sl-blurb" id="dBlurb"></p>
+          <div class="card sl-stats" id="dStats"></div>
+          <div class="card sl-move" id="dSig"></div>
+          <div class="card sl-move ult" id="dUlt"></div>
+          <div class="sl-go">
+            <button class="btn primary sl-fight" id="selGo"><span>Fight</span></button>
+            <button class="btn up sl-up" id="selUp" hidden><span>Upgrade</span></button>
           </div>
         </div>
       </div>

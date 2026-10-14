@@ -16,7 +16,7 @@ async def main():
             for a, o in PAIRS:
                 await pg.evaluate(f"(() => {{ document.getElementById('bPractice').click(); }})()"); await pg.wait_for_timeout(200)
                 idx = ['phoenix','alchemist','odin','wizard','samurai','dragon','gunslinger','reaper'].index(a)
-                await pg.evaluate(f"document.querySelectorAll('.tile')[{idx}].click()")
+                await pg.evaluate(f"document.querySelectorAll('#tiles .tile')[{idx}].click()")
                 await pg.evaluate(f"(() => {{ document.getElementById('oppPick').click(); }})()"); await pg.wait_for_timeout(100)
                 oi = ['random','phoenix','alchemist','odin','wizard','samurai','dragon','gunslinger','reaper'].index(o)
                 await pg.evaluate(f"document.querySelectorAll('#oppPop button')[{oi}].click()")
