@@ -29,7 +29,10 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 - Night track (branch night-gun, PROTO 5): the Gunslinger, a seventh fighter ("Sharpshooter": Twin Shot, two weak fast
   shots, 0.8 s cooldown; Fan the hammer with a recoil hop; High Noon, one golden finishing bullet; Powder jump).
   Jonny's picture: /mnt/project-files/overnight/concept-gunslinger.jpg, Fable's design: overnight/fable-ideas.md
-  section 5. He has no manga page yet: when he wins, the 2D finisher (FINS.gunslinger) plays. Video and move sheet:
+  section 5. His manga KO page is "High Noon" (manga/gunslinger.js, branch night-gunpage): the clock strikes twelve, a
+  tumbleweed rolls by, a barrel-view inset of the loser, the draw in one frame, BANG and one smoking line, the loser's
+  hat (a sprout for the hatless) floats down onto the page, he blows the smoke off the barrel. Accent sunset red;
+  video finisher-films/gunslinger-high-noon-manga-v1.mp4 + -sheet.jpg. His fighter video and move sheet:
   overnight/gunslinger-v1.mp4, gunslinger-v1-sheet.jpg.
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
@@ -98,7 +101,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   screen (finHold) until it ends. Timeline constants FT; one entry per fighter in FINS. FIN_NAME / finName():
   a finishing special with its own name (Gunslinger: "High Noon") on the band, the Finish! banner and the
   Special button; the others show their signature name.
-- ui/manga.js (after finisher.js; manga/*.js spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
+- ui/manga.js (after finisher.js; the seven pages manga/<id>.js, one per fighter: alchemist dragon gunslinger odin
+  phoenix samurai wizard, spliced at its /*MANGA*/ marker, sorted): the KO finisher as a manga page.
   finStart plays MANGA[winner] before anything else: the real hit, the frozen frame inked (paper tint, dot tone,
   border, focus lines, sound word), panels sliding in over each other (the old ones stay visible), a face inset, the
   strike with a 120 ms drop and two impact frames, the loser tearing through the border along the real launch
@@ -207,8 +211,7 @@ accounts (1 s charge).
   Dragon's "Inferno" film, sent to Jonny as a video before the rest. 3. The other five films (Phoenix, then
   Wizard + Alchemist, then Odin + Samurai). UI only, no PROTO bump. The Potatalities move to a later finisher
   shop that sells alternates for chips (the existing currency) next to the skins.
-- Gunslinger follow-ups: his manga KO page (manga/gunslinger.js), Jonny's notes on the
-  video. lethal() empties the projectile list in its look-ahead (h.projs = []), so a projectile still in the
+- Gunslinger follow-ups: Jonny's notes on the video and on his manga page (High Noon). lethal() empties the projectile list in its look-ahead (h.projs = []), so a projectile still in the
   air (Dragon's flame puffs, a bullet in flight) is not part of the KO call; harmless so far
   (finish.js passes) but a mirror Dragon match once called a KO that a later puff then changed.
 - M5: accounts via sync code: built (night-acct, see "Accounts" above). Live once Jonny has merged it, pasted update.txt and then
