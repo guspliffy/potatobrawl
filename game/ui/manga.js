@@ -124,7 +124,7 @@ function mgWarn(e) { try { console.warn("Manga finisher failed, using the 2D fin
 // stays black and the skin shows as a weak tint); every gradient turns into hard bands: manga has flat shapes and cut tone, no gradients.
 const MG_FS = Object.getOwnPropertyDescriptor(MG_CTX, "fillStyle"), MG_SS = Object.getOwnPropertyDescriptor(MG_CTX, "strokeStyle"), MG_TC = new Map();
 function mgTintCss(s, k) {
-  const key = k + s;
+  const mono = MG.mono, key = mono ? "m" + k + s : k + s;   // mono: the puppet is drawn in greys (mgPuppet's o.mono)
   let v = MG_TC.get(key);
   if (v !== undefined) return v;
   let r, g, b, a = 1, m;
@@ -133,7 +133,9 @@ function mgTintCss(s, k) {
   else if ((m = /^rgba?\(([^)]*)\)$/.exec(s))) { const q = m[1].split(","); r = +q[0]; g = +q[1]; b = +q[2]; if (q.length > 3) a = +q[3]; }
   else { MG_TC.set(key, s); return s; }
   const lum = (r * 0.3 + g * 0.59 + b * 0.11) / 255, u = clamp((lum - 0.1) / 0.4, 0, 1), w = k * u * u * (3 - 2 * u);
-  v = `rgba(${Math.round(r + (241 - r) * w)},${Math.round(g + (236 - g) * w)},${Math.round(b + (226 - b) * w)},${a})`;
+  let R = Math.round(r + (241 - r) * w), G = Math.round(g + (236 - g) * w), B = Math.round(b + (226 - b) * w);
+  if (mono) R = G = B = Math.round(R * 0.3 + G * 0.59 + B * 0.11);
+  v = `rgba(${R},${G},${B},${a})`;
   MG_TC.set(key, v);
   return v;
 }
@@ -284,7 +286,7 @@ function mgWordDraw(c, w, t) {
 //   slide (ms), poly: [[x, y] x4] as shares of the page area drawn for a winner on the left (mirrored when the winner is on the right),
 //   cam(t, pn) -> { wx, wy, vh, px, py } (the world point at the panel's centre, the world height the panel shows, a pan in px),
 //   draw(c, pn, t), freeze (ms: the panel is drawn once into a bitmap and stays as it was), cover (ms: a later panel covers it from here: it dims),
-//   shake(t) -> [dx, dy], live (keep drawing every frame), paper }
+//   shake(t) -> [dx, dy], live (keep drawing every frame), paper, dim ("r,g,b" of the dimming once covered; ink by default) }
 function mgPanel(d, idx) {
   const pg = MG.page, mx = (x) => (FIN.dir > 0 ? x : 1 - x);
   const poly = d.poly.map(([fx, fy]) => [pg.x + mx(fx) * pg.w, pg.y + fy * pg.h]);
@@ -342,7 +344,7 @@ function mgPanelFrame(c, pn, t) {
   // the page fills up: a panel that a later one covers is dimmed
   if (d.cover !== undefined && t > d.cover) {
     const a = 0.2 * fe(d.cover, d.cover + 200, t);
-    c.save(); c.setTransform(D, 0, 0, D, D * pn.ox, D * pn.oy); c.fillStyle = `rgba(11,10,18,${a.toFixed(3)})`; mgPoly(c, pn.poly); c.fill(); c.restore();
+    c.save(); c.setTransform(D, 0, 0, D, D * pn.ox, D * pn.oy); c.fillStyle = `rgba(${d.dim || "11,10,18"},${a.toFixed(3)})`; mgPoly(c, pn.poly); c.fill(); c.restore();
   }
 }
 // the border draws itself over 160 ms; tears are gaps with jagged ends where a body burst through; a glow is the ink going accent, then cooling
@@ -399,7 +401,7 @@ function mgTear(pn, sx, sy, wdt, t, glowCol) {
 
 /* ---------- a fighter drawn into a panel: fat ink, paper tint, cut tone ---------- */
 // o: { sc (scale about the feet), halo (css px of white edge), under (lc, p) (art behind the fighter, inked like it), box ([l, t, r, b] world units about the feet that the drawing may cover), free (not cut to the panel), a (alpha), sil ("#fff" | "#000": a flat silhouette), tint, light (angle the light comes from), wash: [hex, alpha],
-//      post(lc, X) (extra source-atop art in device px: X = { sx, sy, z } is the feet and the device px per world unit), tone (false: no dots), k (ink) }
+//      post(lc, X) (extra source-atop art in device px: X = { sx, sy, z } is the feet and the device px per world unit), tone (false: no dots), k (ink), mono (every colour grey) }
 function mgPuppet(c, pn, p, tt, o) {
   o = o || {};
   const D = DPR, sc = o.sc || 1, ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y), bq = o.box || MG_BOX;
@@ -413,7 +415,7 @@ function mgPuppet(c, pn, p, tt, o) {
   lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(bx, by, bw, bh);
   lc.save(); lc.beginPath(); lc.rect(bx, by, bw, bh); lc.clip();
   lc.setTransform(D * ze, 0, 0, D * ze, D * (sx + pn.ox), D * (sy + pn.oy));
-  MG.pt = tt; MG.tintK = o.tint === undefined ? 0.56 : o.tint;
+  MG.pt = tt; MG.tintK = o.tint === undefined ? 0.56 : o.tint; MG.mono = !!o.mono;
   if (o.flash) p.flash = 2;
   mgInkOn(lc, k);
   try {
@@ -625,6 +627,7 @@ function mgPage(c, t) {
   c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
   c.fillStyle = MG_PAPER; c.fillRect(0, 0, L.gw, L.gh);
   for (const pn of MG.panels) { if (t < pn.t0) break; mgPanelFrame(c, pn, t); }
+  if (MG.script.page) MG.script.page(c, t);   // a last pass over the whole page (the Reaper's page turns into a negative here)
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 // anything thrown while the page plays: the 2D finisher takes over from its own start (the results always follow)
@@ -687,7 +690,7 @@ function mangaOverlay(o, tk) {
     if (t >= MT.CARD) mgCard(o, t);
     if (t > MT.SKIP && t < MT.FADE) {
       o.font = `600 ${Math.round(clamp(MG.m * 1.05, 9, 12))}px system-ui, sans-serif`; o.textAlign = "right"; o.textBaseline = "middle";
-      o.fillStyle = "rgba(30,28,40,0.55)"; o.fillText(touchUI ? "Tap to skip" : "Click or press a key to skip", L.gw - MG.m - 4, L.gh - MG.m * 0.5);
+      o.fillStyle = S.hint ? S.hint(t) : "rgba(30,28,40,0.55)"; o.fillText(touchUI ? "Tap to skip" : "Click or press a key to skip", L.gw - MG.m - 4, L.gh - MG.m * 0.5);
     }
     const fade = fe(MT.FADE, MT.END, t);
     if (fade > 0) { o.fillStyle = `rgba(14,16,34,${(0.9 * fade).toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }

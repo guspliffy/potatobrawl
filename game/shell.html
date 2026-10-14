@@ -293,7 +293,7 @@ button { font: inherit; color: inherit; }
 .pop button:hover { background: var(--raise); }
 .pop button.on { background: var(--sand); color: var(--ink); }
 
-.tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; height: clamp(56px, calc(var(--uh) * 20), 168px); }
+.tiles { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; height: clamp(56px, calc(var(--uh) * 20), 168px); }
 .tile { --fc: var(--sand); appearance: none; position: relative; padding: 0; border: 0; border-radius: 7px; overflow: hidden; cursor: pointer; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); min-width: 0; transition: transform 0.12s; }
 .tile img, .tile canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; filter: saturate(0.55) brightness(0.62); transition: filter 0.15s; }
 .tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(14, 16, 34, 0) 50%, rgba(14, 16, 34, 0.9)); pointer-events: none; }
@@ -303,7 +303,7 @@ button { font: inherit; color: inherit; }
 .tile.on img, .tile.on canvas { filter: none; }
 .tile.on span { color: var(--text); }
 .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-/* seven fighters (Gunslinger): on narrow screens a long name shrinks to fit its tile instead of being cut off */
+/* seven, now eight fighters (Gunslinger, Reaper): on narrow screens a long name shrinks to fit its tile instead of being cut off */
 .tile { container-type: inline-size; }
 .tile span { font-size: min(clamp(14px, calc(var(--uh) * 4.2), 22px), 18cqw); }
 
@@ -432,6 +432,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .ac-me { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ac-id { display: flex; gap: 12px; align-items: center; }
 .av[data-f="gunslinger"] { background-position: 53% 67%; background-size: auto 190%; }   /* his face sits lower, under the hat brim */
+.av[data-f="reaper"] { background-position: 53% 62%; background-size: auto 190%; }   /* his face, inside the hood */
 .ac-id .av { --d: 58px; }
 .ac-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .ac-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 18ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }

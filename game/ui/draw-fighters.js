@@ -12,7 +12,9 @@ function pose(f, tk) {
     // charge-up (a ground heavy held at its hold point): chg frames, whether it is waiting right now, the 1 px jitter at full charge
     chg: 0, hold: false, jit: [0, 0],
     // Gunslinger: the back pistol's angle (null = at rest) and which pistol has just fired (draws the muzzle flash)
-    gunB: null, shotF: -1, shotB: -1 };
+    gunB: null, shotF: -1, shotB: -1,
+    // Reaper: scythe blade side (+1 / -1), handle foreshortening (flat swings), scythe drawn behind the body, a light's trail, the Grave rise cloud
+    bladeS: 1, scyK: 1, scyBack: false, reapT: null, cloud: 0, noSwoosh: false };
   let fF = [w * 0.24, 0], fB = [-w * 0.2, 0];
   let hF = [w * 0.5, -leg - tor * 0.52], hB = [w * 0.2, -leg - tor * 0.42];
   const st = f.state;
@@ -34,6 +36,10 @@ function pose(f, tk) {
     else { hF = [w * 0.55, -leg - tor * 0.75]; hB = [-w * 0.35, -leg - tor * 0.65]; }
   }
   if (st === "helpless") { P.dim = true; hF = [w * 0.25, -leg - tor * 1.25]; hB = [-w * 0.2, -leg - tor * 1.25]; }
+  if (st === "helpless" && L_.costume === "reaper") {   // the drift after Grave rise: scythe held up, the free arm out, a thin wisp under him
+    hF = [w * 0.62, -leg - tor * 1.0]; hB = [-w * 0.62, -leg - tor * 0.78]; fF = [w * 0.12, -leg * 0.15]; fB = [-w * 0.18, -leg * 0.05];
+    P.holdAng = -1.62 + Math.sin(tk * 0.12) * 0.06; P.cloud = 0.42;
+  }
   if (st === "hitstun") {
     P.spin = f.tumble ? f.st * 0.3 * (f.kbx * f.facing >= 0 ? -1 : 1) : 0;
     P.lean = f.tumble ? 0 : -0.3;
@@ -89,6 +95,7 @@ function pose(f, tk) {
     }
     if (m.kind === "charge" && phase === 0) P.crouch = 0.3 * ease(k);
     if (m.pound) { fF = [w * 0.08, 4]; fB = [-w * 0.12, 2]; hF = [w * 0.42, -leg - tor * 1.15]; hB = [-w * 0.42, -leg - tor * 1.1]; }
+    if (L_.costume === "reaper" && !HEAVY_KEYS[f.mid]) reaperPose(f, P, m, f.mid, phase, k, w, leg, tor, (a, b, c2, d) => { hF = a; if (b) hB = b; if (c2) fF = c2; if (d) fB = d; });
     let look = null, replace = false;
     if (hk) {
       // shared heavy language: a deeper crouch while winding up, a glint in the last two startup frames
@@ -108,7 +115,7 @@ function pose(f, tk) {
       P.hv = { id: f.spec.id, key: hk, look, phase, k, u: X.u, wk, age: X.age, ck: P.chg ? P.chg / BL.TUNE.chgMax : 0, startup: m.startup, active: m.active, a0, a1, tx, ty, b, trail: X.trail || null };
     }
     const lingerEnd = a1 + (look && look.linger != null ? look.linger : 0);
-    if (b && !replace && (phase === 1 || (phase === 2 && f.mt <= lingerEnd && look && look.keepSwoosh))) {
+    if (b && !replace && !P.noSwoosh && (phase === 1 || (phase === 2 && f.mt <= lingerEnd && look && look.keepSwoosh))) {
       P.swoosh = { tx, ty, r: b.r, body: m.limb === "body", sweep: b.x2 !== b.x || b.y2 !== b.y, sx: b.x, sy: b.y, heavy: m.dmg >= 12, fire: !!m.fire, hv: !!hk, linger: phase === 2, age: f.mt - a0, key: hk, ck: P.chg ? P.chg / BL.TUNE.chgMax : 0 };
     }
   }
@@ -137,9 +144,10 @@ function pose(f, tk) {
     P.head = [w * 0.16, P.cy - P.ry * 0.28];
     P.mouthPt = [w * 0.16, P.cy - P.ry * 0.28 + w * 0.23];
     // arms hang outside the round body when they're not doing something
-    if (st !== "attack" && st !== "ledge" && st !== "hitstun" && !finArms) {
+    if (st !== "attack" && st !== "ledge" && st !== "hitstun" && !finArms && !(st === "helpless" && L_.costume === "reaper")) {
       if (P.hF[0] < w * 0.75) P.hF = [w * 0.75 + (P.hF[0] - w * 0.5) * 0.4, P.hF[1] + 4];
       if (P.hB[0] > -w * 0.68) P.hB = [-w * 0.68 + (P.hB[0] + w * 0.3) * 0.3, P.hB[1] + 4];
+      if (L_.costume === "reaper" && st !== "helpless") P.hF = [w * 0.9 + (st === "run" ? (P.hF[0] - w * 0.75) * 0.5 : 0), P.hF[1] + tor * 0.16];   // the scythe held out at his side, clear of the face
     }
   }
   return P;
@@ -431,7 +439,7 @@ function potatoFace(c, f, P, look) {
     if (cos === "dragon") c.ellipse(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.13 * pk, er * 0.55 * pk, 0, 0, Math.PI * 2); else c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.38 * k * hk * pk, 0, Math.PI * 2);
     c.fillStyle = "#120a08"; c.fill();
     c.beginPath(); c.arc(e[0] + er * 0.4, e[1] - er * 0.25, er * 0.22, 0, Math.PI * 2); c.fillStyle = "#ffffff"; c.fill();
-    if (ex ? (ex === "rage" || ex === "grin") : (style === "focused" || style === "fierce")) {
+    if (ex ? (ex === "rage" || ex === "grin") : (style === "focused" || style === "fierce" || style === "sly")) {
       // heavy upper lid in skin colour
       const s = i ? 1 : -1;
       c.save(); c.beginPath(); c.ellipse(e[0], e[1], er * k * 1.05, er * 1.2 * hk, 0, 0, Math.PI * 2); c.clip();
@@ -454,6 +462,9 @@ function potatoFace(c, f, P, look) {
     else if (style === "evil" || style === "fierce" || style === "focused") { c.moveTo(e[0] + side * er * 0.9, e[1] - er * (style === "focused" ? 1.6 : 1.8)); c.lineTo(e[0] - side * er * 0.7, e[1] - er * (style === "focused" ? 1.15 : 1.2)); }
     else if (style === "stern") { c.moveTo(e[0] - er * 1.1, e[1] - er * 1.45); c.lineTo(e[0] + er * 1.1, e[1] - er * 1.3); }
     else if (style === "cocky") { c.lineWidth = 3; c.moveTo(e[0] + side * er * 1.0, e[1] - er * (side > 0 ? 1.95 : 1.75)); c.quadraticCurveTo(e[0], e[1] - er * 2.0, e[0] - side * er * 0.85, e[1] - er * 1.3); }
+    // sly (Reaper): the back brow slants down hard to the nose, the front one arches high: one raised eyebrow
+    else if (style === "sly" && side < 0) { c.lineWidth = 3.4; c.moveTo(e[0] - er * 1.15, e[1] - er * 2.05); c.lineTo(e[0] + er * 0.95, e[1] - er * 1.25); }
+    else if (style === "sly") { c.lineWidth = 3.2; c.moveTo(e[0] - er * 0.85, e[1] - er * 1.75); c.quadraticCurveTo(e[0] + er * 0.05, e[1] - er * 2.75, e[0] + er * 1.15, e[1] - er * 1.95); }
     else c.arc(e[0], e[1] - er * 0.6, er * 1.1, -2.4, -0.75);
     c.stroke();
   });
@@ -501,6 +512,9 @@ function potatoFace(c, f, P, look) {
     c.beginPath(); c.moveTo(mx - er * 1.05, my - er * 0.2); c.quadraticCurveTo(mx + er * 0.1, my + er * 1.25, mx + er * 1.35, my - er * 0.55);
     c.quadraticCurveTo(mx + er * 0.15, my + er * 0.3, mx - er * 1.05, my - er * 0.2); c.closePath();
     c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = 1.6; c.stroke();
+  } else if (style === "sly") {   // a closed smirk pulled up on the front side, with a dimple
+    c.beginPath(); c.moveTo(mx - er * 1.05, my - er * 0.05); c.quadraticCurveTo(mx + er * 0.3, my + er * 0.8, mx + er * 1.45, my - er * 0.6); c.lineWidth = 2; c.stroke();
+    c.lineWidth = 1.4; c.beginPath(); c.moveTo(mx + er * 1.3, my - er * 0.92); c.quadraticCurveTo(mx + er * 1.62, my - er * 0.66, mx + er * 1.55, my - er * 0.3); c.stroke();
   } else if (style === "fierce") {
     c.beginPath(); c.moveTo(mx - er * 1.0, my - er * 0.1); c.quadraticCurveTo(mx, my + er * 0.6, mx + er * 1.1, my - er * 0.5); c.lineWidth = 1.8; c.stroke();
     c.fillStyle = "#ffffff"; c.beginPath(); c.moveTo(mx + er * 0.25, my + er * 0.2); c.lineTo(mx + er * 0.4, my + er * 0.7); c.lineTo(mx + er * 0.58, my + er * 0.12); c.closePath(); c.fill(); c.lineWidth = 0.8; c.stroke();
@@ -790,6 +804,215 @@ function cowboyHat(c, P, pal) {
   c.beginPath(); c.moveTo(-rx * 0.7, ry * 0.08); c.quadraticCurveTo(0, ry * 0.2, rx * 0.75, ry * 0.08); c.stroke();
   c.restore();
 }
+/* ---- Reaper: a hood with sprouts poking out, a sly smirk, a farm scythe ---- */
+// colours per skin: Shroud grey, Moss green, Ember Wake (dark hood, orange lining), Bone (white hood, black trim). P.dim greys them, a hit flash whitens them.
+function reapCols(f, P, flash) {
+  const lvl = skinLvl(f), ac = f.pal.accent;
+  const c = {
+    hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55),
+    trim: lvl === 3 ? "#1f1d26" : null, ghost: lvl === 3 && !flash && !P.dim ? 1 : null, handle: lvl === 3 ? "#2a2630" : "#3b3530", band: lvl === 2 ? "#f08a3c" : "#7d7f88", blade: "#a7acb6", spine: "#6d717c",
+  };
+  if (flash) { for (const k in c) if (c[k]) c[k] = "#ffffff"; }
+  else if (P.dim) { for (const k in c) if (c[k]) c[k] = mix(c[k], "#6a6a7a", 0.45); }
+  return c;
+}
+// the hood: a soft peak that droops back, the back drape hanging over the shoulder, an open front framing the face (lining showing at the rim),
+// two sprout leaves poking out at the top. Drawn over the face inside the body's lean.
+function reaperHood(c, f, P, RC, tk) {
+  const { rx, ry, cy, w } = P, [hx, hy] = P.head;
+  const fl = f.state === "helpless" || (!f.grounded && f.state === "air") ? Math.sin(tk * 0.3 + f.slot) * 2.2 : 0, lift = clamp((f.vy || 0) * 0.5, -3, 4) * (f.grounded ? 0 : 1);
+  const ox = hx + w * 0.005, oy = hy + ry * 0.1, orx = w * 0.375, ory = ry * 0.7;   // the face opening
+  const outer = () => {
+    c.beginPath();
+    c.moveTo(rx * 1.1, cy + ry * 0.2);
+    c.bezierCurveTo(rx * 1.18, cy - ry * 0.55, rx * 0.72, cy - ry * 1.12, rx * 0.02, cy - ry * 1.17);
+    c.quadraticCurveTo(-rx * 0.62, cy - ry * 1.16 - lift, -rx * 0.98, cy - ry * 0.86 - lift * 0.6);   // the peak droops back
+    c.quadraticCurveTo(-rx * 1.24 + fl * 0.3, cy - ry * 0.2, -rx * 1.2 + fl, cy + ry * 0.58 + fl * 0.4);   // the back drape over the shoulder
+    c.quadraticCurveTo(-rx * 0.7, cy + ry * 0.7, -rx * 0.25, cy + ry * 0.52);
+    c.quadraticCurveTo(rx * 0.5, cy + ry * 0.42, rx * 1.1, cy + ry * 0.2);
+    c.closePath();
+  };
+  const hole = () => { c.beginPath(); c.ellipse(ox, oy, orx, ory, 0.08, 0, Math.PI * 2); };
+  c.save();
+  c.beginPath(); c.rect(-rx * 2, cy - ry * 2.2, rx * 4, ry * 3.6); c.ellipse(ox, oy, orx, ory, 0.08, 0, Math.PI * 2); c.clip("evenodd");
+  outer(); c.fillStyle = RC.hood; c.fill();
+  c.save(); c.clip();
+  c.fillStyle = RC.hoodD;   // a fold shadow down the back and under the peak
+  c.beginPath(); c.ellipse(-rx * 0.85, cy - ry * 0.1, rx * 0.32, ry * 0.9, 0.1, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = RC.hoodD; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-rx * 0.35, cy - ry * 1.0); c.quadraticCurveTo(-rx * 0.62, cy - ry * 0.4, -rx * 0.5, cy + ry * 0.4); c.stroke();
+  if (RC.trim) { c.lineWidth = 5; c.strokeStyle = RC.trim; outer(); c.stroke(); }   // Bone: a black hem
+  // the rim of the opening: a band of lining (the inside of the hood), then a crisp edge
+  c.lineWidth = RC.trim ? 8 : 7; c.strokeStyle = RC.lining; hole(); c.stroke();
+  c.lineWidth = 2.6; c.strokeStyle = OUT; hole(); c.stroke();
+  c.restore();
+  c.lineWidth = 2.2; c.strokeStyle = OUT; outer(); c.stroke();
+  c.restore();
+  sprout(c, rx * 0.05, cy - ry * 1.1, 1.05);
+}
+// the scythe in the front hand. Angle a points from the hand to the blade end of the handle; bladeS (+1 / -1, any value between flips it
+// through a squash) puts the blade on one side of the handle; scyK < 1 foreshortens the handle (a flat swing seen from the side).
+const SCY = { butt: 0.44, head: 1.02, blade: 0.98 };
+function scyTipAt(h, a, s, w, k) {
+  const L = w * SCY.head * (k == null ? 1 : k), lb = w * SCY.blade, x = L - lb * 0.28 * (k == null ? 1 : k), y = (s == null ? 1 : s) * lb, ca = Math.cos(a), sa = Math.sin(a);
+  return [h[0] + x * ca - y * sa, h[1] + x * sa + y * ca];
+}
+const scyAng = (f, P) => (P.holdAng != null ? P.holdAng : f.state === "run" ? -2.05 : f.state === "ledge" ? 1.75 : f.state === "hitstun" ? -1.75 + P.spin : -1.75);
+function scythe(c, f, P, RC, limb, lw) {
+  const a = scyAng(f, P), s = P.bladeS, k = P.scyK, w = P.w, [hx, hy] = P.hF;
+  const Lb = w * SCY.butt, Lh = w * SCY.head, lb = w * SCY.blade;
+  c.save(); c.translate(hx, hy); c.rotate(a); c.lineCap = "round"; c.lineJoin = "round";
+  c.save(); c.scale(k, 1);
+  c.strokeStyle = OUT; c.lineWidth = 6.4; c.beginPath(); c.moveTo(-Lb, 0); c.lineTo(Lh, 0); c.stroke();
+  c.strokeStyle = RC.handle; c.lineWidth = 3.6; c.stroke();
+  c.strokeStyle = "rgba(255,255,255,0.18)"; c.lineWidth = 1; c.beginPath(); c.moveTo(-Lb + 3, -0.9); c.lineTo(Lh - 6, -0.9); c.stroke();
+  c.fillStyle = RC.handle; c.beginPath(); c.arc(-Lb, 0, 3.3, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.3; c.strokeStyle = OUT; c.stroke();   // the knob
+  c.restore();
+  c.translate(Lh * k, 0);
+  c.fillStyle = RC.band; c.beginPath(); c.roundRect(-6, -3.6, 9, 7.2, 1.5); c.fill(); c.lineWidth = 1.3; c.strokeStyle = OUT; c.stroke();   // the collar
+  if (Math.abs(s) > 0.06) {
+    c.save(); c.scale(k * 0.5 + 0.5, s);
+    c.beginPath(); c.moveTo(3, -3); c.quadraticCurveTo(lb * 0.58, lb * 0.3, -lb * 0.28, lb);       // the spine out to the tip
+    c.quadraticCurveTo(lb * 0.16, lb * 0.44, -3, 3.5); c.closePath();                                // the cutting edge back to the collar
+    c.fillStyle = RC.blade; c.fill(); c.lineWidth = 1.6 / Math.max(0.4, Math.abs(s)); c.strokeStyle = OUT; c.stroke();
+    c.save(); c.clip(); c.fillStyle = RC.spine; c.beginPath(); c.moveTo(3, -3); c.quadraticCurveTo(lb * 0.58, lb * 0.3, -lb * 0.28, lb); c.quadraticCurveTo(lb * 0.42, lb * 0.32, 2, 2); c.closePath(); c.fill(); c.restore();
+    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // 200 chips: a ghost-lit edge
+    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = 1.2 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke();
+    c.restore();
+  }
+  c.restore();
+  P.scyTip = scyTipAt(P.hF, a, s, w, k);
+  c.fillStyle = limb; c.beginPath(); c.arc(hx, hy, lw, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();   // the fist over the handle
+}
+// a swing trail: the blade tip's path as a pale crescent (tapered at both ends), cheap: one dark wash, the pale body, a white core
+function scyTrail(c, pts, n, wmax, a) {
+  if (a <= 0 || n < 2) return;
+  c.globalAlpha = 0.35 * a; c.fillStyle = "rgba(20,15,30,0.9)"; brush(c, pts, wmax * 1.3 + 2, n);
+  c.globalAlpha = 0.85 * a; c.fillStyle = "#e6e9f2"; brush(c, pts, wmax, n);
+  c.globalAlpha = a; c.fillStyle = "#ffffff"; brush(c, pts, wmax * 0.38, n);
+  c.globalAlpha = 1;
+}
+// the tip path of a swing: T = { h1, h2, a1, a2, s, k1, k2 } (hand, angle, blade side, foreshortening at the window's start and end); or T.flat = { cx, cy, rf, rb, ry, t1, t2 }
+function scyPts(T, w, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n;
+    if (T.flat) { const F = T.flat, t = F.t1 + (F.t2 - F.t1) * u, ct = Math.cos(t); pts.push([F.cx + ct * (ct > 0 ? F.rf : F.rb), F.cy + Math.sin(t) * F.ry]); }
+    else pts.push(scyTipAt(lerp2(T.h1, T.h2, u), T.a1 + (T.a2 - T.a1) * u, T.s, w, T.k1 == null ? 1 : T.k1 + ((T.k2 == null ? T.k1 : T.k2) - T.k1) * u));
+  }
+  return pts;
+}
+// the reach crescent while a ground heavy charges: thin, white, front and behind (Reap, grave sweep) or over the head (up heavy).
+// It brightens and thickens with the charge; at full charge a star sits at each end.
+function reapReach(c, f, P, tk) {
+  const key = P.hv && P.hv.key, q = Math.min(1, P.chg / 40), full = P.chg > 40, pulse = 0.85 + 0.15 * Math.sin(tk * 0.45), th = (2 + 4 * q) * pulse;
+  const w = P.w, leg = P.leg, tor = P.tor;
+  // each arc: centre, radii, angle range. The flat swings lie on a flat ellipse (front and back reach differ); the up heavy is a half circle over his head
+  const arcs = key === "hUp" ? [[0, -40, 76, 76, -Math.PI + 0.3, -0.3]]
+    : key === "hDown" ? [[w * 0.2, -leg - tor * 0.05, 78, 7, -1.1, 1.1], [w * 0.2, -leg - tor * 0.05, 78, 7, Math.PI - 1.1, Math.PI + 1.1]]
+    : [[w * 0.2, -leg - tor * 0.3, 94, 12, -1.1, 1.1], [w * 0.2, -leg - tor * 0.3, 68, 12, Math.PI - 1.1, Math.PI + 1.1]];
+  c.save();
+  for (const [cx, cy, rx, ry, a0, a1] of arcs) {
+    const o = [], inn = [], flat = ry < rx;
+    for (let i = 0; i <= 14; i++) {
+      const u = i / 14, an = a0 + (a1 - a0) * u, d = th * Math.sin(Math.PI * u), ca = Math.cos(an), sa = Math.sin(an);
+      o.push([cx + ca * rx, cy + sa * ry]);
+      inn.push(flat ? [cx + ca * (rx - d * 0.6), cy + sa * ry - d] : [cx + ca * (rx - d), cy + sa * (ry - d)]);
+    }
+    c.beginPath(); c.moveTo(o[0][0], o[0][1]); for (const p of o) c.lineTo(p[0], p[1]); for (let i = inn.length - 1; i >= 0; i--) c.lineTo(inn[i][0], inn[i][1]); c.closePath();
+    c.globalAlpha = (0.3 + 0.55 * q) * pulse; c.fillStyle = "#ffffff"; c.fill();
+    c.globalAlpha = 0.25 + 0.3 * q; c.strokeStyle = "rgba(20,15,30,0.6)"; c.lineWidth = 1; c.stroke();
+    if (full) { c.globalAlpha = 1; const m = o[7]; star4(c, m[0], m[1], 5 + 2 * pulse, "#ffffff"); }   // full charge: a star at the far point of the reach
+  }
+  c.restore();
+}
+// Grave rise: a dark cloud under his feet that lifts him, swelling in the lift and thinning as he drifts
+function graveCloud(c, f, P, tk, amt) {
+  if (amt <= 0) return;
+  const lvl = skinLvl(f), base = lvl === 2 ? "#3a2c2a" : lvl === 3 ? "#d9d4c6" : "#3a3646", rim = lvl === 2 ? "#f08a3c" : lvl === 3 ? "#9e9888" : "#6a6478";
+  c.save();
+  for (let i = 0; i < 6; i++) {
+    const sx = (i - 2.5) * 9 + Math.sin(tk * 0.2 + i * 1.7) * 2, sy = 6 + Math.abs(i - 2.5) * -1.4 + Math.cos(tk * 0.17 + i) * 1.5, r = (8 + (i % 3) * 2.5) * amt;
+    c.globalAlpha = 0.75 * amt; c.fillStyle = base; c.beginPath(); c.arc(sx, sy, r, 0, Math.PI * 2); c.fill();
+    c.globalAlpha = 0.5 * amt; c.strokeStyle = rim; c.lineWidth = 1.4; c.beginPath(); c.arc(sx, sy, r, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+  }
+  c.globalAlpha = 0.4 * amt; c.fillStyle = base;
+  for (let i = 0; i < 3; i++) { const t = (tk * 0.05 + i / 3) % 1; c.beginPath(); c.arc((i - 1) * 10, 10 + t * 18, 4 * (1 - t) * amt + 1, 0, Math.PI * 2); c.fill(); }
+  c.restore();
+}
+// Reaper's lights, air moves, Harvest and Grave rise (the heavies are in HEAVY_LOOK.reaper): sets the scythe angle, blade side and
+// foreshortening on P and hands the limbs back through set(hF, hB, fF, fB). Trails go in P.reapT (drawn by drawPotato).
+const REAP_REST = (w, leg, tor) => [w * 0.9, -leg - tor * 0.32];
+// the grip of the back hand, a little way down the handle from the front hand
+const reapGrip = (h, a, k, d) => [h[0] - Math.cos(a) * d * k, h[1] - Math.sin(a) * d];
+const REAP_MOVES = {
+  // [wind hand, wind angle, wind side], [strike hand(s)], [strike angles], strike side, trail kind, two hands
+  jab: { wh: [0.35, 0.25], wa: -3.0, ws: 1, sh: [[0.68, 0.22]], sa: [-3.2], ss: 1, tr: "butt", two: true },
+  side: { wh: [0.12, 0.25], wa: -0.2, ws: -1, sh: [[0.66, 0.2]], sa: [0.02], ss: -1, tr: "head", two: true },
+  up: { wh: [0.55, 0.35], wa: -0.3, ws: -1, sh: [[0.4, 0.95], [0.0, 1.0]], sa: [-0.9, -2.7], ss: -1, tr: "tip", two: true },
+  down: { wh: [0.3, 0.25], wa: -0.1, ws: -1, sh: [[0.6, 0.12]], sa: [0.1], ss: -1, tr: "head", two: true, crouch: 0.38 },
+  nair: { wh: [0.45, 0.45], wa: -2.6, ws: 1, sh: [[0.45, 0.42]], sa: [-1.9, -1.9 + Math.PI * 2], ss: 1, tr: "tip", span: 0.55 },
+  sair: { wh: [0.4, 0.95], wa: -2.5, ws: 1, sh: [[0.72, 0.8], [0.8, 0.38]], sa: [-1.4, 0.6], ss: 1, tr: "tip", two: true },
+  uair: { wh: [0.45, 0.5], wa: -0.4, ws: -1, sh: [[0.3, 1.05], [-0.05, 1.05]], sa: [-0.8, -2.6], ss: -1, tr: "tip", two: true },
+  dair: { wh: [0.25, 1.0], wa: -1.5, ws: 1, sh: [[0.4, 0.45], [0.25, 0.25]], sa: [-0.4, 1.75], ss: 1, tr: "tip", two: true },
+  pound: { wh: [0.6, 0.6], wa: 1.57, ws: 1, sh: [[0.6, 0.6]], sa: [1.57], ss: 1, tr: null, two: true },
+};
+function reaperPose(f, P, m, mid, phase, k, w, leg, tor, set) {
+  const a0 = m.startup + 1, a1 = m.startup + m.active, u = phase === 1 ? (m.active > 1 ? clamp((f.mt - a0) / (m.active - 1), 0, 1) : 1) : phase === 2 ? 1 : 0;
+  const rest = REAP_REST(w, leg, tor), tl = (r, wd, s1, s2) => (phase === 0 ? mixv(r, wd, ease(k)) : phase === 1 ? mixv(s1, s2 == null ? s1 : s2, u) : mixv(s2 == null ? s1 : s2, r, ease(k)));
+  const fade = phase === 2 ? 1 - (f.mt - a1) / 7 : 1;
+  P.noSwoosh = true; P.spin = 0;
+  if (mid === "spec") {
+    // Harvest: the scythe is drawn back, then spins flat round him one and a half times as he slides; Last Rites hooks up at the end
+    const cx = w * 0.25, cy = -leg - tor * 0.26;
+    P.lean = phase === 1 ? 0.12 : phase === 0 ? -0.12 * ease(k) : 0.12 * (1 - ease(k));
+    P.crouch = phase === 2 ? 0.25 * (1 - ease(k)) : 0.25;
+    let hF, ps = Math.PI - 0.1 + Math.PI * 3 * u;
+    if (phase === 0) { hF = lerp2(rest, [w * 0.05, cy], ease(k)); P.holdAng = mixv(-1.75 + Math.PI * 2, Math.PI - 0.1, ease(k)); P.bladeS = 1 - 1.5 * ease(k); P.scyBack = k > 0.5; }
+    else if (phase === 1) {
+      const cp = Math.cos(ps);
+      hF = [cx + cp * w * 0.22, cy + Math.sin(ps) * 3]; P.holdAng = cp >= 0 ? 0.04 : Math.PI - 0.04; P.scyK = Math.max(0.12, Math.abs(cp)); P.bladeS = -0.5; P.scyBack = Math.sin(ps) < 0;
+      P.reapT = { T: { flat: { cx, cy, rf: 66, rb: 54, ry: 11, t1: ps - 2.4, t2: ps } }, n: 1, a: 1, wmax: 9 };
+    } else {
+      const fin = typeof finishReady === "function" && finishReady(1 - f.slot);
+      hF = lerp2([cx + w * 0.22, cy], rest, ease(k)); P.holdAng = mixv(fin ? -1.4 : 0.04, -1.75, ease(k)); P.bladeS = mixv(fin ? -1 : -0.5, 1, ease(k));
+      if (fin && f.mt - a1 < 9) P.reapT = { T: { h1: [w * 0.6, -leg - tor * 0.2], h2: [w * 0.3, -leg - tor * 1.0], a1: 0.4, a2: -1.6, s: -1 }, n: 1, a: 1 - (f.mt - a1) / 9, wmax: 12 };   // Last Rites: the hook straight up
+    }
+    set(hF, reapGrip(hF, P.holdAng, P.scyK, 13), [w * 0.42, 0], [-w * 0.38, 0]);
+    return;
+  }
+  if (m.rec) {
+    // Grave rise: both arms up, the scythe raised, a dark cloud under the feet lifts him
+    P.holdAng = -1.75; P.bladeS = 1; P.lean = -0.05;
+    P.cloud = phase === 0 ? ease(k) : phase === 1 ? 1 : 1 - 0.7 * ease(k);
+    set([w * 0.6, -leg - tor * 1.08], [-w * 0.5, -leg - tor * 0.75], [w * 0.14, -leg * 0.3], [-w * 0.12, -leg * 0.2]);
+    return;
+  }
+  const R = REAP_MOVES[mid];
+  if (!R) return;
+  const pt = (q) => [w * q[0], -leg - tor * q[1]];
+  const sh1 = pt(R.sh[0]), sh2 = R.sh[1] ? pt(R.sh[1]) : sh1, sa1 = R.sa[0], sa2 = R.sa[1] == null ? sa1 : R.sa[1];
+  const restA = -1.75;   // the scythe at rest
+  const hF = tl(rest, pt(R.wh), sh1, sh2);
+  P.holdAng = tl(restA, R.wa, sa1, sa2); P.bladeS = tl(1, R.ws, R.ss, R.ss);
+  if (R.crouch) P.crouch = Math.max(P.crouch, R.crouch * (phase === 2 ? 1 - ease(k) : phase === 0 ? ease(k) : 1));
+  if (mid === "pound") { P.holdAng = 1.57; P.bladeS = 1; }
+  if (R.tr && phase > 0 && fade > 0) {
+    const u0 = R.span ? Math.max(0, u - R.span) : 0;
+    P.reapT = { T: { h1: lerp2(sh1, sh2, u0), h2: lerp2(sh1, sh2, Math.max(u, u0 + 0.12)), a1: sa1 + (sa2 - sa1) * u0, a2: sa1 + (sa2 - sa1) * Math.max(u, u0 + 0.12), s: R.ss, pt: R.tr, wh: pt(R.wh), wa: R.wa }, n: 1, a: fade, wmax: R.tr === "tip" ? 9 : 6 };
+  }
+  set(hF, R.two ? reapGrip(hF, P.holdAng, 1, 14) : null, null, null);
+}
+// the trail of a light: the tip's arc, or a thrust streak behind the poking end (butt or handle head)
+function reapLightTrail(c, f, P) {
+  const R = P.reapT;
+  if (!R) return;
+  let pts;
+  if (R.T.pt === "butt" || R.T.pt === "head") {
+    const d = R.T.pt === "butt" ? -P.w * SCY.butt : P.w * SCY.head, e = (h, a) => [h[0] + Math.cos(a) * d, h[1] + Math.sin(a) * d];
+    pts = lpts(e(R.T.wh, R.T.wa), e(P.hF, P.holdAng), 8);
+  } else pts = scyPts(R.T, P.w, 14);
+  scyTrail(c, pts, pts.length - 1, R.wmax, R.a * 0.9);
+}
 function greenOrb(c, x, y, r, tk) {
   const fl = 1 + Math.sin(tk * 0.25) * 0.08;
   const glow = c.createRadialGradient(x, y, r * 0.3, x, y, r * 2.4 * fl);
@@ -842,6 +1065,7 @@ function drawPotato(c, f, tk, at) {
   const flash = f.flash > 0 && f.flash % 2 === 0;
   const pal = flash ? { body: "#ffffff", trim: "#ffffff", accent: "#ffffff" } : P.dim ? { body: mix(pal0.body, "#6a6a7a", 0.45), trim: pal0.trim, accent: mix(pal0.accent, "#6a6a7a", 0.45) } : pal0;
   const limbF = flash ? "#ffffff" : LIMB, limbB = flash ? "#e8e8f0" : LIMB_BACK;
+  const RC = cos === "reaper" ? reapCols(f, P, flash) : null;
   c.save();
   c.translate(ox + P.jit[0], oy - P.hop + P.jit[1]); c.globalAlpha = alpha; c.scale(f.facing, 1);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
@@ -866,6 +1090,7 @@ function drawPotato(c, f, tk, at) {
   }
   if (cos === "alchemist") capeShape(c, P, f, tk, mix(pal.accent, "#000000", 0.15), false);
   if (cos === "odin") capeShape(c, P, f, tk, pal.accent, true);
+  if (cos === "reaper") { graveCloud(c, f, P, tk, P.cloud); if (P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); }
   limbPath(c, P.hipB, P.fB, legLen, "fwd", lw, limbB);
   c.fillStyle = limbB; c.beginPath(); c.ellipse(P.fB[0] + 2, P.fB[1] - 1, 5, 3, 0, 0, Math.PI * 2); c.fill();
   limbPath(c, shB, P.hB, armLen, "down", lw - 0.5, limbB);
@@ -907,6 +1132,7 @@ function drawPotato(c, f, tk, at) {
   }
   if (cos === "wizard") wizardHat(c, P, pal, tk);
   if (cos === "gunslinger") cowboyHat(c, P, pal);
+  if (cos === "reaper") reaperHood(c, f, P, RC, tk);
   if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
   if (cos === "dragon") {
     c.fillStyle = "#efe3c8"; c.strokeStyle = OUT; c.lineWidth = 1.2;
@@ -926,6 +1152,7 @@ function drawPotato(c, f, tk, at) {
   if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
   if (cos === "samurai") katana(c, P, f, shR, pal);
   if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
+  if (cos === "reaper") { if (!P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); reapLightTrail(c, f, P); }
   if (cos === "alchemist" && f.specCd <= 0 && !flash) greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
@@ -1662,7 +1889,98 @@ const HEAVY_LOOK = {
       hit(att, e) { gunSpark(e, 8); },
     },
   },
+
+  reaper: {
+    // Reap: the scythe is drawn back behind him, then swings flat round him one full turn at the waist, front and behind
+    hSide: {
+      name: "Reap", linger: 8, glintCol: "#e6e9f2",
+      pose(X) { reapFlat(X, -X.leg - X.tor * 0.3, 0.3, { rf: 94, rb: 68, ry: 12 }, 0.28); },
+      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 12); },
+      swing(f) { reapWisps(f, [[60, -40], [-50, -36]], 3); },
+      hit(att, e) { reapHit(e); },
+    },
+    // overhead arc: from a low guard in front, up over his head and down behind, blade first
+    hUp: {
+      name: "Overhead arc", linger: 8, glintCol: "#e6e9f2",
+      pose(X) {
+        const { P, w, leg, tor } = X;
+        X.replace = true; P.noSwoosh = true;
+        P.crouch = Math.max(P.crouch, X.phase === 0 ? 0.3 * X.wk : X.phase === 2 ? 0.15 * (1 - ease(X.k)) : 0);
+        const rest = REAP_REST(w, leg, tor), h1 = [w * 0.45, -leg - tor * 0.85], h2 = [-w * 0.05, -leg - tor * 1.0];
+        X.hF = hpath(X, rest, [w * 0.5, -leg - tor * 0.15], h1, h2);
+        P.holdAng = hpath(X, -1.75, 1.05, -0.3, -2.85);   // the low guard: blade down near the floor in front
+        P.bladeS = hpath(X, 1, -1, -1, -1);
+        P.lean = hpath(X, 0, 0.1, -0.12, -0.2);
+        X.hB = reapGrip(X.hF, P.holdAng, 1, 14); X.fF = [w * 0.3, 0]; X.fB = [-w * 0.24, 0];
+        X.trail = { h1, h2, a1: -0.3, a2: -2.85, s: -1 };
+        P.glintAt = scyTipAt(X.hF, P.holdAng, P.bladeS, w, 1);
+      },
+      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 12); },
+      swing(f) { reapWisps(f, [[0, -100]], 3); },
+      hit(att, e) { reapHit(e); },
+    },
+    // grave sweep: a deep crouch, the scythe swings flat round his feet, low on both sides; dust jumps up
+    hDown: {
+      name: "Grave sweep", linger: 8, glintCol: "#e6e9f2",
+      pose(X) { reapFlat(X, -X.leg - X.tor * 0.05, 0.46, { rf: 78, rb: 78, ry: 7 }, 0.2); },
+      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 10); },
+      swing(f) { groundDust(f, [52, -52], 4); },
+      hit(att, e) { reapHit(e); },
+    },
+    // in the air: one big vertical turn, from over his head round the front and under him to behind
+    hAir: {
+      name: "Reap", linger: 8, glintCol: "#e6e9f2",
+      pose(X) {
+        const { P, w, leg, tor } = X;
+        X.replace = true; P.noSwoosh = true;
+        const rest = REAP_REST(w, leg, tor), h1 = [w * 0.35, -leg - tor * 0.8], h2 = [w * 0.1, -leg - tor * 0.4];
+        X.hF = hpath(X, rest, [w * 0.2, -leg - tor * 1.0], h1, h2);
+        P.holdAng = hpath(X, -1.75, -2.6, -1.7, 2.5); P.bladeS = 1;
+        if (X.phase === 2) P.holdAng = mixv(2.5, 2 * Math.PI - 1.75, ease(X.k));   // on round over the back to the shoulder
+        P.lean = hpath(X, 0, -0.15, 0.1, 0.2);
+        X.hB = reapGrip(X.hF, P.holdAng, 1, 14);
+        X.trail = { h1, h2, a1: -1.7, a2: 2.5, s: 1 };
+        P.glintAt = scyTipAt(X.hF, P.holdAng, P.bladeS, w, 1);
+      },
+      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 12); },
+      swing(f) { reapWisps(f, [[50, -40], [-40, -30]], 2); },
+      hit(att, e) { reapHit(e); },
+    },
+  },
 };
+// Reaper's flat swings (Reap, grave sweep): wind-up behind him, one full flat turn at height y in the hit window, back to the shoulder.
+// The handle foreshortens as it points towards or away from the camera; it is drawn behind the body on the far half of the turn.
+function reapFlat(X, y, crouch, R, rad) {
+  const { P, w, leg, tor } = X, rest = REAP_REST(w, leg, tor), cx = w * 0.2, back = Math.PI - 0.1;
+  X.replace = true; P.noSwoosh = true;
+  P.crouch = Math.max(P.crouch, crouch * (X.phase === 0 ? X.wk : X.phase === 1 ? 1 : 1 - ease(X.k)));
+  X.fF = [w * 0.36, 0]; X.fB = [-w * 0.3, 0];
+  if (X.phase === 0) {
+    X.hF = lerp2(rest, [w * 0.0, y], X.wk); P.holdAng = mixv(-1.75 + Math.PI * 2, back, X.wk); P.bladeS = 1 - 1.55 * X.wk; P.scyBack = X.wk > 0.45; P.lean = -0.14 * X.wk;
+  } else if (X.phase === 1) {
+    const ps = back + Math.PI * 2 * X.u, cp = Math.cos(ps);
+    X.hF = [cx + cp * w * rad, y + Math.sin(ps) * 3]; P.holdAng = cp >= 0 ? 0.03 : Math.PI - 0.03; P.scyK = Math.max(0.1, Math.abs(cp)); P.bladeS = -0.55; P.scyBack = Math.sin(ps) < 0; P.lean = 0.12;
+  } else {
+    X.hF = lerp2([cx - w * rad, y], rest, ease(X.k)); P.holdAng = mixv(back, 2 * Math.PI - 1.75, ease(X.k)); P.bladeS = mixv(-0.55, 1, ease(X.k)); P.lean = 0.12 * (1 - ease(X.k));
+  }
+  X.hB = reapGrip(X.hF, P.holdAng, P.scyK, 13);
+  X.trail = { flat: { cx, cy: y, rf: R.rf, rb: R.rb, ry: R.ry, t1: back, t2: back + Math.PI * 2 } };
+  P.glintAt = scyTipAt(X.hF, P.holdAng, P.bladeS, w, P.scyK);
+}
+// a heavy's trail, drawn as the swing happens (hv.sp) and fading over the linger frames
+function reapTrailFx(c, f, P, hv, wmax) {
+  if (!hv.trail) return;
+  const N = 20, pts = scyPts(hv.trail, P.w, N), n = Math.max(2, Math.round(N * hv.sp)), a = hv.phase === 2 ? 1 - hv.post / 8 : 1;
+  scyTrail(c, pts, n, wmax, a);
+}
+function reapWisps(f, pts, n) {
+  const dark = skinLvl(f) === 3 ? "#cfc9ba" : "#4a4458";
+  for (const [x, y] of pts) for (let i = 0; i < n; i++) addFx({ k: "puff", x: f.x + f.facing * (x + frand(-8, 8)), y: f.y + y + frand(-6, 6), vx: frand(-0.5, 0.5), vy: frand(-0.8, -0.2), r: frand(3, 5), t: 0, life: frand(20, 30), col: dark });
+}
+function reapHit(e) {
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 50, col: "#eef0f8" });
+  burstLines(e.x, e.y, 7, ["#ffffff", "#c9cdd8"], 7);
+}
 // the muzzle of a pistol held at hand along a (see gunHeld), in fighter space
 function gunMuzzle(P, hand, a, back) { const s = back ? 0.92 : 1, ca = Math.cos(a), sa = Math.sin(a); return [hand[0] + (18.5 * ca + 2.7 * sa) * s, hand[1] + (18.5 * sa - 2.7 * ca) * s]; }
 // a heavy's blast from the muzzle at m along a: a fire cone len long in the hit window, then a grey smoke ball that drifts and fades
@@ -1884,6 +2202,7 @@ function chargePts(f, P, key) {
     case "odin": return key === "hUp" ? [hand] : [hand, P.hB];
     case "wizard": return [P.staffTip || hand];
     case "samurai": { const a = heldDir(f, P, bp(P, P.sh), -0.8), L = P.w * 1.35; return [hand, [hand[0] + Math.cos(a) * L * 0.6, hand[1] + Math.sin(a) * L * 0.6]]; }
+    case "reaper": return [P.scyTip || hand];
     case "gunslinger": return [gunMuzzle(P, hand, heldDir(f, P, bp(P, P.sh), -0.3), false), gunMuzzle(P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, true)];
     default: return key === "hUp" ? [hand, bp(P, [-P.w * 0.05 - 9, P.top - 14])] : key === "hDown" ? [hand, P.hB] : [hand];   // dragon: claws (and the horns for the toss)
   }
@@ -1901,6 +2220,7 @@ const CHARGE_GATHER = {
     motes(c, x, y, tk, q, st === 3 ? 7 : 5);
   },
   samurai(c, f, P, tk, st, q) { bladeGlint(c, f, P, tk, st, q); },
+  reaper(c, f, P, tk, st, q, pts) { for (const [x, y] of pts) motes(c, x, y, tk, q, st === 3 ? 6 : 4); },   // pale soul motes rise off the blade
   gunslinger(c, f, P, tk, st, q, pts) {   // the barrels heat up: an orange glow and sparks that spit off the muzzles
     for (const [x, y] of pts) {
       glowDot(c, x, y, 9 + 6 * q + (st === 3 ? 5 : 0), 0.8, "#ff9a3d");
@@ -1912,7 +2232,7 @@ const CHARGE_GATHER = {
 function drawCharge(c, f, P, tk) {
   if (!P.hold || P.chg <= 0 || !P.rx || !P.hv) return;
   const n = P.chg, st = n > 40 ? 3 : n > 20 ? 2 : 1, q = st === 1 ? n / 20 : st === 2 ? (n - 20) / 20 : 1;
-  const acc = f.pal.accent, ramp = Math.min(1, n / 4), pulse = 0.88 + 0.12 * Math.sin(tk * 0.5);
+  const acc = f.spec.look.costume === "reaper" ? "#dfe3ee" : f.pal.accent, ramp = Math.min(1, n / 4), pulse = 0.88 + 0.12 * Math.sin(tk * 0.5);   // the Reaper's grey hood would make a dark glow
   const a = st === 1 ? 0.55 + 0.25 * q : st === 2 ? 0.7 + 0.2 * q : 1, r = (st === 1 ? 20 + 8 * q : st === 2 ? 28 + 8 * q : 40) * pulse;
   const pts = chargePts(f, P, P.hv.key);
   c.save(); c.lineCap = "round"; c.lineJoin = "round";
@@ -1924,9 +2244,10 @@ function drawCharge(c, f, P, tk) {
   }
   for (const p of pts) {
     glowDot(c, p[0], p[1], r, a * ramp, acc);
-    glowDot(c, p[0], p[1], r * (st === 3 ? 0.5 : 0.4), (st === 3 ? 0.85 : 0.55) * ramp, mix(acc, "#ffffff", 0.65));   // a pale core, so the glow reads on a body of the same colour
+    glowDot(c, p[0], p[1], r * (st === 3 ? 0.5 : 0.4), (st === 3 ? 0.85 : 0.55) * ramp, f.spec.look.costume === "reaper" ? "#ffffff" : mix(acc, "#ffffff", 0.65));   // (mix() returns rgb(), which glowDot reads as black; the Reaper passes a hex)   // a pale core, so the glow reads on a body of the same colour
   }
   if (st >= 2 && CHARGE_GATHER[f.spec.id]) { c.globalAlpha = 1; CHARGE_GATHER[f.spec.id](c, f, P, tk, st, q, pts); }
+  if (f.spec.look.costume === "reaper") { c.globalAlpha = 1; reapReach(c, f, P, tk); }   // the scythe's reach, from the first charge frame
   c.restore();
 }
 
