@@ -33,6 +33,7 @@ function readPad() {
   return r;
 }
 function readPlayer() {
+  if (window.__blInput && mode === "match" && G) return Object.assign(BL.blankInput(), window.__blInput(G));   // tests only: scripted input
   const pad = readPad();
   const kx = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
   const ky = (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0) - (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);

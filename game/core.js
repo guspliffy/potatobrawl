@@ -67,6 +67,14 @@ const TUNE = {
   chgKb: 0.2,
   // KO at the hit: a launch is played this many frames ahead against every escape before it counts as lethal.
   lookFrames: 360,
+  // The link: the second light hit in a row stuns linkStun frames longer, and for linkWin frames after it lands that light's
+  // end lag can be cancelled into a heavy, a special or a jump; a heavy or special started then skips linkFast wind-up frames.
+  linkWin: 12,
+  linkFast: 6,
+  linkStun: 8,
+  // Combo damage: hits from the 4th of a combo deal comboK4, from the 6th comboK6 (so combos can't loop damage forever).
+  comboK4: 0.85,
+  comboK6: 0.7,
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -387,7 +395,7 @@ function newFighter(spec, slot, pal, x, facing) {
     inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
-    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false,
+    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false,
     anim: { run: 0 },
   };
 }
@@ -486,6 +494,7 @@ function updateFighter(g, f) {
   if (f.dropT > 0) f.dropT--;
   if (f.flash > 0) f.flash--;
   if (f.armorFlash > 0) f.armorFlash--;
+  if (f.link > 0) f.link--;
 
   switch (f.state) {
     case "respawn": {
@@ -530,12 +539,7 @@ function actOrMove(g, f) {
   if (f.grounded) {
     if (b.dodge) { consume(f, "dodge"); return startDodge(g, f); }
     if (b.jump) { consume(f, "jump"); f.tumble = false; return setState(f, "jumpsquat"); }
-    if (b.special && f.specCd <= 0) { consume(f, "special"); faceStick(f); return startMove(g, f, "spec"); }
-    if (b.heavy) {
-      consume(f, "heavy");
-      if (dir === "side") faceStick(f);
-      return startMove(g, f, dir === "up" ? "hUp" : dir === "down" ? "hDown" : "hSide");
-    }
+    if (heavyOrSpecial(g, f, dir)) return;
     if (b.light) {
       consume(f, "light");
       if (dir === "side") faceStick(f);
@@ -546,16 +550,7 @@ function actOrMove(g, f) {
     if (f.state !== "air") setState(f, "air");
     if (b.dodge && !f.airDodged) { consume(f, "dodge"); return startDodge(g, f); }
     if (b.jump && f.airJumps > 0) { consume(f, "jump"); return airJump(g, f); }
-    if (b.special && f.specCd <= 0) { consume(f, "special"); faceStick(f); return startMove(g, f, "spec"); }
-    if (b.heavy) {
-      if (dir === "up") { if (!f.recUsed) { consume(f, "heavy"); return startMove(g, f, "rec"); } }
-      else {
-        consume(f, "heavy");
-        if (dir === "down") return startMove(g, f, "pound");
-        if (dir === "side") faceStick(f);
-        return startMove(g, f, "hAir");
-      }
-    }
+    if (heavyOrSpecial(g, f, dir)) return;
     if (b.light) {
       consume(f, "light");
       if (dir === "side") faceStick(f);
@@ -564,6 +559,24 @@ function actOrMove(g, f) {
     airDrift(f, 1);
     fastFallCheck(f);
   }
+}
+
+// a buffered special or heavy starts here (also from a light's end lag while the link is open); true if one started
+function heavyOrSpecial(g, f, dir) {
+  const b = f.buf;
+  if (b.special && f.specCd <= 0) { consume(f, "special"); faceStick(f); startMove(g, f, "spec"); return true; }
+  if (!b.heavy) return false;
+  if (f.grounded) {
+    consume(f, "heavy");
+    if (dir === "side") faceStick(f);
+    startMove(g, f, dir === "up" ? "hUp" : dir === "down" ? "hDown" : "hSide");
+    return true;
+  }
+  if (dir === "up") { if (f.recUsed) return false; consume(f, "heavy"); startMove(g, f, "rec"); return true; }
+  consume(f, "heavy");
+  if (dir === "side") faceStick(f);
+  startMove(g, f, dir === "down" ? "pound" : "hAir");
+  return true;
 }
 
 function groundMove(g, f) {
@@ -613,6 +626,10 @@ function startMove(g, f, key) {
   setState(f, "attack");
   f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0;
   if (key === "spec") f.specCd = m.cooldown || 0;
+  // the link: started from (or soon after) the second light hit in a row, the wind-up skips its first linkFast frames
+  // (a charging heavy still reaches the frame where it charges)
+  f.lk = f.link > 0 && !LIGHT.has(key);
+  if (f.lk) { f.mt = Math.max(0, Math.min(TUNE.linkFast, m.startup - (m.charge ? TUNE.chgHold : 1))); f.link = 0; }
   // a projectile special with finCount fires only finCount shots, in finStyle, when it starts against a finish-ready opponent
   if (key === "spec") f.finShot = !!(m.proj && m.proj.finCount && g.fighters.some((o) => o !== f && o.percent >= TUNE.finishPct));
   if (m.rec) { f.recUsed = true; faceStick(f); f.ff = false; }
@@ -622,6 +639,15 @@ function startMove(g, f, key) {
 
 function updateAttack(g, f) {
   const m = f.move;
+  // the link: the light that opened it can be cancelled into a heavy, a special or a jump
+  if (f.link > 0 && LIGHT.has(f.mid)) {
+    if (heavyOrSpecial(g, f, dirOf(f.inp))) return;
+    if (f.buf.jump && (f.grounded || f.airJumps > 0)) {
+      consume(f, "jump"); f.move = null; f.mid = null;
+      if (f.grounded) { f.tumble = false; setState(f, "jumpsquat"); } else airJump(g, f);
+      return;
+    }
+  }
   // a ground heavy still held at the end of its wind-up waits there and charges
   if (m.charge && f.grounded && f.mt === m.startup - TUNE.chgHold && f.inp.heavy && f.chg < TUNE.chgMax) {
     f.chg++; f.vx *= 0.82;
@@ -935,7 +961,11 @@ function applyHit(g, h) {
   const hit = fin ? Object.assign({}, h.hit, h.hit.fin) : h.hit;
   // charge: up to +chgDmg damage and +chgKb knockback for a fully charged heavy
   const ck = !h.proj && att.chg > 0 ? att.chg / TUNE.chgMax : 0;
-  const dmg = ck ? Math.round(hit.dmg * (1 + TUNE.chgDmg * ck)) : hit.dmg;
+  // combo counter (all hits): hits in a row with fewer than strGap free frames between them
+  const chained = def.comboBy === att.slot && def.freeT < TUNE.strGap;
+  const nth = chained ? def.combo + 1 : 1;
+  let dmg = ck ? Math.round(hit.dmg * (1 + TUNE.chgDmg * ck)) : hit.dmg;
+  if (nth >= 4) dmg = Math.max(1, Math.round(dmg * (nth >= 6 ? TUNE.comboK6 : TUNE.comboK4)));
   def.percent = Math.min(999, def.percent + dmg);
   att.dmgDealt += dmg;
   let kb = knockback(hit, def.percent, def.s.weight);
@@ -954,14 +984,13 @@ function applyHit(g, h) {
     g.events.push({ type: "hit", x: ex, y: ey, dmg, kb: 3, armor: true, slot: att.slot, pal: att.pal, fire: !!hit.fire });
     return;
   }
-  // combo counter (all hits) and light-attack strings
-  const chained = def.comboBy === att.slot && def.freeT < TUNE.strGap;
-  def.combo = chained ? def.combo + 1 : 1;
+  // combo counter and light-attack strings
+  def.combo = nth;
   def.comboDmg = (chained ? def.comboDmg : 0) + dmg;
   def.comboBy = att.slot;
-  let finisher = false;
+  let finisher = false, link = false;
   if (!h.proj && LIGHT.has(att.mid)) {
-    if (chained && def.strBy === att.slot && def.strN > 0) { if (def.strMv !== att.moveT) def.strN++; }
+    if (chained && def.strBy === att.slot && def.strN > 0) { if (def.strMv !== att.moveT) { def.strN++; link = def.strN === 2; } }
     else def.strN = 1;
     def.strBy = att.slot; def.strMv = att.moveT;
     if (def.strN >= 3) {
@@ -975,7 +1004,7 @@ function applyHit(g, h) {
 
   if (def.grounded && dy > 0.2) { dy = -dy * 0.75; kb *= 0.8; }
 
-  def.move = null; def.mid = null; def.ledge = 0;
+  def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
   setState(def, "hitstun");
   def.hitstun = Math.max(8, Math.round(kb * TUNE.hitstunK));
   if (def.grounded && kb < 6 && dy > -0.75) {
@@ -993,6 +1022,7 @@ function applyHit(g, h) {
     def.grounded = false; def.y -= 1;
     def.kbx = dx * kb; def.kby = dy * kb;
   }
+  if (link) { def.hitstun += TUNE.linkStun; att.link = TUNE.linkWin; }
   def.vx = 0; def.vy = 0; def.ff = false;
   def.tumble = kb >= TUNE.tumbleKb;
   def.lastHitBy = att; def.lastHitT = g.t;
@@ -1003,7 +1033,7 @@ function applyHit(g, h) {
   if (fin) g.hitstop = Math.max(g.hitstop, TUNE.finishStop);
   const mv = h.proj ? "spec" : att.mid;
   if (def.tumble) g.launches.push({ att, def, mv, fin, chg: att.chg, kb, dirx: dx, diry: dy });
-  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0 });
+  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0, link, lk: !h.proj && att.lk, mi: h.proj ? -1 : att.moveT });
 }
 
 /* ---------- KO at the hit ----------
@@ -1083,7 +1113,7 @@ function ko(g, f) {
   if (killer) killer.kos++; else f.sds++;
   g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: !killer });
   g.hitstop = Math.max(g.hitstop, 6);
-  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0 });
+  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
@@ -1117,7 +1147,7 @@ function startSudden(g) {
     Object.assign(f, {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
-      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0,
+      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0, link: 0, lk: false,
       chg: 0, doomed: false,
     });
     setState(f, "idle");
@@ -1145,12 +1175,12 @@ const BOT_NEUTRAL = {
 // by fighter id; tests/botstyle.js keeps each of them about as strong as the neutral bot
 const BOT_STYLES = {
   samurai:   { gap: 0.4, shuffle: 0, spec: 1.3, atk: 0.8 },                            // rushes in
-  alchemist: { gap: 1.6, back: 0.4, spec: 1.4, atk: 1.15, heavy: 1.3 },                // stays back and lobs
+  alchemist: { gap: 1.6, back: 0.4, spec: 1.3, atk: 1.15, heavy: 1.25 },               // stays back and lobs
   odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
   wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.4, atk: 0.9, heavy: 1.3 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.3, atk: 0.9, heavy: 1.2 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
@@ -1306,7 +1336,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot"];
+  "chg", "doomed", "finShot", "link", "lk"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -1343,7 +1373,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }

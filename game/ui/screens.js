@@ -29,7 +29,7 @@ function renderMenu() {
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
-  cupMenu();
+  cupMenu(); dailyMenu();
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
@@ -43,6 +43,7 @@ function goMenu() {
   mode = "menu"; paused = false; G = null; match = null; meSlot = 0;
   $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
   modal("pause", false); modal("help", false); modal("settings", false);
+  $("rMenu").hidden = false;   // the Daily Potato's results hide it (their again button is "Menu"); the tutorial's results need it back
   renderMenu(); show("menu"); resize();
   trails[0].length = trails[1].length = 0; fx.length = 0; sfx.length = 0;
   if (!attract) newAttract();
@@ -240,7 +241,7 @@ function enterMatchUI() {
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
     sub.querySelector(".nm").textContent = match.cpu || "";
-    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : "";
   }
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
@@ -263,6 +264,7 @@ function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
   if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
+  if (match.daily) return `Daily Potato · ${me} vs ${op} · ${match.cpu}, ${match.level}`;
   if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
   return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
 }
@@ -325,8 +327,8 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup) ? "Forfeit" : "Quit to menu";
-  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : "Quit to menu";
+  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   releaseTouch();
 }
 let quitArmed = false;
@@ -334,6 +336,7 @@ function finishMatch(forfeit) {
   if (mode !== "match") return;
   if (match && match.tutorial) { tutDone(); return; }
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
+  if (match && match.daily) { dailyMatchEnd(forfeit); return; }
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -398,7 +401,7 @@ function showResults(R) {
   const sheet = $("resSheet");
   sheet.classList.remove("solo");
   sheet.classList.toggle("win", R.res === 1); sheet.classList.toggle("loss", R.res === 0);
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
   const mn = R.me.spec.name, on = R.op.spec.name;
   const who = R.online ? NET.oppName || "Your friend" : on;
@@ -436,16 +439,18 @@ function showResults(R) {
   }
   const k = R.me.kos, fl = R.me.falls;
   $("rStats").innerHTML = `<b>${k}</b> KO${k === 1 ? "" : "s"} · <b>${Math.round(R.me.dmgDealt)}%</b> damage dealt · <b>${fl}</b> fall${fl === 1 ? "" : "s"}`;
-  const why = R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "";
-  const chipsOn = R.ranked || (R.online && R.lines.length);
+  const why = R.why || (R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "");   // R.why: the Daily Potato's own line
+  const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
   $("rChips").innerHTML = chipsOn
     ? `<b><span class="tokglyph"></span>+<span id="rChipN">${R.total}</span> chips</b>${why}`
+    : R.daily ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : "Practice doesn't change your rating or earn chips.";
   if (chipsOn) resCount($("rChipN"), 0, R.total, "");
-  $("rAgain").querySelector("span").textContent = R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";
+  $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   show("result");
 }
 

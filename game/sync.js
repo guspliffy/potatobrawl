@@ -12,6 +12,7 @@ const SYNC = (function () {
   const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
   const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
   const ID_RE = /^[a-z0-9][a-z0-9_-]{0,23}$/;
+  const DAY_RE = /^2\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;   // a local date, "YYYY-MM-DD"
   const CTRL_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
   const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   const num = (v, lo, hi, d) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
@@ -38,6 +39,13 @@ const SYNC = (function () {
   const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])])) : v);
   const canon = (v) => String(JSON.stringify(sortKeys(v)));
   const same = (a, b) => canon(a) === canon(b);
+  // Daily Potato (ui/daily.js): { d: last day tried, r: 1 / 0.5 / 0 (-1 = started, not finished), s: streak, w: the last day that kept
+  // the streak going, b: best streak }. Not an object -> null (missing).
+  function cleanDaily(q) {
+    if (!isObj(q)) return null;
+    const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
+    return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
+  }
   function cleanName(s) {
     return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
   }
@@ -78,6 +86,10 @@ const SYNC = (function () {
     if (typeof p.fsince === "number" && p.fsince > 0) out.fsince = num(p.fsince, 0, 9e15, 0);
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
+    { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
+    if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
+    if (typeof p.comboPaid === "boolean") out.comboPaid = p.comboPaid;
     out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
@@ -103,6 +115,9 @@ const SYNC = (function () {
     if (S.fsince !== undefined) P.fsince = S.fsince; else if (S.fstats !== undefined) delete P.fsince;
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
+    if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
+    if (S.routes !== undefined) P.routes = S.routes.slice();
+    if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -157,9 +172,23 @@ const SYNC = (function () {
     { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
     { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
     { const v = pickOpt("title"); if (have(v)) out.title = v; }
+    // Daily Potato: the side that changed it; if both did, the later day, then (same day) a finished try over one still running (-1),
+    // then the newer side. The best streak keeps the higher one.
+    if (have(S.daily) || have(L.daily)) {
+      const l = L.daily, s = S.daily, b = B.daily;
+      let v = !have(s) ? l : !have(l) ? s : have(b) && same(l, b) ? s : have(b) && same(s, b) ? l : null;
+      if (!v) {
+        const w = l.d !== s.d ? (l.d > s.d ? l : s) : (l.r === -1) !== (s.r === -1) ? (l.r === -1 ? s : l) : localNewer ? l : s;
+        v = Object.assign({}, w, { b: Math.max(l.b, s.b) });
+      }
+      out.daily = Object.assign({}, v);
+    }
+    // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
+    if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
+    if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);
     return out;
   }
 
-  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;

@@ -143,7 +143,7 @@ function pureTests() {
   check(eq(fm.fstats[F0], { w: 5, l: 4, d: 1 }) && eq(fm.fstats[F1], { w: 1, l: 0, d: 0 }), "fstats: two devices add what each changed per fighter (3+2 wins, 1+3 losses, 0+1 draws; a fighter only one side played is kept)");
   check(fm.flawless === 2 && fm.fsince === 900, "fstats: the flawless counter adds, 'since' keeps the earlier date");
   // an older page: it syncs a prof WITHOUT the new fields. Missing = unchanged, never zero.
-  const oldPage = (p) => { const o = Object.assign({}, p); for (const k of ["fstats", "fsince", "flawless", "avatar", "title"]) delete o[k]; return o; };
+  const oldPage = (p) => { const o = Object.assign({}, p); for (const k of ["fstats", "fsince", "flawless", "avatar", "title", "daily"]) delete o[k]; return o; };
   const o1 = SYNC.sanitize(oldPage(fb), FIGHTERS);
   check(!("fstats" in o1) && !("flawless" in o1) && !("avatar" in o1) && !("title" in o1) && !("fsince" in o1), "old page: sanitize does not invent the new fields (a missing one stays missing)");
   const keep1 = SYNC.mergeProf(fA, fb, o1, true);
@@ -177,6 +177,44 @@ function pureTests() {
   check(pb.avatar === F0 + ":1" && pb.title === "centurion", "picture/title: only the other device changed them -> theirs");
   const pc = SYNC.mergeProf(prof({ avatar: "", title: "" }), prof({ avatar: F0 + ":1", title: "cup" }), prof({ avatar: F0 + ":1", title: "cup" }), true);
   check(pc.avatar === "" && pc.title === "", "picture/title: cleared on this device -> stays cleared");
+  // ----- Daily Potato: { d last day tried, r result (-1 = started, not finished), s streak, w last day that kept it, b best }
+  const dy = (d, r, s, w, b) => ({ d, r, s, w, b });
+  const dok = SYNC.sanitize({ daily: dy("2026-10-14", 1, 3, "2026-10-14", 5) }, FIGHTERS);
+  check(eq(dok.daily, dy("2026-10-14", 1, 3, "2026-10-14", 5)) && eq(SYNC.sanitize(dok, FIGHTERS), dok), "daily: a good record passes, cleaning twice changes nothing");
+  const dbad = SYNC.sanitize({ daily: { d: "2026-13-01", r: 1, s: -2, w: "yesterday", b: 1e9 } }, FIGHTERS).daily;
+  check(eq(dbad, dy("", 0, 0, "", 1e6)), "daily: a bad date is dropped (no day = nothing tried), numbers are clamped");
+  const dodd = SYNC.sanitize({ daily: { d: "2026-10-14", r: 7, s: 4.6, w: "2026-10-13", b: 2 } }, FIGHTERS).daily;
+  check(eq(dodd, dy("2026-10-14", -1, 5, "2026-10-13", 5)), "daily: an unknown result counts as started (-1), the best is never below the streak");
+  check(!("daily" in SYNC.sanitize({ daily: 5 }, FIGHTERS)) && !("daily" in SYNC.sanitize({ daily: [1] }, FIGHTERS)) && !("daily" in o1), "daily: not an object, or not there (an older page), counts as missing");
+  const dB = prof({ daily: dy("2026-10-13", 1, 2, "2026-10-13", 4) });
+  const dL = prof({ daily: dy("2026-10-14", 1, 3, "2026-10-14", 4) }), dS = prof({ daily: dy("2026-10-15", 0, 0, "2026-10-14", 4) });
+  check(eq(SYNC.mergeProf(dL, dB, oldPage(dB), false).daily, dL.daily) && eq(SYNC.mergeProf(dL, dB, SYNC.sanitize(oldPage(dB), FIGHTERS), true).daily, dL.daily), "daily: the server copy has none (older page) -> this device's stays");
+  check(eq(SYNC.mergeProf(SYNC.sanitize(oldPage(dB), FIGHTERS), oldPage(dB), dS, true).daily, dS.daily), "daily: this device has none -> the server's is kept");
+  check(eq(SYNC.mergeProf(dB, dB, dS, true).daily, dS.daily) && eq(SYNC.mergeProf(dL, dB, dB, false).daily, dL.daily), "daily: only one side changed it -> that side");
+  check(eq(SYNC.mergeProf(dL, dB, dS, true).daily, dS.daily) && eq(SYNC.mergeProf(dS, dB, dL, true).daily, dS.daily), "daily: both changed -> the later day wins, whichever side is newer");
+  const run = prof({ daily: dy("2026-10-14", -1, 0, "2026-10-13", 4) }), fin = prof({ daily: dy("2026-10-14", 1, 3, "2026-10-14", 3) });
+  check(eq(SYNC.mergeProf(run, dB, fin, true).daily, dy("2026-10-14", 1, 3, "2026-10-14", 4)) && eq(SYNC.mergeProf(fin, dB, run, false).daily, dy("2026-10-14", 1, 3, "2026-10-14", 4)), "daily: same day -> a finished try beats one still running (-1); the best keeps the higher (4)");
+  const lost = prof({ daily: dy("2026-10-14", 0, 0, "2026-10-13", 6) });
+  check(eq(SYNC.mergeProf(lost, dB, fin, true).daily, dy("2026-10-14", 0, 0, "2026-10-13", 6)) && eq(SYNC.mergeProf(lost, dB, fin, false).daily, dy("2026-10-14", 1, 3, "2026-10-14", 6)), "daily: same day, both finished -> the newer side, best = max");
+  check(eq(SYNC.mergeProf(prof({ daily: dy("2026-10-14", 1, 1, "2026-10-14", 1) }), null, prof({ daily: dy("2026-10-12", 1, 9, "2026-10-12", 9) }), false).daily, dy("2026-10-14", 1, 1, "2026-10-14", 9)), "daily: no base copy -> both count as changed");
+  const dev2 = { tokens: 1, owned: {}, pal: {}, daily: dy("2026-10-14", 1, 2, "2026-10-14", 2) };
+  SYNC.applyTo(dev2, o1);
+  check(eq(dev2.daily, dy("2026-10-14", 1, 2, "2026-10-14", 2)), "daily apply: a prof without it leaves this device's record");
+  SYNC.applyTo(dev2, dS);
+  check(eq(dev2.daily, dS.daily) && dev2.daily !== dS.daily, "daily apply: a prof with it replaces it (a copy)");
+  // combo routes (ui/combos.js): a set of route ids, merged as a union; the 30 chips for all of them stay paid once paid anywhere
+  const rc = SYNC.sanitize({ routes: ["sig", "three", "sig", "Bad!", 7, "lift"], comboPaid: true }, FIGHTERS);
+  check(eq(rc.routes, ["lift", "sig", "three"]) && rc.comboPaid === true && eq(SYNC.sanitize(rc, FIGHTERS), rc), "routes: cleaned to a sorted set of ids, cleaning twice changes nothing");
+  check(!("routes" in o1) && !("comboPaid" in o1) && !("routes" in SYNC.sanitize({ routes: "sig" }, FIGHTERS)), "routes: not a list, or not there (an older page), counts as missing");
+  const rB = prof({ routes: ["three"], comboPaid: false }), rL = prof({ routes: ["three", "sig"], comboPaid: false }), rS = prof({ routes: ["lift", "three"], comboPaid: true });
+  const rm = SYNC.mergeProf(rL, rB, rS, false);
+  check(eq(rm.routes, ["lift", "sig", "three"]) && rm.comboPaid === true, "routes: two devices -> every route either cleared; paid on one = paid");
+  check(eq(SYNC.mergeProf(rL, rB, o1, true).routes, rL.routes) && eq(SYNC.mergeProf(SYNC.sanitize(oldPage(fb), FIGHTERS), fb, rS, true).routes, rS.routes), "routes: one side has none (an older page) -> the other side's stay");
+  const dev3 = { tokens: 1, owned: {}, pal: {}, routes: ["sig"], comboPaid: false };
+  SYNC.applyTo(dev3, o1);
+  check(eq(dev3.routes, ["sig"]) && dev3.comboPaid === false, "routes apply: a prof without them leaves this device's");
+  SYNC.applyTo(dev3, rm);
+  check(eq(dev3.routes, rm.routes) && dev3.routes !== rm.routes && dev3.comboPaid === true, "routes apply: a prof with them replaces them (a copy)");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }
