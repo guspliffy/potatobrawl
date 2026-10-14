@@ -5,7 +5,7 @@ Usage:  python3 tests/pwacct.py [outdir]        (needs `python3 game/build.py` f
 import asyncio, sys, os, json, subprocess, tempfile, shutil, time, hashlib, pathlib, re, urllib.request
 from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PORT = 8093
+PORT = int(os.environ.get('PWACCT_PORT', 8093))
 URL = f'http://localhost:{PORT}/'
 OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ROOT / 'build' / 'shots' / 'acct')
 OUT.mkdir(parents=True, exist_ok=True)
