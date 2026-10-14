@@ -20,6 +20,9 @@ PC = {'tokens': 12, 'rating': 1010, 'peak': 1010, 'wins': 1, 'losses': 0, 'match
 errs = []
 def expect(ok, msg):
     if not ok: errs.append(msg)
+def has(hay, *subs):   # innerText follows text-transform (buttons and headings come back in capitals), so compare without case
+    h = (hay or '').lower()
+    return all(x.lower() in h for x in subs)
 
 # ---------- the server
 def start_server(accounts_dir):
@@ -69,8 +72,9 @@ async def open_sheet(pg):
         await pg.click('#mRank'); await pg.wait_for_function("!document.getElementById('scrAccount').hidden", timeout=5000)
         await pg.wait_for_timeout(250)
 async def close_sheet(pg): await pg.click('#acClose'); await pg.wait_for_timeout(150)
-async def btn(pg, label):   # a button or link inside the sync section, by its text
-    await pg.locator('#acSync button', has_text=re.compile('^' + re.escape(label) + '$')).first.click()
+async def btn(pg, label, force=False):   # a button or link inside the sync section, by its text
+    # force: skip Playwright's stability wait, for the second tap of a tap-twice button (it disarms itself after 6 s, and a loaded machine can take longer than that to settle)
+    await pg.locator('#acSync button', has_text=re.compile('^' + re.escape(label) + '$')).first.click(force=force)
 async def wait_pull(pg):    # the page only pulls if the last sync was a few seconds ago
     await pg.wait_for_function('Date.now() - window.__blAcct.st.t > 4300', timeout=15000)
     await pg.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
@@ -88,7 +92,7 @@ async def functional(b, d):
     expect(not await A.evaluate("!!document.getElementById('setReset')"), 'Settings no longer has Reset progress')
     await open_sheet(A)
     sy = await text(A, '#acSync')
-    expect('Save my progress' in sy and 'I have a code' in sy, f'A: unlinked sheet offers Save my progress and I have a code ({sy!r})')
+    expect(has(sy, 'Save my progress', 'I have a code'), f'A: unlinked sheet offers Save my progress and I have a code ({sy!r})')
     expect(await A.input_value('#acName') != '' and (await text(A, '#acSkins')).startswith('7'), 'A: the sheet shows a name and the 7 skins (6 base + 1)')
     await btn(A, 'Save my progress'); await A.wait_for_selector('.ac-code', timeout=10000)
     st = await acst(A); code = st['code']
@@ -194,9 +198,9 @@ async def functional(b, d):
 
     # ----- B unlinks: its progress stays, the code is forgotten
     await open_sheet(B)
-    await btn(B, 'Unlink this device'); await btn(B, 'Tap again to unlink'); await B.wait_for_timeout(300)
+    await btn(B, 'Unlink this device'); await btn(B, 'Tap again to unlink', force=True); await B.wait_for_timeout(300)
     expect((await acst(B))['code'] == '' and not await B.evaluate("!!localStorage.getItem('potatobrawl.acct.v1')"), 'B: unlinked, the link is forgotten')
-    expect('Save my progress' in await text(B, '#acSync'), 'B: the sheet offers to save again')
+    expect(has(await text(B, '#acSync'), 'Save my progress'), 'B: the sheet offers to save again')
     await close_sheet(B); await cb.close()
 
     # ----- device C already has progress: linking asks first
@@ -205,7 +209,7 @@ async def functional(b, d):
     await C.goto(URL + '#sync=' + code); await C.wait_for_function('window.__blAcct && window.__blastline', timeout=30000)
     await C.wait_for_function("window.__blAcct.ui.view === 'replace'", timeout=15000); await C.wait_for_timeout(300)
     sy = await text(C, '#acSync')
-    expect('already has progress' in sy and "Use the account's" in sy and 'This device' in sy, f'C: linking over existing progress asks first ({sy!r})')
+    expect(has(sy, 'already has progress', "Use the account's", 'This device'), f'C: linking over existing progress asks first ({sy!r})')
     expect((await prof(C))['tokens'] == 12 and (await acst(C))['code'] == '', 'C: nothing changed while the question is open')
     await shot(C, 'C_replace')
     await btn(C, 'Cancel'); await C.wait_for_timeout(300)
@@ -226,8 +230,8 @@ async def functional(b, d):
 async def btn_reset(pg):
     await open_sheet(pg)
     await pg.click('#acReset')
-    expect('everywhere' in await text(pg, '#acReset'), 'a linked device warns that Reset erases the account too')
-    await pg.click('#acReset'); await pg.wait_for_timeout(300)
+    expect(has(await text(pg, '#acReset'), 'everywhere'), 'a linked device warns that Reset erases the account too')
+    await pg.click('#acReset', force=True); await pg.wait_for_timeout(300)
     expect((await prof(pg))['tokens'] == 0, 'reset: chips are gone')
     await close_sheet(pg)
 
@@ -240,12 +244,13 @@ async def shots(b, d, code):
         await shot(pg, f'{tag}_1_start')
         # the pill must not run into the title, the buttons or the gear
         bad = await pg.evaluate("""(() => {
-          const q = (s) => document.querySelector(s).getBoundingClientRect(), R = q('#mRank'), G = q('#bSettings'), W = innerWidth;
+          const q = (s) => document.querySelector(s).getBoundingClientRect(), R = q('#mRank'), G = q('#bSettings'), W = innerWidth, H = innerHeight;   // screen boxes (the sideways game is rotated); sizes below use layout px
           const hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
           const bad = [];
-          if (hit(R, G) || R.right > G.left) bad.push('gear');
-          if (R.left < 0 || R.right > W) bad.push('off screen');
-          if (Math.abs(R.height - G.height) > 1) bad.push('height ' + R.height + ' vs gear ' + G.height);
+          if (hit(R, G)) bad.push('gear');
+          if (R.left < 0 || R.right > W || R.top < 0 || R.bottom > H) bad.push('off screen');
+          const pe = document.getElementById('mRank'), ge = document.getElementById('bSettings');
+          if (Math.abs(pe.offsetHeight - ge.offsetHeight) > 1) bad.push('height ' + pe.offsetHeight + ' vs gear ' + ge.offsetHeight);
           const r = document.createRange(); r.selectNodeContents(document.querySelector('.brand h1')); if (hit(R, r.getBoundingClientRect())) bad.push('brand');
           for (const e of document.querySelectorAll('.menu-actions .btn')) if (hit(R, e.getBoundingClientRect())) bad.push(e.textContent.trim().slice(0, 10));
           for (const id of ['mAvatar', 'mBadge', 'mRating', 'mTokens', 'mCups']) { const e = document.getElementById(id); if (e && !e.hidden) { const x = e.getBoundingClientRect(); if (x.width < 4 || x.right > R.right + 1 || x.left < R.left - 1) bad.push('clipped ' + id); } }
@@ -263,7 +268,7 @@ async def shots(b, d, code):
         await shot(pg, f'{tag}_5_sheet_linked')
         await btn(pg, 'Show'); await pg.wait_for_timeout(150)
         await shot(pg, f'{tag}_6_sheet_linked_code')
-        await btn(pg, 'Unlink this device'); await btn(pg, 'Tap again to unlink'); await pg.wait_for_timeout(300)
+        await btn(pg, 'Unlink this device'); await btn(pg, 'Tap again to unlink', force=True); await pg.wait_for_timeout(300)
         await btn(pg, 'Save my progress'); await pg.wait_for_selector('.ac-code', timeout=10000); await pg.wait_for_timeout(200)
         await shot(pg, f'{tag}_7_sheet_new_code')
         # nothing may be cut off or overlap inside the sheet: every control is inside the sheet and all of it can be reached
@@ -284,7 +289,7 @@ async def shots_off(b):
         await goto(pg)
         await open_sheet(pg)
         t = await text(pg, '#acSync')
-        expect("isn't available yet" in t and 'Save my progress' not in t and 'I have a code' not in t, f'{tag}: accounts off says "not available yet" ({t!r})')
+        expect(has(t, "isn't available yet") and not has(t, 'Save my progress') and not has(t, 'I have a code'), f'{tag}: accounts off says "not available yet" ({t!r})')
         await shot(pg, f'{tag}_8_sheet_off')
         await pg.reload(); await goto(pg)
         await ctx.close()
@@ -296,7 +301,7 @@ async def shots_down(b, d):
     pg = await ctx.new_page(); watch(pg, 'down'); await goto(pg)
     await open_sheet(pg); await pg.wait_for_function('window.__blAcct.st.pingFailed', timeout=10000); await pg.wait_for_timeout(300)
     t = await text(pg, '#acSync')
-    expect("Couldn't reach the server" in t and 'Try again' in t, f'down: unlinked sheet says the server cannot be reached ({t!r})')
+    expect(has(t, "Couldn't reach the server", 'Try again'), f'down: unlinked sheet says the server cannot be reached ({t!r})')
     await shot(pg, 'phone_9_sheet_unreachable')
     await ctx.close()
 

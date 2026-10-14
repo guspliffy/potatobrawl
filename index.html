@@ -426,6 +426,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .ac-sync .link { align-self: flex-start; }
 .ac-code { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 800 20px/1.1 var(--display); letter-spacing: 0.08em; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 6px 6px 6px 10px; }
 .ac-code > span { user-select: text; -webkit-user-select: text; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.ac-sync { container-type: inline-size; }
+.ac-code { font-size: clamp(14px, 6.4cqw, 20px); }   /* the 19 characters stay on one line in a half-width column */
 .ac-code .chip { min-height: 28px; padding: 2px 10px; font-size: 13px; flex: none; }
 .ac-in { font: 800 20px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; width: 100%; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 .ac-in:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
@@ -11187,7 +11189,7 @@ function acSyncView() {
     code.appendChild(cs);
     code.appendChild(acBtn(acUI.showCode ? "Hide" : "Show", "chip", flip));
     box.appendChild(code);
-    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? "Write this code down. It is the only way to get your progress back. Anyone who has it can use your progress." : "This code gets your progress onto another device. Keep it private."));
+    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? "Write this code down and keep it private. It is the only way to get your progress back." : "This code gets your progress onto another device. Keep it private."));
     const st = acMk("p", "ac-msg"); const sv = acMk("span", "", acStatusText()); sv.id = "acStat"; st.appendChild(sv);
     st.appendChild(document.createTextNode(" · "));
     st.appendChild(acBtn("Sync now", "link", () => { acctSync(true); }));

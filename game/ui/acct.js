@@ -152,7 +152,7 @@ function acSyncView() {
     code.appendChild(cs);
     code.appendChild(acBtn(acUI.showCode ? "Hide" : "Show", "chip", flip));
     box.appendChild(code);
-    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? "Write this code down. It is the only way to get your progress back. Anyone who has it can use your progress." : "This code gets your progress onto another device. Keep it private."));
+    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? "Write this code down and keep it private. It is the only way to get your progress back." : "This code gets your progress onto another device. Keep it private."));
     const st = acMk("p", "ac-msg"); const sv = acMk("span", "", acStatusText()); sv.id = "acStat"; st.appendChild(sv);
     st.appendChild(document.createTextNode(" · "));
     st.appendChild(acBtn("Sync now", "link", () => { acctSync(true); }));
