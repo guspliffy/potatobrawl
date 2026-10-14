@@ -68,7 +68,139 @@ function tierInfo(r) {
   const lo = i === 0 ? 750 : t.min, hi = TIERS[i + 1].min;
   return { i, t, p: clamp((r - lo) / (hi - lo), 0, 1), next: TIERS[i + 1], need: hi - r };
 }
-function paintBadge(el, i) { el.style.setProperty("--tc", TIERS[i].col); el.textContent = TIERS[i].name[0]; }
+/* Rank emblems (Fable's design): one flat cartoon icon per tier, an inline SVG on a 60x60 viewBox. The ladder: a tin lid, a medal,
+   a medal + laurel, a crown, a trophy (sheen), a gem (twinkle), the bomb-tater (turning burst). Outline #1f2238 2.5, one shade, one
+   highlight top-left, everything inside r 27 of the centre so it sits inside the profile pill's progress ring. Platinum and up move
+   a little (.em-* in shell.html, still under prefers-reduced-motion). Each emblem is built once; %U is the per-copy clip-path id. */
+const EM_O = "#1f2238";
+const emN = (v) => Math.round(v * 10) / 10;
+const emP = (x, y) => emN(x) + " " + emN(y);
+// a lumpy potato outline (the Potato Moon's), centre (x, y), size r, turned by a radians
+function emPot(x, y, r, a, sx = 1.2, sy = 0.88) {
+  let d = "";
+  for (let i = 0; i < 30; i++) {
+    const t = (i / 30) * Math.PI * 2, k = 1 + 0.05 * Math.sin(t * 3 + 0.6) + 0.035 * Math.sin(t * 5 + 1.9);
+    const px = Math.cos(t) * r * sx * k, py = Math.sin(t) * r * sy * k;
+    d += (i ? "L" : "M") + emP(x + px * Math.cos(a) - py * Math.sin(a), y + px * Math.sin(a) + py * Math.cos(a));
+  }
+  return d + "Z";
+}
+// a crescent along the inside of circle (x, y, r) from angle a0 to a1 (degrees, 0 = right, 90 = down), w thick in the middle
+function emCres(x, y, r, a0, a1, w) {
+  const pt = (a, rr) => [x + Math.cos(a * Math.PI / 180) * rr, y + Math.sin(a * Math.PI / 180) * rr];
+  const p0 = pt(a0, r), p1 = pt(a1, r), m = pt((a0 + a1) / 2, r - w);
+  return `M${emP(...p0)}A${r} ${r} 0 0 1 ${emP(...p1)}Q${emP(2 * m[0] - (p0[0] + p1[0]) / 2, 2 * m[1] - (p0[1] + p1[1]) / 2)} ${emP(...p0)}Z`;
+}
+// an n-point star (r1 tips, r2 notches), first tip straight up
+function emStar(x, y, n, r1, r2) {
+  let d = "";
+  for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + (i * Math.PI) / n, r = i % 2 ? r2 : r1; d += (i ? "L" : "M") + emP(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  return d + "Z";
+}
+// a disc with a dent pushed into its rim at the top right
+function emDent(x, y, r) {
+  let d = "";
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2, g = Math.atan2(Math.sin(a + 0.86), Math.cos(a + 0.86)), rr = r - 3 * Math.exp(-((g / 0.24) ** 2));
+    d += (i ? "L" : "M") + emP(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  return d + "Z";
+}
+const emDot = (x, y, r, f) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`;
+const emLine = (d, s, w) => `<path d="${d}" fill="none" stroke="${s}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+// a round medal at (x, y), radius r: shade under a slightly smaller face shifted up-left, a highlight crescent, an inner ring
+// (its outline, emRim, goes on last, over whatever sits on the face)
+const emMedal = (x, y, r, col, sh, hi, ring) =>
+  emDot(x, y, r, sh) + emDot(emN(x - 1.1), emN(y - 1.1), emN(r - 2.4), col) + `<path d="${emCres(x, y, r - 3.2, 195, 283, 3)}" fill="${hi}"/>` +
+  `<circle cx="${x}" cy="${y}" r="${ring}" fill="none" stroke="${sh}" stroke-width="2"/>`;
+const emRim = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${EM_O}" stroke-width="2.5"/>`;
+const EMB = [
+  // Tin: a pressed tin lid with a dent in its rim, an embossed potato in the middle
+  () => `<path d="${emDent(30, 30, 23)}" fill="#6c7390"/><path d="${emDent(28.9, 28.9, 20.6)}" fill="#9097ad"/>` +
+    `<path d="${emCres(30, 30, 19.8, 160, 268, 3)}" fill="#c3c8d8"/><circle cx="30" cy="30" r="16" fill="none" stroke="#6c7390" stroke-width="2"/>` +
+    `<path d="${emPot(31, 31, 7.6, -0.35)}" fill="#c3c8d8"/><path d="${emPot(30, 30, 7.6, -0.35)}" fill="#7d849c"/>` +
+    emDot(26.6, 29.4, 1.3, "#6c7390") + emDot(32.8, 28, 1.2, "#6c7390") +
+    emLine("M40.2 17.6q-1.8 1.4-2.4 3.4", "#6c7390", 2) +
+    `<path d="${emDent(30, 30, 23)}" fill="none" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>`,
+  // Bronze: a medal on a ribbon, a potato on its face
+  () => `<g stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"><path d="M33 7h10l-7 18h-10z" fill="#a3472e"/><path d="M17 7h10l7 18h-10z" fill="#c25a3a"/></g>` +
+    `<path d="M21.8 9.5h3.4l5.3 13" fill="none" stroke="#e07a56" stroke-width="2" stroke-linecap="round"/>` +
+    emMedal(30, 37, 16.5, "#cd8f5b", "#a86a3b", "#ecb98a", 11.6) +
+    `<path d="${emPot(30, 37, 5.6, -0.3)}" fill="#a86a3b"/>` + emDot(27.6, 35.6, 1.1, "#cd8f5b") + emDot(32.4, 37.6, 1.1, "#cd8f5b") + emRim(30, 37, 16.5),
+  // Silver: a medal with a star, a laurel around it and a sprout on top
+  () => {
+    const lv = [];   // two laurel branches of 4 leaves, from the bottom up both sides, each leaf along the branch tipped outwards
+    const pt = (a) => emP(30 + Math.cos(a * Math.PI / 180) * 20.5, 33 + Math.sin(a * Math.PI / 180) * 20.5);
+    const stem = `M${pt(118)}A20.5 20.5 0 0 1 ${pt(208)}M${pt(62)}A20.5 20.5 0 0 0 ${pt(-28)}`;
+    for (const s of [1, -1]) for (let k = 0; k < 4; k++) {
+      const a = 90 + s * (30 + k * 31), x = 30 + Math.cos(a * Math.PI / 180) * 20.5, y = 33 + Math.sin(a * Math.PI / 180) * 20.5;
+      lv.push(`<path d="M0 0Q4.6-4.4 10 0Q4.6 4.4 0 0Z" transform="translate(${emN(x)} ${emN(y)}) rotate(${emN(a + s * 90 - s * 34)}) translate(-2.4 0)"/>`);
+    }
+    return `<path d="${stem}" fill="none" stroke="${EM_O}" stroke-width="6.4" stroke-linecap="round"/><g fill="${EM_O}" stroke="${EM_O}" stroke-width="4.4" stroke-linejoin="round">${lv.join("")}</g>` +
+      `<path d="${stem}" fill="none" stroke="#a9b2cc" stroke-width="2" stroke-linecap="round"/><g fill="#a9b2cc">${lv.join("")}</g>` +
+      `<g stroke="${EM_O}" stroke-width="2.2" stroke-linejoin="round"><path d="M30 16c-1-4-4-7-9-8 0 5 3 8 9 8z" fill="#7fbf72"/><path d="M30 16c1-5 4-8 9-9 0 6-3 9-9 9z" fill="#7fbf72"/></g>` +
+      emMedal(30, 33, 17.5, "#c9d0e4", "#8f9ab8", "#f4f6fb", 12.8) +
+      `<path d="${emStar(30, 33.6, 5, 9, 3.9)}" fill="#f4f6fb" stroke="#8f9ab8" stroke-width="2" stroke-linejoin="round"/>` + emRim(30, 33, 17.5);
+  },
+  // Gold: a three-point crown, red gems on the outer tips, a potato for the centre jewel
+  () => `<path d="M12 41L15 18L23.5 30.5L30 12L36.5 30.5L45 18L48 41Z" fill="#f0c35a" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<path d="M16.6 24.5L17.4 38.5H15L15.9 25Z" fill="#fff1b3"/><path d="M29.6 19L27.4 30.5L28.6 38.5H26.2L25.4 31Z" fill="#fff1b3"/>` +
+    `<path d="M45 18L48 41H42.8Z" fill="#c9931c"/><path d="M36.5 30.5L38.3 41H34.6Z" fill="#c9931c"/>` +
+    `<rect x="10.5" y="39" width="39" height="11" rx="2.5" fill="#f0c35a" stroke="${EM_O}" stroke-width="2.5"/><path d="M11.8 45.2H48.2V47.5Q48.2 48.7 47 48.7H13Q11.8 48.7 11.8 47.5Z" fill="#c9931c"/>` +
+    `<path d="M13 41.3H25" stroke="#fff1b3" stroke-width="2" stroke-linecap="round"/>` +
+    `<g stroke="${EM_O}" stroke-width="2.2">${emDot(15, 16.5, 3.4, "#c24747")}${emDot(45, 16.5, 3.4, "#c24747")}${emDot(30, 10.5, 3.6, "#f0c35a")}<path d="${emPot(30, 44.5, 4.6, -0.2)}" fill="#a86a3b"/></g>` +
+    emDot(13.9, 15.4, 1.1, "#ff9d8f") + emDot(28.9, 9.4, 1.2, "#fff1b3") + emDot(28.4, 43.8, 0.9, "#5e3618") + emDot(31.8, 44.6, 0.9, "#5e3618"),
+  // Platinum: a trophy, a potato engraved on the bowl, a sheen sweeping across it
+  (u) => `<defs><clipPath id="emc${u}"><path d="M14 11H46C46 27 39 37 30 39C21 37 14 27 14 11Z"/></clipPath></defs>` +
+    `<path d="M15 14C5 13 5 28 18.5 29M45 14C55 13 55 28 41.5 29" fill="none" stroke="${EM_O}" stroke-width="8" stroke-linecap="round"/>` +
+    `<path d="M15 14C5 13 5 28 18.5 29M45 14C55 13 55 28 41.5 29" fill="none" stroke="#7fd6c8" stroke-width="3" stroke-linecap="round"/>` +
+    `<path d="M26 38h8l2 9h-12z" fill="#7fd6c8" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/><path d="M31.5 38.5h2.3l1.6 8h-2.6z" fill="#3f9d90"/>` +
+    `<rect x="17.5" y="46" width="25" height="8" rx="2" fill="#7fd6c8" stroke="${EM_O}" stroke-width="2.5"/><path d="M34 47.3h6.9v5.4H34z" fill="#3f9d90"/>` +
+    `<g clip-path="url(#emc${u})"><path d="M14 11H46V40H14Z" fill="#7fd6c8"/><path d="M36.5 10H48V40H36.5Q41 27 36.5 10Z" fill="#3f9d90"/>` +
+    `<path d="${emPot(29.5, 22.5, 5.4, -0.3)}" fill="#3f9d90"/>${emDot(27, 21, 1, "#7fd6c8")}${emDot(31.6, 23.4, 1, "#7fd6c8")}` +
+    `<path d="M18.8 14.5C18.8 22 21 28.5 25 32.5" fill="none" stroke="#d9fbf5" stroke-width="3" stroke-linecap="round"/>` +
+    `<g class="em-sheen"><path d="M2 9H11L4 41H-5Z" fill="#fff" opacity="0.38"/></g></g>` +
+    `<path d="M14 11H46C46 27 39 37 30 39C21 37 14 27 14 11Z" fill="none" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<rect x="12" y="8.5" width="36" height="5" rx="2" fill="#7fd6c8" stroke="${EM_O}" stroke-width="2.5"/><path d="M14 10.2H21" stroke="#d9fbf5" stroke-width="2" stroke-linecap="round"/>`,
+  // Diamond: a cut gem set on a potato, two sparkles twinkling
+  () => `<path d="${emPot(30, 49.6, 6, 0.05, 1.25, 0.8)}" fill="#a86a3b" stroke="${EM_O}" stroke-width="2.4"/>` + emDot(25, 51, 1.1, "#5e3618") + emDot(35.2, 50.6, 1.1, "#5e3618") +
+    `<path d="M24.6 46.8q-1.6 1.2-1.4 2.6" fill="none" stroke="#d39a63" stroke-width="1.6" stroke-linecap="round"/>` +
+    `<path d="M20 13H40L48 23L30 48L12 23Z" fill="${EM_O}" stroke="${EM_O}" stroke-width="5" stroke-linejoin="round"/>` +
+    `<path d="M12 23L20 13L24 23Z" fill="#8fb6ff"/><path d="M40 13L48 23H36Z" fill="#5a86e0"/><path d="M20 13H40L36 23H24Z" fill="#c4dbff"/>` +
+    `<path d="M12 23H24L30 48Z" fill="#8fb6ff"/><path d="M36 23H48L30 48Z" fill="#5a86e0"/><path d="M24 23H36L30 48Z" fill="#e4efff"/>` +
+    `<path d="M12 23H48M20 13L24 23L30 48L36 23L40 13" fill="none" stroke="#2a4a9a" stroke-width="1.6" stroke-linejoin="round" opacity="0.75"/>` +
+    `<path d="M22.6 15.2H28.4L26.6 20.5H21.3Z" fill="#fff"/>` +
+    `<path class="em-tw" d="${emStar(46, 9.5, 4, 4.6, 1.3)}" fill="#fff"/><path class="em-tw b" d="${emStar(12.5, 12.5, 4, 3.6, 1.1)}" fill="#fff"/>`,
+  // Blastmaster: the bomb-tater, a lit fuse, a turning burst behind it
+  (u) => `<path class="em-burst" d="${emStar(30, 30, 12, 27, 19.5)}" fill="#ffb347" opacity="0.9"/>` +
+    `<path d="${emStar(30, 30, 12, 23.5, 17)}" fill="#ffe08a" opacity="0.55"/>` +
+    `<defs><clipPath id="emc${u}"><path d="${emPot(29.5, 35, 15, -0.2, 1.14, 0.9)}"/></clipPath></defs>` +
+    `<path d="M37 23C38.5 16.5 43 18 43.5 14" fill="none" stroke="#3b2b2b" stroke-width="3.2" stroke-linecap="round"/>` +
+    `<path d="M32.6 20.6l5.8 0.9-0.8 4.8-5.8-0.9z" fill="#5a4a52" stroke="${EM_O}" stroke-width="2" stroke-linejoin="round"/>` +
+    `<g clip-path="url(#emc${u})"><path d="M0 0H60V60H0Z" fill="#b8432a"/><path d="${emPot(27.8, 33.2, 13.6, -0.2, 1.14, 0.9)}" fill="#ef7a52"/>` +
+    `<path d="${emCres(27.4, 33.6, 12, 190, 258, 2.8)}" fill="#ffb08a"/></g>` +
+    `<path d="M33.5 41.5q2.2 1.6 4.5 0.4M38.5 31.5q1.8 1.4 3.6 0.2M19 39q1.8 1.3 3.8 0.4" fill="none" stroke="#b8432a" stroke-width="2" stroke-linecap="round"/>` +
+    emLine("M23.5 24L26 29L22.5 32.5L27.5 36.5L26 41", "#fff1d6", 2.2) +
+    `<path d="${emPot(29.5, 35, 15, -0.2, 1.14, 0.9)}" fill="none" stroke="${EM_O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<g class="em-spark"><path d="${emStar(43.5, 13, 4, 6, 1.8)}" fill="#ffe08a" stroke="#ef7a52" stroke-width="1"/>${emDot(43.5, 13, 1.6, "#fff")}</g>`,
+];
+let emSvg = null, emSeq = 0;
+// the emblem of tier i as SVG markup (cls: extra classes on the <svg>)
+function tierEmblem(i, cls) {
+  if (!emSvg) emSvg = EMB.map((f) => f("%U"));
+  return `<svg class="em em${i}${cls ? " " + cls : ""}" viewBox="0 0 60 60" aria-hidden="true" focusable="false">${emSvg[i].replace(/%U/g, String(++emSeq))}</svg>`;
+}
+// the emblem as a small labelled badge in markup (the cup bracket)
+const tierBadge = (i, cls) => `<i class="${cls}" role="img" aria-label="${TIERS[i].name} tier" title="${TIERS[i].name}">${tierEmblem(i)}</i>`;
+// paint tier i's emblem into el (the pill, the Account sheet, the results). from < i: a promotion, the old emblem spins out first.
+function paintBadge(el, i, from) {
+  const t = TIERS[i], up = from != null && from >= 0 && from < i;
+  el.style.setProperty("--tc", t.col);
+  el.setAttribute("role", "img"); el.setAttribute("aria-label", `${t.name} tier`); el.title = t.name;
+  el.innerHTML = tierEmblem(i) + (up ? tierEmblem(from, "was") : "");
+  el.classList.remove("promo");
+  if (up) { void el.offsetWidth; el.classList.add("promo"); }
+}
 
 /* ===================== sound (WebAudio, synthesized) ===================== */
 const Sfx = {

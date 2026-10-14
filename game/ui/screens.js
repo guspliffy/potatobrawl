@@ -440,7 +440,7 @@ function showResults(R) {
   if (R.ranked) {
     const ti = tierInfo(R.after);
     $("rRank").style.setProperty("--tc", ti.t.col);
-    paintBadge($("rBadge"), ti.i);
+    paintBadge($("rBadge"), ti.i, R.ta > R.tb ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
     $("rTier").textContent = ti.t.name;
     const rt = $("rRating"), tail = ti.next ? ` · ${ti.need} to ${ti.next.name}` : "";
     rt.textContent = ""; const rn = document.createElement("span"); rn.textContent = R.before; rt.append(`${R.before} → `, rn, tail);
