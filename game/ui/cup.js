@@ -131,7 +131,7 @@ function cupSlot(c, r, pos) {
   const out = done && dec !== s, champ = done && r === 2 && dec === s;
   const cls = ["cs", me ? "me" : "", me && !out ? "path" : "", out && !(me && c.out === r) ? "out" : "", me && out ? "fell" : "", champ ? "champ" : "", CU.pop === key ? "pop" : ""].filter(Boolean).join(" ");
   return `<div class="${cls}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(pal)}"><span class="cs-ph">${PORTRAITS[sl.f] ? `<img src="${PORTRAITS[sl.f]}" alt="">` : ""}</span>` +
-    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r"><i class="cs-b" style="--tc:${ti.t.col}"></i><span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
+    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r">${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
 }
 function cupTrophy(c) {
   const champ = c.p[3][0] >= 0 && !CU.hide.has("2:0");
