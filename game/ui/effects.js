@@ -245,6 +245,7 @@ function render(g, tk) {
 }
 function render2D(g, tk) {
   const c = ctx;
+  BL.useStage(g);   // the layout (and look) of the map this game is played on
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip();
   drawBackground(c, tk);

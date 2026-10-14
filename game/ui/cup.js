@@ -89,7 +89,8 @@ function cupFight() {
   const me = FIG[c.fid], opp = FIG[os.f], myPal = me.palettes[c.pal] || me.palettes[0], oppPal = opp.palettes[os.pal] || opp.palettes[0];
   Sfx.init();
   const d = clamp((os.r - 750) / 1000, 0.08, 0.98);
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150 });
+  const map = (((c.seed % BL.MAPS.length) + BL.MAPS.length) % BL.MAPS.length + r) % BL.MAPS.length;   // quarter, semi and final on different maps
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150, map });
   match = { ranked: false, cup: true, round: r, d, oppRating: os.r, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: null, cpu: os.n };
   meSlot = 0;
   enterMatchUI();

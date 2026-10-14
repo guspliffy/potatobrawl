@@ -12,6 +12,8 @@ UI_PARTS = ['base', 'input', 'view', 'draw-fighters', 'draw-world', 'effects', '
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
+# the maps: one script per map in game/maps/<id>.js (MAP_ART entries), spliced in after the Potato Moon map in ui/draw-world.js
+ui = ui.replace('/*MAPS*/', '\n'.join(f.read_text() for f in sorted((d/'maps').glob('*.js'))) if (d/'maps').is_dir() else '')
 ui = ui.replace('/*PORTRAITS*/{}', (d/'portraits'/'portraits.json').read_text())
 ui = ui.replace('/*SKINFX*/', (d/'skinfx.js').read_text())
 ui = ui.replace('/*SYNC*/', (d/'sync.js').read_text())   # account sync, the pure part (also a node module)

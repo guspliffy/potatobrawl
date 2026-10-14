@@ -2,6 +2,7 @@
 // Usage: node finish.js [matches]
 const { BL } = require(process.env.CORE || "../game/core.js");
 const { FIGHTERS, TUNE, newGame, step, makeBot, botInput, blankInput } = BL;
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 const byId = (id) => FIGHTERS.find((f) => f.id === id);
 let bad = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) bad++; };
@@ -63,7 +64,7 @@ let calls = 0, finals = 0, wrong = 0, endsAtHit = 0, otherEnds = 0;
 const N = +(process.argv[2] || 30);
 for (let seed = 1; seed <= N; seed++) {
   const n = FIGHTERS.length, a = FIGHTERS[seed % n], b = FIGHTERS[(seed + 1 + (seed * 5) % (n - 1)) % n];   // every pair, never a mirror match
-  const g = newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[0] }], seed, countdown: 10 });
+  const g = newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[0] }], seed, countdown: 10, map: mapOf(seed) });
   const bots = [makeBot(0.85), makeBot(0.6)], open = [null, null];
   for (let t = 0; t < 20000 && g.phase !== "over"; t++) {
     step(g, [botInput(g, g.fighters[0], g.fighters[1], bots[0]), botInput(g, g.fighters[1], g.fighters[0], bots[1])]);

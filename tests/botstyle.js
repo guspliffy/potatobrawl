@@ -6,13 +6,14 @@
 //   node botstyle.js [games per fighter and level, default 100] [levels, default 0.5,0.8]
 const { BL } = require("../game/core.js");
 const { FIGHTERS, BOT_STYLES, newGame, step, makeBot, botInput } = BL;
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 const N = +(process.argv[2] || 100), LV = (process.argv[3] || "0.5,0.8").split(",").map(Number);
 const LO = 35, HI = 65;
 // STYLE='{"wizard":{"gap":2}}' tries other numbers; ONLY=wizard runs one fighter
 if (process.env.STYLE) for (const [id, v] of Object.entries(JSON.parse(process.env.STYLE))) BOT_STYLES[id] = v;
 
 function play(spec, d, seed, styledSlot) {
-  const g = newGame({ players: [{ spec, pal: spec.palettes[0] }, { spec, pal: spec.palettes[1] }], seed, countdown: 10, time: 240 });
+  const g = newGame({ players: [{ spec, pal: spec.palettes[0] }, { spec, pal: spec.palettes[1] }], seed, countdown: 10, time: 240, map: mapOf(seed) });
   const bots = [0, 1].map((s) => makeBot(d, s === styledSlot ? BOT_STYLES[spec.id] : undefined));
   const m = [0, 1].map(() => ({ fwd: 0, back: 0, air: 0, edge: 0, frames: 0, spec: 0, heavy: 0, chg: 0, pchg: 0, mid: null }));
   let fr = 0;

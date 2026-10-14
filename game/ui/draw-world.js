@@ -41,7 +41,7 @@ function farFries(c, gw, gh, hz) {
   fry(gw * 0.5 + px, hz + 2, u * 0.09, u * 0.022, -0.1);
   fry(gw * 0.95 + px, hz + 2, u * 0.11, u * 0.024, -0.12);
 }
-function drawBackground(c, tk) {
+function moonBg(c, tk) {
   const gw = L.gw, gh = L.gh;
   const hz = gh * 0.7 - (cam.y + 110) * cam.z * 0.16;
   const sky = c.createLinearGradient(0, 0, 0, hz);
@@ -74,7 +74,7 @@ function drawBackground(c, tk) {
   }
 }
 
-function drawStage(c, tk) {
+function moonStage(c, tk) {
   const S = STAGE.main;
   // hanging rock body
   c.beginPath();
@@ -104,6 +104,17 @@ function drawStage(c, tk) {
     c.fillStyle = "#d8d2f0"; c.fillRect(p.x1 + 4, p.y, p.x2 - p.x1 - 8, 2.5);
   }
 }
+
+/* ---- maps (Jonny, 2026-10-14): each map has its own fight layout (core.js MAPS, read through STAGE after BL.useStage(g)) and its own
+   look. MAP_ART[id] = { name, bg(c, tk) (screen space, parallax from cam), stage(c, tk) (world space: STAGE.main and STAGE.plats),
+   ko?(e) (a fighter left the blast zone: a map-flavoured splash, optional) }. Potato Moon is drawn above; the other maps are in
+   game/maps/<id>.js (spliced in at the MAPS marker below). UI only: nothing here touches the simulation. */
+const MAP_ART = { moon: { name: "Potato Moon", bg: moonBg, stage: moonStage } };
+const mapArt = () => MAP_ART[STAGE.id] || MAP_ART.moon;
+const mapName = (i) => { const m = BL.MAPS[i]; return m && MAP_ART[m.id] ? MAP_ART[m.id].name : "Potato Moon"; };
+function drawBackground(c, tk) { mapArt().bg(c, tk); }
+function drawStage(c, tk) { mapArt().stage(c, tk); }
+/*MAPS*/
 
 /* ---- finish-ready looks (UI only: hitboxes and the simulation never change) ----
    A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
