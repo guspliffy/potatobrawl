@@ -109,7 +109,7 @@ function acMk(tag, cls, text) { const e = document.createElement(tag); if (cls) 
 function acBtn(label, cls, fn) {
   const b = acMk("button", cls, label);
   if (/\bbtn\b/.test(cls)) { b.textContent = ""; b.appendChild(acMk("span", "", label)); }
-  b.addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e, b); });
+  b.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(b); fn(e, b); });
   return b;
 }
 function acAgo(t) {
@@ -282,7 +282,7 @@ function renderLocker() {
 }
 function acSetTab(t) { acUI.tab = t; renderAccount(); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
-  b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); acSetTab(b.dataset.t); });
+  b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });
   b.addEventListener("keydown", (e) => {
     const tabs = [...document.querySelectorAll(".ac-tabs .chip")], i = tabs.indexOf(b), d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
     e.stopPropagation(); if (!d) return; e.preventDefault();

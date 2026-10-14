@@ -95,8 +95,8 @@ function dailyMatchEnd(forfeit) {
 }
 
 screens.daily = $("scrDaily");
-$("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); dailyFight(); });
-$("dlyBack").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("daily", false); });
+$("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); dailyFight(); });
+for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("daily", false); });
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open
 setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
 window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };

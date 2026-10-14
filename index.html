@@ -929,6 +929,318 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .speed { position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(-18deg, transparent 0 9px, rgba(255,255,255,.07) 9px 11px); -webkit-mask:linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask:linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); }
 @media (prefers-reduced-motion:reduce) { .rays, .livetag i { animation:none; } }
 
+/* ---------- Menu redesign: the shared controls ("sunset ink", Fable 5.1, 2026-10-14) ----------
+   Restyles the controls every screen uses, by their existing classes: .btn (+ .primary / .pri gold, .ember, .sm, .lg), .chip
+   (+ .on gold, .pick the skewed dropdown chip), the .pop lists under the pickers, .back / .iconbtn (round ink buttons) and the
+   generic .sheet. Recipe: 2px ink outline, a hard ink shadow under it, a bevel (light top edge, dark bottom edge); buttons keep
+   the brand skew (-8deg) with their content upright; pills stay straight. Press: the control sinks 3px into its shadow (4px -> 1px,
+   80 ms) and pops back on release (160 ms, a little overshoot). Hover (mouse only): 6% brighter and the shadow grows to 5px.
+   The match HUD and the touch buttons (.pb) are not touched. Sheets: 50-sheets.css. */
+
+/* ---- buttons ---- */
+.btn {
+  --sh: 4px; --bg: linear-gradient(180deg, #3a4170, #262b50); --bev: var(--bevel); --glow: 0 0 0 transparent;
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 6px 20px;
+  border: 2px solid var(--ink); border-radius: 9px; background: var(--bg); color: var(--text);
+  font: 800 20px/1.05 var(--display); letter-spacing: 0.05em; text-transform: uppercase; text-align: center;
+  box-shadow: 0 var(--sh) 0 var(--ink), var(--glow), var(--bev);
+  transform: skewX(-8deg);
+  transition: transform 0.16s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.16s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s;
+}
+.btn > span { display: inline-block; transform: skewX(8deg); }
+.btn small { font: 600 12px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); margin-left: 8px; }
+.btn:hover, .btn:disabled:hover { background: var(--bg); }
+.btn:active { transform: skewX(-8deg); }
+.btn:active:not(:disabled) { --sh: 1px; transform: skewX(-8deg) translateY(3px); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.btn:disabled { opacity: 0.5; cursor: default; filter: saturate(0.6); }
+.btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+/* gold: the one primary action of a screen (Fable's .btn.pri; the game's class is .primary, both work) */
+.btn.primary, .btn.pri { --bg: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); --bev: var(--bevelgold); --glow: 0 8px 16px rgba(244, 201, 93, 0.25); color: var(--ink); }
+.btn.primary, .btn.pri, .btn.primary:hover, .btn.pri:hover, .btn.primary:disabled:hover { background: var(--bg); }   /* beats the old .btn.primary sand */
+.btn.primary small, .btn.pri small { color: rgba(14, 16, 34, 0.68); }
+.btn.ember { --bg: linear-gradient(180deg, #ff9a6a, #ef7a52 50%, #cf5a36); --bev: var(--bevelgold); color: var(--ink); }
+.btn.ember small { color: rgba(14, 16, 34, 0.68); }
+.btn.sm { min-height: 40px; font-size: 16px; padding: 4px 14px; }
+.btn.lg { min-height: 54px; font-size: 25px; padding: 6px 26px; }
+#app.short .btn.lg { min-height: 48px; font-size: 22px; }
+#app.tiny .btn { min-height: 40px; }
+#app.tiny .btn.lg { min-height: 44px; font-size: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) { --sh: 5px; filter: brightness(1.06); transform: skewX(-8deg) translateY(-1px); }
+  .btn:hover:active:not(:disabled) { --sh: 1px; transform: skewX(-8deg) translateY(3px); }
+}
+
+/* ---- chips: straight ink pills; .on is gold ---- */
+.chip {
+  position: relative; border: 2px solid var(--ink); border-radius: 999px; padding: 6px 15px; min-height: 36px;
+  background: linear-gradient(180deg, #343b6a, #22264a); color: var(--text);
+  font: 800 15px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase;
+  box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s;
+}
+.chip.on { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.chip:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.chip.on:active:not(:disabled) { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+.chip:disabled { opacity: 0.45; cursor: default; filter: saturate(0.6); }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .chip:hover:not(:disabled) { filter: brightness(1.08); } }
+
+/* the dropdown pickers (fighter select, practice): a skewed chip, drawn by ::before so the text stays upright (it is a text node) */
+.chip.pick { isolation: isolate; background: none; border: 0; border-radius: 0; box-shadow: none; padding: 6px 16px; color: var(--text); }
+.chip.pick::before { content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #343b6a, #22264a); box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg); transition: box-shadow 0.08s; }
+.chip.pick small { color: var(--mute); }
+.chip.pick::after { color: var(--gold); }
+.chip.pick:active:not(:disabled) { box-shadow: none; }
+.chip.pick:active:not(:disabled)::before { box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.pickwrap:has(.pop:not([hidden])) .chip.pick::before { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.pickwrap:has(.pop:not([hidden])) .chip.pick, .pickwrap:has(.pop:not([hidden])) .chip.pick small, .pickwrap:has(.pop:not([hidden])) .chip.pick::after { color: var(--ink); }
+
+/* the lists that drop out of a picker */
+.pop { background: linear-gradient(180deg, #2b3058, #1b1f3d); border: 2px solid var(--ink); border-radius: 10px; padding: 6px; gap: 4px; box-shadow: 0 4px 0 var(--ink), var(--soft), var(--bevel); }
+.pop:not([hidden]) { animation: popDrop 0.14s ease-out; }
+@keyframes popDrop { from { transform: translateY(-6px); opacity: 0; } }
+.pop button { border-radius: 6px; font-weight: 800; }
+.pop button:hover { background: rgba(255, 255, 255, 0.07); }
+.pop button.on, .pop button.on:hover { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink), var(--bevelgold); }
+
+/* ---- round ink buttons: back arrows (select, cup, online), the gears ---- */
+.back, .iconbtn {
+  border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); color: var(--text);
+  box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s;
+}
+.iconbtn:hover { background: linear-gradient(180deg, #3a4170, #262b50); }
+.back:active, .iconbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.back:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.back { position: relative; }
+.back::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }   /* short phones draw it 38px: the touch area stays 44px */
+@media (hover: hover) and (pointer: fine) { .back:hover, .iconbtn:hover { filter: brightness(1.1); } }
+/* .round (00-ink.css) gets the same press */
+.round { cursor: pointer; transition: transform 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s; }
+.round:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.round:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .round:hover { filter: brightness(1.1); } }
+
+/* ---- the generic sheet: a card (the modal sheets get their header band in 50-sheets.css) ---- */
+.sheet { background: linear-gradient(180deg, #2b3058, #1b1f3d); border: 2px solid var(--ink); border-radius: 12px; box-shadow: var(--hard), var(--soft), var(--bevel); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip, .chip.pick::before, .back, .iconbtn, .round { transition: none; }
+  .pop:not([hidden]) { animation: none; }
+}
+
+/* ---------- Menu redesign: the sheets ("sunset ink", Fable 5.1, 2026-10-14) ----------
+   Pause, How to play, Settings, Account (Profile · Stats · Locker), Daily Potato, plus the tournament bracket screen.
+   Every modal sheet is a card: 2px ink outline, a 36px ink header band (title 900 italic 24px, the close X as a .round), the body on
+   --raise; it drops in from -12px. The band sticks to the top while a long sheet scrolls, so the X never scrolls away.
+   Inside the body: raised plates (ink outline + hard shadow) for the panels, ink wells for inputs and pickers, skewed segments for
+   tabs and toggles (active = gold with ink text). PAUSED stands up out of its band, stroked; Resume is the large gold button.
+   Everything is scoped to the modal sheets and #scrCup: the results screen (also a .sheet) is styled in 40-results.css. */
+
+/* ---- the frame ---- */
+#app .modal > .sheet { padding: 0; gap: 0; background: var(--raise); border-radius: 12px; }
+.modal:not([hidden]) > .sheet { animation: shDrop 0.26s cubic-bezier(0.2, 0.9, 0.25, 1); }   /* no fade: a sheet is readable from its first frame */
+@keyframes shDrop { from { transform: translateY(-12px); } 70% { transform: translateY(1.5px); } to { transform: none; } }
+.sh-head { position: sticky; top: 0; z-index: 3; flex: none; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 4px 0 16px; background: var(--ink); }
+.sh-head h3, .sheet .sh-head h3 { flex: 1 1 auto; min-width: 0; margin: 0; font: italic 900 24px/1 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 2px 0 0; }
+.sh-head h3::after { content: ""; display: inline-block; width: 28px; height: 5px; margin-left: 10px; vertical-align: 5px; background: linear-gradient(90deg, var(--ember), var(--gold)); transform: skewX(-35deg); }
+.sh-head .kick { flex: none; white-space: nowrap; }
+.sh-head .round { position: relative; width: 30px; height: 30px; flex: none; border-color: #070818; box-shadow: 0 2px 0 #05060f, var(--bevel); }
+.sh-head .round svg { width: 18px; height: 18px; display: block; }
+.sh-head .round::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; }   /* a 44px touch target in the 36px band */
+.sh-head .round:active { transform: translateY(1px); box-shadow: 0 1px 0 #05060f, var(--bevel); }
+.sh-body { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 20px; min-width: 0; }
+#app.short .sh-body { gap: 11px; padding: 12px 16px 16px; }
+#app.tiny .sh-body { gap: 8px; padding: 10px 14px 13px; }
+.modal .sheet p { color: var(--mute); }
+.modal .kicker { font-size: 12px; color: var(--sand); }
+
+/* raised plates and ink wells inside a sheet */
+.ac-rank, .ac-stats > div, .ac-sync, .fs-fav, .lk-f, .hx, .dly-f, #scrHelp .ul, #scrHelp .rc {
+  background: linear-gradient(180deg, #2f3560, #1f2344); border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
+}
+.ac-pick, .ac-t, .ac-name, .ac-in, .ac-code {
+  background: rgba(14, 16, 34, 0.6); border: 2px solid var(--ink); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.ac-name:focus, .ac-in:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+/* tabs (Account) and toggles (Settings): skewed segments joined into one strip; the active one is gold with ink text */
+.ac-tabs, .set-row .chips { display: flex; flex-wrap: nowrap; gap: 0; padding: 0 5px 3px; }
+.ac-tabs .chip, .set-row .chips .chip { isolation: isolate; flex: none; background: none; border: 0; border-radius: 0; box-shadow: none; color: var(--text); }
+#app .ac-tabs .chip, #app .set-row .chips .chip { min-height: 40px; padding: 4px 20px; font-size: 16px; }
+#app.tiny .ac-tabs .chip, #app.tiny .set-row .chips .chip { min-height: 40px; padding: 3px 17px; font-size: 15px; }
+.ac-tabs .chip::before, .set-row .chips .chip::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 0;
+  background: linear-gradient(180deg, #343b6a, #22264a); box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg);
+}
+.ac-tabs .chip + .chip, .set-row .chips .chip + .chip { margin-left: -2px; }
+.ac-tabs .chip:first-child::before, .set-row .chips .chip:first-child::before { border-radius: 9px 0 0 9px; }
+.ac-tabs .chip:last-child::before, .set-row .chips .chip:last-child::before { border-radius: 0 9px 9px 0; }
+.ac-tabs .chip.on, .set-row .chips .chip.on { color: var(--ink); z-index: 1; }
+.ac-tabs .chip.on::before, .set-row .chips .chip.on::before { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.ac-tabs .chip:active:not(:disabled), .ac-tabs .chip.on:active:not(:disabled), .set-row .chips .chip:active:not(:disabled), .set-row .chips .chip.on:active:not(:disabled) { box-shadow: none; }
+.ac-tabs .chip:active:not(:disabled)::before, .set-row .chips .chip:active:not(:disabled)::before { box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.ac-tabs .chip.on:active::before, .set-row .chips .chip.on:active::before { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+
+/* ---- Pause: PAUSED stands up out of the band, stroked; Resume is the large gold button, the other two share a row ---- */
+#scrPause .pause-sheet { width: min(440px, 100%); margin-top: 26px; overflow: visible; }
+.pause-sheet .sh-head { height: 40px; align-items: flex-end; padding: 0 5px 5px 14px; border-radius: 10px 10px 0 0; }
+#app .pause-sheet .pz {
+  flex: 1 1 auto; min-width: 0; margin: 0 0 -9px; font: italic 900 70px/0.8 var(--display); letter-spacing: -0.01em; text-transform: uppercase; color: var(--text);
+  -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); transform: rotate(-3deg); transform-origin: 0 100%; white-space: nowrap;
+}
+#app.short .pause-sheet .pz { font-size: 60px; }
+#app.tiny .pause-sheet .pz { font-size: 50px; -webkit-text-stroke-width: 5px; }
+.pause-sheet .sh-head .round { margin-bottom: -1px; }
+.pause-sheet .sheet-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 10px; padding: 4px 4px 0; }
+.pause-sheet .sheet-actions #pResume { grid-column: 1 / -1; }
+.pause-sheet .sheet-actions .btn:not(.lg) > span { white-space: normal; line-height: 1.05; }
+#app.narrow .pause-sheet .sheet-actions { grid-template-columns: minmax(0, 1fr); gap: 10px; }   /* upright: one per row, no two-line labels */
+#pNote { font-size: 13px; text-align: center; }
+#pNote:empty { display: none; }
+#app.tiny .pause-sheet { margin-top: 18px; }
+
+/* ---- Settings ---- */
+.set-sheet { width: min(500px, 100%); }
+.set-row { grid-template-columns: 104px minmax(0, 1fr); gap: 10px; }
+.set-row > span:first-child { font: 800 15px/1 var(--display); letter-spacing: 0.08em; color: var(--sand); }
+.set-fine { font-size: 12px; padding-top: 10px; border-top: 2px solid rgba(14, 16, 34, 0.5); }
+#app.narrow .set-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }   /* upright: the label over its toggles (Sideways | Flipped | Upright needs the width) */
+#app.narrow .set-row .chips .chip { padding-inline: 16px; }
+
+/* ---- Account ---- */
+.acct-sheet .sh-body { gap: 12px; }
+#app.short .acct-sheet .sh-body { gap: 9px; }
+#app.tiny .acct-sheet .sh-body { gap: 6px; }
+#scrAccount .av { border-width: 2px; box-shadow: 0 0 0 1.5px var(--ink); }
+#scrAccount .ac-id .av { border-width: 3px; box-shadow: 0 0 0 2px var(--ink), 0 4px 0 1px var(--ink); }
+.av-btn:active { transform: translateY(2px); }
+.ac-name, .ac-in, .ac-code { border-radius: 8px; }
+.ac-row .chip, .ac-foot .chip { min-height: 36px; padding: 4px 15px; font-size: 14px; }
+#app.tiny .ac-foot .chip, #app.tiny .ac-row .chip { min-height: 34px; padding: 3px 13px; }
+/* the compact pills answer to at least 40px: the touch area reaches past the drawn pill */
+.ac-row .chip::after, .ac-foot .chip::after, #scrHelp .rc-figs .chip::after { content: ""; position: absolute; inset: -3px 0; }
+.ac-code .chip::after { content: ""; position: absolute; inset: -6px -4px; }   /* Show / Hide: fills the code well's height */
+#scrAccount .av-btn { position: relative; }
+#scrAccount .av-btn::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
+#app .ac-name { min-height: 40px; }
+.ac-pick { border-radius: 10px; }
+.ac-pk { transition: transform 0.12s; }
+.ac-pk:active { transform: translateY(2px); }
+.ac-pk.on .av { box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink); }
+.ac-t { border-radius: 8px; }
+.ac-t.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold), 0 2px 0 var(--ink); background: rgba(244, 201, 93, 0.12); }
+.ac-t.on b { color: var(--gold); }
+.ac-rank { padding: 8px 14px 8px 8px; gap: 12px; }
+#scrAccount .rk-tier { font: italic 900 27px/1 var(--display); letter-spacing: 0.01em; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+#app.short #scrAccount .rk-tier { font-size: 23px; }
+.ac-stats { gap: 8px; padding-bottom: 3px; }
+.ac-stats > div { padding: 6px 10px 7px; }
+.ac-stats dt { font-size: 11px; letter-spacing: 0.14em; color: var(--mute); }
+.ac-stats dd { font-size: 24px; }
+#app.short .ac-stats dd { font-size: 20px; }
+.ac-form i, .hx i.r { border: 2px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
+.ac-form i.l, .hx i.r.l { background: var(--ketchup); color: #fff; }
+.ac-sync { padding: 12px 14px 14px; }
+.ac-sync .kicker { font-size: 12px; }
+.ac-sync .btn { padding-left: 20px; }
+.ac-foot { border-top: 2px solid rgba(14, 16, 34, 0.5); }
+#acReset { color: #ffb39a; }
+/* Stats */
+.fs-fav { padding: 8px 12px; }
+.fs-fav b { font: italic 900 24px/1 var(--display); }
+.fs-tab th { color: var(--sand); }
+.fs-tab td { border-top: 2px solid rgba(14, 16, 34, 0.45); }
+.fs-tab tr.fav td { background: rgba(244, 201, 93, 0.08); }
+.fs-tab tr.fav td:first-child .fn::after { color: var(--gold); }
+.hx { border-radius: 8px; box-shadow: 0 2px 0 var(--ink), var(--bevel); padding: 3px 8px 3px 4px; }
+.hx-list { gap: 6px 12px; padding-bottom: 2px; }
+/* Locker: round swatches with an ink rim, a gold ring on the one worn */
+.lk { gap: 12px; }
+.lk-f { padding: 8px 10px 10px; }
+.lk-h { font: italic 900 19px/1.1 var(--display); }
+#scrAccount .sw i { border: 2.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
+#scrAccount .sw.cur i { box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink); }
+#scrAccount .sw.cur { color: var(--gold); }
+#scrAccount .sw.lock i::after { inset: -2.5px; }
+#scrAccount .sw:not(:disabled):active i { transform: translateY(2px); }
+
+/* ---- How to play ---- */
+.help-sheet .sh-body { gap: 12px; }
+#app.tiny .help-sheet .sh-body { gap: 7px; }
+.help-lead { color: #d3d6ec; }
+#scrHelp .help-combos { gap: 9px; padding-top: 12px; border-top: 2px solid rgba(14, 16, 34, 0.5); }
+#scrHelp .help-combos h4 { font: italic 900 24px/1 var(--display); letter-spacing: 0.02em; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrHelp .help-ult h4::after { width: 22px; height: 6px; margin-left: 10px; vertical-align: 4px; background: linear-gradient(90deg, var(--ember), var(--gold)); transform: skewX(-35deg); box-shadow: 0 2px 0 var(--ink); }
+#scrHelp .ul { border-left: 5px solid var(--fc, var(--gold)); border-radius: 4px 10px 10px 4px; padding: 7px 10px; }
+#scrHelp .rc { padding: 8px 10px; }
+#scrHelp .rc.ok { box-shadow: 0 3px 0 var(--ink), inset 0 0 0 1px rgba(134, 220, 174, 0.55), var(--bevel); }
+#scrHelp .ul-grid, #scrHelp .rc-grid { gap: 8px 10px; padding-bottom: 3px; }
+#scrHelp .rc-figs { gap: 6px 6px; padding-bottom: 3px; }
+#scrHelp .rc-figs .chip { min-height: 34px; padding: 3px 12px; font-size: 13px; }
+#app.tiny #scrHelp .help-go .btn { min-height: 40px; }
+#scrHelp kbd { border: 2px solid var(--ink); border-bottom-width: 3px; background: linear-gradient(180deg, #3a4170, #262b50); }
+.help-more summary { color: var(--sand); min-height: 40px; padding: 10px 0 9px; }
+.help-more summary::marker { color: var(--gold); }
+
+/* ---- Daily Potato ---- */
+.dly-sheet { width: min(520px, 100%); }
+.dly-sheet .sh-body { gap: 12px; }
+.dly-vs { gap: 8px; padding-bottom: 3px; }
+.dly-f { padding: 6px; gap: 10px; }
+.dly-ph { border-radius: 7px; box-shadow: 0 0 0 2px var(--fc), 0 0 0 4px var(--ink); }
+.dly-t b { font: italic 900 21px/1 var(--display); }
+.dly-x {
+  position: relative; z-index: 1; font: italic 900 22px/1 var(--display); color: #fff; text-transform: uppercase;
+  padding: 6px 9px 5px; background: var(--ketchup); border: 2px solid var(--ink); border-radius: 8px;
+  box-shadow: 0 3px 0 var(--ink), inset 0 2px 0 rgba(255, 255, 255, 0.3); text-shadow: 0 2px 0 rgba(14, 16, 34, 0.5); transform: rotate(-6deg);
+}
+.dly-rule b { color: var(--gold); }
+.dly-acts { gap: 10px; padding: 2px 4px 0; }
+.dly-acts .btn { flex: 1 1 0; min-width: 0; }
+.dly-acts #dlyGo { flex-grow: 1.6; }
+#app.short .dly-ph { width: 44px; height: 44px; }
+#app.tiny .dly-ph { width: 38px; height: 38px; }
+#app.narrow .dly-x { margin: -4px auto; }
+
+/* ---- the tournament bracket (same surfaces) ---- */
+.cup { background: radial-gradient(ellipse 55% 60% at 50% 46%, rgba(59, 44, 90, 0.55), transparent 72%), rgba(14, 16, 34, 0.97); }
+#scrCup .sel-head h2 { -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); letter-spacing: 0.005em; }
+#scrCup .sel-head .kicker { font-size: 11px; color: var(--sand); }
+#scrCup .sel-head .coin { flex: none; }
+#app.short #scrCup .sel-head .coin { height: 36px; font-size: 17px; }
+.cc-l { color: var(--mute); }
+.cc-l.now { color: var(--gold); }
+.cs { border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+.cs-ph { border-radius: 6px; box-shadow: 0 0 0 2px var(--fc), 0 0 0 3.5px var(--ink); }
+.cs.me { border-color: var(--me); background: linear-gradient(180deg, #3a4170, #262b50); }
+.cs.path { border-color: var(--me); box-shadow: 0 3px 0 var(--ink), 0 0 14px var(--meg), var(--bevel); }
+.cs.tbd { background: rgba(14, 16, 34, 0.38); border: 2px dashed rgba(206, 210, 255, 0.2); box-shadow: none; }
+.cs.fell { border: 2px dashed var(--ember); box-shadow: 0 3px 0 var(--ink); }
+.cs.champ { border-color: var(--ink); background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), 0 0 18px rgba(244, 201, 93, 0.5), var(--bevelgold); }
+.cs.champ .cs-n, .cs.champ.me .cs-n { color: var(--ink); }
+.cs.champ .cs-r { color: rgba(14, 16, 34, 0.72); }
+.cup-lines path { stroke: rgba(206, 210, 255, 0.24); stroke-width: 2.5; }
+/* one sunburst behind the trophy (the screen's only one) */
+.cc.fin::before { content: ""; position: absolute; left: 50%; top: 50%; width: 280px; height: 280px; margin: -140px 0 0 -140px; pointer-events: none; z-index: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(244, 201, 93, 0.13) 0 5deg, transparent 5deg 14deg);
+  -webkit-mask: radial-gradient(circle, #000 0, transparent 60%); mask: radial-gradient(circle, #000 0, transparent 60%); animation: spin 40s linear infinite; will-change: transform; }
+.cc.fin .trophy { position: relative; z-index: 1; }
+.cup-foot { padding-bottom: 6px; }
+.cf { border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 4px 0 var(--ink), var(--bevel); padding: 8px 10px 8px 8px; }
+.cf .kicker { color: var(--sand); font-size: 11px; }
+.cf-t b { font-size: clamp(21px, calc(var(--uh) * 5.6), 32px); }
+.cf.win { border-color: var(--ink); box-shadow: 0 4px 0 var(--ink), inset 0 0 0 2px var(--gold), var(--bevel); }
+.cf.win .cf-t b { color: var(--gold); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+.cf.lose .cf-t b { color: var(--ember); }
+.cf .btn { margin-bottom: 2px; }
+#app.tiny #scrCup .cf .btn { min-height: 40px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal:not([hidden]) > .sheet, .cc.fin::before { animation: none; }
+  .ac-pk, .av-btn { transition: none; }
+}
+
 </style>
 
 </head><body><div id="app">
@@ -1032,7 +1344,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <header class="sel-head">
         <button class="back" id="cupBack" aria-label="Menu"></button>
         <div class="grow"><div class="kicker" id="cupKick">Tournament</div><h2 id="cupTitle">Quarter-final</h2></div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="cupTokens">0</span></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="cupTokens">0</span></div>
       </header>
       <div class="cup-main">
         <div class="cup-grid" id="cupGrid"></div>
@@ -1045,11 +1357,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
   <section id="scrDaily" class="screen modal" hidden>
     <div class="sheet dly-sheet scroll">
-      <div class="x-row"><h3>Daily Potato</h3><span class="kicker" id="dlyDate"></span></div>
-      <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
-      <p class="dly-rule" id="dlyRule"></p>
-      <p class="dly-line" id="dlyLine"></p>
-      <div class="dly-acts"><button class="btn primary" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+      <header class="sh-head"><h3>Daily Potato</h3><span class="kick" id="dlyDate"></span><button class="round x" id="dlyClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
+        <p class="dly-rule" id="dlyRule"></p>
+        <p class="dly-line" id="dlyLine"></p>
+        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+      </div>
     </div>
   </section>
 
@@ -1124,20 +1438,23 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <section id="scrPause" class="screen modal" hidden>
-    <div class="sheet">
-      <div class="x-row"><h2>Paused</h2><button class="iconbtn" id="pSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button></div>
-      <div class="sheet-actions">
-        <button class="btn primary" id="pResume"><span>Resume</span></button>
-        <button class="btn" id="pHelp"><span>How to play</span></button>
-        <button class="btn" id="pQuit"><span>Forfeit</span></button>
+    <div class="sheet pause-sheet">
+      <header class="sh-head"><h2 class="pz">Paused</h2><button class="round" id="pSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button></header>
+      <div class="sh-body">
+        <div class="sheet-actions">
+          <button class="btn primary lg" id="pResume"><span>Resume</span></button>
+          <button class="btn" id="pHelp"><span>How to play</span></button>
+          <button class="btn" id="pQuit"><span>Forfeit</span></button>
+        </div>
+        <p id="pNote"></p>
       </div>
-      <p id="pNote"></p>
     </div>
   </section>
 
   <section id="scrHelp" class="screen modal" hidden>
     <div class="sheet help-sheet scroll">
-      <div class="x-row"><h3>How to play</h3><button class="link" id="hClose">Close</button></div>
+      <header class="sh-head"><h3>How to play</h3><button class="round x" id="hClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
       <p class="help-lead">Hits raise the other potato's damage, and the higher it is, the farther they fly. Knock them off the screen to take a life.</p>
       <div class="help-body"><div id="helpFig"></div><dl class="help-keys" id="helpKeys"></dl></div>
       <div class="help-combos help-ult" id="helpUlt"></div>
@@ -1155,22 +1472,26 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </dl>
       </details>
       </div>
+      </div>
     </div>
   </section>
 
   <section id="scrSettings" class="screen modal" hidden>
     <div class="sheet set-sheet scroll">
-      <div class="x-row"><h3>Settings</h3><button class="link" id="setClose">Close</button></div>
-      <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
-      <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
-      <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
-      <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      <header class="sh-head"><h3>Settings</h3><button class="round x" id="setClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
+        <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
+        <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
+        <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      </div>
     </div>
   </section>
 
   <section id="scrAccount" class="screen modal" hidden>
     <div class="sheet acct-sheet scroll">
-      <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <header class="sh-head"><h3>Account</h3><button class="round x" id="acClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
       <div class="ac-tabs" role="tablist" aria-label="Account sections">
         <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
         <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
@@ -1203,6 +1524,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
       <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
+      </div>
     </div>
   </section>
 </div>
@@ -3173,6 +3495,30 @@ const Sfx = {
   swing(h) { this.noise(h ? 0.13 : 0.06, h ? 0.12 : 0.06, h ? 1000 : 2200); },
   count(go) { this.tone(go ? 880 : 440, go ? 880 : 440, go ? 0.32 : 0.12, "square", 0.08); },
   ui() { this.tone(620, 840, 0.05, "triangle", 0.07); },
+  /* ---- menu cues ("sunset ink" redesign; each one is over within 120 ms). ui() above is the plain wooden tap. ---- */
+  // primary (Play, Fight, Next, Resume): the tap, then a rising two-note chip "ding"
+  uiGo() { this.tone(620, 840, 0.045, "triangle", 0.07); this.at(0.035, 1319, 1319, 0.04, "sine", 0.05); this.at(0.065, 1976, 1976, 0.05, "sine", 0.045); },
+  // back / close: a lower, shorter tap
+  uiBack() { this.tone(430, 300, 0.05, "triangle", 0.08); this.noise(0.02, 0.04, 1800); },
+  // roster pick / tab: a soft paper flip (two quick brushes of filtered noise)
+  uiFlip() { this.noiseF(0.045, 0.16, "bandpass", 1600, 4200, 0.8); this.noiseF(0.05, 0.11, "bandpass", 2600, 5200, 0.9, 0.04); },
+  // sticker / chips: a coin tick
+  uiCoin() { this.at(0, 1976, 1976, 0.03, "square", 0.025); this.at(0.03, 2637, 2637, 0.07, "sine", 0.05); },
+  // a disabled control: a dull thud
+  uiNo() { this.tone(150, 80, 0.09, "sine", 0.11); this.noise(0.04, 0.05, 500); },
+  // the cue for a control (the shared tap helper in menus.js): data-sfx="go|back|flip|coin|no|tap" wins; otherwise a gold primary
+  // button (.primary / .pri) says "go", a back arrow (.back) or a close X (.x) says "back", anything else is the plain tap
+  cue(el) {
+    const k = (el && el.dataset && el.dataset.sfx) || (el && el.classList ? (el.classList.contains("primary") || el.classList.contains("pri") ? "go" : el.classList.contains("back") || el.classList.contains("x") ? "back" : "tap") : "tap");
+    if (k === "go") this.uiGo(); else if (k === "back") this.uiBack(); else if (k === "flip") this.uiFlip(); else if (k === "coin") this.uiCoin(); else if (k === "no") this.uiNo(); else this.ui();
+  },
+  // a tone that starts dt seconds from now (audio-clock timing, for cues shorter than a setTimeout can place)
+  at(dt, f0, f1, dur, type, vol) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime + dt, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    this.env(g, t, vol, dur); o.connect(g); g.connect(this.out); o.start(t); o.stop(t + dur + 0.03);
+  },
   route() { this.tone(660, 990, 0.09, "triangle", 0.08); this.tone(990, 1320, 0.16, "triangle", 0.06); },
   fire() { this.noise(0.35, 0.3, 900); this.tone(170, 80, 0.3, "sawtooth", 0.06); },
   bolt(low) { this.tone(low ? 420 : 900, low ? 260 : 1500, 0.12, "triangle", 0.07); },
@@ -3238,10 +3584,10 @@ const Sfx = {
   // Reaper: the tug is a low, hollow pull with whispers; the sweep a hard white swish with a ring
   reapPull() { this.noiseF(0.7, 0.24, "bandpass", 700, 200, 1.1); this.tone(90, 52, 0.7, "sine", 0.22); this.tone(660, 330, 0.5, "triangle", 0.03); this.later(160, () => this.tone(520, 260, 0.45, "triangle", 0.025)); },
   reapSweep() { this.noiseF(0.28, 0.42, "highpass", 1400, 6200, 1.3); this.later(40, () => this.tone(3100, 2400, 0.22, "sine", 0.06)); this.tone(120, 50, 0.3, "sine", 0.4); },
-  // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"
-  noiseF(dur, vol, type, f0, f1, q) {
+  // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"; dt (optional) starts it that many seconds from now
+  noiseF(dur, vol, type, f0, f1, q, dt) {
     if (!this.ok()) return;
-    const c = this.ctx, t = c.currentTime, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    const c = this.ctx, t = c.currentTime + (dt || 0), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
     s.buffer = this.noiseBuf; f.type = type; f.Q.value = q || 1;
     f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
     this.env(g, t, vol, dur); s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
@@ -16418,12 +16764,12 @@ function cupRender() {
 /* the strip under the bracket: next opponent (slides in), the end of the cup, or the leave question */
 function cupFootRender() {
   const c = P.cup, card = $("cupCard");
-  const btn = (id, label, primary) => `<button class="btn${primary ? " primary" : ""}" id="${id}"><span>${label}</span></button>`;
+  const btn = (id, label, cls) => `<button class="btn${cls ? " " + cls : ""}" id="${id}"><span>${label}</span></button>`;   // cls: "primary" (gold) or "ember"
   card.className = "cf";
   if (CU.confirm) {
-    card.innerHTML = `<div class="cf-t"><b>Leave the cup?</b><small>It ends here. Chips you already won stay.</small></div><div class="cf-acts">${btn("cfKeep", "Keep playing")}${btn("cfLeave", "Leave", true)}</div>`;
+    card.innerHTML = `<div class="cf-t"><b>Leave the cup?</b><small>It ends here. Chips you already won stay.</small></div><div class="cf-acts">${btn("cfKeep", "Keep playing")}${btn("cfLeave", "Leave", "ember")}</div>`;
     $("cfKeep").addEventListener("click", () => { Sfx.ui(); CU.confirm = false; cupFootRender(); cupFootIn(); });
-    $("cfLeave").addEventListener("click", () => { Sfx.ui(); cupLeave(); });
+    $("cfLeave").addEventListener("click", () => { Sfx.uiBack(); cupLeave(); });
     return;
   }
   if (cupOver(c)) {
@@ -16431,22 +16777,22 @@ function cupFootRender() {
     if (won) {
       card.classList.add("win");
       card.innerHTML = `<div class="cf-t"><b>Champion!</b><small><span class="cf-chips"><span class="tokglyph"></span>+<span id="cupChipsN">0</span></span> chips from this cup${c.flawless ? " · flawless, no life lost" : ""}</small></div>` +
-        `<div class="cf-acts">${btn("cfAgain", "Run it back", true)}${btn("cfMenu", "Menu")}</div>`;
+        `<div class="cf-acts">${btn("cfAgain", "Run it back", "primary")}${btn("cfMenu", "Menu")}</div>`;
     } else {
       const by = c.slots[c.by];
       card.classList.add("lose");
       card.innerHTML = `<div class="cf-t"><b>Out in the ${CUP.names[c.out].toLowerCase()}</b><small>${c.fold ? `You left the match. ${cupEsc(by.n)} goes through.` : `${cupEsc(by.n)} (${FIG[by.f].name}) beat you.`} ${cupEsc(champ.n)} won the cup. ${c.earned ? `+${c.earned} chips from this cup.` : "No chips this time."}</small></div>` +
-        `<div class="cf-acts">${btn("cfAgain", "Run it back", true)}${btn("cfMenu", "Menu")}</div>`;
+        `<div class="cf-acts">${btn("cfAgain", "Run it back", "primary")}${btn("cfMenu", "Menu")}</div>`;
     }
-    $("cfAgain").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); cupBegin(c.fid); });
-    $("cfMenu").addEventListener("click", () => { Sfx.init(); Sfx.ui(); cupLeave(); });
+    $("cfAgain").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); cupBegin(c.fid); });
+    $("cfMenu").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); cupLeave(); });
     return;
   }
   const oi = cupOppOf(c), os = c.slots[oi], spec = FIG[os.f], pal = spec.palettes[os.pal] || spec.palettes[0], ti = tierInfo(os.r);
   card.innerHTML = `<span class="cs-ph" style="--fc:${col(pal)}">${PORTRAITS[os.f] ? `<img src="${PORTRAITS[os.f]}" alt="">` : ""}</span>` +
     `<div class="cf-t"><span class="kicker">${CUP.names[c.round]} · ${CUP.lives[c.round]} lives</span><b>${spec.name} “${cupEsc(os.n)}”</b><small>${CU.note ? cupEsc(CU.note) : `${ti.t.name} ${os.r}`}</small></div>` +
-    `<div class="cf-acts">${btn("cupGo", "Fight", true)}</div>`;
-  $("cupGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); cupFight(); });
+    `<div class="cf-acts">${btn("cupGo", "Fight", "primary")}</div>`;
+  $("cupGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); cupFight(); });
 }
 function cupFootIn() { const f = $("cupFoot"); f.classList.remove("in"); void f.offsetWidth; f.classList.add("in"); }
 
@@ -16478,7 +16824,7 @@ function cupShow(o) {
     if (o.cheer) {
       CU.cheer = true; cupRender(); cupJingle();
       const total = c.earned, t0 = performance.now();
-      const count = () => { const n = $("cupChipsN"); if (!n || mode !== "cup") return; const k = Math.min(1, (performance.now() - t0) / 1200); n.textContent = Math.round(total * k); if (k < 1) requestAnimationFrame(count); };
+      const count = () => { const n = $("cupChipsN"); if (!n || mode !== "cup") return; const k = Math.min(1, (performance.now() - t0) / 1200); n.textContent = Math.round(total * k); if (k < 1) requestAnimationFrame(count); else if (total > 0) Sfx.uiCoin(); };
       count();
     } else if (cupOver(c) && c.out >= 0) Sfx.later(0, () => Sfx.tone(300, 110, 0.4, "sawtooth", 0.07));
     cupFootIn();
@@ -16491,7 +16837,7 @@ function cupJingle() {
 }
 
 $("cupBack").addEventListener("click", () => {
-  Sfx.init(); Sfx.ui();
+  Sfx.init(); Sfx.uiBack();
   const c = P.cup;
   if (!cupOk(c) || cupOver(c)) { cupLeave(); return; }
   CU.confirm = !CU.confirm; cupFootRender(); cupFootIn();   // "Menu" in the middle of a cup asks first: leaving ends the cup
@@ -16598,8 +16944,8 @@ function dailyMatchEnd(forfeit) {
 }
 
 screens.daily = $("scrDaily");
-$("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); dailyFight(); });
-$("dlyBack").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("daily", false); });
+$("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); dailyFight(); });
+for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("daily", false); });
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open
 setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
 window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
@@ -17132,7 +17478,10 @@ function finishOnline(left, lost) {
 }
 
 /* ----- wiring ----- */
-const tap = (id, fn) => $(id).addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e); });
+// every wired control sounds its cue (Sfx.cue: a gold primary "goes", a back arrow or close X "goes back", the rest taps)
+const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(el); fn(e); }); };
+// a tap on a disabled control gets a dull thud (disabled buttons get no click, but pointerdown still reaches them)
+app.addEventListener("pointerdown", (e) => { const d = e.target.closest && e.target.closest("button:disabled, [aria-disabled='true']"); if (d && !d.closest("#ctl")) { Sfx.init(); Sfx.uiNo(); } }, true);
 tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
 tap("bCup", cupOpen);
@@ -17830,7 +18179,7 @@ function acMk(tag, cls, text) { const e = document.createElement(tag); if (cls) 
 function acBtn(label, cls, fn) {
   const b = acMk("button", cls, label);
   if (/\bbtn\b/.test(cls)) { b.textContent = ""; b.appendChild(acMk("span", "", label)); }
-  b.addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e, b); });
+  b.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(b); fn(e, b); });
   return b;
 }
 function acAgo(t) {
@@ -18003,7 +18352,7 @@ function renderLocker() {
 }
 function acSetTab(t) { acUI.tab = t; renderAccount(); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
-  b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); acSetTab(b.dataset.t); });
+  b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });
   b.addEventListener("keydown", (e) => {
     const tabs = [...document.querySelectorAll(".ac-tabs .chip")], i = tabs.indexOf(b), d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
     e.stopPropagation(); if (!d) return; e.preventDefault();
