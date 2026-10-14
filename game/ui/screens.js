@@ -1,7 +1,7 @@
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
-const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline") };
-function show(name) { for (const k of ["menu", "select", "result", "online"]) screens[k].hidden = k !== name; }
+const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
+function show(name) { for (const k of ["menu", "select", "result", "online", "cup"]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; }
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
@@ -35,6 +35,7 @@ function renderMenu() {
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
+  cupMenu();
 }
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
@@ -197,9 +198,9 @@ function openSelect(m) {
   sel.mode = m; sel.pending = null;
   mode = "select";
   const ti = tierInfo(P.rating);
-  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : "Practice · no rating, no chips";
+  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · no rating, no chips";
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -241,7 +242,7 @@ function enterMatchUI() {
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
     sub.querySelector(".nm").textContent = match.cpu || "";
-    sub.querySelector(".tr").textContent = match.ranked ? cpuTier() : "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : "";
   }
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
@@ -263,6 +264,7 @@ function finReady(i) {
 function vsLine() {
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
+  if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
   if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
   return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
 }
@@ -325,14 +327,15 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && match.ranked ? "Forfeit" : "Quit to menu";
-  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup) ? "Forfeit" : "Quit to menu";
+  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   releaseTouch();
 }
 let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
   if (match && match.tutorial) { tutDone(); return; }
+  if (match && match.cup) { cupMatchEnd(forfeit); return; }
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };

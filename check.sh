@@ -79,5 +79,11 @@ else fail "screens" "$LOGS/screens.log"; fi
 if [ "$(grep -c "^no errors" "$LOGS/finisher.log")" = 2 ]; then pass "KO finisher (plays through, skips, results screen after)"
 else fail "KO finisher" "$LOGS/finisher.log"; fi
 
+# 8. Tournament: start a cup, win the quarter-final (chips paid, bracket moves on), lose the semi-final (no rating change), run it back,
+#    leave, reload into a cup, forfeit from the pause menu.
+(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwcup.py" cup flow) > "$LOGS/cup.log" 2>&1
+if grep -q "^no errors" "$LOGS/cup.log"; then pass "tournament (bracket, chips, loss, run it back, reload, forfeit; no page errors)"
+else fail "tournament" "$LOGS/cup.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
