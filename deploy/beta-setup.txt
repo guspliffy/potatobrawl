@@ -27,7 +27,7 @@ git fetch -q origin "$BRANCH"
 git checkout -q -B beta FETCH_HEAD
 grep -q "process.env.HOST" server.js || { echo "Branch $BRANCH has no HOST support in server.js yet. Use the branch from the pull request."; exit 1; }
 mkdir -p public
-cp -f index.html three.min.js web/* public/
+cp -f index.html web/* public/
 npm install --omit=dev --silent
 chown -R potatobrawl:potatobrawl /opt/potatobrawl-beta
 sed -e 's#^Description=.*#Description=PotatoBrawl beta server#' \

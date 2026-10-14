@@ -398,6 +398,8 @@ button { font: inherit; color: inherit; }
 .res2.solo { width: min(540px, 100%); grid-template-columns: minmax(0, 1fr); }
 .res2.solo .res-side { display: none; }
 .res-sub { margin: 6px 0 0; color: var(--mute); }
+.res-fin { margin: 6px 0 0; font-family: var(--display); font-weight: 700; font-style: italic; letter-spacing: 0.04em; text-transform: uppercase; font-size: 15px; color: var(--mute); }
+.res-fin b { color: var(--sand); font-weight: 900; }
 .res-rank { --tc: #9097ad; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; background: var(--raise); border-radius: 6px; }
 .delta { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 30px; font-variant-numeric: tabular-nums; }
 .delta.up { color: var(--mint); } .delta.down { color: var(--ember); }
@@ -809,6 +811,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="kicker" id="rMode">Ranked match</div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
+          <p class="res-fin" id="rFin" hidden></p>
         </div>
         <div class="res-actions">
           <button class="btn primary" id="rAgain"><span>Next match</span></button>

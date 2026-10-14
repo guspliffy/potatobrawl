@@ -360,7 +360,31 @@ function finishMatch(forfeit) {
   }
   showResults(R);
 }
+// Counts a number up (or down) to its final value in ~0.8 s, ease-out. Instant with reduced motion; a tap anywhere on the
+// results screen, or the next showResults, finishes it at once (resCountEnd).
+let resCounts = [], resRaf = 0;
+function resCountEnd() {
+  cancelAnimationFrame(resRaf); resRaf = 0;
+  for (const c of resCounts) c.el.textContent = c.pre + c.to;
+  resCounts = [];
+}
+function resCount(el, from, to, pre) {
+  const still = from === to || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  el.textContent = pre + (still ? to : from);
+  if (still) return;
+  resCounts.push({ el, from, to, pre });
+  if (resRaf) return;
+  const t0 = performance.now();
+  const tick = (now) => {
+    const k = Math.min(1, (now - t0) / 800), e = 1 - Math.pow(1 - k, 3);
+    for (const c of resCounts) c.el.textContent = c.pre + Math.round(c.from + (c.to - c.from) * e);
+    if (k < 1) resRaf = requestAnimationFrame(tick); else { resRaf = 0; resCounts = []; }
+  };
+  resRaf = requestAnimationFrame(tick);
+}
+screens.result.addEventListener("pointerdown", resCountEnd, true);   // a tap on the sheet (even on a button) just finishes the count
 function showResults(R) {
+  resCountEnd();
   finStop();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
@@ -384,6 +408,9 @@ function showResults(R) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     $("rSub").textContent += !R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`;
   }
+  const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
+  if (match) match.finBy = "";
+  $("rFin").hidden = !fb; $("rFin").innerHTML = ""; if (fb) { $("rFin").append("Finished with "); const b = document.createElement("b"); b.textContent = fb; $("rFin").append(b); }
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
@@ -393,19 +420,23 @@ function showResults(R) {
     $("rRank").style.setProperty("--tc", ti.t.col);
     paintBadge($("rBadge"), ti.i);
     $("rTier").textContent = ti.t.name;
-    $("rRating").textContent = `${R.before} → ${R.after}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}`;
+    const rt = $("rRating"), tail = ti.next ? ` · ${ti.need} to ${ti.next.name}` : "";
+    rt.textContent = ""; const rn = document.createElement("span"); rn.textContent = R.before; rt.append(`${R.before} → `, rn, tail);
+    resCount(rn, R.before, R.after, "");
     const bar = $("rBar"); bar.style.setProperty("--p", tierInfo(R.before).i === ti.i ? tierInfo(R.before).p : 0);
     requestAnimationFrame(() => requestAnimationFrame(() => bar.style.setProperty("--p", ti.p)));
-    const d = $("rDelta"); d.textContent = (R.delta >= 0 ? "+" : "") + R.delta; d.className = "delta " + (R.delta >= 0 ? "up" : "down");
+    const d = $("rDelta"); resCount(d, 0, R.delta, R.delta >= 0 ? "+" : ""); d.className = "delta " + (R.delta >= 0 ? "up" : "down");
     $("rPromo").textContent = R.ta > R.tb ? `Promoted to ${TIERS[R.ta].name}` : R.ta < R.tb ? `Dropped to ${TIERS[R.ta].name}` : "";
   }
   const k = R.me.kos, fl = R.me.falls;
   $("rStats").innerHTML = `<b>${k}</b> KO${k === 1 ? "" : "s"} · <b>${Math.round(R.me.dmgDealt)}%</b> damage dealt · <b>${fl}</b> fall${fl === 1 ? "" : "s"}`;
   const why = R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "";
-  $("rChips").innerHTML = R.ranked || (R.online && R.lines.length)
-    ? `<b><span class="tokglyph"></span>+${R.total} chips</b>${why}`
+  const chipsOn = R.ranked || (R.online && R.lines.length);
+  $("rChips").innerHTML = chipsOn
+    ? `<b><span class="tokglyph"></span>+<span id="rChipN">${R.total}</span> chips</b>${why}`
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : "Practice doesn't change your rating or earn chips.";
+  if (chipsOn) resCount($("rChipN"), 0, R.total, "");
   $("rAgain").querySelector("span").textContent = R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";

@@ -38,17 +38,12 @@ web = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
        '<meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser.">'
        '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
        + head_part + '</head><body>' + body_part + '</body></html>')
-# three.min.js: nothing in the game loads it any more. It is still copied so the deploy blocks (cp -f index.html three.min.js ...)
-# keep working unchanged; drop it, the copies here and the deploy lines together next round.
-three = (root/'three.min.js').read_bytes()
-(build/'three.min.js').write_bytes(three)
 # index.html at the repo root is what the server deploys (deploy/update.txt copies it to public/).
 (root/'index.html').write_text(web)
 # public/ is what a local `node server.js` serves (git-ignored).
 pub = root/'public'
 pub.mkdir(exist_ok=True)
 (pub/'index.html').write_text(web)
-(pub/'three.min.js').write_bytes(three)
 # web/ holds the home-screen app files (manifest, icons); the server serves them from public/ too.
 for f in (root/'web').iterdir():
     (pub/f.name).write_bytes(f.read_bytes())
