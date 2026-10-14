@@ -8122,10 +8122,11 @@ MANGA.gunslinger = (function () {
     return [
       { id: "look", t0: MT.LOOK, from: "w", freeze: MT.STRIKE, cover: MT.STRIKE,
         poly: port ? [[0, 0], [1, 0], [1, 0.39], [0, 0.42]] : [[0, 0], [0.45, 0], [0.41, 1], [0, 1]],
-        cam: (t, pn) => { const vh = 103 * (1 - 0.07 * fe(MT.LOOK, MT.STRIKE, t)), z = pn.h / vh; return { wx: FIN.wx + D * (port ? 0.14 : 0.12) * pn.w / z, wy: port ? -57 : -53, vh }; },
+        // a taller page (1280x760) would crop the clock: widen the view to about 100 units and keep its top edge where it was
+        cam: (t, pn) => { const v0 = port ? 103 : Math.max(103, 100 * pn.h / pn.w), vh = v0 * (1 - 0.07 * fe(MT.LOOK, MT.STRIKE, t)), z = pn.h / vh; return { wx: FIN.wx + D * (port ? 0.2 : 0.12) * pn.w / z, wy: port ? -57 : -53 - (v0 - 103) * 0.5 + (v0 - 103) * 0.35, vh }; },
         draw: drawLook },
       { id: "inset", t0: MT.INSET, from: "l", slide: 140, freeze: MT.STRIKE, cover: MT.STRIKE,
-        poly: port ? [[0.42, 0.27], [0.98, 0.25], [0.98, 0.49], [0.4, 0.51]] : [[0.635, 0.05], [0.975, 0.02], [0.96, 0.47], [0.615, 0.5]],
+        poly: port ? [[0.47, 0.29], [0.98, 0.27], [0.98, 0.5], [0.45, 0.52]] : [[0.635, 0.05], [0.975, 0.02], [0.96, 0.47], [0.615, 0.5]],
         cam: (t) => { const h = gnsPt(L_(), Math.min(t, MT.STRIKE), "head"), tr = Math.sin(t * 0.026) * 0.12 * fe(MT.INSET, MT.INSET + 200, t); return { wx: h[0] + tr, wy: h[1] + 1, vh: 27 - 3 * fe(MT.INSET, MT.STRIKE, t) }; },
         draw: drawInset },
       { id: "strike", t0: MT.STRIKE, from: "l", freeze: MT.AFTER, cover: MT.AFTER,
