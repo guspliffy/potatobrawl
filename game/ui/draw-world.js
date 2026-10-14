@@ -107,7 +107,8 @@ function moonStage(c, tk) {
 
 /* ---- maps (Jonny, 2026-10-14): each map has its own fight layout (core.js MAPS, read through STAGE after BL.useStage(g)) and its own
    look. MAP_ART[id] = { name, bg(c, tk) (screen space, parallax from cam), stage(c, tk) (world space: STAGE.main and STAGE.plats),
-   ko?(e) (a fighter left the blast zone: a map-flavoured splash, optional) }. Potato Moon is drawn above; the other maps are in
+   tick?(g, live) (once per sim frame: ambient particles via addFx / sfx, quiet sounds only when live), ko?(e, live) (the "ko" event
+   {slot, x, y, pal}: a fighter left the blast zone; a map-flavoured splash on top of the usual beam) }. Potato Moon is drawn above; the other maps are in
    game/maps/<id>.js (spliced in at the MAPS marker below). UI only: nothing here touches the simulation. */
 const MAP_ART = { moon: { name: "Potato Moon", bg: moonBg, stage: moonStage } };
 const mapArt = () => MAP_ART[STAGE.id] || MAP_ART.moon;

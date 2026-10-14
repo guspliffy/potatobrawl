@@ -18,6 +18,7 @@ function updateFx(g) {
   if (mode === "match" && g === G) tagStep(g);   // hud.js: when the YOU / CPU markers show
   skinTick(g, tick);
   uvTick(g);   // Ultimates: the super freeze clock, particles and cues of the ulti being played
+  { BL.useStage(g); const ma = mapArt(); if (ma.tick) ma.tick(g, mode === "match" && g === G && !FIN.on); }   // the map's ambient particles / sounds (draw-world.js MAP_ART)
   for (const p of g.projs) if (p.style === "fire" && Math.random() < 0.7) ember(p.x - p.vx * 0.6 + (Math.random() - 0.5) * 10, p.y + (Math.random() - 0.5) * 10, -p.vx * 0.12 + (Math.random() - 0.5), -0.6 - Math.random());
   for (const f of g.fighters) {
     if (f.state !== "attack" || !f.move || !f.move.fire) continue;
@@ -310,6 +311,7 @@ function handleEvent(g, e, live) {
         fries: Array.from({ length: 8 }, () => ({ da: (Math.random() - 0.5) * 1.1, sp: 5 + Math.random() * 7, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, len: 12 + Math.random() * 8 })) });
       sfx.push({ k: "flash", t: 0, life: 10 });
       cam.shake = 20; trails[e.slot].length = 0;
+      { const ma = mapArt(); if (ma.ko) ma.ko(e, live); }   // the map's own KO splash (draw-world.js MAP_ART)
       if (live) Sfx.ko();
       break;
     case "jump": if (live && !e.rec && e.slot === meSlot) hudX.jb = true;   // the Special button grows while this jump lasts (updateHud)
