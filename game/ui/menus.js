@@ -159,6 +159,7 @@ function openHelp() {
   $("helpKeys").innerHTML = CTRL.map((c) => `<dt style="--kc:${c.col}">${c.name}${touchUI ? "" : `<kbd>${c.key}</kbd>`}</dt><dd>${c.text}</dd>`).join("");
   $("helpGo").hidden = mode === "match";
   $("helpPadK").hidden = $("helpPad").hidden = touchUI;
+  renderHelpCombos();   // ui/combos.js
   modal("help", true);
 }
 

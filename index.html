@@ -500,12 +500,40 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #tut .tut-n { grid-column: 1; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
 #tut .tut-t { grid-column: 1; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(20px, calc(var(--uh) * 6), 30px); line-height: 1; text-transform: uppercase; }
 #tut .tut-h { grid-column: 1; font-size: 14px; color: var(--mute); }
-#tut .chip { grid-column: 2; grid-row: 1 / span 3; align-self: start; pointer-events: auto; min-height: 32px; padding: 3px 12px; font-size: 13px; }
+#tut .tut-btns { grid-column: 2; grid-row: 1 / span 3; align-self: start; display: flex; flex-direction: column; gap: 6px; }
+#tut .chip { pointer-events: auto; min-height: 32px; padding: 3px 12px; font-size: 13px; }
+#tut .tut-hint { display: block; margin-top: 4px; color: var(--sand); }
+#tut .rk-row { display: flex; flex-wrap: wrap; gap: 4px 0; align-items: center; margin-top: 4px; }
 /* sideways with touch buttons: centre the prompt in the space left of the button cluster so it never sits under Special or Jump */
 #app.tutpad:not(.portrait) #tut { left: calc((100% - 190px) / 2); max-width: min(560px, 62%, calc(100% - 206px)); }
 #app.portrait #tut { top: auto; bottom: calc(var(--panelH) + 12px); max-width: calc(100% - 24px); }
 #tut.done { border-left-color: var(--mint); }
 #tut.done .tut-t { color: var(--mint); }
+
+/* combo routes: a key per step (arrow + button), lit when it landed; route cards in How to play */
+.rk { display: inline-flex; align-items: baseline; gap: 3px; padding: 2px 7px; border: 1.5px solid var(--kc); border-radius: 5px; color: var(--kc); background: rgba(14, 16, 34, 0.5); font: 800 13px/1.25 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; transition: background 0.12s, color 0.12s; }
+.rk i { font-style: normal; font-size: 14px; }
+.rk em { font-style: normal; font-size: 10px; opacity: 0.8; }
+.rk-light { --kc: #f3d9a4; } .rk-heavy { --kc: #ef7a52; } .rk-special { --kc: #8fb6ff; } .rk-jump { --kc: #eef0fa; }
+.rk.on { background: var(--kc); color: #14172e; }
+.rk-sep { display: inline-block; width: 12px; height: 2px; margin: 0 2px; background: rgba(206, 210, 255, 0.3); }
+.rk-g { display: inline-flex; align-items: center; white-space: nowrap; }
+.rk-ok { display: inline-block; width: 13px; height: 13px; margin-left: 6px; vertical-align: -1px; border-radius: 50%; background: var(--mint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' fill='none' stroke='%2314172e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat; }
+.help-combos { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.help-combos h4 { margin: 0; font: italic 900 20px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.help-combos p { margin: 0; font-size: 14px; color: var(--mute); max-width: 75ch; }
+.help-combos p b { color: var(--text); }
+.rc-figs { display: flex; flex-wrap: wrap; gap: 6px; }
+.rc-figs .chip { min-height: 30px; padding: 3px 11px; font-size: 13px; }
+.rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 8px; }
+.rc { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(14, 16, 34, 0.35); }
+.rc.ok { border-color: rgba(127, 214, 160, 0.45); }
+.rc-n { font: 800 15px/1.1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; }
+.rc-n small { margin-left: 8px; font: 600 11px/1 var(--display); letter-spacing: 0.1em; color: var(--sand); }
+.rc-k { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+.rc-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.rc-count { font-size: 13px; color: var(--mute); }
+.rc-foot .btn { width: auto; min-width: 200px; }
 .pb.tutpulse { animation: tutPulse 1.1s ease-in-out infinite; }
 @keyframes tutPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(243, 217, 164, 0.75); } 50% { box-shadow: 0 0 0 10px rgba(243, 217, 164, 0); } }
 #app.tut .pc-stocks, #app.tut #clock { visibility: hidden; }
@@ -763,7 +791,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </div>
 
-  <div id="tut" hidden><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div><div class="tut-h" id="tutH"></div><button class="chip" id="tutSkip">Skip</button></div>
+  <div id="tut" hidden><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div><div class="tut-h" id="tutH"></div><span class="tut-btns"><button class="chip" id="tutNext" hidden>Next</button><button class="chip" id="tutSkip">Skip</button></span></div>
 
   <section id="scrMenu" class="screen menu">
     <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
@@ -922,11 +950,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="x-row"><h3>How to play</h3><button class="link" id="hClose">Close</button></div>
       <p class="help-lead">Hits raise the other potato's damage, and the higher it is, the farther they fly. Knock them off the screen to take a life.</p>
       <div class="help-body"><div id="helpFig"></div><dl class="help-keys" id="helpKeys"></dl></div>
+      <div class="help-combos" id="helpCombos"></div>
       <div class="help-go"><span id="helpGo"><button class="btn primary" id="hTry"><span>Practice with tips</span></button></span>
         <details class="help-more">
         <summary>More tips</summary>
         <dl>
-          <dt>Combos</dt><dd>Light hits chain. The third light hit in a row knocks the opponent away.</dd>
+          <dt>Combos</dt><dd>Light hits chain. The third light hit in a row knocks the opponent away. After the second, a Heavy, Special or Jump comes out faster: that's the link.</dd>
           <dt>Recover</dt><dd>Knocked off the side? Jump in the air, then up + Heavy to fly back. Fall near the edge to grab it.</dd>
           <dt>Steer</dt><dd>Hold the stick while you're flying from a hit to bend your path. Holding up keeps you on screen longer.</dd>
           <dt>Breakfall</dt><dd>Press Dodge just before you hit the ground after a big hit: no bounce, quick recovery.</dd>
@@ -1206,6 +1235,14 @@ const TUNE = {
   chgKb: 0.2,
   // KO at the hit: a launch is played this many frames ahead against every escape before it counts as lethal.
   lookFrames: 360,
+  // The link: the second light hit in a row stuns linkStun frames longer, and for linkWin frames after it lands that light's
+  // end lag can be cancelled into a heavy, a special or a jump; a heavy or special started then skips linkFast wind-up frames.
+  linkWin: 12,
+  linkFast: 6,
+  linkStun: 8,
+  // Combo damage: hits from the 4th of a combo deal comboK4, from the 6th comboK6 (so combos can't loop damage forever).
+  comboK4: 0.85,
+  comboK6: 0.7,
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -1526,7 +1563,7 @@ function newFighter(spec, slot, pal, x, facing) {
     inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
-    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false,
+    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false,
     anim: { run: 0 },
   };
 }
@@ -1625,6 +1662,7 @@ function updateFighter(g, f) {
   if (f.dropT > 0) f.dropT--;
   if (f.flash > 0) f.flash--;
   if (f.armorFlash > 0) f.armorFlash--;
+  if (f.link > 0) f.link--;
 
   switch (f.state) {
     case "respawn": {
@@ -1669,12 +1707,7 @@ function actOrMove(g, f) {
   if (f.grounded) {
     if (b.dodge) { consume(f, "dodge"); return startDodge(g, f); }
     if (b.jump) { consume(f, "jump"); f.tumble = false; return setState(f, "jumpsquat"); }
-    if (b.special && f.specCd <= 0) { consume(f, "special"); faceStick(f); return startMove(g, f, "spec"); }
-    if (b.heavy) {
-      consume(f, "heavy");
-      if (dir === "side") faceStick(f);
-      return startMove(g, f, dir === "up" ? "hUp" : dir === "down" ? "hDown" : "hSide");
-    }
+    if (heavyOrSpecial(g, f, dir)) return;
     if (b.light) {
       consume(f, "light");
       if (dir === "side") faceStick(f);
@@ -1685,16 +1718,7 @@ function actOrMove(g, f) {
     if (f.state !== "air") setState(f, "air");
     if (b.dodge && !f.airDodged) { consume(f, "dodge"); return startDodge(g, f); }
     if (b.jump && f.airJumps > 0) { consume(f, "jump"); return airJump(g, f); }
-    if (b.special && f.specCd <= 0) { consume(f, "special"); faceStick(f); return startMove(g, f, "spec"); }
-    if (b.heavy) {
-      if (dir === "up") { if (!f.recUsed) { consume(f, "heavy"); return startMove(g, f, "rec"); } }
-      else {
-        consume(f, "heavy");
-        if (dir === "down") return startMove(g, f, "pound");
-        if (dir === "side") faceStick(f);
-        return startMove(g, f, "hAir");
-      }
-    }
+    if (heavyOrSpecial(g, f, dir)) return;
     if (b.light) {
       consume(f, "light");
       if (dir === "side") faceStick(f);
@@ -1703,6 +1727,24 @@ function actOrMove(g, f) {
     airDrift(f, 1);
     fastFallCheck(f);
   }
+}
+
+// a buffered special or heavy starts here (also from a light's end lag while the link is open); true if one started
+function heavyOrSpecial(g, f, dir) {
+  const b = f.buf;
+  if (b.special && f.specCd <= 0) { consume(f, "special"); faceStick(f); startMove(g, f, "spec"); return true; }
+  if (!b.heavy) return false;
+  if (f.grounded) {
+    consume(f, "heavy");
+    if (dir === "side") faceStick(f);
+    startMove(g, f, dir === "up" ? "hUp" : dir === "down" ? "hDown" : "hSide");
+    return true;
+  }
+  if (dir === "up") { if (f.recUsed) return false; consume(f, "heavy"); startMove(g, f, "rec"); return true; }
+  consume(f, "heavy");
+  if (dir === "side") faceStick(f);
+  startMove(g, f, dir === "down" ? "pound" : "hAir");
+  return true;
 }
 
 function groundMove(g, f) {
@@ -1752,6 +1794,10 @@ function startMove(g, f, key) {
   setState(f, "attack");
   f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0;
   if (key === "spec") f.specCd = m.cooldown || 0;
+  // the link: started from (or soon after) the second light hit in a row, the wind-up skips its first linkFast frames
+  // (a charging heavy still reaches the frame where it charges)
+  f.lk = f.link > 0 && !LIGHT.has(key);
+  if (f.lk) { f.mt = Math.max(0, Math.min(TUNE.linkFast, m.startup - (m.charge ? TUNE.chgHold : 1))); f.link = 0; }
   // a projectile special with finCount fires only finCount shots, in finStyle, when it starts against a finish-ready opponent
   if (key === "spec") f.finShot = !!(m.proj && m.proj.finCount && g.fighters.some((o) => o !== f && o.percent >= TUNE.finishPct));
   if (m.rec) { f.recUsed = true; faceStick(f); f.ff = false; }
@@ -1761,6 +1807,15 @@ function startMove(g, f, key) {
 
 function updateAttack(g, f) {
   const m = f.move;
+  // the link: the light that opened it can be cancelled into a heavy, a special or a jump
+  if (f.link > 0 && LIGHT.has(f.mid)) {
+    if (heavyOrSpecial(g, f, dirOf(f.inp))) return;
+    if (f.buf.jump && (f.grounded || f.airJumps > 0)) {
+      consume(f, "jump"); f.move = null; f.mid = null;
+      if (f.grounded) { f.tumble = false; setState(f, "jumpsquat"); } else airJump(g, f);
+      return;
+    }
+  }
   // a ground heavy still held at the end of its wind-up waits there and charges
   if (m.charge && f.grounded && f.mt === m.startup - TUNE.chgHold && f.inp.heavy && f.chg < TUNE.chgMax) {
     f.chg++; f.vx *= 0.82;
@@ -2074,7 +2129,11 @@ function applyHit(g, h) {
   const hit = fin ? Object.assign({}, h.hit, h.hit.fin) : h.hit;
   // charge: up to +chgDmg damage and +chgKb knockback for a fully charged heavy
   const ck = !h.proj && att.chg > 0 ? att.chg / TUNE.chgMax : 0;
-  const dmg = ck ? Math.round(hit.dmg * (1 + TUNE.chgDmg * ck)) : hit.dmg;
+  // combo counter (all hits): hits in a row with fewer than strGap free frames between them
+  const chained = def.comboBy === att.slot && def.freeT < TUNE.strGap;
+  const nth = chained ? def.combo + 1 : 1;
+  let dmg = ck ? Math.round(hit.dmg * (1 + TUNE.chgDmg * ck)) : hit.dmg;
+  if (nth >= 4) dmg = Math.max(1, Math.round(dmg * (nth >= 6 ? TUNE.comboK6 : TUNE.comboK4)));
   def.percent = Math.min(999, def.percent + dmg);
   att.dmgDealt += dmg;
   let kb = knockback(hit, def.percent, def.s.weight);
@@ -2093,14 +2152,13 @@ function applyHit(g, h) {
     g.events.push({ type: "hit", x: ex, y: ey, dmg, kb: 3, armor: true, slot: att.slot, pal: att.pal, fire: !!hit.fire });
     return;
   }
-  // combo counter (all hits) and light-attack strings
-  const chained = def.comboBy === att.slot && def.freeT < TUNE.strGap;
-  def.combo = chained ? def.combo + 1 : 1;
+  // combo counter and light-attack strings
+  def.combo = nth;
   def.comboDmg = (chained ? def.comboDmg : 0) + dmg;
   def.comboBy = att.slot;
-  let finisher = false;
+  let finisher = false, link = false;
   if (!h.proj && LIGHT.has(att.mid)) {
-    if (chained && def.strBy === att.slot && def.strN > 0) { if (def.strMv !== att.moveT) def.strN++; }
+    if (chained && def.strBy === att.slot && def.strN > 0) { if (def.strMv !== att.moveT) { def.strN++; link = def.strN === 2; } }
     else def.strN = 1;
     def.strBy = att.slot; def.strMv = att.moveT;
     if (def.strN >= 3) {
@@ -2114,7 +2172,7 @@ function applyHit(g, h) {
 
   if (def.grounded && dy > 0.2) { dy = -dy * 0.75; kb *= 0.8; }
 
-  def.move = null; def.mid = null; def.ledge = 0;
+  def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
   setState(def, "hitstun");
   def.hitstun = Math.max(8, Math.round(kb * TUNE.hitstunK));
   if (def.grounded && kb < 6 && dy > -0.75) {
@@ -2132,6 +2190,7 @@ function applyHit(g, h) {
     def.grounded = false; def.y -= 1;
     def.kbx = dx * kb; def.kby = dy * kb;
   }
+  if (link) { def.hitstun += TUNE.linkStun; att.link = TUNE.linkWin; }
   def.vx = 0; def.vy = 0; def.ff = false;
   def.tumble = kb >= TUNE.tumbleKb;
   def.lastHitBy = att; def.lastHitT = g.t;
@@ -2142,7 +2201,7 @@ function applyHit(g, h) {
   if (fin) g.hitstop = Math.max(g.hitstop, TUNE.finishStop);
   const mv = h.proj ? "spec" : att.mid;
   if (def.tumble) g.launches.push({ att, def, mv, fin, chg: att.chg, kb, dirx: dx, diry: dy });
-  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0 });
+  g.events.push({ type: "hit", x: ex, y: ey, dmg, kb, dirx: dx, diry: dy, slot: att.slot, def: def.slot, pal: att.pal, fire: !!hit.fire, combo: def.combo, comboDmg: def.comboDmg, finisher, ps: h.proj ? h.proj.style : null, mv, fin, chg: ck ? att.chg : 0, link, lk: !h.proj && att.lk, mi: h.proj ? -1 : att.moveT });
 }
 
 /* ---------- KO at the hit ----------
@@ -2222,7 +2281,7 @@ function ko(g, f) {
   if (killer) killer.kos++; else f.sds++;
   g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: !killer });
   g.hitstop = Math.max(g.hitstop, 6);
-  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0 });
+  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
@@ -2256,7 +2315,7 @@ function startSudden(g) {
     Object.assign(f, {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
-      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0,
+      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0, link: 0, lk: false,
       chg: 0, doomed: false,
     });
     setState(f, "idle");
@@ -2284,12 +2343,12 @@ const BOT_NEUTRAL = {
 // by fighter id; tests/botstyle.js keeps each of them about as strong as the neutral bot
 const BOT_STYLES = {
   samurai:   { gap: 0.4, shuffle: 0, spec: 1.3, atk: 0.8 },                            // rushes in
-  alchemist: { gap: 1.6, back: 0.4, spec: 1.4, atk: 1.15, heavy: 1.3 },                // stays back and lobs
+  alchemist: { gap: 1.6, back: 0.4, spec: 1.3, atk: 1.15, heavy: 1.25 },               // stays back and lobs
   odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
   wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
-  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.4, atk: 0.9, heavy: 1.3 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
+  gunslinger:{ gap: 1.4, back: 0.5, spec: 1.3, atk: 0.9, heavy: 1.2 },                 // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc
 };
 function makeBot(level, style) {
@@ -2445,7 +2504,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot"];
+  "chg", "doomed", "finShot", "link", "lk"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -2482,7 +2541,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
@@ -2599,6 +2658,7 @@ const Sfx = {
   swing(h) { this.noise(h ? 0.13 : 0.06, h ? 0.12 : 0.06, h ? 1000 : 2200); },
   count(go) { this.tone(go ? 880 : 440, go ? 880 : 440, go ? 0.32 : 0.12, "square", 0.08); },
   ui() { this.tone(620, 840, 0.05, "triangle", 0.07); },
+  route() { this.tone(660, 990, 0.09, "triangle", 0.08); this.tone(990, 1320, 0.16, "triangle", 0.06); },
   fire() { this.noise(0.35, 0.3, 900); this.tone(170, 80, 0.3, "sawtooth", 0.06); },
   bolt(low) { this.tone(low ? 420 : 900, low ? 260 : 1500, 0.12, "triangle", 0.07); },
   burst() { this.noise(0.25, 0.35, 1400); this.tone(220, 90, 0.2, "sine", 0.25); },
@@ -2733,6 +2793,7 @@ function readPad() {
   return r;
 }
 function readPlayer() {
+  if (window.__blInput && mode === "match" && G) return Object.assign(BL.blankInput(), window.__blInput(G));   // tests only: scripted input
   const pad = readPad();
   const kx = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
   const ky = (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0) - (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);
@@ -5624,7 +5685,7 @@ function drawScreenFx(c) {
     }
   }
 }
-// "3 HIT · 14%" pop-up above the fighter taking the combo
+// "3 HIT · 14%" pop-up above the fighter taking the combo, with the route's name over it when the hits make one
 function drawCombos(c, g) {
   for (let i = 0; i < 2; i++) {
     const cb = combos[i], f = g.fighters[i];
@@ -5642,6 +5703,11 @@ function drawCombos(c, g) {
     c.font = '800 14px "Barlow Condensed", "Arial Narrow", sans-serif';
     const sub = cb.fin ? `${cb.dmg}% · LAUNCH` : `${cb.dmg}%`;
     c.lineWidth = 4; c.strokeText(sub, 0, 16); c.fillStyle = "#f3efe6"; c.fillText(sub, 0, 16);
+    if (cb.route) {   // the route's name above the count, in gold
+      c.font = 'italic 900 17px "Barlow Condensed", "Arial Narrow", sans-serif';
+      const rn = cb.route.toUpperCase();
+      c.lineWidth = 5; c.strokeText(rn, 0, -24); c.fillStyle = "#ffd23f"; c.fillText(rn, 0, -24);
+    }
     c.restore();
   }
   drawChargedPops(c);
@@ -5995,7 +6061,9 @@ function handleEvent(g, e, live) {
       spark(e.x, e.y, e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);
       const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
-      if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: 1, at: combos[e.def] && combos[e.def].at };
+      const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
+      if (rt && rt.fresh && live) Sfx.route();
+      if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
       if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));
@@ -13000,7 +13068,7 @@ setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true })
    Checksums every second catch any divergence; the host then sends a full snapshot. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 6;
+const PROTO = 7;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -13675,6 +13743,7 @@ function openHelp() {
   $("helpKeys").innerHTML = CTRL.map((c) => `<dt style="--kc:${c.col}">${c.name}${touchUI ? "" : `<kbd>${c.key}</kbd>`}</dt><dd>${c.text}</dd>`).join("");
   $("helpGo").hidden = mode === "match";
   $("helpPadK").hidden = $("helpPad").hidden = touchUI;
+  renderHelpCombos();   // ui/combos.js
   modal("help", true);
 }
 
@@ -14485,9 +14554,11 @@ function tutShow() {
 }
 function tutEnd() {
   TUT.on = false; $("tut").hidden = true; app.classList.remove("tut", "tutpad");
+  $("tutNext").hidden = true; $("tutSkip").textContent = "Skip";   // the Combo trial's buttons (ui/combos.js)
   for (const b of padBtns) b.classList.remove("tutpulse");
 }
 function tutTick(evs) {
+  if (match && match.trial) { trialTick(evs); return; }   // the Combo trial runs on this engine (ui/combos.js)
   if (!TUT.on || !match || !match.tutorial || !G || G.phase !== "play") return;
   const me = G.fighters[0], op = G.fighters[1], id = TUT.id;
   // nobody runs out of lives or gets launched far while learning
@@ -14541,6 +14612,224 @@ function tutDone() {
 tap("tutSkip", () => { tutEnd(); goMenu(); });
 tap("hTry", startTutorial);
 
+/* Combo routes, the pure part: no page, no sim. Spliced into the page by build.py (at the ROUTES marker in ui/effects.js)
+   and also a node module, so tests/combos.js can play every route through the real sim. A route is the list of moves
+   (the hit events' `mv`) that land in one combo; "jump" is a step shown on the card that lands no hit, and a trailing "!"
+   means a charged heavy (the hit's chg > 0). */
+const ROUTES = (function () {
+  // pct: the damage the Combo trial's CPU starts at (where the route works for every fighter; tests/combos.js checks it)
+  const SHARED = [
+    { id: "three", name: "Three-piece", keys: ["jab", "jab", "side"], pct: 0 },
+    { id: "lift", name: "Lift & Smash", keys: ["side", "up", "hUp"], pct: 0 },
+    { id: "trip", name: "Trip & Spike", keys: ["down", "side", "hDown"], pct: 0 },
+    { id: "rising", name: "Rising", keys: ["side", "up", "jump", "nair"], pct: 40 },
+    { id: "sig", name: "Signature", keys: ["side", "side", "spec"], pct: 0 },
+  ];
+  const OWN = {
+    phoenix: { id: "skyburn", name: "Skyburn", keys: ["up", "up", "jump", "hAir"], pct: 70 },
+    alchemist: { id: "lab", name: "Lab Accident", keys: ["down", "up", "hUp"], pct: 0 },
+    odin: { id: "hammer", name: "Hammer Fall", keys: ["jab", "jab", "hSide!"], pct: 0 },
+    wizard: { id: "staff", name: "Staff Dance", keys: ["side", "side", "hSide"], pct: 0 },
+    samurai: { id: "blink", name: "Blink Cut", keys: ["side", "up", "spec"], pct: 0 },
+    dragon: { id: "tail", name: "Tail & Flame", keys: ["down", "side", "spec"], pct: 0 },
+    gunslinger: { id: "whip", name: "Pistol Whip", keys: ["jab", "jab", "spec"], pct: 0 },
+    reaper: { id: "reap", name: "Reap", keys: ["down", "down", "spec"], pct: 0 },
+  };
+  const ALL = [...SHARED, ...Object.keys(OWN).map((f) => Object.assign({ fighter: f }, OWN[f]))];
+  const hits = (r) => r.keys.filter((k) => k !== "jump");
+  // the fighter's own route first, then the shared ones
+  function forFighter(id) { return [OWN[id], ...SHARED].filter(Boolean).map((r) => ALL.find((a) => a.id === r.id)); }
+  const byId = (id) => ALL.find((r) => r.id === id) || null;
+  /* Follows one fighter's combo on one defender. `t` is a tracker ({} to start); feed it every hit event of that attacker on that
+     defender (e.combo is the defender's hit count in the combo). Returns the route the combo's moves now end with, or null. */
+  function track(t, e, fid) {
+    if (e.combo === 1 || !t.list) { t.list = []; t.mi = null; }
+    const k = e.mv + (e.chg > 0 ? "!" : "");
+    // one move that hits several times (a multi-hit swing, a spray of bullets) is one step of the route
+    const same = t.list.length && (e.mi >= 0 ? t.mi === e.mi : t.mi === -1 && t.list[t.list.length - 1].replace("!", "") === e.mv);
+    if (same) { if (e.chg > 0) t.list[t.list.length - 1] = k; }
+    else { t.list.push(k); t.mi = e.mi; }
+    const cands = forFighter(fid).slice().sort((a, b) => hits(b).length - hits(a).length);
+    for (const r of cands) {
+      const want = hits(r);
+      if (want.length > t.list.length) continue;
+      const tail = t.list.slice(t.list.length - want.length);
+      if (want.every((w, i) => (w.endsWith("!") ? tail[i] === w : tail[i].replace("!", "") === w))) return r;
+    }
+    return null;
+  }
+  return { SHARED, OWN, ALL, forFighter, byId, hits, track };
+})();
+if (typeof module !== "undefined") module.exports = ROUTES;
+
+/* ===================== combos: routes in the pop-up, route cards in How to play, the Combo trial ===================== */
+// The pop-up: follows each fighter's combo and names the route its hits make (the best one so far in this combo).
+const comboT = [{}, {}];
+function comboRoute(g, e) {
+  const t = comboT[e.slot], f = g.fighters[e.slot];
+  if (!t || !f) return null;
+  if (e.combo === 1) t.best = null;
+  const r = ROUTES.track(t, e, f.spec.id);
+  const fresh = !!r && t.best !== r;
+  if (r) t.best = r;
+  return t.best ? { name: t.best.name, fresh } : null;
+}
+
+/* ----- route cards: each step a small key (arrow + button), in the button's colour ----- */
+const RK = {
+  jab: ["", "light"], side: ["→", "light"], up: ["↑", "light"], down: ["↓", "light"], nair: ["", "light"], uair: ["↑", "light"],
+  hSide: ["→", "heavy"], hUp: ["↑", "heavy"], hDown: ["↓", "heavy"], hAir: ["", "heavy"], spec: ["", "special"], jump: ["", "jump"],
+};
+const RK_NAME = { light: "Light", heavy: "Heavy", special: "Special", jump: "Jump" };
+function routeKeysHTML(r, lit) {   // each key after the first keeps its dash in front of it, so a wrapped line never ends in a dash
+  return r.keys.map((k, i) => {
+    const [arrow, b] = RK[k.replace("!", "")], hold = k.endsWith("!");
+    const key = `<span class="rk rk-${b}${lit && lit[i] ? " on" : ""}">${arrow ? `<i>${arrow}</i>` : ""}<b>${RK_NAME[b]}</b>${hold ? "<em>hold</em>" : ""}</span>`;
+    return i ? `<span class="rk-g"><span class="rk-sep"></span>${key}</span>` : key;
+  }).join("");
+}
+const ROUTE_HINT = {
+  three: "Three light hits in a row, close in. The third one launches.",
+  lift: "Side light, up light, then up + Heavy the moment the up light lands.",
+  trip: "Down light, side light, then down + Heavy right away. Works at low damage.",
+  rising: "Jump the moment the up light lands, then Light with no direction in the air.",
+  sig: "Two side lights, then Special the moment the second one lands.",
+  skyburn: "Two up lights, jump the moment the second lands, then Heavy with no direction in the air.",
+  lab: "Down light, up light, then up + Heavy right away.",
+  hammer: "Two jabs, then side + Heavy and keep holding it a moment before you let go.",
+  staff: "Two side lights, then side + Heavy the moment the second one lands.",
+  blink: "Side light, up light, then Special the moment the up light lands.",
+  tail: "Down light, side light, then Special right away.",
+  whip: "Two jabs, then Special the moment the second one lands.",
+  reap: "Two down lights, then Special the moment the second one lands.",
+};
+const routesDone = () => (Array.isArray(P.routes) ? P.routes : []);
+const ROUTE_TOTAL = ROUTES.ALL.length;
+const COMBO_CHIPS = 30;
+
+/* ----- How to play: the link in one line, the routes of one fighter, the trial button ----- */
+let helpFid = null;
+function renderHelpCombos() {
+  const box = $("helpCombos");
+  if (!FIG[helpFid]) helpFid = FIG[P.last] ? P.last : FIGHTERS[0].id;
+  const done = new Set(routesDone());
+  const figs = FIGHTERS.map((f) => `<button class="chip${f.id === helpFid ? " on" : ""}" data-f="${f.id}">${f.name}${done.has(ROUTES.OWN[f.id].id) ? ' <span class="rk-ok" aria-label="route cleared"></span>' : ""}</button>`).join("");
+  const cards = ROUTES.forFighter(helpFid).map((r) => `<div class="rc${done.has(r.id) ? " ok" : ""}"><div class="rc-n">${r.name}${r.fighter ? `<small>${FIG[r.fighter].name} only</small>` : ""}${done.has(r.id) ? '<span class="rk-ok" aria-label="cleared"></span>' : ""}</div><div class="rc-k">${routeKeysHTML(r)}</div></div>`).join("");
+  box.innerHTML = `<h4>Combos</h4>
+    <p>The second light hit in a row opens <b>the link</b>: a Heavy, Special or Jump pressed the moment it lands comes out faster, and at low damage it can't be escaped. Combos that follow a route show its name.</p>
+    <div class="rc-figs" role="group" aria-label="Routes of">${figs}</div>
+    <div class="rc-grid">${cards}</div>
+    <div class="rc-foot"><span class="rc-count">${done.size} of ${ROUTE_TOTAL} routes cleared${done.size >= ROUTE_TOTAL ? " · Combo Potato" : ` · all ${ROUTE_TOTAL}: the title Combo Potato and ${COMBO_CHIPS} chips`}</span><span id="helpTrialW"><button class="btn" id="hTrial"><span>Combo trial</span></button></span></div>`;
+  for (const b of box.querySelectorAll(".rc-figs .chip")) b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); helpFid = b.dataset.f; renderHelpCombos(); });
+  $("helpTrialW").hidden = mode === "match";
+  $("hTrial").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); startTrial(helpFid); });
+}
+
+/* ----- the Combo trial: the tutorial's engine, a CPU that stands still, one route at a time ----- */
+const TR = { fid: null, list: [], i: 0, k: 0, t: {}, miss: 0, hold: 0, next: null, place: 0, air: false };
+function startTrial(fid) {
+  Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
+  const me = FIG[fid] || FIGHTERS[0], opp = me.id === "odin" ? FIG.wizard : FIG.odin;
+  const myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: opp.palettes[0] }], stocks: 9, time: 0, countdown: 90 });
+  match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
+  meSlot = 0;
+  const list = ROUTES.forFighter(me.id), done = new Set(routesDone());
+  Object.assign(TR, { fid: me.id, list, i: Math.max(0, list.findIndex((r) => !done.has(r.id))), hold: 0, next: null });
+  enterMatchUI();
+  app.classList.toggle("tutpad", touchUI);
+  $("tutNext").hidden = false; $("tutSkip").textContent = "Exit";
+  trialRoute();
+}
+// a fresh try at the current route: the CPU stands a step in front, at the route's damage
+function trialRoute() {
+  const r = TR.list[TR.i];
+  Object.assign(TR, { k: 0, t: {}, miss: 0, air: false });
+  $("tut").classList.remove("done");
+  $("tutN").textContent = `Combo trial · ${FIG[TR.fid].name} · ${TR.i + 1} of ${TR.list.length}`;
+  $("tutT").textContent = r.name;
+  trialKeys();
+  TR.place = 1;
+}
+function trialKeys() {
+  const r = TR.list[TR.i], lit = [];
+  let h = 0;
+  for (const k of r.keys) {
+    if (k === "jump") lit.push(TR.k > h || (TR.k === h && h > 0 && TR.air));
+    else { lit.push(h < TR.k); h++; }
+  }
+  const hint = TR.miss >= 3 ? `<span class="tut-hint">${ROUTE_HINT[r.id] || ""}</span>` : "";
+  $("tutH").innerHTML = `<span class="rk-row">${routeKeysHTML(r, lit)}</span>${hint}`;
+}
+// puts the CPU back in front of the player (also after it was knocked out), at the route's damage
+function trialPlace() {
+  const me = G.fighters[0], op = G.fighters[1], S = STAGE.main, r = TR.list[TR.i];
+  if (op.state === "dead") return false;
+  const side = me.x > S.x2 - 120 ? -1 : me.x < S.x1 + 120 ? 1 : me.facing;
+  Object.assign(op, { x: clamp(me.grounded ? me.x + side * 70 : side * 40, S.x1 + 40, S.x2 - 40), y: S.top, vx: 0, vy: 0, kbx: 0, kby: 0, grounded: true, plat: -1,
+    hitstun: 0, tumble: false, invuln: 0, percent: r.pct, facing: -side, combo: 0, strN: 0, freeT: 99, doomed: false });
+  op.state = "idle"; op.st = 0; op.move = null; op.mid = null;
+  if (me.grounded) me.facing = side;
+  me.specCd = 0;   // every try starts with the special ready
+  return true;
+}
+function trialProgress(list, want) {   // the longest start of the route the combo's last moves match
+  for (let n = Math.min(want.length, list.length); n > 0; n--) {
+    const tail = list.slice(list.length - n);
+    if (want.slice(0, n).every((w, i) => (w.endsWith("!") ? tail[i] === w : tail[i].replace("!", "") === w))) return n;
+  }
+  return 0;
+}
+function trialTick(evs) {
+  if (!G || G.phase !== "play") return;
+  const me = G.fighters[0], op = G.fighters[1], r = TR.list[TR.i], want = ROUTES.hits(r);
+  me.stocks = Math.max(me.stocks, 5); op.stocks = Math.max(op.stocks, 5); me.percent = Math.min(me.percent, 60);
+  if (TR.place && trialPlace()) TR.place = 0;
+  if (TR.hold > 0) {
+    if (--TR.hold === 0) {
+      if (TR.next !== null) { TR.i = TR.next; TR.next = null; }
+      trialRoute();
+    }
+    return;
+  }
+  let changed = false;
+  for (const e of evs) {
+    if (e.type !== "hit" || e.slot !== 0 || e.def !== 1) continue;
+    ROUTES.track(TR.t, e, TR.fid);
+    const k = trialProgress(TR.t.list, want);
+    if (TR.k > 0 && k === 0) TR.miss++;
+    TR.k = k; changed = true;
+    if (k === want.length) return trialClear(r);
+  }
+  if (r.keys.includes("jump") && TR.k > 0 && !me.grounded && !TR.air) { TR.air = true; changed = true; }
+  // the combo is over (the CPU was free long enough) or it is far off: count a miss and set up again
+  const over = TR.k > 0 && op.freeT >= BL.TUNE.strGap && op.state !== "hitstun";
+  if (over || op.state === "dead" || (op.state === "respawn")) {
+    if (over) TR.miss++;
+    if (op.state === "respawn") { op.state = "air"; op.st = 0; }
+    TR.k = 0; TR.t = {}; TR.air = false; TR.place = 1; changed = true;
+  }
+  if (changed) trialKeys();
+}
+function trialClear(r) {
+  const before = routesDone(), first = !before.includes(r.id);
+  if (first) P.routes = [...before, r.id];
+  let note = first ? "Cleared!" : "Cleared again!";
+  if (first && P.routes.length >= ROUTE_TOTAL && !P.comboPaid) {
+    P.comboPaid = true; P.tokens += COMBO_CHIPS;
+    showBanner("Combo Potato", `All ${ROUTE_TOTAL} routes · +${COMBO_CHIPS} chips`, "fin", 2200, "#ffd23f");
+  }
+  if (first) saveProfile();
+  TR.k = want0(r).length; trialKeys();
+  $("tut").classList.add("done"); $("tutT").textContent = `${r.name}: ${note}`;
+  Sfx.route();
+  const done = new Set(routesDone()), nx = TR.list.findIndex((q, j) => j > TR.i && !done.has(q.id));
+  TR.next = nx >= 0 ? nx : (TR.i + 1) % TR.list.length;
+  TR.hold = 80;
+}
+const want0 = (r) => ROUTES.hits(r);
+function trialNext() { if (!match || !match.trial) return; TR.i = (TR.i + 1) % TR.list.length; TR.hold = 0; TR.next = null; trialRoute(); }
+tap("tutNext", trialNext);
 /* ===================== loop ===================== */
 function simTick() {
   if (mode === "result") { if (match && match.online) netTick(); return; }
@@ -14587,7 +14876,7 @@ function frame(now) {
   if (mode === "online") drawOnlineArt(tick);
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 newAttract();
 goMenu();
 if (NET.invite) openOnline();

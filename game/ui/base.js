@@ -105,6 +105,7 @@ const Sfx = {
   swing(h) { this.noise(h ? 0.13 : 0.06, h ? 0.12 : 0.06, h ? 1000 : 2200); },
   count(go) { this.tone(go ? 880 : 440, go ? 880 : 440, go ? 0.32 : 0.12, "square", 0.08); },
   ui() { this.tone(620, 840, 0.05, "triangle", 0.07); },
+  route() { this.tone(660, 990, 0.09, "triangle", 0.08); this.tone(990, 1320, 0.16, "triangle", 0.06); },
   fire() { this.noise(0.35, 0.3, 900); this.tone(170, 80, 0.3, "sawtooth", 0.06); },
   bolt(low) { this.tone(low ? 420 : 900, low ? 260 : 1500, 0.12, "triangle", 0.07); },
   burst() { this.noise(0.25, 0.35, 1400); this.tone(220, 90, 0.2, "sine", 0.25); },

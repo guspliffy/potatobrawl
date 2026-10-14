@@ -132,7 +132,7 @@ function drawScreenFx(c) {
     }
   }
 }
-// "3 HIT · 14%" pop-up above the fighter taking the combo
+// "3 HIT · 14%" pop-up above the fighter taking the combo, with the route's name over it when the hits make one
 function drawCombos(c, g) {
   for (let i = 0; i < 2; i++) {
     const cb = combos[i], f = g.fighters[i];
@@ -150,6 +150,11 @@ function drawCombos(c, g) {
     c.font = '800 14px "Barlow Condensed", "Arial Narrow", sans-serif';
     const sub = cb.fin ? `${cb.dmg}% · LAUNCH` : `${cb.dmg}%`;
     c.lineWidth = 4; c.strokeText(sub, 0, 16); c.fillStyle = "#f3efe6"; c.fillText(sub, 0, 16);
+    if (cb.route) {   // the route's name above the count, in gold
+      c.font = 'italic 900 17px "Barlow Condensed", "Arial Narrow", sans-serif';
+      const rn = cb.route.toUpperCase();
+      c.lineWidth = 5; c.strokeText(rn, 0, -24); c.fillStyle = "#ffd23f"; c.fillText(rn, 0, -24);
+    }
     c.restore();
   }
   drawChargedPops(c);
@@ -275,7 +280,9 @@ function handleEvent(g, e, live) {
       spark(e.x, e.y, e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);
       const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
-      if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: 1, at: combos[e.def] && combos[e.def].at };
+      const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
+      if (rt && rt.fresh && live) Sfx.route();
+      if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
       if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));

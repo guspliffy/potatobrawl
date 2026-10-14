@@ -38,9 +38,11 @@ function tutShow() {
 }
 function tutEnd() {
   TUT.on = false; $("tut").hidden = true; app.classList.remove("tut", "tutpad");
+  $("tutNext").hidden = true; $("tutSkip").textContent = "Skip";   // the Combo trial's buttons (ui/combos.js)
   for (const b of padBtns) b.classList.remove("tutpulse");
 }
 function tutTick(evs) {
+  if (match && match.trial) { trialTick(evs); return; }   // the Combo trial runs on this engine (ui/combos.js)
   if (!TUT.on || !match || !match.tutorial || !G || G.phase !== "play") return;
   const me = G.fighters[0], op = G.fighters[1], id = TUT.id;
   // nobody runs out of lives or gets launched far while learning
