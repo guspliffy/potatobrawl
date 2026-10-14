@@ -9,7 +9,6 @@ online matches.
 | File | What it does |
 |---|---|
 | `public/index.html` | The game: menus, six potato fighters, CPU ranked ladder, practice, online play |
-| `public/three.min.js` | three.js r128 (MIT licence). The game no longer uses it; it is still copied so the update steps stay the same |
 | `server.js` | Serves the page, relays online matches over WebSocket (`/ws`), keeps itself awake |
 | `package.json` | One dependency: `ws` (pinned to 8.21.3) |
 | `render.yaml` | Render setup: free web service in Frankfurt |
