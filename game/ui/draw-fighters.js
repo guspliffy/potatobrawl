@@ -96,6 +96,8 @@ function pose(f, tk) {
     if (m.kind === "charge" && phase === 0) P.crouch = 0.3 * ease(k);
     if (m.pound) { fF = [w * 0.08, 4]; fB = [-w * 0.12, 2]; hF = [w * 0.42, -leg - tor * 1.15]; hB = [-w * 0.42, -leg - tor * 1.1]; }
     if (L_.costume === "reaper" && !HEAVY_KEYS[f.mid]) reaperPose(f, P, m, f.mid, phase, k, w, leg, tor, (a, b, c2, d) => { hF = a; if (b) hB = b; if (c2) fF = c2; if (d) fB = d; });
+    // an Ultimate (see the Ultimates section at the end of this file; the Reaper's is in reaperPose)
+    if (m.ult && L_.costume !== "reaper") ultPose(f, P, m, phase, k, w, leg, tor, { hF, hB, fF, fB }, (a, b, c2, d) => { if (a) hF = a; if (b) hB = b; if (c2) fF = c2; if (d) fB = d; });
     let look = null, replace = false;
     if (hk) {
       // shared heavy language: a deeper crouch while winding up, a glint in the last two startup frames
@@ -696,14 +698,22 @@ function gunShotPose(f, P, m, phase, k, w, leg, tor, set) {
   const iv = m.proj.interval || 1, n = f.finShot ? m.proj.finCount || 1 : m.proj.count || 1, sk = f.mt - m.startup;
   const kick = (i) => { const d = sk - i * iv; return i < n && d >= 1 && d < 6 ? 1 - (d - 1) / 5 : 0; };   // the barrel is level on the shot frame, the kick follows
   const up = phase === 0 ? ease(k) : phase === 2 ? 1 - ease(k) : 1;
-  const hF = lerp2([w * 0.62, -leg - tor * 0.22], [w * 1.02, -leg - tor * 0.64], up), kf = kick(0), kb = kick(1);
+  const hF = lerp2([w * 0.62, -leg - tor * 0.22], [w * 1.02, -leg - tor * 0.64], up);
+  // Twin Shot: front pistol, then back. Dead Eye (Ultimate, six shots): they fire in turn, the last (the gold one) with a big flash
+  const alt = n > 2;
+  let kf = 0, kb = 0, sF = -1, sB = -1;
+  for (let i = 0; i < n; i++) {
+    const front = alt ? i % 2 === 0 : i === 0, d = sk - i * iv, kk = kick(i), fresh = d >= 0 && d < 3;
+    if (front) { kf = Math.max(kf, kk); if (fresh) { sF = d; P.bigF = alt && !!m.ult && i === n - 1; } } else { kb = Math.max(kb, kk); if (fresh) { sB = d; P.bigB = alt && !!m.ult && i === n - 1; } }
+  }
   const hB = f.finShot ? null : lerp2([-w * 0.5, -leg - tor * 0.25], [w * 0.8, -leg - tor * 0.76], up);
   set([hF[0] - kf * 4, hF[1] - kf * 5], hB && [hB[0] - kb * 4, hB[1] - kb * 5]);
   P.holdAng = lerp(0.9, -0.04, up) - kf * 0.55;
   if (hB) P.gunB = lerp(Math.PI - 0.9, -0.08, up) - kb * 0.55;
   P.lean = -0.06 * up - (kf + kb) * 0.05;
-  if (sk >= 0 && sk < 3) P.shotF = sk;
-  if (!f.finShot && sk >= iv && sk < iv + 3) P.shotB = sk - iv;
+  if (sF >= 0) P.shotF = sF;
+  if (sB >= 0 && !f.finShot) P.shotB = sB;
+  P.ultShots = !!m.ult;
 }
 // a revolver in the hand at (hx, hy), pointing along a; the fist is drawn again over the grip. shot >= 0: the muzzle flash, frames since the shot
 function gunHeld(c, f, P, hand, a, shot, r, limb, flash, back) {
@@ -720,7 +730,7 @@ function gunHeld(c, f, P, hand, a, shot, r, limb, flash, back) {
   c.beginPath(); c.moveTo(-4.2, -4.4); c.lineTo(-7.4, -7.2); c.lineTo(-3, -5); c.closePath(); c.fill();            // hammer
   c.lineWidth = 1; c.beginPath(); c.arc(1.8, 2.6, 2.3, 0, Math.PI); c.stroke();                                    // trigger guard
   c.strokeStyle = "rgba(255,255,255,0.6)"; c.beginPath(); c.moveTo(5.5, -3.7); c.lineTo(15.5, -3.7); c.stroke();
-  if (shot >= 0) gunFlash(c, 18.5, -2.7, shot, f.finShot && !back ? 1.6 : 1, f.finShot && !back);
+  if (shot >= 0) { const big = back ? P.bigB : P.bigF; gunFlash(c, 18.5, -2.7, shot, big ? 1.9 : f.finShot && !back ? 1.6 : P.ultShots ? 1.3 : 1, big || (f.finShot && !back)); }
   c.restore();
   c.fillStyle = limb; c.beginPath(); c.arc(hx, hy, r, 0, Math.PI * 2); c.fill();
   if (!back) { c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke(); }
@@ -980,6 +990,28 @@ function reaperPose(f, P, m, mid, phase, k, w, leg, tor, set) {
     set(hF, reapGrip(hF, P.holdAng, P.scyK, 13), [w * 0.42, 0], [-w * 0.38, 0]);
     return;
   }
+  if (mid === "ulti") {
+    // Soul Harvest: the scythe raised in the freeze; the hook out at arm's length, tugging (frames 4 to 23); then one big sweep up and over
+    const mt = f.mt, fz = ease(uvFz(f)), raise = [w * 0.6, -leg - tor * 1.08], hook = [w * 1.0, -leg - tor * 0.62], lo = [w * 0.55, -leg - tor * 0.3], hi = [w * 0.12, -leg - tor * 1.05];
+    P.bladeS = 1;
+    if (mt === 0) { P.holdAng = -1.75; P.lean = -0.1 * fz; P.crouch = 0.2 * fz; set(lerp2(rest, raise, fz), [-w * 0.5, -leg - tor * 0.75], [w * 0.42, 0], [-w * 0.38, 0]); }
+    else if (mt <= 24) {
+      const q = ease(clamp(mt / 4, 0, 1)), tug = mt >= 4 ? Math.max(0, Math.sin((mt - 4) * 0.62)) : 0, hF = lerp2(raise, [hook[0] - tug * 7, hook[1]], q);
+      P.holdAng = lerp(-1.75, 0.12 - tug * 0.12, q); P.lean = -0.1 - 0.12 * q - 0.06 * tug; P.crouch = 0.2 + 0.12 * q;
+      set(hF, reapGrip(hF, P.holdAng, 1, 14), [w * 0.55, 0], [-w * 0.5, 0]);
+    } else if (mt <= 31) {
+      const u = clamp((mt - 25) / 6, 0, 1), e = ease(u), u0 = ease(Math.max(0, u - 0.45)), hF = lerp2(lo, hi, e);
+      P.holdAng = lerp(0.5, -2.9, e); P.lean = lerp(-0.2, 0.18, e); P.crouch = 0.32 * (1 - e);
+      P.reapT = { T: { h1: lerp2(lo, hi, u0), h2: hF, a1: lerp(0.5, -2.9, u0), a2: P.holdAng, s: 1 }, n: 1, a: 1, wmax: 11 };
+      set(hF, reapGrip(hF, P.holdAng, 1, 14), [w * 0.5, 0], [-w * 0.45, 0]);
+    } else {
+      const r = ease(clamp((mt - 31) / 36, 0, 1)), a = 1 - (mt - 31) / 7, hF = lerp2(hi, rest, r);
+      P.holdAng = lerp(-2.9, -1.75, r); P.lean = 0.18 * (1 - r); P.crouch = 0.1 * (1 - r);
+      if (a > 0) P.reapT = { T: { h1: lerp2(lo, hi, 0.55), h2: hi, a1: lerp(0.5, -2.9, 0.55), a2: -2.9, s: 1 }, n: 1, a, wmax: 11 };
+      set(hF, reapGrip(hF, P.holdAng, 1, 14), [w * 0.4, 0], [-w * 0.36, 0]);
+    }
+    return;
+  }
   if (m.rec) {
     // Grave rise: both arms up, the scythe raised, a dark cloud under the feet lifts him
     P.holdAng = -1.75; P.bladeS = 1; P.lean = -0.05;
@@ -1062,12 +1094,13 @@ function drawPotato(c, f, tk, at) {
   let alpha = 1;
   if (intangible(f) && f.state !== "respawn" && f.state !== "getup") alpha = (tk >> 2) % 2 ? 0.55 : 0.8;
   if (f.state === "dodge" && f.st >= 3 && f.st <= (f.dodgeKind === "air" ? 20 : 16)) alpha = 0.45;
+  if (uvHeld(f)) alpha = uvAlpha(f);   // an ulti: solid (no intangible flicker), the Samurai's dash ghosted
   const flash = f.flash > 0 && f.flash % 2 === 0;
   const pal = flash ? { body: "#ffffff", trim: "#ffffff", accent: "#ffffff" } : P.dim ? { body: mix(pal0.body, "#6a6a7a", 0.45), trim: pal0.trim, accent: mix(pal0.accent, "#6a6a7a", 0.45) } : pal0;
   const limbF = flash ? "#ffffff" : LIMB, limbB = flash ? "#e8e8f0" : LIMB_BACK;
   const RC = cos === "reaper" ? reapCols(f, P, flash) : null;
   c.save();
-  c.translate(ox + P.jit[0], oy - P.hop + P.jit[1]); c.globalAlpha = alpha; c.scale(f.facing, 1);
+  c.translate(ox + P.jit[0], oy - P.hop + P.jit[1]); c.globalAlpha = alpha; const us = uvScale(f); c.scale(f.facing * us, us);
   if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
@@ -1149,11 +1182,12 @@ function drawPotato(c, f, tk, at) {
   }
   limbPath(c, shR, P.hF, armLen, "down", lw, limbF);
   c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
+  if (f.mid === "ulti" && f.state === "attack") uvHeldProp(c, f, P, tk);
   if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
   if (cos === "samurai") katana(c, P, f, shR, pal);
   if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
   if (cos === "reaper") { if (!P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); reapLightTrail(c, f, P); }
-  if (cos === "alchemist" && f.specCd <= 0 && !flash) greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
+  if (cos === "alchemist" && f.specCd <= 0 && !flash && f.mid !== "ulti") greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
   }
@@ -1204,7 +1238,7 @@ function drawSwoosh(c, f, P, S) {
   c.lineWidth = lw; path(); c.stroke();
 }
 
-function drawFighter(c, f, tk, at) {
+function drawFighter0(c, f, tk, at) {
   if (f.spec.look.build === "potato") return drawPotato(c, f, tk, at);
   const ox = at ? at[0] : f.x, oy = at ? at[1] : f.y;
   const look = f.spec.look, pal0 = f.pal, X = px(pal0);
@@ -2263,4 +2297,442 @@ function drawFinishFx(c, f, P, tk) {
   c.globalAlpha = 0.5; c.fillStyle = f.pal.accent; brush(c, pts, 15, 8);
   c.globalAlpha = 1; c.fillStyle = "#ffffff"; brush(c, pts, 5, 8);
   c.restore();
+}
+
+/* ===================== Ultimates: the looks of the eight ulti moves (UI only) =====================
+   During an ulti f.state === "attack", f.mid === "ulti", f.mt is the frame and f.move.ult the kind (see docs / interface notes):
+   dive (Phoenix) · cloud (Alchemist) · spear (Odin) · stars (Wizard) · cuts (Samurai) · hellfire (Dragon) · deadeye (Gunslinger) · harvest (Reaper).
+   Poses come from ultPose() (called from pose(); the Reaper's is in reaperPose, the Gunslinger's in gunShotPose), props held in the hand from
+   uvHeldProp() (inside drawPotato, fighter space), what is behind / over the figure from uvBehind / uvAhead (drawFighter) and uvFront
+   (render2D, world space), the marks on the floor from uvFloor (draw-world.js), particles and sounds once per sim tick from uvFighterTick. */
+const UV_RISE = 26;   // Phoenix rises 26 px a tick (core.js ultStep)
+// the Dragon is drawn 1.6x from his feet while he works: grows in the wind-up (and through the freeze), holds, shrinks in the end lag
+function uvScale(f) {
+  if (uvHeld(f) !== "hellfire") return 1;
+  const live = UV.g && UV.g.fighters[f.slot] === f, e = live ? (UV.t < UV_FREEZE ? UV.t * 0.4 : 12) : 0;
+  return 1 + 0.6 * ease(clamp((f.mt + e) / 26, 0, 1)) * (1 - ease(clamp((f.mt - 70) / 28, 0, 1)));
+}
+// the camera keeps Phoenix's dive on the stage instead of following him out of the top of the screen
+function uvCamY(f) { return uvHeld(f) === "dive" ? Math.max(f.y, -120) : f.y; }
+function uvHidden(f) { return uvHeld(f) === "dive" && f.mt >= 15 && f.mt < 31; }   // above the screen: nothing of him is drawn, the mark on the floor says where
+// the alpha of the figure during an ulti (the intangible flicker would run through most of Phoenix's and the Samurai's moves)
+function uvAlpha(f) { return uvHeld(f) === "cuts" && f.mt >= 24 && f.mt <= 36 ? 0.3 : 1; }
+// how far into the super freeze the user's power pose is (0..1); 1 outside the freeze
+function uvFz(f) { return f.mt === 0 && UV.g && UV.g.fighters[f.slot] === f ? clamp(UV.t / 10, 0, 1) : 1; }
+// the crystal of the Wizard's staff in the world (where his stars are called from)
+function staffTip(f, tk) {
+  const P = pose(f, tk), a = P.holdAng != null ? P.holdAng : -Math.PI / 2 + 0.12;
+  return [f.x + f.facing * (P.hF[0] + Math.cos(a) * 40), f.y + P.hF[1] + Math.sin(a) * 40];
+}
+
+function drawFighter(c, f, tk, at) {
+  if (!at && uvHeld(f)) {
+    if (uvHidden(f)) return;
+    uvBehind(c, f, tk);
+    drawFighter0(c, f, tk, at);
+    uvAhead(c, f, tk);
+    return;
+  }
+  drawFighter0(c, f, tk, at);
+}
+
+/* ---- poses ---- */
+// called from pose() for every ulti but the Reaper's (that is reaperPose). cur holds the hands and feet as pose() has them so far;
+// S(hF, hB, fF, fB) hands new ones back. At f.mt === 0 the game is held (the super freeze): every fighter strikes a power pose.
+function ultPose(f, P, m, phase, k, w, leg, tor, cur, set) {
+  const mt = f.mt, cos = f.spec.look.costume, hand = (x, y) => [w * x, -leg - tor * y];
+  const S = (a, b, c2, d) => { if (a) cur.hF = a; if (b) cur.hB = b; if (c2) cur.fF = c2; if (d) cur.fB = d; set(a, b, c2, d); };
+  const fz = ease(uvFz(f)), fzF = hand(0.55, 1.28);
+  P.noSwoosh = true;
+  if (mt === 0 && cos !== "gunslinger") {   // a fist to the sky, knees bent
+    P.crouch = 0.2 * fz; P.lean = -0.1 * fz;
+    S(lerp2(cur.hF, fzF, fz), lerp2(cur.hB, hand(-0.55, 0.5), fz), lerp2(cur.fF, [w * 0.45, 0], fz), lerp2(cur.fB, [-w * 0.4, 0], fz));
+  }
+  switch (cos) {
+    case "phoenix":
+      if (mt === 0) { P.wingUp = fz; S(lerp2(cur.hF, hand(0.95, 0.35), fz), lerp2(cur.hB, hand(-0.8, 0.3), fz)); }                           // braced, wings flared
+      else if (mt < 15) { P.wingUp = 1.2; P.crouch = 0; P.lean = 0; S(hand(0.28, 1.25), hand(-0.2, 1.2), [w * 0.1, -leg * 0.1], [-w * 0.12, -leg * 0.15]); }   // rising: arms up, feet together
+      else if (mt >= 31 && mt < 60) { P.spin = Math.PI + Math.sin(tick * 0.5) * 0.12; P.wingUp = 0.3; S(hand(0.22, 0.15), hand(-0.2, 0.12)); }   // the dive: head first
+      else if (mt >= 60) {   // the landing: swings upright into a crouch, arms wide, the crouch rises again
+        const q = ease(clamp((mt - 59) / 6, 0, 1)), r = ease(clamp((mt - 66) / 24, 0, 1));
+        P.spin = Math.PI * (1 - q); P.crouch = 0.5 * (1 - r); P.wingUp = 1 - 0.5 * r; P.lean = 0;
+        S(hand(1.0, 0.38), hand(-0.9, 0.35), [w * 0.55, 0], [-w * 0.5, 0]);
+      }
+      break;
+    case "alchemist":   // the flask goes up and back over the head, then the usual throw
+      if (phase === 0 && mt > 0) { const q = ease(Math.min(1, k * 1.5)); P.crouch = 0.2 + 0.08 * q; P.lean = -0.1 - 0.04 * q; S(lerp2(fzF, hand(-0.15, 1.42), q)); }
+      break;
+    case "odin":        // the spear is raised, then drawn back behind the shoulder (uvHeldProp draws it)
+      if (mt === 0) P.holdAng = -1.1;
+      else if (phase === 0) { const q = ease(Math.min(1, k * 1.4)); P.crouch = 0.2 + 0.04 * q; P.lean = -0.1 - 0.08 * q; S(lerp2(fzF, hand(-0.55, 0.95), q)); P.holdAng = lerp(-1.1, -0.1, q); }
+      break;
+    case "wizard": {    // the staff held up, the crystal flares on every star he calls
+      const up = phase === 2 ? 1 - ease(k) : 1, call = mt >= 6 && mt <= 42 ? Math.max(0, 1 - ((mt - 6) % 8) / 5) : 0;
+      S(lerp2(cur.hF, hand(0.45, 1.3), up)); P.holdAng = -1.45; P.cryK = 1.35 + 0.35 * Math.sin(tick * 0.4) + 1.1 * call; P.lean = -0.07 * up; P.crouch = 0.12 * up;
+      break;
+    }
+    case "samurai": {
+      if (mt <= 23) {   // crouched, the front hand on the hilt, the scabbard back; trembling for the last frames
+        const q = mt === 0 ? fz : 1;
+        P.crouch = 0.46 * q; P.lean = 0.18 * q; P.holdAng = lerp(-0.8, Math.PI - 0.5, q); P.sheath = q > 0.15 ? 1 : 0;
+        S(lerp2(cur.hF, hand(0.1, 0.3), q), lerp2(cur.hB, hand(-0.45, 0.3), q), lerp2(cur.fF, [w * 0.45, 0], q), lerp2(cur.fB, [-w * 0.4, 0], q));
+        if (mt > 15) P.jit = [(tick & 1 ? 1 : -1) * 0.9 * ((mt - 15) / 8), 0];
+      } else if (mt <= 35) P.sheath = 0;   // the dash (the classic dash pose)
+      else if (mt < 54) { P.crouch = 0.32; P.lean = 0.1; P.holdAng = 0.1; P.sheath = 0; S(hand(0.75, 0.38), hand(-0.4, 0.4), [w * 0.5, 0], [-w * 0.4, 0]); }   // through, blade low
+      else if (mt <= 66) {   // the blade slides home: the click is frame 66
+        const q = ease(clamp((mt - 54) / 12, 0, 1));
+        P.crouch = 0.32 - 0.1 * q; P.lean = 0.1; P.holdAng = lerp(0.1, Math.PI - 0.5, q); P.sheath = q;
+        S(lerp2(hand(0.75, 0.38), hand(0.1, 0.3), q), hand(-0.4, 0.4), [w * 0.5, 0], [-w * 0.4, 0]);
+      } else { P.crouch = 0.22 * (1 - ease(clamp((mt - 66) / 14, 0, 1))); P.lean = 0.05; P.holdAng = Math.PI - 0.5; P.sheath = 1; S(hand(0.1, 0.3), hand(-0.4, 0.35)); }
+      break;
+    }
+    case "dragon": {    // the wings spread as he grows and fold in the end lag
+      const base = 0.35 * (mt === 0 ? fz : 1);
+      P.wingUp = phase === 0 ? base + 0.65 * ease(k) : phase === 1 ? 1 : 1 - ease(k);
+      S(null, null, [w * 0.34, 0], [-w * 0.3, 0]);   // both feet planted (the move's second hitbox would fling the back foot out along the fire)
+      break;
+    }
+    case "gunslinger": P.crouch = 0.08; break;
+  }
+}
+/* ---- what the figure holds ---- */
+function uvHeldProp(c, f, P, tk) {
+  const mt = f.mt, cos = f.spec.look.costume;
+  if (cos === "alchemist" && mt < 24) {   // the flask: it shakes and glows, green sparks climb off it
+    const [hx, hy] = P.hF, q = Math.min(1, mt / 20), sh = mt > 8 ? Math.sin(tk * 1.3) * 0.12 * q : 0;
+    glowDot(c, hx + 3, hy - 12, 20 + 14 * q, 0.55 + 0.3 * q, "#7dff62");
+    flaskShape(c, hx + 3, hy - 10, 1.35 + 0.2 * q, sh, "#7dff62");
+    for (let i = 0; i < 3; i++) { const ph = (tk * 0.05 + i / 3) % 1; c.globalAlpha = 1 - ph; c.fillStyle = "#d4ffbc"; c.beginPath(); c.arc(hx + 3 + Math.sin(i * 3 + tk * 0.2) * 6, hy - 22 - ph * 22, 2.4, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = 1;
+  } else if (cos === "odin" && mt < 26) {   // Gungnir in the hand, tip forward, runes lit
+    c.save(); c.translate(P.hF[0], P.hF[1]); c.rotate(P.holdAng != null ? P.holdAng : -0.3); c.translate(-10, 0); c.scale(0.72, 0.72);
+    uvSpearShape(c, tk);
+    c.restore();
+    c.fillStyle = LIMB; c.beginPath(); c.arc(P.hF[0], P.hF[1], 4.6, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();   // the fist over the shaft
+  } else if (cos === "samurai" && mt >= 16 && mt <= 23) {   // a white glint on the hilt just before the dash
+    const q = (mt - 15) / 8, [hx, hy] = P.hF;
+    glowDot(c, hx, hy, 16 + 14 * q, 0.7, "#ffffff"); star4(c, hx, hy, 7 + 12 * q, "#ffffff");
+  }
+}
+function uvBehind(c, f, tk) {
+  const k = uvHeld(f), mt = f.mt, cy = f.y - f.s.h * 0.5 * uvScale(f);
+  if (k === "dive") {
+    if (mt >= 1 && mt < 15) glowDot(c, f.x, cy, 78, 0.7, "#ff8a2b");
+    else if (mt >= 31 && mt < 60) uvPhoenixComet(c, f, tk, true);
+  } else if (k === "cuts" && mt >= 24 && mt <= 40) {   // afterimages: the accent-coloured silhouettes of where he just was
+    const d = f.facing, fade = mt <= 35 ? 1 : 1 - (mt - 35) / 5, sil = uvSil(f, tk, f.pal.accent), S = UV_SIL.S;
+    for (let i = 1; i <= 5; i++) { c.globalAlpha = 0.5 * (1 - i / 6) * fade; c.drawImage(sil, f.x - d * 22 * i * (mt <= 35 ? 1 : 0.6) - S / 2, f.y - S * 0.8); }
+    c.globalAlpha = 1;
+  } else if (k === "deadeye" && mt >= 1 && mt < 96) {   // the red of the dead eye round him
+    const a = clamp(mt / 8, 0, 1) * clamp((96 - mt) / 12, 0, 1);
+    glowDot(c, f.x, cy, 96, (0.42 + 0.1 * Math.sin(tk * 0.4)) * a, "#ff2a2a");
+  } else if (k === "harvest" && mt >= 1 && mt <= 72) {   // a pale ghost-green light under the hood
+    const a = clamp(mt / 6, 0, 1) * clamp((72 - mt) / 10, 0, 1);
+    glowDot(c, f.x, cy, 84, 0.3 * a, "#bfffe0");
+  }
+}
+function uvAhead(c, f, tk) {
+  const k = uvHeld(f), mt = f.mt;
+  if (k === "dive" && mt >= 31 && mt < 60) uvPhoenixComet(c, f, tk, false);
+}
+
+/* ---- Phoenix: Solar Dive ---- */
+// the flame column he rises in (a tapered, wavering column, white-gold at his feet, red and clear at the bottom)
+function uvColumn(c, x, yTop, yBot, a, tk) {
+  const h = yBot - yTop;
+  if (h < 6 || a <= 0) return;
+  c.save(); c.globalCompositeOperation = "lighter"; c.globalAlpha = a;
+  const layer = (w0, w1, c0, c1, c2, ph) => {
+    const g = c.createLinearGradient(0, yTop, 0, yBot); g.addColorStop(0, c0); g.addColorStop(0.35, c1); g.addColorStop(1, c2);
+    c.fillStyle = g; c.beginPath();
+    for (let i = 0; i <= 10; i++) { const u = i / 10, y = yTop + h * u, hw = w0 + (w1 - w0) * u, wob = Math.sin(tk * 0.8 + u * 9 + ph) * (2 + 4 * u); c.lineTo(x - hw + wob, y); }
+    for (let i = 10; i >= 0; i--) { const u = i / 10, y = yTop + h * u, hw = w0 + (w1 - w0) * u, wob = Math.sin(tk * 0.8 + u * 9 + ph + 2) * (2 + 4 * u); c.lineTo(x + hw + wob, y); }
+    c.closePath(); c.fill();
+  };
+  layer(30, 8, "rgba(255,236,160,0.95)", "rgba(255,130,40,0.7)", "rgba(255,60,20,0)", 0);
+  layer(14, 3, "rgba(255,255,230,1)", "rgba(255,210,100,0.8)", "rgba(255,150,50,0)", 1.3);
+  c.restore();
+}
+// the comet: a long trail up the sky, a fireball with a gold core. `back` draws the trail and the outer fire (behind the figure), else the bright core in front
+function uvPhoenixComet(c, f, tk, back) {
+  const x = f.x, y = f.y - 34;
+  if (back) {
+    const tl = 360;
+    c.save(); c.globalCompositeOperation = "lighter";
+    const g = c.createLinearGradient(0, y, 0, y - tl); g.addColorStop(0, "rgba(255,244,190,0.95)"); g.addColorStop(0.2, "rgba(255,170,60,0.75)"); g.addColorStop(0.6, "rgba(255,90,30,0.35)"); g.addColorStop(1, "rgba(255,60,20,0)");
+    c.fillStyle = g; c.beginPath(); c.moveTo(x - 34, y);
+    for (let i = 0; i <= 10; i++) { const u = i / 10; c.lineTo(x - 34 * (1 - u * 0.85) + Math.sin(tk * 0.9 + u * 8) * 5 * u, y - tl * u); }
+    for (let i = 10; i >= 0; i--) { const u = i / 10; c.lineTo(x + 34 * (1 - u * 0.85) + Math.sin(tk * 0.9 + u * 8 + 2) * 5 * u, y - tl * u); }
+    c.closePath(); c.fill();
+    const g2 = c.createLinearGradient(0, y, 0, y - tl * 0.7); g2.addColorStop(0, "rgba(255,255,235,0.95)"); g2.addColorStop(1, "rgba(255,230,140,0)");
+    c.fillStyle = g2; c.beginPath(); c.moveTo(x - 13, y); c.lineTo(x, y - tl * 0.7); c.lineTo(x + 13, y); c.closePath(); c.fill();
+    glowDot(c, x, y, 78, 0.85, "#ff7a2b");
+    c.restore();
+    for (let i = 0; i < 3; i++) { const ph = (tk * 0.12 + i / 3) % 1; c.fillStyle = "#ffe08a"; c.globalAlpha = 1 - ph; c.beginPath(); c.arc(x + (nz(i * 4.1 + (tk >> 2)) - 0.5) * 50, y - 20 - ph * 140, 3, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = 1;
+  } else {
+    c.save(); c.globalCompositeOperation = "lighter";
+    glowDot(c, x, y, 52, 0.7, "#ffd23f"); glowDot(c, x, y, 24, 0.95, "#fff6c8");   // the gold core
+    c.restore();
+    star4(c, x, y, 20 + 5 * Math.sin(tk * 0.7), "rgba(255,255,255,0.85)");
+  }
+}
+// the mark on the floor where he will land (drawn under the fighters from the moment he is out of sight until he lands, mt 15..59)
+function uvPhoenixMark(c, f, tk) {
+  const mt = f.mt;
+  if (mt < 15 || mt >= 60) return;
+  const x = f.ultX, ty = uvFloorY(f), age = mt - 15, fadeIn = clamp(age / 5, 0, 1), urg = mt >= 31 ? 1 : 0.55 + 0.45 * (age / 16), pul = 0.5 + 0.5 * Math.sin(tk * 0.45);
+  c.save(); c.translate(x, 0);
+  c.globalAlpha = fadeIn; c.globalCompositeOperation = "lighter";
+  const sw = 36 + 8 * pul + (mt >= 31 ? 14 : 0), g = c.createLinearGradient(0, ty - 900, 0, ty);   // the light shaft from above
+  g.addColorStop(0, "rgba(255,230,140,0)"); g.addColorStop(0.65, `rgba(255,205,90,${0.08 * urg})`); g.addColorStop(1, `rgba(255,236,170,${0.24 * urg})`);
+  c.fillStyle = g; c.fillRect(-sw, ty - 900, sw * 2, 900);
+  const g2 = c.createLinearGradient(0, ty - 900, 0, ty); g2.addColorStop(0, "rgba(255,255,255,0)"); g2.addColorStop(1, `rgba(255,255,255,${0.16 * urg})`);
+  c.fillStyle = g2; c.fillRect(-sw * 0.38, ty - 900, sw * 0.76, 900);
+  c.globalCompositeOperation = "source-over";
+  c.translate(0, ty);
+  c.save(); c.scale(1, 0.26);   // the glowing disc, the size of the blast
+  const rg = c.createRadialGradient(0, 0, 8, 0, 0, 100); rg.addColorStop(0, `rgba(255,238,170,${0.7 * urg})`); rg.addColorStop(0.6, `rgba(255,150,50,${0.38 * urg})`); rg.addColorStop(1, "rgba(255,100,30,0)");
+  c.fillStyle = rg; c.beginPath(); c.arc(0, 0, 100, 0, Math.PI * 2); c.fill(); c.restore();
+  c.lineWidth = 3.6; c.strokeStyle = UV_GOLD; c.globalAlpha = fadeIn * 0.95;   // the ring at the blast's reach (about 76 each side)
+  const r1 = 78 + 3 * pul; c.beginPath(); c.ellipse(0, 0, r1, r1 * 0.26, 0, 0, Math.PI * 2); c.stroke();
+  const cp = (tk % 26) / 26, r2 = 78 + 74 * (1 - cp);   // a ring closing in, over and over
+  c.globalAlpha = fadeIn * (1 - cp) * 0.9; c.lineWidth = 2.4; c.strokeStyle = "#ffffff"; c.beginPath(); c.ellipse(0, 0, r2, r2 * 0.26, 0, 0, Math.PI * 2); c.stroke();
+  c.globalAlpha = fadeIn * 0.7; c.lineWidth = 2; c.strokeStyle = "#ffd9a0"; c.beginPath(); c.ellipse(0, 0, 44, 11.4, 0, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
+function uvPhoenixFront(c, f, tk) {
+  const mt = f.mt;
+  if (mt >= 1 && mt < 15) {   // the column from where he left the floor up to him
+    const y0 = f.y + UV_RISE * mt;
+    uvColumn(c, f.x, f.y + 8, y0 + 6, 1, tk);
+    if (mt < 8) { c.save(); c.translate(f.x, y0 + 4); c.scale(1, 0.26); glowDot(c, 0, 0, 80, 0.75 * (1 - mt / 8), "#ffb04a"); c.restore(); }
+  } else if (mt >= 15 && mt < 25) {   // what he leaves behind: the column over the spot, reaching into the sky, dying down
+    const at = UV.at[f.slot];
+    if (at) uvColumn(c, at.x, at.y - 720, at.y + 6, 1 - (mt - 15) / 10, tk);
+  } else if (mt >= 60 && mt <= 74) {   // the landing: flame jets across the blast and a hot line on the floor
+    const q = (mt - 60) / 14, a = 1 - q, env = clamp((mt - 59) / 2, 0, 1) * a;
+    c.save(); c.globalCompositeOperation = "lighter";
+    for (let i = -4; i <= 4; i++) flameCluster(c, f.x + i * 22, f.y + 2, 3, (74 + 54 * nz(i * 3.3)) * (1 - Math.abs(i) * 0.1) * env, 5, tk + i * 5, 1, "rgba(255,120,36,0.9)", "rgba(255,240,170,0.95)");
+    const fl = c.createLinearGradient(f.x - 120, 0, f.x + 120, 0); fl.addColorStop(0, "rgba(255,200,90,0)"); fl.addColorStop(0.5, `rgba(255,236,170,${0.85 * a})`); fl.addColorStop(1, "rgba(255,200,90,0)");
+    c.fillStyle = fl; c.fillRect(f.x - 120, f.y - 3, 240, 7);   // a hot line along the floor
+    c.restore();
+  }
+}
+
+/* ---- Dragon: Hellfire ---- */
+// a flame stream from (ox, oy) to (ex, ey): three layers (red-orange, orange-yellow, white-hot core) whose edges ripple on their own phases; hw1 = half thickness at the far end
+function uvFlameStream(c, ox, oy, ex, ey, hw1, tk) {
+  const N = 16, L = Math.hypot(ex - ox, ey - oy), ang = Math.atan2(ey - oy, ex - ox);
+  c.save(); c.translate(ox, oy); c.rotate(ang);
+  const layer = (wk, c0, c1, c2, ph) => {
+    const g = c.createLinearGradient(0, 0, L, 0); g.addColorStop(0, c0); g.addColorStop(0.5, c1); g.addColorStop(1, c2);
+    c.fillStyle = g; c.beginPath();
+    for (let i = 0; i <= N; i++) { const u = i / N, hw = (5 + (hw1 - 5) * Math.pow(u, 0.7)) * wk; c.lineTo(u * L, -hw + Math.sin(tk * 0.9 - u * 11 + ph) * (2 + 5 * u)); }
+    c.lineTo(L + hw1 * 0.35 * wk, 0);
+    for (let i = N; i >= 0; i--) { const u = i / N, hw = (5 + (hw1 - 5) * Math.pow(u, 0.7)) * wk; c.lineTo(u * L, hw + Math.sin(tk * 0.9 - u * 11 + ph + 2.1) * (2 + 5 * u)); }
+    c.closePath(); c.fill();
+  };
+  layer(1, "rgba(255,226,130,0.95)", "rgba(255,120,36,0.84)", "rgba(220,50,20,0.5)", 0);
+  layer(0.62, "rgba(255,248,200,0.96)", "rgba(255,196,80,0.9)", "rgba(255,120,40,0.62)", 1.7);
+  layer(0.3, "rgba(255,255,240,0.98)", "rgba(255,240,170,0.9)", "rgba(255,200,90,0.5)", 3.1);
+  c.restore();
+}
+function uvMouthWorld(f, tk) {
+  const P = pose(f, tk), m = rot(P.mouthPt || [P.head[0] + P.hr * 1.5, P.head[1] + P.hr * 0.25], P.hip, P.lean), s = uvScale(f);
+  return [f.x + f.facing * m[0] * s, f.y + m[1] * s];
+}
+function uvDragonFire(c, f, tk) {
+  const mt = f.mt, d = f.facing;
+  if (mt < 25 || mt > 73) return;
+  const blast = mt >= 61 && mt <= 66, len = mt <= 66 ? 408 * easeOut2(clamp((mt - 24) / 6, 0, 1)) : 408 * Math.max(0, 1 - (mt - 66) / 7);
+  if (len < 12) return;
+  const [ox, oy] = uvMouthWorld(f, tk), ex = f.x + d * len, ey = f.y - 46;
+  // the floor under the stream glows
+  c.save(); c.globalCompositeOperation = "lighter";
+  const fg = c.createLinearGradient(f.x, 0, ex, 0); fg.addColorStop(0, "rgba(255,150,50,0.35)"); fg.addColorStop(1, "rgba(255,90,30,0.12)");
+  c.fillStyle = fg; c.fillRect(Math.min(f.x + d * 50, ex), f.y - 5, Math.abs(ex - f.x - d * 50), 9);
+  c.restore();
+  c.save(); c.globalAlpha = mt > 66 ? Math.max(0, 1 - (mt - 66) / 7) : 1;
+  uvFlameStream(c, ox, oy, ex, ey, blast ? 58 : 40, tk);
+  // tongues licking up off the top edge of the stream
+  for (let i = 0; i < 5; i++) { const u = 0.25 + i * 0.17, x = ox + (ex - ox) * u, y = oy + (ey - oy) * u - 26 * u; flameCluster(c, x, y, 1, (16 + 14 * u) * (1 + (blast ? 0.5 : 0)), 0, tk + i * 7, 0.6, "rgba(255,140,40,0.8)", "rgba(255,230,150,0.9)"); }
+  if (blast) {   // the blast: the far end flares white-hot
+    c.globalCompositeOperation = "lighter";
+    glowDot(c, ex - d * 30, ey, 110 + 20 * Math.sin(tk * 0.8), 0.9, "#ffcf6a"); glowDot(c, ex - d * 30, ey, 50, 1, "#ffffff");
+  }
+  c.restore();
+}
+
+/* ---- Samurai: Thousand Cuts ---- */
+function uvSamuraiFront(c, g, f, tk) {
+  const mt = f.mt, d = f.facing;
+  if (mt >= 24 && mt <= 46) {   // the streak he left through the dash: a white blade of light from where he started to where he is
+    const x0 = UV.dash[f.slot] ? UV.dash[f.slot].x : f.x - d * 264, a = mt <= 35 ? 1 : 1 - (mt - 35) / 11, y = f.y - 34, len = Math.abs(f.x - x0);
+    if (len > 8) {
+      const pts = lpts([x0, y], [f.x, y], 10);
+      c.save(); c.globalAlpha = 0.5 * a; c.fillStyle = f.pal.accent; brush(c, pts, 34, 10);
+      c.globalAlpha = 0.9 * a; c.fillStyle = "#ffffff"; brush(c, pts, 12, 10); c.restore();
+    }
+  }
+  const t = f.ultTgt >= 0 ? g.fighters[f.ultTgt] : null;
+  if (t && mt >= 30 && mt < 67) {   // the held opponent: more and more cut lines flicker across him, in the last frames hard and bright
+    const n = Math.min(18, Math.floor((mt - 28) / 2.1) + 1), hot = mt >= 58 ? (mt - 57) / 9 : 0;
+    c.save(); c.lineCap = "round";
+    for (let i = 0; i < n; i++) {
+      const cx = t.x + (nz(i * 7.1) - 0.5) * 30, cy = t.y - t.s.h * (0.15 + 0.7 * nz(i * 5.9)), an = (nz(i * 3.3) - 0.5) * 2.4 + (i % 2 ? 0.45 : -0.45), len = 34 + 26 * nz(i * 2.2);
+      const newest = i >= n - 2;
+      c.globalAlpha = (newest ? 0.95 : 0.38 + 0.2 * hot) * (mt < 40 ? 0.8 : 1); c.strokeStyle = "#ffffff"; c.lineWidth = newest ? 2.6 + 1.4 * hot : 1.4 + hot;
+      c.beginPath(); c.moveTo(cx - Math.cos(an) * len, cy - Math.sin(an) * len); c.lineTo(cx + Math.cos(an) * len, cy + Math.sin(an) * len); c.stroke();
+    }
+    if (hot > 0) { c.globalAlpha = 0.3 * hot; c.globalCompositeOperation = "lighter"; glowDot(c, t.x, t.y - t.s.h * 0.5, 60, 0.7 * hot, "#ffffff"); }
+    c.restore();
+  }
+}
+
+/* ---- Reaper: Soul Harvest ---- */
+// the tug: chains and ghost lines from the scythe to the opponent, links and wisps flowing towards him
+function uvReaperFront(c, g, f, tk) {
+  const mt = f.mt, o = g.fighters[1 - f.slot];
+  if (mt >= 3 && mt <= 26 && o && o.state !== "dead" && o.state !== "gone" && Math.abs(o.x - f.x) <= 540) {
+    const a = clamp(Math.min((mt - 3) / 3, (26 - mt) / 3), 0, 1), P = pose(f, tk), tip = scyTipAt(P.hF, scyAng(f, P), P.bladeS, P.w, P.scyK);
+    const ax = f.x + f.facing * tip[0], ay = f.y + tip[1], bx = o.x, by = o.y - o.s.h * 0.5, dx = bx - ax, dy = by - ay, taut = clamp((mt - 4) / 10, 0, 1);
+    const mx = (ax + bx) / 2, my = (ay + by) / 2, nl = Math.hypot(dx, dy) || 1, nx = -dy / nl, ny = dx / nl;
+    const path = (sag, wav) => { const off = sag + wav; c.beginPath(); c.moveTo(bx, by); c.quadraticCurveTo(mx + nx * off, my + ny * off + 22 * (1 - taut), ax, ay); };
+    c.save(); c.globalAlpha = a; c.lineCap = "butt";
+    for (let j = 0; j < 2; j++) {   // two chains (a dashed line reads as links), one sagging each way
+      const sag = (j ? 1 : -1) * 20 * (1 - taut * 0.7);
+      path(sag, 0); c.setLineDash([7, 4]); c.strokeStyle = "rgba(14,12,26,0.85)"; c.lineWidth = 5.4; c.stroke();
+      c.strokeStyle = "#d3efe0"; c.lineWidth = 3; c.stroke();
+    }
+    c.lineCap = "round";
+    for (let j = 0; j < 4; j++) {   // ghost lines running to him
+      path((j - 1.5) * 16, Math.sin(tk * 0.15 + j * 2) * 12); c.setLineDash([16, 14]); c.lineDashOffset = -tk * 3.4 - j * 5; c.strokeStyle = "rgba(190,255,225,0.55)"; c.lineWidth = 2; c.stroke();
+    }
+    c.setLineDash([]); c.lineDashOffset = 0;
+    c.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 4; i++) {   // little souls riding the chains
+      const u = (tk * 0.035 + i / 4) % 1, w = 1 - u, qx = w * w * bx + 2 * w * u * (mx + nx * 10) + u * u * ax, qy = w * w * by + 2 * w * u * (my + ny * 10 + 20 * (1 - taut)) + u * u * ay;
+      glowDot(c, qx, qy, 11, 0.8, "#bfffe0"); glowDot(c, qx, qy, 4, 1, "#ffffff");
+    }
+    c.globalCompositeOperation = "source-over";
+    c.lineWidth = 2.6; c.strokeStyle = "rgba(190,255,225,0.8)";   // the hook round his middle
+    c.beginPath(); c.ellipse(bx, o.y - o.s.h * 0.35, o.s.w * 0.8 + 3 * Math.sin(tk * 0.5), 7, 0, 0, Math.PI * 2); c.stroke();
+    c.restore();
+  }
+  if (mt >= 25 && mt <= 42) {   // the sweep: a big white crescent on each side, both swinging up over him
+    const u = clamp((mt - 25) / 6, 0, 1), fade = mt <= 31 ? 1 : 1 - (mt - 31) / 11, cx = f.x, cy = f.y - 46;
+    if (fade > 0) {
+      c.save();
+      for (const sd of [1, -1]) {
+        const n = 18, tail = Math.max(0, u - 0.75), i0 = Math.floor(tail * n), i1 = Math.max(i0 + 2, Math.ceil(u * n)), pts = [];
+        for (let i = i0; i <= i1; i++) { const s = i / n, an = lerp(0.95, -1.55, s); pts.push([cx + sd * Math.cos(an) * 112, cy + Math.sin(an) * 92]); }
+        c.globalAlpha = 0.55 * fade; c.fillStyle = "rgba(190,255,225,0.9)"; brush(c, pts, 44, pts.length - 1);
+        c.globalAlpha = 0.95 * fade; c.fillStyle = "rgba(20,15,30,0.5)"; brush(c, pts, 30, pts.length - 1);
+        c.globalAlpha = fade; c.fillStyle = "#ffffff"; brush(c, pts, 24, pts.length - 1);
+      }
+      c.restore();
+    }
+  }
+}
+
+/* ---- Wizard: Meteor Shower ---- */
+function uvWizardFront(c, f, tk) {   // a rune circle turning above his head while he calls the stars
+  const mt = f.mt;
+  if (mt < 1 || mt > 64) return;
+  const a = (mt < 8 ? mt / 8 : mt > 46 ? clamp(1 - (mt - 46) / 18, 0, 1) : 1), cx = f.x, cy = f.y - f.s.h - 38;
+  c.save(); c.translate(cx, cy); c.globalAlpha = a;
+  c.save(); c.scale(1, 0.26); glowDot(c, 0, 0, 74, 0.5, "#bff3ff"); c.restore();
+  c.lineWidth = 2.2;
+  for (const [r, colr] of [[54, "#bff3ff"], [38, "#ffd27a"]]) { c.strokeStyle = colr; c.beginPath(); c.ellipse(0, 0, r, r * 0.26, 0, 0, Math.PI * 2); c.stroke(); }
+  for (let i = 0; i < 8; i++) { const an = (i / 8) * Math.PI * 2 + tk * 0.03; rune(c, Math.cos(an) * 46, Math.sin(an) * 46 * 0.26 - 3, 4.2, i, "#fff6d8", 1.2); }
+  c.restore();
+}
+
+/* ---- Gunslinger: Dead Eye ---- */
+function uvDeadEyeFront(c, g, f, tk) {   // a red reticle on the opponent that tightens on every shot
+  const mt = f.mt, o = g.fighters[1 - f.slot];
+  if (!o || o.state === "dead" || o.state === "gone" || mt < 4 || mt > 72) return;
+  const shots = clamp(Math.floor((mt - 24) / 8) + 1, 0, 6), since = mt >= 24 ? (mt - 24) % 8 : 9, k = clamp((mt - 4) / 14, 0, 1), a = clamp((74 - mt) / 8, 0, 1);
+  const r = lerp(62, 26, ease(k)) * (1 - 0.08 * shots) * (1 + (since < 3 ? 0.14 : 0)), x = o.x, y = o.y - o.s.h * 0.55;
+  c.save(); c.globalAlpha = a; c.lineCap = "round";
+  c.strokeStyle = since < 2 ? "#ffffff" : "#ff3030"; c.lineWidth = 2.6;
+  c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.stroke();
+  c.lineWidth = 2.2;
+  for (let i = 0; i < 4; i++) { const an = (i / 4) * Math.PI * 2 + 0.785 * 0; c.beginPath(); c.moveTo(x + Math.cos(an) * (r - 7), y + Math.sin(an) * (r - 7)); c.lineTo(x + Math.cos(an) * (r + 9), y + Math.sin(an) * (r + 9)); c.stroke(); }
+  c.fillStyle = "#ff3030"; c.beginPath(); c.arc(x, y, 2.6, 0, Math.PI * 2); c.fill();
+  c.globalAlpha = a * 0.35; c.lineWidth = 6; c.strokeStyle = "#ff3030"; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
+function uvEyeVignette(c, g) {   // screen space: a red vignette while the dead eye is open
+  let k = 0;
+  for (const f of g.fighters) if (uvHeld(f) === "deadeye") k = Math.max(k, clamp(f.mt / 8, 0, 1) * clamp((96 - f.mt) / 12, 0, 1));
+  if (k <= 0.01) return;
+  const R = Math.hypot(L.gw, L.gh), gr = c.createRadialGradient(L.gw / 2, L.gh / 2, R * 0.16, L.gw / 2, L.gh / 2, R * 0.6);
+  gr.addColorStop(0, "rgba(150,10,24,0)"); gr.addColorStop(1, `rgba(150,10,24,${0.5 * k})`);
+  c.save(); c.fillStyle = gr; c.fillRect(0, 0, L.gw, L.gh); c.fillStyle = `rgba(120,0,14,${0.07 * k})`; c.fillRect(0, 0, L.gw, L.gh); c.restore();
+}
+
+/* ---- over the fighters, world space ---- */
+function uvFront(c, g, tk) {
+  for (const f of g.fighters) {
+    const k = uvHeld(f);
+    if (!k) continue;
+    if (k === "dive") uvPhoenixFront(c, f, tk);
+    else if (k === "hellfire") uvDragonFire(c, f, tk);
+    else if (k === "cuts") uvSamuraiFront(c, g, f, tk);
+    else if (k === "harvest") uvReaperFront(c, g, f, tk);
+    else if (k === "stars") uvWizardFront(c, f, tk);
+    else if (k === "deadeye") uvDeadEyeFront(c, g, f, tk);
+  }
+}
+
+/* ---- once per sim tick: particles and sounds of the ulti being played ---- */
+function uvFighterTick(g, f) {
+  const k = uvHeld(f), mt = f.mt, d = f.facing, live = mode === "match" && !FIN.on && g === G;
+  if (mt === 0) return;   // the super freeze: drawn from the UI clock
+  const o = g.fighters[1 - f.slot];
+  if (k === "dive") {
+    if (mt < 15) UV.at[f.slot] = { x: f.x, y: f.y + UV_RISE * mt };
+    if (mt >= 1 && mt < 15) { for (let i = 0; i < 3; i++) ember(f.x + frand(-16, 16), f.y + frand(0, 60), frand(-1.4, 1.4), frand(0.6, 3.2)); if (mt === 1) { addFx({ k: "uv", sub: "ringf", x: f.x, y: UV.at[f.slot].y, r0: 20, r1: 110, col: "#ffb04a", t: 0, life: 16 }); dust(f.x, UV.at[f.slot].y, 8, 60); } }
+    if (mt >= 31 && mt < 60 && f.y < 0) for (let i = 0; i < 4; i++) ember(f.x + frand(-22, 22), f.y - 34 - frand(0, 50), frand(-1, 1), -frand(0.2, 2));
+  } else if (k === "cloud") {
+    if (mt >= 6 && mt <= 24) mote(f.x + d * frand(-18, 6), f.y - frand(72, 112), frand(-0.5, 0.5), -frand(0.3, 1.3), "#9bff6a", 2.3, 22, 0);
+  } else if (k === "spear") {
+    if (mt >= 8 && mt <= 25) mote(f.x + d * frand(-30, 10), f.y - frand(36, 78), frand(-0.5, 0.5), -frand(0.2, 1), "#ffd23f", 2.2, 22, 0);
+  } else if (k === "stars") {
+    if (mt >= 4 && mt <= 46 && (mt & 1) === 0) { const [tx, ty] = staffTip(f, tick); mote(tx + frand(-5, 5), ty + frand(-5, 5), frand(-0.6, 0.6), -frand(0.6, 2), (mt & 3) ? "#bff3ff" : "#fff6d8", 2.4, 24, 0); }
+  } else if (k === "cuts") {
+    if (mt <= 23) UV.dash[f.slot] = { x: f.x };
+    if (mt <= 21 && (mt & 1) === 0) addFx({ k: "petal", x: f.x + d * frand(-110, 110), y: f.y - frand(6, 80), vx: 0, vy: frand(-0.4, 0.2), rot: frand(0, 6), vr: frand(-0.25, 0.25), col: mix(f.pal.accent, "#ffb7c9", 0.65), r: frand(2.4, 3.4), t: 0, life: 26, g: 0, damp: 1, tow: f.slot });
+    if (mt === 24 && uvCue(f, "dash")) { if (live) Sfx.cutPass(); for (let i = 0; i < 8; i++) addFx({ k: "puff", x: f.x - d * 20, y: f.y - frand(2, 12), vx: -d * frand(1, 4), vy: -frand(0, 1.2), r: frand(4, 8), t: 0, life: 22 }); sfx.push({ k: "flash", t: 0, life: 5 }); }
+    if (mt >= 24 && mt <= 35) addFx({ k: "line", x: f.x, y: f.y - frand(10, 56), vx: -d * frand(4, 10), vy: 0, t: 0, life: 9, col: "#ffffff", w: 2 });
+    if (mt === 36 && uvCue(f, "stop")) dust(f.x, f.y, 6, 40);
+  } else if (k === "hellfire") {
+    if (mt === 25 && uvCue(f, "fire") && live) Sfx.hellfire();
+    if (mt >= 25 && mt <= 66) {
+      cam.shake = Math.max(cam.shake, 2.4);
+      const [ox] = uvMouthWorld(f, tick), len = 408 * easeOut2(clamp((mt - 24) / 6, 0, 1));
+      for (let i = 0; i < 3; i++) { const u = frand(0.1, 1); ember(f.x + d * (60 + (len - 60) * u), f.y - 46 + frand(-32, 32), d * frand(0, 2.4), -frand(0.4, 2.8)); }
+      if (mt % 3 === 0) addFx({ k: "puff", x: f.x + d * frand(70, len), y: f.y - 46 + frand(-30, 20), vx: d * frand(0, 1), vy: -frand(0.4, 1.2), r: frand(7, 12), t: 0, life: 32, col: "#6b5560" });
+      void ox;
+    }
+    if (mt === 61 && uvCue(f, "blast")) {
+      const ex = f.x + d * 380;
+      addFx({ k: "ring", x: ex, y: f.y - 46, t: 0, life: 16, r0: 10, r1: 120, col: UV_GOLD });
+      for (let i = 0; i < 22; i++) ember(ex + frand(-50, 20) * d, f.y - 46 + frand(-40, 40), frand(-6, 6), frand(-6, 2));
+      cam.shake = Math.max(cam.shake, 12); sfx.push({ k: "flash", t: 0, life: 8 });
+      if (live) Sfx.hellBlast();
+    }
+  } else if (k === "deadeye") {
+    if (mt === 1 && uvCue(f, "eye") && live) Sfx.deadEye();
+  } else if (k === "harvest") {
+    if (mt === 4 && uvCue(f, "pull") && live) Sfx.reapPull();
+    if (mt >= 4 && mt <= 23 && mt % 3 === 0 && o && Math.abs(o.x - f.x) <= 540) addFx({ k: "wisp", x: o.x + frand(-14, 14), y: o.y - frand(10, 60), vx: Math.sign(f.x - o.x) * 1.8, vy: -0.3, ph: frand(0, 6), r: 5, col: "#bfffe0", t: 0, life: 26, damp: 0.99 });
+    if (mt === 25 && uvCue(f, "sweep")) {
+      for (let i = 0; i < 6; i++) addFx({ k: "ghost", x: f.x + frand(-60, 60), y: f.y - frand(20, 90), vx: frand(-1, 1), vy: -frand(1, 2.6), ph: frand(0, 6), r: frand(5, 8), t: 0, life: frand(36, 52), damp: 0.97 });
+      cam.shake = Math.max(cam.shake, 6);
+      if (live) Sfx.reapSweep();
+    }
+  }
 }

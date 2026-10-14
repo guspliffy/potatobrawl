@@ -124,6 +124,52 @@ const Sfx = {
     for (let i = 1; i <= 2; i++) this.later(i * 120, () => this.noiseF(0.12, 0.16, "highpass", 1400, 3800, 1.1));
   },
   graveRise() { this.noiseF(0.5, 0.22, "lowpass", 700, 180, 0.8); this.tone(70, 110, 0.4, "sine", 0.16); },
+  /* ---- Ultimates (ui/effects.js, ui/draw-*.js) ---- */
+  // the super freeze: a deep boom, a chord that climbs an octave while a whoosh sweeps up, a bright chime as the freeze lets go (0.5 s)
+  ulti() {
+    if (!this.ok()) return;
+    this.tone(150, 36, 0.6, "sine", 0.6); this.noise(0.3, 0.3, 900);
+    this.noiseF(0.55, 0.32, "bandpass", 260, 3400, 0.9);
+    [[262, 523], [330, 659], [392, 784], [523, 1047]].forEach(([a, b], i) => this.later(i * 40, () => { this.tone(a, b, 0.62, "sawtooth", 0.045); this.tone(a, b, 0.62, "triangle", 0.07); }));
+    this.later(440, () => { this.tone(1568, 1568, 0.6, "sine", 0.07); this.tone(2093, 2093, 0.5, "sine", 0.045); this.noiseF(0.3, 0.12, "highpass", 5000, 8000, 1.2); });
+  },
+  // a bar fills (called by the HUD): a bright clink
+  ultFull() {
+    this.tone(1568, 1568, 0.38, "sine", 0.09); this.tone(3136, 3136, 0.2, "triangle", 0.035); this.noise(0.03, 0.18, 6500);
+    this.later(70, () => { this.tone(2093, 2093, 0.45, "sine", 0.08); this.tone(4186, 4186, 0.15, "sine", 0.02); });
+  },
+  ultHit() { this.tone(1568, 1568, 0.3, "sine", 0.05); this.later(60, () => this.tone(2349, 2349, 0.3, "sine", 0.04)); },
+  ultMark() { this.tone(1320, 1320, 0.1, "square", 0.035); this.later(110, () => this.tone(1760, 1760, 0.14, "square", 0.035)); },
+  // Phoenix lands: a deep boom, a crackle of fire
+  ultLand() { this.tone(110, 28, 0.7, "sine", 0.7); this.noise(0.6, 0.6, 600); this.noiseF(0.5, 0.3, "highpass", 3000, 7000, 1.2); this.later(40, () => this.tone(60, 30, 0.5, "sawtooth", 0.15)); },
+  // Alchemist: the flask bursts into a cloud; every pulse is a wet thump (the last one, which launches, a big one)
+  cloud() { this.noiseF(0.5, 0.22, "highpass", 3200, 1400, 0.8); for (let i = 0; i < 4; i++) this.later(i * 70, () => this.tone(190 + i * 40, 360 + i * 60, 0.07, "sine", 0.1)); },
+  cloudPulse(last) {
+    this.tone(last ? 200 : 170, 60, last ? 0.4 : 0.2, "sine", last ? 0.55 : 0.3); this.noise(last ? 0.35 : 0.14, last ? 0.4 : 0.22, last ? 900 : 1300);
+    for (let i = 0; i < 3; i++) this.later(i * 45, () => this.tone(260 + i * 90, 520 + i * 120, 0.06, "sine", 0.07));
+  },
+  // Odin: a heavy whoosh and a metal ring as the spear leaves his hand
+  spear() { this.noiseF(0.4, 0.34, "bandpass", 500, 2600, 0.9); this.tone(95, 45, 0.35, "sine", 0.4); this.tone(1400, 900, 0.3, "triangle", 0.05); this.later(60, () => this.tone(2100, 1500, 0.25, "sine", 0.03)); },
+  // Wizard: a rising chime for every star called, a whistle down, a thump and sparkle on the floor
+  starCall() { this.tone(1047, 1568, 0.25, "triangle", 0.05); this.tone(2093, 2637, 0.18, "sine", 0.025); },
+  starHit(big) { this.tone(big ? 130 : 170, 45, big ? 0.3 : 0.16, "sine", big ? 0.55 : 0.32); this.noise(big ? 0.28 : 0.12, big ? 0.4 : 0.22, 1600); this.tone(big ? 1319 : 1568, big ? 1319 : 1568, 0.35, "sine", 0.05); this.later(50, () => this.tone(2093, 2093, 0.3, "sine", 0.035)); },
+  // Samurai: the dash is a long high shing; the sheath click (the cut lands) a hard click, a thump and a shimmer
+  cutPass() { this.noiseF(0.3, 0.26, "highpass", 2800, 7000, 2); this.tone(2300, 3800, 0.28, "sine", 0.06); },
+  cutClick() {
+    this.tone(1500, 900, 0.06, "square", 0.12); this.noise(0.04, 0.3, 5200); this.tone(110, 40, 0.3, "sine", 0.5);
+    this.noiseF(0.25, 0.3, "highpass", 3200, 7500, 1.8); this.later(40, () => { this.tone(2637, 2637, 0.5, "sine", 0.05); this.tone(3951, 3951, 0.35, "sine", 0.025); });
+  },
+  // Dragon: a long roar while the stream burns, a boom for the blast at its end
+  hellfire() {
+    this.noiseF(1.0, 0.36, "lowpass", 1500, 380, 0.7); this.tone(95, 55, 0.9, "sawtooth", 0.12); this.tone(104, 62, 0.85, "sawtooth", 0.09);
+    this.noiseF(0.5, 0.2, "bandpass", 900, 2200, 1.1);
+  },
+  hellBlast() { this.tone(72, 26, 0.6, "sine", 0.6); this.noise(0.45, 0.5, 800); this.noiseF(0.35, 0.28, "highpass", 2400, 6000, 1.2); },
+  // Gunslinger: a heartbeat and a thin whine as the dead eye opens
+  deadEye() { this.tone(72, 44, 0.14, "sine", 0.5); this.later(150, () => this.tone(66, 40, 0.16, "sine", 0.45)); this.tone(1800, 2600, 0.5, "sine", 0.025); this.noiseF(0.4, 0.1, "bandpass", 1200, 3000, 1.5); },
+  // Reaper: the tug is a low, hollow pull with whispers; the sweep a hard white swish with a ring
+  reapPull() { this.noiseF(0.7, 0.24, "bandpass", 700, 200, 1.1); this.tone(90, 52, 0.7, "sine", 0.22); this.tone(660, 330, 0.5, "triangle", 0.03); this.later(160, () => this.tone(520, 260, 0.45, "triangle", 0.025)); },
+  reapSweep() { this.noiseF(0.28, 0.42, "highpass", 1400, 6200, 1.3); this.later(40, () => this.tone(3100, 2400, 0.22, "sine", 0.06)); this.tone(120, 50, 0.3, "sine", 0.4); },
   // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"
   noiseF(dur, vol, type, f0, f1, q) {
     if (!this.ok()) return;

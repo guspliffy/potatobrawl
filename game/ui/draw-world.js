@@ -193,6 +193,9 @@ function finFireFx(c, p, tk, who) {   // Phoenix: a long comet tail. Dragon: eve
 }
 
 function drawProj(c, p, tk) {
+  if (p.style === "cloud") return uvDrawCloud(c, p, tk);    // the Ultimates' projectiles (below)
+  if (p.style === "spear") return uvDrawSpear(c, p, tk);
+  if (p.style === "star" || p.style === "bigstar") return uvDrawStar(c, p, tk);
   const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
   if (p.style === "orb") {
     for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
@@ -240,12 +243,14 @@ function drawProj(c, p, tk) {
   }
   if (p.style === "bullet" || p.style === "gold") {
     // a small bright tracer; High Noon's bullet is golden, bigger, with a long trail and a glow (the drawing only, the hitbox is the same)
-    const gold = p.style === "gold", sp = Math.hypot(p.vx, p.vy) || 1, r = gold ? 5.4 : 3;
-    const len = Math.min(gold ? sp * 6 : sp * 2.6, p.t * sp + 4);
+    // Dead Eye's bullets (hit.ult) are the same with a hot red-orange glow; its sixth, the golden one, is half as big again with a longer trail
+    const gold = p.style === "gold", ult = !!(p.hit && p.hit.ult), sp = Math.hypot(p.vx, p.vy) || 1, r = gold ? (ult ? 8.2 : 5.4) : ult ? 3.8 : 3;
+    const len = Math.min(gold ? sp * (ult ? 9 : 6) : sp * (ult ? 4 : 2.6), p.t * sp + 4);
     c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
-    if (gold) glowDot(c, 0, 0, r * 4.2, 0.55, "#ffcf3d");
+    if (gold) glowDot(c, 0, 0, r * 4.2, ult ? 0.75 : 0.55, "#ffcf3d");
+    else if (ult) glowDot(c, 0, 0, r * 3.4, 0.5, "#ff5a3d");
     const gr = c.createLinearGradient(-len, 0, 0, 0);
-    gr.addColorStop(0, gold ? "rgba(255,190,50,0)" : "rgba(255,180,80,0)"); gr.addColorStop(1, gold ? "rgba(255,226,120,0.95)" : "rgba(255,242,210,0.9)");
+    gr.addColorStop(0, gold ? "rgba(255,190,50,0)" : ult ? "rgba(255,70,50,0)" : "rgba(255,180,80,0)"); gr.addColorStop(1, gold ? "rgba(255,226,120,0.95)" : ult ? "rgba(255,210,180,0.95)" : "rgba(255,242,210,0.9)");
     c.fillStyle = gr; c.beginPath(); c.moveTo(0, -r * 0.85); c.lineTo(-len, -r * 0.2); c.lineTo(-len, r * 0.2); c.lineTo(0, r * 0.85); c.closePath(); c.fill();
     c.fillStyle = gold ? "#ffd84a" : "#fff6dc"; c.beginPath(); c.ellipse(0, 0, r * 1.6, r, 0, 0, Math.PI * 2); c.fill();
     if (gold) {
@@ -291,3 +296,134 @@ function drawTag(c, f, isP1, lift) {
   c.restore();
 }
 
+
+/* ---- Ultimates: the projectiles and the marks on the floor (UI only; the hitboxes are the sim's, only the drawing grows) ---- */
+// Alchemist: the cloud is two pre-rendered sprites of billows (so a frame costs two drawImage calls and a few bubbles: no shadowBlur,
+// no filter), turned against each other, swelling on every pulse (p.t % 30 === 0), trembling and brightening in the 30 ticks before the
+// last pulse, which launches.
+const UV_CLOUD = { base: null, hi: null };
+function uvCloudSprites() {
+  if (UV_CLOUD.base) return UV_CLOUD;
+  const S = 256, mk = (draw) => { const cv = document.createElement("canvas"); cv.width = cv.height = S; draw(cv.getContext("2d")); return cv; };
+  const puffs = (x, n, seed, dmax, rmin, rv, cols) => {
+    for (let i = 0; i < n; i++) {
+      const a = nz(seed + i * 3.1) * 6.283, d = Math.sqrt(nz(seed + i * 7.7)) * S * dmax, r = S * (rmin + rv * nz(seed + i * 5.3)), cx = S / 2 + Math.cos(a) * d, cy = S / 2 + Math.sin(a) * d;
+      const g = x.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
+      g.addColorStop(0, cols[0]); g.addColorStop(0.6, cols[1]); g.addColorStop(1, cols[2]);
+      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+    }
+  };
+  UV_CLOUD.base = mk((x) => {
+    puffs(x, 30, 1, 0.3, 0.14, 0.1, ["rgba(86,190,60,0.95)", "rgba(46,140,48,0.78)", "rgba(24,92,44,0)"]);
+    const g = x.createRadialGradient(S / 2, S / 2, S * 0.1, S / 2, S / 2, S * 0.46); g.addColorStop(0, "rgba(40,120,50,0.55)"); g.addColorStop(1, "rgba(24,90,44,0)");
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+  });
+  UV_CLOUD.hi = mk((x) => {
+    puffs(x, 20, 9, 0.27, 0.09, 0.08, ["rgba(210,255,170,0.9)", "rgba(140,235,100,0.55)", "rgba(100,210,80,0)"]);
+    puffs(x, 8, 4, 0.2, 0.05, 0.04, ["rgba(255,255,230,0.85)", "rgba(220,255,190,0.4)", "rgba(200,255,170,0)"]);
+  });
+  return UV_CLOUD;
+}
+function uvDrawCloud(c, p, tk) {
+  const sp = uvCloudSprites(), r = p.r, grow = easeOut2(clamp(p.t / 10, 0, 1)), ph = p.t % 30;
+  const pulse = p.t >= 30 ? Math.max(0, 1 - ph / 12) : 0, charge = p.t >= p.life - 31 ? clamp((p.t - (p.life - 31)) / 30, 0, 1) : 0;
+  const s = ((r * 2.35) / 256) * grow * (1 + 0.13 * pulse + 0.05 * charge + Math.sin(tk * 0.15) * 0.015);
+  c.save(); c.translate(p.x + (charge ? Math.sin(tk * 1.9) * 2.6 * charge : 0), p.y);
+  c.globalAlpha = 0.92; c.save(); c.rotate(tk * 0.006); c.scale(s, s); c.drawImage(sp.base, -128, -128); c.restore();
+  c.globalAlpha = 0.8; c.save(); c.rotate(-tk * 0.009 + 1); c.scale(s * 0.92, s * 0.92); c.drawImage(sp.hi, -128, -128); c.restore();
+  c.globalAlpha = 1;
+  if (pulse > 0 || charge > 0) {   // the pulse: a light flash inside; before the last one the whole cloud glows pale and gold
+    c.globalCompositeOperation = "lighter";
+    glowDot(c, 0, 0, r * 1.1, 0.34 * pulse + 0.3 * charge, charge > 0.5 ? "#fff3b0" : "#9bff6a");
+    c.globalCompositeOperation = "source-over";
+  }
+  // bubbles rise inside and pop at the top
+  for (let i = 0; i < 9; i++) {
+    const per = 70 + nz(i * 4.4) * 50, k = ((tk + nz(i * 8.8) * per) % per) / per, bx = (nz(i * 1.7) - 0.5) * r * 1.3, half = Math.sqrt(Math.max(0, r * r - bx * bx)) * 0.86;
+    const by = half - k * half * 2, br = 3.5 + nz(i * 6.1) * 5 * (k < 0.9 ? 1 : 1 + (k - 0.9) * 8);
+    c.globalAlpha = k > 0.94 ? (1 - k) / 0.06 : 0.9; c.fillStyle = "rgba(170,255,130,0.28)"; c.strokeStyle = "rgba(235,255,215,0.85)"; c.lineWidth = 1.4;
+    c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = "rgba(255,255,255,0.8)"; c.beginPath(); c.arc(bx - br * 0.3, by - br * 0.3, br * 0.25, 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+  // the true size of the cloud (what hurts): a faint dashed ring that flares on the pulse
+  c.setLineDash([9, 7]); c.lineDashOffset = -tk * 0.35; c.lineWidth = 2 + 2 * pulse; c.strokeStyle = rgba(charge > 0.5 ? "#fff3b0" : "#c9ff9e", 0.32 + 0.5 * pulse + 0.35 * charge);
+  c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+  c.restore();
+}
+// Odin: Gungnir, a long golden spear with runes that glow; it tumbles over at the far end of the boomerang and trails light
+function uvDrawSpear(c, p, tk) {
+  const dir = p.dir || 1, s = p.vx * dir, turn = 1 - clamp((s + 5) / 10, 0, 1), sp = Math.abs(p.vx);
+  const ang = (dir > 0 ? turn * Math.PI : Math.PI - turn * Math.PI) + Math.sin(tk * 0.45) * 0.06;
+  c.save(); c.translate(p.x, p.y);
+  if (sp > 4) {   // the streak of light behind it
+    const hd = p.vx >= 0 ? 1 : -1, tl = Math.min(260, sp * 8 + 90), g = c.createLinearGradient(0, 0, -hd * tl, 0);
+    g.addColorStop(0, "rgba(255,236,150,0.7)"); g.addColorStop(0.5, "rgba(255,200,70,0.3)"); g.addColorStop(1, "rgba(255,180,60,0)");
+    c.fillStyle = g; c.beginPath(); c.moveTo(-hd * 84, -9); c.lineTo(-hd * tl, 0); c.lineTo(-hd * 84, 9); c.closePath(); c.fill();
+    c.fillStyle = "rgba(255,255,240,0.6)"; c.beginPath(); c.moveTo(-hd * 84, -2.2); c.lineTo(-hd * tl * 0.6, 0); c.lineTo(-hd * 84, 2.2); c.closePath(); c.fill();
+    for (let i = 0; i < 4; i++) { const k = (tk * 0.07 + i / 4) % 1; c.globalAlpha = 1 - k; star4(c, -hd * (90 + k * (tl - 90)), (nz(i * 5.5) - 0.5) * 22, 4.5 * (1 - k * 0.5), i % 2 ? "#fff6d8" : "#ffd23f"); }
+    c.globalAlpha = 1;
+  }
+  c.rotate(ang); c.scale(1, 0.86 + 0.14 * Math.cos(tk * 0.33)); c.translate(-58, 0);   // the head leads the hitbox by a few pixels, the shaft trails behind it
+  uvSpearShape(c, tk);
+  c.restore();
+}
+// Gungnir lying along +x, butt at -62, head tip at 94 (the thrown spear and the one in his hand share it)
+function uvSpearShape(c, tk) {
+  c.lineCap = "round"; c.lineJoin = "round";
+  c.strokeStyle = "rgba(255,214,90,0.22)"; c.lineWidth = 17; c.beginPath(); c.moveTo(-60, 0); c.lineTo(80, 0); c.stroke();
+  c.strokeStyle = OUT; c.lineWidth = 7.4; c.beginPath(); c.moveTo(-62, 0); c.lineTo(54, 0); c.stroke();
+  c.strokeStyle = "#e2ad3c"; c.lineWidth = 4.4; c.stroke();
+  c.strokeStyle = "#fff3b0"; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-58, -1.2); c.lineTo(52, -1.2); c.stroke();
+  c.fillStyle = "#b3282d"; for (const bx of [-12, 14, 38]) c.fillRect(bx - 2.5, -3.6, 5, 7.2);   // red wraps
+  c.fillStyle = "#e2ad3c"; c.beginPath(); c.arc(-62, 0, 4.6, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
+  c.beginPath(); c.moveTo(52, -3.6); c.lineTo(68, -10.5); c.lineTo(94, 0); c.lineTo(68, 10.5); c.lineTo(52, 3.6); c.closePath();
+  c.fillStyle = "#f7ebb6"; c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
+  c.strokeStyle = "#e2ad3c"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(56, -3); c.lineTo(66, -8.2); c.lineTo(90, -0.6); c.moveTo(56, 3); c.lineTo(66, 8.2); c.lineTo(90, 0.6); c.stroke();
+  c.strokeStyle = "rgba(255,255,255,0.9)"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(56, 0); c.lineTo(88, 0); c.stroke();
+  glowDot(c, 92, 0, 28, 0.75, UV_GOLD);
+  for (let i = 0; i < 3; i++) { c.globalAlpha = 0.45 + 0.5 * Math.sin(tk * 0.2 + i * 1.9) ** 2; rune(c, -34 + i * 28, -17, 6.5, i + 1, "#fff2b8", 1.5); }   // the runes pulse one after the other
+}
+// Wizard: a falling star with a long pale trail; the fifth is bigger and golden
+function uvDrawStar(c, p, tk) {
+  const big = p.style === "bigstar", R = p.r * (big ? 1.2 : 1.12), tl = big ? 320 : 240, sway = Math.sin(tk * 0.2 + p.x) * 3;
+  c.save(); c.translate(p.x, p.y);
+  const g = c.createLinearGradient(0, 0, 0, -tl);
+  g.addColorStop(0, "rgba(255,246,210,0.9)"); g.addColorStop(0.3, big ? "rgba(255,206,80,0.55)" : "rgba(180,240,255,0.55)"); g.addColorStop(1, "rgba(180,240,255,0)");
+  c.fillStyle = g; c.beginPath(); c.moveTo(-R * 0.8, 0); c.quadraticCurveTo(-R * 0.4 + sway, -tl * 0.5, sway, -tl); c.quadraticCurveTo(R * 0.4 + sway, -tl * 0.5, R * 0.8, 0); c.closePath(); c.fill();
+  c.fillStyle = "rgba(255,255,255,0.7)"; c.beginPath(); c.moveTo(-R * 0.28, 0); c.lineTo(sway * 0.6, -tl * 0.62); c.lineTo(R * 0.28, 0); c.closePath(); c.fill();
+  for (let i = 0; i < 5; i++) { const k = (tk * 0.05 + i / 5) % 1; c.globalAlpha = (1 - k) * 0.9; star4(c, Math.sin(tk * 0.3 + i * 2.1) * R * 0.9, -R - k * (tl - R) * 0.8, 3.2 + 3 * (1 - k), i % 2 ? "#fff6d8" : (big ? "#ffd23f" : "#bff3ff")); }
+  c.globalAlpha = 1;
+  glowDot(c, 0, 0, R * 2.8, 0.6, big ? "#ffcf3d" : "#bff3ff");
+  c.rotate(tk * (big ? 0.05 : 0.08));
+  c.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? R * 0.46 : R; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  c.closePath(); c.fillStyle = big ? "#ffd84a" : "#fff0b8"; c.fill(); c.lineWidth = 2; c.strokeStyle = big ? "#a8701c" : "#c79a3c"; c.lineJoin = "round"; c.stroke();
+  c.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? R * 0.2 : R * 0.52; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  c.closePath(); c.fillStyle = "#ffffff"; c.fill();
+  c.restore();
+}
+// the marks on the floor: under each falling star a ring that grows as the star comes down, with a ring closing in on it (they meet at
+// the moment of the hit), and a pale lane up to the star
+function uvStarMarks(c, g, tk) {
+  for (const p of g.projs) {
+    if (p.style !== "star" && p.style !== "bigstar") continue;
+    const big = p.style === "bigstar", q = clamp((p.y + 558) / 558, 0, 1), rm = (p.r + 22) * (0.34 + 0.66 * q), hot = q > 0.8 && tk % 6 < 3;
+    const colr = big ? "#ff9a3d" : "#fff0b0", fy = STAGE.main.top;
+    c.save();
+    c.fillStyle = big ? "rgba(255,150,60,0.07)" : "rgba(255,240,170,0.06)"; c.globalAlpha = 0.5 + 0.5 * q;
+    c.fillRect(p.x - (p.r + 22), p.y, (p.r + 22) * 2, fy - p.y);   // the lane the star falls down
+    c.globalAlpha = 1;
+    c.fillStyle = rgba(colr, 0.12 + 0.3 * q); c.beginPath(); c.ellipse(p.x, fy + 1, rm, rm * 0.27, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = hot ? "#ffffff" : colr; c.lineWidth = 2.2 + 2.2 * q; c.globalAlpha = 0.55 + 0.45 * q; c.beginPath(); c.ellipse(p.x, fy + 1, rm, rm * 0.27, 0, 0, Math.PI * 2); c.stroke();
+    const rc = rm * (1 + 1.1 * (1 - q)); c.globalAlpha = 0.65 * (1 - q * 0.6); c.lineWidth = 2; c.strokeStyle = "#ffffff";
+    c.beginPath(); c.ellipse(p.x, fy + 1, rc, rc * 0.27, 0, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 0.5 + 0.5 * q; c.strokeStyle = colr; c.lineWidth = 2.4; c.beginPath(); c.moveTo(p.x - 7, fy - 2); c.lineTo(p.x + 7, fy + 4); c.moveTo(p.x + 7, fy - 2); c.lineTo(p.x - 7, fy + 4); c.stroke();
+    c.restore();
+  }
+}
+function uvFloor(c, g, tk) {
+  for (const f of g.fighters) if (uvHeld(f) === "dive") uvPhoenixMark(c, f, tk);   // draw-fighters.js
+  uvStarMarks(c, g, tk);
+}
