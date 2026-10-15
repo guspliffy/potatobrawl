@@ -27,7 +27,11 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     stars (win, no heart lost, a stop bonus: quick win, a combo route, a finisher or an ulti KO). A stop opens when the one before
     is won; 12 stars (ROAD_GATE) open the fence to Old Scratch on any level. New stars pay 10 chips; his first win pays the Devil
     Masher title (eighth title in acct.js ACT) and 150 chips; each level won is a star. Progress `P.road` = { s: [bits per stop],
-    b: boss level bits, paid } syncs as a union in sync.js (cleanRoad). Results show the stars; Retry / The Road / Menu.
+    b: boss level bits, paid } syncs as a union in sync.js (cleanRoad). Results show the stars. Your fighter walks the path between
+    stops (rdWalk / rdCurve, timed by the clock, two hops per stop; at once with reduced motion; a tap mid-walk turns it to the new stop).
+    After a win the big results button is Next stop (walks to the next stop and opens its sheet; To Old Scratch after stop 8 once the
+    fence is open; Next: Hard / Nightmare after a boss win), after a loss Retry (match.road.next, roadAgainLabel / roadAgain). The fight
+    behind the menus is not drawn while the Road map covers the screen.
 - Live: https://potatobrawl.cloud (Hostinger VPS srv1519994, 187.124.173.121, Ubuntu 24.04, Node 20).
   Caddy terminates HTTPS and proxies to the game server on 127.0.0.1:8080 (systemd unit `potatobrawl`,
   checkout in /opt/potatobrawl). Old http://187.124.173.121:8080 still answers (deploy/accounts-setup.txt closes it).
