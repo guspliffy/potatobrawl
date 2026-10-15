@@ -175,12 +175,20 @@ def run(b, fid, opp):
             if f[1] > 14: outl.append((int(f[0]), f[1]))
         print("frames over 14 ms: " + ", ".join(f"{t}:{v:.0f}" for t, v in outl))
         print("draw ms per 250 ms window (avg/max): " + "  ".join(f"{k}:{sum(v) / len(v):.1f}/{max(v):.1f}" for k, v in sorted(rows.items())))
+    # a page may set its own card line when it is built (at the freeze, 300 ms): on an Ultimate it must still read "Ultimate: <name>"
+    late = {"done": not ult}
+    def late_card():
+        if late["done"]: return
+        late["done"] = True
+        sub = pg.evaluate("() => window.__blastline.fin.cardSub")
+        if not (sub or "").startswith("Ultimate: "): bad.append(f"{fid}/{opp}: after the page was built the card line is {sub!r}, wanted 'Ultimate: <name>'")
     for ms in AT:
         until_t(pg, ms)
         name = f"manga-{fid}-vs-{opp}-{tag}-{ms:04d}.png"
         shot(pg, name); files.append(name)
+        if ms >= 700: late_card()
     if skip:
-        until_t(pg, 1300); pg.mouse.click(W // 2, H // 2)
+        until_t(pg, 1300); late_card(); pg.mouse.click(W // 2, H // 2)
     until(pg, "() => window.__blastline.mode === 'result'", 9000, 32)
     took = pg.evaluate("() => performance.now()") - t0
     if cdp:

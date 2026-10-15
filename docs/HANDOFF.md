@@ -127,7 +127,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     the name), per-ulti drawing and sounds (Sfx.ulti, ultFull, hellBlast, ...), the Gunslinger's light shots (`gunLightPose`, a
     tracer from the muzzle to the sweeping box, smoke, a shell, Sfx.pop instead of the swing sound). tests/pwultreel.py records
     every ulti + the eight light shots at 844x390 and 390x844 (stills + a video, needs ffmpeg).
-  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js, wizard.js, dragon.js, odin.js, alchemist.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
+  - Ultimate KO pages (ui/manga.js + manga/<id>.js, all eight fighters): an ulti's lethal hit sets FIN.ulti / MG.ulti;
     a page with `MANGA[id].ulti` plays its 5.9 s Ultimate script (a fifth, full-page splash panel, MT_U timeline, three impact
     frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova", Wizard "Big Bang" (2026-10-15, Fable's design
     /mnt/project-files/ultimates/manga/wizard/fable-big-bang.md: the five-star shower lands round the loser, the big star sends
@@ -145,7 +145,13 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     pop open on the body in the cloud and all blink once together at the drop, KABWUMP; the splash is the cloud with 24 eyes that find
     the reader, then their maker; The Experiment's aftermath runs at MT.AFTER + offset, the puddle has an eye; then a goo splatter
     over the results for 6 s: one canvas on #app, corners and edges only, cut round every button, card and line of text, gone when
-    the results are left). The Reaper plays its normal page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
+    the results are left), Reaper "The Ferryman" (2026-10-15, Fable's design /mnt/project-files/ultimates/manga/reaper/fable-ferryman.md:
+    Last Rites to the strike, then he stands planted, Soul Harvest's ghost chains bite round the loser's middle and drag him in (little
+    souls slide up the chains), two crescents in an X, gold SHHK; the splash is a night river, turned with the page (every colour inside
+    a panel is painted as its complement, neg()): he poles a punt across with a lantern on the blade, the soul rides at the bow, flips him
+    a gold coin as the fare, the boat touches the far bank and the soul goes up through the gate; then panel 4 of Last Rites. Upright the
+    river's camera follows the boat; Last Rites' aftermath runs at MT.AFTER + offset). A page without its own cut would play its normal
+    page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
     pwmanga.py --ult plays an Ultimate page.
 - Maps + rank emblems (2026-10-14, same branch, PROTO 9; Jonny's asks after the Ultimates merge):
   - Ulti bar fills at 0.6x (TUNE ultDealt 0.6, ultTaken 0.3, ultHeart 6). A random CPU picks the player's own fighter 4x less
@@ -395,9 +401,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the other five
-  Ultimate KO pages (Reaper Soul Harvest; Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök" and Alchemist "Mutation" done: Fable's
-  twists in next-ideas/fable-ideas.md section 2, the page engine's Ultimate script as built for the first three) + fighter
+- NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the Ultimate
+  KO pages are all done (2026-10-15: Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök", Alchemist "Mutation", Reaper
+  "The Ferryman"; Fable's twists in next-ideas/fable-ideas.md section 2); left of it: fighter
   mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
   seen). Then 4. boss engine + the Devil + The Field + the Road's first 8 stops; 5. Alien + Sea Monster, their stages, Road
   skins; 6. online 2v1; 7. 2v2 (offline, then online).
