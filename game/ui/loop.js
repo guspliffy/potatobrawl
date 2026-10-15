@@ -46,6 +46,7 @@ function frame(now) {
 }
 
 window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
 goMenu();
 if (NET.invite) openOnline();

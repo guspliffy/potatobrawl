@@ -12,6 +12,7 @@
  *                      doesn't put it to sleep (default 4; 0 turns it off)
  *   KEEPALIVE_URL      the public URL to ping; on Render, RENDER_EXTERNAL_URL is used
  *   ACCOUNTS_DIR       folder for sync-code accounts (see accounts.js). Accounts are off unless it exists and is writable.
+ *   STATS_DIR          folder for the anonymous play counts and the private /stats page (see stats.js). Off unless it exists and is writable.
  */
 const http = require("http");
 const fs = require("fs");
@@ -54,10 +55,17 @@ try {
   accounts = require("./accounts.js").init(process.env.ACCOUNTS_DIR);
   console.log(accounts ? `Accounts: on (${accounts.count()} saved in ${accounts.dir})` : process.env.ACCOUNTS_DIR ? "Accounts: off (ACCOUNTS_DIR is not a folder this server can write to)" : "Accounts: off");
 } catch (e) { console.warn("Accounts: off,", e.message); }
+// Play counts (stats.js): off unless STATS_DIR is set. clients is declared further down; it is only read once the server runs.
+let stats = null;
+try {
+  stats = require("./stats.js").init(process.env.STATS_DIR, { online: () => clients.size });
+  console.log(stats ? `Play counts: on (${stats.dir})` : process.env.STATS_DIR ? "Play counts: off (STATS_DIR is not a folder this server can write to)" : "Play counts: off");
+} catch (e) { console.warn("Play counts: off,", e.message); }
 
 const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];
   if (accounts && accounts.handle(req, res, url)) return;
+  if (stats && stats.handle(req, res, url)) return;
   const file = (req.method === "GET" || req.method === "HEAD") && FILES[url];
   if (file) {
     const gzip = /\bgzip\b/.test(req.headers["accept-encoding"] || "");

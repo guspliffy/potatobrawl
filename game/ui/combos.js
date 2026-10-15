@@ -157,7 +157,7 @@ function trialClear(r) {
     P.comboPaid = true; P.tokens += COMBO_CHIPS;
     showBanner("Combo Potato", `All ${ROUTE_TOTAL} routes · +${COMBO_CHIPS} chips`, "fin", 2200, "#ffd23f");
   }
-  if (first) saveProfile();
+  if (first) { saveProfile(); cnt("route"); }   // cnt: ui/counter.js
   TR.k = want0(r).length; trialKeys();
   $("tut").classList.add("done"); $("tutT").textContent = `${r.name}: ${note}`;
   Sfx.route();
