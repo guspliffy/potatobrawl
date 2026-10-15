@@ -985,7 +985,7 @@ function reaperPose(f, P, m, mid, phase, k, w, leg, tor, set) {
       hF = [cx + cp * w * 0.22, cy + Math.sin(ps) * 3]; P.holdAng = cp >= 0 ? 0.04 : Math.PI - 0.04; P.scyK = Math.max(0.12, Math.abs(cp)); P.bladeS = -0.5; P.scyBack = Math.sin(ps) < 0;
       P.reapT = { T: { flat: { cx, cy, rf: 66, rb: 54, ry: 11, t1: ps - 2.4, t2: ps } }, n: 1, a: 1, wmax: 9 };
     } else {
-      const fin = typeof finishReady === "function" && finishReady(1 - f.slot);
+      const fin = typeof finishReady === "function" && finishReady(foeSlot(f.slot));
       hF = lerp2([cx + w * 0.22, cy], rest, ease(k)); P.holdAng = mixv(fin ? -1.4 : 0.04, -1.75, ease(k)); P.bladeS = mixv(fin ? -1 : -0.5, 1, ease(k));
       if (fin && f.mt - a1 < 9) P.reapT = { T: { h1: [w * 0.6, -leg - tor * 0.2], h2: [w * 0.3, -leg - tor * 1.0], a1: 0.4, a2: -1.6, s: -1 }, n: 1, a: 1 - (f.mt - a1) / 9, wmax: 12 };   // Last Rites: the hook straight up
     }
@@ -2293,7 +2293,7 @@ function drawCharge(c, f, P, tk) {
    the projectiles and the ring under the feet are in draw-world.js). */
 function drawFinishFx(c, f, P, tk) {
   const m = f.move;
-  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot)) return;
+  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(foeSlot(f.slot))) return;
   if (f.mt < m.startup + 1 || f.mt > m.startup + m.active) return;   // after the dash the finDashTick line takes over
   const dist = Math.min(260, (m.speed || 15) * (f.mt - m.startup)), y = -P.h * 0.45, pts = lpts([-dist - 6, y], [-6, y], 8);
   c.save(); c.lineCap = "round";
@@ -2329,6 +2329,7 @@ function staffTip(f, tk) {
 }
 
 function drawFighter(c, f, tk, at) {
+  if (f.spec.boss) return drawBoss(c, f, tk, at);   // a boss has his own drawing (ui/draw-boss.js)
   if (!at && uvHeld(f)) {
     if (uvHidden(f)) return;
     uvBehind(c, f, tk);

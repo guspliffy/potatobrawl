@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -56,6 +56,12 @@ else fail "combo routes / the link" "$LOGS/combos.log"; fi
 (cd tests && node ulti.js) > "$LOGS/ulti.log" 2>&1
 if grep -q "^ulti ok" "$LOGS/ulti.log"; then pass "ultimates (KO bands, first hit after the freeze, bar spent, save/restore mid-ulti)"
 else fail "ultimates" "$LOGS/ulti.log"; fi
+
+# 3f. Boss fights (2v1): replay and save/restore determinism with three fighters, then two bot players against Old Scratch at each
+#     difficulty: win rates and fight lengths in their bands, every move used, the final launch leaves the arena, lethal calls come true.
+(cd tests && node boss.js) > "$LOGS/boss.log" 2>&1
+if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights ($(grep -o 'Normal: players win [0-9]*%' "$LOGS/boss.log" | sed 's/Normal: players win/Normal/'), determinism, final launch, lethal calls)"
+else fail "boss fights" "$LOGS/boss.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 
@@ -143,6 +149,19 @@ else fail "Combo trial in the browser" "$LOGS/combo-ui.log"; fi
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwdaily.py" daily) > "$LOGS/daily-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/daily-ui.log"; then pass "Daily Potato in the browser (one try, chips, streak; shots in build/shots/daily)"
 else fail "Daily Potato in the browser" "$LOGS/daily-ui.log"; fi
+
+# 8d. Boss fights in the browser: Practice > VS > Old Scratch (his difficulty, his map), the fight with a CPU partner, the boss bar
+#     (HP, stagger, FINISH), the KO page on the final hit, Victory / Defeat results, the bar at four sizes. Shots in build/shots/boss.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwboss.py" boss) > "$LOGS/boss-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/boss-ui.log"; then pass "boss fights in the browser (Practice entry, boss bar, KO page, results; shots in build/shots/boss)"
+else fail "boss fights in the browser" "$LOGS/boss-ui.log"; fi
+
+# 8e. The Road: the start-page card, the map and its locks, a stop's sheet, a stop played with its rules (lives, time, map, start
+#     percents), the stars and chips paid once and saved, Retry / The Road / quitting to the map, the fence at 12 stars, Old Scratch's
+#     first win (Devil Masher + 150 chips), and the card, map and sheet at four sizes. Shots in build/shots/road.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwroad.py" road) > "$LOGS/road-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/road-ui.log"; then pass "the Road in the browser (map, stops, stars, the fence, Old Scratch; shots in build/shots/road)"
+else fail "the Road in the browser" "$LOGS/road-ui.log"; fi
 
 echo "--- $FAILS failed"
 exit $((FAILS > 0))

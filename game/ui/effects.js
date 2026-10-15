@@ -1,5 +1,6 @@
 /* ===================== effects ===================== */
-const fx = [], sfx = [], trails = [[], []], combos = [null, null], chgPops = [], finDash = [null, null];
+const fx = [], sfx = [], trails = [[], [], []], combos = [null, null, null], chgPops = [], finDash = [null, null, null];   // per slot (a boss fight has three)
+const clearTrails = () => { for (const t of trails) t.length = 0; };
 function addFx(o) { if (fx.length < 260) fx.push(o); }
 function spark(x, y, col, kb, dx, dy) {
   const n = 6 + Math.min(10, (kb * 0.35) | 0);
@@ -32,7 +33,7 @@ function updateFx(g) {
   }
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].t >= fx[i].life) fx.splice(i, 1);
   for (const e of sfx) e.t++;
-  for (let i = 0; i < 2; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
+  for (let i = 0; i < combos.length; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
   for (let i = chgPops.length - 1; i >= 0; i--) { const q = chgPops[i]; q.t++; q.pop *= 0.8; if (q.t > 56) chgPops.splice(i, 1); }
   finDashTick(g);
   for (let i = sfx.length - 1; i >= 0; i--) if (sfx[i].t >= sfx[i].life) sfx.splice(i, 1);
@@ -137,7 +138,7 @@ function drawScreenFx(c) {
 }
 // "3 HIT · 14%" pop-up above the fighter taking the combo, with the route's name over it when the hits make one
 function drawCombos(c, g) {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < combos.length; i++) {
     const cb = combos[i], f = g.fighters[i];
     if (!cb || !f) continue;
     const alive = f.state !== "dead" && f.state !== "gone";
@@ -188,7 +189,7 @@ function humStep(g) {
 function finDashTick(g) {
   g.fighters.forEach((f, i) => {
     const m = f.move;
-    if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot) || skinLvl(f) >= 3) { finDash[i] = null; return; }
+    if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(foeSlot(f.slot)) || skinLvl(f) >= 3) { finDash[i] = null; return; }
     if (f.mt === m.startup + 1) finDash[i] = f.x;
     if (f.mt === m.startup + m.active && finDash[i] !== null) { addFx({ k: "flashline", x1: finDash[i], x2: f.x, y: f.y - f.s.h * 0.45, col: "#ffffff", t: 0, life: 26 }); finDash[i] = null; }
   });
@@ -255,6 +256,7 @@ function render2D(g, tk) {
   c.setTransform(DPR * cam.z, 0, 0, DPR * cam.z, DPR * ox, DPR * oy);
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
+  bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
@@ -285,6 +287,7 @@ function render2D(g, tk) {
 /* ===================== events from the simulation ===================== */
 function handleEvent(g, e, live) {
   skinEvent(g, e);
+  bossEvent(g, e, live);   // a boss's moves, staggers and fall: looks and sounds (ui/draw-boss.js)
   switch (e.type) {
     case "hit": {
       if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
@@ -295,6 +298,7 @@ function handleEvent(g, e, live) {
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       else if (hAtt && hAtt.move && hAtt.move.shot) gunSpark(e, 4);   // a Gunslinger light shot: a small gold spark where it lands
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
+      if (rt && rt.fresh && live) roadRoute(e, rt);   // ui/road.js: a stop's combo star
       if (rt && rt.fresh && live) Sfx.route();
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
@@ -303,7 +307,7 @@ function handleEvent(g, e, live) {
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
     }
-    case "lethal": if (live) finLethal(g, e); break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    case "lethal": if (live) { finLethal(g, e); roadEvent(g, e); } break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
     case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
       if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
@@ -350,6 +354,7 @@ function handleEvent(g, e, live) {
       else if (live) Sfx.swing(true);
       break;
     case "burst":
+      if (g.fighters[e.slot] && g.fighters[e.slot].spec.boss) break;   // his fireballs land in fire (ui/draw-boss.js), not the Alchemist's green
       addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: e.r * 1.2, col: "#7dff62" });
       for (let i = 0; i < 12; i++) addFx({ k: "line", x: e.x, y: e.y, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 7, t: 0, life: 12 + Math.random() * 8, col: i % 2 ? "#d9ffcf" : "#55e05a", w: 2.5 });
       cam.shake = Math.max(cam.shake, 5);
@@ -360,15 +365,16 @@ function handleEvent(g, e, live) {
       else if (e.style === "fire") { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 34, col: "#ff8a3d" }); for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4); }
       else dust(e.x, e.y, 2, 10);
       break;
-    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); } break;
+    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); roadEvent(g, e); } break;
     case "tech": dust(e.x, e.y, 6, 30); addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 8, r1: 30, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "sudden":
-      combos[0] = combos[1] = null; trails[0].length = trails[1].length = 0;
+      combos.fill(null); clearTrails();
       if (live) { showBanner("Sudden death", "Next KO wins", "game", 1700); Sfx.count(true); }
       camStep(g, true);
       break;
     case "game":
       if (!live) break;
+      roadEvent(g, e);
       // the last life lost to a lethal hit starts the finisher on that hit; a self-destruct, a time-out or the tutorial keep the banner
       if (e.hit && finWanted(g)) finStart(g);
       else showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0);
@@ -390,7 +396,7 @@ function handleEvent(g, e, live) {
    The looks of each ulti are in draw-fighters.js (poses, uvFloor, uvFront), draw-world.js (the projectiles) and below (events). */
 const UV_GOLD = "#ffd23f", UV_PALE = "#fff2c2";
 const UV_FREEZE = BL.TUNE.ultFreeze, UV_BANNER = 60;
-const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false], dash: [null, null], at: [null, null] };
+const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false, false], dash: [null, null, null], at: [null, null, null] };
 const uvLive = (g) => UV.g === g && mode === "match" && !FIN.on;
 // once per move and name (a cue that waits on a frame must not fire again while the game is held in hitstop)
 function uvCue(f, name) { const k = f.slot + "." + f.moveT + "." + name; if (UV.cues.has(k)) return false; UV.cues.add(k); return true; }
@@ -456,7 +462,7 @@ function uvLitFighter(c, f, tk) {
 // ---- once per sim tick ----
 function uvTick(g) {
   if (UV.t < 999) UV.t++;
-  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false]; UV.dash = [null, null]; UV.at = [null, null]; }
+  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false, false]; UV.dash = [null, null, null]; UV.at = [null, null, null]; }
   if (UV.t > 1 && UV.t < UV_FREEZE - 2 && uvLive(g)) cam.shake = Math.max(cam.shake, 1.8);   // the held screen trembles
   for (const f of g.fighters) {
     if (uvHeld(f)) uvFighterTick(g, f);

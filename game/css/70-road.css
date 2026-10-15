@@ -1,0 +1,62 @@
+/* ---------- the Road (ui/road.js; Fable's map: boss/fable-boss.md section 3) ----------
+   The menu card (#bRoad): the map in small with "The Road" and your stop over its foot; beside the card column on wide screens (over
+   the attract match, under the top bar), above the column when upright. The Road screen: a header and the map canvas with a button
+   over each stop. A stop's sheet reuses the Daily Potato sheet (dly-*), plus the three stars. The results show the stop's stars. */
+#scrMenu .mm-road { position: absolute; z-index: 1; right: max(var(--mm-px), env(safe-area-inset-right, 0px)); top: calc(max(var(--mm-pt), env(safe-area-inset-top, 0px)) + var(--mm-bar) + 14px);
+  width: min(340px, calc(100% - var(--mm-colw) - 3 * var(--mm-px))); aspect-ratio: 16 / 9; padding: 0; overflow: hidden; border-radius: 12px; text-align: left; color: var(--text);
+  background: #1a0f2a; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; animation: mmIn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.2s backwards; }
+#scrMenu .mm-road:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+@media (hover: hover) { #scrMenu .mm-road:hover { filter: brightness(1.08); } }
+#mRoadCv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#scrMenu .mm-road::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 52%; background: linear-gradient(rgba(14, 16, 34, 0), rgba(14, 16, 34, 0.88)); pointer-events: none; }
+.mm-rdt { position: absolute; z-index: 1; left: 12px; right: 40px; bottom: 9px; display: flex; flex-direction: column; gap: 2px; text-shadow: 0 2px 0 var(--ink); }
+.mm-rdt b { font: italic 900 24px/1 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--sand); }
+#mRoad { font: 700 12.5px/1.2 var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm-rdgo { position: absolute; z-index: 1; right: 12px; bottom: 14px; width: 0; height: 0; border-left: 12px solid var(--sand); border-top: 8px solid transparent; border-bottom: 8px solid transparent; filter: drop-shadow(0 2px 0 var(--ink)); }
+#app.tiny #scrMenu .mm-road { top: calc(max(var(--mm-pt), env(safe-area-inset-top, 0px)) + var(--mm-bar) + 10px); }
+#app.tiny .mm-rdt b { font-size: 19px; }
+#app.tiny #mRoad { font-size: 11px; }
+#app.portrait #scrMenu .mm-road { position: relative; right: auto; top: auto; z-index: auto; order: 3; flex: none; align-self: center; width: 100%; max-width: var(--mm-colw); aspect-ratio: auto; height: 86px; margin: auto 0 0; }
+#app.portrait #scrMenu .mm-road + .mm-col { margin-top: var(--mm-gap); }
+@media (prefers-reduced-motion: reduce) { #scrMenu .mm-road { animation: none; transition: none; } }
+
+/* the Road screen */
+.rd-scr { background: #1a0f2a; display: flex; flex-direction: column; }
+.rd-head { flex: none; padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); background: rgba(14, 16, 34, 0.94); border-bottom: 2px solid rgba(255, 106, 58, 0.35); }
+.rd-sum { flex: none; font: 700 15px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--sand); white-space: nowrap; }
+.rd-map { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+#roadCv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rd-hits { position: absolute; inset: 0; }
+.rd-hit { position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rd-hit:focus-visible { outline: 3px solid var(--sand); outline-offset: 2px; }
+.rd-hit.lock { cursor: default; }
+.rd-note { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); margin: 0; padding: 8px 14px;
+  border-radius: 8px; border: 1px solid var(--line); background: rgba(14, 16, 34, 0.92); font: 600 13px/1.3 var(--body); color: var(--text); text-align: center; }
+#app.narrow .rd-head .coin { display: none; }
+#app.narrow .rd-sum { font-size: 13px; }
+#app.tiny .rd-head h2 { font-size: 24px; }
+
+/* a stop's sheet: the stars, the reward line; past the fence, three level buttons instead of Fight */
+.rd-line { font-style: italic; }
+.rd-stars { display: flex; gap: 8px; justify-content: center; }
+.rd-st { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.rd-st i { font-style: normal; font-size: 28px; line-height: 1; color: #2c2f4a; text-shadow: 0 2px 0 var(--ink), 0 0 1px var(--ink); }
+.rd-st.on i { color: #ffd23f; }
+.rd-st small { font: 600 11.5px/1.2 var(--body); color: var(--mute); }
+.rd-st.on small { color: var(--text); }
+.rd-reward { margin: 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+.rd-lv { display: none; }
+.rd-sheet.boss .rd-lv { display: flex; }
+.rd-sheet.boss #rsGo { display: none; }
+.rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
+.rd-bossph i { font-style: normal; font-size: 26px; line-height: 1; color: #ffd84a; }
+#app.short .rd-st i, #app.tiny .rd-st i { font-size: 22px; }
+
+/* the results: the stop's stars, the new ones pop in one after another */
+.res-stars { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; }
+.res-stars .rd-st { flex: 0 1 auto; flex-direction: row; gap: 5px; text-align: left; }
+.res-stars .rd-st i { font-size: 22px; }
+.res-stars .rd-st small { font-size: 12px; }
+.res-stars .rd-st.new i { animation: rdPop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) calc(0.35s + var(--k) * 0.18s) backwards; }
+@keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
+@media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }

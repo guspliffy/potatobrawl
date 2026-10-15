@@ -1,9 +1,33 @@
-# PotatoBrawl handoff (updated 2026-10-15: "sunset ink" menu redesign, PROTO 9)
+# PotatoBrawl handoff (updated 2026-10-15: boss fights, Old Scratch, The Field and the Road, PROTO 10)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Session 3 of the big-features plan (2026-10-15, branch claude/boss-old-scratch-9qwpj7, PROTO 10, players reload once):
+  - Boss engine in core.js: 3+ fighters (`players` of any length, `f.team`; 1v1 keeps team = slot and plays frame for frame as before),
+    no friendly fire, `g.winner` is the winning TEAM, `BOSSES` (spec.boss numbers per level [Normal, Hard, Nightmare]), boss HP
+    (`hp`/`hpMax`, `hpMul` option), poise -> stagger (`poise`, `stag`), rage, the brain on `g.br` (seeded rng, picks a target `aim`,
+    moves `bq`/`bt`), at 0 HP he is `broken` and the next heavy, special or ulti is the final launch (`doomed`, endGame reason "boss").
+    Events bossMove / bossStomp / bossRain / bossStagger / bossBroken; hits on him carry `boss: true`. Tuned with tests/boss.js.
+  - Old Scratch ("The Devil"): Pitchfork Stab, Tail Whip, Hellfire Stomp (+ two floor flames), Brimstone Rain (fireballs on marked
+    spots), Horn Charge (from half HP; always on Nightmare). Drawn in ui/draw-boss.js (every move's tell, rage, stagger, broken, the
+    KO-page pose, quiet sounds). The Field (maps/field.js) is map index 4 with `pool: false`: it is NOT in the random draw
+    (`BL.POOL` = 4 maps for ranked, online, daily, cup and the tests), only in the Practice picker and boss fights. With it in the
+    draw the balance band failed (Phoenix 58.1%, CPU styles 69%), so adding it to ranked is a balance job of its own.
+  - Boss match (ui/boss.js): you + a CPU partner (`cpuFoe`, bot 0.55/0.65/0.75) vs him, 3 lives each, boss HP x0.75 (BOSS_SOLO
+    room for a solo mode later). Practice > VS lists "Old Scratch · boss, 2 vs 1" with Normal/Hard/Nightmare; the map is locked to
+    The Field. Boss bar `#bossBar` in the HUD (HP with a lag bar, poise, Staggered, FINISH when broken, his line in the countdown),
+    results "Boss fight · <level>" without rating or chips. The KO page plays for the player-team fighter who lands the final hit
+    (FIN.w / FIN.l from FIN.pend in 3-fighter games); manga.js draws a boss at 0.7 in a bigger box (MG_BOSS_SC / MG_BOSS_BOX).
+    `foeSlot(slot)` (draw-world.js) is "the fighter I'm up against" for every 1v1 assumption in the UI (finish rings, skin fx).
+  - Per-player options in newGame: `stocks`, `pct` (first life), `lifePct` (every life; fighter field, FKEYS + checksum).
+  - The Road (ui/road.js): a start-page card opens a map of 8 stops on The Field (Small Fry, Mash, Straw Jack, Dr. Peel, Bang Bang
+    Maris, Cinder, Moonie, Sir Spudsalot), each a named CPU with its own twist (lives each side, time, map, start percents) and three
+    stars (win, no heart lost, a stop bonus: quick win, a combo route, a finisher or an ulti KO). A stop opens when the one before
+    is won; 12 stars (ROAD_GATE) open the fence to Old Scratch on any level. New stars pay 10 chips; his first win pays the Devil
+    Masher title (eighth title in acct.js ACT) and 150 chips; each level won is a star. Progress `P.road` = { s: [bits per stop],
+    b: boss level bits, paid } syncs as a union in sync.js (cleanRoad). Results show the stars; Retry / The Road / Menu.
 - Live: https://potatobrawl.cloud (Hostinger VPS srv1519994, 187.124.173.121, Ubuntu 24.04, Node 20).
   Caddy terminates HTTPS and proxies to the game server on 127.0.0.1:8080 (systemd unit `potatobrawl`,
   checkout in /opt/potatobrawl). Old http://187.124.173.121:8080 still answers (deploy/accounts-setup.txt closes it).
@@ -231,7 +255,7 @@ index.html is committed with every source change (check.sh flags a stale one).
     (`escapeInput`); lethal only if all four die. Event "lethal" {slot, by, final, mv, fin, chg, kb, dirx,
     diry}. On the last life (`final`) the loser is `doomed` (intangible, KO counted at once) and endGame runs
     on that frame ("game" event `hit: true`); the blast line later only removes the doomed loser.
-- ui/: one script in 18 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it); base.js opens the IIFE and loop.js
+- ui/: one script in 21 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it); base.js opens the IIFE and loop.js
   closes it, so a part alone is not valid JS.
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
@@ -293,6 +317,10 @@ index.html is committed with every source change (check.sh flags a stale one).
   whispered "shhh...". Engine hooks it added (each unset = the old behaviour): page(c, t) (a last pass over the page),
   hint(t) (skip-hint colour), mgPuppet o.mono (every colour grey), panel dim ("r,g,b" of the covered dimming).
   Video reaper-hub/manga/reaper-last-rites-manga-v1.mp4 + -sheet.jpg.
+- ui/boss.js (after screens.js): boss matches (startBoss, bossInputs, the boss bar bossHud, bossMatchEnd, results lines). Test hook
+  `window.__blBoss(o)`. ui/draw-boss.js (after draw-world): drawBoss / drawBossProj / bossFloor / bossEvent (looks and sounds only).
+  ui/road.js (after boss.js): the Road (stops table ROAD, map drawing roadPaint, sheets, roadFight / roadBossFight, stars, results).
+  Test hook `window.__blRoad` = { stops, get, fight, boss, open, set }. CSS in game/css/60-boss.css and 70-road.css.
 - ui/acct.js (after menus.js) + sync.js: the profile pill (top right of the start page, replaces the rating/chips card: avatar of
   `P.last`, name, tier badge in a progress ring + rating, chips, cups when `P.cups > 0`) and the Account sheet (`#scrAccount`, opened by
   tapping the pill: name, tier/rating/peak, wins/losses/chips/skins, recent results, the sync section, Reset progress, which moved
@@ -375,6 +403,9 @@ pwux2.py (all screens, 3 sizes) · ulti.js (every ulti's KO% vs Samurai and Odin
 save/restore mid-ulti; check.sh 3e, also in --quick) · pwult.py (the ulti bar empty/half/full/spent, the ULTI button only while full and
 clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone desk up kbd pad; check.sh 6d) · pwtut.py (the nine tutorial
 steps, desktop through to the results, touch sizes up to the ulti; tags desk desktouch se phone up; check.sh 6e) · pwultreel.py (above) ·
+boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
+Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
+map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, four sizes; check.sh 8e) ·
 pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
@@ -401,12 +432,15 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the Ultimate
+- NEXT: session 4 of the big-features plan: the Alien and the Sea Monster on the boss engine, their stages The Kitchen and
+  The Deep, Road skins (stars buy skins), then online 2v1 (session 5) and 2v2 (session 6). Boss leftovers: The Field in the
+  ranked draw needs its own balance pass; a solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when he
+  breaks is not drawn yet; the Road has no stops past the fence yet (the next regions come with the Alien and the Sea Monster).
+- Also open (fighter mastery, queued as its own thread; Jonny's order, 2026-10-14 11:55 UTC): the Ultimate
   KO pages are all done (2026-10-15: Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök", Alchemist "Mutation", Reaper
   "The Ferryman"; Fable's twists in next-ideas/fable-ideas.md section 2); left of it: fighter
   mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
-  seen). Then 4. boss engine + the Devil + The Field + the Road's first 8 stops; 5. Alien + Sea Monster, their stages, Road
-  skins; 6. online 2v1; 7. 2v2 (offline, then online).
+  seen).
 - Ultimates leftovers: Odin's shared combo routes mostly miss lighter fighters (a lever if Jonny wants Odin to combo more); an
   ulti can KO without a "lethal" call when escapes would have survived it (no finisher then, by design); finish.js at 60 seeds
   still finds a rare wrong call where a bot attacker acts after the call (the same class as the old Dragon case).

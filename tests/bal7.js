@@ -1,7 +1,7 @@
 // Per-fighter win rate over many bot-vs-bot games (both sides, several difficulty levels).
 const { BL } = require(process.env.CORE || "../game/core.js");
 const { FIGHTERS, newGame, step, makeBot, botInput } = BL;
-const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.POOL : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 const N = +(process.argv[2] || 60), LV = (process.argv[3] || "0.7").split(",").map(Number);
 function run(a, b, d, seed) {
   const g = newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[1] }], seed, countdown: 10, time: 240, map: mapOf(seed) });
