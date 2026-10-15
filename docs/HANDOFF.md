@@ -577,6 +577,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   flow sometimes comes back from a reload with the starting profile (chips 85, the Daily open again), pwcup.py flow once missed
   the bracket after a reload, pwcombo.py timed out waiting for the trial. Worth a look: a localStorage write right before
   pg.reload() may not have reached the store yet.
+- pwhud.py's KO finisher step failed every time on main on 2026-10-15: the idle player was knocked off the edge by a weak hit and
+  fell (a fall plays no finisher). It now puts the player back in the middle whenever both fighters stand and tries a new match
+  up to three times.
 - Combos/Daily leftovers: the Daily's Brutal (0.87) is still below Practice Hard (0.9); changing the device clock gives an extra
   Daily try (accepted, offline game); a player who clears all 13 routes on two devices before they sync is paid twice.
 - The big-features plan (Jonny, 2026-10-14), approved with its default decisions:
