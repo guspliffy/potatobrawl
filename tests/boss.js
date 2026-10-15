@@ -1,12 +1,16 @@
-// Boss fights (2v1): two bot players against a boss on The Field, at each difficulty.
-//   node boss.js                       the check (check.sh step 3f): determinism + save/restore, then 24 fights per level with bots at 0.6;
-//                                      prints "boss ok" when the win rates and fight lengths sit in their bands, every move is used, the
-//                                      launch that ends him always leaves the arena, and the "lethal" calls on players come true
+// Boss fights (2v1): two bot players against each boss on his own map, at each difficulty.
+//   node boss.js                       the check (check.sh step 3f), for every boss: determinism + save/restore, then 24 fights per level
+//                                      with bots at 0.6; prints "boss ok" when the win rates and fight lengths sit in their bands, every
+//                                      move is used, the launch that ends him always leaves the arena, and the "lethal" calls on players
+//                                      come true
 //   node boss.js <games> [bot level]   the numbers only (win rate, length, staggers, hearts lost, moves, what ended him)
-//   BOSS='{"hp":1100}' node boss.js 48 0.6    try other numbers for the boss block
+//   ONLY=zorp node boss.js ...         one boss (by id)
+//   BOSS='{"hp":1100}' node boss.js 48 0.6    try other numbers for the boss block (with ONLY: that boss; else the first)
 const BL = require("../game/core.js").BL;
-const FIELD = BL.MAPS.findIndex((m) => m.id === "field");
-const BOSS = BL.BOSSES[0];
+const BOSSES = BL.BOSSES.filter((b) => !process.env.ONLY || b.id === process.env.ONLY);
+let BOSS = BOSSES[0], FIELD = 0;
+const use = (b) => { BOSS = b; FIELD = Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map)); };
+use(BOSS);
 if (process.env.BOSS) Object.assign(BOSS.boss, JSON.parse(process.env.BOSS));
 const F = BL.FIGHTERS, LV = ["Normal", "Hard", "Nightmare"];
 const players = (a, b) => [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[1] }, { spec: BOSS, pal: BOSS.palettes[0] }];
@@ -78,19 +82,25 @@ function levels(N, D) {
   return out;
 }
 const arg = process.argv[2];
-if (arg) { levels(+arg, +(process.argv[3] || 0.6)); process.exit(0); }
-const fails = [];
-if (!det()) fails.push("determinism");
-const N = 24, R = levels(N, 0.6);
-const band = (lv, lo, hi) => { const w = (100 * R[lv].wins) / N; if (w < lo || w > hi) fails.push(`${LV[lv]} win rate ${w.toFixed(0)}% outside ${lo}-${hi}%`); };
-band(0, 65, 100); band(1, 25, 75); band(2, 0, 25);
-R.forEach((r, lv) => {
-  const s = r.len / N / 60;
-  if (s < 40 || s > 150) fails.push(`${LV[lv]} fights last ${s.toFixed(0)} s (want 40-150)`);
-  for (const k of ["stab", "whip", "stomp", "rain", "charge"]) if (!r.moves[k]) fails.push(`${LV[lv]}: ${k} never used`);
-  if (r.stuck) fails.push(`${LV[lv]}: the final launch left him in the arena ${r.stuck} times`);
-  if (r.flight > 120) fails.push(`${LV[lv]}: the final launch took ${r.flight} frames to leave`);
-  if (r.wrong > Math.max(1, r.right * 0.03)) fails.push(`${LV[lv]}: ${r.wrong} wrong lethal calls of ${r.wrong + r.right}`);
-});
+if (arg) { for (const b of BOSSES) { use(b); console.log(`--- ${b.name} on ${b.map}`); levels(+arg, +(process.argv[3] || 0.6)); } process.exit(0); }
+const fails = [], wins = [];
+for (const b of BOSSES) {
+  use(b);
+  console.log(`--- ${b.name} on ${b.map}`);
+  const fail = (t) => fails.push(`${b.name}: ${t}`);
+  if (!det()) fail("determinism");
+  const N = 24, R = levels(N, 0.6);
+  const band = (lv, lo, hi) => { const w = (100 * R[lv].wins) / N; if (w < lo || w > hi) fail(`${LV[lv]} win rate ${w.toFixed(0)}% outside ${lo}-${hi}%`); };
+  band(0, 65, 100); band(1, 25, 75); band(2, 0, 25);
+  wins.push(`${b.name} ${(100 * R[0].wins / N).toFixed(0)}%`);
+  R.forEach((r, lv) => {
+    const s = r.len / N / 60;
+    if (s < 40 || s > 150) fail(`${LV[lv]} fights last ${s.toFixed(0)} s (want 40-150)`);
+    for (const k of b.boss.order) if (!r.moves[k]) fail(`${LV[lv]}: ${k} never used`);
+    if (r.stuck) fail(`${LV[lv]}: the final launch left him in the arena ${r.stuck} times`);
+    if (r.flight > 120) fail(`${LV[lv]}: the final launch took ${r.flight} frames to leave`);
+    if (r.wrong > Math.max(1, r.right * 0.03)) fail(`${LV[lv]}: ${r.wrong} wrong lethal calls of ${r.wrong + r.right}`);
+  });
+}
 for (const f of fails) console.log("FAIL", f);
-if (!fails.length) console.log("boss ok");
+if (!fails.length) console.log(`boss ok (Normal: ${wins.join(", ")})`);

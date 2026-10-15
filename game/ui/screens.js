@@ -178,9 +178,11 @@ function buildDetail() {
     b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
     b.style.setProperty("--c", col(p));
     b.title = p.name;
-    b.setAttribute("aria-label", `${p.name}${own ? "" : `, locked, ${p.price} chips`}`);
+    // a Road skin (p.road: the boss that gives it) is never sold: locked, it says who to beat instead of a price
+    if (p.road) b.classList.add("road");
+    b.setAttribute("aria-label", `${p.name}${own ? "" : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
     b.setAttribute("aria-pressed", String(own ? cur : pend));
-    b.innerHTML = `<i></i><small>${own ? p.name : `<span class="tokglyph"></span>${p.price}`}</small>`;
+    b.innerHTML = `<i></i><small>${own ? p.name : p.road ? "Road" : `<span class="tokglyph"></span>${p.price}`}</small>`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
       if (own) { equipSkin(spec.id, i); sel.pending = null; }
@@ -204,14 +206,16 @@ function buildDetail() {
 }
 function buildCards() { buildTiles(); buildDetail(); }
 function skinNote(spec, i) {
-  const p = spec.palettes[i], fx = FXTEXT[spec.id] && FXTEXT[spec.id][i];
-  return `${p.name}: ${fx || "base look"}.`;
+  const p = spec.palettes[i], fx = p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i];
+  const how = p.road && !(P.owned[spec.id] || []).includes(i) ? ` Beat ${roadBossName(p.road)} on the Road with ${spec.name} to get it.` : "";
+  return `${p.name}: ${fx || "base look"}.${how}`;
 }
+const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
 function updateUpgrade() {
-  const btn = $("selUp"), pd = sel.pending;
-  btn.hidden = !pd;
-  screens.select.classList.toggle("sl-pend", !!pd);
-  if (!pd) return;
+  const btn = $("selUp"), pd = sel.pending, road = !!pd && !!FIG[pd.id].palettes[pd.i].road;   // a Road skin can't be bought
+  btn.hidden = !pd || road;
+  screens.select.classList.toggle("sl-pend", !!pd && !road);
+  if (!pd || road) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
   btn.disabled = short > 0;
   btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
@@ -222,7 +226,7 @@ function buyPending() {
   const pd = sel.pending;
   if (!pd) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i];
-  if (P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
+  if (p.road || P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
   P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
   Sfx.uiCoin();
   buildTiles(); buildDetail();

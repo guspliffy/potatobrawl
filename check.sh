@@ -60,7 +60,7 @@ else fail "ultimates" "$LOGS/ulti.log"; fi
 # 3f. Boss fights (2v1): replay and save/restore determinism with three fighters, then two bot players against Old Scratch at each
 #     difficulty: win rates and fight lengths in their bands, every move used, the final launch leaves the arena, lethal calls come true.
 (cd tests && node boss.js) > "$LOGS/boss.log" 2>&1
-if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights ($(grep -o 'Normal: players win [0-9]*%' "$LOGS/boss.log" | sed 's/Normal: players win/Normal/'), determinism, final launch, lethal calls)"
+if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights (Normal win rates: $(grep -o '^boss ok (Normal: [^)]*' "$LOGS/boss.log" | sed 's/^boss ok (Normal: //'); determinism, final launch, lethal calls)"
 else fail "boss fights" "$LOGS/boss.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi

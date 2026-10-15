@@ -16,7 +16,11 @@ const FXTEXT = {
   gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
   reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
 };
-const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 ? 0 : i; };
+// a Road skin (palettes 4-6, pal.road = the boss that gives it) has none of the chip skins' effects: its own overlay (skinRoad)
+const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road ? 0 : i; };
+const skinRoad = (f) => (f.pal && f.pal.road) || "";
+// what each Road skin does (the select screen's note)
+const ROADFX = { scratch: "", zorp: "", kraken: "" };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [0, 1, 2].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three)
