@@ -50,6 +50,14 @@ const SYNC = (function () {
     const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
     return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
   }
+  // The Road (ui/road.js): { s: per stop, the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: the boss levels won as bits
+  // (1 Normal, 2 Hard, 4 Nightmare), paid: the first boss win's reward was paid }. Trailing empty stops are dropped (one spelling).
+  function cleanRoad(q) {
+    if (!isObj(q)) return null;
+    const s = (Array.isArray(q.s) ? q.s : []).slice(0, 24).map((v) => num(v, 0, 7, 0));
+    while (s.length && !s[s.length - 1]) s.pop();
+    return { s, b: num(q.b, 0, 7, 0), paid: q.paid === true };
+  }
   function cleanName(s) {
     return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
   }
@@ -96,6 +104,7 @@ const SYNC = (function () {
     if (isObj(p.mseed)) out.mseed = cleanMap(p.mseed, MSEED_MAX);
     if (isObj(p.mpaid)) out.mpaid = cleanMap(p.mpaid, MLV_MAX);
     if (isObj(p.pages)) out.pages = { ko: cleanIds(p.pages.ko), ult: cleanIds(p.pages.ult) };
+    { const rd = cleanRoad(p.road); if (rd) out.road = rd; }
     // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
     if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
     if (typeof p.comboPaid === "boolean") out.comboPaid = p.comboPaid;
@@ -125,6 +134,7 @@ const SYNC = (function () {
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
+    if (S.road !== undefined) P.road = { s: S.road.s.slice(), b: S.road.b, paid: S.road.paid };
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
     for (const k of ["mxp", "mseed", "mpaid"]) if (S[k] !== undefined) P[k] = Object.assign({}, S[k]);
@@ -136,7 +146,7 @@ const SYNC = (function () {
     if (!P) return false;
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
-      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra);
+      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)));
   }
 
   /* ----- the merge -----
@@ -218,9 +228,15 @@ const SYNC = (function () {
       const u = (k) => [...new Set([...((L.pages || {})[k] || []), ...((S.pages || {})[k] || [])])].sort();
       out.pages = { ko: u("ko"), ult: u("ult") };
     }
+    // the Road: every star and boss level either side won stays won; the first-win reward, paid on any device, stays paid
+    if (have(S.road) || have(L.road)) {
+      const l = L.road || { s: [], b: 0, paid: false }, s = S.road || { s: [], b: 0, paid: false };
+      const st = Array.from({ length: Math.max(l.s.length, s.s.length) }, (_, i) => (l.s[i] | 0) | (s.s[i] | 0));
+      out.road = { s: st, b: l.b | s.b, paid: !!(l.paid || s.paid) };
+    }
     return out;
   }
 
-  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, cleanRoad, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;

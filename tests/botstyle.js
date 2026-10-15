@@ -6,7 +6,7 @@
 //   node botstyle.js [games per fighter and level, default 100] [levels, default 0.5,0.8]
 const { BL } = require("../game/core.js");
 const { FIGHTERS, BOT_STYLES, newGame, step, makeBot, botInput } = BL;
-const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.POOL : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 const N = +(process.argv[2] || 100), LV = (process.argv[3] || "0.5,0.8").split(",").map(Number);
 const LO = 35, HI = 65;
 // STYLE='{"wizard":{"gap":2}}' tries other numbers; ONLY=wizard runs one fighter

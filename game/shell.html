@@ -746,7 +746,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
-    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div></div>
+    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
+      <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
       <div class="pcard right" id="pc1"><div>
         <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
@@ -787,6 +788,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
     </header>
+    <!-- the Road (ui/road.js, 70-road.css): the map in small, your stop and stars; beside the column on wide screens, over it upright -->
+    <button class="card mm-road" id="bRoad" data-sfx="go"><canvas id="mRoadCv" aria-hidden="true"></canvas><span class="mm-rdt"><b>The Road</b><span id="mRoad">Stop 1 of 8 · 0 ★</span></span><i class="mm-rdgo" aria-hidden="true"></i></button>
     <div class="mm-col">
       <button class="card gold tone mm-hero" id="bRanked" data-sfx="go" style="--i:0"><span class="mm-art"><img id="mHeroArt" alt=""></span><span class="mm-edge" aria-hidden="true"></span><span class="mm-body"><span class="kick" id="mRankKick">Ranked match</span><span class="mm-ttl">Ranked</span><span class="mm-sub" id="mRec">0W · 0L</span><span class="mm-cta"><span>Play</span><i aria-hidden="true"></i></span></span></button>
       <div class="mm-row2">
@@ -860,6 +863,31 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the Road (ui/road.js, 70-road.css): the map of the night field, eight stops and the fence; a stop opens its sheet -->
+  <section id="scrRoad" class="screen rd-scr" hidden>
+    <header class="sel-head rd-head">
+      <button class="back" id="roadBack" aria-label="Menu"></button>
+      <div class="grow"><div class="kicker">The Road · region 1</div><h2>The Field</h2></div>
+      <span class="rd-sum" id="roadSum"></span>
+      <div class="coin chips" aria-label="Potato chips"><span id="roadTokens">0</span></div>
+    </header>
+    <div class="rd-map"><canvas id="roadCv" aria-hidden="true"></canvas><div class="rd-hits" id="roadHits" role="group" aria-label="Stops"></div><p class="rd-note" id="roadNote" hidden></p></div>
+  </section>
+  <section id="scrRoadStop" class="screen modal" hidden>
+    <div class="sheet dly-sheet rd-sheet scroll" id="roadStopSheet">
+      <header class="sh-head"><h3 id="rsName"></h3><span class="kick" id="rsKick"></span><button class="round x" id="rsClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="dly-vs"><div class="dly-f" id="rsMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="rsOp"></div></div>
+        <p class="dly-rule" id="rsRule"></p>
+        <p class="dly-line rd-line" id="rsLine"></p>
+        <div class="rd-stars" id="rsStars"></div>
+        <p class="rd-reward" id="rsReward"></p>
+        <div class="dly-acts rd-acts"><button class="btn primary lg" id="rsGo"><span>Fight</span></button><button class="btn" id="rsPick"><span>Fighter</span></button><button class="btn" id="rsBack"><span>Back</span></button></div>
+        <div class="dly-acts rd-lv" id="rsLv"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
   <section id="scrDaily" class="screen modal" hidden>
     <div class="sheet dly-sheet scroll">
@@ -918,6 +946,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
           <p class="res-fin" id="rFin" hidden></p>
+          <p class="res-stars" id="rStars" hidden></p>
         </div>
       </div>
       <div class="res-side">

@@ -63,10 +63,11 @@ function mxNextLine(id, lv) { return lv >= MX_MAX ? "Mastered" : `Next: ${mxRewa
 })();
 
 /* ----- XP for a finished match ----- */
-// The Practice multiplier. Practice is the plain CPU match of finishMatch: not ranked, online, Daily or cup, and match.level is one of the
-// CPU levels. Every other mode (and any mode added later) counts x1.
+// The Practice multiplier. Practice is the plain CPU match of finishMatch: not ranked, online, Daily, cup, a boss fight or a Road stop (the Road's
+// stops and boss levels carry names like "Normal" and "Hard" too), and match.level is one of the CPU levels. Every other mode (and any mode
+// added later) counts x1.
 function mxMult() {
-  const m = match, lv = m && !m.ranked && !m.online && !m.daily && !m.cup ? LEVELS.find((l) => l.name === m.level) : null;
+  const m = match, lv = m && !m.ranked && !m.online && !m.daily && !m.cup && !m.boss && !m.road ? LEVELS.find((l) => l.name === m.level) : null;
   return lv ? { Dummy: 0, Easy: 0.5, Normal: 0.75, Hard: 1 }[lv.name] : 1;
 }
 // R: { res (1 win, 0.5 draw, 0 loss), forfeit, me (the fighter, for its KOs) }; page: your KO page played on the last heart; ult: it was an Ultimate KO

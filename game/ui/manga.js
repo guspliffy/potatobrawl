@@ -123,7 +123,7 @@ const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced i
 const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
 const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, FADE: 5600, END: 5900 };
 const MT = Object.assign({}, MT_N);
-const MG_BOX = [-100, -125, 100, 14];
+const MG_BOSS_SC = 0.7, MG_BOX = [-100, -125, 100, 14], MG_BOSS_BOX = [-180, -215, 180, 14];   // a boss is much bigger (horns at -157, a long fork): his own box, and he is drawn at MG_BOSS_SC so the panels framed for a fighter hold him
 const MG_GOLD = "#f3c84a", MG_GOLD_D = "#b8860b", MG_GOLD_PALE = "#fff2c2", MG_GOLD_SEAL = "#e0b43a";   // the Ultimate's gold: it joins the page's accent, never replaces it
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
 const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
@@ -422,7 +422,7 @@ function mgTear(pn, sx, sy, wdt, t, glowCol) {
 //      post(lc, X) (extra source-atop art in device px: X = { sx, sy, z } is the feet and the device px per world unit), tone (false: no dots), k (ink), mono (every colour grey) }
 function mgPuppet(c, pn, p, tt, o) {
   o = o || {};
-  const D = DPR, sc = o.sc || 1, ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y), bq = o.box || MG_BOX;
+  const boss = !!p.spec.boss, D = DPR, sc = (o.sc || 1) * (boss ? MG_BOSS_SC : 1), ze = pn.z * sc, [sx, sy] = pn.p(p.x, p.y), bq = o.box || (boss ? MG_BOSS_BOX : MG_BOX);
   // the box the fighter can cover (world units about its feet: left, top, right, bottom; o.box widens it for a long spear), cut to the panel (the panel clips it anyway) when drawn into the page, not when drawn into the overlay or when o.free says so
   let x0 = sx + pn.ox + bq[0] * ze, y0 = sy + pn.oy + bq[1] * ze, x1 = sx + pn.ox + bq[2] * ze, y1 = sy + pn.oy + bq[3] * ze;
   if (!(o.free === undefined ? c !== ctx : o.free)) { x0 = Math.max(x0, pn.x0 + pn.ox - 2); x1 = Math.min(x1, pn.x1 + pn.ox + 2); y0 = Math.max(y0, pn.y0 + pn.oy - 2); y1 = Math.min(y1, pn.y1 + pn.oy + 2); }
@@ -560,7 +560,7 @@ function mgWork(t) {
 
 /* ---------- start, tick, draw, end ---------- */
 function mangaStart(g) {
-  const W = g.fighters[g.winner], base = MANGA[W.spec.id];
+  const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
   const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
@@ -578,7 +578,7 @@ function mangaStart(g) {
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
     FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
-    for (const p of FIN.P) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
+    for (const p of FIN.P) if (p) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
     return true;
   } catch (e) { MG.on = false; mgWarn(e); return false; }
@@ -590,7 +590,7 @@ function mangaTick(g, t, k) {
   if (t < MT.FREEZE) return g;
   try {
     if (!FIN.cut) {   // the freeze: the real hit stops here
-      FIN.cut = true; fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+      FIN.cut = true; fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
       hideBanner(); fxHitOff(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
       if (L.panel) { finFull = true; resize(); }
       MG.snapPending = true;

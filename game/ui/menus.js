@@ -7,11 +7,12 @@ tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
 tap("bCup", cupOpen);
 tap("bDaily", dailyOpen);
+tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
-tap("selBack", goMenu);
+tap("selBack", () => { if (sel.mode === "road") openRoad(); else goMenu(); });
 tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -20,6 +21,7 @@ tap("pQuit", () => {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
+  if (match.road) { openRoad(); return; }   // a Road stop or its boss: back to the map, nothing lost
   if (!match.ranked && !match.cup && !match.daily) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
@@ -37,11 +39,13 @@ tap("rAgain", () => {
     return;
   }
   if (match && match.ranked) { sel.mode = "ranked"; }
+  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.lv); else roadFight(match.road.i); return; }   // Retry
   startMatch();
 });
 tap("rChange", () => {
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }
+  if (match && match.road) { openRoad(); return; }
   openSelect(match && !match.ranked ? "practice" : "ranked");
 });
 tap("rMenu", goMenu);

@@ -9,8 +9,8 @@ function simTick() {
     if (match.online) netTick();
     else {
       const pi = readPlayer();
-      const bi = botInput(G, G.fighters[1], G.fighters[0], match.bot);
-      step(G, [pi, bi]);
+      if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
+      else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
     }
     if (G.phase === "countdown") {
       const n = Math.ceil(G.cd / 50);
@@ -42,6 +42,7 @@ function frame(now) {
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") drawCards(tick);
   if (mode === "online") drawOnlineArt(tick);
+  if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
 window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
