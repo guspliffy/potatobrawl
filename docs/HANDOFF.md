@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-14: maps + rank emblems, PROTO 9)
+# PotatoBrawl handoff (updated 2026-10-15: "sunset ink" menu redesign, PROTO 9)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -156,6 +156,21 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     from about 20-45% (light) / 35-55% (heavy), was 90-115 / 120-150. Phoenix's Solar Dive homes in, so it got less (bkb 6, kbg 10:
     80 / 110%); Phoenix still sits at 57.4% (55 before), so check.sh's balance band top is 58. Wizard's CPU style toned down
     (gap 1.4, back 0.4, rng 10, poke 0.8; it beat the neutral CPU 68-74%). tests/ulti.js bands: no KO below 15%, all by 110%.
+- Menu redesign "sunset ink" (2026-10-15, Jonny 2026-10-14 16:48 UTC: the menus looked cheap; Fable's design and mockups in
+  /mnt/project-files/menu-redesign/; UI only, PROTO stays 9): ink outlines, hard shadows, a gold hero, stickers.
+  - CSS lives in game/css/*.css, spliced in name order at `/*CSS*/` (the end of shell.html's style block) by build.py: 00-ink
+    (tokens, .disp .kick .card .tag .livetag .round .plate .coin ...), 10-surfaces (shared buttons/chips/back), 20-menu, 30-select,
+    40-results, 50-sheets (Pause, Help, Settings, Account, Daily, Cup). Screen rules stay scoped under their screen id.
+  - Main menu: plate (#mRank: picture + emblem, name, tier + rating, title sticker), chips/streak/cups coins, gold Ranked hero
+    (#bRanked) with the last fighter and record, Daily tile with today's portraits, Tournament tile, three mini pills, LIVE tag.
+    Select: 2x4 roster (#tiles), stage portrait with a crossfade and the fighter's tint, stat bars, Special + ULTI cards, FIGHT /
+    UPGRADE; tests address tiles as `#tiles .tile` and skins as `#dPals .sw` (the menu also has .tile). Results (#scrResult,
+    #resSheet is no longer a .sheet): winner panel with VICTORY / DEFEAT stamp + finisher plate, rank card with emblem spin on
+    promotion, four stat tiles, NEXT MATCH over Fighters / Menu; resCount(el, from, to, pre, {delay, dur, end}).
+  - UI sounds (ui/base.js): Sfx.uiGo / uiBack / uiFlip / uiCoin / uiNo; the shared tap() plays Sfx.cue(el): data-sfx="go|back|flip|
+    coin|no|tap" wins, else .primary/.pri go, .back/.x back, the rest tap. A tap on a disabled button plays uiNo.
+  - Known small things: cup matches go straight back to the bracket (no results screen); the tier title is the best tier
+    reached (never below the current one).
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch

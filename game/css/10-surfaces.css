@@ -1,0 +1,99 @@
+/* ---------- Menu redesign: the shared controls ("sunset ink", Fable 5.1, 2026-10-14) ----------
+   Restyles the controls every screen uses, by their existing classes: .btn (+ .primary / .pri gold, .ember, .sm, .lg), .chip
+   (+ .on gold, .pick the skewed dropdown chip), the .pop lists under the pickers, .back / .iconbtn (round ink buttons) and the
+   generic .sheet. Recipe: 2px ink outline, a hard ink shadow under it, a bevel (light top edge, dark bottom edge); buttons keep
+   the brand skew (-8deg) with their content upright; pills stay straight. Press: the control sinks 3px into its shadow (4px -> 1px,
+   80 ms) and pops back on release (160 ms, a little overshoot). Hover (mouse only): 6% brighter and the shadow grows to 5px.
+   The match HUD and the touch buttons (.pb) are not touched. Sheets: 50-sheets.css. */
+
+/* ---- buttons ---- */
+.btn {
+  --sh: 4px; --bg: linear-gradient(180deg, #3a4170, #262b50); --bev: var(--bevel); --glow: 0 0 0 transparent;
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 6px 20px;
+  border: 2px solid var(--ink); border-radius: 9px; background: var(--bg); color: var(--text);
+  font: 800 20px/1.05 var(--display); letter-spacing: 0.05em; text-transform: uppercase; text-align: center;
+  box-shadow: 0 var(--sh) 0 var(--ink), var(--glow), var(--bev);
+  transform: skewX(-8deg);
+  transition: transform 0.16s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.16s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s;
+}
+.btn > span { display: inline-block; transform: skewX(8deg); }
+.btn small { font: 600 12px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); margin-left: 8px; }
+.btn:hover, .btn:disabled:hover { background: var(--bg); }
+.btn:active { transform: skewX(-8deg); }
+.btn:active:not(:disabled) { --sh: 1px; transform: skewX(-8deg) translateY(3px); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.btn:disabled { opacity: 0.5; cursor: default; filter: saturate(0.6); }
+.btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+/* gold: the one primary action of a screen (Fable's .btn.pri; the game's class is .primary, both work) */
+.btn.primary, .btn.pri { --bg: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); --bev: var(--bevelgold); --glow: 0 8px 16px rgba(244, 201, 93, 0.25); color: var(--ink); }
+.btn.primary, .btn.pri, .btn.primary:hover, .btn.pri:hover, .btn.primary:disabled:hover { background: var(--bg); }   /* beats the old .btn.primary sand */
+.btn.primary small, .btn.pri small { color: rgba(14, 16, 34, 0.68); }
+.btn.ember { --bg: linear-gradient(180deg, #ff9a6a, #ef7a52 50%, #cf5a36); --bev: var(--bevelgold); color: var(--ink); }
+.btn.ember small { color: rgba(14, 16, 34, 0.68); }
+.btn.sm { min-height: 40px; font-size: 16px; padding: 4px 14px; }
+.btn.lg { min-height: 54px; font-size: 25px; padding: 6px 26px; }
+#app.short .btn.lg { min-height: 48px; font-size: 22px; }
+#app.tiny .btn { min-height: 40px; }
+#app.tiny .btn.lg { min-height: 44px; font-size: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) { --sh: 5px; filter: brightness(1.06); transform: skewX(-8deg) translateY(-1px); }
+  .btn:hover:active:not(:disabled) { --sh: 1px; transform: skewX(-8deg) translateY(3px); }
+}
+
+/* ---- chips: straight ink pills; .on is gold ---- */
+.chip {
+  position: relative; border: 2px solid var(--ink); border-radius: 999px; padding: 6px 15px; min-height: 36px;
+  background: linear-gradient(180deg, #343b6a, #22264a); color: var(--text);
+  font: 800 15px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase;
+  box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s;
+}
+.chip.on { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.chip:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.chip.on:active:not(:disabled) { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+.chip:disabled { opacity: 0.45; cursor: default; filter: saturate(0.6); }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .chip:hover:not(:disabled) { filter: brightness(1.08); } }
+
+/* the dropdown pickers (fighter select, practice): a skewed chip, drawn by ::before so the text stays upright (it is a text node) */
+.chip.pick { isolation: isolate; background: none; border: 0; border-radius: 0; box-shadow: none; padding: 6px 16px; color: var(--text); }
+.chip.pick::before { content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #343b6a, #22264a); box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg); transition: box-shadow 0.08s; }
+.chip.pick small { color: var(--mute); }
+.chip.pick::after { color: var(--gold); }
+.chip.pick:active:not(:disabled) { box-shadow: none; }
+.chip.pick:active:not(:disabled)::before { box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.pickwrap:has(.pop:not([hidden])) .chip.pick::before { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.pickwrap:has(.pop:not([hidden])) .chip.pick, .pickwrap:has(.pop:not([hidden])) .chip.pick small, .pickwrap:has(.pop:not([hidden])) .chip.pick::after { color: var(--ink); }
+
+/* the lists that drop out of a picker */
+.pop { background: linear-gradient(180deg, #2b3058, #1b1f3d); border: 2px solid var(--ink); border-radius: 10px; padding: 6px; gap: 4px; box-shadow: 0 4px 0 var(--ink), var(--soft), var(--bevel); }
+.pop:not([hidden]) { animation: popDrop 0.14s ease-out; }
+@keyframes popDrop { from { transform: translateY(-6px); opacity: 0; } }
+.pop button { border-radius: 6px; font-weight: 800; }
+.pop button:hover { background: rgba(255, 255, 255, 0.07); }
+.pop button.on, .pop button.on:hover { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink), var(--bevelgold); }
+
+/* ---- round ink buttons: back arrows (select, cup, online), the gears ---- */
+.back, .iconbtn {
+  border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); color: var(--text);
+  box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s;
+}
+.iconbtn:hover { background: linear-gradient(180deg, #3a4170, #262b50); }
+.back:active, .iconbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.back:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.back { position: relative; }
+.back::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }   /* short phones draw it 38px: the touch area stays 44px */
+@media (hover: hover) and (pointer: fine) { .back:hover, .iconbtn:hover { filter: brightness(1.1); } }
+/* .round (00-ink.css) gets the same press */
+.round { cursor: pointer; transition: transform 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), box-shadow 0.14s cubic-bezier(0.3, 1.8, 0.5, 1), filter 0.12s; }
+.round:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); transition-duration: 0.08s; transition-timing-function: ease-out; }
+.round:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .round:hover { filter: brightness(1.1); } }
+
+/* ---- the generic sheet: a card (the modal sheets get their header band in 50-sheets.css) ---- */
+.sheet { background: linear-gradient(180deg, #2b3058, #1b1f3d); border: 2px solid var(--ink); border-radius: 12px; box-shadow: var(--hard), var(--soft), var(--bevel); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip, .chip.pick::before, .back, .iconbtn, .round { transition: none; }
+  .pop:not([hidden]) { animation: none; }
+}

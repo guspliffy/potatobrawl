@@ -299,7 +299,7 @@ function onMatchPeers(ch) {
 }
 function opponentLeft() {
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
-  if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgain").querySelector("span").textContent = `${NET.oppName || "Your friend"} left`; return; }
+  if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
     namedPresence({ opp: null, start: null }); lobbyPresence(); renderOnline(); return;
@@ -496,7 +496,9 @@ function updateRematchLabel() {
   const theyWant = opp && opp.presence && opp.presence.rm === NET.matchId + 1;
   const iWant = NET.rm === NET.matchId + 1;
   const who = NET.oppName || "Your friend", inSet = NET.setRes && !NET.setRes.over;
-  $("rAgain").querySelector("span").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet ? "is ready" : "wants a rematch"}` : inSet ? "Next game" : "Rematch";
+  // the button keeps its word; the ready state is its small line (the results screen, css/40-results.css)
+  $("rAgain").querySelector("span").textContent = inSet ? "Next game" : "Rematch";
+  $("rAgainSub").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet ? "is ready" : "wants a rematch"}` : "";
 }
 function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;

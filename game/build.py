@@ -18,6 +18,8 @@ ui = ui.replace('/*PORTRAITS*/{}', (d/'portraits'/'portraits.json').read_text())
 ui = ui.replace('/*SKINFX*/', (d/'skinfx.js').read_text())
 ui = ui.replace('/*SYNC*/', (d/'sync.js').read_text())   # account sync, the pure part (also a node module)
 ui = ui.replace('/*ROUTES*/', (d/'routes.js').read_text())   # combo routes, the pure part (also a node module)
+# menu styles: one file per screen in game/css/, in name order, at the end of the style block (so they win over the older rules)
+shell = shell.replace('/*CSS*/', '\n'.join(f.read_text() for f in sorted((d/'css').glob('*.css'))) if (d/'css').is_dir() else '')
 out = shell.replace('/*CORE*/', core).replace('/*UI*/', ui)
 (build/'blastline.html').write_text(out)
 skel = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style></head><body>' + out + '</body></html>'

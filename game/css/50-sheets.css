@@ -1,0 +1,211 @@
+/* ---------- Menu redesign: the sheets ("sunset ink", Fable 5.1, 2026-10-14) ----------
+   Pause, How to play, Settings, Account (Profile · Stats · Locker), Daily Potato, plus the tournament bracket screen.
+   Every modal sheet is a card: 2px ink outline, a 36px ink header band (title 900 italic 24px, the close X as a .round), the body on
+   --raise; it drops in from -12px. The band sticks to the top while a long sheet scrolls, so the X never scrolls away.
+   Inside the body: raised plates (ink outline + hard shadow) for the panels, ink wells for inputs and pickers, skewed segments for
+   tabs and toggles (active = gold with ink text). PAUSED stands up out of its band, stroked; Resume is the large gold button.
+   Everything is scoped to the modal sheets and #scrCup: the results screen (also a .sheet) is styled in 40-results.css. */
+
+/* ---- the frame ---- */
+#app .modal > .sheet { padding: 0; gap: 0; background: var(--raise); border-radius: 12px; }
+.modal:not([hidden]) > .sheet { animation: shDrop 0.26s cubic-bezier(0.2, 0.9, 0.25, 1); }   /* no fade: a sheet is readable from its first frame */
+@keyframes shDrop { from { transform: translateY(-12px); } 70% { transform: translateY(1.5px); } to { transform: none; } }
+.sh-head { position: sticky; top: 0; z-index: 3; flex: none; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 4px 0 16px; background: var(--ink); }
+.sh-head h3, .sheet .sh-head h3 { flex: 1 1 auto; min-width: 0; margin: 0; font: italic 900 24px/1 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 2px 0 0; }
+.sh-head h3::after { content: ""; display: inline-block; width: 28px; height: 5px; margin-left: 10px; vertical-align: 5px; background: linear-gradient(90deg, var(--ember), var(--gold)); transform: skewX(-35deg); }
+.sh-head .kick { flex: none; white-space: nowrap; }
+.sh-head .round { position: relative; width: 30px; height: 30px; flex: none; border-color: #070818; box-shadow: 0 2px 0 #05060f, var(--bevel); }
+.sh-head .round svg { width: 18px; height: 18px; display: block; }
+.sh-head .round::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; }   /* a 44px touch target in the 36px band */
+.sh-head .round:active { transform: translateY(1px); box-shadow: 0 1px 0 #05060f, var(--bevel); }
+.sh-body { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 20px; min-width: 0; }
+#app.short .sh-body { gap: 11px; padding: 12px 16px 16px; }
+#app.tiny .sh-body { gap: 8px; padding: 10px 14px 13px; }
+.modal .sheet p { color: var(--mute); }
+.modal .kicker { font-size: 12px; color: var(--sand); }
+
+/* raised plates and ink wells inside a sheet */
+.ac-rank, .ac-stats > div, .ac-sync, .fs-fav, .lk-f, .hx, .dly-f, #scrHelp .ul, #scrHelp .rc {
+  background: linear-gradient(180deg, #2f3560, #1f2344); border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
+}
+.ac-pick, .ac-t, .ac-name, .ac-in, .ac-code {
+  background: rgba(14, 16, 34, 0.6); border: 2px solid var(--ink); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.ac-name:focus, .ac-in:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+/* tabs (Account) and toggles (Settings): skewed segments joined into one strip; the active one is gold with ink text */
+.ac-tabs, .set-row .chips { display: flex; flex-wrap: nowrap; gap: 0; padding: 0 5px 3px; }
+.ac-tabs .chip, .set-row .chips .chip { isolation: isolate; flex: none; background: none; border: 0; border-radius: 0; box-shadow: none; color: var(--text); }
+#app .ac-tabs .chip, #app .set-row .chips .chip { min-height: 40px; padding: 4px 20px; font-size: 16px; }
+#app.tiny .ac-tabs .chip, #app.tiny .set-row .chips .chip { min-height: 40px; padding: 3px 17px; font-size: 15px; }
+.ac-tabs .chip::before, .set-row .chips .chip::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 0;
+  background: linear-gradient(180deg, #343b6a, #22264a); box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg);
+}
+.ac-tabs .chip + .chip, .set-row .chips .chip + .chip { margin-left: -2px; }
+.ac-tabs .chip:first-child::before, .set-row .chips .chip:first-child::before { border-radius: 9px 0 0 9px; }
+.ac-tabs .chip:last-child::before, .set-row .chips .chip:last-child::before { border-radius: 0 9px 9px 0; }
+.ac-tabs .chip.on, .set-row .chips .chip.on { color: var(--ink); z-index: 1; }
+.ac-tabs .chip.on::before, .set-row .chips .chip.on::before { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.ac-tabs .chip:active:not(:disabled), .ac-tabs .chip.on:active:not(:disabled), .set-row .chips .chip:active:not(:disabled), .set-row .chips .chip.on:active:not(:disabled) { box-shadow: none; }
+.ac-tabs .chip:active:not(:disabled)::before, .set-row .chips .chip:active:not(:disabled)::before { box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.ac-tabs .chip.on:active::before, .set-row .chips .chip.on:active::before { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+
+/* ---- Pause: PAUSED stands up out of the band, stroked; Resume is the large gold button, the other two share a row ---- */
+#scrPause .pause-sheet { width: min(440px, 100%); margin-top: 26px; overflow: visible; }
+.pause-sheet .sh-head { height: 40px; align-items: flex-end; padding: 0 5px 5px 14px; border-radius: 10px 10px 0 0; }
+#app .pause-sheet .pz {
+  flex: 1 1 auto; min-width: 0; margin: 0 0 -9px; font: italic 900 70px/0.8 var(--display); letter-spacing: -0.01em; text-transform: uppercase; color: var(--text);
+  -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); transform: rotate(-3deg); transform-origin: 0 100%; white-space: nowrap;
+}
+#app.short .pause-sheet .pz { font-size: 60px; }
+#app.tiny .pause-sheet .pz { font-size: 50px; -webkit-text-stroke-width: 5px; }
+.pause-sheet .sh-head .round { margin-bottom: -1px; }
+.pause-sheet .sheet-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 10px; padding: 4px 4px 0; }
+.pause-sheet .sheet-actions #pResume { grid-column: 1 / -1; }
+.pause-sheet .sheet-actions .btn:not(.lg) > span { white-space: normal; line-height: 1.05; }
+#app.narrow .pause-sheet .sheet-actions { grid-template-columns: minmax(0, 1fr); gap: 10px; }   /* upright: one per row, no two-line labels */
+#pNote { font-size: 13px; text-align: center; }
+#pNote:empty { display: none; }
+#app.tiny .pause-sheet { margin-top: 18px; }
+
+/* ---- Settings ---- */
+.set-sheet { width: min(500px, 100%); }
+.set-row { grid-template-columns: 104px minmax(0, 1fr); gap: 10px; }
+.set-row > span:first-child { font: 800 15px/1 var(--display); letter-spacing: 0.08em; color: var(--sand); }
+.set-fine { font-size: 12px; padding-top: 10px; border-top: 2px solid rgba(14, 16, 34, 0.5); }
+#app.narrow .set-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }   /* upright: the label over its toggles (Sideways | Flipped | Upright needs the width) */
+#app.narrow .set-row .chips .chip { padding-inline: 16px; }
+
+/* ---- Account ---- */
+.acct-sheet .sh-body { gap: 12px; }
+#app.short .acct-sheet .sh-body { gap: 9px; }
+#app.tiny .acct-sheet .sh-body { gap: 6px; }
+#scrAccount .av { border-width: 2px; box-shadow: 0 0 0 1.5px var(--ink); }
+#scrAccount .ac-id .av { border-width: 3px; box-shadow: 0 0 0 2px var(--ink), 0 4px 0 1px var(--ink); }
+.av-btn:active { transform: translateY(2px); }
+.ac-name, .ac-in, .ac-code { border-radius: 8px; }
+.ac-row .chip, .ac-foot .chip { min-height: 36px; padding: 4px 15px; font-size: 14px; }
+#app.tiny .ac-foot .chip, #app.tiny .ac-row .chip { min-height: 34px; padding: 3px 13px; }
+/* the compact pills answer to at least 40px: the touch area reaches past the drawn pill */
+.ac-row .chip::after, .ac-foot .chip::after, #scrHelp .rc-figs .chip::after { content: ""; position: absolute; inset: -3px 0; }
+.ac-code .chip::after { content: ""; position: absolute; inset: -6px -4px; }   /* Show / Hide: fills the code well's height */
+#scrAccount .av-btn { position: relative; }
+#scrAccount .av-btn::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
+#app .ac-name { min-height: 40px; }
+.ac-pick { border-radius: 10px; }
+.ac-pk { transition: transform 0.12s; }
+.ac-pk:active { transform: translateY(2px); }
+.ac-pk.on .av { box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink); }
+.ac-t { border-radius: 8px; }
+.ac-t.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold), 0 2px 0 var(--ink); background: rgba(244, 201, 93, 0.12); }
+.ac-t.on b { color: var(--gold); }
+.ac-rank { padding: 8px 14px 8px 8px; gap: 12px; }
+#scrAccount .rk-tier { font: italic 900 27px/1 var(--display); letter-spacing: 0.01em; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+#app.short #scrAccount .rk-tier { font-size: 23px; }
+.ac-stats { gap: 8px; padding-bottom: 3px; }
+.ac-stats > div { padding: 6px 10px 7px; }
+.ac-stats dt { font-size: 11px; letter-spacing: 0.14em; color: var(--mute); }
+.ac-stats dd { font-size: 24px; }
+#app.short .ac-stats dd { font-size: 20px; }
+.ac-form i, .hx i.r { border: 2px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
+.ac-form i.l, .hx i.r.l { background: var(--ketchup); color: #fff; }
+.ac-sync { padding: 12px 14px 14px; }
+.ac-sync .kicker { font-size: 12px; }
+.ac-sync .btn { padding-left: 20px; }
+.ac-foot { border-top: 2px solid rgba(14, 16, 34, 0.5); }
+#acReset { color: #ffb39a; }
+/* Stats */
+.fs-fav { padding: 8px 12px; }
+.fs-fav b { font: italic 900 24px/1 var(--display); }
+.fs-tab th { color: var(--sand); }
+.fs-tab td { border-top: 2px solid rgba(14, 16, 34, 0.45); }
+.fs-tab tr.fav td { background: rgba(244, 201, 93, 0.08); }
+.fs-tab tr.fav td:first-child .fn::after { color: var(--gold); }
+.hx { border-radius: 8px; box-shadow: 0 2px 0 var(--ink), var(--bevel); padding: 3px 8px 3px 4px; }
+.hx-list { gap: 6px 12px; padding-bottom: 2px; }
+/* Locker: round swatches with an ink rim, a gold ring on the one worn */
+.lk { gap: 12px; }
+.lk-f { padding: 8px 10px 10px; }
+.lk-h { font: italic 900 19px/1.1 var(--display); }
+#scrAccount .sw i { border: 2.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
+#scrAccount .sw.cur i { box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink); }
+#scrAccount .sw.cur { color: var(--gold); }
+#scrAccount .sw.lock i::after { inset: -2.5px; }
+#scrAccount .sw:not(:disabled):active i { transform: translateY(2px); }
+
+/* ---- How to play ---- */
+.help-sheet .sh-body { gap: 12px; }
+#app.tiny .help-sheet .sh-body { gap: 7px; }
+.help-lead { color: #d3d6ec; }
+#scrHelp .help-combos { gap: 9px; padding-top: 12px; border-top: 2px solid rgba(14, 16, 34, 0.5); }
+#scrHelp .help-combos h4 { font: italic 900 24px/1 var(--display); letter-spacing: 0.02em; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrHelp .help-ult h4::after { width: 22px; height: 6px; margin-left: 10px; vertical-align: 4px; background: linear-gradient(90deg, var(--ember), var(--gold)); transform: skewX(-35deg); box-shadow: 0 2px 0 var(--ink); }
+#scrHelp .ul { border-left: 5px solid var(--fc, var(--gold)); border-radius: 4px 10px 10px 4px; padding: 7px 10px; }
+#scrHelp .rc { padding: 8px 10px; }
+#scrHelp .rc.ok { box-shadow: 0 3px 0 var(--ink), inset 0 0 0 1px rgba(134, 220, 174, 0.55), var(--bevel); }
+#scrHelp .ul-grid, #scrHelp .rc-grid { gap: 8px 10px; padding-bottom: 3px; }
+#scrHelp .rc-figs { gap: 6px 6px; padding-bottom: 3px; }
+#scrHelp .rc-figs .chip { min-height: 34px; padding: 3px 12px; font-size: 13px; }
+#app.tiny #scrHelp .help-go .btn { min-height: 40px; }
+#scrHelp kbd { border: 2px solid var(--ink); border-bottom-width: 3px; background: linear-gradient(180deg, #3a4170, #262b50); }
+.help-more summary { color: var(--sand); min-height: 40px; padding: 10px 0 9px; }
+.help-more summary::marker { color: var(--gold); }
+
+/* ---- Daily Potato ---- */
+.dly-sheet { width: min(520px, 100%); }
+.dly-sheet .sh-body { gap: 12px; }
+.dly-vs { gap: 8px; padding-bottom: 3px; }
+.dly-f { padding: 6px; gap: 10px; }
+.dly-ph { border-radius: 7px; box-shadow: 0 0 0 2px var(--fc), 0 0 0 4px var(--ink); }
+.dly-t b { font: italic 900 21px/1 var(--display); }
+.dly-x {
+  position: relative; z-index: 1; font: italic 900 22px/1 var(--display); color: #fff; text-transform: uppercase;
+  padding: 6px 9px 5px; background: var(--ketchup); border: 2px solid var(--ink); border-radius: 8px;
+  box-shadow: 0 3px 0 var(--ink), inset 0 2px 0 rgba(255, 255, 255, 0.3); text-shadow: 0 2px 0 rgba(14, 16, 34, 0.5); transform: rotate(-6deg);
+}
+.dly-rule b { color: var(--gold); }
+.dly-acts { gap: 10px; padding: 2px 4px 0; }
+.dly-acts .btn { flex: 1 1 0; min-width: 0; }
+.dly-acts #dlyGo { flex-grow: 1.6; }
+#app.short .dly-ph { width: 44px; height: 44px; }
+#app.tiny .dly-ph { width: 38px; height: 38px; }
+#app.narrow .dly-x { margin: -4px auto; }
+
+/* ---- the tournament bracket (same surfaces) ---- */
+.cup { background: radial-gradient(ellipse 55% 60% at 50% 46%, rgba(59, 44, 90, 0.55), transparent 72%), rgba(14, 16, 34, 0.97); }
+#scrCup .sel-head h2 { -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); letter-spacing: 0.005em; }
+#scrCup .sel-head .kicker { font-size: 11px; color: var(--sand); }
+#scrCup .sel-head .coin { flex: none; }
+#app.short #scrCup .sel-head .coin { height: 36px; font-size: 17px; }
+.cc-l { color: var(--mute); }
+.cc-l.now { color: var(--gold); }
+.cs { border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+.cs-ph { border-radius: 6px; box-shadow: 0 0 0 2px var(--fc), 0 0 0 3.5px var(--ink); }
+.cs.me { border-color: var(--me); background: linear-gradient(180deg, #3a4170, #262b50); }
+.cs.path { border-color: var(--me); box-shadow: 0 3px 0 var(--ink), 0 0 14px var(--meg), var(--bevel); }
+.cs.tbd { background: rgba(14, 16, 34, 0.38); border: 2px dashed rgba(206, 210, 255, 0.2); box-shadow: none; }
+.cs.fell { border: 2px dashed var(--ember); box-shadow: 0 3px 0 var(--ink); }
+.cs.champ { border-color: var(--ink); background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), 0 0 18px rgba(244, 201, 93, 0.5), var(--bevelgold); }
+.cs.champ .cs-n, .cs.champ.me .cs-n { color: var(--ink); }
+.cs.champ .cs-r { color: rgba(14, 16, 34, 0.72); }
+.cup-lines path { stroke: rgba(206, 210, 255, 0.24); stroke-width: 2.5; }
+/* one sunburst behind the trophy (the screen's only one) */
+.cc.fin::before { content: ""; position: absolute; left: 50%; top: 50%; width: 280px; height: 280px; margin: -140px 0 0 -140px; pointer-events: none; z-index: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(244, 201, 93, 0.13) 0 5deg, transparent 5deg 14deg);
+  -webkit-mask: radial-gradient(circle, #000 0, transparent 60%); mask: radial-gradient(circle, #000 0, transparent 60%); animation: spin 40s linear infinite; will-change: transform; }
+.cc.fin .trophy { position: relative; z-index: 1; }
+.cup-foot { padding-bottom: 6px; }
+.cf { border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 4px 0 var(--ink), var(--bevel); padding: 8px 10px 8px 8px; }
+.cf .kicker { color: var(--sand); font-size: 11px; }
+.cf-t b { font-size: clamp(21px, calc(var(--uh) * 5.6), 32px); }
+.cf.win { border-color: var(--ink); box-shadow: 0 4px 0 var(--ink), inset 0 0 0 2px var(--gold), var(--bevel); }
+.cf.win .cf-t b { color: var(--gold); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+.cf.lose .cf-t b { color: var(--ember); }
+.cf .btn { margin-bottom: 2px; }
+#app.tiny #scrCup .cf .btn { min-height: 40px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal:not([hidden]) > .sheet, .cc.fin::before { animation: none; }
+  .ac-pk, .av-btn { transition: none; }
+}
