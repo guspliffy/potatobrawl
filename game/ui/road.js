@@ -27,13 +27,30 @@ const ROAD = [
     line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
 // region 2, The Kitchen, and region 3, The Deep (bosses2/fable-design.md section 5)
-const ROAD_KITCHEN = [];
+const ROAD_KITCHEN = [
+  { id: "backdoor", name: "The Back Door", cpu: "Dishwater Dan", f: "odin", d: 0.45, lives: 2, secs: 120, map: "kitchen", cpuPct: 40, twist: "Dan starts at 40%.",
+    line: "Staff only. You staff? Didn't think so.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
+  { id: "pantry", name: "The Pantry", cpu: "Tin Can Tina", f: "gunslinger", d: 0.5, map: "kitchen", myLifePct: 35, twist: "You start every life at 35%.",
+    line: "Everything in here has a date on it. Yours is today.", bonus: { k: "route", r: "sig", txt: "Land the Signature combo" } },
+  { id: "cold", name: "The Cold Store", cpu: "Frosty Fritz", f: "wizard", d: 0.55, lives: 2, secs: 90, map: "moon", twist: "Win inside 90 seconds.",
+    line: "Minus twenty in here. Don't worry, you'll stop shivering.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
+  { id: "stove", name: "The Stove", cpu: "Sizzle", f: "dragon", d: 0.65, secs: 120, map: "fryer", myPct: 60, twist: "You start at 60%.",
+    line: "Oil's hot. Hop in, I'll time you.", bonus: { k: "fin", txt: "KO with a finisher special" } },
+  { id: "spice", name: "The Spice Rack", cpu: "Paprika Pete", f: "phoenix", d: 0.7, lives: 2, cpuLives: 1, secs: 60, map: "kitchen", twist: "Pete has 1 heart, you have 2.",
+    line: "One pinch. That's all it takes.", bonus: { k: "ulti", txt: "KO with an ulti" } },
+  { id: "sink", name: "The Sink", cpu: "Suds", f: "alchemist", d: 0.75, secs: 120, map: "kitchen", myPct: 50, cpuPct: 50, twist: "You both start at 50%.",
+    line: "Everything ends up in the sink. Even you.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
+  { id: "chef", name: "The Chef's Table", cpu: "Chef Rösti", f: "samurai", d: 0.8, lives: 1, map: "castle", twist: "One life each.",
+    line: "Precision. Presentation. Then the plate.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
+  { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.9, lives: 2, map: "kitchen", cpuPct: 20, twist: "Tom starts at 20%.",
+    line: "They're watching. Through the window. I've seen the lights.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
+];
 const ROAD_DEEP = [];
 ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
 // the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title
 const ROAD_REG = [
   { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher" },
-  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Saucer Smasher" },
+  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker" },
   { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer" },
 ];
 const ROAD_N = 8, ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150;
@@ -346,7 +363,7 @@ function roadFight(i) {
   if (!st || !roadOpen(r, i)) { openRoad(); return; }
   Sfx.init(); modal("roadStop", false);
   const me = FIG[P.last] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], op = FIG[st.f];
-  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % op.palettes.length : 0];
+  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(op) : 0];
   const [a, b] = roadLives(st), map = Math.max(0, BL.MAPS.findIndex((m) => m.id === st.map));
   G = newGame({ players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
     stocks: a, time: roadSecs(st), countdown: 150, map });
@@ -376,7 +393,8 @@ function roadRoute(e, rt) {
   const rd = match && match.road;
   if (!rd || rd.boss || e.slot !== meSlot) return;
   const b = ROAD[rd.i].bonus;
-  if (b.k === "route" && rt.id === b.r) rd.bonus = true;
+  // "own": the route of the fighter you play
+  if (b.k === "route" && (rt.id === b.r || (b.r === "own" && rt.fighter === G.fighters[meSlot].spec.id))) rd.bonus = true;
 }
 // finishMatch: a Road stop is over (a forfeit too): the stars, the chips, the results
 function roadMatchEnd(forfeit) {

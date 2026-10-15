@@ -448,6 +448,16 @@ const FIGHTERS = [
     },
   },
 ];
+// the Road skins (Fable, bosses2/fable-design.md section 6): won from a boss (pal.road = his id), never bought; after the chip skins.
+// One body / trim / ui per boss, the accent (the costume) per fighter. The simulation never reads a palette.
+const ROAD_SKINS = [
+  { name: "Devil's Roast", road: "scratch", body: "#8c4a30", trim: "#2a1512", ui: "#ff5a36",
+    accent: { phoenix: "#ff3d1f", alchemist: "#4a1030", odin: "#8a1a1a", wizard: "#2a1020", samurai: "#c9262a", dragon: "#a01f1f", gunslinger: "#3a1a14", reaper: "#2a0e0c" }, lining: "#ff6a2b" },
+  { name: "Specimen", road: "zorp", body: "#a9c0a0", trim: "#1f2a26", ui: "#9dff5a",
+    accent: { phoenix: "#5aff9a", alchemist: "#2a6e5a", odin: "#9fb8c9", wizard: "#2f4f5a", samurai: "#6cf0c8", dragon: "#3fbf7a", gunslinger: "#7a9a8a", reaper: "#2d4a3e" }, lining: "#9dff5a" },
+];
+for (const f of FIGHTERS) for (const r of ROAD_SKINS)
+  f.palettes.push({ name: r.name, road: r.road, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
 for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
 
