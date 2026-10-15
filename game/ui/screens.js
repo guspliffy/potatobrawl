@@ -95,7 +95,7 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, pending: null };   // blv: the boss difficulty (Practice vs a boss)
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, mate: "random", pending: null };   // blv: the boss difficulty (Practice vs a boss); mate: the 2v2 partner (opp "duo")
 const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
@@ -304,6 +304,7 @@ function cpuFoe(me) {
 function startMatch() {
   Sfx.init();
   if (sel.mode === "practice" && BOSS_IDS.has(sel.opp)) { startBoss({ level: sel.blv, boss: sel.opp }); return; }   // ui/boss.js: you and a CPU partner vs the boss
+  if (sel.mode === "practice" && sel.opp === "duo") { startDuo({ partner: sel.mate, level: sel.level, map: sel.map }); return; }   // ui/duo.js: Team Brawl 2v2
   const ranked = sel.mode === "ranked";
   const me = FIG[sel.fighter], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   let opp, d, oppRating = 0;
@@ -361,6 +362,7 @@ function finReady(i) {
 }
 function vsLine() {
   if (match.boss) return bossVs();
+  if (match.duo) return duoVs();
   if (match.road) return `${ROAD[match.road.i].name} · ${G.fighters[0].spec.name} vs ${G.fighters[1].spec.name} · ${match.cpu}`;
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
@@ -441,6 +443,7 @@ function finishMatch(forfeit) {
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
   if (match && match.boss) { bossMatchEnd(forfeit); return; }   // ui/boss.js
+  if (match && match.duo) { duoMatchEnd(forfeit); return; }     // ui/duo.js
   if (match && match.road) { roadMatchEnd(forfeit); return; }   // ui/road.js
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
@@ -560,7 +563,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.duo ? `Team Brawl 2v2 · ${R.duo.lv}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -572,6 +575,7 @@ function showResults(R) {
     won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
     lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
   if (R.boss) line.splice(0, line.length, ...bossResLine(R));   // ui/boss.js: you and your partner against him
+  if (R.duo) line.splice(0, line.length, ...duoResLine(R));     // ui/duo.js: both teams
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
@@ -594,13 +598,14 @@ function showResults(R) {
   $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
-  const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
-  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road) && R.total > 0);
+  const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
+  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road ? why
+  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
+    : R.duo ? `Team Brawl doesn't change your rating. A win on Hard pays ${DUO_CHIPS} chips.`
     : "Practice doesn't change your rating or earn chips.");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));

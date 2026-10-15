@@ -4,7 +4,7 @@
       after every respawn (and at the start of sudden death). The tutorial keeps them on. drawTag (draw-world.js) asks tagAlpha().
    2. The danger edge glow (#dgr): while the player's own fighter is flying out of a hard launch, a thin red glow lights the edge
       the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger). */
-const HX = { g: null, ph: "", sd: false, alive: [true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
+const HX = { g: null, ph: "", sd: false, alive: [true, true, true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
 const TAG_HOLD = 180, TAG_FADE = 30, TAG_IN = 12;   // sim ticks (60 per second): shown 3 s, fades out in 0.5 s, comes back in 0.2 s
 const dgrEls = [...$("dgr").children];               // left, right, top, bottom
 const reducedMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -19,7 +19,7 @@ function tagShow() {
 }
 // once per sim tick of the live match (updateFx)
 function tagStep(g) {
-  if (HX.g !== g) { HX.g = g; HX.ph = ""; HX.sd = false; HX.alive = [true, true]; HX.from = tick; HX.until = Infinity; }
+  if (HX.g !== g) { HX.g = g; HX.ph = ""; HX.sd = false; HX.alive = [true, true, true, true]; HX.from = tick; HX.until = Infinity; }
   if (g.phase === "play" && HX.ph !== "play") HX.until = tick + TAG_HOLD;   // the match starts: markers stay 3 s
   HX.ph = g.phase;
   if (g.sudden && !HX.sd) { HX.sd = true; tagShow(); }   // sudden death puts both fighters back on the stage

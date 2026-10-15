@@ -11,6 +11,7 @@ const GAMEKEYS = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRi
 window.addEventListener("keydown", (e) => {
   Sfx.init();
   if (mode === "match" && (e.code === "Escape" || e.code === "KeyP")) { e.preventDefault(); togglePause(); return; }
+  if (mode === "match" && e.code === "Tab" && match && match.duo) { e.preventDefault(); if (!e.repeat) duoFocusNext(); return; }   // 2v2: Focus (ui/duo.js)
   if (mode === "match" && GAMEKEYS.has(e.code)) e.preventDefault();
   if (!keys.has(e.code) && KEYMAP[e.code]) latch.add(KEYMAP[e.code]);
   keys.add(e.code);

@@ -2789,6 +2789,15 @@ const TUNE = {
   ultHeart: 6,
   ultFreeze: 30,
   ultKb: 1.75,     // every ulti hit's knockback, times (Jonny 2026-10-14 20:45 UTC: 75-80% stronger, they hardly ever KO'd)
+  // 2v2 (a team game with no boss), the Catch: a fighter free to act that touches a teammate tumbling from a launch (catchAfter frames
+  // or more into it, never the final one) ends that launch: hitstun over, every speed x catchSlow. The catcher waits catchCd frames
+  // before the next one; both get catchUlt on the ulti bar. catchPad: px added around both boxes (a forgiving touch).
+  catchAfter: 14,
+  catchKb: 5,
+  catchCd: 90,
+  catchSlow: 0.5,
+  catchUlt: 5,
+  catchPad: 10,
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -3310,10 +3319,20 @@ function newFighter(spec, slot, pal, x, facing) {
     // held: the boss slot holding this fighter (-1 = free);
     // bx: the spot his move aims at (the target's x at its start; Abduct's spotlight), bk: his move's own counter
     ph: 0, held: -1, bx: 0, bk: 0,
+    // catchCd: frames until this fighter can make its next Catch (2v2)
+    catchCd: 0,
     anim: { run: 0 },
   };
 }
 
+// a team game without a boss: 2v2. Its own rules (respawn and spawn sides, time-out by team hearts, sudden death for four, the Catch)
+// only run here, so 1v1 and the boss fights play exactly as before.
+const teamGame = (g) => g.fighters.length > 2 && !g.fighters.some((f) => f.spec.boss);
+// 2v2 spots: the k-th fighter of a team (slot order) on its side of the map, the first on the map's own spawn, the second further out
+function teamSpot(team, k) {
+  const sp = STAGE.spawns[team ? 1 : 0];
+  return { x: k ? Math.round(sp.x * 1.55) : sp.x, f: sp.f };
+}
 // o: players [{spec, pal, team?}], seed, stocks, time (s, 0 = none), countdown, map, level (boss difficulty 0-2), hpMul (boss HP x).
 // g.winner is the winning TEAM (1v1: team = slot). With a boss in the game: the boss is team 1, everyone else team 0.
 function newGame(o) {
@@ -3328,9 +3347,10 @@ function newGame(o) {
   const bossGame = o.players.some((p) => p.spec.boss);
   const tm = o.players.map((p, i) => p.team ?? (bossGame ? (p.spec.boss ? 1 : 0) : i));
   o.players.forEach((p, i) => {
-    // three or more on stage: each team lines up on its own side (team 0 left); 1v1 keeps the map's spawns
+    // three or more on stage: each team lines up on its own side (team 0 left); 1v1 keeps the map's spawns; 2v2 uses teamSpot
     const k = tm.slice(0, i).filter((t) => t === tm[i]).length, S = STAGE.main;
-    const sp = o.players.length > 2 ? (tm[i] === 0 ? { x: Math.round(S.x1 * 0.575) + k * 90, f: 1 } : { x: Math.round(S.x2 * 0.5) - k * 90, f: -1 }) : STAGE.spawns[i];
+    const sp = o.players.length <= 2 ? STAGE.spawns[i] : !bossGame ? teamSpot(tm[i], k)
+      : tm[i] === 0 ? { x: Math.round(S.x1 * 0.575) + k * 90, f: 1 } : { x: Math.round(S.x2 * 0.5) - k * 90, f: -1 };
     const f = newFighter(p.spec, i, p.pal, sp.x, sp.f);
     f.team = tm[i];
     f.stocks = p.stocks || g.stocks;
@@ -3420,6 +3440,7 @@ function step(g, inputs) {
   for (const f of g.fighters) updateFighter(g, f);
   updateProjs(g);
   detectHits(g);
+  if (live && teamGame(g)) catches(g);
   for (const f of g.fighters) checkBlast(g, f);
   if (live && !g.look) for (const L of g.launches) checkLethal(g, L);
   if (live && g.timed && g.phase === "play") { g.timer--; if (g.timer <= 0) endByTime(g); }
@@ -3448,6 +3469,7 @@ function updateFighter(g, f) {
   if (f.flash > 0) f.flash--;
   if (f.armorFlash > 0) f.armorFlash--;
   if (f.link > 0) f.link--;
+  if (f.catchCd > 0) f.catchCd--;
 
   switch (f.state) {
     case "respawn": {
@@ -3529,7 +3551,17 @@ function startUlti(g, f) {
   g.hitstop = Math.max(g.hitstop, TUNE.ultFreeze);
   g.events.push({ type: "ulti", slot: f.slot, x: f.x, y: f.y, n: f.ultN, name: f.spec.ultimate.name, id: f.spec.id });
 }
-const foe = (g, f) => g.fighters.find((o) => o.team !== f.team && o.state !== "gone");
+// the opponent an ulti aims at: the nearest one of the other team still on the stage (2v2), else the one still in the match
+// (1v1 and boss fights have only one, so this is the old pick there)
+function foe(g, f) {
+  let best = null, bd = Infinity;
+  for (const o of g.fighters) {
+    if (o.team === f.team || o.state === "gone" || o.state === "dead") continue;
+    const d = Math.abs(o.x - f.x);
+    if (d < bd) { bd = d; best = o; }
+  }
+  return best || g.fighters.find((o) => o.team !== f.team && o.state !== "gone");
+}
 // what each ulti does beyond the plain move: runs after mt++ in updateAttack; true = it moved the fighter itself
 function ultStep(g, f, m) {
   const S = STAGE.main, k = m.ult, mt = f.mt;
@@ -4654,6 +4686,30 @@ function checkLethal(g, L) {
   endGame(g, att.team, "stocks", true);
 }
 
+/* ---------- 2v2: the Catch ---------- */
+// A fighter free to act (standing, running or in the air) that touches a teammate tumbling from a launch ends that launch: the
+// teammate's hitstun is over and every speed halves (no free invincibility: they can be hit again at once). Not on the final launch
+// (the match is decided at that hit), not in its first catchAfter frames (a hit in a crowd still sends you), one per catchCd frames.
+function catches(g) {
+  const P = TUNE.catchPad;
+  for (const c of g.fighters) {
+    if (c.catchCd > 0 || !canAct(c) || c.held >= 0) continue;
+    const a = hurt(c);
+    for (const t of g.fighters) {
+      if (t === c || t.team !== c.team || t.state !== "hitstun" || !t.tumble || t.doomed || t.held >= 0 || t.st < TUNE.catchAfter || Math.hypot(t.kbx, t.kby) < TUNE.catchKb) continue;
+      const b = hurt(t);
+      if (a.x2 + P < b.x1 || b.x2 + P < a.x1 || a.y2 + P < b.y1 || b.y2 + P < a.y1) continue;
+      const k = TUNE.catchSlow;
+      t.hitstun = 0; t.tumble = false; t.vx *= k; t.vy *= k; t.kbx *= k; t.kby *= k;
+      setState(t, t.grounded ? "idle" : "air"); endLaunch(t);
+      c.catchCd = TUNE.catchCd;
+      ultGain(c, TUNE.catchUlt); ultGain(t, TUNE.catchUlt);
+      g.events.push({ type: "catch", slot: t.slot, by: c.slot, x: (c.x + t.x) / 2, y: Math.min(c.y, t.y) - 30 });
+      break;
+    }
+  }
+}
+
 /* ---------- KO / match end ---------- */
 function checkBlast(g, f) {
   if (f.state === "dead" || f.state === "gone") return;
@@ -4691,11 +4747,14 @@ function ko(g, f) {
   } else { setState(f, "dead"); f.dead = 70; }
 }
 function respawn(g, f) {
-  f.x = f.slot === 0 ? -70 : 70; f.y = STAGE.respawnY;
+  // 2v2: over your team's side (the second of a team a little further out); otherwise slot 0 left, everyone else right
+  if (teamGame(g)) { const k = g.fighters.filter((o) => o.team === f.team && o.slot < f.slot).length; f.x = (f.team ? 1 : -1) * (70 + 60 * k); }
+  else f.x = f.slot === 0 ? -70 : 70;
+  f.y = STAGE.respawnY;
   f.vx = f.vy = f.kbx = f.kby = 0; f.grounded = false; f.plat = -1;
   setState(f, "respawn");
   f.percent = f.lifePct; f.airJumps = f.s.airJumps; f.recUsed = false; f.airDodged = false; f.ff = false;
-  f.facing = f.slot === 0 ? 1 : -1; f.move = null; f.specCd = 0;
+  f.facing = teamGame(g) ? (f.team ? -1 : 1) : f.slot === 0 ? 1 : -1; f.move = null; f.specCd = 0;
 }
 function endGame(g, winner, reason, hit) {
   if (g.phase === "end" || g.phase === "over") return;
@@ -4706,6 +4765,13 @@ function endByTime(g) {
   // a boss fight that runs out of time is the boss's
   const boss = g.fighters.find((f) => f.spec.boss);
   if (boss) return endGame(g, boss.team, "time");
+  if (teamGame(g)) {
+    // 2v2: the team with more hearts left wins; a tie goes to sudden death, and sudden death running out is a draw
+    if (g.sudden) return endGame(g, -1, "time");
+    const h = [0, 1].map((t) => g.fighters.reduce((n, f) => n + (f.team === t ? Math.max(0, f.stocks) : 0), 0));
+    if (h[0] !== h[1]) return endGame(g, h[0] > h[1] ? 0 : 1, "time");
+    return startSudden(g);
+  }
   const [a, b] = g.fighters;
   if (a.stocks !== b.stocks) return endGame(g, a.stocks > b.stocks ? 0 : 1, "time");
   if (g.sudden) return endGame(g, -1, "time"); // sudden death ran out too: draw
@@ -4714,8 +4780,11 @@ function endByTime(g) {
 // Equal stocks when time runs out: one life each at 150%, next KO wins.
 function startSudden(g) {
   g.sudden = true; g.timer = TUNE.suddenTime; g.projs = []; g.hitstop = 0;
+  const tg = teamGame(g);
   g.fighters.forEach((f, i) => {
-    const sp = STAGE.spawns[i];
+    // 2v2: everyone still in the match, on their team's spots; a fighter already out stays out
+    if (tg && f.state === "gone") return;
+    const sp = tg ? teamSpot(f.team, g.fighters.filter((o) => o.team === f.team && o.slot < f.slot && o.state !== "gone").length) : STAGE.spawns[i];
     Object.assign(f, {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
@@ -4939,13 +5008,57 @@ function avoidEdge(me, out) {
   if (me.grounded && me.plat < 0 && ((me.x < S.x1 + 30 && out.x < 0) || (me.x > S.x2 - 30 && out.x > 0))) out.x = 0;
 }
 
+/* ---------- 2v2 CPUs (offline, like botInput: the UI and the tests call it, a step never does) ----------
+   teamBotInput picks the opponent botInput plays against and adds what a teammate does: run under a tumbling partner to catch them.
+   On the bot: tgt / tgtT = the slot it is on and the frame it may switch; focus / focusT = a foe forced until that frame (the
+   player's Focus command for a partner); catchFor / catchOn = the launch it decided on and whether it goes for the Catch. */
+function teamTarget(g, me, bot) {
+  const up = (o) => !!o && o.team !== me.team && o.state !== "gone" && o.state !== "dead" && o.state !== "respawn";
+  const on = (o, hold) => { if (bot.tgt !== o.slot) { bot.tgt = o.slot; bot.mem.length = 0; } if (hold) bot.tgtT = g.t + hold; return o; };
+  if (!g.fighters.some(up)) return g.fighters.find((o) => o.team !== me.team && o.state !== "gone") || null;
+  if (bot.focusT > g.t && up(g.fighters[bot.focus])) return on(g.fighters[bot.focus], 0);
+  // whoever is hitting my partner right now
+  for (const m of g.fighters) if (m !== me && m.team === me.team && m.state === "hitstun" && up(m.lastHitBy) && g.t - m.lastHitT < 30) return on(m.lastHitBy, 45);
+  const cur = g.fighters[bot.tgt];
+  if (up(cur) && g.t < bot.tgtT) return cur;
+  // a foe at finish percent while my special is ready, else the nearest (a little stickiness so it doesn't flip every frame)
+  let best = null, bd = Infinity;
+  for (const o of g.fighters) {
+    if (!up(o)) continue;
+    const d = Math.abs(o.x - me.x) + Math.abs(o.y - me.y) * 0.5 - (me.specCd <= 0 && o.percent >= TUNE.finishPct ? 200 : 0) - (o === cur ? 60 : 0);
+    if (d < bd) { bd = d; best = o; }
+  }
+  return on(best, 40);
+}
+function teamBotInput(g, me, bot) {
+  const opp = teamTarget(g, me, bot);
+  if (!opp) return blankInput();
+  const out = botInput(g, me, opp, bot);
+  if (g.phase !== "play" || me.catchCd > 0 || !canAct(me)) return out;
+  // a teammate tumbling from a launch: go under where it is heading and catch it (decided once per launch, more often the stronger the CPU)
+  const S = STAGE.main;
+  for (const t of g.fighters) {
+    if (t === me || t.team !== me.team || t.state !== "hitstun" || !t.tumble || t.doomed) continue;
+    if (bot.catchFor !== t.lastHitT) { bot.catchFor = t.lastHitT; bot.catchOn = g.rng() < lerp(0.25, 0.85, bot.d); }
+    if (!bot.catchOn) continue;
+    const tx = t.x + (t.vx + t.kbx) * 10, ty = t.y + (t.vy + t.kby) * 10, dx = tx - me.x;
+    if (Math.abs(dx) > 280 || tx < S.x1 - 40 || tx > S.x2 + 40 || ty > S.top + 40) continue;
+    Object.assign(out, { light: false, heavy: false, special: false, dodge: false, ulti: false, y: 0 });
+    out.x = Math.abs(dx) > 12 ? sign(dx) : 0;
+    out.jump = me.grounded && ty < me.y - 70 && Math.abs(dx) < 140;
+    avoidEdge(me, out);
+    return out;
+  }
+  return out;
+}
+
 /* ---------- snapshots for online desync recovery ---------- */
 const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat", "state", "st", "mid", "mt", "poundT",
   "airJumps", "airDodged", "ff", "dropT", "downHold", "dodgeKind", "dodgeDir", "landT", "percent", "stocks", "invuln",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part", "z", "w", "pass"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -4982,12 +5095,12 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
 
-root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { teamGame, teamBotInput, ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
 
 </script>
@@ -5421,6 +5534,7 @@ const GAMEKEYS = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRi
 window.addEventListener("keydown", (e) => {
   Sfx.init();
   if (mode === "match" && (e.code === "Escape" || e.code === "KeyP")) { e.preventDefault(); togglePause(); return; }
+  if (mode === "match" && e.code === "Tab" && match && match.duo) { e.preventDefault(); if (!e.repeat) duoFocusNext(); return; }   // 2v2: Focus (ui/duo.js)
   if (mode === "match" && GAMEKEYS.has(e.code)) e.preventDefault();
   if (!keys.has(e.code) && KEYMAP[e.code]) latch.add(KEYMAP[e.code]);
   keys.add(e.code);
@@ -14335,7 +14449,7 @@ const KSND = {
 
 BOSS_ART.kraken = { draw: krDraw, proj: krProj, floor: krFloor, event: krEvent, screen: krScreen };
 /* ===================== effects ===================== */
-const fx = [], sfx = [], trails = [[], [], []], combos = [null, null, null], chgPops = [], finDash = [null, null, null];   // per slot (a boss fight has three)
+const fx = [], sfx = [], trails = [[], [], [], []], combos = [null, null, null, null], chgPops = [], finDash = [null, null, null, null];   // per slot (a boss fight has three, a 2v2 four)
 const clearTrails = () => { for (const t of trails) t.length = 0; };
 function addFx(o) { if (fx.length < 260) fx.push(o); }
 function spark(x, y, col, kb, dx, dy) {
@@ -14500,6 +14614,7 @@ function drawCombos(c, g) {
   drawChargedPops(c);
 }
 // "CHARGED" pops at the spot of a full-charge hit: same pop-up style as the combo counter, rising and fading
+// a word popping over the fight: CHARGED on a full-charge heavy, CAUGHT! on a 2v2 Catch (duo.js; txt)
 function chargedPop(e) { chgPops.push({ x: e.x, y: e.y, t: 0, pop: 1, col: col(e.pal) }); }
 function drawChargedPops(c) {
   for (const q of chgPops) {
@@ -14508,8 +14623,8 @@ function drawChargedPops(c) {
     c.save(); c.globalAlpha = Math.max(0, a); c.translate(x, y); c.scale(sc, sc);
     c.textAlign = "center"; c.lineJoin = "round";
     c.font = 'italic 900 22px "Barlow Condensed", "Arial Narrow", sans-serif';
-    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText("CHARGED", 0, 0);
-    c.fillStyle = q.col; c.fillText("CHARGED", 0, 0);
+    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText(q.txt || "CHARGED", 0, 0);
+    c.fillStyle = q.col; c.fillText(q.txt || "CHARGED", 0, 0);
     c.restore();
   }
 }
@@ -14581,7 +14696,7 @@ const ROADFX = { scratch: "Roasted dark at the feet, with ember cracks that glow
   zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp" };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
-const skinState = [0, 1, 2].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three)
+const skinState = [0, 1, 2, 3].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three, a 2v2 four)
 const rnd = (a, b) => a + Math.random() * (b - a);
 function mote(x, y, vx, vy, col, r, life, grav) { addFx({ k: "mote", x, y, vx, vy, col, r, t: 0, life, g: grav || 0, damp: 0.95 }); }
 function staffTip(f, tk) {
@@ -14992,6 +15107,7 @@ function render2D(g, tk) {
 function handleEvent(g, e, live) {
   skinEvent(g, e);
   bossEvent(g, e, live);   // a boss's moves, staggers and fall: looks and sounds (ui/draw-boss.js)
+  duoEvent(g, e, live);    // 2v2: the Catch's pop (ui/duo.js)
   switch (e.type) {
     case "hit": {
       if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
@@ -15100,7 +15216,7 @@ function handleEvent(g, e, live) {
    The looks of each ulti are in draw-fighters.js (poses, uvFloor, uvFront), draw-world.js (the projectiles) and below (events). */
 const UV_GOLD = "#ffd23f", UV_PALE = "#fff2c2";
 const UV_FREEZE = BL.TUNE.ultFreeze, UV_BANNER = 60;
-const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false, false], dash: [null, null, null], at: [null, null, null] };
+const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false, false, false], dash: [null, null, null, null], at: [null, null, null, null] };
 const uvLive = (g) => UV.g === g && mode === "match" && !FIN.on;
 // once per move and name (a cue that waits on a frame must not fire again while the game is held in hitstop)
 function uvCue(f, name) { const k = f.slot + "." + f.moveT + "." + name; if (UV.cues.has(k)) return false; UV.cues.add(k); return true; }
@@ -15166,7 +15282,7 @@ function uvLitFighter(c, f, tk) {
 // ---- once per sim tick ----
 function uvTick(g) {
   if (UV.t < 999) UV.t++;
-  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false, false]; UV.dash = [null, null, null]; UV.at = [null, null, null]; }
+  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false, false, false]; UV.dash = [null, null, null, null]; UV.at = [null, null, null, null]; }
   if (UV.t > 1 && UV.t < UV_FREEZE - 2 && uvLive(g)) cam.shake = Math.max(cam.shake, 1.8);   // the held screen trembles
   for (const f of g.fighters) {
     if (uvHeld(f)) uvFighterTick(g, f);
@@ -15419,7 +15535,8 @@ const finTrav = (f) => 17 * f + 0.6 * f * f;
 function finWanted(g) {
   if (!(mode === "match" && match && !match.tutorial)) return false;
   // a boss fight: only the players' win plays a page (the hero who landed the last hit against the boss); the boss has no page of his own
-  if (g.fighters.length > 2) { const e = FIN.pend, a = e && g.fighters[e.by]; return g.endReason === "boss" && !!a && a.team === g.winner && !a.spec.boss; }
+  // a 2v2: the page of whoever landed the final hit (your team's or a foe's), against the fighter it knocked out
+  if (g.fighters.length > 2) { const e = FIN.pend, a = e && g.fighters[e.by]; return BL.teamGame(g) ? g.endReason === "stocks" && !!a && a.team === g.winner : g.endReason === "boss" && !!a && a.team === g.winner && !a.spec.boss; }
   return g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
 }
 function finStart(g) {
@@ -24206,7 +24323,7 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, pending: null };   // blv: the boss difficulty (Practice vs a boss)
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, mate: "random", pending: null };   // blv: the boss difficulty (Practice vs a boss); mate: the 2v2 partner (opp "duo")
 const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
@@ -24415,6 +24532,7 @@ function cpuFoe(me) {
 function startMatch() {
   Sfx.init();
   if (sel.mode === "practice" && BOSS_IDS.has(sel.opp)) { startBoss({ level: sel.blv, boss: sel.opp }); return; }   // ui/boss.js: you and a CPU partner vs the boss
+  if (sel.mode === "practice" && sel.opp === "duo") { startDuo({ partner: sel.mate, level: sel.level, map: sel.map }); return; }   // ui/duo.js: Team Brawl 2v2
   const ranked = sel.mode === "ranked";
   const me = FIG[sel.fighter], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   let opp, d, oppRating = 0;
@@ -24472,6 +24590,7 @@ function finReady(i) {
 }
 function vsLine() {
   if (match.boss) return bossVs();
+  if (match.duo) return duoVs();
   if (match.road) return `${ROAD[match.road.i].name} · ${G.fighters[0].spec.name} vs ${G.fighters[1].spec.name} · ${match.cpu}`;
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
@@ -24552,6 +24671,7 @@ function finishMatch(forfeit) {
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
   if (match && match.boss) { bossMatchEnd(forfeit); return; }   // ui/boss.js
+  if (match && match.duo) { duoMatchEnd(forfeit); return; }     // ui/duo.js
   if (match && match.road) { roadMatchEnd(forfeit); return; }   // ui/road.js
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
@@ -24671,7 +24791,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.duo ? `Team Brawl 2v2 · ${R.duo.lv}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -24683,6 +24803,7 @@ function showResults(R) {
     won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
     lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
   if (R.boss) line.splice(0, line.length, ...bossResLine(R));   // ui/boss.js: you and your partner against him
+  if (R.duo) line.splice(0, line.length, ...duoResLine(R));     // ui/duo.js: both teams
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
@@ -24705,13 +24826,14 @@ function showResults(R) {
   $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
-  const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
-  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road) && R.total > 0);
+  const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
+  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road ? why
+  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
+    : R.duo ? `Team Brawl doesn't change your rating. A win on Hard pays ${DUO_CHIPS} chips.`
     : "Practice doesn't change your rating or earn chips.");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
@@ -24739,7 +24861,7 @@ function buildNextPick() {
       after every respawn (and at the start of sudden death). The tutorial keeps them on. drawTag (draw-world.js) asks tagAlpha().
    2. The danger edge glow (#dgr): while the player's own fighter is flying out of a hard launch, a thin red glow lights the edge
       the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger). */
-const HX = { g: null, ph: "", sd: false, alive: [true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
+const HX = { g: null, ph: "", sd: false, alive: [true, true, true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
 const TAG_HOLD = 180, TAG_FADE = 30, TAG_IN = 12;   // sim ticks (60 per second): shown 3 s, fades out in 0.5 s, comes back in 0.2 s
 const dgrEls = [...$("dgr").children];               // left, right, top, bottom
 const reducedMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -24754,7 +24876,7 @@ function tagShow() {
 }
 // once per sim tick of the live match (updateFx)
 function tagStep(g) {
-  if (HX.g !== g) { HX.g = g; HX.ph = ""; HX.sd = false; HX.alive = [true, true]; HX.from = tick; HX.until = Infinity; }
+  if (HX.g !== g) { HX.g = g; HX.ph = ""; HX.sd = false; HX.alive = [true, true, true, true]; HX.from = tick; HX.until = Infinity; }
   if (g.phase === "play" && HX.ph !== "play") HX.until = tick + TAG_HOLD;   // the match starts: markers stay 3 s
   HX.ph = g.phase;
   if (g.sudden && !HX.sd) { HX.sd = true; tagShow(); }   // sudden death puts both fighters back on the stage
@@ -24958,6 +25080,97 @@ function bossResLine(R) {
   return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
 }
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
+/* ===================== 2v2 (Team Brawl): you and a CPU partner against two CPUs, offline =====================
+   The rules are in core.js (teamGame: spawn and respawn sides, time-out by team hearts, sudden death for four, the Catch) and the
+   CPUs are BL.teamBotInput. Here: starting the match, the inputs, the Focus command, the results and the rewards.
+   Slots: 0 = you, 1 = your partner (team 0), 2 and 3 = the foes (team 1). Design: /mnt/project-files/2v2/fable-2v2.md (Fable). */
+const DUO_TEAMS = ["Salt & Vinegar", "Mash & Gravy", "Chip & Dip", "Fish & Chips", "Cheese & Onion", "Bangers & Mash", "Crisp & Crunch",
+  "Hash & Brown", "Peel & Eat", "Twice & Baked"];
+const DUO_FOCUS = 480;   // ticks the partner stays on a foe you point at (8 s)
+const DUO_TITLE = 10;    // 2v2 wins for the title Dynamic Duo (acct.js)
+const DUO_CHIPS = 20;    // chips for a win on Hard
+let lastDuoTeam = "";
+const duoTeamName = () => { let n; do n = DUO_TEAMS[(Math.random() * DUO_TEAMS.length) | 0]; while (n === lastDuoTeam); return (lastDuoTeam = n); };
+// o: { partner: fighter id ("random" or missing: a random one), level: LEVELS index, map: a map index or "random" (arena maps stay out) };
+// your fighter is the one picked on the select screen
+function startDuo(o) {
+  Sfx.init();
+  const me = FIG[sel.fighter] || FIGHTERS[0], mine = P.pal[me.id] | 0;
+  const mate = FIG[o.partner] || cpuFoe(me), a = cpuFoe(me);
+  let b = cpuFoe(me);
+  while (b.id === a.id) b = cpuFoe(me);   // two different foes
+  // nobody wears the skin of another fighter of the same kind on the stage (your own skin is yours)
+  const used = [[me.id, mine]];
+  const skin = (spec) => {
+    let i = 0;
+    while (i < chipN(spec) - 1 && used.some(([id, k]) => id === spec.id && k === i)) i++;
+    used.push([spec.id, i]); return spec.palettes[i];
+  };
+  const lv = clamp(o.level | 0, 0, LEVELS.length - 1), d = LEVELS[lv].d;
+  const pick = o.map === undefined || o.map === "random" ? -1 : o.map | 0;
+  const map = BL.MAPS[pick] && BL.MAPS[pick].pool !== false ? pick : randMap();
+  const players = [{ spec: me, pal: me.palettes[mine] || me.palettes[0] }, { spec: mate, pal: skin(mate) }, { spec: a, pal: skin(a) }, { spec: b, pal: skin(b) }];
+  G = newGame({ players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
+  const names = ["You", cpuName(), cpuName(), cpuName()];
+  match = { duo: true, level: LEVELS[lv].name, lv, d, cpu: names[1], names, team: duoTeamName(), caught: 0,
+    bots: [null, ...[mate, a, b].map((s) => makeBot(d, BL.BOT_STYLES[s.id]))] };
+  meSlot = 0;
+  enterMatchUI();
+}
+// the four inputs: yours and the three CPUs'
+function duoInputs(pi) { return [pi, ...[1, 2, 3].map((i) => BL.teamBotInput(G, G.fighters[i], match.bots[i]))]; }
+// Focus: your partner goes after this foe for DUO_FOCUS ticks (tap a foe's card; Tab on a keyboard picks the next foe)
+function duoFocus(slot) {
+  const f = G && match && match.duo && G.fighters[slot], b = match && match.bots && match.bots[1];
+  if (!f || f.team === 0 || f.state === "gone" || !b) return;
+  b.focus = slot; b.focusT = G.t + DUO_FOCUS;
+  Sfx.ui();
+}
+function duoFocusNext() {
+  if (!(G && match && match.duo)) return;
+  const b = match.bots[1], cur = b.focusT > G.t ? b.focus : -1;
+  const foes = [2, 3].filter((i) => G.fighters[i].state !== "gone");
+  if (foes.length) duoFocus(foes[(foes.indexOf(cur) + 1) % foes.length]);
+}
+// the foe the partner is on because you pointed at it (-1 = none): the ember ring on that foe's card
+const duoFocused = () => (G && match && match.duo && match.bots[1].focusT > G.t ? match.bots[1].focus : -1);
+// a Catch: the pop over the two (in the catcher's team colour), and your own Catches counted for Account > Stats
+function duoEvent(g, e, live) {
+  if (e.type !== "catch") return;
+  chgPops.push({ x: e.x, y: e.y + 46, t: 0, pop: 1, col: g.fighters[e.by].team === g.fighters[meSlot].team ? TEAM_COL[0] : TEAM_COL[1], txt: "CAUGHT!" });
+  Sfx.tone(520, 880, 0.14, "triangle", 0.05);
+  if (live && match && match.duo && e.by === meSlot) match.caught++;
+}
+// team colours (Fable): ice blue for your team, ember red for the foes (rims, card edges, the Catch pop)
+const TEAM_COL = ["#7fd4ff", "#ff6a4a"];
+
+/* ----- the end of a 2v2: results, chips on Hard, the win and Catch counts (synced) and the title ----- */
+function duoMatchEnd(forfeit) {
+  const me = G.fighters[0], mate = G.fighters[1], foes = [G.fighters[2], G.fighters[3]];
+  const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
+  const op = foes[1].kos > foes[0].kos ? foes[1] : foes[0];   // the results' portrait on a loss: the foe with the most KOs
+  const R = { res, forfeit, ranked: false, me, op, lines: [], total: 0,
+    duo: { mate, foes, team: match.team, names: match.names, lv: match.level, caught: match.caught } };
+  if (!forfeit && match.d >= 0) {
+    if (res === 1) P.duoW = (P.duoW | 0) + 1;
+    if (match.caught) P.duoC = (P.duoC | 0) + match.caught;
+    if (res === 1 && match.level === "Hard") { R.lines.push(["Win on Hard", DUO_CHIPS]); R.total = DUO_CHIPS; P.tokens += DUO_CHIPS; }
+    if (res === 1 && P.duoW === DUO_TITLE) R.title = "Dynamic Duo";
+    saveProfile();
+  }
+  showResults(R);
+}
+function duoVs() { return `You & ${match.cpu} vs ${match.team}`; }
+// the results' story line for a 2v2
+function duoResLine(R) {
+  const D = R.duo, us = ["You and ", { b: D.names[1] }, ` (${D.mate.spec.name})`], them = [{ b: D.team }, ` (${D.foes[0].spec.name} and ${D.foes[1].spec.name})`];
+  const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
+  if (R.forfeit) return ["You left the match."];
+  if (R.res === 1) return [...us, " beat ", ...them, `${how}.`];
+  if (R.res === 0) return [...them, " beat you and ", { b: D.names[1] }, `${how}.`];
+  return ["Nobody scored a KO in sudden death either."];
+}
+window.__blDuo = (o) => { startDuo(o || {}); return G; };   // test hook: start a 2v2 from a script
 /* ===================== The Road: three regions of eight stops, each ending in a boss =====================
    Region 1 The Field (Old Scratch; Fable's design boss/fable-boss.md section 3), region 2 The Kitchen (Zorp) and region 3 The Deep
    (Kraken Spud; bosses2/fable-design.md). A stop is a 1v1 against a named CPU with one twist rule; three stars each: the win, no heart
@@ -27296,7 +27509,7 @@ if (typeof module !== "undefined") module.exports = ROUTES;
 
 /* ===================== combos: routes in the pop-up, route cards in How to play, the Combo trial ===================== */
 // The pop-up: follows each fighter's combo and names the route its hits make (the best one so far in this combo).
-const comboT = [{}, {}];
+const comboT = [{}, {}, {}, {}];
 function comboRoute(g, e) {
   const t = comboT[e.slot], f = g.fighters[e.slot];
   if (!t || !f) return null;
@@ -27749,7 +27962,7 @@ const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
   // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
-  const OPT_COUNTERS = ["flawless"];
+  const OPT_COUNTERS = ["flawless", "duoW", "duoC"];   // duoW / duoC: 2v2 wins and your Catches (ui/duo.js)
   const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
   const HIST = 50;
@@ -28060,6 +28273,7 @@ const ACT = [
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
   { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
   { id: "kraken", name: () => "Kraken Fryer", ok: () => ((roadGet().b3 | 0) & 7) > 0, how: "Beat Kraken Spud at the end of the pier in The Deep." },
+  { id: "duo", name: () => "Dynamic Duo", ok: () => (P.duoW | 0) >= DUO_TITLE, how: `Win ${DUO_TITLE} Team Brawl 2v2 matches (Practice).` },
   ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
@@ -28070,7 +28284,7 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
@@ -28152,6 +28366,7 @@ function renderAccount() {
   const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
   if (fw + fl > 0) more.push(`Friend matches: ${fw} won, ${fl} lost`);
   if (cups > 0) more.push(`Cups won: ${cups}${(P.flawless | 0) > 0 ? ` (${P.flawless} flawless)` : ""}`);
+  if ((P.duoW | 0) + (P.duoC | 0) > 0) more.push(`2v2: ${P.duoW | 0} won, ${P.duoC | 0} ${(P.duoC | 0) === 1 ? "Catch" : "Catches"}`);
   $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
   const form = $("acForm"); form.innerHTML = "";
   const hist = (P.history || []).slice(0, 10);
@@ -28737,6 +28952,7 @@ function simTick() {
     else {
       const pi = readPlayer();
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
+      else if (match.duo) step(G, duoInputs(pi));   // ui/duo.js: you, your CPU partner and the two CPU foes
       else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
     }
     if (G.phase === "countdown") {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights + 2v2 only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -63,6 +63,13 @@ else fail "ultimates" "$LOGS/ulti.log"; fi
 (cd tests && node boss.js) > "$LOGS/boss.log" 2>&1
 if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights (Normal win rates: $(grep -o '^boss ok (Normal: [^)]*' "$LOGS/boss.log" | sed 's/^boss ok (Normal: //'); determinism, final launch, lethal calls)"
 else fail "boss fights" "$LOGS/boss.log"; fi
+
+# 3g. 2v2 (Team Brawl): replay and save/restore with four fighters, spawn and respawn sides, no friendly fire, the time-out by team hearts and
+#     sudden death for four, the Catch (and never on the final launch, by a foe, in 1v1 or a boss fight), then mirrored CPU teams: sides,
+#     every fighter's 2v2 win rate, match length.
+(cd tests && node duo.js) > "$LOGS/duo.log" 2>&1
+if grep -q "^duo ok" "$LOGS/duo.log"; then pass "2v2 ($(grep -o '[0-9]* games at[^:]*: left side wins [0-9.]*%' "$LOGS/duo.log" | sed 's/^.*left/left/'); rules, the Catch, determinism)"
+else fail "2v2" "$LOGS/duo.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 

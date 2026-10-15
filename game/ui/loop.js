@@ -10,6 +10,7 @@ function simTick() {
     else {
       const pi = readPlayer();
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
+      else if (match.duo) step(G, duoInputs(pi));   // ui/duo.js: you, your CPU partner and the two CPU foes
       else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
     }
     if (G.phase === "countdown") {

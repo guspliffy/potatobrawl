@@ -18,7 +18,8 @@ const finTrav = (f) => 17 * f + 0.6 * f * f;
 function finWanted(g) {
   if (!(mode === "match" && match && !match.tutorial)) return false;
   // a boss fight: only the players' win plays a page (the hero who landed the last hit against the boss); the boss has no page of his own
-  if (g.fighters.length > 2) { const e = FIN.pend, a = e && g.fighters[e.by]; return g.endReason === "boss" && !!a && a.team === g.winner && !a.spec.boss; }
+  // a 2v2: the page of whoever landed the final hit (your team's or a foe's), against the fighter it knocked out
+  if (g.fighters.length > 2) { const e = FIN.pend, a = e && g.fighters[e.by]; return BL.teamGame(g) ? g.endReason === "stocks" && !!a && a.team === g.winner : g.endReason === "boss" && !!a && a.team === g.winner && !a.spec.boss; }
   return g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
 }
 function finStart(g) {
