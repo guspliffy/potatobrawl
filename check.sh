@@ -156,5 +156,12 @@ else fail "Daily Potato in the browser" "$LOGS/daily-ui.log"; fi
 if grep -q "^no errors" "$LOGS/boss-ui.log"; then pass "boss fights in the browser (Practice entry, boss bar, KO page, results; shots in build/shots/boss)"
 else fail "boss fights in the browser" "$LOGS/boss-ui.log"; fi
 
+# 8e. The Road: the start-page card, the map and its locks, a stop's sheet, a stop played with its rules (lives, time, map, start
+#     percents), the stars and chips paid once and saved, Retry / The Road / quitting to the map, the fence at 12 stars, Old Scratch's
+#     first win (Devil Masher + 150 chips), and the card, map and sheet at four sizes. Shots in build/shots/road.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwroad.py" road) > "$LOGS/road-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/road-ui.log"; then pass "the Road in the browser (map, stops, stars, the fence, Old Scratch; shots in build/shots/road)"
+else fail "the Road in the browser" "$LOGS/road-ui.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
