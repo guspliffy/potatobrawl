@@ -16,7 +16,7 @@ async def main():
         await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true"); await pg.wait_for_timeout(700)
         await pg.click('#bRanked'); await pg.wait_for_timeout(300)
         for i in range(8):
-            await pg.evaluate(f"document.querySelectorAll('.tile')[{i}].click()"); await pg.wait_for_timeout(900)
+            await pg.evaluate(f"document.querySelectorAll('#tiles .tile')[{i}].click()"); await pg.wait_for_timeout(900)
             await pg.locator('.d-stage').screenshot(path=f'shots/line_{TAG}_{i}.png')
         print(errs or 'ok')
         await b.close()

@@ -13,7 +13,7 @@ async def main():
         await pg.goto(TEST_URL); await pg.wait_for_timeout(600)
         await pg.click('#bRanked'); await pg.wait_for_timeout(300)
         for i in range(6):
-            await pg.evaluate(f"document.querySelectorAll('.tile')[{i}].click()"); await pg.wait_for_timeout(500)
+            await pg.evaluate(f"document.querySelectorAll('#tiles .tile')[{i}].click()"); await pg.wait_for_timeout(500)
             await pg.locator('.d-stage').screenshot(path=f'shots/l2d_{i}.png')
         print(errs or 'ok'); await b.close()
 asyncio.run(main())

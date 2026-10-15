@@ -122,43 +122,65 @@ function statBars(spec) {
 // put an owned skin on a fighter (the select screen's swatches and the Account locker both do this)
 function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
 function selPalIdx(spec) { return sel.pending && sel.pending.id === spec.id ? sel.pending.i : P.pal[spec.id] || 0; }
+/* The roster is built once and then only restyled, so the pick can scale up (CSS) instead of being redrawn.
+   Tiles keep the class "tile" (the tests click them by it). */
 function buildTiles() {
-  const wrap = $("tiles"); wrap.innerHTML = "";
-  for (const spec of FIGHTERS) {
-    const b = document.createElement("button");
-    const on = sel.fighter === spec.id;
-    b.className = "tile" + (on ? " on" : "");
-    b.style.setProperty("--fc", col(spec.palettes[P.pal[spec.id] || 0]));
+  const wrap = $("tiles");
+  if (wrap.children.length !== FIGHTERS.length) {
+    wrap.innerHTML = "";
+    for (const spec of FIGHTERS) {
+      const b = document.createElement("button");
+      b.className = "tile"; b.dataset.id = spec.id;
+      b.innerHTML = `${PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : ""}<span><b>${spec.name}</b></span>`;
+      b.addEventListener("click", () => {
+        Sfx.init(); Sfx.ui();
+        if (sel.fighter === spec.id) return;
+        sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
+        buildTiles(); buildDetail();
+      });
+      wrap.appendChild(b);
+    }
+  }
+  for (const b of wrap.children) {
+    const spec = FIG[b.dataset.id], on = sel.fighter === spec.id;
+    b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
-    b.innerHTML = `${PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : ""}<span>${spec.name}</span>`;
-    b.addEventListener("click", () => {
-      Sfx.init(); Sfx.ui();
-      if (sel.fighter === spec.id) return;
-      sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
-      buildTiles(); buildDetail();
-    });
-    wrap.appendChild(b);
+    b.style.setProperty("--fc", col(spec.palettes[P.pal[spec.id] || 0]));
   }
 }
+// restart a one-shot CSS animation (the stage name and model when the fighter changes)
+function slReplay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function buildDetail() {
-  const spec = FIG[sel.fighter], pi = selPalIdx(spec), pal = spec.palettes[pi] || spec.palettes[0];
-  const d = $("detail");
-  d.style.setProperty("--fc", col(pal));
-  d.style.setProperty("--fcglow", rgba(col(pal), 0.34));
+  const spec = FIG[sel.fighter], pi = selPalIdx(spec), pal = spec.palettes[pi] || spec.palettes[0], c = col(pal);
+  // the whole screen tints to the skin being looked at (registered properties, so the tint eases over in CSS)
+  screens.select.style.setProperty("--sfc", c);
+  screens.select.style.setProperty("--sfcg", rgba(c, 0.42));
+  screens.select.style.setProperty("--sfct", rgba(c, 0.13));
+  // the stage art: one portrait per fighter; the new pick fades in over the last one (the art shows the base look, the model the skin)
+  const por = $("dPor");
+  if (por.children.length !== FIGHTERS.length) por.innerHTML = FIGHTERS.map((f) => `<img data-id="${f.id}" alt=""${PORTRAITS[f.id] ? ` src="${PORTRAITS[f.id]}"` : ""}>`).join("");
+  const was = por.querySelector("img.on"), now = por.querySelector(`img[data-id="${spec.id}"]`);
+  if (was !== now) {
+    for (const im of por.children) im.classList.remove("was");
+    if (was) { was.classList.remove("on"); was.classList.add("was"); slReplay($("dNameBox"), "swap"); slReplay($("dArt"), "swap"); }
+    if (now) now.classList.add("on");
+  }
   $("dName").textContent = spec.name;
   $("dRole").textContent = spec.role;
   $("dBlurb").textContent = spec.blurb;
-  $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="seg" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
-  $("dSig").innerHTML = `<b>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
-  $("dUlt").innerHTML = `<em>Ulti</em><b>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
+  $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="sl-seg" role="img" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
+  $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
+  $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   const pals = $("dPals"); pals.innerHTML = "";
   spec.palettes.forEach((p, i) => {
     const own = P.owned[spec.id].includes(i), cur = (P.pal[spec.id] || 0) === i, pend = !!sel.pending && sel.pending.id === spec.id && sel.pending.i === i;
     const b = document.createElement("button");
     b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
     b.style.setProperty("--c", col(p));
+    b.title = p.name;
     b.setAttribute("aria-label", `${p.name}${own ? "" : `, locked, ${p.price} chips`}`);
-    b.innerHTML = `<i>${i ? `<em>${"✦".repeat(i)}</em>` : ""}</i>${own ? p.name : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
+    b.setAttribute("aria-pressed", String(own ? cur : pend));
+    b.innerHTML = `<i></i><small>${own ? p.name : `<span class="tokglyph"></span>${p.price}`}</small>`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
       if (own) { equipSkin(spec.id, i); sel.pending = null; }
@@ -168,11 +190,15 @@ function buildDetail() {
     pals.appendChild(b);
   });
   $("dNote").textContent = skinNote(spec, pi);
-  // the big model shows the skin being looked at, locked or not
-  const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
-  f.x = 0; f.y = 0; f.facing = 1;
+  // the portrait only has the base look: any other skin (equipped or a locked one being previewed) stands in the stage corner as the
+  // model drawn in a match
+  screens.select.classList.toggle("sl-skin", pi !== 0);
   cardArt.length = 0;
-  cardArt.push({ cv: $("dArt"), f, fit: 0.74, bottom: 0.93 });
+  if (pi !== 0) {
+    const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+    f.x = 0; f.y = 0; f.facing = -1;
+    cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
+  }
   $("selTokens").textContent = P.tokens;
   updateUpgrade();
 }
@@ -184,11 +210,12 @@ function skinNote(spec, i) {
 function updateUpgrade() {
   const btn = $("selUp"), pd = sel.pending;
   btn.hidden = !pd;
+  screens.select.classList.toggle("sl-pend", !!pd);
   if (!pd) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
   btn.disabled = short > 0;
-  btn.querySelector("span").textContent = "Upgrade";
-  if (short > 0) $("dNote").textContent = `${skinNote(spec, pd.i)} ${short} more chips needed.`;
+  btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
+  if (short > 0) $("dNote").textContent = `${short} more chips needed. ${skinNote(spec, pd.i)}`;   // the shortage first: small phones clamp the note
   btn.setAttribute("aria-label", short > 0 ? `${p.name} costs ${p.price} chips, you need ${short} more` : `Upgrade ${spec.name} to ${p.name} for ${p.price} chips`);
 }
 function buyPending() {
@@ -214,38 +241,43 @@ function drawCards(tk) {
     const c = a.cv.getContext("2d");
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
     const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
-    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc : 0), h * (a.bottom || 0.95));
+    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc * (a.f.facing || 1) : 0), h * (a.bottom || 0.95));
     drawFighter(c, a.f, tk);
   }
 }
-/* practice: opponent and CPU level are small pickers in the header */
-function closePops() { $("oppPop").hidden = true; $("lvlPop").hidden = true; $("mapPop").hidden = true; }
+/* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list */
+const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
+function closePops() { for (const [btn, pop] of SEL_PICKS) { $(pop).hidden = true; $(btn).setAttribute("aria-expanded", "false"); } }
 function buildPractice() {
-  $("oppPick").innerHTML = `<small>vs</small>${sel.opp === "random" ? "Random" : FIG[sel.opp].name}`;
-  $("lvlPick").innerHTML = `<small>CPU</small>${LEVELS[sel.level].name}`;
-  $("mapPick").innerHTML = `<small>Map</small>${sel.map === "random" ? "Random" : mapName(sel.map)}`;
+  const opp = sel.opp === "random" ? null : FIG[sel.opp];
+  $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
+  $("lvlPick").innerHTML = `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
+  $("mapPick").innerHTML = `<small>Map</small><span>${sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
       const b = document.createElement("button");
       b.textContent = it.label; if (isOn(it)) b.className = "on";
+      if (it.img) b.insertAdjacentHTML("afterbegin", `<img src="${it.img}" alt="">`);
       b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); pick(it); closePops(); buildPractice(); });
       pop.appendChild(b);
     });
   };
-  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
+  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
   fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
 }
-for (const [btn, pop] of [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]]) {
-  $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; });
+for (const [btn, pop] of SEL_PICKS) {
+  $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; $(btn).setAttribute("aria-expanded", String(open)); });
 }
 app.addEventListener("click", (e) => { if (!e.target.closest(".pickwrap")) closePops(); });
 function openSelect(m) {
   sel.mode = m; sel.pending = null;
   mode = "select";
   const ti = tierInfo(P.rating);
-  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · no rating, no chips";
+  // the kicker names the mode (ranked: your tier in its colour and the rating)
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · vs CPU";
+  screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();

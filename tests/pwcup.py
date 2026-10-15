@@ -84,7 +84,7 @@ async def flow(b, errs):
     need(await pg.evaluate("window.__blastline.mode") == 'select', 'Tournament does not open the select screen')
     need((await pg.text_content('#selMode')).startswith('Tournament'), 'select header is not the tournament one')
     need((await pg.text_content('#selGo')).strip().lower() == 'start cup', 'Go button is not Start cup')
-    await pg.evaluate("document.querySelectorAll('.tile')[2].click()"); await pg.wait_for_timeout(200)   # Odin
+    await pg.evaluate("document.querySelectorAll('#tiles .tile')[2].click()"); await pg.wait_for_timeout(200)   # Odin
     await clk('#selGo'); await pg.wait_for_timeout(500)
     need(await pg.evaluate("window.__blastline.mode") == 'cup', 'Start cup does not open the bracket')
     await settle(pg)
