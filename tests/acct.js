@@ -215,6 +215,30 @@ function pureTests() {
   check(eq(dev3.routes, ["sig"]) && dev3.comboPaid === false, "routes apply: a prof without them leaves this device's");
   SYNC.applyTo(dev3, rm);
   check(eq(dev3.routes, rm.routes) && dev3.routes !== rm.routes && dev3.comboPaid === true, "routes apply: a prof with them replaces them (a copy)");
+  // fighter mastery (ui/mastery.js): XP played adds up across devices, the head start and the paid level take the higher value, pages are a union
+  const mc = SYNC.sanitize({ mxp: { [F0]: 120, [F1]: 0, "Bad Id": 5, x: -3, odin: 40.4 }, mseed: { [F0]: 9999, odin: 30, zero: 0 }, mpaid: { [F0]: 12, odin: 3 }, pages: { ko: [F1, F0, F1, "Bad!", 7], ult: "x" } }, FIGHTERS);
+  check(eq(mc.mxp, { [F0]: 120, odin: 40 }) && eq(mc.mseed, { [F0]: 650, odin: 30 }) && eq(mc.mpaid, { [F0]: 10, odin: 3 }), "mastery: sanitize drops bad ids, zero and negative rows, caps the head start (650) and the level (10)");
+  check(eq(mc.pages, { ko: [F0, F1].sort(), ult: [] }) && eq(SYNC.sanitize(mc, FIGHTERS), mc), "mastery: pages are cleaned to sorted unique ids; a bad list is empty; cleaning twice changes nothing");
+  check(!("mxp" in o1) && !("mseed" in o1) && !("mpaid" in o1) && !("pages" in o1) && !("mxp" in SYNC.sanitize({ mxp: 5 }, FIGHTERS)) && eq(SYNC.sanitize({ mseed: {} }, FIGHTERS).mseed, {}), "mastery: not there (an older page) counts as missing; an empty head start is kept (given, nothing to count)");
+  const xB = prof({ mxp: { [F0]: 100 }, mseed: { [F0]: 200 }, mpaid: { [F0]: 2 }, pages: { ko: [F0], ult: [] } });
+  const xL = prof({ mxp: { [F0]: 160, [F1]: 30 }, mseed: { [F0]: 200 }, mpaid: { [F0]: 3 }, pages: { ko: [F0, F1], ult: [F0] } });         // this device: +60 XP with F0, 30 with F1, paid level 3
+  const xS = prof({ mxp: { [F0]: 140 }, mseed: { [F0]: 200, [F1]: 90 }, mpaid: { [F0]: 4 }, pages: { ko: [F0], ult: [F1] } });             // the server: the other device played +40 with F0, paid level 4
+  const xm = SYNC.mergeProf(xL, xB, xS, true);
+  check(eq(xm.mxp, { [F0]: 200, [F1]: 30 }), "mastery merge: XP played adds what each device played since the last sync (100 +60 +40)");
+  check(eq(xm.mseed, { [F0]: 200, [F1]: 90 }), "mastery merge: the head start takes the higher value per fighter (two devices that seeded from one record do not add)");
+  check(eq(xm.mpaid, { [F0]: 4 }) && eq(xm.pages, { ko: [F0, F1].sort(), ult: [F0, F1].sort() }), "mastery merge: the paid level is the higher one; KO pages and Ultimate KO pages are a union");
+  const xm2 = SYNC.mergeProf(xL, null, xS, false);
+  check(xm2.mxp[F0] === 300 && xm2.mxp[F1] === 30, "mastery merge: no base copy counts the base as zero");
+  const noMx = (p) => { const o = Object.assign({}, p); for (const k of ["mxp", "mseed", "mpaid", "pages"]) delete o[k]; return o; };
+  const xOld = SYNC.sanitize(noMx(xL), FIGHTERS);
+  const xk = SYNC.mergeProf(xL, xB, xOld, true), xk2 = SYNC.mergeProf(xOld, xB, xS, false);
+  check(eq(xk.mxp, xL.mxp) && eq(xk.mseed, xL.mseed) && eq(xk.mpaid, xL.mpaid) && eq(xk.pages, xL.pages), "mastery merge: the server copy has none of it (an older page) -> this device's values stay");
+  check(eq(xk2.mxp, xS.mxp) && eq(xk2.mseed, xS.mseed) && eq(xk2.mpaid, xS.mpaid) && eq(xk2.pages, xS.pages), "mastery merge: this side has none of it (an older page) -> the server's values are taken");
+  const xDev = { tokens: 1, owned: {}, pal: {}, mxp: { [F0]: 5 }, mseed: { [F0]: 6 }, mpaid: { [F0]: 2 }, pages: { ko: [F0], ult: [] } };
+  SYNC.applyTo(xDev, o1);
+  check(eq(xDev.mxp, { [F0]: 5 }) && eq(xDev.mseed, { [F0]: 6 }) && eq(xDev.mpaid, { [F0]: 2 }) && eq(xDev.pages, { ko: [F0], ult: [] }), "mastery apply: a prof without the fields leaves this device's");
+  SYNC.applyTo(xDev, xm);
+  check(eq(xDev.mxp, xm.mxp) && xDev.mxp !== xm.mxp && eq(xDev.mseed, xm.mseed) && eq(xDev.mpaid, xm.mpaid) && eq(xDev.pages, xm.pages) && xDev.pages !== xm.pages && xDev.pages.ko !== xm.pages.ko, "mastery apply: a prof with them replaces them (copies)");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }
