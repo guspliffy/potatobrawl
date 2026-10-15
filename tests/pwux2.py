@@ -41,24 +41,28 @@ async def fresh(b, tag, vp, mob, errs):
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)
     await frames(pg, 20); await pg.screenshot(path=f'{OUT}/{tag}_t1.png')
     await ctx.close()
-# --- start page: the profile pill (avatar, name, tier ring + rating, chips) in the top right corner; touch controls: Heavy/Special sizes, spacing, jump boost ---
+# --- start page: the profile plate + coins (#mRank: avatar with the rank emblem, name, tier + rating, chips) in the top bar, left of the
+#     gear (upright: the top-left corner, the gear top right); touch controls: Heavy/Special sizes, spacing, jump boost ---
 MENU_CHECK = """(() => {
   const q = (s) => document.querySelector(s).getBoundingClientRect();
-  const R = q('#mRank'), G = q('#bSettings'), W = innerWidth, H = innerHeight;
+  const R = q('#mRank'), G = q('#bSettings'), W = innerWidth, H = innerHeight, up = document.getElementById('app').classList.contains('portrait');
   const hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
   const bad = [];
   if (hit(R, G)) bad.push('settings gear');
-  const ink = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };   // the h1 box is as wide as the column, its letters are not
-  if (hit(R, ink(document.querySelector('.brand h1')))) bad.push('brand');
-  for (const el of document.querySelectorAll('.menu-actions .btn, #rotHint:not([hidden])')) if (hit(R, el.getBoundingClientRect())) bad.push(el.id || el.textContent.trim().slice(0, 12));
+  const ink = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };   // the h1 box is wider than its letters
+  const T = document.getElementById('mTitle'), TR = T.hidden ? null : T.getBoundingClientRect();   // the title sticker under the plate
+  if (hit(R, ink(document.querySelector('#scrMenu h1'))) || (TR && TR.width && hit(TR, ink(document.querySelector('#scrMenu h1'))))) bad.push('logo');
+  for (const el of document.querySelectorAll('#scrMenu .mm-col button, #rotHint:not([hidden])')) { const b = el.getBoundingClientRect(); if (hit(R, b) || (TR && TR.width && hit(TR, b))) bad.push(el.id || el.textContent.trim().slice(0, 12)); }
   if (R.left < 0 || R.right > W || R.top < 0) bad.push('off screen');
   if (R.right > G.left) bad.push('not left of the gear');
-  if (R.top > 40 || W - R.right > 80 + 20) bad.push('not in the top right corner');
+  if (R.top > 40 || (up ? R.left > 40 : W - R.right > 80 + 20)) bad.push(up ? 'not in the top left corner' : 'not in the top right corner');
   if (Math.abs(R.height - G.height) > 1) bad.push('not the height of the gear');
-  const ids = ['mAvatar', 'mBadge', 'mRating', 'mTokens'].filter((i) => { const r = q('#' + i); return r.width < 4 || r.right > R.right + 1 || r.left < R.left - 1; });
+  // the compact plate (667x320, or a full bar) is the picture and the emblem only, by design: the rating is checked where it shows
+  const compact = document.getElementById('app').classList.contains('tiny') || document.getElementById('mRank').classList.contains('fit2');
+  const ids = ['mAvatar', 'mBadge', 'mTokens'].concat(compact ? [] : ['mRating']).filter((i) => { const r = q('#' + i); return r.width < 4 || r.right > R.right + 1 || r.left < R.left - 1; });
   if (ids.length) bad.push('clipped: ' + ids.join(','));
-  const btns = [...document.querySelectorAll('.menu-actions .btn')].map((b) => b.getBoundingClientRect());
-  if (btns[0].top < q('.brand').bottom) bad.push('buttons start inside the brand');
+  const btns = [...document.querySelectorAll('#scrMenu .mm-col button')].map((b) => b.getBoundingClientRect());
+  if (btns[0].top < q('#scrMenu .mm-logo').bottom) bad.push('buttons start inside the logo');
   if (btns[btns.length - 1].bottom > H) bad.push('buttons run off the bottom');
   return bad;
 })()"""

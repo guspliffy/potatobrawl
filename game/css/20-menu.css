@@ -1,0 +1,259 @@
+/* ---------- Main menu (menu redesign step 2, Fable's "sunset ink": menu-redesign/fable-menu-design.md, mockups menu_*.png) ----------
+   Markup: <section id="scrMenu"> in shell.html. Texts: renderMenu / menuDaily / menuFit (ui/screens.js), renderPill (ui/acct.js).
+   One flex column: the top bar (logo lockup left; the profile plate + coins as one button #mRank, the gear right), then the card
+   column (the gold Ranked hero, the Daily Potato + Tournament tiles, three mini pills). The attract match plays behind on the right
+   under the old left shade; the LIVE tag names its fighters. Sizes come from the #app classes view.js sets: desktop (default, the
+   column 520 px and centred), .short (844x390 phones), .tiny (667x320 and 568x320), .portrait (upright: the big logo, the match in
+   the middle, the cards at the bottom). menuFit adds .fit1 / .fit2 to #mRank when the coins do not fit (tighter coins, then no name). */
+#scrMenu {
+  --mm-pt: 16px; --mm-px: 24px; --mm-bar: 48px; --mm-ctl: 44px; --mm-colw: 520px; --mm-gap: 12px;
+  --mm-hero: 170px; --mm-aw: 236px; --mm-title: 64px; --mm-tile: 100px; --mm-mini: 44px;
+  --mm-shade: calc(var(--mm-colw) + var(--mm-px) + 16px);
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: max(var(--mm-pt), env(safe-area-inset-top, 0px)) max(var(--mm-px), env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(var(--mm-px), env(safe-area-inset-left, 0px));
+  /* the left shade, as before the redesign: near-opaque under the column, clear over the arena */
+  background: linear-gradient(90deg, rgba(14, 16, 34, 0.96) 0, rgba(14, 16, 34, 0.9) min(var(--mm-shade), 100%), rgba(14, 16, 34, 0.25) calc(min(var(--mm-shade), 100%) + 180px), rgba(14, 16, 34, 0) 100%);
+  overflow-x: hidden;   /* the upright sunburst is wider than the screen */
+  container: mm / size;
+}
+#scrMenu button { appearance: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#scrMenu button:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+/* ----- top bar: logo lockup left; plate, coins and gear right ----- */
+#scrMenu .mm-bar { flex: none; align-self: stretch; height: var(--mm-bar); display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; }
+#scrMenu .mm-logo { flex: none; }   /* never squeezed: menuFit makes the plate and coins smaller instead */
+#scrMenu .mm-logo .spud { width: 46px; height: 50px; }
+#scrMenu .mm-logo .wm { margin: 0; font-size: 36px; white-space: nowrap; }
+#scrMenu .mm-logo .slash { width: 140px; }
+#scrMenu .mm-logo .rays { display: none; }
+#scrMenu .mm-topr { flex: none; display: flex; align-items: center; gap: 8px; }
+/* #mRank: one button (it opens the Account sheet) holding the plate and the coins, so they read and tap as before */
+#scrMenu .mm-me { display: flex; align-items: center; gap: 8px; height: var(--mm-ctl); padding: 0; border: 0; background: none; text-align: left; }
+#scrMenu .mm-me > *, #scrMenu #bSettings { height: var(--mm-ctl); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrMenu .mm-me:active > *, #scrMenu #bSettings:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrMenu #bSettings { width: var(--mm-ctl); }
+#scrMenu #bSettings svg { width: 22px; height: 22px; display: block; }
+#scrMenu .plate { --tc: #c9d0e4; position: relative; flex: none; gap: 9px; padding: 0 14px 0 3px; }
+#scrMenu .mm-avw { position: relative; width: calc(var(--mm-ctl) + 6px); height: calc(var(--mm-ctl) + 6px); flex: none; margin-top: -9px; }
+#scrMenu .mm-avw .av { width: 100%; height: 100%; margin: 0; border: 2.5px solid var(--ink); box-shadow: inset 0 0 0 2px var(--ab, rgba(206, 210, 255, 0.35)), 0 2px 0 var(--ink); }
+#scrMenu #mBadge { position: absolute; right: -9px; bottom: -6px; width: 25px; height: 25px; filter: drop-shadow(0 1.5px 0 var(--ink)); }
+#scrMenu .plate .who b { display: block; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; font-size: 16px; }
+#scrMenu .plate .who small { font-size: 12px; }
+#scrMenu .plate .who small i { font-variant-numeric: tabular-nums; }
+/* the chosen title: a small sticker on the plate's lower edge (the plate stays two lines) */
+#scrMenu .mm-title { position: absolute; right: 8px; bottom: -15px; z-index: 1; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 800 10px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--sand);
+  padding: 3px 6px 2px; border: 2px solid var(--ink); border-radius: 5px; box-shadow: 0 2px 0 var(--ink); transform: rotate(-3deg); }
+#scrMenu .coin { flex: none; }
+#scrMenu .coin.cup { color: var(--sand); }
+
+/* ----- the card column ----- */
+#scrMenu .mm-col { flex: none; width: min(var(--mm-colw), 100%); margin-block: auto; display: flex; flex-direction: column; gap: var(--mm-gap); }
+#scrMenu .mm-row2 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--mm-gap); }
+#scrMenu .mm-row3 { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+#scrMenu .mm-hero, #scrMenu .mm-tile, #scrMenu .mini { transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+
+/* the gold hero: your fighter in a slanted mask, RANKED, your record, a dark PLAY chevron; a slow sheen crosses it */
+#scrMenu .mm-hero { --fc: var(--ember); display: block; width: 100%; height: var(--mm-hero); padding: 0; overflow: hidden; text-align: left; color: var(--ink); }
+#scrMenu .mm-hero:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), 0 6px 14px rgba(0, 0, 0, 0.32), var(--bevelgold); }
+#scrMenu .mm-art { position: absolute; left: 0; top: 0; bottom: 0; width: var(--mm-aw); overflow: hidden; background: var(--fc); clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%); }
+#scrMenu .mm-art img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; display: block; }
+#scrMenu .mm-hero[data-f="gunslinger"] .mm-art img, #scrMenu .mm-hero[data-f="reaper"] .mm-art img { object-position: 52% 60%; }
+#scrMenu .mm-hero[data-f="odin"] .mm-art img { object-position: 46% 40%; }
+#scrMenu .mm-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 58%, rgba(244, 201, 93, 0.5)); }
+/* the ink edge along the seam of the mask */
+#scrMenu .mm-edge { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--mm-aw) + 4px); background: var(--ink);
+  clip-path: polygon(calc(var(--mm-aw) - 3px) 0, calc(var(--mm-aw) + 4px) 0, calc(var(--mm-aw) * 0.78 + 4px) 100%, calc(var(--mm-aw) * 0.78 - 3px) 100%); }
+#scrMenu .mm-body { position: absolute; z-index: 2; left: calc(var(--mm-aw) * 0.95); right: 16px; top: 14px; bottom: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+#scrMenu .mm-hero .kick { font-size: 12px; color: rgba(14, 16, 34, 0.7); white-space: nowrap; max-width: calc(100% - var(--mm-aw) * 0.07); overflow: hidden; text-overflow: ellipsis; margin-left: calc(var(--mm-aw) * 0.07); }   /* clear of the slanted seam */
+#scrMenu .mm-ttl { font: italic 900 var(--mm-title)/0.86 var(--display); text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); margin-top: 2px; padding-right: 0.06em; }
+#scrMenu .mm-sub { font: 600 14px/1.2 var(--body); color: rgba(14, 16, 34, 0.74); max-width: calc(100% - 132px); font-variant-numeric: tabular-nums; text-wrap: balance; }
+#scrMenu .mm-cta { position: absolute; right: 0; bottom: 0; display: inline-flex; align-items: center; gap: 9px; height: 44px; padding: 0 18px 0 20px; border-radius: 8px;
+  background: var(--ink); color: var(--gold); font: 800 20px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; transform: skewX(-8deg);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.18); }
+#scrMenu .mm-cta > * { transform: skewX(8deg); }
+#scrMenu .mm-cta i { width: 0; height: 0; border-left: 11px solid var(--gold); border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+#scrMenu .mm-hero::before { content: ""; position: absolute; z-index: 1; top: -20%; bottom: -20%; left: 0; width: 26%; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.34) 50%, rgba(255, 255, 255, 0));
+  transform: translateX(-160%) skewX(-20deg); animation: mmSheen 6s ease-in-out 1.2s infinite; }
+@keyframes mmSheen { 0%, 64% { transform: translateX(-160%) skewX(-20deg); } 100% { transform: translateX(520%) skewX(-20deg); } }
+
+/* the two tiles */
+#scrMenu .mm-tile { display: flex; align-items: center; gap: 12px; min-width: 0; height: var(--mm-tile); padding: 0 12px 0 10px; text-align: left; overflow: visible; color: var(--text);
+  box-shadow: var(--hard), var(--bevel); }   /* hard shadow only: the blurred one is the hero's */
+#scrMenu .mm-tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrMenu .mm-tb { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+#scrMenu .mm-tb b { font: italic 900 24px/0.95 var(--display); text-transform: uppercase; white-space: nowrap; padding-right: 0.06em; }
+#scrMenu .mm-l { font: 500 13px/1.2 var(--body); color: var(--mute); overflow-wrap: break-word; }
+#scrMenu .mm-l em { font-style: normal; color: var(--sand); font-weight: 600; }
+#scrMenu .mm-l:empty { display: none; }
+#scrMenu .mm-vs { position: relative; width: 92px; height: 66px; flex: none; }
+#scrMenu .mm-vs img { position: absolute; top: 0; width: 55px; height: 66px; object-fit: cover; object-position: 50% 36%; border: 2px solid var(--ink); border-radius: 8px; background: var(--raise); }
+#scrMenu .mm-vs img:first-child { left: 0; z-index: 1; clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%); }
+#scrMenu .mm-vs img:nth-child(2) { right: 0; clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%); }
+#scrMenu .mm-vs img[data-f="gunslinger"], #scrMenu .mm-vs img[data-f="reaper"] { object-position: 52% 62%; }
+#scrMenu .mm-vs i { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%) rotate(-8deg); font: italic 900 15px/1 var(--display); color: #fff;
+  background: var(--ketchup); border: 2px solid var(--ink); padding: 3px 5px 2px; border-radius: 5px; box-shadow: 0 2px 0 var(--ink); }
+#scrMenu .mm-today { left: -10px; top: -12px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-today.done { background: var(--raise); color: var(--text); }
+#scrMenu .mm-daily.done .mm-vs img { filter: grayscale(0.55) brightness(0.8); }
+#scrMenu .mm-daily.done .mm-vs i { background: var(--plate); }
+#scrMenu .mm-medal { width: 64px; height: 64px; flex: none; border-radius: 50%; border: 2px solid var(--ink); background: radial-gradient(circle at 50% 35%, #ffe08a, #e8a640 70%);
+  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink), inset 0 -4px 0 rgba(120, 60, 0, 0.25); }
+#scrMenu .mm-medal svg { width: 38px; height: 38px; }
+
+/* the mini pills */
+#scrMenu .mini { min-width: 0; min-height: var(--mm-mini); padding: 0 12px; white-space: nowrap; font-size: 15px; }
+#scrMenu .mini:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrMenu .mm-mt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+#scrMenu .mm-mt small { font: 600 10.5px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); margin-top: 2px; }
+#scrMenu .mm-mt small:empty { display: none; }
+#scrMenu .mini:disabled { opacity: 0.5; cursor: default; }
+#scrMenu .mini:disabled i.dot { background: var(--mute); box-shadow: 0 0 0 2px rgba(164, 169, 200, 0.2); }
+
+/* LIVE tag: the two fighters of the match behind the menu */
+#scrMenu .mm-live { position: absolute; right: max(var(--mm-px), env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  max-width: calc(100% - var(--mm-colw) - 3 * var(--mm-px)); pointer-events: none; }
+#scrMenu .mm-live span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#scrMenu .a2hs:not([hidden]) ~ .mm-live { display: none; }   /* the iPhone tip sits where the tag goes */
+#scrMenu .hint { font: 500 11px/1.2 var(--body); color: var(--mute); text-align: center; }
+
+/* entrance: the cards slide up and fade in, 40 ms apart, the hero first (each time the menu shows) */
+@keyframes mmIn { from { opacity: 0; transform: translateY(16px); } }
+#scrMenu .mm-hero, #scrMenu .mm-tile, #scrMenu .mm-row3 .mini { animation: mmIn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) calc(var(--i, 0) * 40ms) backwards; }
+
+/* desktop pointers: hover brightens and the hard shadow grows */
+@media (hover: hover) and (pointer: fine) {
+  #scrMenu .mm-hero:hover { filter: brightness(1.06); box-shadow: 0 5px 0 var(--ink), var(--soft), var(--bevelgold); }
+  #scrMenu .mm-tile:hover { filter: brightness(1.06); box-shadow: 0 5px 0 var(--ink), var(--bevel); }
+  #scrMenu .mini:not(:disabled):hover { filter: brightness(1.08); box-shadow: 0 5px 0 var(--ink), var(--bevel); }
+  #scrMenu .mm-me:hover > *, #scrMenu #bSettings:hover { filter: brightness(1.1); }
+  #scrMenu .mm-hero:active, #scrMenu .mm-tile:active, #scrMenu .mini:active { filter: none; }
+}
+
+/* ----- 844x390 phones (#app.short): Fable's main size ----- */
+#app.short #scrMenu { --mm-pt: 12px; --mm-px: 16px; --mm-bar: 44px; --mm-ctl: 40px; --mm-colw: 448px; --mm-gap: 10px;
+  --mm-hero: 134px; --mm-aw: 186px; --mm-title: 52px; --mm-tile: 84px; --mm-mini: 40px; }
+#app.short #scrMenu { padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+#app.short #scrMenu .mm-col { margin-block: 14px auto; }
+#app.short #scrMenu .mm-logo .spud { width: 40px; height: 44px; }
+#app.short #scrMenu .mm-logo .wm { font-size: 30px; }
+#app.short #scrMenu .mm-logo .slash { width: 120px; }
+#app.short #scrMenu .plate .who b { font-size: 15px; }
+#app.short #scrMenu .plate .who small { font-size: 11px; }
+#app.short #scrMenu .mm-body { right: 14px; top: 12px; bottom: 12px; gap: 4px; }
+#app.short #scrMenu .mm-hero .kick { font-size: 11px; }
+#app.short #scrMenu .mini { font-size: 14px; }
+#app.short #scrMenu .mm-sub { font-size: 13px; max-width: calc(100% - 118px); }
+#app.short #scrMenu .mm-cta { height: 40px; font-size: 18px; padding: 0 16px 0 18px; }
+#app.short #scrMenu .mm-tb b { font-size: 22px; }
+#app.short #scrMenu .mm-l { font-size: 12px; }
+#app.short #scrMenu .mm-vs { width: 80px; height: 58px; }
+#app.short #scrMenu .mm-vs img { width: 48px; height: 58px; }
+#app.short #scrMenu .mm-medal { width: 56px; height: 56px; }
+#app.short #scrMenu .mm-medal svg { width: 33px; height: 33px; }
+#app.short #scrMenu .mm-tile { gap: 10px; }
+
+/* ----- 667x320 and 568x320 (#app.tiny): Fable's 0.8 scale; the plate is the avatar + emblem; the tiles keep one line ----- */
+#app.tiny #scrMenu { --mm-pt: 8px; --mm-px: 12px; --mm-bar: 38px; --mm-ctl: 36px; --mm-colw: 372px; --mm-gap: 8px;
+  --mm-hero: 108px; --mm-aw: 150px; --mm-title: 42px; --mm-tile: 66px; --mm-mini: 34px; }
+#app.tiny #scrMenu .mm-col { margin-block: 10px auto; }
+#app.tiny #scrMenu .mm-logo .spud { width: 34px; height: 36px; }
+#app.tiny #scrMenu .mm-logo .wm { font-size: 25px; }
+#app.tiny #scrMenu .mm-logo .slash { width: 96px; height: 4px; margin-top: 3px; }
+#app.tiny #scrMenu .mm-avw { margin-top: -6px; }
+#app.tiny #scrMenu .coin { font-size: 17px; }
+#app.tiny #scrMenu .mm-body { right: 10px; top: 9px; bottom: 9px; gap: 3px; }
+#app.tiny #scrMenu .mm-hero .kick { font-size: 10px; }
+#app.tiny #scrMenu .mm-sub { font-size: 12px; max-width: calc(100% - 96px); }
+#app.tiny #scrMenu .mm-cta { height: 34px; font-size: 16px; padding: 0 12px 0 14px; gap: 7px; }
+#app.tiny #scrMenu .mm-cta i { border-left-width: 9px; border-top-width: 6px; border-bottom-width: 6px; }
+#app.tiny #scrMenu .mm-tile { gap: 9px; padding: 0 10px 0 8px; }
+#app.tiny #scrMenu .mm-vs { width: 66px; height: 46px; }
+#app.tiny #scrMenu .mm-vs img { width: 40px; height: 46px; border-radius: 7px; }
+#app.tiny #scrMenu .mm-vs i { font-size: 12px; padding: 2px 4px 1px; }
+#app.tiny #scrMenu .mm-tb { gap: 2px; }
+#app.tiny #scrMenu .mm-tb b { font-size: 18px; }
+#app.tiny #scrMenu .mm-l { font-size: 11px; line-height: 1.15; }
+#app.tiny #scrMenu .mm-l2 { display: none; }
+#app.tiny #scrMenu .mm-medal { width: 46px; height: 46px; }
+#app.tiny #scrMenu .mm-medal svg { width: 27px; height: 27px; }
+#app.tiny #scrMenu .tag { font-size: 10px; padding: 4px 7px 3px; }
+#app.tiny #scrMenu .mm-live { max-width: calc(100% - 2 * var(--mm-px) - 140px); }   /* it sits below the column's last row here */
+#app.tiny #scrMenu .mini { font-size: 12.5px; padding: 0 8px; gap: 6px; }
+#app.tiny #scrMenu .mm-mt small { font-size: 9.5px; margin-top: 1px; }
+/* the compact plate: tiny screens, and menuFit's last step when the coins still do not fit */
+#app.tiny #scrMenu .plate, #scrMenu .mm-me.fit2 .plate { padding: 0 12px 0 2px; }
+#app.tiny #scrMenu .plate .who, #app.tiny #scrMenu .mm-title, #scrMenu .mm-me.fit2 .who, #scrMenu .mm-me.fit2 .mm-title { display: none; }
+/* menuFit's first step: tighter coins */
+#scrMenu .mm-me.fit1, #scrMenu .mm-me.fit2 { gap: 6px; }
+#scrMenu .mm-me.fit1 .coin, #scrMenu .mm-me.fit2 .coin { gap: 4px; padding: 0 9px 0 6px; font-size: 17px; }
+#scrMenu .mm-me.fit1 .coin::before, #scrMenu .mm-me.fit2 .coin::before { width: 19px; height: 16px; }
+
+/* 568 wide (the smallest phone): a narrower column */
+@container mm (max-width: 620px) {
+  #app.tiny #scrMenu .mm-col { width: 336px; }
+  #app.tiny #scrMenu .mm-logo .wm { font-size: 23px; }
+  #app.tiny #scrMenu .mm-logo .slash { width: 84px; }
+  #app.tiny #scrMenu .mm-vs { width: 58px; }
+  #app.tiny #scrMenu .mm-vs img { width: 36px; }
+  #app.tiny #scrMenu .mm-medal { width: 40px; height: 40px; }
+  #app.tiny #scrMenu .mm-medal svg { width: 24px; height: 24px; }
+  #app.tiny #scrMenu .mm-tile { gap: 7px; padding: 0 7px 0 7px; }
+  #app.tiny #scrMenu .mm-tb b { font-size: 17px; }
+  #app.tiny #scrMenu .mm-km { display: none; }   /* "Ranked · Gold 1210": the kicker without "match" */
+}
+
+/* ----- upright (#app.portrait): the big tilted logo on a sunburst, the match in the middle, the cards at the bottom ----- */
+#app.portrait #scrMenu { --mm-pt: 14px; --mm-px: 14px; --mm-ctl: 40px; --mm-colw: 480px; --mm-gap: 10px;
+  --mm-hero: 124px; --mm-aw: 150px; --mm-title: 44px; --mm-tile: 118px; --mm-mini: 40px;
+  align-items: stretch; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(10, 11, 28, 0.72) 0, rgba(10, 11, 28, 0.35) 200px, rgba(10, 11, 28, 0) 300px, rgba(10, 11, 28, 0) calc(100% - 360px), rgba(10, 11, 28, 0.9) calc(100% - 250px), rgba(10, 11, 28, 0.96) 100%); }
+#app.portrait #scrMenu .mm-bar { display: contents; }
+#app.portrait #scrMenu .mm-topr { order: 0; flex: none; height: 44px; }
+#app.portrait #scrMenu #bSettings { margin-left: auto; }
+#app.portrait #scrMenu .mm-logo { order: 1; flex: none; align-self: center; position: relative; flex-direction: column; gap: 0; margin: calc(var(--uh) * 7) 0 0; transform: rotate(-3deg); }
+#app.portrait #scrMenu .mm-logo .wm { flex-direction: column; align-items: center; gap: 0; font-size: clamp(56px, calc(var(--uh) * 10), 84px); line-height: 0.82; letter-spacing: -0.015em; }
+#app.portrait #scrMenu .mm-logo .wm b { -webkit-text-stroke: 6px var(--ink); text-shadow: 0 6px 0 var(--ink), 0 14px 30px rgba(0, 0, 0, 0.5); }
+#app.portrait #scrMenu .mm-logo .wm b + b { margin-top: -0.07em; }
+#app.portrait #scrMenu .mm-wmw { display: flex; flex-direction: column; align-items: center; }
+#app.portrait #scrMenu .mm-logo .slash { width: 2.6em; height: 7px; margin-top: 8px; font-size: clamp(56px, calc(var(--uh) * 10), 84px); transform-origin: center; box-shadow: 0 3px 0 var(--ink); }
+#app.portrait #scrMenu .mm-logo .spud { position: absolute; z-index: 1; left: 50%; top: -0.45em; width: 0.64em; height: 0.69em; margin-left: 0.9em; transform: rotate(12deg); font-size: clamp(56px, calc(var(--uh) * 10), 84px); }
+#app.portrait #scrMenu .mm-logo .rays { display: block; inset: -140px -120px; opacity: 0.55; will-change: transform;
+  background: repeating-conic-gradient(from 0deg, rgba(244, 201, 93, 0.22) 0 4deg, transparent 4deg 12deg); }
+#app.portrait #scrMenu .mm-live { order: 2; position: static; flex: none; align-self: flex-end; max-width: 100%; margin: 16px 0 10px; }
+#app.portrait #scrMenu .mm-col { order: 3; align-self: center; width: 100%; max-width: var(--mm-colw); margin: auto 0 0; }
+#app.portrait #scrMenu .hint { order: 4; flex: none; margin-top: 10px; }
+#app.portrait #scrMenu .a2hs { order: 5; position: static; width: auto; flex: none; margin-top: 10px; }
+#app.portrait #scrMenu .mm-row2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#app.portrait #scrMenu .mm-row3 { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1.1fr); }
+#app.portrait #scrMenu .mm-body { right: 12px; top: 12px; bottom: 10px; gap: 3px; }
+#app.portrait #scrMenu .mm-hero .kick { font-size: 10px; }
+#app.portrait #scrMenu .mm-km { display: none; }
+#app.portrait #scrMenu .mm-sub { font-size: 12px; max-width: calc(100% - 108px); }
+#app.portrait #scrMenu .mm-cta { height: 36px; font-size: 17px; padding: 0 14px 0 16px; }
+#app.portrait #scrMenu .mm-cta i { border-left-width: 10px; border-top-width: 6px; border-bottom-width: 6px; }
+#app.portrait #scrMenu .mm-tile { flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 6px; height: auto; min-height: var(--mm-tile); padding: 10px; }
+#app.portrait #scrMenu .mm-tb { flex: none; width: 100%; gap: 4px; }
+#app.portrait #scrMenu .mm-tb b { font-size: 20px; }
+#app.portrait #scrMenu .mm-l { font-size: 11.5px; text-wrap: pretty; }   /* no lone "h" on the last line */
+#app.portrait #scrMenu .mm-vs { width: 72px; height: 44px; }
+#app.portrait #scrMenu .mm-vs img { width: 42px; height: 44px; border-radius: 7px; }
+#app.portrait #scrMenu .mm-vs i { font-size: 13px; }
+#app.portrait #scrMenu .mm-today { left: auto; right: -6px; top: -12px; }
+#app.portrait #scrMenu .mm-medal { width: 44px; height: 44px; }
+#app.portrait #scrMenu .mm-medal svg { width: 28px; height: 28px; }
+#app.portrait #scrMenu .mini { font-size: 13px; padding: 0 8px; }
+#app.portrait #scrMenu .plate .who b { font-size: 15px; }
+#app.portrait #scrMenu .plate .who small { font-size: 11px; }
+@container mm (max-width: 400px) {   /* 360-390 wide phones: a narrower portrait and PLAY, so the record line keeps its room */
+  #app.portrait #scrMenu { --mm-aw: 134px; }
+  #app.portrait #scrMenu .mm-cta { padding: 0 12px 0 14px; font-size: 16px; gap: 7px; }
+  #app.portrait #scrMenu .mm-sub { max-width: calc(100% - 96px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #scrMenu .mm-hero, #scrMenu .mm-tile, #scrMenu .mm-row3 .mini { animation: none; }
+  #scrMenu .mm-hero::before { display: none; }
+  #scrMenu .mm-hero, #scrMenu .mm-tile, #scrMenu .mini, #scrMenu .mm-me > *, #scrMenu #bSettings { transition: none; }
+}

@@ -173,7 +173,7 @@ async def sizes(b, tag, errs):
     ctx, pg, mob = await new_page(b, tag, vp, up, errs)
     clk = pg.tap if mob else pg.click
     await shot(pg, tag, '0_menu', errs, check=False)
-    mb = await pg.evaluate("(() => { const b = document.querySelectorAll('.menu-actions .btn'), r = b[b.length - 1].getBoundingClientRect(); return [r.bottom, innerHeight, b.length]; })()")
+    mb = await pg.evaluate("(() => { const b = document.querySelectorAll('#scrMenu .mm-col button'), r = b[b.length - 1].getBoundingClientRect(); return [r.bottom, innerHeight, b.length]; })()")
     if mb[0] > mb[1]: errs.append(f'{tag}: the menu buttons run off the bottom ({mb})')
     await clk('#bCup'); await pg.wait_for_timeout(700)
     await shot(pg, tag, '0_select', errs, check=False)
