@@ -117,8 +117,6 @@ button { font: inherit; color: inherit; }
 .rule-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .rule-row .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
 .chip:disabled { opacity: 0.45; cursor: default; }
-.res-pick { display: flex; flex-direction: column; gap: 8px; }
-.res-pick .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 #banner.game .b-main { color: var(--ember); }
 #banner.show .b-main { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pop { from { transform: scale(1.9) skewX(-8deg); opacity: 0; } to { transform: scale(1) skewX(-8deg); opacity: 1; } }
@@ -469,25 +467,6 @@ button { font: inherit; color: inherit; }
 .sheet p { margin: 0; color: var(--mute); }
 .x-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .win h2 { color: var(--sand); } .loss h2 { color: var(--ember); }
-.res2 { width: min(820px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 22px; align-items: start; }
-.res-main, .res-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.res2.solo { width: min(540px, 100%); grid-template-columns: minmax(0, 1fr); }
-.res2.solo .res-side { display: none; }
-.res-sub { margin: 6px 0 0; color: var(--mute); }
-.res-fin { margin: 6px 0 0; font-family: var(--display); font-weight: 700; font-style: italic; letter-spacing: 0.04em; text-transform: uppercase; font-size: 15px; color: var(--mute); }
-.res-fin b { color: var(--sand); font-weight: 900; }
-.res-rank { --tc: #9097ad; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; background: var(--raise); border-radius: 6px; }
-.delta { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 30px; font-variant-numeric: tabular-nums; }
-.delta.up { color: var(--mint); } .delta.down { color: var(--ember); }
-.promo { font-family: var(--display); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tc); font-size: 15px; }
-.res-line { font-size: 15px; font-variant-numeric: tabular-nums; }
-.res-line b { color: var(--text); font-family: var(--display); font-weight: 800; font-size: 19px; margin-right: 3px; }
-.res-chips { font-size: 14px; }
-.res-chips b { font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--sand); margin-right: 6px; font-variant-numeric: tabular-nums; }
-.res-pick { display: flex; flex-direction: column; gap: 8px; }
-.res-pick .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.res-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-left: 6px; }
-.res-actions .btn:first-child { grid-column: 1 / -1; }
 .sheet-actions { display: flex; flex-direction: column; gap: 10px; padding-left: 6px; }
 kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background: var(--raise); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; color: var(--text); }
 
@@ -842,7 +821,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .pill.stk .sep { display: none; }
 #app.narrow .pill.stk .pr, #app.narrow .pill.stk .pc { font-size: 18px; }
 #app.narrow .pill.stk .pcup, #app.narrow .pill.stk .pstk { font-size: 16px; gap: 3px; }
-.res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
 .dly-sheet { width: min(500px, 100%); gap: 12px; }
 .dly-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
 .dly-x { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase; color: var(--mute); }
@@ -1024,36 +1002,42 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <section id="scrResult" class="screen result" hidden>
-    <div class="sheet res2 scroll" id="resSheet">
+    <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
+    <div class="res3 scroll" id="resSheet">
       <div class="res-main">
-        <div>
-          <div class="kicker" id="rMode">Ranked match</div>
+        <div class="res-art" aria-hidden="true"><i class="rays"></i><img id="rArt" alt=""></div>
+        <i class="res-edge" aria-hidden="true"></i>
+        <div class="res-txt">
+          <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span></div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
           <p class="res-fin" id="rFin" hidden></p>
         </div>
-        <div class="res-actions">
-          <button class="btn primary" id="rAgain"><span>Next match</span></button>
-          <button class="btn" id="rChange"><span>Fighters</span></button>
-          <button class="btn" id="rMenu"><span>Menu</span></button>
-        </div>
       </div>
       <div class="res-side">
-        <div class="res-rank" id="rRank">
+        <div class="card res-rank" id="rRank">
           <div class="badge" id="rBadge"></div>
-          <div>
-            <div class="rk-tier" id="rTier">Bronze</div>
+          <div class="rk-body">
+            <div class="rk-head"><span class="rk-tier" id="rTier">Bronze</span><span class="promo" id="rPromo"></span></div>
             <div class="rk-sub" id="rRating"></div>
-            <div class="bar"><i id="rBar"></i></div>
-            <div class="promo" id="rPromo"></div>
+            <div class="bar"><i id="rBar"></i><b id="rGain"></b></div>
           </div>
-          <div class="delta" id="rDelta">+0</div>
+          <div class="delta" id="rStick"><b id="rDelta">+0</b><small>Rating</small></div>
         </div>
-        <p class="res-line" id="rStats"></p>
-        <p class="res-chips" id="rChips"></p>
+        <div class="res-stats" id="rStats">
+          <div class="card stat"><b id="rKOs">0</b><span id="rKOsL">KOs</span></div>
+          <div class="card stat"><b><span id="rDmg">0</span><small>%</small></b><span>Damage dealt</span></div>
+          <div class="card stat"><b id="rFalls">0</b><span id="rFallsL">Falls</span></div>
+          <div class="res-chips" id="rChips"><div class="card stat chips" id="rChipT"><b>+<span id="rChipN">0</span></b> <span>chips</span></div> <p class="res-why" id="rWhy"></p></div>
+        </div>
         <div class="res-pick" id="rPick" hidden>
-          <div class="kicker">You lost this game, so you may switch fighter</div>
+          <div class="kick">You lost this game, so you may switch fighter</div>
           <div class="chips" id="rPickChips"></div>
+        </div>
+        <div class="res-actions">
+          <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
+          <button class="btn" id="rChange"><span>Fighters</span></button>
+          <button class="btn" id="rMenu"><span>Menu</span></button>
         </div>
       </div>
     </div>

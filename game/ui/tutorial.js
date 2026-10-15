@@ -99,13 +99,16 @@ function tutDone() {
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
-  const sheet = $("resSheet"); sheet.classList.add("win", "solo"); sheet.classList.remove("loss");
-  $("rMode").textContent = "Tutorial";
-  $("rTitle").textContent = "Ready!";
+  // the results screen (screens.js resOpen): your fighter on the panel, READY!, and on the right your rank as it stands (what the
+  // Ranked match button plays for) instead of the match's stats and chips
+  const me = G.fighters[0].spec;
+  resOpen("win", me, true);
+  if (match) match.finBy = "";
+  $("rMode").textContent = "Tutorial"; $("rWho").textContent = me.name;
+  resTitle("Ready!");
   $("rSub").textContent = "That's the basics. Ranked matches earn potato chips, and chips unlock new skins.";
-  $("rRank").hidden = true; $("rPick").hidden = true;
-  $("rStats").textContent = ""; $("rChips").textContent = "";
-  $("rAgain").disabled = false;
+  resRank(null);
+  $("rStats").hidden = true;
   $("rAgain").querySelector("span").textContent = "Ranked match";
   $("rChange").querySelector("span").textContent = "Practice";
   show("result");
