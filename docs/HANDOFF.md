@@ -1,10 +1,10 @@
-# PotatoBrawl handoff (updated 2026-10-15: Team Brawl 2v2 against CPUs; before it Kraken Spud, The Deep, Zorp, The Kitchen, Road regions and skins)
+# PotatoBrawl handoff (updated 2026-10-15: Team Brawl 2v2 against CPUs, PROTO 14; before it online boss fights on two phones, PROTO 13)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
-- Session 6 of the big-features plan, part 1 (2026-10-15, branch claude/project-thread-qtfrko, players reload once): Team Brawl 2v2, you and a
+- Session 6 of the big-features plan, part 1 (2026-10-15, branch claude/project-thread-qtfrko, PROTO 14, players reload once): Team Brawl 2v2, you and a
   CPU partner against two CPUs, offline. Plan doc https://claude.ai/code/artifact/f4ff6904-3262-4992-9c4c-7cc8b1cee3aa, Fable's design
   /mnt/project-files/2v2/fable-2v2.md. Online 2v2 is a later session (a four-input lockstep, a lobby for four, the snapshot size).
   - core.js, only in a team game without a boss (`teamGame(g)`: 4 fighters, no boss); 1v1 and the boss fights play frame for frame as
@@ -24,10 +24,33 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   - ui/duo.js: startDuo (Practice > VS > Team Brawl 2v2; partner sel.mate, CPU level, pool maps only; two different random foes; nobody wears
     another same-fighter's skin), duoInputs, Focus (duoFocus / Tab), the CAUGHT! pop (chgPops with txt), tips after GO in the first three
     2v2s (P.duoTip, device only), results (duoMatchEnd / duoResLine), 20 chips for a win on Hard, synced counters P.duoW / P.duoC
-    (sync.js OPT_COUNTERS), the title Dynamic Duo at 10 wins (acct.js ACT "duo"), Account > Stats line. CPU team names DUO_TEAMS.
+    (sync.js OPT_COUNTERS), the title Dynamic Duo at 10 wins (acct.js ACT "dynamic"; online 2v1 has "duo"), Account > Stats line. CPU team names DUO_TEAMS.
   - KO page: the final hitter's page against the fighter it knocked out (finWanted for teamGame); the winner's teammate rides along as a
     round portrait sticker "WITH <name>" under the title band (manga.js mgMateSticker).
   - Per-slot UI arrays grew to four (skinState, trails, combos, finDash, UV, comboT, HX.alive).
+- Session 5 of the big-features plan (2026-10-15, branch claude/online-2v1-d7nenz, PROTO 13, players reload once): online boss fights,
+  two phones against a boss. Plan doc https://claude.ai/code/artifact/876ba165-4beb-4bdf-be01-276290f2a41e (Jonny approved the
+  defaults), Fable's design /mnt/project-files/online-2v1/fable-online.md. All in ui/online.js; core.js and the server are unchanged.
+  - Same lockstep as 1v1 with two inputs: host = slot 0, guest = slot 1, the boss (slot 2) moves himself from the shared seed. The
+    start message carries `bo: { b, lv }` (boss id, level); his map comes from the boss (bossMap), rules are BOSS_RULES (3 hearts,
+    no time), HP is all of his (no BOSS_SOLO). match = { online, boss, level }.
+  - Lobby: a Mode row (1 vs 1 / Vs boss) on the host card; Vs boss swaps Lives / Time / Format for Boss and Level (P.onBoss
+    = { on, b, lv }, this device only, not synced). The lobby and room presence carry `bo`; the list row reads "Samurai · vs Old
+    Scratch · Hard" with Team up. On the smallest phones (#app.tiny) and upright the Boss chips show short names; on the smallest the rows are tighter.
+  - The repair copy now goes in pieces (onDesync / syncPart / syncPiece, SYNC_PART 2000 characters; host sync = { n, f, k, of, d },
+    guest confirms each piece with sa = [n, k]): Old Scratch's largest copy is about 4 KB, over a presence's 4 KB on its own. No new
+    desync is raised until the last piece is confirmed (the guest's checks before it are stale); after restoring, the guest never
+    sends a check made before the repair (ckSend). 1v1 uses the same path.
+  - Results (finishBossOnline): chips win 20 / 30 / 45 by level (+5 for the final launch, b.lastHitBy), loss 5 + 1 per 10% of his HP
+    taken (max 10); the why line says Road stars come from the solo Road (online wins never count for the Road). P.duo (an
+    OPT_COUNTER in sync.js) counts wins on Hard / Nightmare: the Double Trouble title (ui/acct.js). After a win Next: Hard / Next:
+    Nightmare / Again, after a loss Retry, through the rematch handshake (both tap). The partner's KO page says "<FIGHTER> WINS IT"
+    (finWinWord, also offline when the CPU partner finishes). Mastery x1; the partner's page gives you no page XP.
+  - A partner who leaves, loses the connection or sends nothing for 15 s: cpuTakeover puts a CPU on their fighter on this phone
+    (BOSS_PARTNER strength of the level), leaves the room and plays on alone (soloTick); banner "<name> dropped", the marker reads
+    CPU; results "Boss fight · <name> dropped", chips as normal, the big button Retry vs CPU (a Practice boss fight).
+  - NICE!: in an online boss fight a tap on your own card (.pcard.nice) or N sends `em` (a counter) in the presence; both phones pop
+    a comic NICE! over that fighter (drawNice, 1.5 s cooldown). Never in the simulation.
 - Session 4 of the big-features plan, part 2 (2026-10-15, branch claude/alien-sea-monster-6nyh3z, PROTO 12, players reload once):
   Kraken Spud the Sea Monster, The Deep, Road region 3 (Kraken Fryer title, Deep Catch skin). Design: bosses2/fable-design.md section 2.
   - Kraken Spud (BOSSES[2], map "deep", HP 600 x lvHp [1, 1, 1.2], poise 32): a hidden boss (`spec.boss.hide`). His head waits in
@@ -471,6 +494,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   the newFighter defaults, FKEYS and checksum, reset them where needed (ko, startSudden), bump `PROTO` in
   game/ui/online.js (deploy/update.txt has no PROTO: it compares the page the game serves with GitHub's index.html).
 - No service worker (a cached old build would desync matches).
+- A presence holds 4 KB in all. The repair copy goes in pieces (ui/online.js SYNC_PART); tests/onsnap.js checks every boss's largest
+  copy fits with every other field at its largest. Anything new in the match presence should be small.
 - Balance band in check.sh is 44-58% (58 since the ulti boost, 2026-10-14; M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
   With the Gunslinger (night-gun, `bal7.js 80 0.5,0.8`): phoenix 50.4, alchemist 44.6, odin 52.7, wizard 50.7,
@@ -513,6 +538,9 @@ steps, desktop through to the results, touch sizes up to the ulti; tags desk des
 boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
 Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
 map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, four sizes; check.sh 8e) ·
+onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
+(online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,
+KO page + Victory + Next: Hard on both, a dropped friend, the lobby at four sizes; check.sh 5c) ·
 pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
@@ -539,7 +567,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: online 2v1 on two phones (session 5, its thread "Online 2v1 boss fights" started 2026-10-15), then 2v2 (session 6).
+- NEXT: 2v2 (session 6, offline vs CPUs first, then online). Online boss fights are done (see State). Their leftovers: the team colour
+  for both players' markers (Fable's idea) is not done; a guest picks no boss or level (the host's pick); a phone whose own
+  connection drops plays on with a CPU too (it can't tell who dropped); P.friendW/L do not count boss fights.
   Boss leftovers: The Field, The Kitchen and The Deep stay out of the ranked draw until each gets its own balance pass; a
   solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when a boss breaks is not drawn yet; bosses have no
   portrait on the results screen or in the VS list.

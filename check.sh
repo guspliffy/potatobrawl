@@ -97,6 +97,20 @@ if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/onl
   pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 
+# 5c. Online boss fights (2v1 on two phones): the repair copy of every boss fits a presence in pieces and restores frame for frame
+#     (node), then two browsers through a local server: the lobby's Vs boss mode, Team up, three fighters on his map with all his HP,
+#     NICE! both ways, a forced desync repaired by the copy in pieces, the KO page and Victory on both, Next: Hard, a dropped friend
+#     (a CPU takes over, Retry vs CPU), the lobby at four sizes. Shots in build/shots/onboss.
+(cd tests && node onsnap.js) > "$LOGS/onsnap.log" 2>&1
+PORT=8095 KEEPALIVE_MINUTES=0 node server.js > "$LOGS/server-onboss.log" 2>&1 &
+SRV=$!
+sleep 1
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwonboss.py" onboss) > "$LOGS/onboss.log" 2>&1
+kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
+if grep -q "^onsnap ok" "$LOGS/onsnap.log" && grep -q "^onboss ok" "$LOGS/onboss.log" && grep -q "^no errors" "$LOGS/onboss.log"; then
+  pass "online boss fights (repair copy in pieces, Team up, NICE!, desync repaired, KO page + Next: Hard on both, CPU takes over a drop)"
+else fail "online boss fights" "$LOGS/onboss.log (and onsnap.log)"; fi
+
 # 5b. Accounts (sync codes): the server's endpoints and limits on port 8094 with a temporary folder, and the merge. Node only.
 timeout 120 node tests/acct.js > "$LOGS/acct.log" 2>&1
 if grep -q "^acct ok" "$LOGS/acct.log"; then pass "accounts server + merge ($(grep -c '^PASS' "$LOGS/acct.log") checks)"

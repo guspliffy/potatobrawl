@@ -280,6 +280,7 @@ function render2D(g, tk) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
+    if (NICE.length) drawNice(c, g);   // ui/online.js: the partner's (or your own) NICE!
   }
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   bossScreen(c, g, tk);   // a boss's layer in screen space, over the fight (Kraken Spud's ink; ui/draw-boss.js)
