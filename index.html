@@ -2635,6 +2635,11 @@ const MAPS = [
   { id: "field", pool: false, main: { x1: -400, x2: 400, top: 0, bottom: 64 },
     plats: [{ x1: -330, x2: -190, y: -125 }, { x1: 190, x2: 330, y: -125 }],
     blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
+  // The Kitchen (Zorp's arena, Fable's design /mnt/project-files/bosses2/fable-design.md section 3): the counters at -120 reach his
+  // hovering saucer, the pot rack over the middle is the perch his Dome Bump punishes
+  { id: "kitchen", pool: false, main: { x1: -360, x2: 360, top: 0, bottom: 64 },
+    plats: [{ x1: -300, x2: -170, y: -120 }, { x1: 170, x2: 300, y: -120 }, { x1: -70, x2: 70, y: -250 }],
+    blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
 ];
 // the maps the random draw picks from (ranked, online, the daily, the cup, the tests' MAP=all): the first POOL; arena maps come after them.
 // (The Field stays out: on its wide flat floor Dragon wins 42% and Phoenix 57% of bot games, against 44-58% everywhere else.)
@@ -2965,6 +2970,16 @@ const FIGHTERS = [
     },
   },
 ];
+// the Road skins (Fable, bosses2/fable-design.md section 6): won from a boss (pal.road = his id), never bought; after the chip skins.
+// One body / trim / ui per boss, the accent (the costume) per fighter. The simulation never reads a palette.
+const ROAD_SKINS = [
+  { name: "Devil's Roast", road: "scratch", body: "#8c4a30", trim: "#2a1512", ui: "#ff5a36",
+    accent: { phoenix: "#ff3d1f", alchemist: "#4a1030", odin: "#8a1a1a", wizard: "#2a1020", samurai: "#c9262a", dragon: "#a01f1f", gunslinger: "#3a1a14", reaper: "#2a0e0c" }, lining: "#ff6a2b" },
+  { name: "Specimen", road: "zorp", body: "#a9c0a0", trim: "#1f2a26", ui: "#9dff5a",
+    accent: { phoenix: "#5aff9a", alchemist: "#2a6e5a", odin: "#9fb8c9", wizard: "#2f4f5a", samurai: "#6cf0c8", dragon: "#3fbf7a", gunslinger: "#7a9a8a", reaper: "#2d4a3e" }, lining: "#9dff5a" },
+];
+for (const f of FIGHTERS) for (const r of ROAD_SKINS)
+  f.palettes.push({ name: r.name, road: r.road, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
 for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
 
@@ -2972,6 +2987,8 @@ for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].
    poise instead of percent, keeps him on the main floor, and drives him with bossAct (his brain, on g.br, so every phone
    agrees). Lights never interrupt him; full poise staggers him (x stagK damage); at 0 HP he is "broken" and the next
    non-light hit sends him out (bossDown: the KO decided at the hit, like a final lethal launch). ---------- */
+// Zorp's probes: they fall, walk walkT frames and pop (burst); touching a player pops one with the same numbers
+const ZORP_PROBE = { r: 14, grav: 0.5, walkT: 120, life: 600, dmg: 9, bkb: 6, kbg: 14, angle: 80, burst: { r: 40, life: 6, dmg: 9, bkb: 6, kbg: 14, angle: 80 } };
 const BOSSES = [
   {
     id: "scratch", name: "Old Scratch", role: "The Devil", map: "field",
@@ -3003,6 +3020,45 @@ const BOSSES = [
                 trail: { every: 6, r: 22, life: 84, pulse: 12, dmg: 5, bkb: 5.5, kbg: 6, angle: 75 } }),
     },
   },
+  {
+    id: "zorp", name: "Zorp", role: "The Alien", map: "kitchen",
+    blurb: "A small green potato in a big saucer. Came for the kitchen, staying for samples. Owns The Kitchen.",
+    look: { build: "boss", costume: "saucer", scale: 1 },
+    stats: { w: 160, h: 120, weight: 400, run: 2.2, accel: 0.35, airSpeed: 2, airAccel: 0.2, gravity: 0.75, fallSpeed: 14, fastFall: 14, jump: 10, airJump: 0, airJumps: 0 },
+    palettes: [{ name: "Specimen Jar", price: 0, body: "#a9c0a0", trim: "#1f2a26", accent: "#9dff5a", ui: "#9dff5a" }],
+    // Fable's design (/mnt/project-files/bosses2/fable-design.md section 1). Old Scratch's block, plus: fly = his hover (floor at y -fly.y,
+    // sinking to -fly.sink in a stagger, drifting fly.speed toward the target within x +-fly.range); at crashAt[lv] % HP the saucer
+    // crashes (phase 2: f.ph 1, on the floor) and he lies dazed crashStag frames; probeN[lv] probes walking probeSpeed[lv]; the laser
+    // turns laserBack[lv] times at the walls; the thrown player hits the partner from throwLv; swap: Eye Beam both ways from Hard or in rage.
+    // Tuned with tests/boss.js: shorter gaps and more HP on Hard / Nightmare than Fable's numbers (the bots won Hard every time).
+    boss: { hp: 1050, lvHp: [1, 1.4, 1.6], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
+            stagK: 1.5, lightK: 1, near: 120, gap: [[22, 24], [24, 24], [18, 20]], lvFast: [0, 0.1, 0.18],
+            fly: { y: 130, sink: 40, speed: 2.2, range: 200 }, crashAt: [55, 50, 45], crashStag: 90,
+            probeN: [3, 4, 5], probeSpeed: [2.5, 2.5, 3.5], laserBack: [0, 1, 3], throwLv: 1, swap: { eye: "eye2" },
+            order: ["beam", "laser", "probe", "abduct", "bump", "eye", "toss", "spin", "hop"] },
+    moves: {
+      // Tractor Beam: the dish glows, a beam straight down catches a player on the floor under him, lifts them while he drifts to
+      // the nearer ledge and throws them out (jump: the air is never caught)
+      beam:   M(36, 30, 30, 11, 7, 16, 30, [], { boss: "beam", fast: true, zone: 55, lift: 90, liftT: 20, drift: 3 }),
+      // Laser Sweep: a laser runs along the floor to the far wall (Hard: and back; Nightmare: out and back twice)
+      laser:  M(42, 80, 24, 0, 0, 0, 0, [], { boss: "laser", fast: true, shot: { r: 24, vx: 9, life: 600, dmg: 12, bkb: 7, kbg: 17, angle: 75 } }),
+      // Probe Drop: three probes drop, walk (left, right, at the nearest player) and pop
+      probe:  M(30, 1, 40, 0, 0, 0, 0, [], { boss: "probe", fast: true, probe: ZORP_PROBE }),
+      // Abduct: a spotlight chases the target, stops, and whoever stands in it is pulled up and thrown at the partner
+      abduct: M(60, 20, 40, 0, 0, 0, 0, [], { boss: "abduct", fast: true, col: 35, follow: [2.2, 48], pull: 100, pullT: 12,
+                toss: { vx: 14, vy: -5, dmg: 12, stun: 36 }, body: { r: 28, life: 24, dmg: 8, bkb: 6, kbg: 8, angle: 70 } }),
+      // Dome Bump: someone sits on the pot rack over him: the saucer jumps up into them
+      bump:   M(30, 10, 30, 10, 6.5, 11, 85, [0, -116, 46], { boss: "bump", fast: true, rise: 11 }),
+      // the crash (not picked: it starts at crashAt % HP): he falls 60 frames, lands with a ring, then lies dazed
+      crash:  M(60, 6, 64, 10, 7, 10, 80, [0, -10, 120], { boss: "crash" }),
+      // phase 2, on the floor: Eye Beam forward (eye2: both ways), Probe Toss, Saucer Spin (two hits), Thruster Hop
+      eye:    M(32, 8, 34, 12, 7, 17, 40, [60, -60, 22, 380, -44], { boss: "eye", fast: true }),
+      eye2:   M(32, 8, 34, 12, 7, 17, 40, [[60, -60, 22, 380, -44], [-60, -60, 22, -380, -44]], { boss: "eye", base: "eye", fast: true }),
+      toss:   M(28, 1, 36, 0, 0, 0, 0, [], { boss: "toss", fast: true, probe: ZORP_PROBE }),
+      spin:   M(28, 12, 30, 9, 6, 15, 45, [[-110, -20, 34], [110, -20, 34]], { boss: "spin", fast: true, multi: 6 }),
+      hop:    M(36, 6, 40, 12, 7, 16, 80, [0, -20, 95], { boss: "hop", fast: true, hopT: 28, range: 300 }),
+    },
+  },
 ];
 
 /* ---------- state ---------- */
@@ -3029,8 +3085,9 @@ function newFighter(spec, slot, pal, x, facing) {
     // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
     // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
     team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1, lifePct: 0,
-    // ph: the boss's phase (1 from his phaseAt % HP: Zorp's saucer down); held: the boss slot holding this fighter (-1 = free)
-    ph: 0, held: -1,
+    // ph: the boss's phase (Zorp: 1 once his saucer has crashed); held: the boss slot holding this fighter (-1 = free);
+    // bx: the spot his move aims at (the target's x at its start; Abduct's spotlight), bk: his move's own counter
+    ph: 0, held: -1, bx: 0, bk: 0,
     anim: { run: 0 },
   };
 }
@@ -3058,7 +3115,10 @@ function newGame(o) {
     // handicaps (the Road's stops): p.pct = the percent the first life starts at, p.lifePct = the percent every life starts at
     if (p.lifePct) f.lifePct = p.lifePct;
     f.percent = p.pct || f.lifePct;
-    if (p.spec.boss) { const B = p.spec.boss; f.stocks = 1; f.hp = f.hpMax = Math.round(B.hp * B.lvHp[g.lv] * (o.hpMul ?? 1)); }
+    if (p.spec.boss) {
+      const B = p.spec.boss; f.stocks = 1; f.hp = f.hpMax = Math.round(B.hp * B.lvHp[g.lv] * (o.hpMul ?? 1));
+      if (B.fly) { f.y = STAGE.main.top - B.fly.y; f.grounded = false; f.state = "air"; }
+    }
     g.fighters.push(f);
   });
   return g;
@@ -3173,7 +3233,7 @@ function updateFighter(g, f) {
     }
     case "ledge": updateLedge(g, f); return;
     case "idle": case "run": case "air": if (f.spec.boss) bossAct(g, f); else actOrMove(g, f); break;
-    case "stagger": f.vx *= 0.8; if (--f.stag <= 0) { f.poise = 0; setState(f, "idle"); } break;
+    case "stagger": f.vx *= 0.8; if (bossFlying(f)) bossHover(f, f.spec.boss.fly.sink); if (--f.stag <= 0) { f.poise = 0; setState(f, "idle"); } break;
     case "broken": f.vx *= 0.8; break;
     case "jumpsquat":
       f.vx *= 0.9;
@@ -3667,7 +3727,8 @@ function updateProjs(g) {
   const S = STAGE.main;
   for (const p of g.projs) {
     p.t++;
-    if (p.boomer) {
+    if (p.z) bossProjStep(g, p);
+    else if (p.boomer) {
       p.vx -= p.dir * ((2 * p.speed) / p.life);
       p.x += p.vx;
       const o = g.fighters[p.owner];
@@ -3679,7 +3740,7 @@ function updateProjs(g) {
       p.vy += p.grav; p.x += p.vx; p.y += p.vy;
     }
     if (p.t >= p.life || (p.style === "flame" && (p.x < S.x1 || p.x > S.x2))) p.done = true;
-    if (p.style !== "burst" && !p.pulse && !p.part && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
+    if (p.style !== "burst" && !p.pulse && !p.part && !p.z && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
       p.done = true;
       if (!p.boomer) g.events.push({ type: "projEnd", x: p.x, y: Math.min(p.y, S.top), style: p.style, slot: p.owner });
       if (p.burst) spawnBurst(g, p, p.x, S.top - 6);
@@ -3711,10 +3772,13 @@ function detectHits(g) {
     if (p.pulse && p.t % p.pulse !== 0) continue;
     for (const def of g.fighters) {
       if (def.team === g.fighters[p.owner].team || intangible(def)) continue;
+      // a passing projectile (pass = a mask of the slots it has hit: Zorp's laser) hits each fighter once and goes on
+      if (p.pass != null && (p.pass >> def.slot) & 1) continue;
       if (hurtsOf(g, def).some((r) => circRect(p.x, p.y, p.r, r))) {
         const hit = p.pulse && p.last && p.t + p.pulse > p.life ? Object.assign({}, p.hit, p.last) : p.hit;
         hits.push({ att: g.fighters[p.owner], def, hit, proj: p, bx: p.x, by: p.y });
-        if (!p.pulse) { p.done = true; break; }
+        if (p.pass != null) p.pass |= 1 << def.slot;
+        else if (!p.pulse) { p.done = true; break; }
       }
     }
   }
@@ -3835,17 +3899,27 @@ function bossAim(g, f) {
 }
 function bossAct(g, f) {
   f.inp.x = 0;
-  if (!f.grounded) { if (f.state !== "air") setState(f, "air"); airDrift(f, 0.5); return; }
+  // a flying boss (Zorp's saucer) keeps his height and drifts; the others fall like anyone
+  const fly = bossFlying(f);
+  if (fly) { if (f.state !== "air") setState(f, "air"); bossHover(f, f.spec.boss.fly.y); }
+  else if (!f.grounded) { if (f.state !== "air") setState(f, "air"); airDrift(f, 0.5); return; }
   // the KO look-ahead and the countdown: he stands (an attack already running plays out)
-  if (g.look || g.phase !== "play") return groundMove(g, f);
+  if (g.look || g.phase !== "play") { if (!fly) groundMove(g, f); else f.vx *= 0.85; return; }
   let t = f.aim >= 0 ? g.fighters[f.aim] : null;
   if (!t || !bossLive(t)) { f.aim = bossAim(g, f); t = f.aim >= 0 ? g.fighters[f.aim] : null; }
-  if (!t) return groundMove(g, f);
+  if (!t) { if (!fly) groundMove(g, f); else f.vx *= 0.85; return; }
   const dx = t.x - f.x, adx = Math.abs(dx), up = f.y - t.y;
   if (f.bt > 0) f.bt--;
   else {
     const key = bossPick(g, f, t, dx, up);
-    if (key) { f.facing = sign(dx) || f.facing; return bossStart(g, f, key); }
+    if (key) { f.facing = sign(dx) || f.facing; return bossStart(g, f, key, t); }
+  }
+  if (fly) {
+    // over the target, within his range
+    const F = f.spec.boss.fly, d = clamp(t.x, -F.range, F.range) - f.x;
+    f.vx = Math.abs(d) > F.speed ? sign(d) * F.speed : d;
+    if (dx) f.facing = sign(dx);
+    return;
   }
   if (adx > f.spec.boss.near) f.inp.x = sign(dx);
   groundMove(g, f);
@@ -3878,25 +3952,59 @@ function scratchWeigh(g, f, t, dx, up) {
   if (adx > 330 && !w[4] && brand(g) < 0.6) return null;
   return w;
 }
-const BOSS_WEIGH = { scratch: scratchWeigh };
-function bossStart(g, f, key) {
-  const B = f.spec.boss, m = f.spec.moves[key], rage = bossRage(g, f);
+// Zorp: beam, laser, probe, abduct, bump while he hovers; eye, toss, spin, hop once he has crashed (null = drift over first)
+function zorpWeigh(g, f, t, dx, up) {
+  const adx = Math.abs(dx), foes = g.fighters.filter((o) => o.team !== f.team && bossLive(o));
+  if (f.ph === 0) {
+    const mate = foes.find((o) => o !== t);
+    // someone sitting on the pot rack over him (Nightmare: on a counter beside him too), or in the air over his dome
+    const perch = foes.some((o) => o.grounded && o.plat >= 0 && Math.abs(o.x - f.x) < (g.lv === 2 ? 200 : 130) && (o.y < f.y - 40 || g.lv === 2));
+    const over = foes.some((o) => !o.grounded && o.y < f.y - 80 && Math.abs(o.x - f.x) < 100);
+    const w = [
+      t.grounded && t.plat < 0 && adx < 120 ? 3 : 0,                          // beam
+      adx > 200 && t.plat < 0 ? 2.5 : 0,                                      // laser
+      adx >= 120 && adx <= 300 ? 2 : 1,                                       // probe
+      t.grounded && !!mate && Math.abs(mate.x - t.x) < 400 ? 2 : 0,           // abduct
+      perch ? 4 : over ? 1.5 : 0,                                             // bump
+      0, 0, 0, 0,
+    ];
+    if (adx > 330 && brand(g) < 0.6) return null;
+    return w;
+  }
+  const w = [
+    0, 0, 0, 0, 0,
+    up < 60 ? (adx >= 120 && adx <= 400 ? 3 : adx > 80 ? 1 : 0) : 0,   // eye
+    adx > 150 ? 2 : 1,                                                // toss
+    adx < 150 && up < 90 ? 3 : 0,                                     // spin
+    adx > 250 ? 2.5 : adx > 150 ? 1 : 0,                              // hop
+  ];
+  if (adx > 420 && brand(g) < 0.6) return null;
+  return w;
+}
+const BOSS_WEIGH = { scratch: scratchWeigh, zorp: zorpWeigh };
+// t: the fighter he picked the move against (f.bx = where they stand; the move's own counter f.bk starts at 0)
+function bossStart(g, f, key, t) {
+  const B = f.spec.boss, rage = bossRage(g, f);
+  // a stronger version from Hard (or in rage): Zorp's Eye Beam both ways
+  if (B.swap && B.swap[key] && (g.lv >= 1 || rage)) key = B.swap[key];
+  const m = f.spec.moves[key];
   startMove(g, f, key);
-  f.bq = key;
+  f.bq = m.base || key; f.bx = t ? t.x : f.x; f.bk = 0;
   // harder levels and rage skip part of the wind-up (the tell is shorter, the hit frames are the same)
   if (m.fast) f.mt = Math.round(m.startup * (B.lvFast[g.lv] + (rage ? B.rageFast : 0)));
   if (m.hop) { f.vy = -m.hop; f.grounded = false; f.plat = -1; }
   const gp = B.gap[g.lv];
   f.bt = Math.round((gp[0] + brand(g) * gp[1]) * (rage ? B.rageGap : 1));
   f.aim = bossAim(g, f);
-  g.events.push({ type: "bossMove", slot: f.slot, mv: key, x: f.x, y: f.y, rage });
+  g.events.push({ type: "bossMove", slot: f.slot, mv: f.bq, x: f.x, y: f.y, rage });
 }
 function bossProj(f, x, y, vx, vy, style, o, extra) {
   return Object.assign({ owner: f.slot, x, y, dir: f.facing, vx, vy, grav: 0, boomer: false, style, burst: null, speed: Math.abs(vx), r: o.r, life: o.life,
     t: 0, pal: f.pal, pulse: 0, last: null, hit: { dmg: o.dmg, bkb: o.bkb, kbg: o.kbg, angle: o.angle, fire: true, fin: null } }, extra);
 }
-// per-move behaviour after mt++ in updateAttack; true = it moved him itself this frame
-function bossStep(g, f, m) {
+// per-move behaviour after mt++ in updateAttack (each boss his own); true = it moved him itself this frame
+const bossStep = (g, f, m) => BOSS_STEP[f.spec.id](g, f, m);
+function scratchStep(g, f, m) {
   const S = STAGE.main, k = m.boss, mt = f.mt, a0 = m.startup + 1, a1 = m.startup + m.active;
   if (k === "stomp" && mt === a0) {
     // still in the air at the end of the hop: wait for the landing (a cap ends the wait)
@@ -3924,6 +4032,131 @@ function bossStep(g, f, m) {
     return true;
   }
   return false;
+}
+// Zorp's moves: he runs the whole move himself (hover, drift, grabs, throws, the crash and its landing) and ends it
+const ZORP_DROP = [[-26, -1.6, -1], [26, 1.6, 1], [0, 0, 0], [-46, -3, -1], [46, 3, 1]];   // probes dropped: x offset, vx, walk dir (0: at the nearest player)
+function zorpStep(g, f, m) {
+  const S = STAGE.main, B = f.spec.boss, k = m.boss, mt = f.mt, a0 = m.startup + 1, a1 = m.startup + m.active, total = a1 + m.endlag;
+  const foes = g.fighters.filter((o) => o.team !== f.team && bossLive(o)), held = g.fighters.find((o) => o.held === f.slot) || null;
+  if (bossFlying(f) && k !== "crash" && !(k === "bump" && mt >= a0 && mt <= a1)) { f.vx *= 0.85; bossHover(f, B.fly.y); }
+  else if (f.grounded) f.vx *= 0.82;
+  if (k === "beam") {
+    // the beam catches one player on the floor under him; held: lifted while he drifts to the nearer ledge, then thrown out
+    if (!held && !f.bk && mt >= a0 && mt <= a1)
+      for (const o of foes) if (o.grounded && o.plat < 0 && !intangible(o) && Math.abs(o.x - f.x) < m.zone) { bossHold(g, f, o); f.bk = 1; f.bx = sign(f.x) || f.facing; break; }
+    if (held) {
+      f.vx = f.bx * m.drift;
+      bossCarry(held, f.x, Math.max(S.top - m.lift, held.y - 4.5), 0.3, 1);
+      if (++f.bk > m.liftT) { bossLet(g, f, m, f.bx); f.bk = -1; }
+    }
+  }
+  if (k === "laser" && mt === a0) {
+    const L = m.shot;
+    g.projs.push(bossProj(f, f.x, S.top - L.r, f.facing * L.vx, 0, "laser", L, { z: "laser", w: B.laserBack[g.lv], pass: 0 }));
+  }
+  if (k === "probe" && mt === a0)
+    for (const [ox, vx, d] of ZORP_DROP.slice(0, B.probeN[g.lv])) zorpProbe(g, f, m.probe, f.x + ox, f.y + 4, vx, -2, d);
+  if (k === "toss" && mt === a0) {
+    // lobbed forward to 120 / 220 / 320 (rage: 420), they walk back at him
+    const n = bossRage(g, f) ? 4 : 3, y0 = f.y - 70;
+    for (let i = 0; i < n; i++) {
+      const tx = clamp(f.x + f.facing * (120 + 100 * i), S.x1 + 20, S.x2 - 20), air = 43;
+      zorpProbe(g, f, m.probe, f.x + f.facing * 30, y0, (tx - f.x - f.facing * 30) / air, -9, -f.facing);
+    }
+  }
+  if (k === "abduct") {
+    // the spotlight chases his target until follow[1], then holds still; a player standing in it in the active frames is pulled up
+    // and thrown at the partner (from throwLv the thrown body hits the partner)
+    const t = f.aim >= 0 ? g.fighters[f.aim] : null;
+    if (mt <= m.follow[1] && t && bossLive(t)) f.bx += clamp(t.x - f.bx, -m.follow[0], m.follow[0]);
+    if (!held && !f.bk && mt >= a0 && mt <= a1)
+      for (const o of foes) if (o.grounded && !intangible(o) && Math.abs(o.x - f.bx) < m.col) { bossHold(g, f, o); f.bk = 1; break; }
+    if (held) {
+      bossCarry(held, f.bx, S.top - m.pull, 0.25, 0.25);
+      if (++f.bk > m.pullT) {
+        const mate = foes.find((o) => o !== held && o.held < 0), dir = mate ? sign(mate.x - held.x) || 1 : sign(held.x) || 1;
+        bossThrow(g, f, held, dir, m.toss);
+        if (mate && g.lv >= B.throwLv) g.projs.push(bossProj(f, held.x, held.y - held.s.h * 0.5, dir * m.toss.vx, 0, "ride", m.body, { z: "ride", w: held.slot, pass: 1 << held.slot }));
+        f.bk = -1;
+      }
+    }
+  }
+  if (k === "bump" && mt >= a0 && mt <= a1) { f.y -= m.rise; f.vy = 0; }
+  if (k === "crash") {
+    // from the height he was at (f.bx) to the floor in the wind-up, then the landing ring; phase 2 from the landing
+    f.vx *= 0.9;
+    if (mt <= m.startup) { const q = mt / m.startup; f.y = f.bx + (S.top - f.bx) * q * q; f.vy = 0; }
+    if (mt === m.startup) {
+      f.y = S.top; f.grounded = true; f.plat = -1; f.ph = 1;
+      g.events.push({ type: "bossCrashLand", slot: f.slot, x: f.x, y: f.y });
+    }
+  }
+  if (k === "hop") {
+    // a crouch, then a thruster hop that lands on the spot (f.bx) at the hitbox frame; still in the air there: wait for the landing
+    if (!f.bk && f.grounded && mt >= m.startup - m.hopT) {
+      const T = Math.max(8, m.startup - mt + 1), tx = clamp(f.bx, -m.range, m.range);
+      f.vx = (tx - f.x) / T; f.vy = -f.s.gravity * T / 2; f.grounded = false; f.plat = -1; f.bk = 1;
+      g.events.push({ type: "bossHop", slot: f.slot, x: f.x, y: f.y });
+    }
+    if (mt === a0 && !f.grounded && f.poundT++ < 40) f.mt = m.startup;
+  }
+  if (f.mt >= total) {
+    f.move = null; f.mid = null; bossLet(g, f, null);
+    if (k === "crash") {
+      // dazed on the floor: a free stagger
+      setState(f, "stagger"); f.stag = B.crashStag; f.poise = 0;
+      g.events.push({ type: "bossStagger", slot: f.slot, by: -1, x: f.x, y: f.y, n: f.stag });
+    } else setState(f, f.grounded ? "idle" : "air");
+  }
+  return true;
+}
+const BOSS_STEP = { scratch: scratchStep, zorp: zorpStep };
+// a probe: falls (grav), walks once it lands (w: its direction; 0 = at the nearest player then), pops after walkT frames
+function zorpProbe(g, f, P, x, y, vx, vy, d) {
+  g.projs.push(bossProj(f, x, y, vx, vy, "probe", P, { z: "probe", w: d, grav: P.grav, speed: f.spec.boss.probeSpeed[g.lv], burst: P.burst }));
+}
+// the boss projectiles that move themselves (p.z): probes, the laser, the body thrown by Abduct
+function bossProjStep(g, p) {
+  const S = STAGE.main;
+  if (p.z === "probe") {
+    if (p.grav) {
+      const py = p.y;
+      p.vy += p.grav; p.x += p.vx; p.y += p.vy;
+      let fy = null;
+      if (p.vy > 0) {
+        if (p.x > S.x1 && p.x < S.x2 && py + p.r <= S.top + 0.5 && p.y + p.r >= S.top) fy = S.top;
+        else for (const q of STAGE.plats) if (p.x >= q.x1 && p.x <= q.x2 && py + p.r <= q.y + 0.5 && p.y + p.r >= q.y) { fy = q.y; break; }
+      }
+      if (fy !== null) {
+        // landed: walk (the first landing starts its walkT frames)
+        if (!p.w) {
+          let best = 1e9;
+          for (const o of g.fighters) if (o.team !== g.fighters[p.owner].team && bossLive(o) && Math.abs(o.x - p.x) < best) { best = Math.abs(o.x - p.x); p.w = sign(o.x - p.x) || 1; }
+          if (!p.w) p.w = 1;
+        }
+        p.y = fy - p.r; p.vy = 0; p.grav = 0; p.vx = p.w * p.speed; p.dir = p.w;
+        if (p.life >= ZORP_PROBE.life) p.life = p.t + ZORP_PROBE.walkT;
+        g.events.push({ type: "probeLand", x: p.x, y: fy, slot: p.owner });
+      } else if (p.y > S.bottom + 200) p.done = true;
+    } else {
+      p.x += p.vx;
+      const fy = p.y + p.r, q = Math.abs(fy - S.top) < 1 ? null : STAGE.plats.find((q) => Math.abs(q.y - fy) < 1);
+      // off the stage's edge: it fizzles; off a platform: it falls again
+      if (!q && (p.x < S.x1 || p.x > S.x2)) { p.done = true; g.events.push({ type: "projEnd", x: p.x, y: fy, style: p.style, slot: p.owner }); }
+      else if (q && (p.x < q.x1 || p.x > q.x2)) p.grav = ZORP_PROBE.grav;
+    }
+  } else if (p.z === "laser") {
+    p.x += p.vx;
+    if (p.x <= S.x1 + p.r || p.x >= S.x2 - p.r) {
+      p.x = clamp(p.x, S.x1 + p.r, S.x2 - p.r);
+      if (p.w > 0) { p.w--; p.vx = -p.vx; p.dir = -p.dir; p.pass = 0; g.events.push({ type: "laserTurn", x: p.x, y: p.y, slot: p.owner }); }
+      else { p.done = true; g.events.push({ type: "projEnd", x: p.x, y: p.y, style: p.style, slot: p.owner }); }
+    }
+  } else if (p.z === "ride") {
+    const o = g.fighters[p.w];
+    if (o.state !== "hitstun" || o.held >= 0) p.done = true;
+    else { p.vx = o.kbx + o.vx || p.vx; p.x = o.x; p.y = o.y - o.s.h * 0.5; }
+  }
 }
 // a hit on the boss: HP instead of percent, poise, no flinch (lights or not) until poise is full; never launched until he is broken
 function bossHit(g, h) {
@@ -3961,10 +4194,19 @@ function bossHit(g, h) {
     // broken: he kneels, his fire goes out; the next non-light hit ends him
     def.move = null; def.mid = null; def.poise = 0; def.stag = 0; def.vx = 0;
     setState(def, "broken");
+    bossLet(g, def, null);
+    if (B.fly) def.ph = 1;   // a flying boss falls to the floor
     g.projs = g.projs.filter((p) => p.owner !== def.slot);
     g.events.push({ type: "bossBroken", slot: def.slot, by: att.slot, x: def.x, y: def.y });
-  } else if (!stag && def.poise >= B.poise) {
+  } else if (B.crashAt && def.ph === 0 && def.mid !== "crash" && def.hp * 100 <= def.hpMax * B.crashAt[g.lv]) {
+    // Zorp's saucer gives out: the crash (phase 2 from its landing)
+    bossLet(g, def, null);
+    startMove(g, def, "crash");
+    def.bq = ""; def.bx = def.y; def.bk = 0; def.stag = 0; def.poise = 0;
+    g.events.push({ type: "bossCrash", slot: def.slot, by: att.slot, x: def.x, y: def.y });
+  } else if (!stag && def.poise >= B.poise && def.mid !== "crash") {
     def.move = null; def.mid = null; def.vx = 0;
+    bossLet(g, def, null);
     setState(def, "stagger");
     def.stag = Math.round(B.stagger[g.lv] * (rage ? B.rageStag : 1));
     g.events.push({ type: "bossStagger", slot: def.slot, by: att.slot, x: def.x, y: def.y, n: def.stag });
@@ -3972,6 +4214,8 @@ function bossHit(g, h) {
 }
 // a flying boss (boss.fly: Zorp's saucer before his phase 2) keeps his height himself: no gravity until he comes down or is launched
 const bossFlying = (f) => !!f.spec.boss && !!f.spec.boss.fly && f.ph === 0 && !f.doomed;
+// he eases to h over the floor (4 a frame)
+function bossHover(f, h) { f.vy = 0; f.grounded = false; f.plat = -1; f.y += clamp(STAGE.main.top - h - f.y, -4, 4); }
 // a boss holds a player (a beam, jaws): no input, no hits on them, no gravity; the boss's move carries them (bossCarry) until bossLet
 function bossHold(g, f, o) {
   o.held = f.slot; o.move = null; o.mid = null; o.ledge = 0; o.link = 0; o.chg = 0; o.ff = false;
@@ -3980,20 +4224,32 @@ function bossHold(g, f, o) {
   o.lastHitBy = f; o.lastHitT = g.t;
   g.events.push({ type: "bossGrab", slot: f.slot, def: o.slot, mv: f.mid, x: o.x, y: o.y });
 }
-function bossCarry(o, x, y, k) { o.x += (x - o.x) * k; o.y += (y - o.y) * k; o.vx = o.vy = o.kbx = o.kby = 0; }
+function bossCarry(o, x, y, kx, ky) { o.x += (x - o.x) * kx; o.y += (y - o.y) * ky; o.vx = o.vy = o.kbx = o.kby = 0; }
 // let go of everyone he holds: thrown with `hit` toward dir (a normal launch through applyHit), or dropped (no hit: a short tumble)
 function bossLet(g, f, hit, dir) {
   for (const o of g.fighters) {
     if (o.held !== f.slot) continue;
     o.held = -1;
-    if (hit) applyHit(g, { att: f, def: o, hit, lx: dir * f.facing * 10, bx: o.x, by: o.y - o.s.h * 0.5 });
+    if (hit) { g.events.push({ type: "bossThrow", slot: f.slot, def: o.slot, mv: f.mid, x: o.x, y: o.y, dir }); applyHit(g, { att: f, def: o, hit, lx: dir * f.facing * 10, bx: o.x, by: o.y - o.s.h * 0.5 }); }
     else { o.hitstun = 18; o.invuln = Math.max(o.invuln, 30); }
   }
+}
+// thrown by the boss at a set speed (Abduct: at the partner): T = { vx, vy, dmg, stun }
+function bossThrow(g, f, o, dir, T) {
+  o.held = -1;
+  o.percent = Math.min(999, o.percent + T.dmg); f.dmgDealt += T.dmg; ultGain(o, T.dmg * TUNE.ultTaken);
+  setState(o, "hitstun"); o.hitstun = T.stun; o.tumble = true; o.grounded = false; o.plat = -1;
+  o.vx = o.vy = 0; o.kbx = dir * T.vx; o.kby = T.vy;
+  o.lastHitBy = f; o.lastHitT = g.t; o.flash = 8; o.recUsed = false; o.airDodged = false; if (o.airJumps < 1) o.airJumps = 1;
+  g.hitstop = Math.max(g.hitstop, 6);
+  g.events.push({ type: "bossThrow", slot: f.slot, def: o.slot, mv: f.mid, x: o.x, y: o.y, dir });
+  g.events.push({ type: "hit", x: o.x, y: o.y - o.s.h * 0.5, dmg: T.dmg, kb: 8, dirx: dir, diry: -0.35, slot: f.slot, def: o.slot, pal: f.pal, fire: false, combo: 1, comboDmg: T.dmg, finisher: false, ps: null, mv: f.mid, fin: false, chg: 0, link: false, lk: false, mi: f.moveT, ult: false });
 }
 
 // the end: launched out of the arena; decided at the hit like a final lethal launch, so the KO page plays from it
 function bossDown(g, att, def, h, mv, hdir, ex, ey) {
   const tr = trig(50), dx = tr[0] * hdir, dy = -tr[1], kb = 46;
+  bossLet(g, def, null);
   def.doomed = true; def.stocks = 0; def.falls++; att.kos++;
   def.move = null; def.mid = null; def.poise = 0;
   setState(def, "hitstun");
@@ -4341,8 +4597,8 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held"];
-const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk"];
+const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part", "z", "w", "pass"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
   return {
@@ -4378,7 +4634,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
@@ -4392,6 +4648,8 @@ root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, 
 "use strict";
 const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, lerp, sign, serialize, restore, checksum } = BL;
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
+// the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road)
+const chipN = (spec) => spec.palettes.filter((p) => !p.road).length;
 const $ = (id) => document.getElementById(id);
 const app = $("app"), cv = $("cv"), ctx = cv.getContext("2d");
 if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -5862,7 +6120,7 @@ function cowboyHat(c, P, pal) {
 function reapCols(f, P, flash) {
   const lvl = skinLvl(f), ac = f.pal.accent;
   const c = {
-    hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55),
+    hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: f.pal.lining || (lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55)),   // a Road skin brings its own lining colour
     trim: lvl === 3 ? "#1f1d26" : null, ghost: lvl === 3 && !flash && !P.dim ? 1 : null, handle: lvl === 3 ? "#2a2630" : "#3b3530", band: lvl === 2 ? "#f08a3c" : "#7d7f88", blade: "#a7acb6", spine: "#6d717c",
   };
   if (flash) { for (const k in c) if (c[k]) c[k] = "#ffffff"; }
@@ -6199,6 +6457,7 @@ function drawPotato(c, f, tk, at) {
     c.strokeStyle = mix(pal.body, "#7a4a22", 0.4); c.lineWidth = 1.2;
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
+  roadSkinBody(c, f, P, tk, flash);
   potatoFace(c, f, P, look);
   if (cos === "odin") odinBeard(c, P, pal);
   if (cos === "alchemist") {
@@ -6217,6 +6476,7 @@ function drawPotato(c, f, tk, at) {
   if (cos === "samurai") { c.fillStyle = "#1c1714"; c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
   if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
   if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
+  roadSkinTop(c, f, P, tk, flash);
   c.restore();
   if (cos === "odin" && !f._ravenOut) {
     let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
@@ -10855,7 +11115,12 @@ const FXTEXT = {
   gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
   reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
 };
-const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 ? 0 : i; };
+// a Road skin (palettes 4-6, pal.road = the boss that gives it) has none of the chip skins' effects: its own overlay (skinRoad)
+const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road ? 0 : i; };
+const skinRoad = (f) => (f.pal && f.pal.road) || "";
+// what each Road skin does (the select screen's note)
+const ROADFX = { scratch: "Roasted dark at the feet, with ember cracks that glow and spit sparks",
+  zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp" };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [0, 1, 2].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three)
@@ -10878,6 +11143,8 @@ function skinTick(g, tk) {
       for (let i = 0; i < 4; i++) addFx({ k: "feather", x: f.x - fc * w * 0.35 + rnd(-7, 7), y: f.y - h * 0.85, vx: rnd(-0.8, 0.8), vy: rnd(-1.4, -0.5), rot: rnd(0, 6), vr: rnd(-0.12, 0.12), t: 0, life: rnd(50, 70), g: 0.05, damp: 0.95 });
     }
     S.raven = ravenOut;
+    const rs = skinRoad(f);
+    if (rs) { if (alive && fxAmbient()) roadSkinTick(f, rs, tk, slot); return; }
     if (!alive || lvl < 1) return;
     if (fxAmbient()) {
       if (cos === "phoenix" && !f.grounded && f.state !== "ledge" && tk % 3 === 0) {
@@ -10964,6 +11231,7 @@ function skinEvent(g, e) {
     case "ko": {
       if (e.sd) return;
       const k = at(foeSlot(e.slot, g));
+      if (k && skinRoad(k) && k.state !== "dead" && k.state !== "gone") return roadSkinKo(k, skinRoad(k));
       if (!k || skinLvl(k) < 3 || k.state === "dead" || k.state === "gone") return;
       const cos = k.spec.look.costume, ac = k.pal.accent;
       if (cos === "phoenix") {
@@ -11064,6 +11332,136 @@ function drawSkinFx(c, e, a) {
     }
   }
   return false;
+}
+
+/* ---- Road skins: one overlay per boss, laid on any fighter in two passes (UI only) ----
+   roadSkinBody runs inside the body's lean, clipped to the potato, before the face (so it lies on the body and the costume's
+   clothes); roadSkinTop runs after the hats, hoods, horns and crests. No white fills, blue glows or gold rings: the glows are
+   ember orange, alien green and sea teal. Nothing is drawn on a hit flash. */
+const RS_CRACK = [[-0.62, 0.12, 0, [[0, 0], [3, -2], [5, 1.5], [8, -0.5], [10, 2.5]]], [-0.1, 0.42, 2.1, [[0, 0], [2.5, 2.5], [6, 2], [8, 5], [11, 4.5]]], [0.42, 0.06, 4.2, [[0, 0], [-2, 3], [1, 5.5], [-0.5, 8.5], [2, 11]]]];
+const RS_PATCH = [[-0.86, -0.2, 0.5], [0.72, 0.5, -0.4]];
+const RS_BARN = [[-0.78, 0.22, 1], [-0.62, 0.5, 0.85], [-0.86, 0.48, 0.7], [-0.45, 0.72, 0.8], [-0.7, 0.74, 0.6]];
+// the Specimen dome per costume: half width (x rx) and how far above the top of the potato it reaches (x ry); the Gunslinger's brim fits under the glass
+const RS_DOME = { phoenix: [1.2, 0.95], alchemist: [1.25, 0.7], odin: [1.35, 0.5], wizard: [1.25, 1.75], samurai: [1.2, 0.6], dragon: [1.25, 0.85], gunslinger: [1.6, 0.75], reaper: [1.3, 0.55] };
+// where the Deep Catch kelp hangs from: the back of the costume's top point (x rx, y below the top of the potato x ry)
+const RS_KELP = { phoenix: [-0.3, -0.5], alchemist: [-0.75, 0.05], odin: [-0.9, -0.1], wizard: [-0.95, -1.2], samurai: [-0.25, -0.15], dragon: [-0.45, -0.45], gunslinger: [-1.35, -0.05], reaper: [-0.95, 0.2] };
+const rsPulse = (tk, ph) => 0.8 + 0.2 * Math.sin(tk * 0.044 + ph);
+function rsStar(c, x, y, r, a) {
+  c.beginPath();
+  for (let i = 0; i < 10; i++) { const q = a + (i / 10) * Math.PI * 2, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(q) * rr, y + Math.sin(q) * rr); }
+  c.closePath();
+}
+function roadSkinBody(c, f, P, tk, flash) {
+  const rs = skinRoad(f);
+  if (!rs || flash) return;
+  const { rx, ry, cy } = P, k = rx / 25;
+  c.save(); potatoPath(c, P); c.clip();
+  if (P.dim) c.globalAlpha = 0.5;
+  const a0 = c.globalAlpha;
+  if (rs === "scratch") {
+    const g = c.createRadialGradient(0, cy + ry * 1.1, ry * 0.15, 0, cy + ry * 1.1, ry * 1.2);
+    g.addColorStop(0, "rgba(60,25,15,0.6)"); g.addColorStop(1, "rgba(60,25,15,0)");
+    c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 0.2, rx * 2.6, ry * 1.4);
+    c.fillStyle = "#3a1a14"; c.strokeStyle = OUT; c.lineWidth = 1;
+    for (const [x, y, a] of RS_PATCH) { c.beginPath(); c.ellipse(x * rx, cy + y * ry, 5 * k, 3.5 * k, a, 0, Math.PI * 2); c.fill(); c.stroke(); }
+    c.lineJoin = "miter";
+    for (const [x, y, ph, pts] of RS_CRACK) {
+      const p = rsPulse(tk, ph), x0 = x * rx, y0 = cy + y * ry;
+      c.beginPath(); c.moveTo(x0, y0);
+      for (let i = 1; i < pts.length; i++) c.lineTo(x0 + pts[i][0] * k, y0 + pts[i][1] * k);
+      c.globalAlpha = a0 * p; c.strokeStyle = "rgba(255,122,43,0.5)"; c.lineWidth = 5 * k; c.stroke();
+      c.strokeStyle = "#ff9a3a"; c.lineWidth = 2 * k; c.stroke();
+    }
+    c.lineJoin = "round";
+  } else if (rs === "zorp") {
+    const g = c.createRadialGradient(0, cy + ry * 1.15, ry * 0.1, 0, cy + ry * 1.15, ry * 1.25);
+    g.addColorStop(0, "rgba(157,255,90,0.38)"); g.addColorStop(1, "rgba(157,255,90,0)");
+    c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 0.2, rx * 2.6, ry * 1.4);
+  } else if (rs === "kraken") {
+    c.strokeStyle = "rgba(200,240,255,0.3)"; c.lineWidth = 3 * k;
+    c.beginPath(); c.ellipse(0, cy, rx * 0.78, ry * 0.8, 0, Math.PI * 1.08, Math.PI * 1.42); c.stroke();
+    c.lineWidth = 1.6 * k; c.beginPath(); c.ellipse(0, cy, rx * 0.66, ry * 0.68, 0, Math.PI * 1.12, Math.PI * 1.25); c.stroke();
+    c.lineWidth = 1;
+    for (const [x, y, s] of RS_BARN) {
+      const bx = x * rx, by = cy + y * ry, r = 3 * k * s;
+      c.fillStyle = "#d9d2c0"; c.strokeStyle = OUT; c.beginPath(); c.arc(bx, by, r, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.fillStyle = "#3a3a3a"; c.beginPath(); c.arc(bx, by - r * 0.1, r * 0.42, 0, Math.PI * 2); c.fill();
+    }
+    rsStar(c, rx * 0.5, cy + ry * 0.55, 5 * k, -0.3 + Math.sin(tk * 0.03) * 0.05);
+    c.fillStyle = "#ff8fb0"; c.fill(); c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = "#ffc2d4"; for (let i = 0; i < 5; i++) { const q = -0.3 + (i / 5) * Math.PI * 2; c.beginPath(); c.arc(rx * 0.5 + Math.cos(q) * 2.6 * k, cy + ry * 0.55 + Math.sin(q) * 2.6 * k, 0.6 * k, 0, Math.PI * 2); c.fill(); }
+  }
+  c.restore();
+}
+function roadSkinTop(c, f, P, tk, flash) {
+  const rs = skinRoad(f);
+  if (!rs || flash) return;
+  const { rx, ry, cy } = P, cos = f.spec.look.costume, k = rx / 25;
+  c.save();
+  if (P.dim) c.globalAlpha = 0.5;
+  if (rs === "zorp") {
+    const [hw, up] = RS_DOME[cos] || [1.25, 0.7], dw = rx * hw, base = cy + ry * 0.3, dh = base - (P.top - ry * up);
+    c.beginPath(); c.ellipse(0, base, dw, dh, 0, Math.PI, Math.PI * 2); c.closePath();
+    c.fillStyle = "rgba(170,235,255,0.14)"; c.fill();
+    c.globalAlpha *= 0.55; c.strokeStyle = "#9dff5a"; c.lineWidth = 3; c.stroke(); c.globalAlpha /= 0.55;
+    c.globalAlpha *= 0.7; c.strokeStyle = "#d8f3ff"; c.lineWidth = 1.4;
+    c.beginPath(); c.ellipse(0, base, dw - 2, dh - 2, 0, Math.PI, Math.PI * 2); c.stroke(); c.globalAlpha /= 0.7;
+    c.strokeStyle = "rgba(230,255,245,0.45)"; c.lineWidth = 2.4;
+    c.beginPath(); c.ellipse(0, base, dw * 0.78, dh * 0.84, 0, Math.PI * 1.17, Math.PI * 1.38); c.stroke();
+    // the orbiting motes inside the glass
+    c.fillStyle = "#9dff5a";
+    for (let i = 0; i < 3; i++) { const a = tk * 0.0524 + i * 2.094; c.beginPath(); c.arc(Math.cos(a) * dw * 0.72, base - dh * 0.55 + Math.sin(a) * dh * 0.3, 1.1 * k, 0, Math.PI * 2); c.fill(); }
+    // the collar: a steel band with two green lights
+    c.fillStyle = "#7f8b93"; c.strokeStyle = OUT; c.lineWidth = 1;
+    c.beginPath(); c.rect(-dw - 1.5, base - 1.5, dw * 2 + 3, 3.2); c.fill(); c.stroke();
+    const on = (tk >> 4) % 4;
+    for (const [i, sx] of [[0, -0.55], [2, 0.55]]) { c.fillStyle = on === i || on === i + 1 ? "#9dff5a" : "#4f8a3a"; c.beginPath(); c.arc(sx * dw, base + 0.1, 1.3, 0, Math.PI * 2); c.fill(); }
+  } else if (rs === "kraken") {
+    // a wavy strand of kelp hanging down the back from the costume's top point, the wave running down it, two blades off it
+    const [ax, ay] = RS_KELP[cos] || [-0.8, 0], x0 = ax * rx, y0 = P.top + ay * ry, L = 30 * k, ph = tk * 0.09 + f.slot, sw = Math.sin(tk * 0.052 + f.slot) * 0.2;
+    const pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10, dx = -t * L * 0.22 + Math.sin(t * 6 - ph) * 3 * k * t, dy = t * L;
+      pts.push([x0 + dx * Math.cos(sw) - dy * Math.sin(sw), y0 + dx * Math.sin(sw) + dy * Math.cos(sw)]);
+    }
+    const line = () => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); };
+    c.lineCap = "round"; c.lineJoin = "round";
+    c.fillStyle = "#2f8a5a"; c.strokeStyle = OUT; c.lineWidth = 1;
+    for (const [i, s2] of [[4, -1], [7, 1]]) {
+      const [bx, by] = pts[i];
+      c.beginPath(); c.ellipse(bx + s2 * 3.2 * k, by + 1.5 * k, 4.6 * k, 1.7 * k, s2 * 0.7 + sw + Math.sin(ph + i) * 0.15, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+    line(); c.strokeStyle = OUT; c.lineWidth = 5.4 * k; c.stroke();
+    c.strokeStyle = "#2f8a5a"; c.lineWidth = 3.6 * k; c.stroke();
+    c.strokeStyle = "#5fbf7f"; c.lineWidth = 1.1 * k; c.beginPath(); c.moveTo(pts[1][0], pts[1][1]); for (let i = 2; i < 9; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+    c.fillStyle = "#246e48"; c.beginPath(); c.arc(x0, y0, 2.2 * k, 0, Math.PI * 2); c.fill();
+  }
+  c.restore();
+}
+// ambient bits that leave the figure (particles): an ember spat off a crack, a drip off the kelp
+function roadSkinTick(f, rs, tk, slot) {
+  const w = f.s.w, h = f.s.h, fc = f.facing;
+  if (rs === "scratch" && tk % 30 === (slot * 11) % 30) {
+    const [x, y] = RS_CRACK[(tk / 30 | 0) % 3];
+    mote(f.x + fc * x * w * 0.56, f.y - h * (0.36 - y * 0.24), rnd(-0.3, 0.3), rnd(-0.9, -0.5), Math.random() < 0.5 ? "#ff9a3a" : "#ff6a2b", 1.5, 40, -0.01);
+  }
+  if (rs === "kraken" && tk % 40 === (slot * 13) % 40) {
+    const [ax] = RS_KELP[f.spec.look.costume] || [-0.8];
+    addFx({ k: "drip", x: f.x + fc * (ax * w * 0.56 - 10), y: f.y - h * 0.5, vx: 0, vy: 0.3, col: "#bfe8e0", r: rnd(1.4, 1.9), t: 0, life: 15, g: 0.2, damp: 0.98 });
+  }
+}
+// a Road skin's KO effect, off the fighter who scored it
+function roadSkinKo(k, rs) {
+  const x = k.x, y = k.y - k.s.h * 0.6;
+  if (rs === "scratch") {
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; mote(x + Math.cos(a) * 14, y + Math.sin(a) * 14, Math.cos(a) * 1.7, Math.sin(a) * 1.7 - 0.7, i % 2 ? "#ff9a3a" : "#ff6a2b", rnd(1.4, 2.2), 30, -0.02); }
+  } else if (rs === "zorp") {
+    addFx({ k: "ring", x, y: y - 6, t: 0, life: 16, r0: 10, r1: 44, col: "#9dff5a" });
+    for (let i = 0; i < 6; i++) addFx({ k: "shard", x: x + rnd(-12, 12), y: y - 14 + rnd(-6, 6), vx: rnd(-3, 3), vy: rnd(-4, -1.5), rot: rnd(0, 6), vr: rnd(-0.3, 0.3), r: rnd(2.4, 3.4), col: "rgba(216,243,255,0.8)", t: 0, life: 26, g: 0.2, damp: 0.96 });
+  } else if (rs === "kraken") {
+    addFx({ k: "ring", x, y: k.y - 4, t: 0, life: 18, r0: 8, r1: 46, col: "#3ef2c0" });
+    for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });
+  }
 }
 
 
@@ -20430,9 +20828,11 @@ function buildDetail() {
     b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
     b.style.setProperty("--c", col(p));
     b.title = p.name;
-    b.setAttribute("aria-label", `${p.name}${own ? "" : `, locked, ${p.price} chips`}`);
+    // a Road skin (p.road: the boss that gives it) is never sold: locked, it says who to beat instead of a price
+    if (p.road) b.classList.add("road");
+    b.setAttribute("aria-label", `${p.name}${own ? "" : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
     b.setAttribute("aria-pressed", String(own ? cur : pend));
-    b.innerHTML = `<i></i><small>${own ? p.name : `<span class="tokglyph"></span>${p.price}`}</small>`;
+    b.innerHTML = `<i></i><small>${own ? p.name : p.road ? "Road" : `<span class="tokglyph"></span>${p.price}`}</small>`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
       if (own) { equipSkin(spec.id, i); sel.pending = null; }
@@ -20456,14 +20856,16 @@ function buildDetail() {
 }
 function buildCards() { buildTiles(); buildDetail(); }
 function skinNote(spec, i) {
-  const p = spec.palettes[i], fx = FXTEXT[spec.id] && FXTEXT[spec.id][i];
-  return `${p.name}: ${fx || "base look"}.`;
+  const p = spec.palettes[i], fx = p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i];
+  const how = p.road && !(P.owned[spec.id] || []).includes(i) ? ` Beat ${roadBossName(p.road)} on the Road with ${spec.name} to get it.` : "";
+  return `${p.name}: ${fx || "base look"}.${how}`;
 }
+const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
 function updateUpgrade() {
-  const btn = $("selUp"), pd = sel.pending;
-  btn.hidden = !pd;
-  screens.select.classList.toggle("sl-pend", !!pd);
-  if (!pd) return;
+  const btn = $("selUp"), pd = sel.pending, road = !!pd && !!FIG[pd.id].palettes[pd.i].road;   // a Road skin can't be bought
+  btn.hidden = !pd || road;
+  screens.select.classList.toggle("sl-pend", !!pd && !road);
+  if (!pd || road) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
   btn.disabled = short > 0;
   btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
@@ -20474,7 +20876,7 @@ function buyPending() {
   const pd = sel.pending;
   if (!pd) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i];
-  if (P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
+  if (p.road || P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
   P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
   Sfx.uiCoin();
   buildTiles(); buildDetail();
@@ -20847,7 +21249,7 @@ function showResults(R) {
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.";
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? "Retry" : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
@@ -21013,15 +21415,17 @@ const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   
 const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (a friend on a second phone will get all of it)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
-const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt." };
+const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt.",
+  zorp: "Take me to your ladle. ...No? Then I'll take you instead." };
 // how to beat him, in one line (the Road's sheet for him)
-const BOSS_RULE = { scratch: "Break him (0 HP), then land a heavy, special or ulti." };
+const BOSS_RULE = { scratch: "Break him (0 HP), then land a heavy, special or ulti.",
+  zorp: "Hit the saucer from the counters until it crashes, break him (0 HP), then land a heavy, special or ulti." };
 const bossOf = (g) => (g ? g.fighters.find((f) => f.spec.boss) : null);
 // o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id }; your fighter is the one picked on the select screen
 function startBoss(o) {
   Sfx.init();
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
-  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % mate.palettes.length : 0];
+  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(mate) : 0];
   const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
     stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: BOSS_SOLO });
@@ -21117,13 +21521,30 @@ const ROAD = [
     line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
 // region 2, The Kitchen, and region 3, The Deep (bosses2/fable-design.md section 5)
-const ROAD_KITCHEN = [];
+const ROAD_KITCHEN = [
+  { id: "backdoor", name: "The Back Door", cpu: "Dishwater Dan", f: "odin", d: 0.45, lives: 2, secs: 120, map: "kitchen", cpuPct: 40, twist: "Dan starts at 40%.",
+    line: "Staff only. You staff? Didn't think so.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
+  { id: "pantry", name: "The Pantry", cpu: "Tin Can Tina", f: "gunslinger", d: 0.5, map: "kitchen", myLifePct: 35, twist: "You start every life at 35%.",
+    line: "Everything in here has a date on it. Yours is today.", bonus: { k: "route", r: "sig", txt: "Land the Signature combo" } },
+  { id: "cold", name: "The Cold Store", cpu: "Frosty Fritz", f: "wizard", d: 0.55, lives: 2, secs: 90, map: "moon", twist: "Win inside 90 seconds.",
+    line: "Minus twenty in here. Don't worry, you'll stop shivering.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
+  { id: "stove", name: "The Stove", cpu: "Sizzle", f: "dragon", d: 0.65, secs: 120, map: "fryer", myPct: 60, twist: "You start at 60%.",
+    line: "Oil's hot. Hop in, I'll time you.", bonus: { k: "fin", txt: "KO with a finisher special" } },
+  { id: "spice", name: "The Spice Rack", cpu: "Paprika Pete", f: "phoenix", d: 0.7, lives: 2, cpuLives: 1, secs: 60, map: "kitchen", twist: "Pete has 1 heart, you have 2.",
+    line: "One pinch. That's all it takes.", bonus: { k: "ulti", txt: "KO with an ulti" } },
+  { id: "sink", name: "The Sink", cpu: "Suds", f: "alchemist", d: 0.75, secs: 120, map: "kitchen", myPct: 50, cpuPct: 50, twist: "You both start at 50%.",
+    line: "Everything ends up in the sink. Even you.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
+  { id: "chef", name: "The Chef's Table", cpu: "Chef Rösti", f: "samurai", d: 0.8, lives: 1, map: "castle", twist: "One life each.",
+    line: "Precision. Presentation. Then the plate.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
+  { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.9, lives: 2, map: "kitchen", cpuPct: 20, twist: "Tom starts at 20%.",
+    line: "They're watching. Through the window. I've seen the lights.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
+];
 const ROAD_DEEP = [];
 ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
 // the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title
 const ROAD_REG = [
   { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher" },
-  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Saucer Smasher" },
+  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker" },
   { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer" },
 ];
 const ROAD_N = 8, ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150;
@@ -21166,12 +21587,23 @@ function roadSummary(r, k) {
 const RD_WIDE = [[0.12, 0.76], [0.26, 0.86], [0.38, 0.68], [0.25, 0.5], [0.41, 0.36], [0.57, 0.5], [0.71, 0.64], [0.8, 0.43], [0.9, 0.2]];
 const RD_TALL = [[0.24, 0.87], [0.6, 0.85], [0.8, 0.72], [0.5, 0.63], [0.2, 0.55], [0.36, 0.44], [0.7, 0.4], [0.56, 0.28], [0.76, 0.13]];
 const RD_GATE = { wide: [0.03, 0.9], tall: [0.06, 0.95] };
-const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1, reg: 0 };   // reg: the region shown
+const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1, reg: 0,   // reg: the region shown
+  pos: null, posK: -1, homes: {}, walk: null, dust: [] };
+// pos: where your fighter stands on region posK's path (-1 its gate, 0..7 the stops, 8 the boss; a fraction while walking);
+// homes: each region's next stop when it was last shown; walk: { a, b, t0, ms, ph, then }
 function rdPoints(w, h) {
   const tall = h > w * 1.05, P0 = tall ? RD_TALL : RD_WIDE, g = RD_GATE[tall ? "tall" : "wide"];
   const mx = Math.min(w, h) * 0.04, my = mx;
   const at = ([x, y]) => [mx + x * (w - 2 * mx), my + y * (h - 2 * my)];
   return { gate: at(g), pts: P0.map(at), tall };
+}
+// a point on the drawn path below: s runs 0 (the gate) .. all.length - 1, stop i sits at s = i + 1
+function rdCurve(all, s) {
+  const i = clamp(Math.floor(s), 0, all.length - 2), t = clamp(s - i, 0, 1);
+  const p0 = all[Math.max(0, i - 1)], p1 = all[i], p2 = all[i + 1], p3 = all[Math.min(all.length - 1, i + 2)];
+  const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+  const u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+  return [a * p1[0] + b * c1[0] + c * c2[0] + d * p2[0], a * p1[1] + b * c1[1] + c * c2[1] + d * p2[1]];
 }
 // a smooth path through the points (Catmull-Rom as Béziers)
 function rdPath(c, pts) {
@@ -21286,7 +21718,7 @@ function roadPaint(cv, tk, o) {
   if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r, k) };
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(RD.bgs[slot].cv, 0, 0);
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const { pts } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r, k), bb = roadBossBits(r, k);
+  const { pts, gate } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r, k), bb = roadBossBits(r, k);
   if (!o.mini) { RD.pts = pts; RD.R = R; RD.w = w; RD.h = h; }
   // beyond the fence: the boss's glimpse
   const [bx, by] = pts[pts.length - 1];
@@ -21319,27 +21751,76 @@ function roadPaint(cv, tk, o) {
     }
     c.globalAlpha = 1;
   });
-  // your fighter on the next stop (on the fence gap once every stop is won), hopping for a moment when tapped
-  const at = pts[Math.min(next, ROAD_N)], f = rdPuppet();
-  const hop = !o.mini && RD.hopT > 0 ? Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2 : 0;
-  if (!o.mini && RD.hopT > 0) RD.hopT--;
-  const sc = (R * 2.3) / f.s.h;
+  // your fighter: on the next stop on the menu card; on the map where it last stood, walking the path to a stop (little hops, dust),
+  // hopping for a moment when its own stop is tapped
+  const f = rdPuppet(), home = Math.min(next, ROAD_N), sc = (R * 2.3) / f.s.h, all = [gate, ...pts];
+  let at, hop = 0;
+  if (o.mini) { at = pts[home]; f.state = "idle"; f.facing = 1; }
+  else {
+    rdRegPos(k);
+    if (RD.pos === null) RD.pos = home;
+    const wk = RD.walk;
+    if (wk) {
+      const q = Math.min(1, (performance.now() - wk.t0) / wk.ms), e = q * q * (3 - 2 * q), s0 = wk.a + (wk.b - wk.a) * e;   // by the clock, not frames
+      const ph = q * Math.abs(wk.b - wk.a) * 2, land = Math.floor(ph) !== Math.floor(wk.ph);   // two hops per stop
+      wk.ph = ph; RD.pos = s0;
+      at = rdCurve(all, s0 + 1);
+      hop = Math.abs(Math.sin(ph * Math.PI)) * R * 0.32;
+      f.state = "run"; f.anim.run += 0.32; f.facing = wk.b > wk.a ? 1 : -1;
+      if (land && q < 1) RD.dust.push({ x: at[0], y: at[1] + R * 0.3, t: 0 });
+      if (q >= 1) { RD.walk = null; RD.pos = wk.b; f.state = "idle"; RD.hopT = 12; if (wk.then && mode === "road") wk.then(); }
+    } else { at = rdCurve(all, clamp(Math.round(RD.pos), -1, ROAD_N) + 1); f.state = "idle"; }
+    if (RD.hopT > 0) { hop += Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2; RD.hopT--; }
+    for (const d of RD.dust) {   // dust puffs where a hop lands
+      d.t++; const a = 1 - d.t / 22;
+      if (a <= 0) continue;
+      c.fillStyle = `rgba(196,150,104,${0.55 * a})`;
+      for (const s of [-1, 1]) { c.beginPath(); c.arc(d.x + s * (R * 0.25 + d.t * 0.5), d.y - d.t * 0.25, R * (0.1 + d.t * 0.008), 0, Math.PI * 2); c.fill(); }
+    }
+    RD.dust = RD.dust.filter((d) => d.t < 22);
+  }
   c.save(); c.setTransform(DPR * sc, 0, 0, DPR * sc, DPR * (at[0] - R * 0.15), DPR * (at[1] - R * 0.35 - hop));
   try { drawFighter(c, f, o.mini ? 0 : tk); } catch (e) { /* a drawing problem never blocks the map */ }
   c.restore();
 }
+// walk your fighter along the shown region's path to stop i (0..7; the boss's gap is 8), then run then(); with reduced motion it is there at once
+function rdWalk(i, then) {
+  const a = RD.pos === null ? i : RD.pos, n = Math.abs(i - a);
+  if (n < 0.01 || reducedMotion()) { RD.walk = null; RD.pos = i; if (then) then(); return; }
+  RD.walk = { a, b: i, t0: performance.now(), ms: Math.min(430 * n + 170, 1600), ph: 0, then };
+}
+// the fighter's spot belongs to one region: showing another starts it afresh there
+function rdRegPos(k) { if (RD.posK !== k) { RD.posK = k; RD.walk = null; RD.pos = null; RD.dust = []; } }
+// your fighter on the region shown: a walk left half way (Back, a fight started) ends where it was going; to (a stop, or ROAD.length + k
+// for a boss) walks there and opens its sheet; otherwise it walks on to the next stop if a win opened one since the region was last
+// shown. A region shown for the first time with nothing won: in at its gate, walking to stop 1.
+function rdArrive(to) {
+  const r = roadGet(), k = RD.reg, home = Math.min(roadNext(r, k), ROAD_N), seen = RD.homes[k];
+  if (RD.walk) { RD.pos = RD.walk.b; RD.walk = null; }
+  rdRegPos(k);
+  if (RD.pos === null) RD.pos = seen !== undefined ? seen : home === 0 ? -1 : home;
+  if (to !== null) rdWalk(roadIsBoss(to) ? ROAD_N : to % ROAD_N, () => roadSheet(to));
+  else if (RD.pos < 0 || (seen !== undefined && seen !== home)) rdWalk(home, null);
+  RD.homes[k] = home;
+}
 
 /* ----- the Road screen ----- */
 screens.road = $("scrRoad");
-function openRoad() {
+// o.to: walk to that stop (ROAD.length + k: region k's boss) and open its sheet (Next stop on the results); o.reg: show that region;
+// without them your fighter walks on to the next stop if a win opened one (rdArrive)
+function openRoad(o) {
   finStop(); tutEnd();
   mode = "road"; sel.mode = "road"; paused = false; G = null; match = null; meSlot = 0;
   modal("roadStop", false); modal("pause", false); modal("help", false); modal("settings", false);
   clearTrails(); fx.length = 0; sfx.length = 0;
   show("road"); $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
-  if (!roadRegOpen(roadGet(), RD.reg)) RD.reg = roadHome(roadGet());
+  const r = roadGet(), to = o && o.to !== undefined && o.to !== null ? o.to : null;
+  if (o && o.reg !== undefined) RD.reg = o.reg;
+  if (to !== null) RD.reg = roadIsBoss(to) ? to - ROAD.length : roadRegOf(to);
+  if (!roadRegOpen(r, RD.reg)) RD.reg = roadHome(r);
   roadHeader(); resize();
   requestAnimationFrame(roadHits);
+  rdArrive(to);
 }
 function roadHeader() {
   const r = roadGet(), k = RD.reg;
@@ -21362,7 +21843,7 @@ function roadGo(d) {
     roadNote(!roadRegReady(k) ? `${ROAD_REG[k].name} is coming soon.` : `Beat ${roadBossSpec(k - 1).name} past the fence of ${ROAD_REG[k - 1].name} to open ${ROAD_REG[k].name}.`);
     return;
   }
-  Sfx.uiFlip(); RD.reg = k; RD.hopT = 0; $("roadHits").dataset.key = ""; roadHeader();
+  Sfx.uiFlip(); RD.reg = k; RD.hopT = 0; $("roadHits").dataset.key = ""; roadHeader(); rdArrive(null);
 }
 // the tap targets over the discs (rebuilt when the map changes size or progress)
 function roadHits() {
@@ -21382,7 +21863,8 @@ function roadHits() {
     b.addEventListener("click", () => {
       Sfx.init();
       if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars in ${ROAD_REG[k].name} to open the fence (you have ${roadRegStars(roadGet(), k)}).` : `Win stop ${j} first.`); return; }
-      Sfx.ui(); RD.hopT = 24; roadSheet(i);
+      Sfx.ui();
+      if (!RD.walk && Math.round(RD.pos) === j) { RD.hopT = 24; roadSheet(i); } else rdWalk(j, () => roadSheet(i));   // mid-walk: turn toward the new stop from where it is
     });
     box.appendChild(b);
   });
@@ -21436,7 +21918,7 @@ function roadFight(i) {
   if (!st || !roadOpen(r, i)) { openRoad(); return; }
   Sfx.init(); modal("roadStop", false);
   const me = FIG[P.last] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], op = FIG[st.f];
-  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % op.palettes.length : 0];
+  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(op) : 0];
   const [a, b] = roadLives(st), map = Math.max(0, BL.MAPS.findIndex((m) => m.id === st.map));
   G = newGame({ players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
     stocks: a, time: roadSecs(st), countdown: 150, map });
@@ -21466,7 +21948,8 @@ function roadRoute(e, rt) {
   const rd = match && match.road;
   if (!rd || rd.boss || e.slot !== meSlot) return;
   const b = ROAD[rd.i].bonus;
-  if (b.k === "route" && rt.id === b.r) rd.bonus = true;
+  // "own": the route of the fighter you play
+  if (b.k === "route" && (rt.id === b.r || (b.r === "own" && rt.fighter === G.fighters[meSlot].spec.id))) rd.bonus = true;
 }
 // finishMatch: a Road stop is over (a forfeit too): the stars, the chips, the results
 function roadMatchEnd(forfeit) {
@@ -21481,11 +21964,15 @@ function roadMatchEnd(forfeit) {
     r.s[rd.i] = now; P.road = r; P.tokens += total;
     saveProfile();
   }
-  const k = roadRegOf(rd.i), rs = roadRegStars(r, k);
+  const k = roadRegOf(rd.i), j = rd.i % ROAD_N, rs = roadRegStars(r, k);
   const gate = fresh > 0 && rs >= ROAD_GATE && rs - fresh < ROAD_GATE;   // this win opened the fence
+  // a win: the big button goes on to the next stop (the region's boss after its last one, once the fence is open); a loss: Retry
+  rd.next = !won ? null : j + 1 < ROAD_N ? { i: rd.i + 1 } : roadGateOpen(r, k) ? { i: ROAD.length + k } : null;
+  const short = won && j === ROAD_N - 1 && !roadGateOpen(r, k) ? ROAD_GATE - rs : 0;
   const why = forfeit ? "No stars for a forfeit." : !won ? "No stars this time. A win opens the next stop." :
     (fresh > 0 ? `${fresh} new ${fresh === 1 ? "star" : "stars"} +${total}` : got === 7 ? "Three stars again." : "No new stars this time.") +
-    (gate ? ` · The fence is open: ${roadBossSpec(k).name} waits past the last stop.` : "");
+    (gate ? ` · The fence is open: ${roadBossSpec(k).name} waits past the last stop.` : "") +
+    (short ? ` · ${short} more ${short === 1 ? "star opens" : "stars open"} the fence.` : "");
   showResults({ res, forfeit, ranked: false, me, op, lines: [], total, why, road: { i: rd.i, got, had, labels: [...ROAD_STARS, st.bonus.txt] } });
 }
 // bossMatchEnd: a Road boss fight adds its star, the first win's reward and the fighter's Road skin to the results
@@ -21503,6 +21990,9 @@ function roadBossEnd(R) {
   R.total = total;
   R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : lines.length ? lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
   R.road = { boss: true, k, lv, got: won ? bit : 0, had: had & ~(won ? bit : 0), labels: BOSS_LV };
+  // a win goes on: into the next region when this first win opened it, else to the next level (after Nightmare, the next region)
+  const nk = k + 1 < ROAD_REG.length && roadRegReady(k + 1) ? k + 1 : -1;
+  match.road.next = !won ? null : nk >= 0 && !had ? { k: nk } : lv + 1 < BOSS_LV.length ? { lv: lv + 1 } : nk >= 0 ? { k: nk } : null;
 }
 // the Road skin a boss gives this fighter: its palette index (-1 = none)
 const roadSkinOf = (spec, bossId) => spec.palettes.findIndex((p) => p.road === bossId);
@@ -21515,6 +22005,28 @@ function roadResStars(R) {
     const on = !!((rd.got | rd.had) & (1 << k)), fresh = !!(rd.got & (1 << k)) && !(rd.had & (1 << k));
     return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
   }).join("");
+}
+// the results' big button after a win: Next stop / To <boss> after a region's last stop / To <region> after a boss win that opened it,
+// Next: Hard after a boss win; Retry after a loss (menus.js rAgain does it)
+function roadAgainLabel() {
+  const nx = match && match.road && match.road.next;
+  if (!nx) return "Retry";
+  if (nx.lv !== undefined) return `Next: ${BOSS_LV[nx.lv]}`;
+  if (nx.k !== undefined) return `To ${ROAD_REG[nx.k].name}`;
+  return roadIsBoss(nx.i) ? `To ${roadBossSpec(nx.i - ROAD.length).name}` : "Next stop";
+}
+function roadAgain() {
+  const rd = match.road, nx = rd.next;
+  if (nx && nx.lv !== undefined) roadBossFight(rd.k, nx.lv);
+  else if (nx && nx.k !== undefined) openRoad({ reg: nx.k, to: roadGoesOn(roadGet(), nx.k) });
+  else if (nx) openRoad({ to: nx.i });
+  else if (rd.boss) roadBossFight(rd.k, rd.lv);
+  else roadFight(rd.i);
+}
+// where region k goes on: its next stop to win, its boss once every stop is won and the fence is open (null: just show the region)
+function roadGoesOn(r, k) {
+  const j = roadNext(r, k);
+  return j < ROAD_N ? k * ROAD_N + j : roadGateOpen(r, k) ? ROAD.length + k : null;
 }
 function roadResMode(R) {
   return R.road.boss ? `The Road · ${roadBossSpec(R.road.k).name} · ${BOSS_LV[R.road.lv]}` : `The Road · ${ROAD_REG[roadRegOf(R.road.i)].name} · stop ${(R.road.i % ROAD_N) + 1} · ${ROAD[R.road.i].name}`;
@@ -21535,9 +22047,11 @@ $("rsPick").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadS
 for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
 screens.roadStop = $("scrRoadStop");
 // test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
-// (boss(lv) = Old Scratch, as before; boss(lv, k) = region k's boss; region(k) shows region k; set(s, extra) also sets b / b2 / p2 ...)
+// (boss(lv) = Old Scratch, as before; boss(lv, k) = region k's boss; region(k) shows region k; set(s, extra) also sets b / b2 / p2 ...;
+// walking / pos: your fighter on the map)
 window.__blRoad = { stops: ROAD, regions: ROAD_REG, get: roadGet, fight: (i) => roadFight(i), boss: (lv, k) => roadBossFight(k | 0, lv), open: openRoad,
-  region: (k) => { RD.reg = k; $("roadHits").dataset.key = ""; roadHeader(); },
+  region: (k) => { RD.reg = k; $("roadHits").dataset.key = ""; roadHeader(); rdArrive(null); },
+  get walking() { return !!RD.walk; }, get pos() { return RD.pos; },
   set: (s, extra) => { const r = roadGet(); P.road = Object.assign({}, r, { s: s.slice() }, extra || {}); saveProfile(); } };
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
@@ -21578,7 +22092,7 @@ function cupNew(fid) {
   let k = 0;
   for (let i = 0; i < 8; i++) {
     if (i === mi) { slots.push({ n: "You", f: fid, pal, r: base }); continue; }
-    const f = ids[k % ids.length], np = FIG[f].palettes.length;
+    const f = ids[k % ids.length], np = chipN(FIG[f]);
     let pl = (R() * np) | 0;
     for (let t = 0; t < np && used.has(f + ":" + pl); t++) pl = (pl + 1) % np;
     used.add(f + ":" + pl);
@@ -21855,7 +22369,7 @@ function dailyPick(key) {
   return { key, me, opp, cpu, seed, wd, d: DAILY.d[wd], word: DAILY.words[wd] };
 }
 // your equipped skin; the CPU's first skin, or the next one after yours in a mirror match (as startMatch does)
-function dailyPals(pk) { const mi = P.pal[pk.me] || 0; return [mi, pk.opp === pk.me ? (mi + 1) % FIG[pk.opp].palettes.length : 0]; }
+function dailyPals(pk) { const mi = P.pal[pk.me] || 0; return [mi, pk.opp === pk.me ? (mi + 1) % chipN(FIG[pk.opp]) : 0]; }
 function dailyNextIn() {   // until the next local midnight
   const ms = dailyDate(dailyShift(dailyKey(), 1)) - Date.now();
   return ms < 3600000 ? `${Math.max(1, Math.ceil(ms / 60000))} min` : `${Math.round(ms / 3600000)} h`;
@@ -21934,7 +22448,7 @@ window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: d
    Checksums every second catch any divergence; the host then sends a full snapshot. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 10;
+const PROTO = 11;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -22496,7 +23010,7 @@ tap("rAgain", () => {
     return;
   }
   if (match && match.ranked) { sel.mode = "ranked"; }
-  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.k, match.road.lv); else roadFight(match.road.i); return; }   // Retry
+  if (match && match.road) { roadAgain(); return; }   // ui/road.js: Next stop after a win, Retry after a loss
   startMatch();
 });
 tap("rChange", () => {
@@ -22756,7 +23270,7 @@ function startTrial(fid) {
   Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
   // the dummy is always Odin (the heaviest fighter, the one every route is tested on: tests/combos.js); against Odin himself in another skin
   const me = FIG[fid] || FIGHTERS[0], opp = FIG.odin, mi = P.pal[me.id] || 0;
-  const myPal = me.palettes[mi] || me.palettes[0], opPal = opp.palettes[me.id === "odin" ? (mi + 1) % opp.palettes.length : 0];
+  const myPal = me.palettes[mi] || me.palettes[0], opPal = opp.palettes[me.id === "odin" ? (mi + 1) % chipN(opp) : 0];
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: opPal }], stocks: 9, time: 0, countdown: 90 });
   match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
   meSlot = 0;
@@ -23139,18 +23653,19 @@ function acSetAvatar(node, id, pal) {   // pal (optional): the ring takes the sk
 function acSetMe(node) { const a = acAvatar(); acSetAvatar(node, a.f, a.p); }
 const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {});
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
-// Eight titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
+// Nine titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
+  { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
-  { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
+  { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
   { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "collector", "wanderer", "combo"];   // the order of the list
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "collector", "wanderer", "combo"];   // the order of the list
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned, else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
   const t = pick || ACT.find((t) => t.ok());
@@ -23335,7 +23850,7 @@ function renderStats() {
 /* ----- Locker tab: every fighter with every skin; tap one you own to wear it ----- */
 function renderLocker() {
   const pan = $("acPanL"); pan.innerHTML = "";
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen."));
+  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen; Road skins are won from the Road's bosses."));
   const grid = acMk("div", "lk");
   for (const f of FIGHTERS) {
     const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
@@ -23344,10 +23859,11 @@ function renderLocker() {
     card.appendChild(h);
     const row = acMk("div", "lk-s");
     f.palettes.forEach((p, i) => {
-      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock"));
+      // a Road skin (p.road): won by beating that boss with this fighter, never bought
+      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock") + (p.road ? " road" : ""));
       b.style.setProperty("--c", col(p));
-      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : `, locked, ${p.price} chips`}`);
-      b.innerHTML = `<i>${i ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
+      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
+      b.innerHTML = `<i>${i && !p.road ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : p.road ? "<span>Road</span>" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
       if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
       if (has) b.addEventListener("click", () => {
         Sfx.init(); Sfx.ui();
@@ -23840,7 +24356,7 @@ function frame(now) {
   while (acc >= STEP && n < 5) { acc -= STEP; n++; simTick(); }
   if (n === 5) acc = 0;
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
-  render(g, tick);
+  if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") drawCards(tick);
   if (mode === "online") drawOnlineArt(tick);

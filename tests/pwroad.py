@@ -1,8 +1,10 @@
 # The Road (ui/road.js): the menu card names your stop and stars; the map opens; a locked stop says what opens it; a stop's sheet
 # shows the matchup, the twist, the CPU's line and the stars; Fight plays the stop with its rules (lives each side, the time, the map,
 # the start percents, the percent every life starts at); a quick win pays the three stars (+10 chips each) once, saves them, and the
-# results show them; Retry replays the stop; The Road goes back to the map; quitting from the pause menu goes to the map; the fence
-# opens at 12 stars and the boss sheet starts Old Scratch on a level; his first win pays the Devil Masher title and 150 chips.
+# results show them; after a win Next stop walks your fighter on to the next stop and opens its sheet, after a loss Retry replays the
+# stop; The Road goes back to the map; quitting from the pause menu goes to the map; the fence opens at 12 stars and the boss sheet
+# starts Old Scratch on a level; his first win pays the Devil Masher title and 150 chips and goes on To The Kitchen (in at its gate,
+# walking to stop 1), a later win offers Next: Hard; The Kitchen's last stop goes on To Zorp.
 # A second part shows the menu, the map and a sheet at each size and checks the stops sit on the screen and the card fits.
 #   python3 pwroad.py [outdir [tag ...]]   tags: flow (844x390) s667 p844 d1280 up390; no tag runs everything
 import asyncio, sys, json, pathlib
@@ -14,6 +16,7 @@ ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-
 SIZES = {'s667': (667, 320, False), 'p844': (844, 390, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
 PROF = "potatobrawl.profile.v1"
 G = "window.__blastline.game"
+ROAD_NAMES = ['The Farm Gate', 'The Sprout Patch']
 
 async def new_page(b, tag, vp, up, errs, prof):
     mob = vp[0] < 1000
@@ -39,10 +42,11 @@ async def win_now(pg):
     await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=90000)
     await pg.wait_for_timeout(1400)
 async def fresh(pg):   # the stop buttons are laid over the map on its next frame, built from the progress at that time
-    await pg.wait_for_function("(() => { const r = window.__blRoad.get(); return (document.getElementById('roadHits').dataset.key || '').endsWith(`:${r.s.join('.')}:${r.b}`); })()", timeout=10000)
-async def hit(pg, i):
+    await pg.wait_for_function("(() => { const r = window.__blRoad.get(); return (document.getElementById('roadHits').dataset.key || '').split(':')[2] === r.s.join('.'); })()", timeout=10000)
+async def hit(pg, i):   # a tap on a stop: your fighter walks there first (if it stands elsewhere), then the sheet opens
     await fresh(pg)
-    await pg.evaluate(f"document.querySelector('.rd-hit[data-i=\"{i}\"]').click()"); await pg.wait_for_timeout(400)
+    await pg.evaluate(f"document.querySelector('.rd-hit[data-i=\"{i}\"]').click()")
+    await pg.wait_for_function("!window.__blRoad.walking", timeout=10000); await pg.wait_for_timeout(400)
 
 async def flow(b, errs):
     tag = 'flow'
@@ -52,6 +56,7 @@ async def flow(b, errs):
         if not ok: errs.append(f'{tag}: {msg}')
         return ok
     R = 'window.__blRoad'
+    BOSS = await pg.evaluate(f"{R}.stops.length")   # the stop buttons' index for region k's boss is BOSS + k
     # ----- the menu card and the map
     need(await txt(pg, '#mRoad') == 'Stop 1 of 8 · 0 ★', f"menu card reads {await txt(pg, '#mRoad')!r}")
     await clk('#bRoad'); await pg.wait_for_timeout(500); await fresh(pg)
@@ -63,7 +68,7 @@ async def flow(b, errs):
     await hit(pg, 2)
     need(await shown(pg, '#roadNote') and 'Win stop 2 first' in await txt(pg, '#roadNote'), f"locked stop note {await txt(pg, '#roadNote')!r}")
     need(not await shown(pg, '#scrRoadStop'), 'a locked stop opened its sheet')
-    await hit(pg, 8)
+    await hit(pg, BOSS)
     need('12 stars' in await txt(pg, '#roadNote'), f"locked fence note {await txt(pg, '#roadNote')!r}")
     # ----- stop 1's sheet and fight
     await hit(pg, 0)
@@ -84,15 +89,32 @@ async def flow(b, errs):
     need(await txt(pg, '#rChipN') == '30' and '3 new stars +30' in await txt(pg, '#rWhy'), f"chips {await txt(pg, '#rChipN')} / {await txt(pg, '#rWhy')!r}")
     p = await prof_of(pg)
     need(p.get('road', {}).get('s') == [7] and p.get('tokens') == 35, f"saved road {p.get('road')} tokens {p.get('tokens')}")
-    need(await txt(pg, '#rAgain') == 'Retry' and await txt(pg, '#rChange') == 'The Road', f"buttons {await txt(pg, '#rAgain')!r} {await txt(pg, '#rChange')!r}")
+    need(await txt(pg, '#rAgain') == 'Next stop' and await txt(pg, '#rChange') == 'The Road', f"buttons after a win {await txt(pg, '#rAgain')!r} {await txt(pg, '#rChange')!r}")
     await pg.screenshot(path=f'{OUT}/flow_win.png')
-    # Retry: the same stop again; winning again pays nothing new
+    # Next stop: the map, your fighter walks from stop 1 to stop 2, then stop 2's sheet opens
+    await clk('#rAgain')
+    await pg.wait_for_function("window.__blastline.mode === 'road'", timeout=10000)
+    walked = await pg.evaluate("new Promise((ok) => { const seen = []; const t = setInterval(() => { seen.push(window.__blRoad.pos); if (!window.__blRoad.walking) { clearInterval(t); ok(seen); } }, 50); })")
+    need(len(walked) > 1 and min(walked) < 1 and walked[-1] == 1, f'no walk from stop 1 to stop 2: {walked}')
+    await pg.wait_for_timeout(400)
+    need(await shown(pg, '#scrRoadStop') and await txt(pg, '#rsName') == ROAD_NAMES[1], f"Next stop opened {await txt(pg, '#rsName')!r}")
+    await pg.screenshot(path=f'{OUT}/flow_next.png')
+    await clk('#rsBack'); await pg.wait_for_timeout(300)
+    # a tap on stop 1: the fighter walks back there before its sheet opens
+    await hit(pg, 0)
+    need(await pg.evaluate("window.__blRoad.pos") == 0 and await txt(pg, '#rsName') == ROAD_NAMES[0], f"tap on stop 1: pos {await pg.evaluate('window.__blRoad.pos')}, sheet {await txt(pg, '#rsName')!r}")
+    await clk('#rsBack'); await pg.wait_for_timeout(300)
+    # a loss keeps Retry: the same stop again; winning it again pays nothing new and offers the next stop
+    await pg.evaluate(f"{R}.fight(0)"); await in_play(pg)
+    await pg.evaluate(f"(() => {{ const f = {G}.fighters[0]; f.stocks = 1; f.x = 5000; }})()")
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=90000); await pg.wait_for_timeout(1400)
+    need(await txt(pg, '#rTitle') == 'Defeat' and await txt(pg, '#rAgain') == 'Retry', f"after a loss {await txt(pg, '#rTitle')!r} {await txt(pg, '#rAgain')!r}")
     await clk('#rAgain')
     await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
     need(await pg.evaluate(f"{G}.fighters[1].spec.id") == 'phoenix', 'Retry is not the same stop')
     await in_play(pg); await win_now(pg)
     need(await txt(pg, '#rChipN') == '0' or not await shown(pg, '#rChipT'), 'a second win paid chips again')
-    need('Three stars again' in await txt(pg, '#rWhy'), f"why {await txt(pg, '#rWhy')!r}")
+    need('Three stars again' in await txt(pg, '#rWhy') and await txt(pg, '#rAgain') == 'Next stop', f"why {await txt(pg, '#rWhy')!r} / {await txt(pg, '#rAgain')!r}")
     await clk('#rChange'); await pg.wait_for_timeout(700)
     need(await pg.evaluate("window.__blastline.mode") == 'road' and await txt(pg, '#roadSum') == 'Stop 2 of 8 · 3 ★', f"back on the map: {await txt(pg, '#roadSum')!r}")
     # ----- the twists: stop 2 (Mash at 70%), stop 3 (you start every life at 40%), stop 7 (2 lives vs 3); a pause-menu quit goes to the map
@@ -113,11 +135,16 @@ async def flow(b, errs):
     await pg.evaluate(f"{R}.fight(6)"); await in_play(pg)
     need(await pg.evaluate(f"[{G}.fighters.map((f) => f.stocks), BL.MAPS[{G}.map].id]") == [[2, 3], 'moon'], 'stop 7: lives are not 2 vs 3 on Potato Moon')
     await clk('#pauseBtn'); await pg.wait_for_timeout(300); await clk('#pQuit'); await pg.wait_for_timeout(600)
+    # stop 8 won with the fence still shut: no Next stop, the results say how many stars are missing
+    await pg.evaluate(f"{R}.set([1, 1, 1, 1, 1, 1, 1, 0])")
+    await pg.evaluate(f"{R}.fight(7)"); await in_play(pg); await win_now(pg)
+    need(await txt(pg, '#rAgain') == 'Retry' and 'open the fence' in await txt(pg, '#rWhy'), f"after stop 8 below 12 stars: {await txt(pg, '#rAgain')!r} / {await txt(pg, '#rWhy')!r}")
+    await clk('#rChange'); await pg.wait_for_timeout(600)
     # ----- the fence: 12 stars open it; the boss sheet; the first win pays the title and 150 chips
     await pg.evaluate(f"{R}.set([7, 7, 7, 7, 0, 0, 0, 0])")
     await pg.evaluate(f"{R}.open()"); await fresh(pg)
-    need(not await pg.evaluate("document.querySelector('.rd-hit[data-i=\"8\"]').classList.contains('lock')"), 'the fence stays locked at 12 stars')
-    await hit(pg, 8)
+    need(not await pg.evaluate(f"document.querySelector('.rd-hit[data-i=\"{BOSS}\"]').classList.contains('lock')"), 'the fence stays locked at 12 stars')
+    await hit(pg, BOSS)
     need(await shown(pg, '#rsLv') and not await shown(pg, '#rsGo'), 'the boss sheet has no level buttons')
     need(await pg.evaluate("[...document.querySelectorAll('#rsLv button')].map((b) => b.textContent)") == ['Normal', 'Hard', 'Nightmare'], 'boss levels')
     need('Devil Masher' in await txt(pg, '#rsReward'), f"boss reward line {await txt(pg, '#rsReward')!r}")
@@ -134,9 +161,32 @@ async def flow(b, errs):
     need('Devil Masher title + 150' in await txt(pg, '#rWhy') and await txt(pg, '#rChipN') == '160', f"boss reward {await txt(pg, '#rWhy')!r} {await txt(pg, '#rChipN')}")
     p = await prof_of(pg)
     need(p['road']['b'] == 1 and p['road']['paid'] is True and p['tokens'] == tok0 + 160, f"saved boss win {p['road']} tokens {p['tokens']} (was {tok0})")
+    need(await txt(pg, '#rAgain') == 'To The Kitchen', f"after his first win the button reads {await txt(pg, '#rAgain')!r}")
     await pg.screenshot(path=f'{OUT}/flow_boss_win.png')
-    await clk('#rChange'); await pg.wait_for_timeout(700)
+    # To The Kitchen: the map shows region 2, your fighter comes in at its gate and walks to stop 1, whose sheet opens
+    await clk('#rAgain')
+    await pg.wait_for_function("window.__blastline.mode === 'road'", timeout=10000)
+    walked = await pg.evaluate("new Promise((ok) => { const seen = []; const t = setInterval(() => { seen.push(window.__blRoad.pos); if (!window.__blRoad.walking) { clearInterval(t); ok(seen); } }, 50); })")
+    need(len(walked) > 1 and min(walked) < 0 and walked[-1] == 0, f'no walk in from the Kitchen gate: {walked}')
+    await pg.wait_for_timeout(400)
+    need(await txt(pg, '#roadReg') == 'The Kitchen' and await shown(pg, '#scrRoadStop') and await txt(pg, '#rsName') == 'The Back Door', f"To The Kitchen opened {await txt(pg, '#roadReg')!r} / {await txt(pg, '#rsName')!r}")
+    await pg.screenshot(path=f'{OUT}/flow_kitchen.png')
+    await clk('#rsBack'); await pg.wait_for_timeout(300)
+    await clk('#roadPrev'); await pg.wait_for_timeout(400)
     need(await txt(pg, '#roadSum') == 'Stop 5 of 8 · 13 ★', f"map summary after the boss {await txt(pg, '#roadSum')!r}")
+    # a later Normal win offers the next level
+    await pg.evaluate(f"{R}.boss(0, 0)"); await in_play(pg)
+    await pg.evaluate(f"(() => {{ const b = {G}.fighters[2]; b.hp = 1; b.poise = 0; }})()")
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=180000); await pg.wait_for_timeout(1400)
+    need(await txt(pg, '#rAgain') == 'Next: Hard', f"after a second Normal win the button reads {await txt(pg, '#rAgain')!r}")
+    # The Kitchen's last stop won with its fence open: To Zorp walks to the boss and opens his sheet
+    await pg.evaluate(f"{R}.set({[7] * 15 + [0]})")
+    await pg.evaluate(f"{R}.fight(15)"); await in_play(pg); await win_now(pg)
+    need(await txt(pg, '#rMode') == 'The Road · The Kitchen · stop 8 · The Window' and await txt(pg, '#rAgain') == 'To Zorp', f"after the Kitchen's stop 8: {await txt(pg, '#rMode')!r} / {await txt(pg, '#rAgain')!r}")
+    await clk('#rAgain')
+    await pg.wait_for_function("window.__blastline.mode === 'road' && !window.__blRoad.walking", timeout=10000); await pg.wait_for_timeout(500)
+    need(await pg.evaluate("window.__blRoad.pos") == 8 and await txt(pg, '#rsName') == 'Zorp' and await shown(pg, '#rsLv'), f"To Zorp: pos {await pg.evaluate('window.__blRoad.pos')}, sheet {await txt(pg, '#rsName')!r}")
+    await pg.screenshot(path=f'{OUT}/flow_zorp_sheet.png')
     await ctx.close()
 
 FIT = """(() => {
