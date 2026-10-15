@@ -458,9 +458,10 @@ const BOSSES = [
     // rage from rageAt[lv] % HP (stagger x rageStag, gaps x rageGap, fast wind-ups skip rageFast more); gap[lv] = idle frames between
     // moves (base + rng x span); fast moves skip lvFast[lv] of their wind-up; Horn Charge from chargeAt[lv] % HP; rainN[lv] fireballs;
     // the charge's fire burns trailLife[lv] frames. stagK = damage x while staggered, lightK = lights' damage x.
-    boss: { hp: 900, lvHp: [1, 1.33, 1.67], poise: 40, stagger: [150, 135, 120], rageAt: [20, 30, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
-            stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [22, 24], [14, 18]], lvFast: [0, 0.15, 0.2], chargeAt: [50, 50, 100],
-            rainN: [6, 8, 8], trailLife: [84, 84, 150] },
+    // Tuned with tests/boss.js (two bots at 0.6: Normal 85% wins in ~66 s, Hard ~48%, Nightmare ~0; bots at 0.8 win Nightmare ~10%).
+    boss: { hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
+            stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [32, 30], [24, 24]], lvFast: [0, 0.08, 0.15], chargeAt: [50, 50, 100],
+            rainN: [6, 7, 8], trailLife: [84, 84, 150] },
     moves: {
       // Pitchfork Stab: the tines glow, then a long poke at waist height (jump it or step out)
       stab:   M(24, 6, 30, 14, 7, 17, 30, [70, -78, 26, 215, -74], { limb: "fork", boss: "stab", fast: true }),
@@ -1313,8 +1314,8 @@ function bossPick(g, f, t, dx, up) {
     adx < 250 && up < 110 ? 3 : 0,                     // stab
     adx < 170 && up < 100 ? (back ? 6 : 2.5) : 0,      // whip
     adx < 300 && up < 140 ? 2 : 0,                     // stomp
-    up > 70 || adx > 320 ? 3 : 1,                      // rain
-    half && adx > 180 && up < 90 && room > 320 ? 2.5 : 0,   // charge
+    up > 70 || adx > 320 ? 2 : 1,                      // rain
+    half && adx > 90 && up < 90 && room > 300 ? 3 : 0,   // charge
   ];
   if (adx > 330 && !w[4] && brand(g) < 0.6) return "";
   const last = BOSS_MOVES.indexOf(f.bq);

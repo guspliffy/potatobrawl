@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -56,6 +56,12 @@ else fail "combo routes / the link" "$LOGS/combos.log"; fi
 (cd tests && node ulti.js) > "$LOGS/ulti.log" 2>&1
 if grep -q "^ulti ok" "$LOGS/ulti.log"; then pass "ultimates (KO bands, first hit after the freeze, bar spent, save/restore mid-ulti)"
 else fail "ultimates" "$LOGS/ulti.log"; fi
+
+# 3f. Boss fights (2v1): replay and save/restore determinism with three fighters, then two bot players against Old Scratch at each
+#     difficulty: win rates and fight lengths in their bands, every move used, the final launch leaves the arena, lethal calls come true.
+(cd tests && node boss.js) > "$LOGS/boss.log" 2>&1
+if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights ($(grep -o 'Normal: players win [0-9]*%' "$LOGS/boss.log" | sed 's/Normal: players win/Normal/'), determinism, final launch, lethal calls)"
+else fail "boss fights" "$LOGS/boss.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 
