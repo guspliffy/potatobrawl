@@ -2022,6 +2022,183 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 @keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
 @media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }
 
+/* ---------- Fighter mastery ("sunset ink"; ui/mastery.js builds the markup, Fable's looks in mastery/fable-mastery.md section 3) ----------
+   The level shield (roster tile, Account > Stats), the laurel and gold line of a Lv 10 tile, the MASTERY row of the select screen's stats
+   card, the row on the results screen (portrait, FIGHTER · LV n, a bar in the fighter colour, the +XP sticker, the level-up tag), the XP
+   sticker on the tournament bracket and the Collection block in the Locker. Badge look by level (data-k): none at Lv 1, ink 2, bronze 3-5,
+   silver 6-8, gold 9, gold with laurels 10. Nothing moves under prefers-reduced-motion, and a tap on the results screen (.still) jumps to the end. */
+:root {
+  --lau: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 22C11 21 4 15 3 3' fill='none' stroke='%230e1022' stroke-width='3.4' stroke-linecap='round'/%3E%3Cpath d='M21 22C11 21 4 15 3 3' fill='none' stroke='%23c98a2b' stroke-width='1.6' stroke-linecap='round'/%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.1'%3E%3Cellipse cx='5' cy='17' rx='3.6' ry='1.7' transform='rotate(-35 5 17)'/%3E%3Cellipse cx='3' cy='12' rx='3.6' ry='1.7' transform='rotate(-70 3 12)'/%3E%3Cellipse cx='3.6' cy='6.2' rx='3.6' ry='1.7' transform='rotate(-100 3.6 6.2)'/%3E%3Cellipse cx='11' cy='20.6' rx='3.6' ry='1.7' transform='rotate(-10 11 20.6)'/%3E%3Cellipse cx='8.2' cy='13.6' rx='3.4' ry='1.6' transform='rotate(-50 8.2 13.6)'/%3E%3Cellipse cx='7.5' cy='8.6' rx='3.4' ry='1.6' transform='rotate(-85 7.5 8.6)'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---- the level shield: an ink outline, the plate in the badge colour, the number on it, a hard shadow ---- */
+.mx-sh { --mc: #3a4170; --tx: var(--ink); position: relative; display: inline-grid; place-items: center; width: 18px; height: 20px; flex: none; font-style: normal;
+  filter: drop-shadow(0 2px 0 var(--ink)); }
+.mx-sh::before, .mx-sh::after { content: ""; position: absolute; clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%); }
+.mx-sh::before { inset: 0; background: var(--ink); }
+.mx-sh::after { inset: 1.5px 1.5px 2.5px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 55%), var(--mc); }
+.mx-sh em { position: relative; z-index: 1; margin-top: -2px; font: 900 11px/1 var(--display); font-style: normal; color: var(--tx); letter-spacing: 0; }
+.mx-sh[data-k="ink"] { --mc: #3a4170; --tx: var(--sand); }
+.mx-sh[data-k="bronze"] { --mc: #cd8f5b; }
+.mx-sh[data-k="silver"] { --mc: #c9d0e4; }
+.mx-sh[data-k="gold"], .mx-sh[data-k="laurel"] { --mc: #f0c35a; }
+.mx-sh.sm { width: 16px; height: 18px; margin-right: 6px; vertical-align: -4px; }
+.mx-sh.sm em { font-size: 10px; }
+
+/* ---- roster tile: the shield bottom-right (just above the name plate when a long name reaches that far), the laurel top-left, the gold line ---- */
+#scrSelect .tile .mx-sh { position: absolute; right: 6px; bottom: 6px; z-index: 2; width: 20px; height: 22px; }
+#scrSelect .tile .mx-sh em { font-size: 12px; }
+#scrSelect .tile .mx-lr { position: absolute; left: 3px; top: 3px; z-index: 2; width: 24px; height: 24px; background: var(--lau) center / contain no-repeat; filter: drop-shadow(0 1px 0 var(--ink)); pointer-events: none; }
+#scrSelect .tile.mx10::before { content: ""; position: absolute; inset: 3px; z-index: 1; border: 1.5px solid var(--gold); border-radius: 7px; pointer-events: none; opacity: 0.95; box-shadow: 0 0 0 1px rgba(14, 16, 34, 0.55); }
+#app.tiny #scrSelect .tile .mx-sh { right: 4px; bottom: 5px; width: 17px; height: 19px; }
+#app.tiny #scrSelect .tile .mx-sh em { font-size: 10px; }
+#app.tiny #scrSelect .tile .mx-lr { width: 19px; height: 19px; left: 2px; top: 2px; }
+#app:not(.short):not(.portrait) #scrSelect .tile .mx-sh { right: 9px; bottom: 9px; width: 26px; height: 29px; }
+#app:not(.short):not(.portrait) #scrSelect .tile .mx-sh em { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrSelect .tile .mx-lr { width: 32px; height: 32px; left: 5px; top: 5px; }
+#app:not(.short):not(.portrait) #scrSelect .tile.mx10::before { inset: 4px; border-width: 2px; border-radius: 9px; }
+#app.portrait #scrSelect .tile .mx-sh { right: 4px; bottom: 5px; width: 17px; height: 19px; }
+#app.portrait #scrSelect .tile .mx-sh em { font-size: 10px; }
+#app.portrait #scrSelect .tile .mx-lr { width: 19px; height: 19px; left: 2px; top: 2px; }
+
+/* ---- the select screen's stats card: MASTERY, ten segments, an LV sticker, what comes next ---- */
+#scrSelect .sl-stats .mx-row { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; }
+#scrSelect .mx-seg { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+#scrSelect .mx-seg i { height: 9px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(14, 16, 34, 0.5); transform: skewX(-14deg); }
+#scrSelect .mx-seg i.on { background: linear-gradient(180deg, #fff 0, var(--gold) 42%); box-shadow: inset 0 0 0 1px var(--ink); }
+#scrSelect .mx-seg i.part { background: linear-gradient(90deg, var(--gold) calc(var(--f) * 100%), rgba(255, 255, 255, 0.1) calc(var(--f) * 100%)); }
+#scrSelect .mx-lv { --mc: #a4a9c8; padding: 3px 7px 2px; border: 1.5px solid var(--ink); border-radius: 5px; background: var(--mc); color: var(--ink); font: 900 12px/1 var(--display); letter-spacing: 0.08em; white-space: nowrap;
+  transform: rotate(-4deg); box-shadow: 0 2px 0 var(--ink); }
+#scrSelect .mx-row[data-k="ink"] .mx-lv { color: var(--sand); }
+#scrSelect .mx-row[data-k="laurel"] .mx-lv::before { content: ""; display: inline-block; width: 12px; height: 12px; margin: -2px 3px -1px -2px; vertical-align: middle; background: var(--lau) center / contain no-repeat; }
+#scrSelect .mx-next { grid-column: 1 / -1; font: 500 11px/1.25 var(--body); letter-spacing: 0; text-transform: none; color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrSelect .sl-name b.mx10 { -webkit-text-stroke-color: var(--gold); }   /* Lv 10: the stage name is stroked in gold */
+#app.tiny #scrSelect .sl-stats .mx-row { gap: 2px 8px; }
+#app.tiny #scrSelect .mx-seg i { height: 7px; }
+#app.tiny #scrSelect .mx-lv { font-size: 11px; padding: 2px 6px 1px; }
+#app.tiny #scrSelect .mx-next { font-size: 10.5px; }
+#app.tiny #scrSelect .sl-blurb { -webkit-line-clamp: 2; }   /* the card grew by a row: two whole lines instead of a third one cut in half */
+#app:not(.short):not(.portrait) #scrSelect .mx-seg i { height: 11px; }
+#app:not(.short):not(.portrait) #scrSelect .mx-lv { font-size: 15px; padding: 4px 9px 3px; }
+#app:not(.short):not(.portrait) #scrSelect .mx-next { font-size: 13px; }
+
+/* ---- the results row: under the rank card (or in its place) ---- */
+#resSheet .res-mx { --fc: #f4c95d; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; flex: none; padding: 6px 12px 6px 8px; }
+#resSheet .res-mx .av { --d: 36px; border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px var(--fc), 0 2px 0 var(--ink); }
+#resSheet .mx-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#resSheet .mx-head { display: flex; align-items: center; gap: 6px; min-width: 0; height: 17px; }
+#resSheet .mx-nm { min-width: 0; font: italic 900 15px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .mx-lvw { --mc: #a4a9c8; flex: none; font: 800 13px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mc); white-space: nowrap; }
+#resSheet .mx-lvw::before { content: "\00b7\00a0"; color: var(--mute); }
+#resSheet .mx-lvw i { display: inline-block; font-style: normal; min-width: 1ch; text-align: center; }
+#resSheet .mx-tag { display: none; flex: none; margin-left: auto; padding: 3px 6px 2px; border: 2px solid var(--ink); border-radius: 6px; font: 800 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+#resSheet .mx-tag.on { display: block; }
+#resSheet .mx-tag.ember { background: var(--ember); color: var(--ink); }
+#resSheet .mx-tag.gold { background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); }
+#resSheet .mx-bar { position: relative; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(14, 16, 34, 0.9); border: 1.5px solid rgba(255, 255, 255, 0.1); }
+#resSheet .mx-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%); background: linear-gradient(180deg, #fff 0, var(--fc) 45%); }
+#resSheet .res-mx.max .mx-bar i { background: linear-gradient(180deg, #fff 0, var(--gold) 45%); }
+#resSheet .res-mx.max { box-shadow: var(--hard), var(--bevel), inset 0 0 0 2px var(--gold); }
+#resSheet .mx-line { min-height: 12px; font: 700 11px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; }
+#resSheet .mx-line.on { opacity: 1; }
+#resSheet .res-mx.zero .mx-line { color: var(--mute); }
+#app:not(.short) #resSheet .res-mx.up .mx-line { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }   /* several levels at once: room for two lines of rewards */
+#resSheet .mx-xp { display: flex; align-items: baseline; justify-content: center; gap: 3px; min-width: 62px; padding: 7px 9px 6px; border: 2px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); transform: rotate(4deg); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); white-space: nowrap; }
+#resSheet .mx-xp b { font: italic 900 21px/1 var(--display); font-variant-numeric: tabular-nums; }
+#resSheet .mx-xp small { font: 800 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+#resSheet .res-mx.zero .mx-xp { background: linear-gradient(180deg, #3a4170, #262b50); color: var(--mute); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-mx.zero .mx-xp b { font-size: 17px; }
+/* motion */
+@keyframes mxSpin { 0% { transform: rotateY(0) scale(1); } 40% { transform: rotateY(180deg) scale(1.9); } 100% { transform: rotateY(360deg) scale(1); } }
+@keyframes mxFlash { 35% { box-shadow: 0 0 14px 4px var(--fc); filter: brightness(2.2); } }
+@keyframes mxStamp { from { transform: rotate(-6deg) scale(2.2); opacity: 0; } 55% { opacity: 1; } to { transform: rotate(-6deg) scale(1); opacity: 1; } }
+@keyframes mxFade { from { opacity: 0; } }
+#resSheet.in:not(.still) .res-mx { animation: resUp 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.14s backwards; }
+#resSheet.in:not(.still) .res-mx .mx-xp { animation: resPop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) var(--d, 0.5s) backwards; }
+#resSheet.in:not(.still) .res-mx.spin .mx-lvw i { animation: mxSpin 0.7s ease-in-out; }
+#resSheet.in:not(.still) .res-mx.flash .mx-bar { animation: mxFlash 0.4s ease-out; }
+#resSheet.in:not(.still) .res-mx .mx-tag.on { animation: mxStamp 0.28s cubic-bezier(0.25, 0.9, 0.3, 1.15); }
+#resSheet.in:not(.still) .res-mx.loss .mx-tag.on { animation: mxFade 0.3s ease-out; }   /* a loss: no zoom */
+#resSheet .mx-line { transition: opacity 0.25s; }
+/* short phones: the third line (Next: ...) is left out unless the match brought a level up or no XP, and the column is packed a little tighter, so the buttons stay on screen */
+#app.short #resSheet .res-mx:not(.up):not(.zero) .mx-line { display: none; }
+#app.short #resSheet .res-side:has(> .res-mx:not([hidden])) { padding: 10px 4px 8px; gap: 8px; }
+#app.tiny #resSheet .res-side:has(> .res-mx:not([hidden])) { padding: 8px 4px 6px; gap: 6px; }
+#app.tiny #resSheet .res-side:has(> .res-mx:not([hidden])) .res-actions .btn { min-height: 37px; }
+#app.tiny #resSheet .res-side:has(> .res-mx:not([hidden])) .res-actions .btn.primary { min-height: 42px; }
+/* no rank card (practice, Daily, online): the row takes its place in the middle of the room, the tiles follow */
+#resSheet .res-side:has(> #rRank[hidden]) > .res-mx { margin-top: auto; }
+#resSheet .res-side:has(> #rRank[hidden]) > .res-mx:not([hidden]) + .res-stats { margin-top: 0; }
+#app.tiny #resSheet .res-mx { gap: 8px; padding: 4px 10px 4px 7px; }
+#app.tiny #resSheet .res-mx .av { --d: 31px; border-width: 2px; }
+#app.tiny #resSheet .mx-head { height: 15px; }
+#app.tiny #resSheet .mx-nm { font-size: 13px; }
+#app.tiny #resSheet .mx-lvw { font-size: 12px; }
+#app.tiny #resSheet .mx-tag { font-size: 9px; padding: 3px 5px 2px; }
+#app.tiny #resSheet .mx-bar { height: 7px; }
+#app.tiny #resSheet .mx-line { min-height: 11px; font-size: 10px; }
+#app.tiny #resSheet .mx-xp { min-width: 54px; padding: 5px 7px 4px; }
+#app.tiny #resSheet .mx-xp b { font-size: 18px; }
+#app.tiny #resSheet .mx-xp small { font-size: 10px; }
+#app:not(.short):not(.portrait) #resSheet .res-mx { gap: 14px; padding: 10px 18px 10px 12px; }
+#app:not(.short):not(.portrait) #resSheet .res-mx .av { --d: 52px; border-width: 3px; }
+#app:not(.short):not(.portrait) #resSheet .mx-head { height: 24px; gap: 8px; }
+#app:not(.short):not(.portrait) #resSheet .mx-nm { font-size: 21px; }
+#app:not(.short):not(.portrait) #resSheet .mx-lvw { font-size: 17px; }
+#app:not(.short):not(.portrait) #resSheet .mx-tag { font-size: 12px; padding: 4px 8px 3px; }
+#app:not(.short):not(.portrait) #resSheet .mx-bar { height: 11px; border-radius: 6px; }
+#app:not(.short):not(.portrait) #resSheet .mx-line { min-height: 15px; font-size: 13px; }
+#app:not(.short):not(.portrait) #resSheet .mx-xp { min-width: 92px; padding: 10px 12px 8px; border-radius: 10px; gap: 4px; }
+#app:not(.short):not(.portrait) #resSheet .mx-xp b { font-size: 30px; }
+#app:not(.short):not(.portrait) #resSheet .mx-xp small { font-size: 14px; }
+#app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-mx { margin-top: 0; }   /* the column is centred here */
+@media (prefers-reduced-motion: reduce) { #resSheet .mx-line { transition: none; } }
+
+/* ---- the tournament bracket: the XP of the match just played, next to the chips ---- */
+.mx-cupxp { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; max-width: 46%; min-width: 0; padding: 4px 9px 3px; border: 2px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); transform: rotate(-2deg); }
+.mx-cupxp b { font: italic 900 18px/1 var(--display); letter-spacing: 0.02em; white-space: nowrap; }
+.mx-cupxp small { max-width: 100%; margin-top: 2px; font: 700 10px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+.mx-cupxp.up { background: linear-gradient(180deg, #ffb48f, var(--ember)); }
+.mx-cupxp.pop { animation: mxCupPop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+@keyframes mxCupPop { from { transform: rotate(-2deg) scale(0.3); opacity: 0; } 60% { transform: rotate(-4deg) scale(1.15); opacity: 1; } }
+#app.portrait .mx-cupxp small { display: none; }
+#app.short .mx-cupxp { padding: 2px 8px 2px; }
+@media (prefers-reduced-motion: reduce) { .mx-cupxp.pop { animation: none; } }
+
+/* ---- Account > Stats: the level beside the fighter ---- */
+.fs-tab td.mx-c { white-space: nowrap; }
+.fs-tab td.mx-c span { font: 800 15px/1 var(--display); letter-spacing: 0.04em; }
+.fs-tab td.mx-c .mx-sh { margin-right: 6px; vertical-align: middle; }
+.fs-tab td.mx-c span { vertical-align: middle; }
+/* a narrow phone: the table has a fifth column, so it gets tighter cells and the portrait smaller */
+#app.narrow .fs-tab th, #app.narrow .fs-tab td { padding-left: 4px; padding-right: 4px; }
+#app.narrow .fs-tab th { letter-spacing: 0.08em; }
+#app.narrow .fs-tab .fn { gap: 6px; font-size: 14px; letter-spacing: 0.02em; }
+#app.narrow .fs-tab .av { --d: 24px; }
+#app.narrow .fs-tab td.mx-c .mx-sh { margin-right: 4px; }
+#app.narrow .fs-tab td.mx-c span { font-size: 14px; }
+
+/* ---- Account > Locker: the Collection ---- */
+.mx-col { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 9px; margin-bottom: 10px; border: 2px solid var(--ink); border-radius: 10px; background: var(--raise); box-shadow: 0 2px 0 var(--ink); }
+.mx-col .kicker { font-size: 12px; color: var(--sand); }
+.mx-cells { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mx-cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 6px 8px 7px; border-radius: 8px; background: rgba(14, 16, 34, 0.55); }
+.mx-cell b { font: 900 24px/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; }
+.mx-cell b small { margin-left: 1px; font-size: 14px; color: var(--mute); }
+.mx-cell > span { font: 700 11px/1.1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); }
+.mx-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.mx-dots .av { --d: 20px; border-width: 2px; opacity: 0.32; filter: grayscale(1); }
+.mx-dots .av.on { opacity: 1; filter: none; box-shadow: 0 0 0 1.5px var(--gold); }
+.mx-rbar { height: 8px; margin-top: 4px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+.mx-rbar i { display: block; height: 100%; background: linear-gradient(180deg, #fff 0, var(--gold) 45%); }
+#app.portrait .mx-cells, #app.narrow .mx-cells { grid-template-columns: minmax(0, 1fr); }
+#app.portrait .mx-cell, #app.narrow .mx-cell { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+#app.tiny .mx-col { padding: 6px 8px 7px; margin-bottom: 6px; gap: 4px; }
+#app.tiny .mx-cell { padding: 4px 6px 5px; }
+#app.tiny .mx-cell b { font-size: 20px; }
+
 </style>
 
 </head><body><div id="app">
@@ -4351,6 +4528,7 @@ function defProfile() {
     last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
     daily: { d: "", r: 0, s: 0, w: "", b: 0 },   // Daily Potato (ui/daily.js)
     routes: [], comboPaid: false,                // combo routes cleared in the Combo trial (ui/combos.js)
+    mxp: {}, mpaid: {}, pages: { ko: [], ult: [] },   // fighter mastery (ui/mastery.js): XP per fighter, highest level paid, KO pages landed. mseed (the one-time head start) is left out on purpose: undefined = not given yet
   };
 }
 let firstRun = false;
@@ -11499,6 +11677,7 @@ function finStart(g) {
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = wi; FIN.l = li;
+  if (FIN.w === meSlot) masteryPage(W.spec.id, FIN.ulti);   // ui/mastery.js: the Collection counts the KO pages you land
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
   const rdx = ev ? ev.dirx : (Lf.x >= W.x ? 0.8 : -0.8), rdy = ev ? ev.diry : -0.6;
@@ -13117,6 +13296,7 @@ function mgCard(o, t) {
   }
   const x0 = Math.max(16, L.gw * 0.06), nm = C.name;
   o.drawImage(nm.cv, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, nm.w, nm.h);
+  masteryGlint(o, nm, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, t);   // ui/mastery.js: Lv 7 and up, your own KO page
   o.drawImage(C.win.cv, x0 + nm.w * 0.86, y - C.win.h / 2 + hh * 0.2, C.win.w, C.win.h);
   o.drawImage(C.sub.cv, x0 - 2, y + hh * 0.2, C.sub.w, C.sub.h);
   o.restore();
@@ -20324,6 +20504,7 @@ function buildTiles() {
     b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
     b.style.setProperty("--fc", col(spec.palettes[P.pal[spec.id] || 0]));
+    masteryTile(b, spec);   // ui/mastery.js: the level shield
   }
 }
 // restart a one-shot CSS animation (the stage name and model when the fighter changes)
@@ -20347,6 +20528,7 @@ function buildDetail() {
   $("dRole").textContent = spec.role;
   $("dBlurb").textContent = spec.blurb;
   $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="sl-seg" role="img" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
+  masteryDetail(spec);   // ui/mastery.js: the MASTERY row of the stats card
   $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   const pals = $("dPals"); pals.innerHTML = "";
@@ -20687,7 +20869,7 @@ function resOpen(look, spec, solo) {
   void sheet.offsetWidth; sheet.classList.add("in");
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
-  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false;
+  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = "";
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -20752,6 +20934,7 @@ function showResults(R) {
   // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
   const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
   if (match) match.finBy = "";
+  masteryResults(R, !!fb && won, ult);   // ui/mastery.js: the XP, the level and the row under the rank card
   const fin = $("rFin");
   fin.hidden = !(fb && won);
   if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
@@ -20769,10 +20952,10 @@ function showResults(R) {
   const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = chipsOn || R.daily || R.road ? why
+  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
-    : "Practice doesn't change your rating or earn chips.";
+    : "Practice doesn't change your rating or earn chips.");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
@@ -21554,6 +21737,7 @@ function cupFight() {
 }
 // finishMatch calls this for a cup match: a win moves you on, a loss (also a forfeit) ends the cup, a draw is fought again
 function cupMatchEnd(forfeit) {
+  masteryCup(forfeit);   // ui/mastery.js: the XP sticker on the bracket
   const c = P.cup, r = c.round, g = G, me = g.fighters[0];
   if (!forfeit && g.winner < 0) { cupShow({ note: "That one was a draw. Fight it again." }); return; }
   const won = !forfeit && g.winner === 0;
@@ -22773,6 +22957,281 @@ function trialClear(r) {
 const want0 = (r) => ROUTES.hits(r);
 function trialNext() { if (!match || !match.trial) return; TR.i = (TR.i + 1) % TR.list.length; TR.hold = 0; TR.next = null; trialRoute(); }
 tap("tutNext", trialNext);
+/* ===================== fighter mastery (UI only; the simulation never reads any of this) =====================
+   Every fighter has its own XP and a level from 1 to 10. XP comes from finished matches (masteryResults for the results screen,
+   masteryCup for the tournament, which has no results screen). Rewards per level: chips at 2/4/6/8, badges, titles at 5 and 10, a gold
+   sheen on the winner's name on the KO page at 7 (masteryGlint, called from manga.js), laurels and a fanfare at 10.
+   Saved in the profile: P.mxp (XP played), P.mseed (the one-time head start from the old win/loss record), P.mpaid (highest level whose
+   chips were paid), P.pages ({ko, ult}: the fighters whose KO page / Ultimate KO page YOU landed). The level is always derived from the XP.
+   The merge rules for two devices are in sync.js. Hooks elsewhere: screens.js (tiles, detail, results), cup.js, finisher.js, manga.js, acct.js. */
+const MX_CURVE = [0, 0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700];   // total XP to reach level n (index n)
+const MX_MAX = 10;
+const MX_CHIPS = { 2: 20, 4: 40, 6: 60, 8: 80 };                              // 200 per fighter
+const MX_TITLES = {                                                          // [Lv 5, Lv 10]
+  phoenix: ["Hot Potato", "Reborn"], alchemist: ["Lab Rat", "Philosopher"], odin: ["Raven Keeper", "Spearbearer"], wizard: ["Star Pupil", "Starcaller"],
+  samurai: ["Steady Hand", "One Cut"], dragon: ["Hatchling", "Elder Wyrm"], gunslinger: ["Deputy", "Most Wanted"], reaper: ["Gravedigger", "Ferryman"],
+};
+const mxFighters = () => FIGHTERS.filter((f) => MX_TITLES[f.id]);
+const mxObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+
+/* ----- the numbers ----- */
+const mxXp = (id) => ((P.mseed && P.mseed[id]) | 0) + ((P.mxp && P.mxp[id]) | 0);
+function mxLevel(xp) { let l = 1; for (let n = 2; n <= MX_MAX; n++) if (xp >= MX_CURVE[n]) l = n; return l; }
+function mxInfo(id) {
+  const xp = mxXp(id), lv = mxLevel(xp), max = lv >= MX_MAX, lo = MX_CURVE[lv], hi = max ? lo : MX_CURVE[lv + 1];
+  return { id, xp, lv, max, p: max ? 1 : clamp((xp - lo) / (hi - lo), 0, 1), lo, hi };
+}
+const mxFrac = (xp) => { const lv = mxLevel(xp); return lv >= MX_MAX ? 1 : clamp((xp - MX_CURVE[lv]) / (MX_CURVE[lv + 1] - MX_CURVE[lv]), 0, 1); };
+// the badge look by level: none at 1, ink 2, bronze 3-5, silver 6-8, gold 9, gold with laurels 10 (the colours are the tier colours)
+function mxBadge(lv) { return lv < 2 ? { k: "", col: "" } : lv < 3 ? { k: "ink", col: "#3a4170" } : lv < 6 ? { k: "bronze", col: "#cd8f5b" } : lv < 9 ? { k: "silver", col: "#c9d0e4" } : { k: lv >= 10 ? "laurel" : "gold", col: "#f0c35a" }; }
+// what a level gives. next: the words for "Next: ..." (no plus sign, a title by its name); else the words for the results line
+function mxRewards(id, lv, next) {
+  const out = [], t = MX_TITLES[id] || ["", ""], chips = MX_CHIPS[lv];
+  if (chips) out.push(next ? `${chips} chips` : `+${chips} chips`);
+  if (lv === 3) out.push("Bronze badge");
+  if (lv === 5) out.push(next ? t[0] : `Title: ${t[0]}`);
+  if (lv === 6) out.unshift("Silver badge");
+  if (lv === 7) out.push("Name glint");
+  if (lv === 9) out.push("Gold badge");
+  if (lv === 10) out.push(next ? `${t[1]} and laurels` : `Title: ${t[1]}`, ...(next ? [] : ["Laurels"]));
+  return out;
+}
+// the reward line is one short line: after the first two a long list (the catch-up after the head start) ends with "+N more"
+let mxPaid = false;   // this match paid mastery chips
+const mxRewardText = (r) => (r.length > 3 ? [...r.slice(0, 2), `+${r.length - 2} more`] : r).join(" · ");
+// Practice's line under the stat tiles says it earns no chips: when a level up did pay some, it says so
+function masteryWhy(s) { return mxPaid ? s.replace(/ or earn chips\.$/, ". Mastery chips still count.") : s; }
+function mxNextLine(id, lv) { return lv >= MX_MAX ? "Mastered" : `Next: ${mxRewards(id, lv + 1, true).join(" and ")} at Lv ${lv + 1}`; }
+
+/* ----- the profile: tidy fields, and the one-time head start from the old record (w*45 + l*28 + d*35, at most 650 per fighter) ----- */
+(function mxLoad() {
+  if (!mxObj(P.mxp)) P.mxp = {};
+  if (!mxObj(P.mpaid)) P.mpaid = {};
+  if (!mxObj(P.pages)) P.pages = { ko: [], ult: [] };
+  for (const k of ["ko", "ult"]) if (!Array.isArray(P.pages[k])) P.pages[k] = [];
+  if (P.mseed === undefined) {
+    const s = {};
+    for (const f of FIGHTERS) {
+      const e = mxObj(P.fstats) ? P.fstats[f.id] : null;
+      const v = e ? Math.min(650, (e.w | 0) * 45 + (e.l | 0) * 28 + (e.d | 0) * 35) : 0;
+      if (v > 0) s[f.id] = v;
+    }
+    P.mseed = s;
+    if (!firstRun) saveProfile();   // a brand new profile is saved with its first real change (the tutorial still starts after a reload)
+  } else if (!mxObj(P.mseed)) P.mseed = {};
+})();
+
+/* ----- XP for a finished match ----- */
+// The Practice multiplier. Practice is the plain CPU match of finishMatch: not ranked, online, Daily, cup, a boss fight or a Road stop (the Road's
+// stops and boss levels carry names like "Normal" and "Hard" too), and match.level is one of the CPU levels. Every other mode (and any mode
+// added later) counts x1.
+function mxMult() {
+  const m = match, lv = m && !m.ranked && !m.online && !m.daily && !m.cup && !m.boss && !m.road ? LEVELS.find((l) => l.name === m.level) : null;
+  return lv ? { Dummy: 0, Easy: 0.5, Normal: 0.75, Hard: 1 }[lv.name] : 1;
+}
+// R: { res (1 win, 0.5 draw, 0 loss), forfeit, me (the fighter, for its KOs) }; page: your KO page played on the last heart; ult: it was an Ultimate KO
+function mxGain(R, page, ult) {
+  if (R.forfeit) return { xp: 0, why: "No XP for a forfeit" };
+  const m = mxMult();
+  if (m <= 0) return { xp: 0, why: "No XP against the Dummy" };
+  const won = R.res === 1, raw = 20 + (won ? 20 : 0) + ((R.me && R.me.kos) | 0) * 5 + (won && page ? (ult ? 15 : 10) : 0);
+  return { xp: Math.round(raw * m) };
+}
+// Add XP to a fighter and pay the chips of every level above the highest one paid (this also pays levels the head start or a sync brought).
+// Returns what the results screen shows: the level and the bar before (from) and after, and the rewards of the levels passed.
+function mxAward(id, add) {
+  const x0 = mxXp(id), l0 = mxLevel(x0), paid = P.mpaid[id] | 0;
+  const lo = Math.max(1, paid), a = { id, add, x0, x1: x0 + add, l0, from: l0, chips: 0, rewards: [], p0: mxFrac(x0) };
+  if (add > 0) {
+    P.mxp[id] = Math.min(1e9, (P.mxp[id] | 0) + add);
+    a.x1 = mxXp(id);
+    const l1 = mxLevel(a.x1);
+    for (let n = lo + 1; n <= l1; n++) { a.chips += MX_CHIPS[n] | 0; a.rewards.push(...mxRewards(id, n, false).filter((r) => !/chips$/.test(r))); }
+    if (l1 > paid) P.mpaid[id] = l1;
+    if (a.chips) P.tokens += a.chips;
+    if (lo < l0) { a.from = lo; a.p0 = 0; }   // levels reached before but never paid (the head start, a sync): they pop now, from the last paid one
+    saveProfile();
+  }
+  a.l1 = mxLevel(a.x1); a.p1 = mxFrac(a.x1);
+  a.up = a.l1 > a.from;
+  if (a.chips) a.rewards.unshift(`+${a.chips} chips`);
+  return a;
+}
+// a KO page you landed (finisher.js, when you won the KO): the Collection counts them
+function masteryPage(id, ult) {
+  if (!FIG[id]) return;
+  let ch = false;
+  for (const k of ult ? ["ko", "ult"] : ["ko"]) if (!P.pages[k].includes(id)) { P.pages[k].push(id); P.pages[k].sort(); ch = true; }
+  if (ch) saveProfile();
+}
+
+/* ----- sound: the two-note fanfare of reaching Lv 10 (the only new sound) ----- */
+let mxFan = 0;   // how many times it played (read by the test)
+Sfx.fanfare = function () { mxFan++; this.tone(784, 784, 0.16, "triangle", 0.1); this.at(0.15, 1175, 1175, 0.5, "triangle", 0.11); this.at(0.15, 2349, 2349, 0.3, "sine", 0.025); };
+
+/* ----- the results row ----- */
+const mxRow = document.createElement("div");
+mxRow.className = "card res-mx"; mxRow.id = "rMx"; mxRow.hidden = true;
+mxRow.innerHTML = '<span class="av" id="rMxAv"></span><div class="mx-body"><div class="mx-head"><b class="mx-nm" id="rMxNm"></b><span class="mx-lvw" id="rMxLvw">Lv <i id="rMxLv">1</i></span><span class="mx-tag" id="rMxTag"></span></div>' +
+  '<div class="mx-bar"><i id="rMxBar"></i></div><div class="mx-line" id="rMxLine"></div></div><div class="mx-xp" id="rMxXp"><b id="rMxXpN">+0</b><small>XP</small></div>';
+$("rRank").after(mxRow);
+let mxRun = null;   // the level-up sequence in progress: { t: [timers], fin }
+function mxStop() { if (mxRun) { mxRun.t.forEach(clearTimeout); mxRun = null; } }
+function masteryHide() { mxStop(); mxRow.hidden = true; }
+const mxLv = (n) => { $("rMxLv").textContent = n; $("rMxLvw").style.setProperty("--mc", n < 3 ? "#a4a9c8" : mxBadge(n).col); };   // the ink badge of Lv 2 would vanish on the dark card
+function mxBar(p, ms) { const b = $("rMxBar"); b.style.transition = ms ? `width ${ms}ms cubic-bezier(0.25, 0.8, 0.25, 1)` : "none"; b.style.setProperty("--p", p); }
+function mxTag(text, cls) { const t = $("rMxTag"); t.textContent = text; t.className = "mx-tag" + (text ? " on " + cls : ""); }
+// Awards the XP and fills the row. page: your KO page played this match; ult: it was an Ultimate KO.
+function masteryResults(R, page, ult) {
+  const id = R.me.spec.id, g = mxGain(R, page, ult), a = mxAward(id, g.xp);
+  mxStop();
+  const spec = FIG[id], won = R.res === 1, calm = resCalm(), T0 = R.ranked ? 1450 : 450, row = mxRow;
+  row.hidden = false; row.classList.remove("up", "flash", "spin", "max", "zero", "loss", "calm");
+  row.classList.toggle("loss", R.res === 0); row.classList.toggle("zero", g.xp <= 0);
+  row.style.setProperty("--fc", col(spec.palettes[P.pal[id] || 0])); row.style.setProperty("--d", T0 + "ms");
+  acSetAvatar($("rMxAv"), id, P.pal[id] || 0);
+  $("rMxNm").textContent = spec.name;
+  const line = $("rMxLine"), xpN = $("rMxXpN");
+  const label = `${spec.name} mastery, level ${a.l1}. ${g.xp > 0 ? `${g.xp} XP.` : g.why}${a.up ? ` Level up. ${a.rewards.join(", ")}.` : ""}`;
+  row.setAttribute("role", "group"); row.setAttribute("aria-label", label);
+  const rewardText = mxRewardText(a.rewards);
+  mxPaid = a.chips > 0;
+  const lineEnd = g.xp <= 0 ? g.why : a.up ? rewardText : mxNextLine(id, a.l1);
+  const mastered = a.l1 >= MX_MAX;
+  const fin = () => {   // the end state: also what a tap on the screen and reduced motion jump to
+    mxStop();
+    mxLv(a.l1); mxBar(a.p1, 0);
+    mxTag(a.up && mastered ? "Mastered" : a.up ? "Level up" : mastered ? "Mastered" : "", mastered ? "gold" : "ember");
+    line.textContent = lineEnd; line.classList.add("on");
+    row.classList.remove("flash", "spin"); row.classList.toggle("up", a.up); row.classList.toggle("max", mastered);
+    xpN.textContent = g.xp > 0 ? `+${g.xp}` : "0";
+    if (a.up && mastered && !fin.sound) { fin.sound = true; if (won) Sfx.fanfare(); }
+    if (a.up && a.chips && !fin.coin) { fin.coin = true; Sfx.uiCoin(); }
+  };
+  fin.sound = fin.coin = false;
+  // the start state
+  mxLv(a.from); mxBar(a.p0, 0); mxTag("", ""); line.classList.remove("on"); line.textContent = "";
+  xpN.textContent = "+0";
+  if (calm) { fin(); return; }
+  const run = mxRun = { t: [], fin };
+  const at = (ms, f) => run.t.push(setTimeout(() => { if (mxRun !== run) return; if (mode !== "result") { mxStop(); return; } f(); }, ms));   // leaving the screen ends it quietly
+  if (g.xp > 0) resCount(xpN, 0, g.xp, "+", { delay: T0, dur: a.up ? 1100 : 800 });   // a tap finishes this count too
+  if (!a.up) {
+    at(T0, () => mxBar(a.p1, 800));
+    at(T0 + 850, fin);
+    return;
+  }
+  // a level up: the bar fills, flashes, the number spins to the new level, the bar empties and fills to where it is now, the tag stamps in, then the rewards
+  at(T0, () => mxBar(1, 520));
+  at(T0 + 560, () => { row.classList.add("flash", "spin"); });
+  at(T0 + 560 + 260, () => mxLv(a.l1));
+  at(T0 + 940, () => {
+    mxBar(0, 0); void $("rMxBar").offsetWidth; mxBar(a.p1, 460);
+    mxTag(mastered ? "Mastered" : "Level up", mastered ? "gold" : "ember");
+    if (won) { if (mastered) { fin.sound = true; Sfx.fanfare(); } else Sfx.uiGo(); }
+  });
+  at(T0 + 1450, () => { line.textContent = lineEnd; line.classList.add("on"); if (a.chips) { fin.coin = true; Sfx.uiCoin(); } });
+  at(T0 + 1500, fin);
+}
+// a tap on the results screen: the level-up sequence jumps to its end (the counts are finished by screens.js)
+screens.result.addEventListener("pointerdown", () => { if (mxRun) mxRun.fin(); }, true);
+
+/* ----- the tournament has no results screen: the XP shows as a sticker on the bracket ----- */
+const mxCup = document.createElement("div");
+mxCup.className = "mx-cupxp"; mxCup.id = "cupXp"; mxCup.hidden = true;
+mxCup.innerHTML = "<b></b><small></small>";
+document.querySelector("#scrCup .sel-head .coin").before(mxCup);
+let mxCupT = 0;
+function masteryCup(forfeit) {
+  clearTimeout(mxCupT); mxCup.hidden = true;
+  if (forfeit || !G || !match) return;
+  const me = G.fighters[0], res = G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5, g = mxGain({ res, forfeit: false, me }, !!match.finBy, !!FIN.ulti);   // finBy: your KO page played (finStart; cup matches have no results screen to clear it)
+  if (g.xp <= 0) return;
+  const a = mxAward(me.spec.id, g.xp), name = FIG[me.spec.id].name;
+  mxCup.querySelector("b").textContent = `+${g.xp} XP`;
+  mxCup.querySelector("small").textContent = a.up ? `${name} Lv ${a.l1}${a.rewards.length ? " · " + mxRewardText(a.rewards) : ""}` : `${name} Lv ${a.l1}`;
+  mxCup.classList.toggle("up", a.up);
+  mxCup.setAttribute("aria-label", `${name} gains ${g.xp} XP${a.up ? `, level ${a.l1}` : ""}`);
+  mxCupT = setTimeout(() => {
+    if (mode !== "cup") return;
+    mxCup.hidden = false; mxCup.classList.remove("pop"); void mxCup.offsetWidth; mxCup.classList.add("pop");
+    if (a.up) Sfx.uiCoin();
+    mxCupT = setTimeout(() => { mxCup.hidden = true; }, 7000);
+  }, 700);
+}
+
+/* ----- the roster tile, the detail panel ----- */
+function mxShield(el, lv) {   // fills the shield (an <i class="mx-sh"><em>) for a level
+  const b = mxBadge(lv);
+  el.hidden = lv < 2; el.dataset.k = b.k; el.firstChild.textContent = lv;
+}
+function masteryTile(b, spec) {
+  const lv = mxInfo(spec.id).lv;
+  if (!b._mx) {
+    b._mx = document.createElement("i"); b._mx.className = "mx-sh"; b._mx.innerHTML = "<em></em>"; b._mx.setAttribute("aria-hidden", "true");
+    b._lr = document.createElement("i"); b._lr.className = "mx-lr"; b._lr.setAttribute("aria-hidden", "true");
+    b.append(b._mx, b._lr);
+  }
+  mxShield(b._mx, lv); b._lr.hidden = lv < MX_MAX;
+  b.classList.toggle("mx10", lv >= MX_MAX);
+  b.setAttribute("aria-label", `${spec.name}${lv > 1 ? `, mastery level ${lv}` : ""}`);
+}
+// the MASTERY row of the stats card: ten segments (the next one fills to the XP fraction), the LV sticker, and what comes next
+function masteryDetail(spec) {
+  const m = mxInfo(spec.id), b = mxBadge(m.lv);
+  let seg = "";
+  for (let n = 1; n <= MX_MAX; n++) seg += n <= m.lv ? '<i class="on"></i>' : n === m.lv + 1 && m.p > 0 ? `<i class="part" style="--f:${m.p.toFixed(3)}"></i>` : "<i></i>";
+  $("dStats").insertAdjacentHTML("beforeend", `<div class="mx-row" data-k="${b.k}"><span>Mastery</span><span class="mx-seg" role="img" aria-label="Mastery level ${m.lv} of ${MX_MAX}">${seg}</span>` +
+    `<b class="mx-lv" style="--mc:${b.col || "#a4a9c8"}">Lv ${m.lv}</b><small class="mx-next">${mxNextLine(spec.id, m.lv)}</small></div>`);
+  $("dName").classList.toggle("mx10", m.lv >= MX_MAX);
+}
+
+/* ----- titles (acct.js lists them in ACT) and the Collection (Account > Locker, the level in Account > Stats) ----- */
+function mxActs(n) {   // the Lv 5 or Lv 10 title of every fighter
+  return mxFighters().map((f) => ({ id: `m${n}_${f.id}`, grp: `m${n}`, fighter: true, name: () => MX_TITLES[f.id][n === 5 ? 0 : 1], ok: () => mxInfo(f.id).lv >= n,
+    how: `Reach Lv ${n} with ${f.name}.`, note: () => `${f.name} Lv ${n}`, xp: () => mxXp(f.id) }));
+}
+const mxJack = { id: "jack", name: () => "Jack of Spuds", ok: () => mxFighters().every((f) => mxInfo(f.id).lv >= 5), how: "Reach Lv 5 with every fighter." };
+function mxShieldHTML(lv, cls) { const b = mxBadge(lv); return `<i class="mx-sh sm ${cls || ""}" data-k="${b.k}"${lv < 2 ? " hidden" : ""}><em>${lv}</em></i>`; }
+const mxDots = (list) => mxFighters().map((f) => { const on = (list || []).includes(f.id); return `<span class="av${on ? " on" : ""}" data-f="${f.id}" title="${f.name}${on ? "" : ": not yet"}"></span>`; }).join("");
+function masteryCollection(pan) {
+  const ko = P.pages.ko.filter((id) => FIG[id]), ult = P.pages.ult.filter((id) => FIG[id]), n = mxFighters().length, rd = routesDone().length;
+  const box = document.createElement("div");
+  box.className = "mx-col";
+  box.innerHTML = '<div class="kicker">Collection</div><div class="mx-cells">' +
+    `<div class="mx-cell" id="mxColKo"><b>${ko.length}<small>/${n}</small></b><span>KO pages</span><div class="mx-dots">${mxDots(ko)}</div></div>` +
+    `<div class="mx-cell" id="mxColUlt"><b>${ult.length}<small>/${n}</small></b><span>Ultimate KOs</span><div class="mx-dots">${mxDots(ult)}</div></div>` +
+    `<div class="mx-cell" id="mxColRt"><b>${rd}<small>/${ROUTE_TOTAL}</small></b><span>Combo routes</span><div class="mx-rbar"><i style="width:${Math.round(100 * rd / ROUTE_TOTAL)}%"></i></div></div></div>` +
+    '<p class="ac-line">A fighter\'s page counts once you land it yourself: your KO on the last heart.</p>';
+  for (const d of box.querySelectorAll(".av")) acSetAvatar(d, d.dataset.f, P.pal[d.dataset.f] || 0);
+  pan.appendChild(box);
+}
+
+/* ----- the winner's name on the KO page: a gold sheen sweeps across it once (Lv 7 and up; a still gold edge with reduced motion) ----- */
+// nm: the name word of the title block ({ cv, w, h }), drawn at (x, y); called by manga.js mgCard inside its slide transform
+function masteryGlint(o, nm, x, y, t) {
+  if (FIN.w !== meSlot || !FIN.P[FIN.w] || mxInfo(FIN.P[FIN.w].spec.id).lv < 7) return;
+  if (!nm.gold) {   // the same lettering with its white fill turned gold (multiply), and only where the letters are
+    const c = document.createElement("canvas"); c.width = nm.cv.width; c.height = nm.cv.height;
+    const g = c.getContext("2d");
+    g.drawImage(nm.cv, 0, 0);
+    g.globalCompositeOperation = "multiply";
+    const gr = g.createLinearGradient(0, 0, 0, c.height); gr.addColorStop(0.3, "#ffe08a"); gr.addColorStop(0.55, "#f4c95d"); gr.addColorStop(1, "#d68a2a");
+    g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = "destination-in"; g.drawImage(nm.cv, 0, 0);
+    nm.gold = c;
+  }
+  const reduced = MG.reduced, k = reduced ? 0.4 : fe(MT.CARD + 380, MT.CARD + 1000, t);
+  if (!reduced && (k <= 0 || k >= 1)) return;
+  const w = nm.w, h = nm.h, bw = w * 0.16, cx = x + (reduced ? w * 0.4 : -bw + (w + bw * 2) * easeOut(k)), sk = h * 0.3;
+  o.save();
+  o.beginPath(); o.moveTo(cx - bw / 2 + sk, y); o.lineTo(cx + bw / 2 + sk, y); o.lineTo(cx + bw / 2 - sk, y + h); o.lineTo(cx - bw / 2 - sk, y + h); o.closePath(); o.clip();
+  o.drawImage(nm.gold, x, y, w, h);
+  o.restore();
+}
+
+/* ----- a hook for the tests ----- */
+window.__blMastery = { info: mxInfo, level: mxLevel, curve: MX_CURVE, titles: MX_TITLES, gain: mxGain, mult: mxMult, page: masteryPage, get fanfares() { return mxFan; } };
 /* ===================== accounts: profile pill, Account sheet, sync code =====================
    The pill (top right of the start page) shows who you are; tapping it opens the Account sheet with your numbers and the sync
    section. The code format, the clean-up of a profile and the merge live in sync.js (pure, tested in node). Nothing here ever
@@ -22795,6 +23254,10 @@ const SYNC = (function () {
   const CTRL_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
   const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   const num = (v, lo, hi, d) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
+  // fighter mastery (ui/mastery.js): {fighterId: number} maps and lists of fighter ids. Zero rows are left out, so a prof has one spelling.
+  const cleanMap = (m, hi) => { const r = {}; for (const id of Object.keys(m).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) { const v = num(m[id], 0, hi, 0); if (v > 0) r[id] = v; } return r; };
+  const cleanIds = (l) => (Array.isArray(l) ? [...new Set(l.filter((x) => typeof x === "string" && ID_RE.test(x)))].sort().slice(0, 24) : []);
+  const MSEED_MAX = 650, MLV_MAX = 10;   // the head start's cap (XP) and the top level
 
   /* ----- the sync code: 16 characters of Crockford base32, shown as 7K3F-9QXM-2PLA-W8RT ----- */
   // What a player may type: any case, dashes and spaces optional, O read as 0, I and L as 1. "" when it cannot be a code.
@@ -22874,6 +23337,11 @@ const SYNC = (function () {
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    // fighter mastery: XP played per fighter (a counter), the one-time head start XP (max), the highest level whose reward was paid (max), the KO pages / Ultimate KO pages landed (union)
+    if (isObj(p.mxp)) out.mxp = cleanMap(p.mxp, MAXN);
+    if (isObj(p.mseed)) out.mseed = cleanMap(p.mseed, MSEED_MAX);
+    if (isObj(p.mpaid)) out.mpaid = cleanMap(p.mpaid, MLV_MAX);
+    if (isObj(p.pages)) out.pages = { ko: cleanIds(p.pages.ko), ult: cleanIds(p.pages.ult) };
     { const rd = cleanRoad(p.road); if (rd) out.road = rd; }
     // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
     if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
@@ -22907,6 +23375,8 @@ const SYNC = (function () {
     if (S.road !== undefined) P.road = { s: S.road.s.slice(), b: S.road.b, paid: S.road.paid };
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
+    for (const k of ["mxp", "mseed", "mpaid"]) if (S[k] !== undefined) P[k] = Object.assign({}, S[k]);
+    if (S.pages !== undefined) P.pages = { ko: S.pages.ko.slice(), ult: S.pages.ult.slice() };
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -22914,7 +23384,8 @@ const SYNC = (function () {
     if (!P) return false;
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
-      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)));
+      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)) ||
+      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)));   // fighter mastery XP (Practice alone earns it)
   }
 
   /* ----- the merge -----
@@ -22975,6 +23446,27 @@ const SYNC = (function () {
     // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
     if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
     if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);
+    // fighter mastery. XP played is a counter per fighter (server + local - base); the head start and the paid level take the higher
+    // value per fighter (two devices that seeded from the same record must not add); the pages are a union. A side without the field is "unchanged".
+    if (have(S.mxp) || have(L.mxp)) {
+      const r = {}, bm = B.mxp || {}, at = (o, id) => (o && o[id]) || 0;
+      for (const id of [...new Set([...Object.keys(L.mxp || {}), ...Object.keys(S.mxp || {})])].sort()) {
+        const l = have(L.mxp) ? at(L.mxp, id) : null, s = have(S.mxp) ? at(S.mxp, id) : null;
+        const v = l === null ? s : s === null ? l : Math.min(MAXN, Math.max(0, s + l - at(bm, id)));
+        if (v > 0) r[id] = v;
+      }
+      out.mxp = r;
+    }
+    for (const k of ["mseed", "mpaid"]) {
+      if (!have(S[k]) && !have(L[k])) continue;
+      const r = {}, a = L[k] || {}, b = S[k] || {};
+      for (const id of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) { const v = Math.max(a[id] || 0, b[id] || 0); if (v > 0) r[id] = v; }
+      out[k] = r;
+    }
+    if (have(S.pages) || have(L.pages)) {
+      const u = (k) => [...new Set([...((L.pages || {})[k] || []), ...((S.pages || {})[k] || [])])].sort();
+      out.pages = { ko: u("ko"), ult: u("ult") };
+    }
     // the Road: every star and boss level either side won stays won; the first-win reward, paid on any device, stays paid
     if (have(S.road) || have(L.road)) {
       const l = L.road || { s: [], b: 0, paid: false }, s = S.road || { s: [], b: 0, paid: false };
@@ -23050,21 +23542,26 @@ function acSetAvatar(node, id, pal) {   // pal (optional): the ring takes the sk
 function acSetMe(node) { const a = acAvatar(); acSetAvatar(node, a.f, a.p); }
 const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {});
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
-// Eight titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
+// Titles, earnable from the start (eight, Jack of Spuds, and a Lv 5 and a Lv 10 title per fighter from ui/mastery.js). `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
+  ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
+  mxJack,          // Jack of Spuds: Lv 5 with every fighter
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
   { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
+  ...mxActs(5),    // the Lv 5 title of each fighter
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "collector", "wanderer", "combo"];   // the order of the list
-function acTitle() {   // the one that shows: the chosen one if earned, else the best earned, else none
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
+function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
-  const t = pick || ACT.find((t) => t.ok());
+  let t = pick || ACT.find((t) => t.ok());
+  if (!pick && t && t.grp) t = ACT.filter((x) => x.grp === t.grp && x.ok()).reduce((a, x) => (x.xp() > a.xp() ? x : a));
   return t ? { id: t.id, name: t.name(), auto: !pick } : null;
 }
 
@@ -23182,10 +23679,10 @@ function renderPick() {
     auto.appendChild(acMk("b", "", "Automatic")); auto.appendChild(acMk("small", "", "Shows the best title you have earned."));
     auto.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.title = ""; saveProfile(); renderPill(); renderAccount(); });
     list.appendChild(auto);
-    for (const id of ACT_SHOWN) {
+    for (const id of acShown()) {
       const t = ACT.find((x) => x.id === id), ok = t.ok();
       const b = acMk("button", "ac-t" + (ok ? "" : " lock") + (ok && cur && !cur.auto && cur.id === id ? " on" : ""));
-      b.appendChild(acMk("b", "", t.name())); b.appendChild(acMk("small", "", ok ? "Earned." : t.how));
+      b.appendChild(acMk("b", "", t.name())); b.appendChild(acMk("small", "", ok ? (t.note ? "Earned: " + t.note() + "." : "Earned.") : t.how));
       if (ok) b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.title = id; saveProfile(); renderPill(); renderAccount(); });
       else { b.setAttribute("aria-disabled", "true"); }
       list.appendChild(b);
@@ -23214,7 +23711,7 @@ function renderStats() {
     d.appendChild(w); pan.appendChild(d);
   }
   const t = acMk("table", "fs-tab"), hd = acMk("tr");
-  for (const h of ["Fighter", "Wins", "Losses", "Win rate"]) hd.appendChild(acMk("th", "", h));
+  for (const h of ["Fighter", "Wins", "Losses", "Win rate", "Mastery"]) hd.appendChild(acMk("th", "", h));
   t.appendChild(acMk("thead")).appendChild(hd);
   const tb = acMk("tbody");
   for (const f of FIGHTERS) {
@@ -23223,6 +23720,7 @@ function renderStats() {
     acSetAvatar(a, f.id, P.pal[f.id] || 0); fn.appendChild(a); fn.appendChild(acMk("span", "", f.name)); c0.appendChild(fn); tr.appendChild(c0);
     tr.appendChild(acMk("td", m ? "" : "z", m ? String(w) : "0")); tr.appendChild(acMk("td", m ? "" : "z", m ? String(l) : "0"));
     tr.appendChild(acMk("td", m ? "" : "z", m ? Math.round((100 * w) / m) + "%" : "\u2013"));
+    { const mt = acMk("td", "mx-c"), lv = mxInfo(f.id).lv; mt.innerHTML = `${mxShieldHTML(lv)}<span>Lv ${lv}</span>`; tr.appendChild(mt); }   // ui/mastery.js
     tb.appendChild(tr);
   }
   t.appendChild(tb); pan.appendChild(t);
@@ -23246,6 +23744,7 @@ function renderStats() {
 /* ----- Locker tab: every fighter with every skin; tap one you own to wear it ----- */
 function renderLocker() {
   const pan = $("acPanL"); pan.innerHTML = "";
+  masteryCollection(pan);   // ui/mastery.js: KO pages, Ultimate KOs, combo routes
   pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen."));
   const grid = acMk("div", "lk");
   for (const f of FIGHTERS) {

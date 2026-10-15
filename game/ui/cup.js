@@ -96,6 +96,7 @@ function cupFight() {
 }
 // finishMatch calls this for a cup match: a win moves you on, a loss (also a forfeit) ends the cup, a draw is fought again
 function cupMatchEnd(forfeit) {
+  masteryCup(forfeit);   // ui/mastery.js: the XP sticker on the bracket
   const c = P.cup, r = c.round, g = G, me = g.fighters[0];
   if (!forfeit && g.winner < 0) { cupShow({ note: "That one was a draw. Fight it again." }); return; }
   const won = !forfeit && g.winner === 0;

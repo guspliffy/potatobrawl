@@ -163,5 +163,12 @@ else fail "boss fights in the browser" "$LOGS/boss-ui.log"; fi
 if grep -q "^no errors" "$LOGS/road-ui.log"; then pass "the Road in the browser (map, stops, stars, the fence, Old Scratch; shots in build/shots/road)"
 else fail "the Road in the browser" "$LOGS/road-ui.log"; fi
 
+# 8f. Fighter mastery: XP per finished match (Practice by CPU level, ranked, forfeit), the level-up row on the results screen, chips paid once,
+#     MASTERED at Lv 10, the one-time head start, the roster shield and detail row, titles, Stats and the Locker's Collection, a KO page
+#     recorded, the cup's XP sticker. Shots in build/shots/mastery.
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwmastery.py" mastery) > "$LOGS/mastery-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/mastery-ui.log"; then pass "fighter mastery in the browser (XP, level up, rewards, titles, Locker; shots in build/shots/mastery)"
+else fail "fighter mastery in the browser" "$LOGS/mastery-ui.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))

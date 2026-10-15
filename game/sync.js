@@ -16,6 +16,10 @@ const SYNC = (function () {
   const CTRL_RE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
   const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   const num = (v, lo, hi, d) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
+  // fighter mastery (ui/mastery.js): {fighterId: number} maps and lists of fighter ids. Zero rows are left out, so a prof has one spelling.
+  const cleanMap = (m, hi) => { const r = {}; for (const id of Object.keys(m).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) { const v = num(m[id], 0, hi, 0); if (v > 0) r[id] = v; } return r; };
+  const cleanIds = (l) => (Array.isArray(l) ? [...new Set(l.filter((x) => typeof x === "string" && ID_RE.test(x)))].sort().slice(0, 24) : []);
+  const MSEED_MAX = 650, MLV_MAX = 10;   // the head start's cap (XP) and the top level
 
   /* ----- the sync code: 16 characters of Crockford base32, shown as 7K3F-9QXM-2PLA-W8RT ----- */
   // What a player may type: any case, dashes and spaces optional, O read as 0, I and L as 1. "" when it cannot be a code.
@@ -95,6 +99,11 @@ const SYNC = (function () {
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    // fighter mastery: XP played per fighter (a counter), the one-time head start XP (max), the highest level whose reward was paid (max), the KO pages / Ultimate KO pages landed (union)
+    if (isObj(p.mxp)) out.mxp = cleanMap(p.mxp, MAXN);
+    if (isObj(p.mseed)) out.mseed = cleanMap(p.mseed, MSEED_MAX);
+    if (isObj(p.mpaid)) out.mpaid = cleanMap(p.mpaid, MLV_MAX);
+    if (isObj(p.pages)) out.pages = { ko: cleanIds(p.pages.ko), ult: cleanIds(p.pages.ult) };
     { const rd = cleanRoad(p.road); if (rd) out.road = rd; }
     // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
     if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
@@ -128,6 +137,8 @@ const SYNC = (function () {
     if (S.road !== undefined) P.road = { s: S.road.s.slice(), b: S.road.b, paid: S.road.paid };
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
+    for (const k of ["mxp", "mseed", "mpaid"]) if (S[k] !== undefined) P[k] = Object.assign({}, S[k]);
+    if (S.pages !== undefined) P.pages = { ko: S.pages.ko.slice(), ult: S.pages.ult.slice() };
     return P;
   }
   // does this profile hold anything worth a "replace it?" question
@@ -135,7 +146,8 @@ const SYNC = (function () {
     if (!P) return false;
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
-      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)));
+      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)) ||
+      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)));   // fighter mastery XP (Practice alone earns it)
   }
 
   /* ----- the merge -----
@@ -196,6 +208,27 @@ const SYNC = (function () {
     // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
     if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
     if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);
+    // fighter mastery. XP played is a counter per fighter (server + local - base); the head start and the paid level take the higher
+    // value per fighter (two devices that seeded from the same record must not add); the pages are a union. A side without the field is "unchanged".
+    if (have(S.mxp) || have(L.mxp)) {
+      const r = {}, bm = B.mxp || {}, at = (o, id) => (o && o[id]) || 0;
+      for (const id of [...new Set([...Object.keys(L.mxp || {}), ...Object.keys(S.mxp || {})])].sort()) {
+        const l = have(L.mxp) ? at(L.mxp, id) : null, s = have(S.mxp) ? at(S.mxp, id) : null;
+        const v = l === null ? s : s === null ? l : Math.min(MAXN, Math.max(0, s + l - at(bm, id)));
+        if (v > 0) r[id] = v;
+      }
+      out.mxp = r;
+    }
+    for (const k of ["mseed", "mpaid"]) {
+      if (!have(S[k]) && !have(L[k])) continue;
+      const r = {}, a = L[k] || {}, b = S[k] || {};
+      for (const id of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) { const v = Math.max(a[id] || 0, b[id] || 0); if (v > 0) r[id] = v; }
+      out[k] = r;
+    }
+    if (have(S.pages) || have(L.pages)) {
+      const u = (k) => [...new Set([...((L.pages || {})[k] || []), ...((S.pages || {})[k] || [])])].sort();
+      out.pages = { ko: u("ko"), ult: u("ult") };
+    }
     // the Road: every star and boss level either side won stays won; the first-win reward, paid on any device, stays paid
     if (have(S.road) || have(L.road)) {
       const l = L.road || { s: [], b: 0, paid: false }, s = S.road || { s: [], b: 0, paid: false };

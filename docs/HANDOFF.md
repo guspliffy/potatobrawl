@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-15: boss fights, Old Scratch, The Field and the Road, PROTO 10)
+# PotatoBrawl handoff (updated 2026-10-15: fighter mastery, boss fights, Old Scratch, The Field and the Road, PROTO 10)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -220,6 +220,47 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     coin|no|tap" wins, else .primary/.pri go, .back/.x back, the rest tap. A tap on a disabled button plays uiNo.
   - Known small things: cup matches go straight back to the bracket (no results screen); the tier title is the best tier
     reached (never below the current one).
+- Fighter mastery (2026-10-15, branch claude/fighter-mastery-bl22hf; Fable's design: /mnt/project-files/mastery/fable-mastery.md; UI only,
+  PROTO stays 9, core.js untouched). Code: game/ui/mastery.js (after combos, before acct) + game/css/80-mastery.css; the other files only
+  call it in one line each (screens.js buildTiles / buildDetail / resOpen / showResults and the Practice line, cup.js cupMatchEnd,
+  finisher.js finStart, manga.js mgCard, acct.js ACT + Stats + Locker).
+  - Data (profile, all synced): `P.mxp` {id: XP earned by playing}, `P.mseed` {id: head start}, `P.mpaid` {id: highest level whose reward was
+    paid}, `P.pages` {ko: [ids], ult: [ids]} (fighters whose KO page / Ultimate KO page YOU landed). XP = mseed + mxp. The head start is
+    given once, at load, while `P.mseed` is undefined: min(650, w*45 + l*28 + d*35) per fighter from `P.fstats`; a brand-new profile
+    (`firstRun`) gets {} in memory and is not written, so the tutorial still starts (defProfile leaves mseed out on purpose).
+  - Curve (total XP to reach the level): Lv2 100, 3 250, 4 450, 5 700, 6 1000, 7 1350, 8 1750, 9 2200, 10 2700.
+  - XP per finished match, for the fighter you played: 20 + 20 for a win + 5 per KO + 10 when your KO page played on the last heart
+    (15 instead for an Ultimate KO page), rounded after the multiplier. Forfeit 0; opponent left = a win; a dropped connection = its result.
+    Ranked, online, Daily, cup, boss fights, Road stops and every other mode count x1. Practice by CPU level: Hard 1, Normal 0.75, Easy
+    0.5, Dummy 0 (the row says why). `mxMult()` decides it POSITIVELY: Practice = not ranked/online/daily/cup/boss/road and `match.level`
+    is one of the LEVELS names, so a new mode is x1 without a code change (boss levels and Road stops carry names like "Normal" too). Tutorial and Combo trial never reach showResults, so they give nothing.
+  - Rewards (`mxAward` pays them, once per level, by `P.mpaid`): Lv2 20 chips, Lv3 bronze badge, Lv4 40, Lv5 title I, Lv6 silver badge
+    + 60, Lv7 KO-page name glint (gold sheen over the winner's name on the manga page, `masteryGlint`), Lv8 80, Lv9 gold badge,
+    Lv10 title II + laurels + a two-note fanfare (`Sfx.fanfare`, only when a WIN reaches Lv10; a loss shows MASTERED quietly).
+    Levels reached but never paid (the head start, a sync) pay on the next finished match and pop in one go.
+  - Titles: per fighter, Lv5 / Lv10 (Phoenix Hot Potato / Reborn, Alchemist Lab Rat / Philosopher, Odin Raven Keeper / Spearbearer,
+    Wizard Star Pupil / Starcaller, Samurai Steady Hand / One Cut, Dragon Hatchling / Elder Wyrm, Gunslinger Deputy / Most Wanted,
+    Reaper Gravedigger / Ferryman), ids `m5_<id>` / `m10_<id>`, and "Jack of Spuds" (all eight at Lv5+). Automatic order: Flawless, a Lv10
+    title, Cup winner, Jack of Spuds, Combo Potato, Collector, Centurion, a Lv5 title, Wanderer, tier; among fighter titles of one rank the
+    fighter with the most XP wins. The picker lists only earned fighter titles (Jack of Spuds always, locked with its how-text).
+  - Where it shows: roster tile shield (ink 2, bronze 3-5, silver 6-8, gold 9, laurel + gold line 10); detail MASTERY row (10 segments,
+    LV sticker, "Next: ..."), gold stage name at 10; results row `#rMx` under the rank card (portrait, NAME - LV, bar, +N XP sticker,
+    level-up sequence: bar fills, flash and spin, number changes, bar refills, LEVEL UP / MASTERED stamp, reward line; a tap finishes it,
+    reduced motion skips it); cup bracket sticker `#cupXp` (the cup has no results screen); Account > Stats "Mastery" column; Account >
+    Locker "Collection" (KO pages n/8, Ultimate KOs n/8, combo routes n/13).
+  - Sync (sync.js, tests in tests/acct.js): `mxp` is a counter (each side's change since the last sync is added; a side that does not
+    know the field counts as unchanged), `mseed` and `mpaid` merge per fighter by max, `pages` is a union; all optional fields (a missing one
+    = "not known", an older page never zeroes it). ACCEPTED EDGE: two devices that both reach the same level before they sync each pay
+    that level's chips once (mpaid is a max, chips are not synced separately), the same as the all-13-routes reward.
+  - Gotchas: `#scrSelect .tile span` / `.tile img` rules hit anything inside a tile, so the shield is `<i><em>`. The module is a part of
+    the shared closure: top-level consts are in TDZ until its part runs (functions are hoisted, which is why screens.js can call it).
+    The results row is built in JS and inserted after #rRank. The Practice line "doesn't change your rating or earn chips" gets
+    "Mastery chips still count" when a level up paid some (`masteryWhy`). The reward line shows the first two rewards and "+N more" after three
+    (the catch-up after the head start). Short phone sizes: the level-up row can scroll the results column by 1-3 px.
+  - Test: tests/pwmastery.py (check.sh 8f, about 15 minutes in the swiftshader container, so its timeout is 1500; tags flow s667 p844
+    d1280 up390, plus ko / cup / x1 = parts of flow; shots in build/shots/mastery, also a Road result beside its stars), test hook
+    `window.__blMastery` (info, level, curve, titles, gain, mult, page, fanfares). pwroad.py's start profile has `mpaid` set so the
+    level chips do not change its chip counts; pwacct.py's title list counts Jack of Spuds (Automatic + eight titles + Jack).
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -259,7 +300,7 @@ index.html is committed with every source change (check.sh flags a stale one).
     (`escapeInput`); lethal only if all four die. Event "lethal" {slot, by, final, mv, fin, chg, kb, dirx,
     diry}. On the last life (`final`) the loser is `doomed` (intangible, KO counted at once) and endGame runs
     on that frame ("game" event `hit: true`); the blast line later only removes the doomed loser.
-- ui/: one script in 21 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it); base.js opens the IIFE and loop.js
+- ui/: one script in 22 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it, mastery after combos for the same reason); base.js opens the IIFE and loop.js
   closes it, so a part alone is not valid JS.
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
@@ -335,6 +376,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   `sanitize` + `mergeProf` for other kinds) and `applyTo`. Device-only fields (sound, screen, fs, rules, a2hs) are never synced.
   The link to an account is stored on the device under `potatobrawl.acct.v1` (code, revision, base copy, last sync time, a pending
   reset), not in the profile. Test hooks: `window.__blAcct` (P, st, ui, sync, save).
+- ui/mastery.js (fighter mastery, see State): XP/level maths (`mxXp`, `mxLevel`, `mxInfo`), `mxGain` + `mxMult` (XP of a match), `mxAward` (XP, chips, `P.mpaid`),
+  `masteryResults` / `masteryCup` / `masteryTile` / `masteryDetail` / `masteryCollection` / `masteryPage` / `masteryGlint`, the titles `mxActs` + `mxJack` (read by ACT in acct.js).
 - skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
@@ -351,7 +394,7 @@ index.html is committed with every source change (check.sh flags a stale one).
   `prof` = rating, peak, streak, wins, losses, draws, matches, chips, friend wins/losses, cups, name, last fighter, owned skins, picked
   skins, tutorial done, last 50 results (+ per-fighter stats, flawless cups, picture, title). No email, no password, no IP is stored.
 - Accounts hub (the Account sheet has three tabs: Profile, Stats, Locker). Profile: picture = any owned fighter + skin (`P.avatar` "id:skin",
-  "" = fighter played last; the pill uses it too), title (`P.title`; "" = best earned; six titles in `ACT` in acct.js: tier = best tier reached
+  "" = fighter played last; the pill uses it too), title (`P.title`; "" = best earned; the titles are `ACT` in acct.js (fighter mastery adds 16 fighter titles and Jack of Spuds, see State); six of them: tier = best tier reached
   after a first ranked match, Centurion 100 wins, Cup winner, Flawless = `P.flawless` counted in cup.js where the +30 is given, Collector,
   Wanderer = 7 fighters with ranked matches), shown under the name and on the pill when it fits. Stats: `P.fstats` {id:{w,l,d}} + `P.fsince`,
   counted in finishMatch only for ranked matches (the ones that already count in wins/losses/history, forfeits as losses); cup and friend matches
@@ -402,7 +445,9 @@ escaped at 0 and 30%; damage scaling; `node combos.js try k1,k2,...` tries a can
 [1 jump | 2 dodge]` traces one run; check.sh step 3d, also in --quick) · pwcombo.py (route cards, the Combo trial driven by a script
 through window.__blInput, misses + hint, Next/Exit, the all-13 reward paid once; tags flow s667 d1280 up390; check.sh 8b) ·
 pwcomboreel.py (a half-speed video of trial routes on a frozen clock; needs ffmpeg) · pwdaily.py (Daily Potato with a Date stand-in:
-one try, chips, streak, reload, next day, midnight; tags flow s667 p844 d1280 up390; check.sh 8c) ·
+one try, chips, streak, reload, next day, midnight; tags flow s667 p844 d1280 up390; check.sh 8c) · pwmastery.py (fighter mastery: XP rules, Practice
+multipliers, level up + chips once, MASTERED + fanfare, head start, tile/detail, titles, Stats + Locker, KO page recorded, cup sticker, boss/Road x1; shots; tags flow
+s667 p844 d1280 up390; check.sh 8f) ·
 pwux2.py (all screens, 3 sizes) · ulti.js (every ulti's KO% vs Samurai and Odin, first hit after the freeze, bar spent, no third use,
 save/restore mid-ulti; check.sh 3e, also in --quick) · pwult.py (the ulti bar empty/half/full/spent, the ULTI button only while full and
 clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone desk up kbd pad; check.sh 6d) · pwtut.py (the nine tutorial
@@ -440,11 +485,12 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   The Deep, Road skins (stars buy skins), then online 2v1 (session 5) and 2v2 (session 6). Boss leftovers: The Field in the
   ranked draw needs its own balance pass; a solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when he
   breaks is not drawn yet; the Road has no stops past the fence yet (the next regions come with the Alien and the Sea Monster).
-- Also open (fighter mastery, queued as its own thread; Jonny's order, 2026-10-14 11:55 UTC): the Ultimate
-  KO pages are all done (2026-10-15: Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök", Alchemist "Mutation", Reaper
-  "The Ferryman"; Fable's twists in next-ideas/fable-ideas.md section 2); left of it: fighter
-  mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
-  seen).
+  Fighter mastery is done (see State): the new fighters appear on the roster and in Stats by themselves (`FIGHTERS`); check the tile
+  shield, the detail row and the Stats table with 10 rows; a new mode counts x1 unless `mxMult` (ui/mastery.js) names it.
+- Ultimate KO pages are all done (2026-10-15: Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök", Alchemist "Mutation", Reaper
+  "The Ferryman"; Fable's twists in next-ideas/fable-ideas.md section 2).
+- Mastery leftovers: two devices that both reach the same level before syncing each pay its chips once (accepted); the head start never changes once
+  given (a bigger record later gives nothing); online matches count x1 and show no mastery to the opponent (the level is not sent).
 - Ultimates leftovers: Odin's shared combo routes mostly miss lighter fighters (a lever if Jonny wants Odin to combo more); an
   ulti can KO without a "lethal" call when escapes would have survived it (no finisher then, by design); finish.js at 60 seeds
   still finds a rare wrong call where a bot attacker acts after the call (the same class as the old Dragon case).

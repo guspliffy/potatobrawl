@@ -48,7 +48,7 @@ async def hit(pg, i):   # a tap on a stop: your fighter walks there first (if it
 
 async def flow(b, errs):
     tag = 'flow'
-    ctx, pg, mob = await new_page(b, tag, (844, 390), False, errs, {'tut': True, 'last': 'samurai', 'tokens': 5})
+    ctx, pg, mob = await new_page(b, tag, (844, 390), False, errs, {'tut': True, 'last': 'samurai', 'tokens': 5, 'mpaid': {'samurai': 10}})   # (mpaid: fighter mastery's level chips are pwmastery's to check; none here)
     clk = pg.tap if mob else pg.click
     def need(ok, msg):
         if not ok: errs.append(f'{tag}: {msg}')
