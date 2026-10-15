@@ -142,6 +142,10 @@ function pureTests() {
   const fm = SYNC.mergeProf(fB, fb, fA, true);
   check(eq(fm.fstats[F0], { w: 5, l: 4, d: 1 }) && eq(fm.fstats[F1], { w: 1, l: 0, d: 0 }), "fstats: two devices add what each changed per fighter (3+2 wins, 1+3 losses, 0+1 draws; a fighter only one side played is kept)");
   check(fm.flawless === 2 && fm.fsince === 900, "fstats: the flawless counter adds, 'since' keeps the earlier date");
+  const dm = SYNC.mergeProf(prof(Object.assign({}, fb, { duo: 3 })), prof(Object.assign({}, fb, { duo: 1 })), prof(Object.assign({}, fb, { duo: 2 })), true);
+  check(dm.duo === 4, "duo: online boss wins (Double Trouble) add from both devices (1, +2 here, +1 there = 4)");
+  const dk = SYNC.mergeProf(prof(Object.assign({}, fb, { duo: 2 })), prof(fb), SYNC.sanitize(fb, FIGHTERS), false);
+  check(dk.duo === 2, "duo: a server copy from a page without it keeps this device's count");
   // an older page: it syncs a prof WITHOUT the new fields. Missing = unchanged, never zero.
   const oldPage = (p) => { const o = Object.assign({}, p); for (const k of ["fstats", "fsince", "flawless", "avatar", "title", "daily"]) delete o[k]; return o; };
   const o1 = SYNC.sanitize(oldPage(fb), FIGHTERS);
