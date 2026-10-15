@@ -577,10 +577,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 - Ultimates leftovers: Odin's shared combo routes mostly miss lighter fighters (a lever if Jonny wants Odin to combo more); an
   ulti can KO without a "lethal" call when escapes would have survived it (no finisher then, by design); finish.js at 60 seeds
   still finds a rare wrong call where a bot attacker acts after the call (the same class as the old Dragon case).
-- Flaky browser tests seen on 2026-10-14 (each passed when run alone, the Daily one also fails now and then on main): pwdaily.py
-  flow sometimes comes back from a reload with the starting profile (chips 85, the Daily open again), pwcup.py flow once missed
-  the bracket after a reload, pwcombo.py timed out waiting for the trial. Worth a look: a localStorage write right before
-  pg.reload() may not have reached the store yet.
+- Flaky browser tests: pwdaily.py and pwcup.py flow came back from a reload with the starting profile (on 2026-10-15 every
+  time, main too). Cause: Playwright's in-memory browser profiles commit localStorage lazily, so a reload can read an older
+  store. Fixed 2026-10-15 (PR #37): both carry the page's storage over the reload in window.name (KEEP + reload()); a new
+  test that reloads should do the same. Still seen once: pwcombo.py timed out waiting for the trial.
 - Combos/Daily leftovers: the Daily's Brutal (0.87) is still below Practice Hard (0.9); changing the device clock gives an extra
   Daily try (accepted, offline game); a player who clears all 13 routes on two devices before they sync is paid twice.
 - The big-features plan (Jonny, 2026-10-14), approved with its default decisions:
