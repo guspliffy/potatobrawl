@@ -53,7 +53,15 @@ function duoFocusNext() {
 // the foe the partner is on because you pointed at it (-1 = none): the ember ring on that foe's card
 const duoFocused = () => (G && match && match.duo && match.bots[1].focusT > G.t ? match.bots[1].focus : -1);
 // a Catch: the pop over the two (in the catcher's team colour), and your own Catches counted for Account > Stats
+const DUO_TIPS = [["Catch!", "Touch your partner while they fly to stop the launch"], ["Focus", "Tap a foe's card (Tab on a keyboard): your partner goes after them"]];
 function duoEvent(g, e, live) {
+  // the first few 2v2s: a tip a moment after GO (the Catch, then Focus, then the Catch again); kept on this device only
+  if (e.type === "go" && live && match && match.duo && (P.duoTip | 0) < 3) {
+    const [a, b] = DUO_TIPS[(P.duoTip | 0) % 2], m = match;
+    P.duoTip = (P.duoTip | 0) + 1; saveProfile();
+    setTimeout(() => { if (mode === "match" && match === m && G.phase === "play") showBanner(a, b, "", 2600, TEAM_COL[0]); }, 900);
+    return;
+  }
   if (e.type !== "catch") return;
   chgPops.push({ x: e.x, y: e.y + 46, t: 0, pop: 1, col: g.fighters[e.by].team === g.fighters[meSlot].team ? TEAM_COL[0] : TEAM_COL[1], txt: "CAUGHT!" });
   Sfx.tone(520, 880, 0.14, "triangle", 0.05);
