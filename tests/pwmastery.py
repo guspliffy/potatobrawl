@@ -387,7 +387,10 @@ async def road_win(pg):
     """From the menu: the Road, stop 1, and win it."""
     await pg.evaluate("document.querySelector('#bRoad').click()"); await pg.wait_for_timeout(600)
     await pg.wait_for_function("(() => { const r = window.__blRoad.get(); return (document.getElementById('roadHits').dataset.key || '').endsWith(`:${r.s.join('.')}:${r.b}`); })()", timeout=10000)
-    await pg.evaluate("document.querySelector('.rd-hit[data-i=\"0\"]').click()"); await pg.wait_for_timeout(500)
+    # on a first visit your fighter walks in from the gate first; the stop's sheet opens when the walk ends
+    await pg.evaluate("document.querySelector('.rd-hit[data-i=\"0\"]').click()")
+    await pg.wait_for_function("(() => { const e = document.getElementById('scrRoadStop'); return !!e && !e.closest('[hidden]') && e.getClientRects().length > 0; })()", timeout=10000)
+    await pg.wait_for_timeout(300)
     await pg.evaluate("document.getElementById('rsGo').click()")
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=90000); await pg.wait_for_timeout(300)
     await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[1].stocks = 1; g.fighters[1].x = 5000; }})()")

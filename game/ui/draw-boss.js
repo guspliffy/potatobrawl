@@ -61,6 +61,8 @@ function bsGlowAt(c, x, y, r, a) { if (a <= 0 || r <= 0) return; const ga = c.gl
 
 // ---- who and what ----
 function bsOf(g) { if (g) for (const f of g.fighters) if (f.spec.boss) return f; return null; }
+// a boss's layer drawn in screen space after the fight, before the HUD (BOSS_ART[id].screen; Kraken Spud's ink)
+function bossScreen(c, g, tk) { const A = bossArt(bsOf(g)); if (A && A.screen) A.screen(c, g, tk); }
 function bsRage(f) {
   const lv = RG && RG.lv != null ? RG.lv : 0, B = f.spec.boss;
   return !!B && f.hpMax > 0 && f.hp * 100 <= f.hpMax * B.rageAt[clamp(lv, 0, 2)];

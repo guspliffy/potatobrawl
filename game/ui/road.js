@@ -45,7 +45,24 @@ const ROAD_KITCHEN = [
   { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.9, lives: 2, map: "kitchen", cpuPct: 20, twist: "Tom starts at 20%.",
     line: "They're watching. Through the window. I've seen the lights.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
-const ROAD_DEEP = [];
+const ROAD_DEEP = [
+  { id: "harbour", name: "The Harbour Wall", cpu: "Salty Sal", f: "samurai", d: 0.5, lives: 2, secs: 120, map: "deep", cpuPct: 35, twist: "Sal starts at 35%.",
+    line: "Mind the wall. Mind the drop. Mind me.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
+  { id: "market", name: "The Fish Market", cpu: "Haddock Hal", f: "gunslinger", d: 0.55, map: "bay", myLifePct: 30, twist: "You start every life at 30%.",
+    line: "Fresh today! Well. Fresh-ish.", bonus: { k: "route", r: "trip", txt: "Land the Trip & Spike combo" } },
+  { id: "lighthouse", name: "The Lighthouse", cpu: "Old Lamp", f: "wizard", d: 0.6, lives: 2, secs: 90, map: "deep", twist: "Win inside 90 seconds.",
+    line: "Three flashes means rocks. Two means run. I only do one.", bonus: { k: "ulti", txt: "KO with an ulti" } },
+  { id: "wreck", name: "The Wreck", cpu: "Barnacle Bill", f: "odin", d: 0.7, lives: 2, cpuLives: 3, map: "castle", twist: "Bill has 3 hearts, you have 2.",
+    line: "Went down with my ship. Came back up annoyed.", bonus: { k: "route", r: "three", txt: "Land the Three-piece combo" } },
+  { id: "fog", name: "The Fog Bank", cpu: "Misty", f: "reaper", d: 0.75, secs: 120, map: "deep", myPct: 50, twist: "You start at 50%.",
+    line: "Can't see a thing out here. Perfect.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
+  { id: "trawler", name: "The Trawler", cpu: "Captain Crisp", f: "dragon", d: 0.8, lives: 1, secs: 90, map: "bay", twist: "One life each.",
+    line: "Net's down. Guess what's in it.", bonus: { k: "fin", txt: "KO with a finisher special" } },
+  { id: "whirlpool", name: "The Whirlpool", cpu: "Gurgle", f: "alchemist", d: 0.85, secs: 120, map: "fryer", myPct: 60, cpuPct: 60, twist: "You both start at 60%.",
+    line: "Round and round. Down and down. Lovely.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
+  { id: "pier", name: "The End of the Pier", cpu: "The Harbour Master", f: "phoenix", d: 0.95, lives: 2, map: "deep", cpuPct: 15, twist: "The Harbour Master starts at 15%.",
+    line: "Nobody passes the end of the pier. Not without a ticket.", bonus: { k: "fast", s: 150, txt: "Win in under 2:30" } },
+];
 ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
 // the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title
 const ROAD_REG = [
