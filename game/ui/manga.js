@@ -833,6 +833,7 @@ function mgCard(o, t) {
   }
   const x0 = Math.max(16, L.gw * 0.06), nm = C.name;
   o.drawImage(nm.cv, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, nm.w, nm.h);
+  masteryGlint(o, nm, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, t);   // ui/mastery.js: Lv 7 and up, your own KO page
   o.drawImage(C.win.cv, x0 + nm.w * 0.86, y - C.win.h / 2 + hh * 0.2, C.win.w, C.win.h);
   o.drawImage(C.sub.cv, x0 - 2, y + hh * 0.2, C.sub.w, C.sub.h);
   o.restore();

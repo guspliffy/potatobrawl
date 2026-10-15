@@ -24,6 +24,7 @@ function finStart(g) {
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = g.winner; FIN.l = 1 - g.winner;
+  if (FIN.w === meSlot) masteryPage(W.spec.id, FIN.ulti);   // ui/mastery.js: the Collection counts the KO pages you land
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
   const rdx = ev ? ev.dirx : (Lf.x >= W.x ? 0.8 : -0.8), rdy = ev ? ev.diry : -0.6;
