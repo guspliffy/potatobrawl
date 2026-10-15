@@ -270,6 +270,20 @@ async def flow(b):
     await ko_page(b)
 
     await cup_xp(b)
+    await modes_x1(b)
+
+async def modes_x1(b):
+    # a boss fight and a Road stop count x1, whatever names their levels carry (Practice's Normal would be 0.75)
+    vp = (844, 390)
+    ctx, _ = await new_ctx(b, vp, prof=dict(BASE)); pg = await open_page(ctx, 'boss x1')
+    await pg.evaluate("window.__blBoss({ level: 0 })"); await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000); await pg.wait_for_timeout(400)
+    check(await pg.evaluate("window.__blMastery.mult()") == 1 and await pg.evaluate("window.__blMastery.gain({ res: 1, me: { kos: 0 } }).xp") == 40, 'a boss fight counts x1 (a win is 40)')
+    await ctx.close()
+    ctx, _ = await new_ctx(b, vp, prof=dict(BASE, last='samurai', mxp={'samurai': 10})); pg = await open_page(ctx, 'road x1')
+    await road_win(pg)
+    r, p = await row(pg), await prof(pg)
+    check(r['xp'] == '+40' and p['mxp']['samurai'] == 50 and p['road']['s'] == [7], f"a Road stop counts x1 (a win is 40; row {r['xp']!r}, saved {p['mxp'].get('samurai')}, stars {p['road'].get('s')})")
+    await ctx.close()
 
 async def cup_xp(b):
     vp = (844, 390)
@@ -363,9 +377,23 @@ RES_FIT = """(() => {
   const sa = document.getElementById('rStats').getBoundingClientRect(), rk = document.getElementById('rRank').getBoundingClientRect();
   if (r.bottom > sa.top + 0.5 && r.top < sa.bottom) bad.push('the row overlaps the stat tiles');
   if (!document.getElementById('rRank').hidden && r.top < rk.bottom - 0.5) bad.push('the row overlaps the rank card');
+  const stars = document.getElementById('rStars');
+  if (!stars.hidden && stars.getClientRects().length) { const q = stars.getBoundingClientRect(); if (r.left < q.right - 0.5 && r.right > q.left + 0.5 && r.top < q.bottom - 0.5 && r.bottom > q.top + 0.5) bad.push('the row overlaps the Road stars'); }
   for (const id of ['rMxLine']) { const e = document.getElementById(id); if (e.scrollHeight > e.clientHeight + 1 && e.textContent.length < 20) bad.push(id + ' is cut'); }
   return bad;
 })()"""
+
+async def road_win(pg):
+    """From the menu: the Road, stop 1, and win it."""
+    await pg.evaluate("document.querySelector('#bRoad').click()"); await pg.wait_for_timeout(600)
+    await pg.wait_for_function("(() => { const r = window.__blRoad.get(); return (document.getElementById('roadHits').dataset.key || '').endsWith(`:${r.s.join('.')}:${r.b}`); })()", timeout=10000)
+    await pg.evaluate("document.querySelector('.rd-hit[data-i=\"0\"]').click()"); await pg.wait_for_timeout(500)
+    await pg.evaluate("document.getElementById('rsGo').click()")
+    await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=90000); await pg.wait_for_timeout(300)
+    await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[1].stocks = 1; g.fighters[1].x = 5000; }})()")
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=90000)
+    await pg.wait_for_function("document.getElementById('rMxLine').classList.contains('on')", timeout=30000)
+    await pg.wait_for_timeout(900)
 
 async def sizes(b, tag):
     vp = SIZES[tag][:2]; up = SIZES[tag][2]
@@ -393,17 +421,28 @@ async def sizes(b, tag):
     await shot('locker')
     await ctx.close()
     # the results: a level up (ranked, the rating above it), several levels at once (practice, no rating), MASTERED
+    CASES = {'s667': None, 'p844': {'levelup', 'severallevels', 'mastered'}, 'd1280': {'levelup', 'mastered'}, 'up390': {'levelup', 'severallevels'}}   # (every match costs about half a minute: the tightest screen gets all of them)
     for name, mode, extra, win, level in [('results_levelup', 'ranked', dict(last='phoenix', mxp={'phoenix': 80}, mpaid={'phoenix': 1}), True, None),
                                           ('results_noup', 'ranked', dict(last='wizard', mxp={'wizard': 330}, mpaid={'wizard': 3}), True, None),
                                           ('results_severallevels', 'practice', dict(last='dragon', mxp={'dragon': 1690}, mpaid={'dragon': 1}), True, 'Hard'),
                                           ('results_mastered', 'ranked', dict(last='reaper', mxp={'reaper': 2680}, mpaid={'reaper': 9}), True, None),
                                           ('results_loss', 'ranked', dict(last='samurai', mxp={'samurai': 680}, mpaid={'samurai': 4}), False, None)]:
+        if CASES[tag] is not None and name[len('results_'):] not in CASES[tag]: continue
         ctx, mob = await new_ctx(b, vp, up, dict(BASE, **extra)); pg = await open_page(ctx, tag + ' ' + name)
         await start(pg, mode, level); await finish(pg, win)
         await pg.screenshot(path=f'{OUT}/{tag}_{name}.png')
         bd = await pg.evaluate(RES_FIT)
         check(not bd, f'{tag} {name}: layout ({"; ".join(bd[:3]) or "fits"})')
         await ctx.close()
+    # a Road stop: the stars and the mastery row side by side (the Road counts x1; Lv 2 on this win)
+    ctx, mob = await new_ctx(b, vp, up, dict(BASE, last='samurai', mxp={'samurai': 80}, mpaid={'samurai': 1})); pg = await open_page(ctx, tag + ' road')
+    await road_win(pg)
+    r = await row(pg)
+    await pg.screenshot(path=f'{OUT}/{tag}_results_road.png')
+    bd = await pg.evaluate(RES_FIT)
+    check(not bd, f'{tag} results_road: layout with the stars ({"; ".join(bd[:3]) or "fits"})')
+    check(r['xp'] == '+40' and r['tag'] == 'Level up' and r['name'] == 'Samurai', f"{tag} results_road: the Road gives full XP ({r['xp']!r}, {r['tag']!r})")
+    await ctx.close()
 
 async def main():
     pathlib.Path(OUT).mkdir(parents=True, exist_ok=True)
@@ -416,6 +455,7 @@ async def main():
                 if t == 'flow': await flow(b)
                 elif t == 'ko': await ko_page(b)     # (the parts of flow, for working on one of them)
                 elif t == 'cup': await cup_xp(b)
+                elif t == 'x1': await modes_x1(b)
                 else: await sizes(b, t)
             except Exception as e:
                 check(False, f'{t}: {type(e).__name__}: {str(e)[:300]}')

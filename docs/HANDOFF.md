@@ -227,9 +227,9 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   - Curve (total XP to reach the level): Lv2 100, 3 250, 4 450, 5 700, 6 1000, 7 1350, 8 1750, 9 2200, 10 2700.
   - XP per finished match, for the fighter you played: 20 + 20 for a win + 5 per KO + 10 when your KO page played on the last heart
     (15 instead for an Ultimate KO page), rounded after the multiplier. Forfeit 0; opponent left = a win; a dropped connection = its result.
-    Ranked, online, Daily, cup and every other mode count x1. Practice by CPU level: Hard 1, Normal 0.75, Easy 0.5, Dummy 0 (the row says
-    why). `mxMult()` decides it POSITIVELY: Practice = not ranked/online/daily/cup and `match.level` is one of LEVELS, so any new mode
-    (the Road, bosses) is x1 without a code change. Tutorial and Combo trial never reach showResults, so they give nothing.
+    Ranked, online, Daily, cup, boss fights, Road stops and every other mode count x1. Practice by CPU level: Hard 1, Normal 0.75, Easy
+    0.5, Dummy 0 (the row says why). `mxMult()` decides it POSITIVELY: Practice = not ranked/online/daily/cup/boss/road and `match.level`
+    is one of the LEVELS names, so a new mode is x1 without a code change (boss levels and Road stops carry names like "Normal" too). Tutorial and Combo trial never reach showResults, so they give nothing.
   - Rewards (`mxAward` pays them, once per level, by `P.mpaid`): Lv2 20 chips, Lv3 bronze badge, Lv4 40, Lv5 title I, Lv6 silver badge
     + 60, Lv7 KO-page name glint (gold sheen over the winner's name on the manga page, `masteryGlint`), Lv8 80, Lv9 gold badge,
     Lv10 title II + laurels + a two-note fanfare (`Sfx.fanfare`, only when a WIN reaches Lv10; a loss shows MASTERED quietly).
@@ -253,8 +253,10 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     The results row is built in JS and inserted after #rRank. The Practice line "doesn't change your rating or earn chips" gets
     "Mastery chips still count" when a level up paid some (`masteryWhy`). The reward line shows the first two rewards and "+N more" after three
     (the catch-up after the head start). Short phone sizes: the level-up row can scroll the results column by 1-3 px.
-  - Test: tests/pwmastery.py (check.sh 8d; tags flow s667 p844 d1280 up390; shots in build/shots/mastery), test hook
-    `window.__blMastery` (info, level, curve, titles, gain, mult, page, fanfares).
+  - Test: tests/pwmastery.py (check.sh 8f, about 15 minutes in the swiftshader container, so its timeout is 1500; tags flow s667 p844
+    d1280 up390, plus ko / cup / x1 = parts of flow; shots in build/shots/mastery, also a Road result beside its stars), test hook
+    `window.__blMastery` (info, level, curve, titles, gain, mult, page, fanfares). pwroad.py's start profile has `mpaid` set so the
+    level chips do not change its chip counts; pwacct.py's title list counts Jack of Spuds (Automatic + eight titles + Jack).
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -440,8 +442,8 @@ escaped at 0 and 30%; damage scaling; `node combos.js try k1,k2,...` tries a can
 through window.__blInput, misses + hint, Next/Exit, the all-13 reward paid once; tags flow s667 d1280 up390; check.sh 8b) ·
 pwcomboreel.py (a half-speed video of trial routes on a frozen clock; needs ffmpeg) · pwdaily.py (Daily Potato with a Date stand-in:
 one try, chips, streak, reload, next day, midnight; tags flow s667 p844 d1280 up390; check.sh 8c) · pwmastery.py (fighter mastery: XP rules, Practice
-multipliers, level up + chips once, MASTERED + fanfare, head start, tile/detail, titles, Stats + Locker, KO page recorded, cup sticker; shots; tags flow
-s667 p844 d1280 up390; check.sh 8d) ·
+multipliers, level up + chips once, MASTERED + fanfare, head start, tile/detail, titles, Stats + Locker, KO page recorded, cup sticker, boss/Road x1; shots; tags flow
+s667 p844 d1280 up390; check.sh 8f) ·
 pwux2.py (all screens, 3 sizes) · ulti.js (every ulti's KO% vs Samurai and Odin, first hit after the freeze, bar spent, no third use,
 save/restore mid-ulti; check.sh 3e, also in --quick) · pwult.py (the ulti bar empty/half/full/spent, the ULTI button only while full and
 clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone desk up kbd pad; check.sh 6d) · pwtut.py (the nine tutorial
