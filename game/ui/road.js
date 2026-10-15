@@ -405,7 +405,8 @@ function roadSheet(i) {
   const RG_ = ROAD_REG[k], bspec = roadBossSpec(k);
   $("rsKick").textContent = boss ? `${RG_.name} · past the fence` : `${RG_.name} · stop ${(i % ROAD_N) + 1} of ${ROAD_N}`;
   $("rsName").textContent = boss ? bspec.name : ROAD[i].name;
-  dailyCard($("rsMe"), me.id, mi, "You");
+  dailyCard($("rsMe"), me.id, mi, "You · tap to change");   // your card is the fighter picker
+  $("rsMe").insertAdjacentHTML("beforeend", `<span class="rd-chg" aria-hidden="true">⇄</span>`);
   const sheet = $("roadStopSheet");
   sheet.classList.toggle("boss", boss);
   if (boss) {
@@ -414,16 +415,13 @@ function roadSheet(i) {
     op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
     $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. ${BOSS_RULE[b.id] || "Break him (0 HP), then land a heavy, special or ulti."}`;
     $("rsLine").textContent = BOSS_LINE[b.id] || "";
-    $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n)).join("");
+    // the level stars are the picker: it starts on the first level not won yet; Fight plays the picked one
+    const first = BOSS_LV.findIndex((_, q) => !(bb & (1 << q)));
+    RD.blv = first >= 0 ? first : clamp(RD.blv | 0, 0, BOSS_LV.length - 1);
+    $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n, q)).join("");
+    rdLevel(RD.blv);
     const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? ` ${me.name} has his ${me.palettes[rs].name} skin.` : ` A win gives ${me.name} the ${me.palettes[rs].name} skin.`;
-    $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips. Every level won is a star.`) + skin;
-    $("rsLv").innerHTML = "";
-    BOSS_LV.forEach((n, q) => {
-      const bt = document.createElement("button");
-      bt.className = "btn" + (q === 0 ? " primary" : ""); bt.innerHTML = `<span>${n}${bb & (1 << q) ? " ★" : ""}</span>`;
-      bt.addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadBossFight(k, q); });
-      $("rsLv").appendChild(bt);
-    });
+    $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips.`) + skin;
   } else {
     const st = ROAD[i], op = FIG[st.f], bits = roadBits(r, i);
     dailyCard($("rsOp"), op.id, 0, st.cpu);
@@ -432,10 +430,18 @@ function roadSheet(i) {
     $("rsLine").textContent = st.line;
     $("rsStars").innerHTML = [...ROAD_STARS, st.bonus.txt].map((n, k) => roadStarHTML(!!(bits & (1 << k)), n)).join("");
     $("rsReward").textContent = bits === 7 ? "All three stars won." : `Each new star: +${ROAD_STAR_CHIPS} chips.`;
+    $("rsGo").querySelector("span").textContent = "Fight";
   }
   modal("roadStop", true);
 }
-const roadStarHTML = (on, label) => `<span class="rd-st${on ? " on" : ""}"><i aria-hidden="true">★</i><small>${cupEsc(label)}</small></span>`;
+// a star with its label; with q (a boss level) it is a button that picks that level
+const roadStarHTML = (on, label, q) => q === undefined ? `<span class="rd-st${on ? " on" : ""}"><i aria-hidden="true">★</i><small>${cupEsc(label)}</small></span>`
+  : `<button class="rd-st rd-lvb${on ? " on" : ""}" data-q="${q}" aria-pressed="false"><i aria-hidden="true">★</i><small>${cupEsc(label)}</small></button>`;
+function rdLevel(q) {
+  RD.blv = q;
+  for (const b of $("rsStars").querySelectorAll(".rd-lvb")) { const on = +b.dataset.q === q; b.classList.toggle("sel", on); b.setAttribute("aria-pressed", String(on)); }
+  $("rsGo").querySelector("span").textContent = `Fight · ${BOSS_LV[q]}`;
+}
 
 /* ----- the fights ----- */
 function roadFight(i) {
@@ -567,8 +573,9 @@ function roadCard() {
 $("roadBack").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); goMenu(); });
 $("roadPrev").addEventListener("click", () => roadGo(-1));
 $("roadNext").addEventListener("click", () => roadGo(1));
-$("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadFight(RD.sel); });
-$("rsPick").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });
+$("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); if (roadIsBoss(RD.sel)) roadBossFight(RD.sel - ROAD.length, RD.blv | 0); else roadFight(RD.sel); });
+$("rsMe").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });   // your card: change fighter
+$("rsStars").addEventListener("click", (e) => { const b = e.target.closest(".rd-lvb"); if (!b) return; Sfx.init(); Sfx.ui(); rdLevel(+b.dataset.q); });
 for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
 screens.roadStop = $("scrRoadStop");
 // test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
