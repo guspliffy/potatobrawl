@@ -458,84 +458,130 @@ function finishMatch(forfeit) {
   }
   showResults(R);
 }
-// Counts a number up (or down) to its final value in ~0.8 s, ease-out. Instant with reduced motion; a tap anywhere on the
-// results screen, or the next showResults, finishes it at once (resCountEnd).
+// Counts a number up (or down) to its final value, ease-out: o.delay ms after the call, over o.dur ms (0.8 s if not given). Instant
+// with reduced motion; a tap anywhere on the results screen, or the next results, finishes every count (and the motion) at once.
+// A timer writes the final value on time even when frames come slowly (a busy phone): the number is never left short.
 let resCounts = [], resRaf = 0;
+const resCalm = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 function resCountEnd() {
   cancelAnimationFrame(resRaf); resRaf = 0;
-  for (const c of resCounts) c.el.textContent = c.pre + c.to;
+  for (const c of resCounts) { clearTimeout(c.tm); c.el.textContent = c.pre + c.to; }
   resCounts = [];
 }
-function resCount(el, from, to, pre) {
-  const still = from === to || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function resCount(el, from, to, pre, o) {
+  const still = from === to || resCalm();
   el.textContent = pre + (still ? to : from);
   if (still) return;
-  resCounts.push({ el, from, to, pre });
-  if (resRaf) return;
-  const t0 = performance.now();
-  const tick = (now) => {
-    const k = Math.min(1, (now - t0) / 800), e = 1 - Math.pow(1 - k, 3);
-    for (const c of resCounts) c.el.textContent = c.pre + Math.round(c.from + (c.to - c.from) * e);
-    if (k < 1) resRaf = requestAnimationFrame(tick); else { resRaf = 0; resCounts = []; }
-  };
-  resRaf = requestAnimationFrame(tick);
+  const delay = (o && o.delay) || 0, dur = (o && o.dur) || 800;
+  const c = { el, from, to, pre, t0: performance.now() + delay, dur };
+  c.tm = setTimeout(() => { c.el.textContent = c.pre + c.to; resCounts = resCounts.filter((x) => x !== c); }, delay + dur);
+  resCounts.push(c);
+  if (!resRaf) resRaf = requestAnimationFrame(resTick);
 }
-screens.result.addEventListener("pointerdown", resCountEnd, true);   // a tap on the sheet (even on a button) just finishes the count
-function showResults(R) {
+function resTick(now) {
+  resCounts = resCounts.filter((c) => {
+    const k = clamp((now - c.t0) / c.dur, 0, 1), e = 1 - Math.pow(1 - k, 3);
+    c.el.textContent = c.pre + Math.round(c.from + (c.to - c.from) * e);
+    if (k >= 1) clearTimeout(c.tm);
+    return k < 1;
+  });
+  resRaf = resCounts.length ? requestAnimationFrame(resTick) : 0;
+}
+// a tap on the screen (even on a button) finishes the counts and jumps the motion (css/40-results.css) to its end
+screens.result.addEventListener("pointerdown", () => { resCountEnd(); $("resSheet").classList.add("still"); }, true);
+// What every results screen shares (the tutorial's too, tutorial.js): the look ("win" / "loss" / "draw"), the portrait on the panel,
+// the motion started again (.in: VICTORY stamps in, the cards slide up, the bar fills, the sticker pops), the optional parts reset.
+function resOpen(look, spec, solo) {
   resCountEnd();
+  const sheet = $("resSheet");
+  sheet.classList.remove("win", "loss", "draw", "solo", "in", "still");
+  sheet.classList.add(look); sheet.classList.toggle("solo", !!solo);
+  void sheet.offsetWidth; sheet.classList.add("in");
+  const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
+  art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
+  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false;
+  $("rAgain").disabled = false; $("rAgainSub").textContent = "";
+  sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
+}
+// the big word; the long ones (Opponent left, Disconnected) are set smaller so they fit the panel
+function resTitle(t) { const h = $("rTitle"); h.textContent = t; h.style.setProperty("--n", t.length > 7 ? t.length + 1 : 7); }
+// one line of text with bold names: strings, or { b: name } (a name a player typed goes in as text, never as markup)
+function resLine(el, parts) {
+  el.textContent = "";
+  for (const x of parts) {
+    if (x && typeof x === "object") { const b = document.createElement("b"); b.textContent = x.b; el.append(b); }
+    else if (x) el.append(x);
+  }
+}
+// The rank card: R is a ranked result (before, after, delta, tb, ta), or null for your rank as it stands (the tutorial's results).
+// The bar is the tier's fill up to what you kept, then the part this match won (mint, it fills) or lost (ketchup); the sticker
+// with the rating change pops after the bar.
+function resRank(R) {
+  const ti = tierInfo(R ? R.after : P.rating), promo = !!R && R.ta > R.tb, drop = !!R && R.ta < R.tb;
+  $("rRank").hidden = false;
+  $("rRank").style.setProperty("--tc", ti.t.col);
+  paintBadge($("rBadge"), ti.i, promo ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
+  $("rTier").textContent = ti.t.name;
+  const pr = $("rPromo"); pr.textContent = promo ? "Promoted!" : drop ? "Dropped" : ""; pr.classList.toggle("down", drop);
+  const rt = $("rRating"), b = document.createElement("b");
+  if (R) { const rn = document.createElement("span"); b.append(`${R.before} → `, rn); resCount(rn, R.before, R.after, "", { delay: 450 }); }
+  else b.textContent = P.rating;
+  rt.textContent = ""; rt.append(b, ti.next ? ` · ${ti.need} to ${ti.next.name}` : "");
+  const bi = R ? tierInfo(R.before) : ti, pa = ti.p, pb = bi.i === ti.i ? bi.p : bi.i < ti.i ? 0 : 1;
+  $("rBar").style.setProperty("--p", Math.min(pa, pb));
+  const g = $("rGain"); g.style.setProperty("--g0", Math.min(pa, pb)); g.style.setProperty("--g1", Math.max(pa, pb));
+  g.parentNode.classList.toggle("down", pa < pb);
+  if (R) {
+    $("rStick").className = "delta " + (R.delta >= 0 ? "up" : "down");
+    resCount($("rDelta"), 0, R.delta, R.delta >= 0 ? "+" : "", { delay: 1250, dur: 400 });
+  }
+}
+function showResults(R) {
+  const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
-  const sheet = $("resSheet");
-  sheet.classList.remove("solo");
-  sheet.classList.toggle("win", R.res === 1); sheet.classList.toggle("loss", R.res === 0);
+  const won = R.res === 1, lost = R.res === 0;
+  resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
   $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
-  $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
-  const mn = R.me.spec.name, on = R.op.spec.name;
-  const who = R.online ? NET.oppName || "Your friend" : on;
-  const cpu = match.cpu && !R.online ? `${match.cpu} (${on}${R.ranked ? `, ${cpuTier()}` : ""})` : on;   // the CPU's potato name, and its tier in ranked
+  $("rWho").textContent = R.me.spec.name;
+  resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
+  // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
+  const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
+  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
-  $("rSub").textContent = R.lost ? `The connection to ${who} dropped.` : R.left ? `${who} left the match.` :
-    R.online && R.res === 1 ? `You beat ${who}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.online && R.res === 0 ? `${who} beat you${how}.` :
-    R.forfeit ? "You left the match. It counts as a loss." :
-    R.res === 1 ? `${mn} beat ${cpu}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.res === 0 ? `${cpu} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
+  const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
+    R.forfeit ? ["You left the match. It counts as a loss."] :
+    won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
+    lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
-    $("rSub").textContent += !R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`;
+    line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
   }
+  resLine($("rSub"), line);
+  // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
   const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
   if (match) match.finBy = "";
-  $("rFin").hidden = !fb; $("rFin").innerHTML = ""; if (fb) { $("rFin").append("Finished with "); const b = document.createElement("b"); b.textContent = fb; $("rFin").append(b); }
+  const fin = $("rFin");
+  fin.hidden = !(fb && won);
+  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
-  $("rRank").hidden = !R.ranked;
-  if (R.ranked) {
-    const ti = tierInfo(R.after);
-    $("rRank").style.setProperty("--tc", ti.t.col);
-    paintBadge($("rBadge"), ti.i, R.ta > R.tb ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
-    $("rTier").textContent = ti.t.name;
-    const rt = $("rRating"), tail = ti.next ? ` · ${ti.need} to ${ti.next.name}` : "";
-    rt.textContent = ""; const rn = document.createElement("span"); rn.textContent = R.before; rt.append(`${R.before} → `, rn, tail);
-    resCount(rn, R.before, R.after, "");
-    const bar = $("rBar"); bar.style.setProperty("--p", tierInfo(R.before).i === ti.i ? tierInfo(R.before).p : 0);
-    requestAnimationFrame(() => requestAnimationFrame(() => bar.style.setProperty("--p", ti.p)));
-    const d = $("rDelta"); resCount(d, 0, R.delta, R.delta >= 0 ? "+" : ""); d.className = "delta " + (R.delta >= 0 ? "up" : "down");
-    $("rPromo").textContent = R.ta > R.tb ? `Promoted to ${TIERS[R.ta].name}` : R.ta < R.tb ? `Dropped to ${TIERS[R.ta].name}` : "";
-  }
+  if (R.ranked) resRank(R);
+  // four tiles: KOs, damage dealt, falls, chips (counting up); the line under them says what the chips were for
   const k = R.me.kos, fl = R.me.falls;
-  $("rStats").innerHTML = `<b>${k}</b> KO${k === 1 ? "" : "s"} · <b>${Math.round(R.me.dmgDealt)}%</b> damage dealt · <b>${fl}</b> fall${fl === 1 ? "" : "s"}`;
-  const why = R.why || (R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "");   // R.why: the Daily Potato's own line
+  $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
+  $("rDmg").textContent = Math.round(R.me.dmgDealt);
+  $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
+  const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
   const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
-  $("rChips").innerHTML = chipsOn
-    ? `<b><span class="tokglyph"></span>+<span id="rChipN">${R.total}</span> chips</b>${why}`
-    : R.daily ? why
+  $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
+  if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600 }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
+  $("rWhy").textContent = chipsOn || R.daily ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : "Practice doesn't change your rating or earn chips.";
-  if (chipsOn) resCount($("rChipN"), 0, R.total, "");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";

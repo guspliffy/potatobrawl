@@ -1,0 +1,247 @@
+/* ---------- Results screen (menu redesign, Fable's "sunset ink", 2026-10-14; mockup results_844x390.png) ----------
+   Left: the winner's panel with a slanted gold edge (your portrait on a win, the opponent's in grey on a loss), the kicker, VICTORY,
+   one line of the story and the finisher plate. Right: the rank card (emblem, tier word, rating line, bar with the gain lit, the
+   rating sticker), four stat tiles (KOs, damage dealt, falls, chips) with the chips line under them, and the buttons.
+   Upright (#app.portrait): the panel is a 180px banner on top and the cards stack under it.
+   Motion (#resSheet.in, set by resOpen in screens.js): VICTORY stamps in, the cards slide up, the bar fills, the sticker pops.
+   None of it under prefers-reduced-motion, and a tap on the screen (#resSheet.still) jumps to the end.
+   Sizes: 844x390 is the mockup (#app.short); #app.tiny is 667x320 / 568x320; no class is the desktop. The widths come from the
+   screen's own size (cq units: #scrResult is the container), so the sideways-rotated phone gets them right too. */
+#scrResult { display: block; padding: 0; overflow: hidden; container-type: size; background: linear-gradient(180deg, rgba(10, 11, 28, 0.86), rgba(10, 11, 28, 0.95)); }
+#resSheet {
+  --pw: clamp(220px, 62cqw - 120px, 400px);   /* the panel's width */
+  --cut: calc(var(--pw) * 0.28);              /* how far its edge leans in at the bottom */
+  --hs: min(86px, calc((var(--pw) * 0.79 - 34px) / 2.9));   /* VICTORY's size (seven letters fit left of the edge) */
+  --padl: max(26px, calc(env(safe-area-inset-left, 0px) + 10px));
+  --padr: max(16px, env(safe-area-inset-right, 0px));
+  --artH: 69%;
+  position: absolute; inset: 0; display: block; width: auto; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: none;
+  color: var(--text); font-family: var(--body);
+}
+
+/* ---- the winner's panel ---- */
+#resSheet .res-main { position: absolute; left: 0; top: 0; bottom: 0; width: var(--pw); }
+#resSheet .res-art { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #2a2f55 0, #12142b var(--artH), #15172e 100%); clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
+#resSheet .res-art .rays { inset: auto; left: -50%; top: calc(74% - var(--pw) * 0.9); width: 180%; aspect-ratio: 1; height: auto; background: repeating-conic-gradient(from 0deg, rgba(244, 201, 93, 0.24) 0 4deg, transparent 4deg 11deg); will-change: transform; }
+#rArt { position: absolute; left: 0; top: 0; width: 100%; height: var(--artH); object-fit: cover; object-position: 50% 30%; display: block; }
+/* the portrait fades to ink at its foot and toward the edge; the sunburst under it fades in below the seam */
+#resSheet .res-art::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(14, 16, 34, 0) calc(var(--artH) * 0.5), rgba(14, 16, 34, 0.97) calc(var(--artH) * 0.97), rgba(14, 16, 34, 0.97) var(--artH), rgba(14, 16, 34, 0) calc(var(--artH) + 80px)),
+    linear-gradient(90deg, rgba(14, 16, 34, 0) 55%, rgba(14, 16, 34, 0.7)) 0 0 / 100% var(--artH) no-repeat; }
+#resSheet.loss #rArt { filter: grayscale(1) brightness(0.72) contrast(1.08); }
+#resSheet.draw #rArt { filter: saturate(0.4) brightness(0.85); }
+#resSheet.loss .res-art .rays { background: repeating-conic-gradient(from 0deg, rgba(232, 69, 60, 0.18) 0 4deg, transparent 4deg 11deg); }
+#resSheet.draw .res-art .rays { background: repeating-conic-gradient(from 0deg, rgba(206, 210, 255, 0.12) 0 4deg, transparent 4deg 11deg); }
+/* the slanted edge: an ink band with a gold stripe in it, along the panel's cut */
+#resSheet .res-edge { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--pw) + 12px); pointer-events: none; background: var(--ink);
+  clip-path: polygon(calc(var(--pw) - 6px) 0, calc(var(--pw) + 7px) 0, calc(var(--pw) - var(--cut) + 7px) 100%, calc(var(--pw) - var(--cut) - 6px) 100%); }
+#resSheet .res-edge::before { content: ""; position: absolute; inset: 0; background: var(--gold);
+  clip-path: polygon(calc(var(--pw) - 3px) 0, calc(var(--pw) + 4px) 0, calc(var(--pw) - var(--cut) + 4px) 100%, calc(var(--pw) - var(--cut) - 3px) 100%); }
+#resSheet.loss .res-edge::before { background: var(--ketchup); }
+#resSheet.draw .res-edge::before { background: var(--mute); }
+#resSheet .res-txt { position: absolute; left: var(--padl); right: calc(var(--cut) + 12px); bottom: 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+#resSheet .res-kick { max-width: 100%; font-size: 12px; line-height: 1.25; text-shadow: 0 1px 0 var(--ink); }
+#rWho { white-space: nowrap; }   /* a long mode line wraps before " · Phoenix", never inside it */
+#rWho:not(:empty)::before { content: " · "; }
+#resSheet #rTitle {
+  --fs: calc(var(--hs) * 7 / var(--n, 7));
+  margin: calc(var(--fs) * 0.14) 0 2px; padding: 0; white-space: nowrap; transform: rotate(-4deg); transform-origin: left bottom;   /* the top margin: its right end rises (-4deg) */
+  font: italic 900 var(--fs) / 0.82 var(--display); letter-spacing: -0.02em; text-transform: uppercase; color: var(--gold);
+  -webkit-text-stroke: calc(var(--fs) * 0.07) var(--ink); paint-order: stroke fill;
+  text-shadow: 0 calc(var(--fs) * 0.07) 0 var(--ink), 0 14px 30px rgba(0, 0, 0, 0.55);
+}
+#resSheet.loss #rTitle { color: var(--ketchup); }
+#resSheet.draw #rTitle { color: var(--sand); }
+#resSheet .res-sub { margin: 0; max-width: 300px; font: 500 13px/1.35 var(--body); color: var(--text); text-shadow: 0 1px 0 var(--ink), 0 0 8px rgba(14, 16, 34, 0.8); }
+#resSheet .res-sub b { font-weight: 700; color: #fff; }
+/* the finisher plate: "ULTI KO | Solar Dive", on a win only */
+#resSheet .res-fin { display: inline-flex; align-items: stretch; max-width: 100%; height: 30px; margin: 4px 0 0 3px; border: 2px solid var(--ink); border-radius: 7px; overflow: hidden;
+  background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); font: 800 13px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+  transform: skewX(-8deg); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#resSheet .res-fin em { display: grid; place-items: center; padding: 0 9px 0 10px; background: var(--ink); color: var(--gold); font: 900 12px/1 var(--display); font-style: normal; letter-spacing: 0.14em; white-space: nowrap; }
+#resSheet .res-fin span { display: grid; place-items: center; padding: 0 12px 0 10px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .res-fin em, #resSheet .res-fin span { transform: skewX(8deg); }
+
+/* ---- the right column ---- */
+#resSheet .res-side { position: absolute; left: calc(var(--pw) + 24px); right: var(--padr); top: 0; bottom: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  padding: 20px 4px 16px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+/* rank card */
+#resSheet .res-rank { --tc: #c9d0e4; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; flex: none; }
+#rBadge { width: 46px; height: 46px; filter: drop-shadow(0 3px 0 var(--ink)); }
+#resSheet .rk-body { min-width: 0; }
+#resSheet .rk-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+#resSheet #rTier { font: italic 900 28px/1 var(--display); letter-spacing: 0; text-transform: uppercase; color: var(--tc); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+#resSheet #rPromo { flex: none; padding: 4px 7px 3px; border: 2px solid var(--ink); border-radius: 6px; background: var(--tc); color: var(--ink); font: 800 11px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); }
+#resSheet #rPromo.down { background: var(--ketchup); color: #fff; }
+#resSheet #rPromo:empty { display: none; }
+#resSheet #rRating { margin-top: 3px; font: 500 12px/1.3 var(--body); color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet #rRating b { color: var(--text); font-weight: 600; }
+#resSheet .res-rank .bar { position: relative; height: 10px; margin-top: 7px; border-radius: 5px; overflow: hidden; background: rgba(14, 16, 34, 0.9); border: 1.5px solid rgba(255, 255, 255, 0.1); }
+#resSheet #rBar { position: absolute; left: 0; top: 0; bottom: 0; height: auto; width: calc(var(--p, 0) * 100%); background: linear-gradient(180deg, #fff 0, var(--tc) 45%); transition: none; }
+/* the part this match won (mint, glowing) or lost (ketchup); --g0 / --g1 are its ends */
+#rGain { position: absolute; top: 0; bottom: 0; left: calc(var(--g0, 0) * 100%); width: calc((var(--g1, 0) - var(--g0, 0)) * 100%); background: var(--mint); box-shadow: 0 0 8px var(--mint); transform-origin: left; }
+#resSheet .bar.down #rGain { background: rgba(232, 69, 60, 0.75); box-shadow: none; transform-origin: right; }
+/* the rating sticker */
+#resSheet .delta { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 74px; height: 56px; padding: 0 10px;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #a9f0c8, #5fc993); color: var(--ink);
+  transform: rotate(4deg); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#resSheet .delta b { font: italic 900 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+#resSheet .delta small { margin-top: 1px; font: 700 10px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+#resSheet .delta.down { background: linear-gradient(180deg, #ff8a7c, #d8382f); color: #fff; }
+#resSheet .delta.down b { text-shadow: 0 2px 0 var(--ink); }
+#resSheet .delta.down small { opacity: 0.9; }
+#resSheet.solo .delta { display: none; }
+#resSheet.solo .res-rank { grid-template-columns: auto minmax(0, 1fr); }
+/* stat tiles; #rChips is display:contents, so the chips tile and the line under the tiles sit in the same grid */
+#resSheet .res-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 8px; flex: none; }
+#resSheet .res-stats.nochips { grid-template-columns: 1fr 1fr 1fr; }
+#resSheet .res-chips { display: contents; }
+#resSheet .stat { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; min-height: 56px; padding: 8px 12px; }
+#resSheet .stat b { font: 800 24px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#resSheet .stat b small { margin-left: 1px; font-size: 14px; opacity: 0.7; }
+#resSheet .stat > span { font: 700 10px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+#resSheet .stat.chips b { color: var(--gold); }
+#resSheet .stat.chips b::before { content: ""; display: inline-block; width: 22px; height: 18px; margin-right: 6px; vertical-align: -1px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%230e1022' stroke-width='2'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E") center / contain no-repeat; }
+#resSheet .res-why { grid-column: 1 / -1; margin: 0; padding: 0 2px; font: 700 11px/1.3 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sand); }
+#resSheet .res-why:empty { display: none; }
+/* best of 3: the loser may switch fighter */
+#resSheet .res-pick { display: flex; flex-direction: column; gap: 6px; flex: none; }
+/* no rank card (practice, Daily, online): the tiles sit in the middle of the room above the buttons; the tutorial's rank card too */
+#resSheet .res-side:has(> #rRank[hidden]) > .res-stats, #resSheet.solo .res-rank { margin-top: auto; }
+#resSheet .res-pick .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#resSheet .res-pick .chip { min-height: 32px; padding: 4px 12px; font-size: 14px; }
+#resSheet .res-pick .chip { position: relative; }   /* the chips look small; the tap area reaches into the gaps (40px tall) */
+#resSheet .res-pick .chip::after { content: ""; position: absolute; inset: -4px -3px; }
+/* buttons: NEXT MATCH (gold, large) over Fighters / Menu, Fable's button recipe (ink outline, hard shadow, bevel, -8deg) */
+#resSheet .res-actions { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 4px 4px 0 2px; flex: none; }
+#resSheet .res-actions .btn:first-child, #resSheet .res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
+#resSheet .res-actions .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 44px; padding: 0 18px;
+  border: 2px solid var(--ink); border-radius: 9px; font: 800 18px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; text-align: center;
+  background: linear-gradient(180deg, #3a4170, #262b50); color: var(--text); transform: skewX(-8deg); box-shadow: var(--hard), var(--bevel); transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
+#resSheet .res-actions .btn > * { transform: skewX(8deg); }
+#resSheet .res-actions .btn.primary { min-height: 52px; font-size: 24px; background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: var(--hard), 0 8px 16px rgba(244, 201, 93, 0.25), var(--bevelgold); }
+#resSheet .res-actions .btn small { margin: 0; font: 600 12px/1 var(--body); letter-spacing: 0; text-transform: none; color: inherit; opacity: 0.75; }
+#resSheet .res-actions .btn small:empty { display: none; }
+#resSheet .res-actions .btn:active:not(:disabled) { transform: skewX(-8deg) translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#resSheet .res-actions .btn.primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+#resSheet .res-actions .btn:disabled { opacity: 0.55; cursor: default; }
+@media (hover: hover) { #resSheet .res-actions .btn:hover:not(:disabled) { filter: brightness(1.06); } }
+
+/* ---- motion: the screen comes in (resOpen adds .in each time the results show) ---- */
+@keyframes resStamp { from { transform: rotate(-4deg) scale(1.6); opacity: 0; } 55% { opacity: 1; } to { transform: rotate(-4deg) scale(1); opacity: 1; } }
+@keyframes resInk { from { text-shadow: 0 0 0 var(--ink), 0 0 0 rgba(0, 0, 0, 0); } }
+@keyframes resUp { from { transform: translateY(16px); opacity: 0; } }
+@keyframes resUpBtn { from { transform: skewX(-8deg) translateY(16px); opacity: 0; } }
+@keyframes resArtIn { from { transform: translateX(-24px); opacity: 0; } }
+@keyframes resFill { from { transform: scaleX(0); } }
+@keyframes resDrain { from { background: var(--tc); } }
+@keyframes resPop { from { transform: rotate(4deg) scale(0.2); opacity: 0; } 60% { transform: rotate(9deg) scale(1.18); opacity: 1; } to { transform: rotate(4deg) scale(1); } }
+#resSheet.in:not(.still) #rArt { animation: resArtIn 0.3s cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+#resSheet.in:not(.still) #rTitle { animation: resStamp 0.32s cubic-bezier(0.25, 0.9, 0.3, 1.15) 0.08s backwards, resInk 0.14s ease-out 0.38s backwards; }
+#resSheet.in:not(.still) .res-kick, #resSheet.in:not(.still) .res-sub { animation: resUp 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.3s backwards; }
+#resSheet.in:not(.still) .res-sub { animation-delay: 0.36s; }
+#resSheet.in:not(.still) .res-fin { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.42s backwards; }
+#resSheet.in:not(.still) .res-rank, #resSheet.in:not(.still) .stat, #resSheet.in:not(.still) .res-why, #resSheet.in:not(.still) .res-pick { animation: resUp 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.1s backwards; }
+#resSheet.in:not(.still) .res-stats > .stat:nth-child(1) { animation-delay: 0.14s; }
+#resSheet.in:not(.still) .res-stats > .stat:nth-child(2) { animation-delay: 0.18s; }
+#resSheet.in:not(.still) .res-stats > .stat:nth-child(3) { animation-delay: 0.22s; }
+#resSheet.in:not(.still) .res-chips .stat { animation-delay: 0.26s; }
+#resSheet.in:not(.still) .res-why, #resSheet.in:not(.still) .res-pick { animation-delay: 0.3s; }
+#resSheet.in:not(.still) .res-actions .btn { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.34s backwards; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(2) { animation-delay: 0.38s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(3) { animation-delay: 0.42s; }
+#resSheet.in:not(.still) #rGain { animation: resFill 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s backwards; }
+#resSheet.in:not(.still) .bar.down #rGain { animation: resDrain 0.8s ease-in 0.45s backwards; }
+#resSheet.in:not(.still) .delta { animation: resPop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) 1.25s backwards; }
+/* a tap on the screen (.still): the entrance at its end at once (the rules above only match without it); reduced motion: no motion at all */
+#resSheet.still .badge.promo .em, #resSheet.still .badge.promo::before, #resSheet.still .badge.promo::after { animation: none; }
+#resSheet.still .badge .em.was { display: none; }
+@media (prefers-reduced-motion: reduce) { #resSheet *, #resSheet *::before, #resSheet *::after { animation: none !important; transition: none !important; } }
+
+/* ---- small landscape phones (667x320, 568x320) ---- */
+#app.tiny #resSheet { --hs: min(72px, calc((var(--pw) * 0.79 - 30px) / 2.9)); --artH: 64%; --padl: max(20px, calc(env(safe-area-inset-left, 0px) + 8px)); }
+#app.tiny #resSheet .res-txt { bottom: 12px; gap: 5px; right: calc(var(--cut) + 8px); }
+#app.tiny #resSheet .res-kick { font-size: 11px; letter-spacing: 0.12em; }
+#app.tiny #resSheet .res-sub { font-size: 12px; line-height: 1.3; }
+#app.tiny #resSheet .res-fin { height: 26px; font-size: 12px; }
+#app.tiny #resSheet .res-fin { letter-spacing: 0.05em; }
+#app.tiny #resSheet .res-fin em { font-size: 11px; padding: 0 6px 0 7px; letter-spacing: 0.1em; }
+#app.tiny #resSheet .res-fin span { padding: 0 9px 0 7px; }
+#app.tiny #resSheet .res-side { left: calc(var(--pw) + 16px); gap: 8px; padding: 10px 4px 10px; }
+#app.tiny #resSheet .res-rank { gap: 10px; padding: 7px 10px; }
+#app.tiny #rBadge { width: 38px; height: 38px; }
+#app.tiny #resSheet #rTier { font-size: 22px; }
+#app.tiny #resSheet #rPromo { font-size: 10px; padding: 3px 6px 2px; }
+#app.tiny #resSheet #rRating { font-size: 11px; margin-top: 2px; }
+#app.tiny #resSheet .res-rank .bar { height: 8px; margin-top: 5px; }
+#app.tiny #resSheet .delta { min-width: 58px; height: 44px; padding: 0 8px; }
+#app.tiny #resSheet .delta b { font-size: 24px; }
+#app.tiny #resSheet .delta small { font-size: 9px; }
+#app.tiny #resSheet .res-stats { gap: 6px; }
+#app.tiny #resSheet .stat { min-height: 44px; padding: 5px 9px; gap: 3px; }
+#app.tiny #resSheet .stat b { font-size: 20px; }
+#app.tiny #resSheet .stat b small { font-size: 12px; }
+#app.tiny #resSheet .stat > span { font-size: 10px; letter-spacing: 0.1em; }
+#app.tiny #resSheet .stat.chips b::before { width: 18px; height: 15px; margin-right: 4px; }
+#app.tiny #resSheet .res-why { font-size: 11px; letter-spacing: 0.08em; }
+#app.tiny #resSheet .res-pick .chip { min-height: 30px; padding: 3px 10px; font-size: 13px; }
+#app.tiny #resSheet .res-pick .chip::after { inset: -5px -3px; }
+#app.tiny #resSheet .res-actions { gap: 8px; }
+#app.tiny #resSheet .res-actions .btn { min-height: 40px; font-size: 16px; padding: 0 12px; }
+#app.tiny #resSheet .res-actions .btn.primary { min-height: 44px; font-size: 20px; }
+#app.tiny #resSheet .res-actions .btn small { font-size: 11px; }
+
+/* ---- desktop and tablets (taller than 520px, landscape): a bigger panel, the column centred ---- */
+#app:not(.short):not(.portrait) #resSheet { --pw: clamp(400px, 44cqw, 600px); --hs: min(124px, calc((var(--pw) * 0.79 - 40px) / 2.9)); --padl: max(48px, calc(env(safe-area-inset-left, 0px) + 16px)); --artH: 60%; }
+#app:not(.short):not(.portrait) #resSheet .res-txt { bottom: 44px; gap: 10px; }
+#app:not(.short):not(.portrait) #resSheet .res-kick { font-size: 14px; }
+#app:not(.short):not(.portrait) #resSheet .res-sub { font-size: 16px; max-width: 380px; }
+#app:not(.short):not(.portrait) #resSheet .res-fin { height: 38px; font-size: 16px; margin-top: 6px; }
+#app:not(.short):not(.portrait) #resSheet .res-fin em { font-size: 14px; padding: 0 12px; }
+#app:not(.short):not(.portrait) #resSheet .res-fin span { padding: 0 16px 0 12px; }
+#app:not(.short):not(.portrait) #resSheet .res-side { left: calc(var(--pw) + 56px); right: max(56px, env(safe-area-inset-right, 0px)); max-width: 640px; justify-content: center; gap: 14px; padding: 24px 6px; }
+#app:not(.short):not(.portrait) #resSheet .res-rank { gap: 18px; padding: 16px 20px; }
+#app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-stats, #app:not(.short):not(.portrait) #resSheet.solo .res-rank { margin-top: 0; }   /* the column is centred here */
+#app:not(.short):not(.portrait) #rBadge { width: 64px; height: 64px; }
+#app:not(.short):not(.portrait) #resSheet #rTier { font-size: 38px; -webkit-text-stroke-width: 2.5px; text-shadow: 0 3px 0 var(--ink); }
+#app:not(.short):not(.portrait) #resSheet #rPromo { font-size: 13px; padding: 5px 9px 4px; }
+#app:not(.short):not(.portrait) #resSheet #rRating { font-size: 15px; margin-top: 4px; }
+#app:not(.short):not(.portrait) #resSheet .res-rank .bar { height: 12px; margin-top: 10px; border-radius: 6px; }
+#app:not(.short):not(.portrait) #resSheet .delta { min-width: 96px; height: 72px; border-radius: 11px; }
+#app:not(.short):not(.portrait) #resSheet .delta b { font-size: 40px; }
+#app:not(.short):not(.portrait) #resSheet .delta small { font-size: 12px; }
+#app:not(.short):not(.portrait) #resSheet .res-stats { gap: 12px; }
+#app:not(.short):not(.portrait) #resSheet .stat { min-height: 82px; padding: 12px 16px; gap: 6px; }
+#app:not(.short):not(.portrait) #resSheet .stat b { font-size: 34px; }
+#app:not(.short):not(.portrait) #resSheet .stat b small { font-size: 19px; }
+#app:not(.short):not(.portrait) #resSheet .stat > span { font-size: 12px; }
+#app:not(.short):not(.portrait) #resSheet .stat.chips b::before { width: 28px; height: 23px; margin-right: 8px; }
+#app:not(.short):not(.portrait) #resSheet .res-why { font-size: 13px; }
+#app:not(.short):not(.portrait) #resSheet .res-actions { margin-top: 14px; gap: 12px; }
+#app:not(.short):not(.portrait) #resSheet .res-actions .btn { min-height: 52px; font-size: 21px; }
+#app:not(.short):not(.portrait) #resSheet .res-actions .btn.primary { min-height: 64px; font-size: 28px; }
+#app:not(.short):not(.portrait) #resSheet .res-actions .btn small { font-size: 13px; }
+
+/* ---- upright phones: the panel is a 180px banner on top (VICTORY left, the portrait right), the cards stack under it ---- */
+#app.portrait #resSheet { --pw: 100cqw; --hs: 54px; --padl: 16px; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+#app.portrait #resSheet .res-main { position: relative; inset: auto; flex: none; width: auto; min-height: calc(180px + env(safe-area-inset-top, 0px)); }
+#app.portrait #resSheet .res-art { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), 0 100%); background: linear-gradient(90deg, #12142b 0, #1d2145 60%, #2a2f55); }
+#app.portrait #resSheet .res-art .rays { left: -55%; top: calc(55% - 50cqw * 1.2); width: 120%; }
+#app.portrait #rArt { left: auto; right: 0; top: 0; width: 60%; height: 100%; object-position: 50% 32%; }
+#app.portrait #resSheet .res-art::after { inset: 0 0 0 auto; width: 60%; background: linear-gradient(90deg, rgba(14, 16, 34, 0.96) 0, rgba(14, 16, 34, 0) 42%), linear-gradient(180deg, rgba(14, 16, 34, 0) 60%, rgba(14, 16, 34, 0.6)); }
+#app.portrait #resSheet .res-edge { left: 0; right: 0; top: 0; bottom: auto; width: auto; height: calc(100% + 8px);
+  clip-path: polygon(0 calc(100% - 14px), 100% calc(100% - 38px), 100% calc(100% - 25px), 0 calc(100% - 1px)); }
+#app.portrait #resSheet .res-edge::before { clip-path: polygon(0 calc(100% - 11px), 100% calc(100% - 35px), 100% calc(100% - 28px), 0 calc(100% - 4px)); }
+#app.portrait #resSheet .res-txt { position: relative; inset: auto; min-height: inherit; justify-content: flex-end; gap: 4px;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 40% 32px max(16px, env(safe-area-inset-left, 0px)); }
+#app.portrait #resSheet .res-kick { font-size: 11px; }
+#app.portrait #resSheet .res-sub { font-size: 12px; line-height: 1.3; max-width: none; }
+#app.portrait #resSheet .res-fin { height: 26px; font-size: 12px; }
+#app.portrait #resSheet .res-fin em { font-size: 11px; }
+#app.portrait #resSheet .res-side { position: relative; inset: auto; flex: 1 0 auto; overflow: visible; gap: 10px;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+#app.portrait #resSheet .res-stats { grid-template-columns: 1fr 1fr; }
+#app.portrait #resSheet .res-stats.nochips { grid-template-columns: 1fr 1fr 1fr; }
+#app.portrait #resSheet .res-actions .btn.primary { min-height: 56px; }
+#app.portrait #resSheet .res-actions .btn { min-height: 48px; }
