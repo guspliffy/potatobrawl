@@ -20956,7 +20956,7 @@ function showResults(R) {
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.");
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? "Retry" : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
@@ -21250,12 +21250,21 @@ function roadSummary(r) {
 const RD_WIDE = [[0.12, 0.76], [0.26, 0.86], [0.38, 0.68], [0.25, 0.5], [0.41, 0.36], [0.57, 0.5], [0.71, 0.64], [0.8, 0.43], [0.9, 0.2]];
 const RD_TALL = [[0.24, 0.87], [0.6, 0.85], [0.8, 0.72], [0.5, 0.63], [0.2, 0.55], [0.36, 0.44], [0.7, 0.4], [0.56, 0.28], [0.76, 0.13]];
 const RD_GATE = { wide: [0.03, 0.9], tall: [0.06, 0.95] };
-const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1 };
+const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1,
+  pos: null, home: null, walk: null, dust: [] };   // pos: the stop your fighter stands on (a fraction while walking); walk: { a, b, t0, ms, ph, then }
 function rdPoints(w, h) {
   const tall = h > w * 1.05, P0 = tall ? RD_TALL : RD_WIDE, g = RD_GATE[tall ? "tall" : "wide"];
   const mx = Math.min(w, h) * 0.04, my = mx;
   const at = ([x, y]) => [mx + x * (w - 2 * mx), my + y * (h - 2 * my)];
   return { gate: at(g), pts: P0.map(at), tall };
+}
+// a point on the drawn path below: s runs 0 (the gate) .. all.length - 1, stop i sits at s = i + 1
+function rdCurve(all, s) {
+  const i = clamp(Math.floor(s), 0, all.length - 2), t = clamp(s - i, 0, 1);
+  const p0 = all[Math.max(0, i - 1)], p1 = all[i], p2 = all[i + 1], p3 = all[Math.min(all.length - 1, i + 2)];
+  const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+  const u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+  return [a * p1[0] + b * c1[0] + c * c2[0] + d * p2[0], a * p1[1] + b * c1[1] + c * c2[1] + d * p2[1]];
 }
 // a smooth path through the points (Catmull-Rom as Béziers)
 function rdPath(c, pts) {
@@ -21351,7 +21360,7 @@ function roadPaint(cv, tk, o) {
   if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r) };
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(RD.bgs[slot].cv, 0, 0);
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const { pts } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r);
+  const { pts, gate } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r);
   if (!o.mini) { RD.pts = pts; RD.R = R; RD.w = w; RD.h = h; }
   // beyond the fence: two horns over the hill and yellow eyes that blink
   const [bx, by] = pts[pts.length - 1], blink = (tk % 200) < 8;
@@ -21389,19 +21398,48 @@ function roadPaint(cv, tk, o) {
     }
     c.globalAlpha = 1;
   });
-  // your fighter on the next stop (on the fence gap once every stop is won), hopping for a moment when tapped
-  const at = pts[Math.min(next, ROAD.length)], f = rdPuppet();
-  const hop = !o.mini && RD.hopT > 0 ? Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2 : 0;
-  if (!o.mini && RD.hopT > 0) RD.hopT--;
-  const sc = (R * 2.3) / f.s.h;
+  // your fighter: on the next stop on the menu card; on the map where it last stood, walking the path to a stop (little hops, dust),
+  // hopping for a moment when its own stop is tapped
+  const f = rdPuppet(), home = Math.min(next, ROAD.length), sc = (R * 2.3) / f.s.h;
+  let at, hop = 0;
+  if (o.mini) { at = pts[home]; f.state = "idle"; f.facing = 1; }
+  else {
+    if (RD.pos === null) RD.pos = home;
+    const wk = RD.walk;
+    if (wk) {
+      const k = Math.min(1, (performance.now() - wk.t0) / wk.ms), e = k * k * (3 - 2 * k), s0 = wk.a + (wk.b - wk.a) * e;   // by the clock, not frames
+      const ph = k * Math.abs(wk.b - wk.a) * 2, land = Math.floor(ph) !== Math.floor(wk.ph);   // two hops per stop
+      wk.ph = ph; RD.pos = s0;
+      at = rdCurve([gate, ...pts], s0 + 1);
+      hop = Math.abs(Math.sin(ph * Math.PI)) * R * 0.32;
+      f.state = "run"; f.anim.run += 0.32; f.facing = wk.b > wk.a ? 1 : -1;
+      if (land && k < 1) RD.dust.push({ x: at[0], y: at[1] + R * 0.3, t: 0 });
+      if (k >= 1) { RD.walk = null; RD.pos = wk.b; f.state = "idle"; RD.hopT = 12; if (wk.then && mode === "road") wk.then(); }
+    } else { at = pts[clamp(Math.round(RD.pos), 0, ROAD.length)]; f.state = "idle"; }
+    if (RD.hopT > 0) { hop += Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2; RD.hopT--; }
+    for (const d of RD.dust) {   // dust puffs where a hop lands
+      d.t++; const a = 1 - d.t / 22;
+      if (a <= 0) continue;
+      c.fillStyle = `rgba(196,150,104,${0.55 * a})`;
+      for (const s of [-1, 1]) { c.beginPath(); c.arc(d.x + s * (R * 0.25 + d.t * 0.5), d.y - d.t * 0.25, R * (0.1 + d.t * 0.008), 0, Math.PI * 2); c.fill(); }
+    }
+    RD.dust = RD.dust.filter((d) => d.t < 22);
+  }
   c.save(); c.setTransform(DPR * sc, 0, 0, DPR * sc, DPR * (at[0] - R * 0.15), DPR * (at[1] - R * 0.35 - hop));
   try { drawFighter(c, f, o.mini ? 0 : tk); } catch (e) { /* a drawing problem never blocks the map */ }
   c.restore();
 }
+// walk your fighter along the path to stop i (the boss's gap is ROAD.length), then run then(); with reduced motion it is there at once
+function rdWalk(i, then) {
+  const a = RD.pos === null ? i : RD.pos, n = Math.abs(i - a);
+  if (n < 0.01 || reducedMotion()) { RD.walk = null; RD.pos = i; if (then) then(); return; }
+  RD.walk = { a, b: i, t0: performance.now(), ms: Math.min(430 * n + 170, 1600), ph: 0, then };
+}
 
 /* ----- the Road screen ----- */
 screens.road = $("scrRoad");
-function openRoad() {
+// o.to: walk to that stop and open its sheet (Next stop on the results); without it your fighter walks on to the next stop if a win opened one
+function openRoad(o) {
   finStop(); tutEnd();
   mode = "road"; sel.mode = "road"; paused = false; G = null; match = null; meSlot = 0;
   modal("roadStop", false); modal("pause", false); modal("help", false); modal("settings", false);
@@ -21409,6 +21447,12 @@ function openRoad() {
   show("road"); $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
   roadHeader(); resize();
   requestAnimationFrame(roadHits);
+  if (RD.walk) { RD.pos = RD.walk.b; RD.walk = null; }   // a walk left half way (Back, a fight started) ends where it was going
+  const r = roadGet(), home = Math.min(roadNext(r), ROAD.length), to = o && o.to !== undefined ? o.to : null;
+  if (RD.pos === null) RD.pos = home;
+  if (to !== null) rdWalk(to, () => roadSheet(to));
+  else if (RD.home !== null && RD.home !== home) rdWalk(home, null);
+  RD.home = home;
 }
 function roadHeader() {
   const r = roadGet();
@@ -21433,7 +21477,8 @@ function roadHits() {
     b.addEventListener("click", () => {
       Sfx.init();
       if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars on the Road to open the fence (you have ${roadTotal(roadGet())}).` : `Win stop ${i} first.`); return; }
-      Sfx.ui(); RD.hopT = 24; roadSheet(i);
+      Sfx.ui();
+      if (!RD.walk && Math.round(RD.pos) === i) { RD.hopT = 24; roadSheet(i); } else rdWalk(i, () => roadSheet(i));   // mid-walk: turn toward the new stop from where it is
     });
     box.appendChild(b);
   });
@@ -21531,9 +21576,13 @@ function roadMatchEnd(forfeit) {
     saveProfile();
   }
   const gate = fresh > 0 && roadTotal(r) >= ROAD_GATE && roadTotal(r) - fresh < ROAD_GATE;   // this win opened the fence
+  // a win: the big button goes on to the next stop (Old Scratch after the last one, once the fence is open); a loss: Retry
+  rd.next = !won ? null : rd.i + 1 < ROAD.length ? { i: rd.i + 1 } : roadGateOpen(r) ? { i: ROAD.length } : null;
+  const short = won && rd.i === ROAD.length - 1 && !roadGateOpen(r) ? ROAD_GATE - roadTotal(r) : 0;
   const why = forfeit ? "No stars for a forfeit." : !won ? "No stars this time. A win opens the next stop." :
     (fresh > 0 ? `${fresh} new ${fresh === 1 ? "star" : "stars"} +${total}` : got === 7 ? "Three stars again." : "No new stars this time.") +
-    (gate ? " · The fence is open: Old Scratch waits past the last stop." : "");
+    (gate ? " · The fence is open: Old Scratch waits past the last stop." : "") +
+    (short ? ` · ${short} more ${short === 1 ? "star opens" : "stars open"} the fence.` : "");
   showResults({ res, forfeit, ranked: false, me, op, lines: [], total, why, road: { i: rd.i, got, had, labels: [...ROAD_STARS, st.bonus.txt] } });
 }
 // bossMatchEnd: a Road boss fight adds its star and the first win's reward to the results
@@ -21547,6 +21596,7 @@ function roadBossEnd(R) {
   R.total = total;
   R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : lines.length ? lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
   R.road = { boss: true, lv, got: won ? 1 << lv : 0, had: r.b & ~(won ? 1 << lv : 0), labels: BOSS_LV };
+  match.road.next = won && lv + 1 < BOSS_LV.length ? { lv: lv + 1 } : null;   // a win offers the next level
 }
 // the results: the stop's three stars (the new ones pop)
 function roadResStars(R) {
@@ -21557,6 +21607,18 @@ function roadResStars(R) {
     const on = !!((rd.got | rd.had) & (1 << k)), fresh = !!(rd.got & (1 << k)) && !(rd.had & (1 << k));
     return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
   }).join("");
+}
+// the results' big button: Next stop / To Old Scratch / Next: Hard after a win, Retry otherwise (menus.js rAgain does it)
+function roadAgainLabel() {
+  const nx = match && match.road && match.road.next;
+  return !nx ? "Retry" : nx.lv !== undefined ? `Next: ${BOSS_LV[nx.lv]}` : nx.i >= ROAD.length ? "To Old Scratch" : "Next stop";
+}
+function roadAgain() {
+  const rd = match.road, nx = rd.next;
+  if (nx && nx.lv !== undefined) roadBossFight(nx.lv);
+  else if (nx) openRoad({ to: nx.i });
+  else if (rd.boss) roadBossFight(rd.lv);
+  else roadFight(rd.i);
 }
 function roadResMode(R) {
   return R.road.boss ? `The Road · Old Scratch · ${BOSS_LV[R.road.lv]}` : `The Road · stop ${R.road.i + 1} · ${ROAD[R.road.i].name}`;
@@ -21575,6 +21637,7 @@ for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { 
 screens.roadStop = $("scrRoadStop");
 // test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
 window.__blRoad = { stops: ROAD, get: roadGet, fight: (i) => roadFight(i), boss: (lv) => roadBossFight(lv), open: openRoad,
+  get walking() { return !!RD.walk; }, get pos() { return RD.pos; },
   set: (s) => { const r = roadGet(); P.road = { s: s.slice(), b: r.b, paid: r.paid }; saveProfile(); } };
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
@@ -22534,7 +22597,7 @@ tap("rAgain", () => {
     return;
   }
   if (match && match.ranked) { sel.mode = "ranked"; }
-  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.lv); else roadFight(match.road.i); return; }   // Retry
+  if (match && match.road) { roadAgain(); return; }   // ui/road.js: Next stop after a win, Retry after a loss
   startMatch();
 });
 tap("rChange", () => {
@@ -24187,7 +24250,7 @@ function frame(now) {
   while (acc >= STEP && n < 5) { acc -= STEP; n++; simTick(); }
   if (n === 5) acc = 0;
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
-  render(g, tick);
+  if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") drawCards(tick);
   if (mode === "online") drawOnlineArt(tick);

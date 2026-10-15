@@ -38,7 +38,7 @@ function frame(now) {
   while (acc >= STEP && n < 5) { acc -= STEP; n++; simTick(); }
   if (n === 5) acc = 0;
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
-  render(g, tick);
+  if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") drawCards(tick);
   if (mode === "online") drawOnlineArt(tick);
