@@ -1,0 +1,176 @@
+/* ---------- Fighter mastery ("sunset ink"; ui/mastery.js builds the markup, Fable's looks in mastery/fable-mastery.md section 3) ----------
+   The level shield (roster tile, Account > Stats), the laurel and gold line of a Lv 10 tile, the MASTERY row of the select screen's stats
+   card, the row on the results screen (portrait, FIGHTER · LV n, a bar in the fighter colour, the +XP sticker, the level-up tag), the XP
+   sticker on the tournament bracket and the Collection block in the Locker. Badge look by level (data-k): none at Lv 1, ink 2, bronze 3-5,
+   silver 6-8, gold 9, gold with laurels 10. Nothing moves under prefers-reduced-motion, and a tap on the results screen (.still) jumps to the end. */
+:root {
+  --lau: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 22C11 21 4 15 3 3' fill='none' stroke='%230e1022' stroke-width='3.4' stroke-linecap='round'/%3E%3Cpath d='M21 22C11 21 4 15 3 3' fill='none' stroke='%23c98a2b' stroke-width='1.6' stroke-linecap='round'/%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.1'%3E%3Cellipse cx='5' cy='17' rx='3.6' ry='1.7' transform='rotate(-35 5 17)'/%3E%3Cellipse cx='3' cy='12' rx='3.6' ry='1.7' transform='rotate(-70 3 12)'/%3E%3Cellipse cx='3.6' cy='6.2' rx='3.6' ry='1.7' transform='rotate(-100 3.6 6.2)'/%3E%3Cellipse cx='11' cy='20.6' rx='3.6' ry='1.7' transform='rotate(-10 11 20.6)'/%3E%3Cellipse cx='8.2' cy='13.6' rx='3.4' ry='1.6' transform='rotate(-50 8.2 13.6)'/%3E%3Cellipse cx='7.5' cy='8.6' rx='3.4' ry='1.6' transform='rotate(-85 7.5 8.6)'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---- the level shield: an ink outline, the plate in the badge colour, the number on it, a hard shadow ---- */
+.mx-sh { --mc: #3a4170; --tx: var(--ink); position: relative; display: inline-grid; place-items: center; width: 18px; height: 20px; flex: none; font-style: normal;
+  filter: drop-shadow(0 2px 0 var(--ink)); }
+.mx-sh::before, .mx-sh::after { content: ""; position: absolute; clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%); }
+.mx-sh::before { inset: 0; background: var(--ink); }
+.mx-sh::after { inset: 1.5px 1.5px 2.5px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 55%), var(--mc); }
+.mx-sh em { position: relative; z-index: 1; margin-top: -2px; font: 900 11px/1 var(--display); font-style: normal; color: var(--tx); letter-spacing: 0; }
+.mx-sh[data-k="ink"] { --mc: #3a4170; --tx: var(--sand); }
+.mx-sh[data-k="bronze"] { --mc: #cd8f5b; }
+.mx-sh[data-k="silver"] { --mc: #c9d0e4; }
+.mx-sh[data-k="gold"], .mx-sh[data-k="laurel"] { --mc: #f0c35a; }
+.mx-sh.sm { width: 16px; height: 18px; margin-right: 6px; vertical-align: -4px; }
+.mx-sh.sm em { font-size: 10px; }
+
+/* ---- roster tile: the shield bottom-right (just above the name plate when a long name reaches that far), the laurel top-left, the gold line ---- */
+#scrSelect .tile .mx-sh { position: absolute; right: 6px; bottom: 6px; z-index: 2; width: 20px; height: 22px; }
+#scrSelect .tile .mx-sh em { font-size: 12px; }
+#scrSelect .tile .mx-lr { position: absolute; left: 3px; top: 3px; z-index: 2; width: 24px; height: 24px; background: var(--lau) center / contain no-repeat; filter: drop-shadow(0 1px 0 var(--ink)); pointer-events: none; }
+#scrSelect .tile.mx10::before { content: ""; position: absolute; inset: 3px; z-index: 1; border: 1.5px solid var(--gold); border-radius: 7px; pointer-events: none; opacity: 0.95; box-shadow: 0 0 0 1px rgba(14, 16, 34, 0.55); }
+#app.tiny #scrSelect .tile .mx-sh { right: 4px; bottom: 5px; width: 17px; height: 19px; }
+#app.tiny #scrSelect .tile .mx-sh em { font-size: 10px; }
+#app.tiny #scrSelect .tile .mx-lr { width: 19px; height: 19px; left: 2px; top: 2px; }
+#app:not(.short):not(.portrait) #scrSelect .tile .mx-sh { right: 9px; bottom: 9px; width: 26px; height: 29px; }
+#app:not(.short):not(.portrait) #scrSelect .tile .mx-sh em { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrSelect .tile .mx-lr { width: 32px; height: 32px; left: 5px; top: 5px; }
+#app:not(.short):not(.portrait) #scrSelect .tile.mx10::before { inset: 4px; border-width: 2px; border-radius: 9px; }
+#app.portrait #scrSelect .tile .mx-sh { right: 4px; bottom: 5px; width: 17px; height: 19px; }
+#app.portrait #scrSelect .tile .mx-sh em { font-size: 10px; }
+#app.portrait #scrSelect .tile .mx-lr { width: 19px; height: 19px; left: 2px; top: 2px; }
+
+/* ---- the select screen's stats card: MASTERY, ten segments, an LV sticker, what comes next ---- */
+#scrSelect .sl-stats .mx-row { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; }
+#scrSelect .mx-seg { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+#scrSelect .mx-seg i { height: 9px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(14, 16, 34, 0.5); transform: skewX(-14deg); }
+#scrSelect .mx-seg i.on { background: linear-gradient(180deg, #fff 0, var(--gold) 42%); box-shadow: inset 0 0 0 1px var(--ink); }
+#scrSelect .mx-seg i.part { background: linear-gradient(90deg, var(--gold) calc(var(--f) * 100%), rgba(255, 255, 255, 0.1) calc(var(--f) * 100%)); }
+#scrSelect .mx-lv { --mc: #a4a9c8; padding: 3px 7px 2px; border: 1.5px solid var(--ink); border-radius: 5px; background: var(--mc); color: var(--ink); font: 900 12px/1 var(--display); letter-spacing: 0.08em; white-space: nowrap;
+  transform: rotate(-4deg); box-shadow: 0 2px 0 var(--ink); }
+#scrSelect .mx-row[data-k="ink"] .mx-lv { color: var(--sand); }
+#scrSelect .mx-row[data-k="laurel"] .mx-lv::before { content: ""; display: inline-block; width: 12px; height: 12px; margin: -2px 3px -1px -2px; vertical-align: middle; background: var(--lau) center / contain no-repeat; }
+#scrSelect .mx-next { grid-column: 1 / -1; font: 500 11px/1.25 var(--body); letter-spacing: 0; text-transform: none; color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrSelect .sl-name b.mx10 { -webkit-text-stroke-color: var(--gold); }   /* Lv 10: the stage name is stroked in gold */
+#app.tiny #scrSelect .sl-stats .mx-row { gap: 2px 8px; }
+#app.tiny #scrSelect .mx-seg i { height: 7px; }
+#app.tiny #scrSelect .mx-lv { font-size: 11px; padding: 2px 6px 1px; }
+#app.tiny #scrSelect .mx-next { font-size: 10.5px; }
+#app.tiny #scrSelect .sl-blurb { -webkit-line-clamp: 2; }   /* the card grew by a row: two whole lines instead of a third one cut in half */
+#app:not(.short):not(.portrait) #scrSelect .mx-seg i { height: 11px; }
+#app:not(.short):not(.portrait) #scrSelect .mx-lv { font-size: 15px; padding: 4px 9px 3px; }
+#app:not(.short):not(.portrait) #scrSelect .mx-next { font-size: 13px; }
+
+/* ---- the results row: under the rank card (or in its place) ---- */
+#resSheet .res-mx { --fc: #f4c95d; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; flex: none; padding: 6px 12px 6px 8px; }
+#resSheet .res-mx .av { --d: 36px; border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px var(--fc), 0 2px 0 var(--ink); }
+#resSheet .mx-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#resSheet .mx-head { display: flex; align-items: center; gap: 6px; min-width: 0; height: 17px; }
+#resSheet .mx-nm { min-width: 0; font: italic 900 15px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .mx-lvw { --mc: #a4a9c8; flex: none; font: 800 13px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mc); white-space: nowrap; }
+#resSheet .mx-lvw::before { content: "\00b7\00a0"; color: var(--mute); }
+#resSheet .mx-lvw i { display: inline-block; font-style: normal; min-width: 1ch; text-align: center; }
+#resSheet .mx-tag { display: none; flex: none; margin-left: auto; padding: 3px 6px 2px; border: 2px solid var(--ink); border-radius: 6px; font: 800 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+#resSheet .mx-tag.on { display: block; }
+#resSheet .mx-tag.ember { background: var(--ember); color: var(--ink); }
+#resSheet .mx-tag.gold { background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); }
+#resSheet .mx-bar { position: relative; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(14, 16, 34, 0.9); border: 1.5px solid rgba(255, 255, 255, 0.1); }
+#resSheet .mx-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%); background: linear-gradient(180deg, #fff 0, var(--fc) 45%); }
+#resSheet .res-mx.max .mx-bar i { background: linear-gradient(180deg, #fff 0, var(--gold) 45%); }
+#resSheet .res-mx.max { box-shadow: var(--hard), var(--bevel), inset 0 0 0 2px var(--gold); }
+#resSheet .mx-line { min-height: 12px; font: 700 11px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; }
+#resSheet .mx-line.on { opacity: 1; }
+#resSheet .res-mx.zero .mx-line { color: var(--mute); }
+#app:not(.short) #resSheet .res-mx.up .mx-line { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }   /* several levels at once: room for two lines of rewards */
+#resSheet .mx-xp { display: flex; align-items: baseline; justify-content: center; gap: 3px; min-width: 62px; padding: 7px 9px 6px; border: 2px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); transform: rotate(4deg); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); white-space: nowrap; }
+#resSheet .mx-xp b { font: italic 900 21px/1 var(--display); font-variant-numeric: tabular-nums; }
+#resSheet .mx-xp small { font: 800 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+#resSheet .res-mx.zero .mx-xp { background: linear-gradient(180deg, #3a4170, #262b50); color: var(--mute); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-mx.zero .mx-xp b { font-size: 17px; }
+/* motion */
+@keyframes mxSpin { 0% { transform: rotateY(0) scale(1); } 40% { transform: rotateY(180deg) scale(1.9); } 100% { transform: rotateY(360deg) scale(1); } }
+@keyframes mxFlash { 35% { box-shadow: 0 0 14px 4px var(--fc); filter: brightness(2.2); } }
+@keyframes mxStamp { from { transform: rotate(-6deg) scale(2.2); opacity: 0; } 55% { opacity: 1; } to { transform: rotate(-6deg) scale(1); opacity: 1; } }
+@keyframes mxFade { from { opacity: 0; } }
+#resSheet.in:not(.still) .res-mx { animation: resUp 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.14s backwards; }
+#resSheet.in:not(.still) .res-mx .mx-xp { animation: resPop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) var(--d, 0.5s) backwards; }
+#resSheet.in:not(.still) .res-mx.spin .mx-lvw i { animation: mxSpin 0.7s ease-in-out; }
+#resSheet.in:not(.still) .res-mx.flash .mx-bar { animation: mxFlash 0.4s ease-out; }
+#resSheet.in:not(.still) .res-mx .mx-tag.on { animation: mxStamp 0.28s cubic-bezier(0.25, 0.9, 0.3, 1.15); }
+#resSheet.in:not(.still) .res-mx.loss .mx-tag.on { animation: mxFade 0.3s ease-out; }   /* a loss: no zoom */
+#resSheet .mx-line { transition: opacity 0.25s; }
+/* short phones: the third line (Next: ...) is left out unless the match brought a level up or no XP, and the column is packed a little tighter, so the buttons stay on screen */
+#app.short #resSheet .res-mx:not(.up):not(.zero) .mx-line { display: none; }
+#app.short #resSheet .res-side:has(> .res-mx:not([hidden])) { padding: 10px 4px 8px; gap: 8px; }
+#app.tiny #resSheet .res-side:has(> .res-mx:not([hidden])) { padding: 8px 4px 6px; gap: 6px; }
+#app.tiny #resSheet .res-side:has(> .res-mx:not([hidden])) .res-actions .btn { min-height: 37px; }
+#app.tiny #resSheet .res-side:has(> .res-mx:not([hidden])) .res-actions .btn.primary { min-height: 42px; }
+/* no rank card (practice, Daily, online): the row takes its place in the middle of the room, the tiles follow */
+#resSheet .res-side:has(> #rRank[hidden]) > .res-mx { margin-top: auto; }
+#resSheet .res-side:has(> #rRank[hidden]) > .res-mx:not([hidden]) + .res-stats { margin-top: 0; }
+#app.tiny #resSheet .res-mx { gap: 8px; padding: 4px 10px 4px 7px; }
+#app.tiny #resSheet .res-mx .av { --d: 31px; border-width: 2px; }
+#app.tiny #resSheet .mx-head { height: 15px; }
+#app.tiny #resSheet .mx-nm { font-size: 13px; }
+#app.tiny #resSheet .mx-lvw { font-size: 12px; }
+#app.tiny #resSheet .mx-tag { font-size: 9px; padding: 3px 5px 2px; }
+#app.tiny #resSheet .mx-bar { height: 7px; }
+#app.tiny #resSheet .mx-line { min-height: 11px; font-size: 10px; }
+#app.tiny #resSheet .mx-xp { min-width: 54px; padding: 5px 7px 4px; }
+#app.tiny #resSheet .mx-xp b { font-size: 18px; }
+#app.tiny #resSheet .mx-xp small { font-size: 10px; }
+#app:not(.short):not(.portrait) #resSheet .res-mx { gap: 14px; padding: 10px 18px 10px 12px; }
+#app:not(.short):not(.portrait) #resSheet .res-mx .av { --d: 52px; border-width: 3px; }
+#app:not(.short):not(.portrait) #resSheet .mx-head { height: 24px; gap: 8px; }
+#app:not(.short):not(.portrait) #resSheet .mx-nm { font-size: 21px; }
+#app:not(.short):not(.portrait) #resSheet .mx-lvw { font-size: 17px; }
+#app:not(.short):not(.portrait) #resSheet .mx-tag { font-size: 12px; padding: 4px 8px 3px; }
+#app:not(.short):not(.portrait) #resSheet .mx-bar { height: 11px; border-radius: 6px; }
+#app:not(.short):not(.portrait) #resSheet .mx-line { min-height: 15px; font-size: 13px; }
+#app:not(.short):not(.portrait) #resSheet .mx-xp { min-width: 92px; padding: 10px 12px 8px; border-radius: 10px; gap: 4px; }
+#app:not(.short):not(.portrait) #resSheet .mx-xp b { font-size: 30px; }
+#app:not(.short):not(.portrait) #resSheet .mx-xp small { font-size: 14px; }
+#app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-mx { margin-top: 0; }   /* the column is centred here */
+@media (prefers-reduced-motion: reduce) { #resSheet .mx-line { transition: none; } }
+
+/* ---- the tournament bracket: the XP of the match just played, next to the chips ---- */
+.mx-cupxp { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; max-width: 46%; min-width: 0; padding: 4px 9px 3px; border: 2px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); transform: rotate(-2deg); }
+.mx-cupxp b { font: italic 900 18px/1 var(--display); letter-spacing: 0.02em; white-space: nowrap; }
+.mx-cupxp small { max-width: 100%; margin-top: 2px; font: 700 10px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+.mx-cupxp.up { background: linear-gradient(180deg, #ffb48f, var(--ember)); }
+.mx-cupxp.pop { animation: mxCupPop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+@keyframes mxCupPop { from { transform: rotate(-2deg) scale(0.3); opacity: 0; } 60% { transform: rotate(-4deg) scale(1.15); opacity: 1; } }
+#app.portrait .mx-cupxp small { display: none; }
+#app.short .mx-cupxp { padding: 2px 8px 2px; }
+@media (prefers-reduced-motion: reduce) { .mx-cupxp.pop { animation: none; } }
+
+/* ---- Account > Stats: the level beside the fighter ---- */
+.fs-tab td.mx-c { white-space: nowrap; }
+.fs-tab td.mx-c span { font: 800 15px/1 var(--display); letter-spacing: 0.04em; }
+.fs-tab td.mx-c .mx-sh { margin-right: 6px; vertical-align: middle; }
+.fs-tab td.mx-c span { vertical-align: middle; }
+/* a narrow phone: the table has a fifth column, so it gets tighter cells and the portrait smaller */
+#app.narrow .fs-tab th, #app.narrow .fs-tab td { padding-left: 4px; padding-right: 4px; }
+#app.narrow .fs-tab th { letter-spacing: 0.08em; }
+#app.narrow .fs-tab .fn { gap: 6px; font-size: 14px; letter-spacing: 0.02em; }
+#app.narrow .fs-tab .av { --d: 24px; }
+#app.narrow .fs-tab td.mx-c .mx-sh { margin-right: 4px; }
+#app.narrow .fs-tab td.mx-c span { font-size: 14px; }
+
+/* ---- Account > Locker: the Collection ---- */
+.mx-col { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 9px; margin-bottom: 10px; border: 2px solid var(--ink); border-radius: 10px; background: var(--raise); box-shadow: 0 2px 0 var(--ink); }
+.mx-col .kicker { font-size: 12px; color: var(--sand); }
+.mx-cells { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mx-cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 6px 8px 7px; border-radius: 8px; background: rgba(14, 16, 34, 0.55); }
+.mx-cell b { font: 900 24px/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; }
+.mx-cell b small { margin-left: 1px; font-size: 14px; color: var(--mute); }
+.mx-cell > span { font: 700 11px/1.1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); }
+.mx-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.mx-dots .av { --d: 20px; border-width: 2px; opacity: 0.32; filter: grayscale(1); }
+.mx-dots .av.on { opacity: 1; filter: none; box-shadow: 0 0 0 1.5px var(--gold); }
+.mx-rbar { height: 8px; margin-top: 4px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+.mx-rbar i { display: block; height: 100%; background: linear-gradient(180deg, #fff 0, var(--gold) 45%); }
+#app.portrait .mx-cells, #app.narrow .mx-cells { grid-template-columns: minmax(0, 1fr); }
+#app.portrait .mx-cell, #app.narrow .mx-cell { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+#app.tiny .mx-col { padding: 6px 8px 7px; margin-bottom: 6px; gap: 4px; }
+#app.tiny .mx-cell { padding: 4px 6px 5px; }
+#app.tiny .mx-cell b { font-size: 20px; }

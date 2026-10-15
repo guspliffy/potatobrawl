@@ -146,6 +146,7 @@ function buildTiles() {
     b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
     b.style.setProperty("--fc", col(spec.palettes[P.pal[spec.id] || 0]));
+    masteryTile(b, spec);   // ui/mastery.js: the level shield
   }
 }
 // restart a one-shot CSS animation (the stage name and model when the fighter changes)
@@ -169,6 +170,7 @@ function buildDetail() {
   $("dRole").textContent = spec.role;
   $("dBlurb").textContent = spec.blurb;
   $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="sl-seg" role="img" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
+  masteryDetail(spec);   // ui/mastery.js: the MASTERY row of the stats card
   $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   const pals = $("dPals"); pals.innerHTML = "";
@@ -513,7 +515,7 @@ function resOpen(look, spec, solo) {
   void sheet.offsetWidth; sheet.classList.add("in");
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
-  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false;
+  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = "";
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -578,6 +580,7 @@ function showResults(R) {
   // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
   const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
   if (match) match.finBy = "";
+  masteryResults(R, !!fb && won, ult);   // ui/mastery.js: the XP, the level and the row under the rank card
   const fin = $("rFin");
   fin.hidden = !(fb && won);
   if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
@@ -595,10 +598,10 @@ function showResults(R) {
   const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = chipsOn || R.daily || R.road ? why
+  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
-    : "Practice doesn't change your rating or earn chips.";
+    : "Practice doesn't change your rating or earn chips.");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
