@@ -353,6 +353,7 @@ function handleEvent(g, e, live) {
       else if (live) Sfx.swing(true);
       break;
     case "burst":
+      if (g.fighters[e.slot] && g.fighters[e.slot].spec.boss) break;   // his fireballs land in fire (ui/draw-boss.js), not the Alchemist's green
       addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: e.r * 1.2, col: "#7dff62" });
       for (let i = 0; i < 12; i++) addFx({ k: "line", x: e.x, y: e.y, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 7, t: 0, life: 12 + Math.random() * 8, col: i % 2 ? "#d9ffcf" : "#55e05a", w: 2.5 });
       cam.shake = Math.max(cam.shake, 5);
