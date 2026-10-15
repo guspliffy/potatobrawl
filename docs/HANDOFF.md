@@ -1,9 +1,24 @@
-# PotatoBrawl handoff (updated 2026-10-15: Kraken Spud, The Deep, Zorp the Alien, The Kitchen, Road regions and Road skins, PROTO 12)
+# PotatoBrawl handoff (updated 2026-10-15: play counts + stats page; Kraken Spud, The Deep, Zorp the Alien, The Kitchen, Road regions and Road skins, PROTO 12)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Analytics counter (2026-10-15, branch claude/project-thread-zit4fr, no PROTO bump, no reload needed): anonymous play counts and
+  Jonny's private stats page. Plan doc https://claude.ai/code/artifact/83606071-fca5-4d1d-98ee-19c8b3a0325c (all defaults approved).
+  - Server: stats.js (Node only), off unless STATS_DIR exists (deploy/stats-setup.txt makes /var/lib/potatobrawl/stats, a systemd
+    drop-in, and prints the link https://potatobrawl.cloud/stats#<key>). POST /api/stats/hit {e: [keys]} adds 1 per key (a whitelist
+    of key patterns, 40 keys and 4 KB a hit, 30 hits a minute per IP in memory); one JSON of totals per day (Europe/Berlin) written
+    every 30 s and on SIGTERM; `peak` = most WebSocket clients at once (a max). POST /api/stats/data {key, from} for the page (last 120
+    days by default); GET /stats serves public/stats.html (from web/stats.html) with a strict CSP. The key lives in STATS_DIR/key.
+  - Game: ui/counter.js, right after base.js in build.py (its hooks run before later parts load). A localStorage note
+    (potatobrawl.count.v1) holds the device's first day, last day/week/month, "came back within 1/3/7/14/30 days" bits, match counts,
+    once-only flags. Keys are listed at the top of stats.js. cntMode(match) names modes (tutorial, trial, practice, ranked, daily, cup,
+    road, boss, road-boss, online, online-boss; a new mode needs a line there). Hooks: enterMatchUI (cntStart), finishMatch and
+    showResults for online (cntEnd), a match left any other way = quit (cntDrop on the 1 s tick), show/modal (cntScreen), buyPending,
+    rAgain, tutShow, trialClear, acctCreate, acSetTab, renderSettings (Settings > Play counts On/Off), loop.js (cntBoot). Sends only
+    on our own server (__blStandalone), never with Global Privacy Control; a 404 stops it for the visit. Tests: tests/stats.js,
+    tests/pwstats.py, tests/pwstatspage.py (check.sh 8g-8i).
 - Session 4 of the big-features plan, part 2 (2026-10-15, branch claude/alien-sea-monster-6nyh3z, PROTO 12, players reload once):
   Kraken Spud the Sea Monster, The Deep, Road region 3 (Kraken Fryer title, Deep Catch skin). Design: bosses2/fable-design.md section 2.
   - Kraken Spud (BOSSES[2], map "deep", HP 600 x lvHp [1, 1, 1.2], poise 32): a hidden boss (`spec.boss.hide`). His head waits in

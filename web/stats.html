@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fff6e4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171a33" media="(prefers-color-scheme: dark)">
+<title>PotatoBrawl · Stats</title>
+<!-- Jonny's private play-count page, served at /stats by stats.js (public/stats.html, copied from web/ by game/build.py).
+     The key is the text after # in the link; it is posted to /api/stats/data and never stored. Inline style and script only,
+     no external script or image: the server sends a strict Content-Security-Policy. Everything from the data goes in as text. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23ef7a52'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #fff6e4; --raised: #fffaf0; --ink: #0e1022; --muted: #646678;
+  --rule: #0e1022; --line: rgba(14, 16, 34, 0.14);
+  --bar: rgba(14, 16, 34, 0.24); --bar-hi: rgba(14, 16, 34, 0.42); --bar-lo: rgba(14, 16, 34, 0.11);
+  --ember: #ef7a52; --gold: #f4c95d; --on-ember: #0e1022;
+  --head: "Barlow Condensed", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #171a33; --raised: #232746; --ink: #eef0fa; --muted: #a4a9c8;
+    --rule: rgba(238, 240, 250, 0.5); --line: rgba(206, 210, 255, 0.14);
+    --bar: rgba(206, 210, 255, 0.3); --bar-hi: rgba(206, 210, 255, 0.52); --bar-lo: rgba(206, 210, 255, 0.14);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.45 var(--body); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 720px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+
+/* title + updated line + range pills */
+.top { padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-bottom: 10px; }
+h1 { margin: 0; font: 800 30px/1 var(--head); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.metarow { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; min-height: 30px; }
+.meta { margin: 0; color: var(--muted); font-size: 13px; }
+.mini { flex: none; padding: 7px 12px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; cursor: pointer; font: 700 12px/1 var(--head); letter-spacing: 0.12em; text-transform: uppercase; }
+.mini:disabled { opacity: 0.5; cursor: default; }
+.pillbar { position: sticky; top: 0; z-index: 10; background: var(--paper); border-bottom: 1px solid var(--line); padding: 8px 0; }
+.pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pill { padding: 11px 0 10px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; cursor: pointer; font: 700 15px/1 var(--head); letter-spacing: 0.1em; text-transform: uppercase; }
+.pill[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: var(--on-ember); }
+
+/* sections */
+main { padding-bottom: 40px; min-height: 40vh; }
+section { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.pillbar + main section:first-child { margin-top: 18px; }
+h2 { margin: 0; font: 800 25px/1.1 var(--head); text-transform: uppercase; letter-spacing: 0.05em; }
+h3 { margin: 24px 0 9px; font: 700 13px/1.2 var(--head); text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
+.base { margin: 4px 0 14px; color: var(--muted); font-size: 13px; }
+.empty, .mut { color: var(--muted); }
+.empty { margin: 6px 0 0; font-size: 14px; }
+h3 + .empty { margin-top: 0; }
+.small { font-size: 13px; }
+p { margin: 8px 0 0; }
+.foot { margin-top: 38px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+
+/* messages (no link, wrong link, no network) */
+.msg { padding: 56px 4px 20px; text-align: center; }
+.msg p { margin: 0 auto; max-width: 30ch; font-size: 19px; line-height: 1.35; }
+
+/* pulse */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tile { border: 1px solid var(--rule); border-radius: 8px; background: var(--raised); padding: 12px 14px 13px; min-width: 0; }
+.tile .k { font: 700 12px/1 var(--head); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.tile .v { margin: 8px 0 5px; font: 800 46px/1 var(--head); }
+.tile .s { color: var(--muted); font-size: 13px; line-height: 1.35; }
+.tile .s b { color: var(--ink); font-weight: 600; }
+.spark { display: block; width: 100%; height: auto; overflow: visible; }
+.spark-cap { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.sl-line { fill: none; stroke: var(--ink); stroke-width: 1; stroke-linejoin: round; }
+.sl-base { stroke: var(--line); stroke-width: 1; }
+.sl-dot { fill: var(--ember); }
+.sl-t { fill: var(--muted); font: 12px var(--body); }
+
+/* horizontal bars */
+.rows { display: grid; gap: 7px; }
+.row { display: grid; grid-template-columns: minmax(84px, 36%) 1fr; gap: 10px; align-items: center; }
+.row .lab { font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
+.track { position: relative; height: 22px; border-left: 1px solid var(--rule); }
+.fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar); border-radius: 0 3px 3px 0; }
+.fill.em { background: var(--ember); }
+.num { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; font: 600 13px/1 var(--body); white-space: nowrap; }
+.num.in { left: 8px; }
+.num.on-em { color: var(--on-ember); }
+.segs { display: flex; gap: 2px; height: 100%; }
+.sg { display: flex; align-items: center; min-width: 0; padding-left: 8px; background: var(--bar); border-radius: 0 3px 3px 0; font: 600 13px/1 var(--body); white-space: nowrap; overflow: hidden; }
+.sg.em { background: var(--ember); color: var(--on-ember); }
+.sg.hi { background: var(--bar-hi); }
+.sg.lo { background: var(--bar-lo); }
+.sg.thin { padding-left: 0; }
+.fn { margin-bottom: 11px; }
+.fn .lh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; font-size: 14px; }
+.fn .lh .mut { font-size: 13px; text-align: right; }
+.fn .track { height: 28px; }
+.fn.key .lab { font-weight: 600; }
+.steps { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 0; font-size: 14px; }
+.steps span { white-space: nowrap; }
+.steps b { font-weight: 600; }
+
+/* cohort grid */
+.cw { margin-bottom: 12px; padding-left: 10px; border-left: 3px solid transparent; }
+.cw.now { border-left-color: var(--ember); }
+.cw-t { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.cw-t span { font-weight: 400; color: var(--muted); }
+.cw-c { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.cc { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 48px; padding: 4px 2px 5px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); text-align: center; }
+.cc small { color: var(--muted); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; line-height: 1.1; }
+.cc b { font: 700 17px/1.2 var(--head); letter-spacing: 0.01em; }
+.cc .sm { color: var(--muted); font-size: 11px; line-height: 1.1; }
+.cc .dots { color: var(--muted); font-weight: 400; opacity: 0.8; }
+.cc.wait b { color: var(--muted); font-weight: 600; font-size: 22px; line-height: 1; }
+
+/* what they play */
+.mrow { margin-bottom: 14px; }
+.mh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.mn { font-size: 15px; font-weight: 600; }
+.mc { color: var(--muted); font-size: 13px; }
+.mrow .track { height: 18px; }
+.ms { margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+
+/* hooks */
+.road { display: grid; grid-template-columns: 74px repeat(8, 1fr); gap: 3px; align-items: center; }
+.road .rn { font-size: 12.5px; line-height: 1.15; }
+.road .rh { color: var(--muted); font-size: 11px; text-align: center; }
+.road .rc { display: flex; align-items: center; justify-content: center; height: 30px; border: 1px solid var(--line); border-radius: 4px; font-size: 12.5px; font-weight: 600; }
+.boss { margin-bottom: 14px; }
+.boss .mn { margin-bottom: 4px; }
+.brow { display: grid; grid-template-columns: 62px 1fr 108px; gap: 8px; align-items: center; margin-top: 4px; font-size: 13px; }
+.brow .track { height: 14px; }
+.brow .fill { background: var(--bar-lo); outline: 1px solid var(--line); outline-offset: -1px; }
+.brow .fill.em { background: var(--ember); outline: 0; }
+.brow .bt { color: var(--muted); white-space: nowrap; }
+.kv > div { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.kv .kl small { display: block; margin-top: 1px; color: var(--muted); font-size: 12.5px; }
+.kv .n { font: 700 21px/1 var(--head); text-align: right; }
+.peaks { display: flex; align-items: flex-end; gap: 2px; height: 46px; margin-top: 30px; border-bottom: 1px solid var(--rule); }
+.peaks i { position: relative; flex: 1 1 0; min-width: 2px; background: var(--bar); border-radius: 2px 2px 0 0; }
+.peaks i b { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 2px; font: 600 12px/1 var(--body); }
+.peaks i.today { background: var(--ember); }
+.peaks i.hi { background: var(--bar-hi); }
+
+/* health */
+.err { display: grid; grid-template-columns: 34px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.err b { font-weight: 700; text-align: right; }
+.err code { font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (min-width: 600px) {
+  body { font-size: 16px; }
+  h1 { font-size: 36px; }
+  .tile .v { font-size: 56px; }
+  .tile { padding: 14px 18px 16px; }
+  .row { grid-template-columns: 170px 1fr; }
+  .brow { grid-template-columns: 80px 1fr 130px; }
+  .road { grid-template-columns: 90px repeat(8, 1fr); }
+  .cc b { font-size: 19px; }
+  .cc small { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <h1>PotatoBrawl · Stats</h1>
+  <div class="metarow">
+    <p class="meta" id="meta">&nbsp;</p>
+    <button class="mini" id="refresh" type="button" hidden>Refresh</button>
+  </div>
+</header>
+<div class="pillbar" id="pillbar" hidden>
+  <div class="wrap"><div class="pills" role="group" aria-label="Range">
+    <button class="pill" type="button" data-range="today" aria-pressed="false">Today</button>
+    <button class="pill" type="button" data-range="week" aria-pressed="true">Week</button>
+    <button class="pill" type="button" data-range="month" aria-pressed="false">Month</button>
+  </div></div>
+</div>
+<main class="wrap" id="main" data-state="loading"><noscript><div class="msg"><p>This page needs JavaScript.</p></div></noscript></main>
+<script>
+(function () {
+  "use strict";
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  var EMBER = "239,122,82";
+  var tbl = function (o) { return Object.assign(Object.create(null), o); };
+  var MODES = tbl({ tutorial: "Tutorial", trial: "Combo trial", practice: "Practice", ranked: "Ranked", daily: "Daily Potato", cup: "Tournament", road: "Road", boss: "Boss fight", "road-boss": "Road boss", online: "Online", "online-boss": "Online boss" });
+  var FIGHTERS = tbl({ dragon: "Dragon", samurai: "Samurai", wizard: "Wizard", phoenix: "Phoenix", odin: "Odin", alchemist: "Alchemist", gunslinger: "Gunslinger", reaper: "Reaper" });
+  var BOSSES = tbl({ scratch: "Old Scratch", zorp: "Zorp", kraken: "Kraken Spud" });
+  var LEVELS = ["Normal", "Hard", "Nightmare"];
+  var REGIONS = ["The Field", "The Kitchen", "The Deep"];
+  var STEPS = ["move", "jump", "light", "heavy", "charge", "special", "dodge", "ult", "off"];
+  var WHERE = tbl({ menu: "Menu", select: "Fighter select", result: "Results", online: "Online", road: "Road", cup: "Tournament" });
+  var FL = [["0", "Under 1 min"], ["1", "1–3 min"], ["3", "3–10 min"], ["10", "10–30 min"], ["30", "30+ min"]];
+  var FM = [["0", "None"], ["1", "1 match"], ["2", "2 matches"], ["3", "3 or more"]];
+  var ML = [["0", "Under 1 min"], ["1", "1–2 min"], ["2", "2–3 min"], ["3", "3–5 min"], ["5", "5+ min"]];
+  var RETS = [1, 3, 7, 14, 30];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var st = { data: null, range: "week", at: 0, busy: false, err: null, key: "", sparkEl: null, sparkPts: null };
+  var C = null;   // the numbers of this render
+
+  // ---------- small DOM helpers: data only ever goes in as text
+  function put(el, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { put(el, x); }); return; }
+    el.appendChild(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) for (var k in props) {
+      var v = props[k];
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v; else if (k === "style") el.style.cssText = v; else el.setAttribute(k, v);
+    }
+    for (var i = 2; i < arguments.length; i++) put(el, arguments[i]);
+    return el;
+  }
+  var NS = "http://www.w3.org/2000/svg";
+  function sv(tag, attrs, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.appendChild(document.createTextNode(String(text)));
+    return e;
+  }
+
+  // ---------- dates (calendar days as day numbers; Monday-start weeks)
+  function dn(s) { return Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5; }
+  function ds(n) { return new Date(n * 864e5).toISOString().slice(0, 10); }
+  function fd(n) { var s = ds(n); return +s.slice(8) + " " + MON[+s.slice(5, 7) - 1]; }
+  function wdi(n) { return (((n + 3) % 7) + 7) % 7; }   // 0 = Monday
+  function span(a, b) { var l = []; for (var n = a; n <= b; n++) l.push(ds(n)); return l; }
+  function mkRange(id, t) {
+    var from, p0, p1;
+    if (id === "today") { from = t; p0 = p1 = t - 1; }
+    else if (id === "week") { from = t - wdi(t); p0 = from - 7; p1 = from - 1; }
+    else { from = dn(ds(t).slice(0, 8) + "01"); p1 = from - 1; p0 = dn(ds(p1).slice(0, 8) + "01"); }
+    return { id: id, from: from, to: t, days: span(from, t), pdays: span(p0, p1),
+      now: { today: "today", week: "this week", month: "this month" }[id], prev: { today: "yesterday", week: "last week", month: "last month" }[id] };
+  }
+
+  // ---------- counting
+  function fmt(n) { return Number(n).toLocaleString("en-US"); }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function plural(n, w, pl) { return fmt(n) + " " + (n === 1 ? w : pl || w + "s"); }
+  function modeName(id) { return MODES[id] || id; }
+  function fighterName(id) { return FIGHTERS[id] || cap(id); }
+  function cnt(day, key) { var o = C.D[day]; return o ? (+o[key] || 0) : 0; }
+  function S(days, key) { var t = 0; for (var i = 0; i < days.length; i++) t += cnt(days[i], key); return t; }
+  function P(days, prefix) {   // every key starting with prefix, summed: {rest of the key: count}
+    var out = Object.create(null);
+    for (var i = 0; i < days.length; i++) {
+      var o = C.D[days[i]]; if (!o) continue;
+      for (var k in o) if (k.indexOf(prefix) === 0) { var r = k.slice(prefix.length); out[r] = (out[r] || 0) + (+o[k] || 0); }
+    }
+    return out;
+  }
+  function sorted(map) {
+    return Object.keys(map).map(function (k) { return [k, map[k]]; }).filter(function (e) { return e[1] > 0; })
+      .sort(function (a, b) { return b[1] - a[1] || (a[0] < b[0] ? -1 : 1); });
+  }
+  function total(map) { var t = 0; for (var k in map) t += map[k]; return t; }
+  // small numbers stay honest: under 20 no percent at all, 20-100 rounded to 5%, above 100 whole percent
+  function pct(n, b) { if (!b || b < 20) return ""; var p = 100 * n / b; return (b > 100 ? Math.round(p) : Math.round(p / 5) * 5) + "%"; }
+  function ofPct(n, b) { var p = pct(n, b); return fmt(n) + " of " + fmt(b) + (p ? " (" + (b > 100 ? "" : "about ") + p + ")" : ""); }
+  function finishedOf(days, filter) {   // matches finished (win + loss + draw), optionally only modes passing filter
+    var me = P(days, "me:"), t = 0;
+    for (var k in me) { var p = k.split(":"); if (p[1] === "win" || p[1] === "loss" || p[1] === "draw") if (!filter || filter(p[0])) t += me[k]; }
+    return t;
+  }
+
+  function fxName(id) {
+    if (WHERE[id]) return WHERE[id];
+    if (id.indexOf("tut:") === 0) return "Tutorial · " + cap(id.slice(4));
+    if (id.indexOf("match:") === 0) {
+      var m = modeName(id.slice(6)), art = /^[aeiou]/i.test(m) ? "an " : "a ";
+      return "In " + art + m + (/(fight|trial)$/i.test(m) ? "" : " match");
+    }
+    return cap(id);
+  }
+
+  // ---------- the numbers behind one render
+  function context(data, rangeId) {
+    var tn = dn(data.today), D = data.days || {}, ret = {}, first = Infinity;
+    Object.keys(D).forEach(function (d) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !D[d] || typeof D[d] !== "object") { delete D[d]; return; }
+      var n = dn(d); if (n < first) first = n;
+      for (var k in D[d]) if (k.indexOf("ret:") === 0) {
+        var p = k.split(":"); if (p.length !== 3) continue;
+        (ret[p[1]] || (ret[p[1]] = {}))[p[2]] = (ret[p[1]][p[2]] || 0) + (+D[d][k] || 0);
+      }
+    });
+    return { D: D, tn: tn, today: data.today, ret: ret, first: first, R: mkRange(rangeId, tn) };
+  }
+
+  // ---------- reusable pieces
+  function sec(title, base) {
+    var s = h("section", null, h("h2", null, title));
+    if (base != null) s.appendChild(h("p", { class: "base" }, base));
+    return s;
+  }
+  function note(t) { return h("p", { class: "empty" }, t); }
+  function pctW(v, max) { return max > 0 ? Math.min(100, Math.max(0, v / max * 100)) : 0; }
+  function track(v, max, cls, text) {   // one bar with its count written on it (or just after it when the bar is short)
+    var w = pctW(v, max), inside = w >= 18;
+    return h("div", { class: "track" },
+      h("i", { class: "fill " + (cls || ""), style: "width:" + w.toFixed(2) + "%" + (v > 0 ? ";min-width:3px" : "") }),
+      h("b", { class: "num " + (inside ? "in" : "out") + (inside && cls === "em" ? " on-em" : ""), style: inside ? "" : "left:calc(" + w.toFixed(2) + "% + 7px)" }, text || fmt(v)));
+  }
+  function segTrack(parts, max, withText) {   // one bar made of segments side by side; each segment's share of the whole
+    var sum = 0; parts.forEach(function (p) { sum += p.v; });
+    var kids = parts.filter(function (p) { return p.v > 0; }).map(function (p) {
+      var share = pctW(p.v, max);
+      return h("span", { class: "sg " + (p.cls || "") + (withText ? "" : " thin"), style: "flex:" + p.v + " 1 0" }, withText && share >= 9 ? fmt(p.v) : "");
+    });
+    return h("div", { class: "track" }, h("div", { class: "segs", style: "width:" + pctW(sum, max).toFixed(2) + "%" }, kids));
+  }
+  function barRows(rows, max) {   // rows: [{l, v, cls}]
+    if (max == null) max = Math.max.apply(null, rows.map(function (r) { return r.v; }).concat(1));
+    return h("div", { class: "rows" }, rows.map(function (r) {
+      return h("div", { class: "row" }, h("div", { class: "lab" }, r.l), track(r.v, max, r.cls));
+    }));
+  }
+  function topRows(map, label, n) {   // a sorted bar list; what is beyond the top n is added up as "Other"
+    var e = sorted(map), rows = e.slice(0, n).map(function (x) { return { l: label(x[0]), v: x[1] }; });
+    if (e.length > n) { var o = 0; e.slice(n).forEach(function (x) { o += x[1]; }); rows.push({ l: "Other (" + (e.length - n) + ")", v: o }); }
+    return rows;
+  }
+  function kvRow(label, value, sub) {
+    return h("div", null, h("div", { class: "kl" }, label, sub ? h("small", null, sub) : null), h("div", { class: "n" }, value));
+  }
+
+  // ---------- 1. pulse
+  function secPulse() {
+    var R = C.R, t = C.today;
+    var key = R.id === "today" ? "day" : R.id === "week" ? "wk" : "mo";
+    var cur = S(R.id === "today" ? [t] : R.days, key), prev = S(R.pdays, key);
+    var hasPrev = R.pdays.some(function (d) { return C.D[d]; });
+    var s = sec("Pulse", R.id === "today" ? "Today · " + WD[wdi(R.to)] + " " + fd(R.to) : (R.id === "week" ? "This week" : "This month") + " · " + fd(R.from) + " – " + fd(R.to));
+
+    // the previous period is complete and this one is not: the arrow compares with the same stretch of days of the previous period
+    var same = 0, trend = null;
+    if (R.id !== "today") same = S(R.pdays.slice(0, R.days.length), key);
+    if (hasPrev && R.id !== "today" && cur >= 10 && same >= 10) trend = cur >= same * 1.1 ? "↑ up" : cur <= same * 0.9 ? "↓ down" : null;
+    var t1 = h("div", { class: "tile" }, h("div", { class: "k" }, "Players"), h("div", { class: "v" }, fmt(cur)),
+      h("div", { class: "s" }, R.prev + ": " + (hasPrev ? fmt(prev) : "no data")),
+      trend ? h("div", { class: "s" }, "same days: " + fmt(same) + " · ", h("b", null, trend)) : null);
+
+    var cb = cameBack(), v2, s2;
+    if (!cb) { v2 = "–"; s2 = [h("div", null, "No new players old enough yet")]; }
+    else {
+      var small = cb.base < 20, p = pct(cb.got, cb.base);
+      v2 = small ? fmt(cb.got) + " of " + fmt(cb.base) : p;
+      s2 = [h("div", null, (small ? "" : "of " + fmt(cb.base) + " ") + "new players came back " + cb.text), h("div", null, "first seen " + cb.when + " days ago")];
+    }
+    var t2 = h("div", { class: "tile" }, h("div", { class: "k" }, "Came back"), h("div", { class: "v" }, v2), h("div", { class: "s" }, s2));
+    s.appendChild(h("div", { class: "tiles" }, t1, t2));
+
+    s.appendChild(h("h3", null, "Players per day · last 30 days"));
+    if (!isFinite(C.first)) s.appendChild(note("No plays counted yet."));
+    else {
+      var a = Math.max(C.tn - 29, C.first), pts = [];
+      for (var n = a; n <= C.tn; n++) pts.push({ n: n, v: cnt(ds(n), "day") });
+      var box = h("div", { class: "sparkbox" });
+      st.sparkEl = box; st.sparkPts = pts;
+      s.appendChild(box);
+      s.appendChild(h("div", { class: "spark-cap" }, h("span", null, fd(a)), h("span", null, "today")));
+    }
+    var ph = S(R.days, "dev:phone"), tb = S(R.days, "dev:tablet"), dk = S(R.days, "dev:desktop"), ap = S(R.days, "app:app");
+    if (ph + tb + dk + ap > 0) s.appendChild(h("p", { class: "small mut" }, "phone " + fmt(ph) + " · tablet " + fmt(tb) + " · desktop " + fmt(dk) + " · home-screen app " + fmt(ap) + (R.id === "today" ? "" : " · counted once per day")));
+    return s;
+  }
+  function cameBack() {
+    function calc(lo, hi, T) { var got = 0, base = 0; for (var a = lo; a <= hi; a++) { var d = ds(C.tn - a); base += cnt(d, "day:new"); got += (C.ret[d] && C.ret[d][T]) || 0; } return { got: got, base: base }; }
+    var a = calc(7, 13, 7);
+    if (a.base > 0) return { got: a.got, base: a.base, text: "within a week", when: "7–13" };
+    var b = calc(1, 7, 1);
+    if (b.base > 0) return { got: b.got, base: b.base, text: "the next day", when: "1–7" };
+    return null;
+  }
+  function drawSpark() {
+    var box = st.sparkEl, pts = st.sparkPts; if (!box || !pts || !box.isConnected) return;
+    var W = Math.max(220, Math.floor(box.clientWidth)), H = 78, top = 18, bot = 16, pad = 6;
+    var max = 0, hi = 0, lo = 0; pts.forEach(function (p, i) { if (p.v >= max) { max = p.v; hi = i; } });
+    pts.forEach(function (p, i) { if (p.v < pts[lo].v) lo = i; });
+    var X = function (i) { return pts.length < 2 ? W - pad - 4 : pad + i * (W - 2 * pad) / (pts.length - 1); };
+    var Y = function (v) { return max > 0 ? top + (1 - v / max) * (H - top - bot) : H - bot; };
+    var svg = sv("svg", { class: "spark", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Players per day over the last " + pts.length + " days" });
+    svg.appendChild(sv("line", { class: "sl-base", x1: 0, x2: W, y1: H - bot, y2: H - bot }));
+    if (pts.length > 1) svg.appendChild(sv("polyline", { class: "sl-line", points: pts.map(function (p, i) { return X(i).toFixed(1) + "," + Y(p.v).toFixed(1); }).join(" ") }));
+    var lab = function (i, dy) {
+      var x = X(i), anchor = x < 26 ? "start" : x > W - 26 ? "end" : "middle";
+      svg.appendChild(sv("text", { class: "sl-t", x: anchor === "start" ? Math.max(0, x - 3) : anchor === "end" ? Math.min(W, x + 3) : x, y: Y(pts[i].v) + dy, "text-anchor": anchor }, pts[i].v));
+    };
+    if (max > 0) lab(hi, -7);
+    if (lo !== hi && pts[lo].v < max) lab(lo, 15);
+    var last = pts.length - 1;
+    svg.appendChild(sv("circle", { class: "sl-dot", cx: X(last).toFixed(1), cy: Y(pts[last].v).toFixed(1), r: 4 }));
+    box.textContent = ""; box.appendChild(svg);
+  }
+
+  // ---------- 2. new players
+  function secNew() {
+    var R = C.R, d = R.days, nNew = S(d, "day:new"), done = S(d, "tut:done"), skip = S(d, "tut:skip");
+    var s = sec("New players", plural(nNew, "new player") + " " + R.now);
+    var steps = [
+      { l: "New players", v: nNew, first: true }, { l: "Tutorial", v: done + skip, tut: true },
+      { l: "1st match started", v: S(d, "fn:s1") }, { l: "1st match finished", v: S(d, "fn:d1") },
+      { l: "2nd match started", v: S(d, "fn:s2"), key: true },
+      { l: "5th match finished", v: S(d, "fn:d5") }, { l: "10th match finished", v: S(d, "fn:d10") }, { l: "25th match finished", v: S(d, "fn:d25") }];
+    var vis = P(d, "tut:"), fx = P(d, "fx:"), fl = P(d, "fl:"), fm = P(d, "fm:"), first = P(d, "first:");
+    if (steps.every(function (x) { return x.v === 0; }) && !total(fx) && !total(first)) { s.appendChild(note("No new players " + R.now + " yet.")); return s; }
+    var max = Math.max.apply(null, steps.map(function (x) { return x.v; }).concat(1));
+    steps.forEach(function (x) {
+      var right = x.tut ? "done " + fmt(done) + " · skipped " + fmt(skip) : x.first ? "" : pct(x.v, nNew);
+      var tr = x.tut ? segTrack([{ v: done, cls: "hi" }, { v: skip, cls: "lo" }], max, true) : track(x.v, max, x.key ? "em" : "");
+      s.appendChild(h("div", { class: "fn" + (x.key ? " key" : "") }, h("div", { class: "lh" }, h("span", { class: "lab" }, x.l), h("span", { class: "mut" }, right)), tr));
+    });
+    s.appendChild(note("Each step counts everyone who got there " + R.now + ", even if they joined earlier."));
+
+    var known = STEPS.slice(), extra = Object.keys(vis).filter(function (k) { return k !== "done" && k !== "skip" && known.indexOf(k) < 0 && vis[k] > 0; });
+    var order = known.concat(extra);
+    s.appendChild(h("h3", null, "Tutorial steps reached"));
+    s.appendChild(h("p", { class: "steps" }, order.map(function (k) { return h("span", null, cap(k) + " ", h("b", null, fmt(vis[k] || 0))); })));
+
+    if (total(first)) { s.appendChild(h("h3", null, "First mode they picked")); s.appendChild(barRows(topRows(first, modeName, 8))); }
+    var visits = total(fl) || total(fx);
+    if (visits) {
+      s.appendChild(h("h3", null, "First visit · where they left"));
+      s.appendChild(h("p", { class: "small mut", style: "margin:-3px 0 9px" }, plural(visits, "first visit") + ", counted when a new player leaves the page"));
+      if (total(fx)) s.appendChild(barRows(topRows(fx, fxName, 8)));
+      s.appendChild(h("h3", null, "First visit · how long it lasted"));
+      s.appendChild(barRows(FL.map(function (b) { return { l: b[1], v: fl[b[0]] || 0 }; })));
+      s.appendChild(h("h3", null, "First visit · matches finished"));
+      s.appendChild(barRows(FM.map(function (b) { return { l: b[1], v: fm[b[0]] || 0 }; })));
+    }
+    return s;
+  }
+
+  // ---------- 3. coming back (the cohort grid ignores the range)
+  function secBack() {
+    var tn = C.tn, mon = tn - wdi(tn), rows = [], all = 0;
+    for (var i = 0; i < 8; i++) {
+      var w0 = mon - 7 * i, w1 = Math.min(w0 + 6, tn);
+      if (w1 < C.first) break;
+      var nNew = 0, got = {};
+      for (var n = w0; n <= w1; n++) {
+        var d = ds(n); nNew += cnt(d, "day:new");
+        RETS.forEach(function (T) { got[T] = (got[T] || 0) + ((C.ret[d] && C.ret[d][T]) || 0); });
+      }
+      all += nNew;
+      rows.push({ w0: w0, w1: w1, nNew: nNew, got: got, now: i === 0 });
+    }
+    var s = sec("Coming back", isFinite(C.first) ? plural(all, "new player") + " in the last " + rows.length + " weeks · ignores the range" : "No plays counted yet.");
+    if (!rows.length) return s;
+    if (!all) { s.appendChild(note("No new players yet.")); return s; }
+    s.appendChild(h("p", { class: "small mut", style: "margin:0 0 12px" }, "Share of each week's new players who came back within 1, 3, 7, 14 or 30 days. · = not over yet, … = still counting."));
+    rows.forEach(function (r) {
+      var title = h("div", { class: "cw-t" }, "Week of " + fd(r.w0), h("span", null, r.nNew ? " · " + r.nNew + " new" + (r.now ? " · this week" : "") : " · no new players"));
+      if (!r.nNew) { s.appendChild(h("div", { class: "cw" + (r.now ? " now" : "") }, title)); return; }
+      var cells = RETS.map(function (T) {
+        var lab = h("small", null, T + (T === 1 ? " day" : " days"));
+        if (r.w0 + T > tn) return h("div", { class: "cc wait", title: "not finished yet" }, lab, h("b", null, "·"));
+        var g = r.got[T], big = r.nNew >= 20, still = r.w1 + T > tn, share = g / r.nNew;
+        var a = g > 0 ? Math.min(0.62, 0.1 + share * 0.8) : 0;
+        return h("div", { class: "cc", style: a ? "background:rgba(" + EMBER + "," + a.toFixed(2) + ")" : "" }, lab,
+          h("b", null, big ? pct(g, r.nNew) : g + "/" + r.nNew, still ? h("span", { class: "dots" }, "…") : null), big ? h("span", { class: "sm" }, g + "/" + r.nNew) : null);
+      });
+      s.appendChild(h("div", { class: "cw" + (r.now ? " now" : "") }, title, h("div", { class: "cw-c" }, cells)));
+    });
+    return s;
+  }
+
+  // ---------- 4. what they play
+  function secPlay() {
+    var R = C.R, d = R.days, ms = P(d, "ms:"), me = P(d, "me:"), modes = Object.create(null);
+    var get = function (id) { return modes[id] || (modes[id] = { id: id, s: 0, win: 0, loss: 0, draw: 0, quit: 0, drop: 0 }); };
+    for (var k in ms) get(k).s += ms[k];
+    for (var k2 in me) { var p = k2.split(":"); if (p.length === 2) get(p[0])[p[1]] = (get(p[0])[p[1]] || 0) + me[k2]; }
+    var list = Object.keys(modes).map(function (id) {
+      var m = modes[id]; m.fin = m.win + m.loss + m.draw; m.ended = m.fin + m.quit + m.drop; m.closed = Math.max(0, m.s - m.ended); return m;
+    }).filter(function (m) { return m.s + m.ended > 0; }).sort(function (a, b) { return b.s - a.s || b.fin - a.fin; });
+    var started = 0, fin = 0; list.forEach(function (m) { started += m.s; fin += m.fin; });
+    var s = sec("What they play", plural(started, "match", "matches") + " started " + R.now + " · " + fmt(fin) + " finished");
+    if (!list.length) { s.appendChild(note("No matches " + R.now + " yet.")); return s; }
+    var max = Math.max.apply(null, list.map(function (m) { return Math.max(m.s, m.ended); }).concat(1));
+    list.forEach(function (m) {
+      // the tutorial ends "done" or "skipped"; the Combo trial always ends with its Exit button, so an exit is its normal end
+      var tut = m.id === "tutorial", tri = m.id === "trial";
+      var bits = tri && !m.fin ? [] : [fmt(m.fin) + (tut ? " done" : " finished")];
+      if (m.quit) bits.push(fmt(m.quit) + (tut ? " skipped" : tri ? " exited" : " quit"));
+      if (m.drop) bits.push(fmt(m.drop) + " dropped");
+      if (m.closed) bits.push(fmt(m.closed) + " closed mid-match");
+      if (m.fin && !tut && !tri) bits.push("won " + fmt(m.win) + " of " + fmt(m.fin));
+      s.appendChild(h("div", { class: "mrow" },
+        h("div", { class: "mh" }, h("span", { class: "mn" }, modeName(m.id)), h("span", { class: "mc" }, fmt(m.s) + " started")),
+        segTrack([{ v: m.fin, cls: "em" }, { v: m.quit, cls: tri ? "em" : "hi" }, { v: m.drop, cls: "" }, { v: m.closed, cls: "lo" }], max, false),
+        h("div", { class: "ms" }, bits.join(" · "))));
+    });
+    var ml = P(d, "ml:");
+    if (total(ml)) {
+      s.appendChild(h("h3", null, "How long a match lasts · " + plural(total(ml), "finished match")));
+      s.appendChild(barRows(ML.map(function (b) { return { l: b[1], v: ml[b[0]] || 0 }; })));
+    }
+    var fp = P(d, "fp:");
+    if (total(fp)) {
+      s.appendChild(h("h3", null, "Fighters picked · " + plural(total(fp), "match", "matches")));
+      s.appendChild(barRows(topRows(fp, fighterName, 8)));
+    }
+    var again = P(d, "again:"), ag = 0; for (var a in again) if (a !== "tutorial") ag += again[a];
+    var f2 = finishedOf(d, function (m) { return m !== "tutorial" && m !== "trial"; });
+    var lines = [];
+    if (f2 > 0) lines.push(h("p", null, "Rematch / Next pressed after " + ofPct(ag, f2) + " finished matches."));
+    var tutDone = S(d, "tut:done");
+    if (tutDone > 0) lines.push(h("p", null, "After the tutorial, " + fmt(again.tutorial || 0) + " of " + fmt(tutDone) + " went straight on to Ranked."));
+    if (lines.length) { s.appendChild(h("h3", null, "Keep going")); lines.forEach(function (l) { s.appendChild(l); }); }
+    return s;
+  }
+
+  // ---------- 5. hooks
+  function secHooks() {
+    var R = C.R, d = R.days, rw = P(d, "rw:"), bs = P(d, "bs:"), bw = P(d, "bw:"), scr = P(d, "scr:"), skins = P(d, "skin:");
+    var road = 0, bossN = total(bs), skinN = total(skins), routes = S(d, "route"), acct = S(d, "acct"), inv = S(d, "inv");
+    var stops = []; for (var i = 0; i < 24; i++) { stops.push(rw[i] || 0); road += stops[i]; }
+    var s = sec("Hooks", fmt(road) + " Road stops won · " + plural(bossN, "boss fight") + " started " + R.now);
+    s.appendChild(h("h3", null, "Road · stops won"));
+    if (!road) s.appendChild(note("No Road stops won " + R.now + " yet."));
+    else {
+      var mx = Math.max.apply(null, stops), g = h("div", { class: "road" }, h("div"));
+      for (var c = 1; c <= 8; c++) g.appendChild(h("div", { class: "rh" }, c));
+      for (var r = 0; r < 3; r++) {
+        g.appendChild(h("div", { class: "rn" }, REGIONS[r]));
+        for (var j = 0; j < 8; j++) {
+          var v = stops[r * 8 + j], a = v ? 0.12 + 0.5 * v / mx : 0;
+          g.appendChild(h("div", { class: "rc", style: v ? "background:rgba(" + EMBER + "," + a.toFixed(2) + ")" : "" }, v ? fmt(v) : ""));
+        }
+      }
+      s.appendChild(g);
+    }
+    s.appendChild(h("h3", null, "Boss fights"));
+    var bosses = Object.create(null); Object.keys(bs).concat(Object.keys(bw)).forEach(function (k) { bosses[k.split(":")[0]] = 1; });
+    var ids = Object.keys(bosses);
+    if (!ids.length) s.appendChild(note("No boss fights " + R.now + " yet."));
+    else {
+      var bmax = 1; Object.keys(bs).forEach(function (k) { bmax = Math.max(bmax, bs[k]); });
+      ids.sort(function (a, b) { return (BOSSES[a] ? Object.keys(BOSSES).indexOf(a) : 99) - (BOSSES[b] ? Object.keys(BOSSES).indexOf(b) : 99); });
+      ids.forEach(function (id) {
+        var box = h("div", { class: "boss" }, h("div", { class: "mn" }, BOSSES[id] || cap(id)));
+        for (var lv = 0; lv < 3; lv++) {
+          var tried = bs[id + ":" + lv] || 0, won = bw[id + ":" + lv] || 0;
+          box.appendChild(h("div", { class: "brow" }, h("span", null, LEVELS[lv]),
+            h("div", { class: "track" }, h("i", { class: "fill", style: "width:" + pctW(tried, bmax).toFixed(2) + "%" }), h("i", { class: "fill em", style: "width:" + pctW(Math.min(won, tried || won), bmax).toFixed(2) + "%" })),
+            h("span", { class: "bt" }, "tried " + fmt(tried) + " · won " + fmt(won))));
+        }
+        s.appendChild(box);
+      });
+    }
+    s.appendChild(h("h3", null, "Other hooks"));
+    var top = sorted(skins).slice(0, 3).map(function (e) { return fighterName(e[0]) + " " + e[1]; }).join(" · ");
+    s.appendChild(h("div", { class: "kv" },
+      kvRow("Combo routes cleared", fmt(routes), "first time cleared"), kvRow("Skins bought with chips", fmt(skinN), top || null),
+      kvRow("Sync accounts made", fmt(acct)), kvRow("Invite links opened", fmt(inv))));
+    var sr = sorted(scr);
+    if (sr.length) { s.appendChild(h("h3", null, "Screens opened")); s.appendChild(barRows(topRows(scr, cap, 10))); }
+    return s;
+  }
+
+  // ---------- 6. online
+  function secOnline() {
+    var R = C.R, d = R.days;
+    var isOn = function (m) { return m === "online" || m === "online-boss"; };
+    var started = S(d, "ms:online") + S(d, "ms:online-boss"), fin = finishedOf(d, isOn);
+    var drops = S(d, "me:online:drop") + S(d, "me:online-boss:drop"), again = S(d, "again:online"), inv = S(d, "inv");
+    var peaks = d.map(function (day) { return cnt(day, "peak"); }), pk = Math.max.apply(null, peaks.concat(0));
+    var s = sec("Online", "Online and Online boss modes · " + R.now);
+    if (!started && !fin && !again && !inv && !pk) { s.appendChild(note("No online play " + R.now + " yet.")); return s; }
+    var peakSub = null;
+    if (R.id !== "today" && pk > 0) {
+      var at = peaks.lastIndexOf(pk); peakSub = "highest on " + WD[wdi(R.from + at)] + " " + fd(R.from + at);
+    }
+    s.appendChild(h("div", { class: "kv" },
+      kvRow("Online matches started", fmt(started)),
+      kvRow("Online matches finished", fmt(fin), drops ? plural(drops, "connection drop") : null),
+      kvRow("Rematches pressed", fmt(again)),
+      kvRow("Invite links opened", fmt(inv)),
+      kvRow(R.id === "today" ? "Peak online today" : "Peak online", fmt(pk), peakSub)));
+    if (R.id !== "today" && pk > 0) {
+      var hi = peaks.lastIndexOf(pk);
+      s.appendChild(h("div", { class: "peaks", role: "img", "aria-label": "Peak players online per day" }, peaks.map(function (v, i) {
+        return h("i", { class: i === peaks.length - 1 ? "today" : i === hi ? "hi" : "", style: "height:" + Math.max(v > 0 ? 3 : 0, pctW(v, pk)).toFixed(1) + "%", title: fd(R.from + i) + ": " + v }, i === hi ? h("b", null, pk) : null);
+      })));
+      s.appendChild(h("div", { class: "spark-cap" }, h("span", null, fd(R.from)), h("span", null, "today")));
+    }
+    return s;
+  }
+
+  // ---------- 7. health
+  function secHealth() {
+    var R = C.R, d = R.days, errs = P(d, "err:"), e = sorted(errs), nErr = total(errs);
+    var s = sec("Health", nErr ? plural(nErr, "error") + " from " + plural(e.length, "different message") + " " + R.now : "No errors " + R.now);
+    if (!e.length) s.appendChild(note("No JavaScript errors counted " + R.now + "."));
+    else e.slice(0, 10).forEach(function (x) { s.appendChild(h("div", { class: "err" }, h("b", null, fmt(x[1])), h("code", null, x[0]))); });
+    if (e.length > 10) s.appendChild(note("+ " + (e.length - 10) + " more messages not shown."));
+    var fin = finishedOf(d), slow = S(d, "mslow");
+    s.appendChild(h("h3", null, "Slow devices"));
+    s.appendChild(fin > 0 ? h("p", { style: "margin-top:0" }, "Slow devices: " + ofPct(Math.min(slow, fin), fin) + " finished matches.") : note("No finished matches " + R.now + " yet."));
+    return s;
+  }
+
+  function foot() {
+    return h("p", { class: "foot" }, "Anonymous totals per day. Days are calendar days in " + C.tz + "; weeks start on Monday. Showing the last 120 days that have counts.");
+  }
+
+  // ---------- page states
+  function msg(state, text) {
+    var m = $("main"); m.textContent = ""; m.setAttribute("data-state", state);
+    m.appendChild(h("div", { class: "msg" }, h("p", null, text)));
+  }
+  function chrome() {   // the Refresh button and the "updated" line (a refresh keeps the page as it is meanwhile)
+    var rb = $("refresh"), d = st.data, meta = $("meta");
+    rb.hidden = !st.key; rb.disabled = st.busy; rb.textContent = st.busy ? "Refreshing…" : "Refresh";
+    if (!d) return;
+    var time = new Date(st.at), hh = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2);
+    meta.textContent = "updated " + hh + " · " + fmt(d.online | 0) + " online now" + (st.err ? " · couldn't refresh just now" : "");
+  }
+  function render() {
+    var key = st.key, d = st.data, bar = $("pillbar"), meta = $("meta");
+    chrome();
+    st.sparkEl = null; st.sparkPts = null;
+    if (!key) { bar.hidden = true; meta.textContent = ""; msg("nokey", "This page needs your private link (it ends with #...)"); return; }
+    if (!d) {
+      bar.hidden = true;
+      if (st.busy && !st.err) { meta.textContent = "loading…"; msg("loading", "Loading…"); return; }
+      meta.textContent = "";
+      if (st.err === "404") msg("bad", "That link isn't right, or the counter is off on this server.");
+      else if (st.err === "429") msg("net", "Too many refreshes in a row. Try again in a minute.");
+      else msg("net", "Couldn't reach the server. Pull to refresh.");
+      return;
+    }
+    bar.hidden = false;
+    Array.prototype.forEach.call(document.querySelectorAll(".pill"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-range") === st.range ? "true" : "false"); });
+    C = context(d, st.range); C.tz = d.tz || "Europe/Berlin";
+    var m = $("main"); m.textContent = ""; m.setAttribute("data-state", "ok");
+    [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
+    drawSpark();
+  }
+
+  function load() {
+    if (st.busy) return;
+    st.key = decodeHash();
+    if (!st.key) { st.data = null; render(); return; }
+    st.busy = true; st.err = null; st.at = st.at || 0;
+    var fresh = st.data;
+    if (fresh) chrome(); else render();
+    fetch("/api/stats/data", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: st.key }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" })
+      .then(function (r) { if (r.status === 404) throw "404"; if (r.status === 429) throw "429"; if (!r.ok) throw "net"; return r.json(); })
+      .then(function (j) {
+        if (!j || typeof j.today !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(j.today) || !j.days || typeof j.days !== "object") throw "net";
+        st.data = j; st.at = Date.now(); st.err = null;
+      })
+      .catch(function (e) { st.err = typeof e === "string" ? e : "net"; if (st.err === "404") st.data = null; if (!fresh) st.data = null; })
+      .then(function () { st.busy = false; st.tried = Date.now(); render(); });
+  }
+  function decodeHash() { var h0 = location.hash.replace(/^#/, ""); try { h0 = decodeURIComponent(h0); } catch (e) { /* keep as typed */ } return h0.trim(); }
+
+  // ---------- wiring
+  Array.prototype.forEach.call(document.querySelectorAll(".pill"), function (b) {
+    b.addEventListener("click", function () {
+      st.range = b.getAttribute("data-range");
+      try { sessionStorage.setItem("pb-stats-range", st.range); } catch (e) { /* private window: fine */ }
+      if (st.data) render();
+    });
+  });
+  $("refresh").addEventListener("click", load);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && st.key && Date.now() - (st.tried || 0) > 3000) load(); });
+  window.addEventListener("hashchange", function () { st.data = null; st.err = null; load(); });
+  var raf = 0;
+  window.addEventListener("resize", function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawSpark); });
+  try { var saved = sessionStorage.getItem("pb-stats-range"); if (saved === "today" || saved === "week" || saved === "month") st.range = saved; } catch (e) { /* ignore */ }
+  load();
+})();
+</script>
+</body>
+</html>
