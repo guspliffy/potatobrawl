@@ -252,7 +252,7 @@ function buildPractice() {
   const boss = BL.BOSSES.find((b) => b.id === sel.opp), opp = boss || (sel.opp === "random" ? null : FIG[sel.opp]);
   $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
   $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
-  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(BOSS_MAP) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
   $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
@@ -279,7 +279,7 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${RD.sel >= ROAD.length ? "Old Scratch" : `stop ${RD.sel + 1}: ${ROAD[RD.sel].name}`}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";

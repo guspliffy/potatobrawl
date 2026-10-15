@@ -452,7 +452,7 @@ for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].
    non-light hit sends him out (bossDown: the KO decided at the hit, like a final lethal launch). ---------- */
 const BOSSES = [
   {
-    id: "scratch", name: "Old Scratch", role: "The Devil",
+    id: "scratch", name: "Old Scratch", role: "The Devil", map: "field",
     blurb: "A roasted red potato with horns, a pitchfork and a temper. Owns The Field.",
     look: { build: "boss", costume: "devil", scale: 2.5 },
     stats: { w: 100, h: 156, weight: 400, run: 2.6, accel: 0.35, airSpeed: 2, airAccel: 0.2, gravity: 0.75, fallSpeed: 14, fastFall: 14, jump: 10, airJump: 0, airJumps: 0 },
@@ -464,7 +464,7 @@ const BOSSES = [
     // Tuned with tests/boss.js (two bots at 0.6: Normal 85% wins in ~66 s, Hard ~48%, Nightmare ~0; bots at 0.8 win Nightmare ~10%).
     boss: { hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
             stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [32, 30], [24, 24]], lvFast: [0, 0.08, 0.15], chargeAt: [50, 50, 100],
-            rainN: [6, 7, 8], trailLife: [84, 84, 150] },
+            rainN: [6, 7, 8], trailLife: [84, 84, 150], order: ["stab", "whip", "stomp", "rain", "charge"] },
     moves: {
       // Pitchfork Stab: the tines glow, then a long poke at waist height (jump it or step out)
       stab:   M(24, 6, 30, 14, 7, 17, 30, [70, -78, 26, 215, -74], { limb: "fork", boss: "stab", fast: true }),
@@ -482,7 +482,6 @@ const BOSSES = [
     },
   },
 ];
-const BOSS_MOVES = ["stab", "whip", "stomp", "rain", "charge"];
 
 /* ---------- state ---------- */
 const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti"];
@@ -508,6 +507,8 @@ function newFighter(spec, slot, pal, x, facing) {
     // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
     // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
     team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1, lifePct: 0,
+    // ph: the boss's phase (1 from his phaseAt % HP: Zorp's saucer down); held: the boss slot holding this fighter (-1 = free)
+    ph: 0, held: -1,
     anim: { run: 0 },
   };
 }
@@ -553,7 +554,7 @@ function dirOf(inp) {
 }
 function canAct(f) { return f.state === "idle" || f.state === "run" || f.state === "air"; }
 function intangible(f) {
-  if (f.invuln > 0 || f.doomed) return true;
+  if (f.invuln > 0 || f.doomed || f.held >= 0) return true;
   const s = f.state;
   if (s === "respawn" || s === "getup" || s === "dead" || s === "gone") return true;
   if (s === "attack" && f.move && f.move.inv && f.mt >= f.move.inv[0] && f.mt <= f.move.inv[1]) return true;
@@ -566,6 +567,22 @@ function armored(f) {
   return f.state === "attack" && f.move && f.move.armor && f.mt >= f.move.armor[0] && f.mt <= f.move.armor[1];
 }
 function hurt(f) { const hw = f.s.w / 2; return { x1: f.x - hw, x2: f.x + hw, y1: f.y - f.s.h, y2: f.y }; }
+// where a fighter can be hit: its box. A boss can also be hit through his parts (his projectiles with a `part` box [half width, height]:
+// a tentacle resting on the pier), and a hidden boss (boss.hide: Kraken Spud behind the pier) only while he is open (bossOpen).
+function hurtsOf(g, f) {
+  if (!f.spec.boss) return [hurt(f)];
+  const out = f.spec.boss.hide && !bossOpen(f) ? [] : [hurt(f)];
+  for (const p of g.projs) if (p.part && p.owner === f.slot && !p.done) out.push({ x1: p.x - p.part[0], x2: p.x + p.part[0], y1: p.y - p.part[1], y2: p.y });
+  return out;
+}
+// where a bot aims at a boss: his feet, or the resting part nearest to `me` (ok = false: nothing of him can be hit right now)
+function bossSpot(g, f, me) {
+  const body = !(f.spec.boss.hide && !bossOpen(f));
+  let x = f.x, y = f.y, best = body ? Math.abs(f.x - me.x) : 1e9;
+  for (const p of g.projs) if (p.part && p.owner === f.slot && !p.done && Math.abs(p.x - me.x) < best) { best = Math.abs(p.x - me.x); x = p.x; y = p.y; }
+  return { x, y, ok: best < 1e9 };
+}
+const bossOpen = (f) => f.state === "stagger" || f.state === "broken" || f.doomed || (f.state === "attack" && !!f.move && !!f.move.open && f.mt >= f.move.open[0] && f.mt <= f.move.open[1]);
 function circRect(cx, cy, r, b) {
   const nx = clamp(cx, b.x1, b.x2), ny = clamp(cy, b.y1, b.y2);
   const dx = cx - nx, dy = cy - ny;
@@ -958,6 +975,7 @@ function physics(g, f) {
       if (m.pound && f.mt >= m.startup) maxFall = Math.max(maxFall, m.vyStart);
     }
     if (f.state === "dodge" && f.dodgeKind === "air" && f.st < 18 && (f.dodgeDir[0] || f.dodgeDir[1])) noGrav = true;
+    if (f.held >= 0 || bossFlying(f)) noGrav = true;   // carried by a boss; a boss in the air on purpose (Zorp's saucer)
     if (!noGrav) {
       if (f.vy < maxFall) f.vy = Math.min(f.vy + grav, maxFall);
       else f.vy = Math.max(maxFall, f.vy - 0.5);
@@ -1139,7 +1157,7 @@ function updateProjs(g) {
       p.vy += p.grav; p.x += p.vx; p.y += p.vy;
     }
     if (p.t >= p.life || (p.style === "flame" && (p.x < S.x1 || p.x > S.x2))) p.done = true;
-    if (p.style !== "burst" && !p.pulse && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
+    if (p.style !== "burst" && !p.pulse && !p.part && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
       p.done = true;
       if (!p.boomer) g.events.push({ type: "projEnd", x: p.x, y: Math.min(p.y, S.top), style: p.style, slot: p.owner });
       if (p.burst) spawnBurst(g, p, p.x, S.top - 6);
@@ -1159,19 +1177,19 @@ function detectHits(g) {
       // a move with a `last` block hits once more with those numbers from its frame `from`
       const blast = mv.last && att.mt >= mv.last.from;
       if (last !== undefined && !(mv.multi && att.mt - last >= mv.multi) && !(blast && last < mv.last.from)) continue;
-      const r = hurt(def);
+      const rs = hurtsOf(g, def);
       for (const b of boxes) {
-        if (circRect(b.x, b.y, b.r, r)) { hits.push({ att, def, hit: blast ? Object.assign({}, mv, mv.last) : mv, lx: b.lx, bx: b.x, by: b.y }); break; }
+        if (rs.some((r) => circRect(b.x, b.y, b.r, r))) { hits.push({ att, def, hit: blast ? Object.assign({}, mv, mv.last) : mv, lx: b.lx, bx: b.x, by: b.y }); break; }
       }
     }
   }
   for (const p of g.projs) {
-    if (p.done) continue;
+    if (p.done || !p.hit) continue;
     // a pulsing cloud only hurts on its pulses, stays after a hit, and its last pulse uses the `last` numbers
     if (p.pulse && p.t % p.pulse !== 0) continue;
     for (const def of g.fighters) {
       if (def.team === g.fighters[p.owner].team || intangible(def)) continue;
-      if (circRect(p.x, p.y, p.r, hurt(def))) {
+      if (hurtsOf(g, def).some((r) => circRect(p.x, p.y, p.r, r))) {
         const hit = p.pulse && p.last && p.t + p.pulse > p.life ? Object.assign({}, p.hit, p.last) : p.hit;
         hits.push({ att: g.fighters[p.owner], def, hit, proj: p, bx: p.x, by: p.y });
         if (!p.pulse) { p.done = true; break; }
@@ -1311,8 +1329,20 @@ function bossAct(g, f) {
   groundMove(g, f);
   if (!f.inp.x && dx) f.facing = sign(dx);
 }
-// the next move, weighted by where the target is (BOSS_MOVES order); "" = walk in first
+// the next move: each boss weighs his moves (his boss.order) by where the target is; "" = walk in first
 function bossPick(g, f, t, dx, up) {
+  const B = f.spec.boss, w = BOSS_WEIGH[f.spec.id](g, f, t, dx, up);
+  if (!w) return "";
+  const last = B.order.indexOf(f.bq);
+  if (last >= 0) w[last] /= 3;
+  let sum = 0;
+  for (const v of w) sum += v;
+  let r = brand(g) * sum;
+  for (let i = 0; i < w.length; i++) { r -= w[i]; if (w[i] > 0 && r < 0) return B.order[i]; }
+  return "";
+}
+// Old Scratch: stab, whip, stomp, rain, charge (null = walk in first)
+function scratchWeigh(g, f, t, dx, up) {
   const S = STAGE.main, adx = Math.abs(dx), half = f.hp * 100 <= f.hpMax * f.spec.boss.chargeAt[g.lv];
   const back = g.fighters.some((o) => o.team !== f.team && o !== t && bossLive(o) && Math.abs(o.x - f.x) < 170 && sign(o.x - f.x) !== sign(dx));
   const room = dx > 0 ? S.x2 - f.x : f.x - S.x1;
@@ -1323,15 +1353,10 @@ function bossPick(g, f, t, dx, up) {
     up > 70 || adx > 320 ? 2 : 1,                      // rain
     half && adx > 90 && up < 90 && room > 300 ? 3 : 0,   // charge
   ];
-  if (adx > 330 && !w[4] && brand(g) < 0.6) return "";
-  const last = BOSS_MOVES.indexOf(f.bq);
-  if (last >= 0) w[last] /= 3;
-  let sum = 0;
-  for (const v of w) sum += v;
-  let r = brand(g) * sum;
-  for (let i = 0; i < w.length; i++) { r -= w[i]; if (w[i] > 0 && r < 0) return BOSS_MOVES[i]; }
-  return "";
+  if (adx > 330 && !w[4] && brand(g) < 0.6) return null;
+  return w;
 }
+const BOSS_WEIGH = { scratch: scratchWeigh };
 function bossStart(g, f, key) {
   const B = f.spec.boss, m = f.spec.moves[key], rage = bossRage(g, f);
   startMove(g, f, key);
@@ -1423,6 +1448,27 @@ function bossHit(g, h) {
     g.events.push({ type: "bossStagger", slot: def.slot, by: att.slot, x: def.x, y: def.y, n: def.stag });
   }
 }
+// a flying boss (boss.fly: Zorp's saucer before his phase 2) keeps his height himself: no gravity until he comes down or is launched
+const bossFlying = (f) => !!f.spec.boss && !!f.spec.boss.fly && f.ph === 0 && !f.doomed;
+// a boss holds a player (a beam, jaws): no input, no hits on them, no gravity; the boss's move carries them (bossCarry) until bossLet
+function bossHold(g, f, o) {
+  o.held = f.slot; o.move = null; o.mid = null; o.ledge = 0; o.link = 0; o.chg = 0; o.ff = false;
+  setState(o, "hitstun"); o.hitstun = 999; o.tumble = false;
+  o.vx = o.vy = o.kbx = o.kby = 0; o.grounded = false; o.plat = -1;
+  o.lastHitBy = f; o.lastHitT = g.t;
+  g.events.push({ type: "bossGrab", slot: f.slot, def: o.slot, mv: f.mid, x: o.x, y: o.y });
+}
+function bossCarry(o, x, y, k) { o.x += (x - o.x) * k; o.y += (y - o.y) * k; o.vx = o.vy = o.kbx = o.kby = 0; }
+// let go of everyone he holds: thrown with `hit` toward dir (a normal launch through applyHit), or dropped (no hit: a short tumble)
+function bossLet(g, f, hit, dir) {
+  for (const o of g.fighters) {
+    if (o.held !== f.slot) continue;
+    o.held = -1;
+    if (hit) applyHit(g, { att: f, def: o, hit, lx: dir * f.facing * 10, bx: o.x, by: o.y - o.s.h * 0.5 });
+    else { o.hitstun = 18; o.invuln = Math.max(o.invuln, 30); }
+  }
+}
+
 // the end: launched out of the arena; decided at the hit like a final lethal launch, so the KO page plays from it
 function bossDown(g, att, def, h, mv, hdir, ex, ey) {
   const tr = trig(50), dx = tr[0] * hdir, dy = -tr[1], kb = 46;
@@ -1602,9 +1648,11 @@ function botInput(g, me, opp, bot) {
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
   useStage(g);
   const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
+  // a boss is aimed at where he can be hit (his body, or the nearest resting tentacle); nothing to hit counts as gone
+  const sp = opp.spec.boss ? bossSpot(g, opp, me) : null;
   bot.mem.push({
-    x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
-    gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn", inv: intangible(opp),
+    x: sp ? sp.x : opp.x, y: sp ? sp.y : opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
+    gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn" || (!!opp.spec.boss && !sp.ok), inv: intangible(opp),
     // a boss target: 0 fighting, 1 staggered, 2 broken (-1 = not a boss)
     bs: opp.spec.boss ? (opp.state === "broken" ? 2 : opp.state === "stagger" ? 1 : 0) : -1,
   });
@@ -1771,8 +1819,8 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct"];
-const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held"];
+const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
   return {
@@ -1808,7 +1856,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }

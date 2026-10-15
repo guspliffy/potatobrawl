@@ -2022,6 +2022,19 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 @keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
 @media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }
 
+/* the region's name with arrows to the region before / after (a locked one is dimmed with a padlock) */
+.rd-title { min-width: 0; }
+.rd-reg { display: flex; align-items: center; gap: 6px; }
+.rd-reg h2 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-arr { flex: none; width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid var(--ink); background: var(--sand); box-shadow: 0 2px 0 var(--ink); cursor: pointer; position: relative; }
+.rd-arr::before { content: ""; position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.rd-arr.prev::before { border-right: 9px solid var(--ink); transform: translate(-60%, -50%); }
+.rd-arr.next::before { border-left: 9px solid var(--ink); transform: translate(-40%, -50%); }
+.rd-arr:disabled { visibility: hidden; }
+.rd-arr.lock { filter: grayscale(1) brightness(0.7); }
+.rd-arr:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
+#app.tiny .rd-arr { width: 26px; height: 26px; }
+
 </style>
 
 </head><body><div id="app">
@@ -2154,7 +2167,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <section id="scrRoad" class="screen rd-scr" hidden>
     <header class="sel-head rd-head">
       <button class="back" id="roadBack" aria-label="Menu"></button>
-      <div class="grow"><div class="kicker">The Road · region 1</div><h2>The Field</h2></div>
+      <div class="grow rd-title"><div class="kicker" id="roadKick">The Road · region 1 of 3</div><div class="rd-reg"><button class="rd-arr prev" id="roadPrev" aria-label="Region before"></button><h2 id="roadReg">The Field</h2><button class="rd-arr next" id="roadNext" aria-label="Next region"></button></div></div>
       <span class="rd-sum" id="roadSum"></span>
       <div class="coin chips" aria-label="Potato chips"><span id="roadTokens">0</span></div>
     </header>
@@ -2961,7 +2974,7 @@ for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].
    non-light hit sends him out (bossDown: the KO decided at the hit, like a final lethal launch). ---------- */
 const BOSSES = [
   {
-    id: "scratch", name: "Old Scratch", role: "The Devil",
+    id: "scratch", name: "Old Scratch", role: "The Devil", map: "field",
     blurb: "A roasted red potato with horns, a pitchfork and a temper. Owns The Field.",
     look: { build: "boss", costume: "devil", scale: 2.5 },
     stats: { w: 100, h: 156, weight: 400, run: 2.6, accel: 0.35, airSpeed: 2, airAccel: 0.2, gravity: 0.75, fallSpeed: 14, fastFall: 14, jump: 10, airJump: 0, airJumps: 0 },
@@ -2973,7 +2986,7 @@ const BOSSES = [
     // Tuned with tests/boss.js (two bots at 0.6: Normal 85% wins in ~66 s, Hard ~48%, Nightmare ~0; bots at 0.8 win Nightmare ~10%).
     boss: { hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
             stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [32, 30], [24, 24]], lvFast: [0, 0.08, 0.15], chargeAt: [50, 50, 100],
-            rainN: [6, 7, 8], trailLife: [84, 84, 150] },
+            rainN: [6, 7, 8], trailLife: [84, 84, 150], order: ["stab", "whip", "stomp", "rain", "charge"] },
     moves: {
       // Pitchfork Stab: the tines glow, then a long poke at waist height (jump it or step out)
       stab:   M(24, 6, 30, 14, 7, 17, 30, [70, -78, 26, 215, -74], { limb: "fork", boss: "stab", fast: true }),
@@ -2991,7 +3004,6 @@ const BOSSES = [
     },
   },
 ];
-const BOSS_MOVES = ["stab", "whip", "stomp", "rain", "charge"];
 
 /* ---------- state ---------- */
 const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti"];
@@ -3017,6 +3029,8 @@ function newFighter(spec, slot, pal, x, facing) {
     // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
     // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
     team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1, lifePct: 0,
+    // ph: the boss's phase (1 from his phaseAt % HP: Zorp's saucer down); held: the boss slot holding this fighter (-1 = free)
+    ph: 0, held: -1,
     anim: { run: 0 },
   };
 }
@@ -3062,7 +3076,7 @@ function dirOf(inp) {
 }
 function canAct(f) { return f.state === "idle" || f.state === "run" || f.state === "air"; }
 function intangible(f) {
-  if (f.invuln > 0 || f.doomed) return true;
+  if (f.invuln > 0 || f.doomed || f.held >= 0) return true;
   const s = f.state;
   if (s === "respawn" || s === "getup" || s === "dead" || s === "gone") return true;
   if (s === "attack" && f.move && f.move.inv && f.mt >= f.move.inv[0] && f.mt <= f.move.inv[1]) return true;
@@ -3075,6 +3089,22 @@ function armored(f) {
   return f.state === "attack" && f.move && f.move.armor && f.mt >= f.move.armor[0] && f.mt <= f.move.armor[1];
 }
 function hurt(f) { const hw = f.s.w / 2; return { x1: f.x - hw, x2: f.x + hw, y1: f.y - f.s.h, y2: f.y }; }
+// where a fighter can be hit: its box. A boss can also be hit through his parts (his projectiles with a `part` box [half width, height]:
+// a tentacle resting on the pier), and a hidden boss (boss.hide: Kraken Spud behind the pier) only while he is open (bossOpen).
+function hurtsOf(g, f) {
+  if (!f.spec.boss) return [hurt(f)];
+  const out = f.spec.boss.hide && !bossOpen(f) ? [] : [hurt(f)];
+  for (const p of g.projs) if (p.part && p.owner === f.slot && !p.done) out.push({ x1: p.x - p.part[0], x2: p.x + p.part[0], y1: p.y - p.part[1], y2: p.y });
+  return out;
+}
+// where a bot aims at a boss: his feet, or the resting part nearest to `me` (ok = false: nothing of him can be hit right now)
+function bossSpot(g, f, me) {
+  const body = !(f.spec.boss.hide && !bossOpen(f));
+  let x = f.x, y = f.y, best = body ? Math.abs(f.x - me.x) : 1e9;
+  for (const p of g.projs) if (p.part && p.owner === f.slot && !p.done && Math.abs(p.x - me.x) < best) { best = Math.abs(p.x - me.x); x = p.x; y = p.y; }
+  return { x, y, ok: best < 1e9 };
+}
+const bossOpen = (f) => f.state === "stagger" || f.state === "broken" || f.doomed || (f.state === "attack" && !!f.move && !!f.move.open && f.mt >= f.move.open[0] && f.mt <= f.move.open[1]);
 function circRect(cx, cy, r, b) {
   const nx = clamp(cx, b.x1, b.x2), ny = clamp(cy, b.y1, b.y2);
   const dx = cx - nx, dy = cy - ny;
@@ -3467,6 +3497,7 @@ function physics(g, f) {
       if (m.pound && f.mt >= m.startup) maxFall = Math.max(maxFall, m.vyStart);
     }
     if (f.state === "dodge" && f.dodgeKind === "air" && f.st < 18 && (f.dodgeDir[0] || f.dodgeDir[1])) noGrav = true;
+    if (f.held >= 0 || bossFlying(f)) noGrav = true;   // carried by a boss; a boss in the air on purpose (Zorp's saucer)
     if (!noGrav) {
       if (f.vy < maxFall) f.vy = Math.min(f.vy + grav, maxFall);
       else f.vy = Math.max(maxFall, f.vy - 0.5);
@@ -3648,7 +3679,7 @@ function updateProjs(g) {
       p.vy += p.grav; p.x += p.vx; p.y += p.vy;
     }
     if (p.t >= p.life || (p.style === "flame" && (p.x < S.x1 || p.x > S.x2))) p.done = true;
-    if (p.style !== "burst" && !p.pulse && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
+    if (p.style !== "burst" && !p.pulse && !p.part && p.x > S.x1 && p.x < S.x2 && p.y > S.top - (p.boomer ? -4 : 2) && p.y < S.bottom) {
       p.done = true;
       if (!p.boomer) g.events.push({ type: "projEnd", x: p.x, y: Math.min(p.y, S.top), style: p.style, slot: p.owner });
       if (p.burst) spawnBurst(g, p, p.x, S.top - 6);
@@ -3668,19 +3699,19 @@ function detectHits(g) {
       // a move with a `last` block hits once more with those numbers from its frame `from`
       const blast = mv.last && att.mt >= mv.last.from;
       if (last !== undefined && !(mv.multi && att.mt - last >= mv.multi) && !(blast && last < mv.last.from)) continue;
-      const r = hurt(def);
+      const rs = hurtsOf(g, def);
       for (const b of boxes) {
-        if (circRect(b.x, b.y, b.r, r)) { hits.push({ att, def, hit: blast ? Object.assign({}, mv, mv.last) : mv, lx: b.lx, bx: b.x, by: b.y }); break; }
+        if (rs.some((r) => circRect(b.x, b.y, b.r, r))) { hits.push({ att, def, hit: blast ? Object.assign({}, mv, mv.last) : mv, lx: b.lx, bx: b.x, by: b.y }); break; }
       }
     }
   }
   for (const p of g.projs) {
-    if (p.done) continue;
+    if (p.done || !p.hit) continue;
     // a pulsing cloud only hurts on its pulses, stays after a hit, and its last pulse uses the `last` numbers
     if (p.pulse && p.t % p.pulse !== 0) continue;
     for (const def of g.fighters) {
       if (def.team === g.fighters[p.owner].team || intangible(def)) continue;
-      if (circRect(p.x, p.y, p.r, hurt(def))) {
+      if (hurtsOf(g, def).some((r) => circRect(p.x, p.y, p.r, r))) {
         const hit = p.pulse && p.last && p.t + p.pulse > p.life ? Object.assign({}, p.hit, p.last) : p.hit;
         hits.push({ att: g.fighters[p.owner], def, hit, proj: p, bx: p.x, by: p.y });
         if (!p.pulse) { p.done = true; break; }
@@ -3820,8 +3851,20 @@ function bossAct(g, f) {
   groundMove(g, f);
   if (!f.inp.x && dx) f.facing = sign(dx);
 }
-// the next move, weighted by where the target is (BOSS_MOVES order); "" = walk in first
+// the next move: each boss weighs his moves (his boss.order) by where the target is; "" = walk in first
 function bossPick(g, f, t, dx, up) {
+  const B = f.spec.boss, w = BOSS_WEIGH[f.spec.id](g, f, t, dx, up);
+  if (!w) return "";
+  const last = B.order.indexOf(f.bq);
+  if (last >= 0) w[last] /= 3;
+  let sum = 0;
+  for (const v of w) sum += v;
+  let r = brand(g) * sum;
+  for (let i = 0; i < w.length; i++) { r -= w[i]; if (w[i] > 0 && r < 0) return B.order[i]; }
+  return "";
+}
+// Old Scratch: stab, whip, stomp, rain, charge (null = walk in first)
+function scratchWeigh(g, f, t, dx, up) {
   const S = STAGE.main, adx = Math.abs(dx), half = f.hp * 100 <= f.hpMax * f.spec.boss.chargeAt[g.lv];
   const back = g.fighters.some((o) => o.team !== f.team && o !== t && bossLive(o) && Math.abs(o.x - f.x) < 170 && sign(o.x - f.x) !== sign(dx));
   const room = dx > 0 ? S.x2 - f.x : f.x - S.x1;
@@ -3832,15 +3875,10 @@ function bossPick(g, f, t, dx, up) {
     up > 70 || adx > 320 ? 2 : 1,                      // rain
     half && adx > 90 && up < 90 && room > 300 ? 3 : 0,   // charge
   ];
-  if (adx > 330 && !w[4] && brand(g) < 0.6) return "";
-  const last = BOSS_MOVES.indexOf(f.bq);
-  if (last >= 0) w[last] /= 3;
-  let sum = 0;
-  for (const v of w) sum += v;
-  let r = brand(g) * sum;
-  for (let i = 0; i < w.length; i++) { r -= w[i]; if (w[i] > 0 && r < 0) return BOSS_MOVES[i]; }
-  return "";
+  if (adx > 330 && !w[4] && brand(g) < 0.6) return null;
+  return w;
 }
+const BOSS_WEIGH = { scratch: scratchWeigh };
 function bossStart(g, f, key) {
   const B = f.spec.boss, m = f.spec.moves[key], rage = bossRage(g, f);
   startMove(g, f, key);
@@ -3932,6 +3970,27 @@ function bossHit(g, h) {
     g.events.push({ type: "bossStagger", slot: def.slot, by: att.slot, x: def.x, y: def.y, n: def.stag });
   }
 }
+// a flying boss (boss.fly: Zorp's saucer before his phase 2) keeps his height himself: no gravity until he comes down or is launched
+const bossFlying = (f) => !!f.spec.boss && !!f.spec.boss.fly && f.ph === 0 && !f.doomed;
+// a boss holds a player (a beam, jaws): no input, no hits on them, no gravity; the boss's move carries them (bossCarry) until bossLet
+function bossHold(g, f, o) {
+  o.held = f.slot; o.move = null; o.mid = null; o.ledge = 0; o.link = 0; o.chg = 0; o.ff = false;
+  setState(o, "hitstun"); o.hitstun = 999; o.tumble = false;
+  o.vx = o.vy = o.kbx = o.kby = 0; o.grounded = false; o.plat = -1;
+  o.lastHitBy = f; o.lastHitT = g.t;
+  g.events.push({ type: "bossGrab", slot: f.slot, def: o.slot, mv: f.mid, x: o.x, y: o.y });
+}
+function bossCarry(o, x, y, k) { o.x += (x - o.x) * k; o.y += (y - o.y) * k; o.vx = o.vy = o.kbx = o.kby = 0; }
+// let go of everyone he holds: thrown with `hit` toward dir (a normal launch through applyHit), or dropped (no hit: a short tumble)
+function bossLet(g, f, hit, dir) {
+  for (const o of g.fighters) {
+    if (o.held !== f.slot) continue;
+    o.held = -1;
+    if (hit) applyHit(g, { att: f, def: o, hit, lx: dir * f.facing * 10, bx: o.x, by: o.y - o.s.h * 0.5 });
+    else { o.hitstun = 18; o.invuln = Math.max(o.invuln, 30); }
+  }
+}
+
 // the end: launched out of the arena; decided at the hit like a final lethal launch, so the KO page plays from it
 function bossDown(g, att, def, h, mv, hdir, ex, ey) {
   const tr = trig(50), dx = tr[0] * hdir, dy = -tr[1], kb = 46;
@@ -4111,9 +4170,11 @@ function botInput(g, me, opp, bot) {
   if (bot.d < 0 || g.phase !== "play" || me.state === "dead" || me.state === "gone") return out;
   useStage(g);
   const d = bot.d, R = g.rng, S = STAGE.main, st = bot.st;
+  // a boss is aimed at where he can be hit (his body, or the nearest resting tentacle); nothing to hit counts as gone
+  const sp = opp.spec.boss ? bossSpot(g, opp, me) : null;
   bot.mem.push({
-    x: opp.x, y: opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
-    gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn", inv: intangible(opp),
+    x: sp ? sp.x : opp.x, y: sp ? sp.y : opp.y, st: opp.state, mv: opp.move, mt: opp.mt, pct: opp.percent,
+    gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn" || (!!opp.spec.boss && !sp.ok), inv: intangible(opp),
     // a boss target: 0 fighting, 1 staggered, 2 broken (-1 = not a boss)
     bs: opp.spec.boss ? (opp.state === "broken" ? 2 : opp.state === "stagger" ? 1 : 0) : -1,
   });
@@ -4280,8 +4341,8 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct"];
-const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held"];
+const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
   return {
@@ -4317,7 +4378,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
@@ -10150,8 +10211,16 @@ function bsStars(c, tk) {
   }
 }
 
+/* ---- the other bosses' art (ui/draw-zorp.js, ui/draw-kraken.js) registers here by boss id:
+   { draw(c, f, tk, at), proj(c, p, tk) -> true when it drew p, floor(c, g, f, tk) (his tells, once per frame, under the fighters; also
+   runs his per-tick cues), event(g, e, live) -> true when it fully handled e }. Old Scratch is this file. ---- */
+const BOSS_ART = {};
+const bossArt = (f) => (f && f.spec.boss ? BOSS_ART[f.spec.id] || null : null);
+
 /* ---- drawBoss: the fighter (or the KO page's puppet with `at`) ---- */
 function drawBoss(c, f, tk, at) {
+  const A = bossArt(f);
+  if (A) return A.draw(c, f, tk, at);
   const x = at ? at[0] : f.x, y = at ? at[1] : f.y;
   const Q = bsPose(f, tk), flash = f.flash > 0 && f.flash % 2 === 0, pal = flash ? BS_W : Q.dim ? BS_D : BS_N;
   c.save();
@@ -10254,6 +10323,8 @@ function drawBoss(c, f, tk, at) {
 
 /* ---- his fire (world space): Stomp's floor flames, Brimstone Rain's fireballs and their bursts, Horn Charge's fire trail ---- */
 function drawBossProj(c, p, tk) {
+  const A = bossArt(RG && RG.fighters[p.owner]);
+  if (A) return A.proj(c, p, tk);
   const s = p.style;
   if (s === "flame") { bsFlameRow(c, p, tk); return true; }
   if (s === "brim") { bsBrim(c, p, tk); return true; }
@@ -10322,7 +10393,8 @@ const bsW = (f, lx, ly) => [f.x + f.facing * lx, f.y + ly];   // a point near hi
 /* ---- bossFloor: his tells on the floor (world space, after the stage, under the fighters) ---- */
 function bossFloor(c, g, tk) {
   if (BX.g !== g) bsReset(g);
-  const f = bsOf(g);
+  const f = bsOf(g), A = bossArt(f);
+  if (A) { A.floor(c, g, f, tk); return; }
   if (tk !== BX.tk) { BX.tk = tk; bsTick(g, f, tk); }
   if (!f && !BX.rings.length && !BX.scorch.length) return;
   const S = STAGE.main, top = S.top;
@@ -10454,6 +10526,8 @@ function bsTick(g, f, tk) {
    (a boss fireball's "burst": fire, not the Alchemist's green; effects.js may skip its own case for it). ---- */
 function bossEvent(g, e, live) {
   if (BX.g !== g) bsReset(g);
+  const A = bossArt(bsOf(g));
+  if (A) return A.event(g, e, live);
   switch (e.type) {
     case "bossMove":
       if (e.mv === "stomp") { if (live) BSND.hop(); }
@@ -20430,7 +20504,7 @@ function buildPractice() {
   const boss = BL.BOSSES.find((b) => b.id === sel.opp), opp = boss || (sel.opp === "random" ? null : FIG[sel.opp]);
   $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
   $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
-  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(BOSS_MAP) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
   $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
@@ -20457,7 +20531,7 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${RD.sel >= ROAD.length ? "Old Scratch" : `stop ${RD.sel + 1}: ${ROAD[RD.sel].name}`}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
@@ -20935,11 +21009,13 @@ function hudUlt() {
    The simulation is core.js (BOSSES, teams, bossAct). Here: starting the fight, the partner's bot, the boss bar in the HUD (HP, poise,
    FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
 const BOSS_LV = ["Normal", "Hard", "Nightmare"];
-const BOSS_MAP = Math.max(0, BL.MAPS.findIndex((m) => m.id === "field"));
+const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   // each boss fights on his own map (spec.map)
 const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (a friend on a second phone will get all of it)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
 const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt." };
+// how to beat him, in one line (the Road's sheet for him)
+const BOSS_RULE = { scratch: "Break him (0 HP), then land a heavy, special or ulti." };
 const bossOf = (g) => (g ? g.fighters.find((f) => f.spec.boss) : null);
 // o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id }; your fighter is the one picked on the select screen
 function startBoss(o) {
@@ -20948,7 +21024,7 @@ function startBoss(o) {
   const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % mate.palettes.length : 0];
   const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
-    stocks: 3, time: 0, countdown: 150, map: BOSS_MAP, level: lv, hpMul: BOSS_SOLO });
+    stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: BOSS_SOLO });
   match = { boss: true, level: lv, d: BOSS_PARTNER[lv], bot: makeBot(BOSS_PARTNER[lv], BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };
   meSlot = 0;
   enterMatchUI();
@@ -21012,13 +21088,16 @@ function bossResLine(R) {
   return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
 }
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
-/* ===================== The Road, region 1: The Field (Fable's design: boss/fable-boss.md section 3) =====================
-   Eight stops, each a 1v1 against a named CPU with one twist rule; three stars each: the win, no heart lost, the stop's bonus.
-   Stop k opens when stop k-1 is won. 12 of the 24 stars open the fence: Old Scratch (ui/boss.js) on Normal / Hard / Nightmare, a
-   star each; the first win pays the Devil Masher title and 150 chips. Each new star pays 10 chips. Progress: P.road = { s: the stars
-   per stop as bits (1 win, 2 no heart lost, 4 bonus), b: boss levels won as bits, paid } (sync.js merges it: every star either device
-   won stays won). The map is drawn on a canvas (roadDraw); the stops are buttons laid over it. UI only: the twists are newGame
-   options (lives, start percent, the percent every life starts at, the time, the map). */
+/* ===================== The Road: three regions of eight stops, each ending in a boss =====================
+   Region 1 The Field (Old Scratch; Fable's design boss/fable-boss.md section 3), region 2 The Kitchen (Zorp) and region 3 The Deep
+   (Kraken Spud; bosses2/fable-design.md). A stop is a 1v1 against a named CPU with one twist rule; three stars each: the win, no heart
+   lost, the stop's bonus. A region's first stop opens when the region before it has its boss beaten (any level); then stop k opens when
+   stop k-1 is won. 12 of a region's 24 stars open its fence: the boss (ui/boss.js) on Normal / Hard / Nightmare, a star each; his first
+   win pays his title and 150 chips, and every boss win unlocks his Road skin for the fighter you used. Each new star pays 10 chips.
+   Progress: P.road = { s: the stars per stop (24) as bits (1 win, 2 no heart lost, 4 bonus), then per region the boss levels won as
+   bits and the first win paid: b / paid, b2 / p2, b3 / p3 } (sync.js merges it: every star either device won stays won). The map is
+   drawn on a canvas (roadDraw), one region at a time; the stops are buttons laid over it. UI only: the twists are newGame options
+   (lives, start percent, the percent every life starts at, the time, the map). A region whose boss is not in this build is "coming". */
 const ROAD = [
   { id: "gate", name: "The Farm Gate", cpu: "Small Fry", f: "phoenix", d: 0.3, lives: 2, secs: 90, map: "field",
     line: "Gate's open. Mind the sprouts, they bite.", bonus: { k: "fast", s: 60, txt: "Win in under 60 s" } },
@@ -21037,16 +21116,36 @@ const ROAD = [
   { id: "edge", name: "The Field's Edge", cpu: "Sir Spudsalot", f: "samurai", d: 0.85, lives: 2, map: "field", cpuPct: 25, twist: "Sir Spudsalot starts at 25%.",
     line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
-const ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150, ROAD_BOSS = "scratch";
+// region 2, The Kitchen, and region 3, The Deep (bosses2/fable-design.md section 5)
+const ROAD_KITCHEN = [];
+const ROAD_DEEP = [];
+ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
+// the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title
+const ROAD_REG = [
+  { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher" },
+  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Saucer Smasher" },
+  { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer" },
+];
+const ROAD_N = 8, ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150;
 const ROAD_STARS = ["Win", "No heart lost"];
 function roadGet() { return SYNC.cleanRoad(P.road) || { s: [], b: 0, paid: false }; }
 const roadBits = (r, i) => r.s[i] | 0;
 const roadNStars = (bits) => (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);
-const roadTotal = (r) => ROAD.reduce((a, _, i) => a + roadNStars(roadBits(r, i)), 0);
-const roadBossStars = (r) => roadNStars(r.b);
-const roadOpen = (r, i) => i === 0 || (roadBits(r, i - 1) & 1) === 1;   // a stop opens when the one before it is won
-const roadNext = (r) => { const i = ROAD.findIndex((_, k) => !(roadBits(r, k) & 1)); return i < 0 ? ROAD.length : i; };   // 8 = every stop won
-const roadGateOpen = (r) => roadTotal(r) >= ROAD_GATE;
+const roadRegOf = (i) => Math.floor(i / ROAD_N);
+const roadBossSpec = (k) => BL.BOSSES.find((b) => b.id === ROAD_REG[k].boss) || null;
+const roadRegReady = (k) => !!ROAD_REG[k] && !!roadBossSpec(k);   // a region whose boss this build does not have yet is "coming"
+const roadBossBits = (r, k) => r[ROAD_REG[k].bk] | 0;
+const roadRegOpen = (r, k) => roadRegReady(k) && (k === 0 || roadBossBits(r, k - 1) > 0);   // the boss before it beaten on any level
+const roadRegStars = (r, k) => { let n = 0; for (let j = 0; j < ROAD_N; j++) n += roadNStars(roadBits(r, k * ROAD_N + j)); return n; };
+const roadTotal = (r) => ROAD_REG.reduce((a, _, k) => a + roadRegStars(r, k) + roadNStars(roadBossBits(r, k)), 0);   // every star, bosses too
+const roadOpen = (r, i) => roadRegOpen(r, roadRegOf(i)) && (i % ROAD_N === 0 || (roadBits(r, i - 1) & 1) === 1);   // the one before it won
+const roadNext = (r, k) => { for (let j = 0; j < ROAD_N; j++) if (!(roadBits(r, k * ROAD_N + j) & 1)) return j; return ROAD_N; };   // 8 = every stop won
+const roadGateOpen = (r, k) => roadRegStars(r, k) >= ROAD_GATE;
+// the region the Road opens on: the last one that is open
+const roadHome = (r) => { let k = 0; while (roadRegOpen(r, k + 1)) k++; return k; };
+// RD.sel: a stop (0..23) or a region's boss (ROAD.length + k)
+const roadIsBoss = (i) => i >= ROAD.length;
+const roadSelName = (i) => (roadIsBoss(i) ? roadBossSpec(i - ROAD.length).name : `stop ${(i % ROAD_N) + 1}: ${ROAD[i].name}`);
 const roadLives = (st) => [st.lives || 3, st.cpuLives || st.lives || 3];
 const roadSecs = (st) => st.secs || 180;
 const mmssR = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -21056,10 +21155,10 @@ function roadRules(st) {
   const mi = BL.MAPS.findIndex((m) => m.id === st.map);
   return { twist: st.twist || "", rest: `${lives} · ${mmssR(roadSecs(st))} · ${mapName(Math.max(0, mi))}` };
 }
-// "Stop 3 of 8 · 7 ★" (every stop won: "Old Scratch · 7 ★")
-function roadSummary(r) {
-  const n = roadNext(r), t = roadTotal(r) + roadBossStars(r);
-  return `${n < ROAD.length ? `Stop ${n + 1} of ${ROAD.length}` : roadGateOpen(r) ? "Old Scratch" : `${ROAD_GATE} ★ open the fence`} · ${t} ★`;
+// region k: "Stop 3 of 8 · 7 ★" (every stop won: "Old Scratch · 7 ★"); the stars are the whole Road's
+function roadSummary(r, k) {
+  const n = roadNext(r, k), t = roadTotal(r);
+  return `${n < ROAD_N ? `Stop ${n + 1} of ${ROAD_N}` : roadGateOpen(r, k) ? roadBossSpec(k).name : `${ROAD_GATE} ★ open the fence`} · ${t} ★`;
 }
 
 /* ----- the map: a dirt path from the gate (bottom left) to the fence gap (top right) across the night field ----- */
@@ -21067,7 +21166,7 @@ function roadSummary(r) {
 const RD_WIDE = [[0.12, 0.76], [0.26, 0.86], [0.38, 0.68], [0.25, 0.5], [0.41, 0.36], [0.57, 0.5], [0.71, 0.64], [0.8, 0.43], [0.9, 0.2]];
 const RD_TALL = [[0.24, 0.87], [0.6, 0.85], [0.8, 0.72], [0.5, 0.63], [0.2, 0.55], [0.36, 0.44], [0.7, 0.4], [0.56, 0.28], [0.76, 0.13]];
 const RD_GATE = { wide: [0.03, 0.9], tall: [0.06, 0.95] };
-const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1 };
+const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1, reg: 0 };   // reg: the region shown
 function rdPoints(w, h) {
   const tall = h > w * 1.05, P0 = tall ? RD_TALL : RD_WIDE, g = RD_GATE[tall ? "tall" : "wide"];
   const mx = Math.min(w, h) * 0.04, my = mx;
@@ -21087,10 +21186,19 @@ function rdStar(c, x, y, r, fill, line) {
   for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + (k * Math.PI) / 5, rr = k % 2 ? r * 0.46 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
   c.closePath(); c.fillStyle = fill; c.fill(); c.lineWidth = Math.max(1.2, r * 0.22); c.strokeStyle = line; c.lineJoin = "round"; c.stroke();
 }
-// the still part (sky, moon, hills, field, path, fence), cached per size and progress
-function rdBackground(w, h, s, r) {
+// the still part of region k's map, cached per size and progress: its art's bg (RD_ART by region id; The Field's is below)
+function rdBackground(w, h, s, r, k) {
   const cv = document.createElement("canvas"); cv.width = Math.round(w * s); cv.height = Math.round(h * s);
   const c = cv.getContext("2d"); c.scale(s, s);
+  (RD_ART[ROAD_REG[k].id] || RD_ART.field).bg(c, w, h, r, k);
+  return cv;
+}
+// each region's map art: bg(c, w, h, r, k) the still part (sky, ground, the path through rdPoints, the gate, the fence; roadGateOpen(r, k)
+// opens it), peek(c, x, y, u, tk) the boss's glimpse over the fence gap (x, y = the boss stop)
+const RD_ART = {};
+RD_ART.field = { bg: rdField, peek: rdFieldPeek };
+// The Field: sky, moon, hills, field, path, fence
+function rdField(c, w, h, r, k) {
   const { gate, pts, tall } = rdPoints(w, h), u = Math.min(w, h), hz = h * (tall ? 0.2 : 0.3);
   // sky and stars
   const sk = c.createLinearGradient(0, 0, 0, hz); sk.addColorStop(0, "#1a0f2a"); sk.addColorStop(0.55, "#4a1a3a"); sk.addColorStop(1, "#8c2a2e");
@@ -21135,7 +21243,7 @@ function rdBackground(w, h, s, r) {
   const [bx, by] = pts[pts.length - 1], fy = by + u * 0.02;
   c.fillStyle = "#1e0f22"; c.beginPath(); c.ellipse(bx + u * 0.02, by - u * 0.1, u * 0.26, u * 0.12, 0, Math.PI, Math.PI * 2); c.fill();
   c.strokeStyle = OUT; c.lineWidth = 2.5; c.fillStyle = "#7a4a2e";
-  const open = roadGateOpen(r), gap = u * 0.07;
+  const open = roadGateOpen(r, k), gap = u * 0.07;
   for (const side of [-1, 1]) {
     const x0 = bx + side * gap, x1 = side < 0 ? Math.max(0, bx - u * 0.42) : Math.min(w, bx + u * 0.42);
     for (let x = x0; side < 0 ? x > x1 : x < x1; x += side * u * 0.055) { c.beginPath(); c.rect(x - 3, fy - u * 0.07, 6, u * 0.075); c.fill(); c.stroke(); }
@@ -21143,7 +21251,16 @@ function rdBackground(w, h, s, r) {
     c.beginPath(); c.rect(Math.min(x0, x1), fy - u * 0.025, Math.abs(x1 - x0), 4); c.fill(); c.stroke();
   }
   if (!open) { c.fillStyle = "#6a4a30"; c.beginPath(); c.rect(bx - gap, fy - u * 0.05, gap * 2, 4); c.rect(bx - gap, fy - u * 0.022, gap * 2, 4); c.fill(); c.stroke(); }
-  return cv;
+}
+// beyond The Field's fence: two horns over the hill and yellow eyes that blink
+function rdFieldPeek(c, bx, by, u, tk) {
+  const blink = (tk % 200) < 8;
+  c.save(); c.translate(bx + u * 0.02, by - u * 0.12);
+  c.fillStyle = "#f2d9a8"; c.strokeStyle = OUT; c.lineWidth = 1.5;
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * u * 0.03, 0); c.quadraticCurveTo(s * u * 0.07, -u * 0.03, s * u * 0.06, -u * 0.075); c.quadraticCurveTo(s * u * 0.045, -u * 0.03, s * u * 0.012, -u * 0.005); c.closePath(); c.fill(); c.stroke(); }
+  c.fillStyle = "#ffd84a";
+  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * u * 0.018, u * 0.012, u * 0.011, blink ? 0.6 : u * 0.008, 0, 0, Math.PI * 2); c.fill(); }
+  c.restore();
 }
 // the fighter who walks the Road (the one you play last), drawn at 0.6x on the next stop
 function rdPuppet() {
@@ -21161,35 +21278,31 @@ function roadPaint(cv, tk, o) {
   if (!w || !h) return;
   const W = Math.round(w * DPR), H = Math.round(h * DPR);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-  const c = cv.getContext("2d"), r = roadGet();
-  const key = `${w}x${h}@${DPR}:${r.s.join(".")}:${r.b}:${roadGateOpen(r)}`;
+  const c = cv.getContext("2d"), r = roadGet(), k = o.mini ? roadHome(r) : RD.reg, A = RD_ART[ROAD_REG[k].id] || RD_ART.field;
+  const ink = Object.assign({ disc: "#3a2014", ring: "#7a4a2e", boss: "#6e1f18", bossRing: "#ff8a3d", num: "#f3e7d0" }, A.ink);
+  const key = `${k}:${w}x${h}@${DPR}:${r.s.join(".")}:${roadBossBits(r, k)}:${roadGateOpen(r, k)}`;
   const slot = o.mini ? "mini" : "big";
   RD.bgs = RD.bgs || {};
-  if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r) };
+  if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r, k) };
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(RD.bgs[slot].cv, 0, 0);
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const { pts } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r);
+  const { pts } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r, k), bb = roadBossBits(r, k);
   if (!o.mini) { RD.pts = pts; RD.R = R; RD.w = w; RD.h = h; }
-  // beyond the fence: two horns over the hill and yellow eyes that blink
-  const [bx, by] = pts[pts.length - 1], blink = (tk % 200) < 8;
-  c.save(); c.translate(bx + u * 0.02, by - u * 0.12);
-  c.fillStyle = "#f2d9a8"; c.strokeStyle = OUT; c.lineWidth = 1.5;
-  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * u * 0.03, 0); c.quadraticCurveTo(s * u * 0.07, -u * 0.03, s * u * 0.06, -u * 0.075); c.quadraticCurveTo(s * u * 0.045, -u * 0.03, s * u * 0.012, -u * 0.005); c.closePath(); c.fill(); c.stroke(); }
-  c.fillStyle = "#ffd84a";
-  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * u * 0.018, u * 0.012, u * 0.011, blink ? 0.6 : u * 0.008, 0, 0, Math.PI * 2); c.fill(); }
-  c.restore();
-  // the stops: soil discs, the number, three star slots; won ones grow a sprout; the next one has a pulsing gold ring
-  pts.forEach(([x, y], i) => {
-    const boss = i === ROAD.length, bits = boss ? r.b : roadBits(r, i), open = boss ? roadGateOpen(r) : roadOpen(r, i);
+  // beyond the fence: the boss's glimpse
+  const [bx, by] = pts[pts.length - 1];
+  A.peek(c, bx, by, u, tk);
+  // the stops: discs, the number, three star slots; won ones grow a sprout; the next one has a pulsing gold ring
+  pts.forEach(([x, y], j) => {
+    const boss = j === ROAD_N, i = k * ROAD_N + j, bits = boss ? bb : roadBits(r, i), open = boss ? roadGateOpen(r, k) : roadOpen(r, i);
     c.globalAlpha = open ? 1 : 0.55;
-    c.fillStyle = boss ? (open ? "#6e1f18" : "#3a2014") : "#3a2014"; c.strokeStyle = OUT; c.lineWidth = o.mini ? 1.5 : 3;
+    c.fillStyle = boss && open ? ink.boss : ink.disc; c.strokeStyle = OUT; c.lineWidth = o.mini ? 1.5 : 3;
     c.beginPath(); c.ellipse(x, y, R, R * 0.8, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.strokeStyle = boss && open ? "#ff8a3d" : "#7a4a2e"; c.lineWidth = o.mini ? 1 : 2;
+    c.strokeStyle = boss && open ? ink.bossRing : ink.ring; c.lineWidth = o.mini ? 1 : 2;
     c.beginPath(); c.ellipse(x, y - 1, R * 0.78, R * 0.6, 0, 0, Math.PI * 2); c.stroke();
     if (!o.mini) {
       c.font = `900 ${Math.round(R * 0.8)}px "Barlow Condensed", "Arial Narrow", sans-serif`; c.textAlign = "center"; c.textBaseline = "middle";
-      c.fillStyle = boss ? "#ffd84a" : "#f3e7d0";
-      c.fillText(boss ? (open ? "☠" : "🔒") : String(i + 1), x, y + 1);
+      c.fillStyle = boss ? "#ffd84a" : ink.num;
+      c.fillText(boss ? (open ? "☠" : "🔒") : String(j + 1), x, y + 1);
       if (boss && !open) { c.font = `800 ${Math.round(R * 0.5)}px "Barlow Condensed", sans-serif`; c.fillStyle = "#f3e7d0"; c.fillText(`${ROAD_GATE} ★`, x, y - R * 1.25); }
     }
     if (!boss && (bits & 1)) {   // a sprout on a won stop
@@ -21198,8 +21311,8 @@ function roadPaint(cv, tk, o) {
       c.beginPath(); c.ellipse(x + R * 0.38, y - R * 0.98, R * 0.22, R * 0.12, -0.5, 0, Math.PI * 2); c.fill(); c.stroke();
       c.beginPath(); c.ellipse(x + R * 0.72, y - R * 1.02, R * 0.22, R * 0.12, 0.5, 0, Math.PI * 2); c.fill(); c.stroke();
     }
-    for (let k = 0; k < 3; k++) rdStar(c, x + (k - 1) * R * 0.72, y + R * 1.12, R * (o.mini ? 0.32 : 0.3), bits & (1 << k) ? "#ffd23f" : "rgba(14,16,34,0.55)", OUT);
-    if (i === Math.min(next, ROAD.length) && open && !(boss && (r.b & 7) === 7)) {
+    for (let q = 0; q < 3; q++) rdStar(c, x + (q - 1) * R * 0.72, y + R * 1.12, R * (o.mini ? 0.32 : 0.3), bits & (1 << q) ? "#ffd23f" : "rgba(14,16,34,0.55)", OUT);
+    if (j === Math.min(next, ROAD_N) && open && !(boss && (bb & 7) === 7)) {
       const a = 0.5 + 0.5 * Math.sin(tk * 0.1);
       c.strokeStyle = `rgba(255,210,63,${0.5 + 0.5 * a})`; c.lineWidth = o.mini ? 1.5 : 3;
       c.beginPath(); c.ellipse(x, y, R * (1.2 + 0.08 * a), R * (0.98 + 0.06 * a), 0, 0, Math.PI * 2); c.stroke();
@@ -21207,7 +21320,7 @@ function roadPaint(cv, tk, o) {
     c.globalAlpha = 1;
   });
   // your fighter on the next stop (on the fence gap once every stop is won), hopping for a moment when tapped
-  const at = pts[Math.min(next, ROAD.length)], f = rdPuppet();
+  const at = pts[Math.min(next, ROAD_N)], f = rdPuppet();
   const hop = !o.mini && RD.hopT > 0 ? Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2 : 0;
   if (!o.mini && RD.hopT > 0) RD.hopT--;
   const sc = (R * 2.3) / f.s.h;
@@ -21224,32 +21337,51 @@ function openRoad() {
   modal("roadStop", false); modal("pause", false); modal("help", false); modal("settings", false);
   clearTrails(); fx.length = 0; sfx.length = 0;
   show("road"); $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
+  if (!roadRegOpen(roadGet(), RD.reg)) RD.reg = roadHome(roadGet());
   roadHeader(); resize();
   requestAnimationFrame(roadHits);
 }
 function roadHeader() {
-  const r = roadGet();
-  $("roadSum").textContent = roadSummary(r);
+  const r = roadGet(), k = RD.reg;
+  $("roadKick").textContent = `The Road · region ${k + 1} of ${ROAD_REG.length}`;
+  $("roadReg").textContent = ROAD_REG[k].name;
+  $("roadSum").textContent = roadSummary(r, k);
   $("roadTokens").textContent = P.tokens;
+  $("roadPrev").disabled = k === 0;
+  const nx = k + 1 < ROAD_REG.length;
+  $("roadNext").disabled = !nx;
+  $("roadNext").classList.toggle("lock", nx && !roadRegOpen(r, k + 1));
+}
+// the arrows beside the region's name: the region before / after (a locked one says what opens it)
+function roadGo(d) {
+  const r = roadGet(), k = RD.reg + d;
+  if (k < 0 || k >= ROAD_REG.length) return;
+  Sfx.init();
+  if (!roadRegOpen(r, k)) {
+    Sfx.uiBack();
+    roadNote(!roadRegReady(k) ? `${ROAD_REG[k].name} is coming soon.` : `Beat ${roadBossSpec(k - 1).name} past the fence of ${ROAD_REG[k - 1].name} to open ${ROAD_REG[k].name}.`);
+    return;
+  }
+  Sfx.uiFlip(); RD.reg = k; RD.hopT = 0; $("roadHits").dataset.key = ""; roadHeader();
 }
 // the tap targets over the discs (rebuilt when the map changes size or progress)
 function roadHits() {
   const box = $("roadHits"), cv = $("roadCv"), r = roadGet();
   if (!cv.clientWidth) return;
   const { pts } = rdPoints(cv.clientWidth, cv.clientHeight), R = clamp(Math.min(cv.clientWidth, cv.clientHeight) * 0.052, 15, 30);
-  const key = `${cv.clientWidth}x${cv.clientHeight}:${r.s.join(".")}:${r.b}`;
+  const k = RD.reg, key = `${k}:${cv.clientWidth}x${cv.clientHeight}:${r.s.join(".")}:${roadBossBits(r, k)}`;
   if (box.dataset.key === key) return;
   box.dataset.key = key; box.innerHTML = "";
-  pts.forEach(([x, y], i) => {
-    const boss = i === ROAD.length, open = boss ? roadGateOpen(r) : roadOpen(r, i), b = document.createElement("button");
+  pts.forEach(([x, y], j) => {
+    const boss = j === ROAD_N, i = boss ? ROAD.length + k : k * ROAD_N + j, open = boss ? roadGateOpen(r, k) : roadOpen(r, i), b = document.createElement("button");
     b.className = "rd-hit"; b.style.left = `${x}px`; b.style.top = `${y}px`; b.style.setProperty("--s", `${Math.max(44, R * 2.4)}px`);
-    const n = boss ? roadBossStars(r) : roadNStars(roadBits(r, i));
-    b.setAttribute("aria-label", boss ? `Old Scratch, ${open ? `${n} of 3 stars` : `opens at ${ROAD_GATE} stars`}` : `Stop ${i + 1}, ${ROAD[i].name}, ${open ? `${n} of 3 stars` : "locked"}`);
+    const n = boss ? roadNStars(roadBossBits(r, k)) : roadNStars(roadBits(r, i)), bn = roadBossSpec(k).name;
+    b.setAttribute("aria-label", boss ? `${bn}, ${open ? `${n} of 3 stars` : `opens at ${ROAD_GATE} stars`}` : `Stop ${j + 1}, ${ROAD[i].name}, ${open ? `${n} of 3 stars` : "locked"}`);
     b.dataset.i = i;
     if (!open) b.classList.add("lock");
     b.addEventListener("click", () => {
       Sfx.init();
-      if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars on the Road to open the fence (you have ${roadTotal(roadGet())}).` : `Win stop ${i} first.`); return; }
+      if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars in ${ROAD_REG[k].name} to open the fence (you have ${roadRegStars(roadGet(), k)}).` : `Win stop ${j} first.`); return; }
       Sfx.ui(); RD.hopT = 24; roadSheet(i);
     });
     box.appendChild(b);
@@ -21262,25 +21394,27 @@ function roadDraw(tk) { roadPaint($("roadCv"), tk, {}); roadHits(); }
 /* ----- a stop's sheet: you vs the CPU, the twist, the CPU's line, the three stars, Fight ----- */
 function roadSheet(i) {
   RD.sel = i;
-  const r = roadGet(), boss = i === ROAD.length, me = FIG[P.last] || FIGHTERS[0], mi = P.pal[me.id] || 0;
-  $("rsKick").textContent = boss ? "The Road · past the fence" : `The Road · stop ${i + 1} of ${ROAD.length}`;
-  $("rsName").textContent = boss ? "Old Scratch" : ROAD[i].name;
+  const r = roadGet(), boss = roadIsBoss(i), k = boss ? i - ROAD.length : roadRegOf(i), me = FIG[P.last] || FIGHTERS[0], mi = P.pal[me.id] || 0;
+  const RG_ = ROAD_REG[k], bspec = roadBossSpec(k);
+  $("rsKick").textContent = boss ? `${RG_.name} · past the fence` : `${RG_.name} · stop ${(i % ROAD_N) + 1} of ${ROAD_N}`;
+  $("rsName").textContent = boss ? bspec.name : ROAD[i].name;
   dailyCard($("rsMe"), me.id, mi, "You");
   const sheet = $("roadStopSheet");
   sheet.classList.toggle("boss", boss);
   if (boss) {
-    const b = BL.BOSSES.find((x) => x.id === ROAD_BOSS);
+    const b = bspec, bb = roadBossBits(r, k), rs = roadSkinOf(me, b.id);
     const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
-    op.innerHTML = `<span class="dly-ph rd-bossph"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
-    $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. Break him (0 HP), then land a heavy, special or ulti.`;
-    $("rsLine").textContent = BOSS_LINE[ROAD_BOSS];
-    $("rsStars").innerHTML = BOSS_LV.map((n, k) => roadStarHTML(!!(r.b & (1 << k)), n)).join("");
-    $("rsReward").textContent = r.paid ? "Every level won is a star." : `First win: the Devil Masher title and ${ROAD_BOSS_CHIPS} chips. Every level won is a star.`;
+    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
+    $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. ${BOSS_RULE[b.id] || "Break him (0 HP), then land a heavy, special or ulti."}`;
+    $("rsLine").textContent = BOSS_LINE[b.id] || "";
+    $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n)).join("");
+    const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? ` ${me.name} has his ${me.palettes[rs].name} skin.` : ` A win gives ${me.name} the ${me.palettes[rs].name} skin.`;
+    $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips. Every level won is a star.`) + skin;
     $("rsLv").innerHTML = "";
-    BOSS_LV.forEach((n, k) => {
+    BOSS_LV.forEach((n, q) => {
       const bt = document.createElement("button");
-      bt.className = "btn" + (k === 0 ? " primary" : ""); bt.innerHTML = `<span>${n}${r.b & (1 << k) ? " ★" : ""}</span>`;
-      bt.addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadBossFight(k); });
+      bt.className = "btn" + (q === 0 ? " primary" : ""); bt.innerHTML = `<span>${n}${bb & (1 << q) ? " ★" : ""}</span>`;
+      bt.addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadBossFight(k, q); });
       $("rsLv").appendChild(bt);
     });
   } else {
@@ -21310,11 +21444,11 @@ function roadFight(i) {
   meSlot = 0;
   enterMatchUI();
 }
-function roadBossFight(lv) {
+function roadBossFight(k, lv) {
   const r = roadGet();
-  if (!roadGateOpen(r)) { openRoad(); return; }
+  if (!roadRegOpen(r, k) || !roadGateOpen(r, k)) { openRoad(); return; }
   modal("roadStop", false);
-  startBoss({ level: lv, boss: ROAD_BOSS, road: { boss: true, lv } });
+  startBoss({ level: lv, boss: ROAD_REG[k].boss, road: { boss: true, k, lv } });
 }
 // handleEvent (effects.js) passes the live match's events: the start, the end, the KOs (a finisher special, an ulti)
 function roadEvent(g, e) {
@@ -21347,24 +21481,31 @@ function roadMatchEnd(forfeit) {
     r.s[rd.i] = now; P.road = r; P.tokens += total;
     saveProfile();
   }
-  const gate = fresh > 0 && roadTotal(r) >= ROAD_GATE && roadTotal(r) - fresh < ROAD_GATE;   // this win opened the fence
+  const k = roadRegOf(rd.i), rs = roadRegStars(r, k);
+  const gate = fresh > 0 && rs >= ROAD_GATE && rs - fresh < ROAD_GATE;   // this win opened the fence
   const why = forfeit ? "No stars for a forfeit." : !won ? "No stars this time. A win opens the next stop." :
     (fresh > 0 ? `${fresh} new ${fresh === 1 ? "star" : "stars"} +${total}` : got === 7 ? "Three stars again." : "No new stars this time.") +
-    (gate ? " · The fence is open: Old Scratch waits past the last stop." : "");
+    (gate ? ` · The fence is open: ${roadBossSpec(k).name} waits past the last stop.` : "");
   showResults({ res, forfeit, ranked: false, me, op, lines: [], total, why, road: { i: rd.i, got, had, labels: [...ROAD_STARS, st.bonus.txt] } });
 }
-// bossMatchEnd: a Road boss fight adds its star and the first win's reward to the results
+// bossMatchEnd: a Road boss fight adds its star, the first win's reward and the fighter's Road skin to the results
 function roadBossEnd(R) {
-  const lv = match.road.lv, r = roadGet(), won = R.res === 1;
-  let total = 0;
+  const { k, lv } = match.road, RG_ = ROAD_REG[k], r = roadGet(), won = R.res === 1, bit = 1 << lv, had = r[RG_.bk] | 0;
+  let total = 0, save = false;
   const lines = [];
-  if (won && !(r.b & (1 << lv))) { r.b |= 1 << lv; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
-  if (won && !r.paid) { r.paid = true; total += ROAD_BOSS_CHIPS; lines.push(`Devil Masher title + ${ROAD_BOSS_CHIPS}`); }
-  if (total) { P.road = r; P.tokens += total; saveProfile(); }
+  if (won && !(had & bit)) { r[RG_.bk] = had | bit; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
+  if (won && !r[RG_.pk]) { r[RG_.pk] = true; total += ROAD_BOSS_CHIPS; lines.push(`${RG_.title} title + ${ROAD_BOSS_CHIPS}`); }
+  // every win unlocks this boss's Road skin for the fighter you played (if it doesn't have it yet)
+  const me = R.me.spec, rs = roadSkinOf(me, RG_.boss);
+  if (won && rs >= 0 && !(P.owned[me.id] || []).includes(rs)) { P.owned[me.id] = [...(P.owned[me.id] || [0]), rs]; save = true; lines.push(`${me.palettes[rs].name} skin for ${me.name}`); R.skin = { f: me.id, i: rs }; }
+  if (won && k + 1 < ROAD_REG.length && roadRegReady(k + 1) && !had) lines.push(`${ROAD_REG[k + 1].name} is open`);
+  if (total || save) { P.road = r; P.tokens += total; saveProfile(); }
   R.total = total;
   R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : lines.length ? lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
-  R.road = { boss: true, lv, got: won ? 1 << lv : 0, had: r.b & ~(won ? 1 << lv : 0), labels: BOSS_LV };
+  R.road = { boss: true, k, lv, got: won ? bit : 0, had: had & ~(won ? bit : 0), labels: BOSS_LV };
 }
+// the Road skin a boss gives this fighter: its palette index (-1 = none)
+const roadSkinOf = (spec, bossId) => spec.palettes.findIndex((p) => p.road === bossId);
 // the results: the stop's three stars (the new ones pop)
 function roadResStars(R) {
   const el = $("rStars"), rd = R.road;
@@ -21376,23 +21517,28 @@ function roadResStars(R) {
   }).join("");
 }
 function roadResMode(R) {
-  return R.road.boss ? `The Road · Old Scratch · ${BOSS_LV[R.road.lv]}` : `The Road · stop ${R.road.i + 1} · ${ROAD[R.road.i].name}`;
+  return R.road.boss ? `The Road · ${roadBossSpec(R.road.k).name} · ${BOSS_LV[R.road.lv]}` : `The Road · ${ROAD_REG[roadRegOf(R.road.i)].name} · stop ${(R.road.i % ROAD_N) + 1} · ${ROAD[R.road.i].name}`;
 }
 
 /* ----- the menu card: the map in small, "Stop 3 of 8 · 7 ★" ----- */
 function roadCard() {
-  $("mRoad").textContent = roadSummary(roadGet());
+  const r = roadGet(), k = roadHome(r);
+  $("mRoad").textContent = (k ? `${ROAD_REG[k].name} · ` : "") + roadSummary(r, k);
   requestAnimationFrame(() => roadPaint($("mRoadCv"), tick, { mini: true }));
 }
 
 $("roadBack").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); goMenu(); });
+$("roadPrev").addEventListener("click", () => roadGo(-1));
+$("roadNext").addEventListener("click", () => roadGo(1));
 $("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadFight(RD.sel); });
 $("rsPick").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });
 for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
 screens.roadStop = $("scrRoadStop");
 // test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
-window.__blRoad = { stops: ROAD, get: roadGet, fight: (i) => roadFight(i), boss: (lv) => roadBossFight(lv), open: openRoad,
-  set: (s) => { const r = roadGet(); P.road = { s: s.slice(), b: r.b, paid: r.paid }; saveProfile(); } };
+// (boss(lv) = Old Scratch, as before; boss(lv, k) = region k's boss; region(k) shows region k; set(s, extra) also sets b / b2 / p2 ...)
+window.__blRoad = { stops: ROAD, regions: ROAD_REG, get: roadGet, fight: (i) => roadFight(i), boss: (lv, k) => roadBossFight(k | 0, lv), open: openRoad,
+  region: (k) => { RD.reg = k; $("roadHits").dataset.key = ""; roadHeader(); },
+  set: (s, extra) => { const r = roadGet(); P.road = Object.assign({}, r, { s: s.slice() }, extra || {}); saveProfile(); } };
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
    final (2 lives / 2 min, 2 lives / 2 min, 3 lives / 3 min). The cup in progress is P.cup (saved with the profile), so a reload
@@ -22350,7 +22496,7 @@ tap("rAgain", () => {
     return;
   }
   if (match && match.ranked) { sel.mode = "ranked"; }
-  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.lv); else roadFight(match.road.i); return; }   // Retry
+  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.k, match.road.lv); else roadFight(match.road.i); return; }   // Retry
   startMatch();
 });
 tap("rChange", () => {
@@ -22762,13 +22908,17 @@ const SYNC = (function () {
     const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
     return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
   }
-  // The Road (ui/road.js): { s: per stop, the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: the boss levels won as bits
-  // (1 Normal, 2 Hard, 4 Nightmare), paid: the first boss win's reward was paid }. Trailing empty stops are dropped (one spelling).
+  // The Road (ui/road.js): { s: per stop (24 in three regions), the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: Old
+  // Scratch's levels won as bits (1 Normal, 2 Hard, 4 Nightmare), paid: his first win's reward was paid; b2 / p2: the same for Zorp,
+  // b3 / p3 for Kraken Spud (left out while 0 / false, so an older page's road has one spelling) }. Trailing empty stops are dropped.
   function cleanRoad(q) {
     if (!isObj(q)) return null;
     const s = (Array.isArray(q.s) ? q.s : []).slice(0, 24).map((v) => num(v, 0, 7, 0));
     while (s.length && !s[s.length - 1]) s.pop();
-    return { s, b: num(q.b, 0, 7, 0), paid: q.paid === true };
+    const out = { s, b: num(q.b, 0, 7, 0), paid: q.paid === true };
+    for (const k of ["b2", "b3"]) { const v = num(q[k], 0, 7, 0); if (v) out[k] = v; }
+    for (const k of ["p2", "p3"]) if (q[k] === true) out[k] = true;
+    return out;
   }
   function cleanName(s) {
     return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
@@ -22841,7 +22991,7 @@ const SYNC = (function () {
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
-    if (S.road !== undefined) P.road = { s: S.road.s.slice(), b: S.road.b, paid: S.road.paid };
+    if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
     return P;
@@ -22917,6 +23067,8 @@ const SYNC = (function () {
       const l = L.road || { s: [], b: 0, paid: false }, s = S.road || { s: [], b: 0, paid: false };
       const st = Array.from({ length: Math.max(l.s.length, s.s.length) }, (_, i) => (l.s[i] | 0) | (s.s[i] | 0));
       out.road = { s: st, b: l.b | s.b, paid: !!(l.paid || s.paid) };
+      for (const k of ["b2", "b3"]) if ((l[k] | 0) | (s[k] | 0)) out.road[k] = (l[k] | 0) | (s[k] | 0);
+      for (const k of ["p2", "p3"]) if (l[k] || s[k]) out.road[k] = true;
     }
     return out;
   }

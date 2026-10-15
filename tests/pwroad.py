@@ -78,7 +78,7 @@ async def flow(b, errs):
     need('Small Fry' in await txt(pg, '#pc1'), 'the CPU card does not name Small Fry')
     await in_play(pg)
     await win_now(pg)
-    need(await txt(pg, '#rTitle') == 'Victory' and await txt(pg, '#rMode') == 'The Road · stop 1 · The Farm Gate', f"results {await txt(pg, '#rTitle')!r} {await txt(pg, '#rMode')!r}")
+    need(await txt(pg, '#rTitle') == 'Victory' and await txt(pg, '#rMode') == 'The Road · The Field · stop 1 · The Farm Gate', f"results {await txt(pg, '#rTitle')!r} {await txt(pg, '#rMode')!r}")
     stars = await pg.evaluate("[...document.querySelectorAll('#rStars .rd-st')].map((s) => s.className)")
     need(stars == ['rd-st on new'] * 3, f'result stars {stars}')
     need(await txt(pg, '#rChipN') == '30' and '3 new stars +30' in await txt(pg, '#rWhy'), f"chips {await txt(pg, '#rChipN')} / {await txt(pg, '#rWhy')!r}")

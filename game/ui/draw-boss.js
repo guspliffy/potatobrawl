@@ -445,8 +445,16 @@ function bsStars(c, tk) {
   }
 }
 
+/* ---- the other bosses' art (ui/draw-zorp.js, ui/draw-kraken.js) registers here by boss id:
+   { draw(c, f, tk, at), proj(c, p, tk) -> true when it drew p, floor(c, g, f, tk) (his tells, once per frame, under the fighters; also
+   runs his per-tick cues), event(g, e, live) -> true when it fully handled e }. Old Scratch is this file. ---- */
+const BOSS_ART = {};
+const bossArt = (f) => (f && f.spec.boss ? BOSS_ART[f.spec.id] || null : null);
+
 /* ---- drawBoss: the fighter (or the KO page's puppet with `at`) ---- */
 function drawBoss(c, f, tk, at) {
+  const A = bossArt(f);
+  if (A) return A.draw(c, f, tk, at);
   const x = at ? at[0] : f.x, y = at ? at[1] : f.y;
   const Q = bsPose(f, tk), flash = f.flash > 0 && f.flash % 2 === 0, pal = flash ? BS_W : Q.dim ? BS_D : BS_N;
   c.save();
@@ -549,6 +557,8 @@ function drawBoss(c, f, tk, at) {
 
 /* ---- his fire (world space): Stomp's floor flames, Brimstone Rain's fireballs and their bursts, Horn Charge's fire trail ---- */
 function drawBossProj(c, p, tk) {
+  const A = bossArt(RG && RG.fighters[p.owner]);
+  if (A) return A.proj(c, p, tk);
   const s = p.style;
   if (s === "flame") { bsFlameRow(c, p, tk); return true; }
   if (s === "brim") { bsBrim(c, p, tk); return true; }
@@ -617,7 +627,8 @@ const bsW = (f, lx, ly) => [f.x + f.facing * lx, f.y + ly];   // a point near hi
 /* ---- bossFloor: his tells on the floor (world space, after the stage, under the fighters) ---- */
 function bossFloor(c, g, tk) {
   if (BX.g !== g) bsReset(g);
-  const f = bsOf(g);
+  const f = bsOf(g), A = bossArt(f);
+  if (A) { A.floor(c, g, f, tk); return; }
   if (tk !== BX.tk) { BX.tk = tk; bsTick(g, f, tk); }
   if (!f && !BX.rings.length && !BX.scorch.length) return;
   const S = STAGE.main, top = S.top;
@@ -749,6 +760,8 @@ function bsTick(g, f, tk) {
    (a boss fireball's "burst": fire, not the Alchemist's green; effects.js may skip its own case for it). ---- */
 function bossEvent(g, e, live) {
   if (BX.g !== g) bsReset(g);
+  const A = bossArt(bsOf(g));
+  if (A) return A.event(g, e, live);
   switch (e.type) {
     case "bossMove":
       if (e.mv === "stomp") { if (live) BSND.hop(); }

@@ -60,3 +60,16 @@
 .res-stars .rd-st.new i { animation: rdPop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) calc(0.35s + var(--k) * 0.18s) backwards; }
 @keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
 @media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }
+
+/* the region's name with arrows to the region before / after (a locked one is dimmed with a padlock) */
+.rd-title { min-width: 0; }
+.rd-reg { display: flex; align-items: center; gap: 6px; }
+.rd-reg h2 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-arr { flex: none; width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid var(--ink); background: var(--sand); box-shadow: 0 2px 0 var(--ink); cursor: pointer; position: relative; }
+.rd-arr::before { content: ""; position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.rd-arr.prev::before { border-right: 9px solid var(--ink); transform: translate(-60%, -50%); }
+.rd-arr.next::before { border-left: 9px solid var(--ink); transform: translate(-40%, -50%); }
+.rd-arr:disabled { visibility: hidden; }
+.rd-arr.lock { filter: grayscale(1) brightness(0.7); }
+.rd-arr:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
+#app.tiny .rd-arr { width: 26px; height: 26px; }

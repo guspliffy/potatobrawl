@@ -46,13 +46,17 @@ const SYNC = (function () {
     const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
     return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
   }
-  // The Road (ui/road.js): { s: per stop, the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: the boss levels won as bits
-  // (1 Normal, 2 Hard, 4 Nightmare), paid: the first boss win's reward was paid }. Trailing empty stops are dropped (one spelling).
+  // The Road (ui/road.js): { s: per stop (24 in three regions), the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: Old
+  // Scratch's levels won as bits (1 Normal, 2 Hard, 4 Nightmare), paid: his first win's reward was paid; b2 / p2: the same for Zorp,
+  // b3 / p3 for Kraken Spud (left out while 0 / false, so an older page's road has one spelling) }. Trailing empty stops are dropped.
   function cleanRoad(q) {
     if (!isObj(q)) return null;
     const s = (Array.isArray(q.s) ? q.s : []).slice(0, 24).map((v) => num(v, 0, 7, 0));
     while (s.length && !s[s.length - 1]) s.pop();
-    return { s, b: num(q.b, 0, 7, 0), paid: q.paid === true };
+    const out = { s, b: num(q.b, 0, 7, 0), paid: q.paid === true };
+    for (const k of ["b2", "b3"]) { const v = num(q[k], 0, 7, 0); if (v) out[k] = v; }
+    for (const k of ["p2", "p3"]) if (q[k] === true) out[k] = true;
+    return out;
   }
   function cleanName(s) {
     return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
@@ -125,7 +129,7 @@ const SYNC = (function () {
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
-    if (S.road !== undefined) P.road = { s: S.road.s.slice(), b: S.road.b, paid: S.road.paid };
+    if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
     return P;
@@ -201,6 +205,8 @@ const SYNC = (function () {
       const l = L.road || { s: [], b: 0, paid: false }, s = S.road || { s: [], b: 0, paid: false };
       const st = Array.from({ length: Math.max(l.s.length, s.s.length) }, (_, i) => (l.s[i] | 0) | (s.s[i] | 0));
       out.road = { s: st, b: l.b | s.b, paid: !!(l.paid || s.paid) };
+      for (const k of ["b2", "b3"]) if ((l[k] | 0) | (s[k] | 0)) out.road[k] = (l[k] | 0) | (s[k] | 0);
+      for (const k of ["p2", "p3"]) if (l[k] || s[k]) out.road[k] = true;
     }
     return out;
   }

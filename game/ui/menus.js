@@ -39,7 +39,7 @@ tap("rAgain", () => {
     return;
   }
   if (match && match.ranked) { sel.mode = "ranked"; }
-  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.lv); else roadFight(match.road.i); return; }   // Retry
+  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.k, match.road.lv); else roadFight(match.road.i); return; }   // Retry
   startMatch();
 });
 tap("rChange", () => {
