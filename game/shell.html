@@ -51,6 +51,7 @@ button { font: inherit; color: inherit; }
 .pcard.right { border-left: 0; border-right: 4px solid var(--fc); background: linear-gradient(270deg, rgba(14, 16, 34, 0.82), rgba(14, 16, 34, 0.55)); text-align: right; }
 .pcard > div { transform: skewX(9deg); }
 .pcard.out { opacity: 0.45; }
+.pcard.nice { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }   /* an online boss fight: a tap on your card says NICE! */
 .pc-top { display: flex; gap: 8px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .pcard.right .pc-top { justify-content: flex-end; }
 .pc-tag { color: var(--fc); }
@@ -912,16 +913,19 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="on-card on-me">
           <div class="on-who"><canvas class="on-art" id="onArt"></canvas><div><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden><span id="onMyFighter"></span><button class="link" id="onChange">Change fighter</button></div></div>
           <div class="on-rules" id="onRules">
-            <div class="rule-row"><span>Lives</span><span class="chips" id="ruleL"></span></div>
-            <div class="rule-row"><span>Time</span><span class="chips" id="ruleT"></span></div>
-            <div class="rule-row"><span>Format</span><span class="chips" id="ruleB"></span></div>
+            <div class="rule-row"><span>Mode</span><span class="chips" id="ruleM"></span></div>
+            <div class="rule-row" id="rowL"><span>Lives</span><span class="chips" id="ruleL"></span></div>
+            <div class="rule-row" id="rowT"><span>Time</span><span class="chips" id="ruleT"></span></div>
+            <div class="rule-row" id="rowB"><span>Format</span><span class="chips" id="ruleB"></span></div>
+            <div class="rule-row" id="rowBo" hidden><span>Boss</span><span class="chips" id="ruleBo"></span></div>
+            <div class="rule-row" id="rowLv" hidden><span>Level</span><span class="chips" id="ruleLv"></span></div>
           </div>
           <button class="btn primary" id="onHost"><span>Host a match</span></button>
           <p class="on-note" id="onNote"></p>
         </div>
         <div class="on-card on-side scroll">
           <div class="on-invite" id="onInvite" hidden>
-            <b>Your match is open</b>
+            <b id="onInvT">Your match is open</b>
             <div class="on-link" id="onLink"></div>
             <div class="on-link-btns"><button class="chip" id="onCopy">Copy link</button><button class="chip" id="onShare" hidden>Share</button></div>
           </div>

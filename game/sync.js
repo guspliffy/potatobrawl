@@ -5,7 +5,7 @@ const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
   // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
-  const OPT_COUNTERS = ["flawless"];
+  const OPT_COUNTERS = ["flawless", "duo"];   // duo: online boss wins on Hard or Nightmare (the Double Trouble title)
   const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
   const HIST = 50;

@@ -58,6 +58,8 @@ function finPuppet(f, x, facing, role) {
   return p;
 }
 // Called when the sim says the match is over; returns true while the cinematic still holds the results.
+// the name card's word: YOU WIN on your own page; on your partner's in a boss fight WINS IT (so it reads as the team's win)
+const finWinWord = (W) => (W.slot === meSlot ? "YOU WIN" : G && G.fighters.length > 2 && !W.spec.boss ? "WINS IT" : "WINS");
 function finHold(fn) { if (!FIN.on) return false; FIN.finish = fn; return true; }
 function finEnd() {
   if (!FIN.on) return;
@@ -799,7 +801,7 @@ function finCard(o, t) {
   o.fillStyle = "#f4f2ec"; o.fillText(W.spec.name.toUpperCase(), x, y);
   const nw = o.measureText(W.spec.name.toUpperCase()).width;
   o.font = `700 ${Math.round(fs * 0.36)}px "Barlow Condensed", "Arial Narrow", sans-serif`; o.fillStyle = c1;
-  o.fillText(W.slot === meSlot ? "YOU WIN" : "WINS", x + nw + 12, y + fs * 0.12);
+  o.fillText(finWinWord(W), x + nw + 12, y + fs * 0.12);
   o.restore();
   // K.O. stamp
   const s = fe(FT.CARD + 180, FT.CARD + 420, t);

@@ -4,10 +4,12 @@
    lockstep and exchange only inputs, carried in each player's presence object
    (presence is coalesced, so it always carries a short history of recent frames).
    A small input delay, sized from the measured ping, hides the network round trip.
-   Checksums every second catch any divergence; the host then sends a full snapshot. */
+   Checksums every second catch any divergence; the host then sends a full snapshot, in pieces (one presence holds 4 KB).
+   A boss fight (2v1) is the same lockstep with two inputs: host = slot 0, guest = slot 1, the boss (slot 2) moves himself in the
+   simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 12;
+const PROTO = 13;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -15,7 +17,8 @@ const NET = {
   phase: "idle", oppPeer: null, oppBy: null, lastOpp: null, joinT: 0,
   matchId: 0, startSeen: 0, pingSent: new Map(), pingSeen: new Set(), pings: [], pingT: 0, hsT: 0, lastStart: null,
   D: 6, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0, ckMine: new Map(), ckSend: null,
-  syncN: 0, syncSent: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
+  syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
+  cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0,
   standalone: !!window.__blStandalone, invite: null, inviteT: 0,
 };
 {
@@ -64,26 +67,51 @@ function lobbyPresence() {
   if (!NET.room || !NET.ok) return;
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
   const hosting = NET.phase === "hosting";
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, busy }).catch(() => {});
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, bo: hosting ? hostBo() : null, busy }).catch(() => {});
 }
+// The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
+function onBoss() {
+  const o = P.onBoss && typeof P.onBoss === "object" ? P.onBoss : {};
+  return { on: !!o.on, b: BOSS_IDS.has(o.b) ? o.b : BL.BOSSES[0].id, lv: [0, 1, 2].includes(o.lv) ? o.lv : 0 };
+}
+const hostBo = () => { const o = onBoss(); return o.on ? { b: o.b, lv: o.lv } : null; };
+const validBo = (bo) => !!bo && typeof bo === "object" && BOSS_IDS.has(bo.b) && [0, 1, 2].includes(bo.lv);
+const boSpec = (bo) => BL.BOSSES.find((b) => b.id === bo.b) || BL.BOSSES[0];
+const BOSS_SHORT = { scratch: "Scratch", zorp: "Zorp", kraken: "Kraken" };   // the Boss chips on the smallest phones
+const BOSS_RULES = { l: 3, t: 0, b: 1 };   // a boss fight: three hearts each, no time limit, one fight
 function buildRules() {
-  const edit = NET.phase === "idle" || NET.phase === "hosting";
+  const edit = NET.phase === "idle" || NET.phase === "hosting", ob = onBoss();
   // rebuild only on change, so a tap is never lost to a re-render
-  const sig = JSON.stringify(P.rules) + edit + NET.phase, box = $("onRules");
+  const sig = JSON.stringify(P.rules) + JSON.stringify(ob) + edit + NET.phase, box = $("onRules");
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
-  for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? v + " min" : "No limit")], ["b", "ruleB", (v) => (v === 3 ? "Best of 3" : "Single")]]) {
+  const pick = (id, items, isOn, set) => {
     const row = $(id); row.innerHTML = "";
-    for (const v of RULES[k]) {
+    for (const it of items) {
       const b = document.createElement("button");
-      b.className = "chip" + (P.rules[k] === v ? " on" : ""); b.textContent = label(v); b.disabled = !edit;
+      b.className = "chip" + (isOn(it) ? " on" : ""); b.disabled = !edit;
+      if (it.short) {   // a long name has a short form for the smallest phones (css/30-select.css)
+        const l = document.createElement("span"), sh = document.createElement("span");
+        l.className = "l"; l.textContent = it.label; sh.className = "s"; sh.textContent = it.short;
+        b.append(l, sh); b.setAttribute("aria-label", it.label);
+      } else b.textContent = it.label;
       b.addEventListener("click", () => {
-        Sfx.init(); Sfx.ui(); P.rules = Object.assign({}, P.rules, { [k]: v }); saveProfile(); buildRules();
-        if (NET.phase === "hosting") { namedPresence({ r: P.rules }); lobbyPresence(); }
+        Sfx.init(); Sfx.ui(); set(it); saveProfile(); buildRules();
+        if (NET.phase === "hosting") { namedPresence({ r: P.rules, bo: hostBo() }); lobbyPresence(); }
+        renderOnline();   // the host button and the note follow the mode
       });
       row.appendChild(b);
     }
-  }
+  };
+  const setBoss = (patch) => { P.onBoss = Object.assign(onBoss(), patch); };
+  pick("ruleM", [{ v: false, label: "1 vs 1" }, { v: true, label: "Vs boss" }], (it) => it.v === ob.on, (it) => setBoss({ on: it.v }));
+  for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? v + " min" : "No limit")], ["b", "ruleB", (v) => (v === 3 ? "Best of 3" : "Single")]])
+    pick(id, RULES[k].map((v) => ({ v, label: label(v) })), (it) => P.rules[k] === it.v, (it) => { P.rules = Object.assign({}, P.rules, { [k]: it.v }); });
+  pick("ruleBo", BL.BOSSES.map((b) => ({ v: b.id, label: b.name, short: BOSS_SHORT[b.id] })), (it) => it.v === ob.b, (it) => setBoss({ b: it.v }));
+  pick("ruleLv", BOSS_LV.map((name, i) => ({ v: i, label: name })), (it) => it.v === ob.lv, (it) => setBoss({ lv: it.v }));
+  // a boss fight swaps lives, time and format for the boss (his map comes with him) and his level
+  for (const id of ["rowL", "rowT", "rowB"]) $(id).hidden = ob.on;
+  for (const id of ["rowBo", "rowLv"]) $(id).hidden = !ob.on;
 }
 function namedPresence(patch) {
   if (!NET.mr) return;
@@ -174,12 +202,14 @@ async function renderOnline() {
     const sp = document.createElement("span"); const hf = FIG[h.presence.f];
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
+    const bo = validBo(h.presence.bo) ? h.presence.bo : null;   // a boss fight: the row reads as an invitation to team up
     sp.textContent = old ? "Different game version. Both of you reload the page." :
-      (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter") + (validRules(h.presence.r) ? ` · ${ruleText(h.presence.r)}` : "");
+      (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter") +
+      (bo ? ` · vs ${boSpec(bo).name} · ${BOSS_LV[bo.lv]}` : validRules(h.presence.r) ? ` · ${ruleText(h.presence.r)}` : "");
     who.append(b, sp);
     const btn = document.createElement("button"); btn.className = "chip";
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
-    btn.textContent = joining ? "Joining" : "Join";
+    btn.textContent = joining ? "Joining" : bo ? "Team up" : "Join";
     btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected;
     btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); netJoin(h.presence.host); });
     li.dataset.h = h.presence.host; li.append(who, btn); frag.appendChild(li);
@@ -190,16 +220,19 @@ async function renderOnline() {
     ? others.map((p) => `${names[p.peer] || "Friend"}${p.presence && p.presence.busy ? " (in a match)" : ""}`).join(", ")
     : "Just you. Friends show up here when they open this page.";
   hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
-  hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : "Host a match";
+  const ob = onBoss().on;
+  hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : "Host a match";
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   note.textContent =
-    NET.phase === "hosting" ? "Waiting for a challenger. Your match is listed for everyone here." :
+    NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
     NET.phase === "joining" ? "Joining…" :
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
-    NET.note || (NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
+    NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
+      : NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
   const inv = $("onInvite");
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
+    $("onInvT").textContent = ob ? "Your boss fight is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
   }
@@ -241,7 +274,7 @@ function leaveMatchRoom() {
 }
 function resetNet() {
   Object.assign(NET, { role: null, hostCode: null, oppPeer: null, oppBy: null, oppName: "", lastOpp: null, matchId: 0, startSeen: 0,
-    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, oppLeft: false, lastStart: null });
+    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false });
   NET.pingSent = new Map(); NET.pingSeen = new Set();
 }
 function netCancel() { leaveMatchRoom(); resetNet(); NET.phase = "idle"; lobbyPresence(); renderOnline(); }
@@ -253,7 +286,7 @@ async function netHost() {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
-  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules });
+  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo() });
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -271,6 +304,7 @@ async function netJoin(code) {
   lobbyPresence(); renderOnline();
 }
 function matchRoomLost() {
+  if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { finishOnline(false, true); return; }
   leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "The match connection dropped.";
   if (mode === "online") renderOnline();
@@ -298,6 +332,7 @@ function onMatchPeers(ch) {
   }
 }
 function opponentLeft() {
+  if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
@@ -334,8 +369,10 @@ function handshakeTick(now) {
       const gf = FIG[pr.f] ? pr.f : FIGHTERS[0].id;
       const gpi = Number.isInteger(pr.pi) && pr.pi >= 0 && pr.pi < FIG[gf].palettes.length ? pr.pi : 0;
       const hf = sel.fighter, hpi = palIdx(hf);
+      const bo = hostBo();
       const st = { id: NET.matchId + 1, seed: (Math.random() * 1e9) | 0, d: D, f: [hf, gf], p: [hpi, gf === hf && gpi === hpi ? (gpi + 1) % FIG[gf].palettes.length : gpi], rtt: Math.round(rtt),
-        r: Object.assign({}, P.rules), set: { n: 1, w: [0, 0] } };
+        r: Object.assign({}, bo ? BOSS_RULES : P.rules), set: { n: 1, w: [0, 0] } };
+      if (bo) st.bo = bo;   // a boss fight: which boss (his map comes with him) and his level
       NET.lastStart = st;
       namedPresence({ start: st });
       startOnlineMatch(st);
@@ -349,20 +386,29 @@ function validStart(st) {
   return st && typeof st === "object" && Number.isInteger(st.id) && Number.isInteger(st.seed) && Number.isInteger(st.d) && st.d >= 1 && st.d <= 20 &&
     Array.isArray(st.f) && st.f.length === 2 && st.f.every((id) => FIG[id]) && Array.isArray(st.p) && st.p.length === 2 &&
     st.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < FIG[st.f[i]].palettes.length) &&
-    validRules(st.r) && st.set && Number.isInteger(st.set.n) && st.set.n >= 1 && st.set.n <= 3 && Array.isArray(st.set.w) && st.set.w.length === 2 && st.set.w.every((v) => Number.isInteger(v) && v >= 0 && v <= 2);
+    validRules(st.r) && st.set && Number.isInteger(st.set.n) && st.set.n >= 1 && st.set.n <= 3 && Array.isArray(st.set.w) && st.set.w.length === 2 && st.set.w.every((v) => Number.isInteger(v) && v >= 0 && v <= 2) &&
+    (st.bo == null || validBo(st.bo));
 }
 function startOnlineMatch(st) {
   Object.assign(NET, { matchId: st.id, startSeen: st.id, D: st.d, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0,
-    ckMine: new Map(), ckSend: null, syncSent: null, lastSync: 0, rm: 0, lastOpp: null, oppLeft: false, rtt: st.rtt || 0,
-    rules: st.r, set: st.set, setRes: null, nextF: null, rttLive: 0, rttS: [], myPg: null, echo: null, pgT: 0 });
+    ckMine: new Map(), ckSend: null, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, rm: 0, lastOpp: null, oppLeft: false, rtt: st.rtt || 0,
+    rules: st.r, set: st.set, setRes: null, nextF: null, rttLive: 0, rttS: [], myPg: null, echo: null, pgT: 0,
+    boss: st.bo || null, cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0 });
   for (let i = 0; i < NET.D; i++) { NET.myLog.push(NEUTRAL); NET.opLog.push(NEUTRAL); }
-  const specs = st.f.map((id) => FIG[id]);
+  const specs = st.f.map((id) => FIG[id]), players = specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] }));
   meSlot = NET.role === "host" ? 0 : 1;
-  // the map comes from the match seed, so both phones play the same one with no new field in the start message
-  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
-  match = { online: true, ranked: false, level: null };
-  NET.phase = "match";
-  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, rm: null, pg: null, po: null, nf: null, np: null });
+  if (st.bo) {
+    // a boss fight: the two of you (team 0) and the boss (slot 2, team 1) on his own map, with all of his HP
+    const boss = boSpec(st.bo);
+    G = newGame({ players: [...players, { spec: boss, pal: boss.palettes[0] }], stocks: BOSS_RULES.l, time: 0, countdown: 150, seed: st.seed, map: bossMap(boss), level: st.bo.lv });
+    match = { online: true, ranked: false, boss: true, level: st.bo.lv };
+  } else {
+    // the map comes from the match seed, so both phones play the same one with no new field in the start message
+    G = newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+    match = { online: true, ranked: false, level: null };
+  }
+  NET.phase = "match"; NICE.length = 0;
+  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
   resolveOppName();
@@ -392,16 +438,46 @@ function readOpp(pr) {
   if (Array.isArray(pr.ck) && pr.ck.length === 2) {
     const mine = NET.ckMine.get(pr.ck[0]);
     if (mine !== undefined && mine !== pr.ck[1]) onDesync(pr.ck[0]);
-    else if (mine !== undefined && NET.syncSent && pr.ck[0] > NET.syncSent.f) { NET.syncSent = null; namedPresence({ sync: null }); }
+    else if (mine !== undefined && NET.syncSent && pr.ck[0] > NET.syncSent.f) { NET.syncSent = null; NET.syncTx = null; namedPresence({ sync: null }); }
   }
-  if (NET.role === "guest" && pr.sync && typeof pr.sync === "object" && Number.isInteger(pr.sync.n) && pr.sync.n > NET.lastSync) applySync(pr.sync);
+  // the repair copy, a piece at a time: the guest confirms each piece (sa: [n, k]), the host then puts up the next one
+  const tx = NET.syncTx;
+  if (NET.role === "host" && tx && Array.isArray(pr.sa) && pr.sa[0] === tx.n && pr.sa[1] === tx.k) { if (tx.k + 1 < tx.parts.length) syncPart(tx.k + 1); else tx.done = true; }
+  if (NET.role === "guest" && pr.sync && typeof pr.sync === "object") syncPiece(pr.sync);
+  if (Number.isInteger(pr.em) && pr.em > NET.emSeen) { NET.emSeen = pr.em; niceShow(1 - meSlot); }   // the partner's NICE!
 }
+/* The repair copy: the whole game (serialize) as JSON, sent in pieces of SYNC_PART characters, because one presence holds 4 KB in all
+   and a boss fight's copy is 3.4-3.9 KB on its own. sync = { n (repair number), f (its frame), k (piece), of (pieces), d (the text) }. */
+const SYNC_PART = 2000;
 function onDesync(F) {
   if (NET.role !== "host") return;
   if (NET.syncSent && NET.syncSent.f >= F) return;
+  // a copy still on its way (until the guest confirms its last piece, which it does as it restores it): their checks were made before it
+  if (NET.syncTx && !NET.syncTx.done && performance.now() - NET.syncTx.t < 5000) return;
   NET.desyncs++; NET.syncN++;
   NET.syncSent = { n: NET.syncN, f: NET.frame };
-  namedPresence({ sync: { n: NET.syncN, f: NET.frame, st: serialize(G) } });
+  const txt = JSON.stringify(serialize(G)), parts = [], size = window.__blSyncPart || SYNC_PART;   // __blSyncPart: tests only (more, smaller pieces)
+  for (let i = 0; i < txt.length; i += size) parts.push(txt.slice(i, i + size));
+  NET.syncTx = { n: NET.syncN, f: NET.frame, parts, k: 0, t: performance.now(), done: false };
+  NET.syncLast = parts.length; NET.syncF = NET.frame;   // read by tests/pwonboss.py
+  syncPart(0);
+}
+function syncPart(k) {
+  const tx = NET.syncTx;
+  tx.k = k; tx.t = performance.now();
+  namedPresence({ sync: { n: tx.n, f: tx.f, k, of: tx.parts.length, d: tx.parts[k] } });
+}
+function syncPiece(sy) {
+  if (!Number.isInteger(sy.n) || sy.n <= NET.lastSync || !Number.isInteger(sy.f) || !Number.isInteger(sy.k) || !Number.isInteger(sy.of) ||
+    sy.of < 1 || sy.of > 16 || sy.k < 0 || sy.k >= sy.of || typeof sy.d !== "string") return;
+  if (!NET.syncRx || NET.syncRx.n !== sy.n) NET.syncRx = { n: sy.n, f: sy.f, of: sy.of, parts: [] };
+  const rx = NET.syncRx;
+  if (rx.parts[sy.k] === undefined) { rx.parts[sy.k] = sy.d; namedPresence({ sa: [sy.n, sy.k] }); }
+  for (let i = 0; i < rx.of; i++) if (rx.parts[i] === undefined) return;
+  NET.syncRx = null;
+  let st = null;
+  try { st = JSON.parse(rx.parts.join("")); } catch (e) { console.warn("resync copy unreadable", e); }
+  applySync({ n: rx.n, f: rx.f, st });
 }
 function applySync(sy) {
   NET.lastSync = sy.n;
@@ -410,12 +486,15 @@ function applySync(sy) {
     const cur = NET.frame;
     restore(G, sy.st);
     for (const k of [...NET.ckMine.keys()]) if (k > sy.f) NET.ckMine.delete(k);
+    if (NET.ckSend && NET.ckSend[0] > sy.f) NET.ckSend = null;   // made before the repair: never send it again
     if (cur > sy.f) {
+      NET.frame = sy.f;   // the game is at the copy's frame now; replaying the logged inputs brings it back up to where it was
       for (let fr = sy.f; fr < cur; fr++) {
         if (NET.myLog[fr] === undefined || NET.opLog[fr] === undefined) break;
         const ins = []; ins[meSlot] = decIn(NET.myLog[fr]); ins[1 - meSlot] = decIn(NET.opLog[fr]);
         step(G, ins); G.events.length = 0;
-        if ((fr + 1) % 60 === 0) NET.ckMine.set(fr + 1, checksum(G));
+        NET.frame = fr + 1;
+        if ((fr + 1) % 60 === 0) { const h = checksum(G); NET.ckMine.set(fr + 1, h); NET.ckSend = [fr + 1, h]; }
       }
     } else {
       NET.frame = sy.f;
@@ -428,6 +507,7 @@ function netTick() {
   const now = performance.now();
   if (mode === "online" && NET.invite && NET.phase === "idle" && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
   if (NET.phase === "joining" || NET.phase === "handshake") { handshakeTick(now); return; }
+  if (NET.phase === "match" && NET.cpuMate && G) { soloTick(); return; }
   if (!NET.mr) return;
   const opp = NET.oppPeer ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
   if (NET.phase === "result") { resultTick(opp); return; }
@@ -466,7 +546,30 @@ function netTick() {
   const badge = $("netBadge");
   if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}`; }
   else if (!badge.hidden) badge.hidden = true;
-  if (NET.stall > 60 * 15) finishOnline(false, true);
+  if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
+}
+/* A boss fight goes on when the partner drops (they leave, their connection or ours goes, or nothing comes from them for 15 s): a CPU
+   takes over their fighter on this phone at the partner strength of the level, and this phone plays on alone, sending nothing. */
+function cpuTakeover() {
+  if (NET.cpuMate || !G || !match || !match.boss) return;
+  const mate = G.fighters[1 - meSlot], live = G.phase === "countdown" || G.phase === "play";
+  NET.cpuMate = makeBot(BOSS_PARTNER[G.lv], BL.BOT_STYLES[mate.spec.id]);
+  NET.dropLive = live;   // it dropped during the fight (not after the boss was already down): the results say so
+  NET.oppLeft = true; NET.rtt = NET.rttLive = 0;
+  leaveMatchRoom();
+  $("pc" + meSlot).classList.remove("nice");
+  $("netBadge").hidden = true;
+  if (!live) return;
+  showBanner(`${NET.oppName || "Your partner"} dropped`, `CPU has ${mate.spec.name} now`, "fin", 2200, "#f3d9a4");
+  $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = "CPU";
+  tagShow();   // hud.js: the markers come back for 3 s, the partner's now reads CPU
+}
+function soloTick() {
+  const ins = [];
+  ins[meSlot] = readPlayer();
+  ins[1 - meSlot] = botInput(G, G.fighters[1 - meSlot], bossOf(G), NET.cpuMate);
+  step(G, ins);
+  NET.frame++;
 }
 function resultTick(opp) {
   if (!opp) return;
@@ -485,6 +588,7 @@ function resultTick(opp) {
       if (f[0] === f[1] && p[0] === p[1]) p[1] = (p[1] + 1) % FIG[f[1]].palettes.length;
     }
     const st = Object.assign({}, prev, { id: next, seed: (Math.random() * 1e9) | 0, f, p, set });
+    if (prev.bo) st.bo = { b: prev.bo.b, lv: G.winner === 0 && prev.bo.lv < 2 ? prev.bo.lv + 1 : prev.bo.lv };   // a boss beaten: the next level (Nightmare: again)
     NET.lastStart = st;
     namedPresence({ start: st });
     startOnlineMatch(st);
@@ -495,13 +599,14 @@ function updateRematchLabel() {
   const opp = NET.mr && NET.mr.peers().find((p) => p.peer === NET.oppPeer);
   const theyWant = opp && opp.presence && opp.presence.rm === NET.matchId + 1;
   const iWant = NET.rm === NET.matchId + 1;
-  const who = NET.oppName || "Your friend", inSet = NET.setRes && !NET.setRes.over;
+  const who = NET.oppName || "Your friend", inSet = NET.setRes && !NET.setRes.over, boss = match.boss;
   // the button keeps its word; the ready state is its small line (the results screen, css/40-results.css)
-  $("rAgain").querySelector("span").textContent = inSet ? "Next game" : "Rematch";
-  $("rAgainSub").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet ? "is ready" : "wants a rematch"}` : "";
+  $("rAgain").querySelector("span").textContent = boss ? NET.again : inSet ? "Next game" : "Rematch";
+  $("rAgainSub").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet || boss ? "is ready" : "wants a rematch"}` : "";
 }
 function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;
+  if (match.boss) { finishBossOnline(); return; }
   const me = G.fighters[meSlot], op = G.fighters[1 - meSlot];
   const res = left ? 1 : lost ? 0.5 : G.winner === meSlot ? 1 : G.winner === 1 - meSlot ? 0 : 0.5;
   const R = { res, online: true, left: !!left, lost: !!lost, me, op, lines: [], total: 0 };
@@ -528,3 +633,71 @@ function finishOnline(left, lost) {
   lobbyPresence();
 }
 
+/* ----- the end of an online boss fight ----- */
+const DUO_WIN = [20, 30, 45];   // chips for a win, by level (both phones pay their own player)
+function finishBossOnline() {
+  const me = G.fighters[meSlot], mate = G.fighters[1 - meSlot], b = bossOf(G), lv = G.lv;
+  const won = G.winner === me.team, hp = b.hpMax ? b.hp / b.hpMax : 0, by = won && b.lastHitBy ? b.lastHitBy.slot : -1;
+  const R = { res: won ? 1 : 0, online: true, me, op: b, lines: [], total: 0, dropped: !!NET.cpuMate && NET.dropLive, mateFin: won && by === mate.slot,
+    boss: { lv, mate, hp, secs: Math.round(G.t / 60), name: b.spec.name, by } };
+  if (won) {
+    R.lines.push([`Win on ${BOSS_LV[lv]}`, DUO_WIN[lv]]);
+    if (by === me.slot) R.lines.push(["Final launch", 5]);   // a flourish, not a prize: the KO page is the reward
+  } else {
+    R.lines.push(["Fight played", 5]);
+    const t = Math.min(10, Math.floor((1 - hp) * 10 + 1e-9));   // +1 per 10% of his HP taken
+    if (t > 0) R.lines.push([`Took ${t * 10}% of his HP`, t]);
+  }
+  R.total = R.lines.reduce((a, l) => a + l[1], 0);
+  P.tokens += R.total;
+  let title = false;
+  if (won && lv >= 1) { title = !(P.duo | 0); P.duo = (P.duo | 0) + 1; }   // Double Trouble (ui/acct.js): an online boss win on Hard or Nightmare
+  saveProfile();
+  // the Road stays solo: say so on a win, so an online win never looks short-changed
+  R.why = R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") + (title ? " · New title: Double Trouble" : won ? " · Road stars come from the solo Road" : "");
+  if (match.finBy && R.mateFin) match.finBy += ` · by ${NET.cpuMate ? "CPU" : NET.oppName || "your partner"}`;
+  if (NET.cpuMate) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";
+  NET.again = NET.cpuMate ? "Retry vs CPU" : won ? (lv < 2 ? `Next: ${BOSS_LV[lv + 1]}` : "Again") : "Retry";
+  $("netBadge").hidden = true;
+  showResults(R);
+  lobbyPresence();
+}
+
+/* ----- NICE!: in a boss fight, a tap on your own card (or N) pops a comic NICE! over your fighter on both phones. It rides in the
+   presence next to the inputs (em: how many you have sent), never in the simulation. ----- */
+const NICE = [], NICE_CD = 1500, NICE_MS = 1300;   // NICE: { slot, t0 } showing now
+const niceOk = () => mode === "match" && !!match && !!match.online && !!match.boss && !NET.cpuMate && !!G && G.phase !== "over" && !FIN.on;
+function niceSend() {
+  const now = performance.now();
+  if (!niceOk() || now - NET.emT < NICE_CD) return;
+  NET.emT = now; NET.emN++;
+  namedPresence({ em: NET.emN });
+  niceShow(meSlot);
+}
+function niceShow(slot) {
+  for (let i = NICE.length - 1; i >= 0; i--) if (NICE[i].slot === slot) NICE.splice(i, 1);
+  NICE.push({ slot, t0: performance.now() });
+  Sfx.tone(660, 990, 0.1, "triangle", 0.06); Sfx.tone(990, 1320, 0.12, "triangle", 0.04);
+}
+// over the fighter, in world space like the YOU marker (draw-world.js drawTag): pops in big, settles, rises and fades
+function drawNice(c, g) {
+  const now = performance.now(), k = 1 / cam.z;
+  for (let i = NICE.length - 1; i >= 0; i--) {
+    const n = NICE[i], t = (now - n.t0) / NICE_MS, f = g.fighters[n.slot];
+    if (t >= 1 || !f) { NICE.splice(i, 1); continue; }
+    if (f.state === "dead" || f.state === "gone") continue;
+    const pop = t < 0.12 ? 0.4 + easeOut(t / 0.12) * 0.85 : t < 0.22 ? 1.25 - ((t - 0.12) / 0.1) * 0.25 : 1;
+    c.save();
+    c.globalAlpha = t > 0.75 ? (1 - t) / 0.25 : 1;
+    c.translate(f.x, f.y - f.s.h - (82 + t * 22) * k);   // above the name marker
+    c.scale(k * pop, k * pop); c.rotate(-0.1);
+    c.beginPath();   // a burst behind the word
+    for (let j = 0; j < 20; j++) { const a = (j / 20) * Math.PI * 2, r = j % 2 ? 26 : 38; c.lineTo(Math.cos(a) * r * 1.5, Math.sin(a) * r * 0.85); }
+    c.closePath(); c.fillStyle = "#fff7e0"; c.fill(); c.lineWidth = 3; c.strokeStyle = "rgba(14,16,34,.9)"; c.lineJoin = "round"; c.stroke();
+    c.font = 'italic 900 28px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center"; c.textBaseline = "middle";
+    c.lineWidth = 6; c.strokeText("NICE!", 0, 1); c.fillStyle = "#ffb627"; c.fillText("NICE!", 0, 1);
+    c.restore();
+  }
+}
+for (const i of [0, 1]) $("pc" + i).addEventListener("pointerdown", (e) => { if (i === meSlot && niceOk()) { e.preventDefault(); Sfx.init(); niceSend(); } });
+window.addEventListener("keydown", (e) => { if (e.code === "KeyN" && !e.repeat && niceOk()) niceSend(); });

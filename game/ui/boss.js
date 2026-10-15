@@ -3,7 +3,7 @@
    FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
 const BOSS_LV = ["Normal", "Hard", "Nightmare"];
 const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   // each boss fights on his own map (spec.map)
-const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (a friend on a second phone will get all of it)
+const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (with a friend on a second phone, ui/online.js, all of it)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
 const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt.",
@@ -73,15 +73,22 @@ function bossMatchEnd(forfeit) {
   showResults(R);
 }
 function bossVs() {
-  const b = bossOf(G);
-  return `${G.fighters[0].spec.name} and ${match.cpu || "CPU"} (${G.fighters[1].spec.name}) vs ${b ? b.spec.name : "the boss"} · ${BOSS_LV[G.lv]}`;
+  const b = bossOf(G), vs = ` vs ${b ? b.spec.name : "the boss"} · ${BOSS_LV[G.lv]}`;
+  if (match.online) return `${G.fighters[meSlot].spec.name} and ${NET.oppName || "your friend"} (${G.fighters[1 - meSlot].spec.name})${vs}`;   // ui/online.js: a friend on a second phone
+  return `${G.fighters[0].spec.name} and ${match.cpu || "CPU"} (${G.fighters[1].spec.name})${vs}`;
 }
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 // the results' story line for a boss fight
 function bossResLine(R) {
-  const B = R.boss, mate = [{ b: match.cpu || "your partner" }, ` (${B.mate.spec.name})`];
+  const friend = R.online ? NET.oppName || "your friend" : "";   // online: the friend on the second phone (ui/online.js)
+  const B = R.boss, mate = [{ b: friend || match.cpu || "your partner" }, ` (${B.mate.spec.name})`];
   if (R.forfeit) return ["You left the fight."];
-  if (R.res === 1) return ["You and ", ...mate, " beat ", { b: B.name }, ` on ${BOSS_LV[B.lv]} in ${mmss(B.secs)}.`];
+  if (R.res === 1) {
+    const line = ["You and ", ...mate, " beat ", { b: B.name }, ` on ${BOSS_LV[B.lv]} in ${mmss(B.secs)}.`];
+    // online: who landed the final launch; after a drop the CPU may have finished it
+    if (R.online) line.push(R.mateFin ? (R.dropped ? ` CPU finished what ${friend} started.` : ` ${friend} landed the final launch.`) : B.by === R.me.slot ? " You landed the final launch." : "");
+    return line;
+  }
   return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
 }
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
