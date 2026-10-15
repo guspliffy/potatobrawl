@@ -88,7 +88,9 @@ async def flow(b, errs):
     need(not await shown(pg, '#bossBar .bb-q'), 'the boss line stays after the countdown')
     # the bar follows his HP (test only: set HP), poise and stagger
     await pg.evaluate(f"{BOSS}.hp = Math.round({BOSS}.hpMax * 0.4)")
-    await pg.wait_for_timeout(200)
+    # the HUD redraws every few frames, and the test browser runs about 10 frames a second: wait for the bar (up to 3 s) rather than a fixed time
+    try: await pg.wait_for_function("Math.abs(+getComputedStyle(document.querySelector('#bossBar')).getPropertyValue('--hp') - 0.4) < 0.02", timeout=3000)
+    except Exception: pass
     hpv = await pg.evaluate("+getComputedStyle(document.querySelector('#bossBar')).getPropertyValue('--hp')")
     need(abs(hpv - 0.4) < 0.02, f'bar --hp {hpv}, want 0.4')
     # ----- down to 1 HP: the next hit breaks him (FINISH), the partner ends him, the KO page, the results
