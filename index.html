@@ -5427,7 +5427,8 @@ const Sfx = {
    key per day. This device keeps one note in localStorage (CNT_KEY): its first day, the last day / week / month it said hello, which
    "came back within N days" it already sent, its match counts and the once-only milestones it already sent.
    Counting runs only in the copy our own server serves (net-ws.js sets __blStandalone) and stops for the visit when the server
-   answers 404 (its counter is off). Never when the browser sends Global Privacy Control, or after Settings > Play counts > Off.
+   answers 202 (its counter is off; 404 from a server without one). Never when the browser sends Global Privacy Control, or after
+   Settings > Play counts > Off.
    This part sits right after base.js, so the hooks the other parts call (cntStart, cntEnd, cntScreen, ...) find CNT ready; cntBoot
    runs from loop.js once every part is loaded (it reads NET and PROTO). */
 const CNT_KEY = "potatobrawl.count.v1";
@@ -5583,7 +5584,7 @@ function cntFlush(beacon) {
   fetch("/api/stats/hit", { method: "POST", headers: { "content-type": "text/plain" }, body, keepalive: true, credentials: "omit" })
     .then((r) => {
       CNT.busy = false;
-      if (r.status === 404 || r.status === 405 || r.status === 415) { CNT.dead = true; CNT.q.length = 0; }   // this server counts nothing
+      if (r.status === 202 || r.status === 404 || r.status === 405 || r.status === 415) { CNT.dead = true; CNT.q.length = 0; }   // this server counts nothing (202: its counts are off)
       else if (r.status === 429 || r.status >= 500) again();
     })
     .catch(() => { CNT.busy = false; again(); });   // offline for a moment: the next round sends it

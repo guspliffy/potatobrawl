@@ -66,6 +66,8 @@ const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];
   if (accounts && accounts.handle(req, res, url)) return;
   if (stats && stats.handle(req, res, url)) return;
+  // counts off here: 202 tells the page to stop sending for the visit (a 404 would show as an error in the browser console)
+  if (!stats && url === "/api/stats/hit") { res.writeHead(202, { "cache-control": "no-store" }); res.end(); return; }
   const file = (req.method === "GET" || req.method === "HEAD") && FILES[url];
   if (file) {
     const gzip = /\bgzip\b/.test(req.headers["accept-encoding"] || "");

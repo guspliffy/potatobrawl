@@ -48,7 +48,7 @@ async def page(b, tag, init=None, vp=(1280, 760)):
     pg.hits = []
     pg.on('request', lambda r: pg.hits.append(r.post_data or '') if '/api/stats/hit' in r.url else None)
     pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}') if 'pwstats boom' not in str(e) else None)
-    pg.on('console', lambda m: errs.append(f'{tag} console: {m.text}') if m.type == 'error' and 'api/stats' not in (m.location or {}).get('url', '') else None)
+    pg.on('console', lambda m: errs.append(f'{tag} console: {m.text}') if m.type == 'error' else None)   # also none when the counts are off
     await pg.goto(URL)
     await pg.wait_for_function("window.__blastline && window.__blCount", timeout=20000)
     await pg.evaluate("window.__blastline.perf.lockQ = true")

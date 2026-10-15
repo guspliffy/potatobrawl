@@ -134,7 +134,7 @@ const stopServer = (s, sig) => new Promise((resolve) => { if (s.proc.exitCode !=
 async function viaServer() {
   let s = await startServer({});
   let r = await call(PORT, "POST", "/api/stats/hit", { e: ["day"] });
-  check(r.status === 404 && /Play counts: off/.test(s.log()), "without STATS_DIR the counter is off and /api/stats/hit is 404 (the game stops sending)");
+  check(r.status === 202 && /Play counts: off/.test(s.log()), "without STATS_DIR the counter is off and /api/stats/hit is 202 (the game stops sending, no console error)");
   r = await call(PORT, "GET", "/stats");
   check(r.status === 404, "without STATS_DIR /stats is 404");
   await stopServer(s);

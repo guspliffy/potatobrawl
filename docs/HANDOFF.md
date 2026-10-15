@@ -17,8 +17,8 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     road, boss, road-boss, online, online-boss; a new mode needs a line there). Hooks: enterMatchUI (cntStart), finishMatch and
     showResults for online (cntEnd), a match left any other way = quit (cntDrop on the 1 s tick), show/modal (cntScreen), buyPending,
     rAgain, tutShow, trialClear, acctCreate, acSetTab, renderSettings (Settings > Play counts On/Off), loop.js (cntBoot). Sends only
-    on our own server (__blStandalone), never with Global Privacy Control; a 404 stops it for the visit. Tests: tests/stats.js,
-    tests/pwstats.py, tests/pwstatspage.py (check.sh 8g-8i).
+    on our own server (__blStandalone), never with Global Privacy Control; a 202 (the server's counts are off) or a 404 stops it for
+    the visit. Tests: tests/stats.js, tests/pwstats.py, tests/pwstatspage.py (check.sh 8g-8i).
 - Session 5 of the big-features plan (2026-10-15, branch claude/online-2v1-d7nenz, PROTO 13, players reload once): online boss fights,
   two phones against a boss. Plan doc https://claude.ai/code/artifact/876ba165-4beb-4bdf-be01-276290f2a41e (Jonny approved the
   defaults), Fable's design /mnt/project-files/online-2v1/fable-online.md. All in ui/online.js; core.js and the server are unchanged.
