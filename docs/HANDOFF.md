@@ -127,7 +127,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     the name), per-ulti drawing and sounds (Sfx.ulti, ultFull, hellBlast, ...), the Gunslinger's light shots (`gunLightPose`, a
     tracer from the muzzle to the sweeping box, smoke, a shell, Sfx.pop instead of the swing sound). tests/pwultreel.py records
     every ulti + the eight light shots at 844x390 and 390x844 (stills + a video, needs ffmpeg).
-  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js, wizard.js, dragon.js, odin.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
+  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js, wizard.js, dragon.js, odin.js, alchemist.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
     a page with `MANGA[id].ulti` plays its 5.9 s Ultimate script (a fifth, full-page splash panel, MT_U timeline, three impact
     frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova", Wizard "Big Bang" (2026-10-15, Fable's design
     /mnt/project-files/ultimates/manga/wizard/fable-big-bang.md: the five-star shower lands round the loser, the big star sends
@@ -139,8 +139,13 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     Fable's design /mnt/project-files/ultimates/manga/odin/fable-odin-ultimate.md: Judgement to the inset with the game's golden Gungnir,
     then a throw in a wider strike shot (the spear sticks in the statue, the shatter, it turns round in the air); the splash: 48 ravens
     drag the night down the page, Gungnir flies back to his fist with the statue's shards in its wake, the shards land as RAGNARÖK; Judgement's
-    late moments run at MT.AFTER + offset and its two hero ravens now stay perched on the spear). The other two play their
-    normal page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
+    late moments run at MT.AFTER + offset and its two hero ravens now stay perched on the spear), Alchemist "Mutation" (2026-10-15,
+    Fable's design /mnt/project-files/ultimates/manga/alchemist/fable-design.md: the Mutagen Cloud's own beat (pulses 1400/1900/2400,
+    the fifth at the hit); he turns the empty flask over the cloud, a third eye opens on the loser's forehead in the inset, seven more
+    pop open on the body in the cloud and all blink once together at the drop, KABWUMP; the splash is the cloud with 24 eyes that find
+    the reader, then their maker; The Experiment's aftermath runs at MT.AFTER + offset, the puddle has an eye; then a goo splatter
+    over the results for 6 s: one canvas on #app, corners and edges only, cut round every button, card and line of text, gone when
+    the results are left). The Reaper plays its normal page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
     pwmanga.py --ult plays an Ultimate page.
 - Maps + rank emblems (2026-10-14, same branch, PROTO 9; Jonny's asks after the Ultimates merge):
   - Ulti bar fills at 0.6x (TUNE ultDealt 0.6, ultTaken 0.3, ultHeart 6). A random CPU picks the player's own fighter 4x less
@@ -391,7 +396,7 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 
 ## Next work, in order
 - NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the other five
-  Ultimate KO pages (Alchemist Mutagen Cloud, Reaper Soul Harvest; Wizard "Big Bang", Dragon "Dragon's Age" and Odin "Ragnarök" done: Fable's
+  Ultimate KO pages (Reaper Soul Harvest; Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök" and Alchemist "Mutation" done: Fable's
   twists in next-ideas/fable-ideas.md section 2, the page engine's Ultimate script as built for the first three) + fighter
   mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
   seen). Then 4. boss engine + the Devil + The Field + the Road's first 8 stops; 5. Alien + Sea Monster, their stages, Road
