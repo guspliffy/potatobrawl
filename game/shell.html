@@ -878,13 +878,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="sheet dly-sheet rd-sheet scroll" id="roadStopSheet">
       <header class="sh-head"><h3 id="rsName"></h3><span class="kick" id="rsKick"></span><button class="round x" id="rsClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="sh-body">
-        <div class="dly-vs"><div class="dly-f" id="rsMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="rsOp"></div></div>
+        <div class="dly-vs"><button class="dly-f rd-me" id="rsMe" aria-label="Change fighter"></button><b class="dly-x">vs</b><div class="dly-f r" id="rsOp"></div></div>
         <p class="dly-rule" id="rsRule"></p>
         <p class="dly-line rd-line" id="rsLine"></p>
         <div class="rd-stars" id="rsStars"></div>
         <p class="rd-reward" id="rsReward"></p>
-        <div class="dly-acts rd-acts"><button class="btn primary lg" id="rsGo"><span>Fight</span></button><button class="btn" id="rsPick"><span>Fighter</span></button><button class="btn" id="rsBack"><span>Back</span></button></div>
-        <div class="dly-acts rd-lv" id="rsLv"></div>
+        <div class="dly-acts rd-acts"><button class="btn primary lg" id="rsGo"><span>Fight</span></button><button class="btn" id="rsBack"><span>Back</span></button></div>
       </div>
     </div>
   </section>
