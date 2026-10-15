@@ -968,7 +968,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <header class="sel-head">
         <button class="back" id="cupBack" aria-label="Menu"></button>
         <div class="grow"><div class="kicker" id="cupKick">Tournament</div><h2 id="cupTitle">Quarter-final</h2></div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="cupTokens">0</span></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="cupTokens">0</span></div>
       </header>
       <div class="cup-main">
         <div class="cup-grid" id="cupGrid"></div>
@@ -981,11 +981,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
   <section id="scrDaily" class="screen modal" hidden>
     <div class="sheet dly-sheet scroll">
-      <div class="x-row"><h3>Daily Potato</h3><span class="kicker" id="dlyDate"></span></div>
-      <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
-      <p class="dly-rule" id="dlyRule"></p>
-      <p class="dly-line" id="dlyLine"></p>
-      <div class="dly-acts"><button class="btn primary" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+      <header class="sh-head"><h3>Daily Potato</h3><span class="kick" id="dlyDate"></span><button class="round x" id="dlyClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
+        <p class="dly-rule" id="dlyRule"></p>
+        <p class="dly-line" id="dlyLine"></p>
+        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+      </div>
     </div>
   </section>
 
@@ -1060,20 +1062,23 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <section id="scrPause" class="screen modal" hidden>
-    <div class="sheet">
-      <div class="x-row"><h2>Paused</h2><button class="iconbtn" id="pSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button></div>
-      <div class="sheet-actions">
-        <button class="btn primary" id="pResume"><span>Resume</span></button>
-        <button class="btn" id="pHelp"><span>How to play</span></button>
-        <button class="btn" id="pQuit"><span>Forfeit</span></button>
+    <div class="sheet pause-sheet">
+      <header class="sh-head"><h2 class="pz">Paused</h2><button class="round" id="pSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button></header>
+      <div class="sh-body">
+        <div class="sheet-actions">
+          <button class="btn primary lg" id="pResume"><span>Resume</span></button>
+          <button class="btn" id="pHelp"><span>How to play</span></button>
+          <button class="btn" id="pQuit"><span>Forfeit</span></button>
+        </div>
+        <p id="pNote"></p>
       </div>
-      <p id="pNote"></p>
     </div>
   </section>
 
   <section id="scrHelp" class="screen modal" hidden>
     <div class="sheet help-sheet scroll">
-      <div class="x-row"><h3>How to play</h3><button class="link" id="hClose">Close</button></div>
+      <header class="sh-head"><h3>How to play</h3><button class="round x" id="hClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
       <p class="help-lead">Hits raise the other potato's damage, and the higher it is, the farther they fly. Knock them off the screen to take a life.</p>
       <div class="help-body"><div id="helpFig"></div><dl class="help-keys" id="helpKeys"></dl></div>
       <div class="help-combos help-ult" id="helpUlt"></div>
@@ -1091,22 +1096,26 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </dl>
       </details>
       </div>
+      </div>
     </div>
   </section>
 
   <section id="scrSettings" class="screen modal" hidden>
     <div class="sheet set-sheet scroll">
-      <div class="x-row"><h3>Settings</h3><button class="link" id="setClose">Close</button></div>
-      <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
-      <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
-      <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
-      <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      <header class="sh-head"><h3>Settings</h3><button class="round x" id="setClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
+        <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
+        <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
+        <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      </div>
     </div>
   </section>
 
   <section id="scrAccount" class="screen modal" hidden>
     <div class="sheet acct-sheet scroll">
-      <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <header class="sh-head"><h3>Account</h3><button class="round x" id="acClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
       <div class="ac-tabs" role="tablist" aria-label="Account sections">
         <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
         <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
@@ -1139,6 +1148,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
       <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
+      </div>
     </div>
   </section>
 </div>

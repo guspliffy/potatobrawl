@@ -239,6 +239,30 @@ const Sfx = {
   swing(h) { this.noise(h ? 0.13 : 0.06, h ? 0.12 : 0.06, h ? 1000 : 2200); },
   count(go) { this.tone(go ? 880 : 440, go ? 880 : 440, go ? 0.32 : 0.12, "square", 0.08); },
   ui() { this.tone(620, 840, 0.05, "triangle", 0.07); },
+  /* ---- menu cues ("sunset ink" redesign; each one is over within 120 ms). ui() above is the plain wooden tap. ---- */
+  // primary (Play, Fight, Next, Resume): the tap, then a rising two-note chip "ding"
+  uiGo() { this.tone(620, 840, 0.045, "triangle", 0.07); this.at(0.035, 1319, 1319, 0.04, "sine", 0.05); this.at(0.065, 1976, 1976, 0.05, "sine", 0.045); },
+  // back / close: a lower, shorter tap
+  uiBack() { this.tone(430, 300, 0.05, "triangle", 0.08); this.noise(0.02, 0.04, 1800); },
+  // roster pick / tab: a soft paper flip (two quick brushes of filtered noise)
+  uiFlip() { this.noiseF(0.045, 0.16, "bandpass", 1600, 4200, 0.8); this.noiseF(0.05, 0.11, "bandpass", 2600, 5200, 0.9, 0.04); },
+  // sticker / chips: a coin tick
+  uiCoin() { this.at(0, 1976, 1976, 0.03, "square", 0.025); this.at(0.03, 2637, 2637, 0.07, "sine", 0.05); },
+  // a disabled control: a dull thud
+  uiNo() { this.tone(150, 80, 0.09, "sine", 0.11); this.noise(0.04, 0.05, 500); },
+  // the cue for a control (the shared tap helper in menus.js): data-sfx="go|back|flip|coin|no|tap" wins; otherwise a gold primary
+  // button (.primary / .pri) says "go", a back arrow (.back) or a close X (.x) says "back", anything else is the plain tap
+  cue(el) {
+    const k = (el && el.dataset && el.dataset.sfx) || (el && el.classList ? (el.classList.contains("primary") || el.classList.contains("pri") ? "go" : el.classList.contains("back") || el.classList.contains("x") ? "back" : "tap") : "tap");
+    if (k === "go") this.uiGo(); else if (k === "back") this.uiBack(); else if (k === "flip") this.uiFlip(); else if (k === "coin") this.uiCoin(); else if (k === "no") this.uiNo(); else this.ui();
+  },
+  // a tone that starts dt seconds from now (audio-clock timing, for cues shorter than a setTimeout can place)
+  at(dt, f0, f1, dur, type, vol) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime + dt, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    this.env(g, t, vol, dur); o.connect(g); g.connect(this.out); o.start(t); o.stop(t + dur + 0.03);
+  },
   route() { this.tone(660, 990, 0.09, "triangle", 0.08); this.tone(990, 1320, 0.16, "triangle", 0.06); },
   fire() { this.noise(0.35, 0.3, 900); this.tone(170, 80, 0.3, "sawtooth", 0.06); },
   bolt(low) { this.tone(low ? 420 : 900, low ? 260 : 1500, 0.12, "triangle", 0.07); },
@@ -304,10 +328,10 @@ const Sfx = {
   // Reaper: the tug is a low, hollow pull with whispers; the sweep a hard white swish with a ring
   reapPull() { this.noiseF(0.7, 0.24, "bandpass", 700, 200, 1.1); this.tone(90, 52, 0.7, "sine", 0.22); this.tone(660, 330, 0.5, "triangle", 0.03); this.later(160, () => this.tone(520, 260, 0.45, "triangle", 0.025)); },
   reapSweep() { this.noiseF(0.28, 0.42, "highpass", 1400, 6200, 1.3); this.later(40, () => this.tone(3100, 2400, 0.22, "sine", 0.06)); this.tone(120, 50, 0.3, "sine", 0.4); },
-  // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"
-  noiseF(dur, vol, type, f0, f1, q) {
+  // filtered noise with a sweep: type "bandpass" | "highpass" | "lowpass"; dt (optional) starts it that many seconds from now
+  noiseF(dur, vol, type, f0, f1, q, dt) {
     if (!this.ok()) return;
-    const c = this.ctx, t = c.currentTime, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    const c = this.ctx, t = c.currentTime + (dt || 0), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
     s.buffer = this.noiseBuf; f.type = type; f.Q.value = q || 1;
     f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
     this.env(g, t, vol, dur); s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);

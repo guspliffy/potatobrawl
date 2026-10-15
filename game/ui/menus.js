@@ -1,5 +1,8 @@
 /* ----- wiring ----- */
-const tap = (id, fn) => $(id).addEventListener("click", (e) => { Sfx.init(); Sfx.ui(); fn(e); });
+// every wired control sounds its cue (Sfx.cue: a gold primary "goes", a back arrow or close X "goes back", the rest taps)
+const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(el); fn(e); }); };
+// a tap on a disabled control gets a dull thud (disabled buttons get no click, but pointerdown still reaches them)
+app.addEventListener("pointerdown", (e) => { const d = e.target.closest && e.target.closest("button:disabled, [aria-disabled='true']"); if (d && !d.closest("#ctl")) { Sfx.init(); Sfx.uiNo(); } }, true);
 tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
 tap("bCup", cupOpen);
