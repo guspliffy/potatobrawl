@@ -15973,6 +15973,7 @@ MANGA.reaper = (function () {
   const own = new WeakMap();           // this page's canvases live and die with the engine's picture of the hit (freed at the end of the page)
   const box = () => { let b = own.get(MG.snap); if (!b) { b = {}; own.set(MG.snap, b); } return b; };
   let dust = [], motes = [], soul = null, cornerT = TURNED, stoneName = "", stoneFont = 5, tear2 = null;
+  let ult = false, boat = false;   // ult: this play is the Ultimate page, The Ferryman (set by its start); boat: he is being posed standing in the ferry (the splash)
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function rprPt(p, t, key, dx, dy) {
@@ -15981,8 +15982,9 @@ MANGA.reaper = (function () {
     return [p.x + p.facing * q[0], p.y + q[1]];
   }
   const glideK = (t) => ease(fe(GLIDE0, GLIDE1, t));
-  const wX = (t) => FIN.wx + FIN.dir * (130 - GAP) * glideK(t);   // he glides up to the loser before the hook
-  const loserAt = (tt) => { if (tt < FIN.launch) return [FIN.lx - (tt >= HIT ? FIN.dir * 5 : 0), 0]; const tr = finTrav((tt - FIN.launch) / FMS); return [FIN.lx + FIN.ldx * tr, FIN.ldy * tr]; };
+  // he glides up to the loser before the hook (The Ferryman: he stands at that spot from the strike panel on and drags the loser in instead)
+  const wX = (t) => FIN.wx + FIN.dir * (130 - GAP) * (ult ? (t >= MT.STRIKE ? 1 : 0) : glideK(t));
+  const loserAt = (tt) => { if (tt < FIN.launch) return [ult ? fmLoserX(tt) : FIN.lx - (tt >= HIT ? FIN.dir * 5 : 0), 0]; const tr = finTrav((tt - FIN.launch) / FMS); return [FIN.lx + FIN.ldx * tr, FIN.ldy * tr]; };
   const rprTone = (c, pn, poly, size, cover, drift) => mgToneFill(c, poly.map(([x, y]) => [x + pn.ox, y + pn.oy]), size, cover, drift);
   const rprDisc = (cx, cy, r, n) => Array.from({ length: n }, (_, i) => [cx + Math.cos((i / n) * TAU) * r, cy + Math.sin((i / n) * TAU) * r]);
   const rprRng = (seed) => { const r = mgRng(Math.imul(seed + 1, 2654435761) >>> 0); r(); r(); return r; };
@@ -16194,13 +16196,15 @@ MANGA.reaper = (function () {
     rprMoon(c, m[0], m[1], 21 * pn.z);
     // the ground he glides over: a few streaks of his passing
     rprGround(c, pn, t);
-    if (t > GLIDE0 && t < HIT + 200) {   // the glide: speed lines behind him, low, fading as he stops
+    if (ult) fmHeels(c, pn, t);
+    else if (t > GLIDE0 && t < HIT + 200) {   // the glide: speed lines behind him, low, fading as he stops
       const a = 0.45 * Math.sin(Math.PI * fe(GLIDE0, GLIDE1 + 60, t)), q = pn.p(wX(t) - D * 46, -34);
       if (a > 0.02) mgSpeed(c, q[0], q[1], 70 * pn.z, 46 * pn.z, D > 0 ? 0 : Math.PI, -t * 0.5 * D, a, false, 0.7);
     }
     if (t >= HIT + 100) { const hp = pn.p(FIN.lx, -34); mgFocus(c, hp[0], hp[1], Math.hypot(pn.w, pn.h), t * 0.0005, 0.6 * (1 - fe(HIT + 100, 3400, t))); }
     mgPuppet(c, pn, W, t, { light: dirAng(-0.55), box: BOX, mono: true, post: rprPost(W, t, cheekK(t)) });
     if (!MG.broke) rprLoser(c, pn, t);
+    if (ult) fmChains(c, pn, t);
     pn.screen(c);
     // where the blade caught him: a white burst, after the impact frames
     const hb = fe(HIT + 100, HIT + 280, t);
@@ -16277,9 +16281,10 @@ MANGA.reaper = (function () {
 
   /* ---- over the page (not turned: drawn as it should look) ---- */
   // the white stroke: one crescent from his side low across the whole page up through the loser to the far top corner, tapered at both ends
-  function rprStrokePts(n) {
+  // (mirror: the other crescent of the Ultimate, from the far side low to his side high, through the same point)
+  function rprStrokePts(n, mirror) {
     const pg = MG.page, D = FIN.dir, pn = MG.byId.strike, hx = (fx) => pg.x + (D > 0 ? fx : 1 - fx) * pg.w;
-    const A = [hx(0.0), pg.y + pg.h * 0.97], C = [hx(1.0), pg.y + pg.h * 0.04];
+    const A = [hx(mirror ? 1 : 0), pg.y + pg.h * 0.97], C = [hx(mirror ? 0 : 1), pg.y + pg.h * 0.04];
     mgPlace(pn, HIT + 200);
     const B = pn.sp(FIN.lx, -36), Q = [2 * B[0] - (A[0] + C[0]) / 2, 2 * B[1] - (A[1] + C[1]) / 2];
     mgPlace(pn, FIN.t);   // (back where the engine had it this frame)
@@ -16304,13 +16309,19 @@ MANGA.reaper = (function () {
     if (t < HIT + 100 || t > 3700 || !MG.byId.strike) return;
     const B = box();
     if (!B.stroke) B.stroke = rprStrokePts(40);
-    const up = easeOut(fe(HIT + 100, HIT + 190, t)), th = Math.min(L.gw, L.gh) * 0.034 * (1 - 0.75 * ease(fe(3250, 3650, t))), a = 1 - fe(3450, 3700, t);
-    o.save(); o.globalAlpha = 0.3 * a; rprCrescent(o, B.stroke, up, th * 1.9, "#ffffff"); o.restore();
-    o.save(); o.globalAlpha = a; const tip = rprCrescent(o, B.stroke, up, th, "#ffffff", "rgba(20,15,30,0.6)"); o.restore();
-    if (up >= 1 && a > 0) { const s = Math.min(L.gw, L.gh) * 0.03 * (0.85 + 0.15 * Math.sin(t * 0.03)) * a; o.save(); o.globalAlpha = a; star4(o, tip[0], tip[1], s, "#ffffff"); o.restore(); }
+    if (ult && !B.stroke2) B.stroke2 = rprStrokePts(40, true);
+    // (the Ultimate: two crescents, an X through the loser, gone as the river comes in: over it they would float)
+    const up = easeOut(fe(HIT + 100, HIT + 190, t)), th = Math.min(L.gw, L.gh) * 0.034 * (1 - 0.75 * ease(fe(3250, 3650, t))), a = (1 - fe(3450, 3700, t)) * (ult ? fmTide(t) : 1);
+    if (a <= 0) return;
+    for (const pts of ult ? [B.stroke, B.stroke2] : [B.stroke]) {
+      o.save(); o.globalAlpha = 0.3 * a; rprCrescent(o, pts, up, th * 1.9, "#ffffff"); o.restore();
+      o.save(); o.globalAlpha = a; const tip = rprCrescent(o, pts, up, th, "#ffffff", "rgba(20,15,30,0.6)"); o.restore();
+      if (up >= 1 && a > 0) { const s = Math.min(L.gw, L.gh) * 0.03 * (0.85 + 0.15 * Math.sin(t * 0.03)) * a; o.save(); o.globalAlpha = a; star4(o, tip[0], tip[1], s, "#ffffff"); o.restore(); }
+    }
   }
   // the soul: an amber ghost of the loser's potato with a wisp of a tail, eyes closed, a little sprout; it stays where the blade caught him, then drifts up
-  function rprSoulAt(t) {
+  const rprSoulAt = (t) => (ult && t >= F_SOUL ? fmSoulAt(t) : rprSoulBase(t));
+  function rprSoulBase(t) {
     if (!soul || t < soul.t0) return null;
     const u = t - soul.t0, pop = u < 150 ? 1.18 * easeOut(u / 150) : 1.18 - 0.18 * ease(Math.min(1, (u - 150) / 120));
     const rise = Math.max(0, u - 260), dy = 0.00011 * rise * rise + 0.05 * rise, sway = Math.sin(u * 0.0042) * 9 * fe(200, 700, u);
@@ -16318,11 +16329,12 @@ MANGA.reaper = (function () {
   }
   function rprSoul(o, t) {
     const S = rprSoulAt(t);
-    if (!S || S.y < -S.s * 3) return;
+    if (!S || S.y < -S.s * 3 || S.a <= 0.01) return;
     const s = S.s, u = t - soul.t0;
+    o.save(); o.globalAlpha = S.a;
     // motes shed on the way up
     for (const m of motes) {
-      const age = u - m.t; if (age < 0 || age > m.life) continue;
+      const age = u - m.t; if (age < 0 || age > m.life || (ult && (soul.t0 + m.t >= F_SOUL || t >= MT.SPLASH + 100))) continue;
       const q = age / m.life, born = rprSoulAt(soul.t0 + m.t);
       if (!born) continue;
       const x = born.x + m.dx * s + Math.sin(age * 0.006 + m.ph) * 4, y = born.y + s * 0.9 + age * 0.012, r = m.r * (1 - q);
@@ -16354,11 +16366,12 @@ MANGA.reaper = (function () {
     o.strokeStyle = "#ffffff"; o.lineWidth = Math.max(1.4, s * 0.07); o.beginPath(); o.moveTo(0, -s * 0.9); o.quadraticCurveTo(-s * 0.05, -s * 1.12, s * 0.04, -s * 1.28); o.stroke();
     for (const sd of [-1, 1]) { o.beginPath(); o.ellipse(sd * s * 0.17 + s * 0.02, -s * 1.3, s * 0.17, s * 0.08, sd * 0.5, 0, TAU); o.fillStyle = COL; o.fill(); o.stroke(); }
     o.restore();
+    o.restore();
   }
   // where the soul crosses the strike panel's top border (when the loser left another way, the soul tears its own way out): a gap in the white line
   function rprSoulTear(o, t) {
     const pn = MG.byId.strike, S = rprSoulAt(t);
-    if (!pn || !S) return;
+    if (!pn || !S || ult) return;   // (the ferry's soul never leaves through the border)
     if (!tear2) {
       const a = pn.poly[0], b = pn.poly[1], q = clamp((S.x - pn.ox - a[0]) / ((b[0] - a[0]) || 1), 0, 1), yb = a[1] + (b[1] - a[1]) * q + pn.oy;
       if (S.y - S.s > yb) return;
@@ -16390,12 +16403,21 @@ MANGA.reaper = (function () {
     }
   }
 
+  // the glide: the scythe goes back over his head and down behind him, low (the hook comes from behind and under); q 0..1
+  function rprGlidePose(P, w, leg, tor, q) {
+    const up = [w * 0.6, -leg - tor * 0.6], back = [w * 0.05, -leg - tor * 0.22];
+    P.scyBack = true; P.holdAng = lerp(-1.56, Math.PI - 0.2 - TAU, q); P.bladeS = q < 0.5 ? -1 : lerp(-1, 1, (q - 0.5) * 2);
+    P.crouch = 0.28 * q; P.lean = -0.05 - 0.08 * q; P.expr = "grin"; P.mouth = 0;
+    const h = lerp2(up, back, q), grip = [h[0] - Math.cos(P.holdAng) * 13, h[1] - Math.sin(P.holdAng) * 13];
+    return { hF: h, hB: lerp2([-w * 0.62, -leg - tor * 0.25], grip, ease(fe(0.4, 0.9, q))), fF: [w * 0.5, 0], fB: [-w * 0.35, 0] };
+  }
+
   /* ---- the script ---- */
   const S_ = {
     col: COL, name: "Last Rites", flight: "strike",
     panels,
     words(lay) {
-      const ev = FIN.ev, mv = ev ? ev.mv || "" : "", big = !ev || ev.fin || mv === "spec" || /^h/.test(mv), D = FIN.dir;
+      const ev = FIN.ev, mv = ev ? ev.mv || "" : "", big = !ev || ev.fin || mv === "spec" || mv === "ulti" || /^h/.test(mv), D = FIN.dir;
       return [
         { text: big ? "SHUNK" : "WHAK", t0: 600, t1: 1330, size: 0.24, rot: -0.12 * D, at: () => [clamp(MG.ix + D * L.gw * 0.04, L.gw * 0.22, L.gw * 0.78), clamp(MG.iy - L.gh * 0.24, L.gh * 0.2, L.gh * 0.5)] },
         // the bell, small and long, high over the page as the dark spreads
@@ -16410,7 +16432,7 @@ MANGA.reaper = (function () {
           at: () => { const p = MG.byId.after, m = p.sp(...rprPt(W_(), HUSH + 60, "head")); return [m[0] - D * p.z * 34, m[1] - p.z * 22]; } },
       ];
     },
-    start(g) { dust = []; motes = []; soul = null; tear2 = null; setTimes(); },
+    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; setTimes(); },
     build(lay) {
       const B = box(), gw = L.gw, gh = L.gh;
       MG.panels[0].d.draw = drawHit;
@@ -16430,7 +16452,7 @@ MANGA.reaper = (function () {
     step(t, k) {
       const W = W_();
       W.x = wX(t);
-      W.y = t > GLIDE0 - 60 && t < GLIDE1 + 120 ? -2.5 * Math.sin(Math.PI * fe(GLIDE0 - 60, GLIDE1 + 120, t)) : 0;   // he lifts off the ground as he glides
+      W.y = !ult && t > GLIDE0 - 60 && t < GLIDE1 + 120 ? -2.5 * Math.sin(Math.PI * fe(GLIDE0 - 60, GLIDE1 + 120, t)) : 0;   // he lifts off the ground as he glides
       if (!soul && t >= FIN.launch && MG.byId.strike) { const pn = MG.byId.strike, q = pn.sp(FIN.lx, -34); soul = { t0: FIN.launch, x: q[0], y: q[1], s: L_().s.w * 0.36 * clamp(pn.z, 1.1, 2.4) }; }
       const B = box();
       if (!B.queued) {   // the one-off canvases join the end of the engine's build queue, so they are made in the hold before the skip (after the inked copy)
@@ -16443,6 +16465,8 @@ MANGA.reaper = (function () {
       const w = sk.w, leg = sk.leg, tor = sk.tor;
       if (role === "w") {
         P.exK = 1; P.scyK = 1;
+        if (ult && boat) return fmPoseBoat(P, w, leg, tor, t);                  // The Ferryman: in the boat (the splash)
+        if (ult && t >= MT.STRIKE && t < HIT) return fmPoseStrike(P, w, leg, tor, t);   // ... planted: the chains, the tug, the whip back
         if (t < MT.STRIKE + 70) {   // the look: the scythe rises behind the hood, the blade hooked back over it (as in the picture)
           const r = ease(fe(RISE0, RISE1, t));
           P.scyBack = true; P.bladeS = -1; P.holdAng = -1.5 - 0.06 * r; P.lean = -0.05 * r;
@@ -16450,13 +16474,7 @@ MANGA.reaper = (function () {
           return { hF: [w * 0.6, lerp(-leg + 6, -leg - tor * 0.6, r)], hB: [-w * 0.62, -leg - tor * 0.25] };
         }
         const up = [w * 0.6, -leg - tor * 0.6], back = [w * 0.05, -leg - tor * 0.22], high = [w * 0.75, -leg - tor * 1.05];
-        if (t < HIT) {   // the glide: the scythe goes back over his head and down behind him, low (the hook comes from behind and under)
-          const q = ease(fe(GLIDE0 - 40, GLIDE1, t));
-          P.scyBack = true; P.holdAng = lerp(-1.56, Math.PI - 0.2 - TAU, q); P.bladeS = q < 0.5 ? -1 : lerp(-1, 1, (q - 0.5) * 2);
-          P.crouch = 0.28 * q; P.lean = -0.05 - 0.08 * q; P.expr = "grin"; P.mouth = 0;
-          const h = lerp2(up, back, q), grip = [h[0] - Math.cos(P.holdAng) * 13, h[1] - Math.sin(P.holdAng) * 13];
-          return { hF: h, hB: lerp2([-w * 0.62, -leg - tor * 0.25], grip, ease(fe(0.4, 0.9, q))), fF: [w * 0.5, 0], fB: [-w * 0.35, 0] };
-        }
+        if (t < HIT) return rprGlidePose(P, w, leg, tor, ease(fe(GLIDE0 - 40, GLIDE1, t)));   // the glide
         if (t < SETTLE) {   // the hook (between two frames: during the impact frames), then the follow-through held high
           const d = easeOut(fe(HIT, HIT + 70, t));
           P.crouch = 0.28 * (1 - d); P.lean = -0.13 + 0.31 * d; P.holdAng = lerp(Math.PI - 0.2, -1.35, d); P.bladeS = lerp(1, -1, Math.min(1, d * 3)); P.scyBack = d < 0.3; P.expr = "grin";
@@ -16471,6 +16489,7 @@ MANGA.reaper = (function () {
       }
       // the loser: terror (the pupils shrink as the silence comes), then flung, spinning
       const fly = t >= FIN.launch;
+      if (ult && !fly && t < 2850) return fmPoseLoser(P, w, leg, tor, t);   // The Ferryman: dragged in by the chains
       P.expr = fly ? "ko" : "terror"; P.exK = fe(MT.STRIKE, 2850, t);
       if (!fly) {
         P.lean = Math.sin(t * 0.03) * 0.035 * fe(2000, 2500, t); P.mouth = 0.3;
@@ -16484,7 +16503,7 @@ MANGA.reaper = (function () {
       const k = fe(TOLL, TURNED, t);
       if (k <= 0) return;
       const pn = MG.byId.strike;
-      if (MG.broke && pn && !FIN.out && L_().state !== "gone") { c.save(); mgPlace(pn, t); rprLoser(c, pn, t); c.restore(); }   // out of its panel: over the whole page, turned with it
+      if (MG.broke && pn && !FIN.out && L_().state !== "gone" && !(ult && t >= MT.SPLASH)) { c.save(); mgPlace(pn, t); rprLoser(c, pn, t); c.restore(); }   // out of its panel: over the whole page, turned with it
       c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
       if (k < 1) { rprPool(c, k); c.clip(); }
       c.globalCompositeOperation = "difference"; c.fillStyle = "#ffffff"; c.fillRect(0, 0, MG.cw, MG.ch);
@@ -16493,7 +16512,7 @@ MANGA.reaper = (function () {
     hint(t) { return t >= cornerT ? "rgba(214,216,228,0.62)" : "rgba(30,28,40,0.55)"; },
     over(o, t) {
       if (t > FIN.launch && t < FIN.launch + 420 && MG.byId.strike) {   // white speed lines along the real launch direction (ink ones would vanish in the night)
-        const Lp = L_(), pn = MG.byId.strike, a = 1 - fe(FIN.launch + 200, FIN.launch + 420, t);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult ? fmTide(t) : 1);
         const q = pn.sp(...loserAt(Math.min(t, FIN.launch + 200)).map((v, i) => (i ? v - Lp.s.h * 0.5 : v))), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         mgSpeed(o, q[0] - Math.cos(ang) * len * 0.45, q[1] - Math.sin(ang) * len * 0.45, len, Math.min(L.gw, L.gh) * 0.3, ang, -(t - FIN.launch) * 1.3, 0.75 * a, true, 0.85);
@@ -16510,12 +16529,13 @@ MANGA.reaper = (function () {
       // the crescent, flat
       const B = box(); if (!B.stroke) B.stroke = rprStrokePts(40);
       rprCrescent(o, B.stroke, 1, Math.min(L.gw, L.gh) * 0.03, sil);
+      if (ult) { if (!B.stroke2) B.stroke2 = rprStrokePts(40, true); rprCrescent(o, B.stroke2, 1, Math.min(L.gw, L.gh) * 0.03, sil); }
     },
     cues(t) {
       // (not a sound) the tear's glow is drawn inside the panel, so amber would come out as its complement: white ink instead. cues run after the
       // engine has made the tear, before the frame is drawn
       const sp = MG.byId.strike;
-      if (sp) for (const g of sp.glows) g.col = INK;
+      if (sp) for (const g of sp.glows) g.col = ult ? NGOLD : INK;   // (the Ultimate's tear burns gold: gold's complement)
       cueOnce("toll", TOLL, () => Cin.go(() => {   // a big bronze bell: the hum an octave down, the strike note, a minor third, the fifth, the octave; long tails
         for (const [f, v, d] of [[55, 0.13, 3.4], [110, 0.17, 3.0], [131, 0.07, 2.4], [165, 0.06, 2.0], [220, 0.06, 1.7], [293, 0.035, 1.3], [370, 0.025, 1.0]]) Cin._osc("sine", f, f * 0.997, d, v, 0.006);
         Cin._noise(0.07, 0.18, 1700, 700, "bandpass", 1.3);
@@ -16524,8 +16544,8 @@ MANGA.reaper = (function () {
       cueOnce("ting", RISE1, () => Cin.go(() => Cin.chime(2637)));
       cueOnce("pluck", MT.INSET, () => Cin.go(() => Cin.pluck(990)));
       cueOnce("smirk", SMIRK + 20, () => Cin.go(() => { Cin._osc("triangle", 2350, 2349, 0.18, 0.03, 0.003); Cin._osc("triangle", 3520, 3519, 0.22, 0.02, 0.003, 0.07); }));
-      cueOnce("glide", GLIDE0, () => Cin.go(() => { Cin._noise(0.5, 0.07, 500, 1100, "bandpass", 1.4, 0, -0.4); Cin._noise(0.45, 0.05, 1100, 600, "bandpass", 1.4, 0.2, 0.4); }));
-      cueOnce("back", 2620, () => Cin.go(() => Cin.whoosh(0.22, 0.4, -0.5, 0.18)));
+      if (!ult) cueOnce("glide", GLIDE0, () => Cin.go(() => { Cin._noise(0.5, 0.07, 500, 1100, "bandpass", 1.4, 0, -0.4); Cin._noise(0.45, 0.05, 1100, 600, "bandpass", 1.4, 0.2, 0.4); }));
+      if (!ult) cueOnce("back", 2620, () => Cin.go(() => Cin.whoosh(0.22, 0.4, -0.5, 0.18)));
       cueOnce("stroke", HIT, () => Cin.go(() => {   // SHHK: a sweep up through the hiss, a click at the end, the blade ringing on
         Cin._noise(0.17, 0.55, 2000, 9000, "highpass", 0.8); Cin._noise(0.05, 0.3, 7000, 4200, "bandpass", 2, 0.13);
         Cin._osc("sine", 3100, 3060, 1.1, 0.03, 0.004, 0.03); Cin._osc("sine", 4650, 4600, 0.8, 0.018, 0.004, 0.03);
@@ -16540,6 +16560,406 @@ MANGA.reaper = (function () {
       cueOnce("toll2", TOLL2, () => Cin.go(() => { for (const [f, v, d] of [[110, 0.05, 2.2], [131, 0.02, 1.6], [220, 0.02, 1.2]]) Cin._osc("sine", f, f * 0.997, d, v, 0.01); }));
     },
   };
+
+  /* ===================== the Ultimate page, "The Ferryman" (MANGA.reaper.ulti; design: Project files ultimates/manga/reaper/fable-ferryman.md) =====================
+     Played when the lethal hit is his Soul Harvest (the engine's long timeline: SPLASH 3250, AFTER 4700). Last Rites to the strike panel; from 2350 he stands
+     planted at his strike spot, the scythe swings forward and Soul Harvest's ghost chains fly out of the blade (2420), bite round the loser's middle at the far
+     edge (2500) and drag him in, heels dug in, little souls sliding up the chains (to 2760); he lets go, whips the scythe back low behind him, the drop, and the
+     hook is two crescents at once (an X through the loser), a gold SHHK, the tear burns gold; 3050 the loser goes straight up and out, the soul stays.
+     3250 the tide: panel 5 is the river, turned with the page like every panel (night water, a white moon and its broken reflection, the near shore with reeds,
+     the far bank with three small stones, a bare tree and a gate) and him standing in a punt, the scythe as the pole, a candle lantern hung on the blade;
+     3300 the soul comes down onto the bow; 3450 the push, the boat crosses (3500-4300) with the harvest's little souls bobbing in its wake; 3750 the fare:
+     a gold coin rises out of the soul, 3850 the flip, 4050 he catches it (ting), 4100 bites it, tucks it under the hood; 4300 the bow touches the bank (tok);
+     4330 the soul goes up the bank through the gate and fades, he bows his head; 4700 panel 4 of Last Rites (the stone: the far bank's receipt).
+     Inside a panel every colour is painted as its complement (neg: the page is turned afterwards); over the page (the soul, the coin, the words) as it looks.
+     The splash's world: the waterline is y = 0 (-1 the surface), the boat starts at x = 0 and crosses to X1 (fmGeo). Every helper here is prefixed fm. */
+  const NGHOST = neg("#bfffe0"), NGOLD = neg(MG_GOLD), POLE = "#8a8a8a", HULL = "#a9a9a9";   // ghost green and gold, painted as their complements; the pole's grey core, the hull's grey
+  const F_RAISE = 2420, F_BITE = 2500, F_LET = 2760, F_WHIP = 2800, F_HOLD = 2880, F_SOUL = 3300, F_SEAT = 3520, F_GO = 3500, F_STOP = 4300,
+    F_COIN = 3750, F_FLIP = 3850, F_CATCH = 4050, F_LAND = 4330, F_GONE = 4650, GATE = 47;
+  const LX0 = () => (MG.lay && MG.lay.port ? 150 : 120);
+  const fmTide = (t) => 1 - fe(MT.SPLASH, MT.SPLASH + (MG.reduced ? 1 : 100), t);   // what floats over the strike goes as the river comes in (at once with reduced motion)   // how far beyond his spot the loser starts (world units; upright off the panel's edge)
+  let fmStarsA = [], fmWaterA = [];
+
+  /* ---- the strike: the drag ---- */
+  function fmLoserX(t) {
+    if (t >= HIT) return FIN.lx - FIN.dir * 5;
+    if (MG.reduced) return FIN.lx;
+    return FIN.lx + FIN.dir * LX0() * (1 - ease(fe(F_BITE, F_LET, t)));
+  }
+  // he stands where he was in the look and the inset (both are drawn at MT.STRIKE, when the Ultimate has him at his strike spot already)
+  function fmHome(fn) { const W = W_(), ox = W.x, oy = W.y; W.x = FIN.wx; W.y = 0; try { return fn(); } finally { W.x = ox; W.y = oy; } }
+  // the heels dig in: short speed lines low behind the loser while he is dragged (panel px)
+  function fmHeels(c, pn, t) {
+    const a = 0.4 * fe(F_BITE, F_BITE + 60, t) * (1 - fe(F_LET - 40, F_LET + 60, t));
+    if (a < 0.02 || MG.reduced) return;
+    const q = pn.p(loserAt(t)[0] + FIN.dir * 30, -4);
+    mgSpeed(c, q[0], q[1], 64 * pn.z, 12 * pn.z, 0, t * 0.5 * FIN.dir, a, false, 0.6);
+  }
+  // Soul Harvest's ghost chains from the blade's tip to the loser's middle (world units): six thin ghost lines, two chains (dashed links in ghost green,
+  // a white core), from 2500 three loops round his middle and the little souls sliding up the chains to the blade; they fly out with a wave, go taut, go slack
+  function fmChains(c, pn, t) {
+    if (t < F_RAISE || t > F_LET + 100) return;
+    const grow = MG.reduced ? 1 : easeOut(fe(F_RAISE, F_BITE, t)), fade = 1 - fe(F_LET, F_LET + 100, t);
+    if (grow <= 0.01 || fade <= 0.01) return;
+    const Lp = L_(), A = rprBladeTip(W_(), t), lx = loserAt(t)[0], B = [lx, -Lp.s.h * 0.42];
+    const dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+    const taut = t >= F_BITE && t < F_LET, d = Math.abs(lx - FIN.lx) / LX0();
+    const sag = t < F_BITE ? 8 : taut ? 2 + 4 * d : 3 + 12 * fe(F_LET, F_LET + 100, t);
+    const wave = MG.reduced ? 0 : 8 * (1 - fe(F_BITE, F_BITE + 60, t)), jit = taut && !MG.reduced ? Math.sin(t * 0.19) : 0;
+    const at = (u, off, kink) => { const s = Math.sin(Math.PI * u), o = off * s + (wave * Math.sin((u * len) / 40 * TAU - t * 0.05) + kink * Math.sin(u * TAU * 1.5 + off) + jit) * s; return [A[0] + dx * u + nx * o, A[1] + dy * u + ny * o + sag * s]; };
+    const line = (off, kink, n) => { c.beginPath(); for (let i = 0; i <= n; i++) { const q = at((i / n) * grow, off, kink); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); } };
+    pn.world(c); c.save(); c.lineCap = "round"; c.lineJoin = "round";
+    const nl = MG.slow ? 3 : 6;
+    c.globalAlpha = 0.5 * fade; c.strokeStyle = NGHOST; c.lineWidth = 0.6;
+    for (let i = 0; i < nl; i++) { line((i / (nl - 1) - 0.5) * 16, 3, 16); c.stroke(); }
+    c.globalAlpha = fade;
+    const chain = () => { c.setLineDash([3, 2]); c.strokeStyle = NGHOST; c.lineWidth = 2.2; c.stroke(); c.setLineDash([]); c.strokeStyle = INK; c.lineWidth = 0.7; c.stroke(); };
+    for (const off of [-3.5, 3.5]) { line(off, 0, 22); chain(); }
+    if (t >= F_BITE) {   // the bite: three loops round his middle
+      const k = MG.reduced ? 1 : easeOut(fe(F_BITE, F_BITE + 90, t)), cy = -Lp.s.h * 0.4, rx = Lp.s.w * 0.6 * k + 0.5;
+      for (let j = 0; j < 3; j++) { c.beginPath(); c.ellipse(lx, cy + (j - 1) * 4.5, rx + j * 1.5, 3.2, (j - 1) * 0.1, 0, TAU); chain(); }
+      const n = MG.slow ? 1 : 3;   // the little souls of the harvest, from him up to the blade
+      for (const off of [-3.5, 3.5]) for (let i = 0; i < n; i++) {
+        const u = 1 - ((t * 0.0011 + i / n + (off > 0 ? 0.17 : 0)) % 1), q = at(u * grow, off, 0), q2 = at(Math.min(1, u * grow + 0.03), off, 0);
+        fmWisp(c, q[0], q[1], 2.5, Math.atan2(q[1] - q2[1], q[0] - q2[0]), t * 0.012 + i * 2);
+      }
+    }
+    c.restore(); pn.screen(c);
+  }
+  // a little soul of the harvest (world units, inside a panel): ghost green (as its complement), a white rim and two white dot eyes once turned, the tail streaming
+  // behind it; ang: where it is heading
+  function fmWisp(c, x, y, r, ang, ph) {
+    const tx = -Math.cos(ang), ty = -Math.sin(ang), px = -ty, py = tx, w1 = Math.sin(ph) * r * 0.7, w2 = Math.sin(ph + 1.3) * r * 0.5;
+    c.save(); c.translate(x, y);
+    c.beginPath(); c.moveTo(px * r * 0.7, py * r * 0.7);
+    c.quadraticCurveTo(tx * r * 1.7 + px * w1, ty * r * 1.7 + py * w1, tx * r * 2.8 + px * w2, ty * r * 2.8 + py * w2);
+    c.quadraticCurveTo(tx * r * 1.5 - px * r * 0.2, ty * r * 1.5 - py * r * 0.2, -px * r * 0.7, -py * r * 0.7); c.closePath();
+    c.fillStyle = NGHOST; c.fill();
+    c.beginPath(); c.ellipse(0, 0, r, r * 1.15, 0, 0, TAU); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(0.5, r * 0.22); c.stroke();
+    c.fillStyle = INK; for (const ex of [-0.35, 0.35]) { c.beginPath(); c.arc(ex * r, -r * 0.1, r * 0.17, 0, TAU); c.fill(); }
+    c.restore();
+  }
+  // him on the strike panel: from the look's last pose the scythe swings forward over the top (2350-2420), the chains fly, he hauls (2500-2760, leaning back, both
+  // hands on the snath, the back foot sliding), lets go and whips it back over his head (2760-2800), the glide's wind-up behind him (2800-2880), the hold
+  function fmPoseStrike(P, w, leg, tor, t) {
+    const lookF = [w * 0.6, -leg - tor * 0.6], lookB = [-w * 0.62, -leg - tor * 0.25], out = [w * 0.7, -leg - tor * 0.95];
+    P.expr = "grin"; P.mouth = 0;
+    if (t < F_LET) {
+      const k = easeOut(fe(MT.STRIKE, F_RAISE, t)), tug = MG.reduced ? (t >= F_BITE ? 1 : 0) : ease(fe(F_BITE, F_BITE + 120, t));
+      P.holdAng = lerp(-1.56, -0.35, k); P.bladeS = lerp(-1, 1, k); P.scyBack = t < 2385;
+      P.crouch = 0.12 * k; P.lean = lerp(-0.05, -0.04, k) - 0.16 * tug + (MG.reduced ? 0 : Math.sin(t * 0.07) * 0.015 * tug);
+      const hF = lerp2(lookF, out, k), grip = [hF[0] - Math.cos(P.holdAng) * 10, hF[1] - Math.sin(P.holdAng) * 10];
+      return { hF, hB: lerp2(lerp2(lookB, [w * 0.3, -leg - tor * 0.6], k), grip, tug), fF: [w * 0.4, 0], fB: [-w * 0.3 - 5 * tug, 0] };
+    }
+    if (t < F_WHIP) {
+      const k = easeOut(fe(F_LET, F_WHIP, t)), grip = [out[0] - Math.cos(-0.35) * 10, out[1] - Math.sin(-0.35) * 10];
+      P.holdAng = lerp(-0.35, -1.56, k); P.bladeS = lerp(1, -1, k); P.scyBack = k > 0.5; P.crouch = 0.12 * (1 - k); P.lean = lerp(-0.2, -0.05, k);
+      return { hF: lerp2(out, lookF, k), hB: lerp2(grip, lookB, k), fF: lerp2([w * 0.4, 0], [w * 0.5, 0], k), fB: lerp2([-w * 0.3 - 5, 0], [-w * 0.35, 0], k) };
+    }
+    return rprGlidePose(P, w, leg, tor, ease(fe(F_WHIP, F_HOLD, t)));
+  }
+  // the loser on the strike panel: terror at the far edge, leaning away, hands up; hauled in, heels dug in, hands on the chain; let go: a bounce on his spot
+  function fmPoseLoser(P, w, leg, tor, t) {
+    P.expr = "terror"; P.exK = fe(MT.STRIKE, 2850, t);
+    const tug = MG.reduced ? (t >= F_BITE ? 1 : 0) : ease(fe(F_BITE, F_BITE + 100, t));
+    const upF = [w * 0.8, -leg - tor * 0.85], upB = [w * 0.45, -leg - tor * 0.95], grabF = [w * 0.55, -leg - tor * 0.4], grabB = [w * 0.25, -leg - tor * 0.45];
+    if (t < F_LET) {
+      P.lean = -0.3 - 0.06 * tug + (MG.reduced ? 0 : Math.sin(t * 0.05) * 0.03 * tug); P.mouth = 0.6 + 0.3 * tug;
+      return { hF: lerp2(upF, grabF, tug), hB: lerp2(upB, grabB, tug), fF: [w * (0.24 + 0.3 * tug), 0], fB: [-w * (0.2 - 0.15 * tug), 0] };
+    }
+    const k = ease(fe(F_LET, 2850, t));
+    P.hop = MG.reduced ? 0 : 3 * Math.sin(Math.PI * fe(F_LET, 2840, t)); P.lean = lerp(-0.36, 0, k); P.mouth = lerp(0.9, 0.3, k);
+    return { hF: lerp2(grabF, [w * 0.75, -leg - tor * 0.42], k), hB: lerp2(grabB, [-w * 0.7, -leg - tor * 0.42], k), fF: lerp2([w * 0.54, 0], [w * 0.24, 0], k), fB: lerp2([-w * 0.05, 0], [-w * 0.2, 0], k) };
+  }
+
+  /* ---- the river (panel 5) ---- */
+  // the splash's world: wide, a fixed camera (the near shore at 0.1 of the page, the boat from 0.24 to 0.65, the far bank's foot at 0.78); upright, the camera
+  // follows the boat, leading it more and more (the shore slides out, the bank and its gate slide in). Once per page (the panel's size is fixed).
+  function fmGeo(pn) {
+    const B = box();
+    if (B.fmG) return B.fmG;
+    const port = !!MG.lay.port, D = FIN.dir, vh = port ? 440 : 240, VW = (vh * pn.w) / pn.h, BH = 62, wl = port ? 0.68 : 0.74;
+    const trav = port ? 200 : Math.max(60, 0.68 * VW - (2 * BH + 10));
+    const G = { port, vh, VW, BH, WY: -(wl - 0.5) * vh, X0: 0, X1: D * trav, CX: port ? 0 : D * (0.4 * VW - (BH + 6)), far: port ? 0.6 : 0.56 };
+    G.shoreX = G.X0 - D * (BH + 6); G.bankX = G.X1 + D * (BH + 4);
+    return (B.fmG = G);
+  }
+  const fmBoatX = (t, G) => G.X0 + (G.X1 - G.X0) * (MG.reduced && G.port ? 1 : ease(fe(F_GO, F_STOP, t)));
+  const fmBob = (t) => (MG.reduced ? 0 : 1.2 * Math.sin(t * 0.004));
+  const fmTilt = (t) => (MG.reduced ? 0 : 0.015 * Math.cos(t * 0.004) + 0.04 * easeOut(fe(F_STOP, F_STOP + 80, t)) * (1 - ease(fe(F_STOP + 80, F_STOP + 230, t))));   // the bow dips as it touches the bank
+  const fmStandX = (t, G) => fmBoatX(t, G) - FIN.dir * G.BH * 0.42;   // he stands in the stern half, the soul sits at the bow
+  const fmCam = (t, pn) => { const G = fmGeo(pn); return { wx: G.port ? fmBoatX(t, G) + FIN.dir * G.VW * lerp(0.03, 0.2, MG.reduced ? 1 : ease(fe(F_GO, F_STOP, t))) : G.CX, wy: G.WY, vh: G.vh }; };
+  // a world point of the river on the screen at page time tt, as the engine places the panel (its slide in from the bottom included); touches no panel state
+  function fmSp(tt, wx, wy) {
+    const pn = MG.byId.splash, cm = fmCam(tt, pn), z = pn.h / cm.vh, ks = easeOut(fe(pn.t0, pn.t0 + pn.slide, tt));
+    return [pn.cx + (wx - cm.wx) * z + pn.off[0] * (1 - ks), pn.cy + (wy - cm.wy) * z + pn.off[1] * (1 - ks)];
+  }
+  // fn(W, G) with him standing in the boat at page time t (his place and the bob; the pose's boat branch), then everything as it was
+  function fmAt(t, fn) {
+    const W = W_(), G = fmGeo(MG.byId.splash), ox = W.x, oy = W.y;
+    W.x = fmStandX(t, G); W.y = fmBob(t); boat = true;
+    try { return fn(W, G); } finally { W.x = ox; W.y = oy; boat = false; }
+  }
+  const fmHandScr = (t) => fmAt(t, (W) => { const q = rprPt(W, t, "hB"); return fmSp(t, q[0], q[1]); });
+  // him in the boat: the scythe held up as the pole (the blade forward over the boat, the lantern on its tip), the hands slide up, the push, the pole upright;
+  // the free hand catches the coin, takes it to his mouth (the bite) and back to his chest; a small bow of the head as the soul leaves
+  function fmPoseBoat(P, w, leg, tor, t) {
+    const r = MG.reduced, slide = r ? 0 : ease(fe(3450, 3550, t)), push = r ? 0 : ease(fe(3550, 3750, t)), back = r ? 1 : ease(fe(3750, 3900, t));
+    const a = lerp(lerp(lerp(-1.5, -1.3, slide), -1.75, push), -1.57, back), off = lerp(lerp(lerp(0, 12, slide), -4, push), 0, back);
+    P.holdAng = a; P.bladeS = 1; P.scyBack = false; P.scyK = 1; P.mouth = t >= 4180 && t < 4260 ? 0.35 : 0;
+    P.expr = t >= 4420 ? "calm" : "grin";
+    const hF = [w * 0.55 + Math.cos(a) * off, -leg - tor * 0.62 + Math.sin(a) * off], onPole = [hF[0] - Math.cos(a) * 14, hF[1] - Math.sin(a) * 14];
+    const chest = [w * 0.3, -leg - tor * 0.42], catchP = [w * 0.48, -leg - tor * 0.86], mouth = [w * 0.32, -leg - tor * 0.47];
+    const free = r ? 1 : ease(fe(3750, 3870, t)), lift = ease(fe(3950, F_CATCH, t)), bite = ease(fe(4100, 4200, t)), down = ease(fe(4260, F_LAND, t));
+    const hB = lerp2(lerp2(lerp2(lerp2(onPole, chest, free), catchP, lift), mouth, bite), chest, down);
+    P.lean = lerp(lerp(lerp(0, 0.1, slide), -0.05, push), 0, back) - 0.06 * bite * (1 - down) + 0.08 * ease(fe(4380, F_GONE, t));
+    return { hF, hB, fF: [w * 0.3, 0], fB: [-w * 0.3, 0] };
+  }
+  const fmMoonAt = (pn, G) => { const u = G.port ? 0.62 : 0.5; return [pn.x0 + (FIN.dir > 0 ? u : 1 - u) * pn.w, pn.y0 + (G.port ? 0.19 : 0.15) * pn.h, (G.port ? 0.085 : 0.09) * pn.h]; };
+  // the far bank's profile: d world units past its foot (toward the far side), y up is negative: a steep slope, then nearly flat
+  const bankY = (d) => (d < 44 ? -64 * (1 - (1 - d / 44) * (1 - d / 44)) : -64 - (d - 44) * 0.06);
+  function fmDrawSplash(c, pn, t) {
+    const G = fmGeo(pn), bx = fmBoatX(t, G), bob = fmBob(t), tilt = fmTilt(t), mo = fmMoonAt(pn, G), fy = pn.y0 + pn.h * G.far;
+    pn.screen(c);
+    rprSky(c, pn, t, G.far * 0.9);
+    c.fillStyle = INK; c.beginPath();
+    for (const [u, v, k] of fmStarsA) { const x = pn.x0 + u * pn.w, y = pn.y0 + v * pn.h; if (Math.hypot(x - mo[0], y - mo[1]) > mo[2] * 1.35 && y < fy - 6) { c.moveTo(x + 1.3, y); c.arc(x, y, k > 0.8 ? 1.7 : 1.2, 0, TAU); } }
+    c.fill();
+    rprMoon(c, mo[0], mo[1], mo[2]);
+    c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(pn.x0 - 4, fy); c.lineTo(pn.x1 + 4, fy); c.stroke();   // the far shore
+    fmWater(c, pn, t, G, mo, fy);
+    pn.world(c);
+    fmBank(c, G);
+    fmShore(c, G);
+    fmWake(c, t, G);
+    fmAt(t, (W) => {
+      const tip = rprBladeTip(W, t);
+      if (!MG.slow) {   // the lantern's light, round it and on the water (candle amber: painted as its complement)
+        c.fillStyle = rgba(NCOL, 0.12); c.beginPath(); c.ellipse(tip[0], -0.5, 26, 5, 0, 0, TAU); c.fill();
+        c.fillStyle = rgba(NCOL, 0.14); c.beginPath(); c.arc(tip[0], tip[1] + 11, 10, 0, TAU); c.fill();
+      }
+      pn.screen(c);
+      mgPuppet(c, pn, W, t, { light: dirAng(-0.5), box: BOX, mono: true, post: rprPost(W, t, cheekK(t)) });
+      pn.world(c);
+      fmBoat(c, bx, bob, tilt, G);
+      fmPole(c, W, t);
+      fmLantern(c, tip, t, tilt);
+    });
+    pn.screen(c);
+  }
+  // the water: short strokes drifting against the boat's way (with the camera too, upright), the moon's broken reflection under it (panel px)
+  function fmWater(c, pn, t, G, mo, fy) {
+    const drift = MG.reduced ? 0 : -(fmBoatX(t, G) - G.X0) * pn.z * (G.port ? 1 : 0.4), Wd = pn.w + 60, n = MG.slow ? 10 : fmWaterA.length;
+    c.strokeStyle = INK; c.lineCap = "round";
+    for (let i = 0; i < n; i++) {
+      const s = fmWaterA[i], y = fy + 7 + s.y * (pn.y1 - fy - 9), len = (0.02 + 0.04 * s.y) * pn.w;
+      const x = pn.x0 - 30 + ((((s.x * Wd + drift * (0.7 + 0.3 * s.y) - (MG.reduced ? 0 : t * 0.004 * (1 + s.dr))) % Wd) + Wd) % Wd);
+      c.lineWidth = 0.8 + 1.4 * s.y; c.beginPath(); c.moveTo(x - len / 2, y); c.lineTo(x + len / 2, y); c.stroke();
+    }
+    for (let i = 0; i < 7; i++) {
+      const q = i / 6, y = fy + 5 + q * (pn.y1 - fy) * 0.8, hw = (0.02 + 0.03 * q) * pn.w, x = mo[0] + (MG.reduced || MG.slow ? 0 : Math.sin(t * 0.003 + i * 1.7) * 0.01 * pn.w);
+      c.lineWidth = 1.2 + q * 1.4; c.beginPath(); c.moveTo(x - hw, y); c.lineTo(x - hw * 0.25, y); c.moveTo(x - hw * 0.05, y); c.lineTo(x + hw, y); c.stroke();
+    }
+  }
+  // the far bank (world): night ground with a white edge and hatching under it, three small stones, a bare tree and the gate at the top of the slope
+  function fmBank(c, G) {
+    const D = FIN.dir, X = (d) => G.bankX + D * d, edge = () => { c.moveTo(X(-2), 1.5); for (let d = 0; d <= 280; d += 7) c.lineTo(X(d), bankY(d)); };
+    c.beginPath(); c.moveTo(X(-12), 300); edge(); c.lineTo(X(280), 300); c.closePath(); c.fillStyle = PAPER; c.fill();
+    c.strokeStyle = INK; c.lineCap = "round"; c.lineJoin = "round"; c.lineWidth = 0.8; c.beginPath();
+    for (let d = 3; d < 270; d += 9) { const y = bankY(d) + 3; c.moveTo(X(d), y); c.lineTo(X(d - 7), y + 13); }
+    c.stroke();
+    c.lineWidth = 1.8; c.beginPath(); edge(); c.stroke();
+    for (const [d, sc, tl] of [[20, 0.8, -0.12], [70, 1, 0.06], [108, 0.75, -0.05]]) fmGrave(c, X(d), bankY(d) + 1, sc, tl * D);
+    // the tree: five strokes
+    const tx = X(89), ty = bankY(89) + 1;
+    c.lineWidth = 1.7; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + D * 3, ty - 34); c.stroke();
+    c.lineWidth = 1.1; c.beginPath(); c.moveTo(tx + D * 2, ty - 20); c.lineTo(tx + D * 12, ty - 30); c.lineTo(tx + D * 18, ty - 33); c.moveTo(tx + D * 3, ty - 34); c.lineTo(tx - D * 6, ty - 44); c.moveTo(tx + D * 3, ty - 34); c.lineTo(tx + D * 9, ty - 47); c.stroke();
+    // the gate: two posts, a lintel with turned-up ends, a bar
+    const gx = X(GATE), gy = bankY(GATE) + 0.5;
+    c.fillStyle = PAPER; c.lineWidth = 1.1;
+    for (const sd of [-1, 1]) { c.beginPath(); c.rect(gx + sd * 8 - 1.8, gy - 27, 3.6, 27); c.fill(); c.stroke(); }
+    c.beginPath(); c.moveTo(gx - 14, gy - 31.5); c.quadraticCurveTo(gx, gy - 29.5, gx + 14, gy - 31.5); c.lineTo(gx + 13, gy - 28); c.quadraticCurveTo(gx, gy - 26.5, gx - 13, gy - 28); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(gx - 8, gy - 21); c.lineTo(gx + 8, gy - 21); c.stroke();
+  }
+  function fmGrave(c, x, y, sc, tl) {
+    c.save(); c.translate(x, y); c.rotate(tl); c.scale(sc, sc);
+    c.beginPath(); c.moveTo(-4.5, 0); c.lineTo(-4.5, -8); c.arc(0, -8, 4.5, Math.PI, 0); c.lineTo(4.5, 0); c.closePath();
+    c.fillStyle = PAPER; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.1; c.stroke();
+    c.lineWidth = 0.7; c.beginPath(); c.moveTo(-1.6, -8.5); c.lineTo(1.6, -8.5); c.moveTo(0, -10.5); c.lineTo(0, -5.5); c.stroke();   // a small cross cut in it
+    c.restore();
+  }
+  // the near shore (world): the bank the boat pushes off from, reeds at the water's edge
+  function fmShore(c, G) {
+    const D = FIN.dir, X = (d) => G.shoreX - D * d, edge = () => { c.moveTo(X(0), 1); c.quadraticCurveTo(X(5), -5.5, X(14), -6.5); c.lineTo(X(420), -8); };
+    c.beginPath(); c.moveTo(X(-6), 300); edge(); c.lineTo(X(420), 300); c.closePath(); c.fillStyle = PAPER; c.fill();
+    c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = 0.8; c.beginPath();
+    for (let d = 6; d < 400; d += 9) { c.moveTo(X(d), -4); c.lineTo(X(d + 7), 9); }
+    c.stroke();
+    c.lineWidth = 1.8; c.beginPath(); edge(); c.stroke();
+    c.lineWidth = 1.1; c.beginPath();
+    for (let i = 0; i < 6; i++) { const x0 = X(3 + i * 5.5), h = 14 + ((i * 7) % 4) * 3.5, ln = (i % 2 ? 0.28 : -0.12) * D; c.moveTo(x0, -5.5); c.quadraticCurveTo(x0 + ln * h * 0.3, -5.5 - h * 0.6, x0 + ln * h, -5.5 - h); }
+    c.stroke();
+  }
+  // the wake: a fan of lines off the stern while the boat moves, and the harvest's little souls following it, bobbing on the water
+  function fmWake(c, t, G) {
+    if (t < 3550) return;
+    const D = FIN.dir, mv = MG.reduced ? 0 : Math.sin(Math.PI * fe(F_GO, F_STOP, t)), sx = fmBoatX(t, G) - D * (G.BH + 2);
+    if (mv > 0.05) {
+      c.save(); c.globalAlpha = mv; c.strokeStyle = INK; c.lineWidth = 1; c.beginPath();
+      for (let i = 0; i < 4; i++) { c.moveTo(sx - D * 3, -1); c.lineTo(sx - D * (16 + i * 8), -1 + (i % 2 ? 2 + i * 1.6 : -1 - i * 0.6)); }
+      c.stroke(); c.restore();
+    }
+    const n = MG.slow ? 3 : 6;
+    for (let i = 0; i < n; i++) {
+      const a = fe(3550 + i * 90, 3700 + i * 90, t);
+      if (a <= 0) continue;
+      const x = fmBoatX(t - (i + 1) * (MG.slow ? 240 : 120), G) - D * (G.BH + 10 + i * 5), y = -4 + (MG.reduced ? 0 : 1.6 * Math.sin(t * 0.005 + i * 1.9));
+      c.save(); c.globalAlpha = a; fmWisp(c, x, y, 4.8, D > 0 ? 0 : Math.PI, t * 0.008 + i * 2); c.restore();
+    }
+  }
+  // the punt (world, centre bx): a flat hull with the bow curling up, planks, a seat board at the bow; the water closes over its lower half and his feet
+  function fmBoat(c, bx, bob, tilt, G) {
+    const H = G.BH;
+    c.save(); c.translate(bx, bob); c.scale(FIN.dir, 1); c.rotate(tilt); c.lineJoin = "round"; c.lineCap = "round";
+    c.beginPath(); c.moveTo(-H - 1, -17); c.lineTo(-H + 5, 6); c.lineTo(H - 22, 6); c.quadraticCurveTo(H - 3, 5, H + 2, -18); c.quadraticCurveTo(H + 4, -27, H - 2, -29); c.quadraticCurveTo(H - 1, -21, H - 11, -16.5); c.quadraticCurveTo(0, -15.5, -H - 1, -17); c.closePath();
+    c.fillStyle = HULL; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.8; c.stroke();
+    c.lineWidth = 0.8; c.beginPath(); c.moveTo(-H + 1, -11.5); c.lineTo(H - 7, -11.5); c.moveTo(-H + 2.5, -6); c.lineTo(H - 4, -6); c.stroke();
+    c.fillStyle = INK; c.fillRect(H - 32, -19.5, 14, 3);
+    c.restore();
+    c.fillStyle = PAPER; c.fillRect(bx - H - 2, -1, 2 * H + 6, 14);
+    c.strokeStyle = INK; c.lineWidth = 1.2; c.lineCap = "round"; c.beginPath(); c.moveTo(bx - H - 9, -1); c.lineTo(bx + H + 10, -1); c.stroke();
+  }
+  // the pole below his hands: the snath goes on down past the gunwale to the water (in front of the hull), two rings where it goes in
+  function fmPole(c, W, t) {
+    MG.pt = t;
+    const P = pose(W, mgTk(t)), a = P.holdAng + P.lean, D = W.facing, Lb = P.w * SCY.butt;
+    const q = rot([P.hF[0] - Math.cos(P.holdAng) * Lb, P.hF[1] - Math.sin(P.holdAng) * Lb], P.hip, P.lean), x0 = W.x + D * q[0], y0 = W.y + q[1], dx = -D * Math.cos(a), dy = -Math.sin(a);
+    if (dy < 0.3) return;
+    const len = Math.min(80, (-1 - y0) / dy);
+    if (len <= 0) return;
+    const x1 = x0 + dx * len;
+    c.lineCap = "round"; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, -1);
+    c.strokeStyle = INK; c.lineWidth = 4.4; c.stroke(); c.strokeStyle = POLE; c.lineWidth = 2.2; c.stroke();
+    if (MG.slow || MG.reduced) return;
+    c.strokeStyle = INK; c.lineWidth = 0.9;
+    for (let i = 0; i < 2; i++) { const u = (t * 0.0014 + i * 0.5) % 1; c.globalAlpha = 1 - u; c.beginPath(); c.ellipse(x1, -1, 3 + 11 * u, 0.8 + 1.6 * u, 0, 0, TAU); c.stroke(); }
+    c.globalAlpha = 1;
+  }
+  // the lantern hung on the blade's tip: a cap, a cage, a candle-amber flame (as its complement); it swings with the hull
+  function fmLantern(c, tip, t, tilt) {
+    const sw = (MG.reduced ? 0 : 0.1 * Math.sin(t * 0.004 + 0.8)) + tilt * 2, fl = MG.reduced ? 1 : 1 + 0.12 * Math.sin(t * 0.031);
+    c.save(); c.translate(tip[0], tip[1]); c.rotate(sw); c.lineJoin = "round";
+    c.strokeStyle = INK; c.lineWidth = 0.8; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, 4); c.stroke();
+    c.lineWidth = 1.1; c.fillStyle = PAPER;
+    c.beginPath(); c.moveTo(-4.6, 6.5); c.lineTo(0, 3.6); c.lineTo(4.6, 6.5); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.rect(-3.6, 6.5, 7.2, 8.6); c.fill(); c.stroke();
+    c.fillStyle = NCOL; c.beginPath(); c.moveTo(0, 12.6 - 4.4 * fl); c.quadraticCurveTo(2.3, 11.4, 0, 13.6); c.quadraticCurveTo(-2.3, 11.4, 0, 12.6 - 4.4 * fl); c.fill();
+    c.restore();
+  }
+
+  /* ---- over the page: the soul in the boat, the coin ---- */
+  // the soul from 3300: it comes down onto the bow (dipping below the line), rides there, then goes up the bank through the gate and fades (screen px)
+  function fmSoulAt(t) {
+    const b = rprSoulBase(F_SOUL), pn = MG.byId.splash;
+    if (!b || !pn || t >= F_GONE) return null;
+    const G = fmGeo(pn), D = FIN.dir, s1 = L_().s.w * 0.36 * clamp(pn.h / G.vh, 1.1, 2.4);
+    const seat = (tt) => { const q = fmSp(tt, fmBoatX(tt, G) + D * (G.BH - 25), fmBob(tt) - 19); return [q[0], q[1] - s1 * 1.25]; };
+    if (t < F_SEAT) { const k = ease(fe(F_SOUL, F_SEAT, t)), e = seat(t); return { x: lerp(b.x, e[0], k), y: lerp(b.y, e[1], k) + pn.h * 0.04 * Math.sin(Math.PI * k), s: lerp(b.s, s1, k), a: 1, tilt: b.tilt * (1 - k) }; }
+    if (t < F_LAND || MG.reduced) { const e = seat(Math.min(t, F_LAND)); return { x: e[0], y: e[1], s: s1, a: MG.reduced ? 1 - fe(F_LAND, 4500, t) : 1, tilt: fmTilt(t) * D + 0.06 * Math.sin(t * 0.003) }; }
+    const k = easeOut(fe(F_LAND, 4620, t)), e0 = seat(F_LAND), gt = fmSp(t, G.bankX + D * GATE, bankY(GATE) - 13), ctl = [lerp(e0[0], gt[0], 0.55), Math.min(e0[1], gt[1]) - pn.h * 0.14], u = 1 - k;
+    return { x: u * u * e0[0] + 2 * u * k * ctl[0] + k * k * gt[0], y: u * u * e0[1] + 2 * u * k * ctl[1] + k * k * gt[1], s: s1 * (1 - 0.35 * k), a: 1 - fe(4520, F_GONE, t), tilt: 0.1 * Math.sin(t * 0.004) };
+  }
+  // the fare: it rises out of the soul's crown, flips over to his free hand (spinning), rides in his fist to his mouth and back, and goes under the hood
+  function fmCoinAt(t) {
+    if (t < F_COIN || t >= 4360) return null;
+    const crown = (tt) => { const S = fmSoulAt(tt); return S ? [S.x, S.y - S.s * 1.3] : [0, 0]; };
+    if (t < F_FLIP) { const k = easeOut(fe(F_COIN, F_FLIP, t)), c0 = crown(t); return { x: c0[0], y: c0[1] - L.gh * 0.05 * k, a: k, sp: 1 }; }
+    if (t < F_CATCH) {
+      const c0 = crown(F_FLIP), p0 = [c0[0], c0[1] - L.gh * 0.05], p1 = fmHandScr(F_CATCH), k = fe(F_FLIP, F_CATCH, t);
+      if (MG.reduced) return k < 0.5 ? { x: p0[0], y: p0[1], a: 1 - 2 * k, sp: 1 } : { x: p1[0], y: p1[1], a: 2 * k - 1, sp: 1 };
+      const ctl = [(p0[0] + p1[0]) / 2, Math.min(p0[1], p1[1]) - L.gh * 0.24], u = 1 - k;
+      return { x: u * u * p0[0] + 2 * u * k * ctl[0] + k * k * p1[0], y: u * u * p0[1] + 2 * u * k * ctl[1] + k * k * p1[1], a: 1, sp: Math.cos(t * 0.035), apex: Math.abs(k - 0.5) < 0.08 };
+    }
+    const h = fmHandScr(t);
+    return { x: h[0], y: h[1] - 1, a: 1 - fe(4300, 4360, t), sp: 1, held: true };
+  }
+  function fmCoin(o, t) {
+    const C = fmCoinAt(t);
+    if (!C || C.a <= 0.01) return;
+    const r = L.gh * 0.026 * (C.held ? 0.85 : 1), rx = r * Math.max(0.12, Math.abs(C.sp)), g = C.apex ? 1.3 : 0.55 + 0.45 * Math.sin(t * 0.02);
+    o.save(); o.globalAlpha = C.a; o.translate(C.x, C.y);
+    o.fillStyle = MG_GOLD; o.strokeStyle = MG_GOLD_D; o.lineWidth = Math.max(1.2, r * 0.22);
+    o.beginPath(); o.ellipse(0, 0, rx, r, 0, 0, TAU); o.fill(); o.stroke();
+    if (rx > r * 0.4) { o.lineWidth = Math.max(0.8, r * 0.1); o.beginPath(); o.ellipse(0, 0, rx * 0.6, r * 0.6, 0, 0, TAU); o.stroke(); }
+    star4(o, -rx * 0.35, -r * 0.45, r * 0.75 * g, MG_GOLD_PALE);
+    o.restore();
+  }
+  // the kit's flute at any pitch (two falling notes as the soul goes through the gate)
+  function fmFlute(f, dur) {
+    const c = Sfx.ctx, t = c.currentTime, o = c.createOscillator(), lf = c.createOscillator(), lg = c.createGain(), g = c.createGain();
+    o.type = "sine"; o.frequency.value = f; lf.frequency.value = 5; lg.gain.value = f * 0.01; lf.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + dur * 0.35); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(Cin.bus); o.start(t); lf.start(t); o.stop(t + dur + 0.05); lf.stop(t + dur + 0.05);
+    Cin._noise(dur, 0.02, f * 2.7, f * 2.7, "bandpass", 3);
+  }
+
+  S_.ulti = Object.assign({}, S_, {
+    name: "The Ferryman", pop: 3050, ownWords: true,   // pop: the launch waits for the gold impact frame; ownWords: the upright sizes are set here
+    start(g) { S_.start(g); ult = true; },
+    end() { ult = false; boat = false; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike");
+      for (const q of [by("look"), by("inset")]) { const d0 = q.draw, c0 = q.cam; q.draw = (c, pn, t) => fmHome(() => d0(c, pn, t)); q.cam = (t, pn) => fmHome(() => c0(t, pn)); }
+      strike.freeze = strike.cover = MT.SPLASH;   // the river covers the whole page from here: the strike is drawn once more, then a bitmap
+      ps.splice(ps.findIndex((q) => q.id === "after"), 0, mgSplashPanel({ from: "b", paper: PAPER, dim: "255,255,255", slide: MG.reduced ? 1 : 180, cam: fmCam, draw: fmDrawSplash }));
+      return ps;
+    },
+    build(lay) {
+      S_.build(lay);
+      const r = mgRng(2718);
+      fmStarsA = Array.from({ length: 9 }, () => [0.04 + r() * 0.92, 0.05 + r() * 0.42, r()]);
+      fmWaterA = Array.from({ length: 20 }, () => ({ x: r(), y: r(), dr: r() }));
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, k = lay.port ? Math.min(1, (L.gw * 0.9) / L.gh) : 1, m = lay.port ? 0.7 : 1;
+      for (const w of ws) w.mul = (w.mul || 1) * k;
+      Object.assign(ws.find((w) => w.text === "SHHK"), { size: 0.26, fill: MG_GOLD, t1: MT.SPLASH + 150 });   // gone as the river comes in
+      ws.find((w) => w.text === "shhh...").fill = "#ffffff";   // (the engine makes the unfilled words after the hit gold)
+      ws.push(
+        { text: "ting", t0: F_CATCH, t1: 4420, size: 0.06, mul: m, jit: 0.1, rot: -0.08 * D, fill: MG_GOLD, at: () => { const h = fmHandScr(F_CATCH); return [h[0] + D * L.gw * 0.06, h[1] - L.gh * 0.07]; } },
+        { text: "tok", t0: F_STOP, t1: 4600, size: 0.045, mul: m, jit: 0.1, fill: "#ffffff", at: () => { const G = fmGeo(MG.byId.splash), q = fmSp(F_STOP, fmBoatX(F_STOP, G) + D * G.BH, -28); return [q[0], q[1] - L.gh * 0.05]; } },
+      );
+      return ws;
+    },
+    // the drag (finLoser has just put the loser on his spot); once the river is in, the KO beam and its flying bits are gone
+    after(t) {
+      if (t < FIN.launch && !FIN.out) L_().x = fmLoserX(t);
+      if (t >= MT.SPLASH && t < MT.AFTER) { if (FIN.beam && FIN.beam.t0 > -1e5) FIN.beam.t0 = -1e6; FIN.parts.length = 0; }
+    },
+    over(o, t) { S_.over(o, t); fmCoin(o, t); },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("fmSwing", 2360, () => Cin.go(() => Cin.whoosh(0.2, -0.4 * D, 0.4 * D, 0.3)));
+      cueOnce("fmChains", F_RAISE, () => Cin.go(() => { Cin._noise(0.45, 0.07, 1400, 3000, "bandpass", 1.6); Cin._osc("sine", 660, 990, 0.3, 0.03, 0.02); }));   // the ghost breath
+      cueOnce("fmBite", F_BITE, () => Cin.go(() => { Cin.tick(2800); Cin.clack(); Cin.growl(0.3); Cin._noise(0.3, 0.05, 300, 900, "bandpass", 1.2, 0, 0.3 * D); Cin.rumble(0.3); }));
+      cueOnce("fmBack", F_LET, () => Cin.go(() => Cin.whoosh(0.22, 0.4, -0.5, 0.18)));
+      cueOnce("fmTide", MT.SPLASH, () => Cin.go(() => { Cin._noise(0.7, 0.08, 250, 700, "bandpass", 1.1); Cin.sub(40, 28, 1.3, 0.4); }));
+      cueOnce("fmPush", 3450, () => Cin.go(() => { Cin._noise(0.35, 0.05, 500, 250, "bandpass", 1.5); Cin.whoosh(0.3, 0.2 * D, -0.2 * D, 0.2); }));
+      cueOnce("fmSeat", 3480, () => Cin.go(() => Cin._osc("sine", 780, 520, 0.3, 0.03, 0.05)));
+      for (const lt of [3650, 3980, 4180]) cueOnce("fmLap" + lt, lt, () => Cin.go(() => Cin._osc("sine", 900, 600, 0.08, 0.02)));
+      cueOnce("fmCoin", F_COIN, () => Cin.go(() => Cin.shimmer(2093, 0.25)));
+      cueOnce("fmFlip", F_FLIP, () => Cin.go(() => Cin.tick(5200)));
+      cueOnce("fmCatch", F_CATCH, () => Cin.go(() => { Cin.clack(); Cin.chime(2093); }));
+      cueOnce("fmTeeth", 4220, () => Cin.go(() => Cin.tick(2400)));
+      cueOnce("fmBank", F_STOP, () => Cin.go(() => { Cin._osc("sine", 110, 80, 0.25, 0.05); Cin._noise(0.12, 0.08, 150, 400, "bandpass", 1.5); }));
+      cueOnce("fmSoul", F_LAND, () => Cin.go(() => { Cin._osc("sine", 520, 780, 0.35, 0.05, 0.05); Cin._osc("sine", 1040, 1560, 0.3, 0.02, 0.05, 0.05); }));
+      cueOnce("fmFlute1", 4360, () => Cin.go(() => fmFlute(440, 0.3)));
+      cueOnce("fmFlute2", 4520, () => Cin.go(() => fmFlute(370, 0.4)));
+      cueOnce("fmDrone", 4600, () => Cin.go(() => Cin.drone(false)));
+    },
+  });
   return S_;
 })();
 
