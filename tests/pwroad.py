@@ -77,6 +77,13 @@ async def flow(b, errs):
     need(await txt(pg, '#rsName') == 'The Farm Gate' and 'Small Fry' in await txt(pg, '#rsOp') and 'Samurai' in await txt(pg, '#rsMe'), f"sheet reads {await txt(pg, '#roadStopSheet')!r}")
     need(await txt(pg, '#rsRule') == '2 lives each · 1:30 · The Field', f"rule line {await txt(pg, '#rsRule')!r}")
     need(await pg.evaluate("[...document.querySelectorAll('#rsStars .rd-st')].map((s) => s.textContent)") == ['★Win', '★No heart lost', '★Win in under 60 s'], 'stop 1 star labels')
+    # your card is the fighter picker (no Fighter button): it opens the fighter page; Back returns to the map
+    need(await pg.evaluate("document.querySelectorAll('.rd-acts button').length") == 2 and await txt(pg, '#rsGo') == 'Fight', f"stop buttons {await txt(pg, '.rd-acts')!r}")
+    await clk('#rsMe'); await pg.wait_for_timeout(600)
+    need(await pg.evaluate("window.__blastline.mode") == 'select' and not await shown(pg, '#scrRoadStop'), 'tapping your card does not open the fighter page')
+    await clk('#selBack'); await pg.wait_for_timeout(600)
+    need(await pg.evaluate("window.__blastline.mode") == 'road', 'Back on the fighter page does not return to the map')
+    await hit(pg, 0)
     await clk('#rsGo')
     await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
     st = await pg.evaluate(f"(() => {{ const g = {G}; return {{ map: BL.MAPS[g.map].id, time: g.timer / 60, st: g.fighters.map((f) => f.stocks), op: g.fighters[1].spec.id, me: g.fighters[0].spec.id }}; }})()")
@@ -146,12 +153,17 @@ async def flow(b, errs):
     await pg.evaluate(f"{R}.open()"); await fresh(pg)
     need(not await pg.evaluate(f"document.querySelector('.rd-hit[data-i=\"{BOSS}\"]').classList.contains('lock')"), 'the fence stays locked at 12 stars')
     await hit(pg, BOSS)
-    need(await shown(pg, '#rsLv') and not await shown(pg, '#rsGo'), 'the boss sheet has no level buttons')
-    need(await pg.evaluate("[...document.querySelectorAll('#rsLv button')].map((b) => b.textContent)") == ['Normal', 'Hard', 'Nightmare'], 'boss levels')
+    # the level stars pick the level (the first one not won yet), Fight plays it; both fit on a phone without scrolling
+    need(await pg.evaluate("[...document.querySelectorAll('#rsStars .rd-lvb')].map((b) => b.textContent)") == ['★Normal', '★Hard', '★Nightmare'], 'boss level stars')
+    need(await txt(pg, '#rsGo') == 'Fight · Normal' and await pg.evaluate("document.querySelector('#rsStars .rd-lvb.sel').dataset.q") == '0', f"boss Fight button {await txt(pg, '#rsGo')!r}")
+    need(await pg.evaluate(ONSCREEN % '#rsGo') and await pg.evaluate(ONSCREEN % '#rsStars .rd-lvb[data-q=\"2\"]'), 'the boss Fight button or a level is off the screen')
+    await clk('#rsStars .rd-lvb[data-q="1"]'); await pg.wait_for_timeout(200)
+    need(await txt(pg, '#rsGo') == 'Fight · Hard' and await pg.evaluate("document.querySelector('#rsStars .rd-lvb[data-q=\"1\"]').getAttribute('aria-pressed')") == 'true', f"picking Hard: {await txt(pg, '#rsGo')!r}")
+    await clk('#rsStars .rd-lvb[data-q="0"]'); await pg.wait_for_timeout(200)
     need('Devil Masher' in await txt(pg, '#rsReward'), f"boss reward line {await txt(pg, '#rsReward')!r}")
     await pg.screenshot(path=f'{OUT}/flow_boss_sheet.png')
     tok0 = (await prof_of(pg)).get('tokens')
-    await pg.evaluate("document.querySelector('#rsLv button').click()")
+    await clk('#rsGo')
     await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
     need(await pg.evaluate(f"{G}.fighters.length === 3 && {G}.lv === 0"), 'the boss fight did not start on Normal')
     await in_play(pg)
@@ -189,10 +201,12 @@ async def flow(b, errs):
     need(await txt(pg, '#rMode') == 'The Road · The Kitchen · stop 8 · The Window' and await txt(pg, '#rAgain') == 'To Zorp', f"after the Kitchen's stop 8: {await txt(pg, '#rMode')!r} / {await txt(pg, '#rAgain')!r}")
     await clk('#rAgain')
     await pg.wait_for_function("window.__blastline.mode === 'road' && !window.__blRoad.walking", timeout=10000); await pg.wait_for_timeout(500)
-    need(await pg.evaluate("window.__blRoad.pos") == 8 and await txt(pg, '#rsName') == 'Zorp' and await shown(pg, '#rsLv'), f"To Zorp: pos {await pg.evaluate('window.__blRoad.pos')}, sheet {await txt(pg, '#rsName')!r}")
+    need(await pg.evaluate("window.__blRoad.pos") == 8 and await txt(pg, '#rsName') == 'Zorp' and await txt(pg, '#rsGo') == 'Fight · Normal', f"To Zorp: pos {await pg.evaluate('window.__blRoad.pos')}, sheet {await txt(pg, '#rsName')!r}")
     await pg.screenshot(path=f'{OUT}/flow_zorp_sheet.png')
     await ctx.close()
 
+# on the screen and not covered (by the sticky button row, say): the element's centre hits the element itself
+ONSCREEN = "(() => { const e = document.querySelector('%s'), r = e.getBoundingClientRect(), h = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2); return r.width > 0 && r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth && !!h && e.contains(h); })()"
 FIT = """(() => {
   const bad = [], vw = innerWidth, vh = innerHeight;
   const m = document.querySelector('.rd-map').getBoundingClientRect();
@@ -227,7 +241,15 @@ async def size(b, tag, errs):
     if not sh:
         sc = await pg.evaluate("(() => { const s = document.querySelector('#roadStopSheet'); return s.scrollHeight > s.clientHeight; })()")
         if not sc: errs.append(f'{tag}: the stop sheet does not fit and does not scroll')
+    if not await pg.evaluate(ONSCREEN % '#rsGo'): errs.append(f'{tag}: the stop sheet\'s Fight button is off the screen')
     await pg.screenshot(path=f'{OUT}/{tag}_sheet.png')
+    # the boss's sheet: the level stars and Fight are on the screen without scrolling
+    await pg.evaluate("document.getElementById('rsBack').click()"); await pg.wait_for_timeout(300)
+    await pg.evaluate("window.__blRoad.set([7, 7, 7, 7, 0, 0, 0, 0])"); await pg.evaluate("window.__blRoad.open()"); await fresh(pg)
+    await hit(pg, await pg.evaluate("window.__blRoad.stops.length"))   # region 1's boss
+    for sel in ('#rsGo', '#rsStars .rd-lvb[data-q="0"]', '#rsStars .rd-lvb[data-q="2"]'):
+        if not await pg.evaluate(ONSCREEN % sel): errs.append(f'{tag}: {sel} is off the screen on the boss sheet')
+    await pg.screenshot(path=f'{OUT}/{tag}_boss_sheet.png')
     await ctx.close()
 
 async def main():
