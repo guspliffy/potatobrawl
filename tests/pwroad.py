@@ -3,8 +3,9 @@
 # the start percents, the percent every life starts at); a quick win pays the three stars (+10 chips each) once, saves them, and the
 # results show them; after a win Next stop walks your fighter on to the next stop and opens its sheet, after a loss Retry replays the
 # stop; The Road goes back to the map; quitting from the pause menu goes to the map; the fence opens at 12 stars and the boss sheet
-# starts Old Scratch on a level; his first win pays the Devil Masher title and 150 chips and goes on To The Kitchen (in at its gate,
-# walking to stop 1), a later win offers Next: Hard; The Kitchen's last stop goes on To Zorp.
+# starts Old Scratch on a level; his first win pays the Devil Masher title, 150 chips and the Devil's Roast skin for your fighter,
+# and goes on To The Kitchen (in at its gate, walking to stop 1), a later win offers Next: Hard; The Kitchen's last stop goes on
+# To Zorp.
 # A second part shows the menu, the map and a sheet at each size and checks the stops sit on the screen and the card fits.
 #   python3 pwroad.py [outdir [tag ...]]   tags: flow (844x390) s667 p844 d1280 up390; no tag runs everything
 import asyncio, sys, json, pathlib
@@ -161,6 +162,9 @@ async def flow(b, errs):
     need('Devil Masher title + 150' in await txt(pg, '#rWhy') and await txt(pg, '#rChipN') == '160', f"boss reward {await txt(pg, '#rWhy')!r} {await txt(pg, '#rChipN')}")
     p = await prof_of(pg)
     need(p['road']['b'] == 1 and p['road']['paid'] is True and p['tokens'] == tok0 + 160, f"saved boss win {p['road']} tokens {p['tokens']} (was {tok0})")
+    # the win gives the fighter you played his Road skin (Devil's Roast), owned and saved
+    me, rs = await pg.evaluate(f"(() => {{ const s = {G}.fighters[0].spec; return [s.id, s.palettes.findIndex((q) => q.road === 'scratch')]; }})()")
+    need(rs > 0 and rs in (p.get('owned') or {}).get(me, []) and "Devil's Roast skin for" in await txt(pg, '#rWhy'), f"Road skin {me} #{rs}: owned {(p.get('owned') or {}).get(me)} / {await txt(pg, '#rWhy')!r}")
     need(await txt(pg, '#rAgain') == 'To The Kitchen', f"after his first win the button reads {await txt(pg, '#rAgain')!r}")
     await pg.screenshot(path=f'{OUT}/flow_boss_win.png')
     # To The Kitchen: the map shows region 2, your fighter comes in at its gate and walks to stop 1, whose sheet opens
