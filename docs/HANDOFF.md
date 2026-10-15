@@ -66,6 +66,9 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     After a win the big results button is Next stop (walks to the next stop and opens its sheet; To Old Scratch after stop 8 once the
     fence is open; Next: Hard / Nightmare after a boss win), after a loss Retry (match.road.next, roadAgainLabel / roadAgain). The fight
     behind the menus is not drawn while the Road map covers the screen.
+    A stop's sheet has Fight and Back only, pinned to the sheet's bottom edge (sticky .rd-acts); tapping your own fighter card (#rsMe) opens
+    the fighter page. On a boss's sheet the three level stars are the level picker (.rd-lvb, RD.blv, starts on the first level not won)
+    and Fight plays the picked level ("Fight · Hard").
 - Live: https://potatobrawl.cloud (Hostinger VPS srv1519994, 187.124.173.121, Ubuntu 24.04, Node 20).
   Caddy terminates HTTPS and proxies to the game server on 127.0.0.1:8080 (systemd unit `potatobrawl`,
   checkout in /opt/potatobrawl). Old http://187.124.173.121:8080 still answers (deploy/accounts-setup.txt closes it).

@@ -45,9 +45,22 @@
 .rd-st small { font: 600 11.5px/1.2 var(--body); color: var(--mute); }
 .rd-st.on small { color: var(--text); }
 .rd-reward { margin: 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
-.rd-lv { display: none; }
-.rd-sheet.boss .rd-lv { display: flex; }
-.rd-sheet.boss #rsGo { display: none; }
+/* your fighter's card is the fighter picker: tap it to change fighter */
+.rd-me { font: inherit; color: inherit; border: 0; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.45); }
+.rd-me:active { transform: translateY(1px); }
+.rd-me .rd-chg { margin-left: auto; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: #ffd23f; color: var(--ink); font: 900 17px/1 var(--body); box-shadow: 0 2px 0 var(--ink); }
+#app.narrow .rd-me .rd-chg { margin: 0; }
+/* a boss's card: the three level stars are the level picker; Fight plays the picked one */
+.rd-lvb { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; min-height: 48px; padding: 5px 4px; border-radius: 10px; }
+.rd-lvb.sel { background: rgba(255, 210, 63, 0.13); box-shadow: inset 0 0 0 2px #ffd23f; }
+.rd-lvb.sel small { color: var(--text); }
+/* Fight and Back stay on the screen: the row sticks to the sheet's bottom edge while the rest scrolls above it */
+.rd-sheet .rd-acts { position: sticky; bottom: 0; z-index: 2; margin: 0 -20px -20px; padding: 10px 24px 20px; background: var(--raise);
+  box-shadow: 0 -12px 12px -10px rgba(0, 0, 0, 0.5); }
+#app.short .rd-sheet .rd-acts { margin: 0 -16px -16px; padding: 8px 20px 14px; }
+#app.tiny .rd-sheet .rd-acts { margin: 0 -14px -13px; padding: 6px 18px 11px; }
+#app.short .rd-sheet.boss .rd-line { display: none; }   /* on a short screen his line is said in the countdown instead */
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
 .rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }
 .rd-bossph.rd-kraken { background: radial-gradient(circle at 50% 35%, #8a5aa8, #3a1f55); }
