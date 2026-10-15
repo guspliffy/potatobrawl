@@ -252,6 +252,12 @@ function pureTests() {
   SYNC.applyTo(dev4, qS);
   check(eq(dev4.road, qS.road) && dev4.road.s !== qS.road.s, "road apply: a prof with it replaces it (a copy)");
   check(SYNC.hasProgress({ road: { s: [0, 1] } }) && !SYNC.hasProgress({ road: { s: [0] } }), "road: a star counts as progress worth asking about");
+  // regions 2 and 3 (Zorp, Kraken Spud): their boss bits and first-win flags b2/p2, b3/p3, only there when set (an older page has none)
+  const r2 = SYNC.sanitize({ road: { s: [7], b: 1, paid: true, b2: 9, p2: 1, b3: 0, p3: false } }, FIGHTERS).road;
+  check(eq(r2, { s: [7], b: 1, paid: true, b2: 7 }), "road regions: b2/b3 clamped to 0-7 and dropped at 0, p2/p3 only when true");
+  const qR = prof({ road: { s: [1], b: 1, paid: true, b2: 2, p2: true } }), qT = prof({ road: { s: [1], b: 1, paid: true, b2: 1, b3: 4, p3: true } });
+  check(eq(SYNC.mergeProf(qR, prof({ road: { s: [1], b: 1, paid: true } }), qT, false).road, { s: [1], b: 1, paid: true, b2: 3, p2: true, b3: 4, p3: true }), "road regions: two devices -> each region's boss levels and paid flags merge as a union");
+  check(eq(SYNC.mergeProf(qR, qR, prof({ road: { s: [1], b: 1, paid: true } }), false).road, qR.road), "road regions: an older page without b2 keeps this device's b2");
   check(SYNC.hasProgress({ mxp: { odin: 30 } }) && !SYNC.hasProgress({ mxp: { odin: 0 } }), "mastery: XP from Practice counts as progress worth asking about");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");

@@ -37,7 +37,7 @@ function cupNew(fid) {
   let k = 0;
   for (let i = 0; i < 8; i++) {
     if (i === mi) { slots.push({ n: "You", f: fid, pal, r: base }); continue; }
-    const f = ids[k % ids.length], np = FIG[f].palettes.length;
+    const f = ids[k % ids.length], np = chipN(FIG[f]);
     let pl = (R() * np) | 0;
     for (let t = 0; t < np && used.has(f + ":" + pl); t++) pl = (pl + 1) % np;
     used.add(f + ":" + pl);

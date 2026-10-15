@@ -1,9 +1,31 @@
-# PotatoBrawl handoff (updated 2026-10-15: fighter mastery, boss fights, Old Scratch, The Field and the Road, PROTO 10)
+# PotatoBrawl handoff (updated 2026-10-15: Zorp the Alien, The Kitchen, Road regions and Road skins, PROTO 11)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Session 4 of the big-features plan, part 1 (2026-10-15, branch claude/alien-sea-monster-6nyh3z, PROTO 11, players reload once):
+  Zorp the Alien, The Kitchen, Road region 2, Road skins. Design: /mnt/project-files/bosses2/fable-design.md (Fable).
+  - Boss engine additions in core.js (used by Zorp now, Kraken Spud next): per-boss tables BOSS_WEIGH / BOSS_STEP (bossStep
+    dispatch), fighter fields `ph` (Zorp: 0 hovering, 1 on the floor after the crash), `held` (a grabbed player = the boss's slot),
+    `bx` (a move's spot), `bk` (a move counter); projectile fields `z` (probe / laser / wave / ride: bossProjStep moves them), `w`,
+    `pass` (hit-once mask), `part` (a hurtable boss part, hurtsOf). Helpers bossHover / bossHold / bossCarry / bossLet / bossThrow /
+    bossThreat (bots step out of spot strikes). Boss hits burn only with spec.boss.fireHits (Old Scratch). The 1v1 sim and Old
+    Scratch play frame for frame as before (fingerprint 1v1 6f19cb8c, scratch e858e24d).
+  - Zorp (BOSSES[1], map "kitchen", HP 1050 x lvHp [1, 1.4, 1.6], poise 40): hovers at y -130 (beam grab-and-throw, laser floor
+    runner, walking probes, abduct-and-throw at the partner, dome bump under the pot rack); below crashAt [55, 50, 45]% HP the saucer
+    crashes (ring hitbox, 90-frame stagger) and fights from the floor (eye beam, probe toss, spin, thruster hop). Bots at 0.6: Normal
+    100%, Hard ~67%, Nightmare ~8%. Art ui/draw-zorp.js (BOSS_ART.zorp), stage maps/kitchen.js (pool:false, Practice + boss only).
+  - The Road in regions (ui/road.js): ROAD holds 8 stops per region (The Field, The Kitchen; The Deep's come with Kraken Spud),
+    ROAD_REG names each region's boss, its P.road keys (b/paid, b2/p2, b3/p3; sync.js merges them as a union) and title (Dome Cracker
+    for Zorp). A region opens when the boss before it is beaten on any level; 12 of its 24 stars open its fence. The map shows one
+    region at a time (arrows beside the name; RD_ART[region].bg / peek / ink / won, The Kitchen in ui/road-kitchen.js). Your fighter
+    walks each region's path (in at the gate on a first visit); after a win: Next stop, To <boss> after the region's last stop once its
+    fence is open, To <next region> after the boss win that opened it, Next: Hard after a later boss win; Retry after a loss.
+  - Road skins: palettes with `road: <boss id>` appended to every fighter (Devil's Roast from Old Scratch, Specimen from Zorp), price 0,
+    won by beating that boss with that fighter; skinLvl is 0 for them, chipN(spec) counts the chip skins (CPUs and mirror picks keep
+    to chip skins). Drawn on any fighter by skinfx.js roadSkinBody / roadSkinTop (+ roadSkinTick, roadSkinKo). The Locker lists them
+    with a "Road" tag.
 - Session 3 of the big-features plan (2026-10-15, branch claude/boss-old-scratch-9qwpj7, PROTO 10, players reload once):
   - Boss engine in core.js: 3+ fighters (`players` of any length, `f.team`; 1v1 keeps team = slot and plays frame for frame as before),
     no friendly fire, `g.winner` is the winning TEAM, `BOSSES` (spec.boss numbers per level [Normal, Hard, Nightmare]), boss HP
@@ -481,10 +503,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: session 4 of the big-features plan: the Alien and the Sea Monster on the boss engine, their stages The Kitchen and
-  The Deep, Road skins (stars buy skins), then online 2v1 (session 5) and 2v2 (session 6). Boss leftovers: The Field in the
-  ranked draw needs its own balance pass; a solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when he
-  breaks is not drawn yet; the Road has no stops past the fence yet (the next regions come with the Alien and the Sea Monster).
+- NEXT: Kraken Spud the Sea Monster, The Deep and Road region 3 (session 4, part 2: its own PR, PROTO 12), then online 2v1
+  (session 5) and 2v2 (session 6). Boss leftovers: The Field and The Kitchen stay out of the ranked draw until each gets its own balance pass; a
+  solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when a boss breaks is not drawn yet; bosses have no
+  portrait on the results screen or in the VS list.
   Fighter mastery is done (see State): the new fighters appear on the roster and in Stats by themselves (`FIGHTERS`); check the tile
   shield, the detail row and the Stats table with 10 rows; a new mode counts x1 unless `mxMult` (ui/mastery.js) names it.
 - Ultimate KO pages are all done (2026-10-15: Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök", Alchemist "Mutation", Reaper

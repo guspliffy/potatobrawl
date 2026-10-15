@@ -2,20 +2,24 @@
    The simulation is core.js (BOSSES, teams, bossAct). Here: starting the fight, the partner's bot, the boss bar in the HUD (HP, poise,
    FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
 const BOSS_LV = ["Normal", "Hard", "Nightmare"];
-const BOSS_MAP = Math.max(0, BL.MAPS.findIndex((m) => m.id === "field"));
+const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   // each boss fights on his own map (spec.map)
 const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (a friend on a second phone will get all of it)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
-const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt." };
+const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt.",
+  zorp: "Take me to your ladle. ...No? Then I'll take you instead." };
+// how to beat him, in one line (the Road's sheet for him)
+const BOSS_RULE = { scratch: "Break him (0 HP), then land a heavy, special or ulti.",
+  zorp: "Hit the saucer from the counters until it crashes, break him (0 HP), then land a heavy, special or ulti." };
 const bossOf = (g) => (g ? g.fighters.find((f) => f.spec.boss) : null);
 // o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id }; your fighter is the one picked on the select screen
 function startBoss(o) {
   Sfx.init();
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
-  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % mate.palettes.length : 0];
+  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(mate) : 0];
   const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
-    stocks: 3, time: 0, countdown: 150, map: BOSS_MAP, level: lv, hpMul: BOSS_SOLO });
+    stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: BOSS_SOLO });
   match = { boss: true, level: lv, d: BOSS_PARTNER[lv], bot: makeBot(BOSS_PARTNER[lv], BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };
   meSlot = 0;
   enterMatchUI();

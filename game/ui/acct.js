@@ -65,21 +65,22 @@ function acSetAvatar(node, id, pal) {   // pal (optional): the ring takes the sk
 function acSetMe(node) { const a = acAvatar(); acSetAvatar(node, a.f, a.p); }
 const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {});
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
-// Titles, earnable from the start (eight, Jack of Spuds, and a Lv 5 and a Lv 10 title per fighter from ui/mastery.js). `how` is shown while one is locked. Best first (what "automatic" picks).
+// Titles, earnable from the start (nine, Jack of Spuds, and a Lv 5 and a Lv 10 title per fighter from ui/mastery.js). `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
+  { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
   ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
-  { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
+  { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
   { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
   ...mxActs(5),    // the Lv 5 title of each fighter
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
@@ -268,7 +269,7 @@ function renderStats() {
 function renderLocker() {
   const pan = $("acPanL"); pan.innerHTML = "";
   masteryCollection(pan);   // ui/mastery.js: KO pages, Ultimate KOs, combo routes
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen."));
+  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen; Road skins are won from the Road's bosses."));
   const grid = acMk("div", "lk");
   for (const f of FIGHTERS) {
     const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
@@ -277,10 +278,11 @@ function renderLocker() {
     card.appendChild(h);
     const row = acMk("div", "lk-s");
     f.palettes.forEach((p, i) => {
-      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock"));
+      // a Road skin (p.road): won by beating that boss with this fighter, never bought
+      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock") + (p.road ? " road" : ""));
       b.style.setProperty("--c", col(p));
-      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : `, locked, ${p.price} chips`}`);
-      b.innerHTML = `<i>${i ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
+      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
+      b.innerHTML = `<i>${i && !p.road ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : p.road ? "<span>Road</span>" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
       if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
       if (has) b.addEventListener("click", () => {
         Sfx.init(); Sfx.ui();

@@ -30,7 +30,7 @@ function dailyPick(key) {
   return { key, me, opp, cpu, seed, wd, d: DAILY.d[wd], word: DAILY.words[wd] };
 }
 // your equipped skin; the CPU's first skin, or the next one after yours in a mirror match (as startMatch does)
-function dailyPals(pk) { const mi = P.pal[pk.me] || 0; return [mi, pk.opp === pk.me ? (mi + 1) % FIG[pk.opp].palettes.length : 0]; }
+function dailyPals(pk) { const mi = P.pal[pk.me] || 0; return [mi, pk.opp === pk.me ? (mi + 1) % chipN(FIG[pk.opp]) : 0]; }
 function dailyNextIn() {   // until the next local midnight
   const ms = dailyDate(dailyShift(dailyKey(), 1)) - Date.now();
   return ms < 3600000 ? `${Math.max(1, Math.ceil(ms / 60000))} min` : `${Math.round(ms / 3600000)} h`;

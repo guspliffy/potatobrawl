@@ -180,9 +180,11 @@ function buildDetail() {
     b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
     b.style.setProperty("--c", col(p));
     b.title = p.name;
-    b.setAttribute("aria-label", `${p.name}${own ? "" : `, locked, ${p.price} chips`}`);
+    // a Road skin (p.road: the boss that gives it) is never sold: locked, it says who to beat instead of a price
+    if (p.road) b.classList.add("road");
+    b.setAttribute("aria-label", `${p.name}${own ? "" : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
     b.setAttribute("aria-pressed", String(own ? cur : pend));
-    b.innerHTML = `<i></i><small>${own ? p.name : `<span class="tokglyph"></span>${p.price}`}</small>`;
+    b.innerHTML = `<i></i><small>${own ? p.name : p.road ? "Road" : `<span class="tokglyph"></span>${p.price}`}</small>`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
       if (own) { equipSkin(spec.id, i); sel.pending = null; }
@@ -206,14 +208,16 @@ function buildDetail() {
 }
 function buildCards() { buildTiles(); buildDetail(); }
 function skinNote(spec, i) {
-  const p = spec.palettes[i], fx = FXTEXT[spec.id] && FXTEXT[spec.id][i];
-  return `${p.name}: ${fx || "base look"}.`;
+  const p = spec.palettes[i], fx = p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i];
+  const how = p.road && !(P.owned[spec.id] || []).includes(i) ? ` Beat ${roadBossName(p.road)} on the Road with ${spec.name} to get it.` : "";
+  return `${p.name}: ${fx || "base look"}.${how}`;
 }
+const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
 function updateUpgrade() {
-  const btn = $("selUp"), pd = sel.pending;
-  btn.hidden = !pd;
-  screens.select.classList.toggle("sl-pend", !!pd);
-  if (!pd) return;
+  const btn = $("selUp"), pd = sel.pending, road = !!pd && !!FIG[pd.id].palettes[pd.i].road;   // a Road skin can't be bought
+  btn.hidden = !pd || road;
+  screens.select.classList.toggle("sl-pend", !!pd && !road);
+  if (!pd || road) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
   btn.disabled = short > 0;
   btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
@@ -224,7 +228,7 @@ function buyPending() {
   const pd = sel.pending;
   if (!pd) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i];
-  if (P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
+  if (p.road || P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
   P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
   Sfx.uiCoin();
   buildTiles(); buildDetail();
@@ -254,7 +258,7 @@ function buildPractice() {
   const boss = BL.BOSSES.find((b) => b.id === sel.opp), opp = boss || (sel.opp === "random" ? null : FIG[sel.opp]);
   $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
   $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
-  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(BOSS_MAP) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
   $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
@@ -281,7 +285,7 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${RD.sel >= ROAD.length ? "Old Scratch" : `stop ${RD.sel + 1}: ${ROAD[RD.sel].name}`}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";

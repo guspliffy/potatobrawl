@@ -1,10 +1,13 @@
-/* ===================== The Road, region 1: The Field (Fable's design: boss/fable-boss.md section 3) =====================
-   Eight stops, each a 1v1 against a named CPU with one twist rule; three stars each: the win, no heart lost, the stop's bonus.
-   Stop k opens when stop k-1 is won. 12 of the 24 stars open the fence: Old Scratch (ui/boss.js) on Normal / Hard / Nightmare, a
-   star each; the first win pays the Devil Masher title and 150 chips. Each new star pays 10 chips. Progress: P.road = { s: the stars
-   per stop as bits (1 win, 2 no heart lost, 4 bonus), b: boss levels won as bits, paid } (sync.js merges it: every star either device
-   won stays won). The map is drawn on a canvas (roadDraw); the stops are buttons laid over it. UI only: the twists are newGame
-   options (lives, start percent, the percent every life starts at, the time, the map). */
+/* ===================== The Road: three regions of eight stops, each ending in a boss =====================
+   Region 1 The Field (Old Scratch; Fable's design boss/fable-boss.md section 3), region 2 The Kitchen (Zorp) and region 3 The Deep
+   (Kraken Spud; bosses2/fable-design.md). A stop is a 1v1 against a named CPU with one twist rule; three stars each: the win, no heart
+   lost, the stop's bonus. A region's first stop opens when the region before it has its boss beaten (any level); then stop k opens when
+   stop k-1 is won. 12 of a region's 24 stars open its fence: the boss (ui/boss.js) on Normal / Hard / Nightmare, a star each; his first
+   win pays his title and 150 chips, and every boss win unlocks his Road skin for the fighter you used. Each new star pays 10 chips.
+   Progress: P.road = { s: the stars per stop (24) as bits (1 win, 2 no heart lost, 4 bonus), then per region the boss levels won as
+   bits and the first win paid: b / paid, b2 / p2, b3 / p3 } (sync.js merges it: every star either device won stays won). The map is
+   drawn on a canvas (roadDraw), one region at a time; the stops are buttons laid over it. UI only: the twists are newGame options
+   (lives, start percent, the percent every life starts at, the time, the map). A region whose boss is not in this build is "coming". */
 const ROAD = [
   { id: "gate", name: "The Farm Gate", cpu: "Small Fry", f: "phoenix", d: 0.3, lives: 2, secs: 90, map: "field",
     line: "Gate's open. Mind the sprouts, they bite.", bonus: { k: "fast", s: 60, txt: "Win in under 60 s" } },
@@ -23,16 +26,53 @@ const ROAD = [
   { id: "edge", name: "The Field's Edge", cpu: "Sir Spudsalot", f: "samurai", d: 0.85, lives: 2, map: "field", cpuPct: 25, twist: "Sir Spudsalot starts at 25%.",
     line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
-const ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150, ROAD_BOSS = "scratch";
+// region 2, The Kitchen, and region 3, The Deep (bosses2/fable-design.md section 5)
+const ROAD_KITCHEN = [
+  { id: "backdoor", name: "The Back Door", cpu: "Dishwater Dan", f: "odin", d: 0.45, lives: 2, secs: 120, map: "kitchen", cpuPct: 40, twist: "Dan starts at 40%.",
+    line: "Staff only. You staff? Didn't think so.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
+  { id: "pantry", name: "The Pantry", cpu: "Tin Can Tina", f: "gunslinger", d: 0.5, map: "kitchen", myLifePct: 35, twist: "You start every life at 35%.",
+    line: "Everything in here has a date on it. Yours is today.", bonus: { k: "route", r: "sig", txt: "Land the Signature combo" } },
+  { id: "cold", name: "The Cold Store", cpu: "Frosty Fritz", f: "wizard", d: 0.55, lives: 2, secs: 90, map: "moon", twist: "Win inside 90 seconds.",
+    line: "Minus twenty in here. Don't worry, you'll stop shivering.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
+  { id: "stove", name: "The Stove", cpu: "Sizzle", f: "dragon", d: 0.65, secs: 120, map: "fryer", myPct: 60, twist: "You start at 60%.",
+    line: "Oil's hot. Hop in, I'll time you.", bonus: { k: "fin", txt: "KO with a finisher special" } },
+  { id: "spice", name: "The Spice Rack", cpu: "Paprika Pete", f: "phoenix", d: 0.7, lives: 2, cpuLives: 1, secs: 60, map: "kitchen", twist: "Pete has 1 heart, you have 2.",
+    line: "One pinch. That's all it takes.", bonus: { k: "ulti", txt: "KO with an ulti" } },
+  { id: "sink", name: "The Sink", cpu: "Suds", f: "alchemist", d: 0.75, secs: 120, map: "kitchen", myPct: 50, cpuPct: 50, twist: "You both start at 50%.",
+    line: "Everything ends up in the sink. Even you.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
+  { id: "chef", name: "The Chef's Table", cpu: "Chef Rösti", f: "samurai", d: 0.8, lives: 1, map: "castle", twist: "One life each.",
+    line: "Precision. Presentation. Then the plate.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
+  { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.9, lives: 2, map: "kitchen", cpuPct: 20, twist: "Tom starts at 20%.",
+    line: "They're watching. Through the window. I've seen the lights.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
+];
+const ROAD_DEEP = [];
+ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
+// the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title
+const ROAD_REG = [
+  { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher" },
+  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker" },
+  { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer" },
+];
+const ROAD_N = 8, ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150;
 const ROAD_STARS = ["Win", "No heart lost"];
 function roadGet() { return SYNC.cleanRoad(P.road) || { s: [], b: 0, paid: false }; }
 const roadBits = (r, i) => r.s[i] | 0;
 const roadNStars = (bits) => (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);
-const roadTotal = (r) => ROAD.reduce((a, _, i) => a + roadNStars(roadBits(r, i)), 0);
-const roadBossStars = (r) => roadNStars(r.b);
-const roadOpen = (r, i) => i === 0 || (roadBits(r, i - 1) & 1) === 1;   // a stop opens when the one before it is won
-const roadNext = (r) => { const i = ROAD.findIndex((_, k) => !(roadBits(r, k) & 1)); return i < 0 ? ROAD.length : i; };   // 8 = every stop won
-const roadGateOpen = (r) => roadTotal(r) >= ROAD_GATE;
+const roadRegOf = (i) => Math.floor(i / ROAD_N);
+const roadBossSpec = (k) => BL.BOSSES.find((b) => b.id === ROAD_REG[k].boss) || null;
+const roadRegReady = (k) => !!ROAD_REG[k] && !!roadBossSpec(k);   // a region whose boss this build does not have yet is "coming"
+const roadBossBits = (r, k) => r[ROAD_REG[k].bk] | 0;
+const roadRegOpen = (r, k) => roadRegReady(k) && (k === 0 || roadBossBits(r, k - 1) > 0);   // the boss before it beaten on any level
+const roadRegStars = (r, k) => { let n = 0; for (let j = 0; j < ROAD_N; j++) n += roadNStars(roadBits(r, k * ROAD_N + j)); return n; };
+const roadTotal = (r) => ROAD_REG.reduce((a, _, k) => a + roadRegStars(r, k) + roadNStars(roadBossBits(r, k)), 0);   // every star, bosses too
+const roadOpen = (r, i) => roadRegOpen(r, roadRegOf(i)) && (i % ROAD_N === 0 || (roadBits(r, i - 1) & 1) === 1);   // the one before it won
+const roadNext = (r, k) => { for (let j = 0; j < ROAD_N; j++) if (!(roadBits(r, k * ROAD_N + j) & 1)) return j; return ROAD_N; };   // 8 = every stop won
+const roadGateOpen = (r, k) => roadRegStars(r, k) >= ROAD_GATE;
+// the region the Road opens on: the last one that is open
+const roadHome = (r) => { let k = 0; while (roadRegOpen(r, k + 1)) k++; return k; };
+// RD.sel: a stop (0..23) or a region's boss (ROAD.length + k)
+const roadIsBoss = (i) => i >= ROAD.length;
+const roadSelName = (i) => (roadIsBoss(i) ? roadBossSpec(i - ROAD.length).name : `stop ${(i % ROAD_N) + 1}: ${ROAD[i].name}`);
 const roadLives = (st) => [st.lives || 3, st.cpuLives || st.lives || 3];
 const roadSecs = (st) => st.secs || 180;
 const mmssR = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -42,10 +82,10 @@ function roadRules(st) {
   const mi = BL.MAPS.findIndex((m) => m.id === st.map);
   return { twist: st.twist || "", rest: `${lives} · ${mmssR(roadSecs(st))} · ${mapName(Math.max(0, mi))}` };
 }
-// "Stop 3 of 8 · 7 ★" (every stop won: "Old Scratch · 7 ★")
-function roadSummary(r) {
-  const n = roadNext(r), t = roadTotal(r) + roadBossStars(r);
-  return `${n < ROAD.length ? `Stop ${n + 1} of ${ROAD.length}` : roadGateOpen(r) ? "Old Scratch" : `${ROAD_GATE} ★ open the fence`} · ${t} ★`;
+// region k: "Stop 3 of 8 · 7 ★" (every stop won: "Old Scratch · 7 ★"); the stars are the whole Road's
+function roadSummary(r, k) {
+  const n = roadNext(r, k), t = roadTotal(r);
+  return `${n < ROAD_N ? `Stop ${n + 1} of ${ROAD_N}` : roadGateOpen(r, k) ? roadBossSpec(k).name : `${ROAD_GATE} ★ open the fence`} · ${t} ★`;
 }
 
 /* ----- the map: a dirt path from the gate (bottom left) to the fence gap (top right) across the night field ----- */
@@ -53,8 +93,10 @@ function roadSummary(r) {
 const RD_WIDE = [[0.12, 0.76], [0.26, 0.86], [0.38, 0.68], [0.25, 0.5], [0.41, 0.36], [0.57, 0.5], [0.71, 0.64], [0.8, 0.43], [0.9, 0.2]];
 const RD_TALL = [[0.24, 0.87], [0.6, 0.85], [0.8, 0.72], [0.5, 0.63], [0.2, 0.55], [0.36, 0.44], [0.7, 0.4], [0.56, 0.28], [0.76, 0.13]];
 const RD_GATE = { wide: [0.03, 0.9], tall: [0.06, 0.95] };
-const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1,
-  pos: null, home: null, walk: null, dust: [] };   // pos: the stop your fighter stands on (a fraction while walking); walk: { a, b, t0, ms, ph, then }
+const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1, reg: 0,   // reg: the region shown
+  pos: null, posK: -1, homes: {}, walk: null, dust: [] };
+// pos: where your fighter stands on region posK's path (-1 its gate, 0..7 the stops, 8 the boss; a fraction while walking);
+// homes: each region's next stop when it was last shown; walk: { a, b, t0, ms, ph, then }
 function rdPoints(w, h) {
   const tall = h > w * 1.05, P0 = tall ? RD_TALL : RD_WIDE, g = RD_GATE[tall ? "tall" : "wide"];
   const mx = Math.min(w, h) * 0.04, my = mx;
@@ -82,10 +124,20 @@ function rdStar(c, x, y, r, fill, line) {
   for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + (k * Math.PI) / 5, rr = k % 2 ? r * 0.46 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
   c.closePath(); c.fillStyle = fill; c.fill(); c.lineWidth = Math.max(1.2, r * 0.22); c.strokeStyle = line; c.lineJoin = "round"; c.stroke();
 }
-// the still part (sky, moon, hills, field, path, fence), cached per size and progress
-function rdBackground(w, h, s, r) {
+// the still part of region k's map, cached per size and progress: its art's bg (RD_ART by region id; The Field's is below)
+function rdBackground(w, h, s, r, k) {
   const cv = document.createElement("canvas"); cv.width = Math.round(w * s); cv.height = Math.round(h * s);
   const c = cv.getContext("2d"); c.scale(s, s);
+  (RD_ART[ROAD_REG[k].id] || RD_ART.field).bg(c, w, h, r, k);
+  return cv;
+}
+// each region's map art: bg(c, w, h, r, k) the still part (sky, ground, the path through rdPoints, the gate, the fence; roadGateOpen(r, k)
+// opens it), peek(c, x, y, u, tk) the boss's glimpse over the fence gap (x, y = the boss stop), ink: the disc colours, and optionally
+// won(c, x, y, R, mini): the mark on a won stop in place of the sprout
+const RD_ART = {};
+RD_ART.field = { bg: rdField, peek: rdFieldPeek };
+// The Field: sky, moon, hills, field, path, fence
+function rdField(c, w, h, r, k) {
   const { gate, pts, tall } = rdPoints(w, h), u = Math.min(w, h), hz = h * (tall ? 0.2 : 0.3);
   // sky and stars
   const sk = c.createLinearGradient(0, 0, 0, hz); sk.addColorStop(0, "#1a0f2a"); sk.addColorStop(0.55, "#4a1a3a"); sk.addColorStop(1, "#8c2a2e");
@@ -130,7 +182,7 @@ function rdBackground(w, h, s, r) {
   const [bx, by] = pts[pts.length - 1], fy = by + u * 0.02;
   c.fillStyle = "#1e0f22"; c.beginPath(); c.ellipse(bx + u * 0.02, by - u * 0.1, u * 0.26, u * 0.12, 0, Math.PI, Math.PI * 2); c.fill();
   c.strokeStyle = OUT; c.lineWidth = 2.5; c.fillStyle = "#7a4a2e";
-  const open = roadGateOpen(r), gap = u * 0.07;
+  const open = roadGateOpen(r, k), gap = u * 0.07;
   for (const side of [-1, 1]) {
     const x0 = bx + side * gap, x1 = side < 0 ? Math.max(0, bx - u * 0.42) : Math.min(w, bx + u * 0.42);
     for (let x = x0; side < 0 ? x > x1 : x < x1; x += side * u * 0.055) { c.beginPath(); c.rect(x - 3, fy - u * 0.07, 6, u * 0.075); c.fill(); c.stroke(); }
@@ -138,7 +190,16 @@ function rdBackground(w, h, s, r) {
     c.beginPath(); c.rect(Math.min(x0, x1), fy - u * 0.025, Math.abs(x1 - x0), 4); c.fill(); c.stroke();
   }
   if (!open) { c.fillStyle = "#6a4a30"; c.beginPath(); c.rect(bx - gap, fy - u * 0.05, gap * 2, 4); c.rect(bx - gap, fy - u * 0.022, gap * 2, 4); c.fill(); c.stroke(); }
-  return cv;
+}
+// beyond The Field's fence: two horns over the hill and yellow eyes that blink
+function rdFieldPeek(c, bx, by, u, tk) {
+  const blink = (tk % 200) < 8;
+  c.save(); c.translate(bx + u * 0.02, by - u * 0.12);
+  c.fillStyle = "#f2d9a8"; c.strokeStyle = OUT; c.lineWidth = 1.5;
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * u * 0.03, 0); c.quadraticCurveTo(s * u * 0.07, -u * 0.03, s * u * 0.06, -u * 0.075); c.quadraticCurveTo(s * u * 0.045, -u * 0.03, s * u * 0.012, -u * 0.005); c.closePath(); c.fill(); c.stroke(); }
+  c.fillStyle = "#ffd84a";
+  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * u * 0.018, u * 0.012, u * 0.011, blink ? 0.6 : u * 0.008, 0, 0, Math.PI * 2); c.fill(); }
+  c.restore();
 }
 // the fighter who walks the Road (the one you play last), drawn at 0.6x on the next stop
 function rdPuppet() {
@@ -156,45 +217,42 @@ function roadPaint(cv, tk, o) {
   if (!w || !h) return;
   const W = Math.round(w * DPR), H = Math.round(h * DPR);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-  const c = cv.getContext("2d"), r = roadGet();
-  const key = `${w}x${h}@${DPR}:${r.s.join(".")}:${r.b}:${roadGateOpen(r)}`;
+  const c = cv.getContext("2d"), r = roadGet(), k = o.mini ? roadHome(r) : RD.reg, A = RD_ART[ROAD_REG[k].id] || RD_ART.field;
+  const ink = Object.assign({ disc: "#3a2014", ring: "#7a4a2e", boss: "#6e1f18", bossRing: "#ff8a3d", num: "#f3e7d0" }, A.ink);
+  const key = `${k}:${w}x${h}@${DPR}:${r.s.join(".")}:${roadBossBits(r, k)}:${roadGateOpen(r, k)}`;
   const slot = o.mini ? "mini" : "big";
   RD.bgs = RD.bgs || {};
-  if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r) };
+  if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r, k) };
   c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(RD.bgs[slot].cv, 0, 0);
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const { pts, gate } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r);
+  const { pts, gate } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r, k), bb = roadBossBits(r, k);
   if (!o.mini) { RD.pts = pts; RD.R = R; RD.w = w; RD.h = h; }
-  // beyond the fence: two horns over the hill and yellow eyes that blink
-  const [bx, by] = pts[pts.length - 1], blink = (tk % 200) < 8;
-  c.save(); c.translate(bx + u * 0.02, by - u * 0.12);
-  c.fillStyle = "#f2d9a8"; c.strokeStyle = OUT; c.lineWidth = 1.5;
-  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * u * 0.03, 0); c.quadraticCurveTo(s * u * 0.07, -u * 0.03, s * u * 0.06, -u * 0.075); c.quadraticCurveTo(s * u * 0.045, -u * 0.03, s * u * 0.012, -u * 0.005); c.closePath(); c.fill(); c.stroke(); }
-  c.fillStyle = "#ffd84a";
-  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * u * 0.018, u * 0.012, u * 0.011, blink ? 0.6 : u * 0.008, 0, 0, Math.PI * 2); c.fill(); }
-  c.restore();
-  // the stops: soil discs, the number, three star slots; won ones grow a sprout; the next one has a pulsing gold ring
-  pts.forEach(([x, y], i) => {
-    const boss = i === ROAD.length, bits = boss ? r.b : roadBits(r, i), open = boss ? roadGateOpen(r) : roadOpen(r, i);
+  // beyond the fence: the boss's glimpse
+  const [bx, by] = pts[pts.length - 1];
+  A.peek(c, bx, by, u, tk);
+  // the stops: discs, the number, three star slots; won ones grow a sprout; the next one has a pulsing gold ring
+  pts.forEach(([x, y], j) => {
+    const boss = j === ROAD_N, i = k * ROAD_N + j, bits = boss ? bb : roadBits(r, i), open = boss ? roadGateOpen(r, k) : roadOpen(r, i);
     c.globalAlpha = open ? 1 : 0.55;
-    c.fillStyle = boss ? (open ? "#6e1f18" : "#3a2014") : "#3a2014"; c.strokeStyle = OUT; c.lineWidth = o.mini ? 1.5 : 3;
+    c.fillStyle = boss && open ? ink.boss : ink.disc; c.strokeStyle = OUT; c.lineWidth = o.mini ? 1.5 : 3;
     c.beginPath(); c.ellipse(x, y, R, R * 0.8, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.strokeStyle = boss && open ? "#ff8a3d" : "#7a4a2e"; c.lineWidth = o.mini ? 1 : 2;
+    c.strokeStyle = boss && open ? ink.bossRing : ink.ring; c.lineWidth = o.mini ? 1 : 2;
     c.beginPath(); c.ellipse(x, y - 1, R * 0.78, R * 0.6, 0, 0, Math.PI * 2); c.stroke();
     if (!o.mini) {
       c.font = `900 ${Math.round(R * 0.8)}px "Barlow Condensed", "Arial Narrow", sans-serif`; c.textAlign = "center"; c.textBaseline = "middle";
-      c.fillStyle = boss ? "#ffd84a" : "#f3e7d0";
-      c.fillText(boss ? (open ? "☠" : "🔒") : String(i + 1), x, y + 1);
+      c.fillStyle = boss ? "#ffd84a" : ink.num;
+      c.fillText(boss ? (open ? "☠" : "🔒") : String(j + 1), x, y + 1);
       if (boss && !open) { c.font = `800 ${Math.round(R * 0.5)}px "Barlow Condensed", sans-serif`; c.fillStyle = "#f3e7d0"; c.fillText(`${ROAD_GATE} ★`, x, y - R * 1.25); }
     }
-    if (!boss && (bits & 1)) {   // a sprout on a won stop
+    if (!boss && (bits & 1) && A.won) A.won(c, x, y, R, o.mini);   // a won stop: the region's own mark (The Kitchen's fork and knife are in its bg)
+    else if (!boss && (bits & 1)) {   // a sprout on a won stop
       c.strokeStyle = OUT; c.lineWidth = o.mini ? 1 : 2; c.fillStyle = "#5fc14b";
       c.beginPath(); c.moveTo(x + R * 0.55, y - R * 0.45); c.lineTo(x + R * 0.55, y - R * 0.95); c.stroke();
       c.beginPath(); c.ellipse(x + R * 0.38, y - R * 0.98, R * 0.22, R * 0.12, -0.5, 0, Math.PI * 2); c.fill(); c.stroke();
       c.beginPath(); c.ellipse(x + R * 0.72, y - R * 1.02, R * 0.22, R * 0.12, 0.5, 0, Math.PI * 2); c.fill(); c.stroke();
     }
-    for (let k = 0; k < 3; k++) rdStar(c, x + (k - 1) * R * 0.72, y + R * 1.12, R * (o.mini ? 0.32 : 0.3), bits & (1 << k) ? "#ffd23f" : "rgba(14,16,34,0.55)", OUT);
-    if (i === Math.min(next, ROAD.length) && open && !(boss && (r.b & 7) === 7)) {
+    for (let q = 0; q < 3; q++) rdStar(c, x + (q - 1) * R * 0.72, y + R * 1.12, R * (o.mini ? 0.32 : 0.3), bits & (1 << q) ? "#ffd23f" : "rgba(14,16,34,0.55)", OUT);
+    if (j === Math.min(next, ROAD_N) && open && !(boss && (bb & 7) === 7)) {
       const a = 0.5 + 0.5 * Math.sin(tk * 0.1);
       c.strokeStyle = `rgba(255,210,63,${0.5 + 0.5 * a})`; c.lineWidth = o.mini ? 1.5 : 3;
       c.beginPath(); c.ellipse(x, y, R * (1.2 + 0.08 * a), R * (0.98 + 0.06 * a), 0, 0, Math.PI * 2); c.stroke();
@@ -203,22 +261,23 @@ function roadPaint(cv, tk, o) {
   });
   // your fighter: on the next stop on the menu card; on the map where it last stood, walking the path to a stop (little hops, dust),
   // hopping for a moment when its own stop is tapped
-  const f = rdPuppet(), home = Math.min(next, ROAD.length), sc = (R * 2.3) / f.s.h;
+  const f = rdPuppet(), home = Math.min(next, ROAD_N), sc = (R * 2.3) / f.s.h, all = [gate, ...pts];
   let at, hop = 0;
   if (o.mini) { at = pts[home]; f.state = "idle"; f.facing = 1; }
   else {
+    rdRegPos(k);
     if (RD.pos === null) RD.pos = home;
     const wk = RD.walk;
     if (wk) {
-      const k = Math.min(1, (performance.now() - wk.t0) / wk.ms), e = k * k * (3 - 2 * k), s0 = wk.a + (wk.b - wk.a) * e;   // by the clock, not frames
-      const ph = k * Math.abs(wk.b - wk.a) * 2, land = Math.floor(ph) !== Math.floor(wk.ph);   // two hops per stop
+      const q = Math.min(1, (performance.now() - wk.t0) / wk.ms), e = q * q * (3 - 2 * q), s0 = wk.a + (wk.b - wk.a) * e;   // by the clock, not frames
+      const ph = q * Math.abs(wk.b - wk.a) * 2, land = Math.floor(ph) !== Math.floor(wk.ph);   // two hops per stop
       wk.ph = ph; RD.pos = s0;
-      at = rdCurve([gate, ...pts], s0 + 1);
+      at = rdCurve(all, s0 + 1);
       hop = Math.abs(Math.sin(ph * Math.PI)) * R * 0.32;
       f.state = "run"; f.anim.run += 0.32; f.facing = wk.b > wk.a ? 1 : -1;
-      if (land && k < 1) RD.dust.push({ x: at[0], y: at[1] + R * 0.3, t: 0 });
-      if (k >= 1) { RD.walk = null; RD.pos = wk.b; f.state = "idle"; RD.hopT = 12; if (wk.then && mode === "road") wk.then(); }
-    } else { at = pts[clamp(Math.round(RD.pos), 0, ROAD.length)]; f.state = "idle"; }
+      if (land && q < 1) RD.dust.push({ x: at[0], y: at[1] + R * 0.3, t: 0 });
+      if (q >= 1) { RD.walk = null; RD.pos = wk.b; f.state = "idle"; RD.hopT = 12; if (wk.then && mode === "road") wk.then(); }
+    } else { at = rdCurve(all, clamp(Math.round(RD.pos), -1, ROAD_N) + 1); f.state = "idle"; }
     if (RD.hopT > 0) { hop += Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2; RD.hopT--; }
     for (const d of RD.dust) {   // dust puffs where a hop lands
       d.t++; const a = 1 - d.t / 22;
@@ -232,56 +291,88 @@ function roadPaint(cv, tk, o) {
   try { drawFighter(c, f, o.mini ? 0 : tk); } catch (e) { /* a drawing problem never blocks the map */ }
   c.restore();
 }
-// walk your fighter along the path to stop i (the boss's gap is ROAD.length), then run then(); with reduced motion it is there at once
+// walk your fighter along the shown region's path to stop i (0..7; the boss's gap is 8), then run then(); with reduced motion it is there at once
 function rdWalk(i, then) {
   const a = RD.pos === null ? i : RD.pos, n = Math.abs(i - a);
   if (n < 0.01 || reducedMotion()) { RD.walk = null; RD.pos = i; if (then) then(); return; }
   RD.walk = { a, b: i, t0: performance.now(), ms: Math.min(430 * n + 170, 1600), ph: 0, then };
 }
+// the fighter's spot belongs to one region: showing another starts it afresh there
+function rdRegPos(k) { if (RD.posK !== k) { RD.posK = k; RD.walk = null; RD.pos = null; RD.dust = []; } }
+// your fighter on the region shown: a walk left half way (Back, a fight started) ends where it was going; to (a stop, or ROAD.length + k
+// for a boss) walks there and opens its sheet; otherwise it walks on to the next stop if a win opened one since the region was last
+// shown. A region shown for the first time with nothing won: in at its gate, walking to stop 1.
+function rdArrive(to) {
+  const r = roadGet(), k = RD.reg, home = Math.min(roadNext(r, k), ROAD_N), seen = RD.homes[k];
+  if (RD.walk) { RD.pos = RD.walk.b; RD.walk = null; }
+  rdRegPos(k);
+  if (RD.pos === null) RD.pos = seen !== undefined ? seen : home === 0 ? -1 : home;
+  if (to !== null) rdWalk(roadIsBoss(to) ? ROAD_N : to % ROAD_N, () => roadSheet(to));
+  else if (RD.pos < 0 || (seen !== undefined && seen !== home)) rdWalk(home, null);
+  RD.homes[k] = home;
+}
 
 /* ----- the Road screen ----- */
 screens.road = $("scrRoad");
-// o.to: walk to that stop and open its sheet (Next stop on the results); without it your fighter walks on to the next stop if a win opened one
+// o.to: walk to that stop (ROAD.length + k: region k's boss) and open its sheet (Next stop on the results); o.reg: show that region;
+// without them your fighter walks on to the next stop if a win opened one (rdArrive)
 function openRoad(o) {
   finStop(); tutEnd();
   mode = "road"; sel.mode = "road"; paused = false; G = null; match = null; meSlot = 0;
   modal("roadStop", false); modal("pause", false); modal("help", false); modal("settings", false);
   clearTrails(); fx.length = 0; sfx.length = 0;
   show("road"); $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
+  const r = roadGet(), to = o && o.to !== undefined && o.to !== null ? o.to : null;
+  if (o && o.reg !== undefined) RD.reg = o.reg;
+  if (to !== null) RD.reg = roadIsBoss(to) ? to - ROAD.length : roadRegOf(to);
+  if (!roadRegOpen(r, RD.reg)) RD.reg = roadHome(r);
   roadHeader(); resize();
   requestAnimationFrame(roadHits);
-  if (RD.walk) { RD.pos = RD.walk.b; RD.walk = null; }   // a walk left half way (Back, a fight started) ends where it was going
-  const r = roadGet(), home = Math.min(roadNext(r), ROAD.length), to = o && o.to !== undefined ? o.to : null;
-  if (RD.pos === null) RD.pos = home;
-  if (to !== null) rdWalk(to, () => roadSheet(to));
-  else if (RD.home !== null && RD.home !== home) rdWalk(home, null);
-  RD.home = home;
+  rdArrive(to);
 }
 function roadHeader() {
-  const r = roadGet();
-  $("roadSum").textContent = roadSummary(r);
+  const r = roadGet(), k = RD.reg;
+  $("roadKick").textContent = `The Road · region ${k + 1} of ${ROAD_REG.length}`;
+  $("roadReg").textContent = ROAD_REG[k].name;
+  $("roadSum").textContent = roadSummary(r, k);
   $("roadTokens").textContent = P.tokens;
+  $("roadPrev").disabled = k === 0;
+  const nx = k + 1 < ROAD_REG.length;
+  $("roadNext").disabled = !nx;
+  $("roadNext").classList.toggle("lock", nx && !roadRegOpen(r, k + 1));
+}
+// the arrows beside the region's name: the region before / after (a locked one says what opens it)
+function roadGo(d) {
+  const r = roadGet(), k = RD.reg + d;
+  if (k < 0 || k >= ROAD_REG.length) return;
+  Sfx.init();
+  if (!roadRegOpen(r, k)) {
+    Sfx.uiBack();
+    roadNote(!roadRegReady(k) ? `${ROAD_REG[k].name} is coming soon.` : `Beat ${roadBossSpec(k - 1).name} past the fence of ${ROAD_REG[k - 1].name} to open ${ROAD_REG[k].name}.`);
+    return;
+  }
+  Sfx.uiFlip(); RD.reg = k; RD.hopT = 0; $("roadHits").dataset.key = ""; roadHeader(); rdArrive(null);
 }
 // the tap targets over the discs (rebuilt when the map changes size or progress)
 function roadHits() {
   const box = $("roadHits"), cv = $("roadCv"), r = roadGet();
   if (!cv.clientWidth) return;
   const { pts } = rdPoints(cv.clientWidth, cv.clientHeight), R = clamp(Math.min(cv.clientWidth, cv.clientHeight) * 0.052, 15, 30);
-  const key = `${cv.clientWidth}x${cv.clientHeight}:${r.s.join(".")}:${r.b}`;
+  const k = RD.reg, key = `${k}:${cv.clientWidth}x${cv.clientHeight}:${r.s.join(".")}:${roadBossBits(r, k)}`;
   if (box.dataset.key === key) return;
   box.dataset.key = key; box.innerHTML = "";
-  pts.forEach(([x, y], i) => {
-    const boss = i === ROAD.length, open = boss ? roadGateOpen(r) : roadOpen(r, i), b = document.createElement("button");
+  pts.forEach(([x, y], j) => {
+    const boss = j === ROAD_N, i = boss ? ROAD.length + k : k * ROAD_N + j, open = boss ? roadGateOpen(r, k) : roadOpen(r, i), b = document.createElement("button");
     b.className = "rd-hit"; b.style.left = `${x}px`; b.style.top = `${y}px`; b.style.setProperty("--s", `${Math.max(44, R * 2.4)}px`);
-    const n = boss ? roadBossStars(r) : roadNStars(roadBits(r, i));
-    b.setAttribute("aria-label", boss ? `Old Scratch, ${open ? `${n} of 3 stars` : `opens at ${ROAD_GATE} stars`}` : `Stop ${i + 1}, ${ROAD[i].name}, ${open ? `${n} of 3 stars` : "locked"}`);
+    const n = boss ? roadNStars(roadBossBits(r, k)) : roadNStars(roadBits(r, i)), bn = roadBossSpec(k).name;
+    b.setAttribute("aria-label", boss ? `${bn}, ${open ? `${n} of 3 stars` : `opens at ${ROAD_GATE} stars`}` : `Stop ${j + 1}, ${ROAD[i].name}, ${open ? `${n} of 3 stars` : "locked"}`);
     b.dataset.i = i;
     if (!open) b.classList.add("lock");
     b.addEventListener("click", () => {
       Sfx.init();
-      if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars on the Road to open the fence (you have ${roadTotal(roadGet())}).` : `Win stop ${i} first.`); return; }
+      if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars in ${ROAD_REG[k].name} to open the fence (you have ${roadRegStars(roadGet(), k)}).` : `Win stop ${j} first.`); return; }
       Sfx.ui();
-      if (!RD.walk && Math.round(RD.pos) === i) { RD.hopT = 24; roadSheet(i); } else rdWalk(i, () => roadSheet(i));   // mid-walk: turn toward the new stop from where it is
+      if (!RD.walk && Math.round(RD.pos) === j) { RD.hopT = 24; roadSheet(i); } else rdWalk(j, () => roadSheet(i));   // mid-walk: turn toward the new stop from where it is
     });
     box.appendChild(b);
   });
@@ -293,25 +384,27 @@ function roadDraw(tk) { roadPaint($("roadCv"), tk, {}); roadHits(); }
 /* ----- a stop's sheet: you vs the CPU, the twist, the CPU's line, the three stars, Fight ----- */
 function roadSheet(i) {
   RD.sel = i;
-  const r = roadGet(), boss = i === ROAD.length, me = FIG[P.last] || FIGHTERS[0], mi = P.pal[me.id] || 0;
-  $("rsKick").textContent = boss ? "The Road · past the fence" : `The Road · stop ${i + 1} of ${ROAD.length}`;
-  $("rsName").textContent = boss ? "Old Scratch" : ROAD[i].name;
+  const r = roadGet(), boss = roadIsBoss(i), k = boss ? i - ROAD.length : roadRegOf(i), me = FIG[P.last] || FIGHTERS[0], mi = P.pal[me.id] || 0;
+  const RG_ = ROAD_REG[k], bspec = roadBossSpec(k);
+  $("rsKick").textContent = boss ? `${RG_.name} · past the fence` : `${RG_.name} · stop ${(i % ROAD_N) + 1} of ${ROAD_N}`;
+  $("rsName").textContent = boss ? bspec.name : ROAD[i].name;
   dailyCard($("rsMe"), me.id, mi, "You");
   const sheet = $("roadStopSheet");
   sheet.classList.toggle("boss", boss);
   if (boss) {
-    const b = BL.BOSSES.find((x) => x.id === ROAD_BOSS);
+    const b = bspec, bb = roadBossBits(r, k), rs = roadSkinOf(me, b.id);
     const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
-    op.innerHTML = `<span class="dly-ph rd-bossph"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
-    $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. Break him (0 HP), then land a heavy, special or ulti.`;
-    $("rsLine").textContent = BOSS_LINE[ROAD_BOSS];
-    $("rsStars").innerHTML = BOSS_LV.map((n, k) => roadStarHTML(!!(r.b & (1 << k)), n)).join("");
-    $("rsReward").textContent = r.paid ? "Every level won is a star." : `First win: the Devil Masher title and ${ROAD_BOSS_CHIPS} chips. Every level won is a star.`;
+    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
+    $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. ${BOSS_RULE[b.id] || "Break him (0 HP), then land a heavy, special or ulti."}`;
+    $("rsLine").textContent = BOSS_LINE[b.id] || "";
+    $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n)).join("");
+    const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? ` ${me.name} has his ${me.palettes[rs].name} skin.` : ` A win gives ${me.name} the ${me.palettes[rs].name} skin.`;
+    $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips. Every level won is a star.`) + skin;
     $("rsLv").innerHTML = "";
-    BOSS_LV.forEach((n, k) => {
+    BOSS_LV.forEach((n, q) => {
       const bt = document.createElement("button");
-      bt.className = "btn" + (k === 0 ? " primary" : ""); bt.innerHTML = `<span>${n}${r.b & (1 << k) ? " ★" : ""}</span>`;
-      bt.addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadBossFight(k); });
+      bt.className = "btn" + (q === 0 ? " primary" : ""); bt.innerHTML = `<span>${n}${bb & (1 << q) ? " ★" : ""}</span>`;
+      bt.addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadBossFight(k, q); });
       $("rsLv").appendChild(bt);
     });
   } else {
@@ -333,7 +426,7 @@ function roadFight(i) {
   if (!st || !roadOpen(r, i)) { openRoad(); return; }
   Sfx.init(); modal("roadStop", false);
   const me = FIG[P.last] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], op = FIG[st.f];
-  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % op.palettes.length : 0];
+  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(op) : 0];
   const [a, b] = roadLives(st), map = Math.max(0, BL.MAPS.findIndex((m) => m.id === st.map));
   G = newGame({ players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
     stocks: a, time: roadSecs(st), countdown: 150, map });
@@ -341,11 +434,11 @@ function roadFight(i) {
   meSlot = 0;
   enterMatchUI();
 }
-function roadBossFight(lv) {
+function roadBossFight(k, lv) {
   const r = roadGet();
-  if (!roadGateOpen(r)) { openRoad(); return; }
+  if (!roadRegOpen(r, k) || !roadGateOpen(r, k)) { openRoad(); return; }
   modal("roadStop", false);
-  startBoss({ level: lv, boss: ROAD_BOSS, road: { boss: true, lv } });
+  startBoss({ level: lv, boss: ROAD_REG[k].boss, road: { boss: true, k, lv } });
 }
 // handleEvent (effects.js) passes the live match's events: the start, the end, the KOs (a finisher special, an ulti)
 function roadEvent(g, e) {
@@ -363,7 +456,8 @@ function roadRoute(e, rt) {
   const rd = match && match.road;
   if (!rd || rd.boss || e.slot !== meSlot) return;
   const b = ROAD[rd.i].bonus;
-  if (b.k === "route" && rt.id === b.r) rd.bonus = true;
+  // "own": the route of the fighter you play
+  if (b.k === "route" && (rt.id === b.r || (b.r === "own" && rt.fighter === G.fighters[meSlot].spec.id))) rd.bonus = true;
 }
 // finishMatch: a Road stop is over (a forfeit too): the stars, the chips, the results
 function roadMatchEnd(forfeit) {
@@ -378,29 +472,38 @@ function roadMatchEnd(forfeit) {
     r.s[rd.i] = now; P.road = r; P.tokens += total;
     saveProfile();
   }
-  const gate = fresh > 0 && roadTotal(r) >= ROAD_GATE && roadTotal(r) - fresh < ROAD_GATE;   // this win opened the fence
-  // a win: the big button goes on to the next stop (Old Scratch after the last one, once the fence is open); a loss: Retry
-  rd.next = !won ? null : rd.i + 1 < ROAD.length ? { i: rd.i + 1 } : roadGateOpen(r) ? { i: ROAD.length } : null;
-  const short = won && rd.i === ROAD.length - 1 && !roadGateOpen(r) ? ROAD_GATE - roadTotal(r) : 0;
+  const k = roadRegOf(rd.i), j = rd.i % ROAD_N, rs = roadRegStars(r, k);
+  const gate = fresh > 0 && rs >= ROAD_GATE && rs - fresh < ROAD_GATE;   // this win opened the fence
+  // a win: the big button goes on to the next stop (the region's boss after its last one, once the fence is open); a loss: Retry
+  rd.next = !won ? null : j + 1 < ROAD_N ? { i: rd.i + 1 } : roadGateOpen(r, k) ? { i: ROAD.length + k } : null;
+  const short = won && j === ROAD_N - 1 && !roadGateOpen(r, k) ? ROAD_GATE - rs : 0;
   const why = forfeit ? "No stars for a forfeit." : !won ? "No stars this time. A win opens the next stop." :
     (fresh > 0 ? `${fresh} new ${fresh === 1 ? "star" : "stars"} +${total}` : got === 7 ? "Three stars again." : "No new stars this time.") +
-    (gate ? " · The fence is open: Old Scratch waits past the last stop." : "") +
+    (gate ? ` · The fence is open: ${roadBossSpec(k).name} waits past the last stop.` : "") +
     (short ? ` · ${short} more ${short === 1 ? "star opens" : "stars open"} the fence.` : "");
   showResults({ res, forfeit, ranked: false, me, op, lines: [], total, why, road: { i: rd.i, got, had, labels: [...ROAD_STARS, st.bonus.txt] } });
 }
-// bossMatchEnd: a Road boss fight adds its star and the first win's reward to the results
+// bossMatchEnd: a Road boss fight adds its star, the first win's reward and the fighter's Road skin to the results
 function roadBossEnd(R) {
-  const lv = match.road.lv, r = roadGet(), won = R.res === 1;
-  let total = 0;
+  const { k, lv } = match.road, RG_ = ROAD_REG[k], r = roadGet(), won = R.res === 1, bit = 1 << lv, had = r[RG_.bk] | 0;
+  let total = 0, save = false;
   const lines = [];
-  if (won && !(r.b & (1 << lv))) { r.b |= 1 << lv; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
-  if (won && !r.paid) { r.paid = true; total += ROAD_BOSS_CHIPS; lines.push(`Devil Masher title + ${ROAD_BOSS_CHIPS}`); }
-  if (total) { P.road = r; P.tokens += total; saveProfile(); }
+  if (won && !(had & bit)) { r[RG_.bk] = had | bit; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
+  if (won && !r[RG_.pk]) { r[RG_.pk] = true; total += ROAD_BOSS_CHIPS; lines.push(`${RG_.title} title + ${ROAD_BOSS_CHIPS}`); }
+  // every win unlocks this boss's Road skin for the fighter you played (if it doesn't have it yet)
+  const me = R.me.spec, rs = roadSkinOf(me, RG_.boss);
+  if (won && rs >= 0 && !(P.owned[me.id] || []).includes(rs)) { P.owned[me.id] = [...(P.owned[me.id] || [0]), rs]; save = true; lines.push(`${me.palettes[rs].name} skin for ${me.name}`); R.skin = { f: me.id, i: rs }; }
+  if (won && k + 1 < ROAD_REG.length && roadRegReady(k + 1) && !had) lines.push(`${ROAD_REG[k + 1].name} is open`);
+  if (total || save) { P.road = r; P.tokens += total; saveProfile(); }
   R.total = total;
   R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : lines.length ? lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
-  R.road = { boss: true, lv, got: won ? 1 << lv : 0, had: r.b & ~(won ? 1 << lv : 0), labels: BOSS_LV };
-  match.road.next = won && lv + 1 < BOSS_LV.length ? { lv: lv + 1 } : null;   // a win offers the next level
+  R.road = { boss: true, k, lv, got: won ? bit : 0, had: had & ~(won ? bit : 0), labels: BOSS_LV };
+  // a win goes on: into the next region when this first win opened it, else to the next level (after Nightmare, the next region)
+  const nk = k + 1 < ROAD_REG.length && roadRegReady(k + 1) ? k + 1 : -1;
+  match.road.next = !won ? null : nk >= 0 && !had ? { k: nk } : lv + 1 < BOSS_LV.length ? { lv: lv + 1 } : nk >= 0 ? { k: nk } : null;
 }
+// the Road skin a boss gives this fighter: its palette index (-1 = none)
+const roadSkinOf = (spec, bossId) => spec.palettes.findIndex((p) => p.road === bossId);
 // the results: the stop's three stars (the new ones pop)
 function roadResStars(R) {
   const el = $("rStars"), rd = R.road;
@@ -411,34 +514,50 @@ function roadResStars(R) {
     return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
   }).join("");
 }
-// the results' big button: Next stop / To Old Scratch / Next: Hard after a win, Retry otherwise (menus.js rAgain does it)
+// the results' big button after a win: Next stop / To <boss> after a region's last stop / To <region> after a boss win that opened it,
+// Next: Hard after a boss win; Retry after a loss (menus.js rAgain does it)
 function roadAgainLabel() {
   const nx = match && match.road && match.road.next;
-  return !nx ? "Retry" : nx.lv !== undefined ? `Next: ${BOSS_LV[nx.lv]}` : nx.i >= ROAD.length ? "To Old Scratch" : "Next stop";
+  if (!nx) return "Retry";
+  if (nx.lv !== undefined) return `Next: ${BOSS_LV[nx.lv]}`;
+  if (nx.k !== undefined) return `To ${ROAD_REG[nx.k].name}`;
+  return roadIsBoss(nx.i) ? `To ${roadBossSpec(nx.i - ROAD.length).name}` : "Next stop";
 }
 function roadAgain() {
   const rd = match.road, nx = rd.next;
-  if (nx && nx.lv !== undefined) roadBossFight(nx.lv);
+  if (nx && nx.lv !== undefined) roadBossFight(rd.k, nx.lv);
+  else if (nx && nx.k !== undefined) openRoad({ reg: nx.k, to: roadGoesOn(roadGet(), nx.k) });
   else if (nx) openRoad({ to: nx.i });
-  else if (rd.boss) roadBossFight(rd.lv);
+  else if (rd.boss) roadBossFight(rd.k, rd.lv);
   else roadFight(rd.i);
 }
+// where region k goes on: its next stop to win, its boss once every stop is won and the fence is open (null: just show the region)
+function roadGoesOn(r, k) {
+  const j = roadNext(r, k);
+  return j < ROAD_N ? k * ROAD_N + j : roadGateOpen(r, k) ? ROAD.length + k : null;
+}
 function roadResMode(R) {
-  return R.road.boss ? `The Road · Old Scratch · ${BOSS_LV[R.road.lv]}` : `The Road · stop ${R.road.i + 1} · ${ROAD[R.road.i].name}`;
+  return R.road.boss ? `The Road · ${roadBossSpec(R.road.k).name} · ${BOSS_LV[R.road.lv]}` : `The Road · ${ROAD_REG[roadRegOf(R.road.i)].name} · stop ${(R.road.i % ROAD_N) + 1} · ${ROAD[R.road.i].name}`;
 }
 
 /* ----- the menu card: the map in small, "Stop 3 of 8 · 7 ★" ----- */
 function roadCard() {
-  $("mRoad").textContent = roadSummary(roadGet());
+  const r = roadGet(), k = roadHome(r);
+  $("mRoad").textContent = (k ? `${ROAD_REG[k].name} · ` : "") + roadSummary(r, k);
   requestAnimationFrame(() => roadPaint($("mRoadCv"), tick, { mini: true }));
 }
 
 $("roadBack").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); goMenu(); });
+$("roadPrev").addEventListener("click", () => roadGo(-1));
+$("roadNext").addEventListener("click", () => roadGo(1));
 $("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadFight(RD.sel); });
 $("rsPick").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });
 for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
 screens.roadStop = $("scrRoadStop");
 // test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
-window.__blRoad = { stops: ROAD, get: roadGet, fight: (i) => roadFight(i), boss: (lv) => roadBossFight(lv), open: openRoad,
+// (boss(lv) = Old Scratch, as before; boss(lv, k) = region k's boss; region(k) shows region k; set(s, extra) also sets b / b2 / p2 ...;
+// walking / pos: your fighter on the map)
+window.__blRoad = { stops: ROAD, regions: ROAD_REG, get: roadGet, fight: (i) => roadFight(i), boss: (lv, k) => roadBossFight(k | 0, lv), open: openRoad,
+  region: (k) => { RD.reg = k; $("roadHits").dataset.key = ""; roadHeader(); rdArrive(null); },
   get walking() { return !!RD.walk; }, get pos() { return RD.pos; },
-  set: (s) => { const r = roadGet(); P.road = { s: s.slice(), b: r.b, paid: r.paid }; saveProfile(); } };
+  set: (s, extra) => { const r = roadGet(); P.road = Object.assign({}, r, { s: s.slice() }, extra || {}); saveProfile(); } };

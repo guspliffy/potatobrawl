@@ -2,6 +2,8 @@
 "use strict";
 const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, lerp, sign, serialize, restore, checksum } = BL;
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
+// the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road)
+const chipN = (spec) => spec.palettes.filter((p) => !p.road).length;
 const $ = (id) => document.getElementById(id);
 const app = $("app"), cv = $("cv"), ctx = cv.getContext("2d");
 if (!CanvasRenderingContext2D.prototype.roundRect) {
