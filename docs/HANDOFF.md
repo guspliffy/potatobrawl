@@ -1,9 +1,33 @@
-# PotatoBrawl handoff (updated 2026-10-15: Kraken Spud, The Deep, Zorp the Alien, The Kitchen, Road regions and Road skins, PROTO 12)
+# PotatoBrawl handoff (updated 2026-10-15: Team Brawl 2v2 against CPUs; before it Kraken Spud, The Deep, Zorp, The Kitchen, Road regions and skins)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Session 6 of the big-features plan, part 1 (2026-10-15, branch claude/project-thread-qtfrko, players reload once): Team Brawl 2v2, you and a
+  CPU partner against two CPUs, offline. Plan doc https://claude.ai/code/artifact/f4ff6904-3262-4992-9c4c-7cc8b1cee3aa, Fable's design
+  /mnt/project-files/2v2/fable-2v2.md. Online 2v2 is a later session (a four-input lockstep, a lobby for four, the snapshot size).
+  - core.js, only in a team game without a boss (`teamGame(g)`: 4 fighters, no boss); 1v1 and the boss fights play frame for frame as
+    before (checked against the old core.js over 128,000 frames): spawns (`teamSpot`: the map's spawn and 1.55x further out) and respawns
+    (70 / 130 px out on the team's side) on the team's side; a time-out goes to the team with more hearts, a tie is sudden death for
+    everyone still in (team spots), sudden death running out is a draw. `foe(g, f)` (ulti aims: Solar Dive, Big Bang) = the nearest foe
+    on the stage (the old pick when there is only one).
+  - The Catch (`catches(g)`, after detectHits): a fighter free to act touching a teammate tumbling from a launch (TUNE.catchAfter 14 frames
+    in or more, knockback at least catchKb 5, not doomed: never the final launch) ends the launch: hitstun 0, every speed x0.5, no invuln;
+    the catcher waits catchCd 90 frames (new fighter field `catchCd`, FKEYS + checksum); both +catchUlt 5 on the ulti bar. Event "catch".
+    Bots make about 5 a match (the first try, catchAfter 8 and no speed floor, made 14, mostly in crowds).
+  - `BL.teamBotInput(g, me, bot)` (offline, like botInput): target = Focus (bot.focus/focusT) > whoever hits my partner > a finish-ready
+    foe while my special is ready > the nearest (sticky 40 frames; bot.mem is cleared on a switch); runs under a tumbling partner to
+    catch it (decided once per launch, 25-85% by level).
+  - Balance (tests/duo.js, mirrored teams, 200 games at 0.5/0.8): sides 49/51, ~100 s a match, Wizard 63% (the highest; band 38-64),
+    Reaper 40% (the lowest). A lever if 2v2 ever goes ranked; the 1v1 numbers are untouched.
+  - ui/duo.js: startDuo (Practice > VS > Team Brawl 2v2; partner sel.mate, CPU level, pool maps only; two different random foes; nobody wears
+    another same-fighter's skin), duoInputs, Focus (duoFocus / Tab), the CAUGHT! pop (chgPops with txt), tips after GO in the first three
+    2v2s (P.duoTip, device only), results (duoMatchEnd / duoResLine), 20 chips for a win on Hard, synced counters P.duoW / P.duoC
+    (sync.js OPT_COUNTERS), the title Dynamic Duo at 10 wins (acct.js ACT "duo"), Account > Stats line. CPU team names DUO_TEAMS.
+  - KO page: the final hitter's page against the fighter it knocked out (finWanted for teamGame); the winner's teammate rides along as a
+    round portrait sticker "WITH <name>" under the title band (manga.js mgMateSticker).
+  - Per-slot UI arrays grew to four (skinState, trails, combos, finDash, UV, comboT, HX.alive).
 - Session 4 of the big-features plan, part 2 (2026-10-15, branch claude/alien-sea-monster-6nyh3z, PROTO 12, players reload once):
   Kraken Spud the Sea Monster, The Deep, Road region 3 (Kraken Fryer title, Deep Catch skin). Design: bosses2/fable-design.md section 2.
   - Kraken Spud (BOSSES[2], map "deep", HP 600 x lvHp [1, 1, 1.2], poise 32): a hidden boss (`spec.boss.hide`). His head waits in
