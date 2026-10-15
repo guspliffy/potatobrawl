@@ -479,7 +479,7 @@ const BOSSES = [
     // moves (base + rng x span); fast moves skip lvFast[lv] of their wind-up; Horn Charge from chargeAt[lv] % HP; rainN[lv] fireballs;
     // the charge's fire burns trailLife[lv] frames. stagK = damage x while staggered, lightK = lights' damage x.
     // Tuned with tests/boss.js (two bots at 0.6: Normal 85% wins in ~66 s, Hard ~48%, Nightmare ~0; bots at 0.8 win Nightmare ~10%).
-    boss: { hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
+    boss: { fireHits: true, hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
             stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [32, 30], [24, 24]], lvFast: [0, 0.08, 0.15], chargeAt: [50, 50, 100],
             rainN: [6, 7, 8], trailLife: [84, 84, 150], order: ["stab", "whip", "stomp", "rain", "charge"] },
     moves: {
@@ -1478,7 +1478,7 @@ function bossStart(g, f, key, t) {
 }
 function bossProj(f, x, y, vx, vy, style, o, extra) {
   return Object.assign({ owner: f.slot, x, y, dir: f.facing, vx, vy, grav: 0, boomer: false, style, burst: null, speed: Math.abs(vx), r: o.r, life: o.life,
-    t: 0, pal: f.pal, pulse: 0, last: null, hit: { dmg: o.dmg, bkb: o.bkb, kbg: o.kbg, angle: o.angle, fire: true, fin: null } }, extra);
+    t: 0, pal: f.pal, pulse: 0, last: null, hit: { dmg: o.dmg, bkb: o.bkb, kbg: o.kbg, angle: o.angle, fire: !!f.spec.boss.fireHits, fin: null } }, extra);
 }
 // per-move behaviour after mt++ in updateAttack (each boss his own); true = it moved him itself this frame
 const bossStep = (g, f, m) => BOSS_STEP[f.spec.id](g, f, m);

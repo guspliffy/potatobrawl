@@ -299,4 +299,4 @@ function rkPeek(c, bx, by, u, tk) {
   c.restore();
 }
 
-RD_ART.kitchen = { bg: rkBg, peek: rkPeek, ink: { disc: "#e3dccb", ring: "#c23f3a", boss: "#1f3a2c", bossRing: "#9dff5a", num: "#3a2a20" } };
+RD_ART.kitchen = { bg: rkBg, peek: rkPeek, won: () => {}, ink: { disc: "#e3dccb", ring: "#c23f3a", boss: "#1f3a2c", bossRing: "#9dff5a", num: "#3a2a20" } };

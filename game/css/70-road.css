@@ -49,6 +49,8 @@
 .rd-sheet.boss .rd-lv { display: flex; }
 .rd-sheet.boss #rsGo { display: none; }
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
+.rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }
+.rd-bossph.rd-kraken { background: radial-gradient(circle at 50% 35%, #8a5aa8, #3a1f55); }
 .rd-bossph i { font-style: normal; font-size: 26px; line-height: 1; color: #ffd84a; }
 #app.short .rd-st i, #app.tiny .rd-st i { font-size: 22px; }
 

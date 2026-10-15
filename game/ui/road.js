@@ -132,7 +132,8 @@ function rdBackground(w, h, s, r, k) {
   return cv;
 }
 // each region's map art: bg(c, w, h, r, k) the still part (sky, ground, the path through rdPoints, the gate, the fence; roadGateOpen(r, k)
-// opens it), peek(c, x, y, u, tk) the boss's glimpse over the fence gap (x, y = the boss stop)
+// opens it), peek(c, x, y, u, tk) the boss's glimpse over the fence gap (x, y = the boss stop), ink: the disc colours, and optionally
+// won(c, x, y, R, mini): the mark on a won stop in place of the sprout
 const RD_ART = {};
 RD_ART.field = { bg: rdField, peek: rdFieldPeek };
 // The Field: sky, moon, hills, field, path, fence
@@ -243,7 +244,8 @@ function roadPaint(cv, tk, o) {
       c.fillText(boss ? (open ? "☠" : "🔒") : String(j + 1), x, y + 1);
       if (boss && !open) { c.font = `800 ${Math.round(R * 0.5)}px "Barlow Condensed", sans-serif`; c.fillStyle = "#f3e7d0"; c.fillText(`${ROAD_GATE} ★`, x, y - R * 1.25); }
     }
-    if (!boss && (bits & 1)) {   // a sprout on a won stop
+    if (!boss && (bits & 1) && A.won) A.won(c, x, y, R, o.mini);   // a won stop: the region's own mark (The Kitchen's fork and knife are in its bg)
+    else if (!boss && (bits & 1)) {   // a sprout on a won stop
       c.strokeStyle = OUT; c.lineWidth = o.mini ? 1 : 2; c.fillStyle = "#5fc14b";
       c.beginPath(); c.moveTo(x + R * 0.55, y - R * 0.45); c.lineTo(x + R * 0.55, y - R * 0.95); c.stroke();
       c.beginPath(); c.ellipse(x + R * 0.38, y - R * 0.98, R * 0.22, R * 0.12, -0.5, 0, Math.PI * 2); c.fill(); c.stroke();

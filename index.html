@@ -2010,6 +2010,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .rd-sheet.boss .rd-lv { display: flex; }
 .rd-sheet.boss #rsGo { display: none; }
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
+.rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }
+.rd-bossph.rd-kraken { background: radial-gradient(circle at 50% 35%, #8a5aa8, #3a1f55); }
 .rd-bossph i { font-style: normal; font-size: 26px; line-height: 1; color: #ffd84a; }
 #app.short .rd-st i, #app.tiny .rd-st i { font-size: 22px; }
 
@@ -3001,7 +3003,7 @@ const BOSSES = [
     // moves (base + rng x span); fast moves skip lvFast[lv] of their wind-up; Horn Charge from chargeAt[lv] % HP; rainN[lv] fireballs;
     // the charge's fire burns trailLife[lv] frames. stagK = damage x while staggered, lightK = lights' damage x.
     // Tuned with tests/boss.js (two bots at 0.6: Normal 85% wins in ~66 s, Hard ~48%, Nightmare ~0; bots at 0.8 win Nightmare ~10%).
-    boss: { hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
+    boss: { fireHits: true, hp: 1150, lvHp: [1, 1.15, 1.45], poise: 40, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
             stagK: 1.5, lightK: 1, near: 120, gap: [[30, 30], [32, 30], [24, 24]], lvFast: [0, 0.08, 0.15], chargeAt: [50, 50, 100],
             rainN: [6, 7, 8], trailLife: [84, 84, 150], order: ["stab", "whip", "stomp", "rain", "charge"] },
     moves: {
@@ -4000,7 +4002,7 @@ function bossStart(g, f, key, t) {
 }
 function bossProj(f, x, y, vx, vy, style, o, extra) {
   return Object.assign({ owner: f.slot, x, y, dir: f.facing, vx, vy, grav: 0, boomer: false, style, burst: null, speed: Math.abs(vx), r: o.r, life: o.life,
-    t: 0, pal: f.pal, pulse: 0, last: null, hit: { dmg: o.dmg, bkb: o.bkb, kbg: o.kbg, angle: o.angle, fire: true, fin: null } }, extra);
+    t: 0, pal: f.pal, pulse: 0, last: null, hit: { dmg: o.dmg, bkb: o.bkb, kbg: o.kbg, angle: o.angle, fire: !!f.spec.boss.fireHits, fin: null } }, extra);
 }
 // per-move behaviour after mt++ in updateAttack (each boss his own); true = it moved him itself this frame
 const bossStep = (g, f, m) => BOSS_STEP[f.spec.id](g, f, m);
@@ -23156,7 +23158,8 @@ function rdBackground(w, h, s, r, k) {
   return cv;
 }
 // each region's map art: bg(c, w, h, r, k) the still part (sky, ground, the path through rdPoints, the gate, the fence; roadGateOpen(r, k)
-// opens it), peek(c, x, y, u, tk) the boss's glimpse over the fence gap (x, y = the boss stop)
+// opens it), peek(c, x, y, u, tk) the boss's glimpse over the fence gap (x, y = the boss stop), ink: the disc colours, and optionally
+// won(c, x, y, R, mini): the mark on a won stop in place of the sprout
 const RD_ART = {};
 RD_ART.field = { bg: rdField, peek: rdFieldPeek };
 // The Field: sky, moon, hills, field, path, fence
@@ -23267,7 +23270,8 @@ function roadPaint(cv, tk, o) {
       c.fillText(boss ? (open ? "☠" : "🔒") : String(j + 1), x, y + 1);
       if (boss && !open) { c.font = `800 ${Math.round(R * 0.5)}px "Barlow Condensed", sans-serif`; c.fillStyle = "#f3e7d0"; c.fillText(`${ROAD_GATE} ★`, x, y - R * 1.25); }
     }
-    if (!boss && (bits & 1)) {   // a sprout on a won stop
+    if (!boss && (bits & 1) && A.won) A.won(c, x, y, R, o.mini);   // a won stop: the region's own mark (The Kitchen's fork and knife are in its bg)
+    else if (!boss && (bits & 1)) {   // a sprout on a won stop
       c.strokeStyle = OUT; c.lineWidth = o.mini ? 1 : 2; c.fillStyle = "#5fc14b";
       c.beginPath(); c.moveTo(x + R * 0.55, y - R * 0.45); c.lineTo(x + R * 0.55, y - R * 0.95); c.stroke();
       c.beginPath(); c.ellipse(x + R * 0.38, y - R * 0.98, R * 0.22, R * 0.12, -0.5, 0, Math.PI * 2); c.fill(); c.stroke();
@@ -23884,7 +23888,7 @@ function rkPeek(c, bx, by, u, tk) {
   c.restore();
 }
 
-RD_ART.kitchen = { bg: rkBg, peek: rkPeek, ink: { disc: "#e3dccb", ring: "#c23f3a", boss: "#1f3a2c", bossRing: "#9dff5a", num: "#3a2a20" } };
+RD_ART.kitchen = { bg: rkBg, peek: rkPeek, won: () => {}, ink: { disc: "#e3dccb", ring: "#c23f3a", boss: "#1f3a2c", bossRing: "#9dff5a", num: "#3a2a20" } };
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
    final (2 lives / 2 min, 2 lives / 2 min, 3 lives / 3 min). The cup in progress is P.cup (saved with the profile), so a reload
