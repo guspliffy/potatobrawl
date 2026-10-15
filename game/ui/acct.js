@@ -65,9 +65,10 @@ function acSetAvatar(node, id, pal) {   // pal (optional): the ring takes the sk
 function acSetMe(node) { const a = acAvatar(); acSetAvatar(node, a.f, a.p); }
 const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {});
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
-// Seven titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
+// Eight titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
+  { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
@@ -75,7 +76,7 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "collector", "wanderer", "combo"];   // the order of the list
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "collector", "wanderer", "combo"];   // the order of the list
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned, else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
   const t = pick || ACT.find((t) => t.ok());

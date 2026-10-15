@@ -298,6 +298,7 @@ function handleEvent(g, e, live) {
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       else if (hAtt && hAtt.move && hAtt.move.shot) gunSpark(e, 4);   // a Gunslinger light shot: a small gold spark where it lands
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
+      if (rt && rt.fresh && live) roadRoute(e, rt);   // ui/road.js: a stop's combo star
       if (rt && rt.fresh && live) Sfx.route();
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
@@ -306,7 +307,7 @@ function handleEvent(g, e, live) {
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
     }
-    case "lethal": if (live) finLethal(g, e); break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    case "lethal": if (live) { finLethal(g, e); roadEvent(g, e); } break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
     case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
       if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
@@ -364,7 +365,7 @@ function handleEvent(g, e, live) {
       else if (e.style === "fire") { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 34, col: "#ff8a3d" }); for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4); }
       else dust(e.x, e.y, 2, 10);
       break;
-    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); } break;
+    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); roadEvent(g, e); } break;
     case "tech": dust(e.x, e.y, 6, 30); addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 8, r1: 30, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "sudden":
       combos.fill(null); clearTrails();
@@ -373,6 +374,7 @@ function handleEvent(g, e, live) {
       break;
     case "game":
       if (!live) break;
+      roadEvent(g, e);
       // the last life lost to a lethal hit starts the finisher on that hit; a self-destruct, a time-out or the tutorial keep the banner
       if (e.hit && finWanted(g)) finStart(g);
       else showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0);

@@ -1,7 +1,7 @@
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
 const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
-function show(name) { for (const k of ["menu", "select", "result", "online", "cup"]) screens[k].hidden = k !== name; }
+function show(name) { for (const k of ["menu", "select", "result", "online", "cup", "road"]) if (screens[k]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; }
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
@@ -50,7 +50,7 @@ function renderMenu() {
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "" : "needs the web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
-  dailyMenu(); menuDaily();
+  dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
 function menuDaily() {
@@ -279,7 +279,7 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${RD.sel >= ROAD.length ? "Old Scratch" : `stop ${RD.sel + 1}: ${ROAD[RD.sel].name}`}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
@@ -355,6 +355,7 @@ function finReady(i) {
 }
 function vsLine() {
   if (match.boss) return bossVs();
+  if (match.road) return `${ROAD[match.road.i].name} · ${G.fighters[0].spec.name} vs ${G.fighters[1].spec.name} · ${match.cpu}`;
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
   if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
@@ -434,6 +435,7 @@ function finishMatch(forfeit) {
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
   if (match && match.boss) { bossMatchEnd(forfeit); return; }   // ui/boss.js
+  if (match && match.road) { roadMatchEnd(forfeit); return; }   // ui/road.js
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -552,7 +554,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -579,22 +581,23 @@ function showResults(R) {
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
   if (R.ranked) resRank(R);
+  roadResStars(R);   // ui/road.js: a Road stop's three stars
   // four tiles: KOs, damage dealt, falls, chips (counting up); the line under them says what the chips were for
   const k = R.me.kos, fl = R.me.falls;
   $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
-  const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
+  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = chipsOn || R.daily ? why
+  $("rWhy").textContent = chipsOn || R.daily || R.road ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.";
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? "Retry" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
-  $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";
+  $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   show("result");
 }

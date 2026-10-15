@@ -9,7 +9,7 @@ function comboRoute(g, e) {
   const r = ROUTES.track(t, e, f.spec.id);
   const fresh = !!r && t.best !== r;
   if (r) t.best = r;
-  return t.best ? { name: t.best.name, fresh } : null;
+  return t.best ? { id: t.best.id, name: t.best.name, fresh } : null;
 }
 
 /* ----- route cards: each step a small key (arrow + button), in the button's colour ----- */

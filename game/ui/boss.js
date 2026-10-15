@@ -63,6 +63,7 @@ function bossMatchEnd(forfeit) {
   const res = forfeit ? 0 : G.winner === me.team ? 1 : 0;
   const R = { res, forfeit, ranked: false, me, op: b, lines: [], total: 0,
     boss: { lv: G.lv, mate, hp: b.hpMax ? b.hp / b.hpMax : 0, secs: Math.round(G.t / 60), name: b.spec.name } };
+  if (match.road) roadBossEnd(R);   // ui/road.js: the level's star, the first win's title and chips
   showResults(R);
 }
 function bossVs() {

@@ -215,6 +215,19 @@ function pureTests() {
   check(eq(dev3.routes, ["sig"]) && dev3.comboPaid === false, "routes apply: a prof without them leaves this device's");
   SYNC.applyTo(dev3, rm);
   check(eq(dev3.routes, rm.routes) && dev3.routes !== rm.routes && dev3.comboPaid === true, "routes apply: a prof with them replaces them (a copy)");
+  // the Road (ui/road.js): stars per stop and boss levels as bits, merged as a union; the first boss win's reward stays paid
+  const rd = SYNC.sanitize({ road: { s: [7, 3.2, 9, -1, 0, 0], b: 12, paid: "yes" } }, FIGHTERS).road;
+  check(eq(rd, { s: [7, 3, 7], b: 7, paid: false }) && eq(SYNC.sanitize({ road: rd }, FIGHTERS).road, rd), "road: bits clamped to 0-7, trailing empty stops dropped, paid only when true; cleaning twice changes nothing");
+  check(!("road" in o1) && !("road" in SYNC.sanitize({ road: [1, 2] }, FIGHTERS)), "road: not an object, or not there (an older page), counts as missing");
+  const qB = prof({ road: { s: [1], b: 0, paid: false } }), qL = prof({ road: { s: [3, 1], b: 0, paid: false } }), qS = prof({ road: { s: [5, 0, 1], b: 1, paid: true } });
+  check(eq(SYNC.mergeProf(qL, qB, qS, false).road, { s: [7, 1, 1], b: 1, paid: true }), "road: two devices -> every star either won, boss levels either won, paid on one = paid");
+  check(eq(SYNC.mergeProf(qL, qB, o1, true).road, qL.road) && eq(SYNC.mergeProf(SYNC.sanitize(oldPage(fb), FIGHTERS), fb, qS, true).road, qS.road), "road: one side has none (an older page) -> the other side's stays");
+  const dev4 = { tokens: 1, owned: {}, pal: {}, road: { s: [1], b: 0, paid: false } };
+  SYNC.applyTo(dev4, o1);
+  check(eq(dev4.road, { s: [1], b: 0, paid: false }), "road apply: a prof without it leaves this device's");
+  SYNC.applyTo(dev4, qS);
+  check(eq(dev4.road, qS.road) && dev4.road.s !== qS.road.s, "road apply: a prof with it replaces it (a copy)");
+  check(SYNC.hasProgress({ road: { s: [0, 1] } }) && !SYNC.hasProgress({ road: { s: [0] } }), "road: a star counts as progress worth asking about");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }

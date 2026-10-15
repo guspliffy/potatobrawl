@@ -1959,6 +1959,69 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow.bossfight #hud { padding-top: 52px; }
 @media (prefers-reduced-motion: reduce) { #bossBar .bb-fin, #bossBar.rage .bb-fill, #bossBar.stag .bb-po i { animation: none; } .bb-lag { transition: none; } }
 
+/* ---------- the Road (ui/road.js; Fable's map: boss/fable-boss.md section 3) ----------
+   The menu card (#bRoad): the map in small with "The Road" and your stop over its foot; beside the card column on wide screens (over
+   the attract match, under the top bar), above the column when upright. The Road screen: a header and the map canvas with a button
+   over each stop. A stop's sheet reuses the Daily Potato sheet (dly-*), plus the three stars. The results show the stop's stars. */
+#scrMenu .mm-road { position: absolute; z-index: 1; right: max(var(--mm-px), env(safe-area-inset-right, 0px)); top: calc(max(var(--mm-pt), env(safe-area-inset-top, 0px)) + var(--mm-bar) + 14px);
+  width: min(340px, calc(100% - var(--mm-colw) - 3 * var(--mm-px))); aspect-ratio: 16 / 9; padding: 0; overflow: hidden; border-radius: 12px; text-align: left; color: var(--text);
+  background: #1a0f2a; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; animation: mmIn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.2s backwards; }
+#scrMenu .mm-road:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+@media (hover: hover) { #scrMenu .mm-road:hover { filter: brightness(1.08); } }
+#mRoadCv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#scrMenu .mm-road::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 52%; background: linear-gradient(rgba(14, 16, 34, 0), rgba(14, 16, 34, 0.88)); pointer-events: none; }
+.mm-rdt { position: absolute; z-index: 1; left: 12px; right: 40px; bottom: 9px; display: flex; flex-direction: column; gap: 2px; text-shadow: 0 2px 0 var(--ink); }
+.mm-rdt b { font: italic 900 24px/1 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--sand); }
+#mRoad { font: 700 12.5px/1.2 var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm-rdgo { position: absolute; z-index: 1; right: 12px; bottom: 14px; width: 0; height: 0; border-left: 12px solid var(--sand); border-top: 8px solid transparent; border-bottom: 8px solid transparent; filter: drop-shadow(0 2px 0 var(--ink)); }
+#app.tiny #scrMenu .mm-road { top: calc(max(var(--mm-pt), env(safe-area-inset-top, 0px)) + var(--mm-bar) + 10px); }
+#app.tiny .mm-rdt b { font-size: 19px; }
+#app.tiny #mRoad { font-size: 11px; }
+#app.portrait #scrMenu .mm-road { position: relative; right: auto; top: auto; z-index: auto; order: 3; flex: none; align-self: center; width: 100%; max-width: var(--mm-colw); aspect-ratio: auto; height: 86px; margin: auto 0 0; }
+#app.portrait #scrMenu .mm-road + .mm-col { margin-top: var(--mm-gap); }
+@media (prefers-reduced-motion: reduce) { #scrMenu .mm-road { animation: none; transition: none; } }
+
+/* the Road screen */
+.rd-scr { background: #1a0f2a; display: flex; flex-direction: column; }
+.rd-head { flex: none; padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); background: rgba(14, 16, 34, 0.94); border-bottom: 2px solid rgba(255, 106, 58, 0.35); }
+.rd-sum { flex: none; font: 700 15px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--sand); white-space: nowrap; }
+.rd-map { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+#roadCv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rd-hits { position: absolute; inset: 0; }
+.rd-hit { position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rd-hit:focus-visible { outline: 3px solid var(--sand); outline-offset: 2px; }
+.rd-hit.lock { cursor: default; }
+.rd-note { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); margin: 0; padding: 8px 14px;
+  border-radius: 8px; border: 1px solid var(--line); background: rgba(14, 16, 34, 0.92); font: 600 13px/1.3 var(--body); color: var(--text); text-align: center; }
+#app.narrow .rd-head .coin { display: none; }
+#app.narrow .rd-sum { font-size: 13px; }
+#app.tiny .rd-head h2 { font-size: 24px; }
+
+/* a stop's sheet: the stars, the reward line; past the fence, three level buttons instead of Fight */
+.rd-line { font-style: italic; }
+.rd-stars { display: flex; gap: 8px; justify-content: center; }
+.rd-st { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.rd-st i { font-style: normal; font-size: 28px; line-height: 1; color: #2c2f4a; text-shadow: 0 2px 0 var(--ink), 0 0 1px var(--ink); }
+.rd-st.on i { color: #ffd23f; }
+.rd-st small { font: 600 11.5px/1.2 var(--body); color: var(--mute); }
+.rd-st.on small { color: var(--text); }
+.rd-reward { margin: 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+.rd-lv { display: none; }
+.rd-sheet.boss .rd-lv { display: flex; }
+.rd-sheet.boss #rsGo { display: none; }
+.rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
+.rd-bossph i { font-style: normal; font-size: 26px; line-height: 1; color: #ffd84a; }
+#app.short .rd-st i, #app.tiny .rd-st i { font-size: 22px; }
+
+/* the results: the stop's stars, the new ones pop in one after another */
+.res-stars { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; }
+.res-stars .rd-st { flex: 0 1 auto; flex-direction: row; gap: 5px; text-align: left; }
+.res-stars .rd-st i { font-size: 22px; }
+.res-stars .rd-st small { font-size: 12px; }
+.res-stars .rd-st.new i { animation: rdPop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) calc(0.35s + var(--k) * 0.18s) backwards; }
+@keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
+@media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }
+
 </style>
 
 </head><body><div id="app">
@@ -2012,6 +2075,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
     </header>
+    <!-- the Road (ui/road.js, 70-road.css): the map in small, your stop and stars; beside the column on wide screens, over it upright -->
+    <button class="card mm-road" id="bRoad" data-sfx="go"><canvas id="mRoadCv" aria-hidden="true"></canvas><span class="mm-rdt"><b>The Road</b><span id="mRoad">Stop 1 of 8 · 0 ★</span></span><i class="mm-rdgo" aria-hidden="true"></i></button>
     <div class="mm-col">
       <button class="card gold tone mm-hero" id="bRanked" data-sfx="go" style="--i:0"><span class="mm-art"><img id="mHeroArt" alt=""></span><span class="mm-edge" aria-hidden="true"></span><span class="mm-body"><span class="kick" id="mRankKick">Ranked match</span><span class="mm-ttl">Ranked</span><span class="mm-sub" id="mRec">0W · 0L</span><span class="mm-cta"><span>Play</span><i aria-hidden="true"></i></span></span></button>
       <div class="mm-row2">
@@ -2085,6 +2150,31 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the Road (ui/road.js, 70-road.css): the map of the night field, eight stops and the fence; a stop opens its sheet -->
+  <section id="scrRoad" class="screen rd-scr" hidden>
+    <header class="sel-head rd-head">
+      <button class="back" id="roadBack" aria-label="Menu"></button>
+      <div class="grow"><div class="kicker">The Road · region 1</div><h2>The Field</h2></div>
+      <span class="rd-sum" id="roadSum"></span>
+      <div class="coin chips" aria-label="Potato chips"><span id="roadTokens">0</span></div>
+    </header>
+    <div class="rd-map"><canvas id="roadCv" aria-hidden="true"></canvas><div class="rd-hits" id="roadHits" role="group" aria-label="Stops"></div><p class="rd-note" id="roadNote" hidden></p></div>
+  </section>
+  <section id="scrRoadStop" class="screen modal" hidden>
+    <div class="sheet dly-sheet rd-sheet scroll" id="roadStopSheet">
+      <header class="sh-head"><h3 id="rsName"></h3><span class="kick" id="rsKick"></span><button class="round x" id="rsClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="dly-vs"><div class="dly-f" id="rsMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="rsOp"></div></div>
+        <p class="dly-rule" id="rsRule"></p>
+        <p class="dly-line rd-line" id="rsLine"></p>
+        <div class="rd-stars" id="rsStars"></div>
+        <p class="rd-reward" id="rsReward"></p>
+        <div class="dly-acts rd-acts"><button class="btn primary lg" id="rsGo"><span>Fight</span></button><button class="btn" id="rsPick"><span>Fighter</span></button><button class="btn" id="rsBack"><span>Back</span></button></div>
+        <div class="dly-acts rd-lv" id="rsLv"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
   <section id="scrDaily" class="screen modal" hidden>
     <div class="sheet dly-sheet scroll">
@@ -2143,6 +2233,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
           <p class="res-fin" id="rFin" hidden></p>
+          <p class="res-stars" id="rStars" hidden></p>
         </div>
       </div>
       <div class="res-side">
@@ -10980,6 +11071,7 @@ function handleEvent(g, e, live) {
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       else if (hAtt && hAtt.move && hAtt.move.shot) gunSpark(e, 4);   // a Gunslinger light shot: a small gold spark where it lands
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
+      if (rt && rt.fresh && live) roadRoute(e, rt);   // ui/road.js: a stop's combo star
       if (rt && rt.fresh && live) Sfx.route();
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
@@ -10988,7 +11080,7 @@ function handleEvent(g, e, live) {
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
     }
-    case "lethal": if (live) finLethal(g, e); break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    case "lethal": if (live) { finLethal(g, e); roadEvent(g, e); } break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
     case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
       if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
@@ -11046,7 +11138,7 @@ function handleEvent(g, e, live) {
       else if (e.style === "fire") { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 34, col: "#ff8a3d" }); for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4); }
       else dust(e.x, e.y, 2, 10);
       break;
-    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); } break;
+    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); roadEvent(g, e); } break;
     case "tech": dust(e.x, e.y, 6, 30); addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 8, r1: 30, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "sudden":
       combos.fill(null); clearTrails();
@@ -11055,6 +11147,7 @@ function handleEvent(g, e, live) {
       break;
     case "game":
       if (!live) break;
+      roadEvent(g, e);
       // the last life lost to a lethal hit starts the finisher on that hit; a self-destruct, a time-out or the tutorial keep the banner
       if (e.hit && finWanted(g)) finStart(g);
       else showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0);
@@ -19664,7 +19757,7 @@ MANGA.wizard = (function () {
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
 const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
-function show(name) { for (const k of ["menu", "select", "result", "online", "cup"]) screens[k].hidden = k !== name; }
+function show(name) { for (const k of ["menu", "select", "result", "online", "cup", "road"]) if (screens[k]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; }
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
@@ -19713,7 +19806,7 @@ function renderMenu() {
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "" : "needs the web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
-  dailyMenu(); menuDaily();
+  dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
 function menuDaily() {
@@ -19942,7 +20035,7 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${RD.sel >= ROAD.length ? "Old Scratch" : `stop ${RD.sel + 1}: ${ROAD[RD.sel].name}`}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
@@ -20018,6 +20111,7 @@ function finReady(i) {
 }
 function vsLine() {
   if (match.boss) return bossVs();
+  if (match.road) return `${ROAD[match.road.i].name} · ${G.fighters[0].spec.name} vs ${G.fighters[1].spec.name} · ${match.cpu}`;
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
   if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
@@ -20097,6 +20191,7 @@ function finishMatch(forfeit) {
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
   if (match && match.boss) { bossMatchEnd(forfeit); return; }   // ui/boss.js
+  if (match && match.road) { roadMatchEnd(forfeit); return; }   // ui/road.js
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -20215,7 +20310,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -20242,22 +20337,23 @@ function showResults(R) {
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
   if (R.ranked) resRank(R);
+  roadResStars(R);   // ui/road.js: a Road stop's three stars
   // four tiles: KOs, damage dealt, falls, chips (counting up); the line under them says what the chips were for
   const k = R.me.kos, fl = R.me.falls;
   $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
-  const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
+  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = chipsOn || R.daily ? why
+  $("rWhy").textContent = chipsOn || R.daily || R.road ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.";
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? "Retry" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
-  $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";
+  $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   show("result");
 }
@@ -20478,6 +20574,7 @@ function bossMatchEnd(forfeit) {
   const res = forfeit ? 0 : G.winner === me.team ? 1 : 0;
   const R = { res, forfeit, ranked: false, me, op: b, lines: [], total: 0,
     boss: { lv: G.lv, mate, hp: b.hpMax ? b.hp / b.hpMax : 0, secs: Math.round(G.t / 60), name: b.spec.name } };
+  if (match.road) roadBossEnd(R);   // ui/road.js: the level's star, the first win's title and chips
   showResults(R);
 }
 function bossVs() {
@@ -20493,6 +20590,387 @@ function bossResLine(R) {
   return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
 }
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
+/* ===================== The Road, region 1: The Field (Fable's design: boss/fable-boss.md section 3) =====================
+   Eight stops, each a 1v1 against a named CPU with one twist rule; three stars each: the win, no heart lost, the stop's bonus.
+   Stop k opens when stop k-1 is won. 12 of the 24 stars open the fence: Old Scratch (ui/boss.js) on Normal / Hard / Nightmare, a
+   star each; the first win pays the Devil Masher title and 150 chips. Each new star pays 10 chips. Progress: P.road = { s: the stars
+   per stop as bits (1 win, 2 no heart lost, 4 bonus), b: boss levels won as bits, paid } (sync.js merges it: every star either device
+   won stays won). The map is drawn on a canvas (roadDraw); the stops are buttons laid over it. UI only: the twists are newGame
+   options (lives, start percent, the percent every life starts at, the time, the map). */
+const ROAD = [
+  { id: "gate", name: "The Farm Gate", cpu: "Small Fry", f: "phoenix", d: 0.3, lives: 2, secs: 90, map: "field",
+    line: "Gate's open. Mind the sprouts, they bite.", bonus: { k: "fast", s: 60, txt: "Win in under 60 s" } },
+  { id: "sprout", name: "The Sprout Patch", cpu: "Mash", f: "odin", d: 0.4, secs: 120, map: "field", cpuPct: 70, twist: "Mash starts at 70%.",
+    line: "Nobody moves Mash. Nobody.", bonus: { k: "route", r: "three", txt: "Land the Three-piece combo" } },
+  { id: "scarecrow", name: "The Scarecrow's Post", cpu: "Straw Jack", f: "reaper", d: 0.45, secs: 120, map: "field", myLifePct: 40, twist: "You start every life at 40%.",
+    line: "Caw. Just a scarecrow. Nothing with a scythe here.", bonus: { k: "fin", txt: "KO with a finisher special" } },
+  { id: "well", name: "The Lord's Well", cpu: "Dr. Peel", f: "alchemist", d: 0.5, secs: 90, map: "castle", twist: "Win inside 90 seconds.",
+    line: "Drink this. No? Then I'll throw it.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
+  { id: "crow", name: "Crow's Rest", cpu: "Bang Bang Maris", f: "gunslinger", d: 0.6, lives: 1, secs: 60, map: "field", twist: "One life each.",
+    line: "One heart. One shot. Don't blink.", bonus: { k: "ulti", txt: "KO with an ulti" } },
+  { id: "barn", name: "The Burnt Barn", cpu: "Cinder", f: "dragon", d: 0.65, map: "fryer", myPct: 50, twist: "You start at 50%.",
+    line: "Smell that? That's you, in a minute.", bonus: { k: "route", r: "trip", txt: "Land the Trip & Spike combo" } },
+  { id: "moon", name: "The Harvest Moon", cpu: "Moonie", f: "wizard", d: 0.75, map: "moon", lives: 2, cpuLives: 3, twist: "Moonie has 3 hearts, you have 2.",
+    line: "The stars said you'd come. They were vague about the leaving.", bonus: { k: "ulti", txt: "KO with an ulti" } },
+  { id: "edge", name: "The Field's Edge", cpu: "Sir Spudsalot", f: "samurai", d: 0.85, lives: 2, map: "field", cpuPct: 25, twist: "Sir Spudsalot starts at 25%.",
+    line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
+];
+const ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150, ROAD_BOSS = "scratch";
+const ROAD_STARS = ["Win", "No heart lost"];
+function roadGet() { return SYNC.cleanRoad(P.road) || { s: [], b: 0, paid: false }; }
+const roadBits = (r, i) => r.s[i] | 0;
+const roadNStars = (bits) => (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);
+const roadTotal = (r) => ROAD.reduce((a, _, i) => a + roadNStars(roadBits(r, i)), 0);
+const roadBossStars = (r) => roadNStars(r.b);
+const roadOpen = (r, i) => i === 0 || (roadBits(r, i - 1) & 1) === 1;   // a stop opens when the one before it is won
+const roadNext = (r) => { const i = ROAD.findIndex((_, k) => !(roadBits(r, k) & 1)); return i < 0 ? ROAD.length : i; };   // 8 = every stop won
+const roadGateOpen = (r) => roadTotal(r) >= ROAD_GATE;
+const roadLives = (st) => [st.lives || 3, st.cpuLives || st.lives || 3];
+const roadSecs = (st) => st.secs || 180;
+const mmssR = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+// the stop's rules in one line: the twist in bold, then lives, time, map
+function roadRules(st) {
+  const [a, b] = roadLives(st), lives = a === b ? `${a} ${a === 1 ? "life" : "lives"} each` : `${a} lives vs ${b}`;
+  const mi = BL.MAPS.findIndex((m) => m.id === st.map);
+  return { twist: st.twist || "", rest: `${lives} · ${mmssR(roadSecs(st))} · ${mapName(Math.max(0, mi))}` };
+}
+// "Stop 3 of 8 · 7 ★" (every stop won: "Old Scratch · 7 ★")
+function roadSummary(r) {
+  const n = roadNext(r), t = roadTotal(r) + roadBossStars(r);
+  return `${n < ROAD.length ? `Stop ${n + 1} of ${ROAD.length}` : roadGateOpen(r) ? "Old Scratch" : `${ROAD_GATE} ★ open the fence`} · ${t} ★`;
+}
+
+/* ----- the map: a dirt path from the gate (bottom left) to the fence gap (top right) across the night field ----- */
+// stop positions as fractions of the map (wide screens, then upright ones); the last point is the fence gap (the boss)
+const RD_WIDE = [[0.12, 0.76], [0.26, 0.86], [0.38, 0.68], [0.25, 0.5], [0.41, 0.36], [0.57, 0.5], [0.71, 0.64], [0.8, 0.43], [0.9, 0.2]];
+const RD_TALL = [[0.24, 0.87], [0.6, 0.85], [0.8, 0.72], [0.5, 0.63], [0.2, 0.55], [0.36, 0.44], [0.7, 0.4], [0.56, 0.28], [0.76, 0.13]];
+const RD_GATE = { wide: [0.03, 0.9], tall: [0.06, 0.95] };
+const RD = { cv: null, bg: null, key: "", hop: -1, hopT: 0, pup: null, pupId: "", pts: [], R: 20, w: 0, h: 0, sel: -1 };
+function rdPoints(w, h) {
+  const tall = h > w * 1.05, P0 = tall ? RD_TALL : RD_WIDE, g = RD_GATE[tall ? "tall" : "wide"];
+  const mx = Math.min(w, h) * 0.04, my = mx;
+  const at = ([x, y]) => [mx + x * (w - 2 * mx), my + y * (h - 2 * my)];
+  return { gate: at(g), pts: P0.map(at), tall };
+}
+// a smooth path through the points (Catmull-Rom as Béziers)
+function rdPath(c, pts) {
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    c.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+  }
+}
+function rdStar(c, x, y, r, fill, line) {
+  c.beginPath();
+  for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + (k * Math.PI) / 5, rr = k % 2 ? r * 0.46 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  c.closePath(); c.fillStyle = fill; c.fill(); c.lineWidth = Math.max(1.2, r * 0.22); c.strokeStyle = line; c.lineJoin = "round"; c.stroke();
+}
+// the still part (sky, moon, hills, field, path, fence), cached per size and progress
+function rdBackground(w, h, s, r) {
+  const cv = document.createElement("canvas"); cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+  const c = cv.getContext("2d"); c.scale(s, s);
+  const { gate, pts, tall } = rdPoints(w, h), u = Math.min(w, h), hz = h * (tall ? 0.2 : 0.3);
+  // sky and stars
+  const sk = c.createLinearGradient(0, 0, 0, hz); sk.addColorStop(0, "#1a0f2a"); sk.addColorStop(0.55, "#4a1a3a"); sk.addColorStop(1, "#8c2a2e");
+  c.fillStyle = sk; c.fillRect(0, 0, w, hz + 2);
+  c.fillStyle = "rgba(255,220,200,0.6)";
+  for (let i = 0; i < 26; i++) { const x = ((i * 137.5) % 100) / 100 * w, y = ((i * 61.3) % 100) / 100 * hz * 0.7; c.beginPath(); c.arc(x, y, 0.7 + (i % 3) * 0.35, 0, Math.PI * 2); c.fill(); }
+  // the harvest moon, top left
+  const mr = u * 0.085, mx = w * (tall ? 0.2 : 0.14), my = hz * 0.45;
+  const gl = c.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 2.6); gl.addColorStop(0, "rgba(255,110,60,0.35)"); gl.addColorStop(1, "rgba(255,110,60,0)");
+  c.fillStyle = gl; c.fillRect(mx - mr * 3, my - mr * 3, mr * 6, mr * 6);
+  c.fillStyle = "#ff6a3a"; c.beginPath(); c.arc(mx, my, mr, 0, Math.PI * 2); c.fill();
+  c.fillStyle = "#d94f2a"; for (const [dx, dy, k] of [[-0.3, -0.2, 0.22], [0.25, 0.1, 0.16], [-0.05, 0.38, 0.12]]) { c.beginPath(); c.arc(mx + dx * mr, my + dy * mr, k * mr, 0, Math.PI * 2); c.fill(); }
+  // far hills on the horizon, the farmhouse on the right one
+  c.fillStyle = "#2a1430";
+  c.beginPath(); c.moveTo(0, hz + 2); c.quadraticCurveTo(w * 0.22, hz - u * 0.12, w * 0.46, hz + 2); c.quadraticCurveTo(w * 0.72, hz - u * 0.16, w, hz - u * 0.02); c.lineTo(w, hz + 4); c.lineTo(0, hz + 4); c.fill();
+  // the field: soil with furrows and sprouts
+  const fg = c.createLinearGradient(0, hz, 0, h); fg.addColorStop(0, "#3a2014"); fg.addColorStop(0.35, "#5a3421"); fg.addColorStop(1, "#3a2014");
+  c.fillStyle = fg; c.fillRect(0, hz, w, h - hz);
+  c.lineWidth = 2; c.strokeStyle = "rgba(122,74,46,0.55)";
+  for (let k = 1; k <= 7; k++) {
+    const y = hz + (h - hz) * (k * k) / 56; c.beginPath();
+    for (let x = 0; x <= w; x += 24) c.lineTo(x, y + Math.sin(x * 0.05 + k) * 2);
+    c.stroke();
+  }
+  c.fillStyle = "#5a8a3a";
+  for (let i = 0; i < 40; i++) { const x = ((i * 83.1) % 100) / 100 * w, y = hz + 10 + ((i * 47.7) % 100) / 100 * (h - hz - 14); c.beginPath(); c.ellipse(x - 2, y, 3, 1.4, -0.5, 0, Math.PI * 2); c.ellipse(x + 2, y, 3, 1.4, 0.5, 0, Math.PI * 2); c.fill(); }
+  // the dirt path, from the gate through the stops to the fence gap
+  const all = [gate, ...pts];
+  c.lineCap = "round"; c.lineJoin = "round";
+  rdPath(c, all); c.strokeStyle = "#2a1a16"; c.lineWidth = u * 0.075; c.stroke();
+  rdPath(c, all); c.strokeStyle = "#7a4a2e"; c.lineWidth = u * 0.06; c.stroke();
+  rdPath(c, all); c.setLineDash([u * 0.012, u * 0.03]); c.strokeStyle = "#a0683e"; c.lineWidth = u * 0.012; c.stroke(); c.setLineDash([]);
+  // the farm gate at the start: two posts with a sign across them, the gate swung open toward you
+  const [gx, gy] = gate, ph = u * 0.1, x0 = gx - u * 0.035, x1 = gx + u * 0.055;
+  c.strokeStyle = OUT; c.lineWidth = 2; c.fillStyle = "#7a4a2e";
+  c.beginPath(); c.moveTo(x1, gy - ph * 0.72); c.lineTo(x1 + u * 0.06, gy - ph * 0.5); c.lineTo(x1 + u * 0.06, gy - ph * 0.08); c.lineTo(x1, gy - ph * 0.2); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(x1, gy - ph * 0.46); c.lineTo(x1 + u * 0.06, gy - ph * 0.29); c.stroke();
+  c.fillStyle = "#e8d8a8";
+  for (const x of [x0, x1]) { c.beginPath(); c.rect(x - 3, gy - ph, 6, ph); c.fill(); c.stroke(); }
+  c.fillStyle = "#a0683e"; c.beginPath(); c.rect(x0 - 5, gy - ph - 2, x1 - x0 + 10, 6); c.fill(); c.stroke();
+  // the fence across the top right with a gap at the boss's spot; a hill beyond it
+  const [bx, by] = pts[pts.length - 1], fy = by + u * 0.02;
+  c.fillStyle = "#1e0f22"; c.beginPath(); c.ellipse(bx + u * 0.02, by - u * 0.1, u * 0.26, u * 0.12, 0, Math.PI, Math.PI * 2); c.fill();
+  c.strokeStyle = OUT; c.lineWidth = 2.5; c.fillStyle = "#7a4a2e";
+  const open = roadGateOpen(r), gap = u * 0.07;
+  for (const side of [-1, 1]) {
+    const x0 = bx + side * gap, x1 = side < 0 ? Math.max(0, bx - u * 0.42) : Math.min(w, bx + u * 0.42);
+    for (let x = x0; side < 0 ? x > x1 : x < x1; x += side * u * 0.055) { c.beginPath(); c.rect(x - 3, fy - u * 0.07, 6, u * 0.075); c.fill(); c.stroke(); }
+    c.beginPath(); c.rect(Math.min(x0, x1), fy - u * 0.055, Math.abs(x1 - x0), 4); c.fill(); c.stroke();
+    c.beginPath(); c.rect(Math.min(x0, x1), fy - u * 0.025, Math.abs(x1 - x0), 4); c.fill(); c.stroke();
+  }
+  if (!open) { c.fillStyle = "#6a4a30"; c.beginPath(); c.rect(bx - gap, fy - u * 0.05, gap * 2, 4); c.rect(bx - gap, fy - u * 0.022, gap * 2, 4); c.fill(); c.stroke(); }
+  return cv;
+}
+// the fighter who walks the Road (the one you play last), drawn at 0.6x on the next stop
+function rdPuppet() {
+  const spec = FIG[P.last] || FIGHTERS[0];
+  if (RD.pupId !== spec.id + ":" + (P.pal[spec.id] || 0)) {
+    const pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0];
+    RD.pup = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+    RD.pup.x = 0; RD.pup.y = 0; RD.pup.facing = 1; RD.pupId = spec.id + ":" + (P.pal[spec.id] || 0);
+  }
+  return RD.pup;
+}
+// one frame of the map on canvas cv (CSS size w x h); o.mini: the small copy on the menu card (no fighter hop, fewer details)
+function roadPaint(cv, tk, o) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  const W = Math.round(w * DPR), H = Math.round(h * DPR);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const c = cv.getContext("2d"), r = roadGet();
+  const key = `${w}x${h}@${DPR}:${r.s.join(".")}:${r.b}:${roadGateOpen(r)}`;
+  const slot = o.mini ? "mini" : "big";
+  RD.bgs = RD.bgs || {};
+  if (!RD.bgs[slot] || RD.bgs[slot].key !== key) RD.bgs[slot] = { key, cv: rdBackground(w, h, DPR, r) };
+  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(RD.bgs[slot].cv, 0, 0);
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const { pts } = rdPoints(w, h), u = Math.min(w, h), R = clamp(u * 0.052, o.mini ? 7 : 15, 30), next = roadNext(r);
+  if (!o.mini) { RD.pts = pts; RD.R = R; RD.w = w; RD.h = h; }
+  // beyond the fence: two horns over the hill and yellow eyes that blink
+  const [bx, by] = pts[pts.length - 1], blink = (tk % 200) < 8;
+  c.save(); c.translate(bx + u * 0.02, by - u * 0.12);
+  c.fillStyle = "#f2d9a8"; c.strokeStyle = OUT; c.lineWidth = 1.5;
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * u * 0.03, 0); c.quadraticCurveTo(s * u * 0.07, -u * 0.03, s * u * 0.06, -u * 0.075); c.quadraticCurveTo(s * u * 0.045, -u * 0.03, s * u * 0.012, -u * 0.005); c.closePath(); c.fill(); c.stroke(); }
+  c.fillStyle = "#ffd84a";
+  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * u * 0.018, u * 0.012, u * 0.011, blink ? 0.6 : u * 0.008, 0, 0, Math.PI * 2); c.fill(); }
+  c.restore();
+  // the stops: soil discs, the number, three star slots; won ones grow a sprout; the next one has a pulsing gold ring
+  pts.forEach(([x, y], i) => {
+    const boss = i === ROAD.length, bits = boss ? r.b : roadBits(r, i), open = boss ? roadGateOpen(r) : roadOpen(r, i);
+    c.globalAlpha = open ? 1 : 0.55;
+    c.fillStyle = boss ? (open ? "#6e1f18" : "#3a2014") : "#3a2014"; c.strokeStyle = OUT; c.lineWidth = o.mini ? 1.5 : 3;
+    c.beginPath(); c.ellipse(x, y, R, R * 0.8, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.strokeStyle = boss && open ? "#ff8a3d" : "#7a4a2e"; c.lineWidth = o.mini ? 1 : 2;
+    c.beginPath(); c.ellipse(x, y - 1, R * 0.78, R * 0.6, 0, 0, Math.PI * 2); c.stroke();
+    if (!o.mini) {
+      c.font = `900 ${Math.round(R * 0.8)}px "Barlow Condensed", "Arial Narrow", sans-serif`; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillStyle = boss ? "#ffd84a" : "#f3e7d0";
+      c.fillText(boss ? (open ? "☠" : "🔒") : String(i + 1), x, y + 1);
+      if (boss && !open) { c.font = `800 ${Math.round(R * 0.5)}px "Barlow Condensed", sans-serif`; c.fillStyle = "#f3e7d0"; c.fillText(`${ROAD_GATE} ★`, x, y - R * 1.25); }
+    }
+    if (!boss && (bits & 1)) {   // a sprout on a won stop
+      c.strokeStyle = OUT; c.lineWidth = o.mini ? 1 : 2; c.fillStyle = "#5fc14b";
+      c.beginPath(); c.moveTo(x + R * 0.55, y - R * 0.45); c.lineTo(x + R * 0.55, y - R * 0.95); c.stroke();
+      c.beginPath(); c.ellipse(x + R * 0.38, y - R * 0.98, R * 0.22, R * 0.12, -0.5, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(x + R * 0.72, y - R * 1.02, R * 0.22, R * 0.12, 0.5, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+    for (let k = 0; k < 3; k++) rdStar(c, x + (k - 1) * R * 0.72, y + R * 1.12, R * (o.mini ? 0.32 : 0.3), bits & (1 << k) ? "#ffd23f" : "rgba(14,16,34,0.55)", OUT);
+    if (i === Math.min(next, ROAD.length) && open && !(boss && (r.b & 7) === 7)) {
+      const a = 0.5 + 0.5 * Math.sin(tk * 0.1);
+      c.strokeStyle = `rgba(255,210,63,${0.5 + 0.5 * a})`; c.lineWidth = o.mini ? 1.5 : 3;
+      c.beginPath(); c.ellipse(x, y, R * (1.2 + 0.08 * a), R * (0.98 + 0.06 * a), 0, 0, Math.PI * 2); c.stroke();
+    }
+    c.globalAlpha = 1;
+  });
+  // your fighter on the next stop (on the fence gap once every stop is won), hopping for a moment when tapped
+  const at = pts[Math.min(next, ROAD.length)], f = rdPuppet();
+  const hop = !o.mini && RD.hopT > 0 ? Math.sin((1 - RD.hopT / 24) * Math.PI) * R * 1.2 : 0;
+  if (!o.mini && RD.hopT > 0) RD.hopT--;
+  const sc = (R * 2.3) / f.s.h;
+  c.save(); c.setTransform(DPR * sc, 0, 0, DPR * sc, DPR * (at[0] - R * 0.15), DPR * (at[1] - R * 0.35 - hop));
+  try { drawFighter(c, f, o.mini ? 0 : tk); } catch (e) { /* a drawing problem never blocks the map */ }
+  c.restore();
+}
+
+/* ----- the Road screen ----- */
+screens.road = $("scrRoad");
+function openRoad() {
+  finStop(); tutEnd();
+  mode = "road"; sel.mode = "road"; paused = false; G = null; match = null; meSlot = 0;
+  modal("roadStop", false); modal("pause", false); modal("help", false); modal("settings", false);
+  clearTrails(); fx.length = 0; sfx.length = 0;
+  show("road"); $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
+  roadHeader(); resize();
+  requestAnimationFrame(roadHits);
+}
+function roadHeader() {
+  const r = roadGet();
+  $("roadSum").textContent = roadSummary(r);
+  $("roadTokens").textContent = P.tokens;
+}
+// the tap targets over the discs (rebuilt when the map changes size or progress)
+function roadHits() {
+  const box = $("roadHits"), cv = $("roadCv"), r = roadGet();
+  if (!cv.clientWidth) return;
+  const { pts } = rdPoints(cv.clientWidth, cv.clientHeight), R = clamp(Math.min(cv.clientWidth, cv.clientHeight) * 0.052, 15, 30);
+  const key = `${cv.clientWidth}x${cv.clientHeight}:${r.s.join(".")}:${r.b}`;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key; box.innerHTML = "";
+  pts.forEach(([x, y], i) => {
+    const boss = i === ROAD.length, open = boss ? roadGateOpen(r) : roadOpen(r, i), b = document.createElement("button");
+    b.className = "rd-hit"; b.style.left = `${x}px`; b.style.top = `${y}px`; b.style.setProperty("--s", `${Math.max(44, R * 2.4)}px`);
+    const n = boss ? roadBossStars(r) : roadNStars(roadBits(r, i));
+    b.setAttribute("aria-label", boss ? `Old Scratch, ${open ? `${n} of 3 stars` : `opens at ${ROAD_GATE} stars`}` : `Stop ${i + 1}, ${ROAD[i].name}, ${open ? `${n} of 3 stars` : "locked"}`);
+    b.dataset.i = i;
+    if (!open) b.classList.add("lock");
+    b.addEventListener("click", () => {
+      Sfx.init();
+      if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars on the Road to open the fence (you have ${roadTotal(roadGet())}).` : `Win stop ${i} first.`); return; }
+      Sfx.ui(); RD.hopT = 24; roadSheet(i);
+    });
+    box.appendChild(b);
+  });
+}
+let roadNoteT = 0;
+function roadNote(t) { const n = $("roadNote"); n.textContent = t; n.hidden = false; clearTimeout(roadNoteT); roadNoteT = setTimeout(() => { n.hidden = true; }, 2600); }
+function roadDraw(tk) { roadPaint($("roadCv"), tk, {}); roadHits(); }
+
+/* ----- a stop's sheet: you vs the CPU, the twist, the CPU's line, the three stars, Fight ----- */
+function roadSheet(i) {
+  RD.sel = i;
+  const r = roadGet(), boss = i === ROAD.length, me = FIG[P.last] || FIGHTERS[0], mi = P.pal[me.id] || 0;
+  $("rsKick").textContent = boss ? "The Road · past the fence" : `The Road · stop ${i + 1} of ${ROAD.length}`;
+  $("rsName").textContent = boss ? "Old Scratch" : ROAD[i].name;
+  dailyCard($("rsMe"), me.id, mi, "You");
+  const sheet = $("roadStopSheet");
+  sheet.classList.toggle("boss", boss);
+  if (boss) {
+    const b = BL.BOSSES.find((x) => x.id === ROAD_BOSS);
+    const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
+    op.innerHTML = `<span class="dly-ph rd-bossph"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
+    $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. Break him (0 HP), then land a heavy, special or ulti.`;
+    $("rsLine").textContent = BOSS_LINE[ROAD_BOSS];
+    $("rsStars").innerHTML = BOSS_LV.map((n, k) => roadStarHTML(!!(r.b & (1 << k)), n)).join("");
+    $("rsReward").textContent = r.paid ? "Every level won is a star." : `First win: the Devil Masher title and ${ROAD_BOSS_CHIPS} chips. Every level won is a star.`;
+    $("rsLv").innerHTML = "";
+    BOSS_LV.forEach((n, k) => {
+      const bt = document.createElement("button");
+      bt.className = "btn" + (k === 0 ? " primary" : ""); bt.innerHTML = `<span>${n}${r.b & (1 << k) ? " ★" : ""}</span>`;
+      bt.addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadBossFight(k); });
+      $("rsLv").appendChild(bt);
+    });
+  } else {
+    const st = ROAD[i], op = FIG[st.f], bits = roadBits(r, i);
+    dailyCard($("rsOp"), op.id, 0, st.cpu);
+    const ru = roadRules(st);
+    $("rsRule").innerHTML = `${ru.twist ? `<b>${cupEsc(ru.twist)}</b> ` : ""}${cupEsc(ru.rest)}`;
+    $("rsLine").textContent = st.line;
+    $("rsStars").innerHTML = [...ROAD_STARS, st.bonus.txt].map((n, k) => roadStarHTML(!!(bits & (1 << k)), n)).join("");
+    $("rsReward").textContent = bits === 7 ? "All three stars won." : `Each new star: +${ROAD_STAR_CHIPS} chips.`;
+  }
+  modal("roadStop", true);
+}
+const roadStarHTML = (on, label) => `<span class="rd-st${on ? " on" : ""}"><i aria-hidden="true">★</i><small>${cupEsc(label)}</small></span>`;
+
+/* ----- the fights ----- */
+function roadFight(i) {
+  const st = ROAD[i], r = roadGet();
+  if (!st || !roadOpen(r, i)) { openRoad(); return; }
+  Sfx.init(); modal("roadStop", false);
+  const me = FIG[P.last] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], op = FIG[st.f];
+  const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % op.palettes.length : 0];
+  const [a, b] = roadLives(st), map = Math.max(0, BL.MAPS.findIndex((m) => m.id === st.map));
+  G = newGame({ players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
+    stocks: a, time: roadSecs(st), countdown: 150, map });
+  match = { ranked: false, road: { i, go: -1, end: -1, bonus: false }, d: st.d, oppRating: 0, bot: makeBot(st.d, BL.BOT_STYLES[op.id]), level: st.name, cpu: st.cpu };
+  meSlot = 0;
+  enterMatchUI();
+}
+function roadBossFight(lv) {
+  const r = roadGet();
+  if (!roadGateOpen(r)) { openRoad(); return; }
+  modal("roadStop", false);
+  startBoss({ level: lv, boss: ROAD_BOSS, road: { boss: true, lv } });
+}
+// handleEvent (effects.js) passes the live match's events: the start, the end, the KOs (a finisher special, an ulti)
+function roadEvent(g, e) {
+  const rd = match && match.road;
+  if (!rd || rd.boss) return;
+  if (e.type === "go") rd.go = g.t;
+  else if (e.type === "game") rd.end = g.t;
+  else if (e.type === "lethal" && e.by === meSlot && e.slot !== meSlot) {
+    const k = ROAD[rd.i].bonus.k;
+    if ((k === "fin" && e.fin) || (k === "ulti" && e.mv === "ulti")) rd.bonus = true;
+  }
+}
+// a named combo route landed (effects.js, from comboRoute)
+function roadRoute(e, rt) {
+  const rd = match && match.road;
+  if (!rd || rd.boss || e.slot !== meSlot) return;
+  const b = ROAD[rd.i].bonus;
+  if (b.k === "route" && rt.id === b.r) rd.bonus = true;
+}
+// finishMatch: a Road stop is over (a forfeit too): the stars, the chips, the results
+function roadMatchEnd(forfeit) {
+  const rd = match.road, st = ROAD[rd.i], me = G.fighters[0], op = G.fighters[1];
+  const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5, won = res === 1;
+  const secs = rd.go >= 0 ? ((rd.end >= 0 ? rd.end : G.t) - rd.go) / 60 : 1e9;
+  const bonus = won && (st.bonus.k === "fast" ? secs < st.bonus.s : rd.bonus);
+  const got = won ? 1 | (me.falls === 0 ? 2 : 0) | (bonus ? 4 : 0) : 0;
+  const r = roadGet(), had = roadBits(r, rd.i), now = had | got, fresh = roadNStars(now) - roadNStars(had);
+  const total = fresh * ROAD_STAR_CHIPS;
+  if (fresh > 0) {
+    r.s[rd.i] = now; P.road = r; P.tokens += total;
+    saveProfile();
+  }
+  const gate = fresh > 0 && roadTotal(r) >= ROAD_GATE && roadTotal(r) - fresh < ROAD_GATE;   // this win opened the fence
+  const why = forfeit ? "No stars for a forfeit." : !won ? "No stars this time. A win opens the next stop." :
+    (fresh > 0 ? `${fresh} new ${fresh === 1 ? "star" : "stars"} +${total}` : got === 7 ? "Three stars again." : "No new stars this time.") +
+    (gate ? " · The fence is open: Old Scratch waits past the last stop." : "");
+  showResults({ res, forfeit, ranked: false, me, op, lines: [], total, why, road: { i: rd.i, got, had, labels: [...ROAD_STARS, st.bonus.txt] } });
+}
+// bossMatchEnd: a Road boss fight adds its star and the first win's reward to the results
+function roadBossEnd(R) {
+  const lv = match.road.lv, r = roadGet(), won = R.res === 1;
+  let total = 0;
+  const lines = [];
+  if (won && !(r.b & (1 << lv))) { r.b |= 1 << lv; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
+  if (won && !r.paid) { r.paid = true; total += ROAD_BOSS_CHIPS; lines.push(`Devil Masher title + ${ROAD_BOSS_CHIPS}`); }
+  if (total) { P.road = r; P.tokens += total; saveProfile(); }
+  R.total = total;
+  R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : lines.length ? lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
+  R.road = { boss: true, lv, got: won ? 1 << lv : 0, had: r.b & ~(won ? 1 << lv : 0), labels: BOSS_LV };
+}
+// the results: the stop's three stars (the new ones pop)
+function roadResStars(R) {
+  const el = $("rStars"), rd = R.road;
+  el.hidden = !rd;
+  if (!rd) return;
+  el.innerHTML = rd.labels.map((n, k) => {
+    const on = !!((rd.got | rd.had) & (1 << k)), fresh = !!(rd.got & (1 << k)) && !(rd.had & (1 << k));
+    return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
+  }).join("");
+}
+function roadResMode(R) {
+  return R.road.boss ? `The Road · Old Scratch · ${BOSS_LV[R.road.lv]}` : `The Road · stop ${R.road.i + 1} · ${ROAD[R.road.i].name}`;
+}
+
+/* ----- the menu card: the map in small, "Stop 3 of 8 · 7 ★" ----- */
+function roadCard() {
+  $("mRoad").textContent = roadSummary(roadGet());
+  requestAnimationFrame(() => roadPaint($("mRoadCv"), tick, { mini: true }));
+}
+
+$("roadBack").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); goMenu(); });
+$("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); roadFight(RD.sel); });
+$("rsPick").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });
+for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
+screens.roadStop = $("scrRoadStop");
+// test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
+window.__blRoad = { stops: ROAD, get: roadGet, fight: (i) => roadFight(i), boss: (lv) => roadBossFight(lv), open: openRoad,
+  set: (s) => { const r = roadGet(); P.road = { s: s.slice(), b: r.b, paid: r.paid }; saveProfile(); } };
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
    final (2 lives / 2 min, 2 lives / 2 min, 3 lives / 3 min). The cup in progress is P.cup (saved with the profile), so a reload
@@ -21418,11 +21896,12 @@ tap("bRanked", () => openSelect("ranked"));
 tap("bPractice", () => openSelect("practice"));
 tap("bCup", cupOpen);
 tap("bDaily", dailyOpen);
+tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
-tap("selBack", goMenu);
+tap("selBack", () => { if (sel.mode === "road") openRoad(); else goMenu(); });
 tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else startMatch(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -21431,6 +21910,7 @@ tap("pQuit", () => {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
+  if (match.road) { openRoad(); return; }   // a Road stop or its boss: back to the map, nothing lost
   if (!match.ranked && !match.cup && !match.daily) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
@@ -21448,11 +21928,13 @@ tap("rAgain", () => {
     return;
   }
   if (match && match.ranked) { sel.mode = "ranked"; }
+  if (match && match.road) { if (match.road.boss) roadBossFight(match.road.lv); else roadFight(match.road.i); return; }   // Retry
   startMatch();
 });
 tap("rChange", () => {
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }
+  if (match && match.road) { openRoad(); return; }
   openSelect(match && !match.ranked ? "practice" : "ranked");
 });
 tap("rMenu", goMenu);
@@ -21647,7 +22129,7 @@ function comboRoute(g, e) {
   const r = ROUTES.track(t, e, f.spec.id);
   const fresh = !!r && t.best !== r;
   if (r) t.best = r;
-  return t.best ? { name: t.best.name, fresh } : null;
+  return t.best ? { id: t.best.id, name: t.best.name, fresh } : null;
 }
 
 /* ----- route cards: each step a small key (arrow + button), in the button's colour ----- */
@@ -21858,6 +22340,14 @@ const SYNC = (function () {
     const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
     return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
   }
+  // The Road (ui/road.js): { s: per stop, the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: the boss levels won as bits
+  // (1 Normal, 2 Hard, 4 Nightmare), paid: the first boss win's reward was paid }. Trailing empty stops are dropped (one spelling).
+  function cleanRoad(q) {
+    if (!isObj(q)) return null;
+    const s = (Array.isArray(q.s) ? q.s : []).slice(0, 24).map((v) => num(v, 0, 7, 0));
+    while (s.length && !s[s.length - 1]) s.pop();
+    return { s, b: num(q.b, 0, 7, 0), paid: q.paid === true };
+  }
   function cleanName(s) {
     return Array.from(String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim()).slice(0, 16).join("").trim();
   }
@@ -21899,6 +22389,7 @@ const SYNC = (function () {
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    { const rd = cleanRoad(p.road); if (rd) out.road = rd; }
     // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
     if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
     if (typeof p.comboPaid === "boolean") out.comboPaid = p.comboPaid;
@@ -21928,6 +22419,7 @@ const SYNC = (function () {
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
+    if (S.road !== undefined) P.road = { s: S.road.s.slice(), b: S.road.b, paid: S.road.paid };
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
     return P;
@@ -21937,7 +22429,7 @@ const SYNC = (function () {
     if (!P) return false;
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
-      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra);
+      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)));
   }
 
   /* ----- the merge -----
@@ -21998,10 +22490,16 @@ const SYNC = (function () {
     // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
     if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
     if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);
+    // the Road: every star and boss level either side won stays won; the first-win reward, paid on any device, stays paid
+    if (have(S.road) || have(L.road)) {
+      const l = L.road || { s: [], b: 0, paid: false }, s = S.road || { s: [], b: 0, paid: false };
+      const st = Array.from({ length: Math.max(l.s.length, s.s.length) }, (_, i) => (l.s[i] | 0) | (s.s[i] | 0));
+      out.road = { s: st, b: l.b | s.b, paid: !!(l.paid || s.paid) };
+    }
     return out;
   }
 
-  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, cleanRoad, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;
 
@@ -22067,9 +22565,10 @@ function acSetAvatar(node, id, pal) {   // pal (optional): the ring takes the sk
 function acSetMe(node) { const a = acAvatar(); acSetAvatar(node, a.f, a.p); }
 const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {});
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
-// Seven titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
+// Eight titles, earnable from the start. `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
+  { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
@@ -22077,7 +22576,7 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "collector", "wanderer", "combo"];   // the order of the list
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "collector", "wanderer", "combo"];   // the order of the list
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned, else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
   const t = pick || ACT.find((t) => t.ok());
@@ -22771,6 +23270,7 @@ function frame(now) {
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") drawCards(tick);
   if (mode === "online") drawOnlineArt(tick);
+  if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
 window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
