@@ -1,0 +1,64 @@
+/* ---------- Menu redesign, shared base ("sunset ink", Fable 5.1, 2026-10-14) ----------
+   Tokens + the shared pieces from the mockups (menu-redesign/mockups/gen.py BASE_CSS): .disp .kick .ink (stroked display text),
+   .logo, .card / .card.gold, .tone (halftone corner), .rays (sunburst), .mini, .round, .plate (profile plate, emblem slot .emb),
+   .coin.chips|cup|flame|plus, .tag (stickers), .livetag (LIVE pill; .live is taken), .speed (speed lines).
+   The buttons (.btn, .btn.primary, ...) are restyled in 10-surfaces.css. One file per screen after this one, in name order. */
+:root {
+  /* Fable's "sunset ink" tokens (menu-redesign/fable-menu-design.md); --ink ... --mint repeat the values above */
+  --ink:#0e1022; --night:#171a33; --raise:#232746; --plate:#2c3156; --dusk:#3b2c5a;
+  --text:#eef0fa; --mute:#a4a9c8; --line:rgba(206,210,255,.14);
+  --gold:#f4c95d; --gold2:#e09a3a; --gold3:#ffe08a; --sand:#f3d9a4; --ember:#ef7a52; --ketchup:#e8453c; --mint:#86dcae; --sky:#8fb6ff; --paper:#fff6e4;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif; --body:"Barlow",system-ui,sans-serif;
+  --hard:0 4px 0 var(--ink); --soft:0 10px 22px rgba(0,0,0,.38); --bevel:inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 0 rgba(0,0,0,.22);
+  --bevelgold:inset 0 2px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(120,60,0,.25);
+}
+.disp { font-family:var(--display); text-transform:uppercase; }
+.kick { font:700 11px/1 var(--display); letter-spacing:.16em; text-transform:uppercase; color:var(--sand); }
+/* ink-outlined display text, for words that sit on art */
+.ink { -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; text-shadow:0 3px 0 var(--ink); }
+.ink.big { -webkit-text-stroke:5px var(--ink); text-shadow:0 5px 0 var(--ink), 0 12px 24px rgba(0,0,0,.45); }
+
+/* ---- the logo lockup: potato mark + two-tone wordmark + ember slash ---- */
+.logo { display:flex; align-items:center; gap:6px; }
+.logo svg { width:40px; height:44px; flex:none; filter:drop-shadow(0 3px 0 var(--ink)); }
+.logo .wm { display:flex; flex-direction:column; line-height:.84; font:italic 900 30px/.84 var(--display); text-transform:uppercase; letter-spacing:-.01em; }
+.logo .wm b { color:#fff; font-weight:900; } .logo .wm b + b { color:var(--gold); }
+.logo .wm b { -webkit-text-stroke:3.5px var(--ink); paint-order:stroke fill; text-shadow:0 3px 0 var(--ink); }
+.logo.one .wm { flex-direction:row; gap:7px; }
+.logo .slash { display:block; height:5px; width:120px; margin-top:4px; background:linear-gradient(90deg, var(--ember), var(--gold) 60%, transparent); transform:skewX(-35deg); transform-origin:left; box-shadow:0 2px 0 var(--ink); }
+
+/* ---- chunky surfaces: card, plate, buttons ---- */
+.card { position:relative; background:linear-gradient(180deg, #2b3058, #1b1f3d); border:2px solid var(--ink); border-radius:12px; box-shadow:var(--hard), var(--soft), var(--bevel); }
+.card.gold { background:linear-gradient(180deg, #ffe08a 0%, #f4c95d 48%, #e8a640 100%); color:var(--ink); box-shadow:var(--hard), var(--soft), var(--bevelgold); }
+.tone::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; background:radial-gradient(circle, rgba(14,16,34,.34) 0 1px, transparent 1.5px) 0 0/5px 5px; -webkit-mask:linear-gradient(118deg, transparent 62%, #000 100%); mask:linear-gradient(118deg, transparent 62%, #000 100%); }
+.rays { position:absolute; inset:-60%; pointer-events:none; background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.14) 0 5deg, transparent 5deg 14deg); -webkit-mask:radial-gradient(circle at center, #000 0, transparent 60%); mask:radial-gradient(circle at center, #000 0, transparent 60%); animation:spin 40s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.mini { display:inline-flex; align-items:center; justify-content:center; gap:7px; border:2px solid var(--ink); border-radius:999px; min-height:40px; padding:0 14px; font:800 14px/1 var(--display); letter-spacing:.06em; text-transform:uppercase; background:linear-gradient(180deg, #2f3560, #1f2344); color:var(--text); box-shadow:0 3px 0 var(--ink), var(--bevel); }
+.mini i.dot { width:8px; height:8px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 2px rgba(134,220,174,.25); }
+.round { width:40px; height:40px; border-radius:50%; border:2px solid var(--ink); background:linear-gradient(180deg, #3a4170, #262b50); color:var(--text); display:grid; place-items:center; padding:0; box-shadow:0 3px 0 var(--ink), var(--bevel); flex:none; }
+.round svg { width:20px; height:20px; }
+.round.back::before { content:""; width:10px; height:10px; border-left:3px solid var(--text); border-bottom:3px solid var(--text); transform:translateX(2px) rotate(45deg); }
+/* profile plate + coin pills */
+.plate { display:flex; align-items:center; gap:9px; height:40px; padding:0 14px 0 2px; border:2px solid var(--ink); border-radius:10px; background:linear-gradient(180deg, #343b6a, #22264a); box-shadow:0 3px 0 var(--ink), var(--bevel); text-align:left; }
+.plate .av { position:relative; width:46px; height:46px; flex:none; margin-top:-8px; }
+.plate .av img, .av img { width:100%; height:100%; border-radius:50%; object-fit:cover; object-position:50% 44%; border:2.5px solid var(--ink); box-shadow:0 2px 0 var(--ink); display:block; }
+.plate .av .emb { position:absolute; right:-7px; bottom:-5px; filter:drop-shadow(0 2px 0 var(--ink)); }
+.plate .who { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.plate .who b { font:800 15px/1 var(--display); letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.plate .who small { font:700 11px/1 var(--display); letter-spacing:.1em; text-transform:uppercase; color:var(--tc, #c9d0e4); white-space:nowrap; }
+.plate .who small i { font-style:normal; color:var(--text); opacity:.8; }
+.coin { display:inline-flex; align-items:center; gap:6px; height:40px; padding:0 12px 0 8px; border:2px solid var(--ink); border-radius:10px; background:linear-gradient(180deg, #343b6a, #22264a); box-shadow:0 3px 0 var(--ink), var(--bevel); font:800 19px/1 var(--display); color:var(--gold); font-variant-numeric:tabular-nums; }
+.coin::before { content:""; width:22px; height:18px; background:var(--g) center/contain no-repeat; }
+.coin.chips { --g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%230e1022' stroke-width='2'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E"); }
+.coin.cup { --g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%230e1022' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%230e1022' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%230e1022' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.coin.flame { --g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8c1 3.7 6.5 6.2 6.5 12.2a6.5 6.5 0 0 1-13 0c0-3.2 1.8-5 3.1-6.4.2 2 1 3.2 2.2 3.8-.4-3.8.2-6.8 1.2-9.6z' fill='%23ff8a3d' stroke='%230e1022' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M12 12.2c1.4 1.6 3 3 3 5.1a3 3 0 0 1-6 0c0-1.7 1.3-2.9 3-5.1z' fill='%23ffd66b'/%3E%3C/svg%3E"); color:#ffb36b; }
+.coin.plus { color:var(--ink); background:linear-gradient(180deg, #ffe08a, #e8a640); box-shadow:0 3px 0 var(--ink), var(--bevelgold); }
+/* tags, stickers */
+.tag { position:absolute; font:800 11px/1 var(--display); letter-spacing:.08em; text-transform:uppercase; padding:5px 8px 4px; border:2px solid var(--ink); border-radius:6px; transform:rotate(-6deg); box-shadow:0 2px 0 var(--ink); }
+.tag.ember { background:var(--ember); color:var(--ink); } .tag.gold { background:var(--gold); color:var(--ink); } .tag.mint { background:var(--mint); color:var(--ink); } .tag.red { background:var(--ketchup); color:#fff; }
+.livetag { display:inline-flex; align-items:center; gap:7px; padding:0 10px; height:26px; border-radius:6px; background:rgba(14,16,34,.72); border:1px solid rgba(206,210,255,.22); font:700 11px/1 var(--display); letter-spacing:.12em; text-transform:uppercase; color:var(--mute); }
+.livetag i { width:7px; height:7px; border-radius:50%; background:var(--ketchup); box-shadow:0 0 0 3px rgba(232,69,60,.3); animation:blink 1.2s ease-in-out infinite; }
+@keyframes blink { 50% { opacity:.4; } }
+/* speed lines, for hero art */
+.speed { position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(-18deg, transparent 0 9px, rgba(255,255,255,.07) 9px 11px); -webkit-mask:linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask:linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); }
+@media (prefers-reduced-motion:reduce) { .rays, .livetag i { animation:none; } }
