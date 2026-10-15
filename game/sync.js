@@ -146,7 +146,8 @@ const SYNC = (function () {
     if (!P) return false;
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
-      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)));
+      (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)) ||
+      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)));   // fighter mastery XP (Practice alone earns it)
   }
 
   /* ----- the merge -----

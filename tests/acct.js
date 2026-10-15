@@ -252,6 +252,7 @@ function pureTests() {
   SYNC.applyTo(dev4, qS);
   check(eq(dev4.road, qS.road) && dev4.road.s !== qS.road.s, "road apply: a prof with it replaces it (a copy)");
   check(SYNC.hasProgress({ road: { s: [0, 1] } }) && !SYNC.hasProgress({ road: { s: [0] } }), "road: a star counts as progress worth asking about");
+  check(SYNC.hasProgress({ mxp: { odin: 30 } }) && !SYNC.hasProgress({ mxp: { odin: 0 } }), "mastery: XP from Practice counts as progress worth asking about");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }

@@ -186,7 +186,7 @@ let mxCupT = 0;
 function masteryCup(forfeit) {
   clearTimeout(mxCupT); mxCup.hidden = true;
   if (forfeit || !G || !match) return;
-  const me = G.fighters[0], res = G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5, g = mxGain({ res, forfeit: false, me }, false, false);
+  const me = G.fighters[0], res = G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5, g = mxGain({ res, forfeit: false, me }, !!match.finBy, !!FIN.ulti);   // finBy: your KO page played (finStart; cup matches have no results screen to clear it)
   if (g.xp <= 0) return;
   const a = mxAward(me.spec.id, g.xp), name = FIG[me.spec.id].name;
   mxCup.querySelector("b").textContent = `+${g.xp} XP`;
@@ -243,7 +243,7 @@ function masteryCollection(pan) {
     `<div class="mx-cell" id="mxColKo"><b>${ko.length}<small>/${n}</small></b><span>KO pages</span><div class="mx-dots">${mxDots(ko)}</div></div>` +
     `<div class="mx-cell" id="mxColUlt"><b>${ult.length}<small>/${n}</small></b><span>Ultimate KOs</span><div class="mx-dots">${mxDots(ult)}</div></div>` +
     `<div class="mx-cell" id="mxColRt"><b>${rd}<small>/${ROUTE_TOTAL}</small></b><span>Combo routes</span><div class="mx-rbar"><i style="width:${Math.round(100 * rd / ROUTE_TOTAL)}%"></i></div></div></div>` +
-    '<p class="ac-line">A page counts when you land it. Your own fighters get their pages when you win with a KO on the last heart.</p>';
+    '<p class="ac-line">A fighter\'s page counts once you land it yourself: your KO on the last heart.</p>';
   for (const d of box.querySelectorAll(".av")) acSetAvatar(d, d.dataset.f, P.pal[d.dataset.f] || 0);
   pan.appendChild(box);
 }
