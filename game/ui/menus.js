@@ -31,6 +31,12 @@ tap("rAgain", () => {
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
+  if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
+    const lv = G.lv, boss = bossOf(G).spec.id, partner = G.fighters[1 - meSlot].spec.id;
+    resetNet(); NET.phase = "idle"; lobbyPresence();
+    startBoss({ level: lv, boss, partner });
+    return;
+  }
   if (match && match.online) {
     NET.rm = NET.matchId + 1;
     const nf = FIG[NET.nextF] ? NET.nextF : null;

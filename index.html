@@ -51,6 +51,7 @@ button { font: inherit; color: inherit; }
 .pcard.right { border-left: 0; border-right: 4px solid var(--fc); background: linear-gradient(270deg, rgba(14, 16, 34, 0.82), rgba(14, 16, 34, 0.55)); text-align: right; }
 .pcard > div { transform: skewX(9deg); }
 .pcard.out { opacity: 0.45; }
+.pcard.nice { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }   /* an online boss fight: a tap on your card says NICE! */
 .pc-top { display: flex; gap: 8px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .pcard.right .pc-top { justify-content: flex-end; }
 .pc-tag { color: var(--fc); }
@@ -1459,6 +1460,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrOnline .on-list li.empty { border: 0; box-shadow: none; }
 #scrOnline .on-invite { border: 2px solid var(--ink); border-radius: 10px; background: rgba(243, 217, 164, 0.1); box-shadow: inset 0 0 0 1px rgba(243, 217, 164, 0.3); }
 #scrOnline .kicker { color: var(--sand); }
+/* the host card's rule rows (Mode, then Lives / Time / Format or Boss / Level): a Boss chip's short name on the smallest phones and
+   upright (the full names wrap the row there); on the smallest phones the rows are a little tighter so the Host button stays on the screen */
+#scrOnline .rule-row .chip .s { display: none; }
+#app.tiny #scrOnline .rule-row .chip .l, #app.portrait #scrOnline .rule-row .chip .l { display: none; }
+#app.tiny #scrOnline .rule-row .chip .s, #app.portrait #scrOnline .rule-row .chip .s { display: inline; }
+#app.tiny #scrOnline .on-me { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
+#app.tiny #scrOnline .on-rules { gap: 3px; }
+#app.tiny #scrOnline .rule-row .chip { min-height: 26px; padding: 2px 10px; font-size: 13px; }
 
 /* ---------- Results screen (menu redesign, Fable's "sunset ink", 2026-10-14; mockup results_844x390.png) ----------
    Left: the winner's panel with a slanted gold edge (your portrait on a win, the opponent's in grey on a loss), the kicker, VICTORY,
@@ -2391,16 +2400,19 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="on-card on-me">
           <div class="on-who"><canvas class="on-art" id="onArt"></canvas><div><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden><span id="onMyFighter"></span><button class="link" id="onChange">Change fighter</button></div></div>
           <div class="on-rules" id="onRules">
-            <div class="rule-row"><span>Lives</span><span class="chips" id="ruleL"></span></div>
-            <div class="rule-row"><span>Time</span><span class="chips" id="ruleT"></span></div>
-            <div class="rule-row"><span>Format</span><span class="chips" id="ruleB"></span></div>
+            <div class="rule-row"><span>Mode</span><span class="chips" id="ruleM"></span></div>
+            <div class="rule-row" id="rowL"><span>Lives</span><span class="chips" id="ruleL"></span></div>
+            <div class="rule-row" id="rowT"><span>Time</span><span class="chips" id="ruleT"></span></div>
+            <div class="rule-row" id="rowB"><span>Format</span><span class="chips" id="ruleB"></span></div>
+            <div class="rule-row" id="rowBo" hidden><span>Boss</span><span class="chips" id="ruleBo"></span></div>
+            <div class="rule-row" id="rowLv" hidden><span>Level</span><span class="chips" id="ruleLv"></span></div>
           </div>
           <button class="btn primary" id="onHost"><span>Host a match</span></button>
           <p class="on-note" id="onNote"></p>
         </div>
         <div class="on-card on-side scroll">
           <div class="on-invite" id="onInvite" hidden>
-            <b>Your match is open</b>
+            <b id="onInvT">Your match is open</b>
             <div class="on-link" id="onLink"></div>
             <div class="on-link-btns"><button class="chip" id="onCopy">Copy link</button><button class="chip" id="onShare" hidden>Share</button></div>
           </div>
@@ -5017,7 +5029,7 @@ function defProfile() {
   return {
     rating: 1000, peak: 1000, wins: 0, losses: 0, draws: 0, matches: 0, tokens: 0, streak: 0,
     owned: Object.fromEntries(FIGHTERS.map((f) => [f.id, [0]])), pal: Object.fromEntries(FIGHTERS.map((f) => [f.id, 0])),
-    last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
+    last: FIGHTERS[0].id, sound: true, history: [], fstats: {}, fsince: 0, flawless: 0, duo: 0, avatar: "", title: "", screen: "cw", rules: { l: 3, t: 4, b: 1 },
     daily: { d: "", r: 0, s: 0, w: "", b: 0 },   // Daily Potato (ui/daily.js)
     routes: [], comboPaid: false,                // combo routes cleared in the Combo trial (ui/combos.js)
     mxp: {}, mpaid: {}, pages: { ko: [], ult: [] },   // fighter mastery (ui/mastery.js): XP per fighter, highest level paid, KO pages landed. mseed (the one-time head start) is left out on purpose: undefined = not given yet
@@ -11515,7 +11527,7 @@ function drawTag(c, f, isP1, lift) {
   if (f.state === "dead" || f.state === "gone") return;
   const fade = tagAlpha();   // hud.js: off 3 s after the start, back for 3 s after a respawn
   if (fade < 0.02) return;
-  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
+  const label = isP1 ? "YOU" : match && match.online && !NET.cpuMate ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
@@ -15206,6 +15218,7 @@ function render2D(g, tk) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
+    if (NICE.length) drawNice(c, g);   // ui/online.js: the partner's (or your own) NICE!
   }
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   bossScreen(c, g, tk);   // a boss's layer in screen space, over the fight (Kraken Spud's ink; ui/draw-boss.js)
@@ -15687,6 +15700,8 @@ function finPuppet(f, x, facing, role) {
   return p;
 }
 // Called when the sim says the match is over; returns true while the cinematic still holds the results.
+// the name card's word: YOU WIN on your own page; on your partner's in a boss fight WINS IT (so it reads as the team's win)
+const finWinWord = (W) => (W.slot === meSlot ? "YOU WIN" : G && G.fighters.length > 2 && !W.spec.boss ? "WINS IT" : "WINS");
 function finHold(fn) { if (!FIN.on) return false; FIN.finish = fn; return true; }
 function finEnd() {
   if (!FIN.on) return;
@@ -16428,7 +16443,7 @@ function finCard(o, t) {
   o.fillStyle = "#f4f2ec"; o.fillText(W.spec.name.toUpperCase(), x, y);
   const nw = o.measureText(W.spec.name.toUpperCase()).width;
   o.font = `700 ${Math.round(fs * 0.36)}px "Barlow Condensed", "Arial Narrow", sans-serif`; o.fillStyle = c1;
-  o.fillText(W.slot === meSlot ? "YOU WIN" : "WINS", x + nw + 12, y + fs * 0.12);
+  o.fillText(finWinWord(W), x + nw + 12, y + fs * 0.12);
   o.restore();
   // K.O. stamp
   const s = fe(FT.CARD + 180, FT.CARD + 420, t);
@@ -17249,12 +17264,12 @@ function mgCardPrep() {
   const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold
   if (!MG.cards) {
     const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
-    MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
+    MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(finWinWord(W), { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
       sub: mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol }), ko: mgWord("K.O.", { size: hh * 0.95, seed: 17, arc: 12, jit: 0.1, fill: "#ffffff", weight: 900 }) };
     // a line that is wider than the band (a long name on a narrow screen) is set again, smaller; on the upright phone the sub line also stays clear of the seal
     const x0 = Math.max(16, L.gw * 0.06), room = L.gw - x0 - 8, C = MG.cards;
     if (C.sub.w > room) C.sub = mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27 * room / C.sub.w, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol });
-    if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(W.slot === meSlot ? "YOU WIN" : "WINS", { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
+    if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(finWinWord(W), { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
   }
 }
 function mgCard(o, t) {
@@ -24674,6 +24689,7 @@ function enterMatchUI() {
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
     el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
+    el.classList.toggle("nice", !!(match.online && match.boss && i === meSlot));   // ui/online.js: a tap on your own card says NICE! to your partner
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
   { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
@@ -24903,7 +24919,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online && R.boss ? `Boss fight · ${R.dropped ? `${NET.oppName || "Your partner"} dropped` : `with ${NET.oppName || "your friend"}`}` : R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -24923,7 +24939,7 @@ function showResults(R) {
   // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
   const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
   if (match) match.finBy = "";
-  masteryResults(R, !!fb && won, ult);   // ui/mastery.js: the XP, the level and the row under the rank card
+  masteryResults(R, !!fb && won && !R.mateFin, ult);   // ui/mastery.js: the XP, the level and the row under the rank card (R.mateFin: your partner's KO page)
   const fin = $("rFin");
   fin.hidden = !(fb && won);
   if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
@@ -24945,7 +24961,7 @@ function showResults(R) {
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.");
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.online && R.boss ? NET.again : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
@@ -25108,7 +25124,7 @@ function hudUlt() {
    FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
 const BOSS_LV = ["Normal", "Hard", "Nightmare"];
 const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   // each boss fights on his own map (spec.map)
-const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (a friend on a second phone will get all of it)
+const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (with a friend on a second phone, ui/online.js, all of it)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
 const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt.",
@@ -25178,15 +25194,22 @@ function bossMatchEnd(forfeit) {
   showResults(R);
 }
 function bossVs() {
-  const b = bossOf(G);
-  return `${G.fighters[0].spec.name} and ${match.cpu || "CPU"} (${G.fighters[1].spec.name}) vs ${b ? b.spec.name : "the boss"} · ${BOSS_LV[G.lv]}`;
+  const b = bossOf(G), vs = ` vs ${b ? b.spec.name : "the boss"} · ${BOSS_LV[G.lv]}`;
+  if (match.online) return `${G.fighters[meSlot].spec.name} and ${NET.oppName || "your friend"} (${G.fighters[1 - meSlot].spec.name})${vs}`;   // ui/online.js: a friend on a second phone
+  return `${G.fighters[0].spec.name} and ${match.cpu || "CPU"} (${G.fighters[1].spec.name})${vs}`;
 }
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 // the results' story line for a boss fight
 function bossResLine(R) {
-  const B = R.boss, mate = [{ b: match.cpu || "your partner" }, ` (${B.mate.spec.name})`];
+  const friend = R.online ? NET.oppName || "your friend" : "";   // online: the friend on the second phone (ui/online.js)
+  const B = R.boss, mate = [{ b: friend || match.cpu || "your partner" }, ` (${B.mate.spec.name})`];
   if (R.forfeit) return ["You left the fight."];
-  if (R.res === 1) return ["You and ", ...mate, " beat ", { b: B.name }, ` on ${BOSS_LV[B.lv]} in ${mmss(B.secs)}.`];
+  if (R.res === 1) {
+    const line = ["You and ", ...mate, " beat ", { b: B.name }, ` on ${BOSS_LV[B.lv]} in ${mmss(B.secs)}.`];
+    // online: who landed the final launch; after a drop the CPU may have finished it
+    if (R.online) line.push(R.mateFin ? (R.dropped ? ` CPU finished what ${friend} started.` : ` ${friend} landed the final launch.`) : B.by === R.me.slot ? " You landed the final launch." : "");
+    return line;
+  }
   return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
 }
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
@@ -26770,10 +26793,12 @@ window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: d
    lockstep and exchange only inputs, carried in each player's presence object
    (presence is coalesced, so it always carries a short history of recent frames).
    A small input delay, sized from the measured ping, hides the network round trip.
-   Checksums every second catch any divergence; the host then sends a full snapshot. */
+   Checksums every second catch any divergence; the host then sends a full snapshot, in pieces (one presence holds 4 KB).
+   A boss fight (2v1) is the same lockstep with two inputs: host = slot 0, guest = slot 1, the boss (slot 2) moves himself in the
+   simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 12;
+const PROTO = 13;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -26781,7 +26806,8 @@ const NET = {
   phase: "idle", oppPeer: null, oppBy: null, lastOpp: null, joinT: 0,
   matchId: 0, startSeen: 0, pingSent: new Map(), pingSeen: new Set(), pings: [], pingT: 0, hsT: 0, lastStart: null,
   D: 6, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0, ckMine: new Map(), ckSend: null,
-  syncN: 0, syncSent: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
+  syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
+  cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0,
   standalone: !!window.__blStandalone, invite: null, inviteT: 0,
 };
 {
@@ -26830,26 +26856,51 @@ function lobbyPresence() {
   if (!NET.room || !NET.ok) return;
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
   const hosting = NET.phase === "hosting";
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, busy }).catch(() => {});
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, bo: hosting ? hostBo() : null, busy }).catch(() => {});
 }
+// The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
+function onBoss() {
+  const o = P.onBoss && typeof P.onBoss === "object" ? P.onBoss : {};
+  return { on: !!o.on, b: BOSS_IDS.has(o.b) ? o.b : BL.BOSSES[0].id, lv: [0, 1, 2].includes(o.lv) ? o.lv : 0 };
+}
+const hostBo = () => { const o = onBoss(); return o.on ? { b: o.b, lv: o.lv } : null; };
+const validBo = (bo) => !!bo && typeof bo === "object" && BOSS_IDS.has(bo.b) && [0, 1, 2].includes(bo.lv);
+const boSpec = (bo) => BL.BOSSES.find((b) => b.id === bo.b) || BL.BOSSES[0];
+const BOSS_SHORT = { scratch: "Scratch", zorp: "Zorp", kraken: "Kraken" };   // the Boss chips on the smallest phones
+const BOSS_RULES = { l: 3, t: 0, b: 1 };   // a boss fight: three hearts each, no time limit, one fight
 function buildRules() {
-  const edit = NET.phase === "idle" || NET.phase === "hosting";
+  const edit = NET.phase === "idle" || NET.phase === "hosting", ob = onBoss();
   // rebuild only on change, so a tap is never lost to a re-render
-  const sig = JSON.stringify(P.rules) + edit + NET.phase, box = $("onRules");
+  const sig = JSON.stringify(P.rules) + JSON.stringify(ob) + edit + NET.phase, box = $("onRules");
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
-  for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? v + " min" : "No limit")], ["b", "ruleB", (v) => (v === 3 ? "Best of 3" : "Single")]]) {
+  const pick = (id, items, isOn, set) => {
     const row = $(id); row.innerHTML = "";
-    for (const v of RULES[k]) {
+    for (const it of items) {
       const b = document.createElement("button");
-      b.className = "chip" + (P.rules[k] === v ? " on" : ""); b.textContent = label(v); b.disabled = !edit;
+      b.className = "chip" + (isOn(it) ? " on" : ""); b.disabled = !edit;
+      if (it.short) {   // a long name has a short form for the smallest phones (css/30-select.css)
+        const l = document.createElement("span"), sh = document.createElement("span");
+        l.className = "l"; l.textContent = it.label; sh.className = "s"; sh.textContent = it.short;
+        b.append(l, sh); b.setAttribute("aria-label", it.label);
+      } else b.textContent = it.label;
       b.addEventListener("click", () => {
-        Sfx.init(); Sfx.ui(); P.rules = Object.assign({}, P.rules, { [k]: v }); saveProfile(); buildRules();
-        if (NET.phase === "hosting") { namedPresence({ r: P.rules }); lobbyPresence(); }
+        Sfx.init(); Sfx.ui(); set(it); saveProfile(); buildRules();
+        if (NET.phase === "hosting") { namedPresence({ r: P.rules, bo: hostBo() }); lobbyPresence(); }
+        renderOnline();   // the host button and the note follow the mode
       });
       row.appendChild(b);
     }
-  }
+  };
+  const setBoss = (patch) => { P.onBoss = Object.assign(onBoss(), patch); };
+  pick("ruleM", [{ v: false, label: "1 vs 1" }, { v: true, label: "Vs boss" }], (it) => it.v === ob.on, (it) => setBoss({ on: it.v }));
+  for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? v + " min" : "No limit")], ["b", "ruleB", (v) => (v === 3 ? "Best of 3" : "Single")]])
+    pick(id, RULES[k].map((v) => ({ v, label: label(v) })), (it) => P.rules[k] === it.v, (it) => { P.rules = Object.assign({}, P.rules, { [k]: it.v }); });
+  pick("ruleBo", BL.BOSSES.map((b) => ({ v: b.id, label: b.name, short: BOSS_SHORT[b.id] })), (it) => it.v === ob.b, (it) => setBoss({ b: it.v }));
+  pick("ruleLv", BOSS_LV.map((name, i) => ({ v: i, label: name })), (it) => it.v === ob.lv, (it) => setBoss({ lv: it.v }));
+  // a boss fight swaps lives, time and format for the boss (his map comes with him) and his level
+  for (const id of ["rowL", "rowT", "rowB"]) $(id).hidden = ob.on;
+  for (const id of ["rowBo", "rowLv"]) $(id).hidden = !ob.on;
 }
 function namedPresence(patch) {
   if (!NET.mr) return;
@@ -26940,12 +26991,14 @@ async function renderOnline() {
     const sp = document.createElement("span"); const hf = FIG[h.presence.f];
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
+    const bo = validBo(h.presence.bo) ? h.presence.bo : null;   // a boss fight: the row reads as an invitation to team up
     sp.textContent = old ? "Different game version. Both of you reload the page." :
-      (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter") + (validRules(h.presence.r) ? ` · ${ruleText(h.presence.r)}` : "");
+      (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter") +
+      (bo ? ` · vs ${boSpec(bo).name} · ${BOSS_LV[bo.lv]}` : validRules(h.presence.r) ? ` · ${ruleText(h.presence.r)}` : "");
     who.append(b, sp);
     const btn = document.createElement("button"); btn.className = "chip";
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
-    btn.textContent = joining ? "Joining" : "Join";
+    btn.textContent = joining ? "Joining" : bo ? "Team up" : "Join";
     btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected;
     btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); netJoin(h.presence.host); });
     li.dataset.h = h.presence.host; li.append(who, btn); frag.appendChild(li);
@@ -26956,16 +27009,19 @@ async function renderOnline() {
     ? others.map((p) => `${names[p.peer] || "Friend"}${p.presence && p.presence.busy ? " (in a match)" : ""}`).join(", ")
     : "Just you. Friends show up here when they open this page.";
   hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
-  hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : "Host a match";
+  const ob = onBoss().on;
+  hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : "Host a match";
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   note.textContent =
-    NET.phase === "hosting" ? "Waiting for a challenger. Your match is listed for everyone here." :
+    NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
     NET.phase === "joining" ? "Joining…" :
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
-    NET.note || (NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
+    NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
+      : NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
   const inv = $("onInvite");
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
+    $("onInvT").textContent = ob ? "Your boss fight is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
   }
@@ -27007,7 +27063,7 @@ function leaveMatchRoom() {
 }
 function resetNet() {
   Object.assign(NET, { role: null, hostCode: null, oppPeer: null, oppBy: null, oppName: "", lastOpp: null, matchId: 0, startSeen: 0,
-    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, oppLeft: false, lastStart: null });
+    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false });
   NET.pingSent = new Map(); NET.pingSeen = new Set();
 }
 function netCancel() { leaveMatchRoom(); resetNet(); NET.phase = "idle"; lobbyPresence(); renderOnline(); }
@@ -27019,7 +27075,7 @@ async function netHost() {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
-  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules });
+  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo() });
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -27037,6 +27093,7 @@ async function netJoin(code) {
   lobbyPresence(); renderOnline();
 }
 function matchRoomLost() {
+  if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { finishOnline(false, true); return; }
   leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "The match connection dropped.";
   if (mode === "online") renderOnline();
@@ -27064,6 +27121,7 @@ function onMatchPeers(ch) {
   }
 }
 function opponentLeft() {
+  if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
@@ -27100,8 +27158,10 @@ function handshakeTick(now) {
       const gf = FIG[pr.f] ? pr.f : FIGHTERS[0].id;
       const gpi = Number.isInteger(pr.pi) && pr.pi >= 0 && pr.pi < FIG[gf].palettes.length ? pr.pi : 0;
       const hf = sel.fighter, hpi = palIdx(hf);
+      const bo = hostBo();
       const st = { id: NET.matchId + 1, seed: (Math.random() * 1e9) | 0, d: D, f: [hf, gf], p: [hpi, gf === hf && gpi === hpi ? (gpi + 1) % FIG[gf].palettes.length : gpi], rtt: Math.round(rtt),
-        r: Object.assign({}, P.rules), set: { n: 1, w: [0, 0] } };
+        r: Object.assign({}, bo ? BOSS_RULES : P.rules), set: { n: 1, w: [0, 0] } };
+      if (bo) st.bo = bo;   // a boss fight: which boss (his map comes with him) and his level
       NET.lastStart = st;
       namedPresence({ start: st });
       startOnlineMatch(st);
@@ -27115,20 +27175,29 @@ function validStart(st) {
   return st && typeof st === "object" && Number.isInteger(st.id) && Number.isInteger(st.seed) && Number.isInteger(st.d) && st.d >= 1 && st.d <= 20 &&
     Array.isArray(st.f) && st.f.length === 2 && st.f.every((id) => FIG[id]) && Array.isArray(st.p) && st.p.length === 2 &&
     st.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < FIG[st.f[i]].palettes.length) &&
-    validRules(st.r) && st.set && Number.isInteger(st.set.n) && st.set.n >= 1 && st.set.n <= 3 && Array.isArray(st.set.w) && st.set.w.length === 2 && st.set.w.every((v) => Number.isInteger(v) && v >= 0 && v <= 2);
+    validRules(st.r) && st.set && Number.isInteger(st.set.n) && st.set.n >= 1 && st.set.n <= 3 && Array.isArray(st.set.w) && st.set.w.length === 2 && st.set.w.every((v) => Number.isInteger(v) && v >= 0 && v <= 2) &&
+    (st.bo == null || validBo(st.bo));
 }
 function startOnlineMatch(st) {
   Object.assign(NET, { matchId: st.id, startSeen: st.id, D: st.d, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0,
-    ckMine: new Map(), ckSend: null, syncSent: null, lastSync: 0, rm: 0, lastOpp: null, oppLeft: false, rtt: st.rtt || 0,
-    rules: st.r, set: st.set, setRes: null, nextF: null, rttLive: 0, rttS: [], myPg: null, echo: null, pgT: 0 });
+    ckMine: new Map(), ckSend: null, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, rm: 0, lastOpp: null, oppLeft: false, rtt: st.rtt || 0,
+    rules: st.r, set: st.set, setRes: null, nextF: null, rttLive: 0, rttS: [], myPg: null, echo: null, pgT: 0,
+    boss: st.bo || null, cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0 });
   for (let i = 0; i < NET.D; i++) { NET.myLog.push(NEUTRAL); NET.opLog.push(NEUTRAL); }
-  const specs = st.f.map((id) => FIG[id]);
+  const specs = st.f.map((id) => FIG[id]), players = specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] }));
   meSlot = NET.role === "host" ? 0 : 1;
-  // the map comes from the match seed, so both phones play the same one with no new field in the start message
-  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
-  match = { online: true, ranked: false, level: null };
-  NET.phase = "match";
-  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, rm: null, pg: null, po: null, nf: null, np: null });
+  if (st.bo) {
+    // a boss fight: the two of you (team 0) and the boss (slot 2, team 1) on his own map, with all of his HP
+    const boss = boSpec(st.bo);
+    G = newGame({ players: [...players, { spec: boss, pal: boss.palettes[0] }], stocks: BOSS_RULES.l, time: 0, countdown: 150, seed: st.seed, map: bossMap(boss), level: st.bo.lv });
+    match = { online: true, ranked: false, boss: true, level: st.bo.lv };
+  } else {
+    // the map comes from the match seed, so both phones play the same one with no new field in the start message
+    G = newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+    match = { online: true, ranked: false, level: null };
+  }
+  NET.phase = "match"; NICE.length = 0;
+  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
   resolveOppName();
@@ -27158,16 +27227,46 @@ function readOpp(pr) {
   if (Array.isArray(pr.ck) && pr.ck.length === 2) {
     const mine = NET.ckMine.get(pr.ck[0]);
     if (mine !== undefined && mine !== pr.ck[1]) onDesync(pr.ck[0]);
-    else if (mine !== undefined && NET.syncSent && pr.ck[0] > NET.syncSent.f) { NET.syncSent = null; namedPresence({ sync: null }); }
+    else if (mine !== undefined && NET.syncSent && pr.ck[0] > NET.syncSent.f) { NET.syncSent = null; NET.syncTx = null; namedPresence({ sync: null }); }
   }
-  if (NET.role === "guest" && pr.sync && typeof pr.sync === "object" && Number.isInteger(pr.sync.n) && pr.sync.n > NET.lastSync) applySync(pr.sync);
+  // the repair copy, a piece at a time: the guest confirms each piece (sa: [n, k]), the host then puts up the next one
+  const tx = NET.syncTx;
+  if (NET.role === "host" && tx && Array.isArray(pr.sa) && pr.sa[0] === tx.n && pr.sa[1] === tx.k) { if (tx.k + 1 < tx.parts.length) syncPart(tx.k + 1); else tx.done = true; }
+  if (NET.role === "guest" && pr.sync && typeof pr.sync === "object") syncPiece(pr.sync);
+  if (Number.isInteger(pr.em) && pr.em > NET.emSeen) { NET.emSeen = pr.em; niceShow(1 - meSlot); }   // the partner's NICE!
 }
+/* The repair copy: the whole game (serialize) as JSON, sent in pieces of SYNC_PART characters, because one presence holds 4 KB in all
+   and a boss fight's copy is 3.4-3.9 KB on its own. sync = { n (repair number), f (its frame), k (piece), of (pieces), d (the text) }. */
+const SYNC_PART = 2000;
 function onDesync(F) {
   if (NET.role !== "host") return;
   if (NET.syncSent && NET.syncSent.f >= F) return;
+  // a copy still on its way (until the guest confirms its last piece, which it does as it restores it): their checks were made before it
+  if (NET.syncTx && !NET.syncTx.done && performance.now() - NET.syncTx.t < 5000) return;
   NET.desyncs++; NET.syncN++;
   NET.syncSent = { n: NET.syncN, f: NET.frame };
-  namedPresence({ sync: { n: NET.syncN, f: NET.frame, st: serialize(G) } });
+  const txt = JSON.stringify(serialize(G)), parts = [], size = window.__blSyncPart || SYNC_PART;   // __blSyncPart: tests only (more, smaller pieces)
+  for (let i = 0; i < txt.length; i += size) parts.push(txt.slice(i, i + size));
+  NET.syncTx = { n: NET.syncN, f: NET.frame, parts, k: 0, t: performance.now(), done: false };
+  NET.syncLast = parts.length; NET.syncF = NET.frame;   // read by tests/pwonboss.py
+  syncPart(0);
+}
+function syncPart(k) {
+  const tx = NET.syncTx;
+  tx.k = k; tx.t = performance.now();
+  namedPresence({ sync: { n: tx.n, f: tx.f, k, of: tx.parts.length, d: tx.parts[k] } });
+}
+function syncPiece(sy) {
+  if (!Number.isInteger(sy.n) || sy.n <= NET.lastSync || !Number.isInteger(sy.f) || !Number.isInteger(sy.k) || !Number.isInteger(sy.of) ||
+    sy.of < 1 || sy.of > 16 || sy.k < 0 || sy.k >= sy.of || typeof sy.d !== "string") return;
+  if (!NET.syncRx || NET.syncRx.n !== sy.n) NET.syncRx = { n: sy.n, f: sy.f, of: sy.of, parts: [] };
+  const rx = NET.syncRx;
+  if (rx.parts[sy.k] === undefined) { rx.parts[sy.k] = sy.d; namedPresence({ sa: [sy.n, sy.k] }); }
+  for (let i = 0; i < rx.of; i++) if (rx.parts[i] === undefined) return;
+  NET.syncRx = null;
+  let st = null;
+  try { st = JSON.parse(rx.parts.join("")); } catch (e) { console.warn("resync copy unreadable", e); }
+  applySync({ n: rx.n, f: rx.f, st });
 }
 function applySync(sy) {
   NET.lastSync = sy.n;
@@ -27176,12 +27275,15 @@ function applySync(sy) {
     const cur = NET.frame;
     restore(G, sy.st);
     for (const k of [...NET.ckMine.keys()]) if (k > sy.f) NET.ckMine.delete(k);
+    if (NET.ckSend && NET.ckSend[0] > sy.f) NET.ckSend = null;   // made before the repair: never send it again
     if (cur > sy.f) {
+      NET.frame = sy.f;   // the game is at the copy's frame now; replaying the logged inputs brings it back up to where it was
       for (let fr = sy.f; fr < cur; fr++) {
         if (NET.myLog[fr] === undefined || NET.opLog[fr] === undefined) break;
         const ins = []; ins[meSlot] = decIn(NET.myLog[fr]); ins[1 - meSlot] = decIn(NET.opLog[fr]);
         step(G, ins); G.events.length = 0;
-        if ((fr + 1) % 60 === 0) NET.ckMine.set(fr + 1, checksum(G));
+        NET.frame = fr + 1;
+        if ((fr + 1) % 60 === 0) { const h = checksum(G); NET.ckMine.set(fr + 1, h); NET.ckSend = [fr + 1, h]; }
       }
     } else {
       NET.frame = sy.f;
@@ -27194,6 +27296,7 @@ function netTick() {
   const now = performance.now();
   if (mode === "online" && NET.invite && NET.phase === "idle" && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
   if (NET.phase === "joining" || NET.phase === "handshake") { handshakeTick(now); return; }
+  if (NET.phase === "match" && NET.cpuMate && G) { soloTick(); return; }
   if (!NET.mr) return;
   const opp = NET.oppPeer ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
   if (NET.phase === "result") { resultTick(opp); return; }
@@ -27232,7 +27335,30 @@ function netTick() {
   const badge = $("netBadge");
   if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}`; }
   else if (!badge.hidden) badge.hidden = true;
-  if (NET.stall > 60 * 15) finishOnline(false, true);
+  if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
+}
+/* A boss fight goes on when the partner drops (they leave, their connection or ours goes, or nothing comes from them for 15 s): a CPU
+   takes over their fighter on this phone at the partner strength of the level, and this phone plays on alone, sending nothing. */
+function cpuTakeover() {
+  if (NET.cpuMate || !G || !match || !match.boss) return;
+  const mate = G.fighters[1 - meSlot], live = G.phase === "countdown" || G.phase === "play";
+  NET.cpuMate = makeBot(BOSS_PARTNER[G.lv], BL.BOT_STYLES[mate.spec.id]);
+  NET.dropLive = live;   // it dropped during the fight (not after the boss was already down): the results say so
+  NET.oppLeft = true; NET.rtt = NET.rttLive = 0;
+  leaveMatchRoom();
+  $("pc" + meSlot).classList.remove("nice");
+  $("netBadge").hidden = true;
+  if (!live) return;
+  showBanner(`${NET.oppName || "Your partner"} dropped`, `CPU has ${mate.spec.name} now`, "fin", 2200, "#f3d9a4");
+  $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = "CPU";
+  tagShow();   // hud.js: the markers come back for 3 s, the partner's now reads CPU
+}
+function soloTick() {
+  const ins = [];
+  ins[meSlot] = readPlayer();
+  ins[1 - meSlot] = botInput(G, G.fighters[1 - meSlot], bossOf(G), NET.cpuMate);
+  step(G, ins);
+  NET.frame++;
 }
 function resultTick(opp) {
   if (!opp) return;
@@ -27251,6 +27377,7 @@ function resultTick(opp) {
       if (f[0] === f[1] && p[0] === p[1]) p[1] = (p[1] + 1) % FIG[f[1]].palettes.length;
     }
     const st = Object.assign({}, prev, { id: next, seed: (Math.random() * 1e9) | 0, f, p, set });
+    if (prev.bo) st.bo = { b: prev.bo.b, lv: G.winner === 0 && prev.bo.lv < 2 ? prev.bo.lv + 1 : prev.bo.lv };   // a boss beaten: the next level (Nightmare: again)
     NET.lastStart = st;
     namedPresence({ start: st });
     startOnlineMatch(st);
@@ -27261,13 +27388,14 @@ function updateRematchLabel() {
   const opp = NET.mr && NET.mr.peers().find((p) => p.peer === NET.oppPeer);
   const theyWant = opp && opp.presence && opp.presence.rm === NET.matchId + 1;
   const iWant = NET.rm === NET.matchId + 1;
-  const who = NET.oppName || "Your friend", inSet = NET.setRes && !NET.setRes.over;
+  const who = NET.oppName || "Your friend", inSet = NET.setRes && !NET.setRes.over, boss = match.boss;
   // the button keeps its word; the ready state is its small line (the results screen, css/40-results.css)
-  $("rAgain").querySelector("span").textContent = inSet ? "Next game" : "Rematch";
-  $("rAgainSub").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet ? "is ready" : "wants a rematch"}` : "";
+  $("rAgain").querySelector("span").textContent = boss ? NET.again : inSet ? "Next game" : "Rematch";
+  $("rAgainSub").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet || boss ? "is ready" : "wants a rematch"}` : "";
 }
 function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;
+  if (match.boss) { finishBossOnline(); return; }
   const me = G.fighters[meSlot], op = G.fighters[1 - meSlot];
   const res = left ? 1 : lost ? 0.5 : G.winner === meSlot ? 1 : G.winner === 1 - meSlot ? 0 : 0.5;
   const R = { res, online: true, left: !!left, lost: !!lost, me, op, lines: [], total: 0 };
@@ -27294,6 +27422,74 @@ function finishOnline(left, lost) {
   lobbyPresence();
 }
 
+/* ----- the end of an online boss fight ----- */
+const DUO_WIN = [20, 30, 45];   // chips for a win, by level (both phones pay their own player)
+function finishBossOnline() {
+  const me = G.fighters[meSlot], mate = G.fighters[1 - meSlot], b = bossOf(G), lv = G.lv;
+  const won = G.winner === me.team, hp = b.hpMax ? b.hp / b.hpMax : 0, by = won && b.lastHitBy ? b.lastHitBy.slot : -1;
+  const R = { res: won ? 1 : 0, online: true, me, op: b, lines: [], total: 0, dropped: !!NET.cpuMate && NET.dropLive, mateFin: won && by === mate.slot,
+    boss: { lv, mate, hp, secs: Math.round(G.t / 60), name: b.spec.name, by } };
+  if (won) {
+    R.lines.push([`Win on ${BOSS_LV[lv]}`, DUO_WIN[lv]]);
+    if (by === me.slot) R.lines.push(["Final launch", 5]);   // a flourish, not a prize: the KO page is the reward
+  } else {
+    R.lines.push(["Fight played", 5]);
+    const t = Math.min(10, Math.floor((1 - hp) * 10 + 1e-9));   // +1 per 10% of his HP taken
+    if (t > 0) R.lines.push([`Took ${t * 10}% of his HP`, t]);
+  }
+  R.total = R.lines.reduce((a, l) => a + l[1], 0);
+  P.tokens += R.total;
+  let title = false;
+  if (won && lv >= 1) { title = !(P.duo | 0); P.duo = (P.duo | 0) + 1; }   // Double Trouble (ui/acct.js): an online boss win on Hard or Nightmare
+  saveProfile();
+  // the Road stays solo: say so on a win, so an online win never looks short-changed
+  R.why = R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") + (title ? " · New title: Double Trouble" : won ? " · Road stars come from the solo Road" : "");
+  if (match.finBy && R.mateFin) match.finBy += ` · by ${NET.cpuMate ? "CPU" : NET.oppName || "your partner"}`;
+  if (NET.cpuMate) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";
+  NET.again = NET.cpuMate ? "Retry vs CPU" : won ? (lv < 2 ? `Next: ${BOSS_LV[lv + 1]}` : "Again") : "Retry";
+  $("netBadge").hidden = true;
+  showResults(R);
+  lobbyPresence();
+}
+
+/* ----- NICE!: in a boss fight, a tap on your own card (or N) pops a comic NICE! over your fighter on both phones. It rides in the
+   presence next to the inputs (em: how many you have sent), never in the simulation. ----- */
+const NICE = [], NICE_CD = 1500, NICE_MS = 1300;   // NICE: { slot, t0 } showing now
+const niceOk = () => mode === "match" && !!match && !!match.online && !!match.boss && !NET.cpuMate && !!G && G.phase !== "over" && !FIN.on;
+function niceSend() {
+  const now = performance.now();
+  if (!niceOk() || now - NET.emT < NICE_CD) return;
+  NET.emT = now; NET.emN++;
+  namedPresence({ em: NET.emN });
+  niceShow(meSlot);
+}
+function niceShow(slot) {
+  for (let i = NICE.length - 1; i >= 0; i--) if (NICE[i].slot === slot) NICE.splice(i, 1);
+  NICE.push({ slot, t0: performance.now() });
+  Sfx.tone(660, 990, 0.1, "triangle", 0.06); Sfx.tone(990, 1320, 0.12, "triangle", 0.04);
+}
+// over the fighter, in world space like the YOU marker (draw-world.js drawTag): pops in big, settles, rises and fades
+function drawNice(c, g) {
+  const now = performance.now(), k = 1 / cam.z;
+  for (let i = NICE.length - 1; i >= 0; i--) {
+    const n = NICE[i], t = (now - n.t0) / NICE_MS, f = g.fighters[n.slot];
+    if (t >= 1 || !f) { NICE.splice(i, 1); continue; }
+    if (f.state === "dead" || f.state === "gone") continue;
+    const pop = t < 0.12 ? 0.4 + easeOut(t / 0.12) * 0.85 : t < 0.22 ? 1.25 - ((t - 0.12) / 0.1) * 0.25 : 1;
+    c.save();
+    c.globalAlpha = t > 0.75 ? (1 - t) / 0.25 : 1;
+    c.translate(f.x, f.y - f.s.h - (82 + t * 22) * k);   // above the name marker
+    c.scale(k * pop, k * pop); c.rotate(-0.1);
+    c.beginPath();   // a burst behind the word
+    for (let j = 0; j < 20; j++) { const a = (j / 20) * Math.PI * 2, r = j % 2 ? 26 : 38; c.lineTo(Math.cos(a) * r * 1.5, Math.sin(a) * r * 0.85); }
+    c.closePath(); c.fillStyle = "#fff7e0"; c.fill(); c.lineWidth = 3; c.strokeStyle = "rgba(14,16,34,.9)"; c.lineJoin = "round"; c.stroke();
+    c.font = 'italic 900 28px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center"; c.textBaseline = "middle";
+    c.lineWidth = 6; c.strokeText("NICE!", 0, 1); c.fillStyle = "#ffb627"; c.fillText("NICE!", 0, 1);
+    c.restore();
+  }
+}
+for (const i of [0, 1]) $("pc" + i).addEventListener("pointerdown", (e) => { if (i === meSlot && niceOk()) { e.preventDefault(); Sfx.init(); niceSend(); } });
+window.addEventListener("keydown", (e) => { if (e.code === "KeyN" && !e.repeat && niceOk()) niceSend(); });
 /* ----- wiring ----- */
 // every wired control sounds its cue (Sfx.cue: a gold primary "goes", a back arrow or close X "goes back", the rest taps)
 const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(el); fn(e); }); };
@@ -27327,6 +27523,12 @@ tap("rAgain", () => {
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
+  if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
+    const lv = G.lv, boss = bossOf(G).spec.id, partner = G.fighters[1 - meSlot].spec.id;
+    resetNet(); NET.phase = "idle"; lobbyPresence();
+    startBoss({ level: lv, boss, partner });
+    return;
+  }
   if (match && match.online) {
     NET.rm = NET.matchId + 1;
     const nf = FIG[NET.nextF] ? NET.nextF : null;
@@ -27983,7 +28185,7 @@ const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
   // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
-  const OPT_COUNTERS = ["flawless"];
+  const OPT_COUNTERS = ["flawless", "duo"];   // duo: online boss wins on Hard or Nightmare (the Double Trouble title)
   const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
   const HIST = 50;
@@ -28294,6 +28496,7 @@ const ACT = [
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
   { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
   { id: "kraken", name: () => "Kraken Fryer", ok: () => ((roadGet().b3 | 0) & 7) > 0, how: "Beat Kraken Spud at the end of the pier in The Deep." },
+  { id: "duo", name: () => "Double Trouble", ok: () => (P.duo | 0) > 0, how: "Beat a boss on Hard or Nightmare with a friend online (Play friends, Vs boss)." },
   ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
@@ -28304,7 +28507,7 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());

@@ -335,6 +335,7 @@ function enterMatchUI() {
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
     el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
+    el.classList.toggle("nice", !!(match.online && match.boss && i === meSlot));   // ui/online.js: a tap on your own card says NICE! to your partner
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   });
   { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
@@ -564,7 +565,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online && R.boss ? `Boss fight · ${R.dropped ? `${NET.oppName || "Your partner"} dropped` : `with ${NET.oppName || "your friend"}`}` : R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -584,7 +585,7 @@ function showResults(R) {
   // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
   const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
   if (match) match.finBy = "";
-  masteryResults(R, !!fb && won, ult);   // ui/mastery.js: the XP, the level and the row under the rank card
+  masteryResults(R, !!fb && won && !R.mateFin, ult);   // ui/mastery.js: the XP, the level and the row under the rank card (R.mateFin: your partner's KO page)
   const fin = $("rFin");
   fin.hidden = !(fb && won);
   if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
@@ -606,7 +607,7 @@ function showResults(R) {
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.");
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
+  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.online && R.boss ? NET.again : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
