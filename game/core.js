@@ -507,7 +507,7 @@ function newFighter(spec, slot, pal, x, facing) {
     ult: 0, ultN: 0, ultX: 0, ultTgt: -1,
     // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
     // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
-    team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1,
+    team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1, lifePct: 0,
     anim: { run: 0 },
   };
 }
@@ -531,7 +531,10 @@ function newGame(o) {
     const sp = o.players.length > 2 ? (tm[i] === 0 ? { x: Math.round(S.x1 * 0.575) + k * 90, f: 1 } : { x: Math.round(S.x2 * 0.5) - k * 90, f: -1 }) : STAGE.spawns[i];
     const f = newFighter(p.spec, i, p.pal, sp.x, sp.f);
     f.team = tm[i];
-    f.stocks = g.stocks;
+    f.stocks = p.stocks || g.stocks;
+    // handicaps (the Road's stops): p.pct = the percent the first life starts at, p.lifePct = the percent every life starts at
+    if (p.lifePct) f.lifePct = p.lifePct;
+    f.percent = p.pct || f.lifePct;
     if (p.spec.boss) { const B = p.spec.boss; f.stocks = 1; f.hp = f.hpMax = Math.round(B.hp * B.lvHp[g.lv] * (o.hpMul ?? 1)); }
     g.fighters.push(f);
   });
@@ -1530,7 +1533,7 @@ function respawn(g, f) {
   f.x = f.slot === 0 ? -70 : 70; f.y = STAGE.respawnY;
   f.vx = f.vy = f.kbx = f.kby = 0; f.grounded = false; f.plat = -1;
   setState(f, "respawn");
-  f.percent = 0; f.airJumps = f.s.airJumps; f.recUsed = false; f.airDodged = false; f.ff = false;
+  f.percent = f.lifePct; f.airJumps = f.s.airJumps; f.recUsed = false; f.airDodged = false; f.ff = false;
   f.facing = f.slot === 0 ? 1 : -1; f.move = null; f.specCd = 0;
 }
 function endGame(g, winner, reason, hit) {
@@ -1768,7 +1771,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim"];
+  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -1805,7 +1808,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
