@@ -197,6 +197,7 @@ function finDashTick(g) {
 function drawBubbles(c, g, tk, img) {
   for (const f of g.fighters) {
     if (f.state === "dead" || f.state === "gone") continue;
+    if (f.spec.boss && f.spec.boss.hide && !f.doomed) continue;   // Kraken Spud waiting out at sea is not off the stage
     const [sx, sy] = toScreen(f.x, f.y - f.s.h * 0.5);
     const m = 6;
     if (sx > m && sx < L.gw - m && sy > m && sy < L.gh - m) continue;
@@ -277,6 +278,7 @@ function render2D(g, tk) {
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
   }
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  bossScreen(c, g, tk);   // a boss's layer in screen space, over the fight (Kraken Spud's ink; ui/draw-boss.js)
   drawScreenFx(c);
   uvScreen(c, g);   // Ultimates: the flash, speed lines, the banner and the Dead Eye vignette
   if (mode === "match") drawCombos(c, g);

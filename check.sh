@@ -58,7 +58,7 @@ if grep -q "^ulti ok" "$LOGS/ulti.log"; then pass "ultimates (KO bands, first hi
 else fail "ultimates" "$LOGS/ulti.log"; fi
 
 # 3f. Boss fights (2v1): replay and save/restore determinism with three fighters, then two bot players against Old Scratch at each
-#     difficulty, then the same against Zorp: win rates and fight lengths in their bands, every move used, the final launch leaves the
+#     difficulty, then the same against Zorp and Kraken Spud: win rates and fight lengths in their bands, every move used, the final launch leaves the
 #     arena, lethal calls come true.
 (cd tests && node boss.js) > "$LOGS/boss.log" 2>&1
 if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights (Normal win rates: $(grep -o '^boss ok (Normal: [^)]*' "$LOGS/boss.log" | sed 's/^boss ok (Normal: //'); determinism, final launch, lethal calls)"
@@ -153,7 +153,8 @@ else fail "Daily Potato in the browser" "$LOGS/daily-ui.log"; fi
 
 # 8d. Boss fights in the browser: Practice > VS > Old Scratch (his difficulty, his map), the fight with a CPU partner, the boss bar
 #     (HP, stagger, FINISH), the KO page on the final hit, Victory / Defeat results, the bar at four sizes; then Zorp on The Kitchen
-#     (his line, the hover, the crash into his floor phase, the finish). Shots in build/shots/boss.
+#     (his line, the hover, the crash into his floor phase, the finish) and Kraken Spud on The Deep (out at sea, a slammed tentacle,
+#     the finish). Shots in build/shots/boss.
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwboss.py" boss) > "$LOGS/boss-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/boss-ui.log"; then pass "boss fights in the browser (Practice entry, boss bar, KO page, results; shots in build/shots/boss)"
 else fail "boss fights in the browser" "$LOGS/boss-ui.log"; fi

@@ -118,6 +118,10 @@ const MAPS = [
   { id: "kitchen", pool: false, main: { x1: -360, x2: 360, top: 0, bottom: 64 },
     plats: [{ x1: -300, x2: -170, y: -120 }, { x1: 170, x2: 300, y: -120 }, { x1: -70, x2: 70, y: -250 }],
     blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
+  // The Deep (Kraken Spud's arena, section 4): a long jetty, harbour end left, open sea right where his head waits; crates and lobster pots
+  { id: "deep", pool: false, main: { x1: -360, x2: 360, top: 0, bottom: 64 },
+    plats: [{ x1: -290, x2: -170, y: -115 }, { x1: 170, x2: 290, y: -115 }],
+    blast: BLAST, spawns: [{ x: -190, f: 1 }, { x: 190, f: -1 }], respawnY: -330 },
 ];
 // the maps the random draw picks from (ranked, online, the daily, the cup, the tests' MAP=all): the first POOL; arena maps come after them.
 // (The Field stays out: on its wide flat floor Dragon wins 42% and Phoenix 57% of bot games, against 44-58% everywhere else.)
@@ -455,6 +459,8 @@ const ROAD_SKINS = [
     accent: { phoenix: "#ff3d1f", alchemist: "#4a1030", odin: "#8a1a1a", wizard: "#2a1020", samurai: "#c9262a", dragon: "#a01f1f", gunslinger: "#3a1a14", reaper: "#2a0e0c" }, lining: "#ff6a2b" },
   { name: "Specimen", road: "zorp", body: "#a9c0a0", trim: "#1f2a26", ui: "#9dff5a",
     accent: { phoenix: "#5aff9a", alchemist: "#2a6e5a", odin: "#9fb8c9", wizard: "#2f4f5a", samurai: "#6cf0c8", dragon: "#3fbf7a", gunslinger: "#7a9a8a", reaper: "#2d4a3e" }, lining: "#9dff5a" },
+  { name: "Deep Catch", road: "kraken", body: "#b89a62", trim: "#1a2430", ui: "#3ef2c0",
+    accent: { phoenix: "#ff7a8a", alchemist: "#3a2f6e", odin: "#4a7a8a", wizard: "#1e3a4a", samurai: "#1fa88a", dragon: "#5a8a9a", gunslinger: "#8a7a5a", reaper: "#22343a" }, lining: "#3ef2c0" },
 ];
 for (const f of FIGHTERS) for (const r of ROAD_SKINS)
   f.palettes.push({ name: r.name, road: r.road, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
@@ -537,6 +543,42 @@ const BOSSES = [
       hop:    M(36, 6, 40, 12, 7, 16, 80, [0, -20, 95], { boss: "hop", fast: true, hopT: 28, range: 300 }),
     },
   },
+  {
+    id: "kraken", name: "Kraken Spud", role: "The Sea Monster", map: "deep",
+    blurb: "A purple potato the size of a boat, under the pier. The fish sent him. Owns The Deep.",
+    look: { build: "boss", costume: "kraken", scale: 1 },
+    // his box is the head lying on the deck (170 x 130); in the sea it can't be hit
+    stats: { w: 170, h: 130, weight: 400, run: 0, accel: 0, airSpeed: 0, airAccel: 0, gravity: 0.75, fallSpeed: 14, fastFall: 14, jump: 0, airJump: 0, airJumps: 0 },
+    palettes: [{ name: "Deep Purple", price: 0, body: "#6a3f8f", trim: "#3a1f55", accent: "#3ef2c0", ui: "#c77dff" }],
+    // Fable's design section 2. Old Scratch's block, plus: sea = where his head waits past the right ledge (hidden: hide, he can only be
+    // hit through a part on the deck, his head lying there, or while staggered / broken); slams come in pairs from pairAt[lv] % HP,
+    // Chomp from chompAt[lv] %; a slammed tentacle stays stay[lv] frames (rage: rageStay[lv]); inkN[lv] blots for inkT[lv] frames (UI only);
+    // the Wave pushes wavePush[lv] a frame and is waveH[lv] tall; sweepN[lv] sweeps (the second from the right ledge, 30 frames later).
+    // Tuned with tests/boss.js: with Fable's numbers (950 HP, tentacles down 70 frames, Chomp from half HP) the bots could hit him
+    // a third of the time and fights ran past four minutes; now 600 HP, slams in pairs and Chomp from the start, the tentacles stay
+    // longer on Normal (the window) and shorter on the harder levels (the difficulty), shorter gaps (bots at 0.6: Normal ~100% in
+    // ~96 s, Hard ~58%, Nightmare ~8%).
+    boss: { hp: 600, lvHp: [1, 1, 1.2], poise: 32, stagger: [150, 135, 120], rageAt: [20, 25, 35], rageStag: 1.3, rageGap: 0.65, rageFast: 0.25,
+            stagK: 1.5, lightK: 1, near: 0, gap: [[20, 24], [18, 20], [14, 16]], lvFast: [0, 0.15, 0.25],
+            hide: true, sea: { x: 470, y: -20 }, pairAt: [100, 100, 100], chompAt: [100, 100, 100], stay: [110, 80, 70], rageStay: [80, 60, 55],
+            inkN: [7, 9, 11], inkT: [132, 156, 180], wavePush: [4.5, 5.5, 6.5], waveH: [60, 60, 80], sweepN: [1, 1, 2],
+            order: ["slam", "sweep", "ink", "wave", "chomp"] },
+    moves: {
+      // Tentacle Slam: a foam ring where the target stands, the tip slams there and the tentacle stays on the deck (hit it now);
+      // in pairs (one per player, 30 frames apart) from pairAt
+      slam:  M(36, 6, 82, 0, 0, 0, 0, [], { boss: "slam", fast: true, spot: true, tip: { r: 50, life: 6, dmg: 13, bkb: 7, kbg: 16, angle: 80 }, part: [30, 120], pairT: 30 }),
+      // Low Sweep: a tentacle from the left ledge sweeps the deck to the right (Nightmare: a second one back from the right)
+      sweep: M(40, 60, 20, 0, 0, 0, 0, [], { boss: "sweep", fast: true, shot: { r: 30, vx: 12, life: 600, dmg: 10, bkb: 6, kbg: 12, angle: 70 } }),
+      // Ink Spray: blots over the screen (UI only); his next gap is halved
+      ink:   M(48, 1, 40, 0, 0, 0, 0, [], { boss: "ink", fast: true, halfGap: true }),
+      // Wave: a wall of water rolls from the right ledge to the left; pushes, 4% once, no knockback
+      wave:  M(50, 90, 20, 0, 0, 0, 0, [], { boss: "wave", fast: true, half: 45, vx: 8, dmg: 4 }),
+      // Chomp: the head lunges onto the deck where the target stood, the mouth catches one player (3 bites, spat up); then the head
+      // lies on the deck (catch: 150 frames, miss: 90): the big window; 20 frames to slide back
+      chomp: M(44, 12, 206, 0, 0, 0, 0, [], { boss: "chomp", fast: true, spot: true, lunge: 10, mouth: [55, 10, 100], bites: [12, 5], chew: 36, down: 150, miss: 90, slide: 20,
+               spit: { dmg: 1, bkb: 9, kbg: 12, angle: 88 } }),
+    },
+  },
 ];
 
 /* ---------- state ---------- */
@@ -563,7 +605,8 @@ function newFighter(spec, slot, pal, x, facing) {
     // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
     // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
     team: slot, hp: 0, hpMax: 0, poise: 0, stag: 0, bq: "", bt: 0, aim: -1, lifePct: 0,
-    // ph: the boss's phase (Zorp: 1 once his saucer has crashed); held: the boss slot holding this fighter (-1 = free);
+    // ph: the boss's phase (Zorp: 1 once his saucer has crashed; Kraken Spud: 1 while his head lies on the deck, hurtable);
+    // held: the boss slot holding this fighter (-1 = free);
     // bx: the spot his move aims at (the target's x at its start; Abduct's spotlight), bk: his move's own counter
     ph: 0, held: -1, bx: 0, bk: 0,
     anim: { run: 0 },
@@ -596,6 +639,7 @@ function newGame(o) {
     if (p.spec.boss) {
       const B = p.spec.boss; f.stocks = 1; f.hp = f.hpMax = Math.round(B.hp * B.lvHp[g.lv] * (o.hpMul ?? 1));
       if (B.fly) { f.y = STAGE.main.top - B.fly.y; f.grounded = false; f.state = "air"; }
+      if (B.sea) { f.x = B.sea.x; f.y = B.sea.y; f.facing = -1; f.grounded = false; f.state = "air"; }
     }
     g.fighters.push(f);
   });
@@ -642,7 +686,9 @@ function bossSpot(g, f, me) {
   for (const p of g.projs) if (p.part && p.owner === f.slot && !p.done && Math.abs(p.x - me.x) < best) { best = Math.abs(p.x - me.x); x = p.x; y = p.y; }
   return { x, y, ok: best < 1e9 };
 }
-const bossOpen = (f) => f.state === "stagger" || f.state === "broken" || f.doomed || (f.state === "attack" && !!f.move && !!f.move.open && f.mt >= f.move.open[0] && f.mt <= f.move.open[1]);
+// (a staggered hidden boss: once his head has flopped onto the deck; ph 1: his head lies there after a Chomp)
+const bossOpen = (f) => (f.state === "stagger" && (!f.spec.boss.hide || f.st >= 10)) || f.state === "broken" || f.doomed || (!!f.spec.boss.hide && f.ph === 1) ||
+  (f.state === "attack" && !!f.move && !!f.move.open && f.mt >= f.move.open[0] && f.mt <= f.move.open[1]);
 function circRect(cx, cy, r, b) {
   const nx = clamp(cx, b.x1, b.x2), ny = clamp(cy, b.y1, b.y2);
   const dx = cx - nx, dy = cy - ny;
@@ -711,8 +757,8 @@ function updateFighter(g, f) {
     }
     case "ledge": updateLedge(g, f); return;
     case "idle": case "run": case "air": if (f.spec.boss) bossAct(g, f); else actOrMove(g, f); break;
-    case "stagger": f.vx *= 0.8; if (bossFlying(f)) bossHover(f, f.spec.boss.fly.sink); if (--f.stag <= 0) { f.poise = 0; setState(f, "idle"); } break;
-    case "broken": f.vx *= 0.8; break;
+    case "stagger": f.vx *= 0.8; if (bossFlying(f)) bossHover(f, f.spec.boss.fly.sink); if (f.spec.boss && f.spec.boss.sea) bossFlop(f); if (--f.stag <= 0) { f.poise = 0; setState(f, "idle"); } break;
+    case "broken": f.vx *= 0.8; if (f.spec.boss && f.spec.boss.sea) bossFlop(f); break;
     case "jumpsquat":
       f.vx *= 0.9;
       if (f.st >= 3) {
@@ -1023,6 +1069,8 @@ function updateDodge(g, f) {
 
 function physics(g, f) {
   const s = f.s;
+  // a boss in the sea (Kraken Spud) is placed by his moves, no gravity, until the launch that ends him
+  if (f.spec.boss && f.spec.boss.sea && !f.doomed) { f.vx = f.vy = f.kbx = f.kby = 0; f.grounded = false; return; }
   if (!f.grounded) {
     let grav = s.gravity, maxFall = f.ff ? s.fastFall : s.fallSpeed;
     if (f.state === "helpless" && f.spec.moves.rec.glide) { grav *= 0.4; maxFall = 4.2; }
@@ -1377,21 +1425,24 @@ function bossAim(g, f) {
 }
 function bossAct(g, f) {
   f.inp.x = 0;
-  // a flying boss (Zorp's saucer) keeps his height and drifts; the others fall like anyone
-  const fly = bossFlying(f);
-  if (fly) { if (f.state !== "air") setState(f, "air"); bossHover(f, f.spec.boss.fly.y); }
+  // a flying boss (Zorp's saucer) keeps his height and drifts; a boss in the sea (Kraken Spud) waits there, his head out of reach;
+  // the others fall like anyone
+  const fly = bossFlying(f), sea = !!f.spec.boss.sea, still = () => { if (fly) f.vx *= 0.85; else if (!sea) groundMove(g, f); };
+  if (sea) { if (f.state !== "air") setState(f, "air"); f.ph = 0; bossHome(f); }
+  else if (fly) { if (f.state !== "air") setState(f, "air"); bossHover(f, f.spec.boss.fly.y); }
   else if (!f.grounded) { if (f.state !== "air") setState(f, "air"); airDrift(f, 0.5); return; }
   // the KO look-ahead and the countdown: he stands (an attack already running plays out)
-  if (g.look || g.phase !== "play") { if (!fly) groundMove(g, f); else f.vx *= 0.85; return; }
+  if (g.look || g.phase !== "play") return still();
   let t = f.aim >= 0 ? g.fighters[f.aim] : null;
   if (!t || !bossLive(t)) { f.aim = bossAim(g, f); t = f.aim >= 0 ? g.fighters[f.aim] : null; }
-  if (!t) { if (!fly) groundMove(g, f); else f.vx *= 0.85; return; }
+  if (!t) return still();
   const dx = t.x - f.x, adx = Math.abs(dx), up = f.y - t.y;
   if (f.bt > 0) f.bt--;
   else {
     const key = bossPick(g, f, t, dx, up);
-    if (key) { f.facing = sign(dx) || f.facing; return bossStart(g, f, key, t); }
+    if (key) { if (!sea) f.facing = sign(dx) || f.facing; return bossStart(g, f, key, t); }
   }
+  if (sea) return;
   if (fly) {
     // over the target, within his range
     const F = f.spec.boss.fly, d = clamp(t.x, -F.range, F.range) - f.x;
@@ -1459,7 +1510,19 @@ function zorpWeigh(g, f, t, dx, up) {
   if (adx > 420 && brand(g) < 0.6) return null;
   return w;
 }
-const BOSS_WEIGH = { scratch: scratchWeigh, zorp: zorpWeigh };
+// Kraken Spud: slam, sweep, ink, wave, chomp (he never walks in)
+function krakenWeigh(g, f, t, dx, up) {
+  const B = f.spec.boss, foes = g.fighters.filter((o) => o.team !== f.team && bossLive(o));
+  const partDown = g.projs.some((p) => p.owner === f.slot && p.part && !p.done);
+  return [
+    4,                                                                                   // slam
+    foes.every((o) => o.grounded && o.x < 0) ? 3 : 2,                                    // sweep
+    f.bq === "ink" || g.t < 750 || partDown ? 0 : 1,                                     // ink: never twice running, not in the first 10 s
+    foes.every((o) => o.x > 0) ? 3 : 1.5,                                                // wave
+    f.hp * 100 <= f.hpMax * B.chompAt[g.lv] && t.grounded && t.x > 40 ? 3 : 0,           // chomp
+  ];
+}
+const BOSS_WEIGH = { scratch: scratchWeigh, zorp: zorpWeigh, kraken: krakenWeigh };
 // t: the fighter he picked the move against (f.bx = where they stand; the move's own counter f.bk starts at 0)
 function bossStart(g, f, key, t) {
   const B = f.spec.boss, rage = bossRage(g, f);
@@ -1472,7 +1535,7 @@ function bossStart(g, f, key, t) {
   if (m.fast) f.mt = Math.round(m.startup * (B.lvFast[g.lv] + (rage ? B.rageFast : 0)));
   if (m.hop) { f.vy = -m.hop; f.grounded = false; f.plat = -1; }
   const gp = B.gap[g.lv];
-  f.bt = Math.round((gp[0] + brand(g) * gp[1]) * (rage ? B.rageGap : 1));
+  f.bt = Math.round((gp[0] + brand(g) * gp[1]) * (rage ? B.rageGap : 1) * (m.halfGap ? 0.5 : 1));
   f.aim = bossAim(g, f);
   g.events.push({ type: "bossMove", slot: f.slot, mv: f.bq, x: f.x, y: f.y, rage });
 }
@@ -1588,7 +1651,85 @@ function zorpStep(g, f, m) {
   }
   return true;
 }
-const BOSS_STEP = { scratch: scratchStep, zorp: zorpStep };
+// Kraken Spud's moves: tentacles and the wave are projectiles (a slammed tentacle is a `part`: he can be hit through it); only the
+// Chomp moves his head (onto the deck: hurtable while it lies there, f.ph 1); f.bx = the first slam's spot / the Chomp's,
+// f.bk = the second slam's spot (from pairT; 1e4 = none) / the Chomp's state (0 reaching, 1.. chewing, -1 lying on the deck)
+function krakenStep(g, f, m) {
+  const S = STAGE.main, B = f.spec.boss, k = m.boss, mt = f.mt, a0 = m.startup + 1, a1 = m.startup + m.active, total = a1 + m.endlag;
+  const foes = g.fighters.filter((o) => o.team !== f.team && bossLive(o)), held = g.fighters.find((o) => o.held === f.slot) || null;
+  if (k !== "chomp") { f.ph = 0; bossHome(f); }
+  if (k === "slam") {
+    if (mt === m.pairT) {
+      // pairs (from pairAt % HP, or in rage): the second on the other player, pairT frames after the first
+      let o2 = null, best = -1;
+      if (f.hp * 100 <= f.hpMax * B.pairAt[g.lv] || bossRage(g, f)) for (const o of foes) if (Math.abs(o.x - f.bx) > best) { best = Math.abs(o.x - f.bx); o2 = o; }
+      f.bk = o2 ? clamp(o2.x, S.x1 + 30, S.x2 - 30) : 1e4;
+    }
+    if (mt === a0) krakenSlam(g, f, m, f.bx);
+    if (mt === a0 + m.pairT && f.bk < 1e4) krakenSlam(g, f, m, f.bk);
+  }
+  if (k === "sweep") {
+    const L = m.shot;
+    if (mt === a0) g.projs.push(bossProj(f, S.x1 + L.r, S.top - L.r, L.vx, 0, "sweep", L, { z: "laser", w: 0, pass: 0, dir: 1 }));
+    if (mt === a0 + 30 && B.sweepN[g.lv] > 1) g.projs.push(bossProj(f, S.x2 - L.r, S.top - L.r, -L.vx, 0, "sweep", L, { z: "laser", w: 0, pass: 0, dir: -1 }));
+  }
+  if (k === "ink" && mt === a0) g.events.push({ type: "bossInk", slot: f.slot, n: B.inkN[g.lv], dur: B.inkT[g.lv], seed: g.t, x: f.x, y: f.y });
+  if (k === "wave" && mt === a0)
+    g.projs.push(Object.assign(bossProj(f, S.x2 + m.half, S.top, -m.vx, 0, "wave", { r: m.half, life: 600 }), { hit: null, z: "wave", w: B.waveH[g.lv], speed: B.wavePush[g.lv], pass: 0, dir: -1 }));
+  if (k === "chomp") {
+    const H = B.sea, lx = clamp(f.bx, 40, 300), lt = m.startup - m.lunge;
+    f.ph = 0;
+    if (mt <= lt) { f.x += (H.x - f.x) * 0.2; f.y += (H.y - 60 - f.y) * 0.2; }   // he rears up
+    else if (mt <= m.startup) { const q = (mt - lt) / m.lunge; f.x += (lx - f.x) * q; f.y += (S.top - f.y) * q; }   // the lunge onto the deck
+    else if (mt <= total - m.slide) {
+      f.x = lx; f.y = S.top;
+      if (!f.bk && mt <= a1) {
+        // the mouth catches one player (hidden while it reaches; a box over the deck)
+        const [hw, y1, y2] = m.mouth;
+        for (const o of foes) {
+          if (intangible(o) || o.held >= 0) continue;
+          const r = hurt(o);
+          if (r.x2 > lx - hw && r.x1 < lx + hw && r.y2 > S.top - y2 && r.y1 < S.top - y1) { bossHold(g, f, o); f.bk = 1; break; }
+        }
+        // a miss: the head lies on the deck miss frames
+        if (!f.bk && mt === a1) { f.bk = -1; f.mt = a1 + m.chew + m.down - m.miss; }
+      }
+      if (held && f.bk > 0) {
+        bossCarry(held, lx, S.top - 40, 0.4, 0.4);
+        const n = f.bk++;
+        if (n % m.bites[0] === 0) {
+          held.percent = Math.min(999, held.percent + m.bites[1]); f.dmgDealt += m.bites[1]; ultGain(held, m.bites[1] * TUNE.ultTaken); held.flash = 6;
+          g.events.push({ type: "bossBite", slot: f.slot, def: held.slot, x: held.x, y: held.y, dmg: m.bites[1] });
+        }
+        // spat straight up, then the head lies on the deck (the window): from the end of the chew on the clock
+        if (n >= m.chew) { bossLet(g, f, m.spit, 1); f.bk = -1; f.mt = a1 + m.chew; }
+      }
+      if (f.bk === -1) f.ph = 1;
+    } else bossHome(f, 0.2);   // slides back
+  }
+  if (f.mt >= total) { f.move = null; f.mid = null; f.ph = 0; bossLet(g, f, null); setState(f, "air"); }
+  return true;
+}
+// a slam at x: the tip's hit (6 frames) and the tentacle left on the deck (a part: he can be hit through it)
+function krakenSlam(g, f, m, x) {
+  const S = STAGE.main, B = f.spec.boss;
+  x = clamp(x, S.x1 + 30, S.x2 - 30);
+  g.projs.push(bossProj(f, x, S.top - 30, 0, 0, "slam", m.tip, { pass: 0 }));
+  g.projs.push(Object.assign(bossProj(f, x, S.top, 0, 0, "tent", { r: 30, life: (bossRage(g, f) ? B.rageStay : B.stay)[g.lv] }), { hit: null, part: m.part }));
+  g.events.push({ type: "bossSlam", slot: f.slot, x, y: S.top });
+}
+// where his strike will land on the floor (bots step out of it): the slams' spots, the Chomp's; null once it has landed
+function bossThreat(f) {
+  const m = f.move, a0 = m.startup + 1;
+  if (f.mid === "slam") { if (f.mt <= a0) return f.bx; if (f.mt >= m.pairT && f.bk < 1e4 && f.mt <= a0 + m.pairT) return f.bk; }
+  if (f.mid === "chomp" && f.mt <= a0 + m.active) return clamp(f.bx, 40, 300);
+  return null;
+}
+// his head eases home (in the sea past the ledge)
+function bossHome(f, k) { const H = f.spec.boss.sea; f.x += (H.x - f.x) * (k || 0.15); f.y += (H.y - f.y) * (k || 0.15); }
+// staggered or broken: the head flops onto the deck at f.bx
+function bossFlop(f) { f.x += (f.bx - f.x) * 0.3; f.y += (STAGE.main.top - f.y) * 0.3; }
+const BOSS_STEP = { scratch: scratchStep, zorp: zorpStep, kraken: krakenStep };
 // a probe: falls (grav), walks once it lands (w: its direction; 0 = at the nearest player then), pops after walkT frames
 function zorpProbe(g, f, P, x, y, vx, vy, d) {
   g.projs.push(bossProj(f, x, y, vx, vy, "probe", P, { z: "probe", w: d, grav: P.grav, speed: f.spec.boss.probeSpeed[g.lv], burst: P.burst }));
@@ -1630,6 +1771,21 @@ function bossProjStep(g, p) {
       if (p.w > 0) { p.w--; p.vx = -p.vx; p.dir = -p.dir; p.pass = 0; g.events.push({ type: "laserTurn", x: p.x, y: p.y, slot: p.owner }); }
       else { p.done = true; g.events.push({ type: "projEnd", x: p.x, y: p.y, style: p.style, slot: p.owner }); }
     }
+  } else if (p.z === "wave") {
+    // Kraken's Wave: rolls along the deck; pushes everyone inside (p.speed on the floor, 2 in the air) and hurts each once (4%)
+    p.x += p.vx;
+    const d = sign(p.vx), owner = g.fighters[p.owner];
+    for (const o of g.fighters) {
+      if (o.team === owner.team || !bossLive(o) || o.held >= 0 || o.state === "ledge") continue;
+      if (Math.abs(o.x - p.x) > p.r + o.s.w / 2 || o.y < S.top - p.w || o.y > S.top + 1 || o.plat >= 0) continue;
+      o.x += d * (o.grounded ? p.speed : 2);
+      if (!((p.pass >> o.slot) & 1)) {
+        p.pass |= 1 << o.slot;
+        o.percent = Math.min(999, o.percent + 4); owner.dmgDealt += 4; ultGain(o, 4 * TUNE.ultTaken); o.flash = 6;
+        g.events.push({ type: "bossWave", slot: p.owner, def: o.slot, x: o.x, y: o.y, dmg: 4 });
+      }
+    }
+    if (p.x < S.x1 - p.r - 20) p.done = true;
   } else if (p.z === "ride") {
     const o = g.fighters[p.w];
     if (o.state !== "hitstun" || o.held >= 0) p.done = true;
@@ -1674,6 +1830,7 @@ function bossHit(g, h) {
     setState(def, "broken");
     bossLet(g, def, null);
     if (B.fly) def.ph = 1;   // a flying boss falls to the floor
+    if (B.sea) { def.bx = clamp(def.ph === 1 ? def.x : h.bx, 60, 290); def.ph = 0; }   // the head flops onto the deck where he was hit
     g.projs = g.projs.filter((p) => p.owner !== def.slot);
     g.events.push({ type: "bossBroken", slot: def.slot, by: att.slot, x: def.x, y: def.y });
   } else if (B.crashAt && def.ph === 0 && def.mid !== "crash" && def.hp * 100 <= def.hpMax * B.crashAt[g.lv]) {
@@ -1685,6 +1842,7 @@ function bossHit(g, h) {
   } else if (!stag && def.poise >= B.poise && def.mid !== "crash") {
     def.move = null; def.mid = null; def.vx = 0;
     bossLet(g, def, null);
+    if (B.sea) { def.bx = clamp(def.ph === 1 ? def.x : h.bx, 60, 290); def.ph = 0; g.projs = g.projs.filter((p) => !(p.owner === def.slot && p.part)); }
     setState(def, "stagger");
     def.stag = Math.round(B.stagger[g.lv] * (rage ? B.rageStag : 1));
     g.events.push({ type: "bossStagger", slot: def.slot, by: att.slot, x: def.x, y: def.y, n: def.stag });
@@ -1911,6 +2069,8 @@ function botInput(g, me, opp, bot) {
     gone: opp.state === "dead" || opp.state === "gone" || opp.state === "respawn" || (!!opp.spec.boss && !sp.ok), inv: intangible(opp),
     // a boss target: 0 fighting, 1 staggered, 2 broken (-1 = not a boss)
     bs: opp.spec.boss ? (opp.state === "broken" ? 2 : opp.state === "stagger" ? 1 : 0) : -1,
+    // where a boss's strike aimed at a spot on the floor is about to land (null = none)
+    sx: opp.spec.boss && opp.state === "attack" && opp.move && opp.move.spot ? bossThreat(opp) : null,
   });
   const delay = Math.round(lerp(18, 4, d));
   while (bot.mem.length > delay + 1) bot.mem.shift();
@@ -1980,6 +2140,15 @@ function botInput(g, me, opp, bot) {
   if (bot.think > 0) { bot.think--; return dodgeHold(); }
   bot.think = Math.round(lerp(12, 2, d) + R() * lerp(8, 3, d));
   bot.hold.x = 0; bot.hold.y = 0;
+  // a boss's strike aimed at a spot on the floor (Kraken Spud's slams and Chomp): get out of it; his sweeps and waves: jump them
+  if (canAct(me) && me.grounded && opp.spec.boss) {
+    if (o.sx !== null && Math.abs(me.x - o.sx) < 100 && R() < lerp(0.25, 0.85, d)) {
+      const away = sign(me.x - o.sx) || -sign(me.x) || 1;
+      bot.hold.x = away; out.x = away; avoidEdge(me, out); return out;
+    }
+    for (const p of g.projs)
+      if ((p.z === "laser" || p.z === "wave") && p.owner === opp.slot && sign(me.x - p.x) === sign(p.vx) && Math.abs(me.x - p.x) < 40 + Math.abs(p.vx) * 12 && R() < lerp(0.2, 0.8, d)) return press("jump", 0, 0, 14);
+  }
   if (o.gone) {
     bot.hold.x = Math.abs(me.x) > 60 ? -sign(me.x) : 0;
     out.x = bot.hold.x; return out;

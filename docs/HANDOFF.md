@@ -1,9 +1,21 @@
-# PotatoBrawl handoff (updated 2026-10-15: Zorp the Alien, The Kitchen, Road regions and Road skins, PROTO 11)
+# PotatoBrawl handoff (updated 2026-10-15: Kraken Spud, The Deep, Zorp the Alien, The Kitchen, Road regions and Road skins, PROTO 12)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Session 4 of the big-features plan, part 2 (2026-10-15, branch claude/alien-sea-monster-6nyh3z, PROTO 12, players reload once):
+  Kraken Spud the Sea Monster, The Deep, Road region 3 (Kraken Fryer title, Deep Catch skin). Design: bosses2/fable-design.md section 2.
+  - Kraken Spud (BOSSES[2], map "deep", HP 600 x lvHp [1, 1, 1.2], poise 32): a hidden boss (`spec.boss.hide`). His head waits in
+    the sea past the right ledge (f.x 470, f.y -20, no physics; bossHome eases him there) and has no hurtbox there: he is hit
+    through a slammed tentacle lying on the deck (a projectile `part`, hurtsOf), his head lying on the deck after a Chomp
+    (`ph` 1), a stagger (bossFlop flops the head onto the deck), broken or doomed (bossOpen). Moves (krakenStep): slams in pairs
+    (a tentacle stays 110 / 80 / 70 frames), a sweep along the deck (two on Nightmare), Ink Spray (bossInk: the UI places blots
+    from the seed; screen-space layer bossScreen in ui/draw-boss.js, called from effects.js render2D), a Wave that pushes, and Chomp
+    (rears, lunges onto the deck, 3 bites on a held player, spits him up, then lies there: the big window). Bots at 0.6: Normal
+    ~100%, Hard ~58%, Nightmare ~8%. The camera (view.js camTarget) and the off-stage bubbles skip him while he hides at sea.
+  - Art ui/draw-kraken.js (BOSS_ART.kraken with a `screen` layer for the ink), stage maps/deep.js (pool:false), the Road's Deep map
+    ui/road-deep.js (region 3: eight stops, Kraken Spud at the end of the pier).
 - Session 4 of the big-features plan, part 1 (2026-10-15, branch claude/alien-sea-monster-6nyh3z, PROTO 11, players reload once):
   Zorp the Alien, The Kitchen, Road region 2, Road skins. Design: /mnt/project-files/bosses2/fable-design.md (Fable).
   - Boss engine additions in core.js (used by Zorp now, Kraken Spud next): per-boss tables BOSS_WEIGH / BOSS_STEP (bossStep
@@ -503,8 +515,8 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: Kraken Spud the Sea Monster, The Deep and Road region 3 (session 4, part 2: its own PR, PROTO 12), then online 2v1
-  (session 5) and 2v2 (session 6). Boss leftovers: The Field and The Kitchen stay out of the ranked draw until each gets its own balance pass; a
+- NEXT: online 2v1 on two phones (session 5, its thread "Online 2v1 boss fights" started 2026-10-15), then 2v2 (session 6).
+  Boss leftovers: The Field, The Kitchen and The Deep stay out of the ranked draw until each gets its own balance pass; a
   solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when a boss breaks is not drawn yet; bosses have no
   portrait on the results screen or in the VS list.
   Fighter mastery is done (see State): the new fighters appear on the roster and in Stats by themselves (`FIGHTERS`); check the tile

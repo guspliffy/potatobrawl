@@ -51,6 +51,8 @@ function camTarget(g) {
   let x1 = -base, x2 = base, y1 = -300, y2 = 110;
   for (const f of g.fighters) {
     if (f.state === "dead" || f.state === "gone") continue;
+    // a hidden boss out at sea (Kraken Spud behind the pier) is no reason to pull the camera out: only his reach onto the deck counts
+    if (f.spec.boss && f.spec.boss.hide && !f.doomed && f.x > STAGE.main.x2 + 40) continue;
     // Ultimates (UI only): Phoenix's dive goes far above the screen, the camera stays on the stage; the Dragon is drawn 1.6x
     const fy = uvCamY(f), fh = f.s.h * uvScale(f);
     x1 = Math.min(x1, f.x - pad); x2 = Math.max(x2, f.x + pad);

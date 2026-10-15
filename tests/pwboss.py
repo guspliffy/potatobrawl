@@ -3,8 +3,9 @@
 # countdown), the bar follows his HP, poise and stagger; at 0 HP he breaks (FINISH, the banner), the partner ends him and the KO page
 # plays before the results (Victory, "Boss fight · Hard"); a rematch, then a loss (both of you out): no KO page, Defeat, his HP left.
 # A second part starts a fight at each size and checks the bar fits between the cards (screenshots: fight, staggered, broken).
-# A third part fights Zorp: his map and line, the hover, the crash into his floor phase, the finish (screenshots zorp_*).
-#   python3 pwboss.py [outdir [tag ...]]   tags: flow (844x390) zorp s667 p844 d1280 up390; no tag runs everything
+# A third part fights Zorp: his map and line, the hover, the crash into his floor phase, the finish (screenshots zorp_*); a fourth
+# fights Kraken Spud: The Deep, out at sea where he can't be hit, a slammed tentacle he can be hit through, the finish (kraken_*).
+#   python3 pwboss.py [outdir [tag ...]]   tags: flow (844x390) zorp kraken s667 p844 d1280 up390; no tag runs everything
 import asyncio, sys, json, pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'boss'
@@ -201,6 +202,54 @@ async def zorp(b, errs):
     await pg.screenshot(path=f'{OUT}/zorp_s667.png')
     await ctx.close()
 
+# ----- Kraken Spud (the third boss): The Deep, his line, out at sea (he can't be hit there), a slammed tentacle on the deck, the finish
+async def kraken(b, errs):
+    tag = 'kraken'
+    ctx, pg, mob = await new_page(b, tag, (844, 390), False, errs)
+    def need(ok, msg):
+        if not ok: errs.append(f'{tag}: {msg}')
+        return ok
+    await pg.evaluate("window.__blBoss({ boss: 'kraken', level: 0, partner: 'odin' })")
+    await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
+    st = await pg.evaluate(f"(() => {{ const g = {G}; const f = g.fighters[2]; return {{ boss: f.spec.id, map: BL.MAPS[g.map].id, x: f.x, y: f.y, hp: f.hpMax }}; }})()")
+    need(st['boss'] == 'kraken' and st['map'] == 'deep', f'Kraken fight setup {st}')
+    need(st['x'] == 470 and st['y'] == -20 and st['hp'] == round(600 * 0.75), f"he does not wait at sea with his HP: {st}")
+    need(await txt(pg, '#bossBar .bb-name') == 'Kraken Spud', f"bar reads {await txt(pg, '#bossBar .bb-top')!r}")
+    try: await pg.wait_for_function("document.querySelector('#bossBar').classList.contains('talk')", timeout=3000)
+    except Exception: pass
+    need('side dishes' in await txt(pg, '#bossBar .bb-q'), f"his line {await txt(pg, '#bossBar .bb-q')!r}")
+    await pg.screenshot(path=f'{OUT}/kraken_countdown.png')
+    await in_play(pg)
+    await pg.wait_for_timeout(1500)
+    need(await pg.evaluate(f"(() => {{ const f = {BOSS}; return f.x > 400 && f.ph !== 1 && f.state !== 'stagger'; }})()"), 'he left the sea in the first seconds')
+    await pg.screenshot(path=f'{OUT}/kraken_sea.png')
+    # a slammed tentacle stays on the deck: the part he can be hit through
+    await pg.wait_for_function(f"{G}.projs.some((p) => p.part && p.t > 8)", timeout=60000)
+    need(await pg.evaluate(f"{G}.projs.some((p) => p.part && p.style === 'tent' && Math.abs(p.y) < 1)"), 'no tentacle lying on the deck after a slam')
+    await pg.screenshot(path=f'{OUT}/kraken_slam.png')
+    await pg.evaluate(f"(() => {{ const b = {BOSS}; b.hp = 1; b.poise = 0; }})()")
+    await pg.wait_for_function("document.querySelector('#bossBar').classList.contains('down')", timeout=120000)
+    await pg.wait_for_timeout(600)
+    await pg.screenshot(path=f'{OUT}/kraken_broken.png')
+    await pg.wait_for_function("window.__blastline.fin.on || window.__blastline.mode === 'result'", timeout=120000)
+    if need(await pg.evaluate("window.__blastline.fin.on"), 'no KO page after the final hit on Kraken Spud'):
+        await pg.wait_for_timeout(1800)
+        await pg.screenshot(path=f'{OUT}/kraken_kopage.png')
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=60000)
+    await pg.wait_for_timeout(1100)
+    need(await txt(pg, '#rTitle') == 'Victory' and 'beat Kraken Spud on Normal' in await txt(pg, '#rSub'), f"results {await txt(pg, '#rTitle')!r} {await txt(pg, '#rSub')!r}")
+    await pg.screenshot(path=f'{OUT}/kraken_win.png')
+    await ctx.close()
+    # the bar fits at the phone size against him too
+    ctx, pg, mob = await new_page(b, 'kraken s667', SIZES['s667'][:2], False, errs)
+    await pg.evaluate("window.__blBoss({ boss: 'kraken', level: 2, partner: 'wizard' })")
+    await in_play(pg)
+    await pg.wait_for_timeout(2000)
+    bad = await pg.evaluate(FIT)
+    if bad: errs.append('kraken s667: ' + '; '.join(bad))
+    await pg.screenshot(path=f'{OUT}/kraken_s667.png')
+    await ctx.close()
+
 async def main():
     pathlib.Path(OUT).mkdir(parents=True, exist_ok=True)
     errs = []
@@ -208,6 +257,7 @@ async def main():
         b = await p.chromium.launch(args=ARGS)
         if not ONLY or 'flow' in ONLY: await flow(b, errs)
         if not ONLY or 'zorp' in ONLY: await zorp(b, errs)
+        if not ONLY or 'kraken' in ONLY: await kraken(b, errs)
         for tag in SIZES:
             if not ONLY or tag in ONLY: await size(b, tag, errs)
         await b.close()
