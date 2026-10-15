@@ -127,12 +127,16 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     the name), per-ulti drawing and sounds (Sfx.ulti, ultFull, hellBlast, ...), the Gunslinger's light shots (`gunLightPose`, a
     tracer from the muzzle to the sweeping box, smoke, a shell, Sfx.pop instead of the swing sound). tests/pwultreel.py records
     every ulti + the eight light shots at 844x390 and 390x844 (stills + a video, needs ffmpeg).
-  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js, wizard.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
+  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js, wizard.js, dragon.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
     a page with `MANGA[id].ulti` plays its 5.9 s Ultimate script (a fifth, full-page splash panel, MT_U timeline, three impact
     frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova", Wizard "Big Bang" (2026-10-15, Fable's design
     /mnt/project-files/ultimates/manga/wizard/fable-big-bang.md: the five-star shower lands round the loser, the big star sends
     them up into a deep-night sky, the splash draws their face as a constellation over their dark shape, it cracks and bangs into
-    a gold galaxy). The other four play their normal page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
+    a gold galaxy), Dragon "Dragon's Age" (2026-10-15, Fable's design /mnt/project-files/ultimates/manga/dragon/fable-dragon-ultimate.md:
+    Inferno to the roar with Hellfire's blast ring, then the splash shows what the loser saw: the Dragon at his true age filling the
+    page (his potato head with the sprout, horns, gold slit eye, wings, neck, tail; two bitmaps made once while panel 1 holds) and the
+    loser a dot at the far end of the slab; one stream of fire, the dot pops off as a speck, DRAGON'S AGE). The other three play their
+    normal page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
     pwmanga.py --ult plays an Ultimate page.
 - Maps + rank emblems (2026-10-14, same branch, PROTO 9; Jonny's asks after the Ultimates merge):
   - Ulti bar fills at 0.6x (TUNE ultDealt 0.6, ultTaken 0.3, ultHeart 6). A random CPU picks the player's own fighter 4x less
@@ -383,7 +387,7 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 
 ## Next work, in order
 - NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the other five
-  Ultimate KO pages (Alchemist Mutagen Cloud, Odin Gungnir, Dragon Hellfire, Reaper Soul Harvest; Wizard "Big Bang" done: Fable's
+  Ultimate KO pages (Alchemist Mutagen Cloud, Odin Gungnir, Reaper Soul Harvest; Wizard "Big Bang" and Dragon "Dragon's Age" done: Fable's
   twists in next-ideas/fable-ideas.md section 2, the page engine's Ultimate script as built for the first three) + fighter
   mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
   seen). Then 4. boss engine + the Devil + The Field + the Road's first 8 stops; 5. Alien + Sea Monster, their stages, Road
