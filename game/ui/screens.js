@@ -133,8 +133,8 @@ function buildTiles() {
       b.className = "tile"; b.dataset.id = spec.id;
       b.innerHTML = `${PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : ""}<span><b>${spec.name}</b></span>`;
       b.addEventListener("click", () => {
-        Sfx.init(); Sfx.ui();
-        if (sel.fighter === spec.id) return;
+        Sfx.init(); if (sel.fighter === spec.id) { Sfx.ui(); return; }
+        Sfx.uiFlip();
         sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
         buildTiles(); buildDetail();
       });
@@ -224,7 +224,7 @@ function buyPending() {
   const spec = FIG[pd.id], p = spec.palettes[pd.i];
   if (P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
   P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
-  Sfx.ui();
+  Sfx.uiCoin();
   buildTiles(); buildDetail();
   $("dNote").textContent = `Upgraded to ${p.name}. ${FXTEXT[spec.id][pd.i] || ""}`.trim();
 }
@@ -465,7 +465,7 @@ let resCounts = [], resRaf = 0;
 const resCalm = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 function resCountEnd() {
   cancelAnimationFrame(resRaf); resRaf = 0;
-  for (const c of resCounts) { clearTimeout(c.tm); c.el.textContent = c.pre + c.to; }
+  for (const c of resCounts) { clearTimeout(c.tm); c.el.textContent = c.pre + c.to; if (c.end) c.end(); }
   resCounts = [];
 }
 function resCount(el, from, to, pre, o) {
@@ -473,8 +473,8 @@ function resCount(el, from, to, pre, o) {
   el.textContent = pre + (still ? to : from);
   if (still) return;
   const delay = (o && o.delay) || 0, dur = (o && o.dur) || 800;
-  const c = { el, from, to, pre, t0: performance.now() + delay, dur };
-  c.tm = setTimeout(() => { c.el.textContent = c.pre + c.to; resCounts = resCounts.filter((x) => x !== c); }, delay + dur);
+  const c = { el, from, to, pre, t0: performance.now() + delay, dur, end: o && o.end };   // end: once, when the count lands or is skipped
+  c.tm = setTimeout(() => { c.el.textContent = c.pre + c.to; resCounts = resCounts.filter((x) => x !== c); if (c.end) c.end(); }, delay + dur);
   resCounts.push(c);
   if (!resRaf) resRaf = requestAnimationFrame(resTick);
 }
@@ -482,7 +482,7 @@ function resTick(now) {
   resCounts = resCounts.filter((c) => {
     const k = clamp((now - c.t0) / c.dur, 0, 1), e = 1 - Math.pow(1 - k, 3);
     c.el.textContent = c.pre + Math.round(c.from + (c.to - c.from) * e);
-    if (k >= 1) clearTimeout(c.tm);
+    if (k >= 1) { clearTimeout(c.tm); if (c.end) c.end(); }
     return k < 1;
   });
   resRaf = resCounts.length ? requestAnimationFrame(resTick) : 0;
@@ -578,7 +578,7 @@ function showResults(R) {
   const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
   const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
-  if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600 }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
+  if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = chipsOn || R.daily ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : "Practice doesn't change your rating or earn chips.";

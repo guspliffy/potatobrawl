@@ -74,7 +74,6 @@ function cupKeys(c, r) {
 const cupOppOf = (c) => { const r = c.round, idx = c.p[r].indexOf(c.mi); return c.p[r][idx ^ 1]; };
 
 /* ----- entry, start, leave ----- */
-function cupMenu() { $("mCup").textContent = cupOk(P.cup) ? "resume" : P.cups ? `${P.cups} won` : "8 players"; }
 function cupOpen() { if (cupOk(P.cup)) cupShow({ quick: true }); else openSelect("cup"); }
 function cupBegin(fid) {
   fid = fid || sel.fighter;
