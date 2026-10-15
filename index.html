@@ -12593,7 +12593,7 @@ MANGA.dragon = (function () {
   // the still parts, made once (after the freeze frame, in step()): back = wings, tail, body, neck, chest, horns; front = the skull with the snout, teeth and sprout
   function dgBits() {
     if (dgB) return dgB;
-    const G = dgGeo(), r = G.r, [hx, hy] = G.H, pal = W_().pal, zs = DPR * G.u * 1.07, bw = Math.min(G.W, G.bx);
+    const G = dgGeo(), r = G.r, [hx, hy] = G.H, pal = W_().pal, bw = Math.min(G.W, G.bx), zs = Math.min(DPR * G.u * 1.07, Math.sqrt(4e6 / (bw * 100)));   // (a little over the push's 6%; at most 4 M pixels for the back)
     const tint = (col, k) => mixH(col, MG_PAPER, k === undefined ? 0.38 : k);
     const hide = tint(pal.body), belly = tint(mixH(pal.body, "#fff0c6", 0.45), 0.25), horn = tint("#efe6cf", 0.1), line = tint(mixH(pal.body, "#7a4a22", 0.4), 0.2);
     const tone = (cv, poly, o, cover) => { cv.save(); cv.setTransform(1, 0, 0, 1, 0, 0); cv.fillStyle = mgTile(12, cover); mgPoly(cv, poly.map((q) => [(q[0] - o[0]) * zs, (q[1] - o[1]) * zs])); cv.fill(); cv.restore(); };   // a dot screen over a shape (the tile keeps its own size whatever the canvas scale)
