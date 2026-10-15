@@ -16,14 +16,19 @@ const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
 // finish line of the loser's flight: world units travelled, `f` frames after the launch
 const finTrav = (f) => 17 * f + 0.6 * f * f;
 function finWanted(g) {
-  return mode === "match" && match && !match.tutorial && g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
+  if (!(mode === "match" && match && !match.tutorial)) return false;
+  // a boss fight: only the players' win plays a page (the hero who landed the last hit against the boss); the boss has no page of his own
+  if (g.fighters.length > 2) { const e = FIN.pend, a = e && g.fighters[e.by]; return g.endReason === "boss" && !!a && a.team === g.winner && !a.spec.boss; }
+  return g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
 }
 function finStart(g) {
-  const W = g.fighters[g.winner], Lf = g.fighters[1 - g.winner];
+  // the two on the page: the winner and the loser (with three on stage, whoever landed the final hit and the boss it ended)
+  const many = g.fighters.length > 2 && FIN.pend, wi = many ? FIN.pend.by : g.winner, li = many ? FIN.pend.slot : 1 - g.winner;
+  const W = g.fighters[wi], Lf = g.fighters[li];
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
-  FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = g.winner; FIN.l = 1 - g.winner;
+  FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = wi; FIN.l = li;
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
   const rdx = ev ? ev.dirx : (Lf.x >= W.x ? 0.8 : -0.8), rdy = ev ? ev.diry : -0.6;
@@ -38,7 +43,7 @@ function finStart(g) {
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
-  FIN.P = [null, null];
+  FIN.P = [];   // by slot
   FIN.P[FIN.w] = finPuppet(W, FIN.wx, FIN.dir, "w");
   FIN.P[FIN.l] = finPuppet(Lf, FIN.lx, -FIN.dir, "l");
   // a winner with a manga page (manga.js, MANGA[id]) plays that; anything missing or broken falls back to the 2D staging below

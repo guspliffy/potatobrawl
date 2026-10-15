@@ -560,7 +560,7 @@ function mgWork(t) {
 
 /* ---------- start, tick, draw, end ---------- */
 function mangaStart(g) {
-  const W = g.fighters[g.winner], base = MANGA[W.spec.id];
+  const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
   const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
@@ -578,7 +578,7 @@ function mangaStart(g) {
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
     FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
-    for (const p of FIN.P) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
+    for (const p of FIN.P) if (p) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
     return true;
   } catch (e) { MG.on = false; mgWarn(e); return false; }

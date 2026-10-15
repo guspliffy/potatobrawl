@@ -359,7 +359,7 @@ function startOnlineMatch(st) {
   const specs = st.f.map((id) => FIG[id]);
   meSlot = NET.role === "host" ? 0 : 1;
   // the map comes from the match seed, so both phones play the same one with no new field in the start message
-  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.MAPS.length });
+  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
   match = { online: true, ranked: false, level: null };
   NET.phase = "match";
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, rm: null, pg: null, po: null, nf: null, np: null });

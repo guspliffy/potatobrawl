@@ -109,11 +109,14 @@ const MAPS = [
   { id: "fryer", main: { x1: -320, x2: 320, top: 0, bottom: 64 },
     plats: [{ x1: -250, x2: -130, y: -105 }, { x1: 130, x2: 250, y: -105 }, { x1: -190, x2: -80, y: -225 }, { x1: 80, x2: 190, y: -225 }],
     blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
-  // The Field (Old Scratch's arena, also a normal map): the widest floor, two low side platforms, no top platform
-  { id: "field", main: { x1: -400, x2: 400, top: 0, bottom: 64 },
+  // The Field (Old Scratch's arena; in the Practice map picker, not in the random draw): the widest floor, two low side platforms, no top platform
+  { id: "field", pool: false, main: { x1: -400, x2: 400, top: 0, bottom: 64 },
     plats: [{ x1: -330, x2: -190, y: -125 }, { x1: 190, x2: 330, y: -125 }],
     blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
 ];
+// the maps the random draw picks from (ranked, online, the daily, the cup, the tests' MAP=all): the first POOL; arena maps come after them.
+// (The Field stays out: on its wide flat floor Dragon wins 42% and Phoenix 57% of bot games, against 44-58% everywhere else.)
+const POOL = MAPS.filter((m) => m.pool !== false).length;
 const STAGE = { id: "", map: 0, main: null, plats: null, blast: null, spawns: null, respawnY: 0 };
 function useStage(g) {
   const i = g && MAPS[g.map] ? g.map : 0;
@@ -1807,5 +1810,5 @@ function checksum(g) {
   return h >>> 0;
 }
 
-root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);

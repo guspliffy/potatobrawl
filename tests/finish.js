@@ -2,7 +2,7 @@
 // Usage: node finish.js [matches]
 const { BL } = require(process.env.CORE || "../game/core.js");
 const { FIGHTERS, TUNE, newGame, step, makeBot, botInput, blankInput } = BL;
-const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.MAPS.length : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
+const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.POOL : +(process.env.MAP || 0));   // MAP=<index> or MAP=all (the seed picks)
 const byId = (id) => FIGHTERS.find((f) => f.id === id);
 let bad = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) bad++; };

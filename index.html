@@ -1920,6 +1920,45 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   .ac-pk, .av-btn { transition: none; }
 }
 
+/* ---------- boss fights (ui/boss.js): the boss bar in the timer's place ----------
+   HP (the pale lag bar trails each hit), poise under it (gold; it flickers and drains while he is staggered), rage turns the HP
+   ember and makes it throb, broken empties and cracks the bar and FINISH pulses under it. His line shows during the countdown. */
+#app.bossfight #clock { display: none; }
+#bossBar { position: relative; --hp: 1; --po: 0; --bc: #ff4a36; width: clamp(200px, 31vw, 380px); padding: 3px 12px 6px; transform: skewX(-9deg); background: linear-gradient(180deg, rgba(14, 16, 34, 0.86), rgba(14, 16, 34, 0.6)); border-bottom: 2px solid var(--bc); border-radius: 2px 2px 4px 4px; }
+#bossBar .bb-top, #bossBar .bb-fin, #bossBar .bb-q { transform: skewX(9deg); }
+.bb-top { display: flex; align-items: baseline; gap: 8px; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.bb-name { color: var(--bc); }
+.bb-lv { margin-left: auto; color: var(--mute); font-size: 11px; }
+.bb-st { display: none; color: #ffd23f; font-size: 11px; }
+#bossBar.stag .bb-st { display: inline; }
+#bossBar.stag .bb-lv { display: none; }   /* no room for both on small phones */
+.bb-hp { position: relative; height: 12px; margin-top: 3px; background: rgba(0, 0, 0, 0.5); border: 1.5px solid rgba(14, 16, 34, 0.95); border-radius: 2px; overflow: hidden; }
+.bb-hp i { position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(var(--hp)); }
+.bb-lag { background: #f6e3c8; transition: transform 0.5s 0.35s ease-out; }
+.bb-fill { background: linear-gradient(180deg, #ff8a5c, #d42c22 58%, #8e1812); }
+.bb-po { height: 4px; margin-top: 3px; background: rgba(0, 0, 0, 0.45); border-radius: 2px; overflow: hidden; }
+.bb-po i { display: block; height: 100%; transform-origin: 0 50%; transform: scaleX(var(--po)); background: #e8b53a; transition: transform 0.12s; }
+#bossBar.stag .bb-po i { background: #ffe680; animation: bbStag 0.24s steps(2) infinite; transition: none; }
+@keyframes bbStag { 50% { opacity: 0.45; } }
+#bossBar.rage .bb-fill { background: linear-gradient(180deg, #ffb04a, #ff5a1f 55%, #b5240f); animation: bbRage 0.6s ease-in-out infinite alternate; }
+@keyframes bbRage { to { filter: brightness(1.35); } }
+/* broken: the bar is empty and cracked (an ink zigzag), FINISH pulses in gold */
+#bossBar.down .bb-hp::after { content: ""; position: absolute; inset: -2px 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16' preserveAspectRatio='none'%3E%3Cpath d='M0 9 L14 4 L22 11 L35 3 L44 12 L58 5 L66 13 L79 4 L88 10 L100 6' fill='none' stroke='%230e1022' stroke-width='2.2' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.bb-fin { display: none; margin-top: 2px; text-align: center; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 17px; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; color: #ffd23f; }
+#bossBar.down .bb-fin { display: block; animation: bbFin 0.55s ease-in-out infinite alternate; }
+@keyframes bbFin { from { transform: skewX(9deg) scale(1); opacity: 0.8; } to { transform: skewX(9deg) scale(1.12); opacity: 1; } }
+/* his line during the countdown, hanging under the bar over the arena (it never pushes the HUD around) */
+.bb-q { display: none; position: absolute; left: 4px; right: 4px; top: calc(100% + 8px); margin: 0; padding: 5px 10px; font-size: 13px; line-height: 1.3; font-style: italic; color: var(--text); white-space: normal; text-align: center; background: rgba(14, 16, 34, 0.7); border-radius: 4px; }
+.bb-q::before { content: "\201C"; } .bb-q::after { content: "\201D"; }
+#bossBar.talk .bb-q { display: block; }
+/* upright phones: the bar hangs from the top edge like the timer, the cards sit under it */
+#app.narrow #bossBar { width: min(66vw, 320px); border-radius: 0 0 4px 4px; }
+#app.narrow #bossBar.down .bb-lv { visibility: hidden; }
+#app.narrow #bossBar .bb-fin { position: absolute; right: 12px; top: 2px; margin: 0; font-size: 15px; }   /* FINISH takes the level's place */
+#app.narrow .bb-q { top: calc(100% + 150px); }   /* under the cards */
+#app.narrow.bossfight #hud { padding-top: 52px; }
+@media (prefers-reduced-motion: reduce) { #bossBar .bb-fin, #bossBar.rage .bb-fill, #bossBar.stag .bb-po i { animation: none; } .bb-lag { transition: none; } }
+
 </style>
 
 </head><body><div id="app">
@@ -1931,7 +1970,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
-    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div></div>
+    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
+      <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
       <div class="pcard right" id="pc1"><div>
         <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
@@ -2487,11 +2527,14 @@ const MAPS = [
   { id: "fryer", main: { x1: -320, x2: 320, top: 0, bottom: 64 },
     plats: [{ x1: -250, x2: -130, y: -105 }, { x1: 130, x2: 250, y: -105 }, { x1: -190, x2: -80, y: -225 }, { x1: 80, x2: 190, y: -225 }],
     blast: BLAST, spawns: [{ x: -170, f: 1 }, { x: 170, f: -1 }], respawnY: -330 },
-  // The Field (Old Scratch's arena, also a normal map): the widest floor, two low side platforms, no top platform
-  { id: "field", main: { x1: -400, x2: 400, top: 0, bottom: 64 },
+  // The Field (Old Scratch's arena; in the Practice map picker, not in the random draw): the widest floor, two low side platforms, no top platform
+  { id: "field", pool: false, main: { x1: -400, x2: 400, top: 0, bottom: 64 },
     plats: [{ x1: -330, x2: -190, y: -125 }, { x1: 190, x2: 330, y: -125 }],
     blast: BLAST, spawns: [{ x: -200, f: 1 }, { x: 200, f: -1 }], respawnY: -330 },
 ];
+// the maps the random draw picks from (ranked, online, the daily, the cup, the tests' MAP=all): the first POOL; arena maps come after them.
+// (The Field stays out: on its wide flat floor Dragon wins 42% and Phoenix 57% of bot games, against 44-58% everywhere else.)
+const POOL = MAPS.filter((m) => m.pool !== false).length;
 const STAGE = { id: "", map: 0, main: null, plats: null, blast: null, spawns: null, respawnY: 0 };
 function useStage(g) {
   const i = g && MAPS[g.map] ? g.map : 0;
@@ -4185,7 +4228,7 @@ function checksum(g) {
   return h >>> 0;
 }
 
-root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);
 
 </script>
@@ -10152,14 +10195,19 @@ const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
 // finish line of the loser's flight: world units travelled, `f` frames after the launch
 const finTrav = (f) => 17 * f + 0.6 * f * f;
 function finWanted(g) {
-  return mode === "match" && match && !match.tutorial && g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
+  if (!(mode === "match" && match && !match.tutorial)) return false;
+  // a boss fight: only the players' win plays a page (the hero who landed the last hit against the boss); the boss has no page of his own
+  if (g.fighters.length > 2) { const e = FIN.pend, a = e && g.fighters[e.by]; return g.endReason === "boss" && !!a && a.team === g.winner && !a.spec.boss; }
+  return g.endReason === "stocks" && (g.winner === 0 || g.winner === 1);
 }
 function finStart(g) {
-  const W = g.fighters[g.winner], Lf = g.fighters[1 - g.winner];
+  // the two on the page: the winner and the loser (with three on stage, whoever landed the final hit and the boss it ended)
+  const many = g.fighters.length > 2 && FIN.pend, wi = many ? FIN.pend.by : g.winner, li = many ? FIN.pend.slot : 1 - g.winner;
+  const W = g.fighters[wi], Lf = g.fighters[li];
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
-  FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = g.winner; FIN.l = 1 - g.winner;
+  FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = wi; FIN.l = li;
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
   const rdx = ev ? ev.dirx : (Lf.x >= W.x ? 0.8 : -0.8), rdy = ev ? ev.diry : -0.6;
@@ -10174,7 +10222,7 @@ function finStart(g) {
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
-  FIN.P = [null, null];
+  FIN.P = [];   // by slot
   FIN.P[FIN.w] = finPuppet(W, FIN.wx, FIN.dir, "w");
   FIN.P[FIN.l] = finPuppet(Lf, FIN.lx, -FIN.dir, "l");
   // a winner with a manga page (manga.js, MANGA[id]) plays that; anything missing or broken falls back to the 2D staging below
@@ -11505,7 +11553,7 @@ function mgWork(t) {
 
 /* ---------- start, tick, draw, end ---------- */
 function mangaStart(g) {
-  const W = g.fighters[g.winner], base = MANGA[W.spec.id];
+  const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
   const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
@@ -11523,7 +11571,7 @@ function mangaStart(g) {
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
     FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
-    for (const p of FIN.P) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
+    for (const p of FIN.P) if (p) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
     return true;
   } catch (e) { MG.on = false; mgWarn(e); return false; }
@@ -18434,7 +18482,7 @@ function hideBanner() { clearTimeout(bannerT); bannerEl.hidden = true; }
 function newAttract() {
   const pick = () => FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
   const a = pick(), b = pick();
-  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
+  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.POOL) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   clearTrails();
   $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
@@ -18512,8 +18560,8 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", pending: null };
-const randMap = () => (Math.random() * BL.MAPS.length) | 0;
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, pending: null };   // blv: the boss difficulty (Practice vs a boss)
+const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
   "Spud Muffin", "Tater Tot", "Hash Brown", "Mash Master", "Sir Fries-a-Lot", "Lady Latke", "Chip Chomp", "Wedge Wally",
@@ -18666,10 +18714,11 @@ function drawCards(tk) {
 const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
 function closePops() { for (const [btn, pop] of SEL_PICKS) { $(pop).hidden = true; $(btn).setAttribute("aria-expanded", "false"); } }
 function buildPractice() {
-  const opp = sel.opp === "random" ? null : FIG[sel.opp];
+  const boss = BL.BOSSES.find((b) => b.id === sel.opp), opp = boss || (sel.opp === "random" ? null : FIG[sel.opp]);
   $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
-  $("lvlPick").innerHTML = `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
-  $("mapPick").innerHTML = `<small>Map</small><span>${sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
+  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(BOSS_MAP) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
@@ -18680,8 +18729,10 @@ function buildPractice() {
       pop.appendChild(b);
     });
   };
-  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
-  fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
+  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] })),
+    ...BL.BOSSES.map((b) => ({ id: b.id, label: `${b.name} · boss, 2 vs 1`, img: PORTRAITS[b.id] }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
+  if (boss) fill($("lvlPop"), BOSS_LV.map((name, i) => ({ i, label: name })), (it) => it.i === sel.blv, (it) => { sel.blv = it.i; });
+  else fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
   fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
 }
 for (const [btn, pop] of SEL_PICKS) {
@@ -18711,6 +18762,7 @@ function cpuFoe(me) {
 }
 function startMatch() {
   Sfx.init();
+  if (sel.mode === "practice" && BOSS_IDS.has(sel.opp)) { startBoss({ level: sel.blv, boss: sel.opp }); return; }   // ui/boss.js: you and a CPU partner vs the boss
   const ranked = sel.mode === "ranked";
   const me = FIG[sel.fighter], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   let opp, d, oppRating = 0;
@@ -18746,8 +18798,9 @@ function enterMatchUI() {
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
     sub.querySelector(".nm").textContent = match.cpu || "";
-    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : match.boss ? "partner" : "";
   }
+  bossHudReset();   // ui/boss.js: the boss bar in the timer's place (hidden when there is no boss)
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
@@ -18760,12 +18813,13 @@ const hudCache = [{}, {}], hudX = { spFin: null, ch: -1, jb: false };
 const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
 // A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
 function finReady(i) {
-  if (!G || G.phase !== "play" || (match && match.tutorial)) return;
+  if (!G || G.phase !== "play" || (match && (match.tutorial || match.boss))) return;   // a boss has no finisher (his own FINISH is in the boss bar)
   const att = G.fighters[1 - i];
   showBanner("Finish!", `${finName(att.spec)} KOs now`, "fin", 1100, col(att.pal));
   Sfx.tone(330, 740, 0.22, "sawtooth", 0.06); Sfx.noise(0.16, 0.22, 3200);
 }
 function vsLine() {
+  if (match.boss) return bossVs();
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
   if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
   if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
@@ -18812,7 +18866,7 @@ function updateHud() {
   const me = G.fighters[meSlot], cd = me.spec.moves.spec.cooldown || 1;
   btnSpec.style.setProperty("--cd", (me.specCd / cd).toFixed(3));
   // touch: the special glows and names itself while the opponent is at finish percent
-  const sf = !!hudCache[1 - meSlot].fin;
+  const bo = match.boss && bossOf(G), sf = bo ? bo.state === "broken" : !!hudCache[1 - meSlot].fin;
   if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? finName(me.spec) : "Special"; }   // finName: finisher.js (High Noon)
   // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
   // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,
@@ -18825,6 +18879,7 @@ function updateHud() {
   const chv = charging ? Math.min(1, me.chg / BL.TUNE.chgMax) : 0;
   if (hudX.ch !== chv) { hudX.ch = chv; btnHeavy.style.setProperty("--ch", chv.toFixed(3)); btnHeavy.classList.toggle("chg", charging); }
   hudUlt();   // hud.js: the ultimate bars under the cards and the ULTI button
+  if (match.boss) bossHud();   // ui/boss.js
 }
 function togglePause(force) {
   if (mode !== "match" || (G && G.phase === "over") || FIN.on) return;
@@ -18843,6 +18898,7 @@ function finishMatch(forfeit) {
   if (match && match.tutorial) { tutDone(); return; }
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
+  if (match && match.boss) { bossMatchEnd(forfeit); return; }   // ui/boss.js
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -18961,7 +19017,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -18972,6 +19028,7 @@ function showResults(R) {
     R.forfeit ? ["You left the match. It counts as a loss."] :
     won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
     lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
+  if (R.boss) line.splice(0, line.length, ...bossResLine(R));   // ui/boss.js: you and your partner against him
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
@@ -18998,6 +19055,7 @@ function showResults(R) {
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = chipsOn || R.daily ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
+    : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : "Practice doesn't change your rating or earn chips.";
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
@@ -19158,26 +19216,84 @@ function hudUlt() {
   }
 }
 /* ===================== Boss fights (2v1): you and a CPU partner against a boss on his own map =====================
-   The simulation is core.js (BOSSES, teams, bossAct). Here: starting the fight, the partner's bot, the boss's HP/poise bar,
-   the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). */
+   The simulation is core.js (BOSSES, teams, bossAct). Here: starting the fight, the partner's bot, the boss bar in the HUD (HP, poise,
+   FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
 const BOSS_LV = ["Normal", "Hard", "Nightmare"];
 const BOSS_MAP = Math.max(0, BL.MAPS.findIndex((m) => m.id === "field"));
-const BOSS_SOLO = 0.75;   // a CPU partner: the boss has 3/4 of his HP
+const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (a friend on a second phone will get all of it)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
-// o: { level 0-2, partner: fighter id (default: a random other fighter) }; your fighter is the one picked on the select screen
+const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
+const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt." };
+const bossOf = (g) => (g ? g.fighters.find((f) => f.spec.boss) : null);
+// o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id }; your fighter is the one picked on the select screen
 function startBoss(o) {
   Sfx.init();
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
-  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? (P.pal[me.id] + 1) % mate.palettes.length : 0];
-  const boss = BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
+  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % mate.palettes.length : 0];
+  const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
     stocks: 3, time: 0, countdown: 150, map: BOSS_MAP, level: lv, hpMul: BOSS_SOLO });
-  match = { boss: true, level: lv, d: BOSS_PARTNER[lv], bot: makeBot(BOSS_PARTNER[lv], BL.BOT_STYLES[mate.id]), cpu: cpuName() };
+  match = { boss: true, level: lv, d: BOSS_PARTNER[lv], bot: makeBot(BOSS_PARTNER[lv], BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };
   meSlot = 0;
   enterMatchUI();
 }
 // the two inputs of a boss fight: yours and the partner's bot (the boss's brain is in the simulation)
 function bossInputs(pi) { return [pi, botInput(G, G.fighters[1], G.fighters[2], match.bot)]; }
+
+/* ----- the boss bar: in the timer's place. HP (a pale lag bar trails each hit), poise under it (gold; while he is staggered
+   it drains with the stagger), rage turns the bar ember, broken empties and cracks it and FINISH pulses. ----- */
+const BB = { g: null, hp: "", po: "", cls: "", quote: false };
+function bossHudReset() {
+  const b = bossOf(G), el = $("bossBar");
+  BB.g = G; BB.hp = BB.po = BB.cls = ""; BB.quote = false;
+  $("app").classList.toggle("bossfight", !!b);
+  el.hidden = !b;
+  if (!b) return;
+  el.style.setProperty("--bc", col(b.pal));
+  el.querySelector(".bb-name").textContent = b.spec.name;
+  el.querySelector(".bb-lv").textContent = BOSS_LV[G.lv] || "";
+  el.querySelector(".bb-q").textContent = BOSS_LINE[b.spec.id] || "";
+}
+function bossHud() {
+  if (BB.g !== G) bossHudReset();
+  const b = bossOf(G);
+  if (!b) return;
+  const B = b.spec.boss, el = $("bossBar"), down = b.state === "broken" || b.doomed, stag = b.state === "stagger";
+  const rage = !down && b.hp * 100 <= b.hpMax * B.rageAt[G.lv];
+  const hp = (b.hpMax ? b.hp / b.hpMax : 0).toFixed(3);
+  if (BB.hp !== hp) { BB.hp = hp; el.style.setProperty("--hp", hp); }
+  const sMax = B.stagger[G.lv] * (rage ? B.rageStag : 1);
+  const po = (down ? 0 : stag ? clamp(b.stag / sMax, 0, 1) : b.poise / B.poise).toFixed(3);
+  if (BB.po !== po) { BB.po = po; el.style.setProperty("--po", po); }
+  const cls = down ? "down" : stag ? "stag" : rage ? "rage" : "";
+  if (BB.cls !== cls) {
+    if (cls === "down" && BB.cls !== "down" && G.phase === "play") showBanner("Finish!", "A heavy, special or ulti ends him", "fin", 1600, "#ffd23f");
+    el.classList.remove("down", "stag", "rage"); if (cls) el.classList.add(cls); BB.cls = cls;
+  }
+  const quote = G.phase === "countdown";   // his line while the countdown runs
+  if (BB.quote !== quote) { BB.quote = quote; el.classList.toggle("talk", quote); }
+}
+
+/* ----- the end of a boss fight: the results (the Road adds its stars in road.js) ----- */
+function bossMatchEnd(forfeit) {
+  const me = G.fighters[0], mate = G.fighters[1], b = bossOf(G);
+  const res = forfeit ? 0 : G.winner === me.team ? 1 : 0;
+  const R = { res, forfeit, ranked: false, me, op: b, lines: [], total: 0,
+    boss: { lv: G.lv, mate, hp: b.hpMax ? b.hp / b.hpMax : 0, secs: Math.round(G.t / 60), name: b.spec.name } };
+  showResults(R);
+}
+function bossVs() {
+  const b = bossOf(G);
+  return `${G.fighters[0].spec.name} and ${match.cpu || "CPU"} (${G.fighters[1].spec.name}) vs ${b ? b.spec.name : "the boss"} · ${BOSS_LV[G.lv]}`;
+}
+const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+// the results' story line for a boss fight
+function bossResLine(R) {
+  const B = R.boss, mate = [{ b: match.cpu || "your partner" }, ` (${B.mate.spec.name})`];
+  if (R.forfeit) return ["You left the fight."];
+  if (R.res === 1) return ["You and ", ...mate, " beat ", { b: B.name }, ` on ${BOSS_LV[B.lv]} in ${mmss(B.secs)}.`];
+  return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
+}
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
@@ -19269,7 +19385,7 @@ function cupFight() {
   const me = FIG[c.fid], opp = FIG[os.f], myPal = me.palettes[c.pal] || me.palettes[0], oppPal = opp.palettes[os.pal] || opp.palettes[0];
   Sfx.init();
   const d = clamp((os.r - 750) / 1000, 0.08, 0.98);
-  const map = (((c.seed % BL.MAPS.length) + BL.MAPS.length) % BL.MAPS.length + r) % BL.MAPS.length;   // quarter, semi and final on different maps
+  const map = (((c.seed % BL.POOL) + BL.POOL) % BL.POOL + r) % BL.POOL;   // quarter, semi and final on different maps
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150, map });
   match = { ranked: false, cup: true, round: r, d, oppRating: os.r, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: null, cpu: os.n };
   meSlot = 0;
@@ -19542,7 +19658,7 @@ function dailyFight() {
   P.daily = { d: key, r: -1, s: 0, w: st.w, b: st.b };   // tried from the first frame: a quit, a forfeit or a reload counts as a loss
   saveProfile();
   Sfx.init(); modal("daily", false);
-  G = newGame({ players: [{ spec: me, pal: me.palettes[mi] || me.palettes[0] }, { spec: opp, pal: opp.palettes[oi] || opp.palettes[0] }], stocks: DAILY.lives, time: DAILY.secs, countdown: 150, seed: pk.seed, map: ((pk.seed % BL.MAPS.length) + BL.MAPS.length) % BL.MAPS.length });
+  G = newGame({ players: [{ spec: me, pal: me.palettes[mi] || me.palettes[0] }, { spec: opp, pal: opp.palettes[oi] || opp.palettes[0] }], stocks: DAILY.lives, time: DAILY.secs, countdown: 150, seed: pk.seed, map: ((pk.seed % BL.POOL) + BL.POOL) % BL.POOL });
   match = { ranked: false, daily: { key, prev }, d: pk.d, oppRating: 0, bot: makeBot(pk.d, BL.BOT_STYLES[opp.id]), level: pk.word, cpu: pk.cpu };
   meSlot = 0;
   enterMatchUI();
@@ -19926,7 +20042,7 @@ function startOnlineMatch(st) {
   const specs = st.f.map((id) => FIG[id]);
   meSlot = NET.role === "host" ? 0 : 1;
   // the map comes from the match seed, so both phones play the same one with no new field in the start message
-  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.MAPS.length });
+  G = newGame({ players: specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] })), stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
   match = { online: true, ranked: false, level: null };
   NET.phase = "match";
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, rm: null, pg: null, po: null, nf: null, np: null });

@@ -150,5 +150,11 @@ else fail "Combo trial in the browser" "$LOGS/combo-ui.log"; fi
 if grep -q "^no errors" "$LOGS/daily-ui.log"; then pass "Daily Potato in the browser (one try, chips, streak; shots in build/shots/daily)"
 else fail "Daily Potato in the browser" "$LOGS/daily-ui.log"; fi
 
+# 8d. Boss fights in the browser: Practice > VS > Old Scratch (his difficulty, his map), the fight with a CPU partner, the boss bar
+#     (HP, stagger, FINISH), the KO page on the final hit, Victory / Defeat results, the bar at four sizes. Shots in build/shots/boss.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwboss.py" boss) > "$LOGS/boss-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/boss-ui.log"; then pass "boss fights in the browser (Practice entry, boss bar, KO page, results; shots in build/shots/boss)"
+else fail "boss fights in the browser" "$LOGS/boss-ui.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
