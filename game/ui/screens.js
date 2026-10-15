@@ -251,30 +251,41 @@ function drawCards(tk) {
     drawFighter(c, a.f, tk);
   }
 }
-/* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list */
-const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
+/* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list. With Team Brawl 2v2 as the opponent
+   (sel.opp "duo", ui/duo.js) the VS chip names it, the map list keeps to the random pool and a fourth chip picks your partner. */
+const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"], ["matePick", "matePop"]];
 function closePops() { for (const [btn, pop] of SEL_PICKS) { $(pop).hidden = true; $(btn).setAttribute("aria-expanded", "false"); } }
 function buildPractice() {
-  const boss = BL.BOSSES.find((b) => b.id === sel.opp), opp = boss || (sel.opp === "random" ? null : FIG[sel.opp]);
-  $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
+  const boss = BL.BOSSES.find((b) => b.id === sel.opp), duo = sel.opp === "duo", opp = boss || (sel.opp === "random" || duo ? null : FIG[sel.opp]);
+  const mate = FIG[sel.mate], portrait = (spec) => (spec && PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : `<i class="sl-q">?</i>`);
+  screens.select.classList.toggle("sl-team", duo);
+  $("mateWrap").hidden = !duo;
+  $("oppPick").innerHTML = `<small>VS</small>${duo ? `<i class="sl-glyph">2v2</i>` : portrait(opp)}<span>${duo ? "Team Brawl 2v2" : opp ? opp.name : "Random"}</span>`;
   $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
-  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  // the arena maps (The Field...) are not in the 2v2 draw: a pick made for a 1v1 shows as Random here (and stays picked for the 1v1)
+  const mapOk = (i) => i !== "random" && BL.MAPS[i] && !(duo && BL.MAPS[i].pool === false), mapSel = mapOk(sel.map) ? sel.map : "random";
+  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : mapSel === "random" ? "Random" : mapName(mapSel)}</span>`;
   $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
+  $("matePick").innerHTML = `<small>Partner</small>${portrait(mate)}<span>${mate ? mate.name : "Random"}</span>`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
       const b = document.createElement("button");
       b.textContent = it.label; if (isOn(it)) b.className = "on";
       if (it.img) b.insertAdjacentHTML("afterbegin", `<img src="${it.img}" alt="">`);
+      if (it.glyph) b.insertAdjacentHTML("afterbegin", `<i class="sl-glyph">2v2</i>`);
+      if (it.top) b.classList.add("top");
       b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); pick(it); closePops(); buildPractice(); });
       pop.appendChild(b);
     });
   };
+  // Team Brawl 2v2 sits first on screen (.top, CSS order) but last in the list: the tests that pick a fighter by its position (Random is 0) keep working
   fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] })),
-    ...BL.BOSSES.map((b) => ({ id: b.id, label: `${b.name} · boss, 2 vs 1`, img: PORTRAITS[b.id] }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
+    ...BL.BOSSES.map((b) => ({ id: b.id, label: `${b.name} · boss, 2 vs 1`, img: PORTRAITS[b.id] })), { id: "duo", label: "Team Brawl 2v2", glyph: true, top: true }], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   if (boss) fill($("lvlPop"), BOSS_LV.map((name, i) => ({ i, label: name })), (it) => it.i === sel.blv, (it) => { sel.blv = it.i; });
   else fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
-  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
+  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) })).filter((it) => mapOk(it.i))], (it) => it.i === mapSel, (it) => { sel.map = it.i; });
+  fill($("matePop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.mate, (it) => { sel.mate = it.id; });
 }
 for (const [btn, pop] of SEL_PICKS) {
   $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; $(btn).setAttribute("aria-expanded", String(open)); });
@@ -329,13 +340,14 @@ function enterMatchUI() {
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false);
   $("hud").hidden = false; $("ctl").hidden = !touchUI; $("netBadge").hidden = true; $("pingBadge").hidden = true; $("pingBadge").textContent = "";
-  [0, 1].forEach((i) => {
+  hudDuo();   // ui/hud.js: the 2v2's four cards (and the 1v1's two again)
+  for (let i = 0; i < hudN(); i++) {
     const f = G.fighters[i], el = $("pc" + i);
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
-    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
+    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : match.duo && f.team === G.fighters[meSlot].team ? "Partner" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
-  });
+  }
   { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
@@ -351,12 +363,14 @@ function enterMatchUI() {
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
-const hudCache = [{}, {}], hudX = { spFin: null, ch: -1, jb: false };
+const hudCache = [{}, {}, {}, {}], hudX = { spFin: null, ch: -1, jb: false };
+const hudN = () => (match && match.duo && G ? G.fighters.length : 2);   // name cards on the HUD: both fighters, or the four of a 2v2
 const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
 // A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
 function finReady(i) {
   if (!G || G.phase !== "play" || (match && (match.tutorial || match.boss))) return;   // a boss has no finisher (his own FINISH is in the boss bar)
-  const att = G.fighters[1 - i];
+  if (match && match.duo && G.fighters[i].team === G.fighters[meSlot].team) return;   // 2v2: only a FOE crossing the percent is news; the banner is in your colour
+  const att = match && match.duo ? G.fighters[meSlot] : G.fighters[1 - i];
   showBanner("Finish!", `${finName(att.spec)} KOs now`, "fin", 1100, col(att.pal));
   Sfx.tone(330, 740, 0.22, "sawtooth", 0.06); Sfx.noise(0.16, 0.22, 3200);
 }
@@ -387,7 +401,7 @@ function setHearts(box, n, prev) {
   }
 }
 function updateHud() {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < hudN(); i++) {
     const f = G.fighters[i], el = $("pc" + i), hc = hudCache[i];
     const pct = Math.floor(f.percent);
     const num = el.querySelector(".num"), wrap = el.querySelector(".pc-pct");
@@ -399,6 +413,7 @@ function updateHud() {
     if (hc.stocks !== f.stocks) { setHearts(el.querySelector(".pc-stocks"), Math.max(0, f.stocks), hc.stocks); hc.stocks = f.stocks; }
     const out = f.state === "dead" || f.state === "gone";
     if (hc.out !== out) { el.classList.toggle("out", out); hc.out = out; }
+    if (match.duo && i > 1) { const foc = duoFocused() === i; if (hc.foc !== foc) { hc.foc = foc; el.classList.toggle("focus", foc); } }   // the foe the partner was sent after
   }
   const secs = Math.max(0, Math.ceil(G.timer / 60));
   const clock = $("clock");
@@ -410,7 +425,7 @@ function updateHud() {
   const me = G.fighters[meSlot], cd = me.spec.moves.spec.cooldown || 1;
   btnSpec.style.setProperty("--cd", (me.specCd / cd).toFixed(3));
   // touch: the special glows and names itself while the opponent is at finish percent
-  const bo = match.boss && bossOf(G), sf = bo ? bo.state === "broken" : !!hudCache[1 - meSlot].fin;
+  const bo = match.boss && bossOf(G), sf = bo ? bo.state === "broken" : match.duo ? G.fighters.some((o, i) => o.team !== me.team && hudCache[i].fin) : !!hudCache[1 - meSlot].fin;
   if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? finName(me.spec) : "Special"; }   // finName: finisher.js (High Noon)
   // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
   // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,

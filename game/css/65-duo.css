@@ -1,0 +1,60 @@
+/* ---------- Team Brawl 2v2: the HUD (ui/hud.js hudDuo; the markup is in shell.html: .hud-l and the #duoCards template) ----------
+   #app.duo (set while a 2v2 is on): your card #pc0 stays full size top-left and your partner's card #pc1 becomes a MINI card under it; both foes
+   (#pc2, #pc3, mini cards from the template) are stacked top-right with the pause icon under them; the timer is centred. A card's slanted edge is
+   its team colour (--tc, ui/duo.js TEAM_COL: ice blue = your team, ember red = the foes); the fighter colour (--fc) stays on the tag and the
+   ulti bar. A mini card is about 60% of a full card's height on the 320 px phone: name (+ the CPU's name when there is room), hearts, percent, and
+   the ulti bar as a thin line along its bottom edge. Upright phones show hearts + percent only. The two foe cards are tappable (Focus,
+   duoFocus in ui/duo.js) and wear an ember ring while the partner is on that foe (.focus). Nothing here applies without #app.duo, so the 1v1 and
+   the boss fights look as before. */
+.hud-l { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+#pc2, #pc3 { display: none; }
+#app.duo #pc2, #app.duo #pc3 { display: block; }
+
+#app.duo .hud-l { gap: 0; }
+#app.duo #pc0 { margin-bottom: 12px; }   /* the room the full card's ulti strip hangs into */
+#app.duo .hud-r { gap: 4px; }
+#app.duo .hud-r .pcard.pmini { margin-bottom: 0; }
+#app.duo .hud-mid { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); }   /* the timer stays in the middle whatever the two columns weigh */
+#app.duo.narrow .hud-mid { top: 0; }
+
+/* the team colour is the slanted edge */
+#app.duo .pcard { border-left-color: var(--tc, var(--fc)); }
+#app.duo .pcard.right { border-right-color: var(--tc, var(--fc)); }
+#app.duo .pcard.pmini { border-left-width: 3px; padding: 2px 11px 3px 9px; }
+#app.duo .pcard.right.pmini { border-left-width: 0; border-right-width: 3px; padding: 2px 9px 3px 11px; }
+
+/* mini cards (.pmini; .mini is the menu's pill) */
+#app.duo .pcard.pmini .pc-top { gap: 6px; font-size: 10px; line-height: 1.2; letter-spacing: 0.08em; }
+#app.duo .pcard.pmini .pc-sub { display: none; margin-top: 0; font-size: 10px; line-height: 1.15; }
+#app.duo:not(.tiny) .pcard.pmini .pc-sub { display: block; }   /* the CPU's potato name where there is height for it (not the 320 px phone) */
+#app.duo .pcard.pmini .pc-sub .tr { display: none; }
+#app.duo .pcard.pmini .pc-row { gap: 7px; }
+#app.duo .pcard.pmini .pc-pct { font-size: clamp(20px, calc(var(--uh) * 5), 28px); }
+#app.duo .pcard.pmini .pc-stocks { gap: 2px; padding-bottom: 3px; }
+#app.duo .pcard.pmini .pc-stocks i { width: 10px; height: 9px; }
+#app.duo .pcard.pmini.finr .pc-name::after { content: none; }   /* the pulsing percent says it */
+/* the ulti bar: a thin line along the bottom edge (the pips and the U key are for the full card) */
+#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; bottom: 0; height: 3px; gap: 0; }
+#app.duo .pcard.pmini .pc-ult .ub { height: 3px; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .uf { top: 0; bottom: 0; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk { display: none; }
+
+/* the computer (1280x760): the same card, a size up */
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-top { font-size: 12px; }
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-sub { font-size: 11px; }
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-pct { font-size: clamp(20px, calc(var(--uh) * 5), 34px); }
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-stocks i { width: 12px; height: 11px; }
+
+/* upright phones: hearts + percent only on a mini card, side by side */
+#app.duo.narrow .pcard.pmini .pc-top, #app.duo.narrow .pcard.pmini .pc-sub { display: none; }
+#app.duo.narrow .pcard.pmini .pc-row { flex-direction: row; align-items: flex-end; gap: 6px; }
+#app.duo.narrow .pcard.right.pmini .pc-row { flex-direction: row-reverse; }
+#app.duo.narrow .pcard.pmini .pc-pct { font-size: 24px; }
+#app.duo.narrow .pcard.pmini .pc-stocks { padding-bottom: 2px; }
+
+/* Focus: tap a foe's card (the partner goes after that foe for 8 s); the ember ring stays while it lasts */
+#app.duo #pc2, #app.duo #pc3 { pointer-events: auto; cursor: pointer; }
+#app.duo #pc2::after, #app.duo #pc3::after { content: ""; position: absolute; inset: -2px -8px; }   /* a bigger touch target than the card */
+#app.duo .pcard.pmini.focus { box-shadow: 0 0 0 2px #ff6a4a, 0 0 14px 3px rgba(255, 106, 74, 0.7); animation: duoFocus 1s ease-in-out infinite; }
+@keyframes duoFocus { 50% { box-shadow: 0 0 0 2px #ffb08a, 0 0 20px 5px rgba(255, 106, 74, 0.95); } }
+@media (prefers-reduced-motion: reduce) { #app.duo .pcard.pmini.focus { animation: none; } }

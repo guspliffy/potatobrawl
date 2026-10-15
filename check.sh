@@ -181,5 +181,13 @@ else fail "the Road in the browser" "$LOGS/road-ui.log"; fi
 if grep -q "^no errors" "$LOGS/mastery-ui.log"; then pass "fighter mastery in the browser (XP, level up, rewards, titles, Locker; shots in build/shots/mastery)"
 else fail "fighter mastery in the browser" "$LOGS/mastery-ui.log"; fi
 
+# 8j. Team Brawl 2v2 in the browser: Practice > VS > Team Brawl 2v2 (the Partner chip, pool-only maps), a fight with four cards on the HUD (yours,
+#     the partner's mini card, two foe cards), Focus by a tap on a foe card (Tab on a keyboard), the Finish banner only for a foe, the team
+#     rims, the forced end into the KO page and the results, a 1v1 afterwards with its two cards back; the select header and the HUD at four
+#     sizes, a Catch. Shots in build/shots/duo.
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwduo.py" duo) > "$LOGS/duo-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/duo-ui.log"; then pass "2v2 in the browser (picker, four-card HUD, Focus, rims, results; shots in build/shots/duo)"
+else fail "2v2 in the browser" "$LOGS/duo-ui.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))

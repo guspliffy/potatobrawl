@@ -742,10 +742,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <div id="dgr" aria-hidden="true"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i></div>
 
   <div id="hud" hidden>
-    <div class="pcard" id="pc0"><div>
+    <div class="hud-l"><div class="pcard" id="pc0"><div>
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
     <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
@@ -757,6 +757,20 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <button id="pauseBtn" aria-label="Pause"></button>
     </div>
   </div>
+  <!-- Team Brawl 2v2 (ui/hud.js hudDuo, game/css/65-duo.css): the two foes' mini cards, put in the HUD while a 2v2 is on and tappable (Focus); in a 2v2 the partner's
+       card (#pc1) moves under yours. The template keeps them out of the page in a 1v1 and a boss fight. -->
+  <template id="duoCards">
+    <div class="pcard right pmini" id="pc2" role="button" aria-label="Focus this foe"><div>
+      <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub"><span class="nm"></span></div>
+      <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    <div class="pcard right pmini" id="pc3" role="button" aria-label="Focus this foe"><div>
+      <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub"><span class="nm"></span></div>
+      <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+  </template>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>
   <div id="fxHit" aria-hidden="true"><i class="fh-v"></i><i class="fh-l"></i><i class="fh-w"></i></div>
@@ -798,7 +812,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div class="mm-row3">
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
-        <button class="mini" id="bPractice" style="--i:4">Practice</button>
+        <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bHelp" style="--i:5">How to play</button>
       </div>
     </div>
@@ -817,6 +831,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="pickwrap"><button class="sl-pick" id="oppPick" aria-haspopup="true"></button><div class="pop" id="oppPop" hidden></div></div>
           <div class="pickwrap"><button class="sl-pick" id="lvlPick" aria-haspopup="true"></button><div class="pop" id="lvlPop" hidden></div></div>
           <div class="pickwrap"><button class="sl-pick" id="mapPick" aria-haspopup="true"></button><div class="pop" id="mapPop" hidden></div></div>
+          <div class="pickwrap" id="mateWrap" hidden><button class="sl-pick" id="matePick" aria-haspopup="true"></button><div class="pop" id="matePop" hidden></div></div>
         </div>
         <div class="coin chips sl-coin" aria-label="Chips"><span id="selTokens">0</span></div>
       </header>

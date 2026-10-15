@@ -145,7 +145,27 @@ function drawFinRing(c, f) {
   c.restore();
 }
 
+/* ---- 2v2 team rims (UI only; TEAM_COL is in ui/duo.js): while a 2v2 is drawn (render2D sets TEAM_RIM) every potato gets a thin outline in its
+   team's colour behind it (teamRimBody, called from drawPotato: one more stroke of the body path, wider than the ink outline so a ring
+   about 2 screen pixels thick shows) and a steady ring at the feet (drawTeamRing, from drawShadow). Ice blue is your team, ember red the foes. ---- */
+let TEAM_RIM = false;
+function teamRimBody(c, f, P) {
+  const tc = TEAM_COL[f.team];
+  if (!tc) return;
+  c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);   // the body's own transform
+  potatoPath(c, P); c.lineJoin = "round"; c.lineWidth = 2.5 + 4 / cam.z; c.strokeStyle = tc; c.stroke();
+  c.restore();
+}
+function drawTeamRing(c, f) {
+  const tc = TEAM_RIM && TEAM_COL[f.team];
+  if (!tc || f.state === "dead" || f.state === "gone") return;
+  const r = f.s.w * 0.95;
+  c.save(); c.strokeStyle = tc; c.globalAlpha = 0.55; c.lineWidth = 2 / cam.z;
+  c.beginPath(); c.ellipse(f.x, f.y + 1, r, r * 0.26, 0, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
 function drawShadow(c, f) {
+  drawTeamRing(c, f);
   drawFinRing(c, f);
   const S = STAGE.main;
   if (f.state === "dead" || f.state === "gone" || f.x < S.x1 || f.x > S.x2) return;
@@ -305,19 +325,34 @@ function drawProj(c, p, tk) {
   c.restore();
 }
 
-function drawTag(c, f, isP1, lift) {
+function drawTag(c, f, isP1, lift, o) {   // o: a 2v2's { label, col } (duoTags below); without it the 1v1's YOU / CPU
   if (f.state === "dead" || f.state === "gone") return;
   const fade = tagAlpha();   // hud.js: off 3 s after the start, back for 3 s after a respawn
   if (fade < 0.02) return;
-  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
+  const label = o ? o.label : isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
-  c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
+  c.fillStyle = o ? o.col : isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
   c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.stroke(); c.fill();
   c.font = '800 12px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center";
   c.strokeText(label, 0, -6); c.fillText(label, 0, -6);
   c.restore();
+}
+// 2v2: a tag over every fighter still in it, in its team's colour: YOU, your partner's and the foes' CPU names (match.names). Close tags
+// stack (the later one, left to right, goes up a step) so four names never sit on top of each other.
+function duoTags(c, g) {
+  if (tagAlpha() < 0.02) return;
+  const placed = [], z = cam.z;
+  for (const f of [...g.fighters].sort((a, b) => a.x - b.x)) {
+    if (f.state === "dead" || f.state === "gone") continue;
+    const nm = f.slot === meSlot ? "YOU" : ((match.names && match.names[f.slot]) || "CPU").toUpperCase();
+    const label = nm.length > 12 ? nm.slice(0, 11) + "…" : nm, w = label.length * 6.4 + 12, x = f.x * z, y = (f.y - f.s.h) * z;
+    let lift = 0;
+    while (lift < 60 && placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - (y - lift)) < 20)) lift += 20;
+    placed.push({ x, y: y - lift, w });
+    drawTag(c, f, f.slot === meSlot, lift, { label, col: TEAM_COL[f.team] || "#ffffff" });
+  }
 }
 
 

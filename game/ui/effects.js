@@ -259,6 +259,7 @@ function render2D(g, tk) {
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
   bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
+  TEAM_RIM = !!(match && match.duo && g.fighters.length === 4);   // 2v2: team rims on the fighters (draw-world.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
@@ -271,9 +272,11 @@ function render2D(g, tk) {
     uvVeil(c, g, tk);
     uvLitFighter(c, g.fighters[us], tk);
   } else for (const f of order) if (f.state !== "dead" && f.state !== "gone") drawFighter(c, f, tk);
+  TEAM_RIM = false;
   uvFront(c, g, tk);   // Ultimates: what is drawn over the fighters (flame column, comet, chains, fire stream, slashes)
   drawFx(c);
-  if (mode === "match" && !FIN.on) {
+  if (mode === "match" && !FIN.on && match && match.duo && g.fighters.length === 4) duoTags(c, g);   // 2v2: a tag on all four (draw-world.js)
+  else if (mode === "match" && !FIN.on) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);

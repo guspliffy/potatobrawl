@@ -1009,6 +1009,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrMenu .mm-mt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 #scrMenu .mm-mt small { font: 600 10.5px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); margin-top: 2px; }
 #scrMenu .mm-mt small:empty { display: none; }
+#scrMenu .mm-mc { align-items: center; }   /* Practice: the sub-line sits centred under the word (no dot beside it) */
 #scrMenu .mini:disabled { opacity: 0.5; cursor: default; }
 #scrMenu .mini:disabled i.dot { background: var(--mute); box-shadow: 0 0 0 2px rgba(164, 169, 200, 0.2); }
 
@@ -1427,9 +1428,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait #scrSelect .sl-head { flex: none; flex-wrap: wrap; height: auto; row-gap: 10px; container-type: normal; }
 #app.portrait #scrSelect .sl-ttl h2 { font-size: 26px; }
 #app.portrait #scrSelect .sl-opts { order: 3; flex-basis: 100%; }
-#app.portrait #scrSelect .sl-opts .pickwrap:last-child { flex: 1 1 0; }
-#app.portrait #scrSelect .sl-opts .pickwrap:last-child .sl-pick { width: 100%; }
-#app.portrait #scrSelect .sl-opts .pickwrap:last-child .sl-pick::after { margin-left: auto; }
+#app.portrait #scrSelect .sl-opts .pickwrap:nth-child(3) { flex: 1 1 0; }
+#app.portrait #scrSelect .sl-opts .pickwrap:nth-child(3) .sl-pick { width: 100%; }
+#app.portrait #scrSelect .sl-opts .pickwrap:nth-child(3) .sl-pick::after { margin-left: auto; }
 #app.portrait #scrSelect .sl-opts .sl-pick { padding: 0 10px; gap: 5px; }
 #app.portrait #scrSelect .sl-opts .sl-pick span { max-width: none; }
 #app.portrait #scrSelect #oppPick span { display: none; }   /* the avatar says who */
@@ -1445,6 +1446,43 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait #scrSelect .sl-go { position: sticky; bottom: 0; z-index: 6; margin: auto -16px 0; padding: 14px 16px max(14px, env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(10, 11, 28, 0), rgba(10, 11, 28, 0.94) 34%); }
 #app.portrait #scrSelect .sl-go .btn { min-height: 54px; }
+
+/* ---------- Team Brawl 2v2 in Practice (ui/screens.js buildPractice puts .sl-team on the screen): the VS chip carries a 2v2 glyph (the
+   two team colours, ui/duo.js TEAM_COL), a fourth chip picks the partner, the map list is the random pool. Header room is tight, so
+   the chips drop their names and labels as the header narrows; upright phones put the Partner chip on its own row. ---------- */
+#scrSelect .sl-glyph { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); box-shadow: 0 1px 0 var(--ink);
+  background: linear-gradient(115deg, #7fd4ff 50%, #ff6a4a 50%); color: var(--ink); font: italic 900 10px/1 var(--display); letter-spacing: -0.03em; }
+#scrSelect #oppPop button.top { order: -1; }   /* Team Brawl 2v2: the first entry of the list on screen, the last one in it */
+#scrSelect.sl-team #oppPick span { max-width: none; }
+#app:not(.short):not(.portrait) #scrSelect .sl-pick .sl-glyph { width: 30px; height: 30px; font-size: 11px; }
+@container (max-width: 1160px) {
+  #app:not(.short):not(.portrait) #scrSelect.sl-team .sl-ttl h2 { font-size: 30px; -webkit-text-stroke-width: 3px; }
+  #scrSelect.sl-team #mapPick small { display: none; }
+  #scrSelect.sl-team #mapPick::before { content: ""; flex: none; width: 12px; height: 15px; transform: skewX(8deg); background: var(--mute);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 1C5.6 1 2 4.5 2 9c0 5.8 8 14 8 14s8-8.2 8-14c0-4.5-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 1C5.6 1 2 4.5 2 9c0 5.8 8 14 8 14s8-8.2 8-14c0-4.5-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+}
+@container (max-width: 940px) {
+  #scrSelect.sl-team .sl-ttl h2 { font-size: 22px; }
+  #scrSelect.sl-team .sl-pick { padding: 0 9px; gap: 5px; }
+  #scrSelect.sl-team #oppPick span, #scrSelect.sl-team #matePick span { display: none; }
+  #scrSelect.sl-team .pickwrap:first-child { flex-shrink: 0; }
+}
+@container (max-width: 700px) {
+  #scrSelect.sl-team .sl-ttl h2 { display: none; }
+  #scrSelect.sl-team .sl-ttl { flex: 0 1 76px; }
+  #scrSelect.sl-team .sl-ttl .kick { font-size: 12px; line-height: 1.25; white-space: normal; }
+  #scrSelect.sl-team .sl-opts { gap: 6px; }
+}
+@container (max-width: 600px) { #scrSelect.sl-team #matePick small { display: none; } }
+/* the VS list has 13 entries: on the 320 px phone its rows are shorter so the last one stays on screen */
+#app.tiny #scrSelect #oppPop { gap: 2px; }
+#app.tiny #scrSelect #oppPop button { min-height: 32px; padding: 3px 10px; }
+#app.tiny #scrSelect #oppPop img, #app.tiny #scrSelect #oppPop .sl-glyph { width: 24px; height: 24px; }
+#app.portrait #scrSelect.sl-team .sl-opts { flex-wrap: wrap; row-gap: 8px; }
+#app.portrait #scrSelect.sl-team .sl-opts .pickwrap:nth-child(4) { flex: 1 1 100%; }
+#app.portrait #scrSelect.sl-team .sl-opts .pickwrap:nth-child(4) .sl-pick { width: 100%; }
+#app.portrait #scrSelect.sl-team .sl-opts .pickwrap:nth-child(4) .sl-pick::after { margin-left: auto; }
+#app.portrait #scrSelect #matePop { left: 0; right: auto; }
 
 /* ---------- Play friends (#scrOnline shares the select screen's classes): the same ink header, cards and frames ---------- */
 #scrOnline .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
@@ -1959,6 +1997,67 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow.bossfight #hud { padding-top: 52px; }
 @media (prefers-reduced-motion: reduce) { #bossBar .bb-fin, #bossBar.rage .bb-fill, #bossBar.stag .bb-po i { animation: none; } .bb-lag { transition: none; } }
 
+/* ---------- Team Brawl 2v2: the HUD (ui/hud.js hudDuo; the markup is in shell.html: .hud-l and the #duoCards template) ----------
+   #app.duo (set while a 2v2 is on): your card #pc0 stays full size top-left and your partner's card #pc1 becomes a MINI card under it; both foes
+   (#pc2, #pc3, mini cards from the template) are stacked top-right with the pause icon under them; the timer is centred. A card's slanted edge is
+   its team colour (--tc, ui/duo.js TEAM_COL: ice blue = your team, ember red = the foes); the fighter colour (--fc) stays on the tag and the
+   ulti bar. A mini card is about 60% of a full card's height on the 320 px phone: name (+ the CPU's name when there is room), hearts, percent, and
+   the ulti bar as a thin line along its bottom edge. Upright phones show hearts + percent only. The two foe cards are tappable (Focus,
+   duoFocus in ui/duo.js) and wear an ember ring while the partner is on that foe (.focus). Nothing here applies without #app.duo, so the 1v1 and
+   the boss fights look as before. */
+.hud-l { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+#pc2, #pc3 { display: none; }
+#app.duo #pc2, #app.duo #pc3 { display: block; }
+
+#app.duo .hud-l { gap: 0; }
+#app.duo #pc0 { margin-bottom: 12px; }   /* the room the full card's ulti strip hangs into */
+#app.duo .hud-r { gap: 4px; }
+#app.duo .hud-r .pcard.pmini { margin-bottom: 0; }
+#app.duo .hud-mid { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); }   /* the timer stays in the middle whatever the two columns weigh */
+#app.duo.narrow .hud-mid { top: 0; }
+
+/* the team colour is the slanted edge */
+#app.duo .pcard { border-left-color: var(--tc, var(--fc)); }
+#app.duo .pcard.right { border-right-color: var(--tc, var(--fc)); }
+#app.duo .pcard.pmini { border-left-width: 3px; padding: 2px 11px 3px 9px; }
+#app.duo .pcard.right.pmini { border-left-width: 0; border-right-width: 3px; padding: 2px 9px 3px 11px; }
+
+/* mini cards (.pmini; .mini is the menu's pill) */
+#app.duo .pcard.pmini .pc-top { gap: 6px; font-size: 10px; line-height: 1.2; letter-spacing: 0.08em; }
+#app.duo .pcard.pmini .pc-sub { display: none; margin-top: 0; font-size: 10px; line-height: 1.15; }
+#app.duo:not(.tiny) .pcard.pmini .pc-sub { display: block; }   /* the CPU's potato name where there is height for it (not the 320 px phone) */
+#app.duo .pcard.pmini .pc-sub .tr { display: none; }
+#app.duo .pcard.pmini .pc-row { gap: 7px; }
+#app.duo .pcard.pmini .pc-pct { font-size: clamp(20px, calc(var(--uh) * 5), 28px); }
+#app.duo .pcard.pmini .pc-stocks { gap: 2px; padding-bottom: 3px; }
+#app.duo .pcard.pmini .pc-stocks i { width: 10px; height: 9px; }
+#app.duo .pcard.pmini.finr .pc-name::after { content: none; }   /* the pulsing percent says it */
+/* the ulti bar: a thin line along the bottom edge (the pips and the U key are for the full card) */
+#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; bottom: 0; height: 3px; gap: 0; }
+#app.duo .pcard.pmini .pc-ult .ub { height: 3px; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .uf { top: 0; bottom: 0; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk { display: none; }
+
+/* the computer (1280x760): the same card, a size up */
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-top { font-size: 12px; }
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-sub { font-size: 11px; }
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-pct { font-size: clamp(20px, calc(var(--uh) * 5), 34px); }
+#app:not(.short):not(.narrow).duo .pcard.pmini .pc-stocks i { width: 12px; height: 11px; }
+
+/* upright phones: hearts + percent only on a mini card, side by side */
+#app.duo.narrow .pcard.pmini .pc-top, #app.duo.narrow .pcard.pmini .pc-sub { display: none; }
+#app.duo.narrow .pcard.pmini .pc-row { flex-direction: row; align-items: flex-end; gap: 6px; }
+#app.duo.narrow .pcard.right.pmini .pc-row { flex-direction: row-reverse; }
+#app.duo.narrow .pcard.pmini .pc-pct { font-size: 24px; }
+#app.duo.narrow .pcard.pmini .pc-stocks { padding-bottom: 2px; }
+
+/* Focus: tap a foe's card (the partner goes after that foe for 8 s); the ember ring stays while it lasts */
+#app.duo #pc2, #app.duo #pc3 { pointer-events: auto; cursor: pointer; }
+#app.duo #pc2::after, #app.duo #pc3::after { content: ""; position: absolute; inset: -2px -8px; }   /* a bigger touch target than the card */
+#app.duo .pcard.pmini.focus { box-shadow: 0 0 0 2px #ff6a4a, 0 0 14px 3px rgba(255, 106, 74, 0.7); animation: duoFocus 1s ease-in-out infinite; }
+@keyframes duoFocus { 50% { box-shadow: 0 0 0 2px #ffb08a, 0 0 20px 5px rgba(255, 106, 74, 0.95); } }
+@media (prefers-reduced-motion: reduce) { #app.duo .pcard.pmini.focus { animation: none; } }
+
 /* ---------- the Road (ui/road.js; Fable's map: boss/fable-boss.md section 3) ----------
    The menu card (#bRoad): the map in small with "The Road" and your stop over its foot; beside the card column on wide screens (over
    the attract match, under the top bar), above the column when upright. The Road screen: a header and the map canvas with a button
@@ -2221,10 +2320,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <div id="dgr" aria-hidden="true"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i></div>
 
   <div id="hud" hidden>
-    <div class="pcard" id="pc0"><div>
+    <div class="hud-l"><div class="pcard" id="pc0"><div>
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
     <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
@@ -2236,6 +2335,20 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <button id="pauseBtn" aria-label="Pause"></button>
     </div>
   </div>
+  <!-- Team Brawl 2v2 (ui/hud.js hudDuo, game/css/65-duo.css): the two foes' mini cards, put in the HUD while a 2v2 is on and tappable (Focus); in a 2v2 the partner's
+       card (#pc1) moves under yours. The template keeps them out of the page in a 1v1 and a boss fight. -->
+  <template id="duoCards">
+    <div class="pcard right pmini" id="pc2" role="button" aria-label="Focus this foe"><div>
+      <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub"><span class="nm"></span></div>
+      <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    <div class="pcard right pmini" id="pc3" role="button" aria-label="Focus this foe"><div>
+      <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
+      <div class="pc-sub"><span class="nm"></span></div>
+      <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+  </template>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>
   <div id="fxHit" aria-hidden="true"><i class="fh-v"></i><i class="fh-l"></i><i class="fh-w"></i></div>
@@ -2277,7 +2390,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div class="mm-row3">
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
-        <button class="mini" id="bPractice" style="--i:4">Practice</button>
+        <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bHelp" style="--i:5">How to play</button>
       </div>
     </div>
@@ -2296,6 +2409,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="pickwrap"><button class="sl-pick" id="oppPick" aria-haspopup="true"></button><div class="pop" id="oppPop" hidden></div></div>
           <div class="pickwrap"><button class="sl-pick" id="lvlPick" aria-haspopup="true"></button><div class="pop" id="lvlPop" hidden></div></div>
           <div class="pickwrap"><button class="sl-pick" id="mapPick" aria-haspopup="true"></button><div class="pop" id="mapPop" hidden></div></div>
+          <div class="pickwrap" id="mateWrap" hidden><button class="sl-pick" id="matePick" aria-haspopup="true"></button><div class="pop" id="matePop" hidden></div></div>
         </div>
         <div class="coin chips sl-coin" aria-label="Chips"><span id="selTokens">0</span></div>
       </header>
@@ -6871,6 +6985,7 @@ function drawPotato(c, f, tk, at) {
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
   const shR = rot(P.sh, P.hip, P.lean), shB = rot(P.shB, P.hip, P.lean);
+  if (TEAM_RIM && !at) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js)
   if (cos === "phoenix") {
     const air = !f.grounded && f.state !== "ledge";
     const len = P.w * (air ? 1.35 : 1.0);
@@ -11237,7 +11352,27 @@ function drawFinRing(c, f) {
   c.restore();
 }
 
+/* ---- 2v2 team rims (UI only; TEAM_COL is in ui/duo.js): while a 2v2 is drawn (render2D sets TEAM_RIM) every potato gets a thin outline in its
+   team's colour behind it (teamRimBody, called from drawPotato: one more stroke of the body path, wider than the ink outline so a ring
+   about 2 screen pixels thick shows) and a steady ring at the feet (drawTeamRing, from drawShadow). Ice blue is your team, ember red the foes. ---- */
+let TEAM_RIM = false;
+function teamRimBody(c, f, P) {
+  const tc = TEAM_COL[f.team];
+  if (!tc) return;
+  c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);   // the body's own transform
+  potatoPath(c, P); c.lineJoin = "round"; c.lineWidth = 2.5 + 4 / cam.z; c.strokeStyle = tc; c.stroke();
+  c.restore();
+}
+function drawTeamRing(c, f) {
+  const tc = TEAM_RIM && TEAM_COL[f.team];
+  if (!tc || f.state === "dead" || f.state === "gone") return;
+  const r = f.s.w * 0.95;
+  c.save(); c.strokeStyle = tc; c.globalAlpha = 0.55; c.lineWidth = 2 / cam.z;
+  c.beginPath(); c.ellipse(f.x, f.y + 1, r, r * 0.26, 0, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
 function drawShadow(c, f) {
+  drawTeamRing(c, f);
   drawFinRing(c, f);
   const S = STAGE.main;
   if (f.state === "dead" || f.state === "gone" || f.x < S.x1 || f.x > S.x2) return;
@@ -11397,19 +11532,34 @@ function drawProj(c, p, tk) {
   c.restore();
 }
 
-function drawTag(c, f, isP1, lift) {
+function drawTag(c, f, isP1, lift, o) {   // o: a 2v2's { label, col } (duoTags below); without it the 1v1's YOU / CPU
   if (f.state === "dead" || f.state === "gone") return;
   const fade = tagAlpha();   // hud.js: off 3 s after the start, back for 3 s after a respawn
   if (fade < 0.02) return;
-  const label = isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
+  const label = o ? o.label : isP1 ? "YOU" : match && match.online ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
-  c.fillStyle = isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
+  c.fillStyle = o ? o.col : isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
   c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.stroke(); c.fill();
   c.font = '800 12px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center";
   c.strokeText(label, 0, -6); c.fillText(label, 0, -6);
   c.restore();
+}
+// 2v2: a tag over every fighter still in it, in its team's colour: YOU, your partner's and the foes' CPU names (match.names). Close tags
+// stack (the later one, left to right, goes up a step) so four names never sit on top of each other.
+function duoTags(c, g) {
+  if (tagAlpha() < 0.02) return;
+  const placed = [], z = cam.z;
+  for (const f of [...g.fighters].sort((a, b) => a.x - b.x)) {
+    if (f.state === "dead" || f.state === "gone") continue;
+    const nm = f.slot === meSlot ? "YOU" : ((match.names && match.names[f.slot]) || "CPU").toUpperCase();
+    const label = nm.length > 12 ? nm.slice(0, 11) + "…" : nm, w = label.length * 6.4 + 12, x = f.x * z, y = (f.y - f.s.h) * z;
+    let lift = 0;
+    while (lift < 60 && placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - (y - lift)) < 20)) lift += 20;
+    placed.push({ x, y: y - lift, w });
+    drawTag(c, f, f.slot === meSlot, lift, { label, col: TEAM_COL[f.team] || "#ffffff" });
+  }
 }
 
 
@@ -15075,6 +15225,7 @@ function render2D(g, tk) {
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
   bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
+  TEAM_RIM = !!(match && match.duo && g.fighters.length === 4);   // 2v2: team rims on the fighters (draw-world.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
@@ -15087,9 +15238,11 @@ function render2D(g, tk) {
     uvVeil(c, g, tk);
     uvLitFighter(c, g.fighters[us], tk);
   } else for (const f of order) if (f.state !== "dead" && f.state !== "gone") drawFighter(c, f, tk);
+  TEAM_RIM = false;
   uvFront(c, g, tk);   // Ultimates: what is drawn over the fighters (flame column, comet, chains, fire stream, slashes)
   drawFx(c);
-  if (mode === "match" && !FIN.on) {
+  if (mode === "match" && !FIN.on && match && match.duo && g.fighters.length === 4) duoTags(c, g);   // 2v2: a tag on all four (draw-world.js)
+  else if (mode === "match" && !FIN.on) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
@@ -24518,30 +24671,41 @@ function drawCards(tk) {
     drawFighter(c, a.f, tk);
   }
 }
-/* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list */
-const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
+/* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list. With Team Brawl 2v2 as the opponent
+   (sel.opp "duo", ui/duo.js) the VS chip names it, the map list keeps to the random pool and a fourth chip picks your partner. */
+const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"], ["matePick", "matePop"]];
 function closePops() { for (const [btn, pop] of SEL_PICKS) { $(pop).hidden = true; $(btn).setAttribute("aria-expanded", "false"); } }
 function buildPractice() {
-  const boss = BL.BOSSES.find((b) => b.id === sel.opp), opp = boss || (sel.opp === "random" ? null : FIG[sel.opp]);
-  $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
+  const boss = BL.BOSSES.find((b) => b.id === sel.opp), duo = sel.opp === "duo", opp = boss || (sel.opp === "random" || duo ? null : FIG[sel.opp]);
+  const mate = FIG[sel.mate], portrait = (spec) => (spec && PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : `<i class="sl-q">?</i>`);
+  screens.select.classList.toggle("sl-team", duo);
+  $("mateWrap").hidden = !duo;
+  $("oppPick").innerHTML = `<small>VS</small>${duo ? `<i class="sl-glyph">2v2</i>` : portrait(opp)}<span>${duo ? "Team Brawl 2v2" : opp ? opp.name : "Random"}</span>`;
   $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
-  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
+  // the arena maps (The Field...) are not in the 2v2 draw: a pick made for a 1v1 shows as Random here (and stays picked for the 1v1)
+  const mapOk = (i) => i !== "random" && BL.MAPS[i] && !(duo && BL.MAPS[i].pool === false), mapSel = mapOk(sel.map) ? sel.map : "random";
+  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : mapSel === "random" ? "Random" : mapName(mapSel)}</span>`;
   $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
+  $("matePick").innerHTML = `<small>Partner</small>${portrait(mate)}<span>${mate ? mate.name : "Random"}</span>`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
       const b = document.createElement("button");
       b.textContent = it.label; if (isOn(it)) b.className = "on";
       if (it.img) b.insertAdjacentHTML("afterbegin", `<img src="${it.img}" alt="">`);
+      if (it.glyph) b.insertAdjacentHTML("afterbegin", `<i class="sl-glyph">2v2</i>`);
+      if (it.top) b.classList.add("top");
       b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); pick(it); closePops(); buildPractice(); });
       pop.appendChild(b);
     });
   };
+  // Team Brawl 2v2 sits first on screen (.top, CSS order) but last in the list: the tests that pick a fighter by its position (Random is 0) keep working
   fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] })),
-    ...BL.BOSSES.map((b) => ({ id: b.id, label: `${b.name} · boss, 2 vs 1`, img: PORTRAITS[b.id] }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
+    ...BL.BOSSES.map((b) => ({ id: b.id, label: `${b.name} · boss, 2 vs 1`, img: PORTRAITS[b.id] })), { id: "duo", label: "Team Brawl 2v2", glyph: true, top: true }], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   if (boss) fill($("lvlPop"), BOSS_LV.map((name, i) => ({ i, label: name })), (it) => it.i === sel.blv, (it) => { sel.blv = it.i; });
   else fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
-  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
+  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) })).filter((it) => mapOk(it.i))], (it) => it.i === mapSel, (it) => { sel.map = it.i; });
+  fill($("matePop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.mate, (it) => { sel.mate = it.id; });
 }
 for (const [btn, pop] of SEL_PICKS) {
   $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; $(btn).setAttribute("aria-expanded", String(open)); });
@@ -24596,13 +24760,14 @@ function enterMatchUI() {
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false);
   $("hud").hidden = false; $("ctl").hidden = !touchUI; $("netBadge").hidden = true; $("pingBadge").hidden = true; $("pingBadge").textContent = "";
-  [0, 1].forEach((i) => {
+  hudDuo();   // ui/hud.js: the 2v2's four cards (and the 1v1's two again)
+  for (let i = 0; i < hudN(); i++) {
     const f = G.fighters[i], el = $("pc" + i);
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
-    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : "CPU";
+    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : match.duo && f.team === G.fighters[meSlot].team ? "Partner" : "CPU";
     hudCache[i] = { pct: -1, stocks: -1, out: null };
-  });
+  }
   { // the CPU's potato name (and tier in ranked) under its card's CPU tag; the tutorial CPU has none
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
@@ -24618,12 +24783,14 @@ function enterMatchUI() {
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
-const hudCache = [{}, {}], hudX = { spFin: null, ch: -1, jb: false };
+const hudCache = [{}, {}, {}, {}], hudX = { spFin: null, ch: -1, jb: false };
+const hudN = () => (match && match.duo && G ? G.fighters.length : 2);   // name cards on the HUD: both fighters, or the four of a 2v2
 const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
 // A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
 function finReady(i) {
   if (!G || G.phase !== "play" || (match && (match.tutorial || match.boss))) return;   // a boss has no finisher (his own FINISH is in the boss bar)
-  const att = G.fighters[1 - i];
+  if (match && match.duo && G.fighters[i].team === G.fighters[meSlot].team) return;   // 2v2: only a FOE crossing the percent is news; the banner is in your colour
+  const att = match && match.duo ? G.fighters[meSlot] : G.fighters[1 - i];
   showBanner("Finish!", `${finName(att.spec)} KOs now`, "fin", 1100, col(att.pal));
   Sfx.tone(330, 740, 0.22, "sawtooth", 0.06); Sfx.noise(0.16, 0.22, 3200);
 }
@@ -24654,7 +24821,7 @@ function setHearts(box, n, prev) {
   }
 }
 function updateHud() {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < hudN(); i++) {
     const f = G.fighters[i], el = $("pc" + i), hc = hudCache[i];
     const pct = Math.floor(f.percent);
     const num = el.querySelector(".num"), wrap = el.querySelector(".pc-pct");
@@ -24666,6 +24833,7 @@ function updateHud() {
     if (hc.stocks !== f.stocks) { setHearts(el.querySelector(".pc-stocks"), Math.max(0, f.stocks), hc.stocks); hc.stocks = f.stocks; }
     const out = f.state === "dead" || f.state === "gone";
     if (hc.out !== out) { el.classList.toggle("out", out); hc.out = out; }
+    if (match.duo && i > 1) { const foc = duoFocused() === i; if (hc.foc !== foc) { hc.foc = foc; el.classList.toggle("focus", foc); } }   // the foe the partner was sent after
   }
   const secs = Math.max(0, Math.ceil(G.timer / 60));
   const clock = $("clock");
@@ -24677,7 +24845,7 @@ function updateHud() {
   const me = G.fighters[meSlot], cd = me.spec.moves.spec.cooldown || 1;
   btnSpec.style.setProperty("--cd", (me.specCd / cd).toFixed(3));
   // touch: the special glows and names itself while the opponent is at finish percent
-  const bo = match.boss && bossOf(G), sf = bo ? bo.state === "broken" : !!hudCache[1 - meSlot].fin;
+  const bo = match.boss && bossOf(G), sf = bo ? bo.state === "broken" : match.duo ? G.fighters.some((o, i) => o.team !== me.team && hudCache[i].fin) : !!hudCache[1 - meSlot].fin;
   if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? finName(me.spec) : "Special"; }   // finName: finisher.js (High Noon)
   // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
   // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,
@@ -24999,14 +25167,14 @@ function hudPauseZone() {
 const HU = { g: null, c: [{}, {}], rdy: false, btn: document.querySelector('.pb[data-k="ulti"]') };
 function hudUltReset() {
   HU.g = G; HU.rdy = false;
-  HU.c = [0, 1].map(() => ({ u: "", n: -1, full: false, off: null }));
+  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null }));
   HU.btn.classList.remove("rdy", "on");
   for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none");
 }
 function hudUlt() {
   if (HU.g !== G) hudUltReset();
   const trial = !!(match && match.trial);   // the Combo trial has no ultimates
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < hudN(); i++) {
     const f = G.fighters[i], c = HU.c[i], el = $("pc" + i).querySelector(".pc-ult");
     if (c.off !== trial) { c.off = trial; el.hidden = trial; }
     if (trial) continue;
@@ -25030,6 +25198,33 @@ function hudUlt() {
     HU.rdy = rdy; HU.btn.classList.toggle("rdy", rdy);
     // the press has already been read by the sim; a finger still down on a hidden button must not leave the input held
     if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
+  }
+}
+
+/* ---------- 2v2: four name cards (the CSS is game/css/65-duo.css) ----------
+   Called from enterMatchUI for every match. In a 2v2 your partner's card (#pc1) moves under yours and loses its right-hand slant, and the
+   foes' two mini cards (#pc2, #pc3, from the #duoCards template) are put in the right-hand column; each card's edge takes its team colour.
+   Any other match puts everything back (pc1 first in the right-hand column) and drops the extra cards, so a 1v1 and a boss fight are
+   exactly as before. A tap on a foe's card is Focus (ui/duo.js). */
+function hudDuo() {
+  const on = !!(match && match.duo), hl = document.querySelector(".hud-l"), hr = document.querySelector(".hud-r"), p1 = $("pc1");
+  app.classList.toggle("duo", on);
+  if (on) hl.appendChild(p1); else if (p1.parentNode !== hr) hr.insertBefore(p1, hr.firstChild);
+  p1.classList.toggle("right", !on); p1.classList.toggle("pmini", on);
+  if (!on) { for (const id of ["pc2", "pc3"]) { const el = $(id); if (el) el.remove(); } }
+  else if (!$("pc2")) {
+    hr.insertBefore($("duoCards").content.cloneNode(true), $("pauseBtn"));
+    for (const i of [2, 3]) $("pc" + i).addEventListener("pointerdown", (e) => { e.preventDefault(); if (mode === "match" && !paused) duoFocus(i); });
+  }
+  for (let i = 0; i < 4; i++) {
+    const el = $("pc" + i);
+    if (!el) continue;
+    if (on) el.style.setProperty("--tc", TEAM_COL[G.fighters[i].team]); else el.style.removeProperty("--tc");
+    el.classList.remove("focus");
+  }
+  for (const i of [1, 2, 3]) {   // the CPUs' potato names under the card's tag
+    const el = $("pc" + i), sub = el && el.querySelector(".pc-sub");
+    if (on && sub) { sub.hidden = false; sub.querySelector(".nm").textContent = match.names[i] || ""; }
   }
 }
 /* ===================== Boss fights (2v1): you and a CPU partner against a boss on his own map =====================
@@ -29035,7 +29230,7 @@ function frame(now) {
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 newAttract();
 goMenu();
 if (NET.invite) openOnline();
