@@ -111,12 +111,6 @@ button { font: inherit; color: inherit; }
 #pingBadge { order: 3; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.06em; padding: 0 7px; border-radius: 3px; background: rgba(14, 16, 34, 0.6); color: var(--mute); font-variant-numeric: tabular-nums; }
 #pingBadge::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: currentColor; }
 #pingBadge.good { color: #7fd69a; } #pingBadge.ok { color: var(--sand); } #pingBadge.bad { color: var(--ember); }
-.on-rules { display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
-.on-rules .kicker span { color: var(--mute); text-transform: none; letter-spacing: 0; font-weight: 600; }
-.rule-row { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
-.rule-row > span:first-child { width: 58px; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
-.rule-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.rule-row .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
 .chip:disabled { opacity: 0.45; cursor: default; }
 #banner.game .b-main { color: var(--ember); }
 #banner.show .b-main { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
@@ -305,14 +299,13 @@ button { font: inherit; color: inherit; }
 .iconbtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
 
 /* ---------- fighter select: the screen itself is styled in game/css/30-select.css; these shared rules stay for the
-   online and cup screens (.select background, .sel-head, .back, .tokpill), the pickers' .pop lists and the locker's .sw swatches ---------- */
+   online and cup screens (.select background, .sel-head, .back), the pickers' .pop lists and the locker's .sw swatches ---------- */
 .select { background: rgba(14, 16, 34, 0.93); }
 .sel-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .sel-head h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(26px, calc(var(--um) * 6), 40px); line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .sel-head .grow { flex: 1; min-width: 0; }
 .back { appearance: none; border: 1px solid var(--line); background: var(--raise); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
-.tokpill { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--sand); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sel-head .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.portrait .sel-head { flex-wrap: wrap; row-gap: 8px; }
 .pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 6; background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(110px, auto)); gap: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
@@ -324,50 +317,10 @@ button { font: inherit; color: inherit; }
 .sw.cur { color: var(--text); }
 .sw.cur i { box-shadow: 0 0 0 2px var(--text); }
 .sw.lock i::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: rgba(14, 16, 34, 0.55); }
-.sw.pending i { box-shadow: 0 0 0 2px var(--sand); }
 .sw i em { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); font-style: normal; font-size: 8px; line-height: 1; letter-spacing: -1px; color: #f4c95d; text-shadow: 0 0 2px #0e1022, 0 0 2px #0e1022; z-index: 1; white-space: nowrap; }
 .sw .tokglyph { width: 1.2em; height: 0.95em; margin-right: 0.15em; }
 .sw:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
-/* ---------- online ---------- */
-.on2 { position: absolute; inset: 0; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
-  padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
-.on-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 1fr) minmax(260px, 1fr); gap: 12px; align-items: start; }
-.on-card { background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
-.on-side { overflow-y: auto; max-height: 100%; }
-.on-who { display: flex; gap: 12px; align-items: center; }
-.on-who > div { display: flex; flex-direction: column; min-width: 0; align-items: flex-start; }
-.on-who b { font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; line-height: 1.1; overflow-wrap: anywhere; }
-.on-who span { font-size: 14px; color: var(--mute); }
-.on-art { width: 58px; height: 58px; flex: none; border-radius: 6px; background: var(--raise); }
-.on-card .btn { padding-left: 22px; margin-top: 4px; }
-.on-note { margin: 0; font-size: 13px; color: var(--mute); }
-.on-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 15ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
-.on-name:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
-.on-invite { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: rgba(243, 217, 164, 0.08); border: 1px solid rgba(243, 217, 164, 0.3); border-radius: 6px; }
-.on-invite b { font-family: var(--display); font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--sand); }
-.on-link { font: 13px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--text); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
-.on-link-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.on-list li.invited { box-shadow: inset 3px 0 0 var(--sand); }
-.on-note.live { color: var(--sand); }
-.on-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.on-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--raise); border-radius: 6px; min-width: 0; }
-.on-list li .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.on-list li .who b { font-weight: 600; overflow-wrap: anywhere; }
-.on-list li .who span { font-size: 12px; color: var(--mute); }
-.on-list li.empty { background: none; padding: 0; color: var(--mute); font-size: 14px; }
-.on-list li.old .who span { color: var(--ember); }
-.on-list .chip { flex: none; }
-.on-here { margin: -4px 0 0; font-size: 14px; color: var(--mute); }
-.on-help { margin: 4px 0 0; font-size: 13px; color: var(--mute); }
-.on-status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mute); margin-right: 8px; vertical-align: 1px; }
-.on-status.ok::before { background: var(--mint); }
-.on-status.bad::before { background: var(--ember); }
-.on-rules { display: flex; flex-direction: column; gap: 6px; }
-.rule-row { display: flex; align-items: center; gap: 8px 10px; }
-.rule-row > span:first-child { width: 58px; flex: none; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
-.rule-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.rule-row .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
 .chip { appearance: none; cursor: pointer; border: 1px solid var(--line); background: var(--raise); color: var(--text); border-radius: 999px; padding: 6px 14px; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; min-height: 36px; }
 .chip.on { background: var(--sand); color: var(--ink); border-color: var(--sand); }
 .chip:disabled { opacity: 0.45; cursor: default; }
@@ -578,11 +531,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .btn { min-height: 42px; font-size: 18px; padding: 7px 20px; }
 #app.short .sheet { padding: 14px 18px; gap: 10px; }
 #app.short .sheet h2 { font-size: 44px; }
-#app.short .sel2, #app.short .on2 { gap: 8px; padding-top: 8px; }
 #app.short .back, #app.short .iconbtn { width: 38px; height: 38px; }
 #app.short .detail { padding: 10px; gap: 12px; }
 #app.short .d-blurb, #app.short .d-sig { font-size: 13px; line-height: 1.35; }
-#app.short .on-card { padding: 10px 12px; gap: 8px; }
 #app.short .res2 { gap: 10px 20px; }
 #app.short .acct-sheet { gap: 8px; }
 #app.short .ac-me { gap: 8px; }
@@ -622,8 +573,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .help-fig { max-height: calc(var(--uh) * 36); }
 #app.tiny .help-go .btn { min-height: 36px; }
 /* phone held upright with the sideways view turned off: stack everything and scroll */
-#app.portrait .sel2, #app.portrait .on2 { display: flex; flex-direction: column; overflow-y: auto; touch-action: pan-y; }
-#app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
 /* ---------- tournament (ui/cup.js): bracket screen ---------- */
@@ -1162,9 +1111,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 /* ---------- Fighter select ("sunset ink", Fable's build step 3; menu-redesign/mockups/select_844x390.png) ----------
    Three columns: the roster (2x4 portrait tiles, slanted ink name plates), the stage (the picked fighter's portrait over a sunburst
-   and speed lines in the fighter colour, the name stroked, a role plate, the skins strip on ink with the skin note) and the info
-   column (stats, the Special and Ulti cards, FIGHT + UPGRADE). Everything is scoped to #scrSelect (#scrOnline has its own block at
-   the end). The fighter colour is the looked-at skin's `ui` colour: buildDetail sets --sfc / --sfcg (glow) / --sfct (screen tint)
+   and speed lines in the fighter colour, the name stroked, a role plate, the Skins bar on ink) and the info
+   column (stats, the Special and Ulti cards, FIGHT). The Skins bar at the stage's foot and the Skin Rack are styled in 90-skins.css. Everything is scoped to #scrSelect (#scrOnline is styled in
+   95-lobby.css). The fighter colour is the looked-at skin's `ui` colour: buildDetail sets --sfc / --sfcg (glow) / --sfct (screen tint)
    on #scrSelect; they are registered so the tint eases to a new pick. Phone landscape (844x390) is the base; #app.tiny (667x320,
    568x320), the desktop (#app:not(.short):not(.portrait)) and upright phones (#app.portrait) adjust it below. */
 @property --sfc { syntax: "<color>"; inherits: true; initial-value: #f3d9a4; }
@@ -1236,7 +1185,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrSelect .tile.on::after { content: "YOU"; position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
 #scrSelect .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
-/* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the skins strip ---- */
+/* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the Skins bar ---- */
 #scrSelect .sl-detail { display: grid; grid-template-columns: minmax(0, 1fr) var(--iw); gap: 12px; min-height: 0; min-width: 0; }
 #scrSelect .sl-stage { position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; container-type: inline-size;
   border: 2px solid var(--ink); border-radius: 12px; background: radial-gradient(ellipse 80% 70% at 55% 42%, var(--sfcg), transparent 72%), linear-gradient(180deg, #2a2f55, #15172e);
@@ -1255,7 +1204,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrSelect .sl-scene .speed { z-index: 4; opacity: 0.7; background: repeating-linear-gradient(-18deg, transparent 0 9px, var(--sfcg) 9px 11px);
   -webkit-mask: linear-gradient(180deg, transparent 52%, #000 80%), linear-gradient(90deg, #000, transparent 70%); -webkit-mask-composite: source-in;
   mask: linear-gradient(180deg, transparent 52%, #000 80%) intersect, linear-gradient(90deg, #000, transparent 70%); }
-/* the model: the fighter as drawn in a match, in the skin being looked at (locked skins preview here) */
+/* the model: the fighter as drawn in a match, in the worn skin */
 #scrSelect .sl-art { position: absolute; right: 1%; bottom: 3px; width: 36%; height: 60%; z-index: 2; pointer-events: none; opacity: 0; transform: translateY(10px) scale(0.92);
   transition: opacity 0.2s ease-out, transform 0.26s cubic-bezier(0.3, 1.5, 0.5, 1); }
 #scrSelect.sl-skin .sl-art { opacity: 1; transform: none; }
@@ -1270,34 +1219,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrSelect.sl-skin .sl-art.swap { animation: slPop 0.26s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
 @keyframes slSwap { from { opacity: 0; transform: translateX(-16px); } }
 @keyframes slPop { from { opacity: 0; transform: translateY(10px) scale(0.92); } }
-/* the skins strip on ink: round swatches, a gold ring on the equipped one, chip prices on the locked ones, a white ring on a preview */
-#scrSelect .sl-skins { flex: none; position: relative; z-index: 3; display: flex; flex-direction: column; gap: 3px; padding: 4px 10px 7px; background: var(--ink); border-top: 2px solid rgba(255, 255, 255, 0.08); }
-#scrSelect .sl-sws { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-#scrSelect .sw { flex: 0 1 auto; flex-direction: row; gap: 6px; min-width: 40px; min-height: 40px; padding: 0 2px; font: 700 12px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); }
-#scrSelect .sw > i { width: 28px; height: 28px; border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16), 0 2px 0 var(--ink); transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.16s; }
-#scrSelect .sw.cur > i { box-shadow: 0 0 0 3px var(--gold), 0 2px 0 var(--ink); }
-#scrSelect .sw.pending > i { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 12px var(--sfcg); }
-#scrSelect .sw.pending > i::after { opacity: 0; }
-#scrSelect .sw small { display: inline-flex; align-items: center; font: 700 12px/1 var(--display); letter-spacing: 0.04em; white-space: nowrap; color: inherit; }
-#scrSelect .sw.cur small { color: var(--text); }
-#scrSelect .sw.lock small { color: var(--gold); }
-#scrSelect .sw.pending small { color: #fff; }
-#scrSelect .sw .tokglyph { width: 1.15em; height: 0.92em; margin-right: 0.2em; }
-#scrSelect .sw:hover > i { transform: scale(1.06); }
-#scrSelect .sw.pending:hover > i { transform: scale(1.12); }
-#scrSelect .sl-note { font: 500 11.5px/1.3 var(--body); color: var(--sand); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-#scrSelect.sl-pend .sl-note { color: #fff; }
-/* a narrow stage (small phones): the labels go under the swatches */
-@container (max-width: 268px) {
-  #scrSelect .sl-skins { padding-inline: 4px; }
-  #scrSelect .sl-sws { justify-content: space-around; gap: 2px; }
-  #scrSelect .sw { flex-direction: column; gap: 3px; min-width: 40px; padding: 0; }
-  #scrSelect .sw > i { width: 24px; height: 24px; }
-  #scrSelect .sw small { font-size: 10.5px; }
-  #scrSelect .sl-note { font-size: 10.5px; }
-}
 
-/* ---- info: stats, the Special and Ulti cards, FIGHT + UPGRADE ---- */
+/* ---- info: stats, the Special and Ulti cards, FIGHT ---- */
 #scrSelect .sl-info { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
 #scrSelect .sl-info .card { box-shadow: var(--hard), var(--bevel); }   /* no blurred shadow off the stage */
 #scrSelect .sl-blurb { display: none; margin: 0; font: 500 14px/1.4 var(--body); color: var(--mute); }
@@ -1325,11 +1248,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 /* a slow sheen across the gold */
 #scrSelect .sl-go .sl-fight::after { content: ""; position: absolute; top: -10%; bottom: -10%; left: -40%; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); transform: translateX(0); animation: slSheen 6s ease-in-out 1.2s infinite; pointer-events: none; }
 @keyframes slSheen { 0%, 70% { transform: translateX(0); } 100% { transform: translateX(560%); } }
-#scrSelect .sl-up > span { flex-direction: column; gap: 3px; }
-#scrSelect .sl-up small { display: inline-flex; align-items: center; font: 800 15px/1 var(--display); letter-spacing: 0.02em; color: var(--gold); }
-#scrSelect .sl-up small .tokglyph { margin-right: 0.25em; }
-#scrSelect .sl-go .sl-up:disabled { cursor: default; opacity: 1; color: var(--mute); background: linear-gradient(180deg, #2c3156, #1e2240); }
-#scrSelect .sl-up:disabled small { color: var(--mute); }
 
 /* ---- motion: the screen comes in (stage first, then the roster and the cards, 40 ms apart), all off with reduced motion ---- */
 @keyframes slIn { from { opacity: 0; transform: translateY(16px); } }
@@ -1356,7 +1274,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny #scrSelect .sl-name { left: 9px; bottom: 9px; gap: 5px; }
 #app.tiny #scrSelect .sl-name b { font-size: min(40px, 17cqw); -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink), 0 8px 18px rgba(0, 0, 0, 0.5); }
 #app.tiny #scrSelect .sl-name span { font-size: 10.5px; padding: 4px 8px 3px; }
-#app.tiny #scrSelect .sl-skins { padding: 3px 6px 5px; }
 #app.tiny #scrSelect .sl-info { gap: 7px; }
 /* the room the move texts leave takes the flavour line, as long as it fits */
 #app.tiny #scrSelect .sl-blurb { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex: 0 1 auto; min-height: 0; font-size: 12px; line-height: 1.3; padding: 0 2px; }
@@ -1367,7 +1284,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny #scrSelect .sl-go { gap: 8px; }
 #app.tiny #scrSelect .sl-go .btn { min-height: 44px; padding: 0 10px; font-size: 16px; }
 #app.tiny #scrSelect .sl-go .sl-fight { font-size: 22px; }
-#app.tiny #scrSelect .sl-up small { font-size: 13px; }
 /* tight headers: the pickers drop their small labels and the opponent's name (the avatar stays), then the title gives way to the kicker */
 @container (max-width: 700px) {
   #scrSelect .sl-ttl h2 { font-size: 22px; }
@@ -1405,11 +1321,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #scrSelect .sl-name { left: 20px; bottom: 20px; gap: 10px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-name b { font-size: min(76px, 15cqw); -webkit-text-stroke-width: 6px; text-shadow: 0 6px 0 var(--ink), 0 12px 28px rgba(0, 0, 0, 0.5); }
 #app:not(.short):not(.portrait) #scrSelect .sl-name span { font-size: 14px; padding: 6px 12px 5px; }
-#app:not(.short):not(.portrait) #scrSelect .sl-skins { padding: 8px 16px 10px; gap: 5px; }
-#app:not(.short):not(.portrait) #scrSelect .sw { gap: 8px; min-height: 44px; font-size: 14px; }
-#app:not(.short):not(.portrait) #scrSelect .sw > i { width: 32px; height: 32px; }
-#app:not(.short):not(.portrait) #scrSelect .sw small { font-size: 14px; }
-#app:not(.short):not(.portrait) #scrSelect .sl-note { font-size: 13px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-info { gap: 12px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-blurb { display: block; flex: none; }
 #app:not(.short):not(.portrait) #scrSelect .sl-stats { padding: 14px 16px; gap: 12px 14px; font-size: 13px; }
@@ -1419,7 +1330,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #scrSelect .sl-move em { font-size: 11px; padding: 3px 6px 2px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-go .btn { min-height: 60px; font-size: 21px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-go .sl-fight { font-size: 32px; }
-#app:not(.short):not(.portrait) #scrSelect .sl-up small { font-size: 17px; }
 
 /* ---- upright phones (390x844): the header wraps (pickers on their own row), the roster 4 across on top, a 220 px stage, the cards
    stacked, FIGHT sticky at the bottom; the whole screen scrolls ---- */
@@ -1446,28 +1356,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait #scrSelect .sl-go { position: sticky; bottom: 0; z-index: 6; margin: auto -16px 0; padding: 14px 16px max(14px, env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(10, 11, 28, 0), rgba(10, 11, 28, 0.94) 34%); }
 #app.portrait #scrSelect .sl-go .btn { min-height: 54px; }
-
-/* ---------- Play friends (#scrOnline shares the select screen's classes): the same ink header, cards and frames ---------- */
-#scrOnline .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
-#scrOnline .sel-head .back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
-#scrOnline .sel-head h2 { color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
-#scrOnline .sel-head .kicker { color: var(--sand); font-size: 11px; }
-#scrOnline .tokpill { display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px 0 9px; border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #343b6a, #22264a);
-  box-shadow: 0 3px 0 var(--ink), var(--bevel); font-size: 19px; color: var(--gold); }
-#scrOnline .on-card { border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
-#scrOnline .on-art { border: 2px solid var(--ink); border-radius: 10px; background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(243, 217, 164, 0.25), transparent 70%), var(--night); box-shadow: 0 2px 0 var(--ink); }
-#scrOnline .on-list li { border: 2px solid var(--ink); border-radius: 9px; background: var(--raise); box-shadow: 0 2px 0 var(--ink); }
-#scrOnline .on-list li.empty { border: 0; box-shadow: none; }
-#scrOnline .on-invite { border: 2px solid var(--ink); border-radius: 10px; background: rgba(243, 217, 164, 0.1); box-shadow: inset 0 0 0 1px rgba(243, 217, 164, 0.3); }
-#scrOnline .kicker { color: var(--sand); }
-/* the host card's rule rows (Mode, then Lives / Time / Format or Boss / Level): a Boss chip's short name on the smallest phones and
-   upright (the full names wrap the row there); on the smallest phones the rows are a little tighter so the Host button stays on the screen */
-#scrOnline .rule-row .chip .s { display: none; }
-#app.tiny #scrOnline .rule-row .chip .l, #app.portrait #scrOnline .rule-row .chip .l { display: none; }
-#app.tiny #scrOnline .rule-row .chip .s, #app.portrait #scrOnline .rule-row .chip .s { display: inline; }
-#app.tiny #scrOnline .on-me { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
-#app.tiny #scrOnline .on-rules { gap: 3px; }
-#app.tiny #scrOnline .rule-row .chip { min-height: 26px; padding: 2px 10px; font-size: 13px; }
 
 /* ---------- Results screen (menu redesign, Fable's "sunset ink", 2026-10-14; mockup results_844x390.png) ----------
    Left: the winner's panel with a slanted gold edge (your portrait on a win, the opponent's in grey on a loss), the kicker, VICTORY,
@@ -2223,6 +2111,436 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .mx-cell { padding: 4px 6px 5px; }
 #app.tiny .mx-cell b { font-size: 20px; }
 
+/* ---------- Skins: the Skins bar on the fighter select and the Skin Rack sheet (Fable 5.1, skins-lobby/fable-design.md) ----------
+   The bar (#dSkins) is the stage's ink strip as one button: the worn skin's swatch with a gold ring, its name (a ROAD sticker after a
+   Road skin), its effect line in sand, and the gold-rimmed SKINS n/7 pill. The sheet (#scrSkins, ui/skins.js) is the sheet recipe with a
+   42 px band: the looked-at skin in big on the left (sunburst in the skin colour, the model drawn live, the name stroked, the effect
+   line, one action), the rack on the right (four chip skins, three Road skins). Card states: worn (gold ring, WORN tag), own, buy
+   (gold price), short (dimmed, padlock, grey price), road (ROAD sticker, dimmed, padlock), shut (near black); the looked-at card has a
+   white ring. --c is a skin's `ui` colour, --cg its glow (both set by skins.js). Phone landscape (844x390) is the base; #app.tiny
+   (667x320), the desktop and upright phones (a bottom sheet) adjust it below. */
+
+/* ---- the Skins bar ---- */
+#scrSelect .sl-skins { appearance: none; cursor: pointer; flex: none; position: relative; z-index: 5; display: flex; align-items: center; gap: 10px; height: 48px; min-width: 0;
+  padding: 0 6px 0 12px; border: 0; border-top: 2px solid var(--ink); border-radius: 0; background: var(--ink); color: var(--text); font: inherit; text-align: left; }
+#scrSelect .sl-skins > * { transition: transform 0.08s; }
+#scrSelect .sl-skins:active > * { transform: translateY(2px); }   /* the strip sinks under the thumb */
+#scrSelect .sl-skins:focus-visible { outline: 2px solid var(--sand); outline-offset: -4px; }
+#scrSelect .sk-dot { flex: none; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.5), transparent 46%), var(--c, var(--sand));
+  border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px var(--gold); }
+#scrSelect .sk-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#scrSelect .sk-nm { display: flex; align-items: center; gap: 7px; min-width: 0; }
+#scrSelect .sk-nm b { min-width: 0; font: 800 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrSelect .sk-txt small { font: 500 11.5px/1.2 var(--body); color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the ROAD sticker (bar, preview, cards) */
+.sk-rt { flex: none; display: inline-block; font: 800 9.5px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--ember);
+  border: 1.5px solid var(--ink); border-radius: 4px; padding: 3px 5px 2px; transform: rotate(-6deg); box-shadow: 0 1.5px 0 var(--ink); }
+.sk-rt[hidden] { display: none; }
+#scrSelect .sk-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 11px 0 13px; border: 2px solid var(--gold); border-radius: 999px;
+  background: rgba(14, 16, 34, 0.9); box-shadow: 0 0 0 1.5px var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: background 0.12s, transform 0.08s; }
+#scrSelect .sk-pill span { font: 800 14px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+#scrSelect .sk-pill b { font: 800 15px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--text); }
+#scrSelect .sk-pill i { width: 7px; height: 7px; margin: 0 1px 0 -1px; border-top: 2.5px solid var(--sand); border-right: 2.5px solid var(--sand); transform: rotate(45deg); }
+@media (hover: hover) { #scrSelect .sl-skins:hover .sk-pill { background: #262b52; } }
+
+/* ---- the sheet ---- */
+#scrSkins { --pw: 296px; --ft: 36px; }
+#app #scrSkins > .sk-sheet { width: min(800px, 100%); height: min(350px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.sk-head { height: 42px; gap: 12px; padding: 0 6px 0 18px; }
+.sheet .sk-head h3 { font-size: 22px; }
+.sk-head h3 em { font-style: inherit; color: var(--gold); }
+.sk-head .kick { color: var(--mute); letter-spacing: 0.14em; }
+.sk-head .sk-coin { height: 32px; padding: 0 10px 0 7px; gap: 5px; font-size: 17px; border-color: #070818; box-shadow: 0 2px 0 #05060f, var(--bevel); }
+.sk-head .sk-coin::before { width: 20px; height: 16px; }
+.sk-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--pw) minmax(0, 1fr); gap: 14px; padding: 12px 14px 14px; }
+
+/* the preview: the looked-at skin in big */
+.sk-prev { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  background: radial-gradient(ellipse 72% 56% at 50% 34%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+.sk-pa { position: absolute; inset: 0; }
+.sk-pa .rays { inset: -60% -60% -16%; opacity: 0.8; background: repeating-conic-gradient(from 0deg, var(--cg, rgba(243, 217, 164, 0.42)) 0 4deg, transparent 4deg 12deg); }
+.sk-pa::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, transparent 40%, rgba(14, 16, 34, 0.9) 74%); pointer-events: none; }
+.sk-pa canvas { position: absolute; left: 0; top: 0; width: 100%; height: 64%; z-index: 0; }
+.sk-yours { z-index: 4; top: 12px; right: 12px; font-size: 17px; padding: 7px 11px 5px; transform: rotate(-6deg); }
+.sk-yours.sk-pop { animation: skYours 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes skYours { from { opacity: 0; transform: rotate(-14deg) scale(1.7); } }
+.sk-pt { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; flex-direction: column; gap: 7px; padding: 0 14px 13px; }
+.sk-pn { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.sk-pn b { min-width: 0; font: italic 900 30px/0.95 var(--display); letter-spacing: -0.005em; text-transform: uppercase; color: #fff; white-space: nowrap;
+  -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); padding: 2px 4px 0 0; }
+.sk-pn .sk-rt { font-size: 11px; padding: 4px 6px 3px; border-width: 2px; }
+#scrSkins .sk-fx { margin: 0; font: 500 13.5px/1.3 var(--body); color: var(--sand); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.sk-act { display: flex; flex-direction: column; gap: 6px; }
+.sk-act:empty { display: none; }
+#app .sk-go { width: 100%; min-height: 48px; font-size: 22px; }
+.sk-go .tokglyph { margin: 0 0.12em 0 0.3em; }
+.sk-act .sk-pill { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; border: 2px solid var(--ink); border-radius: 9px; transform: skewX(-8deg);
+  background: rgba(14, 16, 34, 0.72); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35); font: 800 18px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.sk-act .sk-pill > * { transform: skewX(8deg); }
+.sk-act .sk-pill i { font-style: normal; color: var(--mint); }
+.sk-act .sk-pill.dim { color: var(--mute); }
+.sk-act .sk-pill.dim .tokglyph, .sk.short .sk-f .tokglyph { filter: grayscale(1) brightness(0.9); }
+#scrSkins .sk-l1 { margin: 0; font: 600 14px/1.3 var(--body); color: #fff; }
+#scrSkins .sk-l1.sk-lock { position: relative; padding-left: 26px; }
+#scrSkins .sk-l1.sk-lock::before { content: ""; position: absolute; left: 0; top: 1px; width: 18px; height: 18px; background: var(--lock) center / contain no-repeat; }
+#scrSkins .sk-l2 { margin: 0; font: 500 12.5px/1.3 var(--body); color: var(--mute); }
+#scrSkins { --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'%3E%3Cpath d='M4.6 8.2V5.6a3.4 3.4 0 0 1 6.8 0v2.6' fill='none' stroke='%23f3d9a4' stroke-width='2.2'/%3E%3Crect x='2' y='8' width='12' height='9' rx='2' fill='%23f3d9a4'/%3E%3Ccircle cx='8' cy='12.4' r='1.5' fill='%230e1022'/%3E%3C/svg%3E"); }
+
+/* the rack: two kickers, a row of four chip skins, a row of three Road skins */
+.sk-rack { display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; min-width: 0; min-height: 0; }
+.sk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 2px 2px 0; }
+.sk-k + .sk-row + .sk-k { padding-top: 5px; }
+.sk-k b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.sk-k span { min-width: 0; font: 500 12.5px/1 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; min-height: 0; padding: 3px 3px 4px; margin: -3px -3px -4px; }   /* room for the rings */
+.sk-row.r3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* a skin card */
+#scrSkins .sk { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0; text-align: left;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); color: var(--text); font: inherit;
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
+.sk-a { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 7px 7px 0 0;
+  background: radial-gradient(ellipse 62% 70% at 50% 62%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #31376a, #1f2346); }
+.sk-a canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: filter 0.18s; }
+.sk-a .sk-rt { position: absolute; left: 4px; top: 5px; z-index: 2; }
+.sk-lk { display: none; position: absolute; right: 5px; bottom: 5px; z-index: 2; width: 24px; height: 24px; border-radius: 50%; background: var(--ink) var(--lock) center / 12px 13px no-repeat;
+  box-shadow: 0 0 0 1.5px rgba(243, 217, 164, 0.25); }
+.sk-f { flex: none; height: var(--ft); display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; padding: 0 8px 1px; }
+.sk-f b { font: 800 12.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-f small { display: flex; align-items: center; min-width: 0; font: 700 11px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-f small .tokglyph { flex: none; margin-right: 4px; }
+.sk.own .sk-f small { color: var(--sand); }
+.sk.buy .sk-f small { color: var(--gold); font-size: 12px; }
+.sk.short .sk-f small { font-size: 12px; }
+.sk.short canvas, .sk.road canvas { filter: saturate(0.45) brightness(0.6); }
+.sk.shut canvas { filter: saturate(0.4) brightness(0.32); }
+.sk.short .sk-lk, .sk.road .sk-lk, .sk.shut .sk-lk { display: block; }
+/* worn: gold ring, the name in gold, the roster's corner tag */
+#scrSkins .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
+.sk.worn .sk-f b { color: var(--gold); }
+.sk.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; animation: skTag 0.16s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes skTag { from { transform: scale(0.4); opacity: 0; } }
+/* looked at (not worn): a white ring, 1.03 */
+#scrSkins .sk.sel:not(.worn) { z-index: 1; transform: scale(1.03); box-shadow: 0 0 0 3px #fff, 0 4px 0 2px var(--ink); }
+@media (hover: hover) { #scrSkins .sk:hover:not(.sel) { transform: translateY(-1px); } #scrSkins .sk:hover canvas { filter: none; } #scrSkins .sk.short:hover canvas, #scrSkins .sk.road:hover canvas { filter: saturate(0.6) brightness(0.72); } #scrSkins .sk.shut:hover canvas { filter: saturate(0.4) brightness(0.4); } }
+#scrSkins .sk:active { transform: translateY(2px); }
+#scrSkins .sk:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+/* ---- small phones (667x320): a tighter sheet, no kicker subtitles, a smaller preview ---- */
+#app.tiny #scrSkins { --pw: 232px; --ft: 32px; padding: 10px 16px; }
+#app.tiny #scrSkins > .sk-sheet { width: min(635px, 100%); height: min(296px, 100%); }
+#app.tiny .sk-head { height: 38px; }
+#app.tiny .sheet .sk-head h3 { font-size: 20px; }
+#app.tiny .sk-head .sk-coin { height: 30px; font-size: 16px; }
+#app.tiny .sk-body { gap: 10px; padding: 9px 10px 10px; }
+#app.tiny .sk-pt { gap: 5px; padding: 0 10px 10px; }
+#app.tiny .sk-pn b { font-size: 26px; -webkit-text-stroke-width: 3.5px; text-shadow: 0 3px 0 var(--ink); }
+#app.tiny #scrSkins .sk-fx { font-size: 12px; }
+#app.tiny .sk-pa canvas { height: 58%; }
+/* the locked states carry more lines: their effect line takes one, and the short state drops where chips come from */
+#app.tiny #scrSkins .sk-prev:is(.short, .road, .shut) .sk-fx { -webkit-line-clamp: 1; }
+#app.tiny #scrSkins .sk-prev.short .sk-l2 { display: none; }
+#app.tiny .sk-go { min-height: 42px; font-size: 19px; }
+#app.tiny .sk-act .sk-pill { height: 40px; font-size: 16px; }
+#app.tiny #scrSkins .sk-l1 { font-size: 12.5px; }
+#app.tiny #scrSkins .sk-l1.sk-lock { padding-left: 22px; }
+#app.tiny #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
+#app.tiny #scrSkins .sk-l2 { font-size: 11.5px; }
+#app.tiny .sk-rack { gap: 5px; }
+#app.tiny .sk-k span { display: none; }
+#app.tiny .sk-k b { font-size: 11px; }
+#app.tiny .sk-row { gap: 6px; }
+#app.tiny .sk-f { padding: 0 6px 1px; gap: 3px; }
+#app.tiny .sk-f b { font-size: 11px; }
+#app.tiny .sk-f small { font-size: 10px; }
+#app.tiny .sk-lk { width: 20px; height: 20px; right: 4px; bottom: 4px; background-size: 10px 11px; }
+#app.tiny .sk.worn::after { padding: 3px 5px 2px; font-size: 9px; }
+#app.tiny #scrSelect .sl-skins { height: 44px; gap: 8px; padding: 0 5px 0 10px; }
+#app.tiny #scrSelect .sk-dot { width: 22px; height: 22px; }
+#app.tiny #scrSelect .sk-txt small { display: none; }
+#app.tiny #scrSelect .sk-nm b { font-size: 13px; }
+#app.tiny #scrSelect .sk-pill { height: 32px; gap: 6px; padding: 0 9px 0 11px; }
+#app.tiny #scrSelect .sk-pill span { font-size: 13px; }
+#app.tiny #scrSelect .sk-pill b { font-size: 14px; }
+
+/* ---- desktop (1280x760): a 960x560 sheet, bigger cards and names ---- */
+#app:not(.short):not(.portrait) #scrSkins { --pw: 360px; --ft: 42px; }
+#app:not(.short):not(.portrait) #scrSkins > .sk-sheet { width: min(960px, 100%); height: min(560px, 100%); }
+#app:not(.short):not(.portrait) .sk-head { height: 48px; padding-left: 22px; }
+#app:not(.short):not(.portrait) .sheet .sk-head h3 { font-size: 26px; }
+#app:not(.short):not(.portrait) .sk-head .sk-coin { height: 36px; font-size: 19px; }
+#app:not(.short):not(.portrait) .sk-head .round { width: 34px; height: 34px; }
+#app:not(.short):not(.portrait) .sk-body { gap: 18px; padding: 16px 18px 18px; }
+#app:not(.short):not(.portrait) .sk-pt { gap: 9px; padding: 0 18px 18px; }
+#app:not(.short):not(.portrait) .sk-pn b { font-size: 40px; -webkit-text-stroke-width: 5px; text-shadow: 0 5px 0 var(--ink); }
+#app:not(.short):not(.portrait) .sk-pn .sk-rt { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrSkins .sk-fx { font-size: 15px; }
+#app:not(.short):not(.portrait) .sk-go { min-height: 56px; font-size: 25px; }
+#app:not(.short):not(.portrait) .sk-act .sk-pill { height: 50px; font-size: 20px; }
+#app:not(.short):not(.portrait) #scrSkins .sk-l1 { font-size: 15.5px; }
+#app:not(.short):not(.portrait) #scrSkins .sk-l2 { font-size: 13.5px; }
+#app:not(.short):not(.portrait) .sk-rack { gap: 9px; }
+#app:not(.short):not(.portrait) .sk-k b { font-size: 13px; }
+#app:not(.short):not(.portrait) .sk-k span { font-size: 13.5px; }
+#app:not(.short):not(.portrait) .sk-row { gap: 12px; }
+#app:not(.short):not(.portrait) .sk-f { padding: 0 10px 2px; gap: 5px; }
+#app:not(.short):not(.portrait) .sk-f b { font-size: 14px; }
+#app:not(.short):not(.portrait) .sk-f small { font-size: 12.5px; }
+#app:not(.short):not(.portrait) .sk-lk { width: 28px; height: 28px; right: 7px; bottom: 7px; background-size: 14px 15px; }
+#app:not(.short):not(.portrait) .sk.worn::after { padding: 5px 8px 4px; font-size: 11px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-skins { height: 56px; gap: 12px; padding: 0 8px 0 16px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-dot { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-nm b { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-txt small { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-pill { height: 40px; padding: 0 13px 0 15px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-pill span { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-pill b { font-size: 16px; }
+
+/* ---- upright phones (390x844): a bottom sheet in thumb reach; the preview goes horizontal (model left, words right) ---- */
+#app.portrait #scrSkins { --ft: 34px; align-items: end; padding: 0 10px; }
+#app.portrait #scrSkins > .sk-sheet { width: 100%; height: auto; max-height: calc(100% - 40px); border-bottom: 0; border-radius: 14px 14px 0 0; box-shadow: var(--soft); }
+#app.portrait #scrSkins:not([hidden]) > .sk-sheet { animation: skUp 0.28s cubic-bezier(0.2, 0.9, 0.25, 1); }
+@keyframes skUp { from { transform: translateY(40px); } 70% { transform: translateY(-2px); } to { transform: none; } }
+#app.portrait .sk-head { border-radius: 12px 12px 0 0; gap: 8px; padding-left: 14px; }
+#app.portrait .sheet .sk-head h3 { font-size: 21px; }
+#app.portrait .sk-head h3::after { display: none; }   /* the band is full: GUNSLINGER SKINS, the count, the coin and the X */
+#app.portrait .sk-head .kick { font-size: 10.5px; letter-spacing: 0.1em; }
+#app.portrait .sk-head .sk-coin { font-size: 16px; padding: 0 8px 0 6px; }
+#app.portrait .sk-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 12px max(14px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait .sk-prev { flex: none; height: 168px; background: radial-gradient(ellipse 46% 80% at 20% 50%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+#app.portrait .sk-pa .rays { inset: -100% 40% -100% -100%; }
+#app.portrait .sk-pa::after { background: linear-gradient(90deg, transparent 30%, rgba(14, 16, 34, 0.55) 60%); }
+#app.portrait .sk-pa canvas { left: 2px; width: 146px; height: 100%; }
+#app.portrait .sk-pt { left: 140px; top: 0; justify-content: center; gap: 5px; padding: 8px 12px 8px 4px; }
+#app.portrait .sk-pn b { font-size: 26px; -webkit-text-stroke-width: 3.5px; text-shadow: 0 3px 0 var(--ink); }
+#app.portrait #scrSkins .sk-fx { font-size: 12.5px; }
+#app.portrait .sk-go { min-height: 44px; font-size: 20px; }
+#app.portrait .sk-act .sk-pill { height: 40px; font-size: 16px; }
+#app.portrait #scrSkins .sk-l1 { font-size: 13px; }
+#app.portrait #scrSkins .sk-l1.sk-lock { padding-left: 22px; }
+#app.portrait #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
+#app.portrait #scrSkins .sk-l2 { font-size: 11.5px; }
+#app.portrait .sk-yours { top: auto; bottom: 10px; right: auto; left: 70px; }
+#app.portrait .sk-rack { grid-template-rows: auto 106px auto 112px; }
+#app.portrait .sk-row { gap: 6px; }
+#app.portrait .sk-f { padding: 0 7px 1px; }
+#app.portrait .sk-f b { font-size: 11.5px; }
+#app.portrait .sk-f small { font-size: 10.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrSkins .sk, #scrSkins .sk-a canvas, #scrSelect .sl-skins > *, #scrSelect .sk-pill { transition: none; }
+  #scrSkins:not([hidden]) > .sk-sheet, .sk-yours.sk-pop, .sk.worn::after { animation: none !important; }
+  #scrSkins .sk.sel:not(.worn) { transform: none; }
+}
+
+/* ---------- Play friends: "Fight Card" (Fable 5.1, skins-lobby/fable-design.md part 3; mockups skins-lobby/mockups/lobby_*.png) ----------
+   Three cards read left to right as you · your match · the room (stacked upright). The Fight Card (#onChange) is one button: your
+   fighter drawn live in the worn skin on a sunburst in its colour, the name stroked, the skin and the role, YOU · TAP TO CHANGE and
+   the Road card's gold ⇄ badge (40 px here) on its right edge; the name plate (an input on the public site) sits on it. The host card
+   holds the rule rows as pills, the gold Host button (Cancel in ink while hosting), the invite link and the note; the room lists the
+   open matches with the host's fighter, then who is here as pills, then the help. --c / --cg are the worn skin's colour and glow
+   (online.js fightCard). Phone landscape (844x390) is the base; #app.tiny (667x320), the desktop and upright phones adjust it. */
+
+#scrOnline .on2 { position: absolute; inset: 0; max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+
+/* ---- header: back, the status kicker with its dot, PLAY FRIENDS stroked, the chips coin ---- */
+#scrOnline .sel-head { flex: none; height: 44px; gap: 12px; }
+#scrOnline .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.08s, box-shadow 0.08s; }
+#scrOnline .sel-head .back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrOnline .sel-head .grow { display: flex; flex-direction: column; gap: 4px; }
+#scrOnline .sel-head h2 { font: italic 900 28px/1 var(--display); letter-spacing: -0.005em; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrOnline .on-status { font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--sand); padding: 3px 0; margin: -3px 0; }
+#scrOnline .on-status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mute); margin-right: 8px; vertical-align: 0; }
+#scrOnline .on-status.ok::before { background: var(--mint); box-shadow: 0 0 0 3px rgba(134, 220, 174, 0.22); }
+#scrOnline .on-status.bad { color: var(--ketchup); }
+#scrOnline .on-status.bad::before { background: var(--ketchup); }
+#scrOnline .sel-head .coin { flex: none; }
+
+/* ---- the three columns ---- */
+#scrOnline .on-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 164px minmax(0, 1fr) 290px; gap: 12px 18px; }
+#scrOnline .on-card { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; padding: 12px 14px;
+  border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+#scrOnline .on-card > .kick { flex: none; color: var(--gold); }
+
+/* ---- the Fight Card ---- */
+#scrOnline .on-fc { position: relative; min-width: 0; min-height: 0; }
+#scrOnline .on-fcb { appearance: none; cursor: pointer; position: absolute; inset: 0; display: flex; flex-direction: column; padding: 0; text-align: left; font: inherit; color: var(--text); container-type: inline-size;
+  border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrOnline .on-fcb::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: 10px; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.45); pointer-events: none; }   /* the Road card's gold edge */
+#scrOnline .on-fcb:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrOnline .on-fcb:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (hover: hover) { #scrOnline .on-fcb:hover { filter: brightness(1.07); } }
+#scrOnline .on-fa { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 10px 10px 0 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 56%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+#scrOnline .on-fa .rays { inset: -60% -60% -50%; opacity: 0.85; background: repeating-conic-gradient(from 0deg, var(--cg, rgba(243, 217, 164, 0.42)) 0 4deg, transparent 4deg 12deg); }
+#scrOnline .on-fa::after { content: ""; position: absolute; left: 24%; right: 24%; bottom: 5%; height: 10px; border-radius: 50%; background: rgba(0, 0, 0, 0.4); }   /* the ground shadow */
+#scrOnline .on-art { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; width: 100%; height: min(100%, 330px); }   /* a tall desktop card keeps the model big */
+#scrOnline .on-ft { flex: none; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 12px 11px; border-top: 2px solid var(--ink); border-radius: 0 0 10px 10px; background: rgba(14, 16, 34, 0.45); }
+#scrOnline .on-ft b { font: italic 900 min(26px, 16cqw)/0.95 var(--display); letter-spacing: -0.005em; text-transform: uppercase; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  -webkit-text-stroke: 3.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); padding: 2px 3px 1px 0; }
+#scrOnline .on-fs { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 13px/1.1 var(--body); color: var(--text); white-space: nowrap; }
+#scrOnline .on-fs i { flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--c, var(--sand)); border: 2px solid var(--ink); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35); }
+#scrOnline .on-fs span { flex: none; }
+#scrOnline .on-fs em { min-width: 0; font-style: normal; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; }
+#scrOnline .on-fs em::before { content: "· "; }
+#scrOnline .on-ft small { font: 700 11px/1.2 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+/* the ⇄ badge on the right edge (the Road card's, 40 px) */
+#scrOnline .on-chg { position: absolute; z-index: 4; right: -15px; top: 46%; transform: translateY(-50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: #ffd23f; color: var(--ink); border: 2px solid var(--ink); box-shadow: 0 2px 0 var(--ink); font: 900 22px/1 var(--body); }
+/* the name plate: your name on ink, top left; on the public site the name input, with a pencil */
+#scrOnline .on-plate { position: absolute; z-index: 5; left: -2px; top: 12px; max-width: calc(100% - 8px); display: flex; align-items: center; padding: 6px 12px 5px 12px;
+  background: var(--ink); border-radius: 0 6px 6px 0; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); pointer-events: none; }
+#scrOnline .on-plate b { min-width: 0; font: 800 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrOnline .on-plate b[hidden] { display: none; }
+#scrOnline .on-name { pointer-events: auto; width: 13ch; max-width: 100%; min-width: 0; margin: -2px 0; padding: 2px 18px 2px 0; border: 0; border-bottom: 1.5px dashed rgba(243, 217, 164, 0.55); border-radius: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 13.5l.9-3.6 7.6-7.6 2.7 2.7-7.6 7.6z' fill='none' stroke='%23f3d9a4' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E") right 1px center / 12px no-repeat;
+  font: 800 15px/1.1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+#scrOnline .on-name:focus { outline: 2px solid var(--sand); outline-offset: 3px; }
+/* back from the fighter select: the card pops (1.04 to 1) and the model comes in */
+#scrOnline .on-fc.fc-in .on-fcb { animation: fcIn 0.22s cubic-bezier(0.3, 1.5, 0.5, 1); }
+#scrOnline .on-fc.fc-in .on-art { animation: fcArt 0.26s ease-out; }
+@keyframes fcIn { from { transform: scale(1.04); } }
+@keyframes fcArt { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---- the host card: YOUR MATCH, the rule rows as pills, the gold Host button pinned to the bottom, the invite link, the note ---- */
+#scrOnline .on-me { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+#scrOnline .on-rules { flex: none; display: flex; flex-direction: column; gap: 7px; padding-top: 2px; }
+#scrOnline .rule-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#scrOnline .rule-row[hidden] { display: none; }
+#scrOnline .rule-row > span:first-child { flex: none; width: 54px; font: 700 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); }
+#scrOnline .rule-row .chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+#scrOnline .rule-row .chip { min-height: 32px; padding: 3px 10px; font-size: 14px; }
+/* a Boss chip's short name (Scratch, Zorp, Kraken) on phones; the full names on the desktop (the aria-label always has it) */
+#scrOnline .rule-row .chip .l { display: none; }
+#app:not(.short):not(.portrait) #scrOnline .rule-row .chip .l { display: inline; }
+#app:not(.short):not(.portrait) #scrOnline .rule-row .chip .s { display: none; }
+#scrOnline #onHost { flex: none; margin-top: auto; min-height: 48px; font-size: 22px; }
+#scrOnline #onHost:not(.primary) { --bg: linear-gradient(180deg, #2b3058, #1b1f3d); color: var(--text); }   /* Cancel while hosting */
+#scrOnline .on-invite { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 9px 11px; border: 2px solid var(--ink); border-radius: 10px; background: rgba(14, 16, 34, 0.5); box-shadow: inset 0 0 0 1px rgba(243, 217, 164, 0.25); }
+#scrOnline .on-invite[hidden] { display: none; }
+#scrOnline .on-invite b { font: 800 13px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--sand); }
+#scrOnline .on-link { padding: 6px 8px; border-radius: 6px; background: var(--ink); font: 12.5px/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--text); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+#scrOnline .on-link-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+#scrOnline .on-link-btns .chip { min-height: 34px; padding: 3px 14px; font-size: 14px; }
+#scrOnline .on-note { flex: none; margin: 0; font: 500 12.5px/1.35 var(--body); color: var(--mute); }
+#scrOnline .on-note:empty { display: none; }
+#scrOnline .on-note.live { color: var(--sand); }
+
+/* ---- the room: open matches (the host's fighter, name, rules, JOIN / TEAM UP), who is here as pills, the help ---- */
+#scrOnline .on-side { gap: 8px; }
+#scrOnline .on-side > .kick + * { margin-top: 1px; }
+#scrOnline .on-side > .on-list + .kick { margin-top: 6px; }
+#scrOnline .on-list { flex: none; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+#scrOnline .on-list li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 8px 7px 7px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrOnline .on-list li.invited { box-shadow: inset 4px 0 0 var(--sand), 0 3px 0 var(--ink), var(--bevel); }
+#scrOnline .on-list li.empty { display: block; padding: 2px 0; border: 0; background: none; box-shadow: none; font: 500 13px/1.35 var(--body); color: var(--mute); }
+#scrOnline .on-por { flex: none; width: 36px; height: 36px; overflow: hidden; border-radius: 50%; border: 2px solid var(--ink); background: var(--raise); box-shadow: 0 2px 0 var(--ink); }
+#scrOnline .on-por img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+#scrOnline .on-list .who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#scrOnline .on-list .who b { font: 800 15px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrOnline .on-list .who span { font: 500 12px/1.3 var(--body); color: var(--mute); }
+#scrOnline .on-list .who em { font-style: normal; color: var(--ember); white-space: nowrap; }
+#scrOnline .on-list li.old .who span { color: var(--ember); }
+#scrOnline .on-list .chip { flex: none; min-height: 38px; padding: 4px 14px; font-size: 15px; color: var(--ink); background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#scrOnline .on-here { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
+#scrOnline .on-here.empty { display: block; font: 500 13px/1.35 var(--body); color: var(--mute); }
+#scrOnline .on-pl { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; height: 28px; padding: 0 11px 0 9px; overflow: hidden; border: 2px solid var(--ink); border-radius: 999px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 2px 0 var(--ink), var(--bevel); font: 800 12.5px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#scrOnline .on-pl::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); }
+#scrOnline .on-pl.busy { color: var(--mute); }
+#scrOnline .on-pl.busy::before { background: var(--mute); box-shadow: none; }
+#scrOnline .on-help { flex: none; margin: auto 0 0; padding-top: 6px; font: 500 11.5px/1.4 var(--body); color: var(--mute); }
+
+/* ---- small phones (667x320): 128 / flex / 232, a 20 px name, 28 px pills, a 42 px Host button; the host note and the help go ---- */
+#app.tiny #scrOnline .on2 { gap: 8px; padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+#app.tiny #scrOnline .sel-head { height: 40px; gap: 10px; }
+#app.tiny #scrOnline .sel-head h2 { font-size: 24px; }
+#app.tiny #scrOnline .on-grid { grid-template-columns: 108px minmax(0, 1fr) 226px; gap: 10px 16px; }
+#app.tiny #scrOnline .on-card { gap: 6px; padding: 9px 11px; }
+#app.tiny #scrOnline .on-ft { gap: 4px; padding: 6px 9px 8px; }
+#app.tiny #scrOnline .on-ft b { font-size: min(20px, 16.5cqw); -webkit-text-stroke-width: 3px; }
+#app.tiny #scrOnline .on-fs { font-size: 11.5px; gap: 5px; }
+#app.tiny #scrOnline .on-fs i { width: 11px; height: 11px; }
+#app.tiny #scrOnline .on-fs em { display: none; }
+#app.tiny #scrOnline .on-ft small { font-size: 9px; letter-spacing: 0.08em; }
+#app.tiny #scrOnline .on-fs span { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+#app.tiny #scrOnline .on-chg { width: 34px; height: 34px; right: -13px; font-size: 19px; }
+#app.tiny #scrOnline .on-plate { top: 8px; padding: 5px 9px 4px 10px; }
+#app.tiny #scrOnline .on-plate b, #app.tiny #scrOnline .on-name { font-size: 13px; }
+#app.tiny #scrOnline .on-rules { gap: 5px; padding-top: 0; }
+#app.tiny #scrOnline .rule-row { gap: 6px; }
+#app.tiny #scrOnline .rule-row > span:first-child { width: 44px; font-size: 10.5px; letter-spacing: 0.06em; }
+#app.tiny #scrOnline .rule-row .chips { gap: 5px; }
+#app.tiny #scrOnline .rule-row .chip { min-height: 28px; padding: 2px 7px; font-size: 12.5px; }
+#app.tiny #scrOnline #onHost { min-height: 42px; font-size: 19px; }
+#app.tiny #scrOnline .on-note:not(.live), #app.tiny #scrOnline .on-help { display: none; }
+#app.tiny #scrOnline .on-list li { gap: 7px; padding: 5px 6px 5px 5px; }
+#app.tiny #scrOnline .on-por { width: 28px; height: 28px; }
+#app.tiny #scrOnline .on-list .who em { white-space: normal; }
+#app.tiny #scrOnline .on-list .who b { font-size: 13.5px; }
+#app.tiny #scrOnline .on-list .who span { font-size: 11px; }
+#app.tiny #scrOnline .on-list .chip { min-height: 32px; padding: 3px 9px; font-size: 12.5px; }
+#app.tiny #scrOnline .on-pl { height: 26px; font-size: 11.5px; }
+
+/* ---- desktop (1280x760): 220 / flex / 380 in the 1180 px frame, a 32 px name, 36 px pills ---- */
+#app:not(.short):not(.portrait) #scrOnline .on2 { gap: 16px; padding: 22px max(28px, env(safe-area-inset-right, 0px)) 24px max(28px, env(safe-area-inset-left, 0px)); max-height: 680px; margin-block: auto; }
+#app:not(.short):not(.portrait) #scrOnline .sel-head { height: 56px; gap: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .sel-head .back { width: 44px; height: 44px; }
+#app:not(.short):not(.portrait) #scrOnline .on-status { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrOnline .sel-head h2 { font-size: 40px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrOnline .sel-head .coin { height: 44px; font-size: 21px; }
+#app:not(.short):not(.portrait) #scrOnline .on-grid { grid-template-columns: 220px minmax(0, 1fr) 380px; gap: 18px 24px; }
+#app:not(.short):not(.portrait) #scrOnline .on-card { gap: 12px; padding: 16px 18px; border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-card > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrOnline .on-fcb { border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-ft { gap: 8px; padding: 12px 16px 15px; }
+#app:not(.short):not(.portrait) #scrOnline .on-ft b { font-size: 32px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrOnline .on-fs { font-size: 14.5px; }
+#app:not(.short):not(.portrait) #scrOnline .on-fs em { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrOnline .on-ft small { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrOnline .on-plate { top: 16px; padding: 7px 14px 6px; }
+#app:not(.short):not(.portrait) #scrOnline .on-plate b, #app:not(.short):not(.portrait) #scrOnline .on-name { font-size: 17px; }
+#app:not(.short):not(.portrait) #scrOnline .on-rules { gap: 10px; }
+#app:not(.short):not(.portrait) #scrOnline .rule-row { gap: 10px; }
+#app:not(.short):not(.portrait) #scrOnline .rule-row > span:first-child { width: 76px; font-size: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .rule-row .chips { gap: 9px; }
+#app:not(.short):not(.portrait) #scrOnline .rule-row .chip { min-height: 36px; padding: 4px 16px; font-size: 16px; }
+#app:not(.short):not(.portrait) #scrOnline #onHost { min-height: 58px; font-size: 26px; }
+#app:not(.short):not(.portrait) #scrOnline .on-note { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-list li { gap: 12px; padding: 9px 10px 9px 9px; }
+#app:not(.short):not(.portrait) #scrOnline .on-por { width: 44px; height: 44px; }
+#app:not(.short):not(.portrait) #scrOnline .on-list .who b { font-size: 17px; }
+#app:not(.short):not(.portrait) #scrOnline .on-list .who span { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrOnline .on-list .chip { min-height: 42px; font-size: 16px; }
+#app:not(.short):not(.portrait) #scrOnline .on-pl { height: 32px; font-size: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-help, #app:not(.short):not(.portrait) #scrOnline .on-here.empty, #app:not(.short):not(.portrait) #scrOnline .on-list li.empty { font-size: 13.5px; }
+
+/* ---- upright phones (390x844): the Fight Card goes horizontal (112 px: the model left, the words right, the badge half over the edge),
+   then the host card, then the room; the page scrolls ---- */
+#app.portrait #scrOnline .on2 { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; padding-top: max(12px, env(safe-area-inset-top, 0px)); }
+#app.portrait #scrOnline .sel-head { height: auto; }
+#app.portrait #scrOnline .sel-head h2 { font-size: 26px; }
+#app.portrait #scrOnline .on-grid { flex: none; display: flex; flex-direction: column; gap: 14px; padding-right: 8px; }
+#app.portrait #scrOnline .on-fc { flex: none; height: 112px; }
+#app.portrait #scrOnline .on-fcb { flex-direction: row; }
+#app.portrait #scrOnline .on-fa { flex: none; width: 124px; border-radius: 10px 0 0 10px; }
+#app.portrait #scrOnline .on-fa .rays { inset: -100% -100% -60%; }
+#app.portrait #scrOnline .on-ft { flex: 1 1 auto; justify-content: center; gap: 6px; padding: 8px 30px 8px 14px; border-top: 0; border-left: 2px solid var(--ink); border-radius: 0 10px 10px 0; }
+#app.portrait #scrOnline .on-chg { top: 50%; right: -14px; }
+#app.portrait #scrOnline .on-plate { top: auto; bottom: 8px; max-width: 132px; padding: 4px 8px 3px 9px; }
+#app.portrait #scrOnline .on-plate b, #app.portrait #scrOnline .on-name { font-size: 12.5px; }
+#app.portrait #scrOnline .on-card, #app.portrait #scrOnline .on-me { flex: none; overflow: visible; }
+#app.portrait #scrOnline #onHost { margin-top: 6px; }
+#app.portrait #scrOnline .on-help { margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrOnline .on-fc.fc-in .on-fcb, #scrOnline .on-fc.fc-in .on-art { animation: none; }
+  #scrOnline .on-fcb, #scrOnline .sel-head .back { transition: none; }
+}
+
 </style>
 
 </head><body><div id="app">
@@ -2316,10 +2634,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <canvas class="sl-art" id="dArt" aria-hidden="true"></canvas>
             <div class="sl-name" id="dNameBox"><b id="dName"></b><span id="dRole"></span></div>
           </div>
-          <div class="sl-skins">
-            <div class="sl-sws" id="dPals" role="group" aria-label="Skins"></div>
-            <div class="sl-note" id="dNote" aria-live="polite"></div>
-          </div>
+          <!-- the Skins bar (ui/skins.js, css/90-skins.css): the worn skin and SKINS n/7; it opens the Skin Rack (#scrSkins) -->
+          <button class="sl-skins" id="dSkins" aria-haspopup="dialog">
+            <i class="sk-dot" aria-hidden="true"></i>
+            <span class="sk-txt"><span class="sk-nm"><b id="dSkName"></b><em class="sk-rt" id="dSkRoad" hidden>Road</em></span><small id="dSkFx"></small></span>
+            <span class="sk-pill" aria-hidden="true"><span>Skins</span><b id="dSkN"></b><i></i></span>
+          </button>
         </div>
         <div class="sl-info">
           <p class="sl-blurb" id="dBlurb"></p>
@@ -2328,8 +2648,30 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="card sl-move ult" id="dUlt"></div>
           <div class="sl-go">
             <button class="btn primary sl-fight" id="selGo"><span>Fight</span></button>
-            <button class="btn up sl-up" id="selUp" hidden><span>Upgrade</span></button>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the Skin Rack (ui/skins.js, css/90-skins.css): the looked-at skin in big, then the chip skins and the Road skins as cards -->
+  <section id="scrSkins" class="screen modal" hidden>
+    <div class="sheet sk-sheet" id="skSheet" role="dialog" aria-modal="true" aria-labelledby="skTitle">
+      <header class="sh-head sk-head"><h3 id="skTitle"><span id="skFig"></span> <em>Skins</em></h3><span class="kick" id="skOwned"></span><div class="coin chips sk-coin" aria-label="Chips"><span id="skTokens">0</span></div><button class="round x" id="skClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sk-body">
+        <div class="sk-prev" id="skPrev">
+          <div class="sk-pa" aria-hidden="true"><i class="rays"></i><canvas id="skArt"></canvas><span class="tag mint sk-yours" id="skYours" hidden>Yours!</span></div>
+          <div class="sk-pt">
+            <div class="sk-pn"><b id="skName"></b><em class="sk-rt" id="skRoadTag" hidden>Road</em></div>
+            <p class="sk-fx" id="skFx"></p>
+            <div class="sk-act" id="skAct" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="sk-rack">
+          <div class="sk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div>
+          <div class="sk-row" id="skChip" role="group" aria-label="Chip skins"></div>
+          <div class="sk-k"><b>Road skins</b><span id="skRoadSub"></span></div>
+          <div class="sk-row r3" id="skRoad" role="group" aria-label="Road skins"></div>
         </div>
       </div>
     </div>
@@ -2390,15 +2732,24 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <section id="scrOnline" class="screen select" hidden>
+    <!-- Play friends (ui/online.js, css/95-lobby.css): you · your match · the room. The Fight Card is one button that opens the fighter select -->
     <div class="on2">
       <header class="sel-head">
         <button class="back" id="onBack" aria-label="Back"></button>
         <div class="grow"><div class="kicker on-status" id="onStatus">Connecting</div><h2>Play friends</h2></div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="onTokens">0</span></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="onTokens">0</span></div>
       </header>
       <div class="on-grid">
+        <div class="on-fc" id="onFc">
+          <button class="on-fcb" id="onChange">
+            <span class="on-fa" aria-hidden="true"><i class="rays"></i><canvas class="on-art" id="onArt"></canvas></span>
+            <span class="on-ft"><b id="onFName"></b><span class="on-fs"><i id="onFDot"></i><span id="onFSkin"></span><em id="onFRole"></em></span><small>You · tap to change</small></span>
+            <span class="on-chg" aria-hidden="true">⇄</span>
+          </button>
+          <div class="on-plate"><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden></div>
+        </div>
         <div class="on-card on-me">
-          <div class="on-who"><canvas class="on-art" id="onArt"></canvas><div><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden><span id="onMyFighter"></span><button class="link" id="onChange">Change fighter</button></div></div>
+          <div class="kick">Your match</div>
           <div class="on-rules" id="onRules">
             <div class="rule-row"><span>Mode</span><span class="chips" id="ruleM"></span></div>
             <div class="rule-row" id="rowL"><span>Lives</span><span class="chips" id="ruleL"></span></div>
@@ -2408,18 +2759,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <div class="rule-row" id="rowLv" hidden><span>Level</span><span class="chips" id="ruleLv"></span></div>
           </div>
           <button class="btn primary" id="onHost"><span>Host a match</span></button>
-          <p class="on-note" id="onNote"></p>
-        </div>
-        <div class="on-card on-side scroll">
           <div class="on-invite" id="onInvite" hidden>
             <b id="onInvT">Your match is open</b>
             <div class="on-link" id="onLink"></div>
             <div class="on-link-btns"><button class="chip" id="onCopy">Copy link</button><button class="chip" id="onShare" hidden>Share</button></div>
           </div>
-          <div class="kicker">Open matches</div>
+          <p class="on-note" id="onNote"></p>
+        </div>
+        <div class="on-card on-side scroll">
+          <div class="kick">Open matches</div>
           <ul class="on-list" id="onList"></ul>
-          <div class="kicker">Here now</div>
-          <p class="on-here" id="onHere">Just you.</p>
+          <div class="kick">Here now</div>
+          <div class="on-here" id="onHere"></div>
           <p class="on-help" id="onHelp"></p>
         </div>
       </div>
@@ -24221,7 +24572,7 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, pending: null };   // blv: the boss difficulty (Practice vs a boss)
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0 };   // blv: the boss difficulty (Practice vs a boss)
 const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
@@ -24245,9 +24596,8 @@ function statBars(spec) {
   const q = (v, a, b) => clamp(Math.round(1 + ((v - a) / (b - a)) * 4), 1, 5);
   return [["Power", q(heavy, 11, 18)], ["Speed", q(s.run, 4.6, 7.4)], ["Weight", q(s.weight, 82, 120)], ["Air", q(airH, 260, 560)]];
 }
-// put an owned skin on a fighter (the select screen's swatches and the Account locker both do this)
+// put an owned skin on a fighter (the Skin Rack, ui/skins.js, and the Account locker both do this)
 function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
-function selPalIdx(spec) { return sel.pending && sel.pending.id === spec.id ? sel.pending.i : P.pal[spec.id] || 0; }
 /* The roster is built once and then only restyled, so the pick can scale up (CSS) instead of being redrawn.
    Tiles keep the class "tile" (the tests click them by it). */
 function buildTiles() {
@@ -24261,7 +24611,7 @@ function buildTiles() {
       b.addEventListener("click", () => {
         Sfx.init(); if (sel.fighter === spec.id) { Sfx.ui(); return; }
         Sfx.uiFlip();
-        sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
+        sel.fighter = spec.id; P.last = spec.id; saveProfile();
         buildTiles(); buildDetail();
       });
       wrap.appendChild(b);
@@ -24278,8 +24628,8 @@ function buildTiles() {
 // restart a one-shot CSS animation (the stage name and model when the fighter changes)
 function slReplay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function buildDetail() {
-  const spec = FIG[sel.fighter], pi = selPalIdx(spec), pal = spec.palettes[pi] || spec.palettes[0], c = col(pal);
-  // the whole screen tints to the skin being looked at (registered properties, so the tint eases over in CSS)
+  const spec = FIG[sel.fighter], pi = palIdx(spec.id), pal = spec.palettes[pi] || spec.palettes[0], c = col(pal);
+  // the whole screen tints to the worn skin (registered properties, so the tint eases over in CSS)
   screens.select.style.setProperty("--sfc", c);
   screens.select.style.setProperty("--sfcg", rgba(c, 0.42));
   screens.select.style.setProperty("--sfct", rgba(c, 0.13));
@@ -24299,29 +24649,8 @@ function buildDetail() {
   masteryDetail(spec);   // ui/mastery.js: the MASTERY row of the stats card
   $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
-  const pals = $("dPals"); pals.innerHTML = "";
-  spec.palettes.forEach((p, i) => {
-    const own = P.owned[spec.id].includes(i), cur = (P.pal[spec.id] || 0) === i, pend = !!sel.pending && sel.pending.id === spec.id && sel.pending.i === i;
-    const b = document.createElement("button");
-    b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
-    b.style.setProperty("--c", col(p));
-    b.title = p.name;
-    // a Road skin (p.road: the boss that gives it) is never sold: locked, it says who to beat instead of a price
-    if (p.road) b.classList.add("road");
-    b.setAttribute("aria-label", `${p.name}${own ? "" : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
-    b.setAttribute("aria-pressed", String(own ? cur : pend));
-    b.innerHTML = `<i></i><small>${own ? p.name : p.road ? "Road" : `<span class="tokglyph"></span>${p.price}`}</small>`;
-    b.addEventListener("click", () => {
-      Sfx.init(); Sfx.ui();
-      if (own) { equipSkin(spec.id, i); sel.pending = null; }
-      else sel.pending = { id: spec.id, i }; // locked: preview it on the model; the Upgrade button buys it
-      buildTiles(); buildDetail();
-    });
-    pals.appendChild(b);
-  });
-  $("dNote").textContent = skinNote(spec, pi);
-  // the portrait only has the base look: any other skin (equipped or a locked one being previewed) stands in the stage corner as the
-  // model drawn in a match
+  skinsBar(spec, pi);   // ui/skins.js: the Skins bar under the stage (the worn skin, SKINS n/7); a tap opens the Skin Rack
+  // the portrait only has the base look: any other worn skin stands in the stage corner as the model drawn in a match
   screens.select.classList.toggle("sl-skin", pi !== 0);
   cardArt.length = 0;
   if (pi !== 0) {
@@ -24330,52 +24659,26 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = P.tokens;
-  updateUpgrade();
+  if (sel.mode === "online") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby: it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
-function skinNote(spec, i) {
-  const p = spec.palettes[i], fx = p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i];
-  const how = p.road && !(P.owned[spec.id] || []).includes(i) ? ` Beat ${roadBossName(p.road)} on the Road with ${spec.name} to get it.` : "";
-  return `${p.name}: ${fx || "base look"}.${how}`;
-}
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
-function updateUpgrade() {
-  const btn = $("selUp"), pd = sel.pending, road = !!pd && !!FIG[pd.id].palettes[pd.i].road;   // a Road skin can't be bought
-  btn.hidden = !pd || road;
-  screens.select.classList.toggle("sl-pend", !!pd && !road);
-  if (!pd || road) return;
-  const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
-  btn.disabled = short > 0;
-  btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
-  if (short > 0) $("dNote").textContent = `${short} more chips needed. ${skinNote(spec, pd.i)}`;   // the shortage first: small phones clamp the note
-  btn.setAttribute("aria-label", short > 0 ? `${p.name} costs ${p.price} chips, you need ${short} more` : `Upgrade ${spec.name} to ${p.name} for ${p.price} chips`);
-}
-function buyPending() {
-  const pd = sel.pending;
-  if (!pd) return;
-  const spec = FIG[pd.id], p = spec.palettes[pd.i];
-  if (p.road || P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
-  P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
-  Sfx.uiCoin();
-  buildTiles(); buildDetail();
-  $("dNote").textContent = `Upgraded to ${p.name}. ${FXTEXT[spec.id][pd.i] || ""}`.trim();
-}
 // a tall, narrow stage (desktop) shows the model smaller so wings and tails stay in view
 function artFit(a) { const w = a.cv.clientWidth, h = a.cv.clientHeight || 1; return Math.min(a.fit || 0.7, Math.max(0.42, (a.fit || 0.7) * 1.1 * w / h)); }
 // models much wider than tall (the Reaper's scythe): how wide the drawing is and how far its middle sits off the feet, in world units; the model shrinks to fit that width
 const ART_SPAN = { reaper: { span: 118, dx: 25 } };
-function drawCards(tk) {
-  for (const a of cardArt) {
-    const r = { width: a.cv.clientWidth, height: a.cv.clientHeight };
-    if (!r.width) continue;
-    const w = Math.round(r.width * DPR), h = Math.round(r.height * DPR);
-    if (a.cv.width !== w || a.cv.height !== h) { a.cv.width = w; a.cv.height = h; }
-    const c = a.cv.getContext("2d");
-    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
-    const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
-    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc * (a.f.facing || 1) : 0), h * (a.bottom || 0.95));
-    drawFighter(c, a.f, tk);
-  }
+function drawCards(tk) { for (const a of cardArt) paintModel(a, tk); }
+// one model on its canvas: a = { cv, f (a fighter from newGame), fit (share of the height), bottom (where the feet stand) }; the Skin Rack draws its cards with it too
+function paintModel(a, tk) {
+  const r = { width: a.cv.clientWidth, height: a.cv.clientHeight };
+  if (!r.width) return;
+  const w = Math.round(r.width * DPR), h = Math.round(r.height * DPR);
+  if (a.cv.width !== w || a.cv.height !== h) { a.cv.width = w; a.cv.height = h; }
+  const c = a.cv.getContext("2d");
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
+  const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
+  c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc * (a.f.facing || 1) : 0), h * (a.bottom || 0.95));
+  drawFighter(c, a.f, tk);
 }
 /* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list */
 const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
@@ -24407,14 +24710,14 @@ for (const [btn, pop] of SEL_PICKS) {
 }
 app.addEventListener("click", (e) => { if (!e.target.closest(".pickwrap")) closePops(); });
 function openSelect(m) {
-  sel.mode = m; sel.pending = null;
+  sel.mode = m;
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -24452,7 +24755,7 @@ function startMatch() {
 function enterMatchUI() {
   finStop();
   mode = "match"; paused = false; lastCount = 0;
-  show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false);
+  show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)
   $("hud").hidden = false; $("ctl").hidden = !touchUI; $("netBadge").hidden = true; $("pingBadge").hidden = true; $("pingBadge").textContent = "";
   [0, 1].forEach((i) => {
     const f = G.fighters[i], el = $("pc" + i);
@@ -26555,6 +26858,179 @@ for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => 
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open
 setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
 window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
+/* ===================== the Skin Rack (UI only; Fable's design, /mnt/project-files/skins-lobby/fable-design.md) =====================
+   The fighter select shows one Skins bar under the stage (#dSkins: the worn skin, its effect and SKINS n/7). A tap opens #scrSkins over
+   the select: the looked-at skin in big (the model drawn live in it, its name, its effect and one action), then the four chip skins and
+   the three Road skins as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
+   with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
+   looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css. */
+const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0 };
+const SK_CHIPS_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
+screens.skins = $("scrSkins");
+const skOwns = (id, i) => (P.owned[id] || [0]).includes(i);
+const skCount = (spec) => spec.palettes.reduce((n, p, i) => n + (skOwns(spec.id, i) ? 1 : 0), 0);
+// the effect line: the chip skins' FXTEXT, a Road skin's ROADFX (skinfx.js)
+const skFx = (spec, i) => `${(spec.palettes[i].road ? ROADFX[spec.palettes[i].road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`;
+const skRegOf = (p) => ROAD_REG.findIndex((g) => g.boss === p.road);
+// worn, own (tap to wear), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
+function skState(spec, i) {
+  const p = spec.palettes[i];
+  if (skOwns(spec.id, i)) return palIdx(spec.id) === i ? "worn" : "own";
+  if (p.road) return roadRegOpen(roadGet(), skRegOf(p)) ? "road" : "shut";
+  return P.tokens >= p.price ? "buy" : "short";
+}
+// a Road skin: who gives it and what stands between you and him (the card's short line, the preview's two lines)
+function skRoad(spec, i) {
+  const p = spec.palettes[i], k = skRegOf(p), reg = ROAD_REG[k], boss = BL.BOSSES.find((b) => b.id === p.road), r = roadGet();
+  if (!reg || !boss) return { foot: "Road", how: "Won on the Road.", why: "" };
+  const how = `Beat ${boss.name} on the Road with ${spec.name}.`;
+  if (!roadRegOpen(r, k)) return { foot: `${reg.name} · locked`, how, why: k > 0 ? `${reg.name} opens once ${roadBossSpec(k - 1).name} is beaten.` : `${reg.name} isn't open yet.` };
+  let why;
+  if (roadBossBits(r, k)) {   // beaten already: by whom (the fighter that has his skin), and every fighter wins his own
+    const o = FIGHTERS.find((f) => f.id !== spec.id && skOwns(f.id, roadSkinOf(f, p.road)));
+    why = o ? `You beat him with ${o.name} · every fighter wins his own.` : `Every fighter wins his own: beat him with ${spec.name}.`;
+  } else why = roadGateOpen(r, k) ? `${reg.name} · his fence is open.` : `${reg.name} · his fence opens at ${ROAD_GATE} stars · you have ${roadRegStars(r, k)}.`;
+  return { foot: `Beat ${boss.name}`, how, why };
+}
+
+/* ----- the Skins bar on the fighter select (buildDetail calls it) ----- */
+function skinsBar(spec, pi) {
+  const p = spec.palettes[pi] || spec.palettes[0], n = skCount(spec), bar = $("dSkins");
+  bar.style.setProperty("--c", col(p));
+  $("dSkName").textContent = p.name;
+  $("dSkRoad").hidden = !p.road;
+  $("dSkFx").textContent = skFx(spec, pi);
+  $("dSkN").textContent = `${n}/${spec.palettes.length}`;
+  bar.setAttribute("aria-label", `Skins. ${spec.name} wears ${p.name}. ${n} of ${spec.palettes.length} owned`);
+}
+$("dSkins").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); openSkins(sel.fighter); });
+
+/* ----- the sheet ----- */
+function openSkins(id) {
+  if (!FIG[id]) return;
+  Object.assign(SK, { id, i: palIdx(id), art: null, cards: [] });
+  skDisarm();
+  modal("skins", true);
+  skRender(true);
+}
+function closeSkins() {
+  skDisarm(); clearTimeout(SK.yoursT); cancelAnimationFrame(SK.coin);
+  modal("skins", false); SK.id = null; SK.art = null; SK.cards = [];
+}
+function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
+// the cards are built when the sheet opens (their models drawn once); every change after that only restyles them
+function skCard(spec, i) {
+  const p = spec.palettes[i], b = document.createElement("button");
+  b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
+  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
+  b.querySelector(".sk-f b").textContent = p.name;
+  b.addEventListener("click", () => skTap(i));
+  const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
+  f.x = 0; f.y = 0; f.facing = -1;
+  SK.cards.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
+  return b;
+}
+function skDrawCards() { for (const a of SK.cards) paintModel(a, 0); }
+function skRender(full) {
+  const spec = FIG[SK.id];
+  if (!spec) return;
+  const n = spec.palettes.length, own = skCount(spec);
+  if (full) {
+    $("skFig").textContent = spec.name;
+    $("skRoadSub").textContent = `won from the bosses, with ${spec.name}`;
+    const chip = $("skChip"), road = $("skRoad");
+    chip.innerHTML = ""; road.innerHTML = ""; SK.cards = [];
+    spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skCard(spec, i)));
+    skDrawCards();
+  }
+  $("skOwned").textContent = `${own} / ${n} owned`;
+  if (!SK.coin) $("skTokens").textContent = P.tokens;
+  for (const b of $("skSheet").querySelectorAll(".sk")) {
+    const i = +b.dataset.i, p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small");
+    b.className = `sk ${st}${i === SK.i ? " sel" : ""}`;
+    if (st === "worn") small.textContent = "Worn";
+    else if (st === "own") small.textContent = "Tap to wear";
+    else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${p.price}`;
+    else small.textContent = skRoad(spec, i).foot;
+    b.setAttribute("aria-pressed", String(i === SK.i));
+    b.setAttribute("aria-label", `${p.name}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${p.price} chips` : skRoad(spec, i).how}`);
+  }
+  skPreview(spec);
+}
+function skPreview(spec) {
+  const i = SK.i, p = spec.palettes[i], st = skState(spec, i);
+  $("skPrev").style.setProperty("--c", col(p)); $("skPrev").style.setProperty("--cg", rgba(col(p), 0.42));
+  $("skPrev").className = `sk-prev ${st}`;
+  $("skName").textContent = p.name;
+  $("skRoadTag").hidden = !p.road;
+  $("skFx").textContent = skFx(spec, i);
+  const act = $("skAct");
+  if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;
+  else if (st === "own") act.innerHTML = `<button class="btn primary sk-go" id="skGo"><span>Wear</span></button>`;
+  else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${p.price}</span></button><p class="sk-l2">You have ${P.tokens} · ${P.tokens - p.price} left after</p>`;
+  else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${p.price}</span><p class="sk-l1">${p.price - P.tokens} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
+  else { const rd = skRoad(spec, i); act.innerHTML = `<p class="sk-l1 sk-lock">${rd.how}</p><p class="sk-l2">${rd.why}</p>`; }
+  const go = $("skGo");
+  if (go) go.addEventListener("click", skGo);
+  if (!SK.art || SK.art.f.spec !== spec || SK.art.i !== i) {
+    const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
+    f.x = 0; f.y = 0; f.facing = -1;
+    SK.art = { cv: $("skArt"), f, i, fit: 0.8, bottom: 0.94 };
+  }
+}
+// the loop draws the preview while the sheet is open (loop.js)
+function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
+function skTap(i) {
+  Sfx.init();
+  const spec = FIG[SK.id], st = skState(spec, i);
+  skDisarm();
+  SK.i = i;
+  if (st === "own") { equipSkin(spec.id, i); Sfx.uiFlip(); skChanged(); return; }   // owned: worn at once
+  if (st === "short" || st === "road" || st === "shut") Sfx.uiNo(); else Sfx.ui();   // looking is free; the thud says it is locked
+  skRender();
+}
+function skGo() {
+  Sfx.init();
+  const spec = FIG[SK.id], i = SK.i, p = spec.palettes[i], st = skState(spec, i);
+  if (st === "own") { equipSkin(spec.id, i); Sfx.uiFlip(); skChanged(); return; }
+  if (st !== "buy") return;
+  if (!SK.arm) {   // the first tap arms the button (ember, "Sure?") for 3 s
+    SK.arm = true; Sfx.ui();
+    SK.armT = setTimeout(() => { SK.arm = false; if (SK.id) skRender(); }, 3000);
+    skRender(); return;
+  }
+  skDisarm();
+  if (P.tokens < p.price || skOwns(spec.id, i)) { skRender(); return; }
+  const was = P.tokens;
+  P.tokens -= p.price; P.owned[spec.id] = [...(P.owned[spec.id] || [0]), i]; P.pal[spec.id] = i; saveProfile();
+  Sfx.uiCoin();
+  skCoin(was, P.tokens);
+  skChanged();
+  // YOURS! on the preview for 1.2 s
+  const y = $("skYours"); y.hidden = false; slReplay(y, "sk-pop");
+  clearTimeout(SK.yoursT); SK.yoursT = setTimeout(() => { y.hidden = true; }, 1200);
+}
+// the band's coin counts down to the new total (400 ms; at once with reduced motion)
+function skCoin(from, to) {
+  const el = $("skTokens"), t0 = performance.now();
+  cancelAnimationFrame(SK.coin); SK.coin = 0;
+  if (resCalm()) { el.textContent = to; return; }
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / 400);
+    el.textContent = Math.round(from + (to - from) * k);
+    SK.coin = k < 1 ? requestAnimationFrame(step) : 0;
+  };
+  SK.coin = requestAnimationFrame(step);
+}
+// after a wear or a buy: the sheet restyles and the select behind it (its tile colour, the stage model, the Skins bar) follows
+function skChanged() { skRender(); if (mode === "select") { buildTiles(); buildDetail(); } }
+$("skClose").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); closeSkins(); });
+// a tap on the dimmed backdrop closes; a tap anywhere but the armed button puts Buy back
+screens.skins.addEventListener("click", (e) => { if (e.target === screens.skins) { Sfx.init(); Sfx.uiBack(); closeSkins(); } });
+$("skSheet").addEventListener("click", (e) => { if (SK.arm && !e.target.closest("#skGo")) { skDisarm(); skRender(); } }, true);
+window.addEventListener("keydown", (e) => { if (e.code === "Escape" && SK.id && !screens.skins.hidden) { e.preventDefault(); closeSkins(); } });
+// the cards' models are redrawn when the sheet changes size (a phone turned)
+if (window.ResizeObserver) new ResizeObserver(() => { if (SK.id) skDrawCards(); }).observe($("skSheet"));
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in
@@ -26709,8 +27185,7 @@ async function renderOnline() {
   const st = $("onStatus"), hostBtn = $("onHost"), note = $("onNote"), list = $("onList");
   $("onTokens").textContent = P.tokens;
   buildRules();
-  const spec = FIG[sel.fighter];
-  $("onMyFighter").textContent = `${spec.name} · ${spec.role}`;
+  fightCard();
   if (NET.tried && !NET.ok) {
     st.textContent = NET.dead ? "Disconnected from online play" : "Online play isn't available here";
     st.className = "kicker on-status bad";
@@ -26720,7 +27195,7 @@ async function renderOnline() {
     const li = document.createElement("li"); li.className = "empty";
     li.textContent = NET.standalone ? "Online play needs the game's web link. A downloaded copy can't reach other players." : "Online play works when this page is open in Claude and you're signed in. It doesn't work from a public link or a downloaded copy.";
     list.appendChild(li);
-    $("onHere").textContent = "";
+    hereNow(null);
     note.textContent = ""; note.className = "on-note";
     return;
   }
@@ -26760,10 +27235,16 @@ async function renderOnline() {
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
     const bo = validBo(h.presence.bo) ? h.presence.bo : null;   // a boss fight: the row reads as an invitation to team up
-    sp.textContent = old ? "Different game version. Both of you reload the page." :
-      (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter") +
-      (bo ? ` · vs ${boSpec(bo).name} · ${BOSS_LV[bo.lv]}` : validRules(h.presence.r) ? ` · ${ruleText(h.presence.r)}` : "");
+    if (old) sp.textContent = "Different game version. Both of you reload the page.";
+    else {
+      sp.textContent = (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter");
+      if (bo) { const em = document.createElement("em"); em.textContent = `vs ${boSpec(bo).name}`; sp.append(" · ", em, ` · ${BOSS_LV[bo.lv]}`); }
+      else if (validRules(h.presence.r)) sp.append(` · ${ruleText(h.presence.r)}`);
+    }
     who.append(b, sp);
+    const por = document.createElement("i"); por.className = "on-por";   // the host's fighter
+    if (hf && PORTRAITS[hf.id]) { const im = document.createElement("img"); im.src = PORTRAITS[hf.id]; im.alt = ""; por.appendChild(im); }
+    li.appendChild(por);
     const btn = document.createElement("button"); btn.className = "chip";
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
     btn.textContent = joining ? "Joining" : bo ? "Team up" : "Join";
@@ -26773,12 +27254,11 @@ async function renderOnline() {
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
-  $("onHere").textContent = others.length
-    ? others.map((p) => `${names[p.peer] || "Friend"}${p.presence && p.presence.busy ? " (in a match)" : ""}`).join(", ")
-    : "Just you. Friends show up here when they open this page.";
+  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy) })));
   hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
   const ob = onBoss().on;
   hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : "Host a match";
+  hostBtn.classList.toggle("primary", NET.phase !== "hosting");   // Cancel is the ink button
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   note.textContent =
     NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
@@ -26786,17 +27266,43 @@ async function renderOnline() {
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
     NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
       : NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
-  const inv = $("onInvite");
+  const inv = $("onInvite"), invWas = inv.hidden;
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
     $("onInvT").textContent = ob ? "Your boss fight is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
+    if (invWas) inv.scrollIntoView({ block: "nearest" });   // on a small phone the host card scrolls: the link comes into view
   }
   $("onHelp").textContent = NET.standalone
     ? "No account needed. Matches connect while both of you have the page open."
     : "Friends need a Claude account and access to this page. Share it from the page's Share menu, then you both open it and pick Play friends. A public link won't connect.";
 }
+// "Here now": a pill per player (a mint dot; grey "· in a match" when busy); rebuilt only when it changes. null = nothing (offline)
+function hereNow(ps) {
+  const box = $("onHere"), sig = JSON.stringify(ps);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig; box.replaceChildren();
+  box.classList.toggle("empty", !!ps && !ps.length);
+  if (!ps) return;
+  if (!ps.length) { box.textContent = "Just you. Friends show up here when they open this page."; return; }
+  for (const p of ps) {
+    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "");
+    el.textContent = p.busy ? `${p.n} · in a match` : p.n;
+    box.appendChild(el);
+  }
+}
+// the Fight Card: your fighter in the worn skin, its name, the skin and the role; the whole card opens the fighter select
+function fightCard() {
+  const spec = FIG[sel.fighter], pi = palIdx(spec.id), p = spec.palettes[pi] || spec.palettes[0], fc = $("onFc");
+  fc.style.setProperty("--c", col(p)); fc.style.setProperty("--cg", rgba(col(p), 0.42));
+  $("onFName").textContent = spec.name;
+  $("onFSkin").textContent = p.name;
+  $("onFRole").textContent = spec.role;
+  $("onChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${p.name}. Change fighter`);
+}
+// back from the fighter select: the card pops and the model comes in (css/95-lobby.css)
+function fightCardIn() { const fc = $("onFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
 function inviteLink() { return location.origin + location.pathname + "#join-" + NET.hostCode; }
 function onlineArtFighter() {
   const spec = FIG[sel.fighter], o = onlineArtFighter;
@@ -26807,15 +27313,13 @@ function onlineArtFighter() {
   }
   return o.f;
 }
+// the Fight Card's model, live in the worn skin (the select's paintModel: 88 % of the art area, the Reaper's scythe fitted)
+const onArt = { cv: null, f: null, fit: 0.88, bottom: 0.93 };
 function drawOnlineArt(tk) {
-  const cvA = $("onArt"); if (!cvA || !cvA.clientWidth) return;
-  onlineArtFighter();
-  const w = Math.round(cvA.clientWidth * DPR), h = Math.round(cvA.clientHeight * DPR);
-  if (cvA.width !== w || cvA.height !== h) { cvA.width = w; cvA.height = h; }
-  const c = cvA.getContext("2d"); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
-  const f = onlineArtFighter.f, sc = (h * 0.8) / f.s.h;
-  c.setTransform(sc, 0, 0, sc, w * 0.5, h * 0.92);
-  drawFighter(c, f, tk);
+  onArt.cv = onArt.cv || $("onArt");
+  onArt.f = onlineArtFighter();
+  onArt.fit = onArt.cv.clientWidth > onArt.cv.clientHeight ? 0.76 : 0.88;   // the upright card's art is wide and short: room for the hats
+  paintModel(onArt, tk);
 }
 
 async function openMatchRoom(code) {
@@ -27270,9 +27774,9 @@ tap("bDaily", dailyOpen);
 tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
-tap("selBack", () => { if (sel.mode === "road") openRoad(); else goMenu(); });
-tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+// from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
+tap("selBack", () => { if (sel.mode === "road") openRoad(); else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -28462,7 +28966,7 @@ function renderStats() {
 function renderLocker() {
   const pan = $("acPanL"); pan.innerHTML = "";
   masteryCollection(pan);   // ui/mastery.js: KO pages, Ultimate KOs, combo routes
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen; Road skins are won from the Road's bosses."));
+  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are in the Skins menu on the fighter select: chip skins are bought there, Road skins are won from the Road's bosses."));
   const grid = acMk("div", "lk");
   for (const f of FIGHTERS) {
     const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
@@ -28479,7 +28983,7 @@ function renderLocker() {
       if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
       if (has) b.addEventListener("click", () => {
         Sfx.init(); Sfx.ui();
-        if (equipSkin(f.id, i)) { if (typeof sel === "object" && sel.pending && sel.pending.id === f.id) sel.pending = null; renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
+        if (equipSkin(f.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
       });
       row.appendChild(b);
     });
@@ -28970,7 +29474,7 @@ function frame(now) {
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
-  if (mode === "select") drawCards(tick);
+  if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }

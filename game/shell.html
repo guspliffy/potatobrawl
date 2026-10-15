@@ -111,12 +111,6 @@ button { font: inherit; color: inherit; }
 #pingBadge { order: 3; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.06em; padding: 0 7px; border-radius: 3px; background: rgba(14, 16, 34, 0.6); color: var(--mute); font-variant-numeric: tabular-nums; }
 #pingBadge::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: currentColor; }
 #pingBadge.good { color: #7fd69a; } #pingBadge.ok { color: var(--sand); } #pingBadge.bad { color: var(--ember); }
-.on-rules { display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
-.on-rules .kicker span { color: var(--mute); text-transform: none; letter-spacing: 0; font-weight: 600; }
-.rule-row { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
-.rule-row > span:first-child { width: 58px; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
-.rule-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.rule-row .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
 .chip:disabled { opacity: 0.45; cursor: default; }
 #banner.game .b-main { color: var(--ember); }
 #banner.show .b-main { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
@@ -305,14 +299,13 @@ button { font: inherit; color: inherit; }
 .iconbtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
 
 /* ---------- fighter select: the screen itself is styled in game/css/30-select.css; these shared rules stay for the
-   online and cup screens (.select background, .sel-head, .back, .tokpill), the pickers' .pop lists and the locker's .sw swatches ---------- */
+   online and cup screens (.select background, .sel-head, .back), the pickers' .pop lists and the locker's .sw swatches ---------- */
 .select { background: rgba(14, 16, 34, 0.93); }
 .sel-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .sel-head h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(26px, calc(var(--um) * 6), 40px); line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .sel-head .grow { flex: 1; min-width: 0; }
 .back { appearance: none; border: 1px solid var(--line); background: var(--raise); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
-.tokpill { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--sand); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sel-head .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.portrait .sel-head { flex-wrap: wrap; row-gap: 8px; }
 .pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 6; background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(110px, auto)); gap: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
@@ -324,50 +317,10 @@ button { font: inherit; color: inherit; }
 .sw.cur { color: var(--text); }
 .sw.cur i { box-shadow: 0 0 0 2px var(--text); }
 .sw.lock i::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: rgba(14, 16, 34, 0.55); }
-.sw.pending i { box-shadow: 0 0 0 2px var(--sand); }
 .sw i em { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); font-style: normal; font-size: 8px; line-height: 1; letter-spacing: -1px; color: #f4c95d; text-shadow: 0 0 2px #0e1022, 0 0 2px #0e1022; z-index: 1; white-space: nowrap; }
 .sw .tokglyph { width: 1.2em; height: 0.95em; margin-right: 0.15em; }
 .sw:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
-/* ---------- online ---------- */
-.on2 { position: absolute; inset: 0; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
-  padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
-.on-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 1fr) minmax(260px, 1fr); gap: 12px; align-items: start; }
-.on-card { background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
-.on-side { overflow-y: auto; max-height: 100%; }
-.on-who { display: flex; gap: 12px; align-items: center; }
-.on-who > div { display: flex; flex-direction: column; min-width: 0; align-items: flex-start; }
-.on-who b { font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; line-height: 1.1; overflow-wrap: anywhere; }
-.on-who span { font-size: 14px; color: var(--mute); }
-.on-art { width: 58px; height: 58px; flex: none; border-radius: 6px; background: var(--raise); }
-.on-card .btn { padding-left: 22px; margin-top: 4px; }
-.on-note { margin: 0; font-size: 13px; color: var(--mute); }
-.on-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 15ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
-.on-name:focus { outline: 2px solid var(--sand); outline-offset: 1px; }
-.on-invite { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: rgba(243, 217, 164, 0.08); border: 1px solid rgba(243, 217, 164, 0.3); border-radius: 6px; }
-.on-invite b { font-family: var(--display); font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--sand); }
-.on-link { font: 13px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--text); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
-.on-link-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.on-list li.invited { box-shadow: inset 3px 0 0 var(--sand); }
-.on-note.live { color: var(--sand); }
-.on-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.on-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--raise); border-radius: 6px; min-width: 0; }
-.on-list li .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.on-list li .who b { font-weight: 600; overflow-wrap: anywhere; }
-.on-list li .who span { font-size: 12px; color: var(--mute); }
-.on-list li.empty { background: none; padding: 0; color: var(--mute); font-size: 14px; }
-.on-list li.old .who span { color: var(--ember); }
-.on-list .chip { flex: none; }
-.on-here { margin: -4px 0 0; font-size: 14px; color: var(--mute); }
-.on-help { margin: 4px 0 0; font-size: 13px; color: var(--mute); }
-.on-status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mute); margin-right: 8px; vertical-align: 1px; }
-.on-status.ok::before { background: var(--mint); }
-.on-status.bad::before { background: var(--ember); }
-.on-rules { display: flex; flex-direction: column; gap: 6px; }
-.rule-row { display: flex; align-items: center; gap: 8px 10px; }
-.rule-row > span:first-child { width: 58px; flex: none; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
-.rule-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.rule-row .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
 .chip { appearance: none; cursor: pointer; border: 1px solid var(--line); background: var(--raise); color: var(--text); border-radius: 999px; padding: 6px 14px; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; min-height: 36px; }
 .chip.on { background: var(--sand); color: var(--ink); border-color: var(--sand); }
 .chip:disabled { opacity: 0.45; cursor: default; }
@@ -578,11 +531,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .btn { min-height: 42px; font-size: 18px; padding: 7px 20px; }
 #app.short .sheet { padding: 14px 18px; gap: 10px; }
 #app.short .sheet h2 { font-size: 44px; }
-#app.short .sel2, #app.short .on2 { gap: 8px; padding-top: 8px; }
 #app.short .back, #app.short .iconbtn { width: 38px; height: 38px; }
 #app.short .detail { padding: 10px; gap: 12px; }
 #app.short .d-blurb, #app.short .d-sig { font-size: 13px; line-height: 1.35; }
-#app.short .on-card { padding: 10px 12px; gap: 8px; }
 #app.short .res2 { gap: 10px 20px; }
 #app.short .acct-sheet { gap: 8px; }
 #app.short .ac-me { gap: 8px; }
@@ -622,8 +573,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .help-fig { max-height: calc(var(--uh) * 36); }
 #app.tiny .help-go .btn { min-height: 36px; }
 /* phone held upright with the sideways view turned off: stack everything and scroll */
-#app.portrait .sel2, #app.portrait .on2 { display: flex; flex-direction: column; overflow-y: auto; touch-action: pan-y; }
-#app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
 /* ---------- tournament (ui/cup.js): bracket screen ---------- */
@@ -829,10 +778,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <canvas class="sl-art" id="dArt" aria-hidden="true"></canvas>
             <div class="sl-name" id="dNameBox"><b id="dName"></b><span id="dRole"></span></div>
           </div>
-          <div class="sl-skins">
-            <div class="sl-sws" id="dPals" role="group" aria-label="Skins"></div>
-            <div class="sl-note" id="dNote" aria-live="polite"></div>
-          </div>
+          <!-- the Skins bar (ui/skins.js, css/90-skins.css): the worn skin and SKINS n/7; it opens the Skin Rack (#scrSkins) -->
+          <button class="sl-skins" id="dSkins" aria-haspopup="dialog">
+            <i class="sk-dot" aria-hidden="true"></i>
+            <span class="sk-txt"><span class="sk-nm"><b id="dSkName"></b><em class="sk-rt" id="dSkRoad" hidden>Road</em></span><small id="dSkFx"></small></span>
+            <span class="sk-pill" aria-hidden="true"><span>Skins</span><b id="dSkN"></b><i></i></span>
+          </button>
         </div>
         <div class="sl-info">
           <p class="sl-blurb" id="dBlurb"></p>
@@ -841,8 +792,30 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="card sl-move ult" id="dUlt"></div>
           <div class="sl-go">
             <button class="btn primary sl-fight" id="selGo"><span>Fight</span></button>
-            <button class="btn up sl-up" id="selUp" hidden><span>Upgrade</span></button>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the Skin Rack (ui/skins.js, css/90-skins.css): the looked-at skin in big, then the chip skins and the Road skins as cards -->
+  <section id="scrSkins" class="screen modal" hidden>
+    <div class="sheet sk-sheet" id="skSheet" role="dialog" aria-modal="true" aria-labelledby="skTitle">
+      <header class="sh-head sk-head"><h3 id="skTitle"><span id="skFig"></span> <em>Skins</em></h3><span class="kick" id="skOwned"></span><div class="coin chips sk-coin" aria-label="Chips"><span id="skTokens">0</span></div><button class="round x" id="skClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sk-body">
+        <div class="sk-prev" id="skPrev">
+          <div class="sk-pa" aria-hidden="true"><i class="rays"></i><canvas id="skArt"></canvas><span class="tag mint sk-yours" id="skYours" hidden>Yours!</span></div>
+          <div class="sk-pt">
+            <div class="sk-pn"><b id="skName"></b><em class="sk-rt" id="skRoadTag" hidden>Road</em></div>
+            <p class="sk-fx" id="skFx"></p>
+            <div class="sk-act" id="skAct" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="sk-rack">
+          <div class="sk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div>
+          <div class="sk-row" id="skChip" role="group" aria-label="Chip skins"></div>
+          <div class="sk-k"><b>Road skins</b><span id="skRoadSub"></span></div>
+          <div class="sk-row r3" id="skRoad" role="group" aria-label="Road skins"></div>
         </div>
       </div>
     </div>
@@ -903,15 +876,24 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <section id="scrOnline" class="screen select" hidden>
+    <!-- Play friends (ui/online.js, css/95-lobby.css): you · your match · the room. The Fight Card is one button that opens the fighter select -->
     <div class="on2">
       <header class="sel-head">
         <button class="back" id="onBack" aria-label="Back"></button>
         <div class="grow"><div class="kicker on-status" id="onStatus">Connecting</div><h2>Play friends</h2></div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="onTokens">0</span></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="onTokens">0</span></div>
       </header>
       <div class="on-grid">
+        <div class="on-fc" id="onFc">
+          <button class="on-fcb" id="onChange">
+            <span class="on-fa" aria-hidden="true"><i class="rays"></i><canvas class="on-art" id="onArt"></canvas></span>
+            <span class="on-ft"><b id="onFName"></b><span class="on-fs"><i id="onFDot"></i><span id="onFSkin"></span><em id="onFRole"></em></span><small>You · tap to change</small></span>
+            <span class="on-chg" aria-hidden="true">⇄</span>
+          </button>
+          <div class="on-plate"><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden></div>
+        </div>
         <div class="on-card on-me">
-          <div class="on-who"><canvas class="on-art" id="onArt"></canvas><div><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden><span id="onMyFighter"></span><button class="link" id="onChange">Change fighter</button></div></div>
+          <div class="kick">Your match</div>
           <div class="on-rules" id="onRules">
             <div class="rule-row"><span>Mode</span><span class="chips" id="ruleM"></span></div>
             <div class="rule-row" id="rowL"><span>Lives</span><span class="chips" id="ruleL"></span></div>
@@ -921,18 +903,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <div class="rule-row" id="rowLv" hidden><span>Level</span><span class="chips" id="ruleLv"></span></div>
           </div>
           <button class="btn primary" id="onHost"><span>Host a match</span></button>
-          <p class="on-note" id="onNote"></p>
-        </div>
-        <div class="on-card on-side scroll">
           <div class="on-invite" id="onInvite" hidden>
             <b id="onInvT">Your match is open</b>
             <div class="on-link" id="onLink"></div>
             <div class="on-link-btns"><button class="chip" id="onCopy">Copy link</button><button class="chip" id="onShare" hidden>Share</button></div>
           </div>
-          <div class="kicker">Open matches</div>
+          <p class="on-note" id="onNote"></p>
+        </div>
+        <div class="on-card on-side scroll">
+          <div class="kick">Open matches</div>
           <ul class="on-list" id="onList"></ul>
-          <div class="kicker">Here now</div>
-          <p class="on-here" id="onHere">Just you.</p>
+          <div class="kick">Here now</div>
+          <div class="on-here" id="onHere"></div>
           <p class="on-help" id="onHelp"></p>
         </div>
       </div>

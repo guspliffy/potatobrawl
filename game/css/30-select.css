@@ -1,8 +1,8 @@
 /* ---------- Fighter select ("sunset ink", Fable's build step 3; menu-redesign/mockups/select_844x390.png) ----------
    Three columns: the roster (2x4 portrait tiles, slanted ink name plates), the stage (the picked fighter's portrait over a sunburst
-   and speed lines in the fighter colour, the name stroked, a role plate, the skins strip on ink with the skin note) and the info
-   column (stats, the Special and Ulti cards, FIGHT + UPGRADE). Everything is scoped to #scrSelect (#scrOnline has its own block at
-   the end). The fighter colour is the looked-at skin's `ui` colour: buildDetail sets --sfc / --sfcg (glow) / --sfct (screen tint)
+   and speed lines in the fighter colour, the name stroked, a role plate, the Skins bar on ink) and the info
+   column (stats, the Special and Ulti cards, FIGHT). The Skins bar at the stage's foot and the Skin Rack are styled in 90-skins.css. Everything is scoped to #scrSelect (#scrOnline is styled in
+   95-lobby.css). The fighter colour is the looked-at skin's `ui` colour: buildDetail sets --sfc / --sfcg (glow) / --sfct (screen tint)
    on #scrSelect; they are registered so the tint eases to a new pick. Phone landscape (844x390) is the base; #app.tiny (667x320,
    568x320), the desktop (#app:not(.short):not(.portrait)) and upright phones (#app.portrait) adjust it below. */
 @property --sfc { syntax: "<color>"; inherits: true; initial-value: #f3d9a4; }
@@ -74,7 +74,7 @@
 #scrSelect .tile.on::after { content: "YOU"; position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
 #scrSelect .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
-/* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the skins strip ---- */
+/* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the Skins bar ---- */
 #scrSelect .sl-detail { display: grid; grid-template-columns: minmax(0, 1fr) var(--iw); gap: 12px; min-height: 0; min-width: 0; }
 #scrSelect .sl-stage { position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; container-type: inline-size;
   border: 2px solid var(--ink); border-radius: 12px; background: radial-gradient(ellipse 80% 70% at 55% 42%, var(--sfcg), transparent 72%), linear-gradient(180deg, #2a2f55, #15172e);
@@ -93,7 +93,7 @@
 #scrSelect .sl-scene .speed { z-index: 4; opacity: 0.7; background: repeating-linear-gradient(-18deg, transparent 0 9px, var(--sfcg) 9px 11px);
   -webkit-mask: linear-gradient(180deg, transparent 52%, #000 80%), linear-gradient(90deg, #000, transparent 70%); -webkit-mask-composite: source-in;
   mask: linear-gradient(180deg, transparent 52%, #000 80%) intersect, linear-gradient(90deg, #000, transparent 70%); }
-/* the model: the fighter as drawn in a match, in the skin being looked at (locked skins preview here) */
+/* the model: the fighter as drawn in a match, in the worn skin */
 #scrSelect .sl-art { position: absolute; right: 1%; bottom: 3px; width: 36%; height: 60%; z-index: 2; pointer-events: none; opacity: 0; transform: translateY(10px) scale(0.92);
   transition: opacity 0.2s ease-out, transform 0.26s cubic-bezier(0.3, 1.5, 0.5, 1); }
 #scrSelect.sl-skin .sl-art { opacity: 1; transform: none; }
@@ -108,34 +108,8 @@
 #scrSelect.sl-skin .sl-art.swap { animation: slPop 0.26s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
 @keyframes slSwap { from { opacity: 0; transform: translateX(-16px); } }
 @keyframes slPop { from { opacity: 0; transform: translateY(10px) scale(0.92); } }
-/* the skins strip on ink: round swatches, a gold ring on the equipped one, chip prices on the locked ones, a white ring on a preview */
-#scrSelect .sl-skins { flex: none; position: relative; z-index: 3; display: flex; flex-direction: column; gap: 3px; padding: 4px 10px 7px; background: var(--ink); border-top: 2px solid rgba(255, 255, 255, 0.08); }
-#scrSelect .sl-sws { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-#scrSelect .sw { flex: 0 1 auto; flex-direction: row; gap: 6px; min-width: 40px; min-height: 40px; padding: 0 2px; font: 700 12px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); }
-#scrSelect .sw > i { width: 28px; height: 28px; border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16), 0 2px 0 var(--ink); transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.16s; }
-#scrSelect .sw.cur > i { box-shadow: 0 0 0 3px var(--gold), 0 2px 0 var(--ink); }
-#scrSelect .sw.pending > i { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 12px var(--sfcg); }
-#scrSelect .sw.pending > i::after { opacity: 0; }
-#scrSelect .sw small { display: inline-flex; align-items: center; font: 700 12px/1 var(--display); letter-spacing: 0.04em; white-space: nowrap; color: inherit; }
-#scrSelect .sw.cur small { color: var(--text); }
-#scrSelect .sw.lock small { color: var(--gold); }
-#scrSelect .sw.pending small { color: #fff; }
-#scrSelect .sw .tokglyph { width: 1.15em; height: 0.92em; margin-right: 0.2em; }
-#scrSelect .sw:hover > i { transform: scale(1.06); }
-#scrSelect .sw.pending:hover > i { transform: scale(1.12); }
-#scrSelect .sl-note { font: 500 11.5px/1.3 var(--body); color: var(--sand); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-#scrSelect.sl-pend .sl-note { color: #fff; }
-/* a narrow stage (small phones): the labels go under the swatches */
-@container (max-width: 268px) {
-  #scrSelect .sl-skins { padding-inline: 4px; }
-  #scrSelect .sl-sws { justify-content: space-around; gap: 2px; }
-  #scrSelect .sw { flex-direction: column; gap: 3px; min-width: 40px; padding: 0; }
-  #scrSelect .sw > i { width: 24px; height: 24px; }
-  #scrSelect .sw small { font-size: 10.5px; }
-  #scrSelect .sl-note { font-size: 10.5px; }
-}
 
-/* ---- info: stats, the Special and Ulti cards, FIGHT + UPGRADE ---- */
+/* ---- info: stats, the Special and Ulti cards, FIGHT ---- */
 #scrSelect .sl-info { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
 #scrSelect .sl-info .card { box-shadow: var(--hard), var(--bevel); }   /* no blurred shadow off the stage */
 #scrSelect .sl-blurb { display: none; margin: 0; font: 500 14px/1.4 var(--body); color: var(--mute); }
@@ -163,11 +137,6 @@
 /* a slow sheen across the gold */
 #scrSelect .sl-go .sl-fight::after { content: ""; position: absolute; top: -10%; bottom: -10%; left: -40%; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); transform: translateX(0); animation: slSheen 6s ease-in-out 1.2s infinite; pointer-events: none; }
 @keyframes slSheen { 0%, 70% { transform: translateX(0); } 100% { transform: translateX(560%); } }
-#scrSelect .sl-up > span { flex-direction: column; gap: 3px; }
-#scrSelect .sl-up small { display: inline-flex; align-items: center; font: 800 15px/1 var(--display); letter-spacing: 0.02em; color: var(--gold); }
-#scrSelect .sl-up small .tokglyph { margin-right: 0.25em; }
-#scrSelect .sl-go .sl-up:disabled { cursor: default; opacity: 1; color: var(--mute); background: linear-gradient(180deg, #2c3156, #1e2240); }
-#scrSelect .sl-up:disabled small { color: var(--mute); }
 
 /* ---- motion: the screen comes in (stage first, then the roster and the cards, 40 ms apart), all off with reduced motion ---- */
 @keyframes slIn { from { opacity: 0; transform: translateY(16px); } }
@@ -194,7 +163,6 @@
 #app.tiny #scrSelect .sl-name { left: 9px; bottom: 9px; gap: 5px; }
 #app.tiny #scrSelect .sl-name b { font-size: min(40px, 17cqw); -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink), 0 8px 18px rgba(0, 0, 0, 0.5); }
 #app.tiny #scrSelect .sl-name span { font-size: 10.5px; padding: 4px 8px 3px; }
-#app.tiny #scrSelect .sl-skins { padding: 3px 6px 5px; }
 #app.tiny #scrSelect .sl-info { gap: 7px; }
 /* the room the move texts leave takes the flavour line, as long as it fits */
 #app.tiny #scrSelect .sl-blurb { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex: 0 1 auto; min-height: 0; font-size: 12px; line-height: 1.3; padding: 0 2px; }
@@ -205,7 +173,6 @@
 #app.tiny #scrSelect .sl-go { gap: 8px; }
 #app.tiny #scrSelect .sl-go .btn { min-height: 44px; padding: 0 10px; font-size: 16px; }
 #app.tiny #scrSelect .sl-go .sl-fight { font-size: 22px; }
-#app.tiny #scrSelect .sl-up small { font-size: 13px; }
 /* tight headers: the pickers drop their small labels and the opponent's name (the avatar stays), then the title gives way to the kicker */
 @container (max-width: 700px) {
   #scrSelect .sl-ttl h2 { font-size: 22px; }
@@ -243,11 +210,6 @@
 #app:not(.short):not(.portrait) #scrSelect .sl-name { left: 20px; bottom: 20px; gap: 10px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-name b { font-size: min(76px, 15cqw); -webkit-text-stroke-width: 6px; text-shadow: 0 6px 0 var(--ink), 0 12px 28px rgba(0, 0, 0, 0.5); }
 #app:not(.short):not(.portrait) #scrSelect .sl-name span { font-size: 14px; padding: 6px 12px 5px; }
-#app:not(.short):not(.portrait) #scrSelect .sl-skins { padding: 8px 16px 10px; gap: 5px; }
-#app:not(.short):not(.portrait) #scrSelect .sw { gap: 8px; min-height: 44px; font-size: 14px; }
-#app:not(.short):not(.portrait) #scrSelect .sw > i { width: 32px; height: 32px; }
-#app:not(.short):not(.portrait) #scrSelect .sw small { font-size: 14px; }
-#app:not(.short):not(.portrait) #scrSelect .sl-note { font-size: 13px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-info { gap: 12px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-blurb { display: block; flex: none; }
 #app:not(.short):not(.portrait) #scrSelect .sl-stats { padding: 14px 16px; gap: 12px 14px; font-size: 13px; }
@@ -257,7 +219,6 @@
 #app:not(.short):not(.portrait) #scrSelect .sl-move em { font-size: 11px; padding: 3px 6px 2px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-go .btn { min-height: 60px; font-size: 21px; }
 #app:not(.short):not(.portrait) #scrSelect .sl-go .sl-fight { font-size: 32px; }
-#app:not(.short):not(.portrait) #scrSelect .sl-up small { font-size: 17px; }
 
 /* ---- upright phones (390x844): the header wraps (pickers on their own row), the roster 4 across on top, a 220 px stage, the cards
    stacked, FIGHT sticky at the bottom; the whole screen scrolls ---- */
@@ -284,25 +245,3 @@
 #app.portrait #scrSelect .sl-go { position: sticky; bottom: 0; z-index: 6; margin: auto -16px 0; padding: 14px 16px max(14px, env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(10, 11, 28, 0), rgba(10, 11, 28, 0.94) 34%); }
 #app.portrait #scrSelect .sl-go .btn { min-height: 54px; }
-
-/* ---------- Play friends (#scrOnline shares the select screen's classes): the same ink header, cards and frames ---------- */
-#scrOnline .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
-#scrOnline .sel-head .back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
-#scrOnline .sel-head h2 { color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
-#scrOnline .sel-head .kicker { color: var(--sand); font-size: 11px; }
-#scrOnline .tokpill { display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px 0 9px; border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #343b6a, #22264a);
-  box-shadow: 0 3px 0 var(--ink), var(--bevel); font-size: 19px; color: var(--gold); }
-#scrOnline .on-card { border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
-#scrOnline .on-art { border: 2px solid var(--ink); border-radius: 10px; background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(243, 217, 164, 0.25), transparent 70%), var(--night); box-shadow: 0 2px 0 var(--ink); }
-#scrOnline .on-list li { border: 2px solid var(--ink); border-radius: 9px; background: var(--raise); box-shadow: 0 2px 0 var(--ink); }
-#scrOnline .on-list li.empty { border: 0; box-shadow: none; }
-#scrOnline .on-invite { border: 2px solid var(--ink); border-radius: 10px; background: rgba(243, 217, 164, 0.1); box-shadow: inset 0 0 0 1px rgba(243, 217, 164, 0.3); }
-#scrOnline .kicker { color: var(--sand); }
-/* the host card's rule rows (Mode, then Lives / Time / Format or Boss / Level): a Boss chip's short name on the smallest phones and
-   upright (the full names wrap the row there); on the smallest phones the rows are a little tighter so the Host button stays on the screen */
-#scrOnline .rule-row .chip .s { display: none; }
-#app.tiny #scrOnline .rule-row .chip .l, #app.portrait #scrOnline .rule-row .chip .l { display: none; }
-#app.tiny #scrOnline .rule-row .chip .s, #app.portrait #scrOnline .rule-row .chip .s { display: inline; }
-#app.tiny #scrOnline .on-me { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
-#app.tiny #scrOnline .on-rules { gap: 3px; }
-#app.tiny #scrOnline .rule-row .chip { min-height: 26px; padding: 2px 10px; font-size: 13px; }

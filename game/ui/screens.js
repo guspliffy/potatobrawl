@@ -95,7 +95,7 @@ function goMenu() {
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
 const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
-const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, pending: null };   // blv: the boss difficulty (Practice vs a boss)
+const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0 };   // blv: the boss difficulty (Practice vs a boss)
 const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
 const CPU_NAMES = [
@@ -119,9 +119,8 @@ function statBars(spec) {
   const q = (v, a, b) => clamp(Math.round(1 + ((v - a) / (b - a)) * 4), 1, 5);
   return [["Power", q(heavy, 11, 18)], ["Speed", q(s.run, 4.6, 7.4)], ["Weight", q(s.weight, 82, 120)], ["Air", q(airH, 260, 560)]];
 }
-// put an owned skin on a fighter (the select screen's swatches and the Account locker both do this)
+// put an owned skin on a fighter (the Skin Rack, ui/skins.js, and the Account locker both do this)
 function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
-function selPalIdx(spec) { return sel.pending && sel.pending.id === spec.id ? sel.pending.i : P.pal[spec.id] || 0; }
 /* The roster is built once and then only restyled, so the pick can scale up (CSS) instead of being redrawn.
    Tiles keep the class "tile" (the tests click them by it). */
 function buildTiles() {
@@ -135,7 +134,7 @@ function buildTiles() {
       b.addEventListener("click", () => {
         Sfx.init(); if (sel.fighter === spec.id) { Sfx.ui(); return; }
         Sfx.uiFlip();
-        sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
+        sel.fighter = spec.id; P.last = spec.id; saveProfile();
         buildTiles(); buildDetail();
       });
       wrap.appendChild(b);
@@ -152,8 +151,8 @@ function buildTiles() {
 // restart a one-shot CSS animation (the stage name and model when the fighter changes)
 function slReplay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function buildDetail() {
-  const spec = FIG[sel.fighter], pi = selPalIdx(spec), pal = spec.palettes[pi] || spec.palettes[0], c = col(pal);
-  // the whole screen tints to the skin being looked at (registered properties, so the tint eases over in CSS)
+  const spec = FIG[sel.fighter], pi = palIdx(spec.id), pal = spec.palettes[pi] || spec.palettes[0], c = col(pal);
+  // the whole screen tints to the worn skin (registered properties, so the tint eases over in CSS)
   screens.select.style.setProperty("--sfc", c);
   screens.select.style.setProperty("--sfcg", rgba(c, 0.42));
   screens.select.style.setProperty("--sfct", rgba(c, 0.13));
@@ -173,29 +172,8 @@ function buildDetail() {
   masteryDetail(spec);   // ui/mastery.js: the MASTERY row of the stats card
   $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
-  const pals = $("dPals"); pals.innerHTML = "";
-  spec.palettes.forEach((p, i) => {
-    const own = P.owned[spec.id].includes(i), cur = (P.pal[spec.id] || 0) === i, pend = !!sel.pending && sel.pending.id === spec.id && sel.pending.i === i;
-    const b = document.createElement("button");
-    b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
-    b.style.setProperty("--c", col(p));
-    b.title = p.name;
-    // a Road skin (p.road: the boss that gives it) is never sold: locked, it says who to beat instead of a price
-    if (p.road) b.classList.add("road");
-    b.setAttribute("aria-label", `${p.name}${own ? "" : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
-    b.setAttribute("aria-pressed", String(own ? cur : pend));
-    b.innerHTML = `<i></i><small>${own ? p.name : p.road ? "Road" : `<span class="tokglyph"></span>${p.price}`}</small>`;
-    b.addEventListener("click", () => {
-      Sfx.init(); Sfx.ui();
-      if (own) { equipSkin(spec.id, i); sel.pending = null; }
-      else sel.pending = { id: spec.id, i }; // locked: preview it on the model; the Upgrade button buys it
-      buildTiles(); buildDetail();
-    });
-    pals.appendChild(b);
-  });
-  $("dNote").textContent = skinNote(spec, pi);
-  // the portrait only has the base look: any other skin (equipped or a locked one being previewed) stands in the stage corner as the
-  // model drawn in a match
+  skinsBar(spec, pi);   // ui/skins.js: the Skins bar under the stage (the worn skin, SKINS n/7); a tap opens the Skin Rack
+  // the portrait only has the base look: any other worn skin stands in the stage corner as the model drawn in a match
   screens.select.classList.toggle("sl-skin", pi !== 0);
   cardArt.length = 0;
   if (pi !== 0) {
@@ -204,52 +182,26 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = P.tokens;
-  updateUpgrade();
+  if (sel.mode === "online") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby: it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
-function skinNote(spec, i) {
-  const p = spec.palettes[i], fx = p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i];
-  const how = p.road && !(P.owned[spec.id] || []).includes(i) ? ` Beat ${roadBossName(p.road)} on the Road with ${spec.name} to get it.` : "";
-  return `${p.name}: ${fx || "base look"}.${how}`;
-}
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
-function updateUpgrade() {
-  const btn = $("selUp"), pd = sel.pending, road = !!pd && !!FIG[pd.id].palettes[pd.i].road;   // a Road skin can't be bought
-  btn.hidden = !pd || road;
-  screens.select.classList.toggle("sl-pend", !!pd && !road);
-  if (!pd || road) return;
-  const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
-  btn.disabled = short > 0;
-  btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
-  if (short > 0) $("dNote").textContent = `${short} more chips needed. ${skinNote(spec, pd.i)}`;   // the shortage first: small phones clamp the note
-  btn.setAttribute("aria-label", short > 0 ? `${p.name} costs ${p.price} chips, you need ${short} more` : `Upgrade ${spec.name} to ${p.name} for ${p.price} chips`);
-}
-function buyPending() {
-  const pd = sel.pending;
-  if (!pd) return;
-  const spec = FIG[pd.id], p = spec.palettes[pd.i];
-  if (p.road || P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
-  P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
-  Sfx.uiCoin();
-  buildTiles(); buildDetail();
-  $("dNote").textContent = `Upgraded to ${p.name}. ${FXTEXT[spec.id][pd.i] || ""}`.trim();
-}
 // a tall, narrow stage (desktop) shows the model smaller so wings and tails stay in view
 function artFit(a) { const w = a.cv.clientWidth, h = a.cv.clientHeight || 1; return Math.min(a.fit || 0.7, Math.max(0.42, (a.fit || 0.7) * 1.1 * w / h)); }
 // models much wider than tall (the Reaper's scythe): how wide the drawing is and how far its middle sits off the feet, in world units; the model shrinks to fit that width
 const ART_SPAN = { reaper: { span: 118, dx: 25 } };
-function drawCards(tk) {
-  for (const a of cardArt) {
-    const r = { width: a.cv.clientWidth, height: a.cv.clientHeight };
-    if (!r.width) continue;
-    const w = Math.round(r.width * DPR), h = Math.round(r.height * DPR);
-    if (a.cv.width !== w || a.cv.height !== h) { a.cv.width = w; a.cv.height = h; }
-    const c = a.cv.getContext("2d");
-    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
-    const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
-    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc * (a.f.facing || 1) : 0), h * (a.bottom || 0.95));
-    drawFighter(c, a.f, tk);
-  }
+function drawCards(tk) { for (const a of cardArt) paintModel(a, tk); }
+// one model on its canvas: a = { cv, f (a fighter from newGame), fit (share of the height), bottom (where the feet stand) }; the Skin Rack draws its cards with it too
+function paintModel(a, tk) {
+  const r = { width: a.cv.clientWidth, height: a.cv.clientHeight };
+  if (!r.width) return;
+  const w = Math.round(r.width * DPR), h = Math.round(r.height * DPR);
+  if (a.cv.width !== w || a.cv.height !== h) { a.cv.width = w; a.cv.height = h; }
+  const c = a.cv.getContext("2d");
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
+  const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
+  c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc * (a.f.facing || 1) : 0), h * (a.bottom || 0.95));
+  drawFighter(c, a.f, tk);
 }
 /* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list */
 const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
@@ -281,14 +233,14 @@ for (const [btn, pop] of SEL_PICKS) {
 }
 app.addEventListener("click", (e) => { if (!e.target.closest(".pickwrap")) closePops(); });
 function openSelect(m) {
-  sel.mode = m; sel.pending = null;
+  sel.mode = m;
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -326,7 +278,7 @@ function startMatch() {
 function enterMatchUI() {
   finStop();
   mode = "match"; paused = false; lastCount = 0;
-  show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false);
+  show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)
   $("hud").hidden = false; $("ctl").hidden = !touchUI; $("netBadge").hidden = true; $("pingBadge").hidden = true; $("pingBadge").textContent = "";
   [0, 1].forEach((i) => {
     const f = G.fighters[i], el = $("pc" + i);

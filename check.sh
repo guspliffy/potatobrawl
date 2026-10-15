@@ -114,6 +114,13 @@ else fail "accounts server + merge" "$LOGS/acct.log"; fi
 if grep -q "^no errors" "$LOGS/screens.log"; then pass "screens 667x320, 844x390, 1280x760 (shots in build/shots/)"
 else fail "screens" "$LOGS/screens.log"; fi
 
+# 6a. Skins and the Play friends lobby (UI only): the Skins bar on the select, the Skin Rack (seven cards in their states, what each
+#     locked skin needs, two-tap Buy, one-tap Wear, Esc / backdrop / X), a Road boss beaten with another fighter, and the lobby's Fight
+#     Card (opens the select, "Use <fighter>", Back, the name input on the public site), at four sizes. Shots in build/shots/skins.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwskins.py" skins) > "$LOGS/skins.log" 2>&1
+if grep -q "^skins ok" "$LOGS/skins.log" && grep -q "^no errors" "$LOGS/skins.log"; then pass "skins menu + Play friends lobby (Skin Rack states, buy, wear, Fight Card at four sizes; shots in build/shots/skins)"
+else fail "skins menu + Play friends lobby" "$LOGS/skins.log"; fi
+
 # 6b. Accounts in the browser: profile pill, Account sheet, two devices syncing through a real server (port 8093).
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwacct.py" acct) > "$LOGS/accounts-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/accounts-ui.log"; then pass "accounts in the browser (pill, sheet, two devices, conflict merge, accounts off; shots in build/shots/acct)"

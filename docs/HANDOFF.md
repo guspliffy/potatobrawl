@@ -1,9 +1,25 @@
-# PotatoBrawl handoff (updated 2026-10-15: online boss fights on two phones, PROTO 13; before that Kraken Spud, Zorp, Road regions, PROTO 12)
+# PotatoBrawl handoff (updated 2026-10-15: the Skins menu and the new Play friends lobby, UI only; before that online boss fights on two phones, PROTO 13)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Skins menu + Play friends lobby (2026-10-15, branch claude/project-thread-i6zx2q, UI only, PROTO stays 13). Jonny: the seven skin dots
+  on the select looked unclean and "Change fighter" in the lobby was a small link he kept missing. Fable's design
+  /mnt/project-files/skins-lobby/fable-design.md (mockups next to it), plan doc https://claude.ai/code/artifact/a4f11ea5-3906-4084-9f4b-8b8bd983bcb7.
+  - Select: one Skins bar (#dSkins: worn skin swatch, name, ROAD sticker, effect line, SKINS n/7) replaces the dot row (#dPals) and
+    the Upgrade button (#selUp); FIGHT stands alone; the stage model only ever shows the worn skin (sel.pending is gone).
+  - The Skin Rack (ui/skins.js, css/90-skins.css, #scrSkins modal over the select): the looked-at skin big (model drawn live), the four
+    chip skins and three Road skins as cards (models drawn once per open). States worn / own / buy / short / road (region open) /
+    shut (region locked); a locked card is always previewable and the preview says what it needs (Beat X on the Road with F; why it
+    is not yet possible; N more chips needed). Buy = two taps (Sure? for 3 s), the bought skin is worn; an owned skin is worn with
+    one tap; the sheet stays open and the select follows (skChanged). Closes on X, the backdrop, Esc, and when a match starts.
+  - Lobby (#scrOnline, css/95-lobby.css; the old lobby CSS in shell.html and 30-select.css is gone): Fight Card (#onChange, the whole
+    card is the button; the Road card's ⇄ badge at 40 px; name plate #onMyName / #onName on it) | host card YOUR MATCH (rule pills,
+    Host / Cancel, invite link, note) | the room (open matches with the host's portrait and JOIN / TEAM UP, HERE NOW pills, help).
+    Boss chips show the short names on phones. The select opened from the lobby says "Play friends · pick your fighter" and its
+    button "Use <fighter>"; back in the lobby the card pops (fightCardIn).
+  - Test: tests/pwskins.py (check.sh 6a). pwux2.py / pwsel.py now open the Skins bar instead of tapping #dPals.
 - Session 5 of the big-features plan (2026-10-15, branch claude/online-2v1-d7nenz, PROTO 13, players reload once): online boss fights,
   two phones against a boss. Plan doc https://claude.ai/code/artifact/876ba165-4beb-4bdf-be01-276290f2a41e (Jonny approved the
   defaults), Fable's design /mnt/project-files/online-2v1/fable-online.md. All in ui/online.js; core.js and the server are unchanged.
@@ -266,11 +282,12 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   /mnt/project-files/menu-redesign/; UI only, PROTO stays 9): ink outlines, hard shadows, a gold hero, stickers.
   - CSS lives in game/css/*.css, spliced in name order at `/*CSS*/` (the end of shell.html's style block) by build.py: 00-ink
     (tokens, .disp .kick .card .tag .livetag .round .plate .coin ...), 10-surfaces (shared buttons/chips/back), 20-menu, 30-select,
-    40-results, 50-sheets (Pause, Help, Settings, Account, Daily, Cup). Screen rules stay scoped under their screen id.
+    40-results, 50-sheets (Pause, Help, Settings, Account, Daily, Cup), 60-boss, 70-road, 80-mastery, 90-skins (Skins bar + Skin Rack),
+    95-lobby (Play friends). Screen rules stay scoped under their screen id.
   - Main menu: plate (#mRank: picture + emblem, name, tier + rating, title sticker), chips/streak/cups coins, gold Ranked hero
     (#bRanked) with the last fighter and record, Daily tile with today's portraits, Tournament tile, three mini pills, LIVE tag.
     Select: 2x4 roster (#tiles), stage portrait with a crossfade and the fighter's tint, stat bars, Special + ULTI cards, FIGHT /
-    UPGRADE; tests address tiles as `#tiles .tile` and skins as `#dPals .sw` (the menu also has .tile). Results (#scrResult,
+    the Skins bar; tests address tiles as `#tiles .tile` and skins as `#skChip .sk` / `#skRoad .sk` after opening #dSkins (the menu also has .tile). Results (#scrResult,
     #resSheet is no longer a .sheet): winner panel with VICTORY / DEFEAT stamp + finisher plate, rank card with emblem spin on
     promotion, four stat tiles, NEXT MATCH over Fighters / Menu; resCount(el, from, to, pre, {delay, dur, end}).
   - UI sounds (ui/base.js): Sfx.uiGo / uiBack / uiFlip / uiCoin / uiNo; the shared tap() plays Sfx.cue(el): data-sfx="go|back|flip|
@@ -517,6 +534,8 @@ map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence,
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
 (online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,
 KO page + Victory + Next: Hard on both, a dropped friend, the lobby at four sizes; check.sh 5c) ·
+pwskins.py (the Skins bar, the Skin Rack states / lines / two-tap Buy / Wear / closing, a Road boss beaten with another fighter, the
+lobby's Fight Card + "Use <fighter>" + Back + the public name input; tags se phone desk upright; check.sh 6a) ·
 pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).

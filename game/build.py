@@ -8,7 +8,7 @@ core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
 UI_PARTS = ['base', 'input', 'view', 'draw-fighters', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'finisher', 'manga',
-            'screens', 'hud', 'boss', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'online', 'menus', 'combos', 'mastery', 'acct', 'tutorial', 'loop']
+            'screens', 'hud', 'boss', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'skins', 'online', 'menus', 'combos', 'mastery', 'acct', 'tutorial', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
