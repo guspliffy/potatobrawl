@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-14: maps + rank emblems, PROTO 9)
+# PotatoBrawl handoff (updated 2026-10-15: "sunset ink" menu redesign, PROTO 9)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -127,10 +127,25 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     the name), per-ulti drawing and sounds (Sfx.ulti, ultFull, hellBlast, ...), the Gunslinger's light shots (`gunLightPose`, a
     tracer from the muzzle to the sweeping box, smoke, a shell, Sfx.pop instead of the swing sound). tests/pwultreel.py records
     every ulti + the eight light shots at 844x390 and 390x844 (stills + a video, needs ffmpeg).
-  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
+  - Ultimate KO pages (ui/manga.js + manga/samurai.js, gunslinger.js, phoenix.js, wizard.js, dragon.js, odin.js, alchemist.js): an ulti's lethal hit sets FIN.ulti / MG.ulti;
     a page with `MANGA[id].ulti` plays its 5.9 s Ultimate script (a fifth, full-page splash panel, MT_U timeline, three impact
-    frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova". The other five play their normal page with
-    the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
+    frames, gold); Samurai "Hundred Petals", Gunslinger "Wanted", Phoenix "Supernova", Wizard "Big Bang" (2026-10-15, Fable's design
+    /mnt/project-files/ultimates/manga/wizard/fable-big-bang.md: the five-star shower lands round the loser, the big star sends
+    them up into a deep-night sky, the splash draws their face as a constellation over their dark shape, it cracks and bangs into
+    a gold galaxy), Dragon "Dragon's Age" (2026-10-15, Fable's design /mnt/project-files/ultimates/manga/dragon/fable-dragon-ultimate.md:
+    Inferno to the roar with Hellfire's blast ring, then the splash shows what the loser saw: the Dragon at his true age filling the
+    page (his potato head with the sprout, horns, gold slit eye, wings, neck, tail; two bitmaps made once while panel 1 holds) and the
+    loser a dot at the far end of the slab; one stream of fire, the dot pops off as a speck, DRAGON'S AGE), Odin "Ragnarök" (2026-10-15,
+    Fable's design /mnt/project-files/ultimates/manga/odin/fable-odin-ultimate.md: Judgement to the inset with the game's golden Gungnir,
+    then a throw in a wider strike shot (the spear sticks in the statue, the shatter, it turns round in the air); the splash: 48 ravens
+    drag the night down the page, Gungnir flies back to his fist with the statue's shards in its wake, the shards land as RAGNARÖK; Judgement's
+    late moments run at MT.AFTER + offset and its two hero ravens now stay perched on the spear), Alchemist "Mutation" (2026-10-15,
+    Fable's design /mnt/project-files/ultimates/manga/alchemist/fable-design.md: the Mutagen Cloud's own beat (pulses 1400/1900/2400,
+    the fifth at the hit); he turns the empty flask over the cloud, a third eye opens on the loser's forehead in the inset, seven more
+    pop open on the body in the cloud and all blink once together at the drop, KABWUMP; the splash is the cloud with 24 eyes that find
+    the reader, then their maker; The Experiment's aftermath runs at MT.AFTER + offset, the puddle has an eye; then a goo splatter
+    over the results for 6 s: one canvas on #app, corners and edges only, cut round every button, card and line of text, gone when
+    the results are left). The Reaper plays its normal page with the gold layer (gold strike words, gold tear, ULTIMATE: NAME card line, gold seal). The results line names the ulti.
     pwmanga.py --ult plays an Ultimate page.
 - Maps + rank emblems (2026-10-14, same branch, PROTO 9; Jonny's asks after the Ultimates merge):
   - Ulti bar fills at 0.6x (TUNE ultDealt 0.6, ultTaken 0.3, ultHeart 6). A random CPU picks the player's own fighter 4x less
@@ -151,6 +166,26 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     every map at four sizes (start / fight / KO shots, frame cost vs Potato Moon, fails a map with no MAP_ART); pwux2 and pwhud pin
     Potato Moon (their jump/launch setups are placed for it). Per-map balance is 42-57%, mixed over maps inside 44-57%. The
     Gunslinger's CPU style went to specials 1.15x / heavies 1.1x (it beat the neutral CPU 65% over all maps).
+  - Ultis 1.75x stronger (Jonny 20:45 UTC: "close to impossible to KO with a ulti"): TUNE.ultKb multiplies the knockback of every
+    ulti hit that launches (kb >= tumbleKb), so multi-hit ultis still carry the target into the finale. A standing defender is KO'd
+    from about 20-45% (light) / 35-55% (heavy), was 90-115 / 120-150. Phoenix's Solar Dive homes in, so it got less (bkb 6, kbg 10:
+    80 / 110%); Phoenix still sits at 57.4% (55 before), so check.sh's balance band top is 58. Wizard's CPU style toned down
+    (gap 1.4, back 0.4, rng 10, poke 0.8; it beat the neutral CPU 68-74%). tests/ulti.js bands: no KO below 15%, all by 110%.
+- Menu redesign "sunset ink" (2026-10-15, Jonny 2026-10-14 16:48 UTC: the menus looked cheap; Fable's design and mockups in
+  /mnt/project-files/menu-redesign/; UI only, PROTO stays 9): ink outlines, hard shadows, a gold hero, stickers.
+  - CSS lives in game/css/*.css, spliced in name order at `/*CSS*/` (the end of shell.html's style block) by build.py: 00-ink
+    (tokens, .disp .kick .card .tag .livetag .round .plate .coin ...), 10-surfaces (shared buttons/chips/back), 20-menu, 30-select,
+    40-results, 50-sheets (Pause, Help, Settings, Account, Daily, Cup). Screen rules stay scoped under their screen id.
+  - Main menu: plate (#mRank: picture + emblem, name, tier + rating, title sticker), chips/streak/cups coins, gold Ranked hero
+    (#bRanked) with the last fighter and record, Daily tile with today's portraits, Tournament tile, three mini pills, LIVE tag.
+    Select: 2x4 roster (#tiles), stage portrait with a crossfade and the fighter's tint, stat bars, Special + ULTI cards, FIGHT /
+    UPGRADE; tests address tiles as `#tiles .tile` and skins as `#dPals .sw` (the menu also has .tile). Results (#scrResult,
+    #resSheet is no longer a .sheet): winner panel with VICTORY / DEFEAT stamp + finisher plate, rank card with emblem spin on
+    promotion, four stat tiles, NEXT MATCH over Fighters / Menu; resCount(el, from, to, pre, {delay, dur, end}).
+  - UI sounds (ui/base.js): Sfx.uiGo / uiBack / uiFlip / uiCoin / uiNo; the shared tap() plays Sfx.cue(el): data-sfx="go|back|flip|
+    coin|no|tap" wins, else .primary/.pri go, .back/.x back, the rest tap. A tap on a disabled button plays uiNo.
+  - Known small things: cup matches go straight back to the bracket (no results screen); the tier title is the best tier
+    reached (never below the current one).
 - PR #6 (bigger Heavy/Special buttons with a jump boost, rating + chips top right, tutorial vs an Easy CPU with a
   charge step) merged (c0fe65c).
 - Source lives in this repo since M0 (no more zip). GitHub is connected to Claude; Claude works on a branch
@@ -297,7 +332,7 @@ index.html is committed with every source change (check.sh flags a stale one).
   the newFighter defaults, FKEYS and checksum, reset them where needed (ko, startSudden), bump `PROTO` in
   game/ui/online.js (deploy/update.txt has no PROTO: it compares the page the game serves with GitHub's index.html).
 - No service worker (a cached old build would desync matches).
-- Balance band in check.sh is 44-57% (M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
+- Balance band in check.sh is 44-58% (58 since the ulti boost, 2026-10-14; M3: phoenix 49.1, alchemist 45.8, odin 53.8, wizard 48.1, samurai 49.9,
   dragon 53.4; bots now charge sometimes and go for the special when the opponent is finish-ready).
   With the Gunslinger (night-gun, `bal7.js 80 0.5,0.8`): phoenix 50.4, alchemist 44.6, odin 52.7, wizard 50.7,
   samurai 51.5, dragon 51.0, gunslinger 49.1. The six old fighters play exactly as before (same bot matches
@@ -361,7 +396,7 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 
 ## Next work, in order
 - NEXT: session 3 of the big-features plan (Jonny's order, 2026-10-14 11:55 UTC, each session in a fresh thread): the other five
-  Ultimate KO pages (Alchemist Mutagen Cloud, Odin Gungnir, Wizard Meteor Shower, Dragon Hellfire, Reaper Soul Harvest: Fable's
+  Ultimate KO pages (Reaper Soul Harvest; Wizard "Big Bang", Dragon "Dragon's Age", Odin "Ragnarök" and Alchemist "Mutation" done: Fable's
   twists in next-ideas/fable-ideas.md section 2, the page engine's Ultimate script as built for the first three) + fighter
   mastery (XP per fighter, levels 1-10 on the select card, a title per level; the Locker counts KO pages / Ultimate KOs / routes
   seen). Then 4. boss engine + the Devil + The Field + the Road's first 8 stops; 5. Alien + Sea Monster, their stages, Road

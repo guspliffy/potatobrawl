@@ -74,7 +74,6 @@ function cupKeys(c, r) {
 const cupOppOf = (c) => { const r = c.round, idx = c.p[r].indexOf(c.mi); return c.p[r][idx ^ 1]; };
 
 /* ----- entry, start, leave ----- */
-function cupMenu() { $("mCup").textContent = cupOk(P.cup) ? "resume" : P.cups ? `${P.cups} won` : "8 players"; }
 function cupOpen() { if (cupOk(P.cup)) cupShow({ quick: true }); else openSelect("cup"); }
 function cupBegin(fid) {
   fid = fid || sel.fighter;
@@ -200,12 +199,12 @@ function cupRender() {
 /* the strip under the bracket: next opponent (slides in), the end of the cup, or the leave question */
 function cupFootRender() {
   const c = P.cup, card = $("cupCard");
-  const btn = (id, label, primary) => `<button class="btn${primary ? " primary" : ""}" id="${id}"><span>${label}</span></button>`;
+  const btn = (id, label, cls) => `<button class="btn${cls ? " " + cls : ""}" id="${id}"><span>${label}</span></button>`;   // cls: "primary" (gold) or "ember"
   card.className = "cf";
   if (CU.confirm) {
-    card.innerHTML = `<div class="cf-t"><b>Leave the cup?</b><small>It ends here. Chips you already won stay.</small></div><div class="cf-acts">${btn("cfKeep", "Keep playing")}${btn("cfLeave", "Leave", true)}</div>`;
+    card.innerHTML = `<div class="cf-t"><b>Leave the cup?</b><small>It ends here. Chips you already won stay.</small></div><div class="cf-acts">${btn("cfKeep", "Keep playing")}${btn("cfLeave", "Leave", "ember")}</div>`;
     $("cfKeep").addEventListener("click", () => { Sfx.ui(); CU.confirm = false; cupFootRender(); cupFootIn(); });
-    $("cfLeave").addEventListener("click", () => { Sfx.ui(); cupLeave(); });
+    $("cfLeave").addEventListener("click", () => { Sfx.uiBack(); cupLeave(); });
     return;
   }
   if (cupOver(c)) {
@@ -213,22 +212,22 @@ function cupFootRender() {
     if (won) {
       card.classList.add("win");
       card.innerHTML = `<div class="cf-t"><b>Champion!</b><small><span class="cf-chips"><span class="tokglyph"></span>+<span id="cupChipsN">0</span></span> chips from this cup${c.flawless ? " · flawless, no life lost" : ""}</small></div>` +
-        `<div class="cf-acts">${btn("cfAgain", "Run it back", true)}${btn("cfMenu", "Menu")}</div>`;
+        `<div class="cf-acts">${btn("cfAgain", "Run it back", "primary")}${btn("cfMenu", "Menu")}</div>`;
     } else {
       const by = c.slots[c.by];
       card.classList.add("lose");
       card.innerHTML = `<div class="cf-t"><b>Out in the ${CUP.names[c.out].toLowerCase()}</b><small>${c.fold ? `You left the match. ${cupEsc(by.n)} goes through.` : `${cupEsc(by.n)} (${FIG[by.f].name}) beat you.`} ${cupEsc(champ.n)} won the cup. ${c.earned ? `+${c.earned} chips from this cup.` : "No chips this time."}</small></div>` +
-        `<div class="cf-acts">${btn("cfAgain", "Run it back", true)}${btn("cfMenu", "Menu")}</div>`;
+        `<div class="cf-acts">${btn("cfAgain", "Run it back", "primary")}${btn("cfMenu", "Menu")}</div>`;
     }
-    $("cfAgain").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); cupBegin(c.fid); });
-    $("cfMenu").addEventListener("click", () => { Sfx.init(); Sfx.ui(); cupLeave(); });
+    $("cfAgain").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); cupBegin(c.fid); });
+    $("cfMenu").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); cupLeave(); });
     return;
   }
   const oi = cupOppOf(c), os = c.slots[oi], spec = FIG[os.f], pal = spec.palettes[os.pal] || spec.palettes[0], ti = tierInfo(os.r);
   card.innerHTML = `<span class="cs-ph" style="--fc:${col(pal)}">${PORTRAITS[os.f] ? `<img src="${PORTRAITS[os.f]}" alt="">` : ""}</span>` +
     `<div class="cf-t"><span class="kicker">${CUP.names[c.round]} · ${CUP.lives[c.round]} lives</span><b>${spec.name} “${cupEsc(os.n)}”</b><small>${CU.note ? cupEsc(CU.note) : `${ti.t.name} ${os.r}`}</small></div>` +
-    `<div class="cf-acts">${btn("cupGo", "Fight", true)}</div>`;
-  $("cupGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); cupFight(); });
+    `<div class="cf-acts">${btn("cupGo", "Fight", "primary")}</div>`;
+  $("cupGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); cupFight(); });
 }
 function cupFootIn() { const f = $("cupFoot"); f.classList.remove("in"); void f.offsetWidth; f.classList.add("in"); }
 
@@ -260,7 +259,7 @@ function cupShow(o) {
     if (o.cheer) {
       CU.cheer = true; cupRender(); cupJingle();
       const total = c.earned, t0 = performance.now();
-      const count = () => { const n = $("cupChipsN"); if (!n || mode !== "cup") return; const k = Math.min(1, (performance.now() - t0) / 1200); n.textContent = Math.round(total * k); if (k < 1) requestAnimationFrame(count); };
+      const count = () => { const n = $("cupChipsN"); if (!n || mode !== "cup") return; const k = Math.min(1, (performance.now() - t0) / 1200); n.textContent = Math.round(total * k); if (k < 1) requestAnimationFrame(count); else if (total > 0) Sfx.uiCoin(); };
       count();
     } else if (cupOver(c) && c.out >= 0) Sfx.later(0, () => Sfx.tone(300, 110, 0.4, "sawtooth", 0.07));
     cupFootIn();
@@ -273,7 +272,7 @@ function cupJingle() {
 }
 
 $("cupBack").addEventListener("click", () => {
-  Sfx.init(); Sfx.ui();
+  Sfx.init(); Sfx.uiBack();
   const c = P.cup;
   if (!cupOk(c) || cupOver(c)) { cupLeave(); return; }
   CU.confirm = !CU.confirm; cupFootRender(); cupFootIn();   // "Menu" in the middle of a cup asks first: leaving ends the cup

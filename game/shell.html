@@ -117,8 +117,6 @@ button { font: inherit; color: inherit; }
 .rule-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .rule-row .chip { min-height: 30px; padding: 3px 12px; font-size: 14px; }
 .chip:disabled { opacity: 0.45; cursor: default; }
-.res-pick { display: flex; flex-direction: column; gap: 8px; }
-.res-pick .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 #banner.game .b-main { color: var(--ember); }
 #banner.show .b-main { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pop { from { transform: scale(1.9) skewX(-8deg); opacity: 0; } to { transform: scale(1) skewX(-8deg); opacity: 1; } }
@@ -278,43 +276,18 @@ button { font: inherit; color: inherit; }
 .bar i { display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--tc); transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .scroll { overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 
-/* ---------- menu ---------- */
-.menu { display: flex; background: linear-gradient(90deg, rgba(14, 16, 34, 0.96) 0, rgba(14, 16, 34, 0.9) min(440px, 100%), rgba(14, 16, 34, 0.25) calc(min(440px, 100%) + 180px), rgba(14, 16, 34, 0) 100%); }
-.menu-panel { width: min(440px, 100%); height: 100%; display: flex; flex-direction: column; padding-block: 20px; padding-inline: max(20px, env(safe-area-inset-left, 0px)) 22px; }
-.menu-inner { margin-block: auto; display: flex; flex-direction: column; gap: 16px; }
-.brand h1 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(50px, calc(var(--um) * 12), 78px); line-height: 0.85; letter-spacing: -0.015em; text-transform: uppercase; }
-.brand h1 span { color: var(--sand); display: block; }
-.brand .slash { display: block; height: 6px; width: 70%; margin: 10px 0 0; background: linear-gradient(90deg, var(--ember), var(--sand) 55%, rgba(243, 217, 164, 0)); transform: skewX(-35deg); transform-origin: left; }
-/* accounts: the profile pill in the top right corner of the start page, left of the settings gear (same height as the gear).
-   Tap it for the Account sheet. Avatar + name, tier badge in a progress ring + rating, chips, cups when there are any. */
+/* ---------- menu: game/css/20-menu.css (the menu redesign); the rules below are shared with the Account sheet and the results ---------- */
 #app { --gear: 42px; }
 #app.short { --gear: 38px; }
-.pill { --tc: #9097ad; appearance: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--gear) + 10px); max-width: calc(100% - var(--gear) - 40px); height: var(--gear); overflow: hidden; display: flex; align-items: center; gap: 9px; padding: 0 14px 0 4px; background: rgba(35, 39, 70, 0.78); border: 1px solid var(--line); border-radius: calc(var(--gear) / 2); }
-.pill:hover { background: #2c3156; }
-.pill:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-.pill > * { flex: none; }
 .av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
-.pill .pn { flex: 0 1 auto; min-width: 0; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
-.pill .pnw { flex: 0 1 auto; min-width: 0; max-width: 9.5em; display: flex; flex-direction: column; gap: 3px; }
-.pill .pnw .pn { max-width: none; }
-.pill .pt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; color: var(--sand); }
-.pill .sep { width: 1px; height: 56%; background: var(--line); }
-.pill .pr, .pill .pc, .pill .pcup { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 800; font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; }
-.pill .pc { color: var(--sand); }
-.pill .pcup { color: var(--sand); font-size: 18px; }
 .ring { --tc: #9097ad; --d: calc(var(--gear) - 10px); position: relative; width: var(--d); height: var(--d); flex: none; display: grid; place-items: center; }
 .ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring > svg circle { fill: none; stroke-width: 3.4; }
 .ring .rt { stroke: rgba(255, 255, 255, 0.14); }
 .ring .rp { stroke: var(--tc); stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
 #app .ring i.badge { width: 84%; height: 84%; }
-.cupglyph { display: inline-block; width: 0.95em; height: 0.95em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v4.5a6 6 0 0 1-12 0z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11' fill='none' stroke='%23a8661f' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M12 13.5V17M8.5 21h7M9.5 17h5' fill='none' stroke='%23a8661f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
-/* 667-wide phones and upright phones: no room for the name */
-#app.tiny .pill .pnw, #app.tiny .pill .sep.s1, #app.narrow .pill .pnw, #app.narrow .pill .sep.s1 { display: none; }
-#app.tiny .pill, #app.narrow .pill { gap: 8px; padding-right: 12px; }
 .rk-tier { font-family: var(--display); font-weight: 800; font-size: 25px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--tc); }
 .rk-sub { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; margin-top: 2px; }
-.menu-actions { display: flex; flex-direction: column; gap: 10px; padding-left: 6px; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn:disabled:hover { background: var(--raise); }
 .hint { font-size: 13px; color: var(--sand); }
@@ -329,77 +302,22 @@ button { font: inherit; color: inherit; }
 .iconbtn svg { width: 22px; height: 22px; display: block; }
 .iconbtn:hover { background: #2c3156; }
 .iconbtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-#bSettings { position: absolute; z-index: 1; top: max(14px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); }
 
-/* ---------- fighter select: one row of tiles, one detail panel ---------- */
+/* ---------- fighter select: the screen itself is styled in game/css/30-select.css; these shared rules stay for the
+   online and cup screens (.select background, .sel-head, .back, .tokpill), the pickers' .pop lists and the locker's .sw swatches ---------- */
 .select { background: rgba(14, 16, 34, 0.93); }
-.sel2 { position: absolute; inset: 0; max-width: 1120px; margin: 0 auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px;
-  padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 .sel-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .sel-head h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(26px, calc(var(--um) * 6), 40px); line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .sel-head .grow { flex: 1; min-width: 0; }
 .back { appearance: none; border: 1px solid var(--line); background: var(--raise); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); transform: translateX(2px) rotate(45deg); }
 .tokpill { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--sand); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.sel-opts { display: flex; gap: 8px; align-items: center; }
-/* three pickers (vs, CPU, Map): smaller chips on short screens, and their own row under the heading when upright */
 .sel-head .kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#app.short .chip.pick, #app.tiny .chip.pick { min-height: 32px; padding: 3px 10px; font-size: 13px; gap: 4px; }
-#app.short .chip.pick small, #app.tiny .chip.pick small { font-size: 11px; }
 #app.portrait .sel-head { flex-wrap: wrap; row-gap: 8px; }
-#app.portrait .sel-opts { order: 3; flex-basis: 100%; flex-wrap: wrap; }
-.pickwrap { position: relative; }
-.chip.pick { display: inline-flex; align-items: center; gap: 6px; }
-.chip.pick small { font-family: var(--body); font-weight: 500; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--mute); }
-.chip.pick::after { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); margin-left: 2px; }
 .pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 6; background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(110px, auto)); gap: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
 .pop button { appearance: none; border: 0; background: none; color: var(--text); text-align: left; padding: 7px 10px; border-radius: 5px; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
 .pop button:hover { background: var(--raise); }
 .pop button.on { background: var(--sand); color: var(--ink); }
-
-.tiles { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; height: clamp(56px, calc(var(--uh) * 20), 168px); }
-.tile { --fc: var(--sand); appearance: none; position: relative; padding: 0; border: 0; border-radius: 7px; overflow: hidden; cursor: pointer; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); min-width: 0; transition: transform 0.12s; }
-.tile img, .tile canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; filter: saturate(0.55) brightness(0.62); transition: filter 0.15s; }
-.tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(14, 16, 34, 0) 50%, rgba(14, 16, 34, 0.9)); pointer-events: none; }
-.tile span { position: absolute; left: 8px; right: 6px; bottom: 4px; z-index: 1; text-align: left; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(14px, calc(var(--uh) * 4.2), 22px); line-height: 1; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile:hover img { filter: saturate(0.8) brightness(0.82); }
-.tile.on { transform: translateY(-2px); box-shadow: inset 0 0 0 3px var(--fc), 0 6px 18px rgba(0, 0, 0, 0.35); }
-.tile.on img, .tile.on canvas { filter: none; }
-.tile.on span { color: var(--text); }
-.tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-/* seven, now eight fighters (Gunslinger, Reaper): on narrow screens a long name shrinks to fit its tile instead of being cut off */
-.tile { container-type: inline-size; }
-.tile span { font-size: min(clamp(14px, calc(var(--uh) * 4.2), 22px), 18cqw); }
-
-.detail { --fc: var(--sand); min-height: 0; display: grid; grid-template-columns: minmax(140px, 0.85fr) minmax(0, 1.3fr) minmax(210px, 1fr); gap: 16px; padding: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 10px; }
-.d-stage { position: relative; min-height: 0; border-radius: 8px; overflow: hidden; background: radial-gradient(ellipse 70% 60% at 50% 62%, var(--fcglow, rgba(243, 217, 164, 0.3)), transparent 70%), linear-gradient(180deg, #1d2142, #14172e); }
-.d-stage::before { content: ""; position: absolute; left: 18%; right: 18%; bottom: 5%; height: 9%; border-radius: 50%; background: rgba(0, 0, 0, 0.35); }
-.d-art { position: absolute; inset: 0; width: 100%; height: 100%; }
-.d-info { min-height: 0; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
-.d-name { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.d-name b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(28px, calc(var(--uh) * 8.5), 46px); line-height: 0.95; text-transform: uppercase; }
-.d-name span { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fc); }
-.d-blurb { margin: 0; font-size: clamp(13px, calc(var(--uh) * 2.2), 17px); color: var(--mute); max-width: 52ch; }
-.d-stats { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px 10px; align-items: center; font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); max-width: 460px; }
-.seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-.seg i { height: 6px; border-radius: 1px; background: rgba(255, 255, 255, 0.1); }
-.seg i.on { background: var(--fc); }
-.d-sig { font-size: clamp(13px, calc(var(--uh) * 2.1), 16px); color: var(--mute); border-left: 3px solid var(--fc); padding-left: 10px; max-width: 52ch; }
-.d-sig b { color: var(--text); font-family: var(--display); font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 6px; }
-/* the ultimate sits under the signature in the same style; a small gold "Ulti" tag and a gold rule tell them apart */
-.d-sigs { display: flex; flex-direction: column; gap: 9px; }
-#app.short .d-sigs { gap: 6px; }
-.d-ult { border-left-color: #f3c84a; }
-/* a landscape screen too short for the extra line: the card is a size container (its height comes from the grid row), the flavour text
-   gives way first, then the move texts (names stay), then the two names share a row */
-#app:not(.portrait) .detail { container-type: size; }
-@container (max-height: 262px) { .d-blurb { display: none; } }
-@container (max-height: 235px) and (max-width: 740px) { .d-sig span { display: none; } }
-@container (max-height: 190px) { .d-sigs { flex-direction: row; flex-wrap: wrap; gap: 4px 16px; } .d-info { gap: 4px; } }
-@container (max-height: 190px) and (max-width: 560px) { .d-name span, .d-ult em { display: none; } }
-.d-ult em { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #3a2a00; background: #f3c84a; padding: 1px 6px; border-radius: 2px; margin-right: 8px; vertical-align: 1px; }
-.d-side { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-.d-pals { display: flex; gap: 6px; justify-content: space-between; }
 .sw { appearance: none; padding: 0; cursor: pointer; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.04em; color: var(--mute); min-width: 0; flex: 1; }
 .sw i { width: 34px; height: 34px; border-radius: 50%; background: var(--c); border: 3px solid var(--night); box-shadow: 0 0 0 1px var(--line); position: relative; flex: none; }
 .sw.cur { color: var(--text); }
@@ -409,14 +327,6 @@ button { font: inherit; color: inherit; }
 .sw i em { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); font-style: normal; font-size: 8px; line-height: 1; letter-spacing: -1px; color: #f4c95d; text-shadow: 0 0 2px #0e1022, 0 0 2px #0e1022; z-index: 1; white-space: nowrap; }
 .sw .tokglyph { width: 1.2em; height: 0.95em; margin-right: 0.15em; }
 .sw:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
-.d-note { font-size: clamp(13px, calc(var(--uh) * 2.1), 16px); color: var(--sand); line-height: 1.35; min-height: 2.7em; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; flex: 0 1 auto; }
-.d-go { margin-top: auto; display: flex; gap: 8px; }
-.d-go .btn { width: auto; flex: 1 1 auto; min-width: 0; padding-inline: 18px; white-space: nowrap; }
-.d-go .btn.up { background: linear-gradient(100deg, #f4c95d, #e09a3a); color: var(--ink); }
-.d-go .btn.up:hover { background: linear-gradient(100deg, #f8d779, #eaa94a); }
-.d-go .btn.up:disabled { background: var(--raise); color: var(--mute); opacity: 1; }
-.d-go .btn.up span { white-space: nowrap; }
-.d-go .btn.up .tokglyph { margin-left: 0.15em; }
 
 /* ---------- online ---------- */
 .on2 { position: absolute; inset: 0; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
@@ -469,25 +379,6 @@ button { font: inherit; color: inherit; }
 .sheet p { margin: 0; color: var(--mute); }
 .x-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .win h2 { color: var(--sand); } .loss h2 { color: var(--ember); }
-.res2 { width: min(820px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 22px; align-items: start; }
-.res-main, .res-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.res2.solo { width: min(540px, 100%); grid-template-columns: minmax(0, 1fr); }
-.res2.solo .res-side { display: none; }
-.res-sub { margin: 6px 0 0; color: var(--mute); }
-.res-fin { margin: 6px 0 0; font-family: var(--display); font-weight: 700; font-style: italic; letter-spacing: 0.04em; text-transform: uppercase; font-size: 15px; color: var(--mute); }
-.res-fin b { color: var(--sand); font-weight: 900; }
-.res-rank { --tc: #9097ad; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; background: var(--raise); border-radius: 6px; }
-.delta { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 30px; font-variant-numeric: tabular-nums; }
-.delta.up { color: var(--mint); } .delta.down { color: var(--ember); }
-.promo { font-family: var(--display); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tc); font-size: 15px; }
-.res-line { font-size: 15px; font-variant-numeric: tabular-nums; }
-.res-line b { color: var(--text); font-family: var(--display); font-weight: 800; font-size: 19px; margin-right: 3px; }
-.res-chips { font-size: 14px; }
-.res-chips b { font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--sand); margin-right: 6px; font-variant-numeric: tabular-nums; }
-.res-pick { display: flex; flex-direction: column; gap: 8px; }
-.res-pick .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.res-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-left: 6px; }
-.res-actions .btn:first-child { grid-column: 1 / -1; }
 .sheet-actions { display: flex; flex-direction: column; gap: 10px; padding-left: 6px; }
 kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background: var(--raise); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; color: var(--text); }
 
@@ -680,21 +571,15 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .lk-f { padding: 6px 8px 8px; }
 
 /* ---------- short and upright screens ---------- */
-#app.short .menu-panel { padding-block: 12px; }
 #app.short .menu-inner { gap: 10px; }
-#app.short .brand h1 { font-size: 44px; line-height: 0.9; }
-#app.short .brand h1 span { display: inline; }
-#app.short .brand .slash { margin-top: 6px; height: 4px; }
 #app.short .badge { width: 50px; height: 50px; }
 #app.short .rk-tier { font-size: 21px; }
 #app.short .btn { min-height: 42px; font-size: 18px; padding: 7px 20px; }
-#app.short .menu-actions { gap: 8px; }
 #app.short .sheet { padding: 14px 18px; gap: 10px; }
 #app.short .sheet h2 { font-size: 44px; }
 #app.short .sel2, #app.short .on2 { gap: 8px; padding-top: 8px; }
 #app.short .back, #app.short .iconbtn { width: 38px; height: 38px; }
 #app.short .detail { padding: 10px; gap: 12px; }
-#app.short .d-info { gap: 6px; }
 #app.short .d-blurb, #app.short .d-sig { font-size: 13px; line-height: 1.35; }
 #app.short .on-card { padding: 10px 12px; gap: 8px; }
 #app.short .res2 { gap: 10px 20px; }
@@ -722,15 +607,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .ac-sync p.ac-note:not(.keep) { display: none; }
 #app.tiny .ac-foot { padding-top: 4px; }
 #app.tiny .ac-foot .chip, #app.tiny .ac-row .chip { min-height: 28px; padding: 2px 12px; }
-#app.tiny .brand h1 { font-size: 36px; }
-#app.tiny .brand .slash { display: none; }
 #app.tiny .menu-inner { gap: 8px; }
 #app.tiny .badge { width: 42px; height: 42px; }
 #app.tiny .btn { min-height: 38px; font-size: 17px; padding: 6px 18px; }
-#app.tiny .menu-actions { gap: 6px; }
 #app.tiny .sel-head h2 { font-size: 24px; }
 #app.tiny .d-blurb, #app.tiny .d-sig span { display: none; }
-#app.tiny .d-go .btn { font-size: 16px; padding-inline: 12px; min-height: 40px; }
 #app.tiny .d-note { font-size: 12px; min-height: 0; }
 #app.tiny .sheet h2 { font-size: 38px; }
 #app.tiny .help-lead { font-size: 13px; line-height: 1.3; }
@@ -741,13 +622,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .help-go .btn { min-height: 36px; }
 /* phone held upright with the sideways view turned off: stack everything and scroll */
 #app.portrait .sel2, #app.portrait .on2 { display: flex; flex-direction: column; overflow-y: auto; touch-action: pan-y; }
-#app.portrait .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); height: auto; flex: none; }
-#app.portrait .tile { height: 72px; }
-#app.portrait .tile span { font-size: 16px; }
-#app.portrait .tile span { left: 6px; right: 4px; font-size: clamp(12px, 18cqw, 16px); }   /* Gunslinger: four tiles a row, see .tile above */
-#app.portrait #oppPop, #app.portrait #mapPop { right: auto; left: 0; }   /* the fighter list opens to the right: right-aligned it ran off the left edge upright (already so with six) */
-#app.portrait .detail { grid-template-columns: 1fr; flex: none; }
-#app.portrait .d-stage { height: 200px; }
 #app.portrait .on-grid { grid-template-columns: 1fr; flex: none; }
 #app.portrait .res2 { grid-template-columns: 1fr; }
 #app.narrow .sel-head h2 { font-size: 24px; }
@@ -832,17 +706,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 @media (prefers-reduced-motion: reduce) { .cs.pop, .trophy.won, .spark i { animation: none; } .cf { transition: none; } }
 /* ---------- end tournament ---------- */
 /* ---------- Daily Potato (ui/daily.js): the menu button, the streak on the pill, the sheet ---------- */
-.pill .pstk { display: flex; align-items: center; gap: 4px; font-family: var(--display); font-weight: 800; font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; color: #ffb36b; }
-.stkglyph { display: inline-block; width: 0.9em; height: 1em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8c1 3.7 6.5 6.2 6.5 12.2a6.5 6.5 0 0 1-13 0c0-3.2 1.8-5 3.1-6.4.2 2 1 3.2 2.2 3.8-.4-3.8.2-6.8 1.2-9.6z' fill='%23ff8a3d' stroke='%23a8451f' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M12 12.2c1.4 1.6 3 3 3 5.1a3 3 0 0 1-6 0c0-1.7 1.3-2.9 3-5.1z' fill='%23ffd66b'/%3E%3C/svg%3E") center / contain no-repeat; }
 #bDaily.won small { color: var(--sand); }
 #app.narrow #bDaily small { display: block; margin: 3px 0 0; }   /* upright: the line sits under the name instead of wrapping */
-#app.tiny .menu-actions .btn { min-height: 36px; }               /* six buttons fit 320 high */
 /* upright with a streak showing: a tighter pill, so big chip and cup counts still fit a 360-wide phone */
 #app.narrow .pill.stk { gap: 4px; padding-right: 10px; }
 #app.narrow .pill.stk .sep { display: none; }
 #app.narrow .pill.stk .pr, #app.narrow .pill.stk .pc { font-size: 18px; }
 #app.narrow .pill.stk .pcup, #app.narrow .pill.stk .pstk { font-size: 16px; gap: 3px; }
-.res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
 .dly-sheet { width: min(500px, 100%); gap: 12px; }
 .dly-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
 .dly-x { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase; color: var(--mute); }
@@ -864,6 +734,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .dly-f, #app.narrow .dly-f.r { flex-direction: column; text-align: center; }
 /* ---------- end Daily Potato ---------- */
 @media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult.full:not(.flash) .uf { animation: none; } .pc-ult .uf { transition: none; } }
+/*CSS*/
 </style>
 
 <div id="app">
@@ -905,56 +776,68 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <div id="tut" hidden><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div><div class="tut-h" id="tutH"></div><span class="tut-btns"><button class="chip" id="tutNext" hidden>Next</button><button class="chip" id="tutSkip">Skip</button></span></div>
 
-  <section id="scrMenu" class="screen menu">
-    <button class="iconbtn" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
-    <button class="pill" id="mRank" aria-label="Account and profile"><span class="av" id="mAvatar"></span><span class="pnw"><span class="pn" id="mName"></span><span class="pt" id="mTitle" hidden></span></span><i class="sep s1"></i><span class="pr"><span class="ring" id="mRingBox"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="mRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="mBadge"></i></span><b id="mRating">1000</b></span><i class="sep"></i><b class="pc" id="mTokens"><span class="tokglyph"></span>0</b><b class="pstk" id="mStreak" hidden><span class="stkglyph"></span>0</b><b class="pcup" id="mCups" hidden><span class="cupglyph"></span>0</b></button>
-    <div class="menu-panel scroll">
-      <div class="menu-inner">
-        <header class="brand">
-          <h1>Potato<span> Brawl</span></h1>
-          <i class="slash"></i>
-        </header>
-        <div class="menu-actions">
-          <button class="btn primary" id="bRanked"><span>Ranked match<small id="mRec">0W · 0L</small></span></button>
-          <button class="btn" id="bDaily"><span>Daily Potato<small id="mDaily">today's match</small></span></button>
-          <button class="btn" id="bCup"><span>Tournament<small id="mCup">8 players</small></span></button>
-          <button class="btn" id="bOnline"><span>Play friends<small id="mOnline">online</small></span></button>
-          <button class="btn" id="bPractice"><span>Practice</span></button>
-          <button class="btn" id="bHelp"><span>How to play</span></button>
-        </div>
-        <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
+  <!-- main menu (Fable's "sunset ink" design, menu-redesign/fable-menu-design.md): the top bar (logo, the profile plate + coins, the
+       gear), the gold Ranked hero with your fighter, the Daily Potato and Tournament tiles, three mini pills; the attract match plays
+       behind on the right (upright: in the middle). Styles: game/css/20-menu.css; texts: renderMenu (ui/screens.js), renderPill (ui/acct.js). -->
+  <section id="scrMenu" class="screen mm scroll">
+    <header class="mm-bar">
+      <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
+      <div class="mm-topr">
+        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin flame" id="mStreak" hidden>0</span><span class="coin cup" id="mCups" hidden>0</span></button>
+        <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
+      </div>
+    </header>
+    <div class="mm-col">
+      <button class="card gold tone mm-hero" id="bRanked" data-sfx="go" style="--i:0"><span class="mm-art"><img id="mHeroArt" alt=""></span><span class="mm-edge" aria-hidden="true"></span><span class="mm-body"><span class="kick" id="mRankKick">Ranked match</span><span class="mm-ttl">Ranked</span><span class="mm-sub" id="mRec">0W · 0L</span><span class="mm-cta"><span>Play</span><i aria-hidden="true"></i></span></span></button>
+      <div class="mm-row2">
+        <button class="card mm-tile mm-daily" id="bDaily" data-sfx="flip" style="--i:1"><span class="mm-vs" aria-hidden="true"><img id="mDailyA" alt=""><img id="mDailyB" alt=""><i>VS</i></span><span class="mm-tb"><b>Daily Potato</b><span class="mm-l" id="mDaily">today's match</span><span class="mm-l mm-l2" id="mDailyR"></span></span><span class="tag ember mm-today" id="mDailyTag">Today</span></button>
+        <button class="card mm-tile mm-cup" id="bCup" data-sfx="flip" style="--i:2"><span class="mm-medal" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v4.5a6 6 0 0 1-12 0z" fill="#f4c95d" stroke="#0e1022" stroke-width="1.8" stroke-linejoin="round"/><path d="M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11" fill="none" stroke="#0e1022" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13.5V17M8.5 21h7M9.5 17h5" fill="none" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M9 5c0 2 .5 4 2 5" fill="none" stroke="#fff3c4" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></svg></span><span class="mm-tb"><b>Tournament</b><span class="mm-l">8 players · bracket</span><span class="mm-l mm-l2" id="mCup"></span></span></button>
+      </div>
+      <div class="mm-row3">
+        <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
+        <button class="mini" id="bPractice" style="--i:4">Practice</button>
+        <button class="mini" id="bHelp" style="--i:5">How to play</button>
       </div>
     </div>
+    <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
     <div class="a2hs" id="a2hsHint" hidden><span>Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress.</span><button class="link" id="a2hsOk">OK</button></div>
+    <span class="livetag mm-live"><i aria-hidden="true"></i><span id="mLive">Live</span></span>
   </section>
 
-  <section id="scrSelect" class="screen select" hidden>
-    <div class="sel2">
-      <header class="sel-head">
-        <button class="back" id="selBack" aria-label="Back"></button>
-        <div class="grow"><div class="kicker" id="selMode">Ranked match</div><h2>Choose your fighter</h2></div>
-        <div class="sel-opts" id="pracOpts" hidden>
-          <div class="pickwrap"><button class="chip pick" id="oppPick"></button><div class="pop" id="oppPop" hidden></div></div>
-          <div class="pickwrap"><button class="chip pick" id="lvlPick"></button><div class="pop" id="lvlPop" hidden></div></div>
-          <div class="pickwrap"><button class="chip pick" id="mapPick"></button><div class="pop" id="mapPop" hidden></div></div>
+  <!-- fighter select (game/css/30-select.css): roster | stage | info; the whole screen tints to the picked fighter (--sfc) -->
+  <section id="scrSelect" class="screen select sl-scr" hidden>
+    <div class="sl">
+      <header class="sl-head">
+        <button class="round sl-back" id="selBack" data-sfx="back" aria-label="Back"></button>
+        <div class="sl-ttl"><div class="kick" id="selMode">Ranked match</div><h2>Choose your fighter</h2></div>
+        <div class="sl-opts" id="pracOpts" hidden>
+          <div class="pickwrap"><button class="sl-pick" id="oppPick" aria-haspopup="true"></button><div class="pop" id="oppPop" hidden></div></div>
+          <div class="pickwrap"><button class="sl-pick" id="lvlPick" aria-haspopup="true"></button><div class="pop" id="lvlPop" hidden></div></div>
+          <div class="pickwrap"><button class="sl-pick" id="mapPick" aria-haspopup="true"></button><div class="pop" id="mapPop" hidden></div></div>
         </div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="selTokens">0</span></div>
+        <div class="coin chips sl-coin" aria-label="Chips"><span id="selTokens">0</span></div>
       </header>
-      <div class="tiles" id="tiles" role="group" aria-label="Fighters"></div>
-      <div class="detail" id="detail">
-        <div class="d-stage"><canvas class="d-art" id="dArt"></canvas></div>
-        <div class="d-info">
-          <div class="d-name"><b id="dName"></b><span id="dRole"></span></div>
-          <p class="d-blurb" id="dBlurb"></p>
-          <div class="d-stats" id="dStats"></div>
-          <div class="d-sigs"><div class="d-sig" id="dSig"></div><div class="d-sig d-ult" id="dUlt"></div></div>
+      <div class="sl-roster" id="tiles" role="group" aria-label="Fighters"></div>
+      <div class="sl-detail" id="detail">
+        <div class="sl-stage">
+          <div class="sl-top">
+            <div class="sl-scene" aria-hidden="true"><i class="rays"></i><div class="sl-por" id="dPor"></div><i class="speed"></i></div>
+            <canvas class="sl-art" id="dArt" aria-hidden="true"></canvas>
+            <div class="sl-name" id="dNameBox"><b id="dName"></b><span id="dRole"></span></div>
+          </div>
+          <div class="sl-skins">
+            <div class="sl-sws" id="dPals" role="group" aria-label="Skins"></div>
+            <div class="sl-note" id="dNote" aria-live="polite"></div>
+          </div>
         </div>
-        <div class="d-side">
-          <div class="d-pals" id="dPals"></div>
-          <div class="d-note" id="dNote"></div>
-          <div class="d-go">
-            <button class="btn primary" id="selGo"><span>Fight</span></button>
-            <button class="btn up" id="selUp" hidden><span>Upgrade</span></button>
+        <div class="sl-info">
+          <p class="sl-blurb" id="dBlurb"></p>
+          <div class="card sl-stats" id="dStats"></div>
+          <div class="card sl-move" id="dSig"></div>
+          <div class="card sl-move ult" id="dUlt"></div>
+          <div class="sl-go">
+            <button class="btn primary sl-fight" id="selGo"><span>Fight</span></button>
+            <button class="btn up sl-up" id="selUp" hidden><span>Upgrade</span></button>
           </div>
         </div>
       </div>
@@ -967,7 +850,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <header class="sel-head">
         <button class="back" id="cupBack" aria-label="Menu"></button>
         <div class="grow"><div class="kicker" id="cupKick">Tournament</div><h2 id="cupTitle">Quarter-final</h2></div>
-        <div class="tokpill"><span class="tokglyph"></span><span id="cupTokens">0</span></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="cupTokens">0</span></div>
       </header>
       <div class="cup-main">
         <div class="cup-grid" id="cupGrid"></div>
@@ -980,11 +863,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
   <section id="scrDaily" class="screen modal" hidden>
     <div class="sheet dly-sheet scroll">
-      <div class="x-row"><h3>Daily Potato</h3><span class="kicker" id="dlyDate"></span></div>
-      <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
-      <p class="dly-rule" id="dlyRule"></p>
-      <p class="dly-line" id="dlyLine"></p>
-      <div class="dly-acts"><button class="btn primary" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+      <header class="sh-head"><h3>Daily Potato</h3><span class="kick" id="dlyDate"></span><button class="round x" id="dlyClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
+        <p class="dly-rule" id="dlyRule"></p>
+        <p class="dly-line" id="dlyLine"></p>
+        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+      </div>
     </div>
   </section>
 
@@ -1023,56 +908,65 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <section id="scrResult" class="screen result" hidden>
-    <div class="sheet res2 scroll" id="resSheet">
+    <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
+    <div class="res3 scroll" id="resSheet">
       <div class="res-main">
-        <div>
-          <div class="kicker" id="rMode">Ranked match</div>
+        <div class="res-art" aria-hidden="true"><i class="rays"></i><img id="rArt" alt=""></div>
+        <i class="res-edge" aria-hidden="true"></i>
+        <div class="res-txt">
+          <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span></div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
           <p class="res-fin" id="rFin" hidden></p>
         </div>
-        <div class="res-actions">
-          <button class="btn primary" id="rAgain"><span>Next match</span></button>
-          <button class="btn" id="rChange"><span>Fighters</span></button>
-          <button class="btn" id="rMenu"><span>Menu</span></button>
-        </div>
       </div>
       <div class="res-side">
-        <div class="res-rank" id="rRank">
+        <div class="card res-rank" id="rRank">
           <div class="badge" id="rBadge"></div>
-          <div>
-            <div class="rk-tier" id="rTier">Bronze</div>
+          <div class="rk-body">
+            <div class="rk-head"><span class="rk-tier" id="rTier">Bronze</span><span class="promo" id="rPromo"></span></div>
             <div class="rk-sub" id="rRating"></div>
-            <div class="bar"><i id="rBar"></i></div>
-            <div class="promo" id="rPromo"></div>
+            <div class="bar"><i id="rBar"></i><b id="rGain"></b></div>
           </div>
-          <div class="delta" id="rDelta">+0</div>
+          <div class="delta" id="rStick"><b id="rDelta">+0</b><small>Rating</small></div>
         </div>
-        <p class="res-line" id="rStats"></p>
-        <p class="res-chips" id="rChips"></p>
+        <div class="res-stats" id="rStats">
+          <div class="card stat"><b id="rKOs">0</b><span id="rKOsL">KOs</span></div>
+          <div class="card stat"><b><span id="rDmg">0</span><small>%</small></b><span>Damage dealt</span></div>
+          <div class="card stat"><b id="rFalls">0</b><span id="rFallsL">Falls</span></div>
+          <div class="res-chips" id="rChips"><div class="card stat chips" id="rChipT"><b>+<span id="rChipN">0</span></b> <span>chips</span></div> <p class="res-why" id="rWhy"></p></div>
+        </div>
         <div class="res-pick" id="rPick" hidden>
-          <div class="kicker">You lost this game, so you may switch fighter</div>
+          <div class="kick">You lost this game, so you may switch fighter</div>
           <div class="chips" id="rPickChips"></div>
+        </div>
+        <div class="res-actions">
+          <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
+          <button class="btn" id="rChange"><span>Fighters</span></button>
+          <button class="btn" id="rMenu"><span>Menu</span></button>
         </div>
       </div>
     </div>
   </section>
 
   <section id="scrPause" class="screen modal" hidden>
-    <div class="sheet">
-      <div class="x-row"><h2>Paused</h2><button class="iconbtn" id="pSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button></div>
-      <div class="sheet-actions">
-        <button class="btn primary" id="pResume"><span>Resume</span></button>
-        <button class="btn" id="pHelp"><span>How to play</span></button>
-        <button class="btn" id="pQuit"><span>Forfeit</span></button>
+    <div class="sheet pause-sheet">
+      <header class="sh-head"><h2 class="pz">Paused</h2><button class="round" id="pSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button></header>
+      <div class="sh-body">
+        <div class="sheet-actions">
+          <button class="btn primary lg" id="pResume"><span>Resume</span></button>
+          <button class="btn" id="pHelp"><span>How to play</span></button>
+          <button class="btn" id="pQuit"><span>Forfeit</span></button>
+        </div>
+        <p id="pNote"></p>
       </div>
-      <p id="pNote"></p>
     </div>
   </section>
 
   <section id="scrHelp" class="screen modal" hidden>
     <div class="sheet help-sheet scroll">
-      <div class="x-row"><h3>How to play</h3><button class="link" id="hClose">Close</button></div>
+      <header class="sh-head"><h3>How to play</h3><button class="round x" id="hClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
       <p class="help-lead">Hits raise the other potato's damage, and the higher it is, the farther they fly. Knock them off the screen to take a life.</p>
       <div class="help-body"><div id="helpFig"></div><dl class="help-keys" id="helpKeys"></dl></div>
       <div class="help-combos help-ult" id="helpUlt"></div>
@@ -1090,22 +984,26 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </dl>
       </details>
       </div>
+      </div>
     </div>
   </section>
 
   <section id="scrSettings" class="screen modal" hidden>
     <div class="sheet set-sheet scroll">
-      <div class="x-row"><h3>Settings</h3><button class="link" id="setClose">Close</button></div>
-      <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
-      <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
-      <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
-      <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      <header class="sh-head"><h3>Settings</h3><button class="round x" id="setClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
+        <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
+        <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
+        <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      </div>
     </div>
   </section>
 
   <section id="scrAccount" class="screen modal" hidden>
     <div class="sheet acct-sheet scroll">
-      <div class="x-row"><h3>Account</h3><button class="link" id="acClose">Close</button></div>
+      <header class="sh-head"><h3>Account</h3><button class="round x" id="acClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
       <div class="ac-tabs" role="tablist" aria-label="Account sections">
         <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
         <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
@@ -1138,6 +1036,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
       <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
+      </div>
     </div>
   </section>
 </div>

@@ -87,6 +87,7 @@ const TUNE = {
   ultTaken: 0.3,
   ultHeart: 6,
   ultFreeze: 30,
+  ultKb: 1.75,     // every ulti hit's knockback, times (Jonny 2026-10-14 20:45 UTC: 75-80% stronger, they hardly ever KO'd)
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -172,7 +173,7 @@ const FIGHTERS = [
                proj: { style: "fire", speed: 8.5, life: 76, r: 15, ox: 36, oy: -40, grav: 0.03, dmg: 8, bkb: 5.5, kbg: 8, angle: 38,
                        fin: { dmg: 10, bkb: 10, kbg: 14, angle: 40 } } }),
       // Solar Dive: up and out of sight (intangible), the spot is picked at mt 15, a comet dive, the blast where it lands
-      ulti:  M(60, 6, 34, 26, 8, 15, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
+      ulti:  M(60, 6, 34, 26, 6, 10, 82, [[0, -16, 40], [-52, -10, 24], [52, -10, 24]], { limb: "body", ult: "dive", inv: [1, 60], armor: [1, 60] }),
     },
   },
   {
@@ -1200,6 +1201,7 @@ function applyHit(g, h) {
   if (!ultHit) { ultGain(att, dmg * TUNE.ultDealt); ultGain(def, dmg * TUNE.ultTaken); }
   let kb = knockback(hit, def.percent, def.s.weight);
   if (ck) kb *= 1 + TUNE.chgKb * ck;
+  if (ultHit && kb >= TUNE.tumbleKb) kb *= TUNE.ultKb;   // only the launching hits, so a multi-hit ulti still carries its target into the last hit
   let hdir;
   if (h.proj) hdir = sign(h.proj.vx) || h.proj.dir;
   else if (Math.abs(h.lx) < 8) hdir = sign(def.x - att.x) || att.facing;
@@ -1580,7 +1582,7 @@ const BOT_STYLES = {
   alchemist: { gap: 1.6, back: 0.4, spec: 1.3, atk: 1.15, heavy: 1.25 },               // stays back and lobs
   odin:      { gap: 0.8, shuffle: 0, charge: 0.75, heavy: 2.5 },                       // walks forward, charges heavies
   phoenix:   { air: 0.35, atk: 1.25, heavy: 0.6 },                                     // fights from the air
-  wizard:    { gap: 1.8, back: 0.8, rng: 14, poke: 0.9 },                              // pokes at staff range
+  wizard:    { gap: 1.4, back: 0.4, rng: 10, poke: 0.8 },                              // pokes at staff range
   dragon:    { edge: 0.6 },                                                            // guards the edge
   gunslinger:{ gap: 1.2, back: 0.3, spec: 1.15, heavy: 1.1 },                          // keeps a mid distance, shoots often, hammers a finish-ready opponent
   reaper:    { gap: 1.35, rng: 14, shuffle: 0.2, charge: 0.4 },                        // stands at scythe range, charges the arc

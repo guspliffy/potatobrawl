@@ -19,6 +19,8 @@
 #   --slow / --adaptive  the cheap tier / let the page choose its tier by its own timing (the default pins the full tier)
 #   --throttle=N  CPU throttling (a mid phone is about 4); the page's own timing of its draw (FIN.mgStat) is printed either way
 #   --video=      step the page at 30 fps from the hit to the results, screenshot every frame at the given size and device scale, encode with ffmpeg
+#   --tail=N      with --video: N more frames of the results (default 8; a page may leave something on them, the Alchemist's Ultimate splatters them)
+#   --after=...   pictures of the results that many ms after they came up (stepped at 20 fps)
 # Prints "no errors" when no page errors happened and every run ended on the results screen as expected.
 import sys, json, pathlib, subprocess, shutil
 from playwright.sync_api import sync_playwright
@@ -31,6 +33,8 @@ aim = opt("--aim", "side")
 ult = "--ult" in args
 dsf = float(opt("--dsf", "1"))
 video = opt("--video")
+tail = int(opt("--tail", "8"))
+after_ms = [int(x) for x in opt("--after", "").split(",") if x]
 fighter = opt("--fighter", "dragon")
 throttle = float(opt("--throttle", "1"))
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
@@ -155,7 +159,7 @@ def run(b, fid, opp):
             ff(pg, 1000 / 30); n += 1
             shot(pg, str(frames / f"f{n:04d}.png"))
             if n > 400: break
-        for _ in range(8):
+        for _ in range(tail):
             ff(pg, 1000 / 30); n += 1; shot(pg, str(frames / f"f{n:04d}.png"))
         print(f"video frames: {n} in {frames}")
     cdp = None
@@ -202,6 +206,10 @@ def run(b, fid, opp):
     ok = pg.evaluate("() => window.__blastline.mode") == "result"
     ff(pg, 500)
     shot(pg, f"manga-{fid}-vs-{opp}-{tag}-result.png")
+    el = 500
+    for ms in after_ms:
+        while el < ms: ff(pg, 50); el += 50
+        shot(pg, f"manga-{fid}-vs-{opp}-{tag}-result-{ms:04d}.png")
     st = pg.evaluate("() => { const s = window.__blastline.fin.mgStat; return s ? { frames: s.n, avg: s.n ? s.sum / s.n : 0, max: s.max } : null; }")
     ev = info["ev"] or {}
     print(f"{fid} vs {opp}: lethal {ev.get('mv')} dir=({ev.get('dirx', 0):.2f},{ev.get('diry', 0):.2f}) page={info['manga']} results after {took:.0f} ms; draw ms: " + (f"avg {st['avg']:.2f} max {st['max']:.2f} over {st['frames']} frames" if st else "-"))

@@ -20,17 +20,61 @@ function newAttract() {
   const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   trails[0].length = trails[1].length = 0;
+  $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
 }
 
+/* ----- the main menu (Fable's design; markup in shell.html #scrMenu, styles in game/css/20-menu.css) ----- */
+// a portrait <img> on the menu, set only when the fighter changes (the portraits are inlined data URLs)
+function menuImg(img, id) {
+  const src = PORTRAITS[id] || "";
+  if (img._src !== src) { img._src = src; if (src) img.src = src; else img.removeAttribute("src"); }
+  img.dataset.f = id;
+}
 function renderMenu() {
-  renderPill();   // profile pill, ui/acct.js
-  $("mRec").textContent = `${P.wins}W · ${P.losses}L${P.streak > 1 ? ` · ${P.streak} streak` : ""}`;
+  renderPill();   // the profile plate and the coins, ui/acct.js
+  // the Ranked hero: the fighter you play (P.last) in the slanted mask, your tier, your record and the rating to the next tier
+  const ti = tierInfo(P.rating), spec = FIG[P.last] || FIGHTERS[0], pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0], hero = $("bRanked");
+  hero.style.setProperty("--fc", col(pal)); hero.dataset.f = spec.id;
+  menuImg($("mHeroArt"), spec.id);
+  $("mRankKick").innerHTML = `Ranked<span class="mm-km"> match</span> · ${ti.t.name} ${+P.rating || 0}`;   // small screens drop "match"
+  // the line wraps only after a " · " (no-break spaces inside each part and before each dot)
+  const rec = P.matches > 0 ? [`${P.wins}W`, `${P.losses}L`].concat(P.streak > 1 ? [`${P.streak} streak`] : []) : ["First match"];
+  rec.push(ti.next ? `${ti.need} to ${ti.next.name}` : "top tier");
+  $("mRec").textContent = rec.map((t) => t.replace(/ /g, "\u00a0")).join("\u00a0· ");
+  // Tournament: a cup in progress, the cups won, or what a cup pays
+  const c = cupOk(P.cup) ? P.cup : null, cups = P.cups | 0;
+  $("mCup").innerHTML = c ? `<em>Resume</em>${c.out < 0 ? ` · ${CUP.names[c.round].toLowerCase()}` : ""}`
+    : cups ? `<em>${cups} ${cups === 1 ? "cup" : "cups"} won</em>` : `<em>Up to ${CUP.chips.reduce((a, n) => a + n, CUP.flawless)} chips</em>`;
+  // Play friends: the mint dot when online play is there, greyed out with the reason when not
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
-  $("mOnline").textContent = onOk ? "online" : "needs the game's web link";
+  $("mOnline").textContent = onOk ? "" : "needs the web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
-  cupMenu(); dailyMenu();
+  dailyMenu(); menuDaily();
 }
+// the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
+function menuDaily() {
+  const key = dailyKey(), st = dailyGet(), done = st.d === key, pk = dailyPick(key), tile = $("bDaily"), tag = $("mDailyTag");
+  menuImg($("mDailyA"), pk.me); menuImg($("mDailyB"), pk.opp);
+  tile.classList.toggle("done", done);
+  $("mDailyR").innerHTML = done ? "" : `<em>+${DAILY.win} chips</em> · one try`;
+  const won = done && st.r === 1;
+  tag.textContent = done ? (won ? "Won" : "Done") : "Today";
+  tag.className = `tag ${won ? "mint" : done ? "done" : "ember"} mm-today`;
+}
+// The top bar: when the plate and the coins do not fit beside the logo (or across an upright phone), first the coins get
+// tighter (.fit1), then the plate drops the name (.fit2). Runs after renderPill and whenever the menu changes size.
+function menuFit() {
+  const me = $("mRank"), bar = me.closest(".mm-bar"), top = me.parentNode;
+  if (screens.menu.hidden) return;
+  const crowded = () => bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1;
+  me.classList.remove("fit1", "fit2");
+  for (const k of ["fit1", "fit2"]) { if (!crowded()) break; me.classList.add(k); }
+}
+if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe(screens.menu);
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => menuFit());   // the web fonts change the widths
+// the Daily tile turns over to the next matchup at midnight while the menu stays open (daily.js turns its line over too)
+setInterval(() => { if (mode === "menu") menuDaily(); }, 30000);
 // a downloaded copy of the page has no way to reach other players
 function onlineAvailable() {
   const c = window.claude && typeof window.claude.use === "function";
@@ -78,43 +122,65 @@ function statBars(spec) {
 // put an owned skin on a fighter (the select screen's swatches and the Account locker both do this)
 function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
 function selPalIdx(spec) { return sel.pending && sel.pending.id === spec.id ? sel.pending.i : P.pal[spec.id] || 0; }
+/* The roster is built once and then only restyled, so the pick can scale up (CSS) instead of being redrawn.
+   Tiles keep the class "tile" (the tests click them by it). */
 function buildTiles() {
-  const wrap = $("tiles"); wrap.innerHTML = "";
-  for (const spec of FIGHTERS) {
-    const b = document.createElement("button");
-    const on = sel.fighter === spec.id;
-    b.className = "tile" + (on ? " on" : "");
-    b.style.setProperty("--fc", col(spec.palettes[P.pal[spec.id] || 0]));
+  const wrap = $("tiles");
+  if (wrap.children.length !== FIGHTERS.length) {
+    wrap.innerHTML = "";
+    for (const spec of FIGHTERS) {
+      const b = document.createElement("button");
+      b.className = "tile"; b.dataset.id = spec.id;
+      b.innerHTML = `${PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : ""}<span><b>${spec.name}</b></span>`;
+      b.addEventListener("click", () => {
+        Sfx.init(); if (sel.fighter === spec.id) { Sfx.ui(); return; }
+        Sfx.uiFlip();
+        sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
+        buildTiles(); buildDetail();
+      });
+      wrap.appendChild(b);
+    }
+  }
+  for (const b of wrap.children) {
+    const spec = FIG[b.dataset.id], on = sel.fighter === spec.id;
+    b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
-    b.innerHTML = `${PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : ""}<span>${spec.name}</span>`;
-    b.addEventListener("click", () => {
-      Sfx.init(); Sfx.ui();
-      if (sel.fighter === spec.id) return;
-      sel.fighter = spec.id; sel.pending = null; P.last = spec.id; saveProfile();
-      buildTiles(); buildDetail();
-    });
-    wrap.appendChild(b);
+    b.style.setProperty("--fc", col(spec.palettes[P.pal[spec.id] || 0]));
   }
 }
+// restart a one-shot CSS animation (the stage name and model when the fighter changes)
+function slReplay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function buildDetail() {
-  const spec = FIG[sel.fighter], pi = selPalIdx(spec), pal = spec.palettes[pi] || spec.palettes[0];
-  const d = $("detail");
-  d.style.setProperty("--fc", col(pal));
-  d.style.setProperty("--fcglow", rgba(col(pal), 0.34));
+  const spec = FIG[sel.fighter], pi = selPalIdx(spec), pal = spec.palettes[pi] || spec.palettes[0], c = col(pal);
+  // the whole screen tints to the skin being looked at (registered properties, so the tint eases over in CSS)
+  screens.select.style.setProperty("--sfc", c);
+  screens.select.style.setProperty("--sfcg", rgba(c, 0.42));
+  screens.select.style.setProperty("--sfct", rgba(c, 0.13));
+  // the stage art: one portrait per fighter; the new pick fades in over the last one (the art shows the base look, the model the skin)
+  const por = $("dPor");
+  if (por.children.length !== FIGHTERS.length) por.innerHTML = FIGHTERS.map((f) => `<img data-id="${f.id}" alt=""${PORTRAITS[f.id] ? ` src="${PORTRAITS[f.id]}"` : ""}>`).join("");
+  const was = por.querySelector("img.on"), now = por.querySelector(`img[data-id="${spec.id}"]`);
+  if (was !== now) {
+    for (const im of por.children) im.classList.remove("was");
+    if (was) { was.classList.remove("on"); was.classList.add("was"); slReplay($("dNameBox"), "swap"); slReplay($("dArt"), "swap"); }
+    if (now) now.classList.add("on");
+  }
   $("dName").textContent = spec.name;
   $("dRole").textContent = spec.role;
   $("dBlurb").textContent = spec.blurb;
-  $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="seg" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
-  $("dSig").innerHTML = `<b>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
-  $("dUlt").innerHTML = `<em>Ulti</em><b>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
+  $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="sl-seg" role="img" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
+  $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
+  $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   const pals = $("dPals"); pals.innerHTML = "";
   spec.palettes.forEach((p, i) => {
     const own = P.owned[spec.id].includes(i), cur = (P.pal[spec.id] || 0) === i, pend = !!sel.pending && sel.pending.id === spec.id && sel.pending.i === i;
     const b = document.createElement("button");
     b.className = `sw${cur ? " cur" : ""}${own ? "" : " lock"}${pend ? " pending" : ""}`;
     b.style.setProperty("--c", col(p));
+    b.title = p.name;
     b.setAttribute("aria-label", `${p.name}${own ? "" : `, locked, ${p.price} chips`}`);
-    b.innerHTML = `<i>${i ? `<em>${"✦".repeat(i)}</em>` : ""}</i>${own ? p.name : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
+    b.setAttribute("aria-pressed", String(own ? cur : pend));
+    b.innerHTML = `<i></i><small>${own ? p.name : `<span class="tokglyph"></span>${p.price}`}</small>`;
     b.addEventListener("click", () => {
       Sfx.init(); Sfx.ui();
       if (own) { equipSkin(spec.id, i); sel.pending = null; }
@@ -124,11 +190,15 @@ function buildDetail() {
     pals.appendChild(b);
   });
   $("dNote").textContent = skinNote(spec, pi);
-  // the big model shows the skin being looked at, locked or not
-  const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
-  f.x = 0; f.y = 0; f.facing = 1;
+  // the portrait only has the base look: any other skin (equipped or a locked one being previewed) stands in the stage corner as the
+  // model drawn in a match
+  screens.select.classList.toggle("sl-skin", pi !== 0);
   cardArt.length = 0;
-  cardArt.push({ cv: $("dArt"), f, fit: 0.74, bottom: 0.93 });
+  if (pi !== 0) {
+    const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+    f.x = 0; f.y = 0; f.facing = -1;
+    cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
+  }
   $("selTokens").textContent = P.tokens;
   updateUpgrade();
 }
@@ -140,11 +210,12 @@ function skinNote(spec, i) {
 function updateUpgrade() {
   const btn = $("selUp"), pd = sel.pending;
   btn.hidden = !pd;
+  screens.select.classList.toggle("sl-pend", !!pd);
   if (!pd) return;
   const spec = FIG[pd.id], p = spec.palettes[pd.i], short = p.price - P.tokens;
   btn.disabled = short > 0;
-  btn.querySelector("span").textContent = "Upgrade";
-  if (short > 0) $("dNote").textContent = `${skinNote(spec, pd.i)} ${short} more chips needed.`;
+  btn.querySelector("span").innerHTML = `Upgrade<small><span class="tokglyph"></span>${p.price}</small>`;
+  if (short > 0) $("dNote").textContent = `${short} more chips needed. ${skinNote(spec, pd.i)}`;   // the shortage first: small phones clamp the note
   btn.setAttribute("aria-label", short > 0 ? `${p.name} costs ${p.price} chips, you need ${short} more` : `Upgrade ${spec.name} to ${p.name} for ${p.price} chips`);
 }
 function buyPending() {
@@ -153,7 +224,7 @@ function buyPending() {
   const spec = FIG[pd.id], p = spec.palettes[pd.i];
   if (P.tokens < p.price || P.owned[spec.id].includes(pd.i)) { updateUpgrade(); return; }
   P.tokens -= p.price; P.owned[spec.id].push(pd.i); P.pal[spec.id] = pd.i; sel.pending = null; saveProfile();
-  Sfx.ui();
+  Sfx.uiCoin();
   buildTiles(); buildDetail();
   $("dNote").textContent = `Upgraded to ${p.name}. ${FXTEXT[spec.id][pd.i] || ""}`.trim();
 }
@@ -170,38 +241,43 @@ function drawCards(tk) {
     const c = a.cv.getContext("2d");
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
     const sp = ART_SPAN[a.f.spec.id], sc = Math.min((h * artFit(a)) / a.f.s.h, sp ? (w * 0.96) / sp.span : Infinity);
-    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc : 0), h * (a.bottom || 0.95));
+    c.setTransform(sc, 0, 0, sc, w * 0.5 - (sp ? sp.dx * sc * (a.f.facing || 1) : 0), h * (a.bottom || 0.95));
     drawFighter(c, a.f, tk);
   }
 }
-/* practice: opponent and CPU level are small pickers in the header */
-function closePops() { $("oppPop").hidden = true; $("lvlPop").hidden = true; $("mapPop").hidden = true; }
+/* practice: opponent, CPU level and map are dropdown chips in the header; each opens its .pop list */
+const SEL_PICKS = [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]];
+function closePops() { for (const [btn, pop] of SEL_PICKS) { $(pop).hidden = true; $(btn).setAttribute("aria-expanded", "false"); } }
 function buildPractice() {
-  $("oppPick").innerHTML = `<small>vs</small>${sel.opp === "random" ? "Random" : FIG[sel.opp].name}`;
-  $("lvlPick").innerHTML = `<small>CPU</small>${LEVELS[sel.level].name}`;
-  $("mapPick").innerHTML = `<small>Map</small>${sel.map === "random" ? "Random" : mapName(sel.map)}`;
+  const opp = sel.opp === "random" ? null : FIG[sel.opp];
+  $("oppPick").innerHTML = `<small>VS</small>${opp && PORTRAITS[opp.id] ? `<img src="${PORTRAITS[opp.id]}" alt="">` : `<i class="sl-q">?</i>`}<span>${opp ? opp.name : "Random"}</span>`;
+  $("lvlPick").innerHTML = `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
+  $("mapPick").innerHTML = `<small>Map</small><span>${sel.map === "random" ? "Random" : mapName(sel.map)}</span>`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
       const b = document.createElement("button");
       b.textContent = it.label; if (isOn(it)) b.className = "on";
+      if (it.img) b.insertAdjacentHTML("afterbegin", `<img src="${it.img}" alt="">`);
       b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); pick(it); closePops(); buildPractice(); });
       pop.appendChild(b);
     });
   };
-  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
+  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
   fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) }))], (it) => it.i === sel.map, (it) => { sel.map = it.i; });
 }
-for (const [btn, pop] of [["oppPick", "oppPop"], ["lvlPick", "lvlPop"], ["mapPick", "mapPop"]]) {
-  $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; });
+for (const [btn, pop] of SEL_PICKS) {
+  $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; $(btn).setAttribute("aria-expanded", String(open)); });
 }
 app.addEventListener("click", (e) => { if (!e.target.closest(".pickwrap")) closePops(); });
 function openSelect(m) {
   sel.mode = m; sel.pending = null;
   mode = "select";
   const ti = tierInfo(P.rating);
-  $("selMode").textContent = m === "ranked" ? `Ranked match · ${ti.t.name} ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · no rating, no chips";
+  // the kicker names the mode (ranked: your tier in its colour and the rating)
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends" : m === "cup" ? "Tournament · you and 7 CPUs" : "Practice · vs CPU";
+  screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
   $("selGo").querySelector("span").textContent = m === "online" ? "Done" : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
@@ -382,84 +458,130 @@ function finishMatch(forfeit) {
   }
   showResults(R);
 }
-// Counts a number up (or down) to its final value in ~0.8 s, ease-out. Instant with reduced motion; a tap anywhere on the
-// results screen, or the next showResults, finishes it at once (resCountEnd).
+// Counts a number up (or down) to its final value, ease-out: o.delay ms after the call, over o.dur ms (0.8 s if not given). Instant
+// with reduced motion; a tap anywhere on the results screen, or the next results, finishes every count (and the motion) at once.
+// A timer writes the final value on time even when frames come slowly (a busy phone): the number is never left short.
 let resCounts = [], resRaf = 0;
+const resCalm = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 function resCountEnd() {
   cancelAnimationFrame(resRaf); resRaf = 0;
-  for (const c of resCounts) c.el.textContent = c.pre + c.to;
+  for (const c of resCounts) { clearTimeout(c.tm); c.el.textContent = c.pre + c.to; if (c.end) c.end(); }
   resCounts = [];
 }
-function resCount(el, from, to, pre) {
-  const still = from === to || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function resCount(el, from, to, pre, o) {
+  const still = from === to || resCalm();
   el.textContent = pre + (still ? to : from);
   if (still) return;
-  resCounts.push({ el, from, to, pre });
-  if (resRaf) return;
-  const t0 = performance.now();
-  const tick = (now) => {
-    const k = Math.min(1, (now - t0) / 800), e = 1 - Math.pow(1 - k, 3);
-    for (const c of resCounts) c.el.textContent = c.pre + Math.round(c.from + (c.to - c.from) * e);
-    if (k < 1) resRaf = requestAnimationFrame(tick); else { resRaf = 0; resCounts = []; }
-  };
-  resRaf = requestAnimationFrame(tick);
+  const delay = (o && o.delay) || 0, dur = (o && o.dur) || 800;
+  const c = { el, from, to, pre, t0: performance.now() + delay, dur, end: o && o.end };   // end: once, when the count lands or is skipped
+  c.tm = setTimeout(() => { c.el.textContent = c.pre + c.to; resCounts = resCounts.filter((x) => x !== c); if (c.end) c.end(); }, delay + dur);
+  resCounts.push(c);
+  if (!resRaf) resRaf = requestAnimationFrame(resTick);
 }
-screens.result.addEventListener("pointerdown", resCountEnd, true);   // a tap on the sheet (even on a button) just finishes the count
-function showResults(R) {
+function resTick(now) {
+  resCounts = resCounts.filter((c) => {
+    const k = clamp((now - c.t0) / c.dur, 0, 1), e = 1 - Math.pow(1 - k, 3);
+    c.el.textContent = c.pre + Math.round(c.from + (c.to - c.from) * e);
+    if (k >= 1) { clearTimeout(c.tm); if (c.end) c.end(); }
+    return k < 1;
+  });
+  resRaf = resCounts.length ? requestAnimationFrame(resTick) : 0;
+}
+// a tap on the screen (even on a button) finishes the counts and jumps the motion (css/40-results.css) to its end
+screens.result.addEventListener("pointerdown", () => { resCountEnd(); $("resSheet").classList.add("still"); }, true);
+// What every results screen shares (the tutorial's too, tutorial.js): the look ("win" / "loss" / "draw"), the portrait on the panel,
+// the motion started again (.in: VICTORY stamps in, the cards slide up, the bar fills, the sticker pops), the optional parts reset.
+function resOpen(look, spec, solo) {
   resCountEnd();
+  const sheet = $("resSheet");
+  sheet.classList.remove("win", "loss", "draw", "solo", "in", "still");
+  sheet.classList.add(look); sheet.classList.toggle("solo", !!solo);
+  void sheet.offsetWidth; sheet.classList.add("in");
+  const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
+  art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
+  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false;
+  $("rAgain").disabled = false; $("rAgainSub").textContent = "";
+  sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
+}
+// the big word; the long ones (Opponent left, Disconnected) are set smaller so they fit the panel
+function resTitle(t) { const h = $("rTitle"); h.textContent = t; h.style.setProperty("--n", t.length > 7 ? t.length + 1 : 7); }
+// one line of text with bold names: strings, or { b: name } (a name a player typed goes in as text, never as markup)
+function resLine(el, parts) {
+  el.textContent = "";
+  for (const x of parts) {
+    if (x && typeof x === "object") { const b = document.createElement("b"); b.textContent = x.b; el.append(b); }
+    else if (x) el.append(x);
+  }
+}
+// The rank card: R is a ranked result (before, after, delta, tb, ta), or null for your rank as it stands (the tutorial's results).
+// The bar is the tier's fill up to what you kept, then the part this match won (mint, it fills) or lost (ketchup); the sticker
+// with the rating change pops after the bar.
+function resRank(R) {
+  const ti = tierInfo(R ? R.after : P.rating), promo = !!R && R.ta > R.tb, drop = !!R && R.ta < R.tb;
+  $("rRank").hidden = false;
+  $("rRank").style.setProperty("--tc", ti.t.col);
+  paintBadge($("rBadge"), ti.i, promo ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
+  $("rTier").textContent = ti.t.name;
+  const pr = $("rPromo"); pr.textContent = promo ? "Promoted!" : drop ? "Dropped" : ""; pr.classList.toggle("down", drop);
+  const rt = $("rRating"), b = document.createElement("b");
+  if (R) { const rn = document.createElement("span"); b.append(`${R.before} → `, rn); resCount(rn, R.before, R.after, "", { delay: 450 }); }
+  else b.textContent = P.rating;
+  rt.textContent = ""; rt.append(b, ti.next ? ` · ${ti.need} to ${ti.next.name}` : "");
+  const bi = R ? tierInfo(R.before) : ti, pa = ti.p, pb = bi.i === ti.i ? bi.p : bi.i < ti.i ? 0 : 1;
+  $("rBar").style.setProperty("--p", Math.min(pa, pb));
+  const g = $("rGain"); g.style.setProperty("--g0", Math.min(pa, pb)); g.style.setProperty("--g1", Math.max(pa, pb));
+  g.parentNode.classList.toggle("down", pa < pb);
+  if (R) {
+    $("rStick").className = "delta " + (R.delta >= 0 ? "up" : "down");
+    resCount($("rDelta"), 0, R.delta, R.delta >= 0 ? "+" : "", { delay: 1250, dur: 400 });
+  }
+}
+function showResults(R) {
+  const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
-  const sheet = $("resSheet");
-  sheet.classList.remove("solo");
-  sheet.classList.toggle("win", R.res === 1); sheet.classList.toggle("loss", R.res === 0);
+  const won = R.res === 1, lost = R.res === 0;
+  resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
   $("rMode").textContent = R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
-  $("rTitle").textContent = R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : R.res === 1 ? "Victory" : R.res === 0 ? "Defeat" : "Draw";
-  const mn = R.me.spec.name, on = R.op.spec.name;
-  const who = R.online ? NET.oppName || "Your friend" : on;
-  const cpu = match.cpu && !R.online ? `${match.cpu} (${on}${R.ranked ? `, ${cpuTier()}` : ""})` : on;   // the CPU's potato name, and its tier in ranked
+  $("rWho").textContent = R.me.spec.name;
+  resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
+  // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
+  const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
+  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
-  $("rSub").textContent = R.lost ? `The connection to ${who} dropped.` : R.left ? `${who} left the match.` :
-    R.online && R.res === 1 ? `You beat ${who}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.online && R.res === 0 ? `${who} beat you${how}.` :
-    R.forfeit ? "You left the match. It counts as a loss." :
-    R.res === 1 ? `${mn} beat ${cpu}${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.` :
-    R.res === 0 ? `${cpu} beat ${mn}${how}.` : "Nobody scored a KO in sudden death either.";
+  const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
+    R.forfeit ? ["You left the match. It counts as a loss."] :
+    won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
+    lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
-    $("rSub").textContent += !R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`;
+    line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
   }
+  resLine($("rSub"), line);
+  // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
   const fb = match && match.finBy && !R.forfeit && !R.left && !R.lost ? match.finBy : "";
   if (match) match.finBy = "";
-  $("rFin").hidden = !fb; $("rFin").innerHTML = ""; if (fb) { $("rFin").append("Finished with "); const b = document.createElement("b"); b.textContent = fb; $("rFin").append(b); }
+  const fin = $("rFin");
+  fin.hidden = !(fb && won);
+  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
-  $("rRank").hidden = !R.ranked;
-  if (R.ranked) {
-    const ti = tierInfo(R.after);
-    $("rRank").style.setProperty("--tc", ti.t.col);
-    paintBadge($("rBadge"), ti.i, R.ta > R.tb ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
-    $("rTier").textContent = ti.t.name;
-    const rt = $("rRating"), tail = ti.next ? ` · ${ti.need} to ${ti.next.name}` : "";
-    rt.textContent = ""; const rn = document.createElement("span"); rn.textContent = R.before; rt.append(`${R.before} → `, rn, tail);
-    resCount(rn, R.before, R.after, "");
-    const bar = $("rBar"); bar.style.setProperty("--p", tierInfo(R.before).i === ti.i ? tierInfo(R.before).p : 0);
-    requestAnimationFrame(() => requestAnimationFrame(() => bar.style.setProperty("--p", ti.p)));
-    const d = $("rDelta"); resCount(d, 0, R.delta, R.delta >= 0 ? "+" : ""); d.className = "delta " + (R.delta >= 0 ? "up" : "down");
-    $("rPromo").textContent = R.ta > R.tb ? `Promoted to ${TIERS[R.ta].name}` : R.ta < R.tb ? `Dropped to ${TIERS[R.ta].name}` : "";
-  }
+  if (R.ranked) resRank(R);
+  // four tiles: KOs, damage dealt, falls, chips (counting up); the line under them says what the chips were for
   const k = R.me.kos, fl = R.me.falls;
-  $("rStats").innerHTML = `<b>${k}</b> KO${k === 1 ? "" : "s"} · <b>${Math.round(R.me.dmgDealt)}%</b> damage dealt · <b>${fl}</b> fall${fl === 1 ? "" : "s"}`;
-  const why = R.why || (R.lines.length > 1 ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") : R.lines.length ? R.lines[0][0] : "");   // R.why: the Daily Potato's own line
+  $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
+  $("rDmg").textContent = Math.round(R.me.dmgDealt);
+  $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
+  const why = R.why || R.lines.map(([n, v]) => `${n} +${v}`).join(" · ");   // R.why: the Daily Potato's own line
   const chipsOn = R.ranked || (R.online && R.lines.length) || (R.daily && R.total > 0);
-  $("rChips").innerHTML = chipsOn
-    ? `<b><span class="tokglyph"></span>+<span id="rChipN">${R.total}</span> chips</b>${why}`
-    : R.daily ? why
+  $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
+  if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
+  $("rWhy").textContent = chipsOn || R.daily ? why
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : "Practice doesn't change your rating or earn chips.";
-  if (chipsOn) resCount($("rChipN"), 0, R.total, "");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.set && !R.set.over ? "Next game" : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.online ? "Lobby" : "Fighters";

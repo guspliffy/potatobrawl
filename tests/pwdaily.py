@@ -75,13 +75,14 @@ async def line_for(pg, key):
 
 FIT = """(() => {
   const bad = [], vw = innerWidth, vh = innerHeight;
-  const btns = [...document.querySelectorAll('#scrMenu .menu-actions .btn')];
+  const btns = [...document.querySelectorAll('#scrMenu .mm-col button')];
   for (const b of btns) { const r = b.getBoundingClientRect(); if (r.top < -0.5 || r.bottom > vh + 0.5 || r.left < -0.5 || r.right > vw + 0.5) bad.push('menu button ' + b.id + ' off screen'); }
-  const d = document.querySelector('#bDaily'), sp = d.querySelector('span').getBoundingClientRect(), dr = d.getBoundingClientRect(), t = document.querySelector('#bCup').getBoundingClientRect();
-  if (sp.right > dr.right + 1) bad.push('the Daily line runs out of its button');
-  if (!document.querySelector('#app').classList.contains('narrow') && dr.height > t.height + 1) bad.push('the Daily button is taller than the others (its line wrapped)');
+  // the Daily tile: its lines (the matchup or the day's result, the reward) stay inside it and do not stretch it past the Tournament tile
+  const d = document.querySelector('#bDaily'), dr = d.getBoundingClientRect(), t = document.querySelector('#bCup').getBoundingClientRect();
+  for (const l of d.querySelectorAll('.mm-tb > *')) { const r = l.getBoundingClientRect(); if (!r.width) continue; if (r.right > dr.right + 1 || r.bottom > dr.bottom + 1 || l.scrollWidth > l.clientWidth + 1) bad.push('the Daily line "' + l.textContent.slice(0, 20) + '" runs out of its tile'); }
+  if (dr.height > t.height + 1) bad.push('the Daily tile is taller than the Tournament tile (its lines do not fit)');
   const pill = document.querySelector('#mRank'), pr = pill.getBoundingClientRect(), rg = document.createRange();
-  rg.selectNodeContents(document.querySelector('.brand h1'));
+  rg.selectNodeContents(document.querySelector('#scrMenu h1'));
   const h1 = rg.getBoundingClientRect();   // the letters, not the block's full width
   if (pill.scrollWidth > pill.clientWidth + 1) bad.push('the pill is cut off');
   if (pr.left < h1.right - 1 && pr.bottom > h1.top + 1 && pr.top < h1.bottom - 1) bad.push('the pill overlaps the title');
@@ -114,7 +115,7 @@ async def flow(b, errs):
     D = 'window.__blDaily'
     # ----- the day and its matchup
     need(await pg.evaluate(f"{D}.key()") == '2026-10-14', 'the day key is not the local date')
-    ids = await pg.evaluate("[...document.querySelectorAll('#scrMenu .menu-actions .btn')].map((b) => b.id)")
+    ids = await pg.evaluate("[...document.querySelectorAll('#scrMenu .mm-col button')].map((b) => b.id)")
     need(ids[:2] == ['bRanked', 'bDaily'], f'Daily Potato is not second on the menu: {ids}')
     need('Daily Potato' in await txt(pg, '#bDaily'), 'no Daily Potato button')
     pk, want = await line_for(pg, '2026-10-14')
@@ -262,9 +263,10 @@ async def sizes(b, tag, errs):
     ctx, pg, mob = await new_page(b, tag, vp, up, errs, p0, at(14))
     clk = pg.tap if mob else pg.click
     await shot(pg, tag, '0_menu', errs, (FIT,))
-    # the longest lines the button can get, at this size
-    for t in ['Gunslinger vs Gunslinger · Brutal', 'Draw · 12-day streak · next in 23 h']:
-        await pg.evaluate(f"document.querySelector('#mDaily').textContent = {json.dumps(t)}")
+    # the longest lines the tile can get, at this size: the longest matchup (with the reward line under it), and the longest result of
+    # a day already played (the tile has no reward line then, as menuDaily in ui/screens.js leaves it)
+    for t, done in [('Gunslinger vs Gunslinger · Brutal', False), ('Draw · 12-day streak · next in 23 h', True)]:
+        await pg.evaluate(f"(() => {{ document.querySelector('#mDaily').textContent = {json.dumps(t)}; if ({json.dumps(done)}) {{ document.querySelector('#bDaily').classList.add('done'); document.querySelector('#mDailyR').textContent = ''; }} }})()")
         bad = await pg.evaluate(FIT)
         if bad: errs.append(f'{tag} long line {t!r}: ' + '; '.join(bad[:3]))
     if up:   # upright: the sideways hint and the menu still fit, the line sits under the name
