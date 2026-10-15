@@ -121,11 +121,21 @@ function drawStage(c, tk) { mapArt().stage(c, tk); }
    A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
    Ring under the feet: drawFinRing below. Projectile extras: finOrbFx / finRavenFx / finBoltFx / finFireFx below. */
 let RG = null;
+// the slot a fighter is up against: the other one in a 1v1; with three on stage the nearest fighter of the other team still in it
+function foeSlot(slot, g = RG) {
+  if (!g || g.fighters.length < 3) return 1 - slot;
+  const me = g.fighters[slot];
+  let best = -1, bd = Infinity;
+  if (me) g.fighters.forEach((o, i) => { if (o.team === me.team || o.state === "gone") return; const d = Math.abs(o.x - me.x); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+// finish-ready: a fighter at the finish percent, or a boss knocked to 0 HP (broken: the next big hit ends him)
 function finishReady(slot) {
   const f = RG && RG.fighters[slot];
-  return !!f && f.percent >= BL.TUNE.finishPct && f.state !== "dead" && f.state !== "gone";
+  if (!f || f.state === "dead" || f.state === "gone") return false;
+  return f.spec.boss ? f.state === "broken" : f.percent >= BL.TUNE.finishPct;
 }
-const finRingCol = (slot) => (RG && RG.fighters[1 - slot] ? col(RG.fighters[1 - slot].pal) : "#ffffff");   // the colour of the fighter who can finish
+const finRingCol = (slot) => { const o = RG && RG.fighters[foeSlot(slot)]; return o ? col(o.pal) : "#ffffff"; };   // the colour of the fighter who can finish
 function drawFinRing(c, f) {
   if (!finishReady(f.slot)) return;
   const colr = finRingCol(f.slot), w = f.s.w, ph = (tick % 54) / 54, r0 = w * 0.78;
@@ -205,10 +215,11 @@ function finFireFx(c, p, tk, who) {   // Phoenix: a long comet tail. Dragon: eve
 }
 
 function drawProj(c, p, tk) {
+  if (drawBossProj(c, p, tk)) return;   // a boss's fire (ui/draw-boss.js)
   if (p.style === "cloud") return uvDrawCloud(c, p, tk);    // the Ultimates' projectiles (below)
   if (p.style === "spear") return uvDrawSpear(c, p, tk);
   if (p.style === "star" || p.style === "bigstar") return uvDrawStar(c, p, tk);
-  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
+  const rdy = p.style !== "burst" && finishReady(foeSlot(p.owner)), K = finProjK(p, rdy);
   if (p.style === "orb") {
     for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
     if (rdy) finOrbFx(c, p, tk);

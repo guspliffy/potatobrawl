@@ -19,7 +19,7 @@ function newAttract() {
   const a = pick(), b = pick();
   const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
-  trails[0].length = trails[1].length = 0;
+  clearTrails();
   $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
 }
 
@@ -89,7 +89,7 @@ function goMenu() {
   modal("pause", false); modal("help", false); modal("settings", false);
   $("rMenu").hidden = false;   // the Daily Potato's results hide it (their again button is "Menu"); the tutorial's results need it back
   renderMenu(); show("menu"); resize();
-  trails[0].length = trails[1].length = 0; fx.length = 0; sfx.length = 0;
+  clearTrails(); fx.length = 0; sfx.length = 0;
   if (!attract) newAttract();
 }
 
@@ -335,7 +335,7 @@ function enterMatchUI() {
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
   for (const e of document.querySelectorAll(".pcard")) e.classList.remove("finr");
-  fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+  fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }

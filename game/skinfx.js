@@ -19,7 +19,7 @@ const FXTEXT = {
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 ? 0 : i; };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
-const skinState = [{ flare: 0, raven: false, dashX: null }, { flare: 0, raven: false, dashX: null }];
+const skinState = [0, 1, 2].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three)
 const rnd = (a, b) => a + Math.random() * (b - a);
 function mote(x, y, vx, vy, col, r, life, grav) { addFx({ k: "mote", x, y, vx, vy, col, r, t: 0, life, g: grav || 0, damp: 0.95 }); }
 function staffTip(f, tk) {
@@ -124,7 +124,7 @@ function skinEvent(g, e) {
     }
     case "ko": {
       if (e.sd) return;
-      const k = at(1 - e.slot);
+      const k = at(foeSlot(e.slot, g));
       if (!k || skinLvl(k) < 3 || k.state === "dead" || k.state === "gone") return;
       const cos = k.spec.look.costume, ac = k.pal.accent;
       if (cos === "phoenix") {

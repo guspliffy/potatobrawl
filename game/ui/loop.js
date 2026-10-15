@@ -9,8 +9,8 @@ function simTick() {
     if (match.online) netTick();
     else {
       const pi = readPlayer();
-      const bi = botInput(G, G.fighters[1], G.fighters[0], match.bot);
-      step(G, [pi, bi]);
+      if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
+      else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
     }
     if (G.phase === "countdown") {
       const n = Math.ceil(G.cd / 50);

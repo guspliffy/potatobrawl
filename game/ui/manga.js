@@ -590,7 +590,7 @@ function mangaTick(g, t, k) {
   if (t < MT.FREEZE) return g;
   try {
     if (!FIN.cut) {   // the freeze: the real hit stops here
-      FIN.cut = true; fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+      FIN.cut = true; fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
       hideBanner(); fxHitOff(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
       if (L.panel) { finFull = true; resize(); }
       MG.snapPending = true;

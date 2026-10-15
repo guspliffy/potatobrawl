@@ -614,7 +614,7 @@ function finFrame(g, tk) {
   if (t >= FT.END) { finEnd(); return g; }
   if (t < FT.CUT) return g; // beat 0: the real hit plays (hitstop, then slow motion) under the camera punch-in
   if (!FIN.cut) {
-    FIN.cut = true; fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+    FIN.cut = true; fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
     hideBanner(); fxHitOff(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
     if (L.panel) { finFull = true; resize(); }
     finSfx(() => { Sfx.noise(0.18, 0.4, 3000); Sfx.tone(300, 1100, 0.14, "triangle", 0.06); });

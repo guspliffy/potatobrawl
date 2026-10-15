@@ -5828,7 +5828,7 @@ function reaperPose(f, P, m, mid, phase, k, w, leg, tor, set) {
       hF = [cx + cp * w * 0.22, cy + Math.sin(ps) * 3]; P.holdAng = cp >= 0 ? 0.04 : Math.PI - 0.04; P.scyK = Math.max(0.12, Math.abs(cp)); P.bladeS = -0.5; P.scyBack = Math.sin(ps) < 0;
       P.reapT = { T: { flat: { cx, cy, rf: 66, rb: 54, ry: 11, t1: ps - 2.4, t2: ps } }, n: 1, a: 1, wmax: 9 };
     } else {
-      const fin = typeof finishReady === "function" && finishReady(1 - f.slot);
+      const fin = typeof finishReady === "function" && finishReady(foeSlot(f.slot));
       hF = lerp2([cx + w * 0.22, cy], rest, ease(k)); P.holdAng = mixv(fin ? -1.4 : 0.04, -1.75, ease(k)); P.bladeS = mixv(fin ? -1 : -0.5, 1, ease(k));
       if (fin && f.mt - a1 < 9) P.reapT = { T: { h1: [w * 0.6, -leg - tor * 0.2], h2: [w * 0.3, -leg - tor * 1.0], a1: 0.4, a2: -1.6, s: -1 }, n: 1, a: 1 - (f.mt - a1) / 9, wmax: 12 };   // Last Rites: the hook straight up
     }
@@ -7136,7 +7136,7 @@ function drawCharge(c, f, P, tk) {
    the projectiles and the ring under the feet are in draw-world.js). */
 function drawFinishFx(c, f, P, tk) {
   const m = f.move;
-  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot)) return;
+  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(foeSlot(f.slot))) return;
   if (f.mt < m.startup + 1 || f.mt > m.startup + m.active) return;   // after the dash the finDashTick line takes over
   const dist = Math.min(260, (m.speed || 15) * (f.mt - m.startup)), y = -P.h * 0.45, pts = lpts([-dist - 6, y], [-6, y], 8);
   c.save(); c.lineCap = "round";
@@ -7172,6 +7172,7 @@ function staffTip(f, tk) {
 }
 
 function drawFighter(c, f, tk, at) {
+  if (f.spec.boss) return drawBoss(c, f, tk, at);   // a boss has his own drawing (ui/draw-boss.js)
   if (!at && uvHeld(f)) {
     if (uvHidden(f)) return;
     uvBehind(c, f, tk);
@@ -8862,11 +8863,21 @@ MAP_ART.fryer = (() => {
    A fighter at BL.TUNE.finishPct or more can be finished by the opponent's special. RG is the game drawn this frame (set by render()).
    Ring under the feet: drawFinRing below. Projectile extras: finOrbFx / finRavenFx / finBoltFx / finFireFx below. */
 let RG = null;
+// the slot a fighter is up against: the other one in a 1v1; with three on stage the nearest fighter of the other team still in it
+function foeSlot(slot, g = RG) {
+  if (!g || g.fighters.length < 3) return 1 - slot;
+  const me = g.fighters[slot];
+  let best = -1, bd = Infinity;
+  if (me) g.fighters.forEach((o, i) => { if (o.team === me.team || o.state === "gone") return; const d = Math.abs(o.x - me.x); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+// finish-ready: a fighter at the finish percent, or a boss knocked to 0 HP (broken: the next big hit ends him)
 function finishReady(slot) {
   const f = RG && RG.fighters[slot];
-  return !!f && f.percent >= BL.TUNE.finishPct && f.state !== "dead" && f.state !== "gone";
+  if (!f || f.state === "dead" || f.state === "gone") return false;
+  return f.spec.boss ? f.state === "broken" : f.percent >= BL.TUNE.finishPct;
 }
-const finRingCol = (slot) => (RG && RG.fighters[1 - slot] ? col(RG.fighters[1 - slot].pal) : "#ffffff");   // the colour of the fighter who can finish
+const finRingCol = (slot) => { const o = RG && RG.fighters[foeSlot(slot)]; return o ? col(o.pal) : "#ffffff"; };   // the colour of the fighter who can finish
 function drawFinRing(c, f) {
   if (!finishReady(f.slot)) return;
   const colr = finRingCol(f.slot), w = f.s.w, ph = (tick % 54) / 54, r0 = w * 0.78;
@@ -8946,10 +8957,11 @@ function finFireFx(c, p, tk, who) {   // Phoenix: a long comet tail. Dragon: eve
 }
 
 function drawProj(c, p, tk) {
+  if (drawBossProj(c, p, tk)) return;   // a boss's fire (ui/draw-boss.js)
   if (p.style === "cloud") return uvDrawCloud(c, p, tk);    // the Ultimates' projectiles (below)
   if (p.style === "spear") return uvDrawSpear(c, p, tk);
   if (p.style === "star" || p.style === "bigstar") return uvDrawStar(c, p, tk);
-  const rdy = p.style !== "burst" && finishReady(1 - p.owner), K = finProjK(p, rdy);
+  const rdy = p.style !== "burst" && finishReady(foeSlot(p.owner)), K = finProjK(p, rdy);
   if (p.style === "orb") {
     for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
     if (rdy) finOrbFx(c, p, tk);
@@ -9181,8 +9193,28 @@ function uvFloor(c, g, tk) {
   for (const f of g.fighters) if (uvHeld(f) === "dive") uvPhoenixMark(c, f, tk);   // draw-fighters.js
   uvStarMarks(c, g, tk);
 }
+/* ===================== Bosses: Old Scratch's drawing, his fire, his tells on the floor, his sounds (UI only) =====================
+   The simulation (core.js BOSSES, bossAct/bossStep/bossHit) never reads anything here. Hooks: drawFighter (draw-fighters.js) hands a
+   boss to drawBoss, drawProj (draw-world.js) offers every projectile to drawBossProj first, render2D (effects.js) calls bossFloor after
+   the stage, handleEvent (effects.js) passes every event to bossEvent. */
+// placeholder until the art lands: a red potato 2.5x the roster's size
+function drawBoss(c, f, tk, at) {
+  const hw = f.s.w / 2, h = f.s.h, x = at ? at[0] : f.x, y = at ? at[1] : f.y;
+  c.save();
+  c.fillStyle = f.state === "broken" ? "#8a2a1a" : "#b8402e"; c.strokeStyle = OUT; c.lineWidth = 4;
+  c.beginPath(); c.ellipse(x, y - h / 2, hw, h / 2, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.restore();
+}
+function drawBossProj(c, p, tk) {
+  if (p.style !== "flame" && p.style !== "brim" && p.style !== "trail") return false;
+  c.fillStyle = "#ff7a2b"; c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill();
+  return true;
+}
+function bossFloor(c, g, tk) {}
+function bossEvent(g, e, live) {}
 /* ===================== effects ===================== */
-const fx = [], sfx = [], trails = [[], []], combos = [null, null], chgPops = [], finDash = [null, null];
+const fx = [], sfx = [], trails = [[], [], []], combos = [null, null, null], chgPops = [], finDash = [null, null, null];   // per slot (a boss fight has three)
+const clearTrails = () => { for (const t of trails) t.length = 0; };
 function addFx(o) { if (fx.length < 260) fx.push(o); }
 function spark(x, y, col, kb, dx, dy) {
   const n = 6 + Math.min(10, (kb * 0.35) | 0);
@@ -9215,7 +9247,7 @@ function updateFx(g) {
   }
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].t >= fx[i].life) fx.splice(i, 1);
   for (const e of sfx) e.t++;
-  for (let i = 0; i < 2; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
+  for (let i = 0; i < combos.length; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
   for (let i = chgPops.length - 1; i >= 0; i--) { const q = chgPops[i]; q.t++; q.pop *= 0.8; if (q.t > 56) chgPops.splice(i, 1); }
   finDashTick(g);
   for (let i = sfx.length - 1; i >= 0; i--) if (sfx[i].t >= sfx[i].life) sfx.splice(i, 1);
@@ -9320,7 +9352,7 @@ function drawScreenFx(c) {
 }
 // "3 HIT · 14%" pop-up above the fighter taking the combo, with the route's name over it when the hits make one
 function drawCombos(c, g) {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < combos.length; i++) {
     const cb = combos[i], f = g.fighters[i];
     if (!cb || !f) continue;
     const alive = f.state !== "dead" && f.state !== "gone";
@@ -9371,7 +9403,7 @@ function humStep(g) {
 function finDashTick(g) {
   g.fighters.forEach((f, i) => {
     const m = f.move;
-    if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(1 - f.slot) || skinLvl(f) >= 3) { finDash[i] = null; return; }
+    if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(foeSlot(f.slot)) || skinLvl(f) >= 3) { finDash[i] = null; return; }
     if (f.mt === m.startup + 1) finDash[i] = f.x;
     if (f.mt === m.startup + m.active && finDash[i] !== null) { addFx({ k: "flashline", x1: finDash[i], x2: f.x, y: f.y - f.s.h * 0.45, col: "#ffffff", t: 0, life: 26 }); finDash[i] = null; }
   });
@@ -9421,7 +9453,7 @@ const FXTEXT = {
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 ? 0 : i; };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
-const skinState = [{ flare: 0, raven: false, dashX: null }, { flare: 0, raven: false, dashX: null }];
+const skinState = [0, 1, 2].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three)
 const rnd = (a, b) => a + Math.random() * (b - a);
 function mote(x, y, vx, vy, col, r, life, grav) { addFx({ k: "mote", x, y, vx, vy, col, r, t: 0, life, g: grav || 0, damp: 0.95 }); }
 function staffTip(f, tk) {
@@ -9526,7 +9558,7 @@ function skinEvent(g, e) {
     }
     case "ko": {
       if (e.sd) return;
-      const k = at(1 - e.slot);
+      const k = at(foeSlot(e.slot, g));
       if (!k || skinLvl(k) < 3 || k.state === "dead" || k.state === "gone") return;
       const cos = k.spec.look.costume, ac = k.pal.accent;
       if (cos === "phoenix") {
@@ -9666,6 +9698,7 @@ function render2D(g, tk) {
   c.setTransform(DPR * cam.z, 0, 0, DPR * cam.z, DPR * ox, DPR * oy);
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
+  bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
@@ -9696,6 +9729,7 @@ function render2D(g, tk) {
 /* ===================== events from the simulation ===================== */
 function handleEvent(g, e, live) {
   skinEvent(g, e);
+  bossEvent(g, e, live);   // a boss's moves, staggers and fall: looks and sounds (ui/draw-boss.js)
   switch (e.type) {
     case "hit": {
       if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
@@ -9774,7 +9808,7 @@ function handleEvent(g, e, live) {
     case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); } break;
     case "tech": dust(e.x, e.y, 6, 30); addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 8, r1: 30, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "sudden":
-      combos[0] = combos[1] = null; trails[0].length = trails[1].length = 0;
+      combos.fill(null); clearTrails();
       if (live) { showBanner("Sudden death", "Next KO wins", "game", 1700); Sfx.count(true); }
       camStep(g, true);
       break;
@@ -9801,7 +9835,7 @@ function handleEvent(g, e, live) {
    The looks of each ulti are in draw-fighters.js (poses, uvFloor, uvFront), draw-world.js (the projectiles) and below (events). */
 const UV_GOLD = "#ffd23f", UV_PALE = "#fff2c2";
 const UV_FREEZE = BL.TUNE.ultFreeze, UV_BANNER = 60;
-const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false], dash: [null, null], at: [null, null] };
+const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false, false], dash: [null, null, null], at: [null, null, null] };
 const uvLive = (g) => UV.g === g && mode === "match" && !FIN.on;
 // once per move and name (a cue that waits on a frame must not fire again while the game is held in hitstop)
 function uvCue(f, name) { const k = f.slot + "." + f.moveT + "." + name; if (UV.cues.has(k)) return false; UV.cues.add(k); return true; }
@@ -9867,7 +9901,7 @@ function uvLitFighter(c, f, tk) {
 // ---- once per sim tick ----
 function uvTick(g) {
   if (UV.t < 999) UV.t++;
-  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false]; UV.dash = [null, null]; UV.at = [null, null]; }
+  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false, false]; UV.dash = [null, null, null]; UV.at = [null, null, null]; }
   if (UV.t > 1 && UV.t < UV_FREEZE - 2 && uvLive(g)) cam.shake = Math.max(cam.shake, 1.8);   // the held screen trembles
   for (const f of g.fighters) {
     if (uvHeld(f)) uvFighterTick(g, f);
@@ -10716,7 +10750,7 @@ function finFrame(g, tk) {
   if (t >= FT.END) { finEnd(); return g; }
   if (t < FT.CUT) return g; // beat 0: the real hit plays (hitstop, then slow motion) under the camera punch-in
   if (!FIN.cut) {
-    FIN.cut = true; fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+    FIN.cut = true; fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
     hideBanner(); fxHitOff(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
     if (L.panel) { finFull = true; resize(); }
     finSfx(() => { Sfx.noise(0.18, 0.4, 3000); Sfx.tone(300, 1100, 0.14, "triangle", 0.06); });
@@ -11501,7 +11535,7 @@ function mangaTick(g, t, k) {
   if (t < MT.FREEZE) return g;
   try {
     if (!FIN.cut) {   // the freeze: the real hit stops here
-      FIN.cut = true; fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+      FIN.cut = true; fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
       hideBanner(); fxHitOff(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
       if (L.panel) { finFull = true; resize(); }
       MG.snapPending = true;
@@ -18402,7 +18436,7 @@ function newAttract() {
   const a = pick(), b = pick();
   const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.MAPS.length) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
-  trails[0].length = trails[1].length = 0;
+  clearTrails();
   $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
 }
 
@@ -18472,7 +18506,7 @@ function goMenu() {
   modal("pause", false); modal("help", false); modal("settings", false);
   $("rMenu").hidden = false;   // the Daily Potato's results hide it (their again button is "Menu"); the tutorial's results need it back
   renderMenu(); show("menu"); resize();
-  trails[0].length = trails[1].length = 0; fx.length = 0; sfx.length = 0;
+  clearTrails(); fx.length = 0; sfx.length = 0;
   if (!attract) newAttract();
 }
 
@@ -18718,7 +18752,7 @@ function enterMatchUI() {
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
   for (const e of document.querySelectorAll(".pcard")) e.classList.remove("finr");
-  fx.length = 0; sfx.length = 0; trails[0].length = trails[1].length = 0; combos[0] = combos[1] = null;
+  fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
@@ -19123,6 +19157,28 @@ function hudUlt() {
     if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
   }
 }
+/* ===================== Boss fights (2v1): you and a CPU partner against a boss on his own map =====================
+   The simulation is core.js (BOSSES, teams, bossAct). Here: starting the fight, the partner's bot, the boss's HP/poise bar,
+   the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). */
+const BOSS_LV = ["Normal", "Hard", "Nightmare"];
+const BOSS_MAP = Math.max(0, BL.MAPS.findIndex((m) => m.id === "field"));
+const BOSS_SOLO = 0.75;   // a CPU partner: the boss has 3/4 of his HP
+const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
+// o: { level 0-2, partner: fighter id (default: a random other fighter) }; your fighter is the one picked on the select screen
+function startBoss(o) {
+  Sfx.init();
+  const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
+  const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? (P.pal[me.id] + 1) % mate.palettes.length : 0];
+  const boss = BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
+    stocks: 3, time: 0, countdown: 150, map: BOSS_MAP, level: lv, hpMul: BOSS_SOLO });
+  match = { boss: true, level: lv, d: BOSS_PARTNER[lv], bot: makeBot(BOSS_PARTNER[lv], BL.BOT_STYLES[mate.id]), cpu: cpuName() };
+  meSlot = 0;
+  enterMatchUI();
+}
+// the two inputs of a boss fight: yours and the partner's bot (the boss's brain is in the simulation)
+function bossInputs(pi) { return [pi, botInput(G, G.fighters[1], G.fighters[2], match.bot)]; }
+window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script
 /* ===================== tournament: an offline 8-player cup =====================
    UI only: the simulation, the bot and the online code are not touched. You and 7 CPUs play a quarter-final, a semi-final and a
    final (2 lives / 2 min, 2 lives / 2 min, 3 lives / 3 min). The cup in progress is P.cup (saved with the profile), so a reload
@@ -21368,8 +21424,8 @@ function simTick() {
     if (match.online) netTick();
     else {
       const pi = readPlayer();
-      const bi = botInput(G, G.fighters[1], G.fighters[0], match.bot);
-      step(G, [pi, bi]);
+      if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
+      else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
     }
     if (G.phase === "countdown") {
       const n = Math.ceil(G.cd / 50);
