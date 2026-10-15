@@ -144,5 +144,12 @@ else fail "Combo trial in the browser" "$LOGS/combo-ui.log"; fi
 if grep -q "^no errors" "$LOGS/daily-ui.log"; then pass "Daily Potato in the browser (one try, chips, streak; shots in build/shots/daily)"
 else fail "Daily Potato in the browser" "$LOGS/daily-ui.log"; fi
 
+# 8d. Fighter mastery: XP per finished match (Practice by CPU level, ranked, forfeit), the level-up row on the results screen, chips paid once,
+#     MASTERED at Lv 10, the one-time head start, the roster shield and detail row, titles, Stats and the Locker's Collection, a KO page
+#     recorded, the cup's XP sticker. Shots in build/shots/mastery.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwmastery.py" mastery) > "$LOGS/mastery-ui.log"
+if grep -q "^no errors" "$LOGS/mastery-ui.log"; then pass "fighter mastery in the browser (XP, level up, rewards, titles, Locker; shots in build/shots/mastery)"
+else fail "fighter mastery in the browser" "$LOGS/mastery-ui.log"; fi
+
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
