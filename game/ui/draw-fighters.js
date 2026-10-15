@@ -821,7 +821,7 @@ function cowboyHat(c, P, pal) {
 function reapCols(f, P, flash) {
   const lvl = skinLvl(f), ac = f.pal.accent;
   const c = {
-    hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55),
+    hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: f.pal.lining || (lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55)),   // a Road skin brings its own lining colour
     trim: lvl === 3 ? "#1f1d26" : null, ghost: lvl === 3 && !flash && !P.dim ? 1 : null, handle: lvl === 3 ? "#2a2630" : "#3b3530", band: lvl === 2 ? "#f08a3c" : "#7d7f88", blade: "#a7acb6", spine: "#6d717c",
   };
   if (flash) { for (const k in c) if (c[k]) c[k] = "#ffffff"; }
@@ -1158,6 +1158,7 @@ function drawPotato(c, f, tk, at) {
     c.strokeStyle = mix(pal.body, "#7a4a22", 0.4); c.lineWidth = 1.2;
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
+  roadSkinBody(c, f, P, tk, flash);
   potatoFace(c, f, P, look);
   if (cos === "odin") odinBeard(c, P, pal);
   if (cos === "alchemist") {
@@ -1176,6 +1177,7 @@ function drawPotato(c, f, tk, at) {
   if (cos === "samurai") { c.fillStyle = "#1c1714"; c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
   if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
   if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
+  roadSkinTop(c, f, P, tk, flash);
   c.restore();
   if (cos === "odin" && !f._ravenOut) {
     let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);

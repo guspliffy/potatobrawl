@@ -44,6 +44,8 @@ function skinTick(g, tk) {
       for (let i = 0; i < 4; i++) addFx({ k: "feather", x: f.x - fc * w * 0.35 + rnd(-7, 7), y: f.y - h * 0.85, vx: rnd(-0.8, 0.8), vy: rnd(-1.4, -0.5), rot: rnd(0, 6), vr: rnd(-0.12, 0.12), t: 0, life: rnd(50, 70), g: 0.05, damp: 0.95 });
     }
     S.raven = ravenOut;
+    const rs = skinRoad(f);
+    if (rs) { if (alive && fxAmbient()) roadSkinTick(f, rs, tk, slot); return; }
     if (!alive || lvl < 1) return;
     if (fxAmbient()) {
       if (cos === "phoenix" && !f.grounded && f.state !== "ledge" && tk % 3 === 0) {
@@ -130,6 +132,7 @@ function skinEvent(g, e) {
     case "ko": {
       if (e.sd) return;
       const k = at(foeSlot(e.slot, g));
+      if (k && skinRoad(k) && k.state !== "dead" && k.state !== "gone") return roadSkinKo(k, skinRoad(k));
       if (!k || skinLvl(k) < 3 || k.state === "dead" || k.state === "gone") return;
       const cos = k.spec.look.costume, ac = k.pal.accent;
       if (cos === "phoenix") {
@@ -230,4 +233,134 @@ function drawSkinFx(c, e, a) {
     }
   }
   return false;
+}
+
+/* ---- Road skins: one overlay per boss, laid on any fighter in two passes (UI only) ----
+   roadSkinBody runs inside the body's lean, clipped to the potato, before the face (so it lies on the body and the costume's
+   clothes); roadSkinTop runs after the hats, hoods, horns and crests. No white fills, blue glows or gold rings: the glows are
+   ember orange, alien green and sea teal. Nothing is drawn on a hit flash. */
+const RS_CRACK = [[-0.62, 0.12, 0, [[0, 0], [3, -2], [5, 1.5], [8, -0.5], [10, 2.5]]], [-0.1, 0.42, 2.1, [[0, 0], [2.5, 2.5], [6, 2], [8, 5], [11, 4.5]]], [0.42, 0.06, 4.2, [[0, 0], [-2, 3], [1, 5.5], [-0.5, 8.5], [2, 11]]]];
+const RS_PATCH = [[-0.86, -0.2, 0.5], [0.72, 0.5, -0.4]];
+const RS_BARN = [[-0.78, 0.22, 1], [-0.62, 0.5, 0.85], [-0.86, 0.48, 0.7], [-0.45, 0.72, 0.8], [-0.7, 0.74, 0.6]];
+// the Specimen dome per costume: half width (x rx) and how far above the top of the potato it reaches (x ry); the Gunslinger's brim fits under the glass
+const RS_DOME = { phoenix: [1.2, 0.95], alchemist: [1.25, 0.7], odin: [1.35, 0.5], wizard: [1.25, 1.75], samurai: [1.2, 0.6], dragon: [1.25, 0.85], gunslinger: [1.6, 0.75], reaper: [1.3, 0.55] };
+// where the Deep Catch kelp hangs from: the back of the costume's top point (x rx, y below the top of the potato x ry)
+const RS_KELP = { phoenix: [-0.3, -0.5], alchemist: [-0.75, 0.05], odin: [-0.9, -0.1], wizard: [-0.95, -1.2], samurai: [-0.25, -0.15], dragon: [-0.45, -0.45], gunslinger: [-1.35, -0.05], reaper: [-0.95, 0.2] };
+const rsPulse = (tk, ph) => 0.8 + 0.2 * Math.sin(tk * 0.044 + ph);
+function rsStar(c, x, y, r, a) {
+  c.beginPath();
+  for (let i = 0; i < 10; i++) { const q = a + (i / 10) * Math.PI * 2, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(q) * rr, y + Math.sin(q) * rr); }
+  c.closePath();
+}
+function roadSkinBody(c, f, P, tk, flash) {
+  const rs = skinRoad(f);
+  if (!rs || flash) return;
+  const { rx, ry, cy } = P, k = rx / 25;
+  c.save(); potatoPath(c, P); c.clip();
+  if (P.dim) c.globalAlpha = 0.5;
+  const a0 = c.globalAlpha;
+  if (rs === "scratch") {
+    const g = c.createRadialGradient(0, cy + ry * 1.1, ry * 0.15, 0, cy + ry * 1.1, ry * 1.2);
+    g.addColorStop(0, "rgba(60,25,15,0.6)"); g.addColorStop(1, "rgba(60,25,15,0)");
+    c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 0.2, rx * 2.6, ry * 1.4);
+    c.fillStyle = "#3a1a14"; c.strokeStyle = OUT; c.lineWidth = 1;
+    for (const [x, y, a] of RS_PATCH) { c.beginPath(); c.ellipse(x * rx, cy + y * ry, 5 * k, 3.5 * k, a, 0, Math.PI * 2); c.fill(); c.stroke(); }
+    c.lineJoin = "miter";
+    for (const [x, y, ph, pts] of RS_CRACK) {
+      const p = rsPulse(tk, ph), x0 = x * rx, y0 = cy + y * ry;
+      c.beginPath(); c.moveTo(x0, y0);
+      for (let i = 1; i < pts.length; i++) c.lineTo(x0 + pts[i][0] * k, y0 + pts[i][1] * k);
+      c.globalAlpha = a0 * p; c.strokeStyle = "rgba(255,122,43,0.5)"; c.lineWidth = 5 * k; c.stroke();
+      c.strokeStyle = "#ff9a3a"; c.lineWidth = 2 * k; c.stroke();
+    }
+    c.lineJoin = "round";
+  } else if (rs === "zorp") {
+    const g = c.createRadialGradient(0, cy + ry * 1.15, ry * 0.1, 0, cy + ry * 1.15, ry * 1.25);
+    g.addColorStop(0, "rgba(157,255,90,0.38)"); g.addColorStop(1, "rgba(157,255,90,0)");
+    c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 0.2, rx * 2.6, ry * 1.4);
+  } else if (rs === "kraken") {
+    c.strokeStyle = "rgba(200,240,255,0.3)"; c.lineWidth = 3 * k;
+    c.beginPath(); c.ellipse(0, cy, rx * 0.78, ry * 0.8, 0, Math.PI * 1.08, Math.PI * 1.42); c.stroke();
+    c.lineWidth = 1.6 * k; c.beginPath(); c.ellipse(0, cy, rx * 0.66, ry * 0.68, 0, Math.PI * 1.12, Math.PI * 1.25); c.stroke();
+    c.lineWidth = 1;
+    for (const [x, y, s] of RS_BARN) {
+      const bx = x * rx, by = cy + y * ry, r = 3 * k * s;
+      c.fillStyle = "#d9d2c0"; c.strokeStyle = OUT; c.beginPath(); c.arc(bx, by, r, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.fillStyle = "#3a3a3a"; c.beginPath(); c.arc(bx, by - r * 0.1, r * 0.42, 0, Math.PI * 2); c.fill();
+    }
+    rsStar(c, rx * 0.5, cy + ry * 0.55, 5 * k, -0.3 + Math.sin(tk * 0.03) * 0.05);
+    c.fillStyle = "#ff8fb0"; c.fill(); c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = "#ffc2d4"; for (let i = 0; i < 5; i++) { const q = -0.3 + (i / 5) * Math.PI * 2; c.beginPath(); c.arc(rx * 0.5 + Math.cos(q) * 2.6 * k, cy + ry * 0.55 + Math.sin(q) * 2.6 * k, 0.6 * k, 0, Math.PI * 2); c.fill(); }
+  }
+  c.restore();
+}
+function roadSkinTop(c, f, P, tk, flash) {
+  const rs = skinRoad(f);
+  if (!rs || flash) return;
+  const { rx, ry, cy } = P, cos = f.spec.look.costume, k = rx / 25;
+  c.save();
+  if (P.dim) c.globalAlpha = 0.5;
+  if (rs === "zorp") {
+    const [hw, up] = RS_DOME[cos] || [1.25, 0.7], dw = rx * hw, base = cy + ry * 0.3, dh = base - (P.top - ry * up);
+    c.beginPath(); c.ellipse(0, base, dw, dh, 0, Math.PI, Math.PI * 2); c.closePath();
+    c.fillStyle = "rgba(170,235,255,0.14)"; c.fill();
+    c.globalAlpha *= 0.55; c.strokeStyle = "#9dff5a"; c.lineWidth = 3; c.stroke(); c.globalAlpha /= 0.55;
+    c.globalAlpha *= 0.7; c.strokeStyle = "#d8f3ff"; c.lineWidth = 1.4;
+    c.beginPath(); c.ellipse(0, base, dw - 2, dh - 2, 0, Math.PI, Math.PI * 2); c.stroke(); c.globalAlpha /= 0.7;
+    c.strokeStyle = "rgba(230,255,245,0.45)"; c.lineWidth = 2.4;
+    c.beginPath(); c.ellipse(0, base, dw * 0.78, dh * 0.84, 0, Math.PI * 1.17, Math.PI * 1.38); c.stroke();
+    // the orbiting motes inside the glass
+    c.fillStyle = "#9dff5a";
+    for (let i = 0; i < 3; i++) { const a = tk * 0.0524 + i * 2.094; c.beginPath(); c.arc(Math.cos(a) * dw * 0.72, base - dh * 0.55 + Math.sin(a) * dh * 0.3, 1.1 * k, 0, Math.PI * 2); c.fill(); }
+    // the collar: a steel band with two green lights
+    c.fillStyle = "#7f8b93"; c.strokeStyle = OUT; c.lineWidth = 1;
+    c.beginPath(); c.rect(-dw - 1.5, base - 1.5, dw * 2 + 3, 3.2); c.fill(); c.stroke();
+    const on = (tk >> 4) % 4;
+    for (const [i, sx] of [[0, -0.55], [2, 0.55]]) { c.fillStyle = on === i || on === i + 1 ? "#9dff5a" : "#4f8a3a"; c.beginPath(); c.arc(sx * dw, base + 0.1, 1.3, 0, Math.PI * 2); c.fill(); }
+  } else if (rs === "kraken") {
+    // a wavy strand of kelp hanging down the back from the costume's top point, the wave running down it, two blades off it
+    const [ax, ay] = RS_KELP[cos] || [-0.8, 0], x0 = ax * rx, y0 = P.top + ay * ry, L = 30 * k, ph = tk * 0.09 + f.slot, sw = Math.sin(tk * 0.052 + f.slot) * 0.2;
+    const pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10, dx = -t * L * 0.22 + Math.sin(t * 6 - ph) * 3 * k * t, dy = t * L;
+      pts.push([x0 + dx * Math.cos(sw) - dy * Math.sin(sw), y0 + dx * Math.sin(sw) + dy * Math.cos(sw)]);
+    }
+    const line = () => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); };
+    c.lineCap = "round"; c.lineJoin = "round";
+    c.fillStyle = "#2f8a5a"; c.strokeStyle = OUT; c.lineWidth = 1;
+    for (const [i, s2] of [[4, -1], [7, 1]]) {
+      const [bx, by] = pts[i];
+      c.beginPath(); c.ellipse(bx + s2 * 3.2 * k, by + 1.5 * k, 4.6 * k, 1.7 * k, s2 * 0.7 + sw + Math.sin(ph + i) * 0.15, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+    line(); c.strokeStyle = OUT; c.lineWidth = 5.4 * k; c.stroke();
+    c.strokeStyle = "#2f8a5a"; c.lineWidth = 3.6 * k; c.stroke();
+    c.strokeStyle = "#5fbf7f"; c.lineWidth = 1.1 * k; c.beginPath(); c.moveTo(pts[1][0], pts[1][1]); for (let i = 2; i < 9; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+    c.fillStyle = "#246e48"; c.beginPath(); c.arc(x0, y0, 2.2 * k, 0, Math.PI * 2); c.fill();
+  }
+  c.restore();
+}
+// ambient bits that leave the figure (particles): an ember spat off a crack, a drip off the kelp
+function roadSkinTick(f, rs, tk, slot) {
+  const w = f.s.w, h = f.s.h, fc = f.facing;
+  if (rs === "scratch" && tk % 30 === (slot * 11) % 30) {
+    const [x, y] = RS_CRACK[(tk / 30 | 0) % 3];
+    mote(f.x + fc * x * w * 0.56, f.y - h * (0.36 - y * 0.24), rnd(-0.3, 0.3), rnd(-0.9, -0.5), Math.random() < 0.5 ? "#ff9a3a" : "#ff6a2b", 1.5, 40, -0.01);
+  }
+  if (rs === "kraken" && tk % 40 === (slot * 13) % 40) {
+    const [ax] = RS_KELP[f.spec.look.costume] || [-0.8];
+    addFx({ k: "drip", x: f.x + fc * (ax * w * 0.56 - 10), y: f.y - h * 0.5, vx: 0, vy: 0.3, col: "#bfe8e0", r: rnd(1.4, 1.9), t: 0, life: 15, g: 0.2, damp: 0.98 });
+  }
+}
+// a Road skin's KO effect, off the fighter who scored it
+function roadSkinKo(k, rs) {
+  const x = k.x, y = k.y - k.s.h * 0.6;
+  if (rs === "scratch") {
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; mote(x + Math.cos(a) * 14, y + Math.sin(a) * 14, Math.cos(a) * 1.7, Math.sin(a) * 1.7 - 0.7, i % 2 ? "#ff9a3a" : "#ff6a2b", rnd(1.4, 2.2), 30, -0.02); }
+  } else if (rs === "zorp") {
+    addFx({ k: "ring", x, y: y - 6, t: 0, life: 16, r0: 10, r1: 44, col: "#9dff5a" });
+    for (let i = 0; i < 6; i++) addFx({ k: "shard", x: x + rnd(-12, 12), y: y - 14 + rnd(-6, 6), vx: rnd(-3, 3), vy: rnd(-4, -1.5), rot: rnd(0, 6), vr: rnd(-0.3, 0.3), r: rnd(2.4, 3.4), col: "rgba(216,243,255,0.8)", t: 0, life: 26, g: 0.2, damp: 0.96 });
+  } else if (rs === "kraken") {
+    addFx({ k: "ring", x, y: k.y - 4, t: 0, life: 18, r0: 8, r1: 46, col: "#3ef2c0" });
+    for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });
+  }
 }
