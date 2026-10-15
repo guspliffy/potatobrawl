@@ -18965,7 +18965,7 @@ const ACT = [
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).length >= f.palettes.length), how: "Own every skin of one fighter." },
   { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
-  { id: "tier", name: () => tierInfo(P.peak).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
+  { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
 const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "collector", "wanderer", "combo"];   // the order of the list
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned, else none

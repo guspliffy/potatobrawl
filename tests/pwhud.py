@@ -222,7 +222,7 @@ async def flow(b, errs):
     await pg.wait_for_function(f"{HUD}.tag === 0", timeout=30000)
     await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[0].stocks = 1; g.fighters[0].percent = 300; }})()")
     seen = False
-    for i in range(80):
+    for i in range(160):   # up to 40 s: a Hard CPU sometimes spends a while on ultis and dodges before the last hit
         if await pg.evaluate("window.__blastline.fin.on"): seen = True; break
         await pg.evaluate(f"(() => {{ const g = {G}, me = g.fighters[0], op = g.fighters[1]; if (me.state === 'idle' && op.state === 'idle') {{ op.x = me.x + 50; op.y = me.y; op.facing = -1; }} }})()")
         await pg.wait_for_timeout(250)

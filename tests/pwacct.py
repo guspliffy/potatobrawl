@@ -256,7 +256,8 @@ async def shots(b, d, code):
           for (const e of document.querySelectorAll('#scrMenu .mm-col button')) if (hit(R, e.getBoundingClientRect())) bad.push(e.textContent.trim().slice(0, 10));
           // the compact plate (667x320, or a full bar) is the picture and the emblem only, by design: the rating is checked where it shows
           const compact = document.getElementById('app').classList.contains('tiny') || pe.classList.contains('fit2');
-          for (const id of ['mAvatar', 'mBadge', 'mRating', 'mTokens', 'mCups']) { const e = document.getElementById(id); if (e && !e.hidden && !(compact && id === 'mRating')) { const x = e.getBoundingClientRect(); if (x.width < 4 || x.right > R.right + 1 || x.left < R.left - 1) bad.push('clipped ' + id); } }
+          for (const id of ['mAvatar', 'mBadge', 'mRating', 'mTokens', 'mCups']) { const e = document.getElementById(id); if (e && !e.hidden && !(compact && id === 'mRating')) { const x = e.getBoundingClientRect(), rot = R.height > R.width;   // the sideways game is rotated: its across is the screen's up-down
+            if ((rot ? x.height : x.width) < 4 || (rot ? x.bottom > R.bottom + 1 || x.top < R.top - 1 : x.right > R.right + 1 || x.left < R.left - 1)) bad.push('clipped ' + id); } }
           return bad; })()""")
         for x in bad: errs.append(f'{tag}: pill: {x}')
         nm = await pg.is_visible('#mName')
