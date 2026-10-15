@@ -262,7 +262,7 @@ function renderStats() {
 /* ----- Locker tab: every fighter with every skin; tap one you own to wear it ----- */
 function renderLocker() {
   const pan = $("acPanL"); pan.innerHTML = "";
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen."));
+  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen; Road skins are won from the Road's bosses."));
   const grid = acMk("div", "lk");
   for (const f of FIGHTERS) {
     const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
@@ -271,10 +271,11 @@ function renderLocker() {
     card.appendChild(h);
     const row = acMk("div", "lk-s");
     f.palettes.forEach((p, i) => {
-      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock"));
+      // a Road skin (p.road): won by beating that boss with this fighter, never bought
+      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock") + (p.road ? " road" : ""));
       b.style.setProperty("--c", col(p));
-      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : `, locked, ${p.price} chips`}`);
-      b.innerHTML = `<i>${i ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
+      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
+      b.innerHTML = `<i>${i && !p.road ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : p.road ? "<span>Road</span>" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
       if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
       if (has) b.addEventListener("click", () => {
         Sfx.init(); Sfx.ui();

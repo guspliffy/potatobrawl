@@ -3,7 +3,8 @@
 # countdown), the bar follows his HP, poise and stagger; at 0 HP he breaks (FINISH, the banner), the partner ends him and the KO page
 # plays before the results (Victory, "Boss fight · Hard"); a rematch, then a loss (both of you out): no KO page, Defeat, his HP left.
 # A second part starts a fight at each size and checks the bar fits between the cards (screenshots: fight, staggered, broken).
-#   python3 pwboss.py [outdir [tag ...]]   tags: flow (844x390) s667 p844 d1280 up390; no tag runs everything
+# A third part fights Zorp: his map and line, the hover, the crash into his floor phase, the finish (screenshots zorp_*).
+#   python3 pwboss.py [outdir [tag ...]]   tags: flow (844x390) zorp s667 p844 d1280 up390; no tag runs everything
 import asyncio, sys, json, pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'boss'
@@ -149,12 +150,64 @@ async def size(b, tag, errs):
     await pg.screenshot(path=f'{OUT}/{tag}_broken.png')
     await ctx.close()
 
+# ----- Zorp (the second boss): The Kitchen, his line, the hover, the crash into his floor phase, the finish and the results
+async def zorp(b, errs):
+    tag = 'zorp'
+    ctx, pg, mob = await new_page(b, tag, (844, 390), False, errs)
+    def need(ok, msg):
+        if not ok: errs.append(f'{tag}: {msg}')
+        return ok
+    await pg.evaluate("window.__blBoss({ boss: 'zorp', level: 0, partner: 'odin' })")
+    await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
+    st = await pg.evaluate(f"(() => {{ const g = {G}; return {{ boss: g.fighters[2].spec.id, map: BL.MAPS[g.map].id, y: g.fighters[2].y, hp: g.fighters[2].hpMax }}; }})()")
+    need(st['boss'] == 'zorp' and st['map'] == 'kitchen', f'Zorp fight setup {st}')
+    need(st['y'] == -130 and st['hp'] == round(1050 * 0.75), f"he does not start hovering with his HP: {st}")
+    need(await txt(pg, '#bossBar .bb-name') == 'Zorp', f"bar reads {await txt(pg, '#bossBar .bb-top')!r}")
+    try: await pg.wait_for_function("document.querySelector('#bossBar').classList.contains('talk')", timeout=3000)
+    except Exception: pass
+    need('ladle' in await txt(pg, '#bossBar .bb-q'), f"his line {await txt(pg, '#bossBar .bb-q')!r}")
+    await pg.screenshot(path=f'{OUT}/zorp_countdown.png')
+    await in_play(pg)
+    await pg.wait_for_timeout(2500)
+    need(await pg.evaluate(f"{BOSS}.ph === 0 && {BOSS}.y < -100"), 'he is not hovering')
+    await pg.screenshot(path=f'{OUT}/zorp_hover.png')
+    # just over the crash line: the partner's next hit brings the saucer down (phase 2 from the landing)
+    await pg.evaluate(f"(() => {{ const b = {BOSS}; b.hp = Math.round(b.hpMax * 0.56); }})()")
+    await pg.wait_for_function(f"{BOSS}.mid === 'crash' || {BOSS}.ph === 1", timeout=90000)
+    await pg.wait_for_timeout(500)
+    await pg.screenshot(path=f'{OUT}/zorp_crash.png')
+    await pg.wait_for_function(f"{BOSS}.ph === 1 && {BOSS}.grounded", timeout=10000)
+    await pg.wait_for_timeout(1200)
+    await pg.screenshot(path=f'{OUT}/zorp_floor.png')
+    await pg.evaluate(f"(() => {{ const b = {BOSS}; b.hp = 1; b.poise = 0; }})()")
+    await pg.wait_for_function("document.querySelector('#bossBar').classList.contains('down')", timeout=90000)
+    await pg.screenshot(path=f'{OUT}/zorp_broken.png')
+    await pg.wait_for_function("window.__blastline.fin.on || window.__blastline.mode === 'result'", timeout=120000)
+    if need(await pg.evaluate("window.__blastline.fin.on"), 'no KO page after the final hit on Zorp'):
+        await pg.wait_for_timeout(1800)
+        await pg.screenshot(path=f'{OUT}/zorp_kopage.png')
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=60000)
+    await pg.wait_for_timeout(1100)
+    need(await txt(pg, '#rTitle') == 'Victory' and 'beat Zorp on Normal' in await txt(pg, '#rSub'), f"results {await txt(pg, '#rTitle')!r} {await txt(pg, '#rSub')!r}")
+    await pg.screenshot(path=f'{OUT}/zorp_win.png')
+    await ctx.close()
+    # the bar fits at the phone size against him too
+    ctx, pg, mob = await new_page(b, 'zorp s667', SIZES['s667'][:2], False, errs)
+    await pg.evaluate("window.__blBoss({ boss: 'zorp', level: 2, partner: 'wizard' })")
+    await in_play(pg)
+    await pg.wait_for_timeout(2000)
+    bad = await pg.evaluate(FIT)
+    if bad: errs.append('zorp s667: ' + '; '.join(bad))
+    await pg.screenshot(path=f'{OUT}/zorp_s667.png')
+    await ctx.close()
+
 async def main():
     pathlib.Path(OUT).mkdir(parents=True, exist_ok=True)
     errs = []
     async with async_playwright() as p:
         b = await p.chromium.launch(args=ARGS)
         if not ONLY or 'flow' in ONLY: await flow(b, errs)
+        if not ONLY or 'zorp' in ONLY: await zorp(b, errs)
         for tag in SIZES:
             if not ONLY or tag in ONLY: await size(b, tag, errs)
         await b.close()
