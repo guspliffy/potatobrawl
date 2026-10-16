@@ -118,7 +118,7 @@ if grep -q "^onsnap ok" "$LOGS/onsnap.log" && grep -q "^onboss ok" "$LOGS/onboss
   pass "online boss fights (repair copy in pieces, Team up, NICE!, desync repaired, KO page + Next: Hard on both, CPU takes over a drop)"
 else fail "online boss fights" "$LOGS/onboss.log (and onsnap.log)"; fi
 
-# 5d. Online Team Brawl (2v2 for up to four phones) through a local server on port 8099: the lobby's 2 vs 2 and CPUs row, the board,
+# 5f. Online Team Brawl (2v2 for up to four phones) through a local server on port 8099: the lobby's 2 vs 2 and CPUs row, the board,
 #     Join and Switch side, host + friend vs two CPUs (names, a Focus ping, a forced desync repaired, Victory, Rematch, Defeat, Board),
 #     then four friends (a repair on all four, a friend's page and the host's page closing: CPUs from the same frame everywhere and
 #     the next friend leads, a CPU partner's Focus on every phone, the rematch of the two left), the board at four sizes.
@@ -136,6 +136,20 @@ else fail "online 2v2" "$LOGS/on2v2.log"; fi
 timeout 120 node tests/acct.js > "$LOGS/acct.log" 2>&1
 if grep -q "^acct ok" "$LOGS/acct.log"; then pass "accounts server + merge ($(grep -c '^PASS' "$LOGS/acct.log") checks)"
 else fail "accounts server + merge" "$LOGS/acct.log"; fi
+
+# 5d. Quick match on the server (quick.js): the queue (Ranked and Casual, the ±200/±400 widening, Ranked falls back to Casual, no Ranked
+#     rematch), the referee (bot matches replayed from the relayed inputs give the game's verdict, a late phone, a leaver, a quiet phone,
+#     a wrong start), the Elo and placement, accounts off (Casual only). Node only, port 8092.
+timeout 300 node tests/quick.js > "$LOGS/quick.log" 2>&1
+if grep -q "^quick ok" "$LOGS/quick.log"; then pass "Quick match server + referee ($(grep -c '^PASS' "$LOGS/quick.log") checks)"
+else fail "Quick match server + referee" "$LOGS/quick.log"; fi
+
+# 5e. Quick match in the browser: three players through a real server on port 8099: the Season sheet, Find match, the CPU warm-up while
+#     searching, PLAYER FOUND!, the VS screen, a Ranked match decided by the server, no Ranked rematch (Casual after 20 s), a Casual
+#     leave, a Ranked forfeit, the menu's online rank. Shots in build/shots/quick.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwquick.py" quick) > "$LOGS/quick-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/quick-ui.log"; then pass "Quick match in the browser (search, warm-up, found, VS, Ranked by the server, Casual, forfeit; shots in build/shots/quick)"
+else fail "Quick match in the browser" "$LOGS/quick-ui.log"; fi
 
 # 6. Screens on small phone, phone and desktop, without page errors.
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1

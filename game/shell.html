@@ -696,7 +696,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
-    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
+    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div><div id="qmStrip" class="livetag" hidden><i aria-hidden="true"></i><span id="qmStripT">Searching</span></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
       <div class="pcard right" id="pc1"><div>
@@ -945,6 +945,81 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <section id="scrQuick" class="screen select" hidden>
+    <!-- Quick match (ui/quick.js, css/96-quick.css; Fable's design quick-match/fable-quick.md): you · your match · the queue. The Fight Card is
+         Play friends' one (a tap opens the fighter select); the middle card turns into the search; the CPU warm-up is its own card -->
+    <div class="qm2">
+      <header class="sel-head">
+        <button class="back" id="qmBack" aria-label="Back"></button>
+        <div class="grow"><div class="kicker qm-status" id="qmStatus">Connecting</div><h2>Quick match</h2></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="qmTokens">0</span></div>
+      </header>
+      <div class="qm-grid">
+        <div class="on-fc" id="qmFc">
+          <button class="on-fcb" id="qmChange">
+            <span class="on-fa" aria-hidden="true"><i class="rays"></i><canvas class="on-art" id="qmArt"></canvas></span>
+            <span class="on-ft"><b id="qmFName"></b><span class="on-fs"><i></i><span id="qmFSkin"></span><em id="qmFRole"></em></span><small>You · tap to change</small></span>
+            <span class="on-chg" aria-hidden="true">⇄</span>
+          </button>
+          <div class="on-plate"><b id="qmMyName">You</b></div>
+        </div>
+        <div class="on-card qm-mid">
+          <div class="qm-idle" id="qmIdle">
+            <div class="kick">Your match</div>
+            <div class="qm-seg" role="radiogroup" aria-label="Mode">
+              <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">counts for rank</small></button>
+              <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
+            </div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span></div>
+            <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
+            <p class="qm-truth" id="qmTruth"></p>
+          </div>
+          <div class="qm-search" id="qmSearch" hidden>
+            <div class="kick qm-sk"><i class="qdot" aria-hidden="true"></i><span id="qmSKick">Searching · Ranked</span></div>
+            <div class="qm-disc"><i class="rays" aria-hidden="true"></i><b id="qmTime">0:00</b></div>
+            <p class="qm-range" id="qmRange"></p>
+            <p class="qm-fb" id="qmFb" hidden></p>
+            <button class="btn qm-x" id="qmCancel"><span>Cancel</span></button>
+          </div>
+        </div>
+        <div class="qm-side">
+          <div class="on-card qm-cpu" id="qmCpu" hidden>
+            <span class="tag ember">CPU</span>
+            <b class="qm-cpt">Warm up vs a CPU</b>
+            <span class="qm-cpl" id="qmCpuL">Keeps searching · chips, no rank change. A found player interrupts the fight.</span>
+            <button class="btn primary" id="qmWarm"><span>Fight a CPU</span></button>
+          </div>
+          <div class="on-card qm-room scroll">
+            <div class="kick">The queue</div>
+            <div class="on-here" id="qmHere"></div>
+            <div class="kick">Last five</div>
+            <ul class="qm-last" id="qmLast"></ul>
+            <p class="on-help" id="qmHelp"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick match's Season 1 sheet: once, the first time Quick match opens (ui/quick.js) -->
+  <section id="scrSeason" class="screen modal" hidden>
+    <div class="sheet ss-sheet scroll">
+      <header class="sh-head"><h3>Season 1</h3><span class="tag gold ss-new">New</span><button class="round x" id="ssClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="ss-pl">
+          <div class="ss-p on" id="ssOn"><i class="badge" id="ssBadgeN"></i><div><span class="kick">Your online rank</span><b id="ssTierN">Bronze</b><span id="ssRateN">1000 · everyone starts here</span></div></div>
+          <div class="ss-p old" id="ssOld"><i class="badge" id="ssBadgeO"></i><div><span class="kick">Your CPU rank</span><b id="ssTierO">Bronze</b><span id="ssRateO"></span></div></div>
+        </div>
+        <div class="ss-ls">
+          <p><b>Ranked is online now:</b> real players, and the server keeps the score.</p>
+          <p>Titles you earned stay.</p>
+          <p class="mute">No sign-up: your rank lives on this phone's sync code (Account). Link another phone with it.</p>
+        </div>
+        <button class="btn primary lg" id="ssGo"><span>Let's go</span></button>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -969,6 +1044,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           </div>
           <div class="delta" id="rStick"><b id="rDelta">+0</b><small>Rating</small></div>
         </div>
+        <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
+        <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
         <div class="res-stats" id="rStats">
           <div class="card stat"><b id="rKOs">0</b><span id="rKOsL">KOs</span></div>
           <div class="card stat"><b><span id="rDmg">0</span><small>%</small></b><span>Damage dealt</span></div>
@@ -982,7 +1059,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="res-actions">
           <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
           <button class="btn" id="rChange"><span>Fighters</span></button>
-          <button class="btn" id="rMenu"><span>Menu</span></button>
+          <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>
         </div>
       </div>
     </div>
@@ -1080,6 +1157,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
     </div>
   </section>
+
+  <!-- Quick match (ui/quick.js, css/96-quick.css): PLAYER FOUND! over a CPU warm-up (3 s), then the VS screen until the fight's countdown -->
+  <div id="qmFound" hidden><b class="qf-t">Player found!</b><span class="qf-vs" id="qfVs"></span><span class="qf-n" id="qfN">3</span><span class="qf-l">The CPU fight ends · no result</span></div>
+  <div id="qmVs" hidden aria-live="polite">
+    <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
+    <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>
+    <i class="vs-seam" aria-hidden="true"></i><b class="vs-x" aria-hidden="true">VS</b>
+    <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span></div>
+    <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span></div>
+    <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
+    <div class="vs-foot"><span class="livetag"><i aria-hidden="true"></i><span id="vsPing">measuring…</span></span><span class="vs-bar"><i></i></span></div>
+  </div>
 </div>
 
 <script>

@@ -2718,6 +2718,430 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 @media (prefers-reduced-motion: reduce) { #scrOnline #onHost.full { animation: none; box-shadow: 0 4px 0 var(--ink), var(--bevelgold), 0 0 14px 3px rgba(255, 210, 63, 0.5); } }
 
+/* ---------- Quick match (ui/quick.js; Fable 5.1, quick-match/fable-quick.md, mockup quick-match/fable-quick-mock.html) ----------
+   The Quick match screen is the Play friends lobby's three columns (you · your match · the queue): the first block below is
+   95-lobby.css's Fight Card, cards and pills restated for #scrQuick (a change there may belong here too). Then the parts of its own:
+   the Ranked | Casual segments, the rank plate, the searching disc, the ember CPU card, the queue and LAST FIVE; the searching strip on
+   the warm-up's HUD; the results' confirming rank card and the warm-up's STILL SEARCHING card; the menu hero's Season 1 sticker; the
+   Season 1 sheet; PLAYER FOUND! over the warm-up; the VS screen. Fable's rule: a CPU always wears the ember CPU sticker, a human a tier
+   emblem. Phone landscape (844x390) is the base; #app.tiny (667x320), the desktop and upright phones adjust it. */
+
+#scrQuick .qm2 { position: absolute; inset: 0; max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+
+/* ---- header: back, the status kicker with its dot, QUICK MATCH stroked, the chips coin ---- */
+#scrQuick .sel-head { flex: none; height: 44px; gap: 12px; }
+#scrQuick .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.08s, box-shadow 0.08s; }
+#scrQuick .sel-head .back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrQuick .sel-head .grow { display: flex; flex-direction: column; gap: 4px; }
+#scrQuick .sel-head h2 { font: italic 900 28px/1 var(--display); letter-spacing: -0.005em; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrQuick .sel-head .coin { flex: none; }
+
+/* ---- the three columns ---- */
+#scrQuick .qm-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 164px minmax(0, 1fr) 290px; gap: 12px 18px; }
+#scrQuick .on-card { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; padding: 12px 14px;
+  border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+#scrQuick .on-card > .kick { flex: none; color: var(--gold); }
+
+/* ---- the Fight Card ---- */
+#scrQuick .on-fc { position: relative; min-width: 0; min-height: 0; }
+#scrQuick .on-fcb { appearance: none; cursor: pointer; position: absolute; inset: 0; display: flex; flex-direction: column; padding: 0; text-align: left; font: inherit; color: var(--text); container-type: inline-size;
+  border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrQuick .on-fcb::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: 10px; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.45); pointer-events: none; }   /* the Road card's gold edge */
+#scrQuick .on-fcb:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrQuick .on-fcb:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+#scrQuick .on-fa { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 10px 10px 0 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 56%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+#scrQuick .on-fa .rays { inset: -60% -60% -50%; opacity: 0.85; background: repeating-conic-gradient(from 0deg, var(--cg, rgba(243, 217, 164, 0.42)) 0 4deg, transparent 4deg 12deg); }
+#scrQuick .on-fa::after { content: ""; position: absolute; left: 24%; right: 24%; bottom: 5%; height: 10px; border-radius: 50%; background: rgba(0, 0, 0, 0.4); }   /* the ground shadow */
+#scrQuick .on-art { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; width: 100%; height: min(100%, 330px); }   /* a tall desktop card keeps the model big */
+#scrQuick .on-ft { flex: none; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 12px 11px; border-top: 2px solid var(--ink); border-radius: 0 0 10px 10px; background: rgba(14, 16, 34, 0.45); }
+#scrQuick .on-ft b { font: italic 900 min(26px, 16cqw)/0.95 var(--display); letter-spacing: -0.005em; text-transform: uppercase; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  -webkit-text-stroke: 3.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); padding: 2px 3px 1px 0; }
+#scrQuick .on-fs { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 13px/1.1 var(--body); color: var(--text); white-space: nowrap; }
+#scrQuick .on-fs i { flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--c, var(--sand)); border: 2px solid var(--ink); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35); }
+#scrQuick .on-fs span { flex: none; }
+#scrQuick .on-fs em { min-width: 0; font-style: normal; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .on-fs em::before { content: "· "; }
+#scrQuick .on-ft small { font: 700 11px/1.2 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+/* the ⇄ badge on the right edge (the Road card's, 40 px) */
+#scrQuick .on-chg { position: absolute; z-index: 4; right: -15px; top: 46%; transform: translateY(-50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: #ffd23f; color: var(--ink); border: 2px solid var(--ink); box-shadow: 0 2px 0 var(--ink); font: 900 22px/1 var(--body); }
+/* the name plate: your name on ink, top left; on the public site the name input, with a pencil */
+#scrQuick .on-plate { position: absolute; z-index: 5; left: -2px; top: 12px; max-width: calc(100% - 8px); display: flex; align-items: center; padding: 6px 12px 5px 12px;
+  background: var(--ink); border-radius: 0 6px 6px 0; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); pointer-events: none; }
+#scrQuick .on-plate b { min-width: 0; font: 800 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .on-plate b[hidden] { display: none; }
+/* back from the fighter select: the card pops (1.04 to 1) and the model comes in */
+#scrQuick .on-fc.fc-in .on-fcb { animation: fcIn 0.22s cubic-bezier(0.3, 1.5, 0.5, 1); }
+#scrQuick .on-fc.fc-in .on-art { animation: fcArt 0.26s ease-out; }
+
+/* ---- the queue: who is here as pills, the help ---- */
+#scrQuick .qm-side { gap: 8px; }
+#scrQuick .on-here { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
+#scrQuick .on-here.empty { display: block; font: 500 13px/1.35 var(--body); color: var(--mute); }
+#scrQuick .on-pl { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; height: 28px; padding: 0 11px 0 9px; overflow: hidden; border: 2px solid var(--ink); border-radius: 999px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 2px 0 var(--ink), var(--bevel); font: 800 12.5px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#scrQuick .on-pl::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); }
+#scrQuick .on-pl.busy { color: var(--mute); }
+#scrQuick .on-pl.busy::before { background: var(--mute); box-shadow: none; }
+#scrQuick .on-help { flex: none; margin: auto 0 0; padding-top: 6px; font: 500 11.5px/1.4 var(--body); color: var(--mute); }
+
+/* ---- small phones (667x320): 108 / flex / 226, a 20 px name, 26 px pills ---- */
+#app.tiny #scrQuick .qm2 { gap: 8px; padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+#app.tiny #scrQuick .sel-head { height: 40px; gap: 10px; }
+#app.tiny #scrQuick .sel-head h2 { font-size: 24px; }
+#app.tiny #scrQuick .qm-grid { grid-template-columns: 108px minmax(0, 1fr) 226px; gap: 10px 16px; }
+#app.tiny #scrQuick .on-card { gap: 6px; padding: 9px 11px; }
+#app.tiny #scrQuick .on-ft { gap: 4px; padding: 6px 9px 8px; }
+#app.tiny #scrQuick .on-ft b { font-size: min(20px, 16.5cqw); -webkit-text-stroke-width: 3px; }
+#app.tiny #scrQuick .on-fs { font-size: 11.5px; gap: 5px; }
+#app.tiny #scrQuick .on-fs i { width: 11px; height: 11px; }
+#app.tiny #scrQuick .on-fs em { display: none; }
+#app.tiny #scrQuick .on-ft small { font-size: 9px; letter-spacing: 0.08em; }
+#app.tiny #scrQuick .on-fs span { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+#app.tiny #scrQuick .on-chg { width: 34px; height: 34px; right: -13px; font-size: 19px; }
+#app.tiny #scrQuick .on-plate { top: 8px; padding: 5px 9px 4px 10px; }
+#app.tiny #scrQuick .on-pl { height: 26px; font-size: 11.5px; }
+
+/* ---- desktop (1280x760): 220 / flex / 380 in the 1180 px frame, a 32 px name, 36 px pills ---- */
+#app:not(.short):not(.portrait) #scrQuick .qm2 { gap: 16px; padding: 22px max(28px, env(safe-area-inset-right, 0px)) 24px max(28px, env(safe-area-inset-left, 0px)); max-height: 680px; margin-block: auto; }
+#app:not(.short):not(.portrait) #scrQuick .sel-head { height: 56px; gap: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .sel-head .back { width: 44px; height: 44px; }
+#app:not(.short):not(.portrait) #scrQuick .sel-head h2 { font-size: 40px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrQuick .sel-head .coin { height: 44px; font-size: 21px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-grid { grid-template-columns: 220px minmax(0, 1fr) 380px; gap: 18px 24px; }
+#app:not(.short):not(.portrait) #scrQuick .on-card { gap: 12px; padding: 16px 18px; border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .on-card > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .on-fcb { border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .on-ft { gap: 8px; padding: 12px 16px 15px; }
+#app:not(.short):not(.portrait) #scrQuick .on-ft b { font-size: 32px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrQuick .on-fs { font-size: 14.5px; }
+#app:not(.short):not(.portrait) #scrQuick .on-fs em { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrQuick .on-ft small { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .on-plate { top: 16px; padding: 7px 14px 6px; }
+#app:not(.short):not(.portrait) #scrQuick .on-pl { height: 32px; font-size: 14px; }
+
+/* ---- upright phones (390x844): the Fight Card goes horizontal (112 px: the model left, the words right, the badge half over the edge),
+   then your match, then the CPU offer and the queue; the page scrolls ---- */
+#app.portrait #scrQuick .qm2 { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; padding-top: max(12px, env(safe-area-inset-top, 0px)); }
+#app.portrait #scrQuick .sel-head { height: auto; }
+#app.portrait #scrQuick .sel-head h2 { font-size: 26px; }
+#app.portrait #scrQuick .qm-grid { flex: none; display: flex; flex-direction: column; gap: 14px; padding-right: 8px; }
+#app.portrait #scrQuick .on-fc { flex: none; height: 112px; }
+#app.portrait #scrQuick .on-fcb { flex-direction: row; }
+#app.portrait #scrQuick .on-fa { flex: none; width: 124px; border-radius: 10px 0 0 10px; }
+#app.portrait #scrQuick .on-fa .rays { inset: -100% -100% -60%; }
+#app.portrait #scrQuick .on-ft { flex: 1 1 auto; justify-content: center; gap: 6px; padding: 8px 30px 8px 14px; border-top: 0; border-left: 2px solid var(--ink); border-radius: 0 10px 10px 0; }
+#app.portrait #scrQuick .on-chg { top: 50%; right: -14px; }
+#app.portrait #scrQuick .on-plate { top: auto; bottom: 8px; max-width: 132px; padding: 4px 8px 3px 9px; }
+#app.portrait #scrQuick .on-help { margin-top: 2px; }
+@media (hover: hover) { #scrQuick .on-fcb:hover { filter: brightness(1.07); } }
+#app.tiny #scrQuick .on-plate b { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrQuick .on-plate b { font-size: 17px; }
+#app.portrait #scrQuick .on-plate b { font-size: 12.5px; }
+#app:not(.short):not(.portrait) #scrQuick .on-help, #app:not(.short):not(.portrait) #scrQuick .on-here.empty { font-size: 13.5px; }
+
+/* ---- the stickers it adds to the ink set (00-ink.css): in a line (.st), sky (Casual), grey (a draw) ---- */
+.tag.st { position: static; display: inline-block; flex: none; }
+.tag.sky { background: var(--sky, #8fb6ff); color: var(--ink); }
+.tag.grey { background: #8a90ab; color: var(--ink); }
+
+/* ---- the status kicker: mint dot online, grey while connecting ---- */
+#scrQuick .qm-status { font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--sand); padding: 3px 0; margin: -3px 0; }
+#scrQuick .qm-status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mute); margin-right: 8px; vertical-align: 0; }
+#scrQuick .qm-status.ok::before { background: var(--mint); box-shadow: 0 0 0 3px rgba(134, 220, 174, 0.22); }
+
+/* ---- YOUR MATCH: the mode segments, the rank plate, FIND MATCH pinned to the bottom with the truth under it ---- */
+#scrQuick .qm-mid { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+#scrQuick .qm-idle, #scrQuick .qm-search { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 9px; }
+#scrQuick .qm-idle[hidden], #scrQuick .qm-search[hidden] { display: none; }
+#scrQuick .qm-idle > .kick { flex: none; color: var(--gold); }
+#scrQuick .qm-seg { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#scrQuick .qm-seg button { appearance: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 54px; padding: 4px 8px;
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: var(--text);
+  font: 800 19px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; transition: transform 0.08s, box-shadow 0.08s; }
+#scrQuick .qm-seg button small { font: 600 11.5px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); }
+#scrQuick .qm-seg button.on { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#scrQuick .qm-seg button.on small { color: rgba(14, 16, 34, 0.7); }
+#scrQuick .qm-seg button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrQuick .qm-seg button:disabled { cursor: default; }
+#scrQuick .qm-seg button:disabled:not(.on) { opacity: 0.5; }
+#scrQuick .qm-seg button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* the rank plate: emblem, tier word in its colour, rating and what is left, the bar, the record and the season */
+#scrQuick .qm-rk { --tc: #c9d0e4; flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 12px;
+  border: 2px solid var(--ink); border-radius: 10px; background: rgba(14, 16, 34, 0.45); }
+#scrQuick .qm-rk .badge { width: 46px; height: 46px; filter: drop-shadow(0 2px 0 var(--ink)); }
+#scrQuick .qm-rkb { min-width: 0; display: flex; flex-direction: column; }
+#scrQuick .qm-rkt { font: italic 900 24px/1 var(--display); text-transform: uppercase; color: var(--tc); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+#scrQuick .qm-rk.placing .qm-rkt { color: var(--sand); }
+#scrQuick .qm-rks { margin-top: 3px; font: 600 13px/1.2 var(--body); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-rk .bar { position: relative; height: 10px; margin-top: 7px; border-radius: 5px; overflow: hidden; background: rgba(14, 16, 34, 0.9); border: 1.5px solid rgba(255, 255, 255, 0.1); }
+#scrQuick .qm-rk .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%); background: linear-gradient(180deg, #fff 0, var(--tc) 45%); }
+#scrQuick .qm-rk.placing .bar i { background: linear-gradient(180deg, #fff 0, var(--sand) 45%); }
+#scrQuick .qm-rec { white-space: pre-line; text-align: right; line-height: 1.35; color: var(--mute); }
+#scrQuick #qmFind { flex: none; margin-top: auto; min-height: 50px; font-size: 24px; }
+#scrQuick .qm-truth { flex: none; margin: -2px 0 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+#scrQuick .qm-truth.note { color: var(--sand); }
+/* searching: the timer on a turning rays disc, the widening range, the Casual fallback line, CANCEL */
+#scrQuick .qm-search { align-items: center; text-align: center; }
+#scrQuick .qm-sk { flex: none; align-self: flex-start; display: flex; align-items: center; gap: 8px; color: var(--gold); }
+.qdot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); animation: blink 1.2s ease-in-out infinite; }
+#scrQuick .qm-disc { position: relative; flex: none; display: grid; place-items: center; width: 132px; height: 132px; margin-top: 2px; overflow: hidden; border-radius: 50%;
+  border: 2px solid var(--ink); background: radial-gradient(circle, #3a3f74 0, #1b1f3d 70%); box-shadow: 0 3px 0 var(--ink), inset 0 0 0 3px rgba(244, 201, 93, 0.35); }
+#scrQuick .qm-disc .rays { inset: -40%; --rc: rgba(244, 201, 93, 0.22); background: repeating-conic-gradient(from 0deg, var(--rc) 0 5deg, transparent 5deg 15deg); animation-duration: 8s; }
+#scrQuick .qm-disc b { position: relative; font: italic 900 46px/1 var(--display); color: #fff; font-variant-numeric: tabular-nums; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrQuick .qm-range { flex: none; margin: 0; font: 700 14px/1.25 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+#scrQuick .qm-fb { flex: none; margin: 0; max-width: 34ch; font: 600 12.5px/1.3 var(--body); color: var(--sand); }
+#scrQuick .qm-fb[hidden] { display: none; }
+#scrQuick .qm-x { flex: none; margin-top: auto; align-self: stretch; min-height: 44px; font-size: 19px; }
+
+/* ---- the right column: the CPU offer (its own card, the ember sticker), then the queue and LAST FIVE ---- */
+#scrQuick .qm-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+#scrQuick .qm-cpu { flex: none; gap: 6px; padding-top: 14px; border-color: var(--ink); box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.55), var(--hard), var(--bevel); }
+#scrQuick .qm-cpu[hidden] { display: none; }
+#scrQuick .qm-cpu > .tag { left: 10px; top: -10px; z-index: 2; }
+#scrQuick .qm-cpt { font: italic 900 19px/1 var(--display); text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+#scrQuick .qm-cpl { font: 500 12px/1.3 var(--body); color: var(--mute); }
+#scrQuick #qmWarm { min-height: 40px; font-size: 17px; }
+#scrQuick .qm-room { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+#scrQuick .qm-room > .kick { flex: none; color: var(--gold); }
+#scrQuick .qm-room > .on-here + .kick { margin-top: 6px; }
+/* the queue's pills: a pulsing gold dot is searching, mint is here, grey is in a match; YOU while you search */
+#scrQuick .on-pl.q::before { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); animation: blink 1.2s ease-in-out infinite; }
+#scrQuick .on-pl.me { color: var(--gold); box-shadow: inset 0 0 0 1.5px rgba(244, 201, 93, 0.5), 0 2px 0 var(--ink); }
+#scrQuick .on-pl.more::before { display: none; }
+/* LAST FIVE: W / L / D sticker, who and their fighter, the rating change */
+#scrQuick .qm-last { flex: none; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+#scrQuick .qm-last li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 30px; padding: 3px 9px 3px 6px;
+  border-radius: 8px; background: rgba(14, 16, 34, 0.42); }
+#scrQuick .qm-last li.empty { display: block; padding: 0; background: none; min-height: 0; font: 500 12.5px/1.35 var(--body); color: var(--mute); }
+#scrQuick .qm-last .tag { padding: 4px 0 3px; width: 24px; text-align: center; font-size: 12px; }
+#scrQuick .qm-last span { min-width: 0; font: 800 14px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-last span small { font: 500 12px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); }
+#scrQuick .qm-last b { font: 800 15px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--mute); }
+#scrQuick .qm-last b.up { color: var(--mint); }
+#scrQuick .qm-last b.down { color: #ff8a7c; }
+
+/* ---- sizes: small phones, the desktop, upright phones ---- */
+#app.tiny #scrQuick .qm-idle, #app.tiny #scrQuick .qm-search { gap: 6px; }
+#app.tiny #scrQuick .qm-seg { gap: 6px; }
+#app.tiny #scrQuick .qm-seg button { min-height: 44px; font-size: 16px; gap: 3px; }
+#app.tiny #scrQuick .qm-seg button small { font-size: 10.5px; }
+#app.tiny #scrQuick .qm-rk { gap: 9px; padding: 5px 9px; }
+#app.tiny #scrQuick .qm-rk .badge { width: 36px; height: 36px; }
+#app.tiny #scrQuick .qm-rkt { font-size: 19px; }
+#app.tiny #scrQuick .qm-rks { font-size: 11.5px; }
+#app.tiny #scrQuick .qm-rk .bar { height: 8px; margin-top: 5px; }
+#app.tiny #scrQuick .qm-rec { font-size: 9.5px; letter-spacing: 0.1em; }
+#app.tiny #scrQuick #qmFind { min-height: 42px; font-size: 20px; }
+#app.tiny #scrQuick .qm-truth { font-size: 11px; }
+#app.tiny #scrQuick .qm-disc { width: 96px; height: 96px; }
+#app.tiny #scrQuick .qm-disc b { font-size: 34px; -webkit-text-stroke-width: 2.5px; }
+#app.tiny #scrQuick .qm-range { font-size: 12px; }
+#app.tiny #scrQuick .qm-fb { font-size: 11px; }
+#app.tiny #scrQuick .qm-x { min-height: 38px; font-size: 16px; }
+#app.tiny #scrQuick .qm-side { gap: 10px; }
+#app.tiny #scrQuick .qm-cpu { gap: 4px; padding-top: 12px; }
+#app.tiny #scrQuick .qm-cpt { font-size: 16px; }
+#app.tiny #scrQuick .qm-cpl { font-size: 11px; }
+#app.tiny #scrQuick #qmWarm { min-height: 36px; font-size: 15px; }
+#app.tiny #scrQuick .qm-last li { min-height: 26px; gap: 6px; padding: 2px 7px 2px 5px; }
+#app.tiny #scrQuick .qm-last span { font-size: 12.5px; }
+#app.tiny #scrQuick .qm-last span small, #app.tiny #scrQuick .on-help { display: none; }
+#app.tiny #scrQuick .qm-last b { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-status { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle, #app:not(.short):not(.portrait) #scrQuick .qm-search { gap: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-seg { gap: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-seg button { min-height: 72px; font-size: 24px; gap: 6px; border-radius: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-seg button small { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rk { gap: 16px; padding: 12px 16px; border-radius: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rk .badge { width: 60px; height: 60px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rkt { font-size: 32px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rks { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rec { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick #qmFind { min-height: 62px; font-size: 30px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-truth { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-disc { width: 190px; height: 190px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-disc b { font-size: 64px; -webkit-text-stroke-width: 4px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-range { font-size: 18px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-fb { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-x { min-height: 52px; font-size: 22px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-side { gap: 18px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-cpu { gap: 9px; padding-top: 18px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-cpt { font-size: 24px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-cpl { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick #qmWarm { min-height: 48px; font-size: 20px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-room > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last li { min-height: 36px; gap: 10px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last span { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last span small { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last b { font-size: 17px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last li.empty { font-size: 13.5px; }
+/* upright: the Fight Card on top, your match (the timer) in the middle, the CPU offer under the thumb, then the queue */
+#app.portrait #scrQuick .qm-mid, #app.portrait #scrQuick .qm-room, #app.portrait #scrQuick .qm-side { flex: none; overflow: visible; }
+#app.portrait #scrQuick .qm-idle, #app.portrait #scrQuick .qm-search { flex: none; }
+#app.portrait #scrQuick #qmFind, #app.portrait #scrQuick .qm-x { margin-top: 6px; }
+
+/* ---- the searching strip under the clock in the warm-up (a gold dot), and the CPU's sticker in its name ---- */
+#qmStrip { margin-top: 2px; height: 24px; gap: 6px; padding: 0 9px; color: var(--gold); border-color: rgba(244, 201, 93, 0.5); background: rgba(14, 16, 34, 0.82); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#qmStrip[hidden] { display: none; }
+#qmStrip i { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); }
+#app.narrow #qmStrip { position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); margin: 0; }
+
+/* ---- results: the rank card while the server confirms (the before rating, a mute … sticker, a shimmer), no result (grey ±0),
+   the warm-up's STILL SEARCHING card in the rank card's place, the CPU sticker in the kicker ---- */
+#resSheet .res-rank.qm-wait .bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent); animation: qmShim 1.4s linear infinite; }
+@keyframes qmShim { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+#resSheet .delta.wait { background: linear-gradient(180deg, #3a4170, #262b50); color: var(--mute); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .delta.wait b { letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
+#resSheet .delta.zero { background: linear-gradient(180deg, #9aa0ba, #6f758f); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-qm { flex: none; display: flex; flex-direction: column; gap: 7px; padding: 10px 14px; box-shadow: inset 0 0 0 1.5px rgba(244, 201, 93, 0.45), var(--hard), var(--bevel); }
+#resSheet .res-qm[hidden] { display: none; }
+#resSheet .rq-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#resSheet .res-qm .livetag { height: 28px; font-size: 13px; color: var(--gold); border-color: rgba(244, 201, 93, 0.5); font-variant-numeric: tabular-nums; }
+#resSheet .res-qm .livetag i { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); }
+#resSheet .res-qm .mini { min-height: 34px; font-size: 13px; }
+#resSheet .rq-l { font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+#resSheet .rq-l:empty { display: none; }
+#resSheet .res-kick .qm-cpu { margin-right: 8px; padding: 3px 6px 2px; font-size: 10px; vertical-align: 1px; }
+.btn small:empty { display: none; }
+
+/* ---- the menu's gold hero as Quick match: the live dot in the kicker, the ember SEASON 1 sticker in the corner ---- */
+#scrMenu .mm-hero .qm-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #1c8a52; box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.25); vertical-align: 0; }
+#scrMenu .mm-hero .qm-dot.off { background: var(--ketchup); }
+#scrMenu .mm-hero .qm-s1 { right: 12px; top: 10px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-hero .qm-s1[hidden] { display: none; }
+#app.tiny #scrMenu .mm-hero .qm-s1 { right: 8px; top: 7px; font-size: 10px; padding: 4px 6px 3px; }
+
+/* ---- the Season 1 sheet: the gold-edged online plate, the dim CPU plate, three lines, LET'S GO ---- */
+#scrSeason .ss-sheet { width: min(560px, 100%); max-height: 100%; }
+#scrSeason .ss-new { position: static; flex: none; margin-right: 6px; }
+#scrSeason .ss-pl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#scrSeason .ss-p { --tc: #c9d0e4; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrSeason .ss-p.on { box-shadow: inset 0 0 0 2px rgba(244, 201, 93, 0.6), 0 3px 0 var(--ink), var(--bevelgold); }
+#scrSeason .ss-p.old { opacity: 0.72; }
+#scrSeason .ss-p.old .badge { filter: saturate(0.35) brightness(0.8); }
+#scrSeason .ss-p[hidden] { display: none; }
+#scrSeason .ss-p .badge { width: 46px; height: 46px; }
+#scrSeason .ss-p > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#scrSeason .ss-p b { font: italic 900 24px/1 var(--display); text-transform: uppercase; color: var(--tc); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+#scrSeason .ss-p span:not(.kick) { font: 600 12.5px/1.25 var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+#scrSeason .ss-ls p { margin: 0 0 6px; font: 500 14px/1.4 var(--body); color: var(--text); }
+#scrSeason .ss-ls p b { color: var(--gold); }
+#scrSeason .ss-ls p.mute { color: var(--mute); font-size: 13px; }
+#scrSeason #ssGo { align-self: center; min-width: 220px; }
+#scrSeason:not([hidden]) .ss-p.on .badge .em { animation: emIn 0.6s 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+#app.tiny #scrSeason .ss-p { padding: 6px 9px; gap: 9px; }
+#app.tiny #scrSeason .ss-p .badge { width: 36px; height: 36px; }
+#app.tiny #scrSeason .ss-p b { font-size: 19px; }
+#app.tiny #scrSeason .ss-ls p { font-size: 12.5px; margin-bottom: 3px; }
+#app.portrait #scrSeason .ss-pl { grid-template-columns: 1fr; }
+
+/* ---- PLAYER FOUND! over the dimmed warm-up: the banner's recipe in gold, vs who and their tier, a digit disc counting 3·2·1;
+   it covers the controls, so the fight takes no more input ---- */
+#qmFound { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
+  background: rgba(8, 9, 20, 0.62); touch-action: none; }
+#qmFound[hidden] { display: none; }
+#qmFound .qf-t { font: italic 900 clamp(48px, calc(var(--um, 4px) * 14), 112px)/0.9 var(--display); letter-spacing: -0.01em; text-transform: uppercase; color: var(--gold);
+  -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink), 0 12px 24px rgba(0, 0, 0, 0.45); transform: skewX(-8deg); }
+#qmFound .qf-vs { display: flex; align-items: center; gap: 9px; padding: 6px 14px; border-radius: 8px; background: rgba(14, 16, 34, 0.86); border: 2px solid var(--ink);
+  font: 800 17px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; }
+#qmFound .qf-em { display: inline-block; width: 26px; height: 26px; flex: none; }
+#qmFound .qf-em .em { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 0 var(--ink)); }
+#qmFound .qf-vs .tag { font-size: 10.5px; }
+#qmFound .qf-n { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); background: var(--gold); color: var(--ink);
+  font: italic 900 40px/1 var(--display); box-shadow: 0 4px 0 var(--ink), var(--bevelgold); }
+#qmFound .qf-l { font: 700 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); text-shadow: 0 2px 0 var(--ink); }
+#qmFound.in .qf-t { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+#qmFound.in .qf-vs { animation: qfUp 0.3s 0.25s ease-out both; }
+@keyframes qfUp { from { opacity: 0; transform: translateY(10px); } }
+
+/* ---- the VS screen (3 s): a diagonal split, you left on your skin's sunburst and them right, the ink seam at −17° with the ketchup VS
+   sticker, a nameplate, the fighter, the tier plate on each side; the RANKED / CASUAL stamp on top; the ping and the map at the foot
+   with a gold bar draining into the fight's countdown. --cl / --cr are the two skins' glows (ui/quick.js qmVs) ---- */
+#qmVs { position: absolute; inset: 0; z-index: 7; overflow: hidden; background: #0b0c1c; --cl: rgba(243, 217, 164, 0.42); --cr: rgba(143, 182, 255, 0.42); }
+#qmVs[hidden] { display: none; }
+#qmVs .vs-h { position: absolute; top: 0; bottom: 0; width: 62%; overflow: hidden; }
+#qmVs .vs-h.l { left: 0; clip-path: polygon(0 0, 100% 0, 75% 100%, 0 100%); background: radial-gradient(ellipse 70% 70% at 40% 50%, var(--cl), transparent 75%), linear-gradient(160deg, #2a2f55, #15172e); }
+#qmVs .vs-h.r { right: 0; clip-path: polygon(25% 0, 100% 0, 100% 100%, 0 100%); background: radial-gradient(ellipse 70% 70% at 60% 50%, var(--cr), transparent 75%), linear-gradient(200deg, #2a2f55, #15172e); }
+#qmVs .vs-h .rays { inset: -60%; opacity: 0.8; background: repeating-conic-gradient(from 0deg, var(--cl) 0 4deg, transparent 4deg 12deg); }
+#qmVs .vs-h.r .rays { background: repeating-conic-gradient(from 0deg, var(--cr) 0 4deg, transparent 4deg 12deg); }
+#qmVs .vs-art { position: absolute; z-index: 1; bottom: 4%; width: 80%; height: 84%; }   /* wider than the model needs: wings and weapons stay whole */
+#qmVs .vs-h.l .vs-art { left: -5%; }
+#qmVs .vs-h.r .vs-art { right: -5%; }
+#qmVs .vs-h::after { content: ""; position: absolute; bottom: 6%; width: 30%; height: 14px; border-radius: 50%; background: rgba(0, 0, 0, 0.4); }   /* the ground shadow */
+#qmVs .vs-h.l::after { left: 20%; }
+#qmVs .vs-h.r::after { right: 20%; }
+#qmVs .vs-seam { position: absolute; left: 50%; top: -10%; bottom: -10%; width: 12px; margin-left: -6px; background: var(--ink); transform: rotate(17deg); }
+#qmVs .vs-x { position: absolute; left: 50%; top: 50%; z-index: 3; padding: 8px 14px 6px; border: 3px solid var(--ink); border-radius: 10px; background: var(--ketchup); color: #fff;
+  font: italic 900 46px/1 var(--display); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; box-shadow: 0 4px 0 var(--ink); transform: translate(-50%, -50%) rotate(-8deg); }
+#qmVs .vs-s { position: absolute; z-index: 2; bottom: 56px; display: flex; flex-direction: column; gap: 6px; max-width: 40%; }
+#qmVs .vs-s.l { left: max(18px, env(safe-area-inset-left, 0px)); align-items: flex-start; }
+#qmVs .vs-s.r { right: max(18px, env(safe-area-inset-right, 0px)); align-items: flex-end; text-align: right; }
+#qmVs .vs-pl { display: inline-block; max-width: 100%; padding: 6px 14px 5px; background: var(--ink); transform: skewX(-12deg); }
+#qmVs .vs-pl b { display: block; transform: skewX(12deg); font: 800 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#qmVs .vs-f { max-width: 100%; font: italic 900 44px/0.9 var(--display); text-transform: uppercase; color: #fff; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 4px 1px 0; }
+#qmVs .vs-t { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px 0 4px; border: 2px solid var(--ink); border-radius: 8px; background: rgba(14, 16, 34, 0.86);
+  font: 800 14px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#qmVs .vs-t .em { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 2px 0 var(--ink)); }
+#qmVs .vs-t.un .em { filter: saturate(0.3) brightness(0.75) drop-shadow(0 2px 0 var(--ink)); }
+#qmVs .vs-st { position: absolute; z-index: 3; left: 50%; top: max(14px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+#qmVs .vs-st b { padding: 6px 16px 4px; border: 2px solid var(--ink); border-radius: 8px; font: italic 900 24px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); background: var(--gold); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); transform: rotate(-4deg); }
+#qmVs .vs-st.cs b { background: var(--sky, #8fb6ff); }
+#qmVs .vs-st span { padding: 3px 8px; border-radius: 5px; background: rgba(14, 16, 34, 0.86); font: 700 11px/1.1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#qmVs .vs-st .vs-fb { color: var(--sand); }
+#qmVs .vs-st span[hidden] { display: none; }
+#qmVs .vs-foot { position: absolute; z-index: 3; left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; width: min(360px, 60%); }
+#qmVs .vs-foot .livetag { font-variant-numeric: tabular-nums; }
+#qmVs .vs-foot .livetag i { background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); animation: none; }
+#qmVs .vs-bar { display: block; width: 100%; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(14, 16, 34, 0.86); border: 1px solid rgba(255, 255, 255, 0.12); }
+#qmVs .vs-bar i { display: block; height: 100%; background: var(--gold); transform-origin: left; }
+#qmVs.in .vs-bar i { animation: vsDrain 3s linear both; }
+#qmVs.in .vs-h.l, #qmVs.in .vs-s.l { animation: vsInL 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+#qmVs.in .vs-h.r, #qmVs.in .vs-s.r { animation: vsInR 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+#qmVs.in .vs-x { animation: vsStamp 0.34s 0.28s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+@keyframes vsDrain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes vsInL { from { transform: translateX(-40%); opacity: 0; } }
+@keyframes vsInR { from { transform: translateX(40%); opacity: 0; } }
+@keyframes vsStamp { from { transform: translate(-50%, -50%) rotate(-8deg) scale(1.6); opacity: 0; } }
+#app.tiny #qmVs .vs-f { font-size: 34px; -webkit-text-stroke-width: 3px; }
+#app.tiny #qmVs .vs-s { bottom: 50px; }
+#app.tiny #qmVs .vs-x { font-size: 36px; }
+#app:not(.short):not(.portrait) #qmVs .vs-f { font-size: 64px; -webkit-text-stroke-width: 5px; }
+#app:not(.short):not(.portrait) #qmVs .vs-pl b { font-size: 19px; }
+#app:not(.short):not(.portrait) #qmVs .vs-t { height: 40px; font-size: 17px; }
+#app:not(.short):not(.portrait) #qmVs .vs-t .em { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #qmVs .vs-x { font-size: 64px; }
+#app:not(.short):not(.portrait) #qmVs .vs-st b { font-size: 32px; }
+#app:not(.short):not(.portrait) #qmVs .vs-s { bottom: 80px; }
+/* upright: you on top, them below, the seam across */
+#app.portrait #qmVs .vs-h { left: 0; right: 0; width: auto; height: 58%; }
+#app.portrait #qmVs .vs-h.l { top: 0; bottom: auto; clip-path: polygon(0 0, 100% 0, 100% 72%, 0 100%); }
+#app.portrait #qmVs .vs-h.r { top: auto; bottom: 0; clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%); }
+#app.portrait #qmVs .vs-art { width: 70%; height: 74%; bottom: auto; top: 6%; }
+#app.portrait #qmVs .vs-h.l .vs-art { left: auto; right: 2%; }
+#app.portrait #qmVs .vs-h.r .vs-art { top: auto; bottom: 4%; right: auto; left: 2%; }
+#app.portrait #qmVs .vs-h::after { display: none; }
+#app.portrait #qmVs .vs-seam { left: -10%; right: -10%; top: 50%; bottom: auto; width: auto; height: 12px; margin: -6px 0 0; transform: rotate(-17deg); }
+#app.portrait #qmVs .vs-s { max-width: calc(100% - 36px); }
+#app.portrait #qmVs .vs-s.l { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 96px); bottom: auto; }
+#app.portrait #qmVs .vs-s.r { bottom: 90px; }
+#app.portrait #qmVs .vs-f { font-size: 40px; }
+#app.portrait #qmVs .vs-foot { width: calc(100% - 48px); }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrQuick .on-fc.fc-in .on-fcb, #scrQuick .on-fc.fc-in .on-art { animation: none; }
+  #scrQuick .on-fcb, #scrQuick .sel-head .back, #scrQuick .qm-seg button { transition: none; }
+  .qdot, #scrQuick .on-pl.q::before, #resSheet .delta.wait b, #resSheet .res-qm .livetag i, #qmStrip i { animation: none; }
+  #resSheet .res-rank.qm-wait .bar::after { animation: none; opacity: 0.5; transform: none; }
+  #qmFound.in .qf-t, #qmFound.in .qf-vs, #qmVs.in .vs-h, #qmVs.in .vs-s, #qmVs.in .vs-x, #scrSeason:not([hidden]) .ss-p.on .badge .em { animation: none; }
+}
+
 </style>
 
 </head><body><div id="app">
@@ -2729,7 +3153,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
-    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
+    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div><div id="qmStrip" class="livetag" hidden><i aria-hidden="true"></i><span id="qmStripT">Searching</span></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
       <div class="pcard right" id="pc1"><div>
@@ -2978,6 +3402,81 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <section id="scrQuick" class="screen select" hidden>
+    <!-- Quick match (ui/quick.js, css/96-quick.css; Fable's design quick-match/fable-quick.md): you · your match · the queue. The Fight Card is
+         Play friends' one (a tap opens the fighter select); the middle card turns into the search; the CPU warm-up is its own card -->
+    <div class="qm2">
+      <header class="sel-head">
+        <button class="back" id="qmBack" aria-label="Back"></button>
+        <div class="grow"><div class="kicker qm-status" id="qmStatus">Connecting</div><h2>Quick match</h2></div>
+        <div class="coin chips" aria-label="Potato chips"><span id="qmTokens">0</span></div>
+      </header>
+      <div class="qm-grid">
+        <div class="on-fc" id="qmFc">
+          <button class="on-fcb" id="qmChange">
+            <span class="on-fa" aria-hidden="true"><i class="rays"></i><canvas class="on-art" id="qmArt"></canvas></span>
+            <span class="on-ft"><b id="qmFName"></b><span class="on-fs"><i></i><span id="qmFSkin"></span><em id="qmFRole"></em></span><small>You · tap to change</small></span>
+            <span class="on-chg" aria-hidden="true">⇄</span>
+          </button>
+          <div class="on-plate"><b id="qmMyName">You</b></div>
+        </div>
+        <div class="on-card qm-mid">
+          <div class="qm-idle" id="qmIdle">
+            <div class="kick">Your match</div>
+            <div class="qm-seg" role="radiogroup" aria-label="Mode">
+              <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">counts for rank</small></button>
+              <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
+            </div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span></div>
+            <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
+            <p class="qm-truth" id="qmTruth"></p>
+          </div>
+          <div class="qm-search" id="qmSearch" hidden>
+            <div class="kick qm-sk"><i class="qdot" aria-hidden="true"></i><span id="qmSKick">Searching · Ranked</span></div>
+            <div class="qm-disc"><i class="rays" aria-hidden="true"></i><b id="qmTime">0:00</b></div>
+            <p class="qm-range" id="qmRange"></p>
+            <p class="qm-fb" id="qmFb" hidden></p>
+            <button class="btn qm-x" id="qmCancel"><span>Cancel</span></button>
+          </div>
+        </div>
+        <div class="qm-side">
+          <div class="on-card qm-cpu" id="qmCpu" hidden>
+            <span class="tag ember">CPU</span>
+            <b class="qm-cpt">Warm up vs a CPU</b>
+            <span class="qm-cpl" id="qmCpuL">Keeps searching · chips, no rank change. A found player interrupts the fight.</span>
+            <button class="btn primary" id="qmWarm"><span>Fight a CPU</span></button>
+          </div>
+          <div class="on-card qm-room scroll">
+            <div class="kick">The queue</div>
+            <div class="on-here" id="qmHere"></div>
+            <div class="kick">Last five</div>
+            <ul class="qm-last" id="qmLast"></ul>
+            <p class="on-help" id="qmHelp"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick match's Season 1 sheet: once, the first time Quick match opens (ui/quick.js) -->
+  <section id="scrSeason" class="screen modal" hidden>
+    <div class="sheet ss-sheet scroll">
+      <header class="sh-head"><h3>Season 1</h3><span class="tag gold ss-new">New</span><button class="round x" id="ssClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <div class="ss-pl">
+          <div class="ss-p on" id="ssOn"><i class="badge" id="ssBadgeN"></i><div><span class="kick">Your online rank</span><b id="ssTierN">Bronze</b><span id="ssRateN">1000 · everyone starts here</span></div></div>
+          <div class="ss-p old" id="ssOld"><i class="badge" id="ssBadgeO"></i><div><span class="kick">Your CPU rank</span><b id="ssTierO">Bronze</b><span id="ssRateO"></span></div></div>
+        </div>
+        <div class="ss-ls">
+          <p><b>Ranked is online now:</b> real players, and the server keeps the score.</p>
+          <p>Titles you earned stay.</p>
+          <p class="mute">No sign-up: your rank lives on this phone's sync code (Account). Link another phone with it.</p>
+        </div>
+        <button class="btn primary lg" id="ssGo"><span>Let's go</span></button>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -3002,6 +3501,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           </div>
           <div class="delta" id="rStick"><b id="rDelta">+0</b><small>Rating</small></div>
         </div>
+        <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
+        <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
         <div class="res-stats" id="rStats">
           <div class="card stat"><b id="rKOs">0</b><span id="rKOsL">KOs</span></div>
           <div class="card stat"><b><span id="rDmg">0</span><small>%</small></b><span>Damage dealt</span></div>
@@ -3015,7 +3516,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="res-actions">
           <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
           <button class="btn" id="rChange"><span>Fighters</span></button>
-          <button class="btn" id="rMenu"><span>Menu</span></button>
+          <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>
         </div>
       </div>
     </div>
@@ -3113,6 +3614,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
     </div>
   </section>
+
+  <!-- Quick match (ui/quick.js, css/96-quick.css): PLAYER FOUND! over a CPU warm-up (3 s), then the VS screen until the fight's countdown -->
+  <div id="qmFound" hidden><b class="qf-t">Player found!</b><span class="qf-vs" id="qfVs"></span><span class="qf-n" id="qfN">3</span><span class="qf-l">The CPU fight ends · no result</span></div>
+  <div id="qmVs" hidden aria-live="polite">
+    <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
+    <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>
+    <i class="vs-seam" aria-hidden="true"></i><b class="vs-x" aria-hidden="true">VS</b>
+    <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span></div>
+    <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span></div>
+    <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
+    <div class="vs-foot"><span class="livetag"><i aria-hidden="true"></i><span id="vsPing">measuring…</span></span><span class="vs-bar"><i></i></span></div>
+  </div>
 </div>
 
 <script>/* Standalone network layer. Inside Claude the page uses the platform's `room` and `user`
@@ -3126,6 +3639,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { /* private mode */ } return null; };
   const rid = () => Math.random().toString(36).slice(2, 12).padEnd(10, "0");
   const PEER = "p" + rid() + rid();
+  // a secret made when the page opens: only this page can take its peer back after a dropped connection (peer ids are public in a room)
+  const KEY = (() => { try { const b = new Uint8Array(18); crypto.getRandomValues(b); return Array.from(b, (x) => "abcdefghijklmnopqrstuvwxyz0123456789"[x % 36]).join(""); } catch (e) { return rid() + rid() + rid(); } })();
   let BY = store("potatobrawl.uid") || store("blastline.uid");
   if (!BY || !/^[A-Za-z0-9_-]{4,40}$/.test(BY)) BY = "u_" + rid() + rid();
   store("potatobrawl.uid", BY);
@@ -3137,6 +3652,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
+  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / qm-* messages
   const rooms = new Map();
 
   function setConn(v) { if (v === welcomed) return; welcomed = v; for (const fn of [...connL]) fn(v); }
@@ -3145,7 +3661,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     try { ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws"); }
     catch (e) { setTimeout(connect, backoff); return; }
     window.__blws = ws;
-    ws.onopen = () => { backoff = 400; send({ t: "hello", peer: PEER, by: BY, name: NAME }); };
+    ws.onopen = () => { backoff = 400; send({ t: "hello", peer: PEER, by: BY, name: NAME, k: KEY }); };
     ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (_) { return; } onMsg(m); };
     ws.onclose = () => { setConn(false); setTimeout(connect, backoff); backoff = Math.min(backoff * 2, 6000); };
     ws.onerror = () => {};
@@ -3157,6 +3673,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
+    if (m.t === "me" || (typeof m.t === "string" && m.t.slice(0, 3) === "qm-")) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -3261,6 +3778,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     return NAME;
   };
   window.claude = { use: async (n) => (n === "room" ? room : n === "user" ? user : null) };
+  // Quick match talks to the server directly (server.js -> quick.js): send a message, hear the answers, know the connection
+  window.__blQuick = Object.freeze({
+    send(m) { if (!welcomed) return false; send(m); return true; },
+    on(fn) { qmL.add(fn); return () => qmL.delete(fn); },
+    connected: () => welcomed,
+    onConnection(fn) { connL.add(fn); return () => connL.delete(fn); },
+  });
   connect();
 })();
 </script>
@@ -6160,6 +6684,8 @@ function cntMode(m) {
   if (!m) return "none";
   if (m.trial) return "trial";
   if (m.tutorial) return "tutorial";
+  if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
+  if (m.warm) return "warmup";
   if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
   if (m.boss) return m.road ? "road-boss" : "boss";
   if (m.duo) return "team";   // Team Brawl 2v2 (ui/duo.js; match.team is the CPU team's name)
@@ -25143,8 +25669,8 @@ MANGA.wizard = (function () {
 
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
-const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
-function show(name) { cntScreen(name); for (const k of ["menu", "select", "result", "online", "cup", "road"]) if (screens[k]) screens[k].hidden = k !== name; }
+const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup"), quick: $("scrQuick"), season: $("scrSeason") };
+function show(name) { cntScreen(name); for (const k of ["menu", "select", "result", "online", "cup", "road", "quick"]) if (screens[k]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; if (on) cntScreen(name); }   // cntScreen: ui/counter.js (play counts)
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
@@ -25194,6 +25720,7 @@ function renderMenu() {
   $("mOnline").textContent = onOk ? "" : "needs the web link";
   $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
+  qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
 function menuDaily() {
@@ -25224,6 +25751,7 @@ function onlineAvailable() {
   return !!c && !(window.__blStandalone && !/^https?:$/.test(location.protocol));
 }
 function goMenu() {
+  qmStop();   // ui/quick.js: the menu stops a Quick match search
   if (NET.mr) leaveMatchRoom();
   if (NET.phase !== "idle") { resetNet(); NET.phase = "idle"; lobbyPresence(); }
   tutEnd(); finStop();
@@ -25331,7 +25859,7 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = P.tokens;
-  if (sel.mode === "online") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby: it names the pick
+  if (sel.mode === "online" || sel.mode === "quick") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
@@ -25397,10 +25925,10 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -25556,6 +26084,7 @@ function togglePause(force) {
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
   $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : "Quit to menu";
   $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  if (match && (match.qm || match.warm)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
   releaseTouch();
 }
 let quitArmed = false;
@@ -25568,6 +26097,7 @@ function finishMatch(forfeit) {
   if (match && match.boss) { bossMatchEnd(forfeit); return; }   // ui/boss.js
   if (match && match.duo) { duoMatchEnd(forfeit); return; }     // ui/duo.js
   if (match && match.road) { roadMatchEnd(forfeit); return; }   // ui/road.js
+  if (match && match.warm) { qmWarmEnd(forfeit); return; }      // ui/quick.js: the CPU warm-up while searching
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -25642,7 +26172,8 @@ function resOpen(look, spec, solo) {
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
-  $("rAgain").disabled = false; $("rAgainSub").textContent = "";
+  $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
+  $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
 // the big word; the long ones (Opponent left, Disconnected) are set smaller so they fit the panel
@@ -25723,7 +26254,7 @@ function showResults(R) {
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
-  const chipsOn = R.ranked || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
+  const chipsOn = R.ranked || R.warm || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
@@ -25736,6 +26267,7 @@ function showResults(R) {
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
+  if (R.qm || R.warm) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   show("result");
 }
 
@@ -27899,7 +28431,7 @@ const NET = {
   matchId: 0, startSeen: 0, pingSent: new Map(), pingSeen: new Set(), pings: [], pingT: 0, hsT: 0, lastStart: null,
   D: 6, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0, ckMine: new Map(), ckSend: null,
   syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
-  cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0,
+  cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, qm: null,   // qm: the Quick match being joined or played (ui/quick.js)
   standalone: !!window.__blStandalone, invite: null, inviteT: 0,
   tb: null, hs: null,   // a Team Brawl's board and its start (ui/online-team.js)
 };
@@ -27952,8 +28484,9 @@ async function netInit() {
 function lobbyPresence() {
   if (!NET.room || !NET.ok) return;
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
-  const hosting = NET.phase === "hosting", tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy }).catch(() => {});
+  const hosting = NET.phase === "hosting" && !NET.qm, q = qmPresence();   // ui/quick.js: searching (qs) or in a Quick match
+  const tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs }).catch(() => {});
 }
 // The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
 function onBoss() {
@@ -28215,7 +28748,7 @@ function leaveMatchRoom() {
 }
 function resetNet() {
   Object.assign(NET, { role: null, hostCode: null, oppPeer: null, oppBy: null, oppName: "", lastOpp: null, matchId: 0, startSeen: 0,
-    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false,
+    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false, qm: null,
     tb: null, hs: null });
   NET.pingSent = new Map(); NET.pingSeen = new Set();
   TM = null;
@@ -28286,6 +28819,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
+  if (NET.phase === "result" && match && match.qm && match.qm.ranked) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -28296,7 +28830,7 @@ function opponentLeft() {
 
 function handshakeTick(now) {
   const opp = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
-  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > 8000) { NET.note = "No answer from the host."; netCancel(); return; }
+  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > 8000 && !NET.qm) { NET.note = "No answer from the host."; netCancel(); return; }   // a Quick match: the server calls it off
   if (!opp) return;
   const pr = opp.presence || {};
   const echo = typeof pr.pg === "number" ? pr.pg : null;
@@ -28313,7 +28847,7 @@ function handshakeTick(now) {
       NET.pingSeen.add(pr.po); NET.pings.push(now - NET.pingSent.get(pr.po));
     }
     const waited = now - NET.hsT;
-    if (NET.pings.length >= 6 || (waited > 3000 && NET.pings.length) || waited > 7000) {
+    if ((NET.pings.length >= 6 || (waited > 3000 && NET.pings.length) || waited > 7000) && (!NET.qm || qmReady(pr))) {   // a Quick match: once both VS screens showed
       const sorted = [...NET.pings].sort((a, b) => a - b);
       const rtt = sorted.length ? sorted[sorted.length >> 1] : 260;
       const pad = typeof window.__blDpad === "number" ? window.__blDpad : 4;
@@ -28322,16 +28856,16 @@ function handshakeTick(now) {
       const gpi = Number.isInteger(pr.pi) && pr.pi >= 0 && pr.pi < FIG[gf].palettes.length ? pr.pi : 0;
       const hf = sel.fighter, hpi = palIdx(hf);
       const bo = hostBo();
-      const st = { id: NET.matchId + 1, seed: (Math.random() * 1e9) | 0, d: D, f: [hf, gf], p: [hpi, gf === hf && gpi === hpi ? (gpi + 1) % FIG[gf].palettes.length : gpi], rtt: Math.round(rtt),
-        r: Object.assign({}, bo ? BOSS_RULES : P.rules), set: { n: 1, w: [0, 0] } };
-      if (bo) st.bo = bo;   // a boss fight: which boss (his map comes with him) and his level
+      const st = NET.qm ? qmStartMsg(D, rtt) : { id: NET.matchId + 1, seed: (Math.random() * 1e9) | 0, d: D, f: [hf, gf], p: [hpi, gf === hf && gpi === hpi ? (gpi + 1) % FIG[gf].palettes.length : gpi], rtt: Math.round(rtt),
+        r: Object.assign({}, bo ? BOSS_RULES : P.rules), set: { n: 1, w: [0, 0] } };   // a Quick match: the one the server assigned
+      if (bo && !NET.qm) st.bo = bo;   // a boss fight: which boss (his map comes with him) and his level
       NET.lastStart = st;
       namedPresence({ start: st });
       startOnlineMatch(st);
     }
   } else {
     const st = pr.start;
-    if (validStart(st) && st.id > NET.startSeen) startOnlineMatch(st);
+    if (validStart(st) && st.id > NET.startSeen && (!NET.qm || qmStartOk(st))) startOnlineMatch(st);   // a Quick match: only the assigned one (else the server decides)
   }
 }
 function validStart(st) {
@@ -28358,6 +28892,7 @@ function startOnlineMatch(st) {
     // the map comes from the match seed, so both phones play the same one with no new field in the start message
     G = newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
     match = { online: true, ranked: false, level: null };
+    if (NET.qm) { match.qm = NET.qm; qmMatchStarts(); }   // ui/quick.js
   }
   NET.phase = "match"; NICE.length = 0;
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
@@ -28499,7 +29034,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && match.qm.ranked ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -28563,6 +29098,7 @@ function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;
   if (match.tb) { tbFinish(); return; }   // ui/online-team.js
   if (match.boss) { finishBossOnline(); return; }
+  if (match.qm) { qmFinish(left, lost); return; }   // ui/quick.js: the server decides a Ranked one
   const me = G.fighters[meSlot], op = G.fighters[1 - meSlot];
   const res = left ? 1 : lost ? 0.5 : G.winner === meSlot ? 1 : G.winner === 1 - meSlot ? 0 : 0.5;
   const R = { res, online: true, left: !!left, lost: !!lost, me, op, lines: [], total: 0 };
@@ -29456,7 +29992,7 @@ function tbRoomLost() {
 const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(el); fn(e); }); };
 // a tap on a disabled control gets a dull thud (disabled buttons get no click, but pointerdown still reaches them)
 app.addEventListener("pointerdown", (e) => { const d = e.target.closest && e.target.closest("button:disabled, [aria-disabled='true']"); if (d && !d.closest("#ctl")) { Sfx.init(); Sfx.uiNo(); } }, true);
-tap("bRanked", () => openSelect("ranked"));
+tap("bRanked", quickOpen);   // ui/quick.js: Quick match on our own server, else Ranked vs a CPU
 tap("bPractice", () => openSelect("practice"));
 tap("bCup", cupOpen);
 tap("bDaily", dailyOpen);
@@ -29464,12 +30000,17 @@ tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 // from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
-tap("selBack", () => { if (sel.mode === "road") openRoad(); else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+tap("selBack", () => { if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
 tap("pQuit", () => {
+  if (match && match.warm) { qmWarmQuit(); return; }   // ui/quick.js: the warm-up's Back to search
+  if (match && match.qm) {   // ui/quick.js: a Ranked forfeit counts as a loss, a Casual match is just left
+    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked ? "Tap again to forfeit" : "Tap again to leave"; return; }
+    qmForfeit(); return;
+  }
   if (match && match.online) {
     if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to leave"; return; }
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
@@ -29483,8 +30024,9 @@ tap("rAgain", () => {
   cntAgain();   // ui/counter.js
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
-  if (match && match.tutorial) { openSelect("ranked"); return; }
+  if (match && match.tutorial) { quickOpen(); return; }
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
+  if (match && (match.qm || match.warm) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
   if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
     const lv = G.lv, boss = bossOf(G).spec.id, partner = G.fighters[1 - meSlot].spec.id;
     resetNet(); NET.phase = "idle"; lobbyPresence();
@@ -29504,6 +30046,7 @@ tap("rAgain", () => {
   startMatch();
 });
 tap("rChange", () => {
+  if (match && (match.qm || match.warm)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }
@@ -30472,10 +31015,10 @@ const ACT = [
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
-  { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
+  { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) + qmWins() >= 100, how: "Win 100 ranked matches." },
   ...mxActs(5),    // the Lv 5 title of each fighter
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
-  { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
+  { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
 const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
@@ -30495,12 +31038,12 @@ function acRing(ringBox, arc, ti) {   // the Account sheet's tier ring
 // #mRank is one button: the plate (picture with the rank emblem on its corner, name, tier + rating, the chosen title as a sticker)
 // and the coins beside it (chips; the Daily Potato streak while there is one; cups once one is won). Styles: game/css/20-menu.css.
 function renderPill() {
-  const ti = tierInfo(P.rating), name = acctName(), cups = P.cups | 0, me = $("mRank");
+  const rk = rankView(), ti = tierInfo(rk.r), name = acctName(), cups = P.cups | 0, me = $("mRank");   // rankView: ui/quick.js (the online rank on our own server)
   acSetMe($("mAvatar"));
   $("mName").textContent = name;
   me.querySelector(".plate").style.setProperty("--tc", ti.t.col);
   $("mTier").textContent = ti.t.name;
-  $("mRating").textContent = P.rating;
+  $("mRating").textContent = rk.r;
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
   const tt = acTitle(), mt = $("mTitle");
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
@@ -30508,7 +31051,7 @@ function renderPill() {
   $("mTokens").textContent = P.tokens;
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -30539,7 +31082,7 @@ function renderAccount() {
   $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l";
   if (acUI.tab === "s") { renderStats(); return; }
   if (acUI.tab === "l") { renderLocker(); return; }
-  const ti = tierInfo(P.rating), name = acctName();
+  const rk = rankView(), ti = tierInfo(rk.r), name = acctName();
   acSetMe($("acAvatar"));
   const tt = acTitle(); $("acTitleLine").textContent = tt ? tt.name : "";
   renderPick();
@@ -30551,8 +31094,8 @@ function renderAccount() {
   acRing($("acRank").querySelector(".ring"), $("acRing"), ti);
   $("acRank").style.setProperty("--tc", ti.t.col);
   $("acTier").textContent = ti.t.name;
-  $("acRating").textContent = `${P.rating} rating · best ${P.peak}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}`;
-  $("acW").textContent = P.wins; $("acL").textContent = P.losses;
+  $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;
+  $("acW").textContent = rk.w; $("acL").textContent = rk.l;
   $("acChips").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
   $("acSkins").innerHTML = `${acSkinCount(P)}<small> / ${acSkinTotal()}</small>`;
   const more = [];
@@ -30562,10 +31105,10 @@ function renderAccount() {
   if ((P.duoW | 0) + (P.duoC | 0) > 0) more.push(`2v2: ${P.duoW | 0} won, ${P.duoC | 0} ${(P.duoC | 0) === 1 ? "Catch" : "Catches"}`);
   $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
   const form = $("acForm"); form.innerHTML = "";
-  const hist = (P.history || []).slice(0, 10);
+  const hist = rk.h.slice(0, 10);
   if (hist.length) {
     form.appendChild(acMk("span", "ac-line", "Recent ranked"));
-    for (const h of hist) { const i = acMk("i", h.r === 1 ? "w" : h.r === 0 ? "l" : "", h.r === 1 ? "W" : h.r === 0 ? "L" : "D"); i.title = `${h.d > 0 ? "+" : ""}${h.d}`; form.appendChild(i); }
+    for (const h of hist) { const i = acMk("i", h.res === 1 ? "w" : h.res === 0 ? "l" : "", h.res === 1 ? "W" : h.res === 0 ? "L" : "D"); i.title = `${h.dr > 0 ? "+" : ""}${h.dr}`; form.appendChild(i); }
   }
   form.hidden = !hist.length;
   $("acReset").textContent = acUI.resetArmed ? (ACCT.code ? "Tap again to erase it everywhere" : "Tap again to erase rating, chips and skins") : "Reset progress";
@@ -30626,6 +31169,7 @@ function acFav() {   // the fighter with the most counted matches (ties: the ear
 function renderStats() {
   const pan = $("acPanS"); pan.innerHTML = "";
   const st = acFstats(), fav = acFav();
+  if (rankView().online && (P.matches | 0) > 0) { const ti = tierInfo(P.rating | 0); pan.appendChild(acMk("p", "ac-line", `Your CPU rank (before Season 1): ${ti.t.name} ${P.rating | 0} · best ${Math.max(P.peak | 0, P.rating | 0)} · ${P.wins | 0}W ${P.losses | 0}L. Ranked is online now.`)); }   // ui/quick.js
   pan.appendChild(acMk("p", "ac-line", P.fsince ? `Per-fighter records count ranked matches since ${acDate(P.fsince)}. Friend and cup matches are not counted.` : "Per-fighter records start with your next ranked match. Friend and cup matches are not counted."));
   if (fav) {
     const d = acMk("div", "fs-fav"); const a = acMk("span", "av"); acSetAvatar(a, fav.f.id, P.pal[fav.f.id] || 0); d.appendChild(a);
@@ -30647,7 +31191,7 @@ function renderStats() {
   }
   t.appendChild(tb); pan.appendChild(t);
   const hist = (P.history || []).slice(0, SYNC.HIST);
-  pan.appendChild(acMk("div", "kicker", `Last ${SYNC.HIST} ranked matches`));
+  pan.appendChild(acMk("div", "kicker", `Last ${SYNC.HIST} ranked matches${rankView().online ? " vs a CPU" : ""}`));
   if (!hist.length) { pan.appendChild(acMk("p", "ac-line", "No ranked matches yet.")); return; }
   const ul = acMk("ul", "hx-list");
   for (const h of hist) {
@@ -31015,6 +31559,715 @@ setTimeout(() => {
   openAccount();
   acctTryLink(code).then(() => { if (acUI.view !== "replace") acctStripHash(); });
 }, 0);
+/* ===================== Quick match: Ranked and Casual 1v1 against real players (the server side is quick.js) =====================
+   One queue on our server for everyone with the same game version. The server pairs two players and names the room, the seed, both
+   fighters and who hosts; the two phones then play exactly like a friend match (online.js: lockstep, the inputs in their presence).
+   In Ranked the server plays the same match from those inputs and decides it, so the rank lives on the server (the account file's
+   `on` part) and this page only shows it (a copy is kept on this device for the menu). While searching you can fight a CPU (a
+   warm-up: chips, no rank); a found player ends it. Fable's design: quick-match/fable-quick.md.
+   Screens: #scrQuick (you · your match · the queue), PLAYER FOUND! (#qmFound), the VS screen (#qmVs), the Season 1 sheet
+   (#scrSeason), the searching strip on the warm-up's HUD (#qmStrip) and its results (#rQm); styles in css/96-quick.css.
+   It needs net-ws.js's __blQuick (a page served by our own server). Elsewhere the gold hero stays the old Ranked vs a CPU. */
+const QM_KEY = "potatobrawl.qm.v1";
+const QM_PLACING = 5, QM_FLOOR = 900;   // the server's: the first 5 ranked matches place you and can't drop you below Bronze
+const QM_FB = 20;                       // seconds a Ranked search waits for another Ranked player before it takes a Casual one
+const QM_FRESH = Object.freeze({ id: "", r: 1000, pk: 1000, w: 0, l: 0, d: 0, n: 0, h: Object.freeze([]) });   // Season 1 starts everyone here
+const QM = {
+  st: "idle",          // idle | search | found (the found moment, the VS screen and the match itself)
+  mode: "r",           // "r" Ranked or "c" Casual, remembered
+  s1: false,           // the Season 1 sheet was seen
+  me: null, code: "",  // the server's online record { id, r, pk, w, l, d, n, h } and the sync code it belongs to
+  conn: false, authed: false, authing: false, authCode: "", acct: "", making: false, lastCode: null,   // acct: "" | "off" | "unknown" (the server's answer)
+  t0: 0, hidden: false, wait: null, sentF: "", no: "", note: "",
+  found: null, res: null, pend: null, applied: [], streak: 0,
+  vsT: 0, vsN: 0, fdT: 0, cfT: 0, uiT: 0, seq: 0, shown: null,   // vsN: VS screens shown (the tests read it)
+};
+const qmOn = () => !!window.__blQuick && !window.__blNoQuick;   // __blNoQuick: tests of the older screens on our server
+(function qmLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(QM_KEY) || "null");
+    if (!s || typeof s !== "object") return;
+    QM.mode = s.mode === "c" ? "c" : "r"; QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);
+    if (s.me && typeof s.code === "string") { QM.me = qmClean(s.me); QM.code = s.code; }
+  } catch (e) { /* storage blocked: nothing remembered */ }
+})();
+function qmSave() { try { localStorage.setItem(QM_KEY, JSON.stringify({ mode: QM.mode, s1: QM.s1, me: QM.me, code: QM.code, k: QM.streak })); } catch (e) { /* ignore */ } }
+// a record from the server (or this device's copy), cleaned
+function qmClean(o) {
+  const n = (v, d) => (Number.isInteger(v) && v >= 0 && v < 1e9 ? v : d), s = (v, k) => (typeof v === "string" ? v.slice(0, k) : "");
+  const me = { id: s(o.id, 10), r: n(o.r, 1000), pk: n(o.pk, 1000), w: n(o.w, 0), l: n(o.l, 0), d: n(o.d, 0), n: n(o.n, 0), h: [] };
+  me.pk = Math.max(me.pk, me.r);
+  if (Array.isArray(o.h)) me.h = o.h.filter((x) => x && typeof x === "object").slice(0, 20).map((x) => ({
+    t: Number.isFinite(x.t) ? x.t : 0, o: SYNC.cleanName(s(x.o, 40)), of: FIG[x.of] ? x.of : "", f: FIG[x.f] ? x.f : "",
+    or: n(x.or, 0), res: [1, 0.5, 0].includes(x.res) ? x.res : 0, dr: Number.isInteger(x.dr) && Math.abs(x.dr) < 1000 ? x.dr : 0, why: s(x.why, 8) }));
+  return me;
+}
+const qmMe = () => (QM.me && QM.code && QM.code === ACCT.code ? QM.me : null);   // the record of the account this device is linked to
+// the rank the page shows (the profile plate, the menu, the Account sheet): the online one on our own server, else the CPU one
+function rankView() {
+  if (!qmOn()) return { online: false, r: P.rating | 0, pk: Math.max(P.peak | 0, P.rating | 0), w: P.wins | 0, l: P.losses | 0, d: P.draws | 0, n: P.matches | 0,
+    h: (P.history || []).map((x) => ({ res: x.r, dr: x.d })) };
+  const m = qmMe() || QM_FRESH;
+  return { online: true, r: m.r, pk: Math.max(m.pk, m.r), w: m.w, l: m.l, d: m.d, n: m.n, h: m.h };
+}
+const qmAcctOff = () => QM.acct === "off" || (!ACCT.code && ACCT.avail === false);   // the server keeps no accounts: Casual only
+const qmMode = () => (qmAcctOff() ? "c" : QM.mode);
+const qmSearching = () => QM.st === "search";
+// online.js lobbyPresence: searching (the queue's gold dot) or busy in a found match, for everyone's queue list
+function qmPresence() { return qmOn() ? { qs: qmSearching() && !QM.hidden ? 1 : 0, busy: QM.st === "found" } : { qs: 0, busy: false }; }
+// acct.js Centurion: online Ranked wins count too
+function qmWins() { const m = qmOn() && qmMe(); return m ? m.w : 0; }
+const qmClock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const qmWaited = () => Math.max(0, (Date.now() - QM.t0) / 1000);
+// the server's Elo, for the Forfeit line (K 48 for the first 10, then 32; placement can't drop you below Bronze)
+function qmElo(r, or, res, n) { const K = n < 10 ? 48 : 32, d = Math.round(K * (res - 1 / (1 + Math.pow(10, (or - r) / 400)))); return Math.max(n < QM_PLACING ? QM_FLOOR : 0, r + d) - r; }
+// a tier plate's words: "Silver 1138", "Placing 2/5", or "Unranked" for a Casual player without an account
+function qmTierWords(r, placing, unranked) { return unranked ? "Unranked" : placing ? `Placing ${placing.n}/${QM_PLACING}` : `${tierInfo(r).t.name} ${r}`; }
+
+/* ----- the connection: sign in with the sync code, the server's messages ----- */
+function qmBoot() {   // loop.js, before the first menu
+  if (!qmOn()) return;
+  const api = window.__blQuick;
+  api.on(qmMsg);
+  if (window.__blSetName) NET.myName = window.__blSetName(acctName());   // the name players see in Quick match is the Account one
+  api.onConnection((on) => {
+    QM.conn = on; QM.authing = false;
+    if (on) {
+      QM.authed = false; QM.acct = "";
+      // a Ranked match left while the connection was down: say so now, so the server decides it at once
+      if (QM.pend && !NET.mr) api.send({ t: "leave", room: QM.pend.room });
+      qmAuth();
+      if (qmSearching()) qmSend();
+      // found but not started yet: the connection that was paired is gone, so is that match (the server tells the other phone)
+      else if (QM.st === "found" && QM.found && NET.phase !== "match" && NET.phase !== "result") qmOff({ id: QM.found.id });
+    }
+    qmRefresh();
+  });
+  QM.conn = api.connected();
+  netInit().then(() => { if (NET.room) NET.room.onPeers(qmPeers); qmRefresh(); });   // whether accounts are on is asked when Quick match opens (quickOpen)
+  document.addEventListener("visibilitychange", qmVis);
+}
+function qmAuth() {
+  if (!qmOn() || !ACCT.code || !QM.conn || QM.authing || QM.authed || QM.acct === "off" || QM.acct === "unknown") return;
+  QM.authing = window.__blQuick.send({ t: "auth", code: ACCT.code });
+  if (QM.authing) QM.authCode = ACCT.code;
+}
+function qmMsg(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.t === "me") qmGotMe(m);
+  else if (m.t === "qm-wait") { if (qmSearching()) { QM.wait = m; qmUi(); } }
+  else if (m.t === "qm-no") qmRefused(m.why);
+  else if (m.t === "qm-x") { if (qmSearching()) qmCancel("You're searching on another page or phone."); }
+  else if (m.t === "qm-found") qmFound(m);
+  else if (m.t === "qm-off") qmOff(m);
+  else if (m.t === "qm-res") qmRes(m);
+}
+function qmGotMe(m) {
+  QM.authing = false;
+  if (m.err) {
+    QM.authed = false; QM.acct = m.err === "off" ? "off" : "unknown";
+    if (qmSearching()) qmSend();   // Casual goes on; Ranked can't
+  } else {
+    QM.authed = true; QM.acct = ""; QM.code = ACCT.code; QM.me = qmClean(m);
+    let k = 0; while (k < QM.me.h.length && QM.me.h[k].res === 1) k++;
+    QM.streak = k;
+    qmSave(); qmPendMe();
+    if (qmSearching()) qmSend();
+  }
+  qmRefresh();
+}
+function qmRefused(why) {
+  if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then search again
+  if (why === "busy") {   // the server still has us in the last match: leave it, then search again
+    if (QM.found) window.__blQuick.send({ t: "leave", room: QM.found.room });
+    setTimeout(qmSend, 400); return;
+  }
+  if (why === "old") QM.no = "old";
+  if (qmSearching()) qmCancel(why === "old" ? "" : "Couldn't search. Try again.");
+  qmRefresh();
+}
+// the menu, the plate and this screen follow every change
+function qmRefresh() { if (!qmOn()) return; renderPill(); if (mode === "menu") qmHero(); qmRender(); }
+function qmPeers() { if (mode === "quick") qmRender(); else if (mode === "menu") qmHero(); }
+// everyone with the page open (the lobby room), and who of them searches (their lobby presence, online.js lobbyPresence)
+function qmLobby() {
+  const ps = (NET.lobbyPeers || []).filter((p) => p.kind === "viewer");
+  return { ps, n: Math.max(ps.length, QM.conn ? 1 : 0), q: ps.filter((p) => !p.sameTab && p.presence && p.presence.qs).length };
+}
+
+/* ----- searching ----- */
+async function qmMakeAcct() {   // the silent account: the existing sync-code account, made on the first Ranked search
+  if (ACCT.code) return true;
+  if (QM.making) return false;
+  QM.making = true;
+  const prof = acctSnap(), r = await acctCall("new", { prof });
+  QM.making = false;
+  const code = r.s === 200 && r.j ? SYNC.normCode(r.j.code) : "";
+  if (code && Number.isSafeInteger(r.j.rev)) {
+    ACCT.avail = true; ACCT.code = code; ACCT.rev = r.j.rev; ACCT.base = prof; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.lastC = SYNC.canon(prof);
+    acctStore(); cnt("acct");   // cnt: ui/counter.js
+    return true;
+  }
+  if (r.s === 404) ACCT.avail = false;
+  return false;
+}
+async function qmFind() {
+  if (!qmOn() || QM.st !== "idle") return;
+  if (QM.no === "old") { location.reload(); return; }
+  if (!QM.conn || !NET.room) { QM.note = "Connecting to the server…"; qmRender(); return; }
+  QM.st = "search"; QM.t0 = Date.now(); QM.wait = null; QM.note = ""; QM.sentF = "";
+  lobbyPresence(); qmRender();
+  if (qmMode() === "r" && !ACCT.code) {
+    const ok = await qmMakeAcct();
+    if (!qmSearching()) return;   // cancelled meanwhile
+    if (!ok) { qmCancel(qmAcctOff() ? "Ranked opens soon. Casual works now." : "Couldn't reach the server. Try again."); return; }
+  }
+  qmSend();
+}
+function qmSend() {
+  if (!qmSearching() || QM.hidden || !QM.conn) return;
+  if (ACCT.code && !QM.authed && !QM.acct) { qmAuth(); return; }   // signed in first: the server pairs by your rank (it searches on `me`)
+  if (qmMode() === "r" && !QM.authed) { qmCancel(QM.acct === "unknown" ? "This phone's account isn't on the server. Check Account." : "Ranked opens soon. Casual works now."); return; }
+  const w = Math.min(60, Math.round(qmWaited()));
+  QM.sentF = sel.fighter;
+  window.__blQuick.send({ t: "qm", v: PROTO, mode: qmMode(), f: sel.fighter, pi: palIdx(sel.fighter), w });
+}
+function qmCancel(note) {
+  if (qmSearching() && qmOn()) window.__blQuick.send({ t: "qmx" });
+  QM.st = "idle"; QM.wait = null; QM.note = note || ""; QM.hidden = false;
+  qmStripShow(false); $("rQm").hidden = true;
+  lobbyPresence(); qmRender();
+}
+// a hidden page leaves the queue (the server never pairs a phone in a pocket) and comes back with the time it had waited
+function qmVis() {
+  if (!qmOn()) return;
+  if (document.hidden) { if (qmSearching() && !QM.hidden) { QM.hidden = true; window.__blQuick.send({ t: "qmx" }); } }
+  else if (QM.hidden) { QM.hidden = false; qmSend(); }
+}
+// goMenu: the menu stops the search (the warm-up's results say so on their Menu button)
+function qmStop() {
+  if (!qmOn()) return;
+  if (qmSearching()) window.__blQuick.send({ t: "qmx" });
+  QM.st = "idle"; QM.wait = null; QM.fdT = 0; QM.vsT = 0; QM.note = ""; QM.hidden = false;
+  $("qmFound").hidden = true; $("qmVs").hidden = true; qmStripShow(false);
+  NET.qm = null;
+  lobbyPresence();
+}
+
+/* ----- a player found: join the room, PLAYER FOUND! over a warm-up, the VS screen, then the host starts the fight ----- */
+function qmFoundOk(m) {
+  return typeof m.room === "string" && /^qm[0-9a-f]{12}$/.test(m.room) && m.id === m.room && (m.role === "host" || m.role === "guest") && Number.isInteger(m.seed) &&
+    Array.isArray(m.f) && m.f.length === 2 && m.f.every((id) => FIG[id]) && Array.isArray(m.p) && m.p.length === 2 &&
+    m.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < FIG[m.f[i]].palettes.length) && validRules(m.r) && !!m.opp && typeof m.opp === "object";
+}
+function qmFound(m) {
+  if (!qmSearching() || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  const opp = m.opp;
+  opp.name = SYNC.cleanName(opp.name) || "Potato";
+  QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
+  const me = qmMe() || QM_FRESH;
+  QM.pend = m.ranked ? { id: m.id, room: m.room, n0: me.n, r0: me.r, w0: me.w, l0: me.l, d0: me.d, k0: QM.streak, dead: 0 } : null;
+  Sfx.init(); qmChime();
+  try { if (navigator.vibrate) navigator.vibrate([60, 90, 60]); } catch (e) { /* no vibration */ }
+  qmJoin(m);
+  if (mode === "match" && match && match.warm && G && G.phase !== "over") qmFoundBanner(m);
+  else { qmEndWarm(); qmVs(m); }
+  lobbyPresence();
+}
+async function qmJoin(m) {
+  if (NET.mr) leaveMatchRoom();
+  resetNet();
+  const me = m.role === "host" ? 0 : 1;
+  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
+  NET.role = m.role; NET.phase = m.role === "host" ? "hosting" : "joining"; NET.joinT = performance.now(); NET.note = "";
+  NET.oppName = m.opp.name; NET.mrCode = m.room;
+  try { await openMatchRoom(m.room); }
+  catch (e) { return; }   // the server calls the match off (qm-off) and the search goes on
+  if (NET.mrCode !== m.room) return;
+  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0 });
+}
+function qmChime() { Sfx.tone(784, 784, 0.12, "triangle", 0.08); Sfx.at(0.13, 1175, 1175, 0.22, "triangle", 0.08); Sfx.at(0.06, 110, 40, 0.4, "sine", 0.45); }
+// over a running CPU warm-up: the fight freezes under PLAYER FOUND! and a 3·2·1 (qmTick), then ends with no result
+function qmFoundBanner(m) {
+  paused = true; releaseTouch(); hideBanner();
+  modal("pause", false); modal("help", false); modal("settings", false);
+  const o = m.opp, el = $("qmFound"), vs = $("qfVs");
+  vs.textContent = "";
+  vs.append(`vs ${o.name} `);
+  const em = document.createElement("i"); em.className = "qf-em"; em.innerHTML = tierEmblem(tierIdx(o.r)); vs.append(em);
+  const t = document.createElement("span"); t.textContent = qmTierWords(o.r, o.pl >= 0 ? { n: o.pl } : null, !o.id); vs.append(t);
+  const st = document.createElement("span"); st.className = "tag st " + (m.ranked ? "gold" : "sky"); st.textContent = m.ranked ? "Ranked" : "Casual"; vs.append(st);
+  $("qfN").textContent = "3";
+  el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
+  QM.fdT = performance.now();
+}
+// the warm-up (running or on its results) gives way to the found match: the Quick match screen goes under the VS screen
+function qmEndWarm() {
+  if (mode === "match" && match && match.warm) cntEnd(true);   // ui/counter.js: it ended without a result
+  if (mode === "match" || mode === "result") {
+    finStop(); paused = false;
+    $("hud").hidden = true; $("ctl").hidden = true; hideBanner(); releaseTouch();
+    modal("pause", false); modal("help", false); modal("settings", false);
+    G = null; match = null; meSlot = 0;
+  }
+  if (mode !== "quick") { mode = "quick"; show("quick"); resize(); }
+  modal("season", false);
+  qmStripShow(false);
+  qmRender();
+}
+// the VS screen's two models, drawn live in the skins of this match (as the Fight Card), facing each other
+const qmVsArt = [];
+function qmVs(m) {
+  const mine = m.role === "host" ? 0 : 1, o = m.opp, me = qmMe(), el = $("qmVs");
+  const fs = newGame({ players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
+  qmVsArt.length = 0;
+  for (const [k, f] of [["L", fs[mine]], ["R", fs[1 - mine]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
+  const side = (k, name, fid, pi, r, pl, unranked) => {
+    const spec = FIG[fid], pal = spec.palettes[pi] || spec.palettes[0];
+    el.style.setProperty(k === "L" ? "--cl" : "--cr", rgba(col(pal), 0.42));
+    $("vsName" + k).textContent = name;
+    $("vsF" + k).textContent = spec.name;
+    const t = $("vsT" + k); t.innerHTML = tierEmblem(tierIdx(r)); t.classList.toggle("un", !!unranked || !!pl);
+    const w = document.createElement("span"); w.textContent = qmTierWords(r, pl, unranked); t.append(w);
+  };
+  const my = me || QM_FRESH;
+  side("L", NET.myName || acctName(), m.f[mine], m.p[mine], my.r, me && my.n < QM_PLACING ? { n: my.n } : null, !me);
+  side("R", o.name, m.f[1 - mine], m.p[1 - mine], Number.isInteger(o.r) ? o.r : 1000, o.pl >= 0 ? { n: o.pl } : null, !o.id);
+  $("vsMode").textContent = m.ranked ? "Ranked" : "Casual";
+  $("vsStamp").className = "vs-st " + (m.ranked ? "rk" : "cs");
+  $("vsFb").hidden = !m.fb; $("vsWhy").hidden = m.ranked;
+  $("vsPing").textContent = `measuring… · ${mapName(m.seed % BL.POOL)}`;
+  el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
+  QM.vsT = performance.now(); QM.vsN++;
+  Sfx.tone(120, 40, 0.35, "sine", 0.5); Sfx.noise(0.2, 0.3, 900);
+}
+// online.js startOnlineMatch: the fight's own countdown takes over from the VS screen
+function qmMatchStarts() {
+  $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
+  QM.st = "found"; modal("season", false);
+}
+// online.js handshakeTick: the host starts exactly the match the server assigned, once both VS screens have shown (rd)
+const qmReady = (pr) => !!NET.qm && NET.qm.rd && pr.rd === 1;
+function qmStartMsg(D, rtt) {
+  const q = NET.qm;
+  return { id: NET.matchId + 1, seed: q.seed, d: D, f: q.f.slice(), p: q.p.slice(), rtt: Math.round(rtt), r: Object.assign({}, q.r), set: { n: 1, w: [0, 0] } };
+}
+// ...and the guest plays only that match (a Casual rematch is the friend-match one)
+function qmStartOk(st) {
+  const q = NET.qm;
+  if (st.id !== 1) return !q.ranked;
+  return st.seed === q.seed && st.f[0] === q.f[0] && st.f[1] === q.f[1] && st.p[0] === q.p[0] && st.p[1] === q.p[1] &&
+    st.r.l === q.r.l && st.r.t === q.r.t && st.r.b === q.r.b && st.set.n === 1 && st.bo == null;
+}
+// the match was called off before it started (the other phone never connected or left): back to the search, the time kept
+function qmOff(m) {
+  if (!QM.found || m.id !== QM.found.id || NET.phase === "match" || NET.phase === "result") return;
+  const banner = !!QM.fdT;
+  $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
+  if (NET.mr) leaveMatchRoom();
+  resetNet(); NET.phase = "idle";
+  QM.found = null; QM.pend = null; QM.st = "search"; QM.wait = null;
+  if (banner && mode === "match" && match && match.warm) { paused = false; QM.note = ""; }   // the CPU fight goes on
+  else { if (mode !== "quick") quickOpen(); QM.note = "The other player didn't connect. Searching again."; }
+  qmSend(); lobbyPresence(); qmRender();
+}
+
+/* ----- the end of a Quick match ----- */
+// online.js finishOnline: chips on this phone as before (Ranked as the old Ranked, Casual as a friend match); the rank from the server
+function qmFinish(left, lost) {
+  const q = match.qm, me = G.fighters[meSlot], op = G.fighters[1 - meSlot], over = !left && !lost;
+  const res = left ? 1 : lost ? 0.5 : G.winner === meSlot ? 1 : G.winner === 1 - meSlot ? 0 : 0.5;
+  const R = { res, online: true, qm: q, left: !!left, lost: !!lost, me, op, lines: [], total: 0 };
+  const kos = (each) => { if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * each]); };
+  if (q.ranked && (over || left)) {
+    if (res === 1) {
+      R.lines.push([left ? "Win · they left" : "Win", 20]); kos(5);
+      const k = (QM.pend && QM.pend.id === q.id ? QM.pend.k0 : QM.streak) + 1, sb = over ? Math.min(20, (k - 1) * 5) : 0;
+      if (sb > 0) R.lines.push([`${k} win streak`, sb]);
+    } else if (res === 0.5) { R.lines.push(["Draw", 10]); kos(3); }
+    else { R.lines.push(["Match played", 6]); kos(2); }
+  } else if (!q.ranked && over) {
+    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]); kos(2);
+  }
+  R.total = R.lines.reduce((a, l) => a + l[1], 0);
+  if (R.total) { P.tokens += R.total; saveProfile(); }
+  if (lost || left || q.ranked) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked has no rematch: the room goes
+  if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
+  QM.st = "idle";
+  $("netBadge").hidden = true;
+  showResults(R);
+  lobbyPresence();
+}
+// Pause > Forfeit: Ranked counts it as a loss (the server too, when the room is left); Casual just leaves
+function qmForfeit() {
+  const q = match.qm;
+  leaveMatchRoom(); NET.phase = "idle"; QM.st = "idle";
+  if (!q.ranked) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
+  if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
+  showResults({ res: 0, online: true, qm: q, forfeit: true, me: G.fighters[meSlot], op: G.fighters[1 - meSlot], lines: [], total: 0 });
+  lobbyPresence();
+}
+// screens.js showResults, at its end: what a Quick match's results (and a warm-up's) say and do
+function qmResults(R) {
+  QM.shown = R;
+  const mn = $("rMenuSub");
+  if (R.warm) {
+    const k = $("rMode"); k.textContent = "";
+    const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
+    k.append(t, "Warm-up");
+    $("rAgain").querySelector("span").textContent = "Another CPU fight";
+    $("rChange").querySelector("span").textContent = qmSearching() ? "Back to search" : "Quick match";
+    mn.textContent = qmSearching() ? "stops searching" : "";
+    qmResCard();
+    return;
+  }
+  const q = R.qm;
+  $("rMode").textContent = `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
+  if (q.ranked) {
+    $("rAgain").querySelector("span").textContent = "Next match"; $("rAgain").disabled = false;
+    $("rChange").querySelector("span").textContent = "Quick match";
+    if (R.lost) { resTitle("Connection lost"); resLine($("rSub"), ["The connection dropped. The server decides this match."]); }
+    if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "No chips for a match you left." : "No chips for an unfinished match.");
+    qmRankCard();
+    if (QM.res && QM.res.id === q.id) qmVerdictView(false);
+  } else {
+    $("rChange").querySelector("span").textContent = "Next match";
+    if (!R.lines.length) $("rWhy").textContent = masteryWhy("No chips for an unfinished match. Casual doesn't change your rank.");
+  }
+}
+// the rank card while the server confirms: the rating before, a mute … sticker, a shimmer on the bar (css/96-quick.css)
+function qmRankCard() {
+  const p = QM.pend && QM.shown && QM.shown.qm && QM.pend.id === QM.shown.qm.id ? QM.pend : null, me = qmMe() || QM_FRESH;
+  const r0 = p ? p.r0 : me.r, n0 = p ? p.n0 : me.n, ti = tierInfo(r0), card = $("rRank");
+  card.hidden = false; card.classList.add("qm-wait"); card.classList.remove("qm-zero"); card.style.setProperty("--tc", ti.t.col);
+  paintBadge($("rBadge"), ti.i);
+  $("rTier").textContent = n0 < QM_PLACING ? "Placing" : ti.t.name;
+  $("rPromo").textContent = ""; $("rPromo").classList.remove("down");
+  const rt = $("rRating"), b = document.createElement("b"); b.textContent = `${r0} → …`; rt.textContent = ""; rt.append(b);
+  $("rBar").style.setProperty("--p", ti.p);
+  const g = $("rGain"); g.style.setProperty("--g0", ti.p); g.style.setProperty("--g1", ti.p);
+  $("rStick").className = "delta wait"; $("rDelta").textContent = "…"; $("rStick").querySelector("small").textContent = "Confirming";
+  QM.cfT = performance.now();
+}
+// the server's verdict on the results on screen: the normal rank sequence, or the forfeit / no-result words
+function qmVerdictView(late) {
+  const v = QM.res, R = QM.shown;
+  if (!v || !R || !R.qm || R.qm.id !== v.id || mode !== "result") return;
+  const card = $("rRank"), st = $("rStick"), sheet = $("resSheet"), who = R.qm.opp ? R.qm.opp.name : NET.oppName || "Your opponent";
+  card.classList.remove("qm-wait"); QM.cfT = 0;
+  const look = (k) => { sheet.classList.remove("win", "loss", "draw"); sheet.classList.add(k); };
+  if (v.res === null) {
+    card.classList.add("qm-zero"); st.className = "delta zero"; $("rDelta").textContent = "±0"; st.querySelector("small").textContent = "No result";
+    const me = qmMe() || QM_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r); rt.textContent = ""; rt.append(b, " · unchanged");
+    $("rPromo").textContent = ""; resTitle("No result"); look("draw");
+    resLine($("rSub"), ["The server lost this match. Nobody's rank changes."]);
+    return;
+  }
+  if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
+  resRank({ before: v.r0, after: v.r1, delta: v.dr, tb: tierIdx(v.r0), ta: tierIdx(v.r1) });
+  if (v.n < QM_PLACING) { $("rTier").textContent = `Placing ${v.n} of ${QM_PLACING}`; $("rPromo").textContent = ""; }
+  else if (v.n === QM_PLACING) { $("rPromo").textContent = "Placed!"; $("rPromo").classList.remove("down"); }
+  if (v.why !== "game") {
+    st.querySelector("small").textContent = "Rating · forfeit";
+    if (v.res === 1) {
+      resTitle("Opponent left"); look("win");
+      resLine($("rSub"), v.why === "start" ? [{ b: who }, "'s game didn't match the server's. It counts as your win."] : [{ b: who }, v.why === "quiet" ? " stopped playing. It counts as your win." : " left. It counts as your win."]);
+    } else {
+      resTitle(R.forfeit ? "Forfeit" : "Disconnected"); look("loss");
+      resLine($("rSub"), [R.forfeit ? "You left the match. " : "Your connection dropped. ", "In Ranked that counts as a loss."]);
+    }
+  } else if (v.res !== R.res) {   // the server's copy decides (this phone lost the connection near the end)
+    resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
+    resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
+  }
+}
+// a verdict: the online record moves (the copy on this device too), the results on screen show it
+function qmRes(m) {
+  if (!m || typeof m.id !== "string" || QM.applied.includes(m.id)) return;
+  QM.applied.push(m.id); if (QM.applied.length > 8) QM.applied.shift();
+  const f = QM.found && QM.found.id === m.id ? QM.found : null;
+  if (m.res !== null && Number.isInteger(m.r1) && Number.isInteger(m.n)) {
+    const me = Object.assign({}, qmMe() || QM_FRESH);
+    Object.assign(me, { r: m.r1, pk: Math.max(m.pk | 0, m.r1), n: m.n, w: m.w | 0, l: m.l | 0, d: m.d | 0 });
+    const mine = f && f.role === "guest" ? 1 : 0;
+    me.h = [{ t: Date.now(), o: f ? f.opp.name : "", of: f ? f.f[1 - mine] : "", f: f ? f.f[mine] : "", or: f && Number.isInteger(f.opp.r) ? f.opp.r : 0, res: m.res, dr: m.dr | 0, why: m.why }, ...me.h].slice(0, 20);
+    QM.me = me; QM.code = ACCT.code;
+    if (m.res === 1) QM.streak++; else if (m.res === 0) QM.streak = 0;
+    qmSave();
+    if (f) {   // the per-fighter record (Account > Stats) counts Ranked matches, online ones too
+      const fs = P.fstats[f.f[mine]] || (P.fstats[f.f[mine]] = { w: 0, l: 0, d: 0 });
+      fs[m.res === 1 ? "w" : m.res === 0 ? "l" : "d"]++;
+      if (!P.fsince) P.fsince = Date.now();
+      saveProfile();
+    }
+  }
+  if (QM.pend && QM.pend.id === m.id) QM.pend = null;
+  QM.res = m;
+  qmRefresh();
+  if (mode === "result" && QM.shown && QM.shown.qm && QM.shown.qm.id === m.id) qmVerdictView(true);
+  else if (QM.st === "found" && f && !(match && match.qm && match.qm.id === m.id)) {
+    // decided before the fight began on this phone: the host's start didn't match what the server assigned (or nobody played)
+    $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
+    if (NET.mr) leaveMatchRoom();
+    resetNet(); NET.phase = "idle"; QM.st = "idle";
+    QM.note = m.res === 1 ? `${f.opp.name}'s game didn't match the server's. It counts as your win (+${m.dr}).` : m.res === null ? "That match was called off. Nobody's rank changed." : "Your game didn't match the server's. Reload the page.";
+    quickOpen();
+  }
+}
+// a verdict that never came: `me` after a reconnect shows whether the match counted (the server wrote it) or was lost with a restart
+function qmPendMe() {
+  const p = QM.pend, me = QM.me;
+  if (!p || !me) return;
+  if (me.n > p.n0) {
+    const res = me.w > p.w0 ? 1 : me.l > p.l0 ? 0 : 0.5;
+    qmRes({ id: p.id, res, why: "game", r0: p.r0, r1: me.r, dr: me.r - p.r0, n: me.n, pk: me.pk, w: me.w, l: me.l, d: me.d });
+  } else if (p.over) p.dead = p.dead || Date.now();   // over on this page and not counted on the server (yet)
+}
+
+/* ----- the CPU warm-up: a CPU fight while the search goes on ----- */
+function qmWarmStart() {
+  if (QM.st === "idle") qmFind();
+  if (!qmSearching()) return;
+  Sfx.init(); goFull();
+  const me = FIG[sel.fighter], myPal = me.palettes[palIdx(me.id)] || me.palettes[0], opp = cpuFoe(me);
+  const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
+  const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));   // never below Normal (Fable's review)
+  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
+  match = { warm: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
+  meSlot = 0;
+  enterMatchUI();
+  qmStripShow(true);
+}
+// screens.js finishMatch: a warm-up pays like a friend match (15 / 8 / 5 + 2 per KO) and never touches the rank
+function qmWarmEnd(forfeit) {
+  const me = G.fighters[0], op = G.fighters[1], res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
+  const R = { res, forfeit, warm: true, me, op, lines: [], total: 0 };
+  if (!forfeit) {
+    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
+    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    R.total = R.lines.reduce((a, l) => a + l[1], 0);
+    P.tokens += R.total; saveProfile();
+  }
+  R.why = R.lines.length ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") + " · a warm-up never changes your rank" : "No chips for a fight you left.";
+  qmStripShow(false);
+  showResults(R);
+}
+function qmWarmQuit() { quickOpen(); }   // Pause > Back to search
+// menus.js, the results' buttons: true when Quick match took the tap
+function qmAgain() {
+  if (match.warm) { qmWarmStart(); return true; }
+  if (match.qm && (match.qm.ranked || NET.phase !== "result")) { qmNext(); return true; }
+  return false;   // Casual: the friend match's Rematch (both tap)
+}
+function qmChange() {
+  if (match.warm) { quickOpen(); return; }
+  if (match.qm.ranked) { qmLeave(); quickOpen(); return; }
+  qmNext();   // Casual: Next match
+}
+function qmLeave() { if (NET.mr) leaveMatchRoom(); resetNet(); NET.phase = "idle"; if (QM.st === "found") QM.st = "idle"; lobbyPresence(); }
+function qmNext() { qmLeave(); quickOpen(); qmFind(); }
+// screens.js togglePause: what leaving costs
+function qmPauseText() {
+  const quit = $("pQuit").querySelector("span"), note = $("pNote");
+  if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
+  if (!match.qm || !match.qm.ranked) return;
+  const me = qmMe() || QM_FRESH, o = match.qm.opp, dr = qmElo(me.r, o && Number.isInteger(o.r) ? o.r : 1000, 0, me.n);
+  quit.textContent = "Forfeit";
+  note.textContent = `Online matches keep running while this is open. Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
+}
+
+/* ----- the Quick match screen ----- */
+function quickOpen() {
+  if (!qmOn()) { openSelect("ranked"); return; }
+  finStop();
+  mode = "quick"; G = null; match = null; meSlot = 0; paused = false;
+  show("quick");
+  $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
+  modal("pause", false); modal("help", false); modal("settings", false);
+  qmStripShow(false); $("rQm").hidden = true;
+  resize();
+  if (qmSearching() && sel.fighter !== QM.sentF) qmSend();   // a new fighter rides into the next match found
+  qmRender();
+  if (!QM.s1) qmSeason();
+  if (!ACCT.code && ACCT.avail == null) acctPing().then(qmRefresh);
+}
+function qmCardIn() { const fc = $("qmFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
+const qmArt = { cv: null, f: null, fit: 0.88, bottom: 0.93 };
+function drawQmArt(tk) {   // loop.js: the Fight Card's model, live in the worn skin (as Play friends)
+  qmArt.cv = qmArt.cv || $("qmArt");
+  qmArt.f = onlineArtFighter();
+  qmArt.fit = qmArt.cv.clientWidth > qmArt.cv.clientHeight ? 0.76 : 0.88;
+  paintModel(qmArt, tk);
+  if (QM.vsT) for (const a of qmVsArt) paintModel(a, tk);
+}
+function qmRender() {
+  if (mode !== "quick" || !qmOn()) return;
+  const seq = ++QM.seq, lb = qmLobby(), md = qmMode(), searching = qmSearching(), off = qmAcctOff();
+  const stt = $("qmStatus");
+  stt.textContent = QM.conn ? `Online · ${lb.n} here` : "Connecting";
+  stt.className = "kicker qm-status" + (QM.conn ? " ok" : "");
+  $("qmTokens").textContent = P.tokens;
+  // the Fight Card
+  const spec = FIG[sel.fighter], pi = palIdx(spec.id), pal = spec.palettes[pi] || spec.palettes[0], fc = $("qmFc");
+  fc.style.setProperty("--c", col(pal)); fc.style.setProperty("--cg", rgba(col(pal), 0.42));
+  $("qmFName").textContent = spec.name; $("qmFSkin").textContent = pal.name; $("qmFRole").textContent = spec.role;
+  $("qmChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${pal.name}. Change fighter`);
+  $("qmMyName").textContent = NET.myName || acctName();
+  // the mode: two big segments (Ranked waits for accounts on the server)
+  for (const [id, v] of [["qmR", "r"], ["qmC", "c"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
+  $("qmRSub").textContent = off ? "opens soon" : "counts for rank";
+  qmPlate();
+  $("qmIdle").hidden = searching; $("qmSearch").hidden = !searching;
+  const find = $("qmFind");
+  find.querySelector("span").textContent = QM.no === "old" ? "Reload" : "Find match";
+  find.disabled = QM.no !== "old" && (!QM.conn || QM.making || QM.st !== "idle");
+  const truth = $("qmTruth");
+  truth.className = "qm-truth" + (QM.note || QM.no ? " note" : "");
+  truth.textContent = QM.no === "old" ? "A new version of the game is out. Reload to play Quick match." : QM.note ||
+    (!QM.conn ? "Connecting to the server…" : lb.q ? `${lb.q} searching · ${lb.n} online` : "Nobody searching · you'll warm up vs a CPU");
+  $("qmCpu").hidden = QM.no === "old" || !QM.conn || (searching ? qmWaited() < 5 : lb.q > 0);
+  $("qmHelp").hidden = searching;
+  $("qmHelp").textContent = off ? "Ranked opens once accounts are switched on. Casual works now." : "Nobody searching? Find match anyway: you warm up vs a CPU while the queue fills.";
+  qmLast();
+  qmUi();
+  // the queue: a pill per player (gold pulsing dot: searching, mint: here, grey: in a match), names come from the lobby
+  const others = lb.ps.filter((p) => !p.sameTab);
+  namesFor(others).then((names) => {
+    if (seq !== QM.seq || mode !== "quick") return;
+    const list = others.map((p) => ({ n: names[p.peer] || "Potato", q: !!(p.presence && p.presence.qs), busy: !!(p.presence && p.presence.busy) }))
+      .sort((a, b) => (b.q - a.q) || (a.busy - b.busy));
+    const box = $("qmHere"), sig = JSON.stringify([searching, list]);
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig; box.replaceChildren();
+    const pill = (txt, cls) => { const e = document.createElement("span"); e.className = "on-pl" + (cls ? " " + cls : ""); e.textContent = txt; box.appendChild(e); };
+    if (searching) pill("You", "me q");
+    for (const p of list.slice(0, 8)) pill(p.busy ? `${p.n} · in a match` : p.n, p.q ? "q" : p.busy ? "busy" : "");
+    if (list.length > 8) pill(`+${list.length - 8} more`, "busy more");
+    box.classList.toggle("empty", !list.length && !searching);
+    if (!list.length && !searching) box.textContent = "Just you right now. Players show up here when they open the game.";
+  });
+}
+// the rank plate: emblem, tier word in its colour, rating and what is left to the next tier, the bar, the record and the season
+function qmPlate() {
+  const me = qmMe(), rk = me || QM_FRESH, ti = tierInfo(rk.r), placing = rk.n < QM_PLACING;
+  $("qmRank").style.setProperty("--tc", ti.t.col);
+  $("qmRank").classList.toggle("placing", placing);
+  const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
+  $("qmTier").textContent = placing ? "Placing" : ti.t.name;
+  $("qmRating").textContent = placing ? `${rk.n} of ${QM_PLACING} played · ${rk.r}` : `${rk.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;
+  $("qmBar").style.setProperty("--p", placing ? rk.n / QM_PLACING : ti.p);
+  $("qmRec").textContent = `${rk.w}W · ${rk.l}L\nSeason 1`;
+}
+// LAST FIVE: your last Ranked results (W / L / D, who, their fighter, the rating change)
+function qmLast() {
+  const ul = $("qmLast"), h = (qmMe() || QM_FRESH).h.slice(0, 5), sig = JSON.stringify(h);
+  if (ul.dataset.sig === sig) return;
+  ul.dataset.sig = sig; ul.replaceChildren();
+  if (!h.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "Your Ranked results show here."; ul.appendChild(li); return; }
+  for (const x of h) {
+    const li = document.createElement("li"), r = document.createElement("i"), nm = document.createElement("span"), d = document.createElement("b");
+    r.className = "tag st " + (x.res === 1 ? "mint" : x.res === 0 ? "red" : "grey"); r.textContent = x.res === 1 ? "W" : x.res === 0 ? "L" : "D";
+    nm.textContent = x.o || "Potato";
+    if (FIG[x.of]) { const sm = document.createElement("small"); sm.textContent = ` · ${FIG[x.of].name}`; nm.appendChild(sm); }
+    d.className = x.dr > 0 ? "up" : x.dr < 0 ? "down" : ""; d.textContent = x.dr > 0 ? `+${x.dr}` : x.dr < 0 ? `−${-x.dr}` : "±0";
+    li.append(r, nm, d); ul.appendChild(li);
+  }
+}
+// the parts that tick: the search timer and its range, the warm-up strip and results card, the VS ping, "still confirming"
+function qmUi() {
+  if (!qmOn()) return;
+  const searching = qmSearching(), w = qmWaited(), md = qmMode(), wt = QM.wait;
+  const rng = !wt ? "" : wt.hold ? "The server is about to update. Matches start again in a moment." :
+    `${md === "r" ? (qmMe() || QM_FRESH).n < QM_PLACING ? "Placing" : tierInfo((qmMe() || QM_FRESH).r).t.name : "Casual"} ${wt.rng < 0 ? "· anyone" : `±${wt.rng}`} · ${wt.n} searching`;
+  const fb = searching && md === "r" && w >= QM_FB ? "No Ranked player yet · taking Casual too · that match won't count" : "";
+  if (mode === "quick" && searching) {
+    $("qmTime").textContent = qmClock(w);
+    $("qmSKick").textContent = `Searching · ${md === "r" ? "Ranked" : "Casual"}`;
+    $("qmRange").textContent = rng || "Looking for a player…";
+    const f = $("qmFb"); f.textContent = fb; f.hidden = !fb;
+    if ($("qmCpu").hidden && w >= 5) $("qmCpu").hidden = false;
+  }
+  const strip = $("qmStrip");
+  if (!strip.hidden) $("qmStripT").textContent = `Searching ${qmClock(w)}`;
+  if (mode === "result" && match && match.warm) qmResCard(rng, fb);
+  if (QM.vsT && NET.qm) {
+    const ms = NET.pings.length ? [...NET.pings].sort((a, b) => a - b)[NET.pings.length >> 1] : 0;
+    $("vsPing").textContent = `${ms ? `${Math.round(ms)} ms` : NET.phase === "handshake" ? "connected" : "measuring…"} · ${mapName(NET.qm.seed % BL.POOL)}`;
+  }
+  if (QM.cfT && performance.now() - QM.cfT > 5000 && mode === "result") { QM.cfT = 0; $("rPromo").textContent = "Still confirming · your rank updates when it arrives"; }
+}
+function qmResCard(rng, fb) {   // the warm-up's results: the search goes on in the rank card's place
+  const card = $("rQm"), on = qmSearching();
+  card.hidden = !on;
+  if (!on) return;
+  $("rQmT").textContent = `Still searching ${qmClock(qmWaited())}`;
+  $("rQmL").textContent = [qmMode() === "r" ? "Ranked" : "Casual", rng || "", fb ? "taking Casual too, that match won't count" : ""].filter(Boolean).join(" · ");
+}
+function qmStripShow(on) { $("qmStrip").hidden = !on || !qmSearching(); if (on) qmUi(); }
+// the menu's gold hero is Quick match: the live count, the remembered mode, the rank, the season sticker until the sheet was seen
+function qmHero() {
+  if (!qmOn()) return;
+  const hero = $("bRanked"), rk = rankView(), ti = tierInfo(rk.r), md = qmMode(), lb = qmLobby(), placing = rk.n < QM_PLACING;
+  hero.classList.add("qm");
+  hero.querySelector(".mm-ttl").textContent = "Quick match";
+  $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? `${lb.n} online` : "Offline"} · ${md === "r" ? `Ranked · ${placing ? "Placing" : `${ti.t.name} ${rk.r}`}` : "Casual"}`;
+  $("mRec").textContent = (md === "c" ? (qmAcctOff() ? ["Ranked opens soon"] : ["Casual", "no rank change"])
+    : placing ? [`Placing`, `${rk.n} of ${QM_PLACING}`] : [`${rk.w}W`, `${rk.l}L`, ti.next ? `${ti.need} to ${ti.next.name}` : "top tier"]).map((t) => t.replace(/ /g, " ")).join(" · ");
+  let s1 = hero.querySelector(".qm-s1");
+  if (!s1) { s1 = document.createElement("span"); s1.className = "tag ember qm-s1"; s1.textContent = "Season 1"; hero.appendChild(s1); }
+  s1.hidden = QM.s1;
+  hero.setAttribute("aria-label", `Quick match. ${md === "r" ? "Ranked" : "Casual"}. ${QM.conn ? `${lb.n} online` : "Offline"}`);
+}
+// the Season 1 sheet, once: your new online rank and the CPU rank that stays in Account > Stats
+function qmSeason() {
+  const on = rankView(), ti = tierInfo(on.r), cpu = tierInfo(P.rating | 0);
+  paintBadge($("ssBadgeN"), ti.i); $("ssOn").style.setProperty("--tc", ti.t.col);
+  $("ssTierN").textContent = ti.t.name; $("ssRateN").textContent = on.n ? `${on.r} · ${on.w}W ${on.l}L` : `${on.r} · everyone starts here`;
+  paintBadge($("ssBadgeO"), cpu.i);
+  $("ssTierO").textContent = cpu.t.name; $("ssRateO").textContent = `${P.rating | 0} · kept in Account › Stats`;
+  $("ssOld").hidden = !((P.matches | 0) > 0);
+  modal("season", true);
+}
+function qmSeasonDone() { QM.s1 = true; qmSave(); modal("season", false); qmRender(); }
+
+// simTick (loop.js), every frame: the handshake under any screen, the ready flag, the 3·2·1, a lost verdict, the ticking parts
+function qmTick() {
+  if (!qmOn()) return;
+  const now = performance.now();
+  if (NET.qm && (NET.phase === "hosting" || NET.phase === "joining" || NET.phase === "handshake") && mode !== "online" && mode !== "select") netTick();
+  if (NET.qm && !NET.qm.rd && QM.vsT && now - QM.vsT > 2500 && NET.mr) { NET.qm.rd = true; namedPresence({ rd: 1 }); }
+  if (QM.fdT) {
+    const k = 3 - Math.floor((now - QM.fdT) / 1000);
+    if (k <= 0) { QM.fdT = 0; $("qmFound").hidden = true; qmEndWarm(); if (QM.found) qmVs(QM.found); }
+    else if ($("qfN").textContent !== String(k)) { $("qfN").textContent = String(k); Sfx.count(false); }
+  }
+  // no verdict 20 s after a reconnect showed the match uncounted: ask once more (the server may have been slow to see the old
+  // connection go), then it is lost: no result
+  const pd = QM.pend;
+  if (pd && pd.dead && Date.now() - pd.dead > 20000) {
+    if (!pd.again) { pd.again = true; pd.dead = Date.now() - 15000; QM.authed = false; QM.authing = false; qmAuth(); }
+    else qmRes({ id: pd.id, res: null, why: "void" });
+  }
+  // the account changed (made, linked or unlinked): sign in with it, unless that was just sent
+  if (ACCT.code !== QM.lastCode) {
+    QM.lastCode = ACCT.code;
+    if (QM.authCode !== ACCT.code || !ACCT.code) { QM.authed = false; QM.authing = false; QM.acct = ""; qmAuth(); }
+    qmRefresh();
+  }
+  if (now - QM.uiT > 250) { QM.uiT = now; qmUi(); }
+}
+
+/* ----- wiring ----- */
+tap("qmBack", goMenu);
+tap("qmChange", () => openSelect("quick"));
+tap("qmR", () => { QM.mode = "r"; qmSave(); qmRender(); });
+tap("qmC", () => { QM.mode = "c"; qmSave(); qmRender(); });
+tap("qmFind", qmFind);
+tap("qmCancel", () => qmCancel());
+tap("qmWarm", qmWarmStart);
+tap("rQmX", () => { qmCancel(); $("rChange").querySelector("span").textContent = "Quick match"; $("rMenuSub").textContent = ""; });
+tap("ssGo", qmSeasonDone);
+tap("ssClose", qmSeasonDone);
 /* ----- guided practice: short prompts the first time someone plays ----- */
 const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0, dodges: 0 };
@@ -31136,6 +32389,7 @@ tap("hTry", startTutorial);
 
 /* ===================== loop ===================== */
 function simTick() {
+  qmTick();   // ui/quick.js: the found match's handshake under any screen, its timers
   if (mode === "result") { if (match && match.online) netTick(); return; }
   if (mode === "online" || mode === "select") netTick();
   const live = mode === "match" && G;
@@ -31179,12 +32433,14 @@ function frame(now) {
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
+  if (mode === "quick") drawQmArt(tick);   // ui/quick.js: the Fight Card's model
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
+qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)
 goMenu();
 if (NET.invite) openOnline();
 else if (firstRun && !ACCT.hash) startTutorial(); // a brand-new player starts with the guided round

@@ -19,7 +19,7 @@ const NET = {
   matchId: 0, startSeen: 0, pingSent: new Map(), pingSeen: new Set(), pings: [], pingT: 0, hsT: 0, lastStart: null,
   D: 6, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0, ckMine: new Map(), ckSend: null,
   syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
-  cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0,
+  cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, qm: null,   // qm: the Quick match being joined or played (ui/quick.js)
   standalone: !!window.__blStandalone, invite: null, inviteT: 0,
   tb: null, hs: null,   // a Team Brawl's board and its start (ui/online-team.js)
 };
@@ -72,8 +72,9 @@ async function netInit() {
 function lobbyPresence() {
   if (!NET.room || !NET.ok) return;
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
-  const hosting = NET.phase === "hosting", tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy }).catch(() => {});
+  const hosting = NET.phase === "hosting" && !NET.qm, q = qmPresence();   // ui/quick.js: searching (qs) or in a Quick match
+  const tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs }).catch(() => {});
 }
 // The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
 function onBoss() {
@@ -335,7 +336,7 @@ function leaveMatchRoom() {
 }
 function resetNet() {
   Object.assign(NET, { role: null, hostCode: null, oppPeer: null, oppBy: null, oppName: "", lastOpp: null, matchId: 0, startSeen: 0,
-    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false,
+    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false, qm: null,
     tb: null, hs: null });
   NET.pingSent = new Map(); NET.pingSeen = new Set();
   TM = null;
@@ -406,6 +407,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
+  if (NET.phase === "result" && match && match.qm && match.qm.ranked) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -416,7 +418,7 @@ function opponentLeft() {
 
 function handshakeTick(now) {
   const opp = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
-  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > 8000) { NET.note = "No answer from the host."; netCancel(); return; }
+  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > 8000 && !NET.qm) { NET.note = "No answer from the host."; netCancel(); return; }   // a Quick match: the server calls it off
   if (!opp) return;
   const pr = opp.presence || {};
   const echo = typeof pr.pg === "number" ? pr.pg : null;
@@ -433,7 +435,7 @@ function handshakeTick(now) {
       NET.pingSeen.add(pr.po); NET.pings.push(now - NET.pingSent.get(pr.po));
     }
     const waited = now - NET.hsT;
-    if (NET.pings.length >= 6 || (waited > 3000 && NET.pings.length) || waited > 7000) {
+    if ((NET.pings.length >= 6 || (waited > 3000 && NET.pings.length) || waited > 7000) && (!NET.qm || qmReady(pr))) {   // a Quick match: once both VS screens showed
       const sorted = [...NET.pings].sort((a, b) => a - b);
       const rtt = sorted.length ? sorted[sorted.length >> 1] : 260;
       const pad = typeof window.__blDpad === "number" ? window.__blDpad : 4;
@@ -442,16 +444,16 @@ function handshakeTick(now) {
       const gpi = Number.isInteger(pr.pi) && pr.pi >= 0 && pr.pi < FIG[gf].palettes.length ? pr.pi : 0;
       const hf = sel.fighter, hpi = palIdx(hf);
       const bo = hostBo();
-      const st = { id: NET.matchId + 1, seed: (Math.random() * 1e9) | 0, d: D, f: [hf, gf], p: [hpi, gf === hf && gpi === hpi ? (gpi + 1) % FIG[gf].palettes.length : gpi], rtt: Math.round(rtt),
-        r: Object.assign({}, bo ? BOSS_RULES : P.rules), set: { n: 1, w: [0, 0] } };
-      if (bo) st.bo = bo;   // a boss fight: which boss (his map comes with him) and his level
+      const st = NET.qm ? qmStartMsg(D, rtt) : { id: NET.matchId + 1, seed: (Math.random() * 1e9) | 0, d: D, f: [hf, gf], p: [hpi, gf === hf && gpi === hpi ? (gpi + 1) % FIG[gf].palettes.length : gpi], rtt: Math.round(rtt),
+        r: Object.assign({}, bo ? BOSS_RULES : P.rules), set: { n: 1, w: [0, 0] } };   // a Quick match: the one the server assigned
+      if (bo && !NET.qm) st.bo = bo;   // a boss fight: which boss (his map comes with him) and his level
       NET.lastStart = st;
       namedPresence({ start: st });
       startOnlineMatch(st);
     }
   } else {
     const st = pr.start;
-    if (validStart(st) && st.id > NET.startSeen) startOnlineMatch(st);
+    if (validStart(st) && st.id > NET.startSeen && (!NET.qm || qmStartOk(st))) startOnlineMatch(st);   // a Quick match: only the assigned one (else the server decides)
   }
 }
 function validStart(st) {
@@ -478,6 +480,7 @@ function startOnlineMatch(st) {
     // the map comes from the match seed, so both phones play the same one with no new field in the start message
     G = newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
     match = { online: true, ranked: false, level: null };
+    if (NET.qm) { match.qm = NET.qm; qmMatchStarts(); }   // ui/quick.js
   }
   NET.phase = "match"; NICE.length = 0;
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
@@ -619,7 +622,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && match.qm.ranked ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -683,6 +686,7 @@ function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;
   if (match.tb) { tbFinish(); return; }   // ui/online-team.js
   if (match.boss) { finishBossOnline(); return; }
+  if (match.qm) { qmFinish(left, lost); return; }   // ui/quick.js: the server decides a Ranked one
   const me = G.fighters[meSlot], op = G.fighters[1 - meSlot];
   const res = left ? 1 : lost ? 0.5 : G.winner === meSlot ? 1 : G.winner === 1 - meSlot ? 0 : 0.5;
   const R = { res, online: true, left: !!left, lost: !!lost, me, op, lines: [], total: 0 };

@@ -78,10 +78,10 @@ const ACT = [
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
   { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
-  { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) >= 100, how: "Win 100 ranked matches." },
+  { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) + qmWins() >= 100, how: "Win 100 ranked matches." },
   ...mxActs(5),    // the Lv 5 title of each fighter
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
-  { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
+  { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
 const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
@@ -101,12 +101,12 @@ function acRing(ringBox, arc, ti) {   // the Account sheet's tier ring
 // #mRank is one button: the plate (picture with the rank emblem on its corner, name, tier + rating, the chosen title as a sticker)
 // and the coins beside it (chips; the Daily Potato streak while there is one; cups once one is won). Styles: game/css/20-menu.css.
 function renderPill() {
-  const ti = tierInfo(P.rating), name = acctName(), cups = P.cups | 0, me = $("mRank");
+  const rk = rankView(), ti = tierInfo(rk.r), name = acctName(), cups = P.cups | 0, me = $("mRank");   // rankView: ui/quick.js (the online rank on our own server)
   acSetMe($("mAvatar"));
   $("mName").textContent = name;
   me.querySelector(".plate").style.setProperty("--tc", ti.t.col);
   $("mTier").textContent = ti.t.name;
-  $("mRating").textContent = P.rating;
+  $("mRating").textContent = rk.r;
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
   const tt = acTitle(), mt = $("mTitle");
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
@@ -114,7 +114,7 @@ function renderPill() {
   $("mTokens").textContent = P.tokens;
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${P.rating}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -145,7 +145,7 @@ function renderAccount() {
   $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l";
   if (acUI.tab === "s") { renderStats(); return; }
   if (acUI.tab === "l") { renderLocker(); return; }
-  const ti = tierInfo(P.rating), name = acctName();
+  const rk = rankView(), ti = tierInfo(rk.r), name = acctName();
   acSetMe($("acAvatar"));
   const tt = acTitle(); $("acTitleLine").textContent = tt ? tt.name : "";
   renderPick();
@@ -157,8 +157,8 @@ function renderAccount() {
   acRing($("acRank").querySelector(".ring"), $("acRing"), ti);
   $("acRank").style.setProperty("--tc", ti.t.col);
   $("acTier").textContent = ti.t.name;
-  $("acRating").textContent = `${P.rating} rating · best ${P.peak}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}`;
-  $("acW").textContent = P.wins; $("acL").textContent = P.losses;
+  $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;
+  $("acW").textContent = rk.w; $("acL").textContent = rk.l;
   $("acChips").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
   $("acSkins").innerHTML = `${acSkinCount(P)}<small> / ${acSkinTotal()}</small>`;
   const more = [];
@@ -168,10 +168,10 @@ function renderAccount() {
   if ((P.duoW | 0) + (P.duoC | 0) > 0) more.push(`2v2: ${P.duoW | 0} won, ${P.duoC | 0} ${(P.duoC | 0) === 1 ? "Catch" : "Catches"}`);
   $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
   const form = $("acForm"); form.innerHTML = "";
-  const hist = (P.history || []).slice(0, 10);
+  const hist = rk.h.slice(0, 10);
   if (hist.length) {
     form.appendChild(acMk("span", "ac-line", "Recent ranked"));
-    for (const h of hist) { const i = acMk("i", h.r === 1 ? "w" : h.r === 0 ? "l" : "", h.r === 1 ? "W" : h.r === 0 ? "L" : "D"); i.title = `${h.d > 0 ? "+" : ""}${h.d}`; form.appendChild(i); }
+    for (const h of hist) { const i = acMk("i", h.res === 1 ? "w" : h.res === 0 ? "l" : "", h.res === 1 ? "W" : h.res === 0 ? "L" : "D"); i.title = `${h.dr > 0 ? "+" : ""}${h.dr}`; form.appendChild(i); }
   }
   form.hidden = !hist.length;
   $("acReset").textContent = acUI.resetArmed ? (ACCT.code ? "Tap again to erase it everywhere" : "Tap again to erase rating, chips and skins") : "Reset progress";
@@ -232,6 +232,7 @@ function acFav() {   // the fighter with the most counted matches (ties: the ear
 function renderStats() {
   const pan = $("acPanS"); pan.innerHTML = "";
   const st = acFstats(), fav = acFav();
+  if (rankView().online && (P.matches | 0) > 0) { const ti = tierInfo(P.rating | 0); pan.appendChild(acMk("p", "ac-line", `Your CPU rank (before Season 1): ${ti.t.name} ${P.rating | 0} · best ${Math.max(P.peak | 0, P.rating | 0)} · ${P.wins | 0}W ${P.losses | 0}L. Ranked is online now.`)); }   // ui/quick.js
   pan.appendChild(acMk("p", "ac-line", P.fsince ? `Per-fighter records count ranked matches since ${acDate(P.fsince)}. Friend and cup matches are not counted.` : "Per-fighter records start with your next ranked match. Friend and cup matches are not counted."));
   if (fav) {
     const d = acMk("div", "fs-fav"); const a = acMk("span", "av"); acSetAvatar(a, fav.f.id, P.pal[fav.f.id] || 0); d.appendChild(a);
@@ -253,7 +254,7 @@ function renderStats() {
   }
   t.appendChild(tb); pan.appendChild(t);
   const hist = (P.history || []).slice(0, SYNC.HIST);
-  pan.appendChild(acMk("div", "kicker", `Last ${SYNC.HIST} ranked matches`));
+  pan.appendChild(acMk("div", "kicker", `Last ${SYNC.HIST} ranked matches${rankView().online ? " vs a CPU" : ""}`));
   if (!hist.length) { pan.appendChild(acMk("p", "ac-line", "No ranked matches yet.")); return; }
   const ul = acMk("ul", "hx-list");
   for (const h of hist) {
