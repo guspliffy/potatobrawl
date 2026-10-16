@@ -424,6 +424,7 @@ function roadSheet(i) {
     const first = BOSS_LV.findIndex((_, q) => !(bb & (1 << q)));
     RD.blv = first >= 0 ? first : clamp(RD.blv | 0, 0, BOSS_LV.length - 1);
     $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n, q)).join("");
+    $("rsCombo").hidden = true;
     rdLevel(RD.blv);
     const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? ` ${me.name} has his ${me.palettes[rs].name} skin.` : ` A win gives ${me.name} the ${me.palettes[rs].name} skin.`;
     $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips.`) + skin;
@@ -434,10 +435,25 @@ function roadSheet(i) {
     $("rsRule").innerHTML = `${ru.twist ? `<b>${cupEsc(ru.twist)}</b> ` : ""}${cupEsc(ru.rest)}`;
     $("rsLine").textContent = st.line;
     $("rsStars").innerHTML = [...ROAD_STARS, st.bonus.txt].map((n, k) => roadStarHTML(!!(bits & (1 << k)), n)).join("");
+    // a combo star: the combo's name and buttons under the stars (your fighter's own combo follows the fighter); a tap opens the Combo trial on it
+    const rt = roadRouteOf(st, me.id), cb = $("rsCombo");
+    cb.hidden = !rt;
+    if (rt) cb.innerHTML = `<button class="rd-cmb" id="rsComboGo" aria-label="${cupEsc(rt.name)} combo: practise it in the Combo trial"><span class="rd-cn">${cupEsc(rt.name)}</span><span class="rk-row">${routeKeysHTML(rt)}</span><i class="rd-cgo" aria-hidden="true"></i></button>`;
     $("rsReward").textContent = bits === 7 ? "All three stars won." : `Each new star: +${ROAD_STAR_CHIPS} chips.`;
     $("rsGo").querySelector("span").textContent = "Fight";
   }
   modal("roadStop", true);
+  roadSheetFit();
+}
+// a short sheet (a phone held sideways): when the combo line would sit under Fight, the CPU's line makes room for it
+// (offsets, not screen boxes: the app may be turned sideways)
+function roadSheetFit() {
+  const sh = $("roadStopSheet"), cb = $("rsCombo");
+  sh.classList.remove("tight");
+  if (cb.hidden) return;
+  let y = cb.offsetHeight;
+  for (let e = cb; e && e !== sh; e = e.offsetParent) y += e.offsetTop;
+  if (y > sh.clientHeight - sh.querySelector(".rd-acts").offsetHeight) sh.classList.add("tight");
 }
 // a star with its label; with q (a boss level) it is a button that picks that level
 const roadStarHTML = (on, label, q) => q === undefined ? `<span class="rd-st${on ? " on" : ""}"><i aria-hidden="true">★</i><small>${cupEsc(label)}</small></span>`
@@ -534,14 +550,48 @@ function roadBossEnd(R) {
 // the Road skin a boss gives this fighter: its palette index (-1 = none)
 const roadSkinOf = (spec, bossId) => spec.palettes.findIndex((p) => p.road === bossId);
 // the results: the stop's three stars (the new ones pop)
+// (a missed combo star names its combo and shows its buttons, as on the stop's sheet: a tap opens the Combo trial on it)
 function roadResStars(R) {
   const el = $("rStars"), rd = R.road;
   el.hidden = !rd;
   if (!rd) return;
+  const rt = rd.boss ? null : roadRouteOf(ROAD[rd.i], R.me.spec.id);
   el.innerHTML = rd.labels.map((n, k) => {
     const on = !!((rd.got | rd.had) & (1 << k)), fresh = !!(rd.got & (1 << k)) && !(rd.had & (1 << k));
+    if (k === 2 && rt && !on) return `<button class="rd-st rd-stk" style="--k:${k}" data-i="${rd.i}" aria-label="Combo star missed: ${cupEsc(rt.name)}. Practise it in the Combo trial"><i aria-hidden="true">★</i><small>${cupEsc(rt.name)}</small><span class="rk-row">${routeKeysHTML(rt)}</span></button>`;
     return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
   }).join("");
+}
+// the results' Retry beside Next stop after a win (Next: Hard after a boss win): its second line names the first star still missing;
+// with all three stars (or no next step, when the big button is Retry already) it hides and the big button takes the row
+function roadResRetry(R) {
+  const rd = R.road, nx = match && match.road && match.road.next, all = rd ? rd.got | rd.had : 7, sub = $("rRetrySub");
+  const rt = !nx || all === 7 || rd.boss || !(all & 2) ? null : roadRouteOf(ROAD[rd.i], R.me.spec.id);
+  const miss = !nx || all === 7 ? "" : rd.boss ? BOSS_LV[rd.lv] : !(all & 2) ? `★ ${ROAD_STARS[1]}` : `★ ${roadStarShort(ROAD[rd.i], R.me.spec.id)}`;
+  $("rRetry").hidden = !miss;
+  $("rRetry").parentNode.classList.toggle("retry", !!miss);
+  sub.textContent = miss;
+  // a narrow Retry (a small phone): "★ Lift & Smash" without the word combo, so the line is never cut
+  if (rt) requestAnimationFrame(() => { if (sub.textContent === miss && sub.scrollWidth > sub.clientWidth + 1) sub.textContent = `★ ${rt.name}`; });
+}
+// a stop's bonus star in a few words, for Retry's second line: "Three-piece combo", "Under 60 s", "Under 2:30", "Finisher KO", "Ulti KO"
+function roadStarShort(st, fid) {
+  const b = st.bonus, rt = roadRouteOf(st, fid);
+  return rt ? `${rt.name} combo` : b.k === "fast" ? `Under ${b.s < 100 ? `${b.s} s` : `${Math.floor(b.s / 60)}:${String(b.s % 60).padStart(2, "0")}`}` : b.k === "fin" ? "Finisher KO" : b.k === "ulti" ? "Ulti KO" : b.txt;
+}
+// the combo route a stop's combo star asks for ("own": the fighter you play's own route), null for the other stars
+function roadRouteOf(st, fid) {
+  const b = st && st.bonus;
+  if (!b || b.k !== "route") return null;
+  const id = b.r === "own" ? (ROUTES.OWN[fid] || {}).id : b.r;
+  return ROUTES.ALL.find((r) => r.id === id) || null;
+}
+// the Combo trial on a stop's combo with the fighter you play; its Back (and the pause menu) return to the stop's sheet (ui/combos.js TR.back)
+function roadTrial(i) {
+  const me = FIG[P.last] || FIGHTERS[0], rt = roadRouteOf(ROAD[i], me.id);
+  if (!rt) return;
+  modal("roadStop", false);
+  goFull(); startTrial(me.id, { route: rt.id, back: i });
 }
 // the results' big button after a win: Next stop / To <boss> after a region's last stop / To <region> after a boss win that opened it,
 // Next: Hard after a boss win; Retry after a loss (menus.js rAgain does it)
@@ -551,6 +601,12 @@ function roadAgainLabel() {
   if (nx.lv !== undefined) return `Next: ${BOSS_LV[nx.lv]}`;
   if (nx.k !== undefined) return `To ${ROAD_REG[nx.k].name}`;
   return roadIsBoss(nx.i) ? `To ${roadBossSpec(nx.i - ROAD.length).name}` : "Next stop";
+}
+// Retry beside Next stop: the same stop, or the same boss level
+function roadRetry() {
+  const rd = match && match.road;
+  if (!rd) return;
+  if (rd.boss) roadBossFight(rd.k, rd.lv); else roadFight(rd.i);
 }
 function roadAgain() {
   const rd = match.road, nx = rd.next;
@@ -581,6 +637,8 @@ $("roadPrev").addEventListener("click", () => roadGo(-1));
 $("roadNext").addEventListener("click", () => roadGo(1));
 $("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); if (roadIsBoss(RD.sel)) roadBossFight(RD.sel - ROAD.length, RD.blv | 0); else roadFight(RD.sel); });
 $("rsMe").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });   // your card: change fighter
+$("rsCombo").addEventListener("click", (e) => { if (!e.target.closest(".rd-cmb")) return; Sfx.init(); Sfx.ui(); roadTrial(RD.sel); });
+$("rStars").addEventListener("click", (e) => { const b = e.target.closest(".rd-stk"); if (!b) return; Sfx.init(); Sfx.ui(); roadTrial(+b.dataset.i); });
 $("rsStars").addEventListener("click", (e) => { const b = e.target.closest(".rd-lvb"); if (!b) return; Sfx.init(); Sfx.ui(); rdLevel(+b.dataset.q); });
 for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
 screens.roadStop = $("scrRoadStop");

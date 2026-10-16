@@ -143,8 +143,9 @@ async def main():
         b = await p.chromium.launch(args=ARGS)
         await shoot(b, 'phone', {'width': 844, 'height': 390}, True, errs)
         await shoot(b, 'se', {'width': 667, 'height': 320}, True, errs)
+        await shoot(b, 'w740', {'width': 740, 'height': 360}, True, errs)   # 740 x 360: many Android phones held sideways (the placing plate's size)
         await shoot(b, 'desk', {'width': 1280, 'height': 760}, False, errs)
-        for tag, vp, up in [('se', {'width': 667, 'height': 320}, False), ('phone', {'width': 844, 'height': 390}, False), ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True)]:
+        for tag, vp, up in [('se', {'width': 667, 'height': 320}, False), ('w740', {'width': 740, 'height': 360}, False), ('phone', {'width': 844, 'height': 390}, False), ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True)]:
             await hud(b, tag + 'T', vp, up, errs)
         await fresh(b, 'phone', {'width': 844, 'height': 390}, True, errs)
         await fresh(b, 'desk', {'width': 1280, 'height': 760}, False, errs)

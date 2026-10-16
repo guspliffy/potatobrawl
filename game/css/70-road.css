@@ -45,6 +45,24 @@
 .rd-st small { font: 600 11.5px/1.2 var(--body); color: var(--mute); }
 .rd-st.on small { color: var(--text); }
 .rd-reward { margin: 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+/* a combo star's combo, under the stars: its name and its buttons as the How to play key chips (routeKeysHTML); a tap opens the Combo trial
+   on it (ui/road.js roadTrial). The results show the same line on a missed combo star. */
+.rd-combo { margin: -4px 0 0; display: flex; justify-content: center; }
+.rd-cmb { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px 10px; max-width: 100%; min-height: 36px; padding: 5px 12px;
+  border: 0; border-radius: 10px; background: rgba(14, 16, 34, 0.35); box-shadow: inset 0 0 0 1px var(--line); font: inherit; color: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: transform 0.08s, background 0.12s; }
+.rd-cmb:active { transform: translateY(1px); background: rgba(255, 255, 255, 0.06); }
+.rd-cmb:focus-visible, .res-stars .rd-stk:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) { .rd-cmb:hover { background: rgba(255, 255, 255, 0.06); } }
+.rd-cn { font: italic 800 15px/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: var(--sand); white-space: nowrap; }
+.rd-cmb .rk-row, .res-stars .rk-row { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+.rd-cgo { flex: none; width: 7px; height: 7px; margin: 0 2px 0 -2px; border: solid var(--sand); border-width: 2px 2px 0 0; transform: rotate(45deg); opacity: 0.8; }
+#app.tiny .rd-combo { margin-top: -8px; }
+#app.tiny .rd-cmb { min-height: 30px; padding: 3px 10px; }
+#app.tiny .rd-cn { font-size: 13px; }
+.rd-sheet { position: relative; }   /* roadSheetFit measures the combo line from here */
+.rd-sheet.tight .rd-line { display: none; }   /* a short screen: the combo line takes the CPU's line's place, so it stays above Fight */
+#app.tiny .rd-cmb .rk { font-size: 12px; padding: 1px 6px; }
 /* your fighter's card is the fighter picker: tap it to change fighter */
 .rd-me { font: inherit; color: inherit; border: 0; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.45); }
 .rd-me:active { transform: translateY(1px); }
@@ -72,6 +90,14 @@
 .res-stars .rd-st { flex: 0 1 auto; flex-direction: row; gap: 5px; text-align: left; }
 .res-stars .rd-st i { font-size: 22px; }
 .res-stars .rd-st small { font-size: 12px; }
+.res-stars .rd-stk { flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.res-stars .rd-stk small { margin-right: 2px; }
+.res-stars .rk { font-size: 11.5px; padding: 1px 6px; }
+#app .res-stars .rd-stk .rk i { font-size: 13px; line-height: inherit; color: inherit; text-shadow: none; }
+#app.tiny .res-stars .rk { font-size: 10.5px; padding: 1px 4px; gap: 2px; }
+#app.tiny .res-stars .rd-stk .rk i { font-size: 11px; }
+#app.tiny .res-stars .rk-sep { width: 6px; margin: 0 1px; }
+.res-stars .rk-sep { width: 9px; }
 .res-stars .rd-st.new i { animation: rdPop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) calc(0.35s + var(--k) * 0.18s) backwards; }
 @keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
 @media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }

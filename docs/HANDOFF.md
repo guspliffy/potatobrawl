@@ -4,6 +4,17 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Road and fullscreen fixes (2026-10-16, branch claude/road-fullscreen-fixes-ucjbgm, UI only, no PROTO; plan "Before step 6",
+  thread 1; brief /mnt/project-files/pre-step6/briefs/thread-1.md):
+  - Road results: after a win with a star missing, Retry (#rRetry, dark, 1fr) sits beside Next stop (1.6fr; .res-actions.retry) and
+    its second line names the first star missing ("★ No heart lost", "★ Three-piece combo", roadStarShort); after a boss win it sits
+    beside Next: Hard with the level it replays. Three stars (or no next step) hide it. roadResRetry / roadRetry in ui/road.js.
+  - Combo stars (11 of 24 stops, bonus.k "route"; "own" follows your fighter): the stop sheet shows #rsCombo under the stars, the route's
+    name and its How to play key chips (routeKeysHTML); a tap opens the Combo trial on that route with your fighter (startTrial(fid,
+    { route, back })), whose Back and pause quit return to the stop's sheet (TR.back). The results show the chips on a missed combo
+    star (.rd-stk, also a trial link). On a short sheet the CPU's line hides when the combo line would sit under Fight (roadSheetFit).
+  - Fullscreen: the menu's round button left of the gear and the Settings row "Fullscreen in fights" with "Now: windowed /
+    fullscreen" under it; on iPhone Safari the button and the row's How open #scrA2hs (see the file map's fullscreen line).
 - Online 2v2 (2026-10-16, branch claude/project-thread-x0j4lg, PROTO 15, players reload once): Team Brawl for up to four phones through
   Play friends. Plan https://claude.ai/code/artifact/e0202bd2-7a22-4909-ad75-9687c69130d9 (16 defaults, Jonny's go 05:54 UTC), Fable's
   board /mnt/project-files/online-2v2/fable-online2v2.md. No server change (rooms hold 64; presence stays under 4 KB).
@@ -577,8 +588,11 @@ index.html is committed with every source change (check.sh flags a stale one).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
 - web/ (repo root): manifest.webmanifest + icons. server.js serves them from public/ if present; build.py and
   the deploy blocks copy them there.
-- Fullscreen helpers (FS, goFull, leaveFull) live in ui/input.js next to touchUI; the Fullscreen setting is
-  P.fs (undefined = on for touch devices); the iPhone tip is dismissed with P.a2hs.
+- Fullscreen helpers (FS, goFull, enterFull, leaveFull) live in ui/input.js next to touchUI; the "Fullscreen in fights" setting is
+  P.fs (undefined = on for touch devices; goFull, called from taps that start play, only goes fullscreen when it is On); the iPhone
+  tip is dismissed with P.a2hs. The menu's round button left of the gear (#bFull, ui/menus.js fsSync) shows the real state
+  (fullscreenchange), toggles with enterFull / leaveFull, and on iPhone Safari (FS.btn without FS.can) opens #scrA2hs (Share, then
+  Add to Home Screen); it is hidden in the home-screen app and is the first thing menuFit drops (.nofs) when the top bar is full.
 
 ## Accounts (sync codes): what is stored and where
 - Server side is accounts.js (called from server.js), off unless `ACCOUNTS_DIR` names a writable folder; then `/api/acct/ping|new|load|save`
@@ -668,7 +682,10 @@ clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone 
 steps, desktop through to the results, touch sizes up to the ulti; tags desk desktouch se phone up; check.sh 6e) · pwultreel.py (above) ·
 boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
 Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
-map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, four sizes; check.sh 8e) ·
+map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, Retry beside Next stop, a
+combo star's combo line and its Combo trial with Back to the stop, five sizes; check.sh 8e) · pwfs.py (the fullscreen button and
+Settings row, the iPhone sheet, the home-screen app, a full top bar; the website build on a made-up origin routed by Playwright, no
+port; check.sh 8k) ·
 roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
 tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py

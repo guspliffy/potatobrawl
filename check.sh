@@ -288,7 +288,8 @@ else fail "boss fights in the browser" "$LOGS/boss-ui.log"; fi
 # 8e. The Road: the start-page card, the map and its locks, a stop's sheet, a stop played with its rules (lives, time, map, start
 #     percents), the stars and chips paid once and saved, Retry / The Road / quitting to the map, the fence at 12 stars, Old Scratch's
 #     first win (Devil Masher + 150 chips), the walk and Next stop / To <boss> / To <region> / Next: Hard, The Kitchen's region and
-#     its boss, the Road skins, and the card, map and sheet at four sizes. Shots in build/shots/road.
+#     its boss, the Road skins, Retry beside Next stop (naming the missing star; gone with three stars), a combo star's combo line
+#     and its Combo trial with Back to the stop, and the card, map and sheets at five sizes. Shots in build/shots/road.
 s_roadui() {
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwroad.py" road) > "$LOGS/road-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/road-ui.log"; then pass "the Road in the browser (map, stops, stars, the fence, Old Scratch; shots in build/shots/road)"
@@ -339,15 +340,24 @@ if grep -q "^no errors" "$LOGS/duo-ui.log"; then pass "2v2 in the browser (picke
 else fail "2v2 in the browser" "$LOGS/duo-ui.log"; fi
 }
 
+# 8k. Fullscreen: the menu's button follows the real state (fullscreenchange) and switches with one tap, the Settings row reads
+#     "Fullscreen in fights" with the real state under it, iPhone gets the Add to Home Screen sheet, the home-screen app has no
+#     button, a full top bar drops it first. The website build on a made-up origin inside Playwright (no port). Shots in build/shots/fs.
+s_fsui() {
+(cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwfs.py" fs) > "$LOGS/fs-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/fs-ui.log"; then pass "fullscreen button, Settings row and iPhone sheet (shots in build/shots/fs)"
+else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; fi
+}
+
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos ulti boss duo)
 ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve online onboss on2v2 acct quick quickui screens skins acctui hud ultui tut maps
-  finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui)
+  finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve duo boss snap finish lock combos ulti)
 SOLO=(quick acct stats)
-REAL=(mastery maps acctui on2v2 hud daily screens roadui duoui quickui tut skins bossui ultui onboss comboui cup statsui online statspage finisher)
+REAL=(mastery maps acctui on2v2 hud daily screens roadui duoui quickui tut skins bossui ultui onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

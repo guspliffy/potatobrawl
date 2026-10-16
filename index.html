@@ -329,6 +329,14 @@ button { font: inherit; color: inherit; }
 .a2hs b { color: var(--text); font-weight: 600; }
 .a2hs .link { flex: none; }
 #app.portrait .a2hs { width: auto; left: 14px; }
+.a2hs-sheet { width: min(420px, 100%); }
+.a2hs-lead { margin: 0; font-size: 14px; line-height: 1.35; color: var(--text); }
+.a2hs-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.a2hs-steps li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(14, 16, 34, 0.86); border: 1px solid rgba(243, 217, 164, 0.35);
+  font-size: 14px; line-height: 1.3; color: var(--sand); }
+.a2hs-steps b { color: var(--text); font-weight: 600; }
+.a2hs-ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: #f4f5fb; color: #0a84ff; box-shadow: 0 2px 0 var(--ink); }
+.a2hs-ic svg { width: 22px; height: 22px; }
 .iconbtn { appearance: none; border: 1px solid var(--line); background: rgba(35, 39, 70, 0.85); color: var(--text); border-radius: 50%; width: 42px; height: 42px; flex: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .iconbtn svg { width: 22px; height: 22px; display: block; }
 .iconbtn:hover { background: #2c3156; }
@@ -895,9 +903,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrMenu .mm-topr { flex: none; display: flex; align-items: center; gap: 8px; }
 /* #mRank: one button (it opens the Account sheet) holding the plate and the coins, so they read and tap as before */
 #scrMenu .mm-me { display: flex; align-items: center; gap: 8px; height: var(--mm-ctl); padding: 0; border: 0; background: none; text-align: left; }
-#scrMenu .mm-me > *, #scrMenu #bSettings { height: var(--mm-ctl); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
-#scrMenu .mm-me:active > *, #scrMenu #bSettings:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
-#scrMenu #bSettings { width: var(--mm-ctl); }
+#scrMenu .mm-me > *, #scrMenu #bSettings, #scrMenu #bFull { height: var(--mm-ctl); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrMenu .mm-me:active > *, #scrMenu #bSettings:active, #scrMenu #bFull:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrMenu #bSettings, #scrMenu #bFull { width: var(--mm-ctl); }
+/* fullscreen (ui/menus.js fsSync): four corners out, four corners in while fullscreen; hidden first when the bar is full (menuFit's .nofs) */
+#scrMenu #bFull svg { width: 20px; height: 20px; display: block; }
+#scrMenu #bFull .fs-out, #scrMenu #bFull.on .fs-go { display: none; }
+#scrMenu #bFull.on .fs-out { display: inline; }
+#scrMenu .mm-bar.nofs #bFull { display: none; }
 #scrMenu #bSettings svg { width: 22px; height: 22px; display: block; }
 #scrMenu .plate { --tc: #c9d0e4; position: relative; flex: none; gap: 9px; padding: 0 14px 0 3px; }
 #scrMenu .mm-avw { position: relative; width: calc(var(--mm-ctl) + 6px); height: calc(var(--mm-ctl) + 6px); flex: none; margin-top: -9px; }
@@ -1529,6 +1542,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 /* buttons: NEXT MATCH (gold, large) over Fighters / Menu, Fable's button recipe (ink outline, hard shadow, bevel, -8deg) */
 #resSheet .res-actions { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 4px 4px 0 2px; flex: none; }
 #resSheet .res-actions .btn:first-child, #resSheet .res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
+/* the Road after a win with a star still to get (ui/road.js roadResRetry): Retry beside Next stop, The Road and Menu under them in the same columns */
+#resSheet .res-actions.retry { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+#resSheet .res-actions.retry .btn:first-child { grid-column: auto; }
+#resSheet .res-actions #rRetry { padding: 0 10px; }
+#resSheet .res-actions #rRetry small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #resSheet .res-actions .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 44px; padding: 0 18px;
   border: 2px solid var(--ink); border-radius: 9px; font: 800 18px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; text-align: center;
   background: linear-gradient(180deg, #3a4170, #262b50); color: var(--text); transform: skewX(-8deg); box-shadow: var(--hard), var(--bevel); transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
@@ -1562,8 +1580,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #resSheet.in:not(.still) .res-chips .stat { animation-delay: 0.26s; }
 #resSheet.in:not(.still) .res-why, #resSheet.in:not(.still) .res-pick { animation-delay: 0.3s; }
 #resSheet.in:not(.still) .res-actions .btn { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.34s backwards; }
-#resSheet.in:not(.still) .res-actions .btn:nth-child(2) { animation-delay: 0.38s; }
-#resSheet.in:not(.still) .res-actions .btn:nth-child(3) { animation-delay: 0.42s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(2) { animation-delay: 0.36s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(3) { animation-delay: 0.38s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(4) { animation-delay: 0.42s; }
 #resSheet.in:not(.still) #rGain { animation: resFill 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s backwards; }
 #resSheet.in:not(.still) .bar.down #rGain { animation: resDrain 0.8s ease-in 0.45s backwards; }
 #resSheet.in:not(.still) .delta { animation: resPop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) 1.25s backwards; }
@@ -2022,6 +2041,24 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .rd-st small { font: 600 11.5px/1.2 var(--body); color: var(--mute); }
 .rd-st.on small { color: var(--text); }
 .rd-reward { margin: 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+/* a combo star's combo, under the stars: its name and its buttons as the How to play key chips (routeKeysHTML); a tap opens the Combo trial
+   on it (ui/road.js roadTrial). The results show the same line on a missed combo star. */
+.rd-combo { margin: -4px 0 0; display: flex; justify-content: center; }
+.rd-cmb { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px 10px; max-width: 100%; min-height: 36px; padding: 5px 12px;
+  border: 0; border-radius: 10px; background: rgba(14, 16, 34, 0.35); box-shadow: inset 0 0 0 1px var(--line); font: inherit; color: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: transform 0.08s, background 0.12s; }
+.rd-cmb:active { transform: translateY(1px); background: rgba(255, 255, 255, 0.06); }
+.rd-cmb:focus-visible, .res-stars .rd-stk:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) { .rd-cmb:hover { background: rgba(255, 255, 255, 0.06); } }
+.rd-cn { font: italic 800 15px/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: var(--sand); white-space: nowrap; }
+.rd-cmb .rk-row, .res-stars .rk-row { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+.rd-cgo { flex: none; width: 7px; height: 7px; margin: 0 2px 0 -2px; border: solid var(--sand); border-width: 2px 2px 0 0; transform: rotate(45deg); opacity: 0.8; }
+#app.tiny .rd-combo { margin-top: -8px; }
+#app.tiny .rd-cmb { min-height: 30px; padding: 3px 10px; }
+#app.tiny .rd-cn { font-size: 13px; }
+.rd-sheet { position: relative; }   /* roadSheetFit measures the combo line from here */
+.rd-sheet.tight .rd-line { display: none; }   /* a short screen: the combo line takes the CPU's line's place, so it stays above Fight */
+#app.tiny .rd-cmb .rk { font-size: 12px; padding: 1px 6px; }
 /* your fighter's card is the fighter picker: tap it to change fighter */
 .rd-me { font: inherit; color: inherit; border: 0; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.45); }
 .rd-me:active { transform: translateY(1px); }
@@ -2049,6 +2086,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .res-stars .rd-st { flex: 0 1 auto; flex-direction: row; gap: 5px; text-align: left; }
 .res-stars .rd-st i { font-size: 22px; }
 .res-stars .rd-st small { font-size: 12px; }
+.res-stars .rd-stk { flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.res-stars .rd-stk small { margin-right: 2px; }
+.res-stars .rk { font-size: 11.5px; padding: 1px 6px; }
+#app .res-stars .rd-stk .rk i { font-size: 13px; line-height: inherit; color: inherit; text-shadow: none; }
+#app.tiny .res-stars .rk { font-size: 10.5px; padding: 1px 4px; gap: 2px; }
+#app.tiny .res-stars .rd-stk .rk i { font-size: 11px; }
+#app.tiny .res-stars .rk-sep { width: 6px; margin: 0 1px; }
+.res-stars .rk-sep { width: 9px; }
 .res-stars .rd-st.new i { animation: rdPop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) calc(0.35s + var(--k) * 0.18s) backwards; }
 @keyframes rdPop { from { transform: scale(0) rotate(-40deg); } }
 @media (prefers-reduced-motion: reduce) { .res-stars .rd-st.new i { animation: none; } }
@@ -3361,6 +3406,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
       <div class="mm-topr">
         <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin flame" id="mStreak" hidden>0</span><span class="coin cup" id="mCups" hidden>0</span></button>
+        <button class="round mm-fs" id="bFull" aria-label="Fullscreen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="fs-go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fs-out" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g></svg></button>
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
     </header>
@@ -3482,6 +3528,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <p class="dly-rule" id="rsRule"></p>
         <p class="dly-line rd-line" id="rsLine"></p>
         <div class="rd-stars" id="rsStars"></div>
+        <p class="rd-combo" id="rsCombo" hidden></p>
         <p class="rd-reward" id="rsReward"></p>
         <div class="dly-acts rd-acts"><button class="btn primary lg" id="rsGo"><span>Fight</span></button><button class="btn" id="rsBack"><span>Back</span></button></div>
       </div>
@@ -3670,6 +3717,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </div>
         <div class="res-actions">
           <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
+          <button class="btn" id="rRetry" hidden><span>Retry</span><small id="rRetrySub"></small></button>
           <button class="btn" id="rChange"><span>Fighters</span></button>
           <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>
         </div>
@@ -3721,11 +3769,28 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <header class="sh-head"><h3>Settings</h3><button class="round x" id="setClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="sh-body">
         <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
-        <div class="set-row" id="setFullRow"><span>Fullscreen</span><span class="chips" id="setFull"></span></div>
+        <div class="set-row" id="setFullRow"><span id="setFullL">Fullscreen in fights</span><span class="chips" id="setFull"></span><small id="setFullNow"></small></div>
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
         <div class="set-row" id="setCountRow" hidden><span>Play counts</span><span class="chips" id="setCount"></span></div>
         <p class="set-fine" id="setCountNote" hidden></p>
         <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- iPhone (ui/menus.js): Safari can't make a page fullscreen, the home-screen app opens without the browser bars. The menu's fullscreen
+       button and the Settings row's How open it; the steps reuse the Add to Home Screen tip's copy and look (.a2hs) -->
+  <section id="scrA2hs" class="screen modal" hidden>
+    <div class="sheet a2hs-sheet scroll">
+      <header class="sh-head"><h3>Fullscreen</h3><button class="round x" id="a2hsClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <p class="a2hs-lead">Play without the browser bars: add the game to your Home Screen.</p>
+        <ol class="a2hs-steps">
+          <li><span class="a2hs-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 9.5H6.5v11h11v-11h-2"/><path d="M12 3.5v11M8.5 7L12 3.5 15.5 7"/></g></svg></span><span>Tap <b>Share</b> in the browser's bar</span></li>
+          <li><span class="a2hs-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></g></svg></span><span>Then <b>Add to Home Screen</b></span></li>
+        </ol>
+        <p class="set-fine">The app keeps its own progress. Your sync code (Account) links the two.</p>
+        <button class="btn primary" id="a2hsGot"><span>Got it</span></button>
       </div>
     </div>
   </section>
@@ -7153,11 +7218,13 @@ const FS = {
   ios: /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
 };
 FS.can = FS.web && !FS.app && !/iPhone|iPod/.test(navigator.userAgent) && !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
-const fsWanted = () => (P.fs === undefined ? touchUI : !!P.fs);
+FS.btn = FS.can || (FS.web && FS.ios && !FS.app);   // the menu's fullscreen button: the real thing, or on iPhone the Add to Home Screen steps
+const fsWanted = () => (P.fs === undefined ? touchUI : !!P.fs);   // "Fullscreen in fights" (Settings)
 const isFull = () => !!document.fullscreenElement;
 // Called from taps that start play (Fight, Rematch, Host, Join): browsers only allow fullscreen from a tap.
-function goFull() {
-  if (!FS.can || !fsWanted() || isFull()) return;
+function goFull() { if (fsWanted()) enterFull(); }
+function enterFull() {
+  if (!FS.can || isFull()) return;
   try {
     document.documentElement.requestFullscreen({ navigationUI: "hide" }).then(() => {
       if (touchUI && P.screen !== "up" && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
@@ -7165,7 +7232,7 @@ function goFull() {
   } catch (e) { /* not allowed here */ }
 }
 function leaveFull() { if (isFull()) document.exitFullscreen().catch(() => {}); }
-document.addEventListener("fullscreenchange", () => setTimeout(resize, 60));
+document.addEventListener("fullscreenchange", () => { fsSync(); setTimeout(resize, 60); });   // fsSync (ui/menus.js): the button and the Settings row follow the real state
 
 /* ===================== layout & camera ===================== */
 let W = 1, H = 1, DPR = 1;
@@ -25874,6 +25941,7 @@ function menuImg(img, id) {
   img.dataset.f = id;
 }
 function renderMenu() {
+  fsSync();   // ui/menus.js: the fullscreen button beside the gear (before renderPill, whose menuFit measures the bar with it)
   renderPill();   // the profile plate and the coins, ui/acct.js
   // the Ranked hero: the fighter you play (P.last) in the slanted mask, your tier, your record and the rating to the next tier
   const ti = tierInfo(P.rating), spec = FIG[P.last] || FIGHTERS[0], pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0], hero = $("bRanked");
@@ -25912,8 +25980,8 @@ function menuFit() {
   const me = $("mRank"), bar = me.closest(".mm-bar"), top = me.parentNode;
   if (screens.menu.hidden) return;
   const crowded = () => bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1;
-  me.classList.remove("fit1", "fit2");
-  for (const k of ["fit1", "fit2"]) { if (!crowded()) break; me.classList.add(k); }
+  me.classList.remove("fit1", "fit2"); bar.classList.remove("nofs");
+  for (const k of ["nofs", "fit1", "fit2"]) { if (!crowded()) break; (k === "nofs" ? bar : me).classList.add(k); }   // nofs: the fullscreen button goes first
 }
 if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe(screens.menu);
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => menuFit());   // the web fonts change the widths
@@ -26256,7 +26324,7 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : "Quit to menu";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : match && (match.road || (match.trial && TR.back !== null)) ? "Back to the Road" : "Quit to menu";
   $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   if (match && (match.qm || match.warm)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
   releaseTouch();
@@ -26347,6 +26415,7 @@ function resOpen(look, spec, solo) {
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
+  $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -26441,6 +26510,7 @@ function showResults(R) {
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
+  if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.qm || R.warm) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   show("result");
 }
@@ -27279,6 +27349,7 @@ function roadSheet(i) {
     const first = BOSS_LV.findIndex((_, q) => !(bb & (1 << q)));
     RD.blv = first >= 0 ? first : clamp(RD.blv | 0, 0, BOSS_LV.length - 1);
     $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n, q)).join("");
+    $("rsCombo").hidden = true;
     rdLevel(RD.blv);
     const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? ` ${me.name} has his ${me.palettes[rs].name} skin.` : ` A win gives ${me.name} the ${me.palettes[rs].name} skin.`;
     $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips.`) + skin;
@@ -27289,10 +27360,25 @@ function roadSheet(i) {
     $("rsRule").innerHTML = `${ru.twist ? `<b>${cupEsc(ru.twist)}</b> ` : ""}${cupEsc(ru.rest)}`;
     $("rsLine").textContent = st.line;
     $("rsStars").innerHTML = [...ROAD_STARS, st.bonus.txt].map((n, k) => roadStarHTML(!!(bits & (1 << k)), n)).join("");
+    // a combo star: the combo's name and buttons under the stars (your fighter's own combo follows the fighter); a tap opens the Combo trial on it
+    const rt = roadRouteOf(st, me.id), cb = $("rsCombo");
+    cb.hidden = !rt;
+    if (rt) cb.innerHTML = `<button class="rd-cmb" id="rsComboGo" aria-label="${cupEsc(rt.name)} combo: practise it in the Combo trial"><span class="rd-cn">${cupEsc(rt.name)}</span><span class="rk-row">${routeKeysHTML(rt)}</span><i class="rd-cgo" aria-hidden="true"></i></button>`;
     $("rsReward").textContent = bits === 7 ? "All three stars won." : `Each new star: +${ROAD_STAR_CHIPS} chips.`;
     $("rsGo").querySelector("span").textContent = "Fight";
   }
   modal("roadStop", true);
+  roadSheetFit();
+}
+// a short sheet (a phone held sideways): when the combo line would sit under Fight, the CPU's line makes room for it
+// (offsets, not screen boxes: the app may be turned sideways)
+function roadSheetFit() {
+  const sh = $("roadStopSheet"), cb = $("rsCombo");
+  sh.classList.remove("tight");
+  if (cb.hidden) return;
+  let y = cb.offsetHeight;
+  for (let e = cb; e && e !== sh; e = e.offsetParent) y += e.offsetTop;
+  if (y > sh.clientHeight - sh.querySelector(".rd-acts").offsetHeight) sh.classList.add("tight");
 }
 // a star with its label; with q (a boss level) it is a button that picks that level
 const roadStarHTML = (on, label, q) => q === undefined ? `<span class="rd-st${on ? " on" : ""}"><i aria-hidden="true">★</i><small>${cupEsc(label)}</small></span>`
@@ -27389,14 +27475,48 @@ function roadBossEnd(R) {
 // the Road skin a boss gives this fighter: its palette index (-1 = none)
 const roadSkinOf = (spec, bossId) => spec.palettes.findIndex((p) => p.road === bossId);
 // the results: the stop's three stars (the new ones pop)
+// (a missed combo star names its combo and shows its buttons, as on the stop's sheet: a tap opens the Combo trial on it)
 function roadResStars(R) {
   const el = $("rStars"), rd = R.road;
   el.hidden = !rd;
   if (!rd) return;
+  const rt = rd.boss ? null : roadRouteOf(ROAD[rd.i], R.me.spec.id);
   el.innerHTML = rd.labels.map((n, k) => {
     const on = !!((rd.got | rd.had) & (1 << k)), fresh = !!(rd.got & (1 << k)) && !(rd.had & (1 << k));
+    if (k === 2 && rt && !on) return `<button class="rd-st rd-stk" style="--k:${k}" data-i="${rd.i}" aria-label="Combo star missed: ${cupEsc(rt.name)}. Practise it in the Combo trial"><i aria-hidden="true">★</i><small>${cupEsc(rt.name)}</small><span class="rk-row">${routeKeysHTML(rt)}</span></button>`;
     return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
   }).join("");
+}
+// the results' Retry beside Next stop after a win (Next: Hard after a boss win): its second line names the first star still missing;
+// with all three stars (or no next step, when the big button is Retry already) it hides and the big button takes the row
+function roadResRetry(R) {
+  const rd = R.road, nx = match && match.road && match.road.next, all = rd ? rd.got | rd.had : 7, sub = $("rRetrySub");
+  const rt = !nx || all === 7 || rd.boss || !(all & 2) ? null : roadRouteOf(ROAD[rd.i], R.me.spec.id);
+  const miss = !nx || all === 7 ? "" : rd.boss ? BOSS_LV[rd.lv] : !(all & 2) ? `★ ${ROAD_STARS[1]}` : `★ ${roadStarShort(ROAD[rd.i], R.me.spec.id)}`;
+  $("rRetry").hidden = !miss;
+  $("rRetry").parentNode.classList.toggle("retry", !!miss);
+  sub.textContent = miss;
+  // a narrow Retry (a small phone): "★ Lift & Smash" without the word combo, so the line is never cut
+  if (rt) requestAnimationFrame(() => { if (sub.textContent === miss && sub.scrollWidth > sub.clientWidth + 1) sub.textContent = `★ ${rt.name}`; });
+}
+// a stop's bonus star in a few words, for Retry's second line: "Three-piece combo", "Under 60 s", "Under 2:30", "Finisher KO", "Ulti KO"
+function roadStarShort(st, fid) {
+  const b = st.bonus, rt = roadRouteOf(st, fid);
+  return rt ? `${rt.name} combo` : b.k === "fast" ? `Under ${b.s < 100 ? `${b.s} s` : `${Math.floor(b.s / 60)}:${String(b.s % 60).padStart(2, "0")}`}` : b.k === "fin" ? "Finisher KO" : b.k === "ulti" ? "Ulti KO" : b.txt;
+}
+// the combo route a stop's combo star asks for ("own": the fighter you play's own route), null for the other stars
+function roadRouteOf(st, fid) {
+  const b = st && st.bonus;
+  if (!b || b.k !== "route") return null;
+  const id = b.r === "own" ? (ROUTES.OWN[fid] || {}).id : b.r;
+  return ROUTES.ALL.find((r) => r.id === id) || null;
+}
+// the Combo trial on a stop's combo with the fighter you play; its Back (and the pause menu) return to the stop's sheet (ui/combos.js TR.back)
+function roadTrial(i) {
+  const me = FIG[P.last] || FIGHTERS[0], rt = roadRouteOf(ROAD[i], me.id);
+  if (!rt) return;
+  modal("roadStop", false);
+  goFull(); startTrial(me.id, { route: rt.id, back: i });
 }
 // the results' big button after a win: Next stop / To <boss> after a region's last stop / To <region> after a boss win that opened it,
 // Next: Hard after a boss win; Retry after a loss (menus.js rAgain does it)
@@ -27406,6 +27526,12 @@ function roadAgainLabel() {
   if (nx.lv !== undefined) return `Next: ${BOSS_LV[nx.lv]}`;
   if (nx.k !== undefined) return `To ${ROAD_REG[nx.k].name}`;
   return roadIsBoss(nx.i) ? `To ${roadBossSpec(nx.i - ROAD.length).name}` : "Next stop";
+}
+// Retry beside Next stop: the same stop, or the same boss level
+function roadRetry() {
+  const rd = match && match.road;
+  if (!rd) return;
+  if (rd.boss) roadBossFight(rd.k, rd.lv); else roadFight(rd.i);
 }
 function roadAgain() {
   const rd = match.road, nx = rd.next;
@@ -27436,6 +27562,8 @@ $("roadPrev").addEventListener("click", () => roadGo(-1));
 $("roadNext").addEventListener("click", () => roadGo(1));
 $("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); if (roadIsBoss(RD.sel)) roadBossFight(RD.sel - ROAD.length, RD.blv | 0); else roadFight(RD.sel); });
 $("rsMe").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });   // your card: change fighter
+$("rsCombo").addEventListener("click", (e) => { if (!e.target.closest(".rd-cmb")) return; Sfx.init(); Sfx.ui(); roadTrial(RD.sel); });
+$("rStars").addEventListener("click", (e) => { const b = e.target.closest(".rd-stk"); if (!b) return; Sfx.init(); Sfx.ui(); roadTrial(+b.dataset.i); });
 $("rsStars").addEventListener("click", (e) => { const b = e.target.closest(".rd-lvb"); if (!b) return; Sfx.init(); Sfx.ui(); rdLevel(+b.dataset.q); });
 for (const id of ["rsBack", "rsClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("roadStop", false); });
 screens.roadStop = $("scrRoadStop");
@@ -30239,6 +30367,7 @@ tap("pQuit", () => {
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
   if (match.road) { openRoad(); return; }   // a Road stop or its boss: back to the map, nothing lost
+  if (match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; }   // the Combo trial opened from a Road stop: back to its sheet
   if (!match.ranked && !match.cup && !match.daily) { goMenu(); return; }
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
@@ -30268,6 +30397,7 @@ tap("rAgain", () => {
   if (match && match.road) { roadAgain(); return; }   // ui/road.js: Next stop after a win, Retry after a loss
   startMatch();
 });
+tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: the same stop (or boss level) again, beside Next stop
 tap("rChange", () => {
   if (match && (match.qm || match.warm)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
@@ -30314,8 +30444,12 @@ function chipRow(id, items, cur, pick, disabled) {
 }
 function renderSettings() {
   chipRow("setSound", [[true, "On"], [false, "Off"]], !!P.sound, (v) => { P.sound = v; saveProfile(); });
-  $("setFullRow").hidden = !FS.can;
-  chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
+  // Fullscreen in fights: On / Off, and under it whether the game is fullscreen now; on iPhone the way there (the home-screen app)
+  $("setFullRow").hidden = !FS.btn;
+  $("setFullL").textContent = FS.can ? "Fullscreen in fights" : "Fullscreen";
+  $("setFullNow").textContent = !FS.can ? "Add to Home Screen gives fullscreen" : isFull() ? "Now: fullscreen" : "Now: windowed";
+  if (FS.can) chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
+  else chipRow("setFull", [["how", "How"]], null, () => modal("a2hs", true));
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   cntSettings();   // ui/counter.js: Play counts On / Off
@@ -30325,6 +30459,18 @@ tap("bSettings", openSettings);
 tap("pSettings", openSettings);
 tap("setClose", () => { modal("settings", false); if (mode === "menu") renderMenu(); });
 tap("a2hsOk", () => { P.a2hs = true; saveProfile(); renderMenu(); });
+/* ----- the menu's fullscreen button: it shows the real state (fullscreenchange) and switches with one tap; on iPhone it opens the steps
+   to the home-screen app (#scrA2hs). Hidden in the home-screen app, which is fullscreen already (FS.btn, ui/input.js). ----- */
+function fsSync() {
+  const b = $("bFull"), full = isFull();
+  b.hidden = !FS.btn;
+  b.classList.toggle("on", full);
+  b.setAttribute("aria-label", !FS.can ? "Play without the browser bars" : full ? "Leave fullscreen" : "Fullscreen");
+  if (!screens.settings.hidden) renderSettings();
+}
+tap("bFull", () => { if (!FS.can) modal("a2hs", true); else if (isFull()) leaveFull(); else enterFull(); });
+screens.a2hs = $("scrA2hs");
+for (const id of ["a2hsClose", "a2hsGot"]) tap(id, () => { modal("a2hs", false); if (!P.a2hs) { P.a2hs = true; saveProfile(); if (mode === "menu") renderMenu(); } });   // seen: the one-time tip goes too
 
 /* In sideways mode the browser's own touch scrolling would run along the wrong axis,
    so scrollable panels are dragged by hand, with a little momentum. */
@@ -30532,8 +30678,9 @@ function renderHelpCombos() {
 }
 
 /* ----- the Combo trial: the tutorial's engine, a CPU that stands still, one route at a time ----- */
-const TR = { fid: null, list: [], i: 0, k: 0, t: {}, miss: 0, hold: 0, next: null, place: 0, air: false };
-function startTrial(fid) {
+// o (from a Road stop's combo star, ui/road.js roadTrial): { route: the route to start on, back: the stop whose sheet Back returns to }
+const TR = { fid: null, list: [], i: 0, k: 0, t: {}, miss: 0, hold: 0, next: null, place: 0, air: false, back: null };
+function startTrial(fid, o) {
   Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
   // the dummy is always Odin (the heaviest fighter, the one every route is tested on: tests/combos.js); against Odin himself in another skin
   const me = FIG[fid] || FIGHTERS[0], opp = FIG.odin, mi = P.pal[me.id] || 0;
@@ -30542,10 +30689,11 @@ function startTrial(fid) {
   match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
   meSlot = 0;
   const list = ROUTES.forFighter(me.id), done = new Set(routesDone());
-  Object.assign(TR, { fid: me.id, list, i: Math.max(0, list.findIndex((r) => !done.has(r.id))), hold: 0, next: null });
+  const want = o && o.route ? list.findIndex((r) => r.id === o.route) : -1;
+  Object.assign(TR, { fid: me.id, list, i: want >= 0 ? want : Math.max(0, list.findIndex((r) => !done.has(r.id))), hold: 0, next: null, back: o && o.back !== undefined ? o.back : null });
   enterMatchUI();
   app.classList.toggle("tutpad", touchUI);
-  $("tutNext").hidden = false; $("tutSkip").textContent = "Exit";
+  $("tutNext").hidden = false; $("tutSkip").textContent = TR.back !== null ? "Back" : "Exit";
   trialRoute();
 }
 // a fresh try at the current route: the CPU stands a step in front, at the route's damage
@@ -30631,7 +30779,7 @@ function trialClear(r) {
   $("tut").classList.add("done"); $("tutT").textContent = `${r.name}: ${note}`;
   Sfx.route();
   const done = new Set(routesDone()), nx = TR.list.findIndex((q, j) => j > TR.i && !done.has(q.id));
-  TR.next = nx >= 0 ? nx : (TR.i + 1) % TR.list.length;
+  TR.next = TR.back !== null ? TR.i : nx >= 0 ? nx : (TR.i + 1) % TR.list.length;   // from a Road stop: that stop's combo again until Back (Next moves on)
   TR.hold = 80;
 }
 const want0 = (r) => ROUTES.hits(r);
@@ -32665,7 +32813,7 @@ function tutDone() {
   $("rChange").querySelector("span").textContent = "Practice";
   show("result");
 }
-tap("tutSkip", () => { tutEnd(); goMenu(); });
+tap("tutSkip", () => { if (match && match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; } tutEnd(); goMenu(); });   // a trial from a Road stop: Back to its sheet (openRoad ends the trial)
 tap("hTry", startTutorial);
 
 /* ===================== loop ===================== */
