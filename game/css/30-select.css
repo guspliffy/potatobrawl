@@ -227,9 +227,9 @@
 #app.portrait #scrSelect .sl-head { flex: none; flex-wrap: wrap; height: auto; row-gap: 10px; container-type: normal; }
 #app.portrait #scrSelect .sl-ttl h2 { font-size: 26px; }
 #app.portrait #scrSelect .sl-opts { order: 3; flex-basis: 100%; }
-#app.portrait #scrSelect .sl-opts .pickwrap:last-child { flex: 1 1 0; }
-#app.portrait #scrSelect .sl-opts .pickwrap:last-child .sl-pick { width: 100%; }
-#app.portrait #scrSelect .sl-opts .pickwrap:last-child .sl-pick::after { margin-left: auto; }
+#app.portrait #scrSelect .sl-opts .pickwrap:nth-child(3) { flex: 1 1 0; }
+#app.portrait #scrSelect .sl-opts .pickwrap:nth-child(3) .sl-pick { width: 100%; }
+#app.portrait #scrSelect .sl-opts .pickwrap:nth-child(3) .sl-pick::after { margin-left: auto; }
 #app.portrait #scrSelect .sl-opts .sl-pick { padding: 0 10px; gap: 5px; }
 #app.portrait #scrSelect .sl-opts .sl-pick span { max-width: none; }
 #app.portrait #scrSelect #oppPick span { display: none; }   /* the avatar says who */
@@ -245,3 +245,41 @@
 #app.portrait #scrSelect .sl-go { position: sticky; bottom: 0; z-index: 6; margin: auto -16px 0; padding: 14px 16px max(14px, env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(10, 11, 28, 0), rgba(10, 11, 28, 0.94) 34%); }
 #app.portrait #scrSelect .sl-go .btn { min-height: 54px; }
+
+/* ---------- Team Brawl 2v2 in Practice (ui/screens.js buildPractice puts .sl-team on the screen): the VS chip carries a 2v2 glyph (the
+   two team colours, ui/duo.js TEAM_COL), a fourth chip picks the partner, the map list is the random pool. Header room is tight, so
+   the chips drop their names and labels as the header narrows; upright phones put the Partner chip on its own row. ---------- */
+#scrSelect .sl-glyph { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); box-shadow: 0 1px 0 var(--ink);
+  background: linear-gradient(115deg, #7fd4ff 50%, #ff6a4a 50%); color: var(--ink); font: italic 900 10px/1 var(--display); letter-spacing: -0.03em; }
+#scrSelect #oppPop button.top { order: -1; }   /* Team Brawl 2v2: the first entry of the list on screen, the last one in it */
+#scrSelect.sl-team #oppPick span { max-width: none; }
+#app:not(.short):not(.portrait) #scrSelect .sl-pick .sl-glyph { width: 30px; height: 30px; font-size: 11px; }
+@container (max-width: 1160px) {
+  #app:not(.short):not(.portrait) #scrSelect.sl-team .sl-ttl h2 { font-size: 30px; -webkit-text-stroke-width: 3px; }
+  #scrSelect.sl-team #mapPick small { display: none; }
+  #scrSelect.sl-team #mapPick::before { content: ""; flex: none; width: 12px; height: 15px; transform: skewX(8deg); background: var(--mute);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 1C5.6 1 2 4.5 2 9c0 5.8 8 14 8 14s8-8.2 8-14c0-4.5-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 1C5.6 1 2 4.5 2 9c0 5.8 8 14 8 14s8-8.2 8-14c0-4.5-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+}
+@container (max-width: 940px) {
+  #scrSelect.sl-team .sl-ttl h2 { font-size: 22px; }
+  #scrSelect.sl-team .sl-pick { padding: 0 9px; gap: 5px; }
+  #scrSelect.sl-team #oppPick span, #scrSelect.sl-team #matePick span { display: none; }
+  #scrSelect.sl-team .pickwrap:first-child { flex-shrink: 0; }
+}
+@container (max-width: 700px) {
+  #scrSelect.sl-team .sl-ttl h2 { display: none; }
+  #scrSelect.sl-team .sl-ttl { flex: 0 1 76px; }
+  #scrSelect.sl-team .sl-ttl .kick { font-size: 12px; line-height: 1.25; white-space: normal; }
+  #scrSelect.sl-team .sl-opts { gap: 6px; }
+}
+@container (max-width: 600px) { #scrSelect.sl-team #matePick small { display: none; } }
+/* the VS list has 13 entries: on the 320 px phone its rows are shorter so the last one stays on screen */
+#app.tiny #scrSelect #oppPop { gap: 2px; }
+#app.tiny #scrSelect #oppPop button { min-height: 32px; padding: 3px 10px; }
+#app.tiny #scrSelect #oppPop img, #app.tiny #scrSelect #oppPop .sl-glyph { width: 24px; height: 24px; }
+#app.portrait #scrSelect.sl-team .sl-opts { flex-wrap: wrap; row-gap: 8px; }
+#app.portrait #scrSelect.sl-team .sl-opts .pickwrap:nth-child(4) { flex: 1 1 100%; }
+#app.portrait #scrSelect.sl-team .sl-opts .pickwrap:nth-child(4) .sl-pick { width: 100%; }
+#app.portrait #scrSelect.sl-team .sl-opts .pickwrap:nth-child(4) .sl-pick::after { margin-left: auto; }
+#app.portrait #scrSelect #matePop { left: 0; right: auto; }
+

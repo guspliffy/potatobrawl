@@ -705,6 +705,7 @@ function mgCues(t) {
   cueOnce("taiko", H0, () => Cin.go(() => { Cin.taiko(1); Cin.impact(0.8); }));
   cueOnce("cardDrone", MT.CARD, () => Cin.go(() => Cin.drone(false)));
   if (MG.ulti) cueOnce("gold", H0 + 100, () => Cin.go(() => { Cin.taiko(0.6); Cin.chime(1568); }));   // the third impact frame, the gold one
+  if (MG.cards && MG.cards.mate) cueOnce("mate", MT.CARD + 200, () => Cin.go(() => Cin.stamp(0.5)));   // the 2v2 partner sticker lands
   cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); if (MG.ulti) Cin.chime(1568); }));
   if (S.cues) S.cues(t);
 }
@@ -810,6 +811,12 @@ function mgCardPrep() {
     // a line that is wider than the band (a long name on a narrow screen) is set again, smaller; on the upright phone the sub line also stays clear of the seal
     const x0 = Math.max(16, L.gw * 0.06), room = L.gw - x0 - 8, C = MG.cards;
     if (C.sub.w > room) C.sub = mgWord(FIN.cardSub.toUpperCase(), { size: hh * 0.27 * room / C.sub.w, seed: 13, arc: 30, jit: 0.06, weight: 800, fill: subCol });
+    // a 2v2: the winner's teammate rides along as a round portrait sticker, "WITH <name>" (Fable)
+    const W2 = mgMate();
+    if (W2) {
+      const nm2 = W2.slot === meSlot ? "YOU" : ((match.names && match.names[W2.slot]) || W2.spec.name).toUpperCase();
+      C.mate = { img: mgPic(W2.spec.id), col: W2.team === G.fighters[meSlot].team ? TEAM_COL[0] : TEAM_COL[1], word: mgWord("WITH " + nm2, { size: hh * 0.26, seed: 19, arc: 24, jit: 0.06, weight: 800, fill: "#f1ece2" }) };
+    }
     if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(finWinWord(W), { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
   }
 }
@@ -836,6 +843,7 @@ function mgCard(o, t) {
   masteryGlint(o, nm, x0 - size0(nm) * 0.05, y - nm.h / 2 - hh * 0.02, t);   // ui/mastery.js: Lv 7 and up, your own KO page
   o.drawImage(C.win.cv, x0 + nm.w * 0.86, y - C.win.h / 2 + hh * 0.2, C.win.w, C.win.h);
   o.drawImage(C.sub.cv, x0 - 2, y + hh * 0.2, C.sub.w, C.sub.h);
+  mgMateSticker(o, C, y, sl, t);   // a 2v2: the winner's partner rides along
   o.restore();
   // the seal
   const s = fe(MT.SEAL, MT.SEAL + 140, t);
@@ -853,5 +861,36 @@ function mgCard(o, t) {
   }
 }
 const size0 = (w) => w.h * 0.12;
+// 2v2: the winner's teammate (null outside a 2v2); portraits as images for the canvas, made once
+function mgMate() {
+  if (!(match && match.duo && G && BL.teamGame(G))) return null;
+  const W = G.fighters[FIN.w];
+  return W ? G.fighters.find((f) => f.team === W.team && f.slot !== W.slot) || null : null;
+}
+const MG_PIC = {};
+function mgPic(id) {
+  if (!MG_PIC[id] && PORTRAITS[id]) { const im = new Image(); im.src = PORTRAITS[id]; MG_PIC[id] = im; }
+  return MG_PIC[id] || null;
+}
+// the sticker: under the band at the left (the seal has the right), pops in between the band and the seal, slightly askew
+function mgMateSticker(o, C, y, sl, t) {
+  const M = C.mate, k = fe(MT.CARD + 200, MT.CARD + 360, t);
+  if (!M || k <= 0) return;
+  const hh = C.hh, r = hh * 0.42, x0 = Math.max(16, L.gw * 0.06), cx = x0 + r, cy = y + hh / 2 + sl + hh * (MG.ulti ? 0.3 : 0.22) + r;
+  const sc = 1 + 0.7 * (1 - easeOut(k));
+  o.save(); o.translate(cx, cy); o.rotate(-0.1); o.scale(sc, sc); o.globalAlpha = Math.min(1, k * 3);
+  // the word on a small ink tag to the right of the disc
+  const w = M.word, tw = w.w * 0.92;
+  o.fillStyle = MG_INK; o.beginPath(); o.roundRect(r * 0.55, -w.h * 0.3, tw + r * 0.6, w.h * 0.6, w.h * 0.12); o.fill();
+  o.drawImage(w.cv, r * 0.85, -w.h / 2, w.w, w.h);
+  // the disc: team colour ring, paper ring, the portrait (a plain team-colour disc while the image loads)
+  o.fillStyle = M.col; o.beginPath(); o.arc(0, 0, r, 0, Math.PI * 2); o.fill();
+  o.fillStyle = "#f1ece2"; o.beginPath(); o.arc(0, 0, r * 0.88, 0, Math.PI * 2); o.fill();
+  o.save(); o.beginPath(); o.arc(0, 0, r * 0.8, 0, Math.PI * 2); o.clip();
+  o.fillStyle = M.col; o.fillRect(-r, -r, 2 * r, 2 * r);
+  if (M.img && M.img.complete && M.img.naturalWidth) { const s2 = r * 1.7; o.drawImage(M.img, -s2 / 2, -s2 * 0.42, s2, s2); }
+  o.restore();
+  o.restore();
+}
 
 /*MANGA*/

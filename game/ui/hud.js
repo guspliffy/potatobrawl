@@ -4,7 +4,7 @@
       after every respawn (and at the start of sudden death). The tutorial keeps them on. drawTag (draw-world.js) asks tagAlpha().
    2. The danger edge glow (#dgr): while the player's own fighter is flying out of a hard launch, a thin red glow lights the edge
       the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger). */
-const HX = { g: null, ph: "", sd: false, alive: [true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
+const HX = { g: null, ph: "", sd: false, alive: [true, true, true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
 const TAG_HOLD = 180, TAG_FADE = 30, TAG_IN = 12;   // sim ticks (60 per second): shown 3 s, fades out in 0.5 s, comes back in 0.2 s
 const dgrEls = [...$("dgr").children];               // left, right, top, bottom
 const reducedMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -19,7 +19,7 @@ function tagShow() {
 }
 // once per sim tick of the live match (updateFx)
 function tagStep(g) {
-  if (HX.g !== g) { HX.g = g; HX.ph = ""; HX.sd = false; HX.alive = [true, true]; HX.from = tick; HX.until = Infinity; }
+  if (HX.g !== g) { HX.g = g; HX.ph = ""; HX.sd = false; HX.alive = [true, true, true, true]; HX.from = tick; HX.until = Infinity; }
   if (g.phase === "play" && HX.ph !== "play") HX.until = tick + TAG_HOLD;   // the match starts: markers stay 3 s
   HX.ph = g.phase;
   if (g.sudden && !HX.sd) { HX.sd = true; tagShow(); }   // sudden death puts both fighters back on the stage
@@ -103,14 +103,14 @@ function hudPauseZone() {
 const HU = { g: null, c: [{}, {}], rdy: false, btn: document.querySelector('.pb[data-k="ulti"]') };
 function hudUltReset() {
   HU.g = G; HU.rdy = false;
-  HU.c = [0, 1].map(() => ({ u: "", n: -1, full: false, off: null }));
+  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null }));
   HU.btn.classList.remove("rdy", "on");
   for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none");
 }
 function hudUlt() {
   if (HU.g !== G) hudUltReset();
   const trial = !!(match && match.trial);   // the Combo trial has no ultimates
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < hudN(); i++) {
     const f = G.fighters[i], c = HU.c[i], el = $("pc" + i).querySelector(".pc-ult");
     if (c.off !== trial) { c.off = trial; el.hidden = trial; }
     if (trial) continue;
@@ -134,5 +134,32 @@ function hudUlt() {
     HU.rdy = rdy; HU.btn.classList.toggle("rdy", rdy);
     // the press has already been read by the sim; a finger still down on a hidden button must not leave the input held
     if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
+  }
+}
+
+/* ---------- 2v2: four name cards (the CSS is game/css/65-duo.css) ----------
+   Called from enterMatchUI for every match. In a 2v2 your partner's card (#pc1) moves under yours and loses its right-hand slant, and the
+   foes' two mini cards (#pc2, #pc3, from the #duoCards template) are put in the right-hand column; each card's edge takes its team colour.
+   Any other match puts everything back (pc1 first in the right-hand column) and drops the extra cards, so a 1v1 and a boss fight are
+   exactly as before. A tap on a foe's card is Focus (ui/duo.js). */
+function hudDuo() {
+  const on = !!(match && match.duo), hl = document.querySelector(".hud-l"), hr = document.querySelector(".hud-r"), p1 = $("pc1");
+  app.classList.toggle("duo", on);
+  if (on) hl.appendChild(p1); else if (p1.parentNode !== hr) hr.insertBefore(p1, hr.firstChild);
+  p1.classList.toggle("right", !on); p1.classList.toggle("pmini", on);
+  if (!on) { for (const id of ["pc2", "pc3"]) { const el = $(id); if (el) el.remove(); } }
+  else if (!$("pc2")) {
+    hr.insertBefore($("duoCards").content.cloneNode(true), $("pauseBtn"));
+    for (const i of [2, 3]) $("pc" + i).addEventListener("pointerdown", (e) => { e.preventDefault(); if (mode === "match" && !paused) duoFocus(i); });
+  }
+  for (let i = 0; i < 4; i++) {
+    const el = $("pc" + i);
+    if (!el) continue;
+    if (on) el.style.setProperty("--tc", TEAM_COL[G.fighters[i].team]); else el.style.removeProperty("--tc");
+    el.classList.remove("focus");
+  }
+  for (const i of [1, 2, 3]) {   // the CPUs' potato names under the card's tag
+    const el = $("pc" + i), sub = el && el.querySelector(".pc-sub");
+    if (on && sub) { sub.hidden = false; sub.querySelector(".nm").textContent = match.names[i] || ""; }
   }
 }

@@ -1,7 +1,7 @@
 /*ROUTES*/
 /* ===================== combos: routes in the pop-up, route cards in How to play, the Combo trial ===================== */
 // The pop-up: follows each fighter's combo and names the route its hits make (the best one so far in this combo).
-const comboT = [{}, {}];
+const comboT = [{}, {}, {}, {}];
 function comboRoute(g, e) {
   const t = comboT[e.slot], f = g.fighters[e.slot];
   if (!t || !f) return null;
