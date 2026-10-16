@@ -3458,6 +3458,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   #qmFound.in .qf-t, #qmFound.in .qf-vs, #qmVs.in .vs-h, #qmVs.in .vs-s, #qmVs.in .vs-x, #scrSeason:not([hidden]) .ss-p.on .badge .em { animation: none; }
 }
 
+/* The Boards sheet (ui/boards.js) */
+
 </style>
 
 </head><body><div id="app">
@@ -33067,6 +33069,19 @@ tap("qmWarm", qmWarmStart);
 tap("rQmX", () => { qmCancel(); $("rChange").querySelector("span").textContent = "Quick match"; $("rMenuSub").textContent = ""; });
 tap("ssGo", qmSeasonDone);
 tap("ssClose", qmSeasonDone);
+/* ===================== Ranked vs CPU: a CPU match that counts for its own rank (the server side is cpurank.js) =====================
+   The server deals the match (a ticket: the CPU, its rating and strength, the map and the seed), this phone plays it with no lag and
+   logs your inputs in the online encoding, and the server plays the same match again from them before the CPU rank or the board moves.
+   Fable's design: quick-match/vs-cpu/fable-vs-cpu.md. Styles: css/96-vscpu.css. The Boards sheet is ui/boards.js. */
+const VC = { pl: 0, opl: 0 };   // your place on the CPU board and on the online board (0: not on it)
+// The board data for the Boards sheet (ui/boards.js): k "c" (vs CPU) or "o" (online). Resolves to null without the server.
+//   { k, n, at, top: [{ id, nm, f, r, w, l, pl }], me: null | { i, pn, row } }   i: your place (0: not on the board), pn: placing
+//   matches played (while placing), row: your own row. window.__blBoardMock = { c: {...}, o: {...} } stands in for the server (tests).
+function vcBoard(k) {
+  if (window.__blBoardMock) return Promise.resolve(window.__blBoardMock[k] || null);
+  return Promise.resolve(null);
+}
+/* ===================== The Boards: the CPU board and the online board (ui/vscpu.js fetches them, cpurank.js keeps them) ===================== */
 /* ----- guided practice: short prompts the first time someone plays ----- */
 const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0, dodges: 0 };
