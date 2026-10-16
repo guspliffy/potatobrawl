@@ -119,7 +119,8 @@ async def plates(pg, tag, sizes, back, quick=True, check=None):   # the plate at
         r = await pg.evaluate(PLATE)
         expect(not r['bad'], f'{tag} {w}x{h}: rank plate: {", ".join(r["bad"])}')
         if quick:
-            expect(r['thin'] == (h < w < 820), f'{tag} {w}x{h}: the narrow plate should be {"on" if h < w < 820 else "off"}')
+            want = h < w < 820 and not (w < 760 and h >= 360)   # below 760 wide the side columns shrink (css/96-vscpu.css .slim) and the full plate fits again, except on the shortest phones
+            expect(r['thin'] == want, f'{tag} {w}x{h}: the narrow plate should be {"on" if want else "off"}')
             await overflow(pg, f'{tag} {w}x{h}')
             if check: check(w, h, r)
     await pg.set_viewport_size(back); await pg.wait_for_timeout(300)
