@@ -219,7 +219,7 @@ def label(im, text):
 
 
 with sync_playwright() as p:
-    b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"])
+    b = p.chromium.launch(args=["--disable-gpu", "--autoplay-policy=no-user-gesture-required"])
     meta = b.new_page(); meta.goto((ROOT / "build" / "test.html").as_uri())
     NAMES = meta.evaluate("() => Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, [f.name, f.ultimate.name]]))"); meta.close()
     want_video = not flag("--no-video") and not dev_at
