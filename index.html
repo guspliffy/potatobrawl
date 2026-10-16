@@ -30716,8 +30716,9 @@ window.addEventListener("keydown", (e) => { if (e.code === "KeyN" && !e.repeat &
    runs every CPU itself, frame for frame, from the same random numbers (G.rng = BL.rngOf(seed)): a CPU whose moves crossed the network
    would act on stale frames and lose almost every fight. The CPUs' memory and that counter ride in the repair copy.
    The "lead" is the lowest seat whose phone is still heard: it compares everyone's checksums, sends the repair copy, and hands a friend
-   who drops to a CPU from a frame it names (with their last inputs, so every phone has them). A phone that hears nobody at all plays on
-   alone with CPUs. Design: /mnt/project-files/online-2v2/fable-online2v2.md (Fable). */
+   who drops to a CPU from a frame it names (with their last inputs, so every phone has them). That frame comes after every input of
+   theirs any phone holds: each phone shows the lead what it has first (tbHold). A phone that hears nobody at all plays on alone with
+   CPUs. Design: /mnt/project-files/online-2v2/fable-online2v2.md (Fable). */
 const TB_RULES = { l: 3, t: 4, b: 1 };      // Team Brawl's rules: three hearts, 4:00, one match, a map from the random pool
 const TB_LV = [1, 2, 3];                   // the CPUs row (Easy, Normal, Hard) as LEVELS indices
 const TB_SEATS = [0, 1, 2, 3];
@@ -30725,6 +30726,7 @@ const TB_SILENT = 15000;   // nothing at all from a friend this long (their pres
 const TB_PING = 3000;      // a Focus ping with a person as partner: shown 3 s, one every 3 s
 const TB_PART = 1600;      // repair copy pieces: smaller than a 1v1's, so a piece fits next to the claims and the start message
 const TB_RELAY = 60;       // frames of a dropped friend's last inputs passed on with the claim
+const TB_HOLD = 3000;      // the lead waits at most this long for every phone's copy of a dropped friend's last inputs
 const tbTeam = (s) => (s < 2 ? 0 : 1), tbMate = (s) => s ^ 1, tbFoes = (s) => (s < 2 ? [2, 3] : [0, 1]);
 const tbLvName = (lv) => LEVELS[TB_LV[lv]].name;
 // The lobby's third mode. P.onTeam = { on, lv (0-2) }: this device's last pick (not synced), Normal at first
@@ -30970,6 +30972,7 @@ function tbStartMatch(st) {
   for (let i = 0; i < NET.D; i++) NET.myLog.push(NEUTRAL);
   const now = performance.now(), d = LEVELS[TB_LV[st.lv]].d;
   TM = { st, d, hum: st.h.slice(), logs: [[], [], [], []], frs: [0, 0, 0, 0], heard: [now, now, now, now], last: [], bots: [], cpuFrom: [], gone: [], cl: [],
+    hd: [[], [], [], []], outT: [], hoSig: "[]",
     lastSync: [0, 0, 0, 0], rx: [], tx: null, acks: [], syncSent: null, okAfter: [], focusQ: -1, focusF: 0, echo: [null, null, null, null], rttS: [[], [], [], []],
     pgSeen: new Set(), wait: -1, solo: false, lost: false, fp: 0, fpSeen: 0, ping: null, pingT: -1e9, hits: [], tagT: [], finBy: -1, bk: 0 };
   for (const s of TB_SEATS) if (st.h[s] && s !== me) for (let i = 0; i < NET.D; i++) TM.logs[s].push(NEUTRAL);
@@ -30981,7 +30984,7 @@ function tbStartMatch(st) {
   const names = st.h.map((p, s) => (s === me ? NET.myName || "You" : p ? "Friend" : st.nm[s]));
   match = { online: true, duo: true, tb: true, ranked: false, level: tbLvName(st.lv), lv: st.lv, d, names, caught: 0 };
   NET.phase = "match"; NICE.length = 0;
-  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, rt: null, cl: null, fp: null, bk: null, go: null, em: 0 });
+  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, rt: null, cl: null, ho: null, fp: null, bk: null, go: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
   tbNames();
@@ -31078,7 +31081,13 @@ function tbReadAll(now) {
     if (!peer || s === meSlot || TM.cpuFrom[s] !== undefined) continue;
     const p = peers.find((q) => q.peer === peer);
     if (!p) { TM.gone[s] = true; continue; }
-    if (p.presence !== TM.last[s]) { TM.last[s] = p.presence; TM.heard[s] = now; tbRead(s, p.presence || {}, now); }
+    if (window.__blDeaf === s) continue;   // tests: this phone misses a friend's last messages before they leave (tests/pwon2v2.py)
+    if (p.presence !== TM.last[s]) {
+      TM.last[s] = p.presence;
+      // a friend who left and came back still goes to a CPU: no more of their inputs here, so this phone never plays past the handover
+      if (TM.gone[s]) tbReadLate(s, p.presence || {});
+      else { TM.heard[s] = now; tbRead(s, p.presence || {}, now); }
+    }
     if (!TM || NET.phase !== "match") return;
   }
   // claims and repair copies can also come from a friend already handed to a CPU here (they may still be in the room)
@@ -31112,6 +31121,9 @@ function tbRead(s, pr, now) {
     }
   }
   if (Number.isInteger(pr.fr)) TM.frs[s] = pr.fr;
+  // the inputs this friend holds of anyone who dropped (tbHold); the lead reads them before it names the handover frame
+  TM.hd[s] = Array.isArray(pr.ho) ? pr.ho.filter((h) => Array.isArray(h) && TB_SEATS.includes(h[0]) && h[0] !== meSlot && TM.hum[h[0]] &&
+    Number.isInteger(h[1]) && h[1] >= 0 && typeof h[2] === "string" && h[2].length <= TB_RELAY * 2) : [];
   tbReadLate(s, pr);
   if (!TM || NET.phase !== "match") return;
   // the lead compares checksums; a match after the repair copy's frame means that friend has it
@@ -31140,16 +31152,28 @@ function tbLive(now) {
   return TB_SEATS.filter((s) => tbPerson(s) && (s === meSlot || (!TM.gone[s] && now - TM.heard[s] <= TB_SILENT)));
 }
 const tbLeadSlot = (now) => tbLive(now)[0];
-/* Drops. A friend who left the room, or was not heard for TB_SILENT: the lead hands their fighter to a CPU from the first frame it has no
-   input of theirs for, and passes on their last TB_RELAY inputs so a phone that missed some can still play up to that frame. When two or
-   more friends go quiet at once and nobody is heard any more, this phone is the one cut off: it plays on alone (Connection lost). */
+/* Drops. A friend who left the room, or was not heard for TB_SILENT: the lead hands their fighter to a CPU from the first frame nobody
+   has an input of theirs for, and passes on their last TB_RELAY inputs so a phone that missed some can still play up to that frame.
+   Phones can hold different amounts of those inputs (their last message and the leave can come in together, and then the leave wins),
+   and a phone that played a frame with the friend's own input cannot take it back. So every phone first shows the lead the inputs it
+   holds (tbHold), and the lead takes the handover past all of them; a phone that has not shown them after TB_HOLD is left to a repair.
+   When two or more friends go quiet at once and nobody is heard any more, this phone is the one cut off: it plays on alone (Connection
+   lost). */
 function tbLead(now) {
   const others = TB_SEATS.filter((s) => s !== meSlot && tbPerson(s));
   const out = others.filter((s) => TM.gone[s] || now - TM.heard[s] > TB_SILENT);
+  tbHold(out);
+  for (const s of others) if (!out.includes(s)) TM.outT[s] = undefined;   // heard again: a later drop waits for the holds afresh
   if (!out.length) return;
   if (out.length === others.length && out.filter((s) => !TM.gone[s]).length >= 2) { tbSolo(); return; }
   if (tbLeadSlot(now) !== meSlot) return;
+  const live = tbLive(now).filter((k) => k !== meSlot);
+  let n = 0;
   for (const s of out) {
+    if (TM.outT[s] === undefined) TM.outT[s] = now;
+    const held = live.map((k) => TM.hd[k].find((h) => h[0] === s));
+    if (held.some((h) => !h) && now - TM.outT[s] < TB_HOLD) continue;
+    for (const h of held) if (h) tbFill(s, h[1], h[2], Infinity);
     const log = TM.logs[s];
     let F = NET.frame;
     while (log[F] !== undefined) F++;
@@ -31158,21 +31182,39 @@ function tbLead(now) {
     for (let k = from; k < F; k++) str += packIn(log[k] === undefined ? NEUTRAL : log[k]);
     TM.cl.push([s, F, from, str]);
     tbCpuFrom(s, F);
+    n++;
   }
-  namedPresence({ cl: TM.cl.slice() });
+  if (n) namedPresence({ cl: TM.cl.slice() });
+}
+// every phone: the last inputs it holds of each friend who is out (up to TB_RELAY frames, ending where its log of them ends)
+function tbHold(out) {
+  const ho = out.map((s) => {
+    const log = TM.logs[s];
+    let E = NET.frame;
+    while (log[E] !== undefined) E++;
+    let from = E;
+    while (from > 0 && E - from < TB_RELAY && log[from - 1] !== undefined) from--;
+    let str = "";
+    for (let k = from; k < E; k++) str += packIn(log[k]);
+    return [s, from, str];
+  });
+  const sig = JSON.stringify(ho);
+  if (sig !== TM.hoSig) { TM.hoSig = sig; namedPresence({ ho: ho.length ? ho : null }); }
+}
+// someone's copy of seat s's inputs from frame `from` on, into this phone's log: only frames it misses, only before frame `to`
+function tbFill(s, from, str, to) {
+  for (let k = 0; k * 2 + 1 < str.length && from + k < to; k++) {
+    const a = B64I[str[k * 2]], b = B64I[str[k * 2 + 1]];
+    if (a === undefined || b === undefined || a * 64 + b >= IN_END) break;
+    if (TM.logs[s][from + k] === undefined) TM.logs[s][from + k] = a * 64 + b;
+  }
 }
 function tbClaim(c) {
   if (!Array.isArray(c) || !TB_SEATS.includes(c[0]) || !Number.isInteger(c[1]) || c[1] < 0 || !TM.hum[c[0]]) return;
   const [s, F, from, str] = c;
   if (s === meSlot) { tbSolo(); return; }   // the others no longer hear me: I play on alone
   if (TM.cpuFrom[s] !== undefined && TM.cpuFrom[s] <= F) return;
-  if (Number.isInteger(from) && from >= 0 && typeof str === "string") {
-    for (let k = 0; k * 2 + 1 < str.length && from + k < F; k++) {
-      const a = B64I[str[k * 2]], b = B64I[str[k * 2 + 1]];
-      if (a === undefined || b === undefined || a * 64 + b >= IN_END) break;
-      if (TM.logs[s][from + k] === undefined) TM.logs[s][from + k] = a * 64 + b;
-    }
-  }
+  if (Number.isInteger(from) && from >= 0 && typeof str === "string") tbFill(s, from, str, F);
   tbCpuFrom(s, F);
 }
 function tbCpuFrom(s, F) {

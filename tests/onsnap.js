@@ -53,8 +53,9 @@ for (const boss of BL.BOSSES) {
 
 // ----- an online Team Brawl (ui/online-team.js): the copy is { g: the game, b: the CPUs' memory by seat, r: their random counter, c: the
 // takeovers }, cut into TB_PART pieces. Three CPUs (one person), the largest copy seen; each piece inside a whole presence with every other
-// field at its largest (the board, the start message, three claims with their relayed inputs); joined, it restores into a fresh game and
-// fresh CPUs that play on frame for frame (checksums and the random counter).
+// field at its largest (the board, the start message, three claims with their relayed inputs and three holds of a dropped friend's
+// inputs, more than can be up at once); joined, it restores into a fresh game and fresh CPUs that play on frame for frame (checksums and
+// the random counter).
 const tsrc = fs.readFileSync(__dirname + "/../game/ui/online-team.js", "utf8");
 const TPART = +(/const TB_PART = (\d+);/.exec(tsrc) || [])[1], RELAY = +(/const TB_RELAY = (\d+);/.exec(tsrc) || [])[1];
 if (!TPART || !RELAY) fail("TB_PART or TB_RELAY not found in ui/online-team.js");
@@ -69,7 +70,7 @@ const tins = (g, bots) => g.fighters.map((f, i) => BL.teamBotInput(g, f, bots[i]
 const tcopy = (g, bots) => ({ g: BL.serialize(g), b: { 1: BL.botSave(g, bots[1]), 2: BL.botSave(g, bots[2]), 3: BL.botSave(g, bots[3]) }, r: g.rng.s | 0, c: [[1, 999999]] });
 const tother = { role: "host", f: "alchemist", pi: 3, tb: { lv: 2, bd: [peer, peer, peer, peer], open: false }, m: 99999, s: 999999, i: "Az".repeat(72), fr: 999999, ck: [999999, 4294967295],
   pg: 999999999, po: [999999999, 999999999, 999999999, 999999999], sa: [99999, 15], rm: 100000, bk: 99999, fp: [99999, 3], sw: 99999, em: 99999, rt: 9999,
-  cl: [1, 2, 3].map((k) => [k, 999999, 999999, "Az".repeat(RELAY)]),
+  cl: [1, 2, 3].map((k) => [k, 999999, 999999, "Az".repeat(RELAY)]), ho: [1, 2, 3].map((k) => [k, 999999, "Az".repeat(RELAY)]),
   start: { id: 99999, seed: 999999999, d: 15, t: 1, lv: 2, h: [peer, null, null, null], f: ["alchemist", "gunslinger", "alchemist", "gunslinger"], p: [3, 3, 3, 3], nm: [null, "Yukon Yolanda", "Yukon Yolanda", "Yukon Yolanda"], rtt: 9999 } };
 {
   let big = null, bigN = 0, bigAt = null;
