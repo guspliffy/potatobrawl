@@ -87,7 +87,7 @@ const ACT = [
   { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
 const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
-const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
+const acShown = () => [...ACT_SHOWN.filter((id) => (window.__blQuick && !window.__blNoQuick) || (id !== "cpu1" && id !== "cpu10")), ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];   // the CPU board titles only where the boards are
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
   let t = pick || ACT.find((t) => t.ok());

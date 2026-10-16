@@ -610,9 +610,8 @@ p { margin: 8px 0 0; }
   // ---------- 6b. the names on the Ranked vs CPU boards (cpurank.js): Hide shows one as "Potato" on both boards
   function secBoard() {
     var b = st.data.board;
-    if (!Array.isArray(b)) return document.createDocumentFragment();
-    var s = sec("Board names", b.length ? plural(b.length, "player") + " on the CPU and online boards" : "Nobody on the boards yet");
-    if (!b.length) { s.appendChild(note("Players show up here after their 5 placement matches.")); return s; }
+    if (!Array.isArray(b) || !b.length) return document.createDocumentFragment();   // nobody on the boards (or no accounts): nothing to hide
+    var s = sec("Board names", plural(b.length, "player") + " on the CPU and online boards");
     var best = function (x) { return Math.min(x.c || 999, x.o || 999); };
     b.slice().sort(function (x, y) { return best(x) - best(y); }).slice(0, 150).forEach(function (x) {
       var where = [x.c ? "CPU #" + x.c : "", x.o ? "online #" + x.o : ""].filter(Boolean).join(" · ");

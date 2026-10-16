@@ -302,7 +302,7 @@ async def main():
             await shot(C, 'rivals-390'); await overflow(C, 'C rivals 390')
 
             # ---- 6. C: VS CPU (Ranked vs CPU): the server deals the match, the VS screen wears the CPU sticker, a forfeit counts on the CPU rank
-            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)   # the Account sheet from step 5
+            await tap(C, '#acClose'); await C.wait_for_timeout(300)   # the Account sheet from step 5
             await wait(C, "window.__blastline.mode === 'menu'", 'C: the menu')
             await tap(C, '#bRanked')
             await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match again')
