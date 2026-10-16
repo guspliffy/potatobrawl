@@ -1,9 +1,32 @@
-# PotatoBrawl handoff (updated 2026-10-16: Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby, UI only; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Online 2v2 (2026-10-16, branch claude/project-thread-x0j4lg, PROTO 15, players reload once): Team Brawl for up to four phones through
+  Play friends. Plan https://claude.ai/code/artifact/e0202bd2-7a22-4909-ad75-9687c69130d9 (16 defaults, Jonny's go 05:54 UTC), Fable's
+  board /mnt/project-files/online-2v2/fable-online2v2.md. No server change (rooms hold 64; presence stays under 4 KB).
+  - Lobby: Mode 1 vs 1 | 2 vs 2 | Vs boss; 2 vs 2 swaps Lives / Time / Format for the CPUs row (Easy / Normal / Hard, P.onTeam, device
+    only); rules are fixed (3 hearts, 4:00, one match, a pool map from the seed). Hosting opens the board in the host card: Ice (slots 0
+    and 1, #7fd4ff) | Ember (slots 2 and 3, #ff6a4a), the same on every phone. Friends Join from the list ("Team brawl · N seats open ·
+    Normal CPUs", "full" disables Join), sit Ice first then Ember, may Switch side to a free seat across; empty seats are CPUs. Only the
+    host starts (needs one friend); START glows with a chime when all four seats hold people. The Mode row hides while the board is up.
+  - Start: every seated phone pings every other through its presence (pg, po = echoes by seat, rt = its worst median); the host sets
+    D = clamp(ceil((rtt/2 + 4) / 16.67) + 1, 3, 15) and publishes the start {id, seed, d, t: 1, lv, h: peer|null x4, f, p, nm (CPU names)}.
+  - Match (ui/online-team.js): the 1v1 lockstep with one input log per person; every phone runs every CPU itself from G.rng =
+    BL.rngOf(seed) (a CPU whose moves crossed the network would act on stale frames). Focus taps ride in the input code (FOCUS_BASE + q*2
+    + k) so a CPU partner turns on the same frame everywhere; with a person as partner a tap is a ping (ring + name, 3 s). The lead (the
+    lowest seat still heard) compares checksums (checksum ^ rng counter) and sends the repair copy {g, b: CPU memory, r, c: takeovers}
+    in TB_PART pieces with acks; it also hands a friend who left (or was silent 15 s) to a CPU from the first frame it has no input for,
+    with their last 60 inputs (claims in presence `cl`). A phone that hears nobody plays on alone ("Connection lost"; Retry vs CPU).
+  - Results: Victory / Defeat with both teams' names (a dropped friend reads "Name (CPU)"); chips 15 / 8 / 5 (+2 a KO) while a person is
+    among the foes at the end, else only a Hard win pays 20; friend W/L only with people among the foes; Dynamic Duo counts online wins.
+    Rematch when everyone still here taps it (the lowest seat starts it, CPUs fill seats of friends who left); Board takes everyone
+    back to the seats (the brawl is listed again). TAG TEAM! pops when you and your partner hit the same foe within half a second.
+  - Play counts: mode "online-team" (stats page "Online 2v2"). Tests: tests/pwon2v2.py (four browsers, check.sh 5f) and onsnap.js
+    (the copy with three CPUs fits a presence in pieces and restores frame for frame).
+  - Leftovers: no voice or chat; the host can't kick; a friend can't change the CPU level; no ranked 2v2; Quick match is 1v1 only (2v2 stays invite-only).
 - Quick match (2026-10-16, branch claude/server-accounts-quick-match-1gfirf, step 4 of the build order; no PROTO bump, players reload
   once). Plan doc https://claude.ai/code/artifact/e5f195e3-6626-4794-bb6c-fbd5c807bc6f (17 decision rows, Jonny took every default).
   Live once update.txt is pasted (accounts are already on, on the live server since 2026-10-16; without ACCOUNTS_DIR a server offers
@@ -460,12 +483,12 @@ index.html is committed with every source change (check.sh flags a stale one).
     (`escapeInput`); lethal only if all four die. Event "lethal" {slot, by, final, mv, fin, chg, kb, dirx,
     diry}. On the last life (`final`) the loser is `doomed` (intangible, KO counted at once) and endGame runs
     on that frame ("game" event `hit: true`); the blast line later only removes the doomed loser.
-- ui/: one script in 22 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it, mastery after combos for the same reason); base.js opens the IIFE and loop.js
+- ui/: one script in 30 parts, joined in order by build.py (UI_PARTS; daily after cup, combos after menus so acct.js's titles can read it, mastery after combos for the same reason); base.js opens the IIFE and loop.js
   closes it, so a part alone is not valid JS.
   base (profile in localStorage `potatobrawl.profile.v1`, tiers, sound) · input (touch stick, pad, keys,
   gamepad) · view (layout, camera, colors) · draw-fighters (2D fighters) · draw-world (2D stage, projectiles)
   · effects (fx, /*SKINFX*/ placeholder, the frame-time watchdog PERF, render, sim events) · screens (menu, select, match,
-  results; CPU_NAMES + the CPU's name under its HUD card) · hud (match HUD extras, below) · online (NET, PROTO, lockstep, presence) · menus (button wiring, settings, help) · tutorial
+  results; CPU_NAMES + the CPU's name under its HUD card) · hud (match HUD extras, below) · online (NET, PROTO, lockstep, presence) · online-team (online Team Brawl: board, four-phone lockstep, CPU seats, drops, repair copy) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
 - ui/cup.js (after screens): the offline tournament, UI only. You + 7 CPUs (potato names, fighters, ratings seeded around yours:
   quarter-final opponent about -30, semi-final opponent from the other quarter in your half about +40, final opponent from the other
@@ -645,6 +668,11 @@ tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
 (online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,
 KO page + Victory + Next: Hard on both, a dropped friend, the lobby at four sizes; check.sh 5c) ·
+pwon2v2.py (online Team Brawl in up to five browsers against a server on port 8099: lobby 2 vs 2 + CPUs row, the board, Join,
+Switch side, host + friend vs two CPUs, a Focus ping, a forced desync repaired, Victory / Rematch / Defeat / Board, four friends (Ice is
+full, START glows, a fifth sees "full"), a repair on four phones, a friend's page and then the host's page closing (CPU from the same
+frame everywhere, the next friend leads), a CPU partner's Focus on every phone, the rematch of the two left; the board at four sizes;
+about 7 minutes; check.sh 5f) ·
 pwskins.py (the Skins bar, the Skin Rack states / lines / two-tap Buy / Wear / closing, a Road boss beaten with another fighter, the
 lobby's Fight Card + "Use <fighter>" + Back + the public name input; tags se phone desk upright; check.sh 6a) ·
 pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
@@ -678,7 +706,7 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   none for new accounts; the server replays staked matches). Then 6 leaderboards (weekly boss boards) and replays.
 - Quick match leftovers: a phone whose own connection drops for more than 15 s in a Ranked match loses ("quiet"); an online-rank
   leaderboard is step 6; Casual matches are not recorded on the server (no Casual history).
-- NEXT: 2v2 (session 6, offline vs CPUs first, then online). Online boss fights are done (see State). Their leftovers: the team colour
+- 2v2 is done offline and online (see State). Online boss fight leftovers: the team colour
   for both players' markers (Fable's idea) is not done; a guest picks no boss or level (the host's pick); a phone whose own
   connection drops plays on with a CPU too (it can't tell who dropped); P.friendW/L do not count boss fights.
   Boss leftovers: The Field, The Kitchen and The Deep stay out of the ranked draw until each gets its own balance pass; a

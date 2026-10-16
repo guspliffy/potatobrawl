@@ -29,7 +29,8 @@ function startDuo(o) {
   const map = BL.MAPS[pick] && BL.MAPS[pick].pool !== false ? pick : randMap();
   const players = [{ spec: me, pal: me.palettes[mine] || me.palettes[0] }, { spec: mate, pal: skin(mate) }, { spec: a, pal: skin(a) }, { spec: b, pal: skin(b) }];
   G = newGame({ players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
-  const names = ["You", cpuName(), cpuName(), cpuName()];
+  const names = ["You"];
+  for (let i = 0; i < 3; i++) names.push(cpuNameNot(names));   // three different potato names
   match = { duo: true, level: LEVELS[lv].name, lv, d, cpu: names[1], names, team: duoTeamName(), caught: 0,
     bots: [null, ...[mate, a, b].map((s) => makeBot(d, BL.BOT_STYLES[s.id]))] };
   meSlot = 0;
@@ -39,6 +40,7 @@ function startDuo(o) {
 function duoInputs(pi) { return [pi, ...[1, 2, 3].map((i) => BL.teamBotInput(G, G.fighters[i], match.bots[i]))]; }
 // Focus: your partner goes after this foe for DUO_FOCUS ticks (tap a foe's card; Tab on a keyboard picks the next foe)
 function duoFocus(slot) {
+  if (match && match.tb) { tbFocus(slot); return; }   // online (ui/online-team.js): through the inputs, or a ping for a person as partner
   const f = G && match && match.duo && G.fighters[slot], b = match && match.bots && match.bots[1];
   if (!f || f.team === 0 || f.state === "gone" || !b) return;
   b.focus = slot; b.focusT = G.t + DUO_FOCUS;
@@ -46,28 +48,31 @@ function duoFocus(slot) {
 }
 function duoFocusNext() {
   if (!(G && match && match.duo)) return;
+  if (match.tb) { tbFocusNext(); return; }
   const b = match.bots[1], cur = b.focusT > G.t ? b.focus : -1;
   const foes = [2, 3].filter((i) => G.fighters[i].state !== "gone");
   if (foes.length) duoFocus(foes[(foes.indexOf(cur) + 1) % foes.length]);
 }
 // the foe the partner is on because you pointed at it (-1 = none): the ember ring on that foe's card
-const duoFocused = () => (G && match && match.duo && match.bots[1].focusT > G.t ? match.bots[1].focus : -1);
+const duoFocused = () => (G && match && match.tb ? tbFocused() : G && match && match.duo && match.bots[1].focusT > G.t ? match.bots[1].focus : -1);
 // a Catch: the pop over the two (in the catcher's team colour), and your own Catches counted for Account > Stats
 const DUO_TIPS = [["Catch!", "Touch your partner while they fly to stop the launch"], ["Focus", "Tap a foe's card (Tab on a keyboard): your partner goes after them"]];
 function duoEvent(g, e, live) {
+  if (match && match.tb) tbEvent(g, e, live);   // online: TAG TEAM! and who landed the final launch (ui/online-team.js)
   // the first few 2v2s: a tip a moment after GO (the Catch, then Focus, then the Catch again); kept on this device only
   if (e.type === "go" && live && match && match.duo && (P.duoTip | 0) < 3) {
     const [a, b] = DUO_TIPS[(P.duoTip | 0) % 2], m = match;
     P.duoTip = (P.duoTip | 0) + 1; saveProfile();
-    setTimeout(() => { if (mode === "match" && match === m && G.phase === "play") showBanner(a, b, "", 2600, TEAM_COL[0]); }, 900);
+    setTimeout(() => { if (mode === "match" && match === m && G.phase === "play") showBanner(a, b, "", 2600, TEAM_COL[G.fighters[meSlot].team]); }, 900);
     return;
   }
   if (e.type !== "catch") return;
-  chgPops.push({ x: e.x, y: e.y + 46, t: 0, pop: 1, col: g.fighters[e.by].team === g.fighters[meSlot].team ? TEAM_COL[0] : TEAM_COL[1], txt: "CAUGHT!" });
+  chgPops.push({ x: e.x, y: e.y + 46, t: 0, pop: 1, col: TEAM_COL[g.fighters[e.by].team], txt: "CAUGHT!" });   // team colours are fixed: Ice, Ember
   Sfx.tone(520, 880, 0.14, "triangle", 0.05);
   if (live && match && match.duo && e.by === meSlot) match.caught++;
 }
-// team colours (Fable): ice blue for your team, ember red for the foes (rims, card edges, the Catch pop)
+// team colours (Fable): ice blue for team 0, ember red for team 1 (rims, card edges, the Catch pop). Offline you are always team 0;
+// online (ui/online-team.js) they are the same on every phone, so four people agree on who is Ice and who is Ember.
 const TEAM_COL = ["#7fd4ff", "#ff6a4a"];
 
 /* ----- the end of a 2v2: results, chips on Hard, the win and Catch counts (synced) and the title ----- */
@@ -86,7 +91,7 @@ function duoMatchEnd(forfeit) {
   }
   showResults(R);
 }
-function duoVs() { return `You & ${match.cpu} vs ${match.team}`; }
+function duoVs() { return match.tb ? tbVs() : `You & ${match.cpu} vs ${match.team}`; }
 // the results' story line for a 2v2
 function duoResLine(R) {
   const D = R.duo, us = ["You and ", { b: D.names[1] }, ` (${D.mate.spec.name})`], them = [{ b: D.team }, ` (${D.foes[0].spec.name} and ${D.foes[1].spec.name})`];

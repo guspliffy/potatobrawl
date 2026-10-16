@@ -36,7 +36,7 @@ function cntMode(m) {
   if (m.tutorial) return "tutorial";
   if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
   if (m.warm) return "warmup";
-  if (m.online) return m.boss ? "online-boss" : "online";
+  if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
   if (m.boss) return m.road ? "road-boss" : "boss";
   if (m.duo) return "team";   // Team Brawl 2v2 (ui/duo.js; match.team is the CPU team's name)
   return m.road ? "road" : m.daily ? "daily" : m.cup ? "cup" : m.ranked ? "ranked" : "practice";

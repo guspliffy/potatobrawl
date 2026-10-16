@@ -192,7 +192,7 @@ p { margin: 8px 0 0; }
   var WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   var EMBER = "239,122,82";
   var tbl = function (o) { return Object.assign(Object.create(null), o); };
-  var MODES = tbl({ tutorial: "Tutorial", trial: "Combo trial", practice: "Practice", ranked: "Ranked", daily: "Daily Potato", cup: "Tournament", road: "Road", boss: "Boss fight", "road-boss": "Road boss", online: "Online", "online-boss": "Online boss", team: "Team Brawl 2v2", "quick-r": "Quick match Ranked", "quick-c": "Quick match Casual", warmup: "CPU warm-up" });
+  var MODES = tbl({ tutorial: "Tutorial", trial: "Combo trial", practice: "Practice", ranked: "Ranked", daily: "Daily Potato", cup: "Tournament", road: "Road", boss: "Boss fight", "road-boss": "Road boss", online: "Online", "online-boss": "Online boss", "online-team": "Online 2v2", team: "Team Brawl 2v2", "quick-r": "Quick match Ranked", "quick-c": "Quick match Casual", warmup: "CPU warm-up" });
   var FIGHTERS = tbl({ dragon: "Dragon", samurai: "Samurai", wizard: "Wizard", phoenix: "Phoenix", odin: "Odin", alchemist: "Alchemist", gunslinger: "Gunslinger", reaper: "Reaper" });
   var BOSSES = tbl({ scratch: "Old Scratch", zorp: "Zorp", kraken: "Kraken Spud" });
   var LEVELS = ["Normal", "Hard", "Nightmare"];
@@ -576,11 +576,12 @@ p { margin: 8px 0 0; }
   // ---------- 6. online
   function secOnline() {
     var R = C.R, d = R.days;
-    var isOn = function (m) { return m === "online" || m === "online-boss"; };
-    var started = S(d, "ms:online") + S(d, "ms:online-boss"), fin = finishedOf(d, isOn);
-    var drops = S(d, "me:online:drop") + S(d, "me:online-boss:drop"), again = S(d, "again:online"), inv = S(d, "inv");
+    var ON = ["online", "online-boss", "online-team"], isOn = function (m) { return ON.indexOf(m) >= 0; };
+    var sum = function (f) { return ON.reduce(function (a, m) { return a + S(d, f(m)); }, 0); };
+    var started = sum(function (m) { return "ms:" + m; }), fin = finishedOf(d, isOn);
+    var drops = sum(function (m) { return "me:" + m + ":drop"; }), again = sum(function (m) { return "again:" + m; }), inv = S(d, "inv");
     var peaks = d.map(function (day) { return cnt(day, "peak"); }), pk = Math.max.apply(null, peaks.concat(0));
-    var s = sec("Online", "Online and Online boss modes · " + R.now);
+    var s = sec("Online", "Online, Online boss and Online 2v2 · " + R.now);
     if (!started && !fin && !again && !inv && !pk) { s.appendChild(note("No online play " + R.now + " yet.")); return s; }
     var peakSub = null;
     if (R.id !== "today" && pk > 0) {
