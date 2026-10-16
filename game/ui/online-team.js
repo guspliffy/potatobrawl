@@ -665,7 +665,8 @@ function tbFinish() {
   const res = G.winner === me.team ? 1 : Number.isInteger(G.winner) && G.winner >= 0 ? 0 : 0.5;
   const people = foes.filter((s) => tbPerson(s)).length;   // people still among the foes at the end: friend-match pay
   const op = G.fighters[foes[1]].kos > G.fighters[foes[0]].kos ? G.fighters[foes[1]] : G.fighters[foes[0]];
-  const R = { res, online: true, tb: true, me, op, lines: [], total: 0, conn: TM.lost, mateFin: TM.finBy === m && res === 1,
+  const R = { res, online: true, otb: true, me, op,   // otb: an online team brawl (R.ta / R.tb are a ranked match's tiers)
+    lines: [], total: 0, conn: TM.lost, mateFin: TM.finBy === m && res === 1,
     duo: { mate: G.fighters[m], foes: foes.map((s) => G.fighters[s]), names: match.names, lv: match.level, caught: match.caught } };
   if (people) {
     if (res === 1) R.lines.push([people === 2 ? "Win against friends" : "Win against a friend", 15]);
