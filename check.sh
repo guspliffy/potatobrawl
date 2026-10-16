@@ -249,10 +249,11 @@ else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
 }
 
 # 6c. Match HUD (UI only): timer strip, pause icon under the opponent's card, YOU/CPU markers fading and coming back, percent tint,
-#     danger edge glow for a hard launch of the player's own fighter, none in the KO finisher. Pictures in build/shots/hud.
+#     danger edge glow for a hard launch of the player's own fighter, none in the KO finisher, and the ink-glass touch buttons keep
+#     their touch areas at five sizes (pictures of pressed, charging, cooling, ULTI ready). Pictures in build/shots/hud.
 s_hud() {
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwhud.py" hud) > "$LOGS/hud.log" 2>&1
-if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow; shots in build/shots/hud)"
+if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow, touch buttons' areas and states; shots in build/shots/hud)"
 else fail "match HUD" "$LOGS/hud.log"; fi
 }
 
