@@ -1,0 +1,423 @@
+/* ---------- Quick match (ui/quick.js; Fable 5.1, quick-match/fable-quick.md, mockup quick-match/fable-quick-mock.html) ----------
+   The Quick match screen is the Play friends lobby's three columns (you · your match · the queue): the first block below is
+   95-lobby.css's Fight Card, cards and pills restated for #scrQuick (a change there may belong here too). Then the parts of its own:
+   the Ranked | Casual segments, the rank plate, the searching disc, the ember CPU card, the queue and LAST FIVE; the searching strip on
+   the warm-up's HUD; the results' confirming rank card and the warm-up's STILL SEARCHING card; the menu hero's Season 1 sticker; the
+   Season 1 sheet; PLAYER FOUND! over the warm-up; the VS screen. Fable's rule: a CPU always wears the ember CPU sticker, a human a tier
+   emblem. Phone landscape (844x390) is the base; #app.tiny (667x320), the desktop and upright phones adjust it. */
+
+#scrQuick .qm2 { position: absolute; inset: 0; max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+
+/* ---- header: back, the status kicker with its dot, QUICK MATCH stroked, the chips coin ---- */
+#scrQuick .sel-head { flex: none; height: 44px; gap: 12px; }
+#scrQuick .sel-head .back { width: 40px; height: 40px; border: 2px solid var(--ink); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.08s, box-shadow 0.08s; }
+#scrQuick .sel-head .back:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrQuick .sel-head .grow { display: flex; flex-direction: column; gap: 4px; }
+#scrQuick .sel-head h2 { font: italic 900 28px/1 var(--display); letter-spacing: -0.005em; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrQuick .sel-head .coin { flex: none; }
+
+/* ---- the three columns ---- */
+#scrQuick .qm-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 164px minmax(0, 1fr) 290px; gap: 12px 18px; }
+#scrQuick .on-card { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; padding: 12px 14px;
+  border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+#scrQuick .on-card > .kick { flex: none; color: var(--gold); }
+
+/* ---- the Fight Card ---- */
+#scrQuick .on-fc { position: relative; min-width: 0; min-height: 0; }
+#scrQuick .on-fcb { appearance: none; cursor: pointer; position: absolute; inset: 0; display: flex; flex-direction: column; padding: 0; text-align: left; font: inherit; color: var(--text); container-type: inline-size;
+  border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrQuick .on-fcb::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: 10px; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.45); pointer-events: none; }   /* the Road card's gold edge */
+#scrQuick .on-fcb:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrQuick .on-fcb:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+#scrQuick .on-fa { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 10px 10px 0 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 56%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+#scrQuick .on-fa .rays { inset: -60% -60% -50%; opacity: 0.85; background: repeating-conic-gradient(from 0deg, var(--cg, rgba(243, 217, 164, 0.42)) 0 4deg, transparent 4deg 12deg); }
+#scrQuick .on-fa::after { content: ""; position: absolute; left: 24%; right: 24%; bottom: 5%; height: 10px; border-radius: 50%; background: rgba(0, 0, 0, 0.4); }   /* the ground shadow */
+#scrQuick .on-art { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; width: 100%; height: min(100%, 330px); }   /* a tall desktop card keeps the model big */
+#scrQuick .on-ft { flex: none; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 12px 11px; border-top: 2px solid var(--ink); border-radius: 0 0 10px 10px; background: rgba(14, 16, 34, 0.45); }
+#scrQuick .on-ft b { font: italic 900 min(26px, 16cqw)/0.95 var(--display); letter-spacing: -0.005em; text-transform: uppercase; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  -webkit-text-stroke: 3.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); padding: 2px 3px 1px 0; }
+#scrQuick .on-fs { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 13px/1.1 var(--body); color: var(--text); white-space: nowrap; }
+#scrQuick .on-fs i { flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--c, var(--sand)); border: 2px solid var(--ink); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35); }
+#scrQuick .on-fs span { flex: none; }
+#scrQuick .on-fs em { min-width: 0; font-style: normal; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .on-fs em::before { content: "· "; }
+#scrQuick .on-ft small { font: 700 11px/1.2 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+/* the ⇄ badge on the right edge (the Road card's, 40 px) */
+#scrQuick .on-chg { position: absolute; z-index: 4; right: -15px; top: 46%; transform: translateY(-50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: #ffd23f; color: var(--ink); border: 2px solid var(--ink); box-shadow: 0 2px 0 var(--ink); font: 900 22px/1 var(--body); }
+/* the name plate: your name on ink, top left; on the public site the name input, with a pencil */
+#scrQuick .on-plate { position: absolute; z-index: 5; left: -2px; top: 12px; max-width: calc(100% - 8px); display: flex; align-items: center; padding: 6px 12px 5px 12px;
+  background: var(--ink); border-radius: 0 6px 6px 0; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); pointer-events: none; }
+#scrQuick .on-plate b { min-width: 0; font: 800 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .on-plate b[hidden] { display: none; }
+/* back from the fighter select: the card pops (1.04 to 1) and the model comes in */
+#scrQuick .on-fc.fc-in .on-fcb { animation: fcIn 0.22s cubic-bezier(0.3, 1.5, 0.5, 1); }
+#scrQuick .on-fc.fc-in .on-art { animation: fcArt 0.26s ease-out; }
+
+/* ---- the queue: who is here as pills, the help ---- */
+#scrQuick .qm-side { gap: 8px; }
+#scrQuick .on-here { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
+#scrQuick .on-here.empty { display: block; font: 500 13px/1.35 var(--body); color: var(--mute); }
+#scrQuick .on-pl { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; height: 28px; padding: 0 11px 0 9px; overflow: hidden; border: 2px solid var(--ink); border-radius: 999px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 2px 0 var(--ink), var(--bevel); font: 800 12.5px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#scrQuick .on-pl::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); }
+#scrQuick .on-pl.busy { color: var(--mute); }
+#scrQuick .on-pl.busy::before { background: var(--mute); box-shadow: none; }
+#scrQuick .on-help { flex: none; margin: auto 0 0; padding-top: 6px; font: 500 11.5px/1.4 var(--body); color: var(--mute); }
+
+/* ---- small phones (667x320): 108 / flex / 226, a 20 px name, 26 px pills ---- */
+#app.tiny #scrQuick .qm2 { gap: 8px; padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+#app.tiny #scrQuick .sel-head { height: 40px; gap: 10px; }
+#app.tiny #scrQuick .sel-head h2 { font-size: 24px; }
+#app.tiny #scrQuick .qm-grid { grid-template-columns: 108px minmax(0, 1fr) 226px; gap: 10px 16px; }
+#app.tiny #scrQuick .on-card { gap: 6px; padding: 9px 11px; }
+#app.tiny #scrQuick .on-ft { gap: 4px; padding: 6px 9px 8px; }
+#app.tiny #scrQuick .on-ft b { font-size: min(20px, 16.5cqw); -webkit-text-stroke-width: 3px; }
+#app.tiny #scrQuick .on-fs { font-size: 11.5px; gap: 5px; }
+#app.tiny #scrQuick .on-fs i { width: 11px; height: 11px; }
+#app.tiny #scrQuick .on-fs em { display: none; }
+#app.tiny #scrQuick .on-ft small { font-size: 9px; letter-spacing: 0.08em; }
+#app.tiny #scrQuick .on-fs span { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+#app.tiny #scrQuick .on-chg { width: 34px; height: 34px; right: -13px; font-size: 19px; }
+#app.tiny #scrQuick .on-plate { top: 8px; padding: 5px 9px 4px 10px; }
+#app.tiny #scrQuick .on-pl { height: 26px; font-size: 11.5px; }
+
+/* ---- desktop (1280x760): 220 / flex / 380 in the 1180 px frame, a 32 px name, 36 px pills ---- */
+#app:not(.short):not(.portrait) #scrQuick .qm2 { gap: 16px; padding: 22px max(28px, env(safe-area-inset-right, 0px)) 24px max(28px, env(safe-area-inset-left, 0px)); max-height: 680px; margin-block: auto; }
+#app:not(.short):not(.portrait) #scrQuick .sel-head { height: 56px; gap: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .sel-head .back { width: 44px; height: 44px; }
+#app:not(.short):not(.portrait) #scrQuick .sel-head h2 { font-size: 40px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrQuick .sel-head .coin { height: 44px; font-size: 21px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-grid { grid-template-columns: 220px minmax(0, 1fr) 380px; gap: 18px 24px; }
+#app:not(.short):not(.portrait) #scrQuick .on-card { gap: 12px; padding: 16px 18px; border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .on-card > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .on-fcb { border-radius: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .on-ft { gap: 8px; padding: 12px 16px 15px; }
+#app:not(.short):not(.portrait) #scrQuick .on-ft b { font-size: 32px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrQuick .on-fs { font-size: 14.5px; }
+#app:not(.short):not(.portrait) #scrQuick .on-fs em { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrQuick .on-ft small { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .on-plate { top: 16px; padding: 7px 14px 6px; }
+#app:not(.short):not(.portrait) #scrQuick .on-pl { height: 32px; font-size: 14px; }
+
+/* ---- upright phones (390x844): the Fight Card goes horizontal (112 px: the model left, the words right, the badge half over the edge),
+   then your match, then the CPU offer and the queue; the page scrolls ---- */
+#app.portrait #scrQuick .qm2 { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; padding-top: max(12px, env(safe-area-inset-top, 0px)); }
+#app.portrait #scrQuick .sel-head { height: auto; }
+#app.portrait #scrQuick .sel-head h2 { font-size: 26px; }
+#app.portrait #scrQuick .qm-grid { flex: none; display: flex; flex-direction: column; gap: 14px; padding-right: 8px; }
+#app.portrait #scrQuick .on-fc { flex: none; height: 112px; }
+#app.portrait #scrQuick .on-fcb { flex-direction: row; }
+#app.portrait #scrQuick .on-fa { flex: none; width: 124px; border-radius: 10px 0 0 10px; }
+#app.portrait #scrQuick .on-fa .rays { inset: -100% -100% -60%; }
+#app.portrait #scrQuick .on-ft { flex: 1 1 auto; justify-content: center; gap: 6px; padding: 8px 30px 8px 14px; border-top: 0; border-left: 2px solid var(--ink); border-radius: 0 10px 10px 0; }
+#app.portrait #scrQuick .on-chg { top: 50%; right: -14px; }
+#app.portrait #scrQuick .on-plate { top: auto; bottom: 8px; max-width: 132px; padding: 4px 8px 3px 9px; }
+#app.portrait #scrQuick .on-help { margin-top: 2px; }
+@media (hover: hover) { #scrQuick .on-fcb:hover { filter: brightness(1.07); } }
+#app.tiny #scrQuick .on-plate b { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrQuick .on-plate b { font-size: 17px; }
+#app.portrait #scrQuick .on-plate b { font-size: 12.5px; }
+#app:not(.short):not(.portrait) #scrQuick .on-help, #app:not(.short):not(.portrait) #scrQuick .on-here.empty { font-size: 13.5px; }
+
+/* ---- the stickers it adds to the ink set (00-ink.css): in a line (.st), sky (Casual), grey (a draw) ---- */
+.tag.st { position: static; display: inline-block; flex: none; }
+.tag.sky { background: var(--sky, #8fb6ff); color: var(--ink); }
+.tag.grey { background: #8a90ab; color: var(--ink); }
+
+/* ---- the status kicker: mint dot online, grey while connecting ---- */
+#scrQuick .qm-status { font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--sand); padding: 3px 0; margin: -3px 0; }
+#scrQuick .qm-status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mute); margin-right: 8px; vertical-align: 0; }
+#scrQuick .qm-status.ok::before { background: var(--mint); box-shadow: 0 0 0 3px rgba(134, 220, 174, 0.22); }
+
+/* ---- YOUR MATCH: the mode segments, the rank plate, FIND MATCH pinned to the bottom with the truth under it ---- */
+#scrQuick .qm-mid { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+#scrQuick .qm-idle, #scrQuick .qm-search { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 9px; }
+#scrQuick .qm-idle[hidden], #scrQuick .qm-search[hidden] { display: none; }
+#scrQuick .qm-idle > .kick { flex: none; color: var(--gold); }
+#scrQuick .qm-seg { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#scrQuick .qm-seg button { appearance: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 54px; padding: 4px 8px;
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: var(--text);
+  font: 800 19px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; transition: transform 0.08s, box-shadow 0.08s; }
+#scrQuick .qm-seg button small { font: 600 11.5px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); }
+#scrQuick .qm-seg button.on { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#scrQuick .qm-seg button.on small { color: rgba(14, 16, 34, 0.7); }
+#scrQuick .qm-seg button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+#scrQuick .qm-seg button:disabled { cursor: default; }
+#scrQuick .qm-seg button:disabled:not(.on) { opacity: 0.5; }
+#scrQuick .qm-seg button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* the rank plate: emblem, tier word in its colour, rating and what is left, the bar, the record and the season */
+#scrQuick .qm-rk { --tc: #c9d0e4; flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 12px;
+  border: 2px solid var(--ink); border-radius: 10px; background: rgba(14, 16, 34, 0.45); }
+#scrQuick .qm-rk .badge { width: 46px; height: 46px; filter: drop-shadow(0 2px 0 var(--ink)); }
+#scrQuick .qm-rkb { min-width: 0; display: flex; flex-direction: column; }
+#scrQuick .qm-rkt { font: italic 900 24px/1 var(--display); text-transform: uppercase; color: var(--tc); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+#scrQuick .qm-rk.placing .qm-rkt { color: var(--sand); }
+#scrQuick .qm-rks { margin-top: 3px; font: 600 13px/1.2 var(--body); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-rk .bar { position: relative; height: 10px; margin-top: 7px; border-radius: 5px; overflow: hidden; background: rgba(14, 16, 34, 0.9); border: 1.5px solid rgba(255, 255, 255, 0.1); }
+#scrQuick .qm-rk .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%); background: linear-gradient(180deg, #fff 0, var(--tc) 45%); }
+#scrQuick .qm-rk.placing .bar i { background: linear-gradient(180deg, #fff 0, var(--sand) 45%); }
+#scrQuick .qm-rec { white-space: pre-line; text-align: right; line-height: 1.35; color: var(--mute); }
+#scrQuick #qmFind { flex: none; margin-top: auto; min-height: 50px; font-size: 24px; }
+#scrQuick .qm-truth { flex: none; margin: -2px 0 0; text-align: center; font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+#scrQuick .qm-truth.note { color: var(--sand); }
+/* searching: the timer on a turning rays disc, the widening range, the Casual fallback line, CANCEL */
+#scrQuick .qm-search { align-items: center; text-align: center; }
+#scrQuick .qm-sk { flex: none; align-self: flex-start; display: flex; align-items: center; gap: 8px; color: var(--gold); }
+.qdot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); animation: blink 1.2s ease-in-out infinite; }
+#scrQuick .qm-disc { position: relative; flex: none; display: grid; place-items: center; width: 132px; height: 132px; margin-top: 2px; overflow: hidden; border-radius: 50%;
+  border: 2px solid var(--ink); background: radial-gradient(circle, #3a3f74 0, #1b1f3d 70%); box-shadow: 0 3px 0 var(--ink), inset 0 0 0 3px rgba(244, 201, 93, 0.35); }
+#scrQuick .qm-disc .rays { inset: -40%; --rc: rgba(244, 201, 93, 0.22); background: repeating-conic-gradient(from 0deg, var(--rc) 0 5deg, transparent 5deg 15deg); animation-duration: 8s; }
+#scrQuick .qm-disc b { position: relative; font: italic 900 46px/1 var(--display); color: #fff; font-variant-numeric: tabular-nums; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+#scrQuick .qm-range { flex: none; margin: 0; font: 700 14px/1.25 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+#scrQuick .qm-fb { flex: none; margin: 0; max-width: 34ch; font: 600 12.5px/1.3 var(--body); color: var(--sand); }
+#scrQuick .qm-fb[hidden] { display: none; }
+#scrQuick .qm-x { flex: none; margin-top: auto; align-self: stretch; min-height: 44px; font-size: 19px; }
+
+/* ---- the right column: the CPU offer (its own card, the ember sticker), then the queue and LAST FIVE ---- */
+#scrQuick .qm-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+#scrQuick .qm-cpu { flex: none; gap: 6px; padding-top: 14px; border-color: var(--ink); box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.55), var(--hard), var(--bevel); }
+#scrQuick .qm-cpu[hidden] { display: none; }
+#scrQuick .qm-cpu > .tag { left: 10px; top: -10px; z-index: 2; }
+#scrQuick .qm-cpt { font: italic 900 19px/1 var(--display); text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+#scrQuick .qm-cpl { font: 500 12px/1.3 var(--body); color: var(--mute); }
+#scrQuick #qmWarm { min-height: 40px; font-size: 17px; }
+#scrQuick .qm-room { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+#scrQuick .qm-room > .kick { flex: none; color: var(--gold); }
+#scrQuick .qm-room > .on-here + .kick { margin-top: 6px; }
+/* the queue's pills: a pulsing gold dot is searching, mint is here, grey is in a match; YOU while you search */
+#scrQuick .on-pl.q::before { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); animation: blink 1.2s ease-in-out infinite; }
+#scrQuick .on-pl.me { color: var(--gold); box-shadow: inset 0 0 0 1.5px rgba(244, 201, 93, 0.5), 0 2px 0 var(--ink); }
+#scrQuick .on-pl.more::before { display: none; }
+/* LAST FIVE: W / L / D sticker, who and their fighter, the rating change */
+#scrQuick .qm-last { flex: none; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+#scrQuick .qm-last li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 30px; padding: 3px 9px 3px 6px;
+  border-radius: 8px; background: rgba(14, 16, 34, 0.42); }
+#scrQuick .qm-last li.empty { display: block; padding: 0; background: none; min-height: 0; font: 500 12.5px/1.35 var(--body); color: var(--mute); }
+#scrQuick .qm-last .tag { padding: 4px 0 3px; width: 24px; text-align: center; font-size: 12px; }
+#scrQuick .qm-last span { min-width: 0; font: 800 14px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-last span small { font: 500 12px/1 var(--body); letter-spacing: 0; text-transform: none; color: var(--mute); }
+#scrQuick .qm-last b { font: 800 15px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--mute); }
+#scrQuick .qm-last b.up { color: var(--mint); }
+#scrQuick .qm-last b.down { color: #ff8a7c; }
+
+/* ---- sizes: small phones, the desktop, upright phones ---- */
+#app.tiny #scrQuick .qm-idle, #app.tiny #scrQuick .qm-search { gap: 6px; }
+#app.tiny #scrQuick .qm-seg { gap: 6px; }
+#app.tiny #scrQuick .qm-seg button { min-height: 44px; font-size: 16px; gap: 3px; }
+#app.tiny #scrQuick .qm-seg button small { font-size: 10.5px; }
+#app.tiny #scrQuick .qm-rk { gap: 9px; padding: 5px 9px; }
+#app.tiny #scrQuick .qm-rk .badge { width: 36px; height: 36px; }
+#app.tiny #scrQuick .qm-rkt { font-size: 19px; }
+#app.tiny #scrQuick .qm-rks { font-size: 11.5px; }
+#app.tiny #scrQuick .qm-rk .bar { height: 8px; margin-top: 5px; }
+#app.tiny #scrQuick .qm-rec { font-size: 9.5px; letter-spacing: 0.1em; }
+#app.tiny #scrQuick #qmFind { min-height: 42px; font-size: 20px; }
+#app.tiny #scrQuick .qm-truth { font-size: 11px; }
+#app.tiny #scrQuick .qm-disc { width: 96px; height: 96px; }
+#app.tiny #scrQuick .qm-disc b { font-size: 34px; -webkit-text-stroke-width: 2.5px; }
+#app.tiny #scrQuick .qm-range { font-size: 12px; }
+#app.tiny #scrQuick .qm-fb { font-size: 11px; }
+#app.tiny #scrQuick .qm-x { min-height: 38px; font-size: 16px; }
+#app.tiny #scrQuick .qm-side { gap: 10px; }
+#app.tiny #scrQuick .qm-cpu { gap: 4px; padding-top: 12px; }
+#app.tiny #scrQuick .qm-cpt { font-size: 16px; }
+#app.tiny #scrQuick .qm-cpl { font-size: 11px; }
+#app.tiny #scrQuick #qmWarm { min-height: 36px; font-size: 15px; }
+#app.tiny #scrQuick .qm-last li { min-height: 26px; gap: 6px; padding: 2px 7px 2px 5px; }
+#app.tiny #scrQuick .qm-last span { font-size: 12.5px; }
+#app.tiny #scrQuick .qm-last span small, #app.tiny #scrQuick .on-help { display: none; }
+#app.tiny #scrQuick .qm-last b { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-status { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle, #app:not(.short):not(.portrait) #scrQuick .qm-search { gap: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-seg { gap: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-seg button { min-height: 72px; font-size: 24px; gap: 6px; border-radius: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-seg button small { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rk { gap: 16px; padding: 12px 16px; border-radius: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rk .badge { width: 60px; height: 60px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rkt { font-size: 32px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rks { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rec { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick #qmFind { min-height: 62px; font-size: 30px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-truth { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-disc { width: 190px; height: 190px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-disc b { font-size: 64px; -webkit-text-stroke-width: 4px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-range { font-size: 18px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-fb { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-x { min-height: 52px; font-size: 22px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-side { gap: 18px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-cpu { gap: 9px; padding-top: 18px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-cpt { font-size: 24px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-cpl { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick #qmWarm { min-height: 48px; font-size: 20px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-room > .kick { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last li { min-height: 36px; gap: 10px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last span { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last span small { font-size: 13.5px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last b { font-size: 17px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-last li.empty { font-size: 13.5px; }
+/* upright: the Fight Card on top, your match (the timer) in the middle, the CPU offer under the thumb, then the queue */
+#app.portrait #scrQuick .qm-mid, #app.portrait #scrQuick .qm-room, #app.portrait #scrQuick .qm-side { flex: none; overflow: visible; }
+#app.portrait #scrQuick .qm-idle, #app.portrait #scrQuick .qm-search { flex: none; }
+#app.portrait #scrQuick #qmFind, #app.portrait #scrQuick .qm-x { margin-top: 6px; }
+
+/* ---- the searching strip under the clock in the warm-up (a gold dot), and the CPU's sticker in its name ---- */
+#qmStrip { margin-top: 2px; height: 24px; gap: 6px; padding: 0 9px; color: var(--gold); border-color: rgba(244, 201, 93, 0.5); background: rgba(14, 16, 34, 0.82); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#qmStrip[hidden] { display: none; }
+#qmStrip i { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); }
+#app.narrow #qmStrip { position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); margin: 0; }
+
+/* ---- results: the rank card while the server confirms (the before rating, a mute … sticker, a shimmer), no result (grey ±0),
+   the warm-up's STILL SEARCHING card in the rank card's place, the CPU sticker in the kicker ---- */
+#resSheet .res-rank.qm-wait .bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent); animation: qmShim 1.4s linear infinite; }
+@keyframes qmShim { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+#resSheet .delta.wait { background: linear-gradient(180deg, #3a4170, #262b50); color: var(--mute); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .delta.wait b { letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
+#resSheet .delta.zero { background: linear-gradient(180deg, #9aa0ba, #6f758f); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-qm { flex: none; display: flex; flex-direction: column; gap: 7px; padding: 10px 14px; box-shadow: inset 0 0 0 1.5px rgba(244, 201, 93, 0.45), var(--hard), var(--bevel); }
+#resSheet .res-qm[hidden] { display: none; }
+#resSheet .rq-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#resSheet .res-qm .livetag { height: 28px; font-size: 13px; color: var(--gold); border-color: rgba(244, 201, 93, 0.5); font-variant-numeric: tabular-nums; }
+#resSheet .res-qm .livetag i { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); }
+#resSheet .res-qm .mini { min-height: 34px; font-size: 13px; }
+#resSheet .rq-l { font: 600 12.5px/1.3 var(--body); color: var(--mute); }
+#resSheet .rq-l:empty { display: none; }
+#resSheet .res-kick .qm-cpu { margin-right: 8px; padding: 3px 6px 2px; font-size: 10px; vertical-align: 1px; }
+.btn small:empty { display: none; }
+
+/* ---- the menu's gold hero as Quick match: the live dot in the kicker, the ember SEASON 1 sticker in the corner ---- */
+#scrMenu .mm-hero .qm-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #1c8a52; box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.25); vertical-align: 0; }
+#scrMenu .mm-hero .qm-dot.off { background: var(--ketchup); }
+#scrMenu .mm-hero .qm-s1 { right: 12px; top: 10px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-hero .qm-s1[hidden] { display: none; }
+#app.tiny #scrMenu .mm-hero .qm-s1 { right: 8px; top: 7px; font-size: 10px; padding: 4px 6px 3px; }
+
+/* ---- the Season 1 sheet: the gold-edged online plate, the dim CPU plate, three lines, LET'S GO ---- */
+#scrSeason .ss-sheet { width: min(560px, 100%); max-height: 100%; }
+#scrSeason .ss-new { position: static; flex: none; margin-right: 6px; }
+#scrSeason .ss-pl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#scrSeason .ss-p { --tc: #c9d0e4; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrSeason .ss-p.on { box-shadow: inset 0 0 0 2px rgba(244, 201, 93, 0.6), 0 3px 0 var(--ink), var(--bevelgold); }
+#scrSeason .ss-p.old { opacity: 0.72; }
+#scrSeason .ss-p.old .badge { filter: saturate(0.35) brightness(0.8); }
+#scrSeason .ss-p[hidden] { display: none; }
+#scrSeason .ss-p .badge { width: 46px; height: 46px; }
+#scrSeason .ss-p > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#scrSeason .ss-p b { font: italic 900 24px/1 var(--display); text-transform: uppercase; color: var(--tc); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+#scrSeason .ss-p span:not(.kick) { font: 600 12.5px/1.25 var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+#scrSeason .ss-ls p { margin: 0 0 6px; font: 500 14px/1.4 var(--body); color: var(--text); }
+#scrSeason .ss-ls p b { color: var(--gold); }
+#scrSeason .ss-ls p.mute { color: var(--mute); font-size: 13px; }
+#scrSeason #ssGo { align-self: center; min-width: 220px; }
+#scrSeason:not([hidden]) .ss-p.on .badge .em { animation: emIn 0.6s 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+#app.tiny #scrSeason .ss-p { padding: 6px 9px; gap: 9px; }
+#app.tiny #scrSeason .ss-p .badge { width: 36px; height: 36px; }
+#app.tiny #scrSeason .ss-p b { font-size: 19px; }
+#app.tiny #scrSeason .ss-ls p { font-size: 12.5px; margin-bottom: 3px; }
+#app.portrait #scrSeason .ss-pl { grid-template-columns: 1fr; }
+
+/* ---- PLAYER FOUND! over the dimmed warm-up: the banner's recipe in gold, vs who and their tier, a digit disc counting 3·2·1;
+   it covers the controls, so the fight takes no more input ---- */
+#qmFound { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
+  background: rgba(8, 9, 20, 0.62); touch-action: none; }
+#qmFound[hidden] { display: none; }
+#qmFound .qf-t { font: italic 900 clamp(48px, calc(var(--um, 4px) * 14), 112px)/0.9 var(--display); letter-spacing: -0.01em; text-transform: uppercase; color: var(--gold);
+  -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink), 0 12px 24px rgba(0, 0, 0, 0.45); transform: skewX(-8deg); }
+#qmFound .qf-vs { display: flex; align-items: center; gap: 9px; padding: 6px 14px; border-radius: 8px; background: rgba(14, 16, 34, 0.86); border: 2px solid var(--ink);
+  font: 800 17px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; }
+#qmFound .qf-em { display: inline-block; width: 26px; height: 26px; flex: none; }
+#qmFound .qf-em .em { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 0 var(--ink)); }
+#qmFound .qf-vs .tag { font-size: 10.5px; }
+#qmFound .qf-n { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); background: var(--gold); color: var(--ink);
+  font: italic 900 40px/1 var(--display); box-shadow: 0 4px 0 var(--ink), var(--bevelgold); }
+#qmFound .qf-l { font: 700 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); text-shadow: 0 2px 0 var(--ink); }
+#qmFound.in .qf-t { animation: pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+#qmFound.in .qf-vs { animation: qfUp 0.3s 0.25s ease-out both; }
+@keyframes qfUp { from { opacity: 0; transform: translateY(10px); } }
+
+/* ---- the VS screen (3 s): a diagonal split, you left on your skin's sunburst and them right, the ink seam at −17° with the ketchup VS
+   sticker, a nameplate, the fighter, the tier plate on each side; the RANKED / CASUAL stamp on top; the ping and the map at the foot
+   with a gold bar draining into the fight's countdown. --cl / --cr are the two skins' glows (ui/quick.js qmVs) ---- */
+#qmVs { position: absolute; inset: 0; z-index: 7; overflow: hidden; background: #0b0c1c; --cl: rgba(243, 217, 164, 0.42); --cr: rgba(143, 182, 255, 0.42); }
+#qmVs[hidden] { display: none; }
+#qmVs .vs-h { position: absolute; top: 0; bottom: 0; width: 62%; overflow: hidden; }
+#qmVs .vs-h.l { left: 0; clip-path: polygon(0 0, 100% 0, 75% 100%, 0 100%); background: radial-gradient(ellipse 70% 70% at 40% 50%, var(--cl), transparent 75%), linear-gradient(160deg, #2a2f55, #15172e); }
+#qmVs .vs-h.r { right: 0; clip-path: polygon(25% 0, 100% 0, 100% 100%, 0 100%); background: radial-gradient(ellipse 70% 70% at 60% 50%, var(--cr), transparent 75%), linear-gradient(200deg, #2a2f55, #15172e); }
+#qmVs .vs-h .rays { inset: -60%; opacity: 0.8; background: repeating-conic-gradient(from 0deg, var(--cl) 0 4deg, transparent 4deg 12deg); }
+#qmVs .vs-h.r .rays { background: repeating-conic-gradient(from 0deg, var(--cr) 0 4deg, transparent 4deg 12deg); }
+#qmVs .vs-art { position: absolute; z-index: 1; bottom: 4%; width: 80%; height: 84%; }   /* wider than the model needs: wings and weapons stay whole */
+#qmVs .vs-h.l .vs-art { left: -5%; }
+#qmVs .vs-h.r .vs-art { right: -5%; }
+#qmVs .vs-h::after { content: ""; position: absolute; bottom: 6%; width: 30%; height: 14px; border-radius: 50%; background: rgba(0, 0, 0, 0.4); }   /* the ground shadow */
+#qmVs .vs-h.l::after { left: 20%; }
+#qmVs .vs-h.r::after { right: 20%; }
+#qmVs .vs-seam { position: absolute; left: 50%; top: -10%; bottom: -10%; width: 12px; margin-left: -6px; background: var(--ink); transform: rotate(17deg); }
+#qmVs .vs-x { position: absolute; left: 50%; top: 50%; z-index: 3; padding: 8px 14px 6px; border: 3px solid var(--ink); border-radius: 10px; background: var(--ketchup); color: #fff;
+  font: italic 900 46px/1 var(--display); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; box-shadow: 0 4px 0 var(--ink); transform: translate(-50%, -50%) rotate(-8deg); }
+#qmVs .vs-s { position: absolute; z-index: 2; bottom: 56px; display: flex; flex-direction: column; gap: 6px; max-width: 40%; }
+#qmVs .vs-s.l { left: max(18px, env(safe-area-inset-left, 0px)); align-items: flex-start; }
+#qmVs .vs-s.r { right: max(18px, env(safe-area-inset-right, 0px)); align-items: flex-end; text-align: right; }
+#qmVs .vs-pl { display: inline-block; max-width: 100%; padding: 6px 14px 5px; background: var(--ink); transform: skewX(-12deg); }
+#qmVs .vs-pl b { display: block; transform: skewX(12deg); font: 800 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#qmVs .vs-f { max-width: 100%; font: italic 900 44px/0.9 var(--display); text-transform: uppercase; color: #fff; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 4px 1px 0; }
+#qmVs .vs-t { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px 0 4px; border: 2px solid var(--ink); border-radius: 8px; background: rgba(14, 16, 34, 0.86);
+  font: 800 14px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#qmVs .vs-t .em { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 2px 0 var(--ink)); }
+#qmVs .vs-t.un .em { filter: saturate(0.3) brightness(0.75) drop-shadow(0 2px 0 var(--ink)); }
+#qmVs .vs-st { position: absolute; z-index: 3; left: 50%; top: max(14px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+#qmVs .vs-st b { padding: 6px 16px 4px; border: 2px solid var(--ink); border-radius: 8px; font: italic 900 24px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); background: var(--gold); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); transform: rotate(-4deg); }
+#qmVs .vs-st.cs b { background: var(--sky, #8fb6ff); }
+#qmVs .vs-st span { padding: 3px 8px; border-radius: 5px; background: rgba(14, 16, 34, 0.86); font: 700 11px/1.1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#qmVs .vs-st .vs-fb { color: var(--sand); }
+#qmVs .vs-st span[hidden] { display: none; }
+#qmVs .vs-foot { position: absolute; z-index: 3; left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; width: min(360px, 60%); }
+#qmVs .vs-foot .livetag { font-variant-numeric: tabular-nums; }
+#qmVs .vs-foot .livetag i { background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); animation: none; }
+#qmVs .vs-bar { display: block; width: 100%; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(14, 16, 34, 0.86); border: 1px solid rgba(255, 255, 255, 0.12); }
+#qmVs .vs-bar i { display: block; height: 100%; background: var(--gold); transform-origin: left; }
+#qmVs.in .vs-bar i { animation: vsDrain 3s linear both; }
+#qmVs.in .vs-h.l, #qmVs.in .vs-s.l { animation: vsInL 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+#qmVs.in .vs-h.r, #qmVs.in .vs-s.r { animation: vsInR 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+#qmVs.in .vs-x { animation: vsStamp 0.34s 0.28s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+@keyframes vsDrain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes vsInL { from { transform: translateX(-40%); opacity: 0; } }
+@keyframes vsInR { from { transform: translateX(40%); opacity: 0; } }
+@keyframes vsStamp { from { transform: translate(-50%, -50%) rotate(-8deg) scale(1.6); opacity: 0; } }
+#app.tiny #qmVs .vs-f { font-size: 34px; -webkit-text-stroke-width: 3px; }
+#app.tiny #qmVs .vs-s { bottom: 50px; }
+#app.tiny #qmVs .vs-x { font-size: 36px; }
+#app:not(.short):not(.portrait) #qmVs .vs-f { font-size: 64px; -webkit-text-stroke-width: 5px; }
+#app:not(.short):not(.portrait) #qmVs .vs-pl b { font-size: 19px; }
+#app:not(.short):not(.portrait) #qmVs .vs-t { height: 40px; font-size: 17px; }
+#app:not(.short):not(.portrait) #qmVs .vs-t .em { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #qmVs .vs-x { font-size: 64px; }
+#app:not(.short):not(.portrait) #qmVs .vs-st b { font-size: 32px; }
+#app:not(.short):not(.portrait) #qmVs .vs-s { bottom: 80px; }
+/* upright: you on top, them below, the seam across */
+#app.portrait #qmVs .vs-h { left: 0; right: 0; width: auto; height: 58%; }
+#app.portrait #qmVs .vs-h.l { top: 0; bottom: auto; clip-path: polygon(0 0, 100% 0, 100% 72%, 0 100%); }
+#app.portrait #qmVs .vs-h.r { top: auto; bottom: 0; clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%); }
+#app.portrait #qmVs .vs-art { width: 70%; height: 74%; bottom: auto; top: 6%; }
+#app.portrait #qmVs .vs-h.l .vs-art { left: auto; right: 2%; }
+#app.portrait #qmVs .vs-h.r .vs-art { top: auto; bottom: 4%; right: auto; left: 2%; }
+#app.portrait #qmVs .vs-h::after { display: none; }
+#app.portrait #qmVs .vs-seam { left: -10%; right: -10%; top: 50%; bottom: auto; width: auto; height: 12px; margin: -6px 0 0; transform: rotate(-17deg); }
+#app.portrait #qmVs .vs-s { max-width: calc(100% - 36px); }
+#app.portrait #qmVs .vs-s.l { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 96px); bottom: auto; }
+#app.portrait #qmVs .vs-s.r { bottom: 90px; }
+#app.portrait #qmVs .vs-f { font-size: 40px; }
+#app.portrait #qmVs .vs-foot { width: calc(100% - 48px); }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrQuick .on-fc.fc-in .on-fcb, #scrQuick .on-fc.fc-in .on-art { animation: none; }
+  #scrQuick .on-fcb, #scrQuick .sel-head .back, #scrQuick .qm-seg button { transition: none; }
+  .qdot, #scrQuick .on-pl.q::before, #resSheet .delta.wait b, #resSheet .res-qm .livetag i, #qmStrip i { animation: none; }
+  #resSheet .res-rank.qm-wait .bar::after { animation: none; opacity: 0.5; transform: none; }
+  #qmFound.in .qf-t, #qmFound.in .qf-vs, #qmVs.in .vs-h, #qmVs.in .vs-s, #qmVs.in .vs-x, #scrSeason:not([hidden]) .ss-p.on .badge .em { animation: none; }
+}

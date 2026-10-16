@@ -35,7 +35,7 @@ async def page(b, w, h, prof, url, tag, init=''):
     prof = dict(prof)
     if h > w: prof['screen'] = 'up'
     ctx = await b.new_context(viewport={'width': w, 'height': h}, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=mob)
-    await ctx.add_init_script("localStorage.setItem('%s', %s);%s" % (KEY, json.dumps(json.dumps(prof)), init))
+    await ctx.add_init_script("window.__blNoQuick = true; localStorage.setItem('%s', %s);%s" % (KEY, json.dumps(json.dumps(prof)), init))   # Quick match off: tests/pwquick.py covers it
     pg = await ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
     pg.on('console', lambda m: errs.append(f'{tag} console: {m.text}') if m.type == 'error' else None)

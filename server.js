@@ -13,6 +13,10 @@
  *   KEEPALIVE_URL      the public URL to ping; on Render, RENDER_EXTERNAL_URL is used
  *   ACCOUNTS_DIR       folder for sync-code accounts (see accounts.js). Accounts are off unless it exists and is writable.
  *   STATS_DIR          folder for the anonymous play counts and the private /stats page (see stats.js). Off unless it exists and is writable.
+ *
+ * Quick match (quick.js): the queue for Ranked and Casual 1v1 against real players, and the referee that plays every Ranked match
+ * itself from the inputs passing through here. Ranked needs the accounts; Casual works without them.
+ * SIGUSR2 = drain before an update: no new Quick matches are made, the running ones play on; /health counts them.
  */
 const http = require("http");
 const fs = require("fs");
@@ -29,6 +33,7 @@ const MAX_PER_ROOM = 64;
 const MAX_CLIENTS = 500;
 const ROOM_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/;
 const ID_RE = /^[A-Za-z0-9_-]{4,40}$/;
+const KEY_RE = /^[A-Za-z0-9_-]{16,64}$/;
 
 // Static files are read once at start-up and kept gzipped in memory.
 function asset(file, type, cache) {
@@ -62,6 +67,21 @@ try {
   console.log(stats ? `Play counts: on (${stats.dir})` : process.env.STATS_DIR ? "Play counts: off (STATS_DIR is not a folder this server can write to)" : "Play counts: off");
 } catch (e) { console.warn("Play counts: off,", e.message); }
 
+// Quick match (quick.js). Declared before the server: clients and out() are only used once it runs.
+let quick = null;
+try {
+  quick = require("./quick.js").init({
+    accounts,
+    send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+    nameOf: (peer) => { const c = clients.get(peer); return c ? c.name : ""; },
+    byOf: (peer) => { const c = clients.get(peer); return c ? c.by : ""; },
+    online: () => clients.size,
+    T: process.env.QM_T ? JSON.parse(process.env.QM_T) : undefined,   // tests only: shorter waits
+  });
+  console.log(`Quick match: on (game version ${quick.proto}, Ranked ${accounts ? "on" : "off: needs accounts"})`);
+} catch (e) { console.warn("Quick match: off,", e.message); }
+process.on("SIGUSR2", () => { if (quick) { quick.drain(); console.log(`Quick match: draining for an update, ${quick.running()} ranked matches still running`); } });
+
 const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];
   if (accounts && accounts.handle(req, res, url)) return;
@@ -85,7 +105,9 @@ const server = http.createServer((req, res) => {
   }
   if (url === "/health") {
     res.writeHead(200, { "content-type": "text/plain", "cache-control": "no-store" });
-    return res.end(`ok\nplayers online: ${clients.size}\nlast keep-alive: ${lastPing}\n`);
+    // "ranked matches running" is what deploy/update.txt waits for before a restart
+    const qm = quick ? `ranked matches running: ${quick.running()}\nsearching: ${quick.searching()}\n${quick.draining() ? "draining: yes\n" : ""}` : "";
+    return res.end(`ok\nplayers online: ${clients.size}\n${qm}last keep-alive: ${lastPing}\n`);
   }
   res.writeHead(404, { "content-type": "text/plain" });
   res.end("Not found");
@@ -121,6 +143,7 @@ function leaveRoom(peer, name) {
   const c = clients.get(peer);
   if (c) c.rooms.delete(name);
   toRoom(name, { t: "left", room: name, peer });
+  if (quick) quick.left(peer, name);   // leaving a running Ranked match is a loss
 }
 function drop(peer) {
   const c = clients.get(peer);
@@ -128,6 +151,7 @@ function drop(peer) {
   clearTimeout(c.goneTimer);
   for (const name of [...c.rooms]) leaveRoom(peer, name);
   clients.delete(peer);
+  if (quick) quick.gone(peer);
 }
 
 wss.on("connection", (ws) => {
@@ -147,7 +171,11 @@ wss.on("connection", (ws) => {
 
     if (m.t === "hello") {
       if (peer || !ID_RE.test(m.peer || "") || !ID_RE.test(m.by || "")) return ws.close(1008, "bad hello");
+      // k: a secret the page made when it opened. Peer ids are seen by everyone in a room, so a reconnect that takes over a peer
+      // must carry the same secret (a page from before the secret has none and keeps the old rule)
+      const k = typeof m.k === "string" && KEY_RE.test(m.k) ? m.k : "";
       const old = clients.get(m.peer);
+      if (old && old.k !== k) return ws.close(1008, "taken");
       if (!old && clients.size >= MAX_CLIENTS) return ws.close(1013, "server full");
       peer = m.peer;
       if (old) {
@@ -155,7 +183,7 @@ wss.on("connection", (ws) => {
         if (old.ws && old.ws !== ws) { try { old.ws.close(); } catch (e) { /* already gone */ } }
         old.ws = ws; old.name = clean(m.name);
       } else {
-        clients.set(peer, { ws, by: m.by, name: clean(m.name), rooms: new Set(), goneTimer: null });
+        clients.set(peer, { ws, by: m.by, k, name: clean(m.name), rooms: new Set(), goneTimer: null });
       }
       return out(ws, { t: "welcome", peer });
     }
@@ -163,9 +191,11 @@ wss.on("connection", (ws) => {
     const c = clients.get(peer);
     if (!c || c.ws !== ws) return;
 
+    if (quick && quick.handle(peer, m)) return;   // auth, qm, qmx
     if (m.t === "join") {
       const name = m.room;
       if (typeof name !== "string" || !ROOM_RE.test(name)) return;
+      if (quick && !quick.canJoin(peer, name)) return;   // a Quick match room is its two players' only
       if (!c.rooms.has(name) && c.rooms.size >= MAX_ROOMS_PER_CLIENT) return;
       let r = rooms.get(name);
       if (!r) { r = new Map(); rooms.set(name, r); }
@@ -183,6 +213,7 @@ wss.on("connection", (ws) => {
       if (!r || !r.has(peer) || !m.p || typeof m.p !== "object" || Array.isArray(m.p)) return;
       r.get(peer).presence = m.p;
       toRoom(m.room, { t: "presence", room: m.room, peer, p: m.p }, peer);
+      if (quick) quick.presence(m.room, peer, m.p);   // the referee reads the inputs it just passed on
     } else if (m.t === "name") {
       c.name = clean(m.name);
       for (const name of c.rooms) toRoom(name, { t: "name", by: c.by, name: c.name }, peer);
