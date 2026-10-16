@@ -9,6 +9,8 @@
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { /* private mode */ } return null; };
   const rid = () => Math.random().toString(36).slice(2, 12).padEnd(10, "0");
   const PEER = "p" + rid() + rid();
+  // a secret made when the page opens: only this page can take its peer back after a dropped connection (peer ids are public in a room)
+  const KEY = (() => { try { const b = new Uint8Array(18); crypto.getRandomValues(b); return Array.from(b, (x) => "abcdefghijklmnopqrstuvwxyz0123456789"[x % 36]).join(""); } catch (e) { return rid() + rid() + rid(); } })();
   let BY = store("potatobrawl.uid") || store("blastline.uid");
   if (!BY || !/^[A-Za-z0-9_-]{4,40}$/.test(BY)) BY = "u_" + rid() + rid();
   store("potatobrawl.uid", BY);
@@ -20,6 +22,7 @@
 
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
+  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / qm-* messages
   const rooms = new Map();
 
   function setConn(v) { if (v === welcomed) return; welcomed = v; for (const fn of [...connL]) fn(v); }
@@ -28,7 +31,7 @@
     try { ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws"); }
     catch (e) { setTimeout(connect, backoff); return; }
     window.__blws = ws;
-    ws.onopen = () => { backoff = 400; send({ t: "hello", peer: PEER, by: BY, name: NAME }); };
+    ws.onopen = () => { backoff = 400; send({ t: "hello", peer: PEER, by: BY, name: NAME, k: KEY }); };
     ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (_) { return; } onMsg(m); };
     ws.onclose = () => { setConn(false); setTimeout(connect, backoff); backoff = Math.min(backoff * 2, 6000); };
     ws.onerror = () => {};
@@ -40,6 +43,7 @@
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
+    if (m.t === "me" || (typeof m.t === "string" && m.t.slice(0, 3) === "qm-")) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -144,5 +148,12 @@
     return NAME;
   };
   window.claude = { use: async (n) => (n === "room" ? room : n === "user" ? user : null) };
+  // Quick match talks to the server directly (server.js -> quick.js): send a message, hear the answers, know the connection
+  window.__blQuick = Object.freeze({
+    send(m) { if (!welcomed) return false; send(m); return true; },
+    on(fn) { qmL.add(fn); return () => qmL.delete(fn); },
+    connected: () => welcomed,
+    onConnection(fn) { connL.add(fn); return () => connL.delete(fn); },
+  });
   connect();
 })();

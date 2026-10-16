@@ -1,0 +1,333 @@
+// Quick match on the server (quick.js through server.js): the queue, the referee and the online rank.
+// Two (or more) fake phones talk to a real server.js over WebSocket. A whole bot match is played the way the page plays it
+// (inputs in the presence, D neutral frames first, a checksum every 60 frames) and the server's verdict must match the game.
+// Run: node tests/quick.js   (prints "quick ok" at the end when every check passed)
+const { spawn } = require("child_process");
+const http = require("http");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const crypto = require("crypto");
+const WebSocket = require("ws");
+const { BL } = require("../game/core.js");
+const Q = require("../quick.js");
+
+const ROOT = path.join(__dirname, "..");
+const PORT = 8093;
+const PROTO = +/const PROTO = (\d+);/.exec(fs.readFileSync(path.join(ROOT, "game/ui/online.js"), "utf8"))[1];
+const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400 };
+let fails = 0, passes = 0;
+function check(ok, what) { if (ok) { passes++; console.log("PASS " + what); } else { fails++; console.log("FAIL " + what); } }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const rid = (n) => crypto.randomBytes(n).toString("hex").slice(0, n);
+
+/* ----- the server ----- */
+function call(method, p, body, headers) {
+  return new Promise((resolve) => {
+    const data = body === undefined ? null : JSON.stringify(body);
+    const h = Object.assign(data !== null ? { "content-type": "application/json", "content-length": Buffer.byteLength(data) } : {}, headers);
+    const rq = http.request({ host: "127.0.0.1", port: PORT, method, path: p, headers: h, agent: false }, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => { const text = Buffer.concat(chunks).toString("utf8"); let json = null; try { json = JSON.parse(text); } catch (e) { /* not json */ } resolve({ status: res.statusCode, text, json }); });
+    });
+    rq.on("error", (e) => resolve({ status: 0, text: String(e), json: null }));
+    if (data !== null) rq.write(data);
+    rq.end();
+  });
+}
+async function startServer(env) {
+  const proc = spawn(process.execPath, ["server.js"], { cwd: ROOT, env: Object.assign({}, process.env, { PORT: String(PORT), KEEPALIVE_MINUTES: "0", QM_T: JSON.stringify(FAST) }, env), stdio: ["ignore", "pipe", "pipe"] });
+  let log = ""; proc.stdout.on("data", (d) => { log += d; }); proc.stderr.on("data", (d) => { log += d; });
+  for (let i = 0; i < 60; i++) { const r = await call("GET", "/health"); if (r.status === 200) return { proc, log: () => log }; await sleep(100); }
+  proc.kill(); throw new Error("server did not start:\n" + log);
+}
+async function stopServer(s) { if (!s) return; s.proc.kill(); await new Promise((r) => s.proc.once("exit", r)); }
+const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), "pbqm-"));
+const hashOf = (code) => crypto.createHash("sha256").update(code.replace(/-/g, "")).digest("hex");
+async function newAccount(name) { const r = await call("POST", "/api/acct/new", { prof: { name, tokens: 5 } }, { "x-forwarded-for": "192.0.2." + (1 + Math.floor(Math.random() * 200)) }); return r.json.code; }
+function setOn(dir, code, patch) {   // the test's own hand on an account's online record (the server reads the file each time)
+  const f = path.join(dir, hashOf(code) + ".json"), rec = JSON.parse(fs.readFileSync(f, "utf8"));
+  rec.on = Object.assign(rec.on || {}, patch); fs.writeFileSync(f, JSON.stringify(rec));
+}
+const readOn = (dir, code) => JSON.parse(fs.readFileSync(path.join(dir, hashOf(code) + ".json"), "utf8")).on;
+
+/* ----- a fake phone ----- */
+function phone(name, opts) {
+  const o = opts || {};
+  const P = { name, peer: o.peer || "p" + rid(20), by: "u_" + rid(20), k: o.k === undefined ? rid(24) : o.k, msgs: [], waiters: [], closed: null };
+  P.ws = new WebSocket(`ws://127.0.0.1:${PORT}/ws`);
+  P.ws.on("message", (b) => {
+    let m; try { m = JSON.parse(b); } catch (e) { return; }
+    const w = P.waiters.find((x) => x.pred(m));
+    if (w) { P.waiters.splice(P.waiters.indexOf(w), 1); w.res(m); } else P.msgs.push(m);   // a waited-for message is used up
+  });
+  P.ws.on("close", (code) => { P.closed = code; });
+  P.send = (m) => { if (P.ws.readyState === 1) P.ws.send(JSON.stringify(m)); };
+  // the first message (already received or still to come) that matches
+  P.next = (pred, ms, from) => new Promise((res) => {
+    const i = P.msgs.findIndex((m, k) => k >= (from || 0) && pred(m));
+    if (i >= 0) { const m = P.msgs[i]; P.msgs.splice(0, i + 1); return res(m); }
+    const w = { pred, res };
+    P.waiters.push(w);
+    setTimeout(() => { const k = P.waiters.indexOf(w); if (k >= 0) { P.waiters.splice(k, 1); res(null); } }, ms || 4000);
+  });
+  P.open = () => new Promise((res) => {
+    const go = () => { P.send({ t: "hello", peer: P.peer, by: P.by, name: P.name, k: P.k || undefined }); P.next((m) => m.t === "welcome", 3000).then(res); };
+    if (P.ws.readyState === 1) go(); else { P.ws.once("open", go); P.ws.once("close", () => res(null)); }
+  });
+  P.close = () => { try { P.ws.close(); } catch (e) { /* gone */ } };
+  return P;
+}
+async function authed(name, code) {
+  const p = phone(name);
+  await p.open();
+  if (code) { p.send({ t: "auth", code }); p.me = await p.next((m) => m.t === "me", 3000); }
+  return p;
+}
+
+/* ----- the page's input coding and lockstep, played by two bots ----- */
+const ULTI_BASE = 2592, NEUTRAL = 1280, B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function encIn(i) {
+  const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4), q = (qx + 4) * 9 + (qy + 4);
+  const b4 = (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0);
+  return i.ulti ? ULTI_BASE + q * 16 + b4 : q * 32 + b4 + (i.dodge ? 16 : 0);
+}
+const pack = (arr, from, to) => { let s = ""; for (let f = from; f < to; f++) s += B64[arr[f] >> 6] + B64[arr[f] & 63]; return s; };
+const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+function startMsg(found, over) {
+  return Object.assign({ id: 1, seed: found.seed, d: 4, f: found.f, p: found.p, rtt: 40, r: found.r, set: { n: 1, w: [0, 0] } }, over);
+}
+// joins both phones to the found room and sets their roles; returns [host, guest]
+async function enter(a, b) {
+  const fa = await a.next((m) => m.t === "qm-found", 5000), fb = await b.next((m) => m.t === "qm-found", 5000);
+  if (!fa || !fb) return null;
+  const [H, G] = fa.role === "host" ? [a, b] : [b, a];
+  H.found = fa.role === "host" ? fa : fb; G.found = fa.role === "host" ? fb : fa;
+  for (const p of [H, G]) { p.send({ t: "join", room: p.found.room }); await p.next((m) => m.t === "peers" && m.room === p.found.room, 2000); }
+  H.send({ t: "presence", room: H.found.room, p: { role: "host", f: H.found.f[0] } });
+  G.send({ t: "presence", room: G.found.room, p: { role: "guest", f: G.found.f[1] } });
+  return [H, G];
+}
+/* Plays the match both phones agreed on (the same game the referee builds) with two bots, sending each phone's inputs the way the
+   page does, 60 frames to a message. stopAt: { slot, frame } = that phone goes silent from that frame on; until: both stop there
+   (the match keeps running). ckLie: slot whose checksums are wrong. Returns the local game. */
+async function play(H, G, opts) {
+  const o = opts || {}, st = H.st;
+  const players = st.f.map((id, i) => ({ spec: FIG[id], pal: FIG[id].palettes[st.p[i]] }));
+  const g = BL.newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+  const bots = [BL.makeBot(o.lv0 || 0.95, BL.BOT_STYLES[st.f[0]]), BL.makeBot(o.lv1 || 0.2, BL.BOT_STYLES[st.f[1]])];
+  const logs = [[], []], sent = [0, 0], phones = [H, G];
+  for (let f = 0; f < st.d; f++) { logs[0].push(NEUTRAL); logs[1].push(NEUTRAL); }
+  let ck = null, frame = 0;
+  const flush = async (all) => {
+    for (let i = 0; i < 2; i++) {
+      if (o.stopAt && o.stopAt.slot === i && sent[i] >= o.stopAt.frame) continue;
+      const to = logs[i].length;
+      if (!all && to - sent[i] < 60) continue;
+      const from = Math.max(0, sent[i] - 2);
+      const c = o.ckLie === i && ck ? [ck[0], ck[1] ^ 1] : ck;
+      phones[i].send({ t: "presence", room: phones[i].found.room, p: { m: 1, s: from, i: pack(logs[i], from, to), fr: frame, ck: c } });
+      sent[i] = to;
+    }
+    await sleep(14);   // the server allows about 120 messages a second per phone
+  };
+  while (g.phase !== "over" && frame < 60 * 60 * 5) {
+    for (let i = 0; i < 2; i++) logs[i].push(encIn(BL.botInput(g, g.fighters[i], g.fighters[1 - i], bots[i])));   // the input for frame + D
+    BL.step(g, [Q.decIn(logs[0][frame]), Q.decIn(logs[1][frame])]);
+    g.events.length = 0;
+    frame++;
+    if (frame % 60 === 0) ck = [frame, BL.checksum(g)];
+    if (o.stopAt && frame >= o.stopAt.frame + 200) break;   // the other phone waits from here on
+    if (o.until && frame >= o.until) break;
+    if (logs[0].length % 60 === 0) await flush(false);
+  }
+  await flush(true);
+  return g;
+}
+
+(async () => {
+  const dir = tmpDir();
+  let srv = await startServer({ ACCOUNTS_DIR: dir });
+  try {
+    check(/Quick match: on \(game version \d+, Ranked on\)/.test(srv.log()), "the server starts Quick match with Ranked on");
+    let r = await call("GET", "/health");
+    check(/ranked matches running: 0/.test(r.text) && /searching: 0/.test(r.text), "/health counts ranked matches and searches");
+
+    // ---- accounts: auth gives the online record; Season 1 at 1000 ----
+    const ca = await newAccount("Ann"), cb = await newAccount("Bob"), cc = await newAccount("Cid");
+    let A = await authed("Ann", ca), B = await authed("Bob", cb);
+    check(A.me && A.me.r === 1000 && A.me.n === 0 && /^[0-9A-Z]{10}$/.test(A.me.id), "auth: a fresh online record, rank 1000, a public id");
+    check(readOn(dir, ca) && readOn(dir, ca).id === A.me.id, "auth: the record is saved in the account file");
+    const bad = await authed("Eve", "ZZZZ-ZZZZ-ZZZZ-ZZZZ");
+    check(bad.me && bad.me.err === "unknown", "auth: an unknown code is refused");
+    // a phone's save keeps the online record; a load returns it
+    r = await call("POST", "/api/acct/load", { code: ca });
+    check(r.json && r.json.on && r.json.on.id === A.me.id, "load returns the online record");
+    r = await call("POST", "/api/acct/save", { code: ca, rev: r.json.rev, prof: { name: "Ann", rating: 2400, tokens: 9 } });
+    check(r.status === 200 && readOn(dir, ca).r === 1000, "a save from a phone can't change the online rank");
+
+    // ---- refusals ----
+    bad.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 });
+    check(!!(await bad.next((m) => m.t === "qm-no" && m.why === "acct")), "Ranked without an account: refused (acct)");
+    A.send({ t: "qm", v: PROTO - 1, mode: "r", f: "samurai", pi: 0 });
+    check(!!(await A.next((m) => m.t === "qm-no" && m.why === "old")), "an older page can't search (old: reload)");
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "nobody", pi: 0 });
+    check(!!(await A.next((m) => m.t === "qm-no" && m.why === "bad")), "an unknown fighter is refused");
+    bad.close();
+
+    // ---- a whole Ranked match, decided by the referee ----
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 });
+    const w = await A.next((m) => m.t === "qm-wait");
+    check(w && w.n >= 1 && w.rng === 200, "searching: qm-wait with the count and the range (200)");
+    B.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 });
+    let pair = await enter(A, B);
+    check(!!pair && pair[0].found.ranked === true && pair[0].found.room.slice(0, 2) === "qm", "two Ranked players are paired into a Ranked match");
+    let [H, G] = pair;
+    check(H.found.p[1] === 1 && H.found.f[0] === "samurai" && H.found.opp.name === G.name && H.found.opp.r === 1000 && H.found.opp.pl === 0, "found: mirror skin moved, the opponent's name, rank and placement");
+    // a third phone can't get into the match room
+    const X = await authed("Xan", cc);
+    X.send({ t: "join", room: H.found.room });
+    check(!(await X.next((m) => m.t === "peers", 800)), "a Quick match room refuses anyone else");
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await sleep(150);
+    r = await call("GET", "/health");
+    check(/ranked matches running: 1/.test(r.text), "/health: one ranked match running");
+    const g = await play(H, G, {});
+    const resH = await H.next((m) => m.t === "qm-res", 5000), resG = await G.next((m) => m.t === "qm-res", 5000);
+    const want = g.winner === 0 ? [1, 0] : g.winner === 1 ? [0, 1] : [0.5, 0.5];
+    check(resH && resG && resH.res === want[0] && resG.res === want[1] && resH.why === "game", `the referee's verdict is the game's (winner ${g.winner}, ${g.t} frames)`);
+    const dH = Q.elo(1000, 1000, want[0], 0), dG = Q.elo(1000, 1000, want[1], 0);
+    check(resH && resH.dr === dH && resH.r1 === 1000 + dH && resG.dr === dG && resG.n === 1, `rating: K 48 while placing (${dH >= 0 ? "+" : ""}${dH} / ${dG})`);
+    const oh = readOn(dir, H === A ? ca : cb);
+    check(oh.n === 1 && oh.r === 1000 + dH && oh.h.length === 1 && oh.h[0].why === "game" && oh.last === (H === A ? B : A).me.id, "the account file holds the new rank, the result and the last opponent");
+    check(!/drifted/.test(srv.log()), "both phones' checksums agreed with the referee");
+
+    // ---- never the same opponent twice in a row in Ranked: they meet again as Casual ----
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+    await sleep(100);
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "r", f: "wizard", pi: 0 });
+    check(!(await A.next((m) => m.t === "qm-found", 900)), "the same two Ranked players are not paired again at once");
+    pair = await enter(A, B);
+    check(!!pair && pair[0].found.ranked === false && pair[0].found.fb === true, "after the fallback time they meet as Casual (fb: doesn't count)");
+    [H, G] = pair;
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await sleep(100);
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+    await sleep(100);
+    check(!(await H.next((m) => m.t === "qm-res" || m.t === "qm-off", 500)), "a Casual match leaves no verdict");
+
+    // ---- leaving a running Ranked match is a loss; a drifting phone is logged, the referee still decides ----
+    const C = X;
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "reaper", pi: 0 }); C.send({ t: "qm", v: PROTO, mode: "r", f: "phoenix", pi: 0 });
+    pair = await enter(A, C);
+    [H, G] = pair;
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G, { until: 900, ckLie: 0 });
+    check(/drifted from the referee/.test(srv.log()), "a phone whose checksums differ from the referee's is logged");
+    const before = readOn(dir, G === A ? ca : cc).r;
+    G.send({ t: "leave", room: G.found.room });
+    const lv = await G.next((m) => m.t === "qm-res", 2000), lw = await H.next((m) => m.t === "qm-res", 2000);
+    check(lv && lv.res === 0 && lv.why === "left" && lw && lw.res === 1, "leaving a running Ranked match: the leaver loses, the other wins");
+    check(readOn(dir, G === A ? ca : cc).r < before, "the leaver's rank goes down");
+    H.send({ t: "leave", room: H.found.room });
+
+    // ---- going quiet: the phone the game waits for loses ----
+    await sleep(100);
+    B.send({ t: "qm", v: PROTO, mode: "r", f: "dragon", pi: 0 }); C.send({ t: "qm", v: PROTO, mode: "r", f: "alchemist", pi: 0 });
+    pair = await enter(B, C);
+    [H, G] = pair;
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G, { stopAt: { slot: 0, frame: 300 } });
+    const qv = await H.next((m) => m.t === "qm-res", 4000), qw = await G.next((m) => m.t === "qm-res", 4000);
+    check(qv && qv.why === "quiet" && qv.res === 0 && qw && qw.res === 1, "a phone that sends nothing while the other waits loses (quiet)");
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+
+    // ---- a host that changes the match loses ----
+    await sleep(100);
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "gunslinger", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 2 });
+    pair = await enter(A, B);
+    [H, G] = pair;
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: startMsg(H.found, { seed: H.found.seed + 1 }) } });
+    const sv = await H.next((m) => m.t === "qm-res", 2000);
+    check(sv && sv.why === "start" && sv.res === 0, "a host whose start differs from the server's assignment loses (start)");
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+
+    // ---- found but never started: no result, nobody's rank changes ----
+    await sleep(100);
+    const ra = readOn(dir, ca).r, rc = readOn(dir, cc).r;
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 }); C.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
+    pair = await enter(A, C);
+    const off = await pair[0].next((m) => m.t === "qm-off", 3000), off2 = await pair[1].next((m) => m.t === "qm-off", 1000);
+    check(off && off.why === "nostart" && off2 && readOn(dir, ca).r === ra && readOn(dir, cc).r === rc, "a match that never starts: qm-off nostart to both, no rank change");
+    for (const p of pair) p.send({ t: "leave", room: p.found.room });
+
+    // ---- the rating range: far apart only after waiting ----
+    await sleep(100);
+    setOn(dir, cc, { r: 1700, pk: 1700 });
+    C.send({ t: "auth", code: cc }); await C.next((m) => m.t === "me");
+    const t0 = Date.now();
+    A.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 }); C.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    pair = await enter(A, C);
+    check(!!pair && Date.now() - t0 >= 1100, `players 700 apart meet only once the range is open (${Date.now() - t0} ms)`);
+    for (const p of pair) p.send({ t: "leave", room: p.found.room });
+
+    // ---- one search per account ----
+    await sleep(100);
+    const A2 = await authed("Ann2", ca);
+    A.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    await A.next((m) => m.t === "qm-wait");
+    A2.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    check(!!(await A.next((m) => m.t === "qm-x" && m.why === "elsewhere")), "a second page of the same account takes over the search");
+    A2.send({ t: "qmx" }); A2.close();
+
+    // ---- taking over another phone's connection needs its secret ----
+    const thief = phone("Thief", { peer: B.peer, k: rid(24) });
+    await thief.open();
+    await sleep(200);
+    check(thief.closed === 1008 && B.ws.readyState === 1, "a hello with someone else's peer id and another secret is refused");
+    const thief2 = phone("Thief2", { peer: B.peer, k: "" });
+    await thief2.open();
+    await sleep(200);
+    check(thief2.closed === 1008, "a hello with someone else's peer id and no secret is refused");
+
+    // ---- drain before an update ----
+    const D1 = await authed("Dee", await newAccount("Dee"));
+    D1.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
+    await D1.next((m) => m.t === "qm-wait");
+    srv.proc.kill("SIGUSR2");
+    await sleep(300);
+    r = await call("GET", "/health");
+    check(/draining: yes/.test(r.text) && !!(await D1.next((m) => m.t === "qm-wait" && m.hold === 1, 1500)), "SIGUSR2: draining, searches are told to hold");
+    B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
+    check(!(await D1.next((m) => m.t === "qm-found", 1500)), "draining: no new matches are made");
+    for (const p of [A, B, C, D1, X, thief, thief2]) p.close();
+  } finally { await stopServer(srv); }
+
+  // ---- accounts off: Casual still works, Ranked is refused ----
+  srv = await startServer({ ACCOUNTS_DIR: "" });
+  try {
+    check(/Quick match: on \(game version \d+, Ranked off: needs accounts\)/.test(srv.log()), "accounts off: Quick match runs Casual only");
+    const A = await authed("Ann", "0000-0000-0000-0000"), B = await authed("Bob", null);
+    check(A.me && A.me.err === "off", "accounts off: auth answers off");
+    B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
+    check(!!(await B.next((m) => m.t === "qm-no" && m.why === "acct")), "accounts off: Ranked is refused");
+    A.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "c", f: "samurai", pi: 0 });
+    const pair = await enter(A, B);
+    check(!!pair && pair[0].found.ranked === false && pair[0].found.opp.pl === -1, "accounts off: two Casual players are paired");
+    A.close(); B.close();
+  } finally { await stopServer(srv); }
+
+  // ---- the pure parts ----
+  check(Q.elo(1000, 1000, 1, 0) === 24 && Q.elo(1000, 1000, 1, 10) === 16 && Q.elo(1200, 1000, 0, 20) === -24, "elo: K 48 for the first 10, then 32");
+  check(Q.cleanOn({ r: -5, w: 3, id: "bad" }).r === 1000 && Q.cleanOn({ r: 1300, pk: 900 }).pk === 1300, "a broken online record is cleaned");
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log(`${passes} passed, ${fails} failed`);
+  if (!fails) console.log("quick ok");
+  process.exit(fails ? 1 : 0);
+})().catch((e) => { console.log("FAIL crashed:", e && e.stack); process.exit(1); });

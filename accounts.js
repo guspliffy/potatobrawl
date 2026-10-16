@@ -8,8 +8,11 @@
  *
  *   GET  /api/acct/ping   200 when accounts are on
  *   POST /api/acct/new    {prof}             -> {code, rev}           a new account, rev 1
- *   POST /api/acct/load   {code}             -> {prof, rev, t}        or 404 {error:"unknown"}
+ *   POST /api/acct/load   {code}             -> {prof, rev, t, on?}   or 404 {error:"unknown"}
  *   POST /api/acct/save   {code, rev, prof}  -> {rev}                 or 409 {prof, rev, t} when rev is not the stored one
+ *
+ * An account file can also hold `on`, the online record of Quick match (quick.js: public id, rank, record, last results).
+ * Only the server writes it (writeOn); a save from a phone replaces `prof` and keeps `on` as it is.
  *
  * Everything is a JSON POST body, so codes never appear in URLs or logs. One account = one small file named
  * sha256(code).json, holding {rev, t, prof}; the folder never contains a code. Files are written to a temp name and
@@ -26,7 +29,7 @@ const FILE_RE = /^[0-9a-f]{64}\.json$/;
 const DEFAULTS = {
   maxBody: 16 * 1024,            // bytes of request body
   perMin: 60,                    // requests per IP per minute
-  newPerHour: 10,                // new accounts per IP per hour
+  newPerHour: 60,                // new accounts per IP per hour (Quick match makes one by itself: a class on one Wi-Fi all gets one)
   maxFiles: 20000,               // accounts in total
   maxBytes: 200 * 1024 * 1024,   // size of the whole folder
   unknownDelayMs: 350,           // an unknown code is answered after this pause, so codes cannot be guessed fast
@@ -182,14 +185,14 @@ function init(dir, opts) {
       if (!code) return send(res, 400, { error: "code" });
       if (sub === "load") {
         const rec = read(code);
-        return rec ? send(res, 200, { prof: rec.prof, rev: rec.rev, t: rec.t }) : unknown(res);
+        return rec ? send(res, 200, Object.assign({ prof: rec.prof, rev: rec.rev, t: rec.t }, rec.on ? { on: rec.on } : {})) : unknown(res);
       }
       if (sub === "save") {
         if (!Number.isSafeInteger(m.rev) || m.rev < 1 || !isObj(m.prof) || !shapeOk(m.prof, 0)) return send(res, 400, { error: "prof" });
         const rec = read(code);
         if (!rec) return unknown(res);
         if (rec.rev !== m.rev) return send(res, 409, { prof: rec.prof, rev: rec.rev, t: rec.t });
-        const next = { rev: rec.rev + 1, t: Date.now(), prof: m.prof }, file = fileOf(code);
+        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}), file = fileOf(code);   // the online record stays the server's
         if (total - (sizes.get(file) || 0) + Buffer.byteLength(JSON.stringify(next)) > o.maxBytes) return send(res, 503, { error: "full" });
         write(file, next);
         return send(res, 200, { rev: next.rev, t: next.t });
@@ -209,7 +212,26 @@ function init(dir, opts) {
     } catch (e) { fail(res, e); }
     return true;
   }
-  return { handle, count: () => sizes.size, bytes: () => total, dir };
+  /* ----- for quick.js: an account by its code, and the server-only online record ----- */
+  // the account file's name for a code a player typed or sent ("" when it can't be a code or no such account exists)
+  function fileOfCode(raw) { const code = normCode(raw); return code && sizes.has(fileOf(code)) ? fileOf(code) : ""; }
+  function readFile(file) {
+    if (!FILE_RE.test(file)) return null;
+    try {
+      const rec = JSON.parse(fs.readFileSync(path.join(dir, file), "utf8"));
+      if (isObj(rec) && Number.isSafeInteger(rec.rev) && rec.rev >= 1 && isObj(rec.prof)) return rec;
+    } catch (e) { /* gone */ }
+    return null;
+  }
+  // replaces the online record and keeps everything else (rev too: a phone's next save still fits). Throws on a disk problem.
+  function writeOn(file, on) {
+    const rec = readFile(file);
+    if (!rec || !isObj(on)) return false;
+    rec.on = on;
+    write(file, rec);
+    return true;
+  }
+  return { handle, count: () => sizes.size, bytes: () => total, dir, fileOfCode, readFile, writeOn };
 }
 
 module.exports = { init, normCode, fmtCode, newCode, hashOf };

@@ -357,18 +357,19 @@ async function serverTests() {
   } finally { await stopServer(srv); }
   rmDir(dir);
 
-  // limits through server.js: 10 new accounts an hour, 60 requests a minute, per address
+  // limits through server.js: 60 new accounts an hour (Quick match makes one for every player: a class on one Wi-Fi), 60 requests
+  // a minute, per address. Behind the local proxy each X-Forwarded-For address has its own allowance, so the two limits are tried apart.
   const dir2 = tmpDir();
   srv = await startServer({ ACCOUNTS_DIR: dir2 });
   try {
+    const A = { "x-forwarded-for": "198.51.100.4" };
     let ok = 0, blocked = null;
-    for (let i = 0; i < 12; i++) { const r = await post("new", { prof: { tokens: i } }); if (r.status === 200) ok++; else if (!blocked) blocked = r; }
-    check(ok === 10 && blocked && blocked.status === 429 && !!blocked.headers["retry-after"], "limit: the 11th new account in an hour -> 429 with Retry-After");
-    check(fs.readdirSync(dir2).length === 10, "limit: nothing was created by the refused requests");
-    // 12 requests made so far (10 new + 2 refused); all count towards the 60 a minute
+    for (let i = 0; i < 62; i++) { const r = await post("new", { prof: { tokens: i } }, A); if (r.status === 200) ok++; else if (!blocked) blocked = r; }
+    check(ok === 60 && blocked && blocked.status === 429 && !!blocked.headers["retry-after"], "limit: the 61st new account from one address -> 429 with Retry-After");
+    check(fs.readdirSync(dir2).length === 60, "limit: nothing was created by the refused requests");
     let last = null, n = 0;
-    for (let i = 0; i < 60; i++) { const r = await call("GET", "/api/acct/ping"); n++; if (r.status === 429) { last = r; break; } }
-    check(last && n >= 45 && n <= 50, `limit: 60 requests a minute -> 429 after ${n} more pings`);
+    for (let i = 0; i < 70; i++) { const r = await call("GET", "/api/acct/ping"); n++; if (r.status === 429) { last = r; break; } }
+    check(last && n === 61, `limit: 60 requests a minute -> 429 on request ${n}`);
     r = await call("GET", "/api/acct/ping", undefined, { "x-forwarded-for": "203.0.113.7" });
     check(r.status === 200, "limit: behind the local proxy, another real address (X-Forwarded-For) has its own allowance");
     r = await call("GET", "/health");
