@@ -105,12 +105,12 @@ async def open_casual(pg, tag):
 
 async def walk_off(B, A, what):
     """B walks off the stage until the match is over; both reach the results"""
-    await wait(B, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", f'B: {what} starts', 30)
+    await wait(B, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", f'B: {what} starts', 60)   # a loaded machine (check.sh runs two browser steps and the simulations) is slow
     await B.bring_to_front()
     await B.keyboard.down('ArrowLeft')
-    await wait(B, "window.__blastline.mode === 'result'", f'B: {what} ends (walked off three times)', 100)
+    await wait(B, "window.__blastline.mode === 'result'", f'B: {what} ends (walked off three times)', 180)
     await B.keyboard.up('ArrowLeft')
-    await wait(A, "window.__blastline.mode === 'result'", f'A: the results of {what}', 30)
+    await wait(A, "window.__blastline.mode === 'result'", f'A: the results of {what}', 45)
 
 async def main():
     d = tempfile.mkdtemp(prefix='pwstakes-')
@@ -183,7 +183,7 @@ async def main():
             expect(not await shown(B, '#stkCard'), 'B: the card goes after Not now')
             # again, and B accepts
             await tap(A, '#rStake'); await tap(A, '#skSend')
-            await wait(B, "!document.getElementById('stkCard').hidden", 'B: the second challenge', 10)
+            await wait(B, "!document.getElementById('stkCard').hidden", 'B: the second challenge', 20)
             ta0, tb0 = await tokens(A), await tokens(B)
             vs0 = await A.evaluate("window.__blastline.qm.vsN")
             await tap(B, '#skcOk')

@@ -575,7 +575,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   screen; rvCasual (qm-cs) / rvRanked (qm-res) take the server's record; rvResults / rvStrip / rvVerdict on the results, rvFriend for
   Play friends; rvPlate on the Quick match rank plate; rvStats = the Rivals list atop Account > Stats). CSS in game/css/97-rivals.css.
 - ui/stakes.js (after rivals.js): chip stakes on the page (STK state; stkGot takes `sk` from every verdict; stkButtons = FOR CHIPS on the
-  results (.res-again holds the gold button and the segment; classes stk-seg / stk-row / stk-wait on .res-actions); stkSheet = the
+  results (.res-again holds the gold button and the segment; classes stk-seg / stk-row / stk-wait on .res-actions; stk-row, after
+  Ranked or a staked match, takes the Quick match button's place, so it shows only while a stake can be played); stkSheet = the
   stake sheet #scrStake; stkCard = the challenge card #stkCard, moved over the results' right column sideways, else at the bottom of
   any screen but a fight; stkFound / stkRes / stkPotView = the staked match's VS pot and the pot card #rPot; stkSettings = Settings >
   Chip stakes; stkStats = the line in Account > Stats). CSS in game/css/98-stakes.css. Test hook `window.__blastline.stk`.

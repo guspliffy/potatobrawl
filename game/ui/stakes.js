@@ -165,7 +165,10 @@ function stkButtons() {
   const b = $("rStake"), why = $("rStakeWhy"), acts = why.parentNode;
   if (mode !== "result") return;
   const k = stkShown(), el = stkElFor(k), midSet = k && k.pf && NET.setRes && !NET.setRes.over;   // a best of 3 plays out first
-  const show = !!el && stkOn() && el.why !== "off" && el.why !== "acct" && !midSet, wait = show && (!!STK.out || STK.busy > 0);
+  // after Ranked (or a staked match) REMATCH FOR CHIPS takes the Quick match button's place, so it shows only while it can be used:
+  // a dimmed one there would hide Quick match from every new player for their first 10 matches
+  const going = !!STK.out || STK.busy > 0;
+  const show = !!el && stkOn() && el.why !== "off" && el.why !== "acct" && !midSet && (!k.hard || el.ok.length > 0 || going), wait = show && going;
   acts.classList.toggle("stk-seg", show && !k.hard); acts.classList.toggle("stk-row", show && k.hard); acts.classList.toggle("stk-wait", wait);
   b.hidden = !show;
   const note = STK.note && performance.now() - STK.noteT < 9000 ? STK.note : "", can = show && el.ok.length > 0;
