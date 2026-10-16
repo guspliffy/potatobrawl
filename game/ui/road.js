@@ -8,67 +8,72 @@
    bits and the first win paid: b / paid, b2 / p2, b3 / p3 } (sync.js merges it: every star either device won stays won). The map is
    drawn on a canvas (roadDraw), one region at a time; the stops are buttons laid over it. UI only: the twists are newGame options
    (lives, start percent, the percent every life starts at, the time, the map). A region whose boss is not in this build is "coming". */
+// The difficulty rises over the whole Road, stop by stop (Jonny 2026-10-16; boss/road-curve-plan.md): d, the CPU's strength, climbs
+// from 0.25 to 1.00 (the strongest CPU in the game), and the twists turn against you: in The Field they help or are even, in The Kitchen
+// they are even or a little against you, in The Deep you start behind. tests/roadcurve.js plays every stop with bots and keeps it so.
 const ROAD = [
-  { id: "gate", name: "The Farm Gate", cpu: "Small Fry", f: "phoenix", d: 0.3, lives: 2, secs: 90, map: "field",
+  { id: "gate", name: "The Farm Gate", cpu: "Small Fry", f: "phoenix", d: 0.25, lives: 2, secs: 120, map: "field",
     line: "Gate's open. Mind the sprouts, they bite.", bonus: { k: "fast", s: 60, txt: "Win in under 60 s" } },
-  { id: "sprout", name: "The Sprout Patch", cpu: "Mash", f: "odin", d: 0.4, secs: 120, map: "field", cpuPct: 70, twist: "Mash starts at 70%.",
+  { id: "sprout", name: "The Sprout Patch", cpu: "Mash", f: "odin", d: 0.4, secs: 120, map: "field", cpuPct: 40, twist: "Mash starts at 40%.",
     line: "Nobody moves Mash. Nobody.", bonus: { k: "route", r: "three", txt: "Land the Three-piece combo" } },
-  { id: "scarecrow", name: "The Scarecrow's Post", cpu: "Straw Jack", f: "reaper", d: 0.45, secs: 120, map: "field", myLifePct: 40, twist: "You start every life at 40%.",
+  { id: "scarecrow", name: "The Scarecrow's Post", cpu: "Straw Jack", f: "reaper", d: 0.4, secs: 120, map: "field", myPct: 20, twist: "You start at 20%.",
     line: "Caw. Just a scarecrow. Nothing with a scythe here.", bonus: { k: "fin", txt: "KO with a finisher special" } },
   { id: "well", name: "The Lord's Well", cpu: "Dr. Peel", f: "alchemist", d: 0.5, secs: 90, map: "castle", twist: "Win inside 90 seconds.",
     line: "Drink this. No? Then I'll throw it.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
-  { id: "crow", name: "Crow's Rest", cpu: "Bang Bang Maris", f: "gunslinger", d: 0.6, lives: 1, secs: 60, map: "field", twist: "One life each.",
+  { id: "crow", name: "Crow's Rest", cpu: "Bang Bang Maris", f: "gunslinger", d: 0.53, lives: 1, secs: 60, map: "field", twist: "One life each.",
     line: "One heart. One shot. Don't blink.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "barn", name: "The Burnt Barn", cpu: "Cinder", f: "dragon", d: 0.65, map: "fryer", myPct: 50, twist: "You start at 50%.",
+  { id: "barn", name: "The Burnt Barn", cpu: "Cinder", f: "dragon", d: 0.56, map: "fryer", myPct: 50, twist: "You start at 50%.",
     line: "Smell that? That's you, in a minute.", bonus: { k: "route", r: "trip", txt: "Land the Trip & Spike combo" } },
-  { id: "moon", name: "The Harvest Moon", cpu: "Moonie", f: "wizard", d: 0.75, map: "moon", lives: 2, cpuLives: 3, twist: "Moonie has 3 hearts, you have 2.",
+  { id: "moon", name: "The Harvest Moon", cpu: "Moonie", f: "wizard", d: 0.59, map: "moon", myPct: 20, twist: "You start at 20%.",
     line: "The stars said you'd come. They were vague about the leaving.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "edge", name: "The Field's Edge", cpu: "Sir Spudsalot", f: "samurai", d: 0.85, lives: 2, map: "field", cpuPct: 25, twist: "Sir Spudsalot starts at 25%.",
+  { id: "edge", name: "The Field's Edge", cpu: "Sir Spudsalot", f: "samurai", d: 0.66, lives: 2, map: "field",
     line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
 // region 2, The Kitchen, and region 3, The Deep (bosses2/fable-design.md section 5)
 const ROAD_KITCHEN = [
-  { id: "backdoor", name: "The Back Door", cpu: "Dishwater Dan", f: "odin", d: 0.45, lives: 2, secs: 120, map: "kitchen", cpuPct: 40, twist: "Dan starts at 40%.",
+  { id: "backdoor", name: "The Back Door", cpu: "Dishwater Dan", f: "odin", d: 0.66, lives: 2, secs: 120, map: "kitchen",
     line: "Staff only. You staff? Didn't think so.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
-  { id: "pantry", name: "The Pantry", cpu: "Tin Can Tina", f: "gunslinger", d: 0.5, map: "kitchen", myLifePct: 35, twist: "You start every life at 35%.",
+  { id: "pantry", name: "The Pantry", cpu: "Tin Can Tina", f: "gunslinger", d: 0.68, map: "kitchen", myPct: 30, twist: "You start at 30%.",
     line: "Everything in here has a date on it. Yours is today.", bonus: { k: "route", r: "sig", txt: "Land the Signature combo" } },
-  { id: "cold", name: "The Cold Store", cpu: "Frosty Fritz", f: "wizard", d: 0.55, lives: 2, secs: 90, map: "moon", twist: "Win inside 90 seconds.",
+  { id: "cold", name: "The Cold Store", cpu: "Frosty Fritz", f: "wizard", d: 0.7, lives: 2, secs: 120, map: "moon",
     line: "Minus twenty in here. Don't worry, you'll stop shivering.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
-  { id: "stove", name: "The Stove", cpu: "Sizzle", f: "dragon", d: 0.65, secs: 120, map: "fryer", myPct: 60, twist: "You start at 60%.",
+  { id: "stove", name: "The Stove", cpu: "Sizzle", f: "dragon", d: 0.72, secs: 120, map: "fryer", myPct: 40, twist: "You start at 40%.",
     line: "Oil's hot. Hop in, I'll time you.", bonus: { k: "fin", txt: "KO with a finisher special" } },
-  { id: "spice", name: "The Spice Rack", cpu: "Paprika Pete", f: "phoenix", d: 0.7, lives: 2, cpuLives: 1, secs: 60, map: "kitchen", twist: "Pete has 1 heart, you have 2.",
+  { id: "spice", name: "The Spice Rack", cpu: "Paprika Pete", f: "phoenix", d: 0.72, lives: 1, secs: 60, map: "kitchen", twist: "One life each.",
     line: "One pinch. That's all it takes.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "sink", name: "The Sink", cpu: "Suds", f: "alchemist", d: 0.75, secs: 120, map: "kitchen", myPct: 50, cpuPct: 50, twist: "You both start at 50%.",
+  { id: "sink", name: "The Sink", cpu: "Suds", f: "alchemist", d: 0.76, secs: 120, map: "kitchen", myPct: 60, twist: "You start at 60%.",
     line: "Everything ends up in the sink. Even you.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
   { id: "chef", name: "The Chef's Table", cpu: "Chef Rösti", f: "samurai", d: 0.8, lives: 1, map: "castle", twist: "One life each.",
     line: "Precision. Presentation. Then the plate.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
-  { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.9, lives: 2, map: "kitchen", cpuPct: 20, twist: "Tom starts at 20%.",
+  { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.8, lives: 2, map: "kitchen", myPct: 40, twist: "You start at 40%.",
     line: "They're watching. Through the window. I've seen the lights.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
 ];
 const ROAD_DEEP = [
-  { id: "harbour", name: "The Harbour Wall", cpu: "Salty Sal", f: "samurai", d: 0.5, lives: 2, secs: 120, map: "deep", cpuPct: 35, twist: "Sal starts at 35%.",
+  { id: "harbour", name: "The Harbour Wall", cpu: "Salty Sal", f: "samurai", d: 0.82, lives: 2, secs: 120, map: "deep", myPct: 20, twist: "You start at 20%.",
     line: "Mind the wall. Mind the drop. Mind me.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
-  { id: "market", name: "The Fish Market", cpu: "Haddock Hal", f: "gunslinger", d: 0.55, map: "bay", myLifePct: 30, twist: "You start every life at 30%.",
+  { id: "market", name: "The Fish Market", cpu: "Haddock Hal", f: "gunslinger", d: 0.84, map: "bay", myLifePct: 10, twist: "You start every life at 10%.",
     line: "Fresh today! Well. Fresh-ish.", bonus: { k: "route", r: "trip", txt: "Land the Trip & Spike combo" } },
-  { id: "lighthouse", name: "The Lighthouse", cpu: "Old Lamp", f: "wizard", d: 0.6, lives: 2, secs: 90, map: "deep", twist: "Win inside 90 seconds.",
+  { id: "lighthouse", name: "The Lighthouse", cpu: "Old Lamp", f: "wizard", d: 0.87, lives: 2, secs: 90, map: "deep", twist: "Win inside 90 seconds.",
     line: "Three flashes means rocks. Two means run. I only do one.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "wreck", name: "The Wreck", cpu: "Barnacle Bill", f: "odin", d: 0.7, lives: 2, cpuLives: 3, map: "castle", twist: "Bill has 3 hearts, you have 2.",
+  { id: "wreck", name: "The Wreck", cpu: "Barnacle Bill", f: "odin", d: 0.88, map: "castle", myPct: 40, twist: "You start at 40%.",
     line: "Went down with my ship. Came back up annoyed.", bonus: { k: "route", r: "three", txt: "Land the Three-piece combo" } },
-  { id: "fog", name: "The Fog Bank", cpu: "Misty", f: "reaper", d: 0.75, secs: 120, map: "deep", myPct: 50, twist: "You start at 50%.",
+  { id: "fog", name: "The Fog Bank", cpu: "Misty", f: "reaper", d: 0.9, secs: 120, map: "deep", myPct: 50, twist: "You start at 50%.",
     line: "Can't see a thing out here. Perfect.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
-  { id: "trawler", name: "The Trawler", cpu: "Captain Crisp", f: "dragon", d: 0.8, lives: 1, secs: 90, map: "bay", twist: "One life each.",
+  { id: "trawler", name: "The Trawler", cpu: "Captain Crisp", f: "dragon", d: 0.93, lives: 1, secs: 90, map: "bay", myPct: 30, twist: "One life each, and you start at 30%.",
     line: "Net's down. Guess what's in it.", bonus: { k: "fin", txt: "KO with a finisher special" } },
-  { id: "whirlpool", name: "The Whirlpool", cpu: "Gurgle", f: "alchemist", d: 0.85, secs: 120, map: "fryer", myPct: 60, cpuPct: 60, twist: "You both start at 60%.",
+  { id: "whirlpool", name: "The Whirlpool", cpu: "Gurgle", f: "alchemist", d: 0.96, secs: 120, map: "fryer", myPct: 60, cpuPct: 30, twist: "You start at 60%, Gurgle at 30%.",
     line: "Round and round. Down and down. Lovely.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
-  { id: "pier", name: "The End of the Pier", cpu: "The Harbour Master", f: "phoenix", d: 0.95, lives: 2, map: "deep", cpuPct: 15, twist: "The Harbour Master starts at 15%.",
+  { id: "pier", name: "The End of the Pier", cpu: "The Harbour Master", f: "phoenix", d: 1, lives: 2, map: "deep", myPct: 30, twist: "You start at 30%.",
     line: "Nobody passes the end of the pier. Not without a ticket.", bonus: { k: "fast", s: 150, txt: "Win in under 2:30" } },
 ];
 ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
-// the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title
+// the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title;
+// hp / mate: on the Road each boss is tougher than the one before (his HP x hp, your CPU partner's strength mate on Normal, +0.1 a
+// level), where Practice and online use 3/4 HP and a .55 partner (ui/boss.js)
 const ROAD_REG = [
-  { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher" },
-  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker" },
-  { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer" },
+  { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher", hp: 0.9, mate: 0.5 },
+  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker", hp: 1.2, mate: 0.4 },
+  { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer", hp: 1.3, mate: 0.35 },
 ];
 const ROAD_N = 8, ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150;
 const ROAD_STARS = ["Win", "No heart lost"];
@@ -461,7 +466,8 @@ function roadBossFight(k, lv) {
   const r = roadGet();
   if (!roadRegOpen(r, k) || !roadGateOpen(r, k)) { openRoad(); return; }
   modal("roadStop", false);
-  startBoss({ level: lv, boss: ROAD_REG[k].boss, road: { boss: true, k, lv } });
+  const RG_ = ROAD_REG[k];
+  startBoss({ level: lv, boss: RG_.boss, hpMul: RG_.hp, mate: RG_.mate + 0.1 * lv, road: { boss: true, k, lv } });
 }
 // handleEvent (effects.js) passes the live match's events: the start, the end, the KOs (a finisher special, an ulti)
 function roadEvent(g, e) {

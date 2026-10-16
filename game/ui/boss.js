@@ -14,15 +14,17 @@ const BOSS_RULE = { scratch: "Break him (0 HP), then land a heavy, special or ul
   zorp: "Hit the saucer from the counters until it crashes, break him (0 HP), then land a heavy, special or ulti.",
   kraken: "Hit his tentacles while they lie on the pier and his head when it comes up, break him (0 HP), then land a heavy, special or ulti." };
 const bossOf = (g) => (g ? g.fighters.find((f) => f.spec.boss) : null);
-// o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id }; your fighter is the one picked on the select screen
+// o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id, hpMul / mate: his HP and the partner's strength
+// (default BOSS_SOLO / BOSS_PARTNER; the Road's are its own, ui/road.js) }; your fighter is the one picked on the select screen
 function startBoss(o) {
   Sfx.init();
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(mate) : 0];
   const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
   G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
-    stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: BOSS_SOLO });
-  match = { boss: true, level: lv, d: BOSS_PARTNER[lv], bot: makeBot(BOSS_PARTNER[lv], BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };
+    stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: o.hpMul ?? BOSS_SOLO });
+  const md = o.mate ?? BOSS_PARTNER[lv];
+  match = { boss: true, level: lv, d: md, bot: makeBot(md, BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };
   meSlot = 0;
   enterMatchUI();
 }

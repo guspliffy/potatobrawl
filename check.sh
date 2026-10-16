@@ -87,6 +87,13 @@ else fail "balance outside ${LO}-${HI}%:$OUT" "$LOGS/balance.log"; fi
 if grep -q "^botstyle ok" "$LOGS/botstyle.log"; then pass "CPU styles (styled vs neutral win rates inside 35-65%)"
 else fail "CPU styles outside 35-65% against the neutral CPU" "$LOGS/botstyle.log"; fi
 
+# 4c. The Road gets harder stop by stop: a regular (0.7) and a skilled (0.9) player bot play every stop with each fighter under its rules;
+#     the CPU's strength rises to 1.00, the first stop is won 85%+, the last 20% or less, no stop is 10+ points easier than the one before,
+#     each region is 15+ points harder than the one before, and the Road bosses get tougher region by region.
+(cd tests && node roadcurve.js) > "$LOGS/roadcurve.log" 2>&1
+if grep -q "^roadcurve ok" "$LOGS/roadcurve.log"; then pass "the Road's curve ($(grep -o '^roadcurve ok (.*' "$LOGS/roadcurve.log" | sed 's/^roadcurve ok (//; s/)$//'))"
+else fail "the Road's curve (a stop or region is easier than the one before)" "$LOGS/roadcurve.log"; fi
+
 # 5. Online: two browsers play a match through a local server.
 PORT=8091 KEEPALIVE_MINUTES=0 node server.js > "$LOGS/server.log" 2>&1 &
 SRV=$!
