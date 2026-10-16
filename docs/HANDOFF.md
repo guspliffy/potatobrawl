@@ -149,6 +149,15 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     A stop's sheet has Fight and Back only, pinned to the sheet's bottom edge (sticky .rd-acts); tapping your own fighter card (#rsMe) opens
     the fighter page. On a boss's sheet the three level stars are the level picker (.rd-lvb, RD.blv, starts on the first level not won)
     and Fight plays the picked level ("Fight · Hard").
+    The Road gets harder stop by stop over all 24 stops (Jonny 2026-10-16; plan /mnt/project-files/boss/road-curve-plan.md): the CPU's
+    strength `d` climbs from 0.25 to 1.00, and the twists help in The Field, are even or a little against you in The Kitchen, and start
+    you behind in The Deep. Bot sims: a 0.7 player bot wins stop 1 about 95% and stop 24 about 3% (a 0.9 bot about 20%).
+    tests/roadcurve.js (check.sh 4c) plays every stop and fails if a stop gets 10+ points easier than the one before it, or a region is
+    not 15+ points harder than the one before. Road bosses have their own HP and CPU partner (ROAD_REG hp / mate, +0.1 partner a level,
+    passed to startBoss as hpMul / mate): Old Scratch x0.9 / .50, Zorp x1.2 / .40, Kraken Spud x1.3 / .35; Practice and online keep
+    BOSS_SOLO x0.75 and BOSS_PARTNER .55/.65/.75. Bots still win every Road boss on Normal (they aim at his open spot every time);
+    Hard and Nightmare carry the challenge. To retune, edit the stop table and run `node tests/roadcurve.js`. The sim tools used for
+    the plan (per-twist values, boss settings) are in /mnt/project-files/boss/road-curve/.
 - Live: https://potatobrawl.cloud (Hostinger VPS srv1519994, 187.124.173.121, Ubuntu 24.04, Node 20).
   Caddy terminates HTTPS and proxies to the game server on 127.0.0.1:8080 (systemd unit `potatobrawl`,
   checkout in /opt/potatobrawl). Old http://187.124.173.121:8080 still answers (deploy/accounts-setup.txt closes it).
@@ -575,6 +584,8 @@ steps, desktop through to the results, touch sizes up to the ulti; tags desk des
 boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
 Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
 map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, four sizes; check.sh 8e) ·
+roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
+tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
 (online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,
 KO page + Victory + Next: Hard on both, a dropped friend, the lobby at four sizes; check.sh 5c) ·
