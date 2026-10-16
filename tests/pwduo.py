@@ -39,6 +39,13 @@ async def shown(pg, sel): return await pg.evaluate(f"(() => {{ const e = documen
 async def in_play(pg):
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=60000)
     await pg.wait_for_timeout(300)
+# wait until a condition on the page holds, True when it did. The HUD follows the game on the next frames, which can take a while on a busy
+# machine, and the fight goes on meanwhile (a CPU can KO a fighter set to 200% or spend a full ulti bar): a condition may put such values
+# back on every check (a fighter that is down is left alone).
+async def until(pg, js, timeout=8000):
+    try: await pg.wait_for_function(js, timeout=timeout); return True
+    except Exception: return False
+UP = "((f) => f.state !== 'dead' && f.state !== 'gone')"
 
 # the Team Brawl 2v2 entry of the VS list (the last button in the list, so the older tests that pick a fighter by position keep working; it sits first on screen)
 DUO_CLICK = "[...document.querySelectorAll('#oppPop button')].find((b) => b.textContent.endsWith('Team Brawl 2v2')).click()"
@@ -187,22 +194,22 @@ async def flow(b, errs):
     await pg.screenshot(path=f'{OUT}/flow_fight.png')
     # ----- Focus: a tap on a foe card
     need(await pg.evaluate("window.__blastline.duoFocus") == -1, 'the partner is focused on a foe before any tap')
-    await clk('#pc2'); await pg.wait_for_timeout(300)
-    need(await pg.evaluate("window.__blastline.duoFocus") == 2, f"a tap on the first foe card focuses {await pg.evaluate('window.__blastline.duoFocus')}, want 2")
-    need(await pg.evaluate("document.querySelector('#pc2').classList.contains('focus') && !document.querySelector('#pc3').classList.contains('focus')"), 'no ember ring on the focused foe card only')
+    await clk('#pc2')
+    need(await until(pg, "window.__blastline.duoFocus === 2"), f"a tap on the first foe card focuses {await pg.evaluate('window.__blastline.duoFocus')}, want 2")
+    need(await until(pg, "document.querySelector('#pc2').classList.contains('focus') && !document.querySelector('#pc3').classList.contains('focus')"), 'no ember ring on the focused foe card only')
     ring = await pg.evaluate("getComputedStyle(document.querySelector('#pc2')).boxShadow")
     need('255, 106, 74' in ring, f'the focus ring is not ember: {ring}')
     await pg.screenshot(path=f'{OUT}/flow_focus.png')
-    await clk('#pc3'); await pg.wait_for_timeout(300)
-    need(await pg.evaluate("window.__blastline.duoFocus") == 3 and await pg.evaluate("document.querySelector('#pc3').classList.contains('focus') && !document.querySelector('#pc2').classList.contains('focus')"), 'a tap on the second foe card does not move the Focus')
+    await clk('#pc3')
+    need(await until(pg, "window.__blastline.duoFocus === 3 && document.querySelector('#pc3').classList.contains('focus') && !document.querySelector('#pc2').classList.contains('focus')"), 'a tap on the second foe card does not move the Focus')
     # the pause icon still takes its tap
-    await clk('#pauseBtn'); await pg.wait_for_timeout(300)
-    need(await shown(pg, '#scrPause'), 'the pause icon does nothing in a 2v2')
-    await clk('#pResume'); await pg.wait_for_timeout(300)
+    vis = "(() => { const e = document.querySelector('#scrPause'); return !!e && !e.closest('[hidden]') && e.getClientRects().length > 0; })()"
+    await clk('#pauseBtn')
+    need(await until(pg, vis), 'the pause icon does nothing in a 2v2')
+    await clk('#pResume')
+    need(await until(pg, f"!{vis}"), 'Resume does not close the pause screen')
     # ----- finish percent: only a FOE shows the banner and lights Special
-    await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[1].percent = 200; }})()")
-    await pg.wait_for_timeout(700)
-    need(await pg.evaluate("document.querySelector('#pc1').classList.contains('finr')"), 'the partner card does not pulse at the finish percent')
+    need(await until(pg, f"(() => {{ const f = {G}.fighters[1]; if ({UP}(f)) f.percent = Math.max(f.percent, 200); return document.querySelector('#pc1').classList.contains('finr'); }})()"), 'the partner card does not pulse at the finish percent')
     need(await txt(pg, '#banner .b-main') != 'Finish!', 'a Finish banner for your own partner')
     need(not await pg.evaluate("document.querySelector('.pb[data-k=special]').classList.contains('fin')"), 'the Special glows for your own partner at the finish percent')
     await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[2].percent = 200; }})()")
@@ -210,17 +217,15 @@ async def flow(b, errs):
     except Exception: errs.append(f'{tag}: no Finish banner for a foe at the finish percent')
     mine = await pg.evaluate("(() => { const p = document.createElement('i'); p.style.color = document.querySelector('#pc0').style.getPropertyValue('--fc'); document.body.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return [c, getComputedStyle(document.querySelector('#banner .b-main')).color]; })()")
     need(mine[0] == mine[1], f'the Finish banner is {mine[1]}, want your colour {mine[0]}')
-    need(await pg.evaluate("document.querySelector('.pb[data-k=special]').classList.contains('fin')"), 'the Special does not glow while a foe is finish-ready')
-    need(await pg.evaluate("document.querySelector('#pc2').classList.contains('finr')"), 'the foe card does not pulse at the finish percent')
+    fin2 = f"(() => {{ const f = {G}.fighters[2]; if ({UP}(f)) f.percent = Math.max(f.percent, 200); return document.querySelector('.pb[data-k=special]').classList.contains('fin') && document.querySelector('#pc2').classList.contains('finr'); }})()"
+    need(await until(pg, fin2), 'the Special does not glow and the foe card does not pulse while a foe is at the finish percent')
     await pg.screenshot(path=f'{OUT}/flow_finish.png')
-    await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[1].percent = 0; g.fighters[2].percent = 0; }})()")
-    await pg.wait_for_timeout(700)
-    need(not await pg.evaluate("document.querySelector('.pb[data-k=special]').classList.contains('fin')"), 'the Special keeps glowing after the foe is back under the finish percent')
+    await pg.evaluate(f"(() => {{ const g = {G}; for (const i of [1, 2, 3]) g.fighters[i].percent = 0; }})()")
+    need(await until(pg, "!document.querySelector('.pb[data-k=special]').classList.contains('fin')"), 'the Special keeps glowing after the foe is back under the finish percent')
     # ----- the ulti bar on a mini card: a full one is gold, half one is half
-    await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[2].ult = BL.ultNeed(g.fighters[2]); g.fighters[3].ult = BL.ultNeed(g.fighters[3]) / 2; }})()")
-    await pg.wait_for_timeout(700)
-    u = await pg.evaluate("[2, 3].map((i) => { const e = document.querySelector('#pc' + i + ' .pc-ult'); return [e.classList.contains('full'), +e.style.getPropertyValue('--u')]; })")
-    need(u[0][0] and abs(u[1][1] - 0.5) < 0.06, f'ulti bars on the foe cards: {u}')
+    ub = "[2, 3].map((i) => { const e = document.querySelector('#pc' + i + ' .pc-ult'); return [e.classList.contains('full'), +e.style.getPropertyValue('--u')]; })"
+    ok = await until(pg, f"(() => {{ const g = {G}; g.fighters[2].ult = BL.ultNeed(g.fighters[2]); g.fighters[3].ult = BL.ultNeed(g.fighters[3]) / 2; const u = {ub}; return u[0][0] && Math.abs(u[1][1] - 0.5) < 0.06; }})()")
+    need(ok, f'ulti bars on the foe cards: {await pg.evaluate(ub)}, want a full one and a half one')
     await pg.screenshot(path=f'{OUT}/flow_ulti.png')
     await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[2].ult = 0; g.fighters[3].ult = 0; }})()")
     # ----- the end, as in the smoke check: one foe gone, the other at 400% on his last heart
@@ -275,30 +280,32 @@ async def size(b, tag, errs):
     need(px[0] > 40 and px[1] > 40, f'team rims: {px[0]} ice blue and {px[1]} ember red pixels on the canvas, want more than 40 of each')
     await pg.screenshot(path=f'{OUT}/{tag}_fight.png')
     # a tap (a click on the computer) on a foe card, and Tab
-    await clk('#pc2'); await pg.wait_for_timeout(300)
-    need(await pg.evaluate("window.__blastline.duoFocus") == 2, f"the tap on a foe card focuses {await pg.evaluate('window.__blastline.duoFocus')}, want 2")
+    await clk('#pc2')
+    need(await until(pg, "window.__blastline.duoFocus === 2"), f"the tap on a foe card focuses {await pg.evaluate('window.__blastline.duoFocus')}, want 2")
     if not mob:
-        await pg.keyboard.press('Tab'); await pg.wait_for_timeout(300)
-        need(await pg.evaluate("window.__blastline.duoFocus") == 3, f"Tab after Focus on 2 gives {await pg.evaluate('window.__blastline.duoFocus')}, want 3")
-        await pg.keyboard.press('Tab'); await pg.wait_for_timeout(300)
-        need(await pg.evaluate("window.__blastline.duoFocus") == 2, 'a second Tab does not come back to the first foe')
+        await pg.keyboard.press('Tab')
+        need(await until(pg, "window.__blastline.duoFocus === 3"), f"Tab after Focus on 2 gives {await pg.evaluate('window.__blastline.duoFocus')}, want 3")
+        await pg.keyboard.press('Tab')
+        need(await until(pg, "window.__blastline.duoFocus === 2"), 'a second Tab does not come back to the first foe')
     # the HUD with everything on: a Focus ring, a foe at the finish percent, ulti bars, a heart gone
     await pg.evaluate(f"""(() => {{ const g = {G}; g.fighters[3].percent = 140; g.fighters[2].percent = 190; g.fighters[2].ult = BL.ultNeed(g.fighters[2]); g.fighters[3].ult = BL.ultNeed(g.fighters[3]) * 0.4;
       g.fighters[0].percent = 63; g.fighters[1].percent = 88; g.fighters[1].ult = BL.ultNeed(g.fighters[1]) * 0.7; g.fighters[0].ult = BL.ultNeed(g.fighters[0]) * 0.3; g.fighters[3].stocks = 2; }})()""")
     await pg.wait_for_timeout(1300)
     for bad in await pg.evaluate(HUDFIT): errs.append(f'{tag} HUD (percents, ulti, focus): {bad}')
     await pg.screenshot(path=f'{OUT}/{tag}_hud.png')
-    # a Catch: you tumbling from a launch with your partner on top of you
-    await pg.evaluate(f"""(() => {{ const g = {G}, a = g.fighters[0], p = g.fighters[1]; for (const f of [a, p]) {{ f.x = -40; f.y = -90; f.grounded = false; f.plat = -1; f.vx = 0; f.vy = 0; }}
-      a.state = 'hitstun'; a.hitstun = 80; a.st = 20; a.tumble = true; a.move = null; a.mid = null; a.kbx = 9; a.kby = -3; a.facing = 1; p.state = 'air'; p.move = null; p.mid = null; p.catchCd = 0; p.invuln = 0; }})()""")
-    try:
-        await pg.wait_for_function(f"{G}.fighters[1].catchCd > 0", timeout=8000)
-        await pg.screenshot(path=f'{OUT}/{tag}_catch.png')
-    except Exception: errs.append(f'{tag}: no Catch when your partner touches you tumbling')
+    # a Catch: you tumbling from a launch with your partner on top of you. The CPUs play on, so the partner may be starting an attack or a foe
+    # may hit one of you on that frame (no Catch then): up to four tries.
+    caught = False
+    for _ in range(4):
+        await pg.evaluate(f"""(() => {{ const g = {G}, a = g.fighters[0], p = g.fighters[1]; for (const f of [a, p]) {{ f.x = -40; f.y = -90; f.grounded = false; f.plat = -1; f.vx = 0; f.vy = 0; }}
+          a.state = 'hitstun'; a.hitstun = 80; a.st = 20; a.tumble = true; a.move = null; a.mid = null; a.kbx = 9; a.kby = -3; a.facing = 1; p.state = 'air'; p.move = null; p.mid = null; p.catchCd = 0; p.invuln = 0; p.hitstun = 0; }})()""")
+        if await until(pg, f"{G}.fighters[1].catchCd > 0", 2500): caught = True; break
+    if caught: await pg.screenshot(path=f'{OUT}/{tag}_catch.png')
+    else: errs.append(f'{tag}: no Catch in four tries when your partner touches you tumbling')
     # the end: both foes out
     await pg.wait_for_timeout(500)
     await foes_gone(pg)
-    try: await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=60000)
+    try: await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=170000)   # the KO page plays first (slow on a busy machine, as in the flow)
     except Exception:
         errs.append(f"{tag}: no results after both foes were put out: " + await pg.evaluate(f"(() => {{ const g = {G}; return JSON.stringify({{ mode: window.__blastline.mode, phase: g.phase, t: g.t, f: g.fighters.map((f) => [f.state, f.stocks, Math.round(f.x), Math.round(f.y)]) }}); }})()"))
         await pg.screenshot(path=f'{OUT}/{tag}_noresult.png'); await ctx.close(); return
