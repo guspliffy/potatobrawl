@@ -8482,6 +8482,7 @@ function drawPotato(c, f, tk, at) {
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
   roadSkinBody(c, f, P, tk, flash);
+  if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
   potatoFace(c, f, P, look);
   if (cos === "odin") odinBeard(c, P, pal);
   if (cos === "alchemist") {
@@ -10135,14 +10136,69 @@ function uvShotTick(g, f) {
 }
 /* ===================== Glaze: a pearl sheen over a skin you own, bought in the Shop (UI only, never in the simulation) =====================
    P.glazed = { fighterId: [skin index, ...] }, synced like the skins owned. A fighter object drawn with glaze is marked here (a WeakSet, so
-   nothing is added to the simulated fighter and checksums never see it); drawFighter draws the sheen over a marked one. */
+   nothing is added to the simulated fighter and checksums never see it); drawPotato calls glazeDraw over the body of a marked one.
+   The look: a soft pink-mint-lilac wash, a pearl band drifting across the body every few seconds, a pearl inner rim and a small glint
+   when the fighter lands. Always under 0.35 alpha and never white, blue or gold: those colours are the game's hit, shield and armour
+   signals, and the skin's own colours stay readable through it. Reduced motion: the band stands still and there is no glint. */
 const GLAZE_PRICE = 400;
 const GLAZED = new WeakSet();
 const glazeHas = (id, i) => !!(P.glazed && Array.isArray(P.glazed[id]) && P.glazed[id].includes(i));
 function glazeMark(f, on) { if (on) GLAZED.add(f); else GLAZED.delete(f); return f; }
 const glazeOn = (f) => GLAZED.has(f);
-// drawFighter calls this after the figure (the sheen itself comes with the Glaze drawing)
-function glazeDraw(c, f, tk) {}
+// the skin index a fighter object wears (a palette is shared by reference; a copy from a snapshot is matched by its name)
+const glazeIdx = (f) => { const ps = f.spec.palettes, i = ps.indexOf(f.pal); return i >= 0 ? i : ps.findIndex((p) => p.name === (f.pal && f.pal.name)); };
+// a match starts (enterMatchUI): your own fighter shines when you glazed the skin he wears; CPUs never do (a friend's comes from his setup, ui/online.js)
+function glazeMatch() {
+  if (!G) return;
+  for (const f of G.fighters) GLAZED.delete(f);
+  const me = G.fighters[meSlot];
+  if (me && !me.spec.boss) glazeMark(me, glazeHas(me.spec.id, glazeIdx(me)));
+}
+const GLZ_LAND = new WeakMap();   // fighter -> { g: grounded last frame, t: the frame he landed, k: the frame last drawn }
+const GLZ_C = ["rgba(255,170,215,", "rgba(150,236,200,", "rgba(206,172,255,"];   // pink, mint, lilac (+ alpha)
+// called by drawPotato in body space (translated to the feet, flipped to the facing, turned with the lean), after the body and its costume
+// layers and before the face: the sheen sits on the potato and the eyes stay crisp. P here is the pose.
+function glazeDraw(c, f, P, tk) {
+  const { rx, ry, cy } = P, calm = resCalm();
+  c.save();
+  potatoPath(c, P); c.clip();
+  // the wash: pink at the top, mint across the middle, lilac at the bottom
+  const w = c.createLinearGradient(-rx * 0.6, cy - ry, rx * 0.6, cy + ry);
+  w.addColorStop(0, GLZ_C[0] + "0.18)"); w.addColorStop(0.5, GLZ_C[1] + "0.10)"); w.addColorStop(1, GLZ_C[2] + "0.18)");
+  c.fillStyle = w; c.fillRect(-rx * 1.5, cy - ry * 1.5, rx * 3, ry * 3);
+  // the gloss: a curved pearl highlight on the top of the potato, like the shine on a glazed pot
+  c.save(); c.translate(-rx * 0.18, cy - ry * 0.5); c.rotate(-0.42);
+  const gl = c.createRadialGradient(0, -ry * 0.08, 0, 0, 0, rx * 0.62);
+  gl.addColorStop(0, GLZ_C[0] + "0.34)"); gl.addColorStop(0.45, GLZ_C[1] + "0.28)"); gl.addColorStop(1, GLZ_C[2] + "0)");
+  c.fillStyle = gl; c.beginPath(); c.ellipse(0, 0, rx * 0.62, ry * 0.2, 0, 0, Math.PI * 2); c.fill();
+  c.restore();
+  // the band: a slanted stripe that drifts from the back of the potato to the front, then rests off the body a moment
+  const u = calm ? 0.62 : ((tk * 0.006 + 0.62) % 1.45);
+  if (u < 1.2) {
+    c.save(); c.translate(0, cy); c.rotate(0.62);
+    const x = -rx * 1.7 + u * rx * 2.9, hw = rx * 0.5, b = c.createLinearGradient(x - hw, 0, x + hw, 0);
+    b.addColorStop(0, GLZ_C[0] + "0)"); b.addColorStop(0.3, GLZ_C[0] + "0.30)"); b.addColorStop(0.5, GLZ_C[1] + "0.34)"); b.addColorStop(0.7, GLZ_C[2] + "0.30)"); b.addColorStop(1, GLZ_C[2] + "0)");
+    c.fillStyle = b; c.fillRect(x - hw, -ry * 2.2, hw * 2, ry * 4.4);
+    c.restore();
+  }
+  // the pearl rim just inside the ink line, its colours running round the body
+  const r = c.createLinearGradient(-rx, cy - ry, rx, cy + ry);
+  r.addColorStop(0, GLZ_C[1] + "0.34)"); r.addColorStop(0.5, GLZ_C[0] + "0.34)"); r.addColorStop(1, GLZ_C[2] + "0.34)");
+  c.lineWidth = 8; c.strokeStyle = r; potatoPath(c, P); c.stroke();
+  c.restore();
+  potatoPath(c, P); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();   // the ink line again over the rim's inner edge
+  // the glint: a small pearl star on the shoulder of the potato for a quarter of a second after landing
+  let s = GLZ_LAND.get(f);
+  if (!s) { s = { g: !!f.grounded, t: -99, k: tk }; GLZ_LAND.set(f, s); }
+  if (tk !== s.k) { if (f.grounded && !s.g) s.t = tk; s.g = !!f.grounded; s.k = tk; }
+  const age = tk - s.t;
+  if (!calm && age >= 0 && age < 16) {
+    const q = age < 4 ? age / 4 : 1 - (age - 4) / 12, L = 3 + 6 * q, x = -rx * 0.42, y = cy - ry * 0.52;
+    c.save(); c.globalAlpha *= 0.85 * q; c.fillStyle = "#ffc9e8"; c.beginPath();
+    c.moveTo(x, y - L); c.quadraticCurveTo(x, y, x + L * 0.7, y); c.quadraticCurveTo(x, y, x, y + L); c.quadraticCurveTo(x, y, x - L * 0.7, y); c.quadraticCurveTo(x, y, x, y - L);
+    c.fill(); c.restore();
+  }
+}
 /* ===================== drawing: world ===================== */
 const STARS = Array.from({ length: 70 }, (_, i) => { const r = (n) => ((Math.sin(i * 127.1 + n * 311.7) * 43758.5453) % 1 + 1) % 1; return { x: r(1), y: r(2), s: r(3) < 0.2 ? 2 : 1, a: 0.25 + r(4) * 0.5 }; });
 const ISLES = [{ x: 0.08, w: 0.2, h: 0.05 }, { x: 0.33, w: 0.12, h: 0.03 }, { x: 0.86, w: 0.24, h: 0.065 }, { x: 0.58, w: 0.08, h: 0.02 }];
@@ -26054,10 +26110,11 @@ function buildDetail() {
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   skinsBar(spec, pi);   // ui/skins.js: the Skins bar under the stage (the worn skin, SKINS n/7); a tap opens the Skin Rack
   // the portrait only has the base look: any other worn skin stands in the stage corner as the model drawn in a match
-  screens.select.classList.toggle("sl-skin", pi !== 0);
+  const gz = glazeHas(spec.id, pi);   // ui/glaze.js: a glazed skin is drawn too (the portrait has no sheen)
+  screens.select.classList.toggle("sl-skin", pi !== 0 || gz);
   cardArt.length = 0;
-  if (pi !== 0) {
-    const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  if (pi !== 0 || gz) {
+    const f = glazeMark(BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
@@ -26169,6 +26226,7 @@ function startMatch() {
 }
 function enterMatchUI() {
   cntStart();   // ui/counter.js: play counts (reads the match, never the fight)
+  glazeMatch();   // ui/glaze.js: your own fighter's glaze (UI only)
   finStop();
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)
@@ -27106,7 +27164,7 @@ function rdPuppet() {
     RD.pup = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
     RD.pup.x = 0; RD.pup.y = 0; RD.pup.facing = 1; RD.pupId = spec.id + ":" + (P.pal[spec.id] || 0);
   }
-  return RD.pup;
+  return glazeMark(RD.pup, glazeHas(spec.id, P.pal[spec.id] || 0));   // ui/glaze.js
 }
 // one frame of the map on canvas cv (CSS size w x h); o.mini: the small copy on the menu card (no fighter hop, fewer details)
 function roadPaint(cv, tk, o) {

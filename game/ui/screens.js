@@ -176,10 +176,11 @@ function buildDetail() {
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   skinsBar(spec, pi);   // ui/skins.js: the Skins bar under the stage (the worn skin, SKINS n/7); a tap opens the Skin Rack
   // the portrait only has the base look: any other worn skin stands in the stage corner as the model drawn in a match
-  screens.select.classList.toggle("sl-skin", pi !== 0);
+  const gz = glazeHas(spec.id, pi);   // ui/glaze.js: a glazed skin is drawn too (the portrait has no sheen)
+  screens.select.classList.toggle("sl-skin", pi !== 0 || gz);
   cardArt.length = 0;
-  if (pi !== 0) {
-    const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  if (pi !== 0 || gz) {
+    const f = glazeMark(BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
@@ -291,6 +292,7 @@ function startMatch() {
 }
 function enterMatchUI() {
   cntStart();   // ui/counter.js: play counts (reads the match, never the fight)
+  glazeMatch();   // ui/glaze.js: your own fighter's glaze (UI only)
   finStop();
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)

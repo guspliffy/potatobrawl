@@ -1160,6 +1160,7 @@ function drawPotato(c, f, tk, at) {
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
   roadSkinBody(c, f, P, tk, flash);
+  if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
   potatoFace(c, f, P, look);
   if (cos === "odin") odinBeard(c, P, pal);
   if (cos === "alchemist") {
