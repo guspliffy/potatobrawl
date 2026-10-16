@@ -172,6 +172,13 @@ function pureTests() {
   const many = SYNC.sanitize({ fstats: Object.fromEntries(Array.from({ length: 80 }, (_, i) => ["f" + String(i).padStart(2, "0"), { w: 1 }])) }, FIGHTERS);
   check(Object.keys(many.fstats).length === 24, "sanitize: at most 24 fighters in fstats");
   check(SYNC.sanitize({ fstats: [1], avatar: 5, title: null }, FIGHTERS).fstats === undefined && SYNC.sanitize({ avatar: 5 }, FIGHTERS).avatar === undefined, "sanitize: fstats that is not an object, or an avatar that is not text, counts as missing");
+  // Settings > Chip stakes (ui/stakes.js): so 1 = Off, synced like the picture (the side that changed it wins); a page without it keeps it
+  check(SYNC.sanitize({ so: 1 }, FIGHTERS).so === 1 && SYNC.sanitize({ so: 0 }, FIGHTERS).so === 0 && !("so" in SYNC.sanitize({ so: "off" }, FIGHTERS)) && !("so" in SYNC.sanitize({}, FIGHTERS)), "sanitize: chip stakes so is 0 or 1, anything else is missing");
+  const so1 = SYNC.mergeProf(prof(Object.assign({}, fb, { so: 1 })), prof(fb), prof(Object.assign({}, fb, { tokens: 9 })), false);
+  check(so1.so === 1, "so: Chip stakes Off on this device survives a newer server copy without the field");
+  check(SYNC.mergeProf(prof(Object.assign({}, fb, { so: 1 })), prof(Object.assign({}, fb, { so: 1 })), prof(Object.assign({}, fb, { so: 0 })), true).so === 0, "so: turned back On on another device -> On");
+  const sd = SYNC.applyTo({ so: 1 }, SYNC.sanitize(Object.assign({}, fb, { so: 0 }), FIGHTERS));
+  check(sd.so === 0, "apply: so follows the account");
   const good = SYNC.sanitize({ avatar: F1 + ":2", title: "flawless", fsince: 123456.7, flawless: 4 }, FIGHTERS);
   check(good.avatar === F1 + ":2" && good.title === "flawless" && good.fsince === 123457 && good.flawless === 4 && eq(SYNC.sanitize(good, FIGHTERS), good), "sanitize: good picture, title, since and flawless pass, cleaning twice changes nothing");
   // picture and title follow the newer side when both changed, and only the changing side when one did

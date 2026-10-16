@@ -6,7 +6,7 @@
 # browser steps at once, which play in real time, and the simulations next to them at low priority, so they only take the CPU the
 # browsers leave over. More browsers at once don't finish sooner on 4 cores, they only starve each other. The lines keep the order below.
 #   CHECK_JOBS=1 ./check.sh     one browser step at a time (a slow or busy machine)
-#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+10 (default 8091), e.g. for a second checkout
+#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+11 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -207,6 +207,16 @@ if grep -q "^no errors" "$LOGS/quick-ui.log"; then pass "Quick match in the brow
 else fail "Quick match in the browser" "$LOGS/quick-ui.log"; fi
 }
 
+# 5g. Chip stakes in the browser: two phones (sideways and upright) through a real server with accounts: FOR CHIPS dimmed with its
+#     reasons, the Casual rematch refereed, the stake sheet, a decline and an accept, VS with the pot, the pot card, the chips in both
+#     accounts and on both phones after the sync, the challenge card on the results and on the menu, a Play friends game refereed,
+#     Settings > Chip stakes Off. Shots in build/shots/stakes.
+s_stakesui() {
+(cd "$SHOTS" && PWSTAKES_PORT=$((PB + 11)) timeout 900 python3 "$ROOT/tests/pwstakes.py" stakes) > "$LOGS/stakes-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/stakes-ui.log"; then pass "chip stakes in the browser (FOR CHIPS, stake sheet, challenge card, pot card, chips synced, Play friends; shots in build/shots/stakes)"
+else fail "chip stakes in the browser" "$LOGS/stakes-ui.log"; fi
+}
+
 # 6. Screens on small phone, phone and desktop, without page errors.
 s_screens() {
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
@@ -376,13 +386,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu quickui screens skins shop acctui hud ultui tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu quickui stakesui screens skins shop acctui hud ultui tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos ulti)
 SOLO=(quick cpu acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui tut skins bossui ultui onboss comboui cup statsui online statspage finisher fsui)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tut skins bossui ultui onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

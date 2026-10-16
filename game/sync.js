@@ -119,6 +119,7 @@ const SYNC = (function () {
     if (typeof p.fsince === "number" && p.fsince > 0) out.fsince = num(p.fsince, 0, 9e15, 0);
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
+    if (p.so === 0 || p.so === 1) out.so = p.so;   // Settings > Chip stakes: 1 = Off (the server reads it before a challenge)
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
     // fighter mastery: XP played per fighter (a counter), the one-time head start XP (max), the highest level whose reward was paid (max), the KO pages / Ultimate KO pages landed (union)
     if (isObj(p.mxp)) out.mxp = cleanMap(p.mxp, MAXN);
@@ -158,6 +159,7 @@ const SYNC = (function () {
     if (S.fsince !== undefined) P.fsince = S.fsince; else if (S.fstats !== undefined) delete P.fsince;
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
+    if (S.so !== undefined) P.so = S.so;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
     if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
@@ -223,6 +225,7 @@ const SYNC = (function () {
     { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
     { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
     { const v = pickOpt("title"); if (have(v)) out.title = v; }
+    { const v = pickOpt("so"); if (have(v)) out.so = v; }
     // Daily Potato: the side that changed it; if both did, the later day, then (same day) the record whose Another go was taken (it is
     // further along), then a finished try over one still running (-1), then the newer side. The best streak keeps the higher one.
     if (have(S.daily) || have(L.daily)) {

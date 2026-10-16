@@ -3992,6 +3992,144 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 @media (prefers-reduced-motion: reduce) {
   #qmVs.in .vs-riv, #qmVs.in .vs-w, #resSheet .stat.chips .rv-bty { animation: none; }
 }
+#rSub .rv-nw { white-space: nowrap; }
+
+/* ===== Chip stakes: a rematch for 10, 25 or 50 chips (ui/stakes.js; Fable's design: rival-stakes/fable-design.md) =====
+   One rule: chips a player put up sit on gold (the POT); chips the game pays wear an ember sticker (97-rivals.css). */
+
+/* ---- the results: FOR CHIPS joins the gold button (Casual, Play friends) or takes the second row (Ranked, a staked match) ---- */
+#resSheet .res-again { display: contents; }
+#resSheet .res-actions.stk-seg .res-again { grid-column: 1 / -1; display: flex; }
+#resSheet .res-actions.stk-seg .res-again #rAgain { flex: 1 1 60%; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+#resSheet .res-actions.stk-seg .res-again #rStake { flex: 1 1 40%; min-width: 0; margin-left: -2px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+#resSheet .res-actions.stk-row #rChange { display: none; }
+#resSheet .res-actions.stk-wait #rAgain { display: none; }
+#resSheet .res-actions.stk-wait .res-again { display: contents; }
+#resSheet .res-actions.stk-wait #rStake { grid-column: 1 / -1; }
+#resSheet .res-actions.stk-row.stk-wait #rMenu { grid-column: 1 / -1; }
+#resSheet .res-actions .sk-btn { padding: 0 12px; background: linear-gradient(180deg, #1d2040, #11132a); color: var(--gold); font-size: 17px; }
+#resSheet .res-actions .sk-btn[hidden] { display: none; }
+#resSheet .res-actions .sk-btn .sk-l { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .res-actions .sk-btn .rv-cg { width: 1.3em; height: 1.08em; }
+#resSheet .res-actions .sk-btn .sk-for { display: inline-flex; align-items: center; gap: 5px; color: var(--gold); opacity: 1; font: 800 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+#resSheet .res-actions .stk-row .sk-btn, #resSheet .res-actions.stk-row .sk-btn { color: var(--text); }
+#resSheet .res-actions .sk-btn.dim { color: var(--mute); }
+#resSheet .res-actions .sk-btn.dim .rv-cg { filter: grayscale(1); opacity: 0.6; }
+#resSheet .res-actions .sk-btn:disabled { opacity: 0.6; }
+#resSheet .res-actions.stk-wait .sk-btn { background: linear-gradient(180deg, #2b3059, #1a1d3a); color: var(--gold); box-shadow: var(--hard), var(--bevel), inset 0 0 0 2px rgba(244, 201, 93, 0.55); animation: skWait 1.6s ease-in-out infinite; }
+#resSheet .res-actions.stk-wait .sk-btn .sk-t { color: var(--text); font-variant-numeric: tabular-nums; }
+@keyframes skWait { 50% { box-shadow: var(--hard), var(--bevel), inset 0 0 0 2px rgba(244, 201, 93, 0.95), 0 0 14px rgba(244, 201, 93, 0.25); } }
+#resSheet .res-actions .sk-why { grid-column: 1 / -1; margin: -2px 0 0; padding: 0 4px; font: 600 12.5px/1.3 var(--body); color: var(--sand); text-align: center; }
+#resSheet .res-actions .sk-why[hidden] { display: none; }
+#resSheet.in:not(.still) .res-actions .sk-btn { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.36s backwards; }
+#resSheet.in:not(.still) .res-actions.stk-wait .sk-btn { animation: skWait 1.6s ease-in-out infinite; }
+#app.tiny #resSheet .res-actions .sk-btn { font-size: 14px; padding: 0 8px; }
+#app.tiny #resSheet .res-actions .sk-why { font-size: 11px; }
+#app:not(.short):not(.portrait) #resSheet .res-actions .sk-btn { font-size: 20px; }
+#app:not(.short):not(.portrait) #resSheet .res-actions .sk-btn .sk-for { font-size: 14px; }
+
+/* ---- the pot card, in the rank card's place: your stake and theirs as a two-part bar, the sticker with what moved ---- */
+#resSheet .res-pot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; flex: none;
+  box-shadow: inset 0 0 0 2px rgba(244, 201, 93, 0.5), 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-pot[hidden] { display: none; }
+#resSheet .res-pot .pt-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#resSheet .res-pot .pt-head { display: flex; align-items: center; gap: 8px; min-width: 0; font: italic 900 22px/1.05 var(--display); text-transform: uppercase; color: var(--gold);
+  -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); overflow-wrap: anywhere; }
+#resSheet .res-pot .pt-head .rv-cg { width: 1.2em; height: 1em; -webkit-text-stroke: 0; }
+#resSheet .res-pot .pt-sub { font: 500 12.5px/1.3 var(--body); color: var(--mute); font-variant-numeric: tabular-nums; }
+#resSheet .res-pot .pt-sub b { color: var(--text); font-weight: 600; }
+#resSheet .res-pot .pt-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; height: 10px; margin-top: 3px; }
+#resSheet .res-pot .pt-bar i { position: relative; overflow: hidden; border-radius: 5px; background: var(--gold); border: 1.5px solid rgba(14, 16, 34, 0.9); }
+#resSheet .res-pot.wait .pt-bar i { background: #3a4170; }
+#resSheet .res-pot.wait .pt-bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent); animation: qmShim 1.4s linear infinite; }
+#resSheet .res-pot.up .pt-bar i { background: var(--mint); box-shadow: 0 0 8px var(--mint); animation: resFill 0.5s 0.6s cubic-bezier(0.2, 0.9, 0.25, 1) backwards; transform-origin: left; }
+#resSheet .res-pot.down .pt-bar i { background: rgba(232, 69, 60, 0.8); }
+#resSheet .res-pot.zero .pt-bar i { background: #6f758f; }
+#resSheet .res-pot.down .pt-head { color: #ff9a8f; }
+#resSheet .res-pot.zero .pt-head { color: var(--text); }
+#resSheet .res-pot .delta small { white-space: nowrap; }
+#resSheet .res-side:has(> #rPot:not([hidden])) > .res-stats { margin-top: 0; }
+#app.tiny #resSheet .res-pot { gap: 10px; padding: 7px 10px; }
+#app.tiny #resSheet .res-pot .pt-head { font-size: 18px; }
+#app.tiny #resSheet .res-pot .pt-sub { font-size: 11.5px; }
+#app:not(.short):not(.portrait) #resSheet .res-pot { gap: 18px; padding: 16px 20px; }
+#app:not(.short):not(.portrait) #resSheet .res-pot .pt-head { font-size: 30px; }
+#app:not(.short):not(.portrait) #resSheet .res-pot .pt-sub { font-size: 14px; }
+#app:not(.short):not(.portrait) #resSheet .res-pot .pt-bar { height: 12px; margin-top: 6px; }
+
+/* ---- the VS screen: REMATCH · FOR CHIPS on ember, the gold pot under it ---- */
+#qmVs .vs-st.sk b { background: var(--ember); }
+#qmVs .vs-st .vs-pot { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 4px; border: 2px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(180deg, #ffe08a, #f4c95d 55%, #e8a640); color: var(--ink); font: 800 12px/1 var(--display); letter-spacing: 0.1em; box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#qmVs .vs-st .vs-pot b { font: italic 900 20px/1 var(--display); letter-spacing: 0.02em; }
+#qmVs .vs-st .vs-pot .rv-cg { width: 22px; height: 18px; }
+#qmVs .vs-st .vs-pot[hidden] { display: none; }
+#qmVs .vs-st .vs-pot span { padding: 0; border-radius: 0; background: none; font: inherit; letter-spacing: inherit; color: inherit; }
+#qmVs.in .vs-st .vs-pot { animation: rvStamp 0.3s 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+#app:not(.short):not(.portrait) #qmVs .vs-st .vs-pot b { font-size: 26px; }
+
+/* ---- the stake sheet ---- */
+#scrStake .sk-sheet { width: min(480px, 100%); max-height: 100%; }
+#scrStake .sk-who { margin: 0; font: 800 15px/1.2 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); overflow-wrap: anywhere; }
+#scrStake .sk-rules { margin: -6px 0 0; font: 500 14px/1.4 var(--body); }
+#scrStake .sk-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#scrStake .sk-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 76px; padding: 8px 6px;
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); color: var(--text); box-shadow: 0 3px 0 var(--ink), var(--bevel); cursor: pointer; }
+#scrStake .sk-tile b { display: inline-flex; align-items: center; gap: 6px; font: italic 900 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+#scrStake .sk-tile b .rv-cg { width: 26px; height: 22px; }
+#scrStake .sk-tile small { font: 700 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+#scrStake .sk-tile.on { background: linear-gradient(180deg, #ffe08a, #f4c95d 55%, #e8a640); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#scrStake .sk-tile.on small { color: rgba(14, 16, 34, 0.75); }
+#scrStake .sk-tile:disabled { opacity: 0.45; cursor: default; }
+#scrStake .sk-tile:disabled .rv-cg { filter: grayscale(1); }
+#scrStake .sk-tile:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#scrStake .sk-have { margin: 0; font: 600 13px/1.3 var(--body); color: var(--sand); font-variant-numeric: tabular-nums; }
+#scrStake .sk-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#scrStake .sk-btns .btn { min-height: 50px; }
+#app.tiny #scrStake .sk-tile { min-height: 58px; }
+#app.tiny #scrStake .sk-tile b { font-size: 24px; }
+#app.tiny #scrStake .sk-rules { font-size: 13px; }
+#app.tiny #scrStake .sk-btns .btn { min-height: 42px; }
+
+/* ---- the challenge card: at the bottom of any screen; on the results sideways, over the right column's top (Fable's c and g) ---- */
+.stk-card { position: absolute; z-index: 6; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(520px, calc(100% - 24px));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 18px 16px 14px; border: 2px solid var(--ember); border-radius: 12px;
+  background: linear-gradient(180deg, #2a2f58, #1b1e3c); box-shadow: 0 0 0 2px var(--ink), 0 6px 0 var(--ink), 0 14px 36px rgba(0, 0, 0, 0.55); }
+.stk-card[hidden] { display: none; }
+.stk-card.side { left: 4px; right: 4px; top: 20px; bottom: auto; width: auto; transform: none; }
+.stk-card .skc-tag { position: absolute; left: 12px; top: -13px; padding: 5px 9px 4px; font-size: 12px; transform: rotate(-4deg); }
+.stk-card h4 { grid-column: 1 / -1; margin: 0; font: italic 900 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); overflow-wrap: anywhere; }
+.stk-card h4 .rv-cg { margin: 0 4px 0 2px; width: 1.1em; height: 0.92em; }
+.stk-card p { grid-column: 1; margin: 0; font: 500 13.5px/1.35 var(--body); color: var(--mute); }
+.stk-card .skc-time { grid-column: 2; align-self: end; font: 800 13px/1 var(--display); letter-spacing: 0.08em; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stk-card .skc-bar { grid-column: 1 / -1; position: relative; height: 6px; margin: 4px 0 6px; border-radius: 3px; overflow: hidden; background: rgba(14, 16, 34, 0.9); }
+.stk-card .skc-bar i { position: absolute; inset: 0; background: var(--gold); transform-origin: left; transition: transform 0.25s linear; }
+.stk-card .skc-btns { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stk-card .skc-btns .btn { min-height: 48px; font-size: 19px; }
+.stk-card .skc-btns .btn span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.stk-card .skc-btns .btn .rv-cg { width: 1.2em; height: 1em; }
+.stk-card.in { animation: skIn 0.32s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.stk-card.side.in { animation-name: skInSide; }
+.stk-card.nudge { animation: skNudge 0.4s ease-in-out; }
+.stk-card.side.nudge { animation-name: skNudgeSide; }
+@keyframes skIn { from { transform: translate(-50%, 24px); opacity: 0; } }
+@keyframes skInSide { from { transform: translateY(-14px); opacity: 0; } }
+@keyframes skNudge { 25% { transform: translate(calc(-50% - 6px), 0); } 75% { transform: translate(calc(-50% + 6px), 0); } }
+@keyframes skNudgeSide { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+#app.tiny .stk-card { padding: 15px 12px 10px; gap: 4px 10px; }
+#app.tiny .stk-card h4 { font-size: 17px; }
+#app.tiny .stk-card p { font-size: 12px; }
+#app.tiny .stk-card .skc-btns .btn { min-height: 40px; font-size: 16px; }
+#app:not(.short):not(.portrait) .stk-card h4 { font-size: 26px; }
+
+/* ---- Settings, Account > Stats ---- */
+#scrSettings #setStakeRow[hidden], #scrSettings #setStakeNote[hidden] { display: none; }
+#scrAccount .sk-stat { margin: -4px 0 4px; color: var(--sand); }
+
+@media (prefers-reduced-motion: reduce) {
+  #resSheet .res-actions.stk-wait .sk-btn, .stk-card.in, .stk-card.nudge, #resSheet .res-pot .pt-bar i, #resSheet .res-pot .pt-bar i::after, #qmVs.in .vs-st .vs-pot { animation: none; }
+}
+.stk-card .sk-nw { white-space: nowrap; }
 
 </style>
 
@@ -4381,6 +4519,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           </div>
           <div class="delta" id="rStick"><b id="rDelta">+0</b><small>Rating</small></div>
         </div>
+        <!-- a staked match (ui/stakes.js): the pot in the rank card's place -->
+        <div class="card res-pot" id="rPot" hidden>
+          <div class="pt-body"><b class="pt-head" id="rPotH"></b><span class="pt-sub" id="rPotS"></span><span class="pt-bar" aria-hidden="true"><i></i><i></i></span></div>
+          <div class="delta" id="rPotD"><b id="rPotN">…</b><small>Chips</small></div>
+        </div>
         <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
         <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
         <div class="res-stats" id="rStats">
@@ -4394,11 +4537,27 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="chips" id="rPickChips"></div>
         </div>
         <div class="res-actions">
-          <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
+          <!-- chip stakes (ui/stakes.js): FOR CHIPS joins the gold button, or takes the second row; the reason it can't, under all -->
+          <div class="res-again"><button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button><button class="btn sk-btn" id="rStake" hidden></button></div>
           <button class="btn" id="rRetry" hidden><span>Retry</span><small id="rRetrySub"></small></button>
           <button class="btn" id="rChange"><span>Fighters</span></button>
           <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>
+          <p class="sk-why" id="rStakeWhy" hidden></p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- chip stakes (ui/stakes.js): the rematch for chips, 10 / 25 / 50 (after the results, so it opens over them) -->
+  <section id="scrStake" class="screen modal" hidden>
+    <div class="sheet sk-sheet scroll">
+      <header class="sh-head"><h3>Rematch for chips</h3><button class="round x" id="skClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <p class="sk-who" id="skWho"></p>
+        <p class="sk-rules">Same fighters · 3 lives · 4:00 · not Ranked. Winner takes the pot; the server referees. Leaving is a loss.</p>
+        <div class="sk-tiles" id="skTiles" role="radiogroup" aria-label="Stake"></div>
+        <p class="sk-have" id="skHave"></p>
+        <div class="sk-btns"><button class="btn primary" id="skSend"><span>Challenge</span></button><button class="btn" id="skNo"><span>Not now</span></button></div>
       </div>
     </div>
   </section>
@@ -4451,6 +4610,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
         <div class="set-row" id="setCountRow" hidden><span>Play counts</span><span class="chips" id="setCount"></span></div>
         <p class="set-fine" id="setCountNote" hidden></p>
+        <div class="set-row" id="setStakeRow" hidden><span>Chip stakes</span><span class="chips" id="setStake"></span></div>
+        <p class="set-fine" id="setStakeNote" hidden>Rematches for 10, 25 or 50 chips after online matches. Off hides them, and nobody can challenge you.</p>
         <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
       </div>
     </div>
@@ -4525,8 +4686,17 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <span class="vs-riv" id="vsRiv" hidden></span>
     <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span><span class="vs-w" id="vsWL" hidden></span></div>
     <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b><i class="tag st" id="vsTagR" hidden></i></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span><span class="vs-w" id="vsWR" hidden></span></div>
-    <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
+    <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-pot" id="vsPot" hidden></span><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
     <div class="vs-foot"><span class="livetag"><i aria-hidden="true"></i><span id="vsPing">measuring…</span></span><span class="vs-bar"><i></i></span></div>
+  </div>
+  <!-- chip stakes (ui/stakes.js): a challenge for you, over any screen but a fight -->
+  <div class="stk-card" id="stkCard" role="alertdialog" aria-labelledby="skcT" aria-describedby="skcL" hidden>
+    <i class="tag ember st skc-tag">Challenge</i>
+    <h4 id="skcT"></h4>
+    <p id="skcL"></p>
+    <span class="skc-time" id="skcTime"></span>
+    <span class="skc-bar" aria-hidden="true"><i id="skcBar"></i></span>
+    <div class="skc-btns"><button class="btn primary" id="skcOk"></button><button class="btn" id="skcNo"><span>Not now</span></button></div>
   </div>
 </div>
 
@@ -4554,7 +4724,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
-  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / qm-* messages, and Ranked vs CPU's (ui/vscpu.js)
+  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* messages (stk-*: ui/stakes.js), and Ranked vs CPU's (ui/vscpu.js)
   const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd"]);
   const rooms = new Map();
 
@@ -4576,7 +4746,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
-    if (m.t === "me" || (typeof m.t === "string" && m.t.slice(0, 3) === "qm-") || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
+    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -26663,7 +26833,7 @@ MANGA.wizard = (function () {
 
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
-const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup"), quick: $("scrQuick"), season: $("scrSeason") };
+const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup"), quick: $("scrQuick"), season: $("scrSeason"), stake: $("scrStake") };
 function show(name) { cntScreen(name); for (const k of ["menu", "select", "result", "online", "cup", "road", "quick"]) if (screens[k]) screens[k].hidden = k !== name; }
 function modal(name, on) { screens[name].hidden = !on; if (on) cntScreen(name); }   // cntScreen: ui/counter.js (play counts)
 
@@ -27172,7 +27342,7 @@ function resOpen(look, spec, solo) {
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
-  rvClear();   // ui/rivals.js
+  rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -27270,6 +27440,7 @@ function showResults(R) {
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
+  else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   show("result");
 }
 
@@ -30134,6 +30305,7 @@ async function netHost() {
   resetNet();
   NET.phase = "hosting"; NET.role = "host"; NET.hostCode = code; NET.note = "";
   const team = !onBoss().on && onTeam().on;
+  if (!team) qmSilent();   // ui/quick.js: the referee keeps a 1v1's rival record (both players need an account)
   if (team) tbHostOpen();   // a team brawl: the board, you in the first Ice seat (ui/online-team.js)
   renderOnline();
   try { await openMatchRoom(code); }
@@ -30149,6 +30321,7 @@ async function netJoin(code) {
   resetNet();
   NET.phase = "joining"; NET.role = "guest"; NET.note = ""; NET.joinT = performance.now();
   NET.mrCode = code;
+  qmSilent();   // ui/quick.js: the silent account, for the referee
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
@@ -30193,7 +30366,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
-  if (NET.phase === "result" && match && match.qm && match.qm.ranked) { NET.oppLeft = true; return; }   // Next match never waits for them
+  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk)) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -30412,7 +30585,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && match.qm.ranked ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -30583,8 +30756,9 @@ window.addEventListener("keydown", (e) => { if (e.code === "KeyN" && !e.repeat &
    runs every CPU itself, frame for frame, from the same random numbers (G.rng = BL.rngOf(seed)): a CPU whose moves crossed the network
    would act on stale frames and lose almost every fight. The CPUs' memory and that counter ride in the repair copy.
    The "lead" is the lowest seat whose phone is still heard: it compares everyone's checksums, sends the repair copy, and hands a friend
-   who drops to a CPU from a frame it names (with their last inputs, so every phone has them). A phone that hears nobody at all plays on
-   alone with CPUs. Design: /mnt/project-files/online-2v2/fable-online2v2.md (Fable). */
+   who drops to a CPU from a frame it names (with their last inputs, so every phone has them). That frame comes after every input of
+   theirs any phone holds: each phone shows the lead what it has first (tbHold). A phone that hears nobody at all plays on alone with
+   CPUs. Design: /mnt/project-files/online-2v2/fable-online2v2.md (Fable). */
 const TB_RULES = { l: 3, t: 4, b: 1 };      // Team Brawl's rules: three hearts, 4:00, one match, a map from the random pool
 const TB_LV = [1, 2, 3];                   // the CPUs row (Easy, Normal, Hard) as LEVELS indices
 const TB_SEATS = [0, 1, 2, 3];
@@ -30592,6 +30766,7 @@ const TB_SILENT = 15000;   // nothing at all from a friend this long (their pres
 const TB_PING = 3000;      // a Focus ping with a person as partner: shown 3 s, one every 3 s
 const TB_PART = 1600;      // repair copy pieces: smaller than a 1v1's, so a piece fits next to the claims and the start message
 const TB_RELAY = 60;       // frames of a dropped friend's last inputs passed on with the claim
+const TB_HOLD = 3000;      // the lead waits at most this long for every phone's copy of a dropped friend's last inputs
 const tbTeam = (s) => (s < 2 ? 0 : 1), tbMate = (s) => s ^ 1, tbFoes = (s) => (s < 2 ? [2, 3] : [0, 1]);
 const tbLvName = (lv) => LEVELS[TB_LV[lv]].name;
 // The lobby's third mode. P.onTeam = { on, lv (0-2) }: this device's last pick (not synced), Normal at first
@@ -30837,6 +31012,7 @@ function tbStartMatch(st) {
   for (let i = 0; i < NET.D; i++) NET.myLog.push(NEUTRAL);
   const now = performance.now(), d = LEVELS[TB_LV[st.lv]].d;
   TM = { st, d, hum: st.h.slice(), logs: [[], [], [], []], frs: [0, 0, 0, 0], heard: [now, now, now, now], last: [], bots: [], cpuFrom: [], gone: [], cl: [],
+    hd: [[], [], [], []], outT: [], hoSig: "[]",
     lastSync: [0, 0, 0, 0], rx: [], tx: null, acks: [], syncSent: null, okAfter: [], focusQ: -1, focusF: 0, echo: [null, null, null, null], rttS: [[], [], [], []],
     pgSeen: new Set(), wait: -1, solo: false, lost: false, fp: 0, fpSeen: 0, ping: null, pingT: -1e9, hits: [], tagT: [], finBy: -1, bk: 0 };
   for (const s of TB_SEATS) if (st.h[s] && s !== me) for (let i = 0; i < NET.D; i++) TM.logs[s].push(NEUTRAL);
@@ -30848,7 +31024,7 @@ function tbStartMatch(st) {
   const names = st.h.map((p, s) => (s === me ? NET.myName || "You" : p ? "Friend" : st.nm[s]));
   match = { online: true, duo: true, tb: true, ranked: false, level: tbLvName(st.lv), lv: st.lv, d, names, caught: 0 };
   NET.phase = "match"; NICE.length = 0;
-  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, rt: null, cl: null, fp: null, bk: null, go: null, em: 0 });
+  namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, rt: null, cl: null, ho: null, fp: null, bk: null, go: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
   tbNames();
@@ -30945,7 +31121,13 @@ function tbReadAll(now) {
     if (!peer || s === meSlot || TM.cpuFrom[s] !== undefined) continue;
     const p = peers.find((q) => q.peer === peer);
     if (!p) { TM.gone[s] = true; continue; }
-    if (p.presence !== TM.last[s]) { TM.last[s] = p.presence; TM.heard[s] = now; tbRead(s, p.presence || {}, now); }
+    if (window.__blDeaf === s) continue;   // tests: this phone misses a friend's last messages before they leave (tests/pwon2v2.py)
+    if (p.presence !== TM.last[s]) {
+      TM.last[s] = p.presence;
+      // a friend who left and came back still goes to a CPU: no more of their inputs here, so this phone never plays past the handover
+      if (TM.gone[s]) tbReadLate(s, p.presence || {});
+      else { TM.heard[s] = now; tbRead(s, p.presence || {}, now); }
+    }
     if (!TM || NET.phase !== "match") return;
   }
   // claims and repair copies can also come from a friend already handed to a CPU here (they may still be in the room)
@@ -30979,6 +31161,9 @@ function tbRead(s, pr, now) {
     }
   }
   if (Number.isInteger(pr.fr)) TM.frs[s] = pr.fr;
+  // the inputs this friend holds of anyone who dropped (tbHold); the lead reads them before it names the handover frame
+  TM.hd[s] = Array.isArray(pr.ho) ? pr.ho.filter((h) => Array.isArray(h) && TB_SEATS.includes(h[0]) && h[0] !== meSlot && TM.hum[h[0]] &&
+    Number.isInteger(h[1]) && h[1] >= 0 && typeof h[2] === "string" && h[2].length <= TB_RELAY * 2) : [];
   tbReadLate(s, pr);
   if (!TM || NET.phase !== "match") return;
   // the lead compares checksums; a match after the repair copy's frame means that friend has it
@@ -31007,16 +31192,28 @@ function tbLive(now) {
   return TB_SEATS.filter((s) => tbPerson(s) && (s === meSlot || (!TM.gone[s] && now - TM.heard[s] <= TB_SILENT)));
 }
 const tbLeadSlot = (now) => tbLive(now)[0];
-/* Drops. A friend who left the room, or was not heard for TB_SILENT: the lead hands their fighter to a CPU from the first frame it has no
-   input of theirs for, and passes on their last TB_RELAY inputs so a phone that missed some can still play up to that frame. When two or
-   more friends go quiet at once and nobody is heard any more, this phone is the one cut off: it plays on alone (Connection lost). */
+/* Drops. A friend who left the room, or was not heard for TB_SILENT: the lead hands their fighter to a CPU from the first frame nobody
+   has an input of theirs for, and passes on their last TB_RELAY inputs so a phone that missed some can still play up to that frame.
+   Phones can hold different amounts of those inputs (their last message and the leave can come in together, and then the leave wins),
+   and a phone that played a frame with the friend's own input cannot take it back. So every phone first shows the lead the inputs it
+   holds (tbHold), and the lead takes the handover past all of them; a phone that has not shown them after TB_HOLD is left to a repair.
+   When two or more friends go quiet at once and nobody is heard any more, this phone is the one cut off: it plays on alone (Connection
+   lost). */
 function tbLead(now) {
   const others = TB_SEATS.filter((s) => s !== meSlot && tbPerson(s));
   const out = others.filter((s) => TM.gone[s] || now - TM.heard[s] > TB_SILENT);
+  tbHold(out);
+  for (const s of others) if (!out.includes(s)) TM.outT[s] = undefined;   // heard again: a later drop waits for the holds afresh
   if (!out.length) return;
   if (out.length === others.length && out.filter((s) => !TM.gone[s]).length >= 2) { tbSolo(); return; }
   if (tbLeadSlot(now) !== meSlot) return;
+  const live = tbLive(now).filter((k) => k !== meSlot);
+  let n = 0;
   for (const s of out) {
+    if (TM.outT[s] === undefined) TM.outT[s] = now;
+    const held = live.map((k) => TM.hd[k].find((h) => h[0] === s));
+    if (held.some((h) => !h) && now - TM.outT[s] < TB_HOLD) continue;
+    for (const h of held) if (h) tbFill(s, h[1], h[2], Infinity);
     const log = TM.logs[s];
     let F = NET.frame;
     while (log[F] !== undefined) F++;
@@ -31025,21 +31222,39 @@ function tbLead(now) {
     for (let k = from; k < F; k++) str += packIn(log[k] === undefined ? NEUTRAL : log[k]);
     TM.cl.push([s, F, from, str]);
     tbCpuFrom(s, F);
+    n++;
   }
-  namedPresence({ cl: TM.cl.slice() });
+  if (n) namedPresence({ cl: TM.cl.slice() });
+}
+// every phone: the last inputs it holds of each friend who is out (up to TB_RELAY frames, ending where its log of them ends)
+function tbHold(out) {
+  const ho = out.map((s) => {
+    const log = TM.logs[s];
+    let E = NET.frame;
+    while (log[E] !== undefined) E++;
+    let from = E;
+    while (from > 0 && E - from < TB_RELAY && log[from - 1] !== undefined) from--;
+    let str = "";
+    for (let k = from; k < E; k++) str += packIn(log[k]);
+    return [s, from, str];
+  });
+  const sig = JSON.stringify(ho);
+  if (sig !== TM.hoSig) { TM.hoSig = sig; namedPresence({ ho: ho.length ? ho : null }); }
+}
+// someone's copy of seat s's inputs from frame `from` on, into this phone's log: only frames it misses, only before frame `to`
+function tbFill(s, from, str, to) {
+  for (let k = 0; k * 2 + 1 < str.length && from + k < to; k++) {
+    const a = B64I[str[k * 2]], b = B64I[str[k * 2 + 1]];
+    if (a === undefined || b === undefined || a * 64 + b >= IN_END) break;
+    if (TM.logs[s][from + k] === undefined) TM.logs[s][from + k] = a * 64 + b;
+  }
 }
 function tbClaim(c) {
   if (!Array.isArray(c) || !TB_SEATS.includes(c[0]) || !Number.isInteger(c[1]) || c[1] < 0 || !TM.hum[c[0]]) return;
   const [s, F, from, str] = c;
   if (s === meSlot) { tbSolo(); return; }   // the others no longer hear me: I play on alone
   if (TM.cpuFrom[s] !== undefined && TM.cpuFrom[s] <= F) return;
-  if (Number.isInteger(from) && from >= 0 && typeof str === "string") {
-    for (let k = 0; k * 2 + 1 < str.length && from + k < F; k++) {
-      const a = B64I[str[k * 2]], b = B64I[str[k * 2 + 1]];
-      if (a === undefined || b === undefined || a * 64 + b >= IN_END) break;
-      if (TM.logs[s][from + k] === undefined) TM.logs[s][from + k] = a * 64 + b;
-    }
-  }
+  if (Number.isInteger(from) && from >= 0 && typeof str === "string") tbFill(s, from, str, F);
   tbCpuFrom(s, F);
 }
 function tbCpuFrom(s, F) {
@@ -31391,7 +31606,7 @@ tap("pHelp", openHelp);
 tap("pQuit", () => {
   if (match && match.warm) { qmWarmQuit(); return; }   // ui/quick.js: the warm-up's Back to search
   if (match && match.qm) {   // ui/quick.js: a Ranked forfeit counts as a loss, a Casual match is just left
-    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked ? "Tap again to forfeit" : "Tap again to leave"; return; }
+    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk ? "Tap again to forfeit" : "Tap again to leave"; return; }
     qmForfeit(); return;
   }
   if (match && match.online) {
@@ -31406,6 +31621,7 @@ tap("pQuit", () => {
 });
 tap("rAgain", () => {
   cntAgain();   // ui/counter.js
+  stkLeave();   // ui/stakes.js: a challenge still out is withdrawn
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { quickOpen(); return; }
@@ -31431,6 +31647,7 @@ tap("rAgain", () => {
 });
 tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: the same stop (or boss level) again, beside Next stop
 tap("rChange", () => {
+  stkLeave();   // ui/stakes.js
   if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
@@ -31438,7 +31655,7 @@ tap("rChange", () => {
   if (match && match.road) { openRoad(); return; }
   openSelect(match && !match.ranked ? "practice" : "ranked");
 });
-tap("rMenu", goMenu);
+tap("rMenu", () => { stkLeave(); goMenu(); });   // ui/stakes.js: a challenge still out is withdrawn
 tap("bOnline", openOnline);
 tap("onBack", goMenu);
 tap("onChange", () => openSelect("online"));
@@ -31485,6 +31702,7 @@ function renderSettings() {
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   cntSettings();   // ui/counter.js: Play counts On / Off
+  stkSettings();   // ui/stakes.js: Chip stakes On / Off
 }
 function openSettings() { renderSettings(); modal("settings", true); }
 tap("bSettings", openSettings);
@@ -32215,6 +32433,7 @@ const SYNC = (function () {
     if (typeof p.fsince === "number" && p.fsince > 0) out.fsince = num(p.fsince, 0, 9e15, 0);
     if (typeof p.avatar === "string") out.avatar = /^[a-z0-9][a-z0-9_-]{0,23}:\d{1,2}$/.test(p.avatar) ? p.avatar : "";   // "fighter:skin", "" = the fighter last played
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
+    if (p.so === 0 || p.so === 1) out.so = p.so;   // Settings > Chip stakes: 1 = Off (the server reads it before a challenge)
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
     // fighter mastery: XP played per fighter (a counter), the one-time head start XP (max), the highest level whose reward was paid (max), the KO pages / Ultimate KO pages landed (union)
     if (isObj(p.mxp)) out.mxp = cleanMap(p.mxp, MAXN);
@@ -32254,6 +32473,7 @@ const SYNC = (function () {
     if (S.fsince !== undefined) P.fsince = S.fsince; else if (S.fstats !== undefined) delete P.fsince;
     if (S.avatar !== undefined) P.avatar = S.avatar;
     if (S.title !== undefined) P.title = S.title;
+    if (S.so !== undefined) P.so = S.so;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
     if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
@@ -32319,6 +32539,7 @@ const SYNC = (function () {
     { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
     { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
     { const v = pickOpt("title"); if (have(v)) out.title = v; }
+    { const v = pickOpt("so"); if (have(v)) out.so = v; }
     // Daily Potato: the side that changed it; if both did, the later day, then (same day) the record whose Another go was taken (it is
     // further along), then a finished try over one still running (-1), then the newer side. The best streak keeps the higher one.
     if (have(S.daily) || have(L.daily)) {
@@ -33117,6 +33338,7 @@ function qmClean(o) {
   // ui/rivals.js: the last 30 opponents, the Ranked win streak and its bounty, the refereed count
   me.rv = Array.isArray(o.rv) ? o.rv.map(rvClean).filter(Boolean).slice(0, 30) : [];
   me.ws = n(o.ws, 0); me.bty = rvBounty(me.ws); me.g = n(o.g, 0);
+  me.sk = stkRec(o.sk);   // ui/stakes.js: today's staked matches, the record, the net chips
   return me;
 }
 const qmMe = () => (QM.me && QM.code && QM.code === ACCT.code ? QM.me : null);   // the record of the account this device is linked to
@@ -33179,8 +33401,11 @@ function qmMsg(m) {
   else if (m.t === "qm-x") { if (qmSearching()) qmCancel("You're searching on another page or phone."); }
   else if (m.t === "qm-found") qmFound(m);
   else if (m.t === "qm-off") qmOff(m);
-  else if (m.t === "qm-res") qmRes(m);
-  else if (m.t === "qm-cs") rvCasual(m);   // ui/rivals.js: a Casual game the server played to its end
+  else if (m.t === "qm-res") { qmRes(m); stkGot(m, 1); }   // ui/stakes.js: who can play a rematch for chips now
+  else if (m.t === "qm-cs") { rvCasual(m); stkGot(m, m.g); }   // ui/rivals.js: a Casual game (or a Play friends one) the server played to its end
+  else if (m.t === "qm-sk") stkRes(m);   // ui/stakes.js: a staked match decided
+  else if (m.t === "acct") qmAcctAnswer(m);
+  else if (m.t === "stk-out" || m.t === "stk-in" || m.t === "stk-off" || m.t === "stk-no") stkMsg(m);
 }
 function qmGotMe(m) {
   QM.authing = false;
@@ -33245,6 +33470,17 @@ async function qmFind() {
   }
   qmSend();
 }
+// Play friends (online.js netHost / netJoin): the silent account too, so the referee keeps the rival record and stakes can follow.
+// Unknown whether this server keeps accounts: it says so over the socket first (an HTTP try would leave a 404 where they're off).
+function qmSilent() {
+  if (!qmOn() || ACCT.code || qmAcctOff() || QM.making) return;
+  if (ACCT.avail) { qmMakeAcct(); return; }
+  if (QM.conn) QM.asked = window.__blQuick.send({ t: "acct?" });
+}
+function qmAcctAnswer(m) {
+  ACCT.avail = !!m.on;
+  if (m.on && QM.asked) { QM.asked = false; qmMakeAcct(); }
+}
 function qmSend() {
   if (!qmSearching() || QM.hidden || !QM.conn) return;
   if (ACCT.code && !QM.authed && !QM.acct) { qmAuth(); return; }   // signed in first: the server pairs by your rank (it searches on `me`)
@@ -33282,11 +33518,13 @@ function qmFoundOk(m) {
     m.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < FIG[m.f[i]].palettes.length) && validRules(m.r) && !!m.opp && typeof m.opp === "object";
 }
 function qmFound(m) {
-  if (!qmSearching() || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  const sk = stkFoundOk(m);   // ui/stakes.js: the rematch for chips this phone challenged for or accepted
+  if (!(qmSearching() || sk) || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
   const opp = m.opp;
   opp.name = SYNC.cleanName(opp.name) || "Potato";
   QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
   rvFound(m);   // ui/rivals.js
+  if (sk) stkFound(m); else m.sk = 0;
   const me = qmMe() || QM_FRESH;
   QM.pend = m.ranked ? { id: m.id, room: m.room, n0: me.n, r0: me.r, w0: me.w, l0: me.l, d0: me.d, k0: QM.streak, dead: 0 } : null;
   Sfx.init(); qmChime();
@@ -33300,7 +33538,7 @@ async function qmJoin(m) {
   if (NET.mr) leaveMatchRoom();
   resetNet();
   const me = m.role === "host" ? 0 : 1;
-  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
+  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, sk: m.sk | 0, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
   NET.role = m.role; NET.phase = m.role === "host" ? "hosting" : "joining"; NET.joinT = performance.now(); NET.note = "";
   NET.oppName = m.opp.name; NET.mrCode = m.room;
   try { await openMatchRoom(m.room); }
@@ -33357,9 +33595,10 @@ function qmVs(m) {
   const my = me || QM_FRESH;
   side("L", NET.myName || acctName(), m.f[mine], m.p[mine], my.r, me && my.n < QM_PLACING ? { n: my.n } : null, !me);
   side("R", o.name, m.f[1 - mine], m.p[1 - mine], Number.isInteger(o.r) ? o.r : 1000, o.pl >= 0 ? { n: o.pl } : null, !o.id);
-  $("vsMode").textContent = m.ranked ? "Ranked" : "Casual";
-  $("vsStamp").className = "vs-st " + (m.ranked ? "rk" : "cs");
+  $("vsMode").textContent = m.sk ? "Rematch · for chips" : m.ranked ? "Ranked" : "Casual";
+  $("vsStamp").className = "vs-st " + (m.sk ? "sk" : m.ranked ? "rk" : "cs");
   $("vsFb").hidden = !m.fb; $("vsWhy").hidden = m.ranked;
+  stkVs(m);   // ui/stakes.js: the pot
   $("vsPing").textContent = `measuring… · ${mapName(m.seed % BL.POOL)}`;
   rvVs(m);   // ui/rivals.js: the record, the tags, the wanted plates
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
@@ -33377,10 +33616,10 @@ function qmStartMsg(D, rtt) {
   const q = NET.qm;
   return { id: NET.matchId + 1, seed: q.seed, d: D, f: q.f.slice(), p: q.p.slice(), rtt: Math.round(rtt), r: Object.assign({}, q.r), set: { n: 1, w: [0, 0] } };
 }
-// ...and the guest plays only that match (a Casual rematch is the friend-match one)
+// ...and the guest plays only that match (a Casual rematch is the friend-match one; Ranked and staked matches have none)
 function qmStartOk(st) {
   const q = NET.qm;
-  if (st.id !== 1) return !q.ranked;
+  if (st.id !== 1) return !q.ranked && !q.sk;
   return st.seed === q.seed && st.f[0] === q.f[0] && st.f[1] === q.f[1] && st.p[0] === q.p[0] && st.p[1] === q.p[1] &&
     st.r.l === q.r.l && st.r.t === q.r.t && st.r.b === q.r.b && st.set.n === 1 && st.bo == null;
 }
@@ -33391,6 +33630,7 @@ function qmOff(m) {
   $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
   if (NET.mr) leaveMatchRoom();
   resetNet(); NET.phase = "idle";
+  if (stkOff(m)) { QM.found = null; QM.st = "idle"; quickOpen(); lobbyPresence(); return; }   // ui/stakes.js: a staked match never searched
   QM.found = null; QM.pend = null; QM.st = "search"; QM.wait = null;
   if (banner && mode === "match" && match && match.warm) { paused = false; QM.note = ""; }   // the CPU fight goes on
   else { if (mode !== "quick") quickOpen(); QM.note = "The other player didn't connect. Searching again."; }
@@ -33411,13 +33651,13 @@ function qmFinish(left, lost) {
       if (sb > 0) R.lines.push([`${k} win streak`, sb]);
     } else if (res === 0.5) { R.lines.push(["Draw", 10]); kos(3); }
     else { R.lines.push(["Match played", 6]); kos(2); }
-  } else if (!q.ranked && over) {
+  } else if (!q.ranked && over) {   // Casual, and a staked match too: its pot shows only in the pot card (ui/stakes.js)
     R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]); kos(2);
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
   if (q.ranked) rvFinishLines(R, q);   // ui/rivals.js: a bounty the verdict already brought, shown only (the server pays it)
-  if (lost || left || q.ranked) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked has no rematch: the room goes
+  if (lost || left || q.ranked || q.sk) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked and staked matches have no rematch in the room: it goes
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   QM.st = "idle";
   $("netBadge").hidden = true;
@@ -33428,7 +33668,7 @@ function qmFinish(left, lost) {
 function qmForfeit() {
   const q = match.qm;
   leaveMatchRoom(); NET.phase = "idle"; QM.st = "idle";
-  if (!q.ranked) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
+  if (!q.ranked && !q.sk) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   showResults({ res: 0, online: true, qm: q, forfeit: true, me: G.fighters[meSlot], op: G.fighters[1 - meSlot], lines: [], total: 0 });
   lobbyPresence();
@@ -33450,19 +33690,20 @@ function qmResults(R) {
     return;
   }
   const q = R.qm;
-  $("rMode").textContent = `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
+  $("rMode").textContent = q.sk ? `Rematch for chips · ${q.sk} each` : `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
   rvResults(R);   // ui/rivals.js: the record now, the rival strip
-  if (q.ranked) {
+  if (q.ranked || q.sk) {
     $("rAgain").querySelector("span").textContent = "Next match"; $("rAgain").disabled = false;
     $("rChange").querySelector("span").textContent = "Quick match";
-    if (R.lost) { resTitle("Connection lost"); resLine($("rSub"), ["The connection dropped. The server decides this match."]); }
+    if (R.lost) { resTitle("Connection lost"); resLine($("rSub"), [`The connection dropped. The server decides this ${q.sk ? "pot" : "match"}.`]); }
     if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "No chips for a match you left." : "No chips for an unfinished match.");
-    qmRankCard();
-    if (QM.res && QM.res.id === q.id) qmVerdictView(false);
+    if (q.sk) stkResults(R);   // ui/stakes.js: the pot card in the rank card's place
+    else { qmRankCard(); if (QM.res && QM.res.id === q.id) qmVerdictView(false); }
   } else {
     $("rChange").querySelector("span").textContent = "Next match";
     if (!R.lines.length) $("rWhy").textContent = masteryWhy("No chips for an unfinished match. Casual doesn't change your rank.");
   }
+  stkButtons();   // ui/stakes.js: FOR CHIPS
 }
 // the rank card while the server confirms: the rating before, a mute … sticker, a shimmer on the bar (css/96-quick.css)
 function qmRankCard() {
@@ -33590,12 +33831,12 @@ function qmWarmQuit() { quickOpen(); }   // Pause > Back to search
 function qmAgain() {
   if (match.vc) { vcFight(); return true; }   // ui/vscpu.js: Another CPU fight
   if (match.warm) { qmWarmStart(); return true; }
-  if (match.qm && (match.qm.ranked || NET.phase !== "result")) { qmNext(); return true; }
+  if (match.qm && (match.qm.ranked || match.qm.sk || NET.phase !== "result")) { qmNext(); return true; }
   return false;   // Casual: the friend match's Rematch (both tap)
 }
 function qmChange() {
   if (match.warm || match.vc) { quickOpen(); return; }
-  if (match.qm.ranked) { qmLeave(); quickOpen(); return; }
+  if (match.qm.ranked || match.qm.sk) { qmLeave(); quickOpen(); return; }
   qmNext();   // Casual: Next match
 }
 function qmLeave() { if (NET.mr) leaveMatchRoom(); resetNet(); NET.phase = "idle"; if (QM.st === "found") QM.st = "idle"; lobbyPresence(); }
@@ -33605,6 +33846,11 @@ function qmPauseText() {
   const quit = $("pQuit").querySelector("span"), note = $("pNote");
   if (match.vc) { vcPauseText(); return; }   // ui/vscpu.js
   if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
+  if (match.qm && match.qm.sk) {   // a staked match: no result in its first 30 s, then leaving costs the stake
+    quit.textContent = "Forfeit";
+    note.textContent = NET.frame < STK_EARLY ? "Leaving in the first 30 seconds is no result: nobody's chips move." : `Online matches keep running while this is open. Leaving counts as a loss · −${match.qm.sk} chips`;
+    return;
+  }
   if (!match.qm || !match.qm.ranked) return;
   const me = qmMe() || QM_FRESH, o = match.qm.opp, dr = qmElo(me.r, o && Number.isInteger(o.r) ? o.r : 1000, 0, me.n);
   quit.textContent = "Forfeit";
@@ -33817,7 +34063,7 @@ function qmTick() {
     if (QM.authCode !== ACCT.code || !ACCT.code) { QM.authed = false; QM.authing = false; QM.acct = ""; qmAuth(); }
     qmRefresh();
   }
-  if (now - QM.uiT > 250) { QM.uiT = now; qmUi(); }
+  if (now - QM.uiT > 250) { QM.uiT = now; qmUi(); stkTick(); }   // ui/stakes.js: the challenge clocks
 }
 
 /* ----- wiring ----- */
@@ -33833,7 +34079,7 @@ tap("ssGo", qmSeasonDone);
 tap("ssClose", qmSeasonDone);
 
 /* ===================== Rival record and streak bounty (the server side is quick.js) =====================
-   The server plays every Ranked match and every Casual game between two accounts and keeps your last 30 opponents with your record
+   The server plays every Ranked match, every Casual game and every Play friends 1v1 between two accounts and keeps your last 30 opponents with your record
    against each (`on`.rv, sent in `me`, qm-res and qm-cs), and your Ranked win streak (`on`.ws). Three Ranked wins in a row put a bounty
    on you: 30 chips, +10 a win, 100 at most; whoever ends the streak takes it, once per pair a day. The server pays it into the
    hunter's account file, so this page never adds it to P.tokens (the next sync brings it; adding it here would pay it twice).
@@ -33841,9 +34087,9 @@ tap("ssClose", qmSeasonDone);
    story line, the rival strip, the BOUNTY sticker on the chips), the Quick match rank plate and Account > Stats (the Rivals list).
    Fable's design: rival-stakes/fable-design.md. Styles: css/97-rivals.css. */
 const RV_TAGS = { rival: ["gold", "Rival"], nemesis: ["red", "Nemesis"], wanted: ["ember", "Wanted"] };
-const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0 };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to
+const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0, pf: null, fr: null };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to; pf: a Play friends game's record (qm-cs pf), fr: its results
 const rvN = (e) => e.w + e.l + e.d;
-const rvBounty = (ws) => (ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10));   // quick.js bounty()
+function rvBounty(ws) { return ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10); }   // quick.js bounty(); a declaration: qmLoad (ui/quick.js) runs before this part
 // one opponent from the server, cleaned (qmClean keeps the list)
 function rvClean(x) {
   if (!x || typeof x !== "object" || typeof x.id !== "string" || !/^[0-9A-Z]{10}$/.test(x.id)) return null;
@@ -33889,7 +34135,7 @@ function rvFoundLine(vs, m) {
 function rvVs(m) {
   const o = m.opp, pill = $("vsRiv"), tg = $("vsTagR"), bty = rvOppBty(m), mine = m.ranked && m.you && Number.isInteger(m.you.bty) && m.you.bty > 0 ? m.you.bty : 0;
   pill.hidden = !RV.rec;
-  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = w.t; pill.className = "vs-riv " + w.c; }
+  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = (m.sk ? "Rematch · " : "") + w.t; pill.className = "vs-riv " + w.c; }   // m.sk: a rematch for chips (ui/stakes.js)
   const tag = bty ? "wanted" : RV.rec ? rvTag(rvList().find((x) => x.id === RV.opp) || RV.rec, rvList()) : "";
   tg.hidden = !tag;
   if (tag) { tg.className = `tag st ${RV_TAGS[tag][0]}`; tg.textContent = RV_TAGS[tag][1]; }
@@ -33916,6 +34162,7 @@ function rvCasual(m) {
   if (!m || typeof m.id !== "string" || !Number.isInteger(m.g)) return;
   rvGot(m.rv, m.id, m.g);
   const me = qmMe(); if (me && Number.isInteger(m.gn)) { me.g = m.gn; qmSave(); }
+  if (m.pf) { RV.pf = { id: m.id, g: m.g, e: rvClean(m.rv) }; rvFriend(); return; }   // a Play friends game
   if (mode === "result" && QM.shown && QM.shown.qm && QM.shown.qm.id === m.id && NET.matchId === m.g) rvStrip(QM.shown);
 }
 // qm-res, before qmRes applies it: the record, the streak, the bounty (the chips come with the next sync)
@@ -33949,15 +34196,24 @@ function rvNow(R) {
   e.k = ((R.res === 1 ? "W" : R.res === 0 ? "L" : "D") + e.k).slice(0, 5);
   return e;
 }
-function rvStrip(R) {
-  const el = $("rRiv"), e = rvNow(R), sub = $("rSub");
+function rvStrip(R) { rvShow(rvNow(R), R.qm.opp ? R.qm.opp.name : NET.oppName || "Potato", R.op.spec.id); }
+// Play friends (ui/stakes.js stkFriend): the server's record once it has counted the game on screen
+function rvFriendRes(R) { RV.fr = R; rvFriend(); }
+function rvFriend() {
+  const p = RV.pf, R = RV.fr;
+  if (mode === "result" && R && p && p.e && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || "Your friend", R.op.spec.id);
+}
+function rvShow(e, name, fid) {
+  const el = $("rRiv"), sub = $("rSub");
   const old = sub.querySelector(".rv-now"); if (old) old.remove();
   el.hidden = !e;
   if (!e) return;
-  const name = R.qm.opp ? R.qm.opp.name : NET.oppName || "Potato", w = rvWords(e, name);
-  sub.appendChild(acMk("span", "rv-now", ` ${w.t} now.`));
+  const w = rvWords(e, name);
+  const ln = acMk("span", "rv-now"), part = w.t.split(/(\d+–\d+)/);   // the score never breaks at its dash
+  ln.append(` ${part[0]}`, acMk("span", "rv-nw", part[1] || ""), `${part[2] || ""} now.`);
+  sub.appendChild(ln);
   el.textContent = "";
-  const av = acMk("span", "av"); acSetAvatar(av, R.op.spec.id, 0);
+  const av = acMk("span", "av"); acSetAvatar(av, fid, 0);
   const rec = e.w > e.l ? `You lead ${e.w}–${e.l}` : e.w < e.l ? `Leads ${e.l}–${e.w}` : `Tied ${e.w}–${e.l}`;   // next to their name and face
   el.append(av, acMk("span", "nm", name), acMk("i", "sep"), acMk("span", "rec " + w.c, rec), rvDots(e.k));
   el.setAttribute("aria-label", `${name}: ${w.t}. Open your rivals`);
@@ -33998,6 +34254,7 @@ function rvVerdict(late) {
 // resOpen (screens.js): every results screen starts without them
 function rvClear() {
   const el = $("rRiv"); if (el) el.hidden = true;
+  RV.fr = null;
   const b = document.querySelector("#rChipT .rv-bty"); if (b) b.remove();
 }
 tap("rRiv", () => { openAccount(); acSetTab("s"); });
@@ -34020,7 +34277,8 @@ function rvStats(pan) {
     head.appendChild(acMk("span", "", `${list.length} ${list.length === 1 ? "rival" : "rivals"} · you lead ${lead} · ${n} online ${n === 1 ? "match" : "matches"}`));
   }
   pan.appendChild(head);
-  if (!list.length) { pan.appendChild(acMk("p", "ac-line", "Play Quick match: everyone you meet shows here with your record against them.")); return; }
+  stkStats(pan);   // ui/stakes.js: the chip stakes line
+  if (!list.length) { pan.appendChild(acMk("p", "ac-line", "Play Quick match or Play friends: everyone you meet online shows here with your record against them.")); return; }
   const ul = acMk("ul", "rv-list");
   for (const e of list) {
     const li = acMk("li", "rv-row"), av = acMk("span", "av"), who = acMk("div", "who"), nb = acMk("b"), tag = rvTag(e, list), ti = tierInfo(e.r || 1000);
@@ -34783,6 +35041,341 @@ $("qmBoard").addEventListener("keydown", (e) => { if (e.code === "Enter" || e.co
 window.__blBoards = { open: bdOpen, close: bdClose, preview: bdPreview, plates: bdPlates, pill: bdPill, get state() { return { k: BD.k, st: BD.st }; } };   // tests
 bdPill();
 
+/* ===================== Chip stakes: a rematch for 10, 25 or 50 chips (the server side is quick.js) =====================
+   After every result the server referees (Ranked, a Casual game between two accounts, a Play friends 1v1) both players hear which
+   stakes the two of them can play (`sk` on qm-res, qm-cs and qm-sk). The results offer it: Casual and Play friends keep the gold
+   Rematch and gain an end segment FOR CHIPS; Ranked and a staked match get REMATCH FOR CHIPS in the second row. The stake sheet picks
+   10 / 25 / 50 and sends the challenge (stk); the other player gets the challenge card on whatever screen they are on (results,
+   Quick match, the menu, Play friends) with 30 s to answer. An accepted challenge is a match the server assigns like a Ranked one
+   (qm-found {sk}): the VS screen says REMATCH · FOR CHIPS with the pot, the results show the pot card in the rank card's place, and
+   the server writes the chips into both account files. This page never adds the pot to P.tokens: the next sync brings it (adding
+   it here too would pay it twice), as with the bounty. Chips are never bought, traded or cashed out; a stake is only ever a rematch,
+   5 a day, after 10 refereed matches, ranks within 250 (Play friends: any). Settings > Chip stakes Off hides all of it on this
+   phone and the server refuses challenges to it (prof.so, synced with the account). Fable's design: rival-stakes/fable-design.md.
+   Styles: css/98-stakes.css. */
+const STK_S = [10, 25, 50];
+const STK_EARLY = 150 + 30 * 60;   // quick.js EARLY: leaving before this frame (the countdown + 30 s of fight) is no result
+const STK = {
+  el: null,       // { ok, why, k, id, g } the stakes both can play after the last refereed result, and the game it followed
+  out: null,      // { s, t0, ms, name } my challenge, waiting for an answer
+  inc: null,      // { s, t0, ms, name } a challenge for me
+  busy: 0,        // the stake being sent (> 0) or accepted (< 0) while the account syncs first
+  acc: 0,         // the stake I accepted, until its match is found
+  pick: 25, note: "", noteT: 0,
+  pend: null,     // { id, s, name, t0 } the staked match: its id, the stake, the opponent, the chips before it
+  res: null,      // { id, res, why, s, d } the verdict of the last staked match (qm-sk)
+  applied: [], fr: null,
+};
+const stkOn = () => qmOn() && P.so !== 1;
+const stkSend = (m) => !!(window.__blQuick && window.__blQuick.send(m));
+// the server's sk: the stakes both can play now, or why not (and how many refereed matches to go)
+function stkClean(o) {
+  if (!o || typeof o !== "object") return null;
+  return { ok: Array.isArray(o.ok) ? STK_S.filter((s) => o.ok.includes(s)) : [], why: typeof o.why === "string" ? o.why.slice(0, 8) : "", k: Number.isInteger(o.k) && o.k > 0 && o.k <= 10 ? o.k : 0 };
+}
+// me.sk: today's staked matches, the record and the net chips (qmClean keeps it)
+function stkRec(o) {
+  const n = (v, lo) => (Number.isInteger(v) && v >= lo && v < 1e7 ? v : 0);
+  o = o && typeof o === "object" ? o : {};
+  return { n: n(o.n, 0), w: n(o.w, 0), l: n(o.l, 0), net: n(o.net, -1e7), day: Number.isInteger(o.day) && o.day > 0 && o.day < 100 ? o.day : 5 };
+}
+function stkWhy(why, k, name) {
+  return why === "new" ? `Stakes unlock after 10 online matches · ${k || 10} to go` : why === "day" ? "Daily limit reached · back tomorrow"
+    : why === "gap" ? "Rank gap too big" : why === "chips" ? "Not enough chips" : why === "them" ? `${name} can't stake right now`
+    : why === "hold" ? "The server is updating · try again in a minute" : why === "late" ? "Too late for this rematch" : why === "off" ? "Chip stakes are off in Settings" : "";
+}
+function stkNote(t) { STK.note = t; STK.noteT = performance.now(); }
+const stkMs = (ms) => (Number.isInteger(ms) && ms >= 3000 && ms <= 60000 ? ms : 30000);
+// the refereed game the results on screen are about: Quick match (Ranked and staked: game 1) or a Play friends 1v1
+function stkShown() {
+  if (mode !== "result" || !match || !match.online || match.boss || match.tb) return null;
+  if (match.qm) { const hard = !!(match.qm.ranked || match.qm.sk); return { id: match.qm.id, g: hard ? 1 : NET.matchId, hard, name: match.qm.opp.name }; }
+  return NET.mrCode ? { id: NET.mrCode, g: NET.matchId, hard: false, pf: true, name: NET.oppName || "Your friend" } : null;
+}
+const stkElFor = (k) => (k && STK.el && STK.el.id === k.id && STK.el.g === k.g ? STK.el : null);
+
+/* ----- the server's words ----- */
+// qm-res (game 1), qm-cs (its game), qm-sk (game 1): who can stake now
+function stkGot(m, g) {
+  const el = stkClean(m.sk);
+  if (!el) return;
+  STK.el = Object.assign(el, { id: m.id, g });
+  stkRender();
+}
+function stkMsg(m) {
+  if (m.t === "stk-out") {
+    if (!STK_S.includes(m.s)) return;
+    if (STK.busy !== m.s) { stkSend({ t: "stkx" }); return; }   // cancelled while it was on its way
+    const k = stkShown();
+    STK.busy = 0; STK.note = ""; STK.out = { s: m.s, t0: performance.now(), ms: stkMs(m.ms), name: k ? k.name : NET.oppName || "your opponent" };
+  } else if (m.t === "stk-in") {
+    if (!STK_S.includes(m.s)) return;
+    if (!stkOn()) { stkSend({ t: "stkx" }); return; }
+    STK.inc = { s: m.s, t0: performance.now(), ms: stkMs(m.ms), name: SYNC.cleanName(typeof m.name === "string" ? m.name : "") || "Potato" };
+    Sfx.init(); Sfx.tone(988, 988, 0.1, "triangle", 0.06); Sfx.at(0.11, 1319, 1319, 0.2, "triangle", 0.06);   // a soft chime, no ticking (Fable)
+    try { if (navigator.vibrate) navigator.vibrate(70); } catch (e) { /* no vibration */ }
+  } else if (m.t === "stk-off") {
+    const out = STK.out, mine = STK.acc || STK.busy < 0;
+    STK.out = null; STK.inc = null; STK.acc = 0; STK.busy = 0;
+    // the challenger hears the same words for a decline, a timeout or the other one leaving; the one who passed hears nothing
+    if (out) stkNote(m.why === "no" || m.why === "x" ? `No answer from ${out.name} · the stake is off` : `The stake is off · ${stkWhy(m.why, 0, out.name) || "try again"}`);
+    else if (mine) stkNote(m.why === "no" || m.why === "x" ? "Too late · the stake is off" : `The stake is off · ${stkWhy(m.why, 0, "They") || "try again"}`);
+  } else if (m.t === "stk-no") {
+    const k = stkShown(), el = stkElFor(k);
+    STK.busy = 0;
+    stkNote(stkWhy(m.why, el ? el.k : 0, k ? k.name : "They") || "Couldn't send the challenge");
+  }
+  stkRender();
+}
+// qm-found {sk}: only the stake this phone challenged for or accepted
+const stkFoundOk = (m) => Number.isInteger(m.sk) && STK_S.includes(m.sk) && ((!!STK.out && STK.out.s === m.sk) || STK.acc === m.sk);
+function stkFound(m) {
+  STK.out = null; STK.inc = null; STK.acc = 0; STK.busy = 0; STK.note = ""; STK.res = null;
+  STK.pend = { id: m.id, s: m.sk, name: m.opp.name, t0: P.tokens };
+  modal("stake", false);
+  stkRender();
+}
+// qm-sk: a staked match decided (the server wrote the chips into both accounts)
+function stkRes(m) {
+  if (!m || typeof m.id !== "string" || STK.applied.includes(m.id) || ![1, 0.5, 0, null].includes(m.res) || !STK_S.includes(m.s)) return;
+  STK.applied.push(m.id); if (STK.applied.length > 8) STK.applied.shift();
+  const d = Number.isInteger(m.d) && Math.abs(m.d) <= m.s ? m.d : 0, p = STK.pend && STK.pend.id === m.id ? STK.pend : null;
+  STK.res = { id: m.id, res: m.res, why: typeof m.why === "string" ? m.why.slice(0, 8) : "", s: m.s, d };
+  if (m.rv) rvGot(m.rv, m.id, 1);   // ui/rivals.js
+  const me = qmMe();
+  if (me) {
+    if (Number.isInteger(m.gn)) me.g = m.gn;
+    if (Number.isInteger(m.day)) me.sk.n = m.day;
+    if (d > 0) me.sk.w++; else if (d < 0) me.sk.l++;
+    me.sk.net += d;
+    qmSave();
+  }
+  if (d) acctSoon(800);   // acct.js: the pot is in the account file now
+  stkGot(m, 1);
+  if (mode === "result" && QM.shown && QM.shown.qm && QM.shown.qm.id === m.id) stkPotView(true);
+  else if (p && QM.st === "found" && !(match && match.qm && match.qm.id === m.id)) {
+    // decided before the fight began on this phone: the host's game wasn't the assigned one, or nobody played
+    $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
+    if (NET.mr) leaveMatchRoom();
+    resetNet(); NET.phase = "idle"; QM.st = "idle"; QM.found = null; STK.pend = null;
+    QM.note = m.res === null ? "That match was called off. No chips moved." : d > 0 ? `${p.name}'s game didn't match the server's. You take the pot (+${d}).` : "Your game didn't match the server's. Reload the page.";
+    quickOpen();
+  }
+}
+// qmOff: a staked match that never started: no search to go back to
+function stkOff(m) {
+  if (!STK.pend || STK.pend.id !== m.id) return false;
+  QM.note = `${STK.pend.name} didn't connect. The stake is off.`;
+  STK.pend = null;
+  return true;
+}
+
+/* ----- challenge and answer ----- */
+// the server checks the chips in the account file: this phone's newest first (2.5 s at most)
+const stkSynced = () => Promise.race([Promise.resolve().then(() => acctSync()).catch(() => {}), new Promise((r) => setTimeout(r, 2500))]);
+async function stkChallenge() {
+  const el = stkElFor(stkShown()), s = STK.pick;
+  if (!el || !el.ok.includes(s) || STK.busy || STK.out || STK.inc) return;
+  modal("stake", false);
+  STK.busy = s; STK.note = ""; stkRender();
+  await stkSynced();
+  if (STK.busy !== s) return;   // cancelled meanwhile
+  if (!stkSend({ t: "stk", s })) { STK.busy = 0; stkNote("Couldn't reach the server"); }
+  stkRender();
+}
+function stkCancel() {
+  if (STK.out) stkSend({ t: "stkx" });
+  STK.out = null; if (STK.busy > 0) STK.busy = 0;
+  stkRender();
+}
+async function stkAccept() {
+  const x = STK.inc;
+  if (!x || STK.busy) return;
+  STK.busy = -x.s; stkRender();
+  await stkSynced();
+  if (STK.inc !== x) { STK.busy = 0; stkRender(); return; }   // off meanwhile
+  STK.inc = null; STK.busy = 0; STK.acc = x.s;
+  if (!stkSend({ t: "stk-ok" })) STK.acc = 0;
+  stkRender();
+}
+function stkDecline() { if (!STK.inc) return; STK.inc = null; if (STK.busy < 0) STK.busy = 0; stkSend({ t: "stkx" }); stkRender(); }
+// leaving the results (menus.js): a challenge still out is withdrawn
+function stkLeave() { if (STK.out || STK.busy > 0) stkCancel(); STK.note = ""; }
+
+/* ----- the results: FOR CHIPS, the reason it can't, the pending challenge ----- */
+function stkRender() { stkButtons(); stkCard(); if (!screens.stake.hidden) stkSheetFill(); }
+function stkButtons() {
+  const b = $("rStake"), why = $("rStakeWhy"), acts = why.parentNode;
+  if (mode !== "result") return;
+  const k = stkShown(), el = stkElFor(k), midSet = k && k.pf && NET.setRes && !NET.setRes.over;   // a best of 3 plays out first
+  // after Ranked (or a staked match) REMATCH FOR CHIPS takes the Quick match button's place, so it shows only while it can be used:
+  // a dimmed one there would hide Quick match from every new player for their first 10 matches
+  const going = !!STK.out || STK.busy > 0;
+  const show = !!el && stkOn() && el.why !== "off" && el.why !== "acct" && !midSet && (!k.hard || el.ok.length > 0 || going), wait = show && going;
+  acts.classList.toggle("stk-seg", show && !k.hard); acts.classList.toggle("stk-row", show && k.hard); acts.classList.toggle("stk-wait", wait);
+  b.hidden = !show;
+  const note = STK.note && performance.now() - STK.noteT < 9000 ? STK.note : "", can = show && el.ok.length > 0;
+  why.textContent = !show || wait ? "" : note || (can ? "" : stkWhy(el.why, el.k, k.name));
+  why.hidden = !why.textContent;
+  if (!show) return;
+  b.disabled = !can && !wait; b.classList.toggle("dim", !can && !wait);
+  const key = wait ? (STK.out ? `o${STK.out.s}` : "s") : k.hard ? "row" : "seg";
+  if (b.dataset.k !== key) {
+    b.dataset.k = key; b.textContent = "";
+    if (key === "row") { b.append(acMk("span", "", "Rematch")); const sm = acMk("small", "sk-for"); sm.append(rvCg(), "for chips"); b.append(sm); }
+    else { const l = acMk("span", "sk-l"); l.append(rvCg(), key === "seg" ? "For chips" : key === "s" ? "Sending…" : `${STK.out.s} sent · waiting for ${STK.out.name}`); b.append(l, acMk("small", "sk-t", "")); }
+  }
+  b.setAttribute("aria-label", wait ? "Challenge sent. Tap to cancel" : "Rematch for chips");
+  stkClock();
+}
+// the pending challenge's clock under its button, the challenge card's clock and bar
+function stkClock() {
+  const now = performance.now();
+  if (STK.out && !$("rStake").hidden) { const t = $("rStake").querySelector(".sk-t"); if (t) t.textContent = `${qmClock(Math.max(0, (STK.out.ms - (now - STK.out.t0)) / 1000))} · tap to cancel`; }
+  if (STK.inc && !$("stkCard").hidden) {
+    const left = Math.max(0, STK.inc.ms - (now - STK.inc.t0));
+    $("skcTime").textContent = `${qmClock(left / 1000)} to decide`;
+    $("skcBar").style.transform = `scaleX(${(left / STK.inc.ms).toFixed(3)})`;
+  }
+}
+function stkClear() {
+  const acts = $("rStakeWhy").parentNode;
+  acts.classList.remove("stk-seg", "stk-row", "stk-wait");
+  $("rStake").hidden = true; $("rStake").dataset.k = ""; $("rStakeWhy").hidden = true; $("rPot").hidden = true;
+  STK.fr = null; STK.note = "";
+}
+// screens.js showResults: a Play friends 1v1 (the referee's record and stakes, once it has counted the game)
+function stkFriend(R) { STK.fr = R; rvFriendRes(R); stkButtons(); }
+tap("rStake", () => {
+  if (STK.out) { stkCancel(); return; }
+  if (STK.busy) return;
+  if (STK.inc) { const c = $("stkCard"); c.classList.remove("nudge"); void c.offsetWidth; c.classList.add("nudge"); return; }   // answer theirs first
+  stkSheet();
+});
+
+/* ----- the stake sheet ----- */
+function stkSheet() {
+  const k = stkShown(), el = stkElFor(k);
+  if (!el || !el.ok.length) return;
+  if (!el.ok.includes(STK.pick)) STK.pick = el.ok.includes(25) ? 25 : el.ok[el.ok.length - 1];
+  stkSheetFill();
+  modal("stake", true);
+}
+function stkSheetFill() {
+  const k = stkShown(), el = stkElFor(k);
+  if (!el || !el.ok.length || STK.out || STK.inc) { modal("stake", false); return; }
+  $("skWho").textContent = `vs ${k.name}`;
+  const row = $("skTiles"); row.textContent = "";
+  for (const s of STK_S) {
+    const on = el.ok.includes(s), b = acMk("button", "sk-tile" + (s === STK.pick ? " on" : ""));
+    b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(s === STK.pick)); b.disabled = !on;
+    const n = acMk("b"); n.append(rvCg(), String(s));
+    b.append(n, acMk("small", "", on ? `pot ${s * 2}` : "not enough chips"));
+    b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); STK.pick = s; stkSheetFill(); });
+    row.appendChild(b);
+  }
+  const me = qmMe(), sk = me ? me.sk : stkRec(null);
+  $("skHave").textContent = `You have ${fmtChips(P.tokens)} · ${sk.n} of ${sk.day} today`;
+  $("skSend").querySelector("span").textContent = `Challenge for ${STK.pick}`;
+}
+tap("skSend", stkChallenge);
+tap("skNo", () => modal("stake", false));
+tap("skClose", () => modal("stake", false));
+
+/* ----- the challenge card: over the results' right column (sideways), else at the bottom of any screen but a fight ----- */
+function stkCard() {
+  const c = $("stkCard"), x = STK.inc, show = !!x && stkOn() && mode !== "match" && $("qmVs").hidden && $("qmFound").hidden;
+  if (c.hidden === show) { c.hidden = !show; if (show) { c.classList.remove("in", "nudge"); void c.offsetWidth; c.classList.add("in"); } }
+  if (!show) return;
+  const side = mode === "result" && !L.portrait ? document.querySelector("#resSheet .res-side") : null, host = side || $("app");
+  if (c.parentNode !== host) host.appendChild(c);
+  c.classList.toggle("side", !!side);
+  const key = `${x.s}:${x.name}:${STK.busy}`;
+  if (c.dataset.k !== key) {
+    c.dataset.k = key;
+    const h = $("skcT"); h.textContent = ""; const amt = acMk("span", "sk-nw"); amt.append(rvCg(), String(x.s)); h.append(`${x.name} wants a rematch for `, amt);   // the coin stays with its number
+    $("skcL").textContent = `Winner takes ${x.s * 2} · same fighters · 3 lives · 4:00 · not Ranked. Nothing happens if you pass.`;
+    const ok = $("skcOk"); ok.textContent = ""; ok.disabled = STK.busy < 0;
+    const sp = acMk("span"); sp.append(STK.busy < 0 ? "Starting…" : "Accept ", ...(STK.busy < 0 ? [] : [rvCg(), String(x.s)])); ok.append(sp);
+  }
+  stkClock();
+}
+tap("skcOk", stkAccept);
+tap("skcNo", stkDecline);
+
+// qmTick: the clocks, a challenge the server never answered (gone quiet), the note fading out
+function stkTick() {
+  const now = performance.now();
+  if (STK.out && now - STK.out.t0 > STK.out.ms + 4000) { stkNote(`No answer from ${STK.out.name} · the stake is off`); STK.out = null; stkRender(); }
+  if (STK.inc && now - STK.inc.t0 > STK.inc.ms + 1000) { STK.inc = null; if (STK.busy < 0) STK.busy = 0; stkRender(); }
+  if (STK.note && now - STK.noteT > 9000) { STK.note = ""; stkButtons(); }
+  stkCard(); stkClock();
+}
+
+/* ----- a staked match: the VS screen's pot, the results' pot card ----- */
+function stkVs(m) {
+  const p = $("vsPot");
+  p.hidden = !m.sk;
+  if (!m.sk) return;
+  p.textContent = ""; p.append(rvCg(), acMk("b", "", `${m.sk * 2} pot`), acMk("span", "", ` · ${m.sk} each`));
+}
+// qmResults: the pot card while the referee confirms, then its verdict
+function stkResults(R) {
+  const q = R.qm, card = $("rPot"), st = $("rPotD");
+  if (STK.pend && STK.pend.id === q.id) STK.pend.tr = P.tokens;   // every chip this match gave on the phone, before the pot's sync
+  $("rRank").hidden = true; card.hidden = false; card.className = "card res-pot wait";
+  stkPotHead(`${q.sk * 2} pot`);
+  $("rPotS").textContent = "Checking with the referee…";
+  st.className = "delta wait"; $("rPotN").textContent = "…"; st.querySelector("small").textContent = "Confirming";
+  if (STK.res && STK.res.id === q.id) stkPotView(false);
+}
+function stkPotHead(t) { const h = $("rPotH"); h.textContent = ""; h.append(rvCg(), t); }
+function stkPotView(late) {
+  const v = STK.res, R = QM.shown;
+  if (!v || !R || !R.qm || R.qm.id !== v.id || mode !== "result") return;
+  const card = $("rPot"), st = $("rPotD"), sub = $("rPotS"), name = R.qm.opp ? R.qm.opp.name : "They", s = v.s, pot = s * 2;
+  const p = STK.pend && STK.pend.id === v.id ? STK.pend : null;
+  if (v.b == null) v.b = p ? (p.tr != null ? p.tr : p.t0 + (R.total || 0)) : P.tokens;   // kept: a later redraw comes after the sync
+  const before = v.b, after = Math.max(0, before + v.d);
+  const look = (k) => { const sh = $("resSheet"); sh.classList.remove("win", "loss", "draw"); sh.classList.add(k); };
+  card.hidden = false; card.className = "card res-pot " + (v.d > 0 ? "up" : v.d < 0 ? "down" : "zero");
+  if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }
+  const sticker = (cls, n, small) => { st.className = "delta " + cls; $("rPotN").textContent = n; st.querySelector("small").textContent = small; };
+  const moved = (word) => { sub.textContent = ""; sub.append(`${s} ${word} `, acMk("b", "", name), ` · ${fmtChips(before)} → ${fmtChips(after)}`); };
+  if (v.res === null) {
+    stkPotHead("Nothing moves"); sticker("zero", "±0", "No result");
+    sub.textContent = v.why === "early" ? "It ended in the first 30 seconds: no result." : "No result: both keep their stake.";
+    resTitle("No result"); look("draw");
+    resLine($("rSub"), [v.why === "early" ? "The match ended in its first 30 seconds. " : "The server couldn't decide this match. ", "Nobody's chips move."]);
+  } else if (v.d > 0) { stkPotHead(`You take the ${pot} pot`); moved("from"); sticker("up", `+${s}`, v.why === "game" ? "Chips" : "Forfeit"); }
+  else if (v.d < 0) { stkPotHead(`${name} takes the ${pot} pot`); moved("to"); sticker("down", `−${s}`, "Chips"); }
+  else { stkPotHead("Nothing moves"); sub.textContent = `A draw: both keep their ${s}.`; sticker("zero", "±0", "Draw"); }
+  if (v.res !== null && v.why !== "game") {
+    if (v.res === 1) {
+      resTitle("Opponent left"); look("win");
+      resLine($("rSub"), [{ b: name }, v.why === "quiet" ? " stopped playing. The pot is yours." : v.why === "start" ? "'s game didn't match the server's. The pot is yours." : " left. The pot is yours."]);
+    } else { resTitle(R.forfeit ? "Forfeit" : "Disconnected"); look("loss"); resLine($("rSub"), [R.forfeit ? "You left the match. " : "Your connection dropped. ", "That costs the stake."]); }
+  } else if (v.res !== null && v.res !== R.res) {   // the server's copy decides (this phone lost the connection near the end)
+    resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
+    resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
+  }
+  rvStrip(R);   // ui/rivals.js: the record as the server has it (resLine wiped the story's second sentence)
+  if (v.d > 0) setTimeout(() => { if (mode === "result") { Sfx.uiCoin(); setTimeout(() => Sfx.uiCoin(), 110); setTimeout(() => Sfx.uiCoin(), 220); } }, late ? 300 : 1300);
+  if (p) STK.pend = null;
+}
+
+/* ----- Settings > Chip stakes, Account > Stats ----- */
+function stkSettings() {
+  $("setStakeRow").hidden = !qmOn(); $("setStakeNote").hidden = !qmOn();
+  if (!qmOn()) return;
+  chipRow("setStake", [[0, "On"], [1, "Off"]], P.so === 1 ? 1 : 0, (v) => { P.so = v; saveProfile(); if (v) { stkDecline(); stkCancel(); } stkRender(); });
+}
+function stkStats(pan) {
+  const me = qmMe(), k = me && me.sk;
+  if (!k || !(k.w + k.l + k.n)) return;
+  const net = k.net > 0 ? `+${fmtChips(k.net)}` : k.net < 0 ? `−${fmtChips(-k.net)}` : "±0";
+  pan.appendChild(acMk("p", "ac-line sk-stat", `Chip stakes: ${k.w}–${k.l} · net ${net} chips · ${k.n} of ${k.day} today`));
+}
 /* ----- guided practice: short prompts the first time someone plays ----- */
 const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0, dodges: 0 };
@@ -34953,7 +35546,7 @@ function frame(now) {
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get stk() { return STK; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
 qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)

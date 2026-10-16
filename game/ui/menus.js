@@ -19,7 +19,7 @@ tap("pHelp", openHelp);
 tap("pQuit", () => {
   if (match && match.warm) { qmWarmQuit(); return; }   // ui/quick.js: the warm-up's Back to search
   if (match && match.qm) {   // ui/quick.js: a Ranked forfeit counts as a loss, a Casual match is just left
-    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked ? "Tap again to forfeit" : "Tap again to leave"; return; }
+    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk ? "Tap again to forfeit" : "Tap again to leave"; return; }
     qmForfeit(); return;
   }
   if (match && match.online) {
@@ -34,6 +34,7 @@ tap("pQuit", () => {
 });
 tap("rAgain", () => {
   cntAgain();   // ui/counter.js
+  stkLeave();   // ui/stakes.js: a challenge still out is withdrawn
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { quickOpen(); return; }
@@ -59,6 +60,7 @@ tap("rAgain", () => {
 });
 tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: the same stop (or boss level) again, beside Next stop
 tap("rChange", () => {
+  stkLeave();   // ui/stakes.js
   if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
@@ -66,7 +68,7 @@ tap("rChange", () => {
   if (match && match.road) { openRoad(); return; }
   openSelect(match && !match.ranked ? "practice" : "ranked");
 });
-tap("rMenu", goMenu);
+tap("rMenu", () => { stkLeave(); goMenu(); });   // ui/stakes.js: a challenge still out is withdrawn
 tap("bOnline", openOnline);
 tap("onBack", goMenu);
 tap("onChange", () => openSelect("online"));
@@ -113,6 +115,7 @@ function renderSettings() {
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   cntSettings();   // ui/counter.js: Play counts On / Off
+  stkSettings();   // ui/stakes.js: Chip stakes On / Off
 }
 function openSettings() { renderSettings(); modal("settings", true); }
 tap("bSettings", openSettings);

@@ -1,6 +1,6 @@
 
 /* ===================== Rival record and streak bounty (the server side is quick.js) =====================
-   The server plays every Ranked match and every Casual game between two accounts and keeps your last 30 opponents with your record
+   The server plays every Ranked match, every Casual game and every Play friends 1v1 between two accounts and keeps your last 30 opponents with your record
    against each (`on`.rv, sent in `me`, qm-res and qm-cs), and your Ranked win streak (`on`.ws). Three Ranked wins in a row put a bounty
    on you: 30 chips, +10 a win, 100 at most; whoever ends the streak takes it, once per pair a day. The server pays it into the
    hunter's account file, so this page never adds it to P.tokens (the next sync brings it; adding it here would pay it twice).
@@ -8,9 +8,9 @@
    story line, the rival strip, the BOUNTY sticker on the chips), the Quick match rank plate and Account > Stats (the Rivals list).
    Fable's design: rival-stakes/fable-design.md. Styles: css/97-rivals.css. */
 const RV_TAGS = { rival: ["gold", "Rival"], nemesis: ["red", "Nemesis"], wanted: ["ember", "Wanted"] };
-const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0 };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to
+const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0, pf: null, fr: null };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to; pf: a Play friends game's record (qm-cs pf), fr: its results
 const rvN = (e) => e.w + e.l + e.d;
-const rvBounty = (ws) => (ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10));   // quick.js bounty()
+function rvBounty(ws) { return ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10); }   // quick.js bounty(); a declaration: qmLoad (ui/quick.js) runs before this part
 // one opponent from the server, cleaned (qmClean keeps the list)
 function rvClean(x) {
   if (!x || typeof x !== "object" || typeof x.id !== "string" || !/^[0-9A-Z]{10}$/.test(x.id)) return null;
@@ -56,7 +56,7 @@ function rvFoundLine(vs, m) {
 function rvVs(m) {
   const o = m.opp, pill = $("vsRiv"), tg = $("vsTagR"), bty = rvOppBty(m), mine = m.ranked && m.you && Number.isInteger(m.you.bty) && m.you.bty > 0 ? m.you.bty : 0;
   pill.hidden = !RV.rec;
-  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = w.t; pill.className = "vs-riv " + w.c; }
+  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = (m.sk ? "Rematch · " : "") + w.t; pill.className = "vs-riv " + w.c; }   // m.sk: a rematch for chips (ui/stakes.js)
   const tag = bty ? "wanted" : RV.rec ? rvTag(rvList().find((x) => x.id === RV.opp) || RV.rec, rvList()) : "";
   tg.hidden = !tag;
   if (tag) { tg.className = `tag st ${RV_TAGS[tag][0]}`; tg.textContent = RV_TAGS[tag][1]; }
@@ -83,6 +83,7 @@ function rvCasual(m) {
   if (!m || typeof m.id !== "string" || !Number.isInteger(m.g)) return;
   rvGot(m.rv, m.id, m.g);
   const me = qmMe(); if (me && Number.isInteger(m.gn)) { me.g = m.gn; qmSave(); }
+  if (m.pf) { RV.pf = { id: m.id, g: m.g, e: rvClean(m.rv) }; rvFriend(); return; }   // a Play friends game
   if (mode === "result" && QM.shown && QM.shown.qm && QM.shown.qm.id === m.id && NET.matchId === m.g) rvStrip(QM.shown);
 }
 // qm-res, before qmRes applies it: the record, the streak, the bounty (the chips come with the next sync)
@@ -116,15 +117,24 @@ function rvNow(R) {
   e.k = ((R.res === 1 ? "W" : R.res === 0 ? "L" : "D") + e.k).slice(0, 5);
   return e;
 }
-function rvStrip(R) {
-  const el = $("rRiv"), e = rvNow(R), sub = $("rSub");
+function rvStrip(R) { rvShow(rvNow(R), R.qm.opp ? R.qm.opp.name : NET.oppName || "Potato", R.op.spec.id); }
+// Play friends (ui/stakes.js stkFriend): the server's record once it has counted the game on screen
+function rvFriendRes(R) { RV.fr = R; rvFriend(); }
+function rvFriend() {
+  const p = RV.pf, R = RV.fr;
+  if (mode === "result" && R && p && p.e && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || "Your friend", R.op.spec.id);
+}
+function rvShow(e, name, fid) {
+  const el = $("rRiv"), sub = $("rSub");
   const old = sub.querySelector(".rv-now"); if (old) old.remove();
   el.hidden = !e;
   if (!e) return;
-  const name = R.qm.opp ? R.qm.opp.name : NET.oppName || "Potato", w = rvWords(e, name);
-  sub.appendChild(acMk("span", "rv-now", ` ${w.t} now.`));
+  const w = rvWords(e, name);
+  const ln = acMk("span", "rv-now"), part = w.t.split(/(\d+–\d+)/);   // the score never breaks at its dash
+  ln.append(` ${part[0]}`, acMk("span", "rv-nw", part[1] || ""), `${part[2] || ""} now.`);
+  sub.appendChild(ln);
   el.textContent = "";
-  const av = acMk("span", "av"); acSetAvatar(av, R.op.spec.id, 0);
+  const av = acMk("span", "av"); acSetAvatar(av, fid, 0);
   const rec = e.w > e.l ? `You lead ${e.w}–${e.l}` : e.w < e.l ? `Leads ${e.l}–${e.w}` : `Tied ${e.w}–${e.l}`;   // next to their name and face
   el.append(av, acMk("span", "nm", name), acMk("i", "sep"), acMk("span", "rec " + w.c, rec), rvDots(e.k));
   el.setAttribute("aria-label", `${name}: ${w.t}. Open your rivals`);
@@ -165,6 +175,7 @@ function rvVerdict(late) {
 // resOpen (screens.js): every results screen starts without them
 function rvClear() {
   const el = $("rRiv"); if (el) el.hidden = true;
+  RV.fr = null;
   const b = document.querySelector("#rChipT .rv-bty"); if (b) b.remove();
 }
 tap("rRiv", () => { openAccount(); acSetTab("s"); });
@@ -187,7 +198,8 @@ function rvStats(pan) {
     head.appendChild(acMk("span", "", `${list.length} ${list.length === 1 ? "rival" : "rivals"} · you lead ${lead} · ${n} online ${n === 1 ? "match" : "matches"}`));
   }
   pan.appendChild(head);
-  if (!list.length) { pan.appendChild(acMk("p", "ac-line", "Play Quick match: everyone you meet shows here with your record against them.")); return; }
+  stkStats(pan);   // ui/stakes.js: the chip stakes line
+  if (!list.length) { pan.appendChild(acMk("p", "ac-line", "Play Quick match or Play friends: everyone you meet online shows here with your record against them.")); return; }
   const ul = acMk("ul", "rv-list");
   for (const e of list) {
     const li = acMk("li", "rv-row"), av = acMk("span", "av"), who = acMk("div", "who"), nb = acMk("b"), tag = rvTag(e, list), ti = tierInfo(e.r || 1000);
