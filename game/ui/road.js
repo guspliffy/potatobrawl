@@ -357,7 +357,7 @@ function roadHeader() {
   $("roadKick").textContent = `The Road · region ${k + 1} of ${ROAD_REG.length}`;
   $("roadReg").textContent = ROAD_REG[k].name;
   $("roadSum").textContent = roadSummary(r, k);
-  $("roadTokens").textContent = P.tokens;
+  $("roadTokens").textContent = fmtChips(P.tokens);
   $("roadPrev").disabled = k === 0;
   const nx = k + 1 < ROAD_REG.length;
   $("roadNext").disabled = !nx;

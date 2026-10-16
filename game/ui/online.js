@@ -150,7 +150,7 @@ async function renderOnline() {
   if (mode !== "online") return;
   const seq = ++onSeq;
   const st = $("onStatus"), hostBtn = $("onHost"), note = $("onNote"), list = $("onList");
-  $("onTokens").textContent = P.tokens;
+  $("onTokens").textContent = fmtChips(P.tokens);
   buildRules();
   fightCard();
   if (NET.tried && !NET.ok) {

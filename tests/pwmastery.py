@@ -261,9 +261,10 @@ async def flow(b):
     cells = await pg.evaluate("Object.fromEntries([...document.querySelectorAll('.fs-tab tbody tr')].map((r) => { const c = r.querySelector('td.mx-c'), s = c.querySelector('.mx-sh'); return [r.querySelector('.fn span:last-child').textContent, c.querySelector('span:last-child').textContent + (s.hidden ? '' : ' ' + s.dataset.k)]; }))")
     check(heads[-1] == 'Mastery' and cells.get('Odin') == 'Lv 3 bronze' and cells.get('Reaper') == 'Lv 10 laurel' and cells.get('Phoenix') == 'Lv 1', f'Account > Stats: a Mastery column with the shield and the level ({heads}, {cells})')
     await pg.evaluate("document.querySelector('.ac-tabs .chip[data-t=l]').click()"); await pg.wait_for_timeout(300)
-    col = await pg.evaluate("""(() => { const q = (id) => document.getElementById(id), n = (id) => q(id).querySelector('b').textContent.replace(/\\s/g, ''), lit = (id) => q(id).querySelectorAll('.mx-dots .av.on').length, all = (id) => q(id).querySelectorAll('.mx-dots .av').length;
-      return { ko: n('mxColKo'), ult: n('mxColUlt'), rt: n('mxColRt'), koLit: lit('mxColKo'), ultLit: lit('mxColUlt'), koAll: all('mxColKo'), first: document.querySelector('#acPanL').firstElementChild.className }; })()""")
-    check(col == {'ko': '2/8', 'ult': '1/8', 'rt': '4/13', 'koLit': 2, 'ultLit': 1, 'koAll': 8, 'first': 'mx-col'}, f'Account > Locker: the Collection on top: KO pages 2/8, Ultimate KOs 1/8, combo routes 4/13, lit portraits ({col})')
+    col = await pg.evaluate("""(() => { const q = (id) => document.getElementById(id), n = (id) => q(id).querySelector('b').textContent.replace(/\\s/g, ''), on = (id) => (q(id).dataset.on || '').split(' ').filter(Boolean), line = document.querySelector('#acPanL .lk-top .mx-line');
+      return { ko: n('mxColKo'), ult: n('mxColUlt'), rt: n('mxColRt'), koOn: on('mxColKo'), ultOn: on('mxColUlt'), oneLine: !!line && line.getBoundingClientRect().height < 30, label: q('mxColKo').getAttribute('aria-label') }; })()""")
+    check(col == {'ko': '2/8', 'ult': '1/8', 'rt': '4/13', 'koOn': ['phoenix', 'odin'], 'ultOn': ['odin'], 'oneLine': True, 'label': '2 of 8 KO pages: Phoenix, Odin'},
+          f'Account > Locker: the Collection is one slim line on top: KO pages 2/8, Ultimate KOs 1/8, combo routes 4/13, who is in (the labels) ({col})')
     await ctx.close()
 
     # ----- a KO page you land is recorded (a real lethal hit, the clock under the test's control)

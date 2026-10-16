@@ -239,7 +239,7 @@ button { font: inherit; color: inherit; }
 .btn.primary small { color: rgba(14, 16, 34, 0.65); }
 .btn:hover { background: #2c3156; } .btn.primary:hover { background: #f8e3b8; }
 .btn:active { transform: skewX(-10deg) translateY(1px) scale(0.985); }
-.btn:focus-visible, .link:focus-visible, .chip:focus-visible, .sw:focus-visible, .fc-pick:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.btn:focus-visible, .link:focus-visible, .chip:focus-visible, .fc-pick:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 .link { appearance: none; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--mute); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { color: var(--text); }
 .tokglyph { display: inline-block; width: 1.05em; height: 0.85em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.6'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E") center / contain no-repeat; margin-right: 0.3em; vertical-align: -0.08em; }
@@ -299,7 +299,7 @@ button { font: inherit; color: inherit; }
 .iconbtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
 
 /* ---------- fighter select: the screen itself is styled in game/css/30-select.css; these shared rules stay for the
-   online and cup screens (.select background, .sel-head, .back), the pickers' .pop lists and the locker's .sw swatches ---------- */
+   online and cup screens (.select background, .sel-head, .back), and the pickers' .pop lists ---------- */
 .select { background: rgba(14, 16, 34, 0.93); }
 .sel-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .sel-head h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(26px, calc(var(--um) * 6), 40px); line-height: 1; text-transform: uppercase; white-space: nowrap; }
@@ -312,14 +312,6 @@ button { font: inherit; color: inherit; }
 .pop button { appearance: none; border: 0; background: none; color: var(--text); text-align: left; padding: 7px 10px; border-radius: 5px; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
 .pop button:hover { background: var(--raise); }
 .pop button.on { background: var(--sand); color: var(--ink); }
-.sw { appearance: none; padding: 0; cursor: pointer; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.04em; color: var(--mute); min-width: 0; flex: 1; }
-.sw i { width: 34px; height: 34px; border-radius: 50%; background: var(--c); border: 3px solid var(--night); box-shadow: 0 0 0 1px var(--line); position: relative; flex: none; }
-.sw.cur { color: var(--text); }
-.sw.cur i { box-shadow: 0 0 0 2px var(--text); }
-.sw.lock i::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: rgba(14, 16, 34, 0.55); }
-.sw i em { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); font-style: normal; font-size: 8px; line-height: 1; letter-spacing: -1px; color: #f4c95d; text-shadow: 0 0 2px #0e1022, 0 0 2px #0e1022; z-index: 1; white-space: nowrap; }
-.sw .tokglyph { width: 1.2em; height: 0.95em; margin-right: 0.15em; }
-.sw:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 .chip { appearance: none; cursor: pointer; border: 1px solid var(--line); background: var(--raise); color: var(--text); border-radius: 999px; padding: 6px 14px; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; min-height: 36px; }
 .chip.on { background: var(--sand); color: var(--ink); border-color: var(--sand); }
@@ -508,21 +500,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .hx .vs { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hx b { font: 800 15px/1 var(--display); color: var(--text); font-variant-numeric: tabular-nums; flex: none; }
 .hx b.up { color: var(--mint); } .hx b.down { color: var(--ember); }
-.lk { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
-.lk-f { background: var(--raise); border-radius: 8px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.lk-h { display: flex; align-items: center; gap: 9px; font: 800 17px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
-.lk-h .av { --d: 34px; }
-.lk-h small { margin-left: auto; font: 700 12px/1 var(--display); letter-spacing: 0.1em; color: var(--mute); }
-.lk-s { display: flex; gap: 4px; }
-.lk-s .sw { flex: 1 1 0; }
-.lk-s .sw:disabled { cursor: default; }
-#app.portrait .lk, #app.narrow .lk { grid-template-columns: minmax(0, 1fr); }
 #app.short .ac-pan, #app.short .ac-pick { gap: 6px; }
 #app.short .fs-tab td { padding-block: 2px; }
 #app.tiny .ac-tabs .chip { min-height: 28px; padding: 2px 16px; }
 #app.tiny .ac-pick { padding: 6px 10px; }
 #app.tiny .ac-t { padding: 4px 8px; }
-#app.tiny .lk-f { padding: 6px 8px 8px; }
 
 /* ---------- short and upright screens ---------- */
 #app.short .menu-inner { gap: 10px; }
@@ -543,7 +525,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .ac-rank .ring { --d: 38px; }
 #app.short .ac-sync { padding: 9px 12px 11px; gap: 7px; }
 #app.short .ac-sync p { font-size: 13px; line-height: 1.3; }
-#app.short .ac-stats dd { font-size: 19px; }
 #app.short .ac-foot { padding-top: 6px; }
 #app.tiny .acct-sheet { padding: 8px 14px 10px; gap: 4px; }
 #app.tiny .ac-grid { gap: 6px 18px; }
@@ -553,8 +534,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .ac-name { font-size: 18px; padding: 2px 8px; }
 #app.tiny .ac-rank .ring { --d: 34px; }
 #app.tiny .ac-rank { padding: 3px 10px 3px 5px; }
-#app.tiny .ac-stats > div { padding: 3px 8px 4px; }
-#app.tiny .ac-stats dd { font-size: 17px; }
 #app.tiny .ac-sync { padding: 8px 12px 10px; gap: 6px; }
 #app.tiny .ac-sync p.ac-note:not(.keep) { display: none; }
 #app.tiny .ac-foot { padding-top: 4px; }
@@ -1056,7 +1035,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <dl class="ac-stats">
             <div><dt>Wins</dt><dd id="acW">0</dd></div>
             <div><dt>Losses</dt><dd id="acL">0</dd></div>
-            <div><dt>Chips</dt><dd id="acChips"></dd></div>
+            <div><dt>Chips<span class="tokglyph" aria-hidden="true"></span></dt><dd id="acChips"></dd></div>
             <div><dt>Skins</dt><dd id="acSkins"></dd></div>
           </dl>
           <div class="ac-extra"><span class="ac-line" id="acMore"></span><div class="ac-form" id="acForm" aria-label="Last ranked results"></div></div>

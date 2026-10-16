@@ -25,7 +25,7 @@
 .modal .kicker { font-size: 12px; color: var(--sand); }
 
 /* raised plates and ink wells inside a sheet */
-.ac-rank, .ac-stats > div, .ac-sync, .fs-fav, .lk-f, .hx, .dly-f, #scrHelp .ul, #scrHelp .rc {
+.ac-rank, .ac-stats > div, .ac-sync, .fs-fav, .hx, .dly-f, #scrHelp .ul, #scrHelp .rc {
   background: linear-gradient(180deg, #2f3560, #1f2344); border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
 }
 .ac-pick, .ac-t, .ac-name, .ac-in, .ac-code {
@@ -103,11 +103,18 @@
 .ac-rank { padding: 8px 14px 8px 8px; gap: 12px; }
 #scrAccount .rk-tier { font: italic 900 27px/1 var(--display); letter-spacing: 0.01em; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
 #app.short #scrAccount .rk-tier { font-size: 23px; }
-.ac-stats { gap: 8px; padding-bottom: 3px; }
-.ac-stats > div { padding: 6px 10px 7px; }
-.ac-stats dt { font-size: 11px; letter-spacing: 0.14em; color: var(--mute); }
-.ac-stats dd { font-size: 24px; }
-#app.short .ac-stats dd { font-size: 20px; }
+/* the four numbers: the chip coin follows its label (CHIPS), the value stands alone; .wide (set by renderAccount from five digits) is one size smaller, so 999,999 fits */
+.ac-stats { gap: 6px; padding-bottom: 3px; --sb: 24px; --sw: 18px; }
+.ac-stats > div { padding: 6px 7px 7px; container-type: inline-size; }
+.ac-stats dt { display: flex; align-items: center; gap: 5px; font-size: 11px; letter-spacing: 0.14em; color: var(--mute); white-space: nowrap; }
+.ac-stats dt .tokglyph { flex: none; width: 15px; height: 12px; margin-top: -1px; }
+/* the number: one size, one size smaller from five digits; the cqw cap keeps 999,999 inside the box at any width */
+.ac-stats dd { font-size: min(var(--sb), 38cqw); }
+.ac-stats dd.wide { font-size: min(var(--sw), 27cqw); }
+#app.narrow .ac-stats { --sb: 22px; --sw: 16px; }
+#app.short .ac-stats { --sb: 20px; --sw: 16px; }
+#app.tiny .ac-stats > div { padding: 3px 6px 4px; }
+#app.tiny .ac-stats { gap: 5px; --sw: 15px; }
 .ac-form i, .hx i.r { border: 2px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
 .ac-form i.l, .hx i.r.l { background: var(--ketchup); color: #fff; }
 .ac-sync { padding: 12px 14px 14px; }
@@ -124,15 +131,7 @@
 .fs-tab tr.fav td:first-child .fn::after { color: var(--gold); }
 .hx { border-radius: 8px; box-shadow: 0 2px 0 var(--ink), var(--bevel); padding: 3px 8px 3px 4px; }
 .hx-list { gap: 6px 12px; padding-bottom: 2px; }
-/* Locker: round swatches with an ink rim, a gold ring on the one worn */
-.lk { gap: 12px; }
-.lk-f { padding: 8px 10px 10px; }
-.lk-h { font: italic 900 19px/1.1 var(--display); }
-#scrAccount .sw i { border: 2.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
-#scrAccount .sw.cur i { box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink); }
-#scrAccount .sw.cur { color: var(--gold); }
-#scrAccount .sw.lock i::after { inset: -2.5px; }
-#scrAccount .sw:not(:disabled):active i { transform: translateY(2px); }
+/* the Locker tab (strip + the Skin Rack's cards) is in 92-locker.css */
 
 /* ---- How to play ---- */
 .help-sheet .sh-body { gap: 12px; }
