@@ -815,7 +815,7 @@ function mgCardPrep() {
     const W2 = mgMate();
     if (W2) {
       const nm2 = W2.slot === meSlot ? "YOU" : ((match.names && match.names[W2.slot]) || W2.spec.name).toUpperCase();
-      C.mate = { img: mgPic(W2.spec.id), col: W2.team === G.fighters[meSlot].team ? TEAM_COL[0] : TEAM_COL[1], word: mgWord("WITH " + nm2, { size: hh * 0.26, seed: 19, arc: 24, jit: 0.06, weight: 800, fill: "#f1ece2" }) };
+      C.mate = { img: mgPic(W2.spec.id), col: TEAM_COL[W2.team], word: mgWord("WITH " + nm2, { size: hh * 0.26, seed: 19, arc: 24, jit: 0.06, weight: 800, fill: "#f1ece2" }) };
     }
     if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(finWinWord(W), { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
   }

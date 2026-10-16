@@ -116,8 +116,8 @@ function hudUltReset() {
 function hudUlt() {
   if (HU.g !== G) hudUltReset();
   const trial = !!(match && match.trial);   // the Combo trial has no ultimates
-  for (let i = 0; i < hudN(); i++) {
-    const f = G.fighters[i], c = HU.c[i], el = $("pc" + i).querySelector(".pc-ult");
+  for (let k = 0; k < hudN(); k++) {   // k: the card, i: its fighter (screens.js cardSlot)
+    const i = cardSlot[k], f = G.fighters[i], c = HU.c[k], el = $("pc" + k).querySelector(".pc-ult");
     if (c.off !== trial) { c.off = trial; el.hidden = trial; }
     if (trial) continue;
     const need = BL.ultNeed(f), full = need > 0 && f.ult >= need, mine = i === meSlot;
@@ -129,7 +129,7 @@ function hudUlt() {
     if (c.full !== full) {
       const was = c.full; c.full = full;
       el.classList.toggle("full", full);
-      const card = $("pc" + i);
+      const card = $("pc" + k);
       card.classList.toggle("burn", full && mine);
       if (full && !was) {
         el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 650);
@@ -171,7 +171,7 @@ function hudUltCue(c, g) {
    Called from enterMatchUI for every match. In a 2v2 your partner's card (#pc1) moves under yours and loses its right-hand slant, and the
    foes' two mini cards (#pc2, #pc3, from the #duoCards template) are put in the right-hand column; each card's edge takes its team colour.
    Any other match puts everything back (pc1 first in the right-hand column) and drops the extra cards, so a 1v1 and a boss fight are
-   exactly as before. A tap on a foe's card is Focus (ui/duo.js). */
+   exactly as before. A tap on a foe's card is Focus (ui/duo.js). Online the cards follow cardSlot (screens.js): yours top-left in any seat. */
 function hudDuo() {
   const on = !!(match && match.duo), hl = document.querySelector(".hud-l"), hr = document.querySelector(".hud-r"), p1 = $("pc1");
   app.classList.toggle("duo", on);
@@ -180,16 +180,16 @@ function hudDuo() {
   if (!on) { for (const id of ["pc2", "pc3"]) { const el = $(id); if (el) el.remove(); } }
   else if (!$("pc2")) {
     hr.insertBefore($("duoCards").content.cloneNode(true), $("pauseBtn"));
-    for (const i of [2, 3]) $("pc" + i).addEventListener("pointerdown", (e) => { e.preventDefault(); if (mode === "match" && !paused) duoFocus(i); });
+    for (const i of [2, 3]) $("pc" + i).addEventListener("pointerdown", (e) => { e.preventDefault(); if (mode === "match" && !paused) duoFocus(cardSlot[i]); });
   }
   for (let i = 0; i < 4; i++) {
     const el = $("pc" + i);
     if (!el) continue;
-    if (on) el.style.setProperty("--tc", TEAM_COL[G.fighters[i].team]); else el.style.removeProperty("--tc");
+    if (on) el.style.setProperty("--tc", TEAM_COL[G.fighters[cardSlot[i]].team]); else el.style.removeProperty("--tc");
     el.classList.remove("focus");
   }
-  for (const i of [1, 2, 3]) {   // the CPUs' potato names under the card's tag
+  for (const i of [1, 2, 3]) {   // the CPUs' potato names under the card's tag (online: ui/online-team.js tbTags)
     const el = $("pc" + i), sub = el && el.querySelector(".pc-sub");
-    if (on && sub) { sub.hidden = false; sub.querySelector(".nm").textContent = match.names[i] || ""; }
+    if (on && sub && !match.online) { sub.hidden = false; sub.querySelector(".nm").textContent = match.names[i] || ""; }
   }
 }

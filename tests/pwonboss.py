@@ -44,7 +44,7 @@ async def main():
         cb, B = await page(b, (1280, 760), {'tut': True, 'last': 'odin', 'tokens': 100}, 'B')
         # ----- the host's lobby: Mode, then Boss and Level instead of Lives / Time / Format
         await A.tap('#bOnline'); await A.wait_for_timeout(1200)
-        need(await A.evaluate("[...document.querySelectorAll('#ruleM .chip')].map((b) => b.textContent).join('|')") == '1 vs 1|Vs boss', 'no Mode row with 1 vs 1 and Vs boss')
+        need(await A.evaluate("[...document.querySelectorAll('#ruleM .chip')].map((b) => b.textContent).join('|')") == '1 vs 1|2 vs 2|Vs boss', 'no Mode row with 1 vs 1, 2 vs 2 and Vs boss')
         await chip(A, 'ruleM', 'Vs boss', True); await A.wait_for_timeout(200)
         need(await A.evaluate("document.querySelector('#rowL').hidden && document.querySelector('#rowT').hidden && document.querySelector('#rowB').hidden && !document.querySelector('#rowBo').hidden && !document.querySelector('#rowLv').hidden"),
              'Vs boss does not swap Lives / Time / Format for Boss / Level')

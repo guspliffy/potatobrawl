@@ -118,6 +118,20 @@ if grep -q "^onsnap ok" "$LOGS/onsnap.log" && grep -q "^onboss ok" "$LOGS/onboss
   pass "online boss fights (repair copy in pieces, Team up, NICE!, desync repaired, KO page + Next: Hard on both, CPU takes over a drop)"
 else fail "online boss fights" "$LOGS/onboss.log (and onsnap.log)"; fi
 
+# 5f. Online Team Brawl (2v2 for up to four phones) through a local server on port 8099: the lobby's 2 vs 2 and CPUs row, the board,
+#     Join and Switch side, host + friend vs two CPUs (names, a Focus ping, a forced desync repaired, Victory, Rematch, Defeat, Board),
+#     then four friends (a repair on all four, a friend's page and the host's page closing: CPUs from the same frame everywhere and
+#     the next friend leads, a CPU partner's Focus on every phone, the rematch of the two left), the board at four sizes.
+#     Shots in build/shots/on2v2.
+PORT=8099 KEEPALIVE_MINUTES=0 node server.js > "$LOGS/server-on2v2.log" 2>&1 &
+SRV=$!
+sleep 1
+(cd "$SHOTS" && ON2V2_URL=http://localhost:8099/ timeout 1200 python3 "$ROOT/tests/pwon2v2.py" on2v2) > "$LOGS/on2v2.log" 2>&1
+kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
+if grep -q "^on2v2 ok" "$LOGS/on2v2.log" && grep -q "^no errors" "$LOGS/on2v2.log"; then
+  pass "online 2v2 (board, four phones in step, repairs, drops to CPUs, the lead hands over, rematch and board)"
+else fail "online 2v2" "$LOGS/on2v2.log"; fi
+
 # 5b. Accounts (sync codes): the server's endpoints and limits on port 8094 with a temporary folder, and the merge. Node only.
 timeout 120 node tests/acct.js > "$LOGS/acct.log" 2>&1
 if grep -q "^acct ok" "$LOGS/acct.log"; then pass "accounts server + merge ($(grep -c '^PASS' "$LOGS/acct.log") checks)"
