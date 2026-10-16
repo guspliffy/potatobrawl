@@ -4,6 +4,8 @@ const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, le
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
 // the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road)
 const chipN = (spec) => spec.palettes.filter((p) => !p.road).length;
+// a chip balance as shown everywhere: exact, with commas (1,350 and 12,480), never shortened
+const fmtChips = (n) => Math.max(0, Math.round(+n || 0)).toLocaleString("en-US");
 const $ = (id) => document.getElementById(id);
 const app = $("app"), cv = $("cv"), ctx = cv.getContext("2d");
 if (!CanvasRenderingContext2D.prototype.roundRect) {

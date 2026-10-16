@@ -3,8 +3,10 @@
    the select: the looked-at skin in big (the model drawn live in it, its name, its effect and one action), then the four chip skins and
    the three Road skins as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
    with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
-   looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css. */
-const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0 };
+   looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css.
+   The Account sheet's Locker (ui/acct.js) draws its skin cards with the same builder (skMakeCard, skStyle) and opens this sheet on a locked
+   skin with openSkins(id, i): the sheet then shows above the Account sheet, and closing it re-renders the Locker (css/92-locker.css). */
+const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0, live: 0 };
 const SK_CHIPS_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 screens.skins = $("scrSkins");
 const skOwns = (id, i) => (P.owned[id] || [0]).includes(i);
@@ -46,29 +48,49 @@ function skinsBar(spec, pi) {
 $("dSkins").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); openSkins(sel.fighter); });
 
 /* ----- the sheet ----- */
-function openSkins(id) {
+function openSkins(id, i) {   // i (optional): the skin to look at first; else the one worn
   if (!FIG[id]) return;
-  Object.assign(SK, { id, i: palIdx(id), art: null, cards: [] });
+  Object.assign(SK, { id, i: Number.isInteger(i) && FIG[id].palettes[i] ? i : palIdx(id), art: null, cards: [] });
   skDisarm();
   modal("skins", true);
   skRender(true);
+  cancelAnimationFrame(SK.live); SK.live = mode === "select" ? 0 : requestAnimationFrame(skLive);
 }
 function closeSkins() {
-  skDisarm(); clearTimeout(SK.yoursT); cancelAnimationFrame(SK.coin);
+  skDisarm(); clearTimeout(SK.yoursT); cancelAnimationFrame(SK.coin); cancelAnimationFrame(SK.live); SK.live = 0;
   modal("skins", false); SK.id = null; SK.art = null; SK.cards = [];
+  if (!screens.account.hidden) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }   // opened from the Locker: what was bought or worn shows there
 }
 function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
-// the cards are built when the sheet opens (their models drawn once); every change after that only restyles them
-function skCard(spec, i) {
+// a skin card, as the Rack and the Locker show it: the model drawn once on its canvas (its art record goes into `list`), a tap calls tap(i).
+// The Rack builds its cards when the sheet opens; every change after that only restyles them (skStyle).
+function skMakeCard(spec, i, list, tap) {
   const p = spec.palettes[i], b = document.createElement("button");
   b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
   b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
-  b.addEventListener("click", () => skTap(i));
+  b.addEventListener("click", () => tap(i));
   const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
   f.x = 0; f.y = 0; f.facing = -1;
-  SK.cards.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
   return b;
+}
+const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
+// a card's state: its class (worn / own / buy / short / road / shut, and sel for the Rack's looked-at ring), its foot line, its label; a glazed skin gets a star after its name.
+// tight (the Locker's small cards): a shut Road skin's foot says "Kitchen · locked", not "The Kitchen · locked", so it fits
+function skStyle(b, spec, i, sel, tight) {
+  const p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small"), nm = b.querySelector(".sk-f b"), gz = glazeHas(spec.id, i);
+  b.className = `sk ${st}${sel ? " sel" : ""}`;
+  if (nm._gz !== gz) {
+    nm._gz = gz; nm.className = gz ? "gz" : "";
+    if (gz) { nm.innerHTML = '<span></span><i aria-hidden="true">\u2726</i>'; nm.firstChild.textContent = p.name; } else nm.textContent = p.name;
+  }
+  if (st === "worn") small.textContent = "Worn";
+  else if (st === "own") small.textContent = "Tap to wear";
+  else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${fmtChips(p.price)}`;
+  else small.textContent = tight && st === "shut" ? skRoad(spec, i).foot.replace(/^The /, "") : skRoad(spec, i).foot;
+  b.setAttribute("aria-label", `${p.name}${gz ? ", glazed" : ""}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${fmtChips(p.price)} chips` : skRoad(spec, i).how}`);
+  return st;
 }
 function skDrawCards() { for (const a of SK.cards) paintModel(a, 0); }
 function skRender(full) {
@@ -84,16 +106,11 @@ function skRender(full) {
     skDrawCards();
   }
   $("skOwned").textContent = `${own} / ${n} owned`;
-  if (!SK.coin) $("skTokens").textContent = P.tokens;
+  if (!SK.coin) $("skTokens").textContent = fmtChips(P.tokens);
   for (const b of $("skSheet").querySelectorAll(".sk")) {
-    const i = +b.dataset.i, p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small");
-    b.className = `sk ${st}${i === SK.i ? " sel" : ""}`;
-    if (st === "worn") small.textContent = "Worn";
-    else if (st === "own") small.textContent = "Tap to wear";
-    else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${p.price}`;
-    else small.textContent = skRoad(spec, i).foot;
+    const i = +b.dataset.i;
+    skStyle(b, spec, i, i === SK.i);
     b.setAttribute("aria-pressed", String(i === SK.i));
-    b.setAttribute("aria-label", `${p.name}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${p.price} chips` : skRoad(spec, i).how}`);
   }
   skPreview(spec);
 }
@@ -107,8 +124,8 @@ function skPreview(spec) {
   const act = $("skAct");
   if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;
   else if (st === "own") act.innerHTML = `<button class="btn primary sk-go" id="skGo"><span>Wear</span></button>`;
-  else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${p.price}</span></button><p class="sk-l2">You have ${P.tokens} · ${P.tokens - p.price} left after</p>`;
-  else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${p.price}</span><p class="sk-l1">${p.price - P.tokens} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
+  else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${fmtChips(p.price)}</span></button><p class="sk-l2">You have ${fmtChips(P.tokens)} · ${fmtChips(P.tokens - p.price)} left after</p>`;
+  else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${fmtChips(p.price)}</span><p class="sk-l1">${fmtChips(p.price - P.tokens)} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
   else { const rd = skRoad(spec, i); act.innerHTML = `<p class="sk-l1 sk-lock">${rd.how}</p><p class="sk-l2">${rd.why}</p>`; }
   const go = $("skGo");
   if (go) go.addEventListener("click", skGo);
@@ -120,6 +137,8 @@ function skPreview(spec) {
 }
 // the loop draws the preview while the sheet is open (loop.js)
 function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
+// opened from the Account sheet (the menu, not the select) the loop is not drawing the preview: this does, while the sheet is open
+function skLive() { if (!SK.id) return; if (SK.art) paintModel(SK.art, tick); SK.live = requestAnimationFrame(skLive); }
 function skTap(i) {
   Sfx.init();
   const spec = FIG[SK.id], st = skState(spec, i);
@@ -155,10 +174,10 @@ function skGo() {
 function skCoin(from, to) {
   const el = $("skTokens"), t0 = performance.now();
   cancelAnimationFrame(SK.coin); SK.coin = 0;
-  if (resCalm()) { el.textContent = to; return; }
+  if (resCalm()) { el.textContent = fmtChips(to); return; }
   const step = (now) => {
     const k = Math.min(1, (now - t0) / 400);
-    el.textContent = Math.round(from + (to - from) * k);
+    el.textContent = fmtChips(from + (to - from) * k);
     SK.coin = k < 1 ? requestAnimationFrame(step) : 0;
   };
   SK.coin = requestAnimationFrame(step);

@@ -111,10 +111,10 @@ function renderPill() {
   const tt = acTitle(), mt = $("mTitle");
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
-  $("mTokens").textContent = P.tokens;
+  $("mTokens").textContent = fmtChips(P.tokens);
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -137,7 +137,7 @@ function acSkinCount(p) { return FIGHTERS.reduce((a, f) => a + (p.owned && p.own
 const acSkinTotal = () => FIGHTERS.reduce((a, f) => a + f.palettes.length, 0);
 function acSum(p) {   // one line about a profile, for the "replace it?" question
   const ti = tierInfo(p.rating);
-  return `${ti.t.name} ${p.rating} · ${p.tokens} chips · ${acSkinCount(p)} skins`;
+  return `${ti.t.name} ${p.rating} · ${fmtChips(p.tokens)} chips · ${acSkinCount(p)} skins`;
 }
 function renderAccount() {
   if (screens.account.hidden) return;
@@ -159,7 +159,7 @@ function renderAccount() {
   $("acTier").textContent = ti.t.name;
   $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;
   $("acW").textContent = rk.w; $("acL").textContent = rk.l;
-  $("acChips").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
+  { const c = $("acChips"); c.textContent = fmtChips(P.tokens); c.classList.toggle("wide", String(Math.round(P.tokens)).length >= 5); }   // the coin sits by the label (shell.html); from five digits the number is a size smaller
   $("acSkins").innerHTML = `${acSkinCount(P)}<small> / ${acSkinTotal()}</small>`;
   const more = [];
   const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
@@ -270,35 +270,92 @@ function renderStats() {
   pan.appendChild(ul);
 }
 
-/* ----- Locker tab: every fighter with every skin; tap one you own to wear it ----- */
-function renderLocker() {
-  const pan = $("acPanL"); pan.innerHTML = "";
-  masteryCollection(pan);   // ui/mastery.js: KO pages, Ultimate KOs, combo routes
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are in the Skins menu on the fighter select: chip skins are bought there, Road skins are won from the Road's bosses."));
-  const grid = acMk("div", "lk");
-  for (const f of FIGHTERS) {
-    const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
-    const h = acMk("div", "lk-h"), a = acMk("span", "av"); acSetAvatar(a, f.id, cur); h.appendChild(a);
-    h.appendChild(acMk("span", "", f.name)); h.appendChild(acMk("small", "", `${f.palettes.filter((p, i) => own.includes(i)).length} / ${f.palettes.length}`));
-    card.appendChild(h);
-    const row = acMk("div", "lk-s");
-    f.palettes.forEach((p, i) => {
-      // a Road skin (p.road): won by beating that boss with this fighter, never bought
-      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock") + (p.road ? " road" : ""));
-      b.style.setProperty("--c", col(p));
-      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
-      b.innerHTML = `<i>${i && !p.road ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : p.road ? "<span>Road</span>" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
-      if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
-      if (has) b.addEventListener("click", () => {
-        Sfx.init(); Sfx.ui();
-        if (equipSkin(f.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
-      });
-      row.appendChild(b);
-    });
-    card.appendChild(row); grid.appendChild(card);
-  }
-  pan.appendChild(grid);
+/* ----- Locker tab: the eight fighters on a strip (each in his worn skin), then the picked fighter's seven skins as the Skin Rack's cards -----
+   One fighter at a time: a tap on a tile (or the Left / Right keys) picks him; the Locker opens on the fighter played last (P.last). A card is the
+   Rack's card (skMakeCard, skStyle in ui/skins.js): a skin you own is worn with one tap, any other opens the Rack on it (openSkins(id, i)), where it
+   is bought or explained. The DOM is built once and only restyled after that; a model is drawn again only when it changes (a tile when its
+   fighter's worn skin changes, the cards when another fighter is picked) or the size it is drawn at does (lkPaint). Styles: css/92-locker.css. */
+const LKR = { id: "", tiles: [], cards: [], cardsFor: "", sig: "" };
+function lkBuild() {
+  const pan = $("acPanL");
+  pan.innerHTML = '<div class="lk-top"><div class="lk-col" id="lkCol"></div><span class="lk-own" id="lkOwn"></span><div class="coin chips lk-coin" aria-label="Chips"><span id="lkTokens"></span></div></div>' +
+    '<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="Fighters"></div>' +
+    '<div class="lk-rack" id="lkRack">' +
+    '<div class="lk-grp"><div class="lk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="Chip skins"></div></div>' +
+    '<div class="lk-grp"><div class="lk-k"><b>Road skins</b><span id="lkRoadSub"></span></div><div class="lk-row r3" id="lkRoad" role="group" aria-label="Road skins"></div></div></div>';
+  const strip = $("lkStrip");
+  LKR.tiles = FIGHTERS.map((f) => {
+    const b = acMk("button", "lk-tile");
+    b.dataset.f = f.id; b.setAttribute("role", "radio");
+    b.innerHTML = '<span class="lk-ta"><canvas aria-hidden="true"></canvas></span><b></b><small></small>';
+    b.querySelector("b").textContent = f.name;
+    b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); lkPick(f.id); });
+    strip.appendChild(b);
+    return { cv: b.querySelector("canvas"), f: null, fit: 0.84, bottom: 0.94, key: "", dirty: true, el: b };
+  });
+  strip.addEventListener("keydown", (e) => {   // Left / Right (and Home, End) move along the strip and pick
+    const n = FIGHTERS.length, i = FIGHTERS.findIndex((f) => f.id === LKR.id);
+    const j = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i + n - 1) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+    if (j < 0) return;
+    e.stopPropagation(); e.preventDefault(); Sfx.init(); Sfx.ui();
+    lkPick(FIGHTERS[j].id); LKR.tiles[j].el.focus();
+  });
+  if (window.ResizeObserver) new ResizeObserver(() => { if (!pan.hidden && !screens.account.hidden) lkPaint(); }).observe(pan);
 }
+function lkFighter(spec, pal) {
+  const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  f.x = 0; f.y = 0; f.facing = -1;
+  return f;
+}
+function lkPick(id) { if (id === LKR.id || !FIG[id]) return; LKR.id = id; renderLocker(); }
+function lkTap(i) {
+  Sfx.init();
+  const spec = FIG[LKR.id], st = skState(spec, i);
+  if (st === "worn") { Sfx.ui(); return; }
+  if (st === "own") { Sfx.uiFlip(); if (equipSkin(spec.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); } return; }
+  if (st === "buy") Sfx.ui(); else Sfx.uiNo();   // looking is free; the thud says it is locked
+  openSkins(spec.id, i);
+}
+// draws what is new (a tile with another worn skin, the cards of a newly picked fighter) and, when the size it is drawn at changed (a turned phone, a resized window), everything
+function lkPaint() {
+  const t = LKR.tiles[0].cv, c = LKR.cards[0] && LKR.cards[0].cv;
+  if (!t.clientWidth) return;   // the tab is not showing: nothing can be drawn, what is dirty waits
+  const sig = `${t.clientWidth}x${t.clientHeight} ${c ? c.clientWidth + "x" + c.clientHeight : ""} ${DPR}`, all = sig !== LKR.sig;
+  LKR.sig = sig;
+  for (const a of LKR.tiles.concat(LKR.cards)) if (all || a.dirty) { a.dirty = false; paintModel(a, 0); }
+}
+function renderLocker() {
+  if (!LKR.tiles.length) lkBuild();
+  if (!FIG[LKR.id]) LKR.id = FIG[P.last] ? P.last : FIGHTERS[0].id;
+  const spec = FIG[LKR.id];
+  // the top line: the Collection, the skins owned of all, the chips
+  const cell = $("lkCol"); cell.innerHTML = ""; masteryCollection(cell);   // ui/mastery.js
+  $("lkOwn").innerHTML = `<b>${acSkinCount(P)} / ${acSkinTotal()}</b> skins`;
+  $("lkTokens").textContent = fmtChips(P.tokens);
+  // the strip: a tile whose worn skin changed is drawn again
+  for (const a of LKR.tiles) {
+    const f = FIG[a.el.dataset.f], pi = palIdx(f.id), pal = f.palettes[pi], n = (P.owned[f.id] || [0]).length, on = f.id === LKR.id, key = f.id + ":" + pi;
+    a.el.className = "lk-tile" + (on ? " on" : "") + (n >= f.palettes.length ? " full" : "");
+    a.el.style.setProperty("--c", col(pal)); a.el.style.setProperty("--cg", rgba(col(pal), 0.42));
+    a.el.setAttribute("aria-checked", String(on)); a.el.tabIndex = on ? 0 : -1;
+    a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
+    a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
+    if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
+  }
+  // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
+  if (LKR.cardsFor !== spec.id) {
+    const chip = $("lkChip"), road = $("lkRoad");
+    chip.innerHTML = ""; road.innerHTML = ""; LKR.cards = [];
+    spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skMakeCard(spec, i, LKR.cards, lkTap)));   // ui/skins.js
+    for (const a of LKR.cards) a.dirty = true;
+    LKR.cardsFor = spec.id;
+  }
+  $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
+  for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
+  lkPaint();
+}
+// closing the sheet: the next time it opens, the Locker starts on the fighter played last again
+$("acClose").addEventListener("click", () => { LKR.id = ""; });
 function acSetTab(t) { acUI.tab = t; renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
   b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });

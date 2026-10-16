@@ -1,0 +1,135 @@
+/* ---------- Account > Locker: a strip of the eight fighters, then the picked fighter's seven skins (Fable 5.1, locker-chips/fable-design.md section 1) ----------
+   The top line is the Collection on one line (.mx-line, ui/mastery.js), the skins owned of all (32 / 56 SKINS) and the chips coin. The strip
+   (.lk-strip, ui/acct.js) has one tile per fighter: his model in the worn skin on a glow in that skin's colour, his name and n/7 (gold at 7/7);
+   the picked one has a gold ring. Under it the picked fighter's skins are the Skin Rack's cards (.sk, ui/skins.js skMakeCard / skStyle; their look
+   comes from 90-skins.css, the Locker only sizes them and repeats the rules that sheet scopes to #scrSkins): one row of seven in landscape (chip skins,
+   a gap, Road skins), rows of four and three on an upright phone. --ta / --ca / --ft are the tile art, card art and card foot heights per size, --lkg
+   the gap between cards, --lkG the gap between the two groups, --lkr how much wider a Road card is than a chip card (its foot lines are longer).
+   #app.short is 844x390, #app.tiny 667x320, #app.narrow / #app.portrait an upright screen, the rest the desktop (the sheet is wider there while
+   the Locker shows). The sizes that need the sheet to give up some padding use :has(); without it the sheet just scrolls a little. */
+
+/* the Skin Rack opened from the Locker shows above the Account sheet (both are .screen at z-index 5, the Account later in the page) */
+#scrSkins { z-index: 6; }
+/* a glazed skin: a pearl star after its name (ui/skins.js skStyle) */
+.sk-f b.gz { display: flex; align-items: center; gap: 4px; }
+.sk-f b.gz > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sk-f b.gz > i { flex: none; font-style: normal; font-size: 0.95em; background: linear-gradient(115deg, #ffb3d9, #8ff0dc 45%, #c9b3ff 70%, #ffd6a8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+#acPanL { --ta: 76px; --ca: 98px; --ft: 42px; --lkg: 12px; --lkG: 30px; --lkr: 1; gap: 12px;
+  --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'%3E%3Cpath d='M4.6 8.2V5.6a3.4 3.4 0 0 1 6.8 0v2.6' fill='none' stroke='%23f3d9a4' stroke-width='2.2'/%3E%3Crect x='2' y='8' width='12' height='9' rx='2' fill='%23f3d9a4'/%3E%3Ccircle cx='8' cy='12.4' r='1.5' fill='%230e1022'/%3E%3C/svg%3E"); }
+#app.short #acPanL { --ta: 48px; --ca: 58px; --ft: 34px; --lkg: 8px; --lkG: 16px; --lkr: 1.12; gap: 6px; }
+#app.tiny #acPanL { --ta: 40px; --ca: 46px; --ft: 28px; --lkg: 6px; --lkG: 10px; gap: 5px; }
+:is(#app.narrow, #app.portrait) #acPanL { --ta: 52px; --ca: 54px; --ft: 34px; --lkg: 6px; --lkG: 0px; --lkr: 1; gap: 10px; }
+#app.portrait:not(.narrow) #acPanL { --ta: 84px; --ca: 96px; --ft: 40px; --lkg: 10px; }
+#app:not(.short):not(.portrait) .acct-sheet:has(#acPanL:not([hidden])) { width: min(1120px, 100%); }
+#app.short .acct-sheet:has(#acPanL:not([hidden])) .sh-body { padding-bottom: 10px; }
+#app.narrow .acct-sheet:has(#acPanL:not([hidden])) .sh-body { padding-inline: 14px; }
+#app.tiny #scrAccount:has(#acPanL:not([hidden])) { padding-block: 6px; }
+#app.tiny .acct-sheet:has(#acPanL:not([hidden])) .sh-body { padding: 6px 12px 8px; }
+
+/* ---- the top line ---- */
+.lk-top { display: flex; align-items: center; gap: 12px; flex: none; min-height: 34px; }
+.lk-col { flex: 1 1 auto; min-width: 0; }
+.mx-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
+.mx-line .kicker { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.mx-ct { flex: none; font: 600 12.5px/1 var(--body); color: var(--mute); white-space: nowrap; }
+.mx-ct b { margin-right: 2px; font: 800 16px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--text); }
+.mx-ct b small { font-size: 12px; font-weight: 700; color: var(--mute); }
+.lk-own { flex: none; font: 700 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.lk-own b { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
+.lk-coin { flex: none; height: 32px; padding: 0 10px 0 7px; gap: 5px; font-size: 17px; }
+.lk-coin::before { width: 20px; height: 16px; }
+#app.short .lk-top { min-height: 32px; }
+#app.tiny .lk-top { gap: 10px; min-height: 28px; }
+#app.tiny .mx-line { gap: 4px 11px; }
+#app.tiny .mx-ct { font-size: 12px; }
+#app.tiny .mx-ct b { font-size: 15px; }
+#app.tiny .lk-coin { height: 28px; padding-right: 9px; font-size: 16px; }
+#app.tiny .lk-coin::before { width: 18px; height: 14px; }
+#app:not(.short):not(.portrait) .lk-top { min-height: 38px; }
+#app:not(.short):not(.portrait) .mx-ct { font-size: 14px; }
+#app:not(.short):not(.portrait) .mx-ct b { font-size: 18px; }
+#app:not(.short):not(.portrait) .mx-line .kicker, #app:not(.short):not(.portrait) .lk-own { font-size: 13px; }
+#app:not(.short):not(.portrait) .lk-coin { height: 36px; font-size: 19px; }
+/* upright: the Collection is a boxed row of its own, then the count and the coin */
+:is(#app.narrow, #app.portrait) .lk-top { flex-wrap: wrap; gap: 8px 12px; }
+:is(#app.narrow, #app.portrait) .lk-col { flex: 1 1 100%; }
+:is(#app.narrow, #app.portrait) .mx-line { justify-content: space-between; gap: 4px 8px; padding: 7px 10px; border: 2px solid var(--ink); border-radius: 9px; background: rgba(14, 16, 34, 0.35); }
+:is(#app.narrow, #app.portrait) .mx-line .kicker { display: none; }
+#app.narrow .mx-ct { font-size: 11.5px; }
+#app.narrow .mx-ct b { font-size: 15px; }
+
+/* ---- the strip ---- */
+.lk-strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; flex: none; padding: 3px 3px 4px; margin: -3px -3px -4px; }
+:is(#app.narrow, #app.portrait) .lk-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.lk-tile { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 0 0 8px; overflow: hidden;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: var(--text); font: inherit;
+  transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
+.lk-ta { position: relative; align-self: stretch; height: var(--ta); background: radial-gradient(ellipse 70% 60% at 50% 70%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 72%); }
+.lk-ta canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lk-tile b { max-width: 100%; padding: 0 3px; font: 800 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-tile small { font: 700 12.5px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--mute); }
+.lk-tile small i { font-style: normal; opacity: 0.7; }
+.lk-tile.full small { color: var(--gold); }
+.lk-tile.on { z-index: 1; background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 0 0 3px var(--gold), 0 3px 0 var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.lk-tile.on b { color: var(--gold); }
+@media (hover: hover) { .lk-tile:not(.on):hover { transform: translateY(-1px); } }
+.lk-tile:active { transform: translateY(2px); }
+.lk-tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+#app.short .lk-strip { gap: 6px; }
+#app.short .lk-tile { gap: 1px; padding-bottom: 4px; }
+#app.short .lk-tile b { font-size: 11px; }
+#app.short .lk-tile small { font-size: 10.5px; }
+#app.tiny .lk-strip { gap: 5px; }
+#app.tiny .lk-tile { gap: 1px; padding-bottom: 3px; }
+#app.tiny .lk-tile b { font-size: 10.5px; }
+#app.tiny .lk-tile small { font-size: 10px; }
+:is(#app.narrow, #app.portrait) .lk-tile { gap: 3px; padding-bottom: 6px; }
+:is(#app.narrow, #app.portrait) .lk-tile b { font-size: 12px; }
+:is(#app.narrow, #app.portrait) .lk-tile small { font-size: 11px; }
+
+/* ---- the rack: chip skins | Road skins ---- */
+.lk-rack { display: grid; grid-template-columns: calc((100% - var(--lkG) - 5 * var(--lkg)) * 4 / (4 + 3 * var(--lkr)) + 3 * var(--lkg)) minmax(0, 1fr); column-gap: var(--lkG); flex: none; min-width: 0; }
+.lk-grp { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.lk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 0 2px; }
+.lk-k b { flex: none; font: 800 13px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.lk-k span { min-width: 0; font: 500 13.5px/1 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-k em { display: none; font-style: normal; }
+.lk-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--lkg); min-height: 0; padding: 3px 3px 5px; margin: -3px -3px -5px; }   /* room for the rings */
+.lk-row.r3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#app.short .lk-grp { gap: 4px; }
+#app.short .lk-k b { font-size: 11.5px; }
+#app.short .lk-k span { font-size: 12px; }
+#app.tiny .lk-grp { gap: 3px; }
+#app.tiny .lk-k span { display: none; }
+#app.tiny .lk-k b { font-size: 11px; }
+:is(#app.narrow, #app.portrait) .lk-rack { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+:is(#app.narrow, #app.portrait) .lk-grp { gap: 5px; }
+:is(#app.narrow, #app.portrait) .lk-k b { font-size: 12px; }
+:is(#app.narrow, #app.portrait) .lk-k span { font-size: 12.5px; }
+:is(#app.narrow, #app.portrait) .lk-k em { display: inline; }
+:is(#app.narrow, #app.portrait) .lk-row.r3 .sk-a { height: 62px; }
+#app.portrait:not(.narrow) .lk-row.r3 .sk-a { height: 108px; }
+
+/* a skin card: the Rack's recipe (90-skins.css scopes it to #scrSkins) at the Locker's sizes */
+#acPanL .sk { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0; text-align: left;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); color: var(--text); font: inherit;
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
+#acPanL .sk-a { flex: none; height: var(--ca); }
+#acPanL .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
+@media (hover: hover) { #acPanL .sk:hover { transform: translateY(-1px); } #acPanL .sk:hover canvas { filter: none; } #acPanL .sk.short:hover canvas, #acPanL .sk.road:hover canvas { filter: saturate(0.6) brightness(0.72); } #acPanL .sk.shut:hover canvas { filter: saturate(0.4) brightness(0.4); } }
+#acPanL .sk:active { transform: translateY(2px); }
+#acPanL .sk:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+#app.short #acPanL .sk-f { padding: 0 6px 1px; }
+#app.short #acPanL .sk-f b { font-size: 11.5px; }
+#app.short #acPanL .sk-f small, #app.short #acPanL .sk.buy .sk-f small, #app.short #acPanL .sk.short .sk-f small { font-size: 10.5px; }
+#app.tiny #acPanL .sk-f { padding: 0 5px 1px; gap: 2px; }
+#app.tiny #acPanL .sk-f small, #app.tiny #acPanL .sk.buy .sk-f small, #app.tiny #acPanL .sk.short .sk-f small { font-size: 10px; }
+:is(#app.narrow, #app.portrait) #acPanL .sk-f { padding: 0 6px 1px; }
+:is(#app.narrow, #app.portrait) #acPanL .sk-f b { font-size: 11px; letter-spacing: 0.03em; }
+:is(#app.narrow, #app.portrait) #acPanL .sk-f small, :is(#app.narrow, #app.portrait) #acPanL .sk.buy .sk-f small, :is(#app.narrow, #app.portrait) #acPanL .sk.short .sk-f small { font-size: 10.5px; }
+#app.portrait:not(.narrow) #acPanL .sk-f b { font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-tile, #acPanL .sk { transition: none; }
+}

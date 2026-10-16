@@ -142,29 +142,65 @@ button { font: inherit; color: inherit; }
 .pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
 @keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 3px rgba(255, 70, 50, 0.3); } 50% { color: #ff8a7c; text-shadow: 0 0 14px rgba(255, 90, 60, 0.85); } }
 
-/* ---------- ultimate bar (hud.js): a slim slanted strip hung under each name card. It fills in the fighter's colour, turns gold and
-   flashes when full; the two pips are the ultis left (ultMax minus ultN), grey when both are spent ---------- */
-.hud-r .pcard { margin-bottom: 9px; }
-.pc-ult { --sl: 5px; position: absolute; left: -4px; right: 6px; bottom: -10px; height: 6px; display: flex; align-items: center; gap: 6px; pointer-events: none; transition: opacity 0.3s; }
+/* ---------- ultimate bar (hud.js): a slanted trough on the bottom edge of each name card, as wide as the card. It fills in the fighter's
+   colour (slow stripes drift toward the tip, a sand line marks the tip) and turns gold when full; the two pips are the ultis left (ultMax
+   minus ultN), grey when both are spent. Your own full bar (.me) burns: an ember glow and seven flames (.pc-fl, behind the card's text so they
+   never cover the percent or the hearts) and, on a keyboard, the ULTI [U] tag. The opponent's full bar is gold with a steady glow, no flames.
+   Height (--ubh): 8 px on the 320 px phone, 10 on phones, 12 on a computer, 14 on a big screen ---------- */
+.pcard { --ubh: 12px; }
+#app.short .pcard, #app.narrow .pcard { --ubh: 10px; }
+#app.tiny .pcard { --ubh: 8px; }
+@media (min-width: 1500px) and (min-height: 1000px) { .pcard { --ubh: 14px; } }
+.hud-r .pcard { margin-bottom: calc(var(--ubh) + 5px); }
+.pcard:not(.pmini) { min-width: calc(var(--ubh) * 15 + 20px); }   /* a bar long enough to read, however short the name and the hearts */
+.pc-ult { --sl: calc(var(--ubh) * 0.75); position: absolute; left: -4px; right: 6px; top: calc(100% - 2px); height: var(--ubh); display: flex; align-items: center; gap: 5px; pointer-events: none; transition: opacity 0.3s; }
 .pcard.right .pc-ult { left: 6px; right: -4px; flex-direction: row-reverse; }
 .pc-ult[hidden] { display: none; }
-.pc-ult .ub { position: relative; flex: 1 1 auto; height: 6px; min-width: 0; overflow: hidden; background: rgba(14, 16, 34, 0.78); clip-path: polygon(var(--sl) 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
-.pc-ult .uf { position: absolute; left: 0; top: 1px; bottom: 1px; width: calc(var(--u, 0) * 100%); background: var(--fc); transition: width 0.25s ease-out; clip-path: polygon(0 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
-.pcard.right .pc-ult .uf { left: auto; right: 0; clip-path: polygon(var(--sl) 0, 100% 0, 100% 100%, 0 100%); }
+.pc-ult .ub { position: relative; flex: 1 1 auto; height: 100%; min-width: 0; overflow: hidden; background: rgba(14, 16, 34, 0.86); box-shadow: inset 0 0 0 1px rgba(206, 210, 255, 0.16); clip-path: polygon(var(--sl) 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
+.pc-ult .uf { position: absolute; left: 0; top: 2px; bottom: 2px; width: calc(var(--u, 0) * 100%); background-color: var(--fc); transition: width 0.25s ease-out;
+  background-image: linear-gradient(180deg, rgba(255, 246, 220, 0.32), rgba(255, 246, 220, 0) 55%), repeating-linear-gradient(-60deg, rgba(14, 16, 34, 0.2) 0 3px, rgba(14, 16, 34, 0) 3px 9px);
+  background-size: 100% 100%, 18px 100%; animation: ultDrift 1.6s linear infinite; clip-path: polygon(0 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
+.pc-ult .uf::after { content: ""; position: absolute; top: 0; bottom: 0; right: calc(var(--sl) * 0.5); width: 2px; background: var(--sand); opacity: 0.9; }
+.pc-ult.e .uf::after { display: none; }
+.pcard.right .pc-ult .uf { left: auto; right: 0; clip-path: polygon(var(--sl) 0, 100% 0, 100% 100%, 0 100%); animation-direction: reverse; }
+.pcard.right .pc-ult .uf::after { right: auto; left: calc(var(--sl) * 0.5); }
 .pc-ult .up { display: flex; gap: 3px; flex: none; }
 .pcard.right .pc-ult .up { flex-direction: row-reverse; }
-.pc-ult .up i { width: 11px; height: 6px; background: #f3c84a; clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
+.pc-ult .up i { width: calc(var(--ubh) + 4px); height: calc(var(--ubh) - 2px); background: #f3c84a; clip-path: polygon(30% 0, 100% 0, 70% 100%, 0 100%); }
 .pc-ult .up i.sp { background: rgba(206, 210, 255, 0.22); }
-.pc-ult .uk { flex: none; transform: skewX(9deg); font: 800 11px/1 var(--display); letter-spacing: 0.04em; color: #f3c84a; padding: 2px 5px; border: 1px solid rgba(243, 200, 74, 0.8); border-radius: 3px; background: rgba(14, 16, 34, 0.8); }
-.pc-ult .uk[hidden] { display: none; }
-.pc-ult.full { filter: drop-shadow(0 0 4px rgba(243, 200, 74, 0.8)); }
-.pc-ult.full .uf { background: #f3c84a; }
-.pc-ult.flash .ub { animation: ultFlash 0.6s ease-out; }
-.pc-ult.full:not(.flash) .uf { animation: ultBreathe 1.4s ease-in-out infinite; }
 .pc-ult.none { opacity: 0.45; }
 .pc-ult.none .up i { background: rgba(206, 210, 255, 0.22); }
-@keyframes ultFlash { 0% { background: #fff3c4; transform: scaleY(2.4); } 55% { background: rgba(243, 200, 74, 0.7); transform: scaleY(1.7); } 100% { background: rgba(14, 16, 34, 0.78); transform: scaleY(1); } }
-@keyframes ultBreathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+/* full: gold with a light top edge and a gold rim; the glow sits behind the trough */
+.pc-ult.full .uf { background-color: #f3c84a; background-image: linear-gradient(180deg, rgba(255, 243, 196, 0.75), rgba(255, 243, 196, 0) 60%); background-size: 100% 100%; animation: ultBreathe 1.4s ease-in-out infinite; }
+.pc-ult.full .uf::after { display: none; }
+.pc-ult.full .ub { box-shadow: inset 0 0 0 1.5px rgba(255, 222, 130, 0.95); }
+.pc-ult.full::before { content: ""; position: absolute; left: 0; right: 0; top: -3px; bottom: -3px; z-index: -1; border-radius: 3px; background: rgba(243, 200, 74, 0.38); filter: blur(4px); }
+.pc-ult.full.me::before { top: -5px; bottom: -5px; background: linear-gradient(90deg, rgba(255, 122, 61, 0.75), rgba(243, 200, 74, 0.85)); filter: blur(7px); animation: ultEmber 1.1s ease-in-out infinite alternate; }
+.pc-ult.flash .ub { animation: ultFlash 0.6s ease-out; }
+/* the ULTI [U] tag at the end of your own full bar (a keyboard player; phones have the ULTI button) */
+.pc-ult .uk { position: absolute; left: calc(100% + 8px); top: 50%; margin-top: calc(var(--ubh) * -0.5 - 6px); display: inline-flex; align-items: center; gap: 5px; transform: skewX(9deg); font: italic 900 calc(var(--ubh) + 4px)/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: #3a2a00; padding: 3px 4px 3px 8px; border: 2px solid #0e1022; border-radius: 4px; background: #f3c84a; box-shadow: 0 2px 0 #0e1022, 0 0 12px rgba(255, 150, 60, 0.7); animation: ukPop 0.32s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.pc-ult .uk kbd { font: 800 calc(var(--ubh) + 1px)/1 var(--display); font-style: normal; color: #f3c84a; background: #0e1022; border-radius: 3px; padding: 2px 5px; }
+.pc-ult .uk[hidden] { display: none; }
+/* the flames: seven tongues along the bar, rising over the card's lower edge behind its text (z-index -1 in the card's own stacking context) */
+.pc-fl { display: none; position: absolute; z-index: -1; left: 1%; right: 6%; bottom: calc(var(--ubh) * -0.5 + 1px); height: calc(var(--ubh) * 3); pointer-events: none; }
+.pcard.right .pc-fl { left: 8%; right: 2%; }
+.pcard.burn .pc-fl { display: block; }
+.pcard.burn.bst .pc-fl { animation: flBurst 0.4s ease-out; transform-origin: 50% 100%; }
+.pc-fl i { position: absolute; bottom: 0; width: 16%; height: 100%; transform-origin: 50% 100%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 32'%3E%3ClinearGradient id='a' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ff5a3a' stop-opacity='.85'/%3E%3Cstop offset='.45' stop-color='%23ff8a3d'/%3E%3Cstop offset='1' stop-color='%23f3c84a'/%3E%3C/linearGradient%3E%3Cpath d='M11 0c1 6 8 10 8 19 0 7-4 12-9 12S1 27 1 20c0-5 3-7 4-11 1 3 2 4 3 5 1-5 0-9 3-14z' fill='url(%23a)'/%3E%3Cpath d='M10.5 13c1 4 4.5 6 4.5 11 0 4-2.3 6-5 6s-5-2-5-5.5c0-3 2-4 2.5-6.5 1 1.5 1.5 2 2 2.5.3-3 .2-5 1-7.5z' fill='%23ffe08a'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat; animation: flLick 0.6s ease-in-out infinite alternate; }
+.pc-fl i:nth-child(1) { left: 0; height: 70%; animation-duration: 0.55s; }
+.pc-fl i:nth-child(2) { left: 13%; height: 95%; animation-duration: 0.68s; animation-delay: -0.2s; }
+.pc-fl i:nth-child(3) { left: 27%; height: 78%; animation-duration: 0.5s; animation-delay: -0.35s; }
+.pc-fl i:nth-child(4) { left: 41%; height: 100%; animation-duration: 0.63s; animation-delay: -0.1s; }
+.pc-fl i:nth-child(5) { left: 55%; height: 82%; animation-duration: 0.57s; animation-delay: -0.45s; }
+.pc-fl i:nth-child(6) { left: 69%; height: 92%; animation-duration: 0.7s; animation-delay: -0.3s; }
+.pc-fl i:nth-child(7) { left: 83%; height: 66%; animation-duration: 0.52s; animation-delay: -0.15s; }
+@keyframes ultFlash { 0% { background: #fff3c4; transform: scaleY(1.9); } 55% { background: rgba(243, 200, 74, 0.7); transform: scaleY(1.4); } 100% { background: rgba(14, 16, 34, 0.86); transform: scaleY(1); } }
+@keyframes ultBreathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+@keyframes ultDrift { to { background-position: 0 0, 18px 0; } }
+@keyframes ultEmber { from { opacity: 0.7; } to { opacity: 1; } }
+@keyframes ukPop { from { transform: skewX(9deg) scale(0.3); opacity: 0; } to { transform: skewX(9deg) scale(1); opacity: 1; } }
+@keyframes flLick { 0% { transform: scale(1, 0.82) skewX(-4deg); } 50% { transform: scale(0.9, 1.06) skewX(3deg); } 100% { transform: scale(1.05, 0.94) skewX(-2deg); } }
+@keyframes flBurst { from { transform: scale(1.6); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
 
 /* ---------- danger edge glow (UI only, own fighter): a thin red glow on the side a hard launch is heading for; opacity is set by screens.js ---------- */
 #dgr { position: absolute; left: 0; right: 0; top: 0; bottom: var(--panelH); z-index: 1; overflow: hidden; pointer-events: none; --dw: clamp(26px, calc(var(--um) * 9), 84px); }
@@ -239,7 +275,7 @@ button { font: inherit; color: inherit; }
 .btn.primary small { color: rgba(14, 16, 34, 0.65); }
 .btn:hover { background: #2c3156; } .btn.primary:hover { background: #f8e3b8; }
 .btn:active { transform: skewX(-10deg) translateY(1px) scale(0.985); }
-.btn:focus-visible, .link:focus-visible, .chip:focus-visible, .sw:focus-visible, .fc-pick:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.btn:focus-visible, .link:focus-visible, .chip:focus-visible, .fc-pick:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 .link { appearance: none; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--mute); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { color: var(--text); }
 .tokglyph { display: inline-block; width: 1.05em; height: 0.85em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%23a8661f' stroke-width='1.6'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E") center / contain no-repeat; margin-right: 0.3em; vertical-align: -0.08em; }
@@ -299,7 +335,7 @@ button { font: inherit; color: inherit; }
 .iconbtn:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
 
 /* ---------- fighter select: the screen itself is styled in game/css/30-select.css; these shared rules stay for the
-   online and cup screens (.select background, .sel-head, .back), the pickers' .pop lists and the locker's .sw swatches ---------- */
+   online and cup screens (.select background, .sel-head, .back), and the pickers' .pop lists ---------- */
 .select { background: rgba(14, 16, 34, 0.93); }
 .sel-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .sel-head h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: clamp(26px, calc(var(--um) * 6), 40px); line-height: 1; text-transform: uppercase; white-space: nowrap; }
@@ -312,14 +348,6 @@ button { font: inherit; color: inherit; }
 .pop button { appearance: none; border: 0; background: none; color: var(--text); text-align: left; padding: 7px 10px; border-radius: 5px; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
 .pop button:hover { background: var(--raise); }
 .pop button.on { background: var(--sand); color: var(--ink); }
-.sw { appearance: none; padding: 0; cursor: pointer; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.04em; color: var(--mute); min-width: 0; flex: 1; }
-.sw i { width: 34px; height: 34px; border-radius: 50%; background: var(--c); border: 3px solid var(--night); box-shadow: 0 0 0 1px var(--line); position: relative; flex: none; }
-.sw.cur { color: var(--text); }
-.sw.cur i { box-shadow: 0 0 0 2px var(--text); }
-.sw.lock i::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: rgba(14, 16, 34, 0.55); }
-.sw i em { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); font-style: normal; font-size: 8px; line-height: 1; letter-spacing: -1px; color: #f4c95d; text-shadow: 0 0 2px #0e1022, 0 0 2px #0e1022; z-index: 1; white-space: nowrap; }
-.sw .tokglyph { width: 1.2em; height: 0.95em; margin-right: 0.15em; }
-.sw:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 .chip { appearance: none; cursor: pointer; border: 1px solid var(--line); background: var(--raise); color: var(--text); border-radius: 999px; padding: 6px 14px; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; min-height: 36px; }
 .chip.on { background: var(--sand); color: var(--ink); border-color: var(--sand); }
@@ -508,21 +536,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .hx .vs { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hx b { font: 800 15px/1 var(--display); color: var(--text); font-variant-numeric: tabular-nums; flex: none; }
 .hx b.up { color: var(--mint); } .hx b.down { color: var(--ember); }
-.lk { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
-.lk-f { background: var(--raise); border-radius: 8px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.lk-h { display: flex; align-items: center; gap: 9px; font: 800 17px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
-.lk-h .av { --d: 34px; }
-.lk-h small { margin-left: auto; font: 700 12px/1 var(--display); letter-spacing: 0.1em; color: var(--mute); }
-.lk-s { display: flex; gap: 4px; }
-.lk-s .sw { flex: 1 1 0; }
-.lk-s .sw:disabled { cursor: default; }
-#app.portrait .lk, #app.narrow .lk { grid-template-columns: minmax(0, 1fr); }
 #app.short .ac-pan, #app.short .ac-pick { gap: 6px; }
 #app.short .fs-tab td { padding-block: 2px; }
 #app.tiny .ac-tabs .chip { min-height: 28px; padding: 2px 16px; }
 #app.tiny .ac-pick { padding: 6px 10px; }
 #app.tiny .ac-t { padding: 4px 8px; }
-#app.tiny .lk-f { padding: 6px 8px 8px; }
 
 /* ---------- short and upright screens ---------- */
 #app.short .menu-inner { gap: 10px; }
@@ -543,7 +561,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .ac-rank .ring { --d: 38px; }
 #app.short .ac-sync { padding: 9px 12px 11px; gap: 7px; }
 #app.short .ac-sync p { font-size: 13px; line-height: 1.3; }
-#app.short .ac-stats dd { font-size: 19px; }
 #app.short .ac-foot { padding-top: 6px; }
 #app.tiny .acct-sheet { padding: 8px 14px 10px; gap: 4px; }
 #app.tiny .ac-grid { gap: 6px 18px; }
@@ -553,8 +570,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .ac-name { font-size: 18px; padding: 2px 8px; }
 #app.tiny .ac-rank .ring { --d: 34px; }
 #app.tiny .ac-rank { padding: 3px 10px 3px 5px; }
-#app.tiny .ac-stats > div { padding: 3px 8px 4px; }
-#app.tiny .ac-stats dd { font-size: 17px; }
 #app.tiny .ac-sync { padding: 8px 12px 10px; gap: 6px; }
 #app.tiny .ac-sync p.ac-note:not(.keep) { display: none; }
 #app.tiny .ac-foot { padding-top: 4px; }
@@ -683,7 +698,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .dly-ph { width: 38px; height: 38px; }
 #app.narrow .dly-f, #app.narrow .dly-f.r { flex-direction: column; text-align: center; }
 /* ---------- end Daily Potato ---------- */
-@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult.full:not(.flash) .uf { animation: none; } .pc-ult .uf { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult .uf, .pc-ult.full .uf, .pc-ult.full.me::before, .pc-ult .uk, .pcard.burn.bst .pc-fl, .pc-fl i { animation: none; } .pc-ult .uf { transition: none; } }
 /* ---------- Menu redesign, shared base ("sunset ink", Fable 5.1, 2026-10-14) ----------
    Tokens + the shared pieces from the mockups (menu-redesign/mockups/gen.py BASE_CSS): .disp .kick .ink (stroked display text),
    .logo, .card / .card.gold, .tone (halftone corner), .rays (sunburst), .mini, .round, .plate (profile plate, emblem slot .emb),
@@ -1671,7 +1686,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .modal .kicker { font-size: 12px; color: var(--sand); }
 
 /* raised plates and ink wells inside a sheet */
-.ac-rank, .ac-stats > div, .ac-sync, .fs-fav, .lk-f, .hx, .dly-f, #scrHelp .ul, #scrHelp .rc {
+.ac-rank, .ac-stats > div, .ac-sync, .fs-fav, .hx, .dly-f, #scrHelp .ul, #scrHelp .rc {
   background: linear-gradient(180deg, #2f3560, #1f2344); border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
 }
 .ac-pick, .ac-t, .ac-name, .ac-in, .ac-code {
@@ -1749,11 +1764,20 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .ac-rank { padding: 8px 14px 8px 8px; gap: 12px; }
 #scrAccount .rk-tier { font: italic 900 27px/1 var(--display); letter-spacing: 0.01em; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
 #app.short #scrAccount .rk-tier { font-size: 23px; }
-.ac-stats { gap: 8px; padding-bottom: 3px; }
-.ac-stats > div { padding: 6px 10px 7px; }
-.ac-stats dt { font-size: 11px; letter-spacing: 0.14em; color: var(--mute); }
-.ac-stats dd { font-size: 24px; }
-#app.short .ac-stats dd { font-size: 20px; }
+/* the four numbers: the chip coin follows its label (CHIPS), the value stands alone; .wide (set by renderAccount from five digits) is one size smaller, so 999,999 fits */
+.ac-stats { gap: 6px; padding-bottom: 3px; --sb: 24px; --sw: 18px; }
+.ac-stats > div { padding: 6px 7px 7px; container-type: inline-size; display: flex; flex-direction: column; }
+.ac-stats dd { margin-top: auto; }   /* a smaller (wide) number sits on the same line as its neighbours */
+#acChips { color: var(--gold); }
+.ac-stats dt { display: flex; align-items: center; gap: 5px; font-size: 11px; letter-spacing: 0.14em; color: var(--mute); white-space: nowrap; }
+.ac-stats dt .tokglyph { flex: none; width: 15px; height: 12px; margin-top: -1px; }
+/* the number: one size, one size smaller from five digits; the cqw cap keeps 999,999 inside the box at any width */
+.ac-stats dd { font-size: min(var(--sb), 38cqw); }
+.ac-stats dd.wide { font-size: min(var(--sw), 27cqw); }
+#app.narrow .ac-stats { --sb: 22px; --sw: 16px; }
+#app.short .ac-stats { --sb: 20px; --sw: 16px; }
+#app.tiny .ac-stats > div { padding: 3px 6px 4px; }
+#app.tiny .ac-stats { gap: 5px; --sw: 15px; }
 .ac-form i, .hx i.r { border: 2px solid var(--ink); border-radius: 6px; box-shadow: 0 2px 0 var(--ink); }
 .ac-form i.l, .hx i.r.l { background: var(--ketchup); color: #fff; }
 .ac-sync { padding: 12px 14px 14px; }
@@ -1770,15 +1794,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .fs-tab tr.fav td:first-child .fn::after { color: var(--gold); }
 .hx { border-radius: 8px; box-shadow: 0 2px 0 var(--ink), var(--bevel); padding: 3px 8px 3px 4px; }
 .hx-list { gap: 6px 12px; padding-bottom: 2px; }
-/* Locker: round swatches with an ink rim, a gold ring on the one worn */
-.lk { gap: 12px; }
-.lk-f { padding: 8px 10px 10px; }
-.lk-h { font: italic 900 19px/1.1 var(--display); }
-#scrAccount .sw i { border: 2.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
-#scrAccount .sw.cur i { box-shadow: 0 0 0 3px var(--gold), 0 0 0 5px var(--ink); }
-#scrAccount .sw.cur { color: var(--gold); }
-#scrAccount .sw.lock i::after { inset: -2.5px; }
-#scrAccount .sw:not(:disabled):active i { transform: translateY(2px); }
+/* the Locker tab (strip + the Skin Rack's cards) is in 92-locker.css */
 
 /* ---- How to play ---- */
 .help-sheet .sh-body { gap: 12px; }
@@ -1908,7 +1924,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.duo #pc2, #app.duo #pc3 { display: block; }
 
 #app.duo .hud-l { gap: 0; }
-#app.duo #pc0 { margin-bottom: 12px; }   /* the room the full card's ulti strip hangs into */
+#app.duo #pc0 { margin-bottom: calc(var(--ubh) + 4px); }   /* the room the full card's ulti bar hangs into */
 #app.duo .hud-r { gap: 4px; }
 #app.duo .hud-r .pcard.pmini { margin-bottom: 0; }
 #app.duo .hud-mid { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); }   /* the timer stays in the middle whatever the two columns weigh */
@@ -1930,11 +1946,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.duo .pcard.pmini .pc-stocks { gap: 2px; padding-bottom: 3px; }
 #app.duo .pcard.pmini .pc-stocks i { width: 10px; height: 9px; }
 #app.duo .pcard.pmini.finr .pc-name::after { content: none; }   /* the pulsing percent says it */
-/* the ulti bar: a thin line along the bottom edge (the pips and the U key are for the full card) */
-#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; bottom: 0; height: 3px; gap: 0; }
-#app.duo .pcard.pmini .pc-ult .ub { height: 3px; clip-path: none; }
-#app.duo .pcard.pmini .pc-ult .uf { top: 0; bottom: 0; clip-path: none; }
-#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk { display: none; }
+/* the ulti bar: a line along the bottom edge, 6 px (5 on the 320 px phone; the pips, the ULTI tag and the flames are for the full card) */
+#app.duo .pcard.pmini, #app.duo .pcard.right.pmini { --ubh: 6px; padding-bottom: 7px; }
+#app.duo.tiny .pcard.pmini, #app.duo.tiny .pcard.right.pmini { --ubh: 5px; padding-bottom: 6px; }
+#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; top: auto; bottom: 0; gap: 0; }
+#app.duo .pcard.pmini .pc-ult .ub { clip-path: none; box-shadow: none; }
+#app.duo .pcard.pmini .pc-ult .uf { top: 1px; bottom: 1px; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .uf::after { display: none; }
+#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk, #app.duo .pcard.pmini .pc-fl { display: none; }
 
 /* the computer (1280x760): the same card, a size up */
 #app:not(.short):not(.narrow).duo .pcard.pmini .pc-top { font-size: 12px; }
@@ -2445,6 +2464,142 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   #scrSkins .sk, #scrSkins .sk-a canvas, #scrSelect .sl-skins > *, #scrSelect .sk-pill { transition: none; }
   #scrSkins:not([hidden]) > .sk-sheet, .sk-yours.sk-pop, .sk.worn::after { animation: none !important; }
   #scrSkins .sk.sel:not(.worn) { transform: none; }
+}
+
+/* ---------- Account > Locker: a strip of the eight fighters, then the picked fighter's seven skins (Fable 5.1, locker-chips/fable-design.md section 1) ----------
+   The top line is the Collection on one line (.mx-line, ui/mastery.js), the skins owned of all (32 / 56 SKINS) and the chips coin. The strip
+   (.lk-strip, ui/acct.js) has one tile per fighter: his model in the worn skin on a glow in that skin's colour, his name and n/7 (gold at 7/7);
+   the picked one has a gold ring. Under it the picked fighter's skins are the Skin Rack's cards (.sk, ui/skins.js skMakeCard / skStyle; their look
+   comes from 90-skins.css, the Locker only sizes them and repeats the rules that sheet scopes to #scrSkins): one row of seven in landscape (chip skins,
+   a gap, Road skins), rows of four and three on an upright phone. --ta / --ca / --ft are the tile art, card art and card foot heights per size, --lkg
+   the gap between cards, --lkG the gap between the two groups, --lkr how much wider a Road card is than a chip card (its foot lines are longer).
+   #app.short is 844x390, #app.tiny 667x320, #app.narrow / #app.portrait an upright screen, the rest the desktop (the sheet is wider there while
+   the Locker shows). The sizes that need the sheet to give up some padding use :has(); without it the sheet just scrolls a little. */
+
+/* the Skin Rack opened from the Locker shows above the Account sheet (both are .screen at z-index 5, the Account later in the page) */
+#scrSkins { z-index: 6; }
+/* a glazed skin: a pearl star after its name (ui/skins.js skStyle) */
+.sk-f b.gz { display: flex; align-items: center; gap: 4px; }
+.sk-f b.gz > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sk-f b.gz > i { flex: none; font-style: normal; font-size: 0.95em; background: linear-gradient(115deg, #ffb3d9, #8ff0dc 45%, #c9b3ff 70%, #ffd6a8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+#acPanL { --ta: 76px; --ca: 98px; --ft: 42px; --lkg: 12px; --lkG: 30px; --lkr: 1; gap: 12px;
+  --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'%3E%3Cpath d='M4.6 8.2V5.6a3.4 3.4 0 0 1 6.8 0v2.6' fill='none' stroke='%23f3d9a4' stroke-width='2.2'/%3E%3Crect x='2' y='8' width='12' height='9' rx='2' fill='%23f3d9a4'/%3E%3Ccircle cx='8' cy='12.4' r='1.5' fill='%230e1022'/%3E%3C/svg%3E"); }
+#app.short #acPanL { --ta: 48px; --ca: 58px; --ft: 34px; --lkg: 8px; --lkG: 16px; --lkr: 1.12; gap: 6px; }
+#app.tiny #acPanL { --ta: 40px; --ca: 46px; --ft: 28px; --lkg: 6px; --lkG: 10px; gap: 5px; }
+:is(#app.narrow, #app.portrait) #acPanL { --ta: 52px; --ca: 54px; --ft: 34px; --lkg: 6px; --lkG: 0px; --lkr: 1; gap: 10px; }
+#app.portrait:not(.narrow) #acPanL { --ta: 84px; --ca: 96px; --ft: 40px; --lkg: 10px; }
+#app:not(.short):not(.portrait) .acct-sheet:has(#acPanL:not([hidden])) { width: min(1120px, 100%); }
+#app.short .acct-sheet:has(#acPanL:not([hidden])) .sh-body { padding-bottom: 10px; }
+#app.narrow .acct-sheet:has(#acPanL:not([hidden])) .sh-body { padding-inline: 14px; }
+#app.tiny #scrAccount:has(#acPanL:not([hidden])) { padding-block: 6px; }
+#app.tiny .acct-sheet:has(#acPanL:not([hidden])) .sh-body { padding: 6px 12px 8px; }
+
+/* ---- the top line ---- */
+.lk-top { display: flex; align-items: center; gap: 12px; flex: none; min-height: 34px; }
+.lk-col { flex: 1 1 auto; min-width: 0; }
+.mx-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
+.mx-line .kicker { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.mx-ct { flex: none; font: 600 12.5px/1 var(--body); color: var(--mute); white-space: nowrap; }
+.mx-ct b { margin-right: 2px; font: 800 16px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--text); }
+.mx-ct b small { font-size: 12px; font-weight: 700; color: var(--mute); }
+.lk-own { flex: none; font: 700 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.lk-own b { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
+.lk-coin { flex: none; height: 32px; padding: 0 10px 0 7px; gap: 5px; font-size: 17px; }
+.lk-coin::before { width: 20px; height: 16px; }
+#app.short .lk-top { min-height: 32px; }
+#app.tiny .lk-top { gap: 10px; min-height: 28px; }
+#app.tiny .mx-line { gap: 4px 11px; }
+#app.tiny .mx-ct { font-size: 12px; }
+#app.tiny .mx-ct b { font-size: 15px; }
+#app.tiny .lk-coin { height: 28px; padding-right: 9px; font-size: 16px; }
+#app.tiny .lk-coin::before { width: 18px; height: 14px; }
+#app:not(.short):not(.portrait) .lk-top { min-height: 38px; }
+#app:not(.short):not(.portrait) .mx-ct { font-size: 14px; }
+#app:not(.short):not(.portrait) .mx-ct b { font-size: 18px; }
+#app:not(.short):not(.portrait) .mx-line .kicker, #app:not(.short):not(.portrait) .lk-own { font-size: 13px; }
+#app:not(.short):not(.portrait) .lk-coin { height: 36px; font-size: 19px; }
+/* upright: the Collection is a boxed row of its own, then the count and the coin */
+:is(#app.narrow, #app.portrait) .lk-top { flex-wrap: wrap; gap: 8px 12px; }
+:is(#app.narrow, #app.portrait) .lk-col { flex: 1 1 100%; }
+:is(#app.narrow, #app.portrait) .mx-line { justify-content: space-between; gap: 4px 8px; padding: 7px 10px; border: 2px solid var(--ink); border-radius: 9px; background: rgba(14, 16, 34, 0.35); }
+:is(#app.narrow, #app.portrait) .mx-line .kicker { display: none; }
+#app.narrow .mx-ct { font-size: 11.5px; }
+#app.narrow .mx-ct b { font-size: 15px; }
+
+/* ---- the strip ---- */
+.lk-strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; flex: none; padding: 3px 3px 4px; margin: -3px -3px -4px; }
+:is(#app.narrow, #app.portrait) .lk-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.lk-tile { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 0 0 8px; overflow: hidden;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: var(--text); font: inherit;
+  transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
+.lk-ta { position: relative; align-self: stretch; height: var(--ta); background: radial-gradient(ellipse 70% 60% at 50% 70%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 72%); }
+.lk-ta canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lk-tile b { max-width: 100%; padding: 0 3px; font: 800 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-tile small { font: 700 12.5px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--mute); }
+.lk-tile small i { font-style: normal; opacity: 0.7; }
+.lk-tile.full small { color: var(--gold); }
+.lk-tile.on { z-index: 1; background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 0 0 3px var(--gold), 0 3px 0 var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.lk-tile.on b { color: var(--gold); }
+@media (hover: hover) { .lk-tile:not(.on):hover { transform: translateY(-1px); } }
+.lk-tile:active { transform: translateY(2px); }
+.lk-tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+#app.short .lk-strip { gap: 6px; }
+#app.short .lk-tile { gap: 1px; padding-bottom: 4px; }
+#app.short .lk-tile b { font-size: 11px; }
+#app.short .lk-tile small { font-size: 10.5px; }
+#app.tiny .lk-strip { gap: 5px; }
+#app.tiny .lk-tile { gap: 1px; padding-bottom: 3px; }
+#app.tiny .lk-tile b { font-size: 10.5px; }
+#app.tiny .lk-tile small { font-size: 10px; }
+:is(#app.narrow, #app.portrait) .lk-tile { gap: 3px; padding-bottom: 6px; }
+:is(#app.narrow, #app.portrait) .lk-tile b { font-size: 12px; }
+:is(#app.narrow, #app.portrait) .lk-tile small { font-size: 11px; }
+
+/* ---- the rack: chip skins | Road skins ---- */
+.lk-rack { display: grid; grid-template-columns: calc((100% - var(--lkG) - 5 * var(--lkg)) * 4 / (4 + 3 * var(--lkr)) + 3 * var(--lkg)) minmax(0, 1fr); column-gap: var(--lkG); flex: none; min-width: 0; }
+.lk-grp { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.lk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 0 2px; }
+.lk-k b { flex: none; font: 800 13px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.lk-k span { min-width: 0; font: 500 13.5px/1 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-k em { display: none; font-style: normal; }
+.lk-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--lkg); min-height: 0; padding: 3px 3px 5px; margin: -3px -3px -5px; }   /* room for the rings */
+.lk-row.r3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#app.short .lk-grp { gap: 4px; }
+#app.short .lk-k b { font-size: 11.5px; }
+#app.short .lk-k span { font-size: 12px; }
+#app.tiny .lk-grp { gap: 3px; }
+#app.tiny .lk-k span { display: none; }
+#app.tiny .lk-k b { font-size: 11px; }
+:is(#app.narrow, #app.portrait) .lk-rack { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+:is(#app.narrow, #app.portrait) .lk-grp { gap: 5px; }
+:is(#app.narrow, #app.portrait) .lk-k b { font-size: 12px; }
+:is(#app.narrow, #app.portrait) .lk-k span { font-size: 12.5px; }
+:is(#app.narrow, #app.portrait) .lk-k em { display: inline; }
+:is(#app.narrow, #app.portrait) .lk-row.r3 .sk-a { height: 62px; }
+#app.portrait:not(.narrow) .lk-row.r3 .sk-a { height: 108px; }
+
+/* a skin card: the Rack's recipe (90-skins.css scopes it to #scrSkins) at the Locker's sizes */
+#acPanL .sk { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0; text-align: left;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); color: var(--text); font: inherit;
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
+#acPanL .sk-a { flex: none; height: var(--ca); }
+#acPanL .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
+@media (hover: hover) { #acPanL .sk:hover { transform: translateY(-1px); } #acPanL .sk:hover canvas { filter: none; } #acPanL .sk.short:hover canvas, #acPanL .sk.road:hover canvas { filter: saturate(0.6) brightness(0.72); } #acPanL .sk.shut:hover canvas { filter: saturate(0.4) brightness(0.4); } }
+#acPanL .sk:active { transform: translateY(2px); }
+#acPanL .sk:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+#app.short #acPanL .sk-f { padding: 0 6px 1px; }
+#app.short #acPanL .sk-f b { font-size: 11.5px; }
+#app.short #acPanL .sk-f small, #app.short #acPanL .sk.buy .sk-f small, #app.short #acPanL .sk.short .sk-f small { font-size: 10.5px; }
+#app.tiny #acPanL .sk-f { padding: 0 5px 1px; gap: 2px; }
+#app.tiny #acPanL .sk-f small, #app.tiny #acPanL .sk.buy .sk-f small, #app.tiny #acPanL .sk.short .sk-f small { font-size: 10px; }
+:is(#app.narrow, #app.portrait) #acPanL .sk-f { padding: 0 6px 1px; }
+:is(#app.narrow, #app.portrait) #acPanL .sk-f b { font-size: 11px; letter-spacing: 0.03em; }
+:is(#app.narrow, #app.portrait) #acPanL .sk-f small, :is(#app.narrow, #app.portrait) #acPanL .sk.buy .sk-f small, :is(#app.narrow, #app.portrait) #acPanL .sk.short .sk-f small { font-size: 10.5px; }
+#app.portrait:not(.narrow) #acPanL .sk-f b { font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-tile, #acPanL .sk { transition: none; }
 }
 
 /* ---------- Play friends: "Fight Card" (Fable 5.1, skins-lobby/fable-design.md part 3; mockups skins-lobby/mockups/lobby_*.png) ----------
@@ -3152,7 +3307,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="hud-l"><div class="pcard" id="pc0"><div>
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div></div>
     <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div><div id="qmStrip" class="livetag" hidden><i aria-hidden="true"></i><span id="qmStripT">Searching</span></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
@@ -3160,7 +3315,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
         <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
         <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-      </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+      </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
       <button id="pauseBtn" aria-label="Pause"></button>
     </div>
   </div>
@@ -3171,12 +3326,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
       <div class="pc-sub"><span class="nm"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
     <div class="pcard right pmini" id="pc3" role="button" aria-label="Focus this foe"><div>
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
       <div class="pc-sub"><span class="nm"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
   </template>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>
@@ -3600,7 +3755,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <dl class="ac-stats">
             <div><dt>Wins</dt><dd id="acW">0</dd></div>
             <div><dt>Losses</dt><dd id="acL">0</dd></div>
-            <div><dt>Chips</dt><dd id="acChips"></dd></div>
+            <div><dt>Chips<span class="tokglyph" aria-hidden="true"></span></dt><dd id="acChips"></dd></div>
             <div><dt>Skins</dt><dd id="acSkins"></dd></div>
           </dl>
           <div class="ac-extra"><span class="ac-line" id="acMore"></span><div class="ac-form" id="acForm" aria-label="Last ranked results"></div></div>
@@ -6238,6 +6393,8 @@ const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, le
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
 // the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road)
 const chipN = (spec) => spec.palettes.filter((p) => !p.road).length;
+// a chip balance as shown everywhere: exact, with commas (1,350 and 12,480), never shortened
+const fmtChips = (n) => Math.max(0, Math.round(+n || 0)).toLocaleString("en-US");
 const $ = (id) => document.getElementById(id);
 const app = $("app"), cv = $("cv"), ctx = cv.getContext("2d");
 if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -9932,6 +10089,16 @@ function uvShotTick(g, f) {
   gunShell(f, P.hF[0], P.hF[1] - 2);
   if (live) Sfx.pop();
 }
+/* ===================== Glaze: a pearl sheen over a skin you own, bought in the Shop (UI only, never in the simulation) =====================
+   P.glazed = { fighterId: [skin index, ...] }, synced like the skins owned. A fighter object drawn with glaze is marked here (a WeakSet, so
+   nothing is added to the simulated fighter and checksums never see it); drawFighter draws the sheen over a marked one. */
+const GLAZE_PRICE = 400;
+const GLAZED = new WeakSet();
+const glazeHas = (id, i) => !!(P.glazed && Array.isArray(P.glazed[id]) && P.glazed[id].includes(i));
+function glazeMark(f, on) { if (on) GLAZED.add(f); else GLAZED.delete(f); return f; }
+const glazeOn = (f) => GLAZED.has(f);
+// drawFighter calls this after the figure (the sheen itself comes with the Glaze drawing)
+function glazeDraw(c, f, tk) {}
 /* ===================== drawing: world ===================== */
 const STARS = Array.from({ length: 70 }, (_, i) => { const r = (n) => ((Math.sin(i * 127.1 + n * 311.7) * 43758.5453) % 1 + 1) % 1; return { x: r(1), y: r(2), s: r(3) < 0.2 ? 2 : 1, a: 0.25 + r(4) * 0.5 }; });
 const ISLES = [{ x: 0.08, w: 0.2, h: 0.05 }, { x: 0.33, w: 0.12, h: 0.03 }, { x: 0.86, w: 0.24, h: 0.065 }, { x: 0.58, w: 0.08, h: 0.02 }];
@@ -16494,6 +16661,7 @@ function render2D(g, tk) {
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
     if (NICE.length) drawNice(c, g);   // ui/online.js: the partner's (or your own) NICE!
   }
+  if (mode === "match" && !FIN.on) hudUltCue(c, g);   // hud.js: a flame over your fighter while your ulti is ready
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   bossScreen(c, g, tk);   // a boss's layer in screen space, over the fight (Kraken Spud's ink; ui/draw-boss.js)
   drawScreenFx(c);
@@ -25858,7 +26026,7 @@ function buildDetail() {
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
-  $("selTokens").textContent = P.tokens;
+  $("selTokens").textContent = fmtChips(P.tokens);
   if (sel.mode === "online" || sel.mode === "quick") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
@@ -26381,17 +26549,23 @@ function hudPauseZone() {
 }
 
 /* ---------- ultimate bar and ULTI button (reads the sim, never writes it) ----------
-   Under each name card (.pc-ult, shell.html): a strip that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a short
-   flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. The player's own button
-   (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard player gets a U key
-   next to the own bar instead. The own bar becoming full plays Sfx.ultFull (added by the sound coder; absent = silent). Called every
-   frame from updateHud (screens.js). */
+   On each name card's bottom edge (.pc-ult, shell.html): a bar that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a
+   short flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. Your own full bar burns
+   (.me + the card's .burn: an ember glow and the flames of .pc-fl, a burst as it fills) and a small flame rides over your fighter
+   (hudUltCue, drawn with the tags), so a full bar is seen without looking at the corner; the opponent's full bar is gold, no flames. The
+   player's own button (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard
+   player gets the ULTI [U] tag at the end of the own bar instead. The own bar becoming full plays Sfx.ultFull (absent = silent). Called
+   every frame from updateHud (screens.js). */
 const HU = { g: null, c: [{}, {}], rdy: false, btn: document.querySelector('.pb[data-k="ulti"]') };
 function hudUltReset() {
   HU.g = G; HU.rdy = false;
-  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null }));
+  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null, me: null }));
   HU.btn.classList.remove("rdy", "on");
-  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none");
+  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none", "me", "e");
+  for (const card of document.querySelectorAll("#hud .pcard")) {
+    card.classList.remove("burn", "bst");
+    if (!card.querySelector(".pc-fl")) { const fl = document.createElement("span"); fl.className = "pc-fl"; fl.setAttribute("aria-hidden", "true"); fl.innerHTML = "<i></i>".repeat(7); card.appendChild(fl); }
+  }
 }
 function hudUlt() {
   if (HU.g !== G) hudUltReset();
@@ -26400,19 +26574,23 @@ function hudUlt() {
     const i = cardSlot[k], f = G.fighters[i], c = HU.c[k], el = $("pc" + k).querySelector(".pc-ult");
     if (c.off !== trial) { c.off = trial; el.hidden = trial; }
     if (trial) continue;
-    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need;
+    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need, mine = i === meSlot;
     const us = (need ? Math.max(0, Math.min(1, f.ult / need)) : 0).toFixed(3);
-    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); }
+    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); el.classList.toggle("e", us === "0.000"); }
+    if (c.me !== mine) { c.me = mine; el.classList.toggle("me", mine); }
     const left = BL.TUNE.ultMax - f.ultN;
     if (c.n !== left) { c.n = left; [...el.querySelectorAll(".up i")].forEach((p, k) => p.classList.toggle("sp", k >= left)); el.classList.toggle("none", left <= 0); }
     if (c.full !== full) {
       const was = c.full; c.full = full;
       el.classList.toggle("full", full);
+      const card = $("pc" + k);
+      card.classList.toggle("burn", full && mine);
       if (full && !was) {
         el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 650);
-        if (i === meSlot && Sfx.ultFull) Sfx.ultFull();
+        if (mine) { card.classList.add("bst"); setTimeout(() => card.classList.remove("bst"), 450); }
+        if (mine && Sfx.ultFull) Sfx.ultFull();
       }
-      el.querySelector(".uk").hidden = !(full && i === meSlot && !touchUI);
+      el.querySelector(".uk").hidden = !(full && mine && !touchUI);
     }
   }
   const me = G.fighters[meSlot], need = BL.ultNeed(me), rdy = !trial && G.phase !== "over" && (BL.ultReady(G, me) || (need > 0 && me.ult >= need));
@@ -26421,6 +26599,26 @@ function hudUlt() {
     // the press has already been read by the sim; a finger still down on a hidden button must not leave the input held
     if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
   }
+}
+
+// your ulti is ready: a small flame over your fighter (above the YOU tag while it shows), drawn in the world with the tags (effects.js)
+function hudUltCue(c, g) {
+  if (!HU.rdy || g !== G || HU.g !== G) return;
+  const f = g.fighters[meSlot];
+  if (!f || f.state === "dead" || f.state === "gone") return;
+  const k = 1 / cam.z, t = performance.now() / 1000, calm = resCalm();
+  const y = f.y - f.s.h - (tagAlpha() > 0.02 ? 44 : 16) * k, fl = calm ? 1 : 1 + 0.1 * Math.sin(t * 11) + 0.06 * Math.sin(t * 23 + 1);
+  const tongue = (h, w) => {
+    c.beginPath(); c.moveTo(0, -h);
+    c.bezierCurveTo(w * 0.45, -h * 0.62, w * 1.15, -h * 0.3, w * 0.9, 0); c.quadraticCurveTo(w * 0.62, h * 0.36, 0, h * 0.36);
+    c.quadraticCurveTo(-w * 0.62, h * 0.36, -w * 0.9, 0); c.bezierCurveTo(-w * 1.15, -h * 0.3, -w * 0.45, -h * 0.62, 0, -h); c.closePath();
+  };
+  c.save(); c.translate(f.x, y); c.scale(k, k); c.rotate(calm ? 0 : 0.06 * Math.sin(t * 7));
+  tongue(15 * fl, 6.5); c.lineJoin = "round"; c.lineWidth = 3; c.strokeStyle = "rgba(14,16,34,.85)"; c.stroke();
+  const gr = c.createLinearGradient(0, -15, 0, 5); gr.addColorStop(0, "#ff6a3d"); gr.addColorStop(0.5, "#f3a23a"); gr.addColorStop(1, "#f3c84a");
+  c.fillStyle = gr; c.fill();
+  tongue(8 * fl, 3.4); c.fillStyle = "#ffe08a"; c.fill();
+  c.restore();
 }
 
 /* ---------- 2v2: four name cards (the CSS is game/css/65-duo.css) ----------
@@ -27008,7 +27206,7 @@ function roadHeader() {
   $("roadKick").textContent = `The Road · region ${k + 1} of ${ROAD_REG.length}`;
   $("roadReg").textContent = ROAD_REG[k].name;
   $("roadSum").textContent = roadSummary(r, k);
-  $("roadTokens").textContent = P.tokens;
+  $("roadTokens").textContent = fmtChips(P.tokens);
   $("roadPrev").disabled = k === 0;
   const nx = k + 1 < ROAD_REG.length;
   $("roadNext").disabled = !nx;
@@ -28042,7 +28240,7 @@ function cupRender() {
   const c = P.cup;
   if (!cupOk(c)) return;
   const [kick, title] = cupHead(c);
-  $("cupKick").textContent = kick; $("cupTitle").textContent = title; $("cupTokens").textContent = P.tokens;
+  $("cupKick").textContent = kick; $("cupTitle").textContent = title; $("cupTokens").textContent = fmtChips(P.tokens);
   $("cupGrid").innerHTML = cupGridHTML(c);
   $("cupList").innerHTML = cupListHTML(c);
   cupLines(c);
@@ -28241,8 +28439,10 @@ window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: d
    the select: the looked-at skin in big (the model drawn live in it, its name, its effect and one action), then the four chip skins and
    the three Road skins as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
    with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
-   looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css. */
-const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0 };
+   looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css.
+   The Account sheet's Locker (ui/acct.js) draws its skin cards with the same builder (skMakeCard, skStyle) and opens this sheet on a locked
+   skin with openSkins(id, i): the sheet then shows above the Account sheet, and closing it re-renders the Locker (css/92-locker.css). */
+const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0, live: 0 };
 const SK_CHIPS_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 screens.skins = $("scrSkins");
 const skOwns = (id, i) => (P.owned[id] || [0]).includes(i);
@@ -28284,29 +28484,49 @@ function skinsBar(spec, pi) {
 $("dSkins").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); openSkins(sel.fighter); });
 
 /* ----- the sheet ----- */
-function openSkins(id) {
+function openSkins(id, i) {   // i (optional): the skin to look at first; else the one worn
   if (!FIG[id]) return;
-  Object.assign(SK, { id, i: palIdx(id), art: null, cards: [] });
+  Object.assign(SK, { id, i: Number.isInteger(i) && FIG[id].palettes[i] ? i : palIdx(id), art: null, cards: [] });
   skDisarm();
   modal("skins", true);
   skRender(true);
+  cancelAnimationFrame(SK.live); SK.live = mode === "select" ? 0 : requestAnimationFrame(skLive);
 }
 function closeSkins() {
-  skDisarm(); clearTimeout(SK.yoursT); cancelAnimationFrame(SK.coin);
+  skDisarm(); clearTimeout(SK.yoursT); cancelAnimationFrame(SK.coin); cancelAnimationFrame(SK.live); SK.live = 0;
   modal("skins", false); SK.id = null; SK.art = null; SK.cards = [];
+  if (!screens.account.hidden) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }   // opened from the Locker: what was bought or worn shows there
 }
 function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
-// the cards are built when the sheet opens (their models drawn once); every change after that only restyles them
-function skCard(spec, i) {
+// a skin card, as the Rack and the Locker show it: the model drawn once on its canvas (its art record goes into `list`), a tap calls tap(i).
+// The Rack builds its cards when the sheet opens; every change after that only restyles them (skStyle).
+function skMakeCard(spec, i, list, tap) {
   const p = spec.palettes[i], b = document.createElement("button");
   b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
   b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
-  b.addEventListener("click", () => skTap(i));
+  b.addEventListener("click", () => tap(i));
   const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
   f.x = 0; f.y = 0; f.facing = -1;
-  SK.cards.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
   return b;
+}
+const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
+// a card's state: its class (worn / own / buy / short / road / shut, and sel for the Rack's looked-at ring), its foot line, its label; a glazed skin gets a star after its name.
+// tight (the Locker's small cards): a shut Road skin's foot says "Kitchen · locked", not "The Kitchen · locked", so it fits
+function skStyle(b, spec, i, sel, tight) {
+  const p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small"), nm = b.querySelector(".sk-f b"), gz = glazeHas(spec.id, i);
+  b.className = `sk ${st}${sel ? " sel" : ""}`;
+  if (nm._gz !== gz) {
+    nm._gz = gz; nm.className = gz ? "gz" : "";
+    if (gz) { nm.innerHTML = '<span></span><i aria-hidden="true">\u2726</i>'; nm.firstChild.textContent = p.name; } else nm.textContent = p.name;
+  }
+  if (st === "worn") small.textContent = "Worn";
+  else if (st === "own") small.textContent = "Tap to wear";
+  else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${fmtChips(p.price)}`;
+  else small.textContent = tight && st === "shut" ? skRoad(spec, i).foot.replace(/^The /, "") : skRoad(spec, i).foot;
+  b.setAttribute("aria-label", `${p.name}${gz ? ", glazed" : ""}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${fmtChips(p.price)} chips` : skRoad(spec, i).how}`);
+  return st;
 }
 function skDrawCards() { for (const a of SK.cards) paintModel(a, 0); }
 function skRender(full) {
@@ -28322,16 +28542,11 @@ function skRender(full) {
     skDrawCards();
   }
   $("skOwned").textContent = `${own} / ${n} owned`;
-  if (!SK.coin) $("skTokens").textContent = P.tokens;
+  if (!SK.coin) $("skTokens").textContent = fmtChips(P.tokens);
   for (const b of $("skSheet").querySelectorAll(".sk")) {
-    const i = +b.dataset.i, p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small");
-    b.className = `sk ${st}${i === SK.i ? " sel" : ""}`;
-    if (st === "worn") small.textContent = "Worn";
-    else if (st === "own") small.textContent = "Tap to wear";
-    else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${p.price}`;
-    else small.textContent = skRoad(spec, i).foot;
+    const i = +b.dataset.i;
+    skStyle(b, spec, i, i === SK.i);
     b.setAttribute("aria-pressed", String(i === SK.i));
-    b.setAttribute("aria-label", `${p.name}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${p.price} chips` : skRoad(spec, i).how}`);
   }
   skPreview(spec);
 }
@@ -28345,8 +28560,8 @@ function skPreview(spec) {
   const act = $("skAct");
   if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;
   else if (st === "own") act.innerHTML = `<button class="btn primary sk-go" id="skGo"><span>Wear</span></button>`;
-  else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${p.price}</span></button><p class="sk-l2">You have ${P.tokens} · ${P.tokens - p.price} left after</p>`;
-  else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${p.price}</span><p class="sk-l1">${p.price - P.tokens} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
+  else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${fmtChips(p.price)}</span></button><p class="sk-l2">You have ${fmtChips(P.tokens)} · ${fmtChips(P.tokens - p.price)} left after</p>`;
+  else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${fmtChips(p.price)}</span><p class="sk-l1">${fmtChips(p.price - P.tokens)} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
   else { const rd = skRoad(spec, i); act.innerHTML = `<p class="sk-l1 sk-lock">${rd.how}</p><p class="sk-l2">${rd.why}</p>`; }
   const go = $("skGo");
   if (go) go.addEventListener("click", skGo);
@@ -28358,6 +28573,8 @@ function skPreview(spec) {
 }
 // the loop draws the preview while the sheet is open (loop.js)
 function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
+// opened from the Account sheet (the menu, not the select) the loop is not drawing the preview: this does, while the sheet is open
+function skLive() { if (!SK.id) return; if (SK.art) paintModel(SK.art, tick); SK.live = requestAnimationFrame(skLive); }
 function skTap(i) {
   Sfx.init();
   const spec = FIG[SK.id], st = skState(spec, i);
@@ -28393,10 +28610,10 @@ function skGo() {
 function skCoin(from, to) {
   const el = $("skTokens"), t0 = performance.now();
   cancelAnimationFrame(SK.coin); SK.coin = 0;
-  if (resCalm()) { el.textContent = to; return; }
+  if (resCalm()) { el.textContent = fmtChips(to); return; }
   const step = (now) => {
     const k = Math.min(1, (now - t0) / 400);
-    el.textContent = Math.round(from + (to - from) * k);
+    el.textContent = fmtChips(from + (to - from) * k);
     SK.coin = k < 1 ? requestAnimationFrame(step) : 0;
   };
   SK.coin = requestAnimationFrame(step);
@@ -28576,7 +28793,7 @@ async function renderOnline() {
   if (mode !== "online") return;
   const seq = ++onSeq;
   const st = $("onStatus"), hostBtn = $("onHost"), note = $("onNote"), list = $("onList");
-  $("onTokens").textContent = P.tokens;
+  $("onTokens").textContent = fmtChips(P.tokens);
   buildRules();
   fightCard();
   if (NET.tried && !NET.ok) {
@@ -30647,17 +30864,15 @@ function mxActs(n) {   // the Lv 5 or Lv 10 title of every fighter
 }
 const mxJack = { id: "jack", name: () => "Jack of Spuds", ok: () => mxFighters().every((f) => mxInfo(f.id).lv >= 5), how: "Reach Lv 5 with every fighter." };
 function mxShieldHTML(lv, cls) { const b = mxBadge(lv); return `<i class="mx-sh sm ${cls || ""}" data-k="${b.k}"${lv < 2 ? " hidden" : ""}><em>${lv}</em></i>`; }
-const mxDots = (list) => mxFighters().map((f) => { const on = (list || []).includes(f.id); return `<span class="av${on ? " on" : ""}" data-f="${f.id}" title="${f.name}${on ? "" : ": not yet"}"></span>`; }).join("");
+// the Collection as one slim line, the top line of Account > Locker: KO pages, Ultimate KOs and combo routes, each as "2/8". Who is in, and the rule, are
+// in the labels (a screen reader reads them; a mouse shows the rule). Styles: css/92-locker.css.
 function masteryCollection(pan) {
   const ko = P.pages.ko.filter((id) => FIG[id]), ult = P.pages.ult.filter((id) => FIG[id]), n = mxFighters().length, rd = routesDone().length;
+  const cell = (id, c, tot, what, list) => `<span class="mx-ct" id="${id}"${list ? ` data-on="${list.join(" ")}"` : ""} role="img" aria-label="${c} of ${tot} ${what}${list && list.length ? ": " + list.map((f) => FIG[f].name).join(", ") : ""}"><b>${c}<small>/${tot}</small></b> ${what}</span>`;
   const box = document.createElement("div");
-  box.className = "mx-col";
-  box.innerHTML = '<div class="kicker">Collection</div><div class="mx-cells">' +
-    `<div class="mx-cell" id="mxColKo"><b>${ko.length}<small>/${n}</small></b><span>KO pages</span><div class="mx-dots">${mxDots(ko)}</div></div>` +
-    `<div class="mx-cell" id="mxColUlt"><b>${ult.length}<small>/${n}</small></b><span>Ultimate KOs</span><div class="mx-dots">${mxDots(ult)}</div></div>` +
-    `<div class="mx-cell" id="mxColRt"><b>${rd}<small>/${ROUTE_TOTAL}</small></b><span>Combo routes</span><div class="mx-rbar"><i style="width:${Math.round(100 * rd / ROUTE_TOTAL)}%"></i></div></div></div>` +
-    '<p class="ac-line">A fighter\'s page counts once you land it yourself: your KO on the last heart.</p>';
-  for (const d of box.querySelectorAll(".av")) acSetAvatar(d, d.dataset.f, P.pal[d.dataset.f] || 0);
+  box.className = "mx-line"; box.setAttribute("role", "group"); box.setAttribute("aria-label", "Collection");
+  box.title = "A fighter's page counts once you land it yourself: your KO on the last heart.";
+  box.innerHTML = '<span class="kicker">Collection</span>' + cell("mxColKo", ko.length, n, "KO pages", ko) + cell("mxColUlt", ult.length, n, "Ultimate KOs", ult) + cell("mxColRt", rd, ROUTE_TOTAL, "Combo routes");
   pan.appendChild(box);
 }
 
@@ -31048,10 +31263,10 @@ function renderPill() {
   const tt = acTitle(), mt = $("mTitle");
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
-  $("mTokens").textContent = P.tokens;
+  $("mTokens").textContent = fmtChips(P.tokens);
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${P.tokens} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -31074,7 +31289,7 @@ function acSkinCount(p) { return FIGHTERS.reduce((a, f) => a + (p.owned && p.own
 const acSkinTotal = () => FIGHTERS.reduce((a, f) => a + f.palettes.length, 0);
 function acSum(p) {   // one line about a profile, for the "replace it?" question
   const ti = tierInfo(p.rating);
-  return `${ti.t.name} ${p.rating} · ${p.tokens} chips · ${acSkinCount(p)} skins`;
+  return `${ti.t.name} ${p.rating} · ${fmtChips(p.tokens)} chips · ${acSkinCount(p)} skins`;
 }
 function renderAccount() {
   if (screens.account.hidden) return;
@@ -31096,7 +31311,7 @@ function renderAccount() {
   $("acTier").textContent = ti.t.name;
   $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;
   $("acW").textContent = rk.w; $("acL").textContent = rk.l;
-  $("acChips").innerHTML = `<span class="tokglyph"></span>${P.tokens}`;
+  { const c = $("acChips"); c.textContent = fmtChips(P.tokens); c.classList.toggle("wide", String(Math.round(P.tokens)).length >= 5); }   // the coin sits by the label (shell.html); from five digits the number is a size smaller
   $("acSkins").innerHTML = `${acSkinCount(P)}<small> / ${acSkinTotal()}</small>`;
   const more = [];
   const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
@@ -31207,35 +31422,92 @@ function renderStats() {
   pan.appendChild(ul);
 }
 
-/* ----- Locker tab: every fighter with every skin; tap one you own to wear it ----- */
-function renderLocker() {
-  const pan = $("acPanL"); pan.innerHTML = "";
-  masteryCollection(pan);   // ui/mastery.js: KO pages, Ultimate KOs, combo routes
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are in the Skins menu on the fighter select: chip skins are bought there, Road skins are won from the Road's bosses."));
-  const grid = acMk("div", "lk");
-  for (const f of FIGHTERS) {
-    const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
-    const h = acMk("div", "lk-h"), a = acMk("span", "av"); acSetAvatar(a, f.id, cur); h.appendChild(a);
-    h.appendChild(acMk("span", "", f.name)); h.appendChild(acMk("small", "", `${f.palettes.filter((p, i) => own.includes(i)).length} / ${f.palettes.length}`));
-    card.appendChild(h);
-    const row = acMk("div", "lk-s");
-    f.palettes.forEach((p, i) => {
-      // a Road skin (p.road): won by beating that boss with this fighter, never bought
-      const has = own.includes(i), b = acMk("button", "sw" + (cur === i && has ? " cur" : "") + (has ? "" : " lock") + (p.road ? " road" : ""));
-      b.style.setProperty("--c", col(p));
-      b.setAttribute("aria-label", `${f.name}, ${p.name}${has ? (cur === i ? ", worn" : "") : p.road ? `, locked, beat ${roadBossName(p.road)} on the Road` : `, locked, ${p.price} chips`}`);
-      b.innerHTML = `<i>${i && !p.road ? `<em>${"\u2726".repeat(i)}</em>` : ""}</i>${has ? "" : p.road ? "<span>Road</span>" : `<span><span class="tokglyph"></span>${p.price}</span>`}`;
-      if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
-      if (has) b.addEventListener("click", () => {
-        Sfx.init(); Sfx.ui();
-        if (equipSkin(f.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
-      });
-      row.appendChild(b);
-    });
-    card.appendChild(row); grid.appendChild(card);
-  }
-  pan.appendChild(grid);
+/* ----- Locker tab: the eight fighters on a strip (each in his worn skin), then the picked fighter's seven skins as the Skin Rack's cards -----
+   One fighter at a time: a tap on a tile (or the Left / Right keys) picks him; the Locker opens on the fighter played last (P.last). A card is the
+   Rack's card (skMakeCard, skStyle in ui/skins.js): a skin you own is worn with one tap, any other opens the Rack on it (openSkins(id, i)), where it
+   is bought or explained. The DOM is built once and only restyled after that; a model is drawn again only when it changes (a tile when its
+   fighter's worn skin changes, the cards when another fighter is picked) or the size it is drawn at does (lkPaint). Styles: css/92-locker.css. */
+const LKR = { id: "", tiles: [], cards: [], cardsFor: "", sig: "" };
+function lkBuild() {
+  const pan = $("acPanL");
+  pan.innerHTML = '<div class="lk-top"><div class="lk-col" id="lkCol"></div><span class="lk-own" id="lkOwn"></span><div class="coin chips lk-coin" aria-label="Chips"><span id="lkTokens"></span></div></div>' +
+    '<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="Fighters"></div>' +
+    '<div class="lk-rack" id="lkRack">' +
+    '<div class="lk-grp"><div class="lk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="Chip skins"></div></div>' +
+    '<div class="lk-grp"><div class="lk-k"><b>Road skins</b><span id="lkRoadSub"></span></div><div class="lk-row r3" id="lkRoad" role="group" aria-label="Road skins"></div></div></div>';
+  const strip = $("lkStrip");
+  LKR.tiles = FIGHTERS.map((f) => {
+    const b = acMk("button", "lk-tile");
+    b.dataset.f = f.id; b.setAttribute("role", "radio");
+    b.innerHTML = '<span class="lk-ta"><canvas aria-hidden="true"></canvas></span><b></b><small></small>';
+    b.querySelector("b").textContent = f.name;
+    b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); lkPick(f.id); });
+    strip.appendChild(b);
+    return { cv: b.querySelector("canvas"), f: null, fit: 0.84, bottom: 0.94, key: "", dirty: true, el: b };
+  });
+  strip.addEventListener("keydown", (e) => {   // Left / Right (and Home, End) move along the strip and pick
+    const n = FIGHTERS.length, i = FIGHTERS.findIndex((f) => f.id === LKR.id);
+    const j = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i + n - 1) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+    if (j < 0) return;
+    e.stopPropagation(); e.preventDefault(); Sfx.init(); Sfx.ui();
+    lkPick(FIGHTERS[j].id); LKR.tiles[j].el.focus();
+  });
+  if (window.ResizeObserver) new ResizeObserver(() => { if (!pan.hidden && !screens.account.hidden) lkPaint(); }).observe(pan);
 }
+function lkFighter(spec, pal) {
+  const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  f.x = 0; f.y = 0; f.facing = -1;
+  return f;
+}
+function lkPick(id) { if (id === LKR.id || !FIG[id]) return; LKR.id = id; renderLocker(); }
+function lkTap(i) {
+  Sfx.init();
+  const spec = FIG[LKR.id], st = skState(spec, i);
+  if (st === "worn") { Sfx.ui(); return; }
+  if (st === "own") { Sfx.uiFlip(); if (equipSkin(spec.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); } return; }
+  if (st === "buy") Sfx.ui(); else Sfx.uiNo();   // looking is free; the thud says it is locked
+  openSkins(spec.id, i);
+}
+// draws what is new (a tile with another worn skin, the cards of a newly picked fighter) and, when the size it is drawn at changed (a turned phone, a resized window), everything
+function lkPaint() {
+  const t = LKR.tiles[0].cv, c = LKR.cards[0] && LKR.cards[0].cv;
+  if (!t.clientWidth) return;   // the tab is not showing: nothing can be drawn, what is dirty waits
+  const sig = `${t.clientWidth}x${t.clientHeight} ${c ? c.clientWidth + "x" + c.clientHeight : ""} ${DPR}`, all = sig !== LKR.sig;
+  LKR.sig = sig;
+  for (const a of LKR.tiles.concat(LKR.cards)) if (all || a.dirty) { a.dirty = false; paintModel(a, 0); }
+}
+function renderLocker() {
+  if (!LKR.tiles.length) lkBuild();
+  if (!FIG[LKR.id]) LKR.id = FIG[P.last] ? P.last : FIGHTERS[0].id;
+  const spec = FIG[LKR.id];
+  // the top line: the Collection, the skins owned of all, the chips
+  const cell = $("lkCol"); cell.innerHTML = ""; masteryCollection(cell);   // ui/mastery.js
+  $("lkOwn").innerHTML = `<b>${acSkinCount(P)} / ${acSkinTotal()}</b> skins`;
+  $("lkTokens").textContent = fmtChips(P.tokens);
+  // the strip: a tile whose worn skin changed is drawn again
+  for (const a of LKR.tiles) {
+    const f = FIG[a.el.dataset.f], pi = palIdx(f.id), pal = f.palettes[pi], n = (P.owned[f.id] || [0]).length, on = f.id === LKR.id, key = f.id + ":" + pi;
+    a.el.className = "lk-tile" + (on ? " on" : "") + (n >= f.palettes.length ? " full" : "");
+    a.el.style.setProperty("--c", col(pal)); a.el.style.setProperty("--cg", rgba(col(pal), 0.42));
+    a.el.setAttribute("aria-checked", String(on)); a.el.tabIndex = on ? 0 : -1;
+    a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
+    a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
+    if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
+  }
+  // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
+  if (LKR.cardsFor !== spec.id) {
+    const chip = $("lkChip"), road = $("lkRoad");
+    chip.innerHTML = ""; road.innerHTML = ""; LKR.cards = [];
+    spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skMakeCard(spec, i, LKR.cards, lkTap)));   // ui/skins.js
+    for (const a of LKR.cards) a.dirty = true;
+    LKR.cardsFor = spec.id;
+  }
+  $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
+  for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
+  lkPaint();
+}
+// closing the sheet: the next time it opens, the Locker starts on the fighter played last again
+$("acClose").addEventListener("click", () => { LKR.id = ""; });
 function acSetTab(t) { acUI.tab = t; renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
   b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });
@@ -32106,7 +32378,7 @@ function qmRender() {
   const stt = $("qmStatus");
   stt.textContent = QM.conn ? `Online · ${lb.n} here` : "Connecting";
   stt.className = "kicker qm-status" + (QM.conn ? " ok" : "");
-  $("qmTokens").textContent = P.tokens;
+  $("qmTokens").textContent = fmtChips(P.tokens);
   // the Fight Card
   const spec = FIG[sel.fighter], pi = palIdx(spec.id), pal = spec.palettes[pi] || spec.palettes[0], fc = $("qmFc");
   fc.style.setProperty("--c", col(pal)); fc.style.setProperty("--cg", rgba(col(pal), 0.42));

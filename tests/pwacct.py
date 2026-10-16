@@ -332,10 +332,121 @@ async def hub_shot(pg, tag, name):
 async def hub_fit(pg, tag, what):   # nothing sideways, no control outside the sheet
     bad = await pg.evaluate("""(() => {
       const sh = document.querySelector('.acct-sheet'), S = sh.getBoundingClientRect(), bad = [];
-      for (const e of sh.querySelectorAll('button, input, td, .hx, .lk-f, .ac-t')) { if (!e.offsetParent) continue; const r = e.getBoundingClientRect(); if (r.width && (r.left < S.left - 1 || r.right > S.right + 1)) bad.push('sideways: ' + (e.id || e.className || e.tagName) + ' ' + (e.textContent || '').trim().slice(0, 14)); }
+      for (const e of sh.querySelectorAll('button, input, td, .hx, .lk-tile, .ac-t, #lkRack .sk')) { if (!e.offsetParent) continue; const r = e.getBoundingClientRect(); if (r.width && (r.left < S.left - 1 || r.right > S.right + 1)) bad.push('sideways: ' + (e.id || e.className || e.tagName) + ' ' + (e.textContent || '').trim().slice(0, 14)); }
       if (sh.scrollWidth > sh.clientWidth + 1) bad.push('sheet scrolls sideways');
       return bad; })()""")
     for x in bad: errs.append(f'{tag}: hub {what}: {x}')
+
+# ---------- the Locker tab (Account): the strip of eight, the picked fighter's seven cards, and the Chips box on the Profile tab
+LK_INK = """() => { const ink = (c) => { if (!c.width || !c.height) return 0; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 64) if (d[i] > 200) n++; return n; };
+  return { tiles: [...document.querySelectorAll('#lkStrip canvas')].map(ink), cards: [...document.querySelectorAll('#lkRack canvas')].map(ink) }; }"""
+LK_STATE = """() => ({ on: (document.querySelector('.lk-tile.on') || { dataset: {} }).dataset.f, active: (document.activeElement.dataset || {}).f,
+  states: [...document.querySelectorAll('#lkRack .sk')].map((b) => b.className.replace(/^sk /, '')), names: [...document.querySelectorAll('#lkRack .sk .sk-f b')].map((b) => b.textContent),
+  small: Object.fromEntries([...document.querySelectorAll('.lk-tile')].map((t) => [t.dataset.f, t.querySelector('small').textContent])),
+  tokens: document.getElementById('lkTokens').textContent, own: document.getElementById('lkOwn').textContent, pill: document.getElementById('mTokens').textContent }) """
+LK_RACK = """() => { const sk = document.getElementById('scrSkins'), ac = document.getElementById('scrAccount'), r = document.getElementById('skSheet').getBoundingClientRect(),
+  top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  return { rack: !sk.hidden, acct: !ac.hidden, panel: !document.getElementById('acPanL').hidden, above: !!top && sk.contains(top), name: document.getElementById('skName').textContent, fig: document.getElementById('skFig').textContent }; }"""
+def money(x): return f'{x:,}'
+async def lk_pick(pg, fid):
+    await pg.evaluate("(id) => document.querySelector('.lk-tile[data-f=' + id + ']').click()", fid)
+async def lk_card(pg, i):
+    await pg.evaluate("(i) => document.querySelector('#lkRack .sk[data-i=\"' + i + '\"]').click()", i)
+async def locker(pg, tag, ids):
+    await pg.click('#acTabL'); await pg.wait_for_timeout(250)
+    sheet = "(() => { const s = document.querySelector('.acct-sheet'); return s.scrollHeight - s.clientHeight; })()"
+    st = await pg.evaluate(LK_STATE)
+    tiles = await pg.evaluate("document.querySelectorAll('.lk-tile').length"); cards = len(st['states'])
+    expect(tiles == len(ids) and cards == 7 and st['on'] == ids[1], f"{tag}: the locker shows {len(ids)} fighters and 7 skins, opened on the fighter played last ({tiles}, {cards}, {st['on']})")
+    expect(await pg.evaluate("document.querySelector('#acPanL .lk-top .mx-line') !== null && document.getElementById('mxColKo') !== null") and 'skins' in st['own'].lower() and st['tokens'] == '240',
+           f"{tag}: the top line has the Collection, the skins owned and the chips ({st['own']!r}, {st['tokens']!r})")
+    expect(await pg.evaluate("[...document.querySelectorAll('.lk-tile')].every((t) => t.getAttribute('role') === 'radio' && /wearing/.test(t.getAttribute('aria-label')) && t.hasAttribute('aria-checked')) && [...document.querySelectorAll('#lkRack .sk')].every((b) => /:/.test(b.getAttribute('aria-label')))"),
+           f'{tag}: the tiles and cards have aria labels')
+    await hub_fit(pg, tag, 'locker'); await hub_shot(pg, tag, '6_locker')
+    over = await pg.evaluate(sheet)
+    expect(over <= 1, f'{tag}: the Locker tab scrolls by {over}px (the strip and the seven cards should fit)')
+    # every fighter: his eight tiles and seven cards are drawn (the models have pixels)
+    for fid in ids:
+        await lk_pick(pg, fid)
+        ink = await pg.evaluate(LK_INK)
+        expect(len(ink['tiles']) == len(ids) and all(v > 0 for v in ink['tiles']) and len(ink['cards']) == 7 and all(v > 0 for v in ink['cards']), f'{tag}: {fid}: a tile or card has no model drawn ({ink})')
+    # arrow keys move along the strip and pick
+    await lk_pick(pg, ids[0]); await pg.focus('.lk-tile.on'); await pg.keyboard.press('ArrowRight')
+    st = await pg.evaluate(LK_STATE)
+    expect(st['on'] == ids[1] and st['active'] == ids[1], f"{tag}: Right moves to the next tile ({st['on']}, focus {st['active']})")
+    await pg.keyboard.press('ArrowLeft'); await pg.keyboard.press('ArrowLeft'); st = await pg.evaluate(LK_STATE)
+    expect(st['on'] == ids[-1] and st['active'] == ids[-1], f"{tag}: Left from the first tile wraps to the last ({st['on']})")
+    await pg.keyboard.press('Home'); st = await pg.evaluate(LK_STATE); expect(st['on'] == ids[0], f"{tag}: Home picks the first ({st['on']})")
+    # an owned skin is worn with one tap (the strip tile and the pill follow)
+    await lk_pick(pg, ids[1])
+    st = await pg.evaluate(LK_STATE); i = st['states'].index('own'); was = st['states'].index('worn')
+    tile0 = await pg.evaluate("document.querySelector('.lk-tile[data-f=' + %s + '] canvas').toDataURL()" % json.dumps(ids[1]))
+    await lk_card(pg, i); await pg.wait_for_timeout(150)
+    st = await pg.evaluate(LK_STATE); tile1 = await pg.evaluate("document.querySelector('.lk-tile[data-f=' + %s + '] canvas').toDataURL()" % json.dumps(ids[1]))
+    expect((await prof(pg))['pal'][ids[1]] == i and st['states'][i] == 'worn' and st['states'][was] == 'own', f"{tag}: a tap on an owned skin wears it ({st['states']})")
+    expect(tile0 != tile1, f'{tag}: the strip tile is drawn again in the new skin')
+    # a tap on a skin you can buy opens the Rack on it, above the Account sheet; Escape, the backdrop and the X each close it back to the Locker
+    await lk_pick(pg, ids[0])
+    st = await pg.evaluate(LK_STATE); buy = st['states'].index('buy') if 'buy' in st['states'] else st['states'].index('short')
+    for how in ('Escape', 'backdrop', 'X'):
+        await lk_card(pg, buy); await pg.wait_for_timeout(200)
+        r = await pg.evaluate(LK_RACK)
+        expect(r['rack'] and r['acct'] and r['above'] and r['name'] == st['names'][buy], f'{tag}: a locked card opens the Rack on that skin, above the Account sheet ({r}, wanted {st["names"][buy]!r})')
+        if how == 'Escape': await shot(pg, f'{tag}_hub_6b_locker_rack')
+        if how == 'Escape': await pg.keyboard.press('Escape')
+        elif how == 'backdrop': await pg.evaluate("document.getElementById('scrSkins').click()")
+        else: await pg.evaluate("document.getElementById('skClose').click()")
+        await pg.wait_for_timeout(150)
+        r = await pg.evaluate(LK_RACK); now = await pg.evaluate(LK_STATE)
+        expect(not r['rack'] and r['acct'] and r['panel'] and now['on'] == ids[0], f'{tag}: {how} closes the Rack back to the Locker ({r}, on {now["on"]})')
+    # a Road skin that is not yours opens the Rack too (it explains what to beat)
+    road = await pg.evaluate("[...document.querySelectorAll('#lkRack .sk')].findIndex((b) => /road|shut/.test(b.className))")
+    await lk_card(pg, road); await pg.wait_for_timeout(200)
+    r = await pg.evaluate(LK_RACK)
+    expect(r['rack'] and r['above'] and 'beat' in (await text(pg, '#skAct')).lower(), f'{tag}: a locked Road skin opens the Rack with what to beat ({r})')
+    await pg.keyboard.press('Escape'); await pg.wait_for_timeout(100)
+    # buying in that Rack: the Locker, the chip counts (Locker coin, pill, Profile box) follow once it closes
+    price = await pg.evaluate("(a) => window.BL.FIGHTERS.find((f) => f.id === a[0]).palettes[a[1]].price", [ids[0], buy])
+    p0 = await prof(pg)
+    if st['states'][buy] == 'buy':
+        await lk_card(pg, buy); await pg.wait_for_timeout(150)
+        await pg.evaluate("document.getElementById('skGo').click()"); await pg.wait_for_timeout(100)
+        await pg.evaluate("document.getElementById('skGo').click()"); await pg.wait_for_timeout(600)
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
+        p1 = await prof(pg); now = await pg.evaluate(LK_STATE); left = p0['tokens'] - price
+        expect(p1['tokens'] == left and buy in p1['owned'][ids[0]] and p1['pal'][ids[0]] == buy, f"{tag}: buying in the Rack paid {price} and wore the skin ({p1['tokens']}, {p1['owned'][ids[0]]})")
+        expect(now['states'][buy] == 'worn' and now['small'][ids[0]].startswith(str(len(p1['owned'][ids[0]]))), f"{tag}: the Locker shows the bought skin worn ({now['states']}, {now['small'][ids[0]]})")
+        expect(now['tokens'] == money(left) and now['pill'] == money(left), f"{tag}: the Locker coin and the pill show {money(left)} ({now['tokens']}, {now['pill']})")
+        await hub_shot(pg, tag, '6c_locker_bought')
+        await pg.evaluate("document.getElementById('acTabP').click()"); await pg.wait_for_timeout(100)
+        expect(await pg.evaluate("document.getElementById('acChips').textContent") == money(left), f"{tag}: the Profile Chips box shows {money(left)}")
+        await pg.evaluate("document.getElementById('acTabL').click()"); await pg.wait_for_timeout(100)
+    else:
+        errs.append(f'{tag}: the test profile cannot buy a skin of {ids[0]} (no card in the buy state)')
+    # a glazed skin gets a star after its name (the Shop sells glaze later; the card only reads P.glazed)
+    await pg.evaluate("(id) => { window.__blAcct.P.glazed = { [id]: [0] }; }", ids[0])
+    await pg.evaluate("document.getElementById('acTabP').click()"); await pg.evaluate("document.getElementById('acTabL').click()"); await pg.wait_for_timeout(100)
+    gz = await pg.evaluate("[document.querySelectorAll('#lkRack .sk-f b.gz > i').length, document.querySelector('#lkRack .sk[data-i=\"0\"]').getAttribute('aria-label')]")
+    expect(gz[0] == 1 and 'glazed' in gz[1], f'{tag}: a glazed skin shows a star and says so ({gz})')
+    await hub_shot(pg, tag, '6d_locker_glazed')
+    await pg.evaluate("delete window.__blAcct.P.glazed")
+    await pg.evaluate("document.getElementById('acTabP').click()"); await pg.evaluate("document.getElementById('acTabL').click()"); await pg.wait_for_timeout(100)
+    # the Locker with locked skins on show
+    await lk_pick(pg, ids[0]); await pg.wait_for_timeout(100); await hub_shot(pg, tag, '6e_locker_locked'); await hub_fit(pg, tag, 'locker (locked skins)')
+    await lk_pick(pg, ids[1])
+async def chipbox(pg, tag):   # the Profile tab's Chips box: the coin by the label, the value alone, 999,999 fits at every size
+    for tokens in (1350, 123456, 999999):
+        await pg.evaluate("(t) => { window.__blAcct.P.tokens = t; window.__blAcct.save(); }", tokens)
+        await pg.evaluate("document.getElementById('acTabS').click()"); await pg.evaluate("document.getElementById('acTabP').click()"); await pg.wait_for_timeout(120)
+        r = await pg.evaluate("""() => ({ chips: document.getElementById('acChips').textContent, wide: document.getElementById('acChips').classList.contains('wide'), coin: !!document.querySelector('.ac-stats dt .tokglyph'),
+          fit: [...document.querySelectorAll('.ac-stats dd')].map((d) => [d.id || d.previousSibling.textContent, d.scrollWidth, d.clientWidth]), cols: new Set([...document.querySelectorAll('.ac-stats > div')].map((d) => Math.round(d.getBoundingClientRect().top))).size })""")
+        expect(r['chips'] == money(tokens) and r['wide'] == (tokens >= 10000) and r['coin'], f"{tag}: the Chips box shows {money(tokens)} with the coin by the label ({r['chips']!r}, wide {r['wide']})")
+        expect(all(sw <= cw for _, sw, cw in r['fit']), f"{tag}: the Chips box does not fit {money(tokens)}: {r['fit']}")
+        expect(r['cols'] == 1, f'{tag}: the four numbers are not in one row at {money(tokens)}')
+        await hub_fit(pg, tag, f'profile {money(tokens)}')
+        await hub_shot(pg, tag, f'1b_profile_chips_{tokens}')
+    await pg.evaluate("(t) => { window.__blAcct.P.tokens = t; window.__blAcct.save(); }", 240)
+    await pg.evaluate("document.getElementById('acTabS').click()"); await pg.evaluate("document.getElementById('acTabP').click()"); await pg.wait_for_timeout(100)
 async def hub(b):
     for tag, vp, mob in SIZES:
         if tag == 'rot': continue
@@ -379,19 +490,10 @@ async def hub(b):
         expect(has(await text(pg, '#acPanS'), 'since') and has(await text(pg, '#acPanS'), 'favourite fighter'), f'{tag}: stats show the since date and the favourite fighter')
         await hub_fit(pg, tag, 'stats'); await hub_shot(pg, tag, '4_stats')
         await pg.evaluate("document.querySelector('.acct-sheet').scrollTop = 99999"); await hub_shot(pg, tag, '5_stats_matches')
-        # locker
-        await pg.click('#acTabL'); await pg.wait_for_timeout(150)
-        cards = await pg.evaluate("document.querySelectorAll('.lk-f').length")
-        expect(cards == n, f'{tag}: the locker shows all {n} fighters ({cards})')
-        await hub_fit(pg, tag, 'locker'); await hub_shot(pg, tag, '6_locker')
-        before = (await prof(pg))['pal'][ids[0]]
-        await pg.evaluate("(id) => { const c = [...document.querySelectorAll('.lk-f')][0]; [...c.querySelectorAll('.sw')].find((b) => !b.classList.contains('cur') && !b.disabled).click(); }", ids[0])
-        await pg.wait_for_timeout(150)
-        expect((await prof(pg))['pal'][ids[0]] != before, f'{tag}: tapping an owned skin in the locker equips it')
-        expect(await pg.evaluate("[...document.querySelectorAll('.lk-f')][0].querySelectorAll('.sw.lock').length") >= 1, f'{tag}: locked skins show their price and do nothing')
-        await pg.evaluate("document.querySelector('.lk-f .sw.lock').disabled || document.querySelector('.lk-f .sw.lock').click()")
-        # back to profile still works, and closing returns to the menu
+        await locker(pg, tag, ids)
+        # back to profile still works, the Chips box fits any balance, and closing returns to the menu
         await pg.click('#acTabP'); await pg.wait_for_timeout(100)
+        await chipbox(pg, tag)
         expect(await pg.is_visible('#acReset') and await pg.is_visible('#acSync'), f'{tag}: the Profile tab still has the sync section and Reset')
         await close_sheet(pg)
         await ctx.close()
