@@ -14,7 +14,7 @@ function comboRoute(g, e) {
 
 /* ----- route cards: each step a small key (arrow + button), in the button's colour ----- */
 const RK = {
-  jab: ["", "light"], side: ["→", "light"], up: ["↑", "light"], down: ["↓", "light"], nair: ["", "light"], uair: ["↑", "light"],
+  jab: ["", "light"], side: ["→", "light"], up: ["↑", "light"], down: ["↓", "light"], nair: ["", "light"], air: ["", "light"], uair: ["↑", "light"],
   hSide: ["→", "heavy"], hUp: ["↑", "heavy"], hDown: ["↓", "heavy"], hAir: ["", "heavy"], spec: ["", "special"], jump: ["", "jump"],
 };
 const RK_NAME = { light: "Light", heavy: "Heavy", special: "Special", jump: "Jump" };
@@ -29,9 +29,9 @@ const ROUTE_HINT = {
   three: "Light, Light, then push the stick toward them and Light again. The third hit sends them flying.",
   lift: "Side light, up light, then up + Heavy the moment the up light lands.",
   trip: "Down light, side light, then down + Heavy right away. Works at low damage.",
-  rising: "Stick toward them + Light, stick up + Light, Jump the moment it lands, then Light in the air with no direction.",
+  rising: "Stick toward them + Light, stick up + Light, Jump when it lands, then Light in the air. Any direction counts; toward them reaches best.",
   sig: "Two side lights, then Special the moment the second one lands.",
-  skyburn: "Stick up + Light twice, Jump right as the second one hits, then Heavy in the air for the fiery headbutt.",
+  skyburn: "Stick up + Light twice, Jump when the second one lands, then let go of up and Heavy in the air for the fiery headbutt.",
   lab: "Down light, up light, then up + Heavy right away.",
   hammer: "Two jabs, then side + Heavy and keep holding it a moment before you let go.",
   staff: "Two side lights, then side + Heavy the moment the second one lands.",
@@ -114,7 +114,7 @@ function trialPlace() {
 function trialProgress(list, want) {   // the longest start of the route the combo's last moves match
   for (let n = Math.min(want.length, list.length); n > 0; n--) {
     const tail = list.slice(list.length - n);
-    if (want.slice(0, n).every((w, i) => (w.endsWith("!") ? tail[i] === w : tail[i].replace("!", "") === w))) return n;
+    if (want.slice(0, n).every((w, i) => ROUTES.stepOk(w, tail[i]))) return n;
   }
   return 0;
 }
