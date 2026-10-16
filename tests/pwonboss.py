@@ -7,7 +7,7 @@
 #   python3 pwonboss.py [outdir]     (a server must listen on ONBOSS_URL, default http://localhost:8095/)
 import asyncio, sys, os, json
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'onboss'
 URL = os.environ.get('ONBOSS_URL', 'http://localhost:8095/')
 PROF = "potatobrawl.profile.v1"

@@ -1,8 +1,8 @@
-import asyncio, sys
+import asyncio, sys, os
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 OUT = 'ux2'
-URL = 'http://localhost:8091/'
+URL = os.environ.get('PWON_URL', 'http://localhost:8091/')
 INIT = "localStorage.setItem('potatobrawl.profile.v1', JSON.stringify({tokens: 85, rating: 1080, wins: 3, losses: 2, matches: 5, gfx: '2d'}))"
 async def main():
     errs = []

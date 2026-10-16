@@ -9,7 +9,7 @@ const os = require("os");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const STATS = require(path.join(ROOT, "stats.js"));
-const PORT = 8097;
+const PORT = +process.env.STATS_PORT || 8097;   // check.sh gives every server its own port
 let bad = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) bad++; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

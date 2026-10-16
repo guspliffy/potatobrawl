@@ -9,7 +9,7 @@ PORT = int(os.environ.get('PWACCT_PORT', 8093))
 URL = f'http://localhost:{PORT}/'
 OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ROOT / 'build' / 'shots' / 'acct')
 OUT.mkdir(parents=True, exist_ok=True)
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 SIZES = [('se', {'width': 667, 'height': 320}, True), ('phone', {'width': 844, 'height': 390}, True),
          ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True),
          ('rot', {'width': 390, 'height': 844}, True)]   # up = the Upright screen setting; rot = an upright phone with the game turned sideways (the default)

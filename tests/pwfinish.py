@@ -80,7 +80,7 @@ def newpage(b):
     return ctx, pg
 
 with sync_playwright() as p:
-    b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+    b = p.chromium.launch(args=["--disable-gpu"])
 
     # ---- 1. FINISH! state ----
     ctx, pg = newpage(b)

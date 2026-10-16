@@ -234,7 +234,7 @@ def run(b, fid, opp):
     ctx.close()
 
 with sync_playwright() as p:
-    b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+    b = p.chromium.launch(args=["--disable-gpu"])
     for fid in (ALL if fighter == "all" else [fighter]):
         for opp in (vs if fighter != "all" else [next((o for o in vs if o != fid), ALL[0])]):
             run(b, fid, opp)

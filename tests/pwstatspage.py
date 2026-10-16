@@ -8,12 +8,12 @@ Usage:  python3 game/build.py && python3 tests/pwstatspage.py [outdir]"""
 import asyncio, sys, os, re, json, subprocess, tempfile, shutil, time, pathlib, datetime, urllib.request
 from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PORT = 8096
+PORT = int(os.environ.get('PWSTATSPAGE_PORT', 8096))
 BASE = f'http://127.0.0.1:{PORT}'
 KEY = '0123456789abcdef0123456789abcdef'
 OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ROOT / 'build' / 'shots' / 'stats')
 OUT.mkdir(parents=True, exist_ok=True)
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 SIZES = [('phone', {'width': 390, 'height': 844}, True), ('land', {'width': 844, 'height': 390}, True), ('desk', {'width': 1280, 'height': 800}, False)]
 RANGES = ['today', 'week', 'month']
 SECTIONS = ['Pulse', 'New players', 'Coming back', 'What they play', 'Hooks', 'Online', 'Health']

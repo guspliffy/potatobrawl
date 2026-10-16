@@ -11,7 +11,7 @@
 #   python3 pwon2v2.py [outdir]     (a server must listen on ON2V2_URL, default http://localhost:8099/)
 import asyncio, sys, os, json
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'on2v2'
 URL = os.environ.get('ON2V2_URL', 'http://localhost:8099/')
 PROF = "potatobrawl.profile.v1"

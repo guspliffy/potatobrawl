@@ -13,7 +13,7 @@ const { BL } = require("../game/core.js");
 const Q = require("../quick.js");
 
 const ROOT = path.join(__dirname, "..");
-const PORT = 8092;
+const PORT = +process.env.QUICK_PORT || 8092;   // check.sh gives every server its own port
 const PROTO = +/const PROTO = (\d+);/.exec(fs.readFileSync(path.join(ROOT, "game/ui/online.js"), "utf8"))[1];
 const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400 };
 let fails = 0, passes = 0;
