@@ -4,6 +4,22 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Road and fullscreen fixes (2026-10-16, branch claude/road-fullscreen-fixes-ucjbgm, UI only, no PROTO; plan "Before step 6",
+  thread 1; brief /mnt/project-files/pre-step6/briefs/thread-1.md):
+  - Road results: after a win with a star missing, Retry (#rRetry, dark, 1fr) sits beside Next stop (1.6fr; .res-actions.retry) and
+    its second line names the first star missing ("★ No heart lost", "★ Three-piece combo", roadStarShort); after a boss win it sits
+    beside Next: Hard with the level it replays. Three stars (or no next step) hide it. roadResRetry / roadRetry in ui/road.js.
+  - Combo stars (11 of 24 stops, bonus.k "route"; "own" follows your fighter): the stop sheet shows #rsCombo under the stars, the route's
+    name and its How to play key chips (routeKeysHTML); a tap opens the Combo trial on that route with your fighter (startTrial(fid,
+    { route, back })), whose Back and pause quit return to the stop's sheet (TR.back). The results show the chips on a missed combo
+    star (.rd-stk, also a trial link). On a short sheet the CPU's line hides when the combo line would sit under Fight (roadSheetFit).
+  - Fullscreen: the menu's round button left of the gear and the Settings row "Fullscreen in fights" with "Now: windowed /
+    fullscreen" under it; on iPhone Safari the button and the row's How open #scrA2hs (see the file map's fullscreen line).
+  - Quick match's YOUR MATCH plate below 820 px wide (740-800 px phones, desktop windows near 800): #qmIdle takes .thin (qmThin in
+    ui/quick.js, a ResizeObserver: under 270 px on phones, 340 px on the desktop). The record and season move into the kicker (#qmKRec),
+    five pips (#qmPips) stand for "n of 5 played" while placing, and the tier word, "counts for rank" and the kicker's record shrink
+    until they fit. The rating line falls back to "1561 · 89 to go" wherever "89 to Blastmaster" doesn't fit (any width). The desktop
+    columns give way below 1180 px (clamp on .qm2's cqw). tests/pwquick.py step 6 sweeps 16 sizes for overlapping or cut plate text.
 - Online 2v2 (2026-10-16, branch claude/project-thread-x0j4lg, PROTO 15, players reload once): Team Brawl for up to four phones through
   Play friends. Plan https://claude.ai/code/artifact/e0202bd2-7a22-4909-ad75-9687c69130d9 (16 defaults, Jonny's go 05:54 UTC), Fable's
   board /mnt/project-files/online-2v2/fable-online2v2.md. No server change (rooms hold 64; presence stays under 4 KB).
@@ -603,8 +619,11 @@ index.html is committed with every source change (check.sh flags a stale one).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
 - web/ (repo root): manifest.webmanifest + icons. server.js serves them from public/ if present; build.py and
   the deploy blocks copy them there.
-- Fullscreen helpers (FS, goFull, leaveFull) live in ui/input.js next to touchUI; the Fullscreen setting is
-  P.fs (undefined = on for touch devices); the iPhone tip is dismissed with P.a2hs.
+- Fullscreen helpers (FS, goFull, enterFull, leaveFull) live in ui/input.js next to touchUI; the "Fullscreen in fights" setting is
+  P.fs (undefined = on for touch devices; goFull, called from taps that start play, only goes fullscreen when it is On); the iPhone
+  tip is dismissed with P.a2hs. The menu's round button left of the gear (#bFull, ui/menus.js fsSync) shows the real state
+  (fullscreenchange), toggles with enterFull / leaveFull, and on iPhone Safari (FS.btn without FS.can) opens #scrA2hs (Share, then
+  Add to Home Screen); it is hidden in the home-screen app and is the first thing menuFit drops (.nofs) when the top bar is full.
 
 ## Accounts (sync codes): what is stored and where
 - Server side is accounts.js (called from server.js), off unless `ACCOUNTS_DIR` names a writable folder; then `/api/acct/ping|new|load|save`
@@ -693,7 +712,7 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet; shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
 pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
 return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
@@ -711,7 +730,10 @@ clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone 
 steps, desktop through to the results, touch sizes up to the ulti; tags desk desktouch se phone up; check.sh 6e) · pwultreel.py (above) ·
 boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
 Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
-map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, four sizes; check.sh 8e) ·
+map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, Retry beside Next stop, a
+combo star's combo line and its Combo trial with Back to the stop, five sizes; check.sh 8e) · pwfs.py (the fullscreen button and
+Settings row, the iPhone sheet, the home-screen app, a full top bar; the website build on a made-up origin routed by Playwright, no
+port; check.sh 8k) ·
 roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
 tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py

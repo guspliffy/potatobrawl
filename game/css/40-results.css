@@ -116,6 +116,11 @@
 /* buttons: NEXT MATCH (gold, large) over Fighters / Menu, Fable's button recipe (ink outline, hard shadow, bevel, -8deg) */
 #resSheet .res-actions { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 4px 4px 0 2px; flex: none; }
 #resSheet .res-actions .btn:first-child, #resSheet .res-actions:has(#rMenu[hidden]) #rChange { grid-column: 1 / -1; }
+/* the Road after a win with a star still to get (ui/road.js roadResRetry): Retry beside Next stop, The Road and Menu under them in the same columns */
+#resSheet .res-actions.retry { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+#resSheet .res-actions.retry .btn:first-child { grid-column: auto; }
+#resSheet .res-actions #rRetry { padding: 0 10px; }
+#resSheet .res-actions #rRetry small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #resSheet .res-actions .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 44px; padding: 0 18px;
   border: 2px solid var(--ink); border-radius: 9px; font: 800 18px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; text-align: center;
   background: linear-gradient(180deg, #3a4170, #262b50); color: var(--text); transform: skewX(-8deg); box-shadow: var(--hard), var(--bevel); transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
@@ -149,8 +154,9 @@
 #resSheet.in:not(.still) .res-chips .stat { animation-delay: 0.26s; }
 #resSheet.in:not(.still) .res-why, #resSheet.in:not(.still) .res-pick { animation-delay: 0.3s; }
 #resSheet.in:not(.still) .res-actions .btn { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.34s backwards; }
-#resSheet.in:not(.still) .res-actions .btn:nth-child(2) { animation-delay: 0.38s; }
-#resSheet.in:not(.still) .res-actions .btn:nth-child(3) { animation-delay: 0.42s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(2) { animation-delay: 0.36s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(3) { animation-delay: 0.38s; }
+#resSheet.in:not(.still) .res-actions .btn:nth-child(4) { animation-delay: 0.42s; }
 #resSheet.in:not(.still) #rGain { animation: resFill 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s backwards; }
 #resSheet.in:not(.still) .bar.down #rGain { animation: resDrain 0.8s ease-in 0.45s backwards; }
 #resSheet.in:not(.still) .delta { animation: resPop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) 1.25s backwards; }

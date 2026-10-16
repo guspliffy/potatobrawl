@@ -63,8 +63,9 @@ function renderHelpCombos() {
 }
 
 /* ----- the Combo trial: the tutorial's engine, a CPU that stands still, one route at a time ----- */
-const TR = { fid: null, list: [], i: 0, k: 0, t: {}, miss: 0, hold: 0, next: null, place: 0, air: false };
-function startTrial(fid) {
+// o (from a Road stop's combo star, ui/road.js roadTrial): { route: the route to start on, back: the stop whose sheet Back returns to }
+const TR = { fid: null, list: [], i: 0, k: 0, t: {}, miss: 0, hold: 0, next: null, place: 0, air: false, back: null };
+function startTrial(fid, o) {
   Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
   // the dummy is always Odin (the heaviest fighter, the one every route is tested on: tests/combos.js); against Odin himself in another skin
   const me = FIG[fid] || FIGHTERS[0], opp = FIG.odin, mi = P.pal[me.id] || 0;
@@ -73,10 +74,11 @@ function startTrial(fid) {
   match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
   meSlot = 0;
   const list = ROUTES.forFighter(me.id), done = new Set(routesDone());
-  Object.assign(TR, { fid: me.id, list, i: Math.max(0, list.findIndex((r) => !done.has(r.id))), hold: 0, next: null });
+  const want = o && o.route ? list.findIndex((r) => r.id === o.route) : -1;
+  Object.assign(TR, { fid: me.id, list, i: want >= 0 ? want : Math.max(0, list.findIndex((r) => !done.has(r.id))), hold: 0, next: null, back: o && o.back !== undefined ? o.back : null });
   enterMatchUI();
   app.classList.toggle("tutpad", touchUI);
-  $("tutNext").hidden = false; $("tutSkip").textContent = "Exit";
+  $("tutNext").hidden = false; $("tutSkip").textContent = TR.back !== null ? "Back" : "Exit";
   trialRoute();
 }
 // a fresh try at the current route: the CPU stands a step in front, at the route's damage
@@ -162,7 +164,7 @@ function trialClear(r) {
   $("tut").classList.add("done"); $("tutT").textContent = `${r.name}: ${note}`;
   Sfx.route();
   const done = new Set(routesDone()), nx = TR.list.findIndex((q, j) => j > TR.i && !done.has(q.id));
-  TR.next = nx >= 0 ? nx : (TR.i + 1) % TR.list.length;
+  TR.next = TR.back !== null ? TR.i : nx >= 0 ? nx : (TR.i + 1) % TR.list.length;   // from a Road stop: that stop's combo again until Back (Next moves on)
   TR.hold = 80;
 }
 const want0 = (r) => ROUTES.hits(r);

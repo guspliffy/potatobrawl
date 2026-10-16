@@ -31,6 +31,7 @@ function menuImg(img, id) {
   img.dataset.f = id;
 }
 function renderMenu() {
+  fsSync();   // ui/menus.js: the fullscreen button beside the gear (before renderPill, whose menuFit measures the bar with it)
   renderPill();   // the profile plate and the coins, ui/acct.js
   // the Ranked hero: the fighter you play (P.last) in the slanted mask, your tier, your record and the rating to the next tier
   const ti = tierInfo(P.rating), spec = FIG[P.last] || FIGHTERS[0], pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0], hero = $("bRanked");
@@ -69,8 +70,8 @@ function menuFit() {
   const me = $("mRank"), bar = me.closest(".mm-bar"), top = me.parentNode;
   if (screens.menu.hidden) return;
   const crowded = () => bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1;
-  me.classList.remove("fit1", "fit2");
-  for (const k of ["fit1", "fit2"]) { if (!crowded()) break; me.classList.add(k); }
+  me.classList.remove("fit1", "fit2"); bar.classList.remove("nofs");
+  for (const k of ["nofs", "fit1", "fit2"]) { if (!crowded()) break; (k === "nofs" ? bar : me).classList.add(k); }   // nofs: the fullscreen button goes first
 }
 if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe(screens.menu);
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => menuFit());   // the web fonts change the widths
@@ -415,7 +416,7 @@ function togglePause(force) {
   modal("pause", open); modal("help", false);
   quitArmed = false;
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : "Quit to menu";
+  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : match && (match.road || (match.trial && TR.back !== null)) ? "Back to the Road" : "Quit to menu";
   $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   if (match && (match.qm || match.warm || match.vc)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
   releaseTouch();
@@ -507,6 +508,7 @@ function resOpen(look, spec, solo) {
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
+  $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear();   // ui/rivals.js
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
@@ -603,6 +605,7 @@ function showResults(R) {
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
+  if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   show("result");
 }

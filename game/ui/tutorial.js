@@ -114,6 +114,6 @@ function tutDone() {
   $("rChange").querySelector("span").textContent = "Practice";
   show("result");
 }
-tap("tutSkip", () => { tutEnd(); goMenu(); });
+tap("tutSkip", () => { if (match && match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; } tutEnd(); goMenu(); });   // a trial from a Road stop: Back to its sheet (openRoad ends the trial)
 tap("hTry", startTutorial);
 

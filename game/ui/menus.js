@@ -27,6 +27,7 @@ tap("pQuit", () => {
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
   if (match.road) { openRoad(); return; }   // a Road stop or its boss: back to the map, nothing lost
+  if (match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; }   // the Combo trial opened from a Road stop: back to its sheet
   if (!match.ranked && !match.cup && !match.daily && !match.vc) { goMenu(); return; }   // vc: Ranked vs CPU (ui/vscpu.js) counts a forfeit
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
@@ -56,6 +57,7 @@ tap("rAgain", () => {
   if (match && match.road) { roadAgain(); return; }   // ui/road.js: Next stop after a win, Retry after a loss
   startMatch();
 });
+tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: the same stop (or boss level) again, beside Next stop
 tap("rChange", () => {
   if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
@@ -102,8 +104,12 @@ function chipRow(id, items, cur, pick, disabled) {
 }
 function renderSettings() {
   chipRow("setSound", [[true, "On"], [false, "Off"]], !!P.sound, (v) => { P.sound = v; saveProfile(); });
-  $("setFullRow").hidden = !FS.can;
-  chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
+  // Fullscreen in fights: On / Off, and under it whether the game is fullscreen now; on iPhone the way there (the home-screen app)
+  $("setFullRow").hidden = !FS.btn;
+  $("setFullL").textContent = FS.can ? "Fullscreen in fights" : "Fullscreen";
+  $("setFullNow").textContent = !FS.can ? "Add to Home Screen gives fullscreen" : isFull() ? "Now: fullscreen" : "Now: windowed";
+  if (FS.can) chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
+  else chipRow("setFull", [["how", "How"]], null, () => modal("a2hs", true));
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   cntSettings();   // ui/counter.js: Play counts On / Off
@@ -113,6 +119,18 @@ tap("bSettings", openSettings);
 tap("pSettings", openSettings);
 tap("setClose", () => { modal("settings", false); if (mode === "menu") renderMenu(); });
 tap("a2hsOk", () => { P.a2hs = true; saveProfile(); renderMenu(); });
+/* ----- the menu's fullscreen button: it shows the real state (fullscreenchange) and switches with one tap; on iPhone it opens the steps
+   to the home-screen app (#scrA2hs). Hidden in the home-screen app, which is fullscreen already (FS.btn, ui/input.js). ----- */
+function fsSync() {
+  const b = $("bFull"), full = isFull();
+  b.hidden = !FS.btn;
+  b.classList.toggle("on", full);
+  b.setAttribute("aria-label", !FS.can ? "Play without the browser bars" : full ? "Leave fullscreen" : "Fullscreen");
+  if (!screens.settings.hidden) renderSettings();
+}
+tap("bFull", () => { if (!FS.can) modal("a2hs", true); else if (isFull()) leaveFull(); else enterFull(); });
+screens.a2hs = $("scrA2hs");
+for (const id of ["a2hsClose", "a2hsGot"]) tap(id, () => { modal("a2hs", false); if (!P.a2hs) { P.a2hs = true; saveProfile(); if (mode === "menu") renderMenu(); } });   // seen: the one-time tip goes too
 
 /* In sideways mode the browser's own touch scrolling would run along the wrong axis,
    so scrollable panels are dragged by hand, with a little momentum. */

@@ -352,9 +352,12 @@ function vcPlate() {
   card.classList.toggle("placing", placing); card.classList.add("vc"); card.classList.remove("wanted");
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("qmTier").textContent = placing ? "Placing" : ti.t.name;
-  $("qmRating").textContent = placing ? `${me.n} of ${QM_PLACING} played · ${me.r}` : `${me.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;
+  $("qmRating")._t = placing ? [`${me.n} of ${QM_PLACING} played · ${me.r}`] : ti.next ? [`${me.r} · ${ti.need} to ${ti.next.name}`, `${me.r} · ${ti.need} to go`] : [`${me.r} · top tier`];   // qmThin picks
   $("qmBar").style.setProperty("--p", placing ? me.n / QM_PLACING : ti.p);
   $("qmRec").textContent = `${me.w}W · ${me.l}L\nCPU rank`;
+  const pp = $("qmPips"); pp.setAttribute("aria-label", `${me.n} of ${QM_PLACING} placing matches played`);
+  [...pp.children].forEach((e, k) => e.classList.toggle("on", k < me.n));
+  $("qmKRec").textContent = $("qmRec").textContent.replace("\n", " · ");
   let ln = $("qmBdl");
   if (!ln) {
     ln = document.createElement("button"); ln.id = "qmBdl"; ln.className = "qm-bdl";
@@ -365,6 +368,7 @@ function vcPlate() {
   ln.classList.toggle("mute", !VC.pl);
   ln.textContent = VC.pl ? `#${VC.pl} on the CPU board · Boards ›` : placing ? `CPU board after ${QM_PLACING - me.n} more ${QM_PLACING - me.n === 1 ? "match" : "matches"}` : "The CPU board · Boards ›";
   const w = $("qmWant"); if (w) w.hidden = true;   // the online streak's WANTED tag (ui/rivals.js): not for the CPU rank
+  qmThin();   // ui/quick.js: the narrow plate below 820 px
 }
 function vcPlateOff() {   // back to the online rank
   $("qmRank").classList.remove("vc");

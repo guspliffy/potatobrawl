@@ -618,11 +618,32 @@ function qmPlate() {
   $("qmRank").classList.toggle("placing", placing);
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("qmTier").textContent = placing ? "Placing" : ti.t.name;
-  $("qmRating").textContent = placing ? `${rk.n} of ${QM_PLACING} played · ${rk.r}` : `${rk.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;
+  $("qmRating")._t = placing ? [`${rk.n} of ${QM_PLACING} played · ${rk.r}`] : ti.next ? [`${rk.r} · ${ti.need} to ${ti.next.name}`, `${rk.r} · ${ti.need} to go`] : [`${rk.r} · top tier`];   // qmThin picks
   $("qmBar").style.setProperty("--p", placing ? rk.n / QM_PLACING : ti.p);
   $("qmRec").textContent = `${rk.w}W · ${rk.l}L\nSeason 1`;
+  const pp = $("qmPips"); pp.setAttribute("aria-label", `${rk.n} of ${QM_PLACING} placing matches played`);
+  [...pp.children].forEach((e, k) => e.classList.toggle("on", k < rk.n));
   rvPlate();   // ui/rivals.js: on a streak, WANTED and the bounty
+  $("qmKRec").textContent = $("qmRec").textContent.replace("\n", " · ");
+  qmThin();
 }
+/* A narrow YOUR MATCH column (740-800 px phones, small desktop windows) takes .thin (96-quick.css): the record moves up into the
+   kicker and five pips stand for "n of 5 played". The tier word and "counts for rank" shrink until they fit, at any width. */
+function qmThin() {
+  const idle = $("qmIdle"), w = idle.clientWidth, app = $("app"), rt = $("qmRating"), tx = rt._t || [""];
+  rt.textContent = tx[0];   // the rating line: "1360 · 140 to Diamond", or "1360 · 140 to go" where that doesn't fit
+  if (!w) return;
+  idle.classList.toggle("thin", w < (app.classList.contains("short") || app.classList.contains("portrait") ? 270 : 340));
+  if (tx[1] && rt.scrollWidth > rt.clientWidth + 1) rt.textContent = tx[1];
+  for (const t of [$("qmTier"), $("qmRSub")]) {
+    t.style.fontSize = "";
+    for (let f = parseFloat(getComputedStyle(t).fontSize); t.scrollWidth > t.clientWidth + 1 && f > 9; ) t.style.fontSize = `${--f}px`;
+  }
+  const kr = $("qmKRec"), k0 = kr.previousElementSibling;   // the kicker's record stays on the kicker's line (a streak's is long)
+  kr.style.fontSize = "";
+  for (let f = parseFloat(getComputedStyle(kr).fontSize); kr.offsetTop - k0.offsetTop > 5 && f > 8; ) kr.style.fontSize = `${--f}px`;
+}
+if (window.ResizeObserver) new ResizeObserver(() => qmThin()).observe($("qmIdle"));
 // LAST FIVE: your last Ranked results (W / L / D, who, their fighter, the rating change)
 function qmLast() {
   const ul = $("qmLast"), h = vcMode() ? vcLast() : (qmMe() || QM_FRESH).h.slice(0, 5), sig = JSON.stringify(h);   // vcLast: your ranked CPU results
