@@ -149,6 +149,12 @@ else fail "screens" "$LOGS/screens.log"; fi
 if grep -q "^skins ok" "$LOGS/skins.log" && grep -q "^no errors" "$LOGS/skins.log"; then pass "skins menu + Play friends lobby (Skin Rack states, buy, wear, Fight Card at four sizes; shots in build/shots/skins)"
 else fail "skins menu + Play friends lobby" "$LOGS/skins.log"; fi
 
+# 6a2. The Shop and Another go (UI only): the Account sheet's Shop tab (nameplates and Glaze, two-tap buy, one-tap wear, short of chips), the
+#      plate on the start page, the Profile and the results, the Daily sheet's Another go and its rules, at four sizes. Shots in build/shots/shop.
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwshop.py" shop) > "$LOGS/shop.log" 2>&1
+if grep -q "^shop ok" "$LOGS/shop.log" && grep -q "^no errors" "$LOGS/shop.log"; then pass "shop + Another go (nameplates, Glaze, buy / wear / short, Daily rules at four sizes; shots in build/shots/shop)"
+else fail "shop + Another go" "$LOGS/shop.log"; fi
+
 # 6b. Accounts in the browser: profile pill, Account sheet, two devices syncing through a real server (port 8093).
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwacct.py" acct) > "$LOGS/accounts-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/accounts-ui.log"; then pass "accounts in the browser (pill, sheet, two devices, conflict merge, accounts off; shots in build/shots/acct)"
