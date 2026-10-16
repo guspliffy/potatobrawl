@@ -8,7 +8,7 @@ TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.htm
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'combo'
 ONLY = sys.argv[2:]
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 SIZES = {'flow': (844, 390, False), 's667': (667, 320, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
 PROF = "potatobrawl.profile.v1"
 START = {'tokens': 50, 'tut': True, 'last': 'samurai'}
@@ -32,7 +32,7 @@ DRIVER = r"""(() => {
       h++;
     }
     if (idx < 0) return inp;
-    const k = tr.keys[idx], key = k.replace("!", "");
+    const k = tr.keys[idx], key = k.replace("!", "") === "air" ? "nair" : k.replace("!", "");   // "air": any light air attack, the driver uses the neutral one
     const dx = Math.abs(d.x - a.x);
     if (key === "jump") { if (G.t % 2 === 0) inp.jump = true; if (dx > 44) inp.x = toward; return inp; }
     if (!a.grounded && (key === "nair" || key === "hAir") && a.state !== "attack" && dx > 44) { inp.x = toward; return inp; }   // drift in, then the aerial with no direction
@@ -41,15 +41,16 @@ DRIVER = r"""(() => {
     const dir = base === "side" ? "side" : base === "up" || base === "uair" ? "up" : base === "down" ? "down" : "n";
     const mk = key === "hUp" && !a.grounded ? "rec" : key;
     if (a.state === "attack" && a.mid === mk && a.moveT !== D.prev && D.start === -1) D.start = a.moveT;
-    if (D.start >= 0 && a.moveT === D.start) {   // started: only a charged heavy keeps holding
+    if (D.start >= 0 && a.moveT === D.start && a.state === "attack") {   // started: only a charged heavy keeps holding
       if (k.endsWith("!") && D.held < 14) { inp.heavy = true; D.held++; }
       inp.y = dir === "up" ? -1 : dir === "down" ? 1 : 0; if (dir === "side") inp.x = toward;
       return inp;
     }
-    if (D.start >= 0) { D.prev = D.start; D.start = -1; }   // that one whiffed: go again
+    if (D.start >= 0) { D.prev = D.start; D.start = -1; }   // that one whiffed (it ended, or another move came out): go again
     const m = a.spec.moves[mk], reach = m && m.boxes.length ? Math.max(...m.boxes.map((b) => Math.max(b.x + b.r, b.x2 + b.r))) + d.s.w / 2 - 6 : 160;
     const far = Math.abs(d.x - a.x) - Math.abs(a.vx) * 5 + (tr.k > 0 ? 16 : 0) > reach;   // after the first hit, step in a bit closer
-    if (far && a.grounded && !(a.link > 0)) { if (BL.canAct(a)) inp.x = toward; return inp; }   // step in, as a player would, unless the link is open
+    // step in (or turn around, after a dash carried us past them), as a player would, unless the link is open
+    if ((far || a.facing !== toward) && a.grounded && !(a.link > 0)) { if (BL.canAct(a)) inp.x = toward; return inp; }
     if (G.t - D.lp >= 4) { inp[btn] = true; D.lp = G.t; }   // press at once, then again every 4 ticks until it comes out
     inp.y = dir === "up" ? -1 : dir === "down" ? 1 : 0; if (dir === "side") inp.x = toward;
     return inp;

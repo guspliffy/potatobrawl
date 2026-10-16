@@ -16,7 +16,7 @@ from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 T = (ROOT / 'build' / 'test.html').as_uri()
 O = (ROOT / 'build' / 'online-test.html').as_uri()
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'skins'
 KEY = 'potatobrawl.profile.v1'
 PORT = int(os.environ.get('PWSKINS_PORT', 8096))

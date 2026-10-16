@@ -1,8 +1,8 @@
-import asyncio, sys
+import asyncio, sys, os
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 OUT = 'ux2'
-URL = 'http://localhost:8091/'
+URL = os.environ.get('PWON_URL', 'http://localhost:8091/')
 INIT = "localStorage.setItem('potatobrawl.profile.v1', JSON.stringify({tokens: 85, rating: 1080, wins: 3, losses: 2, matches: 5, gfx: '2d'%s}))"
 # A has glazed the base skin of every fighter and wears the Sunset nameplate: B must see both (the lobby row, the fight); B has neither
 GLAZE_ALL = ", glazed: {phoenix: [0], alchemist: [0], odin: [0], wizard: [0], samurai: [0], dragon: [0], gunslinger: [0], reaper: [0]}, plates: ['sunset'], plate: 'sunset'"

@@ -77,6 +77,9 @@ const TUNE = {
   comboK6: 0.7,
   // The pop-up: a linked up light (the second light in a row, aimed up) lifts at least this hard, so jump + an air attack can follow.
   linkPop: 13,
+  // ...and floats: for popFloat frames of its hitstun the defender falls with popGrav of the usual hitstun gravity, so a jump
+  // pressed after seeing the pop-up land (not only one pressed during the hit's freeze) still reaches them.
+  popFloat: 30, popGrav: 0.35,
   // Ultimates: the bar fills ultDealt per % dealt, ultTaken per % taken and ultHeart per heart lost, up to ultNeed[n] for the
   // n-th use (ultMax uses a match). Pressing ULTI with a full bar spends it and freezes the game for ultFreeze frames (the
   // super freeze, so the opponent always sees it coming). Every ulti's first hit comes 24 frames or more after the freeze.
@@ -609,7 +612,7 @@ function newFighter(spec, slot, pal, x, facing) {
     inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0, ulti: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
-    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false,
+    techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false, pop: 0,
     ult: 0, ultN: 0, ultX: 0, ultTgt: -1,
     // teams (no friendly fire; 1v1: team = slot) and the boss's own state: hp/hpMax, poise, stag (stagger frames left),
     // bq (his last move), bt (idle frames before his next move), aim (the slot he goes after)
@@ -761,6 +764,7 @@ function updateFighter(g, f) {
   f.freeT = f.state === "hitstun" ? 0 : f.freeT + 1;
   if (f.techT > 0) f.techT--;
   if (f.techLock > 0) f.techLock--;
+  if (f.pop > 0) f.pop--;
   if (f.invuln > 0) f.invuln--;
   if (f.specCd > 0) f.specCd--;
   if (f.ledgeCd > 0) f.ledgeCd--;
@@ -784,7 +788,8 @@ function updateFighter(g, f) {
     case "jumpsquat":
       f.vx *= 0.9;
       if (f.st >= 3) {
-        const short = !f.inp.jump;
+        const short = !f.inp.jump || f.lk;   // a jump out of the link is always a short hop: it stays level with the pop-up
+        f.lk = false;
         f.vy = -(short ? f.s.jump * 0.72 : f.s.jump);
         f.vx = clamp(f.vx + f.inp.x * 1.2, -f.s.airSpeed * 1.15, f.s.airSpeed * 1.15);
         f.grounded = false; f.plat = -1;
@@ -815,7 +820,7 @@ function actOrMove(g, f) {
   if (b.ulti) { consume(f, "ulti"); if (ultReady(g, f)) return startUlti(g, f); }
   if (f.grounded) {
     if (b.dodge) { consume(f, "dodge"); return startDodge(g, f); }
-    if (b.jump) { consume(f, "jump"); f.tumble = false; return setState(f, "jumpsquat"); }
+    if (b.jump) { consume(f, "jump"); f.tumble = false; f.lk = false; return setState(f, "jumpsquat"); }
     if (heavyOrSpecial(g, f, dir)) return;
     if (b.light) {
       consume(f, "light");
@@ -924,7 +929,7 @@ function ultStep(g, f, m) {
 function ultMark(g, att, def) {
   if (att.ultTgt >= 0) return;
   att.ultTgt = def.slot;
-  def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
+  def.move = null; def.mid = null; def.ledge = 0; def.link = 0; def.pop = 0;
   setState(def, "hitstun");
   def.hitstun = att.move.cutAt - att.mt + 6;
   def.vx = def.vy = def.kbx = def.kby = 0; def.tumble = false; def.flash = 6;
@@ -1015,7 +1020,7 @@ function updateAttack(g, f) {
     if (heavyOrSpecial(g, f, dirOf(f.inp))) return;
     if (f.buf.jump && (f.grounded || f.airJumps > 0)) {
       consume(f, "jump"); f.move = null; f.mid = null;
-      if (f.grounded) { f.tumble = false; setState(f, "jumpsquat"); } else airJump(g, f);
+      if (f.grounded) { f.tumble = false; f.lk = true; setState(f, "jumpsquat"); } else airJump(g, f);   // lk: a short hop (jumpsquat)
       return;
     }
   }
@@ -1106,7 +1111,7 @@ function physics(g, f) {
   if (!f.grounded) {
     let grav = s.gravity, maxFall = f.ff ? s.fastFall : s.fallSpeed;
     if (f.state === "helpless" && f.spec.moves.rec.glide) { grav *= 0.4; maxFall = 4.2; }
-    if (f.state === "hitstun") grav *= TUNE.hitGrav;
+    if (f.state === "hitstun") grav *= f.pop > 0 ? TUNE.hitGrav * TUNE.popGrav : TUNE.hitGrav;
     let noGrav = false;
     const m = f.move;
     if (f.state === "attack" && m) {
@@ -1404,9 +1409,10 @@ function applyHit(g, h) {
   } else if (!chained) def.strN = 0;
 
   if (def.grounded && dy > 0.2) { dy = -dy * 0.75; kb *= 0.8; }
-  if (link && dy < -0.9) kb = Math.max(kb, TUNE.linkPop);
+  const popped = link && dy < -0.9;
+  if (popped) kb = Math.max(kb, TUNE.linkPop);
 
-  def.move = null; def.mid = null; def.ledge = 0; def.link = 0;
+  def.move = null; def.mid = null; def.ledge = 0; def.link = 0; def.pop = popped ? TUNE.popFloat : 0;
   setState(def, "hitstun");
   def.hitstun = Math.max(8, Math.round(kb * TUNE.hitstunK));
   if (def.grounded && kb < 6 && dy > -0.75) {
@@ -2035,7 +2041,7 @@ function ko(g, f) {
   if (killer) killer.kos++; else f.sds++;
   g.events.push({ type: "ko", x: f.x, y: f.y, slot: f.slot, pal: f.pal, sd: !killer });
   g.hitstop = Math.max(g.hitstop, 6);
-  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false, ultTgt: -1 });
+  Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false, pop: 0, ultTgt: -1 });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
   if (f.stocks <= 0) {
     setState(f, "gone");
@@ -2088,7 +2094,7 @@ function startSudden(g) {
     Object.assign(f, {
       x: sp.x, y: STAGE.main.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: sp.f, grounded: true, plat: -1, move: null, mid: null,
       percent: 150, stocks: 1, hitstun: 0, tumble: false, ledge: 0, ledgeCd: 0, invuln: 90, specCd: 0, airJumps: f.s.airJumps,
-      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0, link: 0, lk: false,
+      recUsed: false, airDodged: false, ff: false, strN: 0, strLaunched: false, combo: 0, freeT: 99, techT: 0, lastHitBy: null, dead: 0, link: 0, lk: false, pop: 0,
       chg: 0, doomed: false, ultTgt: -1,
     });
     setState(f, "idle");
@@ -2394,7 +2400,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"];
+  "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part", "z", "w", "pass"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -2431,7 +2437,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }

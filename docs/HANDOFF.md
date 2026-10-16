@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-16: online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -307,6 +307,17 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     TUNE.linkPop (13) knockback. Before it the defender rose about 15-30 px at 0%. Now up, up, jump, nair is a true combo at 0-50%
     for every fighter (Odin from 30%: his up light can't chain into itself at 0%), hAir lands for 7 of 8, uair for 4 (tests/combos.js
     checks the nair version; `node combos.js try up,up,jump,uair` for the rest). 14 still passed, 15 broke other routes.
+  - Jump routes at human speed (Jonny, 2026-10-16 07:30 UTC: "the combos with jump are still impossible to hit"; PROTO 16): they
+    only landed when Jump was pressed during the hit's freeze. A player who presses it after seeing the hit (9-15 frames later, a
+    normal tap) got Rising 10-30% of the time and Skyburn 14%: the defender was back on the ground, or the full hop flew past.
+    Now (1) the popped defender floats: `f.pop` = TUNE.popFloat (30) frames of hitstun at TUNE.popGrav (0.35) of the hitstun
+    gravity; (2) a jump out of the link (`f.lk` set by the link jump-cancel, read in jumpsquat) is always a short hop; (3) Rising
+    ends in "air" = any light air attack (routes.js `stepOk`, also used by the trial), since drifting in gives sair. Skyburn's hint
+    says to let go of up (up + Heavy in the air is the recovery). tests/combos.js `humanBox` plays every jump/aerial timing in
+    that box and needs 75% to land (now 94-100%; the old engine fails it). New fighter field `pop` (defaults, ko, startSudden,
+    ultMark, FKEYS, checksum).
+    tests/botstyle.js: a row outside 35-65% now plays 2N more games and is judged on all 3N (the change moved Alchemist 0.5 from
+    63% to 69% on the first 100 seeds; over 400 games it is 56% on main and 59% with the change).
   - Gunslinger's lights are point-blank shots (Jonny, 14:38 UTC: "low range shots, not punches"): every light has `shot: true` and
     a thin box (r 10-11) sweeping out from the muzzle over its active frames (jab to 62 px, side 80, up/uair straight up to -112,
     down at the feet to 70, nair both pistols to +-64, dair straight down to 50); side 6 dmg, sair 7 (were 7/8). First try at
@@ -448,8 +459,14 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 npm install                                   # ws only
 python3 -m pip install playwright==1.56.0     # matches the preinstalled Chromium 1194
 ./check.sh --quick                            # build + PROTO + replay, seconds
-./check.sh                                    # everything, ~5 min (screens on swiftshader are slow)
+./check.sh                                    # everything, ~21 min: steps run side by side (it was ~2 h one by one)
 ```
+check.sh builds, runs the three server tests alone (short timers), then up to CHECK_JOBS (default 2; more only starves 4 cores)
+browser steps at once next to the simulations (two at a time at the lowest priority); each PASS/FAIL line carries the step's
+time and the lines keep their usual order. Its test servers use ports PORT_BASE..PORT_BASE+10 (default 8091), one per step; the
+tests keep their old ports when run by hand. The browser tests draw on the CPU (--disable-gpu): the game is canvas 2D only, and
+SwiftShader's emulated GPU took about three cores per browser, so the game ran slower than real time (notes:
+/mnt/project-files/faster-check/wrap-up.md).
 `python3 game/build.py` writes index.html (root, deployed), public/ (local `node server.js`) and build/
 (blastline.html = artifact copy, test.html, online-test.html). build/ and public/ are git-ignored;
 index.html is committed with every source change (check.sh flags a stale one).

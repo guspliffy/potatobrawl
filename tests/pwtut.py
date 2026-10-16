@@ -11,7 +11,7 @@ TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.htm
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'ux2'
 ONLY = sys.argv[2:]
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 N = 9
 import os
 DEBUG = bool(os.environ.get('DEBUG'))
