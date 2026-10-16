@@ -305,7 +305,7 @@ async def size(b, tag, errs):
     # the end: both foes out
     await pg.wait_for_timeout(500)
     await foes_gone(pg)
-    try: await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=60000)
+    try: await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=170000)   # the KO page plays first (slow on a busy machine, as in the flow)
     except Exception:
         errs.append(f"{tag}: no results after both foes were put out: " + await pg.evaluate(f"(() => {{ const g = {G}; return JSON.stringify({{ mode: window.__blastline.mode, phase: g.phase, t: g.t, f: g.fighters.map((f) => [f.state, f.stocks, Math.round(f.x), Math.round(f.y)]) }}); }})()"))
         await pg.screenshot(path=f'{OUT}/{tag}_noresult.png'); await ctx.close(); return
