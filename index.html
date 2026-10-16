@@ -25926,7 +25926,7 @@ function hudUlt() {
     if (c.full !== full) {
       const was = c.full; c.full = full;
       el.classList.toggle("full", full);
-      const card = $("pc" + k);
+      const card = $("pc" + i);
       card.classList.toggle("burn", full && mine);
       if (full && !was) {
         el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 650);
