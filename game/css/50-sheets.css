@@ -105,7 +105,9 @@
 #app.short #scrAccount .rk-tier { font-size: 23px; }
 /* the four numbers: the chip coin follows its label (CHIPS), the value stands alone; .wide (set by renderAccount from five digits) is one size smaller, so 999,999 fits */
 .ac-stats { gap: 6px; padding-bottom: 3px; --sb: 24px; --sw: 18px; }
-.ac-stats > div { padding: 6px 7px 7px; container-type: inline-size; }
+.ac-stats > div { padding: 6px 7px 7px; container-type: inline-size; display: flex; flex-direction: column; }
+.ac-stats dd { margin-top: auto; }   /* a smaller (wide) number sits on the same line as its neighbours */
+#acChips { color: var(--gold); }
 .ac-stats dt { display: flex; align-items: center; gap: 5px; font-size: 11px; letter-spacing: 0.14em; color: var(--mute); white-space: nowrap; }
 .ac-stats dt .tokglyph { flex: none; width: 15px; height: 12px; margin-top: -1px; }
 /* the number: one size, one size smaller from five digits; the cqw cap keeps 999,999 inside the box at any width */
