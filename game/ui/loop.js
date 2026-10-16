@@ -1,5 +1,6 @@
 /* ===================== loop ===================== */
 function simTick() {
+  qmTick();   // ui/quick.js: the found match's handshake under any screen, its timers
   if (mode === "result") { if (match && match.online) netTick(); return; }
   if (mode === "online" || mode === "select") netTick();
   const live = mode === "match" && G;
@@ -43,12 +44,14 @@ function frame(now) {
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
   if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
+  if (mode === "quick") drawQmArt(tick);   // ui/quick.js: the Fight Card's model
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
+qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)
 goMenu();
 if (NET.invite) openOnline();
 else if (firstRun && !ACCT.hash) startTutorial(); // a brand-new player starts with the guided round

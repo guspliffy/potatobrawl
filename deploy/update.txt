@@ -1,11 +1,22 @@
 # Paste on the server as root after a pull request is merged. The same block works for every version: it checks that the
 # game now serves exactly the page that came from GitHub, so it never needs editing when PROTO changes.
+# Before the restart it lets running Ranked Quick matches finish (no new ones start meanwhile; at most 5 minutes, usually none),
+# so an update never takes a Ranked result away.
 bash <<'EOF'
 set -e
 cd /opt/potatobrawl
 git pull --ff-only
 cp -f index.html web/* public/
 chown -R potatobrawl:potatobrawl /opt/potatobrawl
+if curl -s http://127.0.0.1:8080/health | grep -q '^ranked matches running:'; then
+  systemctl kill -s USR2 potatobrawl || true
+  for i in $(seq 1 60); do
+    N=$(curl -s http://127.0.0.1:8080/health | sed -n 's/^ranked matches running: //p')
+    [ "${N:-0}" = 0 ] && break
+    echo "waiting for $N ranked match(es) to finish..."
+    sleep 5
+  done
+fi
 systemctl restart potatobrawl
 LIVE=no
 for i in 1 2 3 4 5 6 7 8 9 10; do
