@@ -1,1 +1,271 @@
-/* The Boards sheet (ui/boards.js) */
+/* ---------- The Boards sheet (ui/boards.js; Fable 5.1, quick-match/vs-cpu/fable-vs-cpu.md section 2, mockup fable-vs-cpu-mock.html C and D) ----------
+   The sheet recipe of 50-sheets.css (ink band, round X, body on --raise) with skewed tabs, one kicker, the list (rows 36 px: place, emblem, name,
+   fighter, record, rating; places 1-3 are discs, row 1 has a gold inner edge) and YOUR row as a gold-edged bar under it. Below 480 px of sheet width
+   (upright phones) a row is 44 px with the fighter and the record under the name. Phone landscape (844x390, 620x350) is the base; #app.tiny
+   (667x320), the desktop (720x520) and upright phones adjust it. Also here: the CPU BOARD card on the Quick match screen (.qm-board), the rank
+   plates of Account > Profile (.bd-plates) and the menu's BOARDS pill (#bBoards, a fourth pill in .mm-row3). */
+
+/* ---- the frame ---- */
+#scrBoards { z-index: 6; }   /* above the Account sheet and the results (both z-index 5) */
+#app #scrBoards > .bd-sheet { --bd-row: 36px; --bd-pc: 30px; --bd-ec: 28px; --bd-wc: 78px; --bd-rc: 50px; --bd-nf: 15px; --bd-ff: 12px; --bd-vf: 17px; --bd-gap: 10px;
+  width: min(620px, 100%); height: min(350px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; container: bdsheet / inline-size; }
+
+/* ---- the tabs: skewed segments, the active one gold; the row scrolls sideways past three ---- */
+#scrBoards .bd-tabs { flex: none; display: flex; gap: 8px; padding: 9px 14px 5px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior: contain; }
+#scrBoards .bd-tabs::-webkit-scrollbar { display: none; }
+#scrBoards .bd-tab { appearance: none; cursor: pointer; flex: none; position: relative; isolation: isolate; display: inline-flex; align-items: center; min-height: 34px; padding: 1px 17px 0; border: 0; background: none;
+  color: var(--text); font: 800 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+#scrBoards .bd-tab::before { content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 8px; background: linear-gradient(180deg, #3a4170, #262b50);
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg); transition: transform 0.08s, box-shadow 0.08s; }
+#scrBoards .bd-tab.on { color: var(--ink); }
+#scrBoards .bd-tab.on::before { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#scrBoards .bd-tab:active::before { transform: skewX(-8deg) translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrBoards .bd-tab.on:active::before { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+#scrBoards .bd-tab:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; border-radius: 8px; }
+@media (hover: hover) and (pointer: fine) { #scrBoards .bd-tab:not(.on):hover::before { filter: brightness(1.1); } }
+
+/* ---- the kicker: the rank, the season, the players, how old the list is ---- */
+#scrBoards .bd-kick { flex: none; padding: 7px 16px 5px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- the list: the same five columns in the header and in every row ---- */
+#scrBoards .bd-main { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#scrBoards .bd-r, #scrBoards .bd-hd { display: grid; grid-template-columns: var(--bd-pc) var(--bd-ec) minmax(0, 1fr) var(--bd-wc) var(--bd-rc); column-gap: var(--bd-gap); align-items: center; padding: 0 10px; font-variant-numeric: tabular-nums; }
+#scrBoards .bd-hd { flex: none; min-height: 22px; margin: 0 10px; padding: 0 0; border-bottom: 1px solid var(--line); font: 700 10px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+#scrBoards .bd-hd > :first-child { text-align: center; }
+#scrBoards .bd-hd .bd-hr { text-align: right; }
+#scrBoards .bd-list { position: relative; flex: 1 1 auto; min-height: 0; padding: 0 10px 22px; overflow-y: auto; overflow-x: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); }   /* the list fades out at the bottom edge */
+#scrBoards .bd-list[hidden], #scrBoards .bd-hd[hidden] { display: none; }
+#scrBoards .bd-list .bd-r { padding: 0 8px 0 4px; min-height: var(--bd-row); border-bottom: 1px solid var(--line); }
+#scrBoards .bd-p { font: 800 15px/1 var(--display); color: var(--mute); text-align: center; white-space: nowrap; }
+#scrBoards .bd-d { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 var(--ink);
+  font: 800 14px/1 var(--display); font-style: normal; color: var(--ink); }
+#scrBoards .bd-d.g, #scrQuick .bd-d.g { background: linear-gradient(180deg, #ffe08a, #e8a640); }
+#scrBoards .bd-d.s, #scrQuick .bd-d.s { background: linear-gradient(180deg, #e9edf7, #aab2cc); }
+#scrBoards .bd-d.b, #scrQuick .bd-d.b { background: linear-gradient(180deg, #e0a877, #b4733f); }
+#app #scrBoards .bd-em, #app #scrQuick .qb-r .bd-em { filter: drop-shadow(0 2px 0 var(--ink)); }
+#app #scrBoards .bd-em { width: 28px; height: 28px; }
+#scrBoards .bd-em .em *, #scrQuick .qb-r .em * { animation: none !important; }   /* a hundred rows stand still (the sheen, twinkle and burst are for the plates) */
+#scrBoards .bd-n { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+#scrBoards .bd-t { display: flex; align-items: baseline; gap: 7px; flex: 0 1 auto; min-width: 0; }
+#scrBoards .bd-nm, #scrQuick .qb-r .bd-nm { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 0 0;
+  font: 800 var(--bd-nf)/1.15 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: var(--text); }
+/* a nameplate bought in the Shop (ui/shop.js, the looks are .np-<id> in 93-shop.css): the name sits on its plate as a small pill */
+#scrBoards .bd-nm[class*="np-"], #scrQuick .qb-r .bd-nm[class*="np-"] { max-width: 100%; color: var(--np-fg); padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; box-shadow: 0 2px 0 var(--ink); line-height: 1.05;
+  -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrBoards .bd-yt, #scrQuick .qb-r .bd-yt { flex: none; font: 800 var(--bd-nf)/1.15 var(--display); font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+#scrBoards .bd-yt::after, #scrQuick .qb-r .bd-yt::after { content: "·"; margin-left: 7px; }
+#scrBoards .bd-f { flex: 0 20 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 var(--bd-ff)/1.2 var(--body); letter-spacing: 0; color: var(--mute); }
+#scrBoards .bd-f2 { display: none; }
+#scrBoards .bd-f:empty { display: none; }
+#scrBoards .bd-w { font: 500 var(--bd-ff)/1 var(--body); color: var(--mute); text-align: right; white-space: nowrap; }
+#scrBoards .bd-v, #scrQuick .qb-r .bd-v { font: 800 var(--bd-vf)/1 var(--display); color: var(--gold); text-align: right; white-space: nowrap; }
+#scrBoards .bd-r.first { border-radius: 6px; border-bottom-color: transparent; box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+#scrBoards .bd-list .bd-r.me { background: linear-gradient(90deg, rgba(244, 201, 93, 0.2), rgba(244, 201, 93, 0.05) 70%, transparent); box-shadow: inset 3px 0 0 var(--gold); border-radius: 6px; }
+#scrBoards .bd-list .bd-r.me.first { box-shadow: inset 3px 0 0 var(--gold), inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+#scrBoards .bd-list .bd-r.pulse { animation: bdFlash 0.9s ease-out; }
+@keyframes bdFlash { from { background-color: rgba(244, 201, 93, 0.6); } }
+@media (hover: hover) and (pointer: fine) { #scrBoards .bd-list .bd-r:not(.sk):hover { background-color: rgba(255, 255, 255, 0.045); border-radius: 6px; } }
+
+/* ghost rows while the list is on its way */
+#scrBoards .bd-r.sk, #scrQuick .qb-r.sk { pointer-events: none; }
+#scrBoards .sk > i, #scrQuick .qb-r.sk > i { display: block; height: 12px; border-radius: 6px; background: rgba(206, 210, 255, 0.1); animation: bdPulse 1s ease-in-out infinite alternate; }
+#scrBoards .sk > .bd-gp, #scrQuick .qb-r.sk > .bd-gp { width: 14px; justify-self: center; }
+#scrBoards .sk > .bd-ge, #scrQuick .qb-r.sk > .bd-ge { width: 24px; height: 24px; border-radius: 50%; justify-self: center; }
+#scrBoards .sk > .bd-gn, #scrQuick .qb-r.sk > .bd-gn { width: var(--w, 56%); max-width: 100%; }
+#scrBoards .sk > .bd-gv, #scrQuick .qb-r.sk > .bd-gv { grid-column: -2 / -1; width: 34px; justify-self: end; }
+@keyframes bdPulse { to { background: rgba(206, 210, 255, 0.2); } }
+
+/* ---- YOUR row: a sticky gold-edged bar under the list; below the top 100 a dotted gap sits over it ---- */
+#scrBoards .bd-you { flex: none; margin: 6px 10px 10px; }
+#scrBoards .bd-you[hidden], #scrBoards .bd-gap[hidden] { display: none; }
+#scrBoards .bd-r.you { min-height: 40px; padding: 0 8px; border: 2px solid var(--gold); border-radius: 8px; background: linear-gradient(180deg, #3a3a2a, #2a2820); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrBoards .bd-r.you .bd-p { color: var(--gold); }
+#scrBoards .bd-r.you[role="button"] { cursor: pointer; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrBoards .bd-r.you[role="button"]:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrBoards .bd-r.you:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { #scrBoards .bd-r.you[role="button"]:hover { filter: brightness(1.1); } }
+#scrBoards .bd-gap { flex: none; height: 14px; margin-top: -1px; display: grid; place-items: center; color: var(--mute); font: 800 14px/1 var(--display); letter-spacing: 0.3em; padding-left: 0.3em; }
+#scrBoards .bd-r.you.none, #scrBoards .bd-r.you.placing { display: flex; align-items: center; gap: 10px; }
+#scrBoards .bd-r.you.none { border-style: dashed; border-color: rgba(244, 201, 93, 0.6); background: rgba(14, 16, 34, 0.35); box-shadow: none; }
+#scrBoards .bd-none { min-width: 0; font: 600 13px/1.25 var(--body); color: var(--sand); }
+#scrBoards .bd-pk { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+#scrBoards .bd-pk b { font: 800 var(--bd-nf)/1.15 var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#scrBoards .bd-pk small { font: 500 var(--bd-ff)/1.2 var(--body); color: var(--mute); }
+#scrBoards .bd-pips, #scrQuick .bd-pips { flex: none; display: inline-flex; gap: 4px; }
+#scrBoards .bd-pips i, #scrQuick .bd-pips i { width: 10px; height: 10px; border: 1.5px solid var(--ink); border-radius: 50%; background: rgba(206, 210, 255, 0.18); }
+#scrBoards .bd-pips i.on, #scrQuick .bd-pips i.on { background: var(--gold); box-shadow: 0 0 6px rgba(244, 201, 93, 0.55); }
+
+/* ---- empty and offline: a dim podium, one line, the one button that fixes it ---- */
+#scrBoards .bd-state { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 6px 24px 14px; text-align: center; }
+#scrBoards .bd-state[hidden] { display: none; }
+#scrBoards .bd-pod { display: flex; align-items: flex-end; gap: 4px; opacity: 0.4; margin-bottom: 2px; }
+#scrBoards .bd-pod i { display: block; width: 26px; background: var(--mute); border: 2px solid var(--ink); border-radius: 4px 4px 0 0; }
+#scrBoards .bd-pod i:nth-child(1) { height: 22px; } #scrBoards .bd-pod i:nth-child(2) { width: 30px; height: 34px; } #scrBoards .bd-pod i:nth-child(3) { height: 16px; }
+#scrBoards .bd-big { display: block; max-width: 20em; font: italic 900 22px/1.05 var(--display); text-transform: uppercase; color: var(--text); padding-right: 3px; }
+#scrBoards .bd-state p.bd-sub { margin: 0; font: 500 13.5px/1.35 var(--body); color: var(--mute); }
+#scrBoards .bd-fight { width: auto; min-width: 200px; margin-top: 6px; }
+#scrBoards .bd-off { display: inline-flex; align-items: center; gap: 8px; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: #ff8a7c; }
+#scrBoards .bd-off::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ketchup); box-shadow: 0 0 0 3px rgba(232, 69, 60, 0.3); }
+#scrBoards .bd-again { margin-top: 6px; min-height: 36px; padding: 0 16px; cursor: pointer; }
+#scrBoards .bd-again:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+
+/* ---- small phones in landscape (667x320) ---- */
+#app.tiny #scrBoards > .bd-sheet { --bd-row: 32px; --bd-nf: 14px; --bd-vf: 16px; width: min(620px, 100%); height: min(296px, 100%); }
+#app.tiny #scrBoards .bd-tabs { padding: 7px 14px 5px; }
+#app.tiny #scrBoards .bd-tab { min-height: 30px; font-size: 13px; padding: 1px 15px 0; }
+#app.tiny #scrBoards .bd-kick { padding: 5px 16px 4px; font-size: 10px; }
+#app.tiny #scrBoards .bd-hd { min-height: 18px; }
+#app.tiny #scrBoards .bd-d { width: 24px; height: 24px; font-size: 13px; }
+#app.tiny #scrBoards .bd-em { width: 26px; height: 26px; }
+#app.tiny #scrBoards .bd-r.you { min-height: 36px; }
+#app.tiny #scrBoards .bd-you { margin: 4px 10px 8px; }
+#app.tiny #scrBoards .bd-big { font-size: 20px; }
+#app.tiny #scrBoards .bd-state { gap: 5px; padding-bottom: 8px; }
+#app.tiny #scrBoards .bd-pod { transform: scale(0.8); margin-bottom: -2px; }
+#app.tiny #scrBoards .bd-fight { min-height: 40px; margin-top: 2px; }
+
+/* ---- desktop (1280x720): a 720x520 sheet, bigger rows and type ---- */
+#app:not(.short):not(.portrait) #scrBoards > .bd-sheet { --bd-row: 42px; --bd-pc: 34px; --bd-ec: 32px; --bd-wc: 96px; --bd-rc: 60px; --bd-nf: 17px; --bd-ff: 13.5px; --bd-vf: 20px; --bd-gap: 14px;
+  width: min(720px, 100%); height: min(520px, 100%); }
+#app:not(.short):not(.portrait) #scrBoards .sh-head { height: 44px; padding-left: 20px; }
+#app:not(.short):not(.portrait) #scrBoards .sh-head h3 { font-size: 26px; }
+#app:not(.short):not(.portrait) #scrBoards .sh-head .round { width: 34px; height: 34px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-tabs { gap: 10px; padding: 14px 20px 6px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-tab { min-height: 40px; font-size: 16px; padding: 1px 22px 0; }
+#app:not(.short):not(.portrait) #scrBoards .bd-kick { padding: 9px 22px 7px; font-size: 12px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-hd { min-height: 26px; margin: 0 16px; font-size: 11px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-list { padding: 0 16px 26px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-p { font-size: 17px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-d { width: 30px; height: 30px; font-size: 16px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-em { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-r.you { min-height: 48px; padding: 0 10px; border-radius: 10px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-you { margin: 8px 16px 16px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-gap { height: 18px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-none { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-pips i { width: 12px; height: 12px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-state { gap: 12px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-pod i { width: 34px; } #app:not(.short):not(.portrait) #scrBoards .bd-pod i:nth-child(2) { width: 40px; height: 46px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-pod i:nth-child(1) { height: 30px; } #app:not(.short):not(.portrait) #scrBoards .bd-pod i:nth-child(3) { height: 22px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-big { font-size: 30px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-state p.bd-sub { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-fight { min-height: 54px; font-size: 24px; min-width: 240px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-off { font-size: 13px; }
+
+/* ---- upright phones (390x844): the sheet fills the screen, rows are 44 px, the fighter and the record go under the name ---- */
+#app.portrait #scrBoards { padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(14px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait #scrBoards > .bd-sheet { width: 100%; height: 100%; --bd-row: 44px; --bd-nf: 15px; --bd-ff: 12px; --bd-vf: 18px; }
+#app.portrait #scrBoards .bd-tabs { padding: 12px 12px 6px; }
+#app.portrait #scrBoards .bd-tab { min-height: 38px; }
+#app.portrait #scrBoards .bd-r.you { min-height: 48px; }
+#app.portrait #scrBoards .bd-you { margin-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait #scrBoards .bd-big { font-size: 24px; }
+@container bdsheet (max-width: 479px) {   /* the sheet is narrow: four columns, the fighter and the record under the name */
+  #scrBoards .bd-r, #scrBoards .bd-hd { grid-template-columns: var(--bd-pc) var(--bd-ec) minmax(0, 1fr) var(--bd-rc); }
+  #scrBoards .bd-hw, #scrBoards .bd-hf, #scrBoards .bd-w, #scrBoards .bd-f1, #scrBoards .bd-up { display: none; }
+  #scrBoards .bd-f2 { display: inline; }
+  #scrBoards .bd-n { flex-direction: column; align-items: flex-start; gap: 3px; }
+  #scrBoards .bd-t { max-width: 100%; }
+  #scrBoards .bd-f { flex: none; max-width: 100%; }
+  #scrBoards .bd-r.you .bd-pk { flex-direction: column; align-items: flex-start; gap: 2px; }
+  #scrBoards .bd-none { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #scrBoards .sk > i, #scrQuick .qb-r.sk > i, #scrBoards .bd-list .bd-r.pulse { animation: none; }
+  #scrBoards .bd-tab::before { transition: none; }
+}
+
+/* ---------- the CPU BOARD card on the Quick match screen (ui/boards.js bdPreview): top 3, a dotted gap, you; name and rating only ---------- */
+#scrQuick .qm-board { flex: none; gap: 3px; padding: 9px 8px 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrQuick .qm-board[hidden] { display: none; }
+#scrQuick .qm-board:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink), var(--bevel); }
+#scrQuick .qm-board:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { #scrQuick .qm-board:hover { filter: brightness(1.07); } }
+#scrQuick .qb-k { flex: none; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 0 6px 3px; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+#scrQuick .qb-more { color: var(--gold); }
+#scrQuick .qb-l { display: flex; flex-direction: column; min-width: 0; }
+#scrQuick .qb-r { display: grid; grid-template-columns: 26px 24px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; min-height: 31px; padding: 0 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; --bd-nf: 15px; --bd-vf: 17px; }
+#scrQuick .qb-r .bd-p { font: 800 14px/1 var(--display); color: var(--mute); text-align: center; }
+#scrQuick .qb-r .bd-d { display: grid; place-items: center; width: 24px; height: 24px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 var(--ink); font: 800 13px/1 var(--display); font-style: normal; color: var(--ink); }
+#app #scrQuick .qb-r .bd-em { width: 24px; height: 24px; }
+#scrQuick .qb-r .bd-n { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+#scrQuick .qb-r .bd-nm[class*="np-"] { padding: 2px 8px 1px; }
+#scrQuick .qb-r.first { border-radius: 6px; border-bottom-color: transparent; box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+#scrQuick .qb-r.you { min-height: 34px; margin-top: 4px; padding: 0 6px; border: 2px solid var(--gold); border-radius: 8px; background: linear-gradient(180deg, #3a3a2a, #2a2820); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrQuick .qb-r.you .bd-p { color: var(--gold); }
+#scrQuick .qb-r.you.first { box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrQuick .qb-r.placing { grid-template-columns: 26px minmax(0, 1fr) auto; }
+#scrQuick .qb-r.placing .bd-nm { color: var(--text); }
+#scrQuick .qb-r:last-child:not(.you) { border-bottom-color: transparent; }
+#scrQuick .qb-gap { flex: none; height: 12px; display: grid; place-items: center; color: var(--mute); font: 800 13px/1 var(--display); letter-spacing: 0.3em; padding-left: 0.3em; }
+#scrQuick .qb-note { margin: 0; padding: 4px 6px 2px; font: 500 12.5px/1.35 var(--body); color: var(--mute); }
+#scrQuick .qb-r.you + .qb-note, #scrQuick .qb-r + .qb-note { margin-top: 6px; }
+#app.tiny #scrQuick .qm-board { padding: 7px 6px 6px; gap: 2px; }
+#app.tiny #scrQuick .qb-k { font-size: 10px; padding-bottom: 2px; }
+#app.tiny #scrQuick .qb-r { min-height: 27px; column-gap: 6px; grid-template-columns: 24px 22px minmax(0, 1fr) auto; --bd-nf: 14px; --bd-vf: 15px; }
+#app.tiny #scrQuick .qb-r .bd-d { width: 22px; height: 22px; font-size: 12px; }
+#app.tiny #scrQuick .qb-r .bd-em { width: 22px; height: 22px; }
+#app.tiny #scrQuick .qb-r.you { min-height: 30px; margin-top: 3px; }
+#app.tiny #scrQuick .qb-note { font-size: 11px; }
+#app.tiny #scrQuick .qb-r .bd-n { gap: 5px; }
+#app.tiny #scrQuick .qb-r .bd-nm[class*="np-"] { padding: 1px 6px 0; }
+#app.tiny #scrQuick .qb-r .bd-yt::after { margin-left: 5px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-board { gap: 5px; padding: 12px 12px 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-k { font-size: 12px; padding: 0 8px 5px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r { min-height: 40px; column-gap: 12px; grid-template-columns: 30px 30px minmax(0, 1fr) auto; padding: 0 8px; --bd-nf: 17px; --bd-vf: 20px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r .bd-p { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r .bd-d { width: 28px; height: 28px; font-size: 15px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r .bd-em { width: 30px; height: 30px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r.you { min-height: 44px; margin-top: 6px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r.placing { grid-template-columns: 30px minmax(0, 1fr) auto; }
+#app:not(.short):not(.portrait) #scrQuick .qb-gap { height: 16px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-note { font-size: 14px; }
+#app.portrait #scrQuick .qm-board { flex: none; overflow: visible; padding: 10px 10px 10px; }
+#app.portrait #scrQuick .qb-r { min-height: 40px; }
+#app.portrait #scrQuick .qb-r.you { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) { #scrQuick .qm-board { transition: none; } }
+
+/* ---------- Account > Profile: the ONLINE RANK and CPU RANK plates (ui/boards.js bdPlates) ---------- */
+.bd-plates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.bd-plates[hidden] { display: none; }
+.bd-plates .bd-pl { --tc: #c9d0e4; appearance: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 8px 8px 10px; text-align: left; color: var(--text);
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; -webkit-tap-highlight-color: transparent; }
+.bd-plates .bd-pl:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+.bd-plates .bd-pl:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .bd-plates .bd-pl:hover { filter: brightness(1.08); } }
+#app .bd-plates .badge { width: 44px; height: 44px; filter: drop-shadow(0 2px 0 var(--ink)); overflow: visible; }
+.bd-plates .bd-pl.placing .badge .em { filter: saturate(0.35) brightness(0.85); }
+.bd-plates .bd-st { position: absolute; right: -9px; bottom: -7px; padding: 3px 4px 2px; border-width: 1.5px; border-radius: 4px; font-size: 9px; box-shadow: 0 1.5px 0 var(--ink); transform: rotate(-8deg); z-index: 1; }
+.bd-plates .bd-pt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.bd-plates .bd-pq { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 10.5px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+.bd-plates .bd-pt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 3px; font: italic 900 22px/1 var(--display); text-transform: uppercase; color: var(--tc);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+.bd-plates .bd-pl.placing .bd-pt b { color: var(--text); }
+.bd-plates .bd-pt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 13px/1.1 var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+.bd-plates .bd-go { flex: none; width: 8px; height: 8px; margin: 0 4px 0 0; border-top: 2.5px solid var(--sand); border-right: 2.5px solid var(--sand); transform: rotate(45deg); }
+.bd-plates > :only-child { grid-column: 1 / -1; }
+.bd-plates .bd-pl.cpu { gap: 14px; }
+#app.narrow .bd-plates .badge { width: 34px; height: 34px; }
+#app.narrow .bd-plates .bd-pl, #app.narrow .bd-plates .bd-pl.cpu { gap: 9px; padding: 7px 6px 7px 8px; }
+#app.narrow .bd-plates .bd-pl.cpu { gap: 13px; }
+#app.narrow .bd-plates .bd-pq { font-size: 10px; letter-spacing: 0.08em; }
+#app.narrow .bd-plates .bd-rk, #app.narrow .bd-plates .bd-go { display: none; }
+#app.narrow .bd-plates .bd-pt b { font-size: 17px; }
+
+/* ---------- the menu's BOARDS pill: a fourth mini in .mm-row3 (shown by bdPill() where there is a server) ---------- */
+#scrMenu #bBoards[hidden] { display: none; }
+#scrMenu .mm-row3.bd4 { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) auto minmax(0, 1fr); }
+#scrMenu #bBoards { gap: 6px; padding: 0 12px; }
+#scrMenu #bBoards .bd-gl { width: 18px; height: 18px; flex: none; }
+#app.portrait #scrMenu .mm-row3.bd4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }   /* upright: two by two (the column has the height) */
+#app.portrait #scrMenu .mm-row3.bd4 .mini { font-size: 14px; }
+/* small phones in landscape (667x320, 568x320): the column is 372 / 336 px, so BOARDS keeps only its podium (the button still says Boards to a screen reader) */
+#app.tiny #scrMenu #bBoards span { display: none; }
+#app.tiny #scrMenu #bBoards { padding: 0 11px; }
+#app.tiny #scrMenu #bBoards .bd-gl { width: 20px; height: 20px; }
+@container mm (max-width: 620px) {   /* 568 wide: the four pills are 354 px of words in a 336 px column, so the gaps and the padding give way */
+  #app.tiny #scrMenu .mm-row3.bd4 { gap: 5px; }
+  #app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 6px; gap: 5px; }
+  #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 9px; }
+}

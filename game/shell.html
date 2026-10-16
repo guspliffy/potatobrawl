@@ -778,7 +778,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="mm-row3">
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
-        <button class="mini" id="bHelp" style="--i:5">How to play</button>
+        <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
+        <button class="mini" id="bHelp" style="--i:6">How to play</button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -1007,6 +1008,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <!-- nobody here: the way to a CPU match that counts (ui/vscpu.js) -->
             <button class="qm-tov" id="qmToV" hidden>Want it to count? · <b>VS CPU</b> ›</button>
           </div>
+          <!-- the CPU board in small (ui/boards.js bdPreview, css/97-boards.css): top 3, a gap, you; the VS CPU mode shows it in the warm-up card's place -->
+          <div class="on-card qm-board" id="qmBoard" role="button" tabindex="0" aria-label="CPU board. Open the full board" hidden>
+            <div class="qb-k"><span>CPU board</span><span class="qb-more">Full board ›</span></div>
+            <div class="qb-l" id="qbList"></div>
+          </div>
           <div class="on-card qm-room scroll">
             <div class="kick">The queue</div>
             <div class="on-here" id="qmHere"></div>
@@ -1035,6 +1041,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </div>
         <button class="btn primary lg" id="ssGo"><span>Let's go</span></button>
       </div>
+    </div>
+  </section>
+
+  <!-- The Boards (ui/boards.js, css/97-boards.css; Fable's design quick-match/vs-cpu/fable-vs-cpu.md section 2): the CPU board and the online board, one sheet with tabs -->
+  <section id="scrBoards" class="screen modal" hidden>
+    <div class="sheet bd-sheet" role="dialog" aria-label="Boards">
+      <header class="sh-head"><h3>Boards</h3><button class="round x" id="bdClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="bd-tabs" id="bdTabs" role="tablist" aria-label="Boards"></div>
+      <div class="bd-kick kick" id="bdKick" aria-live="polite"></div>
+      <div class="bd-main" id="bdMain">
+        <div class="bd-hd" id="bdHd" aria-hidden="true"><span>#</span><span></span><span class="bd-hn">Player<span class="bd-hf"> · fighter</span></span><span class="bd-hw"></span><span class="bd-hr">Rating</span></div>
+        <div class="bd-list scroll" id="bdList"></div>
+        <div class="bd-state" id="bdState" hidden></div>
+      </div>
+      <div class="bd-gap" id="bdGap" aria-hidden="true" hidden>···</div>
+      <div class="bd-you" id="bdYou" hidden></div>
     </div>
   </section>
 
