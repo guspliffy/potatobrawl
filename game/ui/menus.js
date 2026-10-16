@@ -27,7 +27,7 @@ tap("pQuit", () => {
     leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "You left the match."; openOnline(); return;
   }
   if (match.road) { openRoad(); return; }   // a Road stop or its boss: back to the map, nothing lost
-  if (!match.ranked && !match.cup && !match.daily) { goMenu(); return; }
+  if (!match.ranked && !match.cup && !match.daily && !match.vc) { goMenu(); return; }   // vc: Ranked vs CPU (ui/vscpu.js) counts a forfeit
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
 });
@@ -37,7 +37,7 @@ tap("rAgain", () => {
   goFull();
   if (match && match.tutorial) { quickOpen(); return; }
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
-  if (match && (match.qm || match.warm) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
+  if (match && (match.qm || match.warm || match.vc) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
   if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
     const lv = G.lv, boss = bossOf(G).spec.id, partner = G.fighters[1 - meSlot].spec.id;
     resetNet(); NET.phase = "idle"; lobbyPresence();
@@ -57,7 +57,7 @@ tap("rAgain", () => {
   startMatch();
 });
 tap("rChange", () => {
-  if (match && (match.qm || match.warm)) { qmChange(); return; }   // ui/quick.js
+  if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }

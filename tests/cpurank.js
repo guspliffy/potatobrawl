@@ -210,7 +210,8 @@ const backdate = (dir, code) => edit(dir, code, (rec) => { rec.cpu.tk.t -= 10 * 
     edit(dir, codeC, (r) => { r.cpu = { s: 1, r: 1800, pk: 1800, w: 8, l: 2, d: 0, n: 10, h: [], fc: { wizard: 2 }, rt: 9, tk: { id: "abcdef123456", v: PROTO, seed: 5, map: 0, f: ["odin", "samurai"], p: [0, 0], cr: 1700, d: 0.95, pm: false, ni: 1, t: Date.now() - 25 * 3600e3 } }; });
   } finally { await stopServer(srv); }
 
-  srv = await startServer({ ACCOUNTS_DIR: dir });
+  const sdir = fs.mkdtempSync(path.join(os.tmpdir(), "cpurank-stats-"));
+  srv = await startServer({ ACCOUNTS_DIR: dir, STATS_DIR: sdir });
   try {
     await sleep(300);
     const cpuC = readRec(dir, codeC).cpu;
@@ -225,8 +226,22 @@ const backdate = (dir, code) => edit(dir, code, (rec) => { rec.cpu.tk.t -= 10 * 
     const A = await authed("Ann", codeA);
     const ao = await A.ask({ t: "bd", k: "o" }, "bd");
     check(ao && ao.me && ao.me.i === 0 && ao.me.pn === 0, "not placed online: your row says placing 0 of 5");
+    // Jonny's stats page: the names on both boards, and hiding one (it shows as Potato, the page still shows what was written)
+    const key = fs.readFileSync(path.join(sdir, "key"), "utf8").trim(), idB = readRec(dir, codeB).on.id;
+    const sd = await call("POST", "/api/stats/data", { key });
+    const nB = sd.json && Array.isArray(sd.json.board) && sd.json.board.find((x) => x.id === idB);
+    check(sd.json.board.length === 3 && nB && nB.nm === "Bea" && nB.c === 2 && nB.o === 1 && !nB.nb, "stats page: the names on the boards with their places");
+    const bad = await call("POST", "/api/stats/blank", { key: "0".repeat(32), id: idB });
+    const hid = await call("POST", "/api/stats/blank", { key, id: idB, on: true });
+    await sleep(100);
+    const bc2 = await B.ask({ t: "bd", k: "c" }, "bd");
+    const hB = hid.json && hid.json.board.find((x) => x.id === idB);
+    check(bad.status === 404 && hid.status === 200 && hB && hB.nb === 1 && hB.nm === "Bea" && bc2.top[1].nm === "Potato" && readRec(dir, codeB).cpu.nb === 1, "stats page: Hide shows a name as Potato on the boards (a wrong key can't)");
+    await call("POST", "/api/stats/blank", { key, id: idB, on: false });
+    await sleep(100);
+    check((await B.ask({ t: "bd", k: "c" }, "bd")).top[1].nm === "Bea", "stats page: Show puts the name back");
     A.close(); B.close();
-  } finally { await stopServer(srv); }
+  } finally { await stopServer(srv); fs.rmSync(sdir, { recursive: true, force: true }); }
 
   // ---- accounts off: no CPU rank ----
   srv = await startServer({ ACCOUNTS_DIR: "" });

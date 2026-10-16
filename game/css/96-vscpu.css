@@ -1,0 +1,64 @@
+/* ---- Ranked vs CPU on the Quick match screen (ui/vscpu.js): the third segment, the CPU rank plate with its board line,
+   the WANT IT TO COUNT? pill under the warm-up, the HUD strip, the VS sticker and the results' board line ---- */
+#scrQuick .qm-seg { grid-template-columns: 1fr 1fr 1fr; }
+#scrQuick .qm-seg button { min-width: 0; }
+#scrQuick .qm-seg button b { font: inherit; white-space: nowrap; }
+#scrQuick .qm-seg button small { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the CPU rank: an ember CPU sticker on the emblem's corner, the record line in sand */
+#scrQuick .qm-rk.vc { position: relative; box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.45); }
+#scrQuick .qm-rk.vc::before { content: "CPU"; position: absolute; left: 6px; top: -9px; z-index: 2; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px;
+  background: var(--ember, #ef7a52); color: var(--ink); font: 900 9.5px/1 var(--display); letter-spacing: 0.08em; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); }
+#scrQuick .qm-bdl { appearance: none; grid-column: 1 / -1; justify-self: start; max-width: 100%; margin-top: -7px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 700 12px/1.2 var(--body); color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-bdl.mute { color: var(--mute); }
+#scrQuick .qm-bdl[hidden] { display: none; }
+#scrQuick .qm-bdl:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#scrQuick .qm-truth.live { color: var(--mint); }
+/* under the warm-up button: the way into the CPU rank */
+#scrQuick .qm-tov { appearance: none; cursor: pointer; flex: none; align-self: stretch; min-height: 32px; padding: 4px 10px; border: 1.5px solid rgba(244, 201, 93, 0.45); border-radius: 8px;
+  background: rgba(14, 16, 34, 0.5); color: var(--text); font: 600 12px/1.2 var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-tov b { font: 800 13px/1 var(--display); letter-spacing: 0.06em; color: var(--gold); }
+#scrQuick .qm-tov[hidden] { display: none; }
+#scrQuick .qm-tov:active { transform: translateY(2px); }
+
+/* the HUD strip under the clock: Ranked vs CPU · your tier and rating, in gold */
+#vcStrip { margin-top: 2px; height: 24px; gap: 6px; padding: 0 9px; color: var(--gold); border-color: rgba(244, 201, 93, 0.5); background: rgba(14, 16, 34, 0.82); font-size: 11px; white-space: nowrap; }
+#vcStrip[hidden] { display: none; }
+#vcStrip i { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); animation: none; }
+#app.narrow #vcStrip { position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); margin: 0; }
+
+/* the VS screen: the CPU sticker beside its name */
+#qmVs .vc-cpu { display: inline-block; margin-left: 8px; padding: 3px 6px 2px; font-size: 11px; vertical-align: 3px; transform: rotate(-4deg); }
+#qmVs .vc-cpu[hidden] { display: none; }
+
+/* results: the board line under the rank card's bar (gold, mint when you climbed, ketchup when you fell, mute when not on it) */
+#resSheet .rk-bd { appearance: none; display: block; max-width: 100%; margin-top: 6px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font: 700 12px/1.25 var(--body); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .rk-bd.up { color: var(--mint); }
+#resSheet .rk-bd.down { color: #ff8a7c; }
+#resSheet .rk-bd.mute { color: var(--mute); cursor: default; }
+#resSheet .rk-bd[hidden] { display: none; }
+
+/* the menu's profile plate on the CPU rank: a small ember CPU sticker on the picture's corner */
+#scrMenu .plate.vc .mm-avw::after { content: "CPU"; position: absolute; left: -7px; top: -6px; z-index: 2; padding: 2px 3px 1px; border: 1.5px solid var(--ink); border-radius: 4px;
+  background: var(--ember); color: var(--ink); font: 900 8px/1 var(--display); letter-spacing: 0.06em; transform: rotate(-8deg); }
+
+/* the Account sheet's board places */
+.ac-bds { display: flex; flex-wrap: wrap; gap: 6px; }
+.ac-bds:empty { display: none; }
+
+/* ---- sizes ---- */
+#app.tiny #scrQuick .qm-bdl { margin-top: -5px; font-size: 11px; }
+#app.tiny #scrQuick .qm-tov { min-height: 28px; font-size: 11px; }
+#app.tiny #scrQuick .qm-tov b { font-size: 12px; }
+#app.tiny #resSheet .rk-bd { margin-top: 4px; font-size: 11px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-bdl { font-size: 14px; margin-top: -8px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-tov { min-height: 40px; font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-tov b { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rk.vc::before { font-size: 11px; }
+#app:not(.short):not(.portrait) #resSheet .rk-bd { font-size: 14px; }
+/* upright phones: three segments side by side, a smaller title and sub */
+#app.portrait #scrQuick .qm-seg { gap: 6px; }
+#app.portrait #scrQuick .qm-seg button { font-size: 16px; padding: 4px 4px; }
+#app.portrait #scrQuick .qm-seg button small { font-size: 10.5px; }
+#app.tiny #scrQuick .qm-seg button { font-size: 15px; padding: 4px 4px; }

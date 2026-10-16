@@ -1,6 +1,7 @@
 /* ===================== loop ===================== */
 function simTick() {
   qmTick();   // ui/quick.js: the found match's handshake under any screen, its timers
+  vcTick();   // ui/vscpu.js: Ranked vs CPU's VS screen, its HUD pill, a result still on its way
   if (mode === "result") { if (match && match.online) netTick(); return; }
   if (mode === "online" || mode === "select") netTick();
   const live = mode === "match" && G;
@@ -9,7 +10,7 @@ function simTick() {
     if (paused) return;
     if (match.online) netTick();
     else {
-      const pi = readPlayer();
+      const pi = vcIn(readPlayer());   // ui/vscpu.js: a ranked CPU match logs your inputs for the server
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
       else if (match.duo) step(G, duoInputs(pi));   // ui/duo.js: you, your CPU partner and the two CPU foes
       else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);

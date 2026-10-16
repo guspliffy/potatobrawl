@@ -65,7 +65,7 @@ try {
 // Play counts (stats.js): off unless STATS_DIR is set. clients is declared further down; it is only read once the server runs.
 let stats = null;
 try {
-  stats = require("./stats.js").init(process.env.STATS_DIR, { online: () => clients.size });
+  stats = require("./stats.js").init(process.env.STATS_DIR, { online: () => clients.size, board: () => cpurank });   // cpurank is set further down
   console.log(stats ? `Play counts: on (${stats.dir})` : process.env.STATS_DIR ? "Play counts: off (STATS_DIR is not a folder this server can write to)" : "Play counts: off");
 } catch (e) { console.warn("Play counts: off,", e.message); }
 
