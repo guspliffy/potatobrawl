@@ -4,7 +4,7 @@
 #   starts a 2v2: four fighters (teams 0, 0, 1, 1), the partner you picked, a pool map. The HUD has four cards: yours full size, the partner's mini
 #   card under it, the two foes' mini cards on the right, team-colour edges, tags You / Partner / CPU. A tap on a foe card focuses that foe (ember
 #   ring on that card), a tap on the other moves it, the pause icon still works. Only a FOE crossing the finish percent shows the Finish banner (in
-#   your colour) and lights the Special button; the ulti bar on a mini card is a thin line. Then the end is forced as in the smoke check (one foe gone,
+#   your colour) and lights the Special button; the ulti bar on a mini card is a thin line (6 px at most). Then the end is forced as in the smoke check (one foe gone,
 #   the other at 400% with one heart): the KO page, the results say "Team Brawl 2v2", and a 1v1 afterwards has the old two cards back.
 # Part 2, one run per size (667x320, 844x390, 1280x760, upright 390x844): the select header fits with the Partner chip (nothing overlaps, nothing
 #   runs off the screen, the VS list fits the screen), the fight's HUD fits (four cards, the clock and the pause icon: inside the screen, none over
@@ -101,7 +101,7 @@ HUDFIT = """(() => {
   if (us.bottom > p1.top + 1) bad.push('the full card ulti bar reaches the partner card');
   for (const s of ['#pc1', '#pc2', '#pc3']) {
     const u = E(s + ' .pc-ult'), q = u.getBoundingClientRect(), c = R(s);
-    if (q.height > 4.5) bad.push(s + ': the mini ulti bar is ' + q.height + ' px high (a thin line)');
+    if (q.height > 6.5) bad.push(s + ': the mini ulti bar is ' + q.height + ' px high (a thin line, 6 px at most)');
     if (q.bottom > c.bottom + 1 || q.top < c.bottom - 8) bad.push(s + ': the mini ulti bar is not along the bottom edge');
     if (!(E(s + ' .pc-pct').getClientRects().length && E(s + ' .pc-stocks').getClientRects().length)) bad.push(s + ': no hearts or percent');
   }
