@@ -373,8 +373,8 @@ trap 'killtree $$; exit 130' INT TERM
 
 T0=$SECONDS
 run build; run proto; flush            # everything else reads the build
+for s in "${SOLO[@]}"; do run "$s"; done   # nothing beside them: even the simulations made their short timers miss
 ( renice -n 19 -p $BASHPID > /dev/null; lane $((QUICK ? 4 : 2)) "${SIMS[@]}" ) &
-for s in "${SOLO[@]}"; do run "$s"; done
 [ ${#REAL[@]} -gt 0 ] && lane "$JOBS" "${REAL[@]}" &
 while [ "$(jobs -rp | wc -l)" -gt 0 ]; do flush; sleep 2; done
 wait; flush

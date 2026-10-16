@@ -50,7 +50,9 @@ async def list_row(pg, has):
     return await pg.evaluate(f"(() => {{ const li = [...document.querySelectorAll('#onList li')].find((li) => li.textContent.includes({json.dumps(has)})); return li ? [li.textContent, li.querySelector('.chip') ? li.querySelector('.chip').disabled : null] : null; }})()")
 async def join(pg, tag):
     await press(pg, '#bOnline')
-    if not await wait(pg, "[...document.querySelectorAll('#onList li')].some((li) => li.textContent.includes('Team brawl'))", f"{tag}: the team brawl is not in the list", 20000): return None
+    # exactly one: a host page closed a moment ago keeps its room listed for the server's 8 s grace (the board at four sizes
+    # opens a new host right after closing the last one), and Join on that room never reaches a board
+    if not await wait(pg, "[...document.querySelectorAll('#onList li')].filter((li) => li.textContent.includes('Team brawl')).length === 1", f"{tag}: not exactly one team brawl in the list", 20000): return None
     row = await list_row(pg, 'Team brawl')
     await pg.evaluate("[...document.querySelectorAll('#onList li')].find((li) => li.textContent.includes('Team brawl')).querySelector('.chip').click()")
     await wait(pg, f"{N}.phase === 'board'", f"{tag}: not on the board after Join ({row})", 20000)
