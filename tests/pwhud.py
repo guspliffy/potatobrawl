@@ -1,5 +1,5 @@
 # The match HUD: a calmer screen and danger readability (UI only).
-#   python3 pwhud.py [outdir [tag ...]]   tags: se phone desk up   (default all; screenshots go to outdir)
+#   python3 pwhud.py [outdir [tag ...]]   tags: se phone desk up btn   (default all; screenshots go to outdir)
 # Every size (667x320, 844x390, 1280x760, upright 390x844):
 #   layout   the timer is a strip clear of both cards, the pause icon sits under the opponent's card, small, clear of every touch
 #            button, and the percent is the biggest text on each card and on the screen
@@ -10,6 +10,9 @@
 # Phone only (844x390): the markers come back for 3 s after each respawn (the player's and the CPU's) and also in sudden death; the
 #   tutorial keeps them on and its prompt stays clear of the pause icon; the glow is steady with reduced motion and pulses without;
 #   no glow in the KO finisher (a real final lethal hit on the player) and none left on the results screen.
+# Touch buttons (five sizes incl. 740x360, on The Field and The Kitchen): every button (.pb) and the stick keep the touch areas they
+#   had before the ink-glass look (the rects measured on main), the words are heavy italic, a pressed button sinks 3px; pictures of
+#   Light pressed, Heavy held and charging, Special cooling, ULTI ready (tag 6_buttons) and pressed / finish (tag 6b_buttons).
 # Prints "no errors" when every check passed and no page errors happened.
 import asyncio, sys, math, re, os
 import pathlib
@@ -31,7 +34,7 @@ async def ticks(pg, n):   # UI ticks (they also run while the game is frozen by 
     t0 = await pg.evaluate(f"{HUD}.tick")
     await pg.wait_for_function(f"{HUD}.tick >= {t0 + n}", timeout=60000)
 
-async def start(b, tag, vp, up, errs, level='Dummy', reduced=False, tut=False):
+async def start(b, tag, vp, up, errs, level='Dummy', reduced=False, tut=False, mapb=1):
     mob = vp['width'] < 1000
     ctx = await b.new_context(viewport=vp, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=True, reduced_motion='reduce' if reduced else 'no-preference')
     await ctx.add_init_script(PROFILE % (", screen: 'up'" if up else ""))
@@ -46,7 +49,7 @@ async def start(b, tag, vp, up, errs, level='Dummy', reduced=False, tut=False):
         await pg.tap('#lvlPick'); await pg.wait_for_timeout(200)
         await pg.evaluate("(n) => [...document.querySelectorAll('#lvlPop button')].find((x) => x.textContent === n).click()", level); await pg.wait_for_timeout(200)
         # on Potato Moon: the launch and finisher setups below are placed for its layout (Practice picks a random map otherwise)
-        await pg.evaluate("document.querySelectorAll('#mapPop button')[1].click()"); await pg.wait_for_timeout(100)
+        await pg.evaluate(f"document.querySelectorAll('#mapPop button')[{mapb}].click()"); await pg.wait_for_timeout(100)
         await pg.tap('#selGo'); await pg.wait_for_timeout(700)
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=60000)
     return ctx, pg
@@ -254,6 +257,51 @@ async def flow(b, errs):
     await pg.screenshot(path=f'{OUT}/{tag}_7_tutorial.png')
     await ctx.close()
 
+# ---- touch buttons: the touch areas from before the ink-glass look (left, top, width, height; ulti measured while shown) ----
+BTN_RECTS = {
+    'se': {'light': [495, 222, 80, 80], 'heavy': [413, 217, 73, 73], 'jump': [579, 150, 70, 70], 'special': [496, 143, 64, 64], 'dodge': [587, 240, 54, 54], 'ulti': [456, 97, 54, 54], 'stickZone': [0, 96, 306.8, 224], 'stickBase': [28, 158, 116, 116], 'stickKnob': [61, 191, 50, 50]},
+    'mid': {'light': [568, 262, 80, 80], 'heavy': [486, 257, 73, 73], 'jump': [652, 190, 70, 70], 'special': [569, 183, 64, 64], 'dodge': [660, 280, 54, 54], 'ulti': [529, 137, 54, 54], 'stickZone': [0, 108, 340.4, 252], 'stickBase': [28, 198, 116, 116], 'stickKnob': [61, 231, 50, 50]},
+    'phone': {'light': [672, 292, 80, 80], 'heavy': [590, 287, 73, 73], 'jump': [756, 220, 70, 70], 'special': [673, 213, 64, 64], 'dodge': [764, 310, 54, 54], 'ulti': [633, 167, 54, 54], 'stickZone': [0, 117, 388.2, 273], 'stickBase': [28, 228, 116, 116], 'stickKnob': [61, 261, 50, 50]},
+    'desk': {'light': [1108, 662, 80, 80], 'heavy': [1026, 657, 73, 73], 'jump': [1192, 590, 70, 70], 'special': [1109, 583, 64, 64], 'dodge': [1200, 680, 54, 54], 'ulti': [1069, 537, 54, 54], 'stickZone': [0, 228, 588.8, 532], 'stickBase': [28, 598, 116, 116], 'stickKnob': [61, 631, 50, 50]},
+    'up': {'light': [234.2, 755, 72, 72], 'heavy': [160.4, 750.5, 65.7, 65.7], 'jump': [309.8, 690.2, 63, 63], 'special': [235.1, 683.9, 57.6, 57.6], 'dodge': [317, 771.2, 48.6, 48.6], 'ulti': [199.1, 642.5, 48.6, 48.6], 'stickZone': [0, 544, 179.4, 300], 'stickBase': [28, 682, 116, 116], 'stickKnob': [61, 715, 50, 50]},
+}
+BTN_MEASURE = """(() => { const o = {}, hu = document.querySelector('.pb[data-k="ulti"]'); hu.classList.add('rdy'); hu.style.animation = 'none';
+  for (const e of [...document.querySelectorAll('.pb'), ...['stickZone', 'stickBase', 'stickKnob'].map((i) => document.getElementById(i))]) {
+    const q = e.getBoundingClientRect(); o[e.dataset.k || e.id] = [q.left, q.top, q.width, q.height]; }
+  hu.classList.remove('rdy'); hu.style.animation = ''; return o; })()"""
+
+async def buttons(b, errs):
+    sizes = [('se', 667, 320, False, 5), ('mid', 740, 360, False, 6), ('phone', 844, 390, False, 5), ('desk', 1280, 760, False, 6), ('up', 390, 844, True, 5)]   # map buttons: 5 The Field, 6 The Kitchen
+    for tag, w, h, up, mapb in sizes:
+        if ONLY and tag not in ONLY and 'btn' not in ONLY: continue
+        ctx, pg = await start(b, tag, {'width': w, 'height': h}, up, errs, mapb=mapb)
+        await frames(pg, 10)
+        got = await pg.evaluate(BTN_MEASURE)
+        for k, want in BTN_RECTS[tag].items():
+            if k not in got: errs.append(f'{tag} buttons: no {k}'); continue
+            if max(abs(a - c) for a, c in zip(got[k], want)) > 0.6: errs.append(f'{tag} buttons: {k} touch area is {[round(v, 1) for v in got[k]]}, was {want}')
+        look = await pg.evaluate("""(() => { const s = getComputedStyle(document.querySelector('.pb[data-k="light"] > span')), b = getComputedStyle(document.querySelector('.pb[data-k="light"]'));
+          return [s.fontStyle, s.fontWeight, b.borderTopWidth]; })()""")
+        if look != ['italic', '900', '3px']: errs.append(f'{tag} buttons: the look is {look}, want italic 900 words and a 3px rim')
+        # the states: Light pressed (sinks 3px), Heavy held and charging, Special cooling (a real cooldown in the sim), ULTI ready, the stick pushed
+        y0 = await pg.evaluate("document.querySelector('.pb[data-k=\"light\"]').getBoundingClientRect().top")
+        await pg.evaluate(f"""(() => {{ const g = {G}, me = g.fighters[0], q = (k) => document.querySelector('.pb[data-k="' + k + '"]');
+          g.hitstop = 100000; me.ult = 1e9; me.specCd = Math.round((me.spec.moves.spec.cooldown || 1) * 0.4);
+          q('light').classList.add('on'); q('heavy').classList.add('on', 'chg'); q('heavy').style.setProperty('--ch', '0.62');
+          document.getElementById('stickBase').classList.add('on'); document.getElementById('stickKnob').style.transform = 'translate(30px, -8px)'; }})()""")
+        await ticks(pg, 30)   # the ULTI pops in once the bar is full
+        y1 = await pg.evaluate("document.querySelector('.pb[data-k=\"light\"]').getBoundingClientRect().top")
+        k = 0.9 if up else 1   # the pad is scaled to 90% on narrow screens
+        if abs(y1 - y0 - 3 * k) > 0.6: errs.append(f'{tag} buttons: a pressed button moved {y1 - y0:.1f}px, want 3px down')
+        if not await pg.evaluate("document.querySelector('.pb[data-k=\"ulti\"]').classList.contains('rdy')"): errs.append(f'{tag} buttons: the ULTI did not show')
+        await pg.screenshot(path=f'{OUT}/{tag}_6_buttons.png')
+        await pg.evaluate(f"""(() => {{ const g = {G}, me = g.fighters[0], q = (k) => document.querySelector('.pb[data-k="' + k + '"]');
+          me.specCd = 0; g.fighters[1].percent = 300; q('light').classList.remove('on'); q('heavy').classList.remove('chg');
+          q('jump').classList.add('on'); q('ulti').classList.add('on'); }})()""")
+        await ticks(pg, 30)
+        await pg.screenshot(path=f'{OUT}/{tag}_6b_buttons.png')
+        await ctx.close()
+
 async def main():
     errs = []
     sizes = [('se', {'width': 667, 'height': 320}, False), ('phone', {'width': 844, 'height': 390}, False), ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True)]
@@ -262,6 +310,7 @@ async def main():
         for tag, vp, up in sizes:
             if not ONLY or tag in ONLY: await layout_run(b, tag, vp, up, errs)
         if not ONLY or 'phone' in ONLY: await flow(b, errs)
+        await buttons(b, errs)
         await b.close()
     print('\n'.join(errs) or 'no errors')
 asyncio.run(main())
