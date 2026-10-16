@@ -175,8 +175,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Ember", price: 0, body: "#f2c46b", trim: "#1f1d26", accent: "#ff6a2b", ui: "#ff7a3d" },
       { name: "Azure", price: 60, body: "#f0cf7a", trim: "#1f1d26", accent: "#3fa7ff", ui: "#56b4ff" },
-      { name: "Verdant", price: 120, body: "#e9c070", trim: "#1f1d26", accent: "#47c96a", ui: "#5fd67f" },
-      { name: "Solar", price: 200, body: "#f6d27a", trim: "#1f1d26", accent: "#ffc21f", ui: "#ffd23f" },
+      { name: "Verdant", price: 150, body: "#e9c070", trim: "#1f1d26", accent: "#47c96a", ui: "#5fd67f" },
+      { name: "Solar", price: 300, body: "#f6d27a", trim: "#1f1d26", accent: "#ffc21f", ui: "#ffd23f" },
     ],
     moves: {
       jab:   M(3, 3, 8,   4, 4, 2, 38, [30, -36, 17], { limb: "arm" }),
@@ -210,8 +210,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Nightshade", price: 0, body: "#e3a64f", trim: "#1f1d26", accent: "#6b3fa0", ui: "#9b6bd6" },
       { name: "Crimson", price: 60, body: "#e3a64f", trim: "#1f1d26", accent: "#a3324a", ui: "#e0566e" },
-      { name: "Midnight", price: 120, body: "#d99a48", trim: "#1f1d26", accent: "#2f4a8a", ui: "#5b82d6" },
-      { name: "Bone", price: 200, body: "#e8b25c", trim: "#1f1d26", accent: "#d9d2c0", ui: "#e6dfcc" },
+      { name: "Midnight", price: 150, body: "#d99a48", trim: "#1f1d26", accent: "#2f4a8a", ui: "#5b82d6" },
+      { name: "Bone", price: 300, body: "#e8b25c", trim: "#1f1d26", accent: "#d9d2c0", ui: "#e6dfcc" },
     ],
     moves: {
       jab:   M(3, 3, 9,   4, 4, 2, 40, [30, -30, 16], { limb: "arm" }),
@@ -248,8 +248,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Allfather", price: 0, body: "#e6a95a", trim: "#1f1d26", accent: "#b3282d", ui: "#e0484e" },
       { name: "Frost", price: 60, body: "#e6b26a", trim: "#1f1d26", accent: "#3d7fbf", ui: "#5aa2e6" },
-      { name: "Gold", price: 120, body: "#e0a050", trim: "#1f1d26", accent: "#d9a531", ui: "#f0c35a" },
-      { name: "Shadow", price: 200, body: "#d9984a", trim: "#1f1d26", accent: "#4b4b5a", ui: "#9aa0b8" },
+      { name: "Gold", price: 150, body: "#e0a050", trim: "#1f1d26", accent: "#d9a531", ui: "#f0c35a" },
+      { name: "Shadow", price: 300, body: "#d9984a", trim: "#1f1d26", accent: "#4b4b5a", ui: "#9aa0b8" },
     ],
     moves: {
       jab:   M(5, 3, 12,  5, 4.5, 3, 40, [34, -42, 20], { limb: "arm" }),
@@ -284,8 +284,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Dusk", price: 0, body: "#f2b04e", trim: "#1f1d26", accent: "#3b3a52", ui: "#f2c14e" },
       { name: "Arcane", price: 60, body: "#f2b04e", trim: "#1f1d26", accent: "#5b3fa8", ui: "#a37cff" },
-      { name: "Forest", price: 120, body: "#eba84a", trim: "#1f1d26", accent: "#2f6b45", ui: "#57c27e" },
-      { name: "Crimson", price: 200, body: "#f0b85a", trim: "#1f1d26", accent: "#8a2b35", ui: "#e05a68" },
+      { name: "Forest", price: 150, body: "#eba84a", trim: "#1f1d26", accent: "#2f6b45", ui: "#57c27e" },
+      { name: "Crimson", price: 300, body: "#f0b85a", trim: "#1f1d26", accent: "#8a2b35", ui: "#e05a68" },
     ],
     moves: {
       jab:   M(4, 3, 10,  4, 4, 3, 40, [36, -38, 18], { limb: "arm" }),
@@ -320,8 +320,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Jade", price: 0, body: "#d9a660", trim: "#1f1d26", accent: "#2fd39a", ui: "#3fe0a8" },
       { name: "Steel", price: 60, body: "#d9a660", trim: "#1f1d26", accent: "#c9d3df", ui: "#d3dbe6" },
-      { name: "Blood Moon", price: 120, body: "#d29a58", trim: "#1f1d26", accent: "#e0443a", ui: "#ef5a4f" },
-      { name: "Violet", price: 200, body: "#dcac68", trim: "#1f1d26", accent: "#9b6bff", ui: "#b08aff" },
+      { name: "Blood Moon", price: 150, body: "#d29a58", trim: "#1f1d26", accent: "#e0443a", ui: "#ef5a4f" },
+      { name: "Violet", price: 300, body: "#dcac68", trim: "#1f1d26", accent: "#9b6bff", ui: "#b08aff" },
     ],
     moves: {
       jab:   M(3, 3, 8,   3, 4, 2, 40, [30, -36, 17], { limb: "arm" }),
@@ -355,8 +355,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Drake", price: 0, body: "#eeaa58", trim: "#1f1d26", accent: "#e0893a", ui: "#f29a48" },
       { name: "Emerald", price: 60, body: "#eeaa58", trim: "#1f1d26", accent: "#3faa66", ui: "#55c47f" },
-      { name: "Obsidian", price: 120, body: "#e6a250", trim: "#1f1d26", accent: "#4b3d6e", ui: "#8f7bd0" },
-      { name: "Inferno", price: 200, body: "#f0b262", trim: "#1f1d26", accent: "#d63c2c", ui: "#f05a48" },
+      { name: "Obsidian", price: 150, body: "#e6a250", trim: "#1f1d26", accent: "#4b3d6e", ui: "#8f7bd0" },
+      { name: "Inferno", price: 300, body: "#f0b262", trim: "#1f1d26", accent: "#d63c2c", ui: "#f05a48" },
     ],
     moves: {
       jab:   M(4, 3, 10,  4, 4, 3, 40, [34, -36, 18], { limb: "arm" }),
@@ -392,8 +392,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Desert", price: 0, body: "#e8b066", trim: "#1f1d26", accent: "#c27a3a", ui: "#e8964a" },
       { name: "Outlaw", price: 60, body: "#e3aa60", trim: "#1f1d26", accent: "#3b3542", ui: "#a99cc4" },
-      { name: "Sheriff", price: 120, body: "#ebb46a", trim: "#1f1d26", accent: "#e6dfcd", ui: "#8fc0ea" },
-      { name: "Gold Rush", price: 200, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
+      { name: "Sheriff", price: 150, body: "#ebb46a", trim: "#1f1d26", accent: "#e6dfcd", ui: "#8fc0ea" },
+      { name: "Gold Rush", price: 300, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
     ],
     moves: {
       // the lights are point-blank shots: a short tracer (the box sweeps out from the muzzle over the active frames)
@@ -433,8 +433,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Shroud", price: 0, body: "#e2a95c", trim: "#1f1d26", accent: "#5d5a66", ui: "#a9a6b8" },
       { name: "Moss", price: 60, body: "#e2a95c", trim: "#1f1d26", accent: "#3f6b3a", ui: "#6fbf62" },
-      { name: "Ember Wake", price: 120, body: "#dfa456", trim: "#1f1d26", accent: "#3a3440", ui: "#f08a3c" },
-      { name: "Bone", price: 200, body: "#e8b466", trim: "#1f1d26", accent: "#e9e4d6", ui: "#f0ece0" },
+      { name: "Ember Wake", price: 150, body: "#dfa456", trim: "#1f1d26", accent: "#3a3440", ui: "#f08a3c" },
+      { name: "Bone", price: 300, body: "#e8b466", trim: "#1f1d26", accent: "#e9e4d6", ui: "#f0ece0" },
     ],
     moves: {
       // handle pokes: the longest light thrust to the side

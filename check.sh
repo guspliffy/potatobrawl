@@ -132,8 +132,8 @@ s_online() {
 serve $PB "$LOGS/server.log"
 (cd "$SHOTS" && PWON_URL=http://localhost:$PB/ timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 stop
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 }
 
@@ -204,6 +204,14 @@ s_skins() {
 (cd "$SHOTS" && PWSKINS_PORT=$((PB + 5)) timeout 900 python3 "$ROOT/tests/pwskins.py" skins) > "$LOGS/skins.log" 2>&1
 if grep -q "^skins ok" "$LOGS/skins.log" && grep -q "^no errors" "$LOGS/skins.log"; then pass "skins menu + Play friends lobby (Skin Rack states, buy, wear, Fight Card at four sizes; shots in build/shots/skins)"
 else fail "skins menu + Play friends lobby" "$LOGS/skins.log"; fi
+}
+
+# 6a2. The Shop and Another go (UI only): the Account sheet's Shop tab (nameplates and Glaze, two-tap buy, one-tap wear, short of chips), the
+#      plate on the start page, the Profile and the results, the Daily sheet's Another go and its rules, at four sizes. Shots in build/shots/shop.
+s_shop() {
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwshop.py" shop) > "$LOGS/shop.log" 2>&1
+if grep -q "^shop ok" "$LOGS/shop.log" && grep -q "^no errors" "$LOGS/shop.log"; then pass "shop + Another go (nameplates, Glaze, buy / wear / short, Daily rules at four sizes; shots in build/shots/shop)"
+else fail "shop + Another go" "$LOGS/shop.log"; fi
 }
 
 # 6b. Accounts in the browser: profile pill, Account sheet, two devices syncing through a real server.
@@ -341,13 +349,13 @@ else fail "2v2 in the browser" "$LOGS/duo-ui.log"; fi
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve online onboss on2v2 acct quick quickui screens skins acctui hud ultui tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve online onboss on2v2 acct quick quickui screens skins shop acctui hud ultui tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve duo boss snap finish lock combos ulti)
 SOLO=(quick acct stats)
-REAL=(mastery maps acctui on2v2 hud daily screens roadui duoui quickui tut skins bossui ultui onboss comboui cup statsui online statspage finisher)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui tut skins bossui ultui onboss comboui cup statsui online statspage finisher)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

@@ -899,7 +899,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
         <p class="dly-rule" id="dlyRule"></p>
         <p class="dly-line" id="dlyLine"></p>
-        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn primary lg" id="dlyAgain" hidden><span>Another go</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
       </div>
     </div>
   </section>
@@ -1042,7 +1042,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="res-art" aria-hidden="true"><i class="rays"></i><img id="rArt" alt=""></div>
         <i class="res-edge" aria-hidden="true"></i>
         <div class="res-txt">
-          <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span></div>
+          <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span> <span class="rs-np" id="rPlate" hidden></span></div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
           <p class="res-fin" id="rFin" hidden></p>
@@ -1141,6 +1141,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
         <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
         <button class="chip" role="tab" id="acTabL" data-t="l" aria-selected="false" aria-controls="acPanL" tabindex="-1">Locker</button>
+        <button class="chip" role="tab" id="acTabH" data-t="h" aria-selected="false" aria-controls="acPanH" tabindex="-1">Shop</button>
       </div>
       <div id="acPanP" role="tabpanel" aria-labelledby="acTabP">
       <div class="ac-grid">
@@ -1169,6 +1170,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
       <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
+      <div id="acPanH" class="ac-pan" role="tabpanel" aria-labelledby="acTabH" hidden></div>
       </div>
     </div>
   </section>
