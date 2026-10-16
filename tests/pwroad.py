@@ -78,7 +78,7 @@ async def flow(b, errs):
     need(await txt(pg, '#rsRule') == '2 lives each · 2:00 · The Field', f"rule line {await txt(pg, '#rsRule')!r}")
     need(await pg.evaluate("[...document.querySelectorAll('#rsStars .rd-st')].map((s) => s.textContent)") == ['★Win', '★No heart lost', '★Win in under 60 s'], 'stop 1 star labels')
     # your card is the fighter picker (no Fighter button): it opens the fighter page; Back returns to the map
-    need(await pg.evaluate("document.querySelectorAll('.rd-acts button').length") == 2 and await txt(pg, '#rsGo') == 'Fight', f"stop buttons {await txt(pg, '.rd-acts')!r}")
+    need(await pg.evaluate("[...document.querySelectorAll('.rd-acts button')].filter((b) => !b.hidden).length") == 2 and await txt(pg, '#rsGo') == 'Fight', f"stop buttons {await txt(pg, '.rd-acts')!r}")   # Team up: a boss's, online only
     await clk('#rsMe'); await pg.wait_for_timeout(600)
     need(await pg.evaluate("window.__blastline.mode") == 'select' and not await shown(pg, '#scrRoadStop'), 'tapping your card does not open the fighter page')
     await clk('#selBack'); await pg.wait_for_timeout(600)

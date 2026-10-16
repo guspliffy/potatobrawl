@@ -1,9 +1,29 @@
-# PotatoBrawl handoff (updated 2026-10-16: Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Road bosses with an online friend (2026-10-16, branch claude/road-bosses-with-friend-8h2oo8, pre-step-6 thread 4, PROTO 17: the online
+  boss's HP changed, players reload once; brief /mnt/project-files/pre-step6/briefs/thread-4.md). Jonny: online Road-boss wins count for
+  Road stars, with a tougher boss for two.
+  - Team up (#rsTeam, "Team up / with a friend") between Fight and Back on a Road boss's sheet (only where online play exists:
+    onlineHere()); upright Fight takes its own row. It sets P.onBoss = { on, b, lv } (the sheet's boss and picked level), P.onTeam off,
+    sel.fighter = your Road fighter, opens Play friends and hosts as soon as the lobby is connected (teamUp / autoHost in ui/online.js;
+    NET.autoHost, cleared by any other openOnline). The invite link shows on the public site as for any hosted fight.
+  - His HP online: ROAD_REG hp x DUO_HP[boss][level] (ui/online.js duoHp), from the start message's bo, so no new field. DUO_HP was
+    tuned with bots (tests/bossduo.js, check.sh 4d): two player bots (0.7 and 0.9) win about as often as one and the Road's CPU partner
+    against his Road HP, per boss and level (fail at 8 points apart; every K 1 or more). One K per boss fit as well as one per level
+    (within 4 points everywhere over 384 fights a side): Old Scratch x1.05, Zorp x1.15, Kraken Spud x1.55 of his Road HP (0.9 / 1.2 / 1.3),
+    so online he has 0.95 / 1.38 / 2.0 of his base HP. Fights with a friend run a little longer than the Road's (Kraken about 15 s).
+  - A win counts on each phone's own Road where that boss's fence is open (roadRegOpen + roadGateOpen on that device): roadBossWin(k, lv,
+    spec) in ui/road.js, shared with roadBossEnd: the level's star (+10), the first win's title (+150), his Road skin for the fighter
+    played, "<next region> is open"; each paid once ("<level> already won on your Road"). The results show the level stars (R.road) and
+    the chips tile adds them. A closed fence: the online chips and "Open the fence on your Road to earn this star". Any online boss win
+    counts (Team up or the room list), also when a CPU took over a dropped friend. Loss lines and Next: Hard / Retry are unchanged.
+  - Tests: pwonboss.py now starts from Team up on the Road sheet, checks the HP x K, the open fence's star / title / chips / skin, the
+    closed fence's line, and a win after the drop with Hard already won (nothing paid twice; the drop's loss line is no longer checked);
+    onsnap.js plays the online HP. Left as before: no team colour on name markers, boss fights not in the friend W/L.
 - Road and fullscreen fixes (2026-10-16, branch claude/road-fullscreen-fixes-ucjbgm, UI only, no PROTO; plan "Before step 6",
   thread 1; brief /mnt/project-files/pre-step6/briefs/thread-1.md):
   - Road results: after a win with a star missing, Retry (#rRetry, dark, 1fr) sits beside Next stop (1.6fr; .res-actions.retry) and
@@ -145,7 +165,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   defaults), Fable's design /mnt/project-files/online-2v1/fable-online.md. All in ui/online.js; core.js and the server are unchanged.
   - Same lockstep as 1v1 with two inputs: host = slot 0, guest = slot 1, the boss (slot 2) moves himself from the shared seed. The
     start message carries `bo: { b, lv }` (boss id, level); his map comes from the boss (bossMap), rules are BOSS_RULES (3 hearts,
-    no time), HP is all of his (no BOSS_SOLO). match = { online, boss, level }.
+    no time), HP his Road HP x DUO_HP (duoHp, since the Road bosses with a friend PR; before it all of his). match = { online, boss, level }.
   - Lobby: a Mode row (1 vs 1 / Vs boss) on the host card; Vs boss swaps Lives / Time / Format for Boss and Level (P.onBoss
     = { on, b, lv }, this device only, not synced). The lobby and room presence carry `bo`; the list row reads "Samurai · vs Old
     Scratch · Hard" with Team up. On the smallest phones (#app.tiny) and upright the Boss chips show short names; on the smallest the rows are tighter.
@@ -154,7 +174,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     desync is raised until the last piece is confirmed (the guest's checks before it are stale); after restoring, the guest never
     sends a check made before the repair (ckSend). 1v1 uses the same path.
   - Results (finishBossOnline): chips win 20 / 30 / 45 by level (+5 for the final launch, b.lastHitBy), loss 5 + 1 per 10% of his HP
-    taken (max 10); the why line says Road stars come from the solo Road (online wins never count for the Road). P.duo (an
+    taken (max 10); a win also counts on this phone's Road where his fence is open (roadBossWin, see State). P.duo (an
     OPT_COUNTER in sync.js) counts wins on Hard / Nightmare: the Double Trouble title (ui/acct.js). After a win Next: Hard / Next:
     Nightmare / Again, after a loss Retry, through the rematch handshake (both tap). The partner's KO page says "<FIGHTER> WINS IT"
     (finWinWord, also offline when the CPU partner finishes). Mastery x1; the partner's page gives you no page XP.
@@ -497,7 +517,7 @@ python3 -m pip install playwright==1.56.0     # matches the preinstalled Chromiu
 ```
 check.sh builds, runs the three server tests alone (short timers), then up to CHECK_JOBS (default 2; more only starves 4 cores)
 browser steps at once next to the simulations (two at a time at the lowest priority); each PASS/FAIL line carries the step's
-time and the lines keep their usual order. Its test servers use ports PORT_BASE..PORT_BASE+10 (default 8091), one per step; the
+time and the lines keep their usual order. Its test servers use ports PORT_BASE..PORT_BASE+11 (default 8091), one per step; the
 tests keep their old ports when run by hand. The browser tests draw on the CPU (--disable-gpu): the game is canvas 2D only, and
 SwiftShader's emulated GPU took about three cores per browser, so the game ran slower than real time (notes:
 /mnt/project-files/faster-check/wrap-up.md).
@@ -606,8 +626,14 @@ index.html is committed with every source change (check.sh flags a stale one).
   the VS screen, the friend-match lockstep in the reserved room), qmFinish / qmRes / qmResults (results and the server's verdict),
   rankView (online or CPU rank, used by the pill, the hero, the Account sheet), qmTick (from simTick). CSS in game/css/96-quick.css.
 - ui/rivals.js (after quick.js): the rival record and the streak bounty on the page (RV state; rvFound / rvVs on PLAYER FOUND! and the VS
-  screen; rvCasual (qm-cs) / rvRanked (qm-res) take the server's record; rvResults / rvStrip / rvVerdict on the results; rvPlate on the
-  Quick match rank plate; rvStats = the Rivals list atop Account > Stats). CSS in game/css/97-rivals.css.
+  screen; rvCasual (qm-cs) / rvRanked (qm-res) take the server's record; rvResults / rvStrip / rvVerdict on the results, rvFriend for
+  Play friends; rvPlate on the Quick match rank plate; rvStats = the Rivals list atop Account > Stats). CSS in game/css/97-rivals.css.
+- ui/stakes.js (after rivals.js): chip stakes on the page (STK state; stkGot takes `sk` from every verdict; stkButtons = FOR CHIPS on the
+  results (.res-again holds the gold button and the segment; classes stk-seg / stk-row / stk-wait on .res-actions; stk-row, after
+  Ranked or a staked match, takes the Quick match button's place, so it shows only while a stake can be played); stkSheet = the
+  stake sheet #scrStake; stkCard = the challenge card #stkCard, moved over the results' right column sideways, else at the bottom of
+  any screen but a fight; stkFound / stkRes / stkPotView = the staked match's VS pot and the pot card #rPot; stkSettings = Settings >
+  Chip stakes; stkStats = the line in Account > Stats). CSS in game/css/98-stakes.css. Test hook `window.__blastline.stk`.
   Test hook `window.__blastline.qm` (the QM object). `window.__blNoQuick = true` before the page loads switches Quick match off.
 - ui/vscpu.js (after quick.js): VC (the CPU record copy, the pending result, the board cache), vcBoot / vcMsg (cme, ct-ok, ct-no, cres,
   bd), vcFight / vcTicket / vcVs / vcStart (the ticket, the VS screen, the match), vcIn (logs the inputs), vcMatchEnd / vcFlush / vcRes
@@ -671,7 +697,23 @@ index.html is committed with every source change (check.sh flags a stale one).
   (chips = server + local - base). The page never adds a bounty to P.tokens (that would pay twice); it syncs after the verdict.
   Casual games now make the silent account too (when the server has accounts). A reset (forced save) still overwrites a bounty paid
   in the same moment: accepted, a reset wipes progress anyway.
-- Step 5 PR 2 (chip stakes) builds on this: a staked rematch is a server-assigned match like Ranked, refereed the same way.
+- Play friends referee (step 5, PR 2): a 1v1 game between two signed-in players in a friend room is refereed too (the host's presence
+  names its opponent's peer and its start; each start id is its own game with its own rules; boss fights, team brawls and anything
+  odd are not), into the same rival record; the result goes to both as qm-cs {pf: 1}. Hosting or joining makes the silent account.
+- Chip stakes (step 5, PR 2, 2026-10-16): after every refereed result both players get `sk` {ok: the stakes both can play, why, k}.
+  A challenge (stk {s}) goes to the last opponent within 2 minutes of the result; the other has 30 s (stk-in, stk-ok / stkx; the
+  challenger hears "No answer" for a decline, a timeout or a leave alike). Accepted = a server-assigned staked match like Ranked
+  (qm-found {sk}, own qm room, the same fighters, skins and sides, 3 lives, 4:00, no rematch in the room); the referee decides it:
+  winner +s, loser -s through addChips in both account files, a draw moves nothing, leaving or 15 s quiet loses except before frame
+  150 + 30 s (no result: a Wi-Fi hiccup at 0:05 shouldn't cost 50 chips). Rules (stakeCheck): 10/25/50 only; Settings > Chip stakes
+  Off on either side (prof.so = 1, synced with the account); fewer than 10 refereed matches (on.g); 5 accepted a Berlin day (on.sk.n,
+  counted at accept); not enough chips in the account file (the phone syncs first); Quick match ranks more than 250 apart (Play
+  friends: any). `on`.sk = {d, n, w, l, net}. /health counts staked matches as running (the update waits for them). The page never
+  adds the pot to P.tokens (the sync brings it); the pot shows only in its card, the match's own chips (as Casual) on the tile.
+  The pot card's "before → after" starts from P.tokens when the results open (match chips and mastery rewards in, the pot not yet:
+  the sync waits while a match runs), kept on STK.res.b so a redraw after the sync shows the same numbers. net-ws.js hands the page
+  me / acct / qm-* / stk-* (anything else from the server is a room message); a new server message type for ui/quick.js or ui/stakes.js
+  must be added there too.
 
 ## Ranked vs CPU (cpurank.js on the server): what it does and stores
 - cpurank.js is called from server.js only (cme, ct, cr, bd; see its header comment). It needs Quick match's sign-in (quick.seatOf) and
@@ -712,7 +754,7 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, Play friends referee, chip stakes (eligibility, offer, decline, timeout, accept, verdict, early leave, daily limit), accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwstakes.py (chip stakes in two browsers, check.sh port PORT_BASE+11: FOR CHIPS dimmed with its reasons, the Casual rematch refereed, the stake sheet, decline and accept, VS with the pot, the pot card and the chips through the sync, the challenge card on the results and the menu, a Play friends game, Stats line, Settings Off; shots at 4 sizes; check.sh 5g) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
 pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
 return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
@@ -734,7 +776,7 @@ map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence,
 combo star's combo line and its Combo trial with Back to the stop, five sizes; check.sh 8e) · pwfs.py (the fullscreen button and
 Settings row, the iPhone sheet, the home-screen app, a full top bar; the website build on a made-up origin routed by Playwright, no
 port; check.sh 8k) ·
-roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
+bossduo.js (each Road boss and level: two player bots vs his Road HP x DUO_HP against a player bot and the Road partner vs his Road HP, within 8 points; check.sh 4d; DUO=/ONLY= to retune) · roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
 tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
 (online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,
@@ -772,9 +814,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT (build order step 5, PR 2): chip stakes on top of the rival record (plan https://claude.ai/code/artifact/0817259b-885f-4018-a6d0-be027c9f0636;
-  the chip rules: never bought, traded or cashed out; 10/25/50 only as a rematch vs friends or within 250 rating; daily limit 5;
-  none before 10 refereed matches; the server replays staked matches). Then 6 leaderboards (weekly boss boards) and replays.
+- NEXT: build order step 6, weekly boss leaderboards and replays. Step 5 is done (rival record, bounty, chip stakes; plan
+  https://claude.ai/code/artifact/0817259b-885f-4018-a6d0-be027c9f0636). Stakes leftovers: chips still live on phones (a real server
+  wallet comes with Pommes, step 8); a server restart mid staked match = no result; an old page never sees a challenge until it
+  reloads; a reset (forced save) at the moment a pot lands overwrites it; a lawyer's look before the store apps.
 - Quick match leftovers: a phone whose own connection drops for more than 15 s in a Ranked match loses ("quiet"); an online-rank
   leaderboard is step 6; Casual games count only in the rival record (no Casual history list).
 - 2v2 is done offline and online (see State). Online boss fight leftovers: the team colour

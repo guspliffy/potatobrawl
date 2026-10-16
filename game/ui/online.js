@@ -10,7 +10,7 @@
    A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 16;
+const PROTO = 17;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -20,7 +20,7 @@ const NET = {
   D: 6, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0, ckMine: new Map(), ckSend: null,
   syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
   cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, qm: null,   // qm: the Quick match being joined or played (ui/quick.js)
-  standalone: !!window.__blStandalone, invite: null, inviteT: 0,
+  standalone: !!window.__blStandalone, invite: null, inviteT: 0, autoHost: false,   // autoHost: Team up on the Road hosts once connected
   tb: null, hs: null,   // a Team Brawl's board and its start (ui/online-team.js)
 };
 let TM = null;   // the online Team Brawl being played (ui/online-team.js)
@@ -58,7 +58,7 @@ async function netInit() {
   } catch (e) { NET.room = null; }
   NET.ok = !!NET.room;
   if (!NET.ok) { renderOnline(); return; }
-  NET.room.onConnection((on) => { NET.connected = on; renderOnline(); }, (err) => { NET.ok = false; NET.dead = err.code; renderOnline(); });
+  NET.room.onConnection((on) => { NET.connected = on; autoHost(); renderOnline(); }, (err) => { NET.ok = false; NET.dead = err.code; renderOnline(); });
   NET.room.onPeers((ch) => {
     NET.lobbyPeers = ch.peers;
     const me = ch.peers.find((p) => p.sameTab);
@@ -86,6 +86,11 @@ const validBo = (bo) => !!bo && typeof bo === "object" && BOSS_IDS.has(bo.b) && 
 const boSpec = (bo) => BL.BOSSES.find((b) => b.id === bo.b) || BL.BOSSES[0];
 const BOSS_SHORT = { scratch: "Scratch", zorp: "Zorp", kraken: "Kraken" };   // the Boss chips on the smallest phones
 const BOSS_RULES = { l: 3, t: 0, b: 1 };   // a boss fight: three hearts each, no time limit, one fight
+// his HP with a friend: his Road HP (ui/road.js ROAD_REG hp) x DUO_HP[boss][level], from the boss and level in the start message, so
+// both phones build the same fight. Tuned with bots (tests/bossduo.js): two players win about as often as one and the Road's CPU partner
+// (within 4 points in every boss and level over 384 fights each; one K per boss fit as well as one per level).
+const DUO_HP = { scratch: [1.05, 1.05, 1.05], zorp: [1.15, 1.15, 1.15], kraken: [1.55, 1.55, 1.55] };
+const duoHp = (bo) => (ROAD_REG.find((g) => g.boss === bo.b) || { hp: 1 }).hp * DUO_HP[bo.b][bo.lv];
 function buildRules() {
   const edit = NET.phase === "idle" || NET.phase === "hosting", ob = onBoss(), ot = onTeam(), md = ob.on ? "boss" : ot.on ? "team" : "1v1";
   // rebuild only on change, so a tap is never lost to a re-render
@@ -148,15 +153,30 @@ async function resolveOppName() {
 }
 
 function openOnline() {
-  mode = "online"; G = null; match = null; meSlot = 0;
+  mode = "online"; G = null; match = null; meSlot = 0; NET.autoHost = false;
   if (NET.invite && !NET.inviteT) NET.inviteT = performance.now();
   show("online");
   $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
   modal("pause", false); modal("help", false);
   resize();
   if (NET.tb && NET.mr) namedPresence({ f: sel.fighter, pi: palIdx(sel.fighter) });   // on a team brawl's board: my seat shows the fighter just picked
-  netInit().then(() => { lobbyPresence(); renderOnline(); });
+  netInit().then(() => { lobbyPresence(); autoHost(); renderOnline(); });
   renderOnline();
+}
+// Team up on a Road boss's sheet (ui/road.js): the lobby in Vs boss mode with that boss and level, hosting it as soon as it is connected
+// (the invite link comes up on the public site); a friend can also join from the list as ever
+const onlineHere = () => !!(window.claude && typeof window.claude.use === "function") && !(NET.tried && !NET.ok);   // online play can work on this page
+function teamUp(b, lv) {
+  P.onBoss = { on: true, b, lv }; P.onTeam = Object.assign({}, P.onTeam, { on: false });
+  saveProfile();
+  openOnline();
+  NET.autoHost = NET.phase === "idle";
+  autoHost();
+}
+function autoHost() {
+  if (!NET.autoHost || mode !== "online" || NET.phase !== "idle" || !NET.ok || !NET.connected) return;   // not connected yet: its callback calls again
+  NET.autoHost = false;
+  netHost();
 }
 function hideOnline() { screens.online.hidden = true; }
 let onSeq = 0;
@@ -350,6 +370,7 @@ async function netHost() {
   resetNet();
   NET.phase = "hosting"; NET.role = "host"; NET.hostCode = code; NET.note = "";
   const team = !onBoss().on && onTeam().on;
+  if (!team) qmSilent();   // ui/quick.js: the referee keeps a 1v1's rival record (both players need an account)
   if (team) tbHostOpen();   // a team brawl: the board, you in the first Ice seat (ui/online-team.js)
   renderOnline();
   try { await openMatchRoom(code); }
@@ -365,6 +386,7 @@ async function netJoin(code) {
   resetNet();
   NET.phase = "joining"; NET.role = "guest"; NET.note = ""; NET.joinT = performance.now();
   NET.mrCode = code;
+  qmSilent();   // ui/quick.js: the silent account, for the referee
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
@@ -409,7 +431,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
-  if (NET.phase === "result" && match && match.qm && match.qm.ranked) { NET.oppLeft = true; return; }   // Next match never waits for them
+  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk)) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -474,9 +496,9 @@ function startOnlineMatch(st) {
   const specs = st.f.map((id) => FIG[id]), players = specs.map((spec, i) => ({ spec, pal: spec.palettes[st.p[i]] }));
   meSlot = NET.role === "host" ? 0 : 1;
   if (st.bo) {
-    // a boss fight: the two of you (team 0) and the boss (slot 2, team 1) on his own map, with all of his HP
+    // a boss fight: the two of you (team 0) and the boss (slot 2, team 1) on his own map, tougher than on the Road (duoHp)
     const boss = boSpec(st.bo);
-    G = newGame({ players: [...players, { spec: boss, pal: boss.palettes[0] }], stocks: BOSS_RULES.l, time: 0, countdown: 150, seed: st.seed, map: bossMap(boss), level: st.bo.lv });
+    G = newGame({ players: [...players, { spec: boss, pal: boss.palettes[0] }], stocks: BOSS_RULES.l, time: 0, countdown: 150, seed: st.seed, map: bossMap(boss), level: st.bo.lv, hpMul: duoHp(st.bo) });
     match = { online: true, ranked: false, boss: true, level: st.bo.lv };
   } else {
     // the map comes from the match seed, so both phones play the same one with no new field in the start message
@@ -628,7 +650,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && match.qm.ranked ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -739,8 +761,13 @@ function finishBossOnline() {
   let title = false;
   if (won && lv >= 1) { title = !(P.duo | 0); P.duo = (P.duo | 0) + 1; }   // Double Trouble (ui/acct.js): an online boss win on Hard or Nightmare
   saveProfile();
-  // the Road stays solo: say so on a win, so an online win never looks short-changed
-  R.why = R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") + (title ? " · New title: Double Trouble" : won ? " · Road stars come from the solo Road" : "");
+  // the Road: a win counts on this phone's own Road where his fence is open, as on the Road (ui/road.js roadBossWin: the level's star, the
+  // first win's title and chips, his Road skin for the fighter played, each paid once); a closed fence says how to earn it
+  const k = ROAD_REG.findIndex((g) => g.boss === b.spec.id), r = roadGet(), open = k >= 0 && roadRegOpen(r, k) && roadGateOpen(r, k);
+  const w = won && open ? roadBossWin(k, lv, me.spec) : null;
+  if (w) { R.total += w.total; if (w.skin) R.skin = w.skin; R.road = { boss: true, k, lv, got: 1 << lv, had: w.had & ~(1 << lv), labels: BOSS_LV }; }
+  const road = !won ? [] : !w ? ["Open the fence on your Road to earn this star"] : w.lines.length ? w.lines : [`${BOSS_LV[lv]} already won on your Road`];
+  R.why = [...R.lines.map(([n, v]) => `${n} +${v}`), ...road, ...(title ? ["New title: Double Trouble"] : [])].join(" · ");
   if (match.finBy && R.mateFin) match.finBy += ` · by ${NET.cpuMate ? "CPU" : NET.oppName || "your partner"}`;
   if (NET.cpuMate) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";
   NET.again = NET.cpuMate ? "Retry vs CPU" : won ? (lv < 2 ? `Next: ${BOSS_LV[lv + 1]}` : "Again") : "Retry";

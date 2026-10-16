@@ -100,3 +100,4 @@
 @media (prefers-reduced-motion: reduce) {
   #qmVs.in .vs-riv, #qmVs.in .vs-w, #resSheet .stat.chips .rv-bty { animation: none; }
 }
+#rSub .rv-nw { white-space: nowrap; }
