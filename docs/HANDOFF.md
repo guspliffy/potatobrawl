@@ -1,9 +1,24 @@
-# PotatoBrawl handoff (updated 2026-10-15: Team Brawl 2v2 against CPUs, PROTO 14; before it online boss fights on two phones, PROTO 13)
+# PotatoBrawl handoff (updated 2026-10-16: play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14; before it online boss fights on two phones, PROTO 13)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Analytics counter (2026-10-15, branch claude/project-thread-zit4fr, no PROTO bump, no reload needed): anonymous play counts and
+  Jonny's private stats page. Plan doc https://claude.ai/code/artifact/83606071-fca5-4d1d-98ee-19c8b3a0325c (all defaults approved).
+  - Server: stats.js (Node only), off unless STATS_DIR exists (deploy/stats-setup.txt makes /var/lib/potatobrawl/stats, a systemd
+    drop-in, and prints the link https://potatobrawl.cloud/stats#<key>). POST /api/stats/hit {e: [keys]} adds 1 per key (a whitelist
+    of key patterns, 40 keys and 4 KB a hit, 30 hits a minute per IP in memory); one JSON of totals per day (Europe/Berlin) written
+    every 30 s and on SIGTERM; `peak` = most WebSocket clients at once (a max). POST /api/stats/data {key, from} for the page (last 120
+    days by default); GET /stats serves public/stats.html (from web/stats.html) with a strict CSP. The key lives in STATS_DIR/key.
+  - Game: ui/counter.js, right after base.js in build.py (its hooks run before later parts load). A localStorage note
+    (potatobrawl.count.v1) holds the device's first day, last day/week/month, "came back within 1/3/7/14/30 days" bits, match counts,
+    once-only flags. Keys are listed at the top of stats.js. cntMode(match) names modes (tutorial, trial, practice, ranked, daily, cup,
+    road, boss, road-boss, online, online-boss, team = Team Brawl 2v2; a new mode needs a line there). Hooks: enterMatchUI (cntStart), finishMatch and
+    showResults for online (cntEnd), a match left any other way = quit (cntDrop on the 1 s tick), show/modal (cntScreen), buyPending,
+    rAgain, tutShow, trialClear, acctCreate, acSetTab, renderSettings (Settings > Play counts On/Off), loop.js (cntBoot). Sends only
+    on our own server (__blStandalone), never with Global Privacy Control; a 202 (the server's counts are off) or a 404 stops it for
+    the visit. Tests: tests/stats.js, tests/pwstats.py, tests/pwstatspage.py (check.sh 8g-8i).
 - Session 6 of the big-features plan, part 1 (2026-10-15, branch claude/project-thread-qtfrko, PROTO 14, players reload once): Team Brawl 2v2, you and a
   CPU partner against two CPUs, offline. Plan doc https://claude.ai/code/artifact/f4ff6904-3262-4992-9c4c-7cc8b1cee3aa, Fable's design
   /mnt/project-files/2v2/fable-2v2.md. Online 2v2 is a later session (a four-input lockstep, a lobby for four, the snapshot size).
@@ -589,6 +604,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   flow sometimes comes back from a reload with the starting profile (chips 85, the Daily open again), pwcup.py flow once missed
   the bracket after a reload, pwcombo.py timed out waiting for the trial. Worth a look: a localStorage write right before
   pg.reload() may not have reached the store yet.
+- pwhud.py's KO finisher step failed every time on main on 2026-10-15: the idle player was knocked off the edge by a weak hit and
+  fell (a fall plays no finisher). It now puts the player back in the middle whenever both fighters stand and tries a new match
+  up to three times.
 - Combos/Daily leftovers: the Daily's Brutal (0.87) is still below Practice Hard (0.9); changing the device clock gives an extra
   Daily try (accepted, offline game); a player who clears all 13 routes on two devices before they sync is paid twice.
 - The big-features plan (Jonny, 2026-10-14), approved with its default decisions:

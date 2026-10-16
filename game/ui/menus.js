@@ -27,6 +27,7 @@ tap("pQuit", () => {
   finishMatch(true);
 });
 tap("rAgain", () => {
+  cntAgain();   // ui/counter.js
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
@@ -90,6 +91,7 @@ function renderSettings() {
   chipRow("setFull", [[true, "On"], [false, "Off"]], fsWanted(), (v) => { P.fs = v; saveProfile(); if (v) goFull(); else leaveFull(); });
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
+  cntSettings();   // ui/counter.js: Play counts On / Off
 }
 function openSettings() { renderSettings(); modal("settings", true); }
 tap("bSettings", openSettings);

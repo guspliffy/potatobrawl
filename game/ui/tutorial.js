@@ -38,6 +38,7 @@ function tutShow() {
     const me = G.fighters[0];
     me.ultN = Math.min(me.ultN, BL.TUNE.ultMax - 1); me.ult = BL.ultNeed(me);
   }
+  cntOnce("tut:" + s.id);   // ui/counter.js: the furthest step new players reach
   $("tutN").textContent = `Tutorial · ${TUT.i + 1} of ${st.length}`;
   $("tutT").textContent = s.t; $("tutH").textContent = s.h;
   for (const b of padBtns) b.classList.toggle("tutpulse", b.dataset.k === s.b);

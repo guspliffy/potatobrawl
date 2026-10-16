@@ -1,0 +1,47 @@
+# Switches on the play counts and prints the private link to the stats page. Paste ONCE, as root, after the update that brought
+# stats.js is live (paste deploy/update.txt first). Safe to paste again: it then only prints the link again. It only touches the game
+# (service "potatobrawl") and its own folder. Nothing else on this server is changed.
+#
+# What it does:
+#   1. makes /var/lib/potatobrawl/stats (owned by the potatobrawl user, mode 700): one small file of totals per day (a few KB) and the
+#      page key. No player IDs, IP addresses or cookies are stored.
+#   2. adds a systemd drop-in for the game: STATS_DIR (turns the counts on) and permission to write that one folder.
+#   3. restarts the game, checks that the site and the counts answer, and prints your private link (bookmark it).
+# A new link (the old one stops working): rm /var/lib/potatobrawl/stats/key && systemctl restart potatobrawl, then paste this again.
+# To switch the counts off: delete /etc/systemd/system/potatobrawl.service.d/stats.conf, then systemctl daemon-reload and
+# systemctl restart potatobrawl. The stats folder is kept.
+bash <<'EOF'
+set -e
+[ "$(id -u)" = 0 ] || { echo "Please run as root (type: sudo -i), then paste again."; exit 1; }
+id potatobrawl >/dev/null 2>&1 || { echo "The potatobrawl user is missing. Paste the first-time setup block first."; exit 1; }
+[ -f /opt/potatobrawl/stats.js ] || { echo "stats.js is not on the server yet. Paste deploy/update.txt first (after the pull request is merged), then this block again."; exit 1; }
+DIR=/var/lib/potatobrawl/stats
+
+# 1. the folder
+mkdir -p "$DIR"
+chown potatobrawl:potatobrawl /var/lib/potatobrawl "$DIR"
+chmod 700 "$DIR"
+
+# 2. the systemd drop-in for the game
+mkdir -p /etc/systemd/system/potatobrawl.service.d
+cat > /etc/systemd/system/potatobrawl.service.d/stats.conf <<'UNIT'
+[Service]
+Environment=STATS_DIR=/var/lib/potatobrawl/stats
+ReadWritePaths=-/var/lib/potatobrawl/stats
+UNIT
+
+# 3. restart and check
+systemctl daemon-reload
+systemctl restart potatobrawl
+for i in 1 2 3 4 5 6 7 8 9 10; do sleep 1; [ -s "$DIR/key" ] && break; done
+echo "----- checks -----"
+CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' --data '{"e":[]}' http://127.0.0.1:8080/api/stats/hit || true)
+if [ "$CODE" = 204 ] && [ -s "$DIR/key" ]; then
+  echo "play counts are on"
+  echo "your private stats page (bookmark it, don't share it):"
+  echo "  https://potatobrawl.cloud/stats#$(tr -d '[:space:]' < "$DIR/key")"
+else
+  echo "play counts are NOT on. Send me: journalctl -u potatobrawl --no-pager | tail -30"
+fi
+if curl -s http://127.0.0.1:8080/ | cmp -s - /opt/potatobrawl/index.html; then echo "the game still works"; else echo "the game is not serving its page. Send me: journalctl -u potatobrawl --no-pager | tail -30"; fi
+EOF
