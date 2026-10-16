@@ -6,7 +6,8 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 ## State
 - Quick match (2026-10-16, branch claude/server-accounts-quick-match-1gfirf, step 4 of the build order; no PROTO bump, players reload
   once). Plan doc https://claude.ai/code/artifact/e5f195e3-6626-4794-bb6c-fbd5c807bc6f (17 decision rows, Jonny took every default).
-  Live once update.txt is pasted; Ranked needs accounts-setup.txt pasted once too (without ACCOUNTS_DIR the server offers Casual only).
+  Live once update.txt is pasted (accounts are already on, on the live server since 2026-10-16; without ACCOUNTS_DIR a server offers
+  Casual only and Ranked "opens soon").
   - One shared 1v1 queue for Ranked and Casual against real people (3 lives, 4 minutes); 2v1 and 2v2 stay invite-only (Play friends).
     The server (quick.js, see "Quick match" below) pairs, reserves the room and decides every Ranked match by replaying the inputs.
   - Game: ui/quick.js, css/96-quick.css, #scrQuick / #qmVs / #scrSeason in shell.html. Only where window.__blQuick exists (net-ws.js,
@@ -554,7 +555,7 @@ index.html is committed with every source change (check.sh flags a stale one).
   are not counted. History keeps 50. Locker: every fighter and skin; owned ones equip via `equipSkin` (screens.js, shared with the select screen).
   Sync: new fields are optional in sync.js; a MISSING one (older page) is "unchanged", never zero (`OPT_COUNTERS`, fstats, avatar, title).
   Wanderer needs 7 although there are more fighters (the number is fixed on purpose, not the roster size).
-- Live: deploy/accounts-setup.txt (Jonny pastes it once, after update.txt) makes /var/lib/potatobrawl/accounts, adds the systemd drop-in
+- Live (pasted; Jonny's server check on 2026-10-16 06:12 UTC shows accounts on): deploy/accounts-setup.txt makes /var/lib/potatobrawl/accounts, adds the systemd drop-in
   (ACCOUNTS_DIR, HOST=127.0.0.1, ReadWritePaths), installs the nightly backup (/var/backups/potatobrawl, 14 days) and closes port 8080.
   Until then the Account sheet says "Saving to an account isn't available yet." and nothing else changes.
 - Two devices: the server keeps a revision; a stale save gets 409 with the newer copy and the page merges (counters add what each side
