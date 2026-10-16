@@ -68,13 +68,13 @@ LAYOUT = """(() => {
     const nx = Math.max(pb.left, Math.min(cx, pb.right)), ny = Math.max(pb.top, Math.min(cy, pb.bottom));
     if (Math.hypot(nx - cx, ny - cy) < rr + 4) bad.push('the pause icon is on the ' + b.dataset.k + ' button');
   }
-  // the ultimate bar: a slim strip hung under each card, clear of the pause icon and of the other card's strip, nothing but the U key (computers) in it
+  // the ultimate bar: on each card's bottom edge (at most 14 px, pwult.py checks the size per screen), clear of the pause icon and of the other card's bar
   for (const id of ['pc0', 'pc1']) {
     const s = document.querySelector('#' + id + ' .pc-ult');
     if (!s || !s.offsetParent) { bad.push(id + ': no ultimate bar'); continue; }
     const q = s.getBoundingClientRect(), c = r('#' + id);
     if (q.top < c.bottom - 6) bad.push(id + ': the ultimate bar is not under the card');
-    if (q.height > 10) bad.push(id + ': the ultimate bar is ' + q.height + 'px high (a slim strip)');
+    if (q.height > 14.5) bad.push(id + ': the ultimate bar is ' + q.height + 'px high (14 at most)');
     if (q.right > W + 1 || q.left < -6 || q.bottom > H) bad.push(id + ': the ultimate bar is off screen');
     if (hit(q, pb)) bad.push(id + ': the ultimate bar touches the pause icon');
   }

@@ -234,17 +234,15 @@ function mxActs(n) {   // the Lv 5 or Lv 10 title of every fighter
 }
 const mxJack = { id: "jack", name: () => "Jack of Spuds", ok: () => mxFighters().every((f) => mxInfo(f.id).lv >= 5), how: "Reach Lv 5 with every fighter." };
 function mxShieldHTML(lv, cls) { const b = mxBadge(lv); return `<i class="mx-sh sm ${cls || ""}" data-k="${b.k}"${lv < 2 ? " hidden" : ""}><em>${lv}</em></i>`; }
-const mxDots = (list) => mxFighters().map((f) => { const on = (list || []).includes(f.id); return `<span class="av${on ? " on" : ""}" data-f="${f.id}" title="${f.name}${on ? "" : ": not yet"}"></span>`; }).join("");
+// the Collection as one slim line, the top line of Account > Locker: KO pages, Ultimate KOs and combo routes, each as "2/8". Who is in, and the rule, are
+// in the labels (a screen reader reads them; a mouse shows the rule). Styles: css/92-locker.css.
 function masteryCollection(pan) {
   const ko = P.pages.ko.filter((id) => FIG[id]), ult = P.pages.ult.filter((id) => FIG[id]), n = mxFighters().length, rd = routesDone().length;
+  const cell = (id, c, tot, what, list) => `<span class="mx-ct" id="${id}"${list ? ` data-on="${list.join(" ")}"` : ""} role="img" aria-label="${c} of ${tot} ${what}${list && list.length ? ": " + list.map((f) => FIG[f].name).join(", ") : ""}"><b>${c}<small>/${tot}</small></b> ${what}</span>`;
   const box = document.createElement("div");
-  box.className = "mx-col";
-  box.innerHTML = '<div class="kicker">Collection</div><div class="mx-cells">' +
-    `<div class="mx-cell" id="mxColKo"><b>${ko.length}<small>/${n}</small></b><span>KO pages</span><div class="mx-dots">${mxDots(ko)}</div></div>` +
-    `<div class="mx-cell" id="mxColUlt"><b>${ult.length}<small>/${n}</small></b><span>Ultimate KOs</span><div class="mx-dots">${mxDots(ult)}</div></div>` +
-    `<div class="mx-cell" id="mxColRt"><b>${rd}<small>/${ROUTE_TOTAL}</small></b><span>Combo routes</span><div class="mx-rbar"><i style="width:${Math.round(100 * rd / ROUTE_TOTAL)}%"></i></div></div></div>` +
-    '<p class="ac-line">A fighter\'s page counts once you land it yourself: your KO on the last heart.</p>';
-  for (const d of box.querySelectorAll(".av")) acSetAvatar(d, d.dataset.f, P.pal[d.dataset.f] || 0);
+  box.className = "mx-line"; box.setAttribute("role", "group"); box.setAttribute("aria-label", "Collection");
+  box.title = "A fighter's page counts once you land it yourself: your KO on the last heart.";
+  box.innerHTML = '<span class="kicker">Collection</span>' + cell("mxColKo", ko.length, n, "KO pages", ko) + cell("mxColUlt", ult.length, n, "Ultimate KOs", ult) + cell("mxColRt", rd, ROUTE_TOTAL, "Combo routes");
   pan.appendChild(box);
 }
 

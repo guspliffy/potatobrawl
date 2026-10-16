@@ -10,7 +10,7 @@
    A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 15;
+const PROTO = 16;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -164,7 +164,7 @@ async function renderOnline() {
   if (mode !== "online") return;
   const seq = ++onSeq;
   const st = $("onStatus"), hostBtn = $("onHost"), note = $("onNote"), list = $("onList");
-  $("onTokens").textContent = P.tokens;
+  $("onTokens").textContent = fmtChips(P.tokens);
   buildRules();
   fightCard();
   if (NET.tried && !NET.ok) {

@@ -1,16 +1,17 @@
 # Ultimates on the HUD and the controls (UI only): the bar under each name card, the ULTI button, the U key, the gamepad Y button.
 #   python3 pwult.py [outdir [tag ...]]   tags: se phone desk up kbd pad   (default all; screenshots go to outdir, default the current directory)
 # Touch sizes (se 667x320, phone 844x390, desk 1280x760 with touch controls, up = upright 390x844):
-#   bar      empty / half / full under both cards: the fill follows ult / ultNeed in the fighter's colour, gold and flashing when full,
-#            two pips (uses left), the strip hangs under the card and clears the pause icon; pictures of each
+#   bar      empty / half / full on both cards' bottom edge (8/10/12/14 px by screen size): the fill follows ult / ultNeed in the
+#            fighter's colour, gold and flashing when full, flames around your own full bar only (never the opponent's), two pips
+#            (uses left), the bar clears the pause icon and the flames stay on screen; pictures of each
 #   button   ULTI is hidden until the own bar is full, then pops out gold (animation), inside the screen and clear of every other
 #            button, the pause icon, both cards and their bars; pictures
 #   press    a real press (se, desk: the U key; phone, up: a tap on the button) starts the ulti (ultN 1, move "ulti"), the button
 #            hides, one pip goes grey; the second use needs 120 and works the same way (the other kind of press); after that both
 #            pips are grey, the bar is dimmed and the button never comes back
-# kbd (1280x760, keyboard only): no touch buttons, a U key by the own bar when full, U starts the ulti; pad (same, a fake gamepad):
+# kbd (1280x760, keyboard only): no touch buttons, an ULTI [U] tag by the own bar when full (flames too), U starts the ulti; pad (same, a fake gamepad):
 #   Y (button 3) is the ulti and does nothing with an empty bar, button 2 is still jump and no longer ulti.
-# phone also: reduced motion shows the button without animation. Prints "no errors" when every check passed and no page errors happened.
+# phone also: reduced motion shows the button and the flames without animation. Prints "no errors" when every check passed and no page errors happened.
 import asyncio, sys, os
 import pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
@@ -54,7 +55,9 @@ def rgb(s): return [int(float(x)) for x in __import__('re').findall(r'[\d.]+', s
 STRIP = """(i) => { const c = document.getElementById('pc' + i), s = c.querySelector('.pc-ult'), f = s.querySelector('.uf'), cs = getComputedStyle(f);
   return { u: parseFloat(s.style.getPropertyValue('--u') || '0'), full: s.classList.contains('full'), none: s.classList.contains('none'), flash: s.classList.contains('flash'),
     pips: [...s.querySelectorAll('.up i')].filter((p) => !p.classList.contains('sp')).length, fill: cs.backgroundColor, fc: getComputedStyle(c).getPropertyValue('--fc').trim(), w: f.getBoundingClientRect().width,
-    track: s.querySelector('.ub').getBoundingClientRect().width, hidden: s.hidden, key: !s.querySelector('.uk').hidden, shown: !!s.offsetParent }; }"""
+    track: s.querySelector('.ub').getBoundingClientRect().width, hidden: s.hidden, key: !s.querySelector('.uk').hidden, shown: !!s.offsetParent,
+    me: s.classList.contains('me'), burn: c.classList.contains('burn'), flames: (() => { const fl = c.querySelector('.pc-fl'); return !!fl && !!fl.offsetParent && getComputedStyle(fl).visibility !== 'hidden' && +getComputedStyle(fl).opacity > 0.5 && fl.children.length; })(),
+    h: s.getBoundingClientRect().height }; }"""
 BTN = """(() => { const b = document.querySelector('.pb[data-k=ulti]'), cs = getComputedStyle(b); return { shown: !!b.offsetParent, rdy: b.classList.contains('rdy'), anim: cs.animationName, display: cs.display, on: b.classList.contains('on') }; })()"""
 
 # geometry of the ULTI button against everything else on the HUD (circles for round buttons, boxes for the rest)
@@ -91,7 +94,13 @@ STRIPS = """(() => { const bad = [], r = (e) => e.getBoundingClientRect(), pb = 
     const c = document.getElementById(id), s = c.querySelector('.pc-ult'), cq = r(c), sq = r(s);
     if (sq.top < cq.bottom - 6) bad.push(id + ': the strip is not under the card');
     if (sq.right > innerWidth + 1 || sq.left < -6) bad.push(id + ': the strip is off screen');
-    if (sq.height < 4 || sq.height > 10) bad.push(id + ': the strip is ' + sq.height + 'px high');
+    // the bar is part of the card's bottom edge: 8 px on small phones, 10 on phones, 12 on computers, 14 on big screens
+    const want = innerWidth >= 1500 && innerHeight >= 1000 ? 14 : innerHeight < 360 ? 8 : (innerHeight < 520 || innerWidth < 420) ? 10 : 12;
+    if (Math.abs(sq.height - want) > 0.6) bad.push(id + ': the bar is ' + sq.height + 'px high, want ' + want);
+    const fl = c.querySelector('.pc-fl');
+    if (fl && fl.offsetParent && getComputedStyle(fl).visibility !== 'hidden') { const fq = r(fl); if (fq.left < -2 || fq.right > innerWidth + 2 || fq.top < 0) bad.push(id + ': the flames leave the screen [' + [fq.left, fq.top, fq.right].map(Math.round) + ']'); }
+    const k = s.querySelector('.uk');
+    if (!k.hidden) { const kq = r(k); if (kq.right > innerWidth || kq.left < sq.right - 2 || (kq.left < pb.right && pb.left < kq.right && kq.top < pb.bottom && pb.top < kq.bottom)) bad.push(id + ': the ULTI key tag is misplaced [' + [kq.left, kq.top, kq.right, kq.bottom].map(Math.round) + ']'); }
     if (sq.left < pb.right && pb.left < sq.right && sq.top < pb.bottom && pb.top < sq.bottom) bad.push(id + ': the strip touches the pause icon');
   }
   return bad; })()"""
@@ -119,6 +128,8 @@ async def sizes_run(b, tag, vp, up, how1, how2, errs):
     if s1['u'] != 0 or s1['pips'] != 2: errs.append(f'{tag} empty bar (opponent): {s1}')
     if bt['shown'] or bt['rdy']: errs.append(f'{tag} button: shown with an empty bar {bt}')
     if rgb(s0['fill']) == GOLD: errs.append(f'{tag} empty bar: the fill is gold')
+    if s0['burn'] or s0['flames'] or s1['burn']: errs.append(f'{tag} empty bar: flames with an empty bar')
+    if not s0['me'] or s1['me']: errs.append(f'{tag}: the own bar is not marked as yours ({s0["me"]}, opponent {s1["me"]})')
     await check_strips(pg, tag, errs)
     await shot('1_empty')
     # ---- half (own 50 of 100, opponent 30) ----
@@ -142,6 +153,8 @@ async def sizes_run(b, tag, vp, up, how1, how2, errs):
     if not s0['full'] or abs(s0['u'] - 1) > 0.01 or rgb(s0['fill']) != GOLD: errs.append(f'{tag} full bar: {s0}')
     if not s1['full']: errs.append(f'{tag} full bar (opponent): {s1}')
     if s0['key']: errs.append(f'{tag} full bar: the U key hint shows on a touch screen')
+    if not s0['burn'] or not s0['flames']: errs.append(f'{tag} full bar: no flames around the own full bar (burn {s0["burn"]}, flames {s0["flames"]})')
+    if s1['burn'] or s1['flames']: errs.append(f'{tag} full bar: flames on the opponent bar (only your own bar burns)')
     if not bt['shown'] or not bt['rdy']: errs.append(f'{tag} button: not shown with a full bar {bt}')
     if 'ultiGlow' not in bt['anim']: errs.append(f'{tag} button: no gold glow animation {bt["anim"]}')
     for bad in await pg.evaluate(GEOM): errs.append(f'{tag} button: {bad}')
@@ -157,6 +170,7 @@ async def sizes_run(b, tag, vp, up, how1, how2, errs):
     bt, s0 = await pg.evaluate(BTN), await pg.evaluate(STRIP, 0)
     if bt['shown'] or bt['rdy']: errs.append(f'{tag} button: still shown after the ulti started {bt}')
     if s0['full'] or s0['u'] > 0.5 or s0['pips'] != 1: errs.append(f'{tag} after use 1: bar {s0}, want empty, not full and one pip')
+    if s0['burn']: errs.append(f'{tag} after use 1: the flames are still burning')
     await wait_can_act(pg)
     # ---- the second use needs 120 ----
     await pg.evaluate(f"{G}.fighters[0].ult = 100")
@@ -192,6 +206,10 @@ async def reduced_run(b, errs):
     if bt['anim'] != 'none': errs.append(f'{tag}: the button animates with reduced motion ({bt["anim"]})')
     shadow = await pg.evaluate("getComputedStyle(document.querySelector('.pb[data-k=ulti]')).boxShadow")
     if 'rgb' not in shadow or shadow == 'none': errs.append(f'{tag}: no steady glow with reduced motion ({shadow})')
+    s0 = await pg.evaluate(STRIP, 0)
+    if not s0['flames']: errs.append(f'{tag}: no (still) flames with reduced motion')
+    anims = await pg.evaluate("[...document.querySelectorAll('#pc0 .pc-fl i, #pc0 .pc-ult .uf')].map((e) => getComputedStyle(e).animationName).filter((a) => a !== 'none')")
+    if anims: errs.append(f'{tag}: flames or stripes move with reduced motion ({anims})')
     await ctx.close()
 
 async def kbd_run(b, errs):
@@ -207,6 +225,10 @@ async def kbd_run(b, errs):
     s0, s1 = await pg.evaluate(STRIP, 0), await pg.evaluate(STRIP, 1)
     if not s0['full'] or not s0['key']: errs.append(f'{tag}: a full bar should show the U key by the own bar {s0}')
     if s1['key']: errs.append(f'{tag}: the U key hint shows on the opponent bar')
+    kt = await pg.evaluate("document.querySelector('#pc0 .pc-ult .uk').textContent")
+    if kt != 'UltiU': errs.append(f'{tag}: the key tag reads {kt!r}, want ULTI [U]')
+    if not s0['flames']: errs.append(f'{tag}: no flames around the own full bar on a computer')
+    await check_strips(pg, tag, errs)
     await shot('3_full')
     await pg.keyboard.press('KeyU')
     try: await pg.wait_for_function(f"{G}.fighters[0].ultN === 1", timeout=8000)
