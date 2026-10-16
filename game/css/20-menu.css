@@ -29,9 +29,14 @@
 #scrMenu .mm-topr { flex: none; display: flex; align-items: center; gap: 8px; }
 /* #mRank: one button (it opens the Account sheet) holding the plate and the coins, so they read and tap as before */
 #scrMenu .mm-me { display: flex; align-items: center; gap: 8px; height: var(--mm-ctl); padding: 0; border: 0; background: none; text-align: left; }
-#scrMenu .mm-me > *, #scrMenu #bSettings { height: var(--mm-ctl); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
-#scrMenu .mm-me:active > *, #scrMenu #bSettings:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
-#scrMenu #bSettings { width: var(--mm-ctl); }
+#scrMenu .mm-me > *, #scrMenu #bSettings, #scrMenu #bFull { height: var(--mm-ctl); transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrMenu .mm-me:active > *, #scrMenu #bSettings:active, #scrMenu #bFull:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrMenu #bSettings, #scrMenu #bFull { width: var(--mm-ctl); }
+/* fullscreen (ui/menus.js fsSync): four corners out, four corners in while fullscreen; hidden first when the bar is full (menuFit's .nofs) */
+#scrMenu #bFull svg { width: 20px; height: 20px; display: block; }
+#scrMenu #bFull .fs-out, #scrMenu #bFull.on .fs-go { display: none; }
+#scrMenu #bFull.on .fs-out { display: inline; }
+#scrMenu .mm-bar.nofs #bFull { display: none; }
 #scrMenu #bSettings svg { width: 22px; height: 22px; display: block; }
 #scrMenu .plate { --tc: #c9d0e4; position: relative; flex: none; gap: 9px; padding: 0 14px 0 3px; }
 #scrMenu .mm-avw { position: relative; width: calc(var(--mm-ctl) + 6px); height: calc(var(--mm-ctl) + 6px); flex: none; margin-top: -9px; }

@@ -17,7 +17,7 @@ TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.htm
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'shop'
 ONLY = sys.argv[2:]
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 SIZES = {'s667': (667, 320, False), 'p844': (844, 390, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
 PROF = 'potatobrawl.profile.v1'
 G = 'window.__blastline.game'
@@ -64,7 +64,7 @@ async def shown(pg, sel): return await pg.evaluate(f"(() => {{ const e = documen
 async def armed(pg, sel, c):
     """Wait until the button wears its armed class."""
     await pg.wait_for_function("(a) => document.querySelector(a[0]).classList.contains(a[1])", arg=[sel, c], polling=40, timeout=4000)
-# The page is heavy under swiftshader: a tap or a screenshot can take longer than the 3 s an armed button waits for its second tap.
+# The page is heavy on a slow machine: a tap or a screenshot can take longer than the 3 s an armed button waits for its second tap.
 # So the first tap is a real touch, the second a click sent at once (and a button that timed out meanwhile is armed again first).
 async def fast(pg, sel): await pg.evaluate("(s) => document.querySelector(s).click()", sel)
 async def two(pg, clk, sel, c='arm', after=300):
