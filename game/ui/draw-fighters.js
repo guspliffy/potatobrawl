@@ -887,7 +887,7 @@ function scythe(c, f, P, RC, limb, lw) {
     c.quadraticCurveTo(lb * 0.16, lb * 0.44, -3, 3.5); c.closePath();                                // the cutting edge back to the collar
     c.fillStyle = RC.blade; c.fill(); c.lineWidth = 1.6 / Math.max(0.4, Math.abs(s)); c.strokeStyle = OUT; c.stroke();
     c.save(); c.clip(); c.fillStyle = RC.spine; c.beginPath(); c.moveTo(3, -3); c.quadraticCurveTo(lb * 0.58, lb * 0.3, -lb * 0.28, lb); c.quadraticCurveTo(lb * 0.42, lb * 0.32, 2, 2); c.closePath(); c.fill(); c.restore();
-    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // 200 chips: a ghost-lit edge
+    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // the top chip skin (300 chips): a ghost-lit edge
     c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = 1.2 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke();
     c.restore();
   }
@@ -1160,6 +1160,7 @@ function drawPotato(c, f, tk, at) {
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
   roadSkinBody(c, f, P, tk, flash);
+  if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
   potatoFace(c, f, P, look);
   if (cos === "odin") odinBeard(c, P, pal);
   if (cos === "alchemist") {
@@ -1214,7 +1215,7 @@ function drawSwooshes(c, f, P, tk, alpha) {
   else if (m && m.magic) { c.globalAlpha = alpha * 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
   else drawSwoosh(c, f, P, S);
 }
-// Slash arcs. Samurai skins from 120 chips get an ink-brush underlay with the same shape and size.
+// Slash arcs. Samurai skins from the second chip skin (150 chips) get an ink-brush underlay with the same shape and size.
 function drawSwoosh(c, f, P, S) {
   const ink = f.spec.look.costume === "samurai" && skinLvl(f) >= 2 && !S.body;
   const path = () => {

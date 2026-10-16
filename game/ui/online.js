@@ -74,7 +74,7 @@ function lobbyPresence() {
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
   const hosting = NET.phase === "hosting" && !NET.qm, q = qmPresence();   // ui/quick.js: searching (qs) or in a Quick match
   const tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs }).catch(() => {});
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs, np: shopWorn() || null }).catch(() => {});   // np: your nameplate (ui/shop.js)
 }
 // The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
 function onBoss() {
@@ -187,6 +187,7 @@ async function renderOnline() {
   const names = await namesFor(peers);
   if (seq !== onSeq || mode !== "online") return;
   $("onMyName").textContent = NET.myName || "You";
+  plateSet($("onMyName").parentNode, shopWorn());   // your nameplate on the Fight Card (ui/shop.js)
   const nameIn = $("onName");
   $("onMyName").hidden = NET.standalone; nameIn.hidden = !NET.standalone;
   if (NET.standalone && document.activeElement !== nameIn) nameIn.value = NET.myName;
@@ -213,6 +214,7 @@ async function renderOnline() {
     if (NET.invite && h.presence.host === NET.invite) li.className = "invited";
     const who = document.createElement("div"); who.className = "who";
     const b = document.createElement("b"); b.textContent = names[h.peer] || "Friend";
+    plateSet(b, h.presence.np);   // the host's nameplate (ui/shop.js; unknown or none = plain)
     const sp = document.createElement("span"); const hf = FIG[h.presence.f];
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
@@ -239,7 +241,7 @@ async function renderOnline() {
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
-  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy) })));
+  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy), np: plateCls(p.presence && p.presence.np) })));
   // a team brawl's board (ui/online-team.js): the seats with the names of the people in the match's room
   const tbOn = !!NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake");
   const roomNames = tbOn && NET.mr ? Object.assign({}, names, await namesFor(NET.mr.peers())) : names;
@@ -288,7 +290,7 @@ function hereNow(ps) {
   if (!ps) return;
   if (!ps.length) { box.textContent = "Just you. Friends show up here when they open this page."; return; }
   for (const p of ps) {
-    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "");
+    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "") + (p.np ? " " + p.np : "");
     el.textContent = p.busy ? `${p.n} · in a match` : p.n;
     box.appendChild(el);
   }
@@ -312,7 +314,7 @@ function onlineArtFighter() {
     o.f = newGame({ players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     o.f.x = 0; o.f.y = 0;
   }
-  return o.f;
+  return glazeMark(o.f, glazeHas(spec.id, o.pi));   // ui/glaze.js
 }
 // the Fight Card's model, live in the worn skin (the select's paintModel: 88 % of the art area, the Reaper's scythe fitted)
 const onArt = { cv: null, f: null, fit: 0.88, bottom: 0.93 };
@@ -352,8 +354,8 @@ async function netHost() {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
-  if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres() }); }
-  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo() });
+  if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
+  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -366,7 +368,7 @@ async function netJoin(code) {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
-  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter) });
+  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres() });
   if (NET.invite === code) NET.invite = null;
   lobbyPresence(); renderOnline();
 }
@@ -486,6 +488,10 @@ function startOnlineMatch(st) {
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
+  { // your friend's glaze, read from his presence (ui/glaze.js); yours comes from enterMatchUI
+    const o = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null, f = G.fighters[1 - meSlot];
+    if (f) glazeMark(f, glazeFrom(o && o.presence, f));
+  }
   resolveOppName();
 }
 function readOpp(pr) {

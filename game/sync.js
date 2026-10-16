@@ -20,6 +20,18 @@ const SYNC = (function () {
   const cleanMap = (m, hi) => { const r = {}; for (const id of Object.keys(m).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) { const v = num(m[id], 0, hi, 0); if (v > 0) r[id] = v; } return r; };
   const cleanIds = (l) => (Array.isArray(l) ? [...new Set(l.filter((x) => typeof x === "string" && ID_RE.test(x)))].sort().slice(0, 24) : []);
   const MSEED_MAX = 650, MLV_MAX = 10;   // the head start's cap (XP) and the top level
+  const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;   // a nameplate id (ui/shop.js); a newer page may know more than this copy, so only the spelling is checked
+  // Glaze (ui/glaze.js): { fighterId: [skin indices] }, like the skins owned but without the base skin. A fighter with none is left out, so a prof has one spelling.
+  const cleanGlaze = (m, known) => {
+    const r = {};
+    for (const id of Object.keys(m).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) {
+      const n = known.has(id) ? known.get(id) : 16, list = Array.isArray(m[id]) ? m[id] : [];
+      const l = [...new Set(list.filter((i) => Number.isInteger(i) && i >= 0 && i < n))].sort((a, b) => a - b);
+      if (l.length) r[id] = l;
+    }
+    return r;
+  };
+  const cleanPlates = (l) => [...new Set(l.filter((x) => typeof x === "string" && PLATE_RE.test(x)))].sort().slice(0, 64);
 
   /* ----- the sync code: 16 characters of Crockford base32, shown as 7K3F-9QXM-2PLA-W8RT ----- */
   // What a player may type: any case, dashes and spaces optional, O read as 0, I and L as 1. "" when it cannot be a code.
@@ -44,11 +56,16 @@ const SYNC = (function () {
   const canon = (v) => String(JSON.stringify(sortKeys(v)));
   const same = (a, b) => canon(a) === canon(b);
   // Daily Potato (ui/daily.js): { d: last day tried, r: 1 / 0.5 / 0 (-1 = started, not finished), s: streak, w: the last day that kept
-  // the streak going, b: best streak }. Not an object -> null (missing).
+  // the streak going, b: best streak }. Not an object -> null (missing). Added later (left out while not set, so an older page's record has
+  // one spelling): p = the streak that showed before today's first try, kept only while Another go is open (a finished loss or draw);
+  // x = 1 once Another go was taken today.
   function cleanDaily(q) {
     if (!isObj(q)) return null;
     const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
-    return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
+    const out = { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
+    if (d && typeof q.p === "number" && isFinite(q.p)) out.p = num(q.p, 0, 1e6, 0);
+    if (d && (q.x === 1 || q.x === true)) out.x = 1;
+    return out;
   }
   // The Road (ui/road.js): { s: per stop (24 in three regions), the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: Old
   // Scratch's levels won as bits (1 Normal, 2 Hard, 4 Nightmare), paid: his first win's reward was paid; b2 / p2: the same for Zorp,
@@ -112,6 +129,10 @@ const SYNC = (function () {
     // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
     if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
     if (typeof p.comboPaid === "boolean") out.comboPaid = p.comboPaid;
+    // the Shop (ui/shop.js): skins glazed per fighter and the nameplates owned (both a union), the plate worn ("" = Ink)
+    if (isObj(p.glazed)) out.glazed = cleanGlaze(p.glazed, known);
+    if (Array.isArray(p.plates)) out.plates = cleanPlates(p.plates);
+    if (typeof p.plate === "string") out.plate = PLATE_RE.test(p.plate) ? p.plate : "";
     out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
@@ -141,6 +162,9 @@ const SYNC = (function () {
     if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
+    if (S.glazed !== undefined) P.glazed = Object.fromEntries(Object.entries(S.glazed).map(([k, v]) => [k, v.slice()]));
+    if (S.plates !== undefined) P.plates = S.plates.slice();
+    if (S.plate !== undefined) P.plate = S.plate;
     for (const k of ["mxp", "mseed", "mpaid"]) if (S[k] !== undefined) P[k] = Object.assign({}, S[k]);
     if (S.pages !== undefined) P.pages = { ko: S.pages.ko.slice(), ult: S.pages.ult.slice() };
     return P;
@@ -151,7 +175,8 @@ const SYNC = (function () {
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
       (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)) ||
-      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)));   // fighter mastery XP (Practice alone earns it)
+      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)) ||   // fighter mastery XP (Practice alone earns it)
+      (Array.isArray(P.plates) && P.plates.length > 0) || (isObj(P.glazed) && Object.values(P.glazed).some((l) => Array.isArray(l) && l.length > 0)));   // Shop buys
   }
 
   /* ----- the merge -----
@@ -198,17 +223,28 @@ const SYNC = (function () {
     { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
     { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
     { const v = pickOpt("title"); if (have(v)) out.title = v; }
-    // Daily Potato: the side that changed it; if both did, the later day, then (same day) a finished try over one still running (-1),
-    // then the newer side. The best streak keeps the higher one.
+    // Daily Potato: the side that changed it; if both did, the later day, then (same day) the record whose Another go was taken (it is
+    // further along), then a finished try over one still running (-1), then the newer side. The best streak keeps the higher one.
     if (have(S.daily) || have(L.daily)) {
       const l = L.daily, s = S.daily, b = B.daily;
       let v = !have(s) ? l : !have(l) ? s : have(b) && same(l, b) ? s : have(b) && same(s, b) ? l : null;
       if (!v) {
-        const w = l.d !== s.d ? (l.d > s.d ? l : s) : (l.r === -1) !== (s.r === -1) ? (l.r === -1 ? s : l) : localNewer ? l : s;
+        const w = l.d !== s.d ? (l.d > s.d ? l : s) : !l.x !== !s.x ? (l.x ? l : s) : (l.r === -1) !== (s.r === -1) ? (l.r === -1 ? s : l) : localNewer ? l : s;
         v = Object.assign({}, w, { b: Math.max(l.b, s.b) });
       }
       out.daily = Object.assign({}, v);
     }
+    // the Shop: skins glazed and nameplates owned are a union (a side without the field is "unchanged"); the plate worn follows the newer side
+    if (have(S.glazed) || have(L.glazed)) {
+      const r = {}, a = L.glazed || {}, b = S.glazed || {};
+      for (const id of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) {
+        const l = [...new Set([...(a[id] || []), ...(b[id] || [])])].sort((x, y) => x - y);
+        if (l.length) r[id] = l;
+      }
+      out.glazed = r;
+    }
+    if (have(S.plates) || have(L.plates)) out.plates = [...new Set([...(L.plates || []), ...(S.plates || [])])].sort();
+    { const v = pickOpt("plate"); if (have(v)) out.plate = v; }
     // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
     if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
     if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);

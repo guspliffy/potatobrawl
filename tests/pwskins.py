@@ -3,7 +3,7 @@
 #  - the select shows one Skins bar (the worn skin, SKINS 2/7) as a 44+ px tap target at the foot of the stage, no swatch row;
 #  - the bar opens the sheet, which fits the screen; seven cards, each with its model drawn, in their states (worn, own, buy, short,
 #    Road with its region open, Road with its region shut); nothing in the sheet runs past its edges;
-#  - the preview says what each locked skin needs (the Road lines in both cases, "70 more chips needed.", "You have 130 · 10 left after");
+#  - the preview says what each locked skin needs (the Road lines in both cases, "140 more chips needed.", "You have 160 · 10 left after");
 #  - Buy is two taps (Sure? for 3 s, a tap elsewhere puts Buy back), the bought skin is worn, chips counted down, YOURS!; an owned skin
 #    is worn with one tap; the sheet stays open and the select behind follows; Esc, the backdrop and the X close it;
 #  - a Road boss beaten with another fighter: the line says so;
@@ -22,7 +22,7 @@ KEY = 'potatobrawl.profile.v1'
 PORT = int(os.environ.get('PWSKINS_PORT', 8096))
 URL = f'http://localhost:{PORT}/'
 SIZES = [('se', 667, 320), ('phone', 844, 390), ('desk', 1280, 760), ('upright', 390, 844)]
-BASE = {'tokens': 130, 'rating': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': 1, 'last': 'samurai', 'owned': {'samurai': [0, 1]}, 'pal': {'samurai': 1},
+BASE = {'tokens': 160, 'rating': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': 1, 'last': 'samurai', 'owned': {'samurai': [0, 1]}, 'pal': {'samurai': 1},
         'road': {'s': [7, 7, 3, 1], 'b': 0, 'paid': False}}
 errs = []
 
@@ -72,14 +72,14 @@ async def select_part(b, tag, w, h):
     # the sheet
     await (pg.tap if w < 1000 else pg.click)('#dSkins'); await pg.wait_for_timeout(600); await settle(pg)
     need(await ev(pg, "!document.getElementById('scrSkins').hidden"), f'{tag}: the Skins bar does not open the sheet')
-    need(await txt(pg, '#skTitle') == 'Samurai Skins' and await txt(pg, '#skOwned') == '2 / 7 owned' and await txt(pg, '#skTokens') == '130', f"{tag}: the band reads {await txt(pg, '#skTitle')!r} {await txt(pg, '#skOwned')!r} {await txt(pg, '#skTokens')!r}")
+    need(await txt(pg, '#skTitle') == 'Samurai Skins' and await txt(pg, '#skOwned') == '2 / 7 owned' and await txt(pg, '#skTokens') == '160', f"{tag}: the band reads {await txt(pg, '#skTitle')!r} {await txt(pg, '#skOwned')!r} {await txt(pg, '#skTokens')!r}")
     st = await ev(pg, STATES)
     need(st == ['own', 'worn', 'buy', 'short', 'road', 'shut', 'shut'], f'{tag}: card states {st}')
     inked = await ev(pg, INKED)
     need(len(inked) == 7 and all(n > 0 for n in inked), f'{tag}: card models not drawn {inked}')
     fit = await ev(pg, FIT)
     need(not fit, f'{tag}: {fit[:4]}')
-    need(await txt(pg, '#skChip .sk:nth-child(3) .sk-f small') == '120' and await txt(pg, '#skRoad .sk:nth-child(1) .sk-f small') == 'Beat Old Scratch'
+    need(await txt(pg, '#skChip .sk:nth-child(3) .sk-f small') == '150' and await txt(pg, '#skRoad .sk:nth-child(1) .sk-f small') == 'Beat Old Scratch'
          and await txt(pg, '#skRoad .sk:nth-child(2) .sk-f small') == 'The Kitchen · locked', f'{tag}: card foot lines')
     await pg.screenshot(path=f'{OUT}/{tag}_2_rack.png')
     # what each locked skin needs
@@ -91,18 +91,18 @@ async def select_part(b, tag, w, h):
     await ev(pg, card('skRoad', 1)); await pg.wait_for_timeout(200)
     need(await txt(pg, '#skAct .sk-l1') == 'Beat Zorp on the Road with Samurai.' and await txt(pg, '#skAct .sk-l2') == 'The Kitchen opens once Old Scratch is beaten.', f"{tag}: shut Road lines {await txt(pg, '#skAct')!r}")
     await ev(pg, card('skChip', 3)); await pg.wait_for_timeout(200)
-    need(await txt(pg, '#skAct .sk-l1') == '70 more chips needed.' and not await ev(pg, "!!document.getElementById('skGo')"), f"{tag}: short lines {await txt(pg, '#skAct')!r}")
+    need(await txt(pg, '#skAct .sk-l1') == '140 more chips needed.' and not await ev(pg, "!!document.getElementById('skGo')"), f"{tag}: short lines {await txt(pg, '#skAct')!r}")
     need(not await ev(pg, FIT), f'{tag}: the short preview runs out: {(await ev(pg, FIT))[:3]}')
     await pg.screenshot(path=f'{OUT}/{tag}_4_short.png')
     # Buy is two taps; a tap elsewhere puts Buy back
     await ev(pg, card('skChip', 2)); await pg.wait_for_timeout(200)
-    need(await txt(pg, '#skGo') == 'Buy 120' and await txt(pg, '#skAct .sk-l2') == 'You have 130 · 10 left after', f"{tag}: buy lines {await txt(pg, '#skAct')!r}")
+    need(await txt(pg, '#skGo') == 'Buy 150' and await txt(pg, '#skAct .sk-l2') == 'You have 160 · 10 left after', f"{tag}: buy lines {await txt(pg, '#skAct')!r}")
     await ev(pg, "document.getElementById('skGo').click()"); await pg.wait_for_timeout(150)
-    need(await txt(pg, '#skGo') == 'Sure? 120' and await ev(pg, "document.getElementById('skGo').classList.contains('ember')"), f"{tag}: the first tap does not arm: {await txt(pg, '#skGo')!r}")
+    need(await txt(pg, '#skGo') == 'Sure? 150' and await ev(pg, "document.getElementById('skGo').classList.contains('ember')"), f"{tag}: the first tap does not arm: {await txt(pg, '#skGo')!r}")
     await pg.screenshot(path=f'{OUT}/{tag}_5_sure.png')
-    need((await prof(pg))['tokens'] == 130, f'{tag}: one tap bought the skin')
+    need((await prof(pg))['tokens'] == 160, f'{tag}: one tap bought the skin')
     await ev(pg, "document.getElementById('skFx').click()"); await pg.wait_for_timeout(150)
-    need(await txt(pg, '#skGo') == 'Buy 120', f"{tag}: a tap elsewhere leaves {await txt(pg, '#skGo')!r}")
+    need(await txt(pg, '#skGo') == 'Buy 150', f"{tag}: a tap elsewhere leaves {await txt(pg, '#skGo')!r}")
     # wear an owned skin with one tap: the sheet stays, the select behind follows
     await ev(pg, card('skChip', 0)); await pg.wait_for_timeout(250)
     st = await ev(pg, STATES)

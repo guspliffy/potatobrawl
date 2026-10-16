@@ -70,9 +70,9 @@ function skMakeCard(spec, i, list, tap) {
   b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
-  const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
+  const f = glazeMark(BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
   f.x = 0; f.y = 0; f.facing = -1;
-  list.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94 });
   return b;
 }
 const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
@@ -134,6 +134,7 @@ function skPreview(spec) {
     f.x = 0; f.y = 0; f.facing = -1;
     SK.art = { cv: $("skArt"), f, i, fit: 0.8, bottom: 0.94 };
   }
+  glazeMark(SK.art.f, glazeHas(spec.id, i));   // ui/glaze.js: the preview shines when the skin is glazed
 }
 // the loop draws the preview while the sheet is open (loop.js)
 function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }

@@ -1,0 +1,153 @@
+/* ---------- The Shop: nameplates and Glaze (Fable 5.1, locker-chips/fable-design.md section 3; ui/shop.js) ----------
+   The Shop is the Account sheet's fourth tab (#acPanH). Top: the balance coin and where chips come from. Then the eight nameplates as cards
+   (the plate on a pill, its name, and a line: Worn / Tap to wear / the price), then one Glaze card per fighter (his worn skin drawn on a canvas, the price or
+   Glazed). Card states: worn (gold ring, WORN tag), own, buy (gold price), short (grey price, no buy), arm (ember foot: "Sure?" for 3 s), glazed (pearl border).
+   Eight across on a landscape sheet, four across upright. The plate looks (.np-<id>) are used wherever a name stands on a plate: the pill on the
+   start page (css/20-menu.css reads --np-fg / --np-sub / --np-stroke), the Profile's name field, the results; plateCls(id) in ui/shop.js gives the class. */
+
+/* ---- the plate looks: a background and the text colours that stay readable on it (contrast 5:1 or better, checked on every colour stop) ---- */
+.np-sunset { --np-fg: #0e1022; --np-sub: #2b2230; --np-bg: linear-gradient(90deg, #ffe08a, #f4c95d 45%, #ef7a52); }
+.np-mint { --np-fg: #0e1022; --np-sub: #16352c; --np-bg: linear-gradient(180deg, #b4f3d4, #6fcf9f); }
+.np-nightsky { --np-fg: #fff; --np-sub: #cdd5ff;
+  --np-bg: radial-gradient(circle at 7% 30%, #fff 0 0.8px, transparent 1.4px), radial-gradient(circle at 94% 72%, #fff 0 0.7px, transparent 1.3px), radial-gradient(circle at 90% 22%, #ffe08a 0 0.9px, transparent 1.5px),
+    radial-gradient(circle at 10% 78%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 62% 16%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 76% 84%, #ffe08a 0 0.6px, transparent 1.1px),
+    linear-gradient(180deg, #1b2160, #0b0e2e); }
+.np-roaddust { --np-fg: #f9e7bd; --np-sub: #f3dcae;
+  --np-bg: repeating-linear-gradient(90deg, transparent 0 6px, rgba(243, 217, 164, 0.38) 6px 10px) 0 86% / 100% 2px no-repeat, linear-gradient(180deg, #7a3f27, #4e2517); }
+.np-kraken { --np-fg: #fff; --np-sub: #f3edff; --np-bg: linear-gradient(90deg, #653b88, #186b62); }
+/* Halftone: cream paper, ketchup dots that come in towards the right end, so the name and the tier line stay clean */
+.np-halftone { --np-fg: #0e1022; --np-sub: #3a2c22; --np-stroke: 2px #fff6e4;
+  --np-bg: linear-gradient(90deg, #fff6e4 0 38%, rgba(255, 246, 228, 0.55) 72%, rgba(255, 246, 228, 0) 100%), radial-gradient(#e8453c 1.1px, transparent 1.4px) 0 0 / 5px 5px, #fff6e4; }
+.np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; --np-bg: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); }
+/* every plate paints with its --np-bg (the lobby's plates below re-apply it where their own rules set a background) */
+[class*="np-"] { background: var(--np-bg); color: var(--np-fg); }
+/* the Profile's name field wears its plate; a plate with a halo (Halftone) outlines the typed letters too */
+#acName[class*="np-"] { -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; caret-color: var(--np-fg); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
+#acName[class*="np-"]::selection { background: rgba(14, 16, 34, 0.35); }
+
+/* the results: your name on your plate, a small pill at the end of the kicker line (ui/shop.js shopResPlate; hidden for Ink) */
+.rs-np { display: inline-flex; align-items: center; max-width: 12em; height: 20px; margin-left: 3px; padding: 0 8px; vertical-align: -5px; border: 2px solid var(--ink); border-radius: 999px;
+  font: 800 11px/1 var(--display); letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: none; box-shadow: 0 2px 0 var(--ink); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+.rs-np[hidden] { display: none; }
+#app:not(.short):not(.portrait) .rs-np { height: 24px; padding: 0 10px; font-size: 13px; vertical-align: -7px; }   /* the desktop kicker is 14 px */
+
+/* ---- the Shop tab ---- */
+/* sizes as variables: the plate area, the card foot, the model's height, the balance coin; each size below sets its own */
+#acPanH { --pearl: linear-gradient(115deg, #ffb3d9, #8ff0dc 45%, #c9b3ff 70%, #ffd6a8); --pa: 56px; --ft: 36px; --art: 66px; --coin: 38px; --gap: 8px; gap: var(--gap); }
+.sh-top { flex: none; display: flex; align-items: center; gap: 12px; min-height: var(--coin); }
+#acPanH .sh-bal { flex: none; height: var(--coin); gap: 6px; padding: 0 13px 0 9px; font-size: 21px; border-radius: 10px; }
+#acPanH .sh-bal::before { width: 24px; height: 19px; }
+#acPanH .sh-from { flex: 1 1 auto; min-width: 0; margin: 0; font: 500 12.5px/1.3 var(--body); color: var(--sand); }
+#acPanH .sh-from.say { color: #fff; font-weight: 600; }
+#acPanH .sh-from.say::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--ember); vertical-align: 1px; }
+.sh-skins { flex: none; font: 700 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.sh-skins b { font-weight: 800; color: var(--text); }
+.sh-pop { animation: shPop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes shPop { from { transform: scale(1.18); } }
+.sh-k { flex: none; display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 2px 2px 0; }
+.sh-k b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.sh-k span { min-width: 0; font: 500 12.5px/1 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-k .sh-k2 { font-style: normal; }   /* the glazed-here sentence: in the kicker on a landscape sheet, under the cards (.sh-note) on a tiny or upright one */
+.sh-grid { flex: none; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; padding: 3px 0 5px; margin: -3px 0 -5px; }   /* room above and below for the rings and the hard shadows (the sheet's own padding has the sides) */
+#acPanH .sh-note { flex: none; display: none; margin: 0; font: 500 12px/1.35 var(--body); color: var(--mute); }
+
+/* a card: the same recipe as the Skin Rack's */
+.sh-c { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0; text-align: left; font: inherit; color: var(--text);
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; -webkit-tap-highlight-color: transparent; }
+.sh-c:active { transform: translateY(2px); }
+.sh-c:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+@media (hover: hover) { .sh-c:hover { transform: translateY(-1px); } .sh-c:hover:active { transform: translateY(2px); } }
+.sh-pa { flex: none; display: flex; justify-content: center; align-items: flex-start; height: var(--pa); padding: calc(var(--pa) - 26px - 5px) 3px 0; }   /* the pill sits 5 px above the foot, under the WORN tag */
+.sh-np { display: flex; align-items: center; justify-content: center; max-width: 100%; min-width: 0; height: 26px; padding: 0 8px; border: 2px solid var(--ink); border-radius: 999px;
+  font: 800 11.5px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase;
+  box-shadow: 0 2px 0 var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.14); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+.sh-np:not([class*="np-"]) { color: var(--text); background: linear-gradient(180deg, #343b6a, #22264a); }   /* Ink; the other plates bring their own look (.np-*, above) */
+.sh-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-top: 1px; }
+.sh-a { position: relative; flex: none; height: var(--art); overflow: hidden; border-radius: 7px 7px 0 0;
+  background: radial-gradient(ellipse 62% 70% at 50% 62%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #31376a, #1f2346); }
+.sh-a canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sh-f { flex: none; height: var(--ft); display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0; padding: 0 7px 1px; background: rgba(14, 16, 34, 0.55); border-top: 1px solid rgba(255, 255, 255, 0.06); border-radius: 0 0 7px 7px; }
+.sh-f b { font: 800 11.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-f small { display: flex; align-items: center; min-width: 0; font: 700 11px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-f small .tokglyph { flex: none; margin: 0 4px 0 0; }
+.sh-f small > span + .tokglyph { margin-left: 4px; }   /* after a word (Glaze, Sure?) */
+.sh-c.own .sh-f small { color: var(--sand); }
+.sh-c.buy .sh-f small { color: var(--gold); font-size: 12px; }
+.sh-c.short .sh-f small { font-size: 12px; }
+.sh-c.short .sh-f .tokglyph { filter: grayscale(1) brightness(0.9); }
+.sh-gz .sh-f small { font-size: 11.5px; }
+.sh-gz.buy .sh-f small { color: var(--gold); }
+/* worn: a gold ring, the name in gold, the corner tag */
+.sh-c.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.sh-c.worn .sh-f b { color: var(--gold); }
+.sh-c.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+/* armed: the foot turns ember, "Sure?" */
+.sh-c.arm .sh-f { background: var(--ember); border-top-color: transparent; }
+.sh-c.arm .sh-f b, .sh-c.arm .sh-f small, .sh-c.arm.buy .sh-f small { color: var(--ink); }
+.sh-c.arm .sh-f small .tokglyph { filter: brightness(0.4); }
+/* glazed: a pearl border and a pearl line */
+.sh-gz.glazed { border-color: transparent; background: linear-gradient(180deg, #2b3058, #1b1f3d) padding-box, var(--pearl) border-box; }
+.sh-gz.glazed .sh-f small { background: var(--pearl); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
+
+/* ---- sizes ---- */
+/* 844x390 (and any short landscape): the whole Shop fits the sheet without scrolling; the glazed-here sentence moves into the kicker */
+#app.short #acPanH { --pa: 46px; --ft: 32px; --art: 46px; --coin: 34px; --gap: 4px; }
+#app.short #acPanH .sh-bal { font-size: 19px; padding: 0 11px 0 8px; }
+#app.short #acPanH .sh-bal::before { width: 22px; height: 17px; }
+#app.short .sh-f b { font-size: 11px; }
+#app.short .sh-k b, #app.short .sh-k span { line-height: 11px; }
+/* 667x320: eight across still, a smaller pill and cards; the kicker lines keep their first part and the note comes back under the cards */
+#app.tiny #acPanH { --pa: 42px; --ft: 30px; --art: 40px; --coin: 32px; --gap: 5px; }
+#app.tiny #acPanH .sh-bal { font-size: 18px; padding: 0 10px 0 7px; }
+#app.tiny #acPanH .sh-bal::before { width: 20px; height: 16px; }
+#app.tiny .sh-skins { display: none; }
+#app.tiny .sh-grid { gap: 6px; }
+#app.tiny .sh-k .sh-k2 { display: none; }
+#app.tiny #acPanH .sh-note { display: block; }
+#app.tiny .sh-np { height: 22px; padding: 0 6px; font-size: 10px; letter-spacing: 0.03em; }
+#app.tiny .sh-pa { padding-top: calc(var(--pa) - 22px - 4px); }
+#app.tiny .sh-f { padding: 0 5px 1px; gap: 3px; }
+#app.tiny .sh-f b { font-size: 10.5px; letter-spacing: 0.03em; }
+#app.tiny .sh-f small, #app.tiny .sh-c.buy .sh-f small, #app.tiny .sh-c.short .sh-f small, #app.tiny .sh-gz .sh-f small { font-size: 10px; letter-spacing: 0.02em; }
+#app.tiny .sh-c.worn::after { padding: 3px 4px 2px; font-size: 8.5px; }
+/* upright and narrow: four across, two rows of each, the note under the cards */
+#app.portrait #acPanH, #app.narrow #acPanH { --pa: 52px; --ft: 36px; --art: 60px; --coin: 36px; --gap: 8px; }
+#app.portrait .sh-grid, #app.narrow .sh-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 6px; }
+#app.portrait #acPanH .sh-note, #app.narrow #acPanH .sh-note { display: block; }
+#app.portrait .sh-k .sh-k2, #app.narrow .sh-k .sh-k2 { display: none; }
+#app.narrow .sh-skins { display: none; }
+#app.narrow #acPanH .sh-from { font-size: 11.5px; line-height: 1.3; }
+#app.narrow #acPanH .sh-bal { font-size: 18px; padding: 0 10px 0 7px; }
+#app.narrow #acPanH .sh-bal::before { width: 21px; height: 17px; }
+#app.narrow .sh-pa { padding-inline: 2px; }
+#app.narrow .sh-np { padding: 0 5px; font-size: 10px; letter-spacing: 0.03em; }
+#app.narrow .sh-f { padding: 0 5px 1px; }
+#app.narrow .sh-f b { font-size: 10.5px; letter-spacing: 0.03em; }
+#app.narrow .sh-f small, #app.narrow .sh-c.buy .sh-f small, #app.narrow .sh-c.short .sh-f small, #app.narrow .sh-gz .sh-f small { font-size: 10px; letter-spacing: 0; }
+#app.narrow .sh-f small .tokglyph { margin-right: 3px; }
+#app.narrow .sh-f small > span + .tokglyph { margin-left: 3px; }
+/* the desktop: a taller model and a little more air */
+#app:not(.short):not(.portrait) #acPanH { --pa: 58px; --ft: 38px; --art: 80px; --coin: 40px; --gap: 10px; }
+#app:not(.short):not(.portrait) .sh-np { font-size: 12px; }
+#app:not(.short):not(.portrait) .sh-f b { font-size: 12px; }
+#app:not(.short):not(.portrait) .sh-f small, #app:not(.short):not(.portrait) .sh-c.buy .sh-f small, #app:not(.short):not(.portrait) .sh-c.short .sh-f small, #app:not(.short):not(.portrait) .sh-gz .sh-f small { font-size: 12px; }
+#app:not(.short):not(.portrait) #acPanH .sh-from, #app:not(.short):not(.portrait) .sh-k span, #app:not(.short):not(.portrait) #acPanH .sh-note { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .sh-pop { animation: none; } .sh-c { transition: none; } }
+
+/* ---- the Account tabs: four now (Profile, Stats, Locker, Shop); on a narrow screen their padding gives way so the strip stays inside the sheet (390 px: 17, 360 px: 13, 320 px: 8) ---- */
+#app.narrow .ac-tabs .chip { padding-left: clamp(8px, calc((100vw - 252px) / 8), 20px); padding-right: clamp(8px, calc((100vw - 252px) / 8), 20px); }
+
+/* ---- Another go on the Daily sheet (ui/daily.js): the price on the button; dimmed while the chips are short ---- */
+#dlyAgain .tokglyph { margin: 0 0.12em 0 0.2em; }
+#dlyAgain.dim { opacity: 0.6; filter: saturate(0.6); }
+#dlyAgain.dim .tokglyph { filter: grayscale(1); }
+#app.narrow .dly-acts { flex-wrap: wrap; }
+#app.narrow .dly-acts #dlyBack { flex: 1 1 100%; }
+
+/* the friends lobby and Quick match (css/95-lobby.css): your name plate on the Fight Card, a friend's name in the match list and the Here now pills */
+#scrOnline .on-plate[class*="np-"], #scrQuick .on-plate[class*="np-"] { background: var(--np-bg); border: 2px solid var(--ink); border-left: 0; }
+#scrOnline .on-plate[class*="np-"] b, #scrQuick .on-plate[class*="np-"] b, #scrOnline .on-plate[class*="np-"] .on-name { color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-list .who b[class*="np-"] { align-self: flex-start; max-width: 100%; padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-pl[class*="np-"] { background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }

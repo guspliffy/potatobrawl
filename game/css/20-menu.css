@@ -45,6 +45,13 @@
 #scrMenu .plate .who b { display: block; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; font-size: 16px; }
 #scrMenu .plate .who small { font-size: 12px; }
 #scrMenu .plate .who small i { font-variant-numeric: tabular-nums; }
+/* a nameplate bought in the Shop (ui/shop.js; the looks are .np-<id> in css/93-shop.css): the plate class paints the plate and sets --np-fg / --np-sub
+   (and --np-stroke, a halo for a busy plate), the name and the tier line follow it; without one (Ink) these read as before */
+#scrMenu .plate .who b { color: var(--np-fg, inherit); }
+#scrMenu .plate .who small { color: var(--np-sub, var(--tc)); }
+#scrMenu .plate .who small i { color: var(--np-fg, var(--text)); opacity: var(--np-io, 0.8); }
+#scrMenu .plate .who { -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrMenu .plate[class*="np-"] { --np-io: 1; }
 /* the chosen title: a small sticker on the plate's lower edge (the plate stays two lines) */
 #scrMenu .mm-title { position: absolute; right: 8px; bottom: -15px; z-index: 1; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font: 800 10px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--sand);
