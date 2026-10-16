@@ -6,10 +6,11 @@
    A small input delay, sized from the measured ping, hides the network round trip.
    Checksums every second catch any divergence; the host then sends a full snapshot, in pieces (one presence holds 4 KB).
    A boss fight (2v1) is the same lockstep with two inputs: host = slot 0, guest = slot 1, the boss (slot 2) moves himself in the
-   simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on. */
+   simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on.
+   A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 14;
+const PROTO = 15;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -20,7 +21,9 @@ const NET = {
   syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
   cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, qm: null,   // qm: the Quick match being joined or played (ui/quick.js)
   standalone: !!window.__blStandalone, invite: null, inviteT: 0,
+  tb: null, hs: null,   // a Team Brawl's board and its start (ui/online-team.js)
 };
+let TM = null;   // the online Team Brawl being played (ui/online-team.js)
 {
   const jm = /^#join-([a-z0-9][a-z0-9_.-]{2,47})$/.exec(location.hash || "");
   if (jm) { NET.invite = jm[1]; try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* sandboxed */ } }
@@ -30,13 +33,16 @@ const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 const NEUTRAL = 1280;
 // One frame of input in two base64 characters (0-4095). 0-2591: the stick (81 spots) x 32 button sets. ULTI held uses the
 // spare codes ULTI_BASE + stick x 16 (jump, light, heavy, special; dodge is dropped on those frames: the ulti wins anyway).
-const ULTI_BASE = 2592;
+// A Team Brawl's Focus tap uses FOCUS_BASE + stick x 2 + the foe (0 or 1, in seat order), no buttons on that frame; IN_END ends the codes.
+const ULTI_BASE = 2592, FOCUS_BASE = ULTI_BASE + 81 * 16, IN_END = FOCUS_BASE + 81 * 2;
 function encIn(i) {
   const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4), q = (qx + 4) * 9 + (qy + 4);
+  if (i.focus === 0 || i.focus === 1) return FOCUS_BASE + q * 2 + i.focus;
   const b4 = (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0);
   return i.ulti ? ULTI_BASE + q * 16 + b4 : q * 32 + b4 + (i.dodge ? 16 : 0);
 }
 function decIn(v) {
+  if (v >= FOCUS_BASE) { const q = (v - FOCUS_BASE) >> 1; return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, focus: (v - FOCUS_BASE) & 1 }; }
   const u = v >= ULTI_BASE, b = u ? (v - ULTI_BASE) & 15 : v & 31, q = u ? (v - ULTI_BASE) >> 4 : v >> 5;
   return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: !!(b & 1), light: !!(b & 2), heavy: !!(b & 4), special: !!(b & 8), dodge: !!(b & 16), ulti: u };
 }
@@ -67,7 +73,8 @@ function lobbyPresence() {
   if (!NET.room || !NET.ok) return;
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
   const hosting = NET.phase === "hosting" && !NET.qm, q = qmPresence();   // ui/quick.js: searching (qs) or in a Quick match
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, bo: hosting ? hostBo() : null, busy: busy || q.busy, qs: q.qs, np: shopWorn() || null }).catch(() => {});   // np: your nameplate (ui/shop.js)
+  const tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs, np: shopWorn() || null }).catch(() => {});   // np: your nameplate (ui/shop.js)
 }
 // The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
 function onBoss() {
@@ -80,16 +87,18 @@ const boSpec = (bo) => BL.BOSSES.find((b) => b.id === bo.b) || BL.BOSSES[0];
 const BOSS_SHORT = { scratch: "Scratch", zorp: "Zorp", kraken: "Kraken" };   // the Boss chips on the smallest phones
 const BOSS_RULES = { l: 3, t: 0, b: 1 };   // a boss fight: three hearts each, no time limit, one fight
 function buildRules() {
-  const edit = NET.phase === "idle" || NET.phase === "hosting", ob = onBoss();
+  const edit = NET.phase === "idle" || NET.phase === "hosting", ob = onBoss(), ot = onTeam(), md = ob.on ? "boss" : ot.on ? "team" : "1v1";
   // rebuild only on change, so a tap is never lost to a re-render
-  const sig = JSON.stringify(P.rules) + JSON.stringify(ob) + edit + NET.phase, box = $("onRules");
+  const sig = JSON.stringify(P.rules) + JSON.stringify(ob) + JSON.stringify(ot) + edit + NET.phase + !!NET.tb, box = $("onRules");
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
+  // while hosting, a team brawl can't turn into a 1v1 or a boss fight (or back): Cancel or Close first
+  const off = (it) => NET.phase === "hosting" && it.md && (it.md === "team") !== !!NET.tb;
   const pick = (id, items, isOn, set) => {
     const row = $(id); row.innerHTML = "";
     for (const it of items) {
       const b = document.createElement("button");
-      b.className = "chip" + (isOn(it) ? " on" : ""); b.disabled = !edit;
+      b.className = "chip" + (isOn(it) ? " on" : ""); b.disabled = !edit || off(it);
       if (it.short) {   // a long name has a short form for the smallest phones (css/30-select.css)
         const l = document.createElement("span"), sh = document.createElement("span");
         l.className = "l"; l.textContent = it.label; sh.className = "s"; sh.textContent = it.short;
@@ -97,21 +106,25 @@ function buildRules() {
       } else b.textContent = it.label;
       b.addEventListener("click", () => {
         Sfx.init(); Sfx.ui(); set(it); saveProfile(); buildRules();
-        if (NET.phase === "hosting") { namedPresence({ r: P.rules, bo: hostBo() }); lobbyPresence(); }
+        if (NET.phase === "hosting" && NET.tb) { NET.tb.lv = onTeam().lv; namedPresence({ tb: tbPres() }); lobbyPresence(); }
+        else if (NET.phase === "hosting") { namedPresence({ r: P.rules, bo: hostBo() }); lobbyPresence(); }
         renderOnline();   // the host button and the note follow the mode
       });
       row.appendChild(b);
     }
   };
-  const setBoss = (patch) => { P.onBoss = Object.assign(onBoss(), patch); };
-  pick("ruleM", [{ v: false, label: "1 vs 1" }, { v: true, label: "Vs boss" }], (it) => it.v === ob.on, (it) => setBoss({ on: it.v }));
+  const setBoss = (patch) => { P.onBoss = Object.assign(onBoss(), patch); }, setTeam = (patch) => { P.onTeam = Object.assign(onTeam(), patch); };
+  pick("ruleM", [{ md: "1v1", label: "1 vs 1" }, { md: "team", label: "2 vs 2" }, { md: "boss", label: "Vs boss" }], (it) => it.md === md,
+    (it) => { setBoss({ on: it.md === "boss" }); setTeam({ on: it.md === "team" }); });
   for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? v + " min" : "No limit")], ["b", "ruleB", (v) => (v === 3 ? "Best of 3" : "Single")]])
     pick(id, RULES[k].map((v) => ({ v, label: label(v) })), (it) => P.rules[k] === it.v, (it) => { P.rules = Object.assign({}, P.rules, { [k]: it.v }); });
   pick("ruleBo", BL.BOSSES.map((b) => ({ v: b.id, label: b.name, short: BOSS_SHORT[b.id] })), (it) => it.v === ob.b, (it) => setBoss({ b: it.v }));
   pick("ruleLv", BOSS_LV.map((name, i) => ({ v: i, label: name })), (it) => it.v === ob.lv, (it) => setBoss({ lv: it.v }));
-  // a boss fight swaps lives, time and format for the boss (his map comes with him) and his level
-  for (const id of ["rowL", "rowT", "rowB"]) $(id).hidden = ob.on;
-  for (const id of ["rowBo", "rowLv"]) $(id).hidden = !ob.on;
+  pick("ruleCpu", TB_LV.map((k, i) => ({ v: i, label: LEVELS[k].name })), (it) => it.v === ot.lv, (it) => setTeam({ lv: it.v }));
+  // a boss fight swaps lives, time and format for the boss (his map comes with him) and his level; a team brawl for the CPUs' level
+  for (const id of ["rowL", "rowT", "rowB"]) $(id).hidden = md !== "1v1";
+  for (const id of ["rowBo", "rowLv"]) $(id).hidden = md !== "boss";
+  $("rowCpu").hidden = md !== "team";
 }
 function namedPresence(patch) {
   if (!NET.mr) return;
@@ -141,6 +154,7 @@ function openOnline() {
   $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
   modal("pause", false); modal("help", false);
   resize();
+  if (NET.tb && NET.mr) namedPresence({ f: sel.fighter, pi: palIdx(sel.fighter) });   // on a team brawl's board: my seat shows the fighter just picked
   netInit().then(() => { lobbyPresence(); renderOnline(); });
   renderOnline();
 }
@@ -179,7 +193,8 @@ async function renderOnline() {
   if (NET.standalone && document.activeElement !== nameIn) nameIn.value = NET.myName;
   // build off-DOM and swap in only when something changed, so a tap on "Join" is never lost to a re-render
   const frag = document.createDocumentFragment();
-  let hosts = others.filter((p) => p.presence && typeof p.presence.host === "string" && !p.presence.busy);
+  // open matches; not the team brawl this phone sits at (its board is in the host card)
+  let hosts = others.filter((p) => p.presence && typeof p.presence.host === "string" && !p.presence.busy && !(NET.tb && p.presence.host === NET.mrCode));
   if (NET.invite) {
     const inv = hosts.find((h) => h.presence.host === NET.invite);
     if (inv) hosts = [inv, ...hosts.filter((h) => h !== inv)];
@@ -204,7 +219,10 @@ async function renderOnline() {
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
     const bo = validBo(h.presence.bo) ? h.presence.bo : null;   // a boss fight: the row reads as an invitation to team up
+    const tm = h.presence.tm && Number.isInteger(h.presence.tm.n) && [0, 1, 2].includes(h.presence.tm.lv) ? h.presence.tm : null;   // a team brawl: its free seats
     if (old) sp.textContent = "Different game version. Both of you reload the page.";
+    else if (tm) sp.textContent = (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") +
+      (tm.n > 0 ? `Team brawl · ${tm.n} seat${tm.n > 1 ? "s" : ""} open · ${tbLvName(tm.lv)} CPUs` : "Team brawl · full");
     else {
       sp.textContent = (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter");
       if (bo) { const em = document.createElement("em"); em.textContent = `vs ${boSpec(bo).name}`; sp.append(" · ", em, ` · ${BOSS_LV[bo.lv]}`); }
@@ -217,28 +235,44 @@ async function renderOnline() {
     const btn = document.createElement("button"); btn.className = "chip";
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
     btn.textContent = joining ? "Joining" : bo ? "Team up" : "Join";
-    btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected;
+    btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected || (!!tm && tm.n <= 0);
     btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); netJoin(h.presence.host); });
     li.dataset.h = h.presence.host; li.append(who, btn); frag.appendChild(li);
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
   hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy), np: plateCls(p.presence && p.presence.np) })));
-  hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
-  const ob = onBoss().on;
-  hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : "Host a match";
-  hostBtn.classList.toggle("primary", NET.phase !== "hosting");   // Cancel is the ink button
+  // a team brawl's board (ui/online-team.js): the seats with the names of the people in the match's room
+  const tbOn = !!NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake");
+  const roomNames = tbOn && NET.mr ? Object.assign({}, names, await namesFor(NET.mr.peers())) : names;
+  if (seq !== onSeq || mode !== "online") return;
+  tbRender(roomNames);
+  $("onRules").hidden = tbOn && NET.role !== "host";
+  $("rowM").hidden = tbOn;   // the board is up: the mode is set until the brawl closes
+  if (!tbOn) $("onKick").textContent = onTeam().on && !onBoss().on ? "Your team brawl" : "Your match";
+  hostBtn.classList.remove("full");
+  const ob = onBoss().on, ot = !ob && onTeam().on;
+  if (tbOn) tbHostBtn(hostBtn, note, roomNames);   // Start (the host) or Leave (a friend)
+  else {
+    hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
+    hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : ot ? "Host a team brawl" : "Host a match";
+    hostBtn.classList.toggle("primary", NET.phase !== "hosting");   // Cancel is the ink button
+  }
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
-  note.textContent =
+  if (!tbOn) note.textContent =
     NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
     NET.phase === "joining" ? "Joining…" :
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
     NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
+      : ot ? (NET.standalone ? "Pick the CPU level, host, then send up to three friends the link." : "Pick the CPU level and host. Your friends see the brawl in their list.")
       : NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
   const inv = $("onInvite"), invWas = inv.hidden;
+  // a team brawl's link sits in the room card, under the open matches (its board fills the host card)
+  if (NET.tb && inv.parentNode !== $("onList").parentNode) $("onList").after(inv);
+  else if (!NET.tb && inv.parentNode !== note.parentNode) note.before(inv);
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
-    $("onInvT").textContent = ob ? "Your boss fight is open" : "Your match is open";
+    $("onInvT").textContent = NET.tb ? "Your team brawl is open" : ob ? "Your boss fight is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
     if (invWas) inv.scrollIntoView({ block: "nearest" });   // on a small phone the host card scrolls: the link comes into view
@@ -304,8 +338,10 @@ function leaveMatchRoom() {
 }
 function resetNet() {
   Object.assign(NET, { role: null, hostCode: null, oppPeer: null, oppBy: null, oppName: "", lastOpp: null, matchId: 0, startSeen: 0,
-    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false, qm: null });
+    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false, qm: null,
+    tb: null, hs: null });
   NET.pingSent = new Map(); NET.pingSeen = new Set();
+  TM = null;
 }
 function netCancel() { leaveMatchRoom(); resetNet(); NET.phase = "idle"; lobbyPresence(); renderOnline(); }
 async function netHost() {
@@ -313,10 +349,13 @@ async function netHost() {
   const code = "bl" + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, "0");
   resetNet();
   NET.phase = "hosting"; NET.role = "host"; NET.hostCode = code; NET.note = "";
+  const team = !onBoss().on && onTeam().on;
+  if (team) tbHostOpen();   // a team brawl: the board, you in the first Ice seat (ui/online-team.js)
   renderOnline();
   try { await openMatchRoom(code); }
-  catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
-  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
+  catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
+  if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
+  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -334,6 +373,7 @@ async function netJoin(code) {
   lobbyPresence(); renderOnline();
 }
 function matchRoomLost() {
+  if (NET.tb) { tbRoomLost(); return; }   // ui/online-team.js
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { finishOnline(false, true); return; }
   leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "The match connection dropped.";
@@ -341,6 +381,11 @@ function matchRoomLost() {
 }
 function onMatchPeers(ch) {
   const peers = ch.peers;
+  // a team brawl (ui/online-team.js): the host's board; in the match and the results its tick reads the room itself
+  if (NET.tb || (NET.role === "guest" && NET.phase === "joining" && peers.some((p) => !p.sameTab && p.presence && p.presence.role === "host" && p.presence.tb))) {
+    if (NET.phase !== "match" && NET.phase !== "result") tbLobbyTick(performance.now());
+    return;
+  }
   if (NET.role === "host") {
     if (NET.oppPeer && !peers.some((p) => p.peer === NET.oppPeer)) return opponentLeft();
     if (!NET.oppPeer && NET.phase === "hosting") {
@@ -542,6 +587,9 @@ function applySync(sy) {
 function netTick() {
   const now = performance.now();
   if (mode === "online" && NET.invite && NET.phase === "idle" && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
+  if (NET.tb && TM && NET.phase === "match") { tbTick(); return; }   // a team brawl: ui/online-team.js
+  if (NET.tb && TM && NET.phase === "result") { tbResultTick(); return; }
+  if (NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake")) { tbLobbyTick(now); return; }
   if (NET.phase === "joining" || NET.phase === "handshake") { handshakeTick(now); return; }
   if (NET.phase === "match" && NET.cpuMate && G) { soloTick(); return; }
   if (!NET.mr) return;
@@ -642,6 +690,7 @@ function updateRematchLabel() {
 }
 function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;
+  if (match.tb) { tbFinish(); return; }   // ui/online-team.js
   if (match.boss) { finishBossOnline(); return; }
   if (match.qm) { qmFinish(left, lost); return; }   // ui/quick.js: the server decides a Ranked one
   const me = G.fighters[meSlot], op = G.fighters[1 - meSlot];
@@ -736,5 +785,5 @@ function drawNice(c, g) {
     c.restore();
   }
 }
-for (const i of [0, 1]) $("pc" + i).addEventListener("pointerdown", (e) => { if (i === meSlot && niceOk()) { e.preventDefault(); Sfx.init(); niceSend(); } });
+for (const i of [0, 1]) $("pc" + i).addEventListener("pointerdown", (e) => { if (cardSlot[i] === meSlot && niceOk()) { e.preventDefault(); Sfx.init(); niceSend(); } });
 window.addEventListener("keydown", (e) => { if (e.code === "KeyN" && !e.repeat && niceOk()) niceSend(); });

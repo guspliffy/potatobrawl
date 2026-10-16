@@ -275,7 +275,10 @@ function render2D(g, tk) {
   TEAM_RIM = false;
   uvFront(c, g, tk);   // Ultimates: what is drawn over the fighters (flame column, comet, chains, fire stream, slashes)
   drawFx(c);
-  if (mode === "match" && !FIN.on && match && match.duo && g.fighters.length === 4) duoTags(c, g);   // 2v2: a tag on all four (draw-world.js)
+  if (mode === "match" && !FIN.on && match && match.duo && g.fighters.length === 4) {
+    duoTags(c, g);   // 2v2: a tag on all four (draw-world.js)
+    if (TM && TM.ping) drawTbPing(c, g);   // online: a Focus ping over a foe (ui/online-team.js)
+  }
   else if (mode === "match" && !FIN.on) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;

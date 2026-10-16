@@ -922,14 +922,24 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="on-plate"><b id="onMyName">You</b><input id="onName" class="on-name" maxlength="20" autocomplete="nickname" spellcheck="false" aria-label="Your name" hidden></div>
         </div>
         <div class="on-card on-me">
-          <div class="kick">Your match</div>
+          <div class="kick" id="onKick">Your match</div>
           <div class="on-rules" id="onRules">
-            <div class="rule-row"><span>Mode</span><span class="chips" id="ruleM"></span></div>
+            <div class="rule-row" id="rowM"><span>Mode</span><span class="chips" id="ruleM"></span></div>
             <div class="rule-row" id="rowL"><span>Lives</span><span class="chips" id="ruleL"></span></div>
             <div class="rule-row" id="rowT"><span>Time</span><span class="chips" id="ruleT"></span></div>
             <div class="rule-row" id="rowB"><span>Format</span><span class="chips" id="ruleB"></span></div>
             <div class="rule-row" id="rowBo" hidden><span>Boss</span><span class="chips" id="ruleBo"></span></div>
             <div class="rule-row" id="rowLv" hidden><span>Level</span><span class="chips" id="ruleLv"></span></div>
+            <div class="rule-row" id="rowCpu" hidden><span>CPUs</span><span class="chips" id="ruleCpu"></span></div>
+          </div>
+          <!-- a team brawl's board (ui/online-team.js): Ice | Ember, two seats a side; an empty seat is a CPU -->
+          <div class="on-tb" id="onTb" hidden>
+            <p class="on-tbr" id="onTbR"></p>
+            <div class="on-board">
+              <div class="on-col ice"><b class="on-tn">Ice</b><div class="on-seat" id="onSeat0"></div><div class="on-seat" id="onSeat1"></div></div>
+              <div class="on-col ember"><b class="on-tn">Ember</b><div class="on-seat" id="onSeat2"></div><div class="on-seat" id="onSeat3"></div></div>
+            </div>
+            <div class="on-tbrow"><button class="chip" id="onSwitch">⇄ Switch side</button><span id="onTbNote">Empty seats play as CPUs.</span><button class="chip" id="onClose" hidden>Close</button></div>
           </div>
           <button class="btn primary" id="onHost"><span>Host a match</span></button>
           <div class="on-invite" id="onInvite" hidden>

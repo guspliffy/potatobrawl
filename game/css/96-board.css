@@ -1,0 +1,63 @@
+/* ---------- Play friends: a team brawl's board (ui/online-team.js; Fable, online-2v2/fable-online2v2.md and its mockup) ----------
+   In the host card, under the CPUs row (the host) or the host's rules line (a friend): two columns, ICE | EMBER, two seats each. A seat is
+   the fighter's portrait ringed in the team colour, the name (HOST / YOU tags in gold) and the fighter; your own seat has the gold edge; an
+   empty seat is dim and dashed, "CPU · Normal". Under it Switch side, a note and, for the host, Close. START (the gold host button) glows
+   when all four seats hold people. The Mode row goes while the board is up (online.js): a team brawl can't change mode without closing. */
+#scrOnline .on-tb { flex: none; display: flex; flex-direction: column; gap: 6px; }
+#scrOnline .on-tb[hidden], #scrOnline .on-rules[hidden] { display: none; }
+#scrOnline .on-tbr { margin: 0; font: 500 12.5px/1.3 var(--body); color: var(--mute); }
+#scrOnline .on-tbr[hidden] { display: none; }
+#scrOnline .on-board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+#scrOnline .on-col { --tc: #7fd4ff; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+#scrOnline .on-col.ember { --tc: #ff6a4a; }
+#scrOnline .on-tn { display: flex; align-items: center; gap: 6px; font: 800 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--tc); }
+#scrOnline .on-tn::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--tc); box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.9); }
+#scrOnline .on-seat { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 40px; padding: 4px 8px 4px 5px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #232750, #191c3a); box-shadow: 0 2px 0 var(--ink); }
+#scrOnline .on-seat.me { box-shadow: inset 0 0 0 1.5px var(--gold, #ffd23f), 0 2px 0 var(--ink); }
+#scrOnline .on-seat.cpu { border: 2px dashed #4a4f82; background: rgba(27, 30, 68, 0.55); box-shadow: none; opacity: 0.8; }
+#scrOnline .on-seat .av { flex: none; display: grid; place-items: center; width: 30px; height: 30px; overflow: hidden; border-radius: 50%; background: var(--raise, #2f3560);
+  box-shadow: 0 0 0 2px var(--tc), 0 0 0 4px rgba(14, 16, 34, 0.9); font: 800 13px/1 var(--display); font-style: normal; color: #aeb3d0; }
+#scrOnline .on-seat.cpu .av { background: #3a3e6a; box-shadow: 0 0 0 2px #4a4f82; }
+#scrOnline .on-seat .av img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+#scrOnline .on-seat .t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+#scrOnline .on-seat .t b { min-width: 0; font: 800 13.5px/1.05 var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrOnline .on-seat.cpu .t b { color: #aeb3d0; }
+#scrOnline .on-seat .t em { margin-left: 5px; font: 800 9.5px/1 var(--display); font-style: normal; letter-spacing: 0.14em; color: var(--gold, #ffd23f); vertical-align: 1px; }
+#scrOnline .on-seat .t small { min-width: 0; font: 500 11px/1.15 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrOnline .on-tbrow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#scrOnline .on-tbrow .chip { flex: none; min-height: 30px; padding: 2px 11px; font-size: 13px; }
+#scrOnline .on-tbrow .chip[hidden] { display: none; }
+#scrOnline .on-tbrow span { flex: 1 1 auto; min-width: 0; font: 500 12px/1.25 var(--body); color: var(--mute); }
+/* START when the board is full: a slow gold pulse */
+#scrOnline #onHost.full { animation: tbFull 1.4s ease-in-out infinite; }
+@keyframes tbFull { 0%, 100% { box-shadow: 0 4px 0 var(--ink), var(--bevelgold), 0 0 0 0 rgba(255, 210, 63, 0); } 50% { box-shadow: 0 4px 0 var(--ink), var(--bevelgold), 0 0 18px 4px rgba(255, 210, 63, 0.55); } }
+
+/* small phones (667x320): smaller seats, no fighter line, the note beside Switch side goes */
+#app.tiny #scrOnline .on-tb { gap: 4px; }
+#app.tiny #scrOnline .on-board { gap: 6px; }
+#app.tiny #scrOnline .on-col { gap: 4px; }
+#app.tiny #scrOnline .on-tn { font-size: 10.5px; }
+#app.tiny #scrOnline .on-seat { min-height: 32px; gap: 6px; padding: 2px 6px 2px 4px; border-radius: 8px; }
+#app.tiny #scrOnline .on-seat .av { width: 22px; height: 22px; font-size: 11px; }
+#app.tiny #scrOnline .on-seat .t b { font-size: 12px; }
+#app.tiny #scrOnline .on-seat .t small { display: none; }
+#app.tiny #scrOnline .on-tbr { font-size: 11px; }
+#app.tiny #scrOnline .on-tbrow .chip { min-height: 26px; padding: 2px 8px; font-size: 12px; }
+#app.tiny #scrOnline .on-tbrow span { font-size: 11px; }
+
+/* desktop (1280x760): roomier seats */
+#app:not(.short):not(.portrait) #scrOnline .on-tb { gap: 10px; }
+#app:not(.short):not(.portrait) #scrOnline .on-board { gap: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-col { gap: 8px; }
+#app:not(.short):not(.portrait) #scrOnline .on-tn { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-seat { min-height: 54px; gap: 11px; padding: 6px 10px 6px 7px; }
+#app:not(.short):not(.portrait) #scrOnline .on-seat .av { width: 40px; height: 40px; font-size: 16px; }
+#app:not(.short):not(.portrait) #scrOnline .on-seat .t b { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrOnline .on-seat .t em { font-size: 11px; }
+#app:not(.short):not(.portrait) #scrOnline .on-seat .t small { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrOnline .on-tbr { font-size: 14px; }
+#app:not(.short):not(.portrait) #scrOnline .on-tbrow .chip { min-height: 36px; padding: 4px 14px; font-size: 15px; }
+#app:not(.short):not(.portrait) #scrOnline .on-tbrow span { font-size: 13.5px; }
+
+@media (prefers-reduced-motion: reduce) { #scrOnline #onHost.full { animation: none; box-shadow: 0 4px 0 var(--ink), var(--bevelgold), 0 0 14px 3px rgba(255, 210, 63, 0.5); } }
