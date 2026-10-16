@@ -1,14 +1,14 @@
 /* Combo routes, the pure part: no page, no sim. Spliced into the page by build.py (at the ROUTES marker in ui/effects.js)
    and also a node module, so tests/combos.js can play every route through the real sim. A route is the list of moves
    (the hit events' `mv`) that land in one combo; "jump" is a step shown on the card that lands no hit, and a trailing "!"
-   means a charged heavy (the hit's chg > 0). */
+   means a charged heavy (the hit's chg > 0); "air" is any light air attack (neutral, toward, up or down). */
 const ROUTES = (function () {
   // pct: the damage the Combo trial's CPU starts at (where the route works for every fighter; tests/combos.js checks it)
   const SHARED = [
     { id: "three", name: "Three-piece", keys: ["jab", "jab", "side"], pct: 0 },
     { id: "lift", name: "Lift & Smash", keys: ["side", "up", "hUp"], pct: 0 },
     { id: "trip", name: "Trip & Spike", keys: ["down", "side", "hDown"], pct: 0 },
-    { id: "rising", name: "Rising", keys: ["side", "up", "jump", "nair"], pct: 30 },
+    { id: "rising", name: "Rising", keys: ["side", "up", "jump", "air"], pct: 30 },
     { id: "sig", name: "Signature", keys: ["side", "side", "spec"], pct: 0 },
   ];
   const OWN = {
@@ -26,6 +26,9 @@ const ROUTES = (function () {
   // the fighter's own route first, then the shared ones
   function forFighter(id) { return [OWN[id], ...SHARED].filter(Boolean).map((r) => ALL.find((a) => a.id === r.id)); }
   const byId = (id) => ALL.find((r) => r.id === id) || null;
+  // does a combo step `got` (a hit's mv, "!" if charged) fit the route's key `w`
+  const AIR = ["nair", "sair", "uair", "dair"];
+  const stepOk = (w, got) => (w === "air" ? AIR.includes(got) : w.endsWith("!") ? got === w : got.replace("!", "") === w);
   /* Follows one fighter's combo on one defender. `t` is a tracker ({} to start); feed it every hit event of that attacker on that
      defender (e.combo is the defender's hit count in the combo). Returns the route the combo's moves now end with, or null. */
   function track(t, e, fid) {
@@ -40,10 +43,10 @@ const ROUTES = (function () {
       const want = hits(r);
       if (want.length > t.list.length) continue;
       const tail = t.list.slice(t.list.length - want.length);
-      if (want.every((w, i) => (w.endsWith("!") ? tail[i] === w : tail[i].replace("!", "") === w))) return r;
+      if (want.every((w, i) => stepOk(w, tail[i]))) return r;
     }
     return null;
   }
-  return { SHARED, OWN, ALL, forFighter, byId, hits, track };
+  return { SHARED, OWN, ALL, forFighter, byId, hits, stepOk, track };
 })();
 if (typeof module !== "undefined") module.exports = ROUTES;

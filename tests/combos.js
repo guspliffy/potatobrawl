@@ -1,7 +1,7 @@
 // Combo routes (the link): every fighter plays each of its routes (its own + the five shared ones) against a standing CPU
 // and against one that escapes (jumps away, or air dodges, the first frame it can act), at several damage percents.
 //   node combos.js           the table + "combos ok" when every route lands on the standing CPU at 0%, up up jump nair (the pop-up) lands, the link makes
-//                            light, light, heavy/special a true combo at low percent and nothing loops
+//                            light, light, heavy/special a true combo at low percent, the jump routes land at human reaction speed and nothing loops
 //   node combos.js <fighter> <route> <pct> [escape]   one run, frame by frame
 const { BL } = require(process.env.CORE || "../game/core.js");
 const ROUTES = require("../game/routes.js");
@@ -23,8 +23,10 @@ const moveKey = (k, air) => {
   k = k.replace("!", "");
   if (k === "spec") return "spec";
   if (k === "hUp" && air) return "rec";
+  if (k === "air") return "nair";
   return k;
 };
+const isMove = (k, mid, air) => (k === "air" ? ROUTES.stepOk("air", mid || "") : mid === moveKey(k, air));
 
 // how close (feet to feet) the move's hitboxes reach a defender
 function reach(A, D, k, grounded) {
@@ -37,7 +39,7 @@ function reach(A, D, k, grounded) {
 const SPACINGS = [[42, 0], [42, 14], [26, 0], [60, 8], [60, 24]];
 function tryRun(fid, route, pct, escape) { return SPACINGS.some(([g, m]) => run(fid, "odin", route, pct, escape, false, true, g, m)); }
 function land(fid, route, pct, escape) { return SPACINGS.some(([g, m]) => run(fid, "odin", route, pct, escape, false, false, g, m)); }
-function run(fid, oppId, route, pct, escape, trace, anyRoute, gap = 42, margin = 0) {
+function run(fid, oppId, route, pct, escape, trace, anyRoute, gap = 42, margin = 0, stopAt = 0) {
   const A = FIG[fid], D = FIG[oppId];
   const g = newGame({ players: [{ spec: A, pal: A.palettes[0] }, { spec: D, pal: D.palettes[0] }], countdown: 0, seed: 7 });
   const a = g.fighters[0], d = g.fighters[1];
@@ -73,7 +75,7 @@ function run(fid, oppId, route, pct, escape, trace, anyRoute, gap = 42, margin =
     pressedLast = ia.light || ia.heavy || ia.special || ia.jump;
     const mt0 = a.moveT;
     step(g, [ia, id]);
-    if (i < keys.length && keys[i] !== "jump" && a.moveT !== mt0 && a.mid === moveKey(keys[i], !a.grounded)) { started = true; pend = false; startT.add(a.moveT); }
+    if (i < keys.length && keys[i] !== "jump" && a.moveT !== mt0 && isMove(keys[i], a.mid, !a.grounded)) { started = true; pend = false; startT.add(a.moveT); }
     for (const e of g.events) {
       if (e.type !== "hit" || e.slot !== 0) continue;
       const r = ROUTES.track(tr, e, fid);
@@ -84,6 +86,7 @@ function run(fid, oppId, route, pct, escape, trace, anyRoute, gap = 42, margin =
       if (i < keys.length && e.mi === a.moveT && started) { nHits++; i++; started = false; held = 0; while (keys[i] === "jump" && false) i++; }
     }
     g.events.length = 0;
+    if (stopAt && nHits >= stopAt) return g;
     if (trace && t % 1 === 0) console.log(" ", t, "A", a.state, a.mid, a.mt, "link", a.link, "| D", d.state, d.hitstun, d.x.toFixed(0), d.y.toFixed(0), "hs", g.hitstop);
     if (got) break;
     if (d.stocks < 3) break;
@@ -124,6 +127,37 @@ for (const f of FIGHTERS) {
   // into itself at 0%, so his starts at 30%)
   const pop = { id: "pop", name: "pop-up", keys: ["up", "up", "jump", "nair"] };
   for (const p of f.id === "odin" ? [30, 50] : [0, 30, 50]) for (const e of [0, 1, 2]) if (!tryRun(f.id, pop, p, e)) bad.push(`${f.id}: up, up, jump, nair misses at ${p}% (escape ${e})`);
+}
+// the jump routes at human speed: from the route's 2nd hit, a player who sees it land presses Jump 9-15 frames later (a normal tap,
+// held 5 frames: a full hop; the link turns it into a short hop) and the air attack 4-12 frames after that. Rising takes any light
+// air attack (stick toward them here), Skyburn the Heavy air with the stick let go. Most of that box must land as a true combo.
+function humanBox(fid, route) {
+  const lead = route.keys.slice(0, 2), heavy = route.keys[3] === "hAir";
+  let g0 = null;
+  for (const [gp, m] of SPACINGS) if ((g0 = run(fid, "odin", { id: "x", keys: lead }, route.pct, 0, false, false, gp, m, 2))) break;
+  if (!g0) return 0;
+  const s = BL.serialize(g0);
+  let ok = 0, n = 0;
+  for (let j = 9; j <= 15; j++) for (let at = 4; at <= 12; at++) {
+    const g = newGame({ players: [{ spec: FIG[fid], pal: FIG[fid].palettes[0] }, { spec: FIG.odin, pal: FIG.odin.palettes[0] }], countdown: 0, seed: 7 });
+    BL.restore(g, s); n++;
+    const a = g.fighters[0], d = g.fighters[1], toward = Math.sign(d.x - a.x) || 1;
+    for (let t = 1, done = false; t <= 70 && !done; t++) {
+      const ia = BL.blankInput();
+      if (t >= j && t < j + 5) ia.jump = true;
+      if (t >= j + at && t < j + at + 4) ia[heavy ? "heavy" : "light"] = true;
+      if (!heavy && t >= j + at) ia.x = toward;
+      step(g, [ia, BL.blankInput()]);
+      for (const e of g.events) if (e.type === "hit" && e.slot === 0 && e.combo >= 3 && ROUTES.stepOk(route.keys[3], e.mv)) { ok++; done = true; break; }
+      g.events.length = 0;
+    }
+  }
+  return ok / n;
+}
+for (const [fid, rid] of [...FIGHTERS.map((f) => [f.id, "rising"]), ["phoenix", "skyburn"]]) {
+  const r = ROUTES.byId(rid), share = humanBox(fid, r);
+  console.log(`${r.name} by ${fid} at human speed (jump 9-15 frames after the hit): ${Math.round(share * 100)}% of tries land`);
+  if (share < 0.75) bad.push(`${fid}: ${r.name} lands only ${Math.round(share * 100)}% of the time at human speed`);
 }
 // combo damage: hits from the 4th of a combo deal 85%, from the 6th 70%
 {

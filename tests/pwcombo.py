@@ -32,7 +32,7 @@ DRIVER = r"""(() => {
       h++;
     }
     if (idx < 0) return inp;
-    const k = tr.keys[idx], key = k.replace("!", "");
+    const k = tr.keys[idx], key = k.replace("!", "") === "air" ? "nair" : k.replace("!", "");   // "air": any light air attack, the driver uses the neutral one
     const dx = Math.abs(d.x - a.x);
     if (key === "jump") { if (G.t % 2 === 0) inp.jump = true; if (dx > 44) inp.x = toward; return inp; }
     if (!a.grounded && (key === "nair" || key === "hAir") && a.state !== "attack" && dx > 44) { inp.x = toward; return inp; }   // drift in, then the aerial with no direction
