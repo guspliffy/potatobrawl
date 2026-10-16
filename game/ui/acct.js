@@ -1,6 +1,6 @@
 /* ===================== accounts: profile pill, Account sheet, sync code =====================
-   The pill (top right of the start page) shows who you are; tapping it opens the Account sheet with your numbers and the sync
-   section. The code format, the clean-up of a profile and the merge live in sync.js (pure, tested in node). Nothing here ever
+   The pill (top right of the start page) shows who you are; tapping it opens the Account sheet (Profile, Stats, Locker and the Shop, which is
+   ui/shop.js) with your numbers and the sync section; a tap on the pill's chip coin opens the sheet on the Shop. The code format, the clean-up of a profile and the merge live in sync.js (pure, tested in node). Nothing here ever
    blocks the menu on the network: calls have a short timeout and a failure shows one quiet line. */
 /*SYNC*/
 const ACCT_KEY = "potatobrawl.acct.v1";
@@ -105,6 +105,7 @@ function renderPill() {
   acSetMe($("mAvatar"));
   $("mName").textContent = name;
   me.querySelector(".plate").style.setProperty("--tc", ti.t.col);
+  plateSet(me.querySelector(".plate"), shopWorn());   // the nameplate worn (ui/shop.js); Ink = today's look
   $("mTier").textContent = ti.t.name;
   $("mRating").textContent = rk.r;
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
@@ -142,14 +143,16 @@ function acSum(p) {   // one line about a profile, for the "replace it?" questio
 function renderAccount() {
   if (screens.account.hidden) return;
   for (const b of document.querySelectorAll(".ac-tabs .chip")) { const on = b.dataset.t === acUI.tab; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
-  $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l";
+  $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l"; $("acPanH").hidden = acUI.tab !== "h";
   if (acUI.tab === "s") { renderStats(); return; }
   if (acUI.tab === "l") { renderLocker(); return; }
+  if (acUI.tab === "h") { renderShop(); return; }   // ui/shop.js
   const rk = rankView(), ti = tierInfo(rk.r), name = acctName();
   acSetMe($("acAvatar"));
   const tt = acTitle(); $("acTitleLine").textContent = tt ? tt.name : "";
   renderPick();
   const inp = $("acName"); if (document.activeElement !== inp) inp.value = name;
+  plateSet(inp, shopWorn());   // the name sits on the nameplate worn (ui/shop.js)
   $("acPlays").textContent = FIG[P.last] ? `Plays ${FIG[P.last].name}` : "";
   $("acPicBtn").setAttribute("aria-expanded", String(acUI.pick === "av")); $("acTitBtn").setAttribute("aria-expanded", String(acUI.pick === "ti"));
   $("acPicBtn").classList.toggle("on", acUI.pick === "av"); $("acTitBtn").classList.toggle("on", acUI.pick === "ti");
@@ -342,6 +345,7 @@ function renderLocker() {
     a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
     a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
     if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
+    if (glazeOn(a.f) !== glazeHas(f.id, pi)) { glazeMark(a.f, glazeHas(f.id, pi)); a.dirty = true; }   // ui/glaze.js
   }
   // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
   if (LKR.cardsFor !== spec.id) {
@@ -353,11 +357,12 @@ function renderLocker() {
   }
   $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
+  for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
 }
 // closing the sheet: the next time it opens, the Locker starts on the fighter played last again
 $("acClose").addEventListener("click", () => { LKR.id = ""; });
-function acSetTab(t) { acUI.tab = t; renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
+function acSetTab(t) { acUI.tab = t; if (t !== "h") shopLeave(); renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : t === "h" ? "shop" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
   b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });
   b.addEventListener("keydown", (e) => {
@@ -624,10 +629,11 @@ async function acctSync(now) {
 }
 
 /* ----- the sheet: open, close, reset ----- */
-function openAccount() {
-  acUI.tab = "p"; acUI.pick = "";
+function openAccount(tab) {   // tab "h" opens the Shop (the chip coin on the start page); anything else the Profile
+  acUI.tab = tab === "h" ? "h" : "p"; acUI.pick = "";
   acUI.resetArmed = false; acUI.unlinkArmed = false; acUI.view = "main"; acUI.pend = null; acMsg("");
   modal("account", true); renderAccount();
+  if (acUI.tab === "h") { cntScreen("shop"); const sh = document.querySelector("#scrAccount .sheet"); if (sh) sh.scrollTop = 0; }
   if (ACCT.code) { if (Date.now() - ACCT.t > 10000) acctSync(); } else acctPing();
 }
 function acctDoReset() {
@@ -638,9 +644,9 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-tap("mRank", openAccount);
+tap("mRank", (e) => openAccount(e && e.target && e.target.closest && e.target.closest("#mTokens") ? "h" : "p"));   // the chip coin opens the Shop, the rest of the plate the Profile
 tap("acClose", () => {
-  modal("account", false); clearTimeout(acShowT);
+  modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"
   acUI.view = "main"; acUI.pend = null; acUI.code = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = ""; acUI.resetArmed = false; acUI.unlinkArmed = false;
   renderMenu();

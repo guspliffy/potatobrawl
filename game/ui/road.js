@@ -231,7 +231,7 @@ function rdPuppet() {
     RD.pup = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
     RD.pup.x = 0; RD.pup.y = 0; RD.pup.facing = 1; RD.pupId = spec.id + ":" + (P.pal[spec.id] || 0);
   }
-  return RD.pup;
+  return glazeMark(RD.pup, glazeHas(spec.id, P.pal[spec.id] || 0));   // ui/glaze.js
 }
 // one frame of the map on canvas cv (CSS size w x h); o.mini: the small copy on the menu card (no fighter hop, fewer details)
 function roadPaint(cv, tk, o) {

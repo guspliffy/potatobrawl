@@ -906,6 +906,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrMenu .plate .who b { display: block; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; font-size: 16px; }
 #scrMenu .plate .who small { font-size: 12px; }
 #scrMenu .plate .who small i { font-variant-numeric: tabular-nums; }
+/* a nameplate bought in the Shop (ui/shop.js; the looks are .np-<id> in css/93-shop.css): the plate class paints the plate and sets --np-fg / --np-sub
+   (and --np-stroke, a halo for a busy plate), the name and the tier line follow it; without one (Ink) these read as before */
+#scrMenu .plate .who b { color: var(--np-fg, inherit); }
+#scrMenu .plate .who small { color: var(--np-sub, var(--tc)); }
+#scrMenu .plate .who small i { color: var(--np-fg, var(--text)); opacity: var(--np-io, 0.8); }
+#scrMenu .plate .who { -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrMenu .plate[class*="np-"] { --np-io: 1; }
 /* the chosen title: a small sticker on the plate's lower edge (the plate stays two lines) */
 #scrMenu .mm-title { position: absolute; right: 8px; bottom: -15px; z-index: 1; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font: 800 10px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--sand);
@@ -2602,6 +2609,160 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   .lk-tile, #acPanL .sk { transition: none; }
 }
 
+/* ---------- The Shop: nameplates and Glaze (Fable 5.1, locker-chips/fable-design.md section 3; ui/shop.js) ----------
+   The Shop is the Account sheet's fourth tab (#acPanH). Top: the balance coin and where chips come from. Then the eight nameplates as cards
+   (the plate on a pill, its name, and a line: Worn / Tap to wear / the price), then one Glaze card per fighter (his worn skin drawn on a canvas, the price or
+   Glazed). Card states: worn (gold ring, WORN tag), own, buy (gold price), short (grey price, no buy), arm (ember foot: "Sure?" for 3 s), glazed (pearl border).
+   Eight across on a landscape sheet, four across upright. The plate looks (.np-<id>) are used wherever a name stands on a plate: the pill on the
+   start page (css/20-menu.css reads --np-fg / --np-sub / --np-stroke), the Profile's name field, the results; plateCls(id) in ui/shop.js gives the class. */
+
+/* ---- the plate looks: a background and the text colours that stay readable on it (contrast 5:1 or better, checked on every colour stop) ---- */
+.np-sunset { --np-fg: #0e1022; --np-sub: #2b2230; --np-bg: linear-gradient(90deg, #ffe08a, #f4c95d 45%, #ef7a52); }
+.np-mint { --np-fg: #0e1022; --np-sub: #16352c; --np-bg: linear-gradient(180deg, #b4f3d4, #6fcf9f); }
+.np-nightsky { --np-fg: #fff; --np-sub: #cdd5ff;
+  --np-bg: radial-gradient(circle at 7% 30%, #fff 0 0.8px, transparent 1.4px), radial-gradient(circle at 94% 72%, #fff 0 0.7px, transparent 1.3px), radial-gradient(circle at 90% 22%, #ffe08a 0 0.9px, transparent 1.5px),
+    radial-gradient(circle at 10% 78%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 62% 16%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 76% 84%, #ffe08a 0 0.6px, transparent 1.1px),
+    linear-gradient(180deg, #1b2160, #0b0e2e); }
+.np-roaddust { --np-fg: #f9e7bd; --np-sub: #f3dcae;
+  --np-bg: repeating-linear-gradient(90deg, transparent 0 6px, rgba(243, 217, 164, 0.38) 6px 10px) 0 86% / 100% 2px no-repeat, linear-gradient(180deg, #7a3f27, #4e2517); }
+.np-kraken { --np-fg: #fff; --np-sub: #f3edff; --np-bg: linear-gradient(90deg, #653b88, #186b62); }
+/* Halftone: cream paper, ketchup dots that come in towards the right end, so the name and the tier line stay clean */
+.np-halftone { --np-fg: #0e1022; --np-sub: #3a2c22; --np-stroke: 2px #fff6e4;
+  --np-bg: linear-gradient(90deg, #fff6e4 0 38%, rgba(255, 246, 228, 0.55) 72%, rgba(255, 246, 228, 0) 100%), radial-gradient(#e8453c 1.1px, transparent 1.4px) 0 0 / 5px 5px, #fff6e4; }
+.np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; --np-bg: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); }
+/* every plate paints with its --np-bg (the lobby's plates below re-apply it where their own rules set a background) */
+[class*="np-"] { background: var(--np-bg); color: var(--np-fg); }
+/* the Profile's name field wears its plate; a plate with a halo (Halftone) outlines the typed letters too */
+#acName[class*="np-"] { -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; caret-color: var(--np-fg); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
+#acName[class*="np-"]::selection { background: rgba(14, 16, 34, 0.35); }
+
+/* the results: your name on your plate, a small pill at the end of the kicker line (ui/shop.js shopResPlate; hidden for Ink) */
+.rs-np { display: inline-flex; align-items: center; max-width: 12em; height: 20px; margin-left: 3px; padding: 0 8px; vertical-align: -5px; border: 2px solid var(--ink); border-radius: 999px;
+  font: 800 11px/1 var(--display); letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: none; box-shadow: 0 2px 0 var(--ink); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+.rs-np[hidden] { display: none; }
+#app:not(.short):not(.portrait) .rs-np { height: 24px; padding: 0 10px; font-size: 13px; vertical-align: -7px; }   /* the desktop kicker is 14 px */
+
+/* ---- the Shop tab ---- */
+/* sizes as variables: the plate area, the card foot, the model's height, the balance coin; each size below sets its own */
+#acPanH { --pearl: linear-gradient(115deg, #ffb3d9, #8ff0dc 45%, #c9b3ff 70%, #ffd6a8); --pa: 56px; --ft: 36px; --art: 66px; --coin: 38px; --gap: 8px; gap: var(--gap); }
+.sh-top { flex: none; display: flex; align-items: center; gap: 12px; min-height: var(--coin); }
+#acPanH .sh-bal { flex: none; height: var(--coin); gap: 6px; padding: 0 13px 0 9px; font-size: 21px; border-radius: 10px; }
+#acPanH .sh-bal::before { width: 24px; height: 19px; }
+#acPanH .sh-from { flex: 1 1 auto; min-width: 0; margin: 0; font: 500 12.5px/1.3 var(--body); color: var(--sand); }
+#acPanH .sh-from.say { color: #fff; font-weight: 600; }
+#acPanH .sh-from.say::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--ember); vertical-align: 1px; }
+.sh-skins { flex: none; font: 700 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.sh-skins b { font-weight: 800; color: var(--text); }
+.sh-pop { animation: shPop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes shPop { from { transform: scale(1.18); } }
+.sh-k { flex: none; display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 2px 2px 0; }
+.sh-k b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.sh-k span { min-width: 0; font: 500 12.5px/1 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-k .sh-k2 { font-style: normal; }   /* the glazed-here sentence: in the kicker on a landscape sheet, under the cards (.sh-note) on a tiny or upright one */
+.sh-grid { flex: none; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; padding: 3px 0 5px; margin: -3px 0 -5px; }   /* room above and below for the rings and the hard shadows (the sheet's own padding has the sides) */
+#acPanH .sh-note { flex: none; display: none; margin: 0; font: 500 12px/1.35 var(--body); color: var(--mute); }
+
+/* a card: the same recipe as the Skin Rack's */
+.sh-c { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0; text-align: left; font: inherit; color: var(--text);
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; -webkit-tap-highlight-color: transparent; }
+.sh-c:active { transform: translateY(2px); }
+.sh-c:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+@media (hover: hover) { .sh-c:hover { transform: translateY(-1px); } .sh-c:hover:active { transform: translateY(2px); } }
+.sh-pa { flex: none; display: flex; justify-content: center; align-items: flex-start; height: var(--pa); padding: calc(var(--pa) - 26px - 5px) 3px 0; }   /* the pill sits 5 px above the foot, under the WORN tag */
+.sh-np { display: flex; align-items: center; justify-content: center; max-width: 100%; min-width: 0; height: 26px; padding: 0 8px; border: 2px solid var(--ink); border-radius: 999px;
+  font: 800 11.5px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase;
+  box-shadow: 0 2px 0 var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.14); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+.sh-np:not([class*="np-"]) { color: var(--text); background: linear-gradient(180deg, #343b6a, #22264a); }   /* Ink; the other plates bring their own look (.np-*, above) */
+.sh-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-top: 1px; }
+.sh-a { position: relative; flex: none; height: var(--art); overflow: hidden; border-radius: 7px 7px 0 0;
+  background: radial-gradient(ellipse 62% 70% at 50% 62%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #31376a, #1f2346); }
+.sh-a canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sh-f { flex: none; height: var(--ft); display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0; padding: 0 7px 1px; background: rgba(14, 16, 34, 0.55); border-top: 1px solid rgba(255, 255, 255, 0.06); border-radius: 0 0 7px 7px; }
+.sh-f b { font: 800 11.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-f small { display: flex; align-items: center; min-width: 0; font: 700 11px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-f small .tokglyph { flex: none; margin: 0 4px 0 0; }
+.sh-f small > span + .tokglyph { margin-left: 4px; }   /* after a word (Glaze, Sure?) */
+.sh-c.own .sh-f small { color: var(--sand); }
+.sh-c.buy .sh-f small { color: var(--gold); font-size: 12px; }
+.sh-c.short .sh-f small { font-size: 12px; }
+.sh-c.short .sh-f .tokglyph { filter: grayscale(1) brightness(0.9); }
+.sh-gz .sh-f small { font-size: 11.5px; }
+.sh-gz.buy .sh-f small { color: var(--gold); }
+/* worn: a gold ring, the name in gold, the corner tag */
+.sh-c.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.sh-c.worn .sh-f b { color: var(--gold); }
+.sh-c.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+/* armed: the foot turns ember, "Sure?" */
+.sh-c.arm .sh-f { background: var(--ember); border-top-color: transparent; }
+.sh-c.arm .sh-f b, .sh-c.arm .sh-f small, .sh-c.arm.buy .sh-f small { color: var(--ink); }
+.sh-c.arm .sh-f small .tokglyph { filter: brightness(0.4); }
+/* glazed: a pearl border and a pearl line */
+.sh-gz.glazed { border-color: transparent; background: linear-gradient(180deg, #2b3058, #1b1f3d) padding-box, var(--pearl) border-box; }
+.sh-gz.glazed .sh-f small { background: var(--pearl); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
+
+/* ---- sizes ---- */
+/* 844x390 (and any short landscape): the whole Shop fits the sheet without scrolling; the glazed-here sentence moves into the kicker */
+#app.short #acPanH { --pa: 46px; --ft: 32px; --art: 46px; --coin: 34px; --gap: 4px; }
+#app.short #acPanH .sh-bal { font-size: 19px; padding: 0 11px 0 8px; }
+#app.short #acPanH .sh-bal::before { width: 22px; height: 17px; }
+#app.short .sh-f b { font-size: 11px; }
+#app.short .sh-k b, #app.short .sh-k span { line-height: 11px; }
+/* 667x320: eight across still, a smaller pill and cards; the kicker lines keep their first part and the note comes back under the cards */
+#app.tiny #acPanH { --pa: 42px; --ft: 30px; --art: 40px; --coin: 32px; --gap: 5px; }
+#app.tiny #acPanH .sh-bal { font-size: 18px; padding: 0 10px 0 7px; }
+#app.tiny #acPanH .sh-bal::before { width: 20px; height: 16px; }
+#app.tiny .sh-skins { display: none; }
+#app.tiny .sh-grid { gap: 6px; }
+#app.tiny .sh-k .sh-k2 { display: none; }
+#app.tiny #acPanH .sh-note { display: block; }
+#app.tiny .sh-np { height: 22px; padding: 0 6px; font-size: 10px; letter-spacing: 0.03em; }
+#app.tiny .sh-pa { padding-top: calc(var(--pa) - 22px - 4px); }
+#app.tiny .sh-f { padding: 0 5px 1px; gap: 3px; }
+#app.tiny .sh-f b { font-size: 10.5px; letter-spacing: 0.03em; }
+#app.tiny .sh-f small, #app.tiny .sh-c.buy .sh-f small, #app.tiny .sh-c.short .sh-f small, #app.tiny .sh-gz .sh-f small { font-size: 10px; letter-spacing: 0.02em; }
+#app.tiny .sh-c.worn::after { padding: 3px 4px 2px; font-size: 8.5px; }
+/* upright and narrow: four across, two rows of each, the note under the cards */
+#app.portrait #acPanH, #app.narrow #acPanH { --pa: 52px; --ft: 36px; --art: 60px; --coin: 36px; --gap: 8px; }
+#app.portrait .sh-grid, #app.narrow .sh-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 6px; }
+#app.portrait #acPanH .sh-note, #app.narrow #acPanH .sh-note { display: block; }
+#app.portrait .sh-k .sh-k2, #app.narrow .sh-k .sh-k2 { display: none; }
+#app.narrow .sh-skins { display: none; }
+#app.narrow #acPanH .sh-from { font-size: 11.5px; line-height: 1.3; }
+#app.narrow #acPanH .sh-bal { font-size: 18px; padding: 0 10px 0 7px; }
+#app.narrow #acPanH .sh-bal::before { width: 21px; height: 17px; }
+#app.narrow .sh-pa { padding-inline: 2px; }
+#app.narrow .sh-np { padding: 0 5px; font-size: 10px; letter-spacing: 0.03em; }
+#app.narrow .sh-f { padding: 0 5px 1px; }
+#app.narrow .sh-f b { font-size: 10.5px; letter-spacing: 0.03em; }
+#app.narrow .sh-f small, #app.narrow .sh-c.buy .sh-f small, #app.narrow .sh-c.short .sh-f small, #app.narrow .sh-gz .sh-f small { font-size: 10px; letter-spacing: 0; }
+#app.narrow .sh-f small .tokglyph { margin-right: 3px; }
+#app.narrow .sh-f small > span + .tokglyph { margin-left: 3px; }
+/* the desktop: a taller model and a little more air */
+#app:not(.short):not(.portrait) #acPanH { --pa: 58px; --ft: 38px; --art: 80px; --coin: 40px; --gap: 10px; }
+#app:not(.short):not(.portrait) .sh-np { font-size: 12px; }
+#app:not(.short):not(.portrait) .sh-f b { font-size: 12px; }
+#app:not(.short):not(.portrait) .sh-f small, #app:not(.short):not(.portrait) .sh-c.buy .sh-f small, #app:not(.short):not(.portrait) .sh-c.short .sh-f small, #app:not(.short):not(.portrait) .sh-gz .sh-f small { font-size: 12px; }
+#app:not(.short):not(.portrait) #acPanH .sh-from, #app:not(.short):not(.portrait) .sh-k span, #app:not(.short):not(.portrait) #acPanH .sh-note { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .sh-pop { animation: none; } .sh-c { transition: none; } }
+
+/* ---- the Account tabs: four now (Profile, Stats, Locker, Shop); on a narrow screen their padding gives way so the strip stays inside the sheet (390 px: 17, 360 px: 13, 320 px: 8) ---- */
+#app.narrow .ac-tabs .chip { padding-left: clamp(8px, calc((100vw - 252px) / 8), 20px); padding-right: clamp(8px, calc((100vw - 252px) / 8), 20px); }
+
+/* ---- Another go on the Daily sheet (ui/daily.js): the price on the button; dimmed while the chips are short ---- */
+#dlyAgain .tokglyph { margin: 0 0.12em 0 0.2em; }
+#dlyAgain.dim { opacity: 0.6; filter: saturate(0.6); }
+#dlyAgain.dim .tokglyph { filter: grayscale(1); }
+#app.narrow .dly-acts { flex-wrap: wrap; }
+#app.narrow .dly-acts #dlyBack { flex: 1 1 100%; }
+
+/* the friends lobby and Quick match (css/95-lobby.css): your name plate on the Fight Card, a friend's name in the match list and the Here now pills */
+#scrOnline .on-plate[class*="np-"], #scrQuick .on-plate[class*="np-"] { background: var(--np-bg); border: 2px solid var(--ink); border-left: 0; }
+#scrOnline .on-plate[class*="np-"] b, #scrQuick .on-plate[class*="np-"] b, #scrOnline .on-plate[class*="np-"] .on-name { color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-list .who b[class*="np-"] { align-self: flex-start; max-width: 100%; padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-pl[class*="np-"] { background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+
 /* ---------- Play friends: "Fight Card" (Fable 5.1, skins-lobby/fable-design.md part 3; mockups skins-lobby/mockups/lobby_*.png) ----------
    Three cards read left to right as you · your match · the room (stacked upright). The Fight Card (#onChange) is one button: your
    fighter drawn live in the worn skin on a sunburst in its colour, the name stroked, the skin and the role, YOU · TAP TO CHANGE and
@@ -3599,7 +3760,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
         <p class="dly-rule" id="dlyRule"></p>
         <p class="dly-line" id="dlyLine"></p>
-        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn primary lg" id="dlyAgain" hidden><span>Another go</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
       </div>
     </div>
   </section>
@@ -3742,7 +3903,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="res-art" aria-hidden="true"><i class="rays"></i><img id="rArt" alt=""></div>
         <i class="res-edge" aria-hidden="true"></i>
         <div class="res-txt">
-          <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span></div>
+          <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span> <span class="rs-np" id="rPlate" hidden></span></div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
           <!-- Quick match: the record against this opponent (ui/rivals.js); upright it moves over the side column's cards -->
@@ -3843,6 +4004,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="chip on" role="tab" id="acTabP" data-t="p" aria-selected="true" aria-controls="acPanP">Profile</button>
         <button class="chip" role="tab" id="acTabS" data-t="s" aria-selected="false" aria-controls="acPanS" tabindex="-1">Stats</button>
         <button class="chip" role="tab" id="acTabL" data-t="l" aria-selected="false" aria-controls="acPanL" tabindex="-1">Locker</button>
+        <button class="chip" role="tab" id="acTabH" data-t="h" aria-selected="false" aria-controls="acPanH" tabindex="-1">Shop</button>
       </div>
       <div id="acPanP" role="tabpanel" aria-labelledby="acTabP">
       <div class="ac-grid">
@@ -3871,6 +4033,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
       <div id="acPanS" class="ac-pan" role="tabpanel" aria-labelledby="acTabS" hidden></div>
       <div id="acPanL" class="ac-pan" role="tabpanel" aria-labelledby="acTabL" hidden></div>
+      <div id="acPanH" class="ac-pan" role="tabpanel" aria-labelledby="acTabH" hidden></div>
       </div>
     </div>
   </section>
@@ -4228,8 +4391,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Ember", price: 0, body: "#f2c46b", trim: "#1f1d26", accent: "#ff6a2b", ui: "#ff7a3d" },
       { name: "Azure", price: 60, body: "#f0cf7a", trim: "#1f1d26", accent: "#3fa7ff", ui: "#56b4ff" },
-      { name: "Verdant", price: 120, body: "#e9c070", trim: "#1f1d26", accent: "#47c96a", ui: "#5fd67f" },
-      { name: "Solar", price: 200, body: "#f6d27a", trim: "#1f1d26", accent: "#ffc21f", ui: "#ffd23f" },
+      { name: "Verdant", price: 150, body: "#e9c070", trim: "#1f1d26", accent: "#47c96a", ui: "#5fd67f" },
+      { name: "Solar", price: 300, body: "#f6d27a", trim: "#1f1d26", accent: "#ffc21f", ui: "#ffd23f" },
     ],
     moves: {
       jab:   M(3, 3, 8,   4, 4, 2, 38, [30, -36, 17], { limb: "arm" }),
@@ -4263,8 +4426,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Nightshade", price: 0, body: "#e3a64f", trim: "#1f1d26", accent: "#6b3fa0", ui: "#9b6bd6" },
       { name: "Crimson", price: 60, body: "#e3a64f", trim: "#1f1d26", accent: "#a3324a", ui: "#e0566e" },
-      { name: "Midnight", price: 120, body: "#d99a48", trim: "#1f1d26", accent: "#2f4a8a", ui: "#5b82d6" },
-      { name: "Bone", price: 200, body: "#e8b25c", trim: "#1f1d26", accent: "#d9d2c0", ui: "#e6dfcc" },
+      { name: "Midnight", price: 150, body: "#d99a48", trim: "#1f1d26", accent: "#2f4a8a", ui: "#5b82d6" },
+      { name: "Bone", price: 300, body: "#e8b25c", trim: "#1f1d26", accent: "#d9d2c0", ui: "#e6dfcc" },
     ],
     moves: {
       jab:   M(3, 3, 9,   4, 4, 2, 40, [30, -30, 16], { limb: "arm" }),
@@ -4301,8 +4464,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Allfather", price: 0, body: "#e6a95a", trim: "#1f1d26", accent: "#b3282d", ui: "#e0484e" },
       { name: "Frost", price: 60, body: "#e6b26a", trim: "#1f1d26", accent: "#3d7fbf", ui: "#5aa2e6" },
-      { name: "Gold", price: 120, body: "#e0a050", trim: "#1f1d26", accent: "#d9a531", ui: "#f0c35a" },
-      { name: "Shadow", price: 200, body: "#d9984a", trim: "#1f1d26", accent: "#4b4b5a", ui: "#9aa0b8" },
+      { name: "Gold", price: 150, body: "#e0a050", trim: "#1f1d26", accent: "#d9a531", ui: "#f0c35a" },
+      { name: "Shadow", price: 300, body: "#d9984a", trim: "#1f1d26", accent: "#4b4b5a", ui: "#9aa0b8" },
     ],
     moves: {
       jab:   M(5, 3, 12,  5, 4.5, 3, 40, [34, -42, 20], { limb: "arm" }),
@@ -4337,8 +4500,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Dusk", price: 0, body: "#f2b04e", trim: "#1f1d26", accent: "#3b3a52", ui: "#f2c14e" },
       { name: "Arcane", price: 60, body: "#f2b04e", trim: "#1f1d26", accent: "#5b3fa8", ui: "#a37cff" },
-      { name: "Forest", price: 120, body: "#eba84a", trim: "#1f1d26", accent: "#2f6b45", ui: "#57c27e" },
-      { name: "Crimson", price: 200, body: "#f0b85a", trim: "#1f1d26", accent: "#8a2b35", ui: "#e05a68" },
+      { name: "Forest", price: 150, body: "#eba84a", trim: "#1f1d26", accent: "#2f6b45", ui: "#57c27e" },
+      { name: "Crimson", price: 300, body: "#f0b85a", trim: "#1f1d26", accent: "#8a2b35", ui: "#e05a68" },
     ],
     moves: {
       jab:   M(4, 3, 10,  4, 4, 3, 40, [36, -38, 18], { limb: "arm" }),
@@ -4373,8 +4536,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Jade", price: 0, body: "#d9a660", trim: "#1f1d26", accent: "#2fd39a", ui: "#3fe0a8" },
       { name: "Steel", price: 60, body: "#d9a660", trim: "#1f1d26", accent: "#c9d3df", ui: "#d3dbe6" },
-      { name: "Blood Moon", price: 120, body: "#d29a58", trim: "#1f1d26", accent: "#e0443a", ui: "#ef5a4f" },
-      { name: "Violet", price: 200, body: "#dcac68", trim: "#1f1d26", accent: "#9b6bff", ui: "#b08aff" },
+      { name: "Blood Moon", price: 150, body: "#d29a58", trim: "#1f1d26", accent: "#e0443a", ui: "#ef5a4f" },
+      { name: "Violet", price: 300, body: "#dcac68", trim: "#1f1d26", accent: "#9b6bff", ui: "#b08aff" },
     ],
     moves: {
       jab:   M(3, 3, 8,   3, 4, 2, 40, [30, -36, 17], { limb: "arm" }),
@@ -4408,8 +4571,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Drake", price: 0, body: "#eeaa58", trim: "#1f1d26", accent: "#e0893a", ui: "#f29a48" },
       { name: "Emerald", price: 60, body: "#eeaa58", trim: "#1f1d26", accent: "#3faa66", ui: "#55c47f" },
-      { name: "Obsidian", price: 120, body: "#e6a250", trim: "#1f1d26", accent: "#4b3d6e", ui: "#8f7bd0" },
-      { name: "Inferno", price: 200, body: "#f0b262", trim: "#1f1d26", accent: "#d63c2c", ui: "#f05a48" },
+      { name: "Obsidian", price: 150, body: "#e6a250", trim: "#1f1d26", accent: "#4b3d6e", ui: "#8f7bd0" },
+      { name: "Inferno", price: 300, body: "#f0b262", trim: "#1f1d26", accent: "#d63c2c", ui: "#f05a48" },
     ],
     moves: {
       jab:   M(4, 3, 10,  4, 4, 3, 40, [34, -36, 18], { limb: "arm" }),
@@ -4445,8 +4608,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Desert", price: 0, body: "#e8b066", trim: "#1f1d26", accent: "#c27a3a", ui: "#e8964a" },
       { name: "Outlaw", price: 60, body: "#e3aa60", trim: "#1f1d26", accent: "#3b3542", ui: "#a99cc4" },
-      { name: "Sheriff", price: 120, body: "#ebb46a", trim: "#1f1d26", accent: "#e6dfcd", ui: "#8fc0ea" },
-      { name: "Gold Rush", price: 200, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
+      { name: "Sheriff", price: 150, body: "#ebb46a", trim: "#1f1d26", accent: "#e6dfcd", ui: "#8fc0ea" },
+      { name: "Gold Rush", price: 300, body: "#efb866", trim: "#1f1d26", accent: "#d4a02c", ui: "#f2c94c" },
     ],
     moves: {
       // the lights are point-blank shots: a short tracer (the box sweeps out from the muzzle over the active frames)
@@ -4486,8 +4649,8 @@ const FIGHTERS = [
     palettes: [
       { name: "Shroud", price: 0, body: "#e2a95c", trim: "#1f1d26", accent: "#5d5a66", ui: "#a9a6b8" },
       { name: "Moss", price: 60, body: "#e2a95c", trim: "#1f1d26", accent: "#3f6b3a", ui: "#6fbf62" },
-      { name: "Ember Wake", price: 120, body: "#dfa456", trim: "#1f1d26", accent: "#3a3440", ui: "#f08a3c" },
-      { name: "Bone", price: 200, body: "#e8b466", trim: "#1f1d26", accent: "#e9e4d6", ui: "#f0ece0" },
+      { name: "Ember Wake", price: 150, body: "#dfa456", trim: "#1f1d26", accent: "#3a3440", ui: "#f08a3c" },
+      { name: "Bone", price: 300, body: "#e8b466", trim: "#1f1d26", accent: "#e9e4d6", ui: "#f0ece0" },
     ],
     moves: {
       // handle pokes: the longest light thrust to the side
@@ -8279,7 +8442,7 @@ function scythe(c, f, P, RC, limb, lw) {
     c.quadraticCurveTo(lb * 0.16, lb * 0.44, -3, 3.5); c.closePath();                                // the cutting edge back to the collar
     c.fillStyle = RC.blade; c.fill(); c.lineWidth = 1.6 / Math.max(0.4, Math.abs(s)); c.strokeStyle = OUT; c.stroke();
     c.save(); c.clip(); c.fillStyle = RC.spine; c.beginPath(); c.moveTo(3, -3); c.quadraticCurveTo(lb * 0.58, lb * 0.3, -lb * 0.28, lb); c.quadraticCurveTo(lb * 0.42, lb * 0.32, 2, 2); c.closePath(); c.fill(); c.restore();
-    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // 200 chips: a ghost-lit edge
+    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // the top chip skin (300 chips): a ghost-lit edge
     c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = 1.2 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke();
     c.restore();
   }
@@ -8552,6 +8715,7 @@ function drawPotato(c, f, tk, at) {
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
   roadSkinBody(c, f, P, tk, flash);
+  if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
   potatoFace(c, f, P, look);
   if (cos === "odin") odinBeard(c, P, pal);
   if (cos === "alchemist") {
@@ -8606,7 +8770,7 @@ function drawSwooshes(c, f, P, tk, alpha) {
   else if (m && m.magic) { c.globalAlpha = alpha * 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
   else drawSwoosh(c, f, P, S);
 }
-// Slash arcs. Samurai skins from 120 chips get an ink-brush underlay with the same shape and size.
+// Slash arcs. Samurai skins from the second chip skin (150 chips) get an ink-brush underlay with the same shape and size.
 function drawSwoosh(c, f, P, S) {
   const ink = f.spec.look.costume === "samurai" && skinLvl(f) >= 2 && !S.body;
   const path = () => {
@@ -10205,14 +10369,80 @@ function uvShotTick(g, f) {
 }
 /* ===================== Glaze: a pearl sheen over a skin you own, bought in the Shop (UI only, never in the simulation) =====================
    P.glazed = { fighterId: [skin index, ...] }, synced like the skins owned. A fighter object drawn with glaze is marked here (a WeakSet, so
-   nothing is added to the simulated fighter and checksums never see it); drawFighter draws the sheen over a marked one. */
+   nothing is added to the simulated fighter and checksums never see it); drawPotato calls glazeDraw over the body of a marked one.
+   The look: a soft pink-mint-lilac wash, a pearl band drifting across the body every few seconds, a pearl inner rim and a small glint
+   when the fighter lands. Always under 0.35 alpha and never white, blue or gold: those colours are the game's hit, shield and armour
+   signals, and the skin's own colours stay readable through it. Reduced motion: the band stands still and there is no glint. */
 const GLAZE_PRICE = 400;
 const GLAZED = new WeakSet();
 const glazeHas = (id, i) => !!(P.glazed && Array.isArray(P.glazed[id]) && P.glazed[id].includes(i));
 function glazeMark(f, on) { if (on) GLAZED.add(f); else GLAZED.delete(f); return f; }
 const glazeOn = (f) => GLAZED.has(f);
-// drawFighter calls this after the figure (the sheen itself comes with the Glaze drawing)
-function glazeDraw(c, f, tk) {}
+// the skin index a fighter object wears (a palette is shared by reference; a copy from a snapshot is matched by its name)
+const glazeIdx = (f) => { const ps = f.spec.palettes, i = ps.indexOf(f.pal); return i >= 0 ? i : ps.findIndex((p) => p.name === (f.pal && f.pal.name)); };
+// a match starts (enterMatchUI): your own fighter shines when you glazed the skin he wears; CPUs never do (a friend's comes from his setup, ui/online.js)
+function glazeMatch() {
+  if (!G) return;
+  for (const f of G.fighters) GLAZED.delete(f);
+  const me = G.fighters[meSlot];
+  if (me && !me.spec.boss) glazeMark(me, glazeHas(me.spec.id, glazeIdx(me)));
+}
+// online: your glazed skins ride in your presence (gz: { fighterId: [indices] }) so a friend's page draws them; an older page sends none (no glaze)
+function glazePres() {
+  const o = {}, g = P.glazed && typeof P.glazed === "object" ? P.glazed : {};
+  for (const id in g) if (FIG[id] && Array.isArray(g[id])) { const l = g[id].filter((i) => Number.isInteger(i) && i >= 0 && i < FIG[id].palettes.length); if (l.length) o[id] = l; }
+  return o;
+}
+// does a friend's presence glaze the skin this fighter wears?
+function glazeFrom(pr, f) {
+  const g = pr && pr.gz, l = g && typeof g === "object" ? g[f.spec.id] : null;
+  return Array.isArray(l) && l.includes(glazeIdx(f));
+}
+const GLZ_LAND = new WeakMap();   // fighter -> { g: grounded last frame, t: the frame he landed, k: the frame last drawn }
+const GLZ_C = ["rgba(255,170,215,", "rgba(150,236,200,", "rgba(206,172,255,"];   // pink, mint, lilac (+ alpha)
+// called by drawPotato in body space (translated to the feet, flipped to the facing, turned with the lean), after the body and its costume
+// layers and before the face: the sheen sits on the potato and the eyes stay crisp. P here is the pose.
+function glazeDraw(c, f, P, tk) {
+  const { rx, ry, cy } = P, calm = resCalm();
+  c.save();
+  potatoPath(c, P); c.clip();
+  // the wash: pink at the top, mint across the middle, lilac at the bottom
+  const w = c.createLinearGradient(-rx * 0.6, cy - ry, rx * 0.6, cy + ry);
+  w.addColorStop(0, GLZ_C[0] + "0.18)"); w.addColorStop(0.5, GLZ_C[1] + "0.10)"); w.addColorStop(1, GLZ_C[2] + "0.18)");
+  c.fillStyle = w; c.fillRect(-rx * 1.5, cy - ry * 1.5, rx * 3, ry * 3);
+  // the gloss: a curved pearl highlight on the top of the potato, like the shine on a glazed pot
+  c.save(); c.translate(-rx * 0.18, cy - ry * 0.5); c.rotate(-0.42);
+  const gl = c.createRadialGradient(0, -ry * 0.08, 0, 0, 0, rx * 0.62);
+  gl.addColorStop(0, GLZ_C[0] + "0.34)"); gl.addColorStop(0.45, GLZ_C[1] + "0.28)"); gl.addColorStop(1, GLZ_C[2] + "0)");
+  c.fillStyle = gl; c.beginPath(); c.ellipse(0, 0, rx * 0.62, ry * 0.2, 0, 0, Math.PI * 2); c.fill();
+  c.restore();
+  // the band: a slanted stripe that drifts from the back of the potato to the front, then rests off the body a moment
+  const u = calm ? 0.62 : ((tk * 0.006 + 0.62) % 1.45);
+  if (u < 1.2) {
+    c.save(); c.translate(0, cy); c.rotate(0.62);
+    const x = -rx * 1.7 + u * rx * 2.9, hw = rx * 0.5, b = c.createLinearGradient(x - hw, 0, x + hw, 0);
+    b.addColorStop(0, GLZ_C[0] + "0)"); b.addColorStop(0.3, GLZ_C[0] + "0.30)"); b.addColorStop(0.5, GLZ_C[1] + "0.34)"); b.addColorStop(0.7, GLZ_C[2] + "0.30)"); b.addColorStop(1, GLZ_C[2] + "0)");
+    c.fillStyle = b; c.fillRect(x - hw, -ry * 2.2, hw * 2, ry * 4.4);
+    c.restore();
+  }
+  // the pearl rim just inside the ink line, its colours running round the body
+  const r = c.createLinearGradient(-rx, cy - ry, rx, cy + ry);
+  r.addColorStop(0, GLZ_C[1] + "0.34)"); r.addColorStop(0.5, GLZ_C[0] + "0.34)"); r.addColorStop(1, GLZ_C[2] + "0.34)");
+  c.lineWidth = 8; c.strokeStyle = r; potatoPath(c, P); c.stroke();
+  c.restore();
+  potatoPath(c, P); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();   // the ink line again over the rim's inner edge
+  // the glint: a small pearl star on the shoulder of the potato for a quarter of a second after landing
+  let s = GLZ_LAND.get(f);
+  if (!s) { s = { g: !!f.grounded, t: -99, k: tk }; GLZ_LAND.set(f, s); }
+  if (tk !== s.k) { if (f.grounded && !s.g) s.t = tk; s.g = !!f.grounded; s.k = tk; }
+  const age = tk - s.t;
+  if (!calm && age >= 0 && age < 16) {
+    const q = age < 4 ? age / 4 : 1 - (age - 4) / 12, L = 3 + 6 * q, x = -rx * 0.42, y = cy - ry * 0.52;
+    c.save(); c.globalAlpha *= 0.85 * q; c.fillStyle = "#ffc9e8"; c.beginPath();
+    c.moveTo(x, y - L); c.quadraticCurveTo(x, y, x + L * 0.7, y); c.quadraticCurveTo(x, y, x, y + L); c.quadraticCurveTo(x, y, x - L * 0.7, y); c.quadraticCurveTo(x, y, x, y - L);
+    c.fill(); c.restore();
+  }
+}
 /* ===================== drawing: world ===================== */
 const STARS = Array.from({ length: 70 }, (_, i) => { const r = (n) => ((Math.sin(i * 127.1 + n * 311.7) * 43758.5453) % 1 + 1) % 1; return { x: r(1), y: r(2), s: r(3) < 0.2 ? 2 : 1, a: 0.25 + r(4) * 0.5 }; });
 const ISLES = [{ x: 0.08, w: 0.2, h: 0.05 }, { x: 0.33, w: 0.12, h: 0.03 }, { x: 0.86, w: 0.24, h: 0.065 }, { x: 0.58, w: 0.08, h: 0.02 }];
@@ -16345,8 +16575,8 @@ function drawBubbles(c, g, tk, img) {
 }
 
 /* ===================== skin effects =====================
-   Each fighter's four skins add effects step by step (free, 60, 120, 200 chips): 60 adds a small
-   effect around the fighter, 120 adds one tied to a move, 200 adds a change on the figure itself
+   Each fighter's four skins add effects step by step (free, 60, 150, 300 chips): 60 adds a small
+   effect around the fighter, 150 adds one tied to a move, 300 adds a change on the figure itself
    and a KO effect. The rules: effects are decoration only and never
    change a fighter's size or an attack's size or timing; they avoid the colours the game uses as
    signals (white hit flash, blue invincibility glow, gold armour ring); they stay close to the
@@ -26133,10 +26363,11 @@ function buildDetail() {
   $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
   skinsBar(spec, pi);   // ui/skins.js: the Skins bar under the stage (the worn skin, SKINS n/7); a tap opens the Skin Rack
   // the portrait only has the base look: any other worn skin stands in the stage corner as the model drawn in a match
-  screens.select.classList.toggle("sl-skin", pi !== 0);
+  const gz = glazeHas(spec.id, pi);   // ui/glaze.js: a glazed skin is drawn too (the portrait has no sheen)
+  screens.select.classList.toggle("sl-skin", pi !== 0 || gz);
   cardArt.length = 0;
-  if (pi !== 0) {
-    const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  if (pi !== 0 || gz) {
+    const f = glazeMark(BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
@@ -26248,6 +26479,7 @@ function startMatch() {
 }
 function enterMatchUI() {
   cntStart();   // ui/counter.js: play counts (reads the match, never the fight)
+  glazeMatch();   // ui/glaze.js: your own fighter's glaze (UI only)
   finStop();
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)
@@ -26503,6 +26735,7 @@ function showResults(R) {
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
   $("rMode").textContent = R.otb ? tbResMode(R) : R.online && R.boss ? `Boss fight · ${R.dropped ? `${NET.oppName || "Your partner"} dropped` : `with ${NET.oppName || "your friend"}`}` : R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.duo ? `Team Brawl 2v2 · ${R.duo.lv}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
+  shopResPlate();   // your name on the nameplate you wear, if you wear one (ui/shop.js)
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
   const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
@@ -27195,7 +27428,7 @@ function rdPuppet() {
     RD.pup = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
     RD.pup.x = 0; RD.pup.y = 0; RD.pup.facing = 1; RD.pupId = spec.id + ":" + (P.pal[spec.id] || 0);
   }
-  return RD.pup;
+  return glazeMark(RD.pup, glazeHas(spec.id, P.pal[spec.id] || 0));   // ui/glaze.js
 }
 // one frame of the map on canvas cv (CSS size w x h); o.mini: the small copy on the menu card (no fighter hop, fewer details)
 function roadPaint(cv, tk, o) {
@@ -28454,15 +28687,20 @@ setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true })
    One try: starting the match writes the day down as tried (r = -1), so quitting, a forfeit or a reload counts as a loss.
    Chips: a win 40 (streak +1), a draw 15 (streak kept), a finished loss 5, a forfeit or an unfinished match nothing; any loss ends the
    streak. No rating, record, history or per-fighter stats change.
+   Another go (a way to spend chips, see ui/shop.js): after a finished loss or draw (not a forfeit, a quit or a win) the sheet offers the same
+   match again for 50 chips, once a day, two taps. Its result replaces today's: a win pays 40 and continues the streak as if the first try had
+   been won (that is what `p` is for), a draw 15, a loss 5. Starting it writes the day down as tried again (r = -1, x = 1), so quitting or a
+   reload counts as a loss.
    P.daily = { d (last day tried), r (1 / 0.5 / 0, -1 = started, not finished), s (streak), w (the last day that kept the streak going:
-             a win, or a draw while a streak runs), b (best streak) }, synced (sync.js). The streak shows while w is today or yesterday. */
+             a win, or a draw while a streak runs), b (best streak), p (the streak that showed before today's first try; only on a finished
+             loss or draw, which is the go being open), x (1 once Another go was taken today) }, synced (sync.js). The streak shows while w is today or yesterday. */
 const DAILY = {
-  lives: 3, secs: 180, win: 40, draw: 15, loss: 5,
+  lives: 3, secs: 180, win: 40, draw: 15, loss: 5, again: 50,
   d: [0.45, 0.52, 0.59, 0.66, 0.73, 0.8, 0.87],                          // CPU strength, Monday to Sunday in equal steps
   words: ["Normal", "Normal", "Normal", "Hard", "Hard", "Hard", "Brutal"],
 };
 const DAY_N = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON_N = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DLY = { key: "" };   // the day the sheet shows
+const DLY = { key: "", arm: false, armT: 0 };   // the day the sheet shows; whether Another go waits for its second tap
 
 /* ----- the day and its matchup ----- */
 const dPad = (n) => String(n).padStart(2, "0");
@@ -28495,6 +28733,10 @@ function dailyAfter(st, key, prev, res, forfeit) {
   return { st: { d: key, r: res, s, w: won || (draw && s > 0) ? key : st.w, b: Math.max(st.b, s) }, chips: won ? DAILY.win : draw ? DAILY.draw : forfeit ? 0 : DAILY.loss };
 }
 const dailyRes = (r) => (r === 1 ? "Won" : r === 0.5 ? "Draw" : "Lost");   // -1 (left unfinished) is a loss
+// Another go is open: today's try ended in a loss or a draw (r 0 / 0.5 with p; a forfeit or a quit has none), and it was not taken yet
+const dailyAgainOk = (st, key) => st.d === key && (st.r === 0 || st.r === 0.5) && typeof st.p === "number" && !st.x;
+// the record as it stood before today's first try: the day that kept the streak was yesterday when a streak showed (a draw moved it to today); the best never moved
+const dailyBefore = (st, key) => ({ w: st.p > 0 ? dailyShift(key, -1) : st.w, b: st.b });
 
 /* ----- the menu button and the sheet ----- */
 function dailyMenu() {
@@ -28509,25 +28751,61 @@ function dailyCard(el, id, pi, who) {
   el.innerHTML = `<span class="dly-ph">${PORTRAITS[id] ? `<img src="${PORTRAITS[id]}" alt="">` : ""}</span><span class="dly-t"><b>${spec.name}</b><small>${cupEsc(who)}</small></span>`;
 }
 function dailyOpen() {
-  const key = dailyKey(), st = dailyGet(), pk = dailyPick(key), [mi, oi] = dailyPals(pk), done = st.d === key, s = dailyStreak(st, key);
-  DLY.key = key;
+  const key = dailyKey(), st = dailyGet(), pk = dailyPick(key), [mi, oi] = dailyPals(pk), done = st.d === key, s = dailyStreak(st, key), again = dailyAgainOk(st, key);
+  DLY.key = key; dailyDisarm();
   $("dlyDate").textContent = dailyLabel(key);
   dailyCard($("dlyMe"), pk.me, mi, "You"); dailyCard($("dlyOp"), pk.opp, oi, pk.cpu);
   const best = st.b > 0 ? ` Best streak: ${st.b} ${st.b === 1 ? "day" : "days"}.` : "";
-  $("dlyRule").innerHTML = done ? `<b>${dailyRes(st.r)} today.</b>${s > 0 ? ` ${s}-day streak.` : ""}` : `<b>One try.</b> Win: ${DAILY.win} chips${s > 0 ? ` and a ${s + 1}-day streak` : ""}.`;
-  $("dlyLine").textContent = done ? `The next Daily Potato opens in ${dailyNextIn()}.${best}` : `CPU: ${pk.word} · ${DAILY.lives} lives · ${DAILY.secs / 60} min · the same matchup for everyone today.`;
+  $("dlyRule").innerHTML = done ? `<b>${dailyRes(st.r)} today.</b>${again ? ` One more go for ${DAILY.again} chips.` : s > 0 ? ` ${s}-day streak.` : ""}` : `<b>One try.</b> Win: ${DAILY.win} chips${s > 0 ? ` and a ${s + 1}-day streak` : ""}.`;
+  $("dlyLine").textContent = again ? `The same match again. Its result replaces today's: a win pays ${DAILY.win} chips${st.p > 0 ? ` and makes it a ${st.p + 1}-day streak` : ""}, a draw ${DAILY.draw}, a loss ${DAILY.loss}.`
+    : done ? `The next Daily Potato opens in ${dailyNextIn()}.${best}` : `CPU: ${pk.word} · ${DAILY.lives} lives · ${DAILY.secs / 60} min · the same matchup for everyone today.`;
   $("dlyGo").hidden = done;
+  $("dlyAgain").hidden = !again;
+  dailyAgainLabel();
   modal("daily", true);
 }
+// the Another go button: its price, "Sure?" for 3 s after the first tap, dimmed (and answering with the missing chips) while short
+function dailyAgainLabel() {
+  const b = $("dlyAgain"), short = P.tokens < DAILY.again;
+  b.classList.toggle("ember", DLY.arm); b.classList.toggle("primary", !DLY.arm && !short); b.classList.toggle("dim", short);
+  b.querySelector("span").innerHTML = `${DLY.arm ? "Sure?" : "Another go"} <span class="tokglyph"></span>${DAILY.again}`;
+  b.setAttribute("aria-label", DLY.arm ? `Sure? Another go for ${DAILY.again} chips` : short ? `Another go costs ${DAILY.again} chips, you have ${fmtChips(P.tokens)}` : `Another go for ${DAILY.again} chips`);
+}
+function dailyDisarm() { clearTimeout(DLY.armT); DLY.arm = false; }
 function dailyFight() {
   const key = dailyKey(), st = dailyGet();
   if (key !== DLY.key || st.d === key) { dailyOpen(); return; }   // midnight passed while the sheet was open, or today's try went elsewhere (a sync)
-  const pk = dailyPick(key), [mi, oi] = dailyPals(pk), me = FIG[pk.me], opp = FIG[pk.opp], prev = dailyStreak(st, key);
+  const pk = dailyPick(key), prev = dailyStreak(st, key);
   P.daily = { d: key, r: -1, s: 0, w: st.w, b: st.b };   // tried from the first frame: a quit, a forfeit or a reload counts as a loss
   saveProfile();
+  dailyStart(pk, { key, prev });
+}
+// Another go: the second tap pays and starts the same match again; the record says tried again (x), so it never comes twice
+function dailyAgain() {
+  const key = dailyKey(), st = dailyGet();
+  if (key !== DLY.key || !dailyAgainOk(st, key)) { dailyOpen(); return; }   // midnight, or the go went elsewhere (a sync)
+  if (P.tokens < DAILY.again) {
+    dailyDisarm(); Sfx.uiNo(); dailyAgainLabel();
+    $("dlyLine").textContent = `Another go costs ${DAILY.again} chips and you have ${fmtChips(P.tokens)}: ${DAILY.again - P.tokens} more needed. Chips come from ranked wins, the Daily Potato, tournaments and Road stars.`;
+    return;
+  }
+  if (!DLY.arm) {   // the first tap arms the button (ember, "Sure?") for 3 s
+    DLY.arm = true; Sfx.ui(); dailyAgainLabel();
+    DLY.armT = setTimeout(() => { DLY.arm = false; if (!screens.daily.hidden) dailyAgainLabel(); }, 3000);
+    return;
+  }
+  dailyDisarm();
+  const was = dailyBefore(st, key);
+  P.tokens -= DAILY.again;
+  P.daily = { d: key, r: -1, s: 0, w: was.w, b: st.b, x: 1 };   // tried again from the first frame, like the first try
+  saveProfile(); Sfx.uiCoin();
+  dailyStart(dailyPick(key), { key, prev: st.p, again: true, w: was.w });
+}
+function dailyStart(pk, dm) {
+  const [mi, oi] = dailyPals(pk), me = FIG[pk.me], opp = FIG[pk.opp];
   Sfx.init(); modal("daily", false);
   G = newGame({ players: [{ spec: me, pal: me.palettes[mi] || me.palettes[0] }, { spec: opp, pal: opp.palettes[oi] || opp.palettes[0] }], stocks: DAILY.lives, time: DAILY.secs, countdown: 150, seed: pk.seed, map: ((pk.seed % BL.POOL) + BL.POOL) % BL.POOL });
-  match = { ranked: false, daily: { key, prev }, d: pk.d, oppRating: 0, bot: makeBot(pk.d, BL.BOT_STYLES[opp.id]), level: pk.word, cpu: pk.cpu };
+  match = { ranked: false, daily: dm, d: pk.d, oppRating: 0, bot: makeBot(pk.d, BL.BOT_STYLES[opp.id]), level: pk.word, cpu: pk.cpu };
   meSlot = 0;
   enterMatchUI();
 }
@@ -28535,20 +28813,26 @@ function dailyFight() {
 function dailyMatchEnd(forfeit) {
   const dm = match.daily, me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
-  const { st, chips } = dailyAfter(dailyGet(), dm.key, dm.prev, res, forfeit);
+  // Another go replaces today's result: it starts from the record as it was before the first try (dm.w), so a win goes on from the old streak
+  const { st, chips } = dailyAfter(dm.again ? { w: dm.w, b: dailyGet().b } : dailyGet(), dm.key, dm.prev, res, forfeit);
+  if (dm.again) st.x = 1;
+  else if (!forfeit && res !== 1) st.p = dm.prev;   // a finished loss or draw keeps Another go open (a win or a forfeit does not)
   P.daily = st; P.tokens += chips;
   saveProfile();
-  const sk = ` · ${st.s}-day streak`, reset = dm.prev > 0 ? " · streak reset" : "";
-  const why = res === 1 ? `Daily win +${chips}${sk}` : res === 0.5 ? `Daily draw +${chips}${st.s > 0 ? sk : ""}` : forfeit ? `No chips for a forfeit${reset}` : `Daily played +${chips}${reset}`;
+  const sk = ` · ${st.s}-day streak`, reset = dm.prev > 0 ? " · streak reset" : "", ag = dm.again ? " · another go" : "";
+  const why = res === 1 ? `Daily win +${chips}${sk}${ag}` : res === 0.5 ? `Daily draw +${chips}${st.s > 0 ? sk : ""}${ag}` : forfeit ? `No chips for a forfeit${reset}${ag}` : `Daily played +${chips}${reset}${ag}`;
   showResults({ res, forfeit, ranked: false, daily: dm, me, op, lines: [], total: chips, why });
 }
 
 screens.daily = $("scrDaily");
 $("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); dailyFight(); });
-for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); modal("daily", false); });
+$("dlyAgain").addEventListener("click", () => { Sfx.init(); goFull(); dailyAgain(); });
+for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); });
+// a tap anywhere but the armed button puts "Another go" back
+$("scrDaily").addEventListener("click", (e) => { if (DLY.arm && !e.target.closest("#dlyAgain")) { dailyDisarm(); dailyAgainLabel(); } }, true);
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open
 setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
-window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
+window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, again: dailyAgainOk, price: DAILY.again, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
 /* ===================== the Skin Rack (UI only; Fable's design, /mnt/project-files/skins-lobby/fable-design.md) =====================
    The fighter select shows one Skins bar under the stage (#dSkins: the worn skin, its effect and SKINS n/7). A tap opens #scrSkins over
    the select: the looked-at skin in big (the model drawn live in it, its name, its effect and one action), then the four chip skins and
@@ -28621,9 +28905,9 @@ function skMakeCard(spec, i, list, tap) {
   b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
-  const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
+  const f = glazeMark(BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
   f.x = 0; f.y = 0; f.facing = -1;
-  list.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94 });
   return b;
 }
 const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
@@ -28685,6 +28969,7 @@ function skPreview(spec) {
     f.x = 0; f.y = 0; f.facing = -1;
     SK.art = { cv: $("skArt"), f, i, fit: 0.8, bottom: 0.94 };
   }
+  glazeMark(SK.art.f, glazeHas(spec.id, i));   // ui/glaze.js: the preview shines when the skin is glazed
 }
 // the loop draws the preview while the sheet is open (loop.js)
 function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
@@ -28742,6 +29027,189 @@ $("skSheet").addEventListener("click", (e) => { if (SK.arm && !e.target.closest(
 window.addEventListener("keydown", (e) => { if (e.code === "Escape" && SK.id && !screens.skins.hidden) { e.preventDefault(); closeSkins(); } });
 // the cards' models are redrawn when the sheet changes size (a phone turned)
 if (window.ResizeObserver) new ResizeObserver(() => { if (SK.id) skDrawCards(); }).observe($("skSheet"));
+/* ===================== the Shop: the fourth Account tab, where chips are spent on what the game draws itself (UI only, never in the simulation) =====================
+   Reached by the Shop tab, or by a tap on the chip coin on the start page (acct.js openAccount("h")). Top: the balance and where chips come from.
+   Nameplates: the plate behind your name on the start page, in the Profile and on the results (css/93-shop.css has the eight looks). Ink is free and
+   the default; the others are bought once and then worn with one tap. P.plates = ids owned, P.plate = the one worn ("" = Ink), both synced (sync.js).
+   Glaze: one card per fighter with his worn skin on a canvas (paintModel, as the Skin Rack's cards); Glaze buys the pearl sheen for that skin for
+   GLAZE_PRICE (ui/glaze.js: P.glazed = { fighterId: [skin indices] }). A glazed card is marked for the sheen's drawing (glazeMark), so it shows on it.
+   Buying anything takes two taps: the first arms the card ("Sure?", ember, for 3 s, as the Skin Rack's Buy), the second pays, plays the coin, saves and
+   redraws the pill. A card you cannot pay does not buy: the line at the top says how many chips are missing for a few seconds.
+   plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element. */
+const PLATES = [
+  { id: "", name: "Ink", price: 0 },
+  { id: "sunset", name: "Sunset", price: 150 },
+  { id: "mint", name: "Mint", price: 150 },
+  { id: "nightsky", name: "Night Sky", price: 200 },
+  { id: "roaddust", name: "Road Dust", price: 200 },
+  { id: "kraken", name: "Kraken Ink", price: 200 },
+  { id: "halftone", name: "Halftone", price: 300 },
+  { id: "goldleaf", name: "Gold Leaf", price: 300 },
+];
+const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null };
+const SH_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
+const plateInfo = (id) => PLATES.find((p) => p.id === id);
+const plateCls = (id) => (id && plateInfo(id) ? "np-" + id : "");
+// put a plate class on an element and take the earlier one off (el._np remembers it)
+function plateSet(el, id) {
+  const c = plateCls(id);
+  if (el._np === c) return;
+  if (el._np) el.classList.remove(el._np);
+  if (c) el.classList.add(c);
+  el._np = c;
+}
+const shopOwns = (id) => !id || (Array.isArray(P.plates) && P.plates.includes(id));
+// the plate worn: a plate this copy does not know, or one that is not owned, shows as Ink
+const shopWorn = () => { const id = typeof P.plate === "string" ? P.plate : ""; return id && plateInfo(id) && shopOwns(id) ? id : ""; };
+
+/* ----- the cards ----- */
+const shMk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const shCoin = (n) => `<span class="tokglyph"></span>${n}`;
+function shopPlateCard(p) {
+  const b = shMk("button", "sh-c sh-pl"), a = shMk("span", "sh-pa"), np = shMk("span", "sh-np"), nm = shMk("span", "sh-nm"), f = shMk("span", "sh-f");
+  b.type = "button"; b.dataset.id = p.id;
+  if (p.id) np.classList.add(plateCls(p.id));
+  np.appendChild(nm); a.appendChild(np);
+  f.appendChild(shMk("b", "", p.name)); f.appendChild(shMk("small"));
+  b.append(a, f);
+  b.addEventListener("click", () => shopPlateTap(p.id));
+  return { id: p.id, el: b, nm, small: f.lastChild };
+}
+function shopGlazeCard(spec) {
+  const b = shMk("button", "sh-c sh-gz"), a = shMk("span", "sh-a"), cv = shMk("canvas"), f = shMk("span", "sh-f");
+  const i = palIdx(spec.id), pal = spec.palettes[i] || spec.palettes[0];
+  b.type = "button"; b.dataset.id = spec.id;
+  b.style.setProperty("--c", col(pal)); b.style.setProperty("--cg", rgba(col(pal), 0.42));
+  cv.setAttribute("aria-hidden", "true"); a.appendChild(cv);
+  f.appendChild(shMk("b", "", spec.name)); f.appendChild(shMk("small"));
+  b.append(a, f);
+  const fig = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  fig.x = 0; fig.y = 0; fig.facing = -1;
+  b.addEventListener("click", () => shopGlazeTap(spec.id));
+  return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };
+}
+function plState(id) { return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : P.tokens >= plateInfo(id).price ? "buy" : "short"; }
+function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
+
+/* ----- the tab ----- */
+function renderShop() {
+  const pan = $("acPanH");
+  shopDisarm();
+  pan.innerHTML = "";
+  SH.pl = PLATES.map(shopPlateCard); SH.gz = FIGHTERS.map(shopGlazeCard);
+  const top = shMk("div", "sh-top"), bal = shMk("span", "coin chips sh-bal"), from = shMk("p", "sh-from"), sk = shMk("span", "sh-skins");
+  bal.id = "shBal"; from.id = "shFrom"; from.setAttribute("aria-live", "polite");
+  sk.innerHTML = `Skins <b>${acSkinCount(P)} / ${acSkinTotal()}</b> · in the Locker`;
+  top.append(bal, from, sk);
+  SH.top = { bal, from };
+  const kick = (title, text, more) => {   // more: a second sentence, shown here on a landscape sheet (under the cards the rest of the time, .sh-note)
+    const k = shMk("div", "sh-k"), s = shMk("span", "", text);
+    if (more) s.appendChild(shMk("em", "sh-k2", more));
+    k.appendChild(shMk("b", "", title)); k.appendChild(s); return k;
+  };
+  const NOTE = "The worn skin of each fighter is glazed here.";
+  const g1 = shMk("div", "sh-grid sh-plates"), g2 = shMk("div", "sh-grid sh-glaze");
+  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze");
+  for (const c of SH.pl) g1.appendChild(c.el);
+  for (const c of SH.gz) g2.appendChild(c.el);
+  pan.append(top, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
+    kick("Glaze", "a pearl sheen on a skin you own", `, ${GLAZE_PRICE} chips each. ${NOTE}`), g2,
+    shMk("p", "sh-note", NOTE));
+  shopRefresh();
+  shopPaint(true);
+  shopLoop();
+}
+// the balance, the line at the top and every card's state (nothing is rebuilt, so a card keeps its focus)
+function shopRefresh() {
+  if (!SH.top) return;
+  const name = acctName(), worn = shopWorn();
+  SH.top.bal.innerHTML = fmtChips(P.tokens);
+  SH.top.bal.setAttribute("aria-label", `${fmtChips(P.tokens)} chips`);
+  SH.top.from.textContent = SH.msg || SH_FROM; SH.top.from.classList.toggle("say", !!SH.msg);
+  for (const c of SH.pl) {
+    const p = plateInfo(c.id), st = plState(c.id), arm = SH.arm === "p:" + c.id;
+    c.nm.textContent = name;
+    c.el.className = `sh-c sh-pl ${st}${arm ? " arm" : ""}`;
+    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(p.price)}` : st === "worn" ? "Worn" : st === "own" ? "Tap to wear" : shCoin(p.price);
+    c.el.setAttribute("aria-pressed", String(st === "worn"));
+    c.el.setAttribute("aria-label", `${p.name} nameplate: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : arm ? `tap again to buy for ${p.price} chips` : `${p.price} chips`}`);
+  }
+  for (const c of SH.gz) {
+    const st = gzState(c), arm = SH.arm === "g:" + c.id, spec = FIG[c.id], pal = spec.palettes[c.i] || spec.palettes[0];
+    c.el.className = `sh-c sh-gz ${st}${arm ? " arm" : ""}`;
+    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(GLAZE_PRICE)}` : st === "glazed" ? "Glazed ✦" : `<span>Glaze</span>${shCoin(GLAZE_PRICE)}`;
+    c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${GLAZE_PRICE} chips` : `glaze for ${GLAZE_PRICE} chips`}`);
+    if (glazeOn(c.art.f) !== (st === "glazed")) { glazeMark(c.art.f, st === "glazed"); shopPaint(false); }
+  }
+}
+function shopSay(text) {
+  SH.msg = text; clearTimeout(SH.msgT);
+  SH.msgT = setTimeout(() => { SH.msg = ""; shopRefresh(); }, 4200);
+  shopRefresh();
+}
+function shopDisarm() { clearTimeout(SH.armT); SH.arm = ""; }
+function shopArm(key) {
+  SH.arm = key; Sfx.ui(); clearTimeout(SH.armT);
+  SH.armT = setTimeout(() => { SH.arm = ""; shopRefresh(); }, 3000);
+  shopRefresh();
+}
+// leaving the tab or the sheet: nothing stays armed, the redraw loop stops
+function shopLeave() { shopDisarm(); clearTimeout(SH.msgT); SH.msg = ""; cancelAnimationFrame(SH.raf); SH.raf = 0; }
+function shopPaid(price) { P.tokens -= price; saveProfile(); Sfx.uiCoin(); renderPill(); if (SH.top && !resCalm()) slReplay(SH.top.bal, "sh-pop"); }
+
+function shopPlateTap(id) {
+  Sfx.init();
+  const p = plateInfo(id), st = plState(id);
+  if (st === "worn") { shopDisarm(); shopRefresh(); return; }
+  if (st === "own") {   // owned: worn at once
+    shopDisarm(); P.plate = id; saveProfile(); Sfx.uiFlip(); renderPill(); shopRefresh(); return;
+  }
+  if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} costs ${p.price} chips and you have ${fmtChips(P.tokens)}: ${p.price - P.tokens} more needed.`); return; }
+  if (SH.arm !== "p:" + id) { shopArm("p:" + id); return; }
+  shopDisarm();
+  if (P.tokens < p.price || shopOwns(id)) { shopRefresh(); return; }
+  P.plates = [...new Set([...(Array.isArray(P.plates) ? P.plates : []), id])]; P.plate = id;
+  shopPaid(p.price); shopRefresh();
+}
+function shopGlazeTap(id) {
+  Sfx.init();
+  const c = SH.gz.find((x) => x.id === id), st = gzState(c);
+  if (st === "glazed") { shopDisarm(); shopRefresh(); return; }
+  if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`Glaze costs ${GLAZE_PRICE} chips and you have ${fmtChips(P.tokens)}: ${GLAZE_PRICE - P.tokens} more needed.`); return; }
+  if (SH.arm !== "g:" + id) { shopArm("g:" + id); return; }
+  shopDisarm();
+  if (P.tokens < GLAZE_PRICE || glazeHas(id, c.i)) { shopRefresh(); return; }
+  if (!P.glazed || typeof P.glazed !== "object" || Array.isArray(P.glazed)) P.glazed = {};
+  P.glazed[id] = [...new Set([...(Array.isArray(P.glazed[id]) ? P.glazed[id] : []), c.i])].sort((a, b) => a - b);
+  shopPaid(GLAZE_PRICE); shopRefresh();
+}
+// a tap anywhere in the tab but on the armed card puts it back
+$("acPanH").addEventListener("click", (e) => { if (SH.arm && !e.target.closest(".sh-c.arm")) { shopDisarm(); shopRefresh(); } }, true);
+
+/* ----- the models: drawn once the cards stand on the page, again when the sheet changes size, and over and over while a glazed one is there (the sheen moves) ----- */
+function shopPaint(all) { for (const c of SH.gz) if (all || glazeOn(c.art.f)) paintModel(c.art, tick); }
+function shopLoop() {
+  cancelAnimationFrame(SH.raf); SH.raf = 0;
+  if (!SH.gz.some((c) => glazeHas(c.id, c.i))) return;
+  const step = () => {
+    SH.raf = 0;
+    if (screens.account.hidden || acUI.tab !== "h") return;
+    shopPaint(false);
+    SH.raf = requestAnimationFrame(step);
+  };
+  SH.raf = requestAnimationFrame(step);
+}
+if (window.ResizeObserver) new ResizeObserver(() => { if (!screens.account.hidden && acUI.tab === "h") shopPaint(true); }).observe($("acPanH"));
+// a purchase made while the tab is open may add the first glazed card: start the loop then
+$("acPanH").addEventListener("click", () => { if (!SH.raf && acUI.tab === "h") shopLoop(); });
+// the results: your name on the plate you wear next to the fighter's name; nothing for Ink (the results look as they always did)
+function shopResPlate() {
+  const el = $("rPlate"), id = shopWorn();
+  el.hidden = !id;
+  if (id) { el.textContent = acctName(); plateSet(el, id); }
+}
+// the lobby and the other screens ask for the worn plate's class through this (ui/online.js, later)
+window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn };
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in
@@ -28818,7 +29286,7 @@ function lobbyPresence() {
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
   const hosting = NET.phase === "hosting" && !NET.qm, q = qmPresence();   // ui/quick.js: searching (qs) or in a Quick match
   const tb = hosting && NET.tb ? { n: tbFree(NET.tb.bd), lv: NET.tb.lv } : null;   // a team brawl: its free seats and CPU level
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs }).catch(() => {});
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting && !tb ? P.rules : null, bo: hosting && !tb ? hostBo() : null, tm: tb, busy: busy || q.busy, qs: q.qs, np: shopWorn() || null }).catch(() => {});   // np: your nameplate (ui/shop.js)
 }
 // The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
 function onBoss() {
@@ -28931,6 +29399,7 @@ async function renderOnline() {
   const names = await namesFor(peers);
   if (seq !== onSeq || mode !== "online") return;
   $("onMyName").textContent = NET.myName || "You";
+  plateSet($("onMyName").parentNode, shopWorn());   // your nameplate on the Fight Card (ui/shop.js)
   const nameIn = $("onName");
   $("onMyName").hidden = NET.standalone; nameIn.hidden = !NET.standalone;
   if (NET.standalone && document.activeElement !== nameIn) nameIn.value = NET.myName;
@@ -28957,6 +29426,7 @@ async function renderOnline() {
     if (NET.invite && h.presence.host === NET.invite) li.className = "invited";
     const who = document.createElement("div"); who.className = "who";
     const b = document.createElement("b"); b.textContent = names[h.peer] || "Friend";
+    plateSet(b, h.presence.np);   // the host's nameplate (ui/shop.js; unknown or none = plain)
     const sp = document.createElement("span"); const hf = FIG[h.presence.f];
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
@@ -28983,7 +29453,7 @@ async function renderOnline() {
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
-  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy) })));
+  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy), np: plateCls(p.presence && p.presence.np) })));
   // a team brawl's board (ui/online-team.js): the seats with the names of the people in the match's room
   const tbOn = !!NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake");
   const roomNames = tbOn && NET.mr ? Object.assign({}, names, await namesFor(NET.mr.peers())) : names;
@@ -29032,7 +29502,7 @@ function hereNow(ps) {
   if (!ps) return;
   if (!ps.length) { box.textContent = "Just you. Friends show up here when they open this page."; return; }
   for (const p of ps) {
-    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "");
+    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "") + (p.np ? " " + p.np : "");
     el.textContent = p.busy ? `${p.n} · in a match` : p.n;
     box.appendChild(el);
   }
@@ -29056,7 +29526,7 @@ function onlineArtFighter() {
     o.f = newGame({ players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     o.f.x = 0; o.f.y = 0;
   }
-  return o.f;
+  return glazeMark(o.f, glazeHas(spec.id, o.pi));   // ui/glaze.js
 }
 // the Fight Card's model, live in the worn skin (the select's paintModel: 88 % of the art area, the Reaper's scythe fitted)
 const onArt = { cv: null, f: null, fit: 0.88, bottom: 0.93 };
@@ -29096,8 +29566,8 @@ async function netHost() {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
-  if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres() }); }
-  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo() });
+  if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
+  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -29110,7 +29580,7 @@ async function netJoin(code) {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
-  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter) });
+  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres() });
   if (NET.invite === code) NET.invite = null;
   lobbyPresence(); renderOnline();
 }
@@ -29230,6 +29700,10 @@ function startOnlineMatch(st) {
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
+  { // your friend's glaze, read from his presence (ui/glaze.js); yours comes from enterMatchUI
+    const o = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null, f = G.fighters[1 - meSlot];
+    if (f) glazeMark(f, glazeFrom(o && o.presence, f));
+  }
   resolveOppName();
 }
 function readOpp(pr) {
@@ -31020,8 +31494,8 @@ function masteryGlint(o, nm, x, y, t) {
 /* ----- a hook for the tests ----- */
 window.__blMastery = { info: mxInfo, level: mxLevel, curve: MX_CURVE, titles: MX_TITLES, gain: mxGain, mult: mxMult, page: masteryPage, get fanfares() { return mxFan; } };
 /* ===================== accounts: profile pill, Account sheet, sync code =====================
-   The pill (top right of the start page) shows who you are; tapping it opens the Account sheet with your numbers and the sync
-   section. The code format, the clean-up of a profile and the merge live in sync.js (pure, tested in node). Nothing here ever
+   The pill (top right of the start page) shows who you are; tapping it opens the Account sheet (Profile, Stats, Locker and the Shop, which is
+   ui/shop.js) with your numbers and the sync section; a tap on the pill's chip coin opens the sheet on the Shop. The code format, the clean-up of a profile and the merge live in sync.js (pure, tested in node). Nothing here ever
    blocks the menu on the network: calls have a short timeout and a failure shows one quiet line. */
 /* Account sync, the pure part: no page, no network, no storage. It is spliced into the page by build.py (at the SYNC
    marker in ui/acct.js) and is also a node module, so tests/acct.js can test the merge. A "prof" is the part of the profile that follows the
@@ -31045,6 +31519,18 @@ const SYNC = (function () {
   const cleanMap = (m, hi) => { const r = {}; for (const id of Object.keys(m).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) { const v = num(m[id], 0, hi, 0); if (v > 0) r[id] = v; } return r; };
   const cleanIds = (l) => (Array.isArray(l) ? [...new Set(l.filter((x) => typeof x === "string" && ID_RE.test(x)))].sort().slice(0, 24) : []);
   const MSEED_MAX = 650, MLV_MAX = 10;   // the head start's cap (XP) and the top level
+  const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;   // a nameplate id (ui/shop.js); a newer page may know more than this copy, so only the spelling is checked
+  // Glaze (ui/glaze.js): { fighterId: [skin indices] }, like the skins owned but without the base skin. A fighter with none is left out, so a prof has one spelling.
+  const cleanGlaze = (m, known) => {
+    const r = {};
+    for (const id of Object.keys(m).filter((k) => ID_RE.test(k)).sort().slice(0, 24)) {
+      const n = known.has(id) ? known.get(id) : 16, list = Array.isArray(m[id]) ? m[id] : [];
+      const l = [...new Set(list.filter((i) => Number.isInteger(i) && i >= 0 && i < n))].sort((a, b) => a - b);
+      if (l.length) r[id] = l;
+    }
+    return r;
+  };
+  const cleanPlates = (l) => [...new Set(l.filter((x) => typeof x === "string" && PLATE_RE.test(x)))].sort().slice(0, 64);
 
   /* ----- the sync code: 16 characters of Crockford base32, shown as 7K3F-9QXM-2PLA-W8RT ----- */
   // What a player may type: any case, dashes and spaces optional, O read as 0, I and L as 1. "" when it cannot be a code.
@@ -31069,11 +31555,16 @@ const SYNC = (function () {
   const canon = (v) => String(JSON.stringify(sortKeys(v)));
   const same = (a, b) => canon(a) === canon(b);
   // Daily Potato (ui/daily.js): { d: last day tried, r: 1 / 0.5 / 0 (-1 = started, not finished), s: streak, w: the last day that kept
-  // the streak going, b: best streak }. Not an object -> null (missing).
+  // the streak going, b: best streak }. Not an object -> null (missing). Added later (left out while not set, so an older page's record has
+  // one spelling): p = the streak that showed before today's first try, kept only while Another go is open (a finished loss or draw);
+  // x = 1 once Another go was taken today.
   function cleanDaily(q) {
     if (!isObj(q)) return null;
     const day = (v) => (typeof v === "string" && DAY_RE.test(v) ? v : ""), d = day(q.d), s = num(q.s, 0, 1e6, 0);
-    return { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
+    const out = { d, r: !d ? 0 : [1, 0.5, 0, -1].includes(q.r) ? q.r : -1, s, w: day(q.w), b: Math.max(num(q.b, 0, 1e6, 0), s) };
+    if (d && typeof q.p === "number" && isFinite(q.p)) out.p = num(q.p, 0, 1e6, 0);
+    if (d && (q.x === 1 || q.x === true)) out.x = 1;
+    return out;
   }
   // The Road (ui/road.js): { s: per stop (24 in three regions), the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: Old
   // Scratch's levels won as bits (1 Normal, 2 Hard, 4 Nightmare), paid: his first win's reward was paid; b2 / p2: the same for Zorp,
@@ -31137,6 +31628,10 @@ const SYNC = (function () {
     // combo routes cleared in the Combo trial (ui/combos.js), as a sorted set of route ids, and whether their 30 chips were paid
     if (Array.isArray(p.routes)) out.routes = [...new Set(p.routes.filter((r) => typeof r === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(r)))].slice(0, 64).sort();
     if (typeof p.comboPaid === "boolean") out.comboPaid = p.comboPaid;
+    // the Shop (ui/shop.js): skins glazed per fighter and the nameplates owned (both a union), the plate worn ("" = Ink)
+    if (isObj(p.glazed)) out.glazed = cleanGlaze(p.glazed, known);
+    if (Array.isArray(p.plates)) out.plates = cleanPlates(p.plates);
+    if (typeof p.plate === "string") out.plate = PLATE_RE.test(p.plate) ? p.plate : "";
     out.history = (Array.isArray(p.history) ? p.history : []).filter(isObj).slice(0, HIST).map((h) => ({
       r: h.r === 1 ? 1 : h.r === 0.5 ? 0.5 : 0, d: num(h.d, -500, 500, 0),
       me: typeof h.me === "string" && ID_RE.test(h.me) ? h.me : "", op: typeof h.op === "string" && ID_RE.test(h.op) ? h.op : "",
@@ -31166,6 +31661,9 @@ const SYNC = (function () {
     if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
+    if (S.glazed !== undefined) P.glazed = Object.fromEntries(Object.entries(S.glazed).map(([k, v]) => [k, v.slice()]));
+    if (S.plates !== undefined) P.plates = S.plates.slice();
+    if (S.plate !== undefined) P.plate = S.plate;
     for (const k of ["mxp", "mseed", "mpaid"]) if (S[k] !== undefined) P[k] = Object.assign({}, S[k]);
     if (S.pages !== undefined) P.pages = { ko: S.pages.ko.slice(), ult: S.pages.ult.slice() };
     return P;
@@ -31176,7 +31674,8 @@ const SYNC = (function () {
     const extra = isObj(P.owned) ? Object.values(P.owned).some((l) => Array.isArray(l) && l.some((i) => i > 0)) : false;
     return !!((P.matches | 0) > 0 || (P.tokens | 0) > 0 || (P.wins | 0) > 0 || (P.losses | 0) > 0 || (P.draws | 0) > 0 ||
       (P.friendW | 0) > 0 || (P.friendL | 0) > 0 || (P.cups | 0) > 0 || extra || !!(isObj(P.road) && Array.isArray(P.road.s) && P.road.s.some((v) => v > 0)) ||
-      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)));   // fighter mastery XP (Practice alone earns it)
+      !!(isObj(P.mxp) && Object.values(P.mxp).some((v) => v > 0)) ||   // fighter mastery XP (Practice alone earns it)
+      (Array.isArray(P.plates) && P.plates.length > 0) || (isObj(P.glazed) && Object.values(P.glazed).some((l) => Array.isArray(l) && l.length > 0)));   // Shop buys
   }
 
   /* ----- the merge -----
@@ -31223,17 +31722,28 @@ const SYNC = (function () {
     { const f = [L.fsince, S.fsince].filter((v) => v > 0); if (f.length) out.fsince = Math.min(...f); }   // counting began on the earlier device
     { const v = pickOpt("avatar"); if (have(v)) out.avatar = v; }
     { const v = pickOpt("title"); if (have(v)) out.title = v; }
-    // Daily Potato: the side that changed it; if both did, the later day, then (same day) a finished try over one still running (-1),
-    // then the newer side. The best streak keeps the higher one.
+    // Daily Potato: the side that changed it; if both did, the later day, then (same day) the record whose Another go was taken (it is
+    // further along), then a finished try over one still running (-1), then the newer side. The best streak keeps the higher one.
     if (have(S.daily) || have(L.daily)) {
       const l = L.daily, s = S.daily, b = B.daily;
       let v = !have(s) ? l : !have(l) ? s : have(b) && same(l, b) ? s : have(b) && same(s, b) ? l : null;
       if (!v) {
-        const w = l.d !== s.d ? (l.d > s.d ? l : s) : (l.r === -1) !== (s.r === -1) ? (l.r === -1 ? s : l) : localNewer ? l : s;
+        const w = l.d !== s.d ? (l.d > s.d ? l : s) : !l.x !== !s.x ? (l.x ? l : s) : (l.r === -1) !== (s.r === -1) ? (l.r === -1 ? s : l) : localNewer ? l : s;
         v = Object.assign({}, w, { b: Math.max(l.b, s.b) });
       }
       out.daily = Object.assign({}, v);
     }
+    // the Shop: skins glazed and nameplates owned are a union (a side without the field is "unchanged"); the plate worn follows the newer side
+    if (have(S.glazed) || have(L.glazed)) {
+      const r = {}, a = L.glazed || {}, b = S.glazed || {};
+      for (const id of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) {
+        const l = [...new Set([...(a[id] || []), ...(b[id] || [])])].sort((x, y) => x - y);
+        if (l.length) r[id] = l;
+      }
+      out.glazed = r;
+    }
+    if (have(S.plates) || have(L.plates)) out.plates = [...new Set([...(L.plates || []), ...(S.plates || [])])].sort();
+    { const v = pickOpt("plate"); if (have(v)) out.plate = v; }
     // combo routes: everything either side cleared; the chips for all of them, paid once on any device, stay paid
     if (have(S.routes) || have(L.routes)) out.routes = [...new Set([...(L.routes || []), ...(S.routes || [])])].sort();
     if (have(S.comboPaid) || have(L.comboPaid)) out.comboPaid = !!(L.comboPaid || S.comboPaid);
@@ -31375,6 +31885,7 @@ function renderPill() {
   acSetMe($("mAvatar"));
   $("mName").textContent = name;
   me.querySelector(".plate").style.setProperty("--tc", ti.t.col);
+  plateSet(me.querySelector(".plate"), shopWorn());   // the nameplate worn (ui/shop.js); Ink = today's look
   $("mTier").textContent = ti.t.name;
   $("mRating").textContent = rk.r;
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
@@ -31412,14 +31923,16 @@ function acSum(p) {   // one line about a profile, for the "replace it?" questio
 function renderAccount() {
   if (screens.account.hidden) return;
   for (const b of document.querySelectorAll(".ac-tabs .chip")) { const on = b.dataset.t === acUI.tab; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
-  $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l";
+  $("acPanP").hidden = acUI.tab !== "p"; $("acPanS").hidden = acUI.tab !== "s"; $("acPanL").hidden = acUI.tab !== "l"; $("acPanH").hidden = acUI.tab !== "h";
   if (acUI.tab === "s") { renderStats(); return; }
   if (acUI.tab === "l") { renderLocker(); return; }
+  if (acUI.tab === "h") { renderShop(); return; }   // ui/shop.js
   const rk = rankView(), ti = tierInfo(rk.r), name = acctName();
   acSetMe($("acAvatar"));
   const tt = acTitle(); $("acTitleLine").textContent = tt ? tt.name : "";
   renderPick();
   const inp = $("acName"); if (document.activeElement !== inp) inp.value = name;
+  plateSet(inp, shopWorn());   // the name sits on the nameplate worn (ui/shop.js)
   $("acPlays").textContent = FIG[P.last] ? `Plays ${FIG[P.last].name}` : "";
   $("acPicBtn").setAttribute("aria-expanded", String(acUI.pick === "av")); $("acTitBtn").setAttribute("aria-expanded", String(acUI.pick === "ti"));
   $("acPicBtn").classList.toggle("on", acUI.pick === "av"); $("acTitBtn").classList.toggle("on", acUI.pick === "ti");
@@ -31612,6 +32125,7 @@ function renderLocker() {
     a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
     a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
     if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
+    if (glazeOn(a.f) !== glazeHas(f.id, pi)) { glazeMark(a.f, glazeHas(f.id, pi)); a.dirty = true; }   // ui/glaze.js
   }
   // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
   if (LKR.cardsFor !== spec.id) {
@@ -31623,11 +32137,12 @@ function renderLocker() {
   }
   $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
+  for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
 }
 // closing the sheet: the next time it opens, the Locker starts on the fighter played last again
 $("acClose").addEventListener("click", () => { LKR.id = ""; });
-function acSetTab(t) { acUI.tab = t; renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
+function acSetTab(t) { acUI.tab = t; if (t !== "h") shopLeave(); renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : t === "h" ? "shop" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
   b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });
   b.addEventListener("keydown", (e) => {
@@ -31894,10 +32409,11 @@ async function acctSync(now) {
 }
 
 /* ----- the sheet: open, close, reset ----- */
-function openAccount() {
-  acUI.tab = "p"; acUI.pick = "";
+function openAccount(tab) {   // tab "h" opens the Shop (the chip coin on the start page); anything else the Profile
+  acUI.tab = tab === "h" ? "h" : "p"; acUI.pick = "";
   acUI.resetArmed = false; acUI.unlinkArmed = false; acUI.view = "main"; acUI.pend = null; acMsg("");
   modal("account", true); renderAccount();
+  if (acUI.tab === "h") { cntScreen("shop"); const sh = document.querySelector("#scrAccount .sheet"); if (sh) sh.scrollTop = 0; }
   if (ACCT.code) { if (Date.now() - ACCT.t > 10000) acctSync(); } else acctPing();
 }
 function acctDoReset() {
@@ -31908,9 +32424,9 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-tap("mRank", openAccount);
+tap("mRank", (e) => openAccount(e && e.target && e.target.closest && e.target.closest("#mTokens") ? "h" : "p"));   // the chip coin opens the Shop, the rest of the plate the Profile
 tap("acClose", () => {
-  modal("account", false); clearTimeout(acShowT);
+  modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"
   acUI.view = "main"; acUI.pend = null; acUI.code = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = ""; acUI.resetArmed = false; acUI.unlinkArmed = false;
   renderMenu();
@@ -32181,7 +32697,7 @@ async function qmJoin(m) {
   try { await openMatchRoom(m.room); }
   catch (e) { return; }   // the server calls the match off (qm-off) and the search goes on
   if (NET.mrCode !== m.room) return;
-  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0 });
+  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js)
 }
 function qmChime() { Sfx.tone(784, 784, 0.12, "triangle", 0.08); Sfx.at(0.13, 1175, 1175, 0.22, "triangle", 0.08); Sfx.at(0.06, 110, 40, 0.4, "sine", 0.45); }
 // over a running CPU warm-up: the fight freezes under PLAYER FOUND! and a 3·2·1 (qmTick), then ends with no result
@@ -32219,6 +32735,7 @@ function qmVs(m) {
   const mine = m.role === "host" ? 0 : 1, o = m.opp, me = qmMe(), el = $("qmVs");
   const fs = newGame({ players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
+  glazeMark(fs[mine], glazeHas(m.f[mine], m.p[mine]));   // ui/glaze.js: your own glaze on the VS screen
   for (const [k, f] of [["L", fs[mine]], ["R", fs[1 - mine]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
   const side = (k, name, fid, pi, r, pl, unranked) => {
     const spec = FIG[fid], pal = spec.palettes[pi] || spec.palettes[0];
@@ -32517,6 +33034,7 @@ function qmRender() {
   $("qmFName").textContent = spec.name; $("qmFSkin").textContent = pal.name; $("qmFRole").textContent = spec.role;
   $("qmChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${pal.name}. Change fighter`);
   $("qmMyName").textContent = NET.myName || acctName();
+  plateSet($("qmMyName").parentNode, shopWorn());   // your nameplate (ui/shop.js)
   // the mode: two big segments (Ranked waits for accounts on the server)
   for (const [id, v] of [["qmR", "r"], ["qmC", "c"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
   $("qmRSub").textContent = off ? "opens soon" : "counts for rank";
@@ -33049,7 +33567,7 @@ function frame(now) {
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
 qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)

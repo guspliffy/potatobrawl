@@ -1,6 +1,6 @@
 /* ===================== skin effects =====================
-   Each fighter's four skins add effects step by step (free, 60, 120, 200 chips): 60 adds a small
-   effect around the fighter, 120 adds one tied to a move, 200 adds a change on the figure itself
+   Each fighter's four skins add effects step by step (free, 60, 150, 300 chips): 60 adds a small
+   effect around the fighter, 150 adds one tied to a move, 300 adds a change on the figure itself
    and a KO effect. The rules: effects are decoration only and never
    change a fighter's size or an attack's size or timing; they avoid the colours the game uses as
    signals (white hit flash, blue invincibility glow, gold armour ring); they stay close to the
