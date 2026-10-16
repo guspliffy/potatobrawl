@@ -133,7 +133,7 @@ function tbFillCpus(h, f, p, nm) {
     if (h[s] || (f[s] && nm[s])) continue;
     const pool = FIGHTERS.filter((x) => !f.includes(x.id));
     f[s] = (pool.length ? pool : FIGHTERS)[(Math.random() * (pool.length || FIGHTERS.length)) | 0].id;
-    nm[s] = cpuName();
+    nm[s] = cpuNameNot(nm);
   }
   const used = [];
   for (const s of TB_SEATS) {
@@ -732,7 +732,7 @@ function tbResultTick() {
   // every person still here asked for a rematch and nobody went back to the board: the lowest seat starts it
   if (NET.rm !== next || here[0] !== meSlot || here.some((s) => tbPresOf(s).rm !== next || tbPresOf(s).bk === NET.matchId)) return;
   const prev = TM.st, h = prev.h.map((p, s) => (here.includes(s) ? p : null)), nm = prev.nm.slice();
-  h.forEach((p, s) => { if (!p && !nm[s]) nm[s] = cpuName(); });
+  h.forEach((p, s) => { if (!p && !nm[s]) nm[s] = cpuNameNot(nm); });
   const st = Object.assign({}, prev, { id: next, seed: (Math.random() * 1e9) | 0, h, nm });
   namedPresence({ start: st });
   tbStartMatch(st);

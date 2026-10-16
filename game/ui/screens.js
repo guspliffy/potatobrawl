@@ -111,6 +111,12 @@ function cpuName() {
   do n = CPU_NAMES[(Math.random() * CPU_NAMES.length) | 0]; while (n === lastCpuName);
   return (lastCpuName = n);
 }
+// a name none of the CPUs in this match has yet (a 2v2 has up to three; cpuName alone only avoids the one just before)
+function cpuNameNot(taken) {
+  let n = cpuName();
+  for (let i = 0; i < 40 && taken.includes(n); i++) n = cpuName();
+  return n;
+}
 const cardArt = [];
 function statBars(spec) {
   const s = spec.stats, mv = spec.moves;

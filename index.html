@@ -25254,6 +25254,12 @@ function cpuName() {
   do n = CPU_NAMES[(Math.random() * CPU_NAMES.length) | 0]; while (n === lastCpuName);
   return (lastCpuName = n);
 }
+// a name none of the CPUs in this match has yet (a 2v2 has up to three; cpuName alone only avoids the one just before)
+function cpuNameNot(taken) {
+  let n = cpuName();
+  for (let i = 0; i < 40 && taken.includes(n); i++) n = cpuName();
+  return n;
+}
 const cardArt = [];
 function statBars(spec) {
   const s = spec.stats, mv = spec.moves;
@@ -26038,7 +26044,8 @@ function startDuo(o) {
   const map = BL.MAPS[pick] && BL.MAPS[pick].pool !== false ? pick : randMap();
   const players = [{ spec: me, pal: me.palettes[mine] || me.palettes[0] }, { spec: mate, pal: skin(mate) }, { spec: a, pal: skin(a) }, { spec: b, pal: skin(b) }];
   G = newGame({ players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
-  const names = ["You", cpuName(), cpuName(), cpuName()];
+  const names = ["You"];
+  for (let i = 0; i < 3; i++) names.push(cpuNameNot(names));   // three different potato names
   match = { duo: true, level: LEVELS[lv].name, lv, d, cpu: names[1], names, team: duoTeamName(), caught: 0,
     bots: [null, ...[mate, a, b].map((s) => makeBot(d, BL.BOT_STYLES[s.id]))] };
   meSlot = 0;
@@ -28785,7 +28792,7 @@ function tbFillCpus(h, f, p, nm) {
     if (h[s] || (f[s] && nm[s])) continue;
     const pool = FIGHTERS.filter((x) => !f.includes(x.id));
     f[s] = (pool.length ? pool : FIGHTERS)[(Math.random() * (pool.length || FIGHTERS.length)) | 0].id;
-    nm[s] = cpuName();
+    nm[s] = cpuNameNot(nm);
   }
   const used = [];
   for (const s of TB_SEATS) {
@@ -29384,7 +29391,7 @@ function tbResultTick() {
   // every person still here asked for a rematch and nobody went back to the board: the lowest seat starts it
   if (NET.rm !== next || here[0] !== meSlot || here.some((s) => tbPresOf(s).rm !== next || tbPresOf(s).bk === NET.matchId)) return;
   const prev = TM.st, h = prev.h.map((p, s) => (here.includes(s) ? p : null)), nm = prev.nm.slice();
-  h.forEach((p, s) => { if (!p && !nm[s]) nm[s] = cpuName(); });
+  h.forEach((p, s) => { if (!p && !nm[s]) nm[s] = cpuNameNot(nm); });
   const st = Object.assign({}, prev, { id: next, seed: (Math.random() * 1e9) | 0, h, nm });
   namedPresence({ start: st });
   tbStartMatch(st);
