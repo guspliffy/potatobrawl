@@ -3522,6 +3522,367 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   #qmFound.in .qf-t, #qmFound.in .qf-vs, #qmVs.in .vs-h, #qmVs.in .vs-s, #qmVs.in .vs-x, #scrSeason:not([hidden]) .ss-p.on .badge .em { animation: none; }
 }
 
+/* ---- Ranked vs CPU on the Quick match screen (ui/vscpu.js): the third segment, the CPU rank plate with its board line,
+   the WANT IT TO COUNT? pill under the warm-up, the HUD strip, the VS sticker and the results' board line ---- */
+#scrQuick .qm-seg { grid-template-columns: 1fr 1fr 1fr; }
+#scrQuick .qm-seg button { min-width: 0; }
+#scrQuick .qm-seg button b { font: inherit; white-space: nowrap; }
+#scrQuick .qm-seg button small { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the CPU rank: an ember CPU sticker on the emblem's corner, the record line in sand */
+#scrQuick .qm-rk.vc { position: relative; box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.45); }
+#scrQuick .qm-rk.vc::before { content: "CPU"; position: absolute; left: 6px; top: -9px; z-index: 2; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px;
+  background: var(--ember, #ef7a52); color: var(--ink); font: 900 9.5px/1 var(--display); letter-spacing: 0.08em; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); }
+#scrQuick .qm-bdl { appearance: none; grid-column: 1 / -1; justify-self: start; max-width: 100%; margin-top: -7px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 700 12px/1.2 var(--body); color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-bdl.mute { color: var(--mute); }
+#scrQuick .qm-bdl[hidden] { display: none; }
+#scrQuick .qm-bdl:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#scrQuick .qm-truth.live { color: var(--mint); }
+/* under the warm-up button: the way into the CPU rank */
+#scrQuick .qm-tov { appearance: none; cursor: pointer; flex: none; align-self: stretch; min-height: 32px; padding: 4px 10px; border: 1.5px solid rgba(244, 201, 93, 0.45); border-radius: 8px;
+  background: rgba(14, 16, 34, 0.5); color: var(--text); font: 600 12px/1.2 var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrQuick .qm-tov b { font: 800 13px/1 var(--display); letter-spacing: 0.06em; color: var(--gold); }
+#scrQuick .qm-tov[hidden] { display: none; }
+#scrQuick .qm-tov:active { transform: translateY(2px); }
+
+/* the HUD strip under the clock: Ranked vs CPU · your tier and rating, in gold */
+#vcStrip { margin-top: 2px; height: 24px; gap: 6px; padding: 0 9px; color: var(--gold); border-color: rgba(244, 201, 93, 0.5); background: rgba(14, 16, 34, 0.82); font-size: 11px; white-space: nowrap; }
+#vcStrip[hidden] { display: none; }
+#vcStrip i { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); animation: none; }
+#app.narrow #vcStrip { position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); margin: 0; }
+
+/* the VS screen: the CPU sticker beside its name */
+#qmVs .vc-cpu { display: inline-block; margin-left: 8px; padding: 3px 6px 2px; font-size: 11px; vertical-align: 3px; transform: rotate(-4deg); }
+#qmVs .vc-cpu[hidden] { display: none; }
+
+/* results: the board line under the rank card's bar (gold, mint when you climbed, ketchup when you fell, mute when not on it) */
+#resSheet .rk-bd { appearance: none; display: block; max-width: 100%; margin-top: 6px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font: 700 12px/1.25 var(--body); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .rk-bd.up { color: var(--mint); }
+#resSheet .rk-bd.down { color: #ff8a7c; }
+#resSheet .rk-bd.mute { color: var(--mute); cursor: default; }
+#resSheet .rk-bd[hidden] { display: none; }
+
+/* the menu's profile plate on the CPU rank: a small ember CPU sticker on the picture's corner */
+#scrMenu .plate.vc .mm-avw::after { content: "CPU"; position: absolute; left: -7px; top: -6px; z-index: 2; padding: 2px 3px 1px; border: 1.5px solid var(--ink); border-radius: 4px;
+  background: var(--ember); color: var(--ink); font: 900 8px/1 var(--display); letter-spacing: 0.06em; transform: rotate(-8deg); }
+
+/* the Account sheet's board places */
+.ac-bds { display: flex; flex-wrap: wrap; gap: 6px; }
+.ac-bds:empty { display: none; }
+
+/* ---- sizes ---- */
+#app.tiny #scrQuick .qm-bdl { margin-top: -5px; font-size: 11px; }
+#app.tiny #scrQuick .qm-tov { min-height: 28px; font-size: 11px; }
+#app.tiny #scrQuick .qm-tov b { font-size: 12px; }
+#app.tiny #resSheet .rk-bd { margin-top: 4px; font-size: 11px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-bdl { font-size: 14px; margin-top: -8px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-tov { min-height: 40px; font-size: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-tov b { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-rk.vc::before { font-size: 11px; }
+#app:not(.short):not(.portrait) #resSheet .rk-bd { font-size: 14px; }
+/* upright phones: three segments side by side, a smaller title and sub */
+#app.portrait #scrQuick .qm-seg { gap: 6px; }
+#app.portrait #scrQuick .qm-seg button { font-size: 16px; padding: 4px 4px; }
+#app.portrait #scrQuick .qm-seg button small { font-size: 10.5px; }
+#app.tiny #scrQuick .qm-seg button { font-size: 15px; padding: 4px 4px; }
+/* landscape phones under 760 wide (667x375): the side columns of small phones, so the three choices and the plate fit */
+#app.slim:not(.portrait):not(.tiny) #scrQuick .qm-grid { grid-template-columns: 120px minmax(0, 1fr) 232px; gap: 10px 14px; }
+#app.slim:not(.portrait):not(.tiny) #scrQuick .on-ft b { font-size: min(20px, 16.5cqw); -webkit-text-stroke-width: 3px; }
+#app.slim:not(.portrait):not(.tiny) #scrQuick .on-fs em { display: none; }
+#app.slim:not(.portrait):not(.tiny) #scrQuick .on-ft small { font-size: 9px; letter-spacing: 0.08em; }
+#app.slim:not(.portrait):not(.tiny) #scrQuick .on-fs span { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+#app.slim:not(.portrait):not(.tiny) #scrQuick .on-chg { width: 34px; height: 34px; right: -13px; font-size: 19px; }
+#app.slim:not(.portrait) #scrQuick .qm-seg { gap: 6px; }
+#app.slim:not(.portrait) #scrQuick .qm-seg button { font-size: 15px; padding: 4px; }
+#app.slim:not(.portrait) #scrQuick .qm-seg button small { font-size: 10.5px; }
+#app.slim:not(.portrait) #scrQuick .qm-rk { gap: 9px; padding: 6px 9px; }
+#app.slim:not(.portrait) #scrQuick .qm-rk .badge { width: 36px; height: 36px; }
+#app.slim:not(.portrait) #scrQuick .qm-rkt { font-size: 20px; }
+#app.slim:not(.portrait) #scrQuick .qm-rks { font-size: 11.5px; }
+#app.slim:not(.portrait) #scrQuick .qm-rec { font-size: 9.5px; letter-spacing: 0.1em; }
+#app.slim:not(.portrait) #scrQuick .qm-bdl { font-size: 11px; margin-top: -5px; }
+/* the results' rank card at that width: the small phones' sizes, so "Placing 1 of 5" and the board line fit beside the sticker */
+#app.slim:not(.portrait) #resSheet .res-rank { gap: 10px; padding: 7px 10px; }
+#app.slim:not(.portrait) #rBadge { width: 38px; height: 38px; }
+#app.slim:not(.portrait) #resSheet #rTier { font-size: 21px; }
+#app.slim:not(.portrait) #resSheet .delta { min-width: 58px; height: 44px; padding: 0 8px; }
+#app.slim:not(.portrait) #resSheet .delta b { font-size: 24px; }
+#app.slim:not(.portrait) #resSheet .delta small { font-size: 9px; }
+#app.slim:not(.portrait) #resSheet .rk-bd { font-size: 11px; }
+
+/* ---------- The Boards sheet (ui/boards.js; Fable 5.1, quick-match/vs-cpu/fable-vs-cpu.md section 2, mockup fable-vs-cpu-mock.html C and D) ----------
+   The sheet recipe of 50-sheets.css (ink band, round X, body on --raise) with skewed tabs, one kicker, the list (rows 36 px: place, emblem, name,
+   fighter, record, rating; places 1-3 are discs, row 1 has a gold inner edge) and YOUR row as a gold-edged bar under it. Below 480 px of sheet width
+   (upright phones) a row is 44 px with the fighter and the record under the name. Phone landscape (844x390, 620x350) is the base; #app.tiny
+   (667x320), the desktop (720x520) and upright phones adjust it. Also here: the CPU BOARD card on the Quick match screen (.qm-board), the rank
+   plates of Account > Profile (.bd-plates) and the menu's BOARDS pill (#bBoards, a fourth pill in .mm-row3). */
+
+/* ---- the frame ---- */
+#scrBoards { z-index: 6; }   /* above the Account sheet and the results (both z-index 5) */
+#app #scrBoards > .bd-sheet { --bd-row: 36px; --bd-pc: 30px; --bd-ec: 28px; --bd-wc: 78px; --bd-rc: 50px; --bd-nf: 15px; --bd-ff: 12px; --bd-vf: 17px; --bd-gap: 10px;
+  width: min(620px, 100%); height: min(350px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; container: bdsheet / inline-size; }
+
+/* ---- the tabs: skewed segments, the active one gold; the row scrolls sideways past three ---- */
+#scrBoards .bd-tabs { flex: none; display: flex; gap: 8px; padding: 9px 14px 5px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior: contain; }
+#scrBoards .bd-tabs::-webkit-scrollbar { display: none; }
+#scrBoards .bd-tab { appearance: none; cursor: pointer; flex: none; position: relative; isolation: isolate; display: inline-flex; align-items: center; min-height: 34px; padding: 1px 17px 0; border: 0; background: none;
+  color: var(--text); font: 800 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+#scrBoards .bd-tab::before { content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 8px; background: linear-gradient(180deg, #3a4170, #262b50);
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg); transition: transform 0.08s, box-shadow 0.08s; }
+#scrBoards .bd-tab.on { color: var(--ink); }
+#scrBoards .bd-tab.on::before { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+#scrBoards .bd-tab:active::before { transform: skewX(-8deg) translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrBoards .bd-tab.on:active::before { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+#scrBoards .bd-tab:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; border-radius: 8px; }
+@media (hover: hover) and (pointer: fine) { #scrBoards .bd-tab:not(.on):hover::before { filter: brightness(1.1); } }
+
+/* ---- the kicker: the rank, the season, the players, how old the list is ---- */
+#scrBoards .bd-kick { flex: none; padding: 7px 16px 5px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- the list: the same five columns in the header and in every row ---- */
+#scrBoards .bd-main { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#scrBoards .bd-r, #scrBoards .bd-hd { display: grid; grid-template-columns: var(--bd-pc) var(--bd-ec) minmax(0, 1fr) var(--bd-wc) var(--bd-rc); column-gap: var(--bd-gap); align-items: center; padding: 0 10px; font-variant-numeric: tabular-nums; }
+#scrBoards .bd-hd { flex: none; min-height: 22px; margin: 0 10px; padding: 0 0; border-bottom: 1px solid var(--line); font: 700 10px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+#scrBoards .bd-hd > :first-child { text-align: center; }
+#scrBoards .bd-hd .bd-hr { text-align: right; }
+#scrBoards .bd-list { position: relative; flex: 1 1 auto; min-height: 0; padding: 0 10px 22px; overflow-y: auto; overflow-x: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); }   /* the list fades out at the bottom edge */
+#scrBoards .bd-list[hidden], #scrBoards .bd-hd[hidden] { display: none; }
+#scrBoards .bd-list .bd-r { padding: 0 8px 0 4px; min-height: var(--bd-row); border-bottom: 1px solid var(--line); }
+#scrBoards .bd-p { font: 800 15px/1 var(--display); color: var(--mute); text-align: center; white-space: nowrap; }
+#scrBoards .bd-d { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 var(--ink);
+  font: 800 14px/1 var(--display); font-style: normal; color: var(--ink); }
+#scrBoards .bd-d.g, #scrQuick .bd-d.g { background: linear-gradient(180deg, #ffe08a, #e8a640); }
+#scrBoards .bd-d.s, #scrQuick .bd-d.s { background: linear-gradient(180deg, #e9edf7, #aab2cc); }
+#scrBoards .bd-d.b, #scrQuick .bd-d.b { background: linear-gradient(180deg, #e0a877, #b4733f); }
+#app #scrBoards .bd-em, #app #scrQuick .qb-r .bd-em { filter: drop-shadow(0 2px 0 var(--ink)); }
+#app #scrBoards .bd-em { width: 28px; height: 28px; }
+#scrBoards .bd-em .em *, #scrQuick .qb-r .em * { animation: none !important; }   /* a hundred rows stand still (the sheen, twinkle and burst are for the plates) */
+#scrBoards .bd-n { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+#scrBoards .bd-t { display: flex; align-items: baseline; gap: 7px; flex: 0 1 auto; min-width: 0; }
+#scrBoards .bd-nm, #scrQuick .qb-r .bd-nm { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 0 0;
+  font: 800 var(--bd-nf)/1.15 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: var(--text); }
+/* a nameplate bought in the Shop (ui/shop.js, the looks are .np-<id> in 93-shop.css): the name sits on its plate as a small pill */
+#scrBoards .bd-nm[class*="np-"], #scrQuick .qb-r .bd-nm[class*="np-"] { max-width: 100%; color: var(--np-fg); padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; box-shadow: 0 2px 0 var(--ink); line-height: 1.05;
+  -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrBoards .bd-yt, #scrQuick .qb-r .bd-yt { flex: none; font: 800 var(--bd-nf)/1.15 var(--display); font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+#scrBoards .bd-yt::after, #scrQuick .qb-r .bd-yt::after { content: "·"; margin-left: 7px; }
+#scrBoards .bd-f { flex: 0 20 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 var(--bd-ff)/1.2 var(--body); letter-spacing: 0; color: var(--mute); }
+#scrBoards .bd-f2 { display: none; }
+#scrBoards .bd-f:empty { display: none; }
+#scrBoards .bd-w { font: 500 var(--bd-ff)/1 var(--body); color: var(--mute); text-align: right; white-space: nowrap; }
+#scrBoards .bd-v, #scrQuick .qb-r .bd-v { font: 800 var(--bd-vf)/1 var(--display); color: var(--gold); text-align: right; white-space: nowrap; }
+#scrBoards .bd-r.first { border-radius: 6px; border-bottom-color: transparent; box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+#scrBoards .bd-list .bd-r.me { background: linear-gradient(90deg, rgba(244, 201, 93, 0.2), rgba(244, 201, 93, 0.05) 70%, transparent); box-shadow: inset 3px 0 0 var(--gold); border-radius: 6px; }
+#scrBoards .bd-list .bd-r.me.first { box-shadow: inset 3px 0 0 var(--gold), inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+#scrBoards .bd-list .bd-r.pulse { animation: bdFlash 0.9s ease-out; }
+@keyframes bdFlash { from { background-color: rgba(244, 201, 93, 0.6); } }
+@media (hover: hover) and (pointer: fine) { #scrBoards .bd-list .bd-r:not(.sk):hover { background-color: rgba(255, 255, 255, 0.045); border-radius: 6px; } }
+
+/* ghost rows while the list is on its way */
+#scrBoards .bd-r.sk, #scrQuick .qb-r.sk { pointer-events: none; }
+#scrBoards .sk > i, #scrQuick .qb-r.sk > i { display: block; height: 12px; border-radius: 6px; background: rgba(206, 210, 255, 0.1); animation: bdPulse 1s ease-in-out infinite alternate; }
+#scrBoards .sk > .bd-gp, #scrQuick .qb-r.sk > .bd-gp { width: 14px; justify-self: center; }
+#scrBoards .sk > .bd-ge, #scrQuick .qb-r.sk > .bd-ge { width: 24px; height: 24px; border-radius: 50%; justify-self: center; }
+#scrBoards .sk > .bd-gn, #scrQuick .qb-r.sk > .bd-gn { width: var(--w, 56%); max-width: 100%; }
+#scrBoards .sk > .bd-gv, #scrQuick .qb-r.sk > .bd-gv { grid-column: -2 / -1; width: 34px; justify-self: end; }
+@keyframes bdPulse { to { background: rgba(206, 210, 255, 0.2); } }
+
+/* ---- YOUR row: a sticky gold-edged bar under the list; below the top 100 a dotted gap sits over it ---- */
+#scrBoards .bd-you { flex: none; margin: 6px 10px 10px; }
+#scrBoards .bd-you[hidden], #scrBoards .bd-gap[hidden] { display: none; }
+#scrBoards .bd-r.you { min-height: 40px; padding: 0 8px; border: 2px solid var(--gold); border-radius: 8px; background: linear-gradient(180deg, #3a3a2a, #2a2820); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrBoards .bd-r.you .bd-p { color: var(--gold); }
+#scrBoards .bd-r.you[role="button"] { cursor: pointer; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrBoards .bd-r.you[role="button"]:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#scrBoards .bd-r.you:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { #scrBoards .bd-r.you[role="button"]:hover { filter: brightness(1.1); } }
+#scrBoards .bd-gap { flex: none; height: 14px; margin-top: -1px; display: grid; place-items: center; color: var(--mute); font: 800 14px/1 var(--display); letter-spacing: 0.3em; padding-left: 0.3em; }
+#scrBoards .bd-r.you.none, #scrBoards .bd-r.you.placing { display: flex; align-items: center; gap: 10px; }
+#scrBoards .bd-r.you.none { border-style: dashed; border-color: rgba(244, 201, 93, 0.6); background: rgba(14, 16, 34, 0.35); box-shadow: none; }
+#scrBoards .bd-none { min-width: 0; font: 600 13px/1.25 var(--body); color: var(--sand); }
+#scrBoards .bd-pk { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+#scrBoards .bd-pk b { font: 800 var(--bd-nf)/1.15 var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+#scrBoards .bd-pk small { font: 500 var(--bd-ff)/1.2 var(--body); color: var(--mute); }
+#scrBoards .bd-pips, #scrQuick .bd-pips { flex: none; display: inline-flex; gap: 4px; }
+#scrBoards .bd-pips i, #scrQuick .bd-pips i { width: 10px; height: 10px; border: 1.5px solid var(--ink); border-radius: 50%; background: rgba(206, 210, 255, 0.18); }
+#scrBoards .bd-pips i.on, #scrQuick .bd-pips i.on { background: var(--gold); box-shadow: 0 0 6px rgba(244, 201, 93, 0.55); }
+
+/* ---- empty and offline: a dim podium, one line, the one button that fixes it ---- */
+#scrBoards .bd-state { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 6px 24px 14px; text-align: center; }
+#scrBoards .bd-state[hidden] { display: none; }
+#scrBoards .bd-pod { display: flex; align-items: flex-end; gap: 4px; opacity: 0.4; margin-bottom: 2px; }
+#scrBoards .bd-pod i { display: block; width: 26px; background: var(--mute); border: 2px solid var(--ink); border-radius: 4px 4px 0 0; }
+#scrBoards .bd-pod i:nth-child(1) { height: 22px; } #scrBoards .bd-pod i:nth-child(2) { width: 30px; height: 34px; } #scrBoards .bd-pod i:nth-child(3) { height: 16px; }
+#scrBoards .bd-big { display: block; max-width: 20em; font: italic 900 22px/1.05 var(--display); text-transform: uppercase; color: var(--text); padding-right: 3px; }
+#scrBoards .bd-state p.bd-sub { margin: 0; font: 500 13.5px/1.35 var(--body); color: var(--mute); }
+#scrBoards .bd-fight { width: auto; min-width: 200px; margin-top: 6px; }
+#scrBoards .bd-off { display: inline-flex; align-items: center; gap: 8px; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: #ff8a7c; }
+#scrBoards .bd-off::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ketchup); box-shadow: 0 0 0 3px rgba(232, 69, 60, 0.3); }
+#scrBoards .bd-again { margin-top: 6px; min-height: 36px; padding: 0 16px; cursor: pointer; }
+#scrBoards .bd-again:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+
+/* ---- small phones in landscape (667x320) ---- */
+#app.tiny #scrBoards > .bd-sheet { --bd-row: 32px; --bd-nf: 14px; --bd-vf: 16px; width: min(620px, 100%); height: min(296px, 100%); }
+#app.tiny #scrBoards .bd-tabs { padding: 7px 14px 5px; }
+#app.tiny #scrBoards .bd-tab { min-height: 30px; font-size: 13px; padding: 1px 15px 0; }
+#app.tiny #scrBoards .bd-kick { padding: 5px 16px 4px; font-size: 10px; }
+#app.tiny #scrBoards .bd-hd { min-height: 18px; }
+#app.tiny #scrBoards .bd-d { width: 24px; height: 24px; font-size: 13px; }
+#app.tiny #scrBoards .bd-em { width: 26px; height: 26px; }
+#app.tiny #scrBoards .bd-r.you { min-height: 36px; }
+#app.tiny #scrBoards .bd-you { margin: 4px 10px 8px; }
+#app.tiny #scrBoards .bd-big { font-size: 20px; }
+#app.tiny #scrBoards .bd-state { gap: 5px; padding-bottom: 8px; }
+#app.tiny #scrBoards .bd-pod { transform: scale(0.8); margin-bottom: -2px; }
+#app.tiny #scrBoards .bd-fight { min-height: 40px; margin-top: 2px; }
+
+/* ---- desktop (1280x720): a 720x520 sheet, bigger rows and type ---- */
+#app:not(.short):not(.portrait) #scrBoards > .bd-sheet { --bd-row: 42px; --bd-pc: 34px; --bd-ec: 32px; --bd-wc: 96px; --bd-rc: 60px; --bd-nf: 17px; --bd-ff: 13.5px; --bd-vf: 20px; --bd-gap: 14px;
+  width: min(720px, 100%); height: min(520px, 100%); }
+#app:not(.short):not(.portrait) #scrBoards .sh-head { height: 44px; padding-left: 20px; }
+#app:not(.short):not(.portrait) #scrBoards .sh-head h3 { font-size: 26px; }
+#app:not(.short):not(.portrait) #scrBoards .sh-head .round { width: 34px; height: 34px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-tabs { gap: 10px; padding: 14px 20px 6px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-tab { min-height: 40px; font-size: 16px; padding: 1px 22px 0; }
+#app:not(.short):not(.portrait) #scrBoards .bd-kick { padding: 9px 22px 7px; font-size: 12px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-hd { min-height: 26px; margin: 0 16px; font-size: 11px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-list { padding: 0 16px 26px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-p { font-size: 17px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-d { width: 30px; height: 30px; font-size: 16px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-em { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-r.you { min-height: 48px; padding: 0 10px; border-radius: 10px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-you { margin: 8px 16px 16px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-gap { height: 18px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-none { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-pips i { width: 12px; height: 12px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-state { gap: 12px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-pod i { width: 34px; } #app:not(.short):not(.portrait) #scrBoards .bd-pod i:nth-child(2) { width: 40px; height: 46px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-pod i:nth-child(1) { height: 30px; } #app:not(.short):not(.portrait) #scrBoards .bd-pod i:nth-child(3) { height: 22px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-big { font-size: 30px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-state p.bd-sub { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-fight { min-height: 54px; font-size: 24px; min-width: 240px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-off { font-size: 13px; }
+
+/* ---- upright phones (390x844): the sheet fills the screen, rows are 44 px, the fighter and the record go under the name ---- */
+#app.portrait #scrBoards { padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(14px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait #scrBoards > .bd-sheet { width: 100%; height: 100%; --bd-row: 44px; --bd-nf: 15px; --bd-ff: 12px; --bd-vf: 18px; }
+#app.portrait #scrBoards .bd-tabs { padding: 12px 12px 6px; }
+#app.portrait #scrBoards .bd-tab { min-height: 38px; }
+#app.portrait #scrBoards .bd-r.you { min-height: 48px; }
+#app.portrait #scrBoards .bd-you { margin-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait #scrBoards .bd-big { font-size: 24px; }
+@container bdsheet (max-width: 479px) {   /* the sheet is narrow: four columns, the fighter and the record under the name */
+  #scrBoards .bd-r, #scrBoards .bd-hd { grid-template-columns: var(--bd-pc) var(--bd-ec) minmax(0, 1fr) var(--bd-rc); }
+  #scrBoards .bd-hw, #scrBoards .bd-hf, #scrBoards .bd-w, #scrBoards .bd-f1, #scrBoards .bd-up { display: none; }
+  #scrBoards .bd-f2 { display: inline; }
+  #scrBoards .bd-n { flex-direction: column; align-items: flex-start; gap: 3px; }
+  #scrBoards .bd-t { max-width: 100%; }
+  #scrBoards .bd-f { flex: none; max-width: 100%; }
+  #scrBoards .bd-r.you .bd-pk { flex-direction: column; align-items: flex-start; gap: 2px; }
+  #scrBoards .bd-none { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #scrBoards .sk > i, #scrQuick .qb-r.sk > i, #scrBoards .bd-list .bd-r.pulse { animation: none; }
+  #scrBoards .bd-tab::before { transition: none; }
+}
+
+/* ---------- the CPU BOARD card on the Quick match screen (ui/boards.js bdPreview): top 3, a dotted gap, you; name and rating only ---------- */
+#scrQuick .qm-board { flex: none; gap: 3px; padding: 9px 8px 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+#scrQuick .qm-board[hidden] { display: none; }
+#scrQuick .qm-board:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink), var(--bevel); }
+#scrQuick .qm-board:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { #scrQuick .qm-board:hover { filter: brightness(1.07); } }
+#scrQuick .qb-k { flex: none; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 0 6px 3px; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+#scrQuick .qb-more { color: var(--gold); }
+#scrQuick .qb-l { display: flex; flex-direction: column; min-width: 0; }
+#scrQuick .qb-r { display: grid; grid-template-columns: 26px 24px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; min-height: 31px; padding: 0 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; --bd-nf: 15px; --bd-vf: 17px; }
+#scrQuick .qb-r .bd-p { font: 800 14px/1 var(--display); color: var(--mute); text-align: center; }
+#scrQuick .qb-r .bd-d { display: grid; place-items: center; width: 24px; height: 24px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 var(--ink); font: 800 13px/1 var(--display); font-style: normal; color: var(--ink); }
+#app #scrQuick .qb-r .bd-em { width: 24px; height: 24px; }
+#scrQuick .qb-r .bd-n { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+#scrQuick .qb-r .bd-nm[class*="np-"] { padding: 2px 8px 1px; }
+#scrQuick .qb-r.first { border-radius: 6px; border-bottom-color: transparent; box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+#scrQuick .qb-r.you { min-height: 34px; margin-top: 4px; padding: 0 6px; border: 2px solid var(--gold); border-radius: 8px; background: linear-gradient(180deg, #3a3a2a, #2a2820); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrQuick .qb-r.you .bd-p { color: var(--gold); }
+#scrQuick .qb-r.you.first { box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+#scrQuick .qb-r.placing { grid-template-columns: 26px minmax(0, 1fr) auto; }
+#scrQuick .qb-r.placing .bd-nm { color: var(--text); }
+#scrQuick .qb-r:last-child:not(.you) { border-bottom-color: transparent; }
+#scrQuick .qb-gap { flex: none; height: 12px; display: grid; place-items: center; color: var(--mute); font: 800 13px/1 var(--display); letter-spacing: 0.3em; padding-left: 0.3em; }
+#scrQuick .qb-note { margin: 0; padding: 4px 6px 2px; font: 500 12.5px/1.35 var(--body); color: var(--mute); }
+#scrQuick .qb-r.you + .qb-note, #scrQuick .qb-r + .qb-note { margin-top: 6px; }
+#app.tiny #scrQuick .qm-board { padding: 7px 6px 6px; gap: 2px; }
+#app.tiny #scrQuick .qb-k { font-size: 10px; padding-bottom: 2px; }
+#app.tiny #scrQuick .qb-r { min-height: 27px; column-gap: 6px; grid-template-columns: 24px 22px minmax(0, 1fr) auto; --bd-nf: 14px; --bd-vf: 15px; }
+#app.tiny #scrQuick .qb-r .bd-d { width: 22px; height: 22px; font-size: 12px; }
+#app.tiny #scrQuick .qb-r .bd-em { width: 22px; height: 22px; }
+#app.tiny #scrQuick .qb-r.you { min-height: 30px; margin-top: 3px; }
+#app.tiny #scrQuick .qb-note { font-size: 11px; }
+#app.tiny #scrQuick .qb-r .bd-n { gap: 5px; }
+#app.tiny #scrQuick .qb-r .bd-nm[class*="np-"] { padding: 1px 6px 0; }
+#app.tiny #scrQuick .qb-r .bd-yt::after { margin-left: 5px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-board { gap: 5px; padding: 12px 12px 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-k { font-size: 12px; padding: 0 8px 5px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r { min-height: 40px; column-gap: 12px; grid-template-columns: 30px 30px minmax(0, 1fr) auto; padding: 0 8px; --bd-nf: 17px; --bd-vf: 20px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r .bd-p { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r .bd-d { width: 28px; height: 28px; font-size: 15px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r .bd-em { width: 30px; height: 30px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r.you { min-height: 44px; margin-top: 6px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-r.placing { grid-template-columns: 30px minmax(0, 1fr) auto; }
+#app:not(.short):not(.portrait) #scrQuick .qb-gap { height: 16px; }
+#app:not(.short):not(.portrait) #scrQuick .qb-note { font-size: 14px; }
+#app.portrait #scrQuick .qm-board { flex: none; overflow: visible; padding: 10px 10px 10px; }
+#app.portrait #scrQuick .qb-r { min-height: 40px; }
+#app.portrait #scrQuick .qb-r.you { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) { #scrQuick .qm-board { transition: none; } }
+
+/* ---------- Account > Profile: the ONLINE RANK and CPU RANK plates (ui/boards.js bdPlates) ---------- */
+.bd-plates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.bd-plates[hidden] { display: none; }
+.bd-plates .bd-pl { --tc: #c9d0e4; appearance: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 8px 8px 10px; text-align: left; color: var(--text);
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; -webkit-tap-highlight-color: transparent; }
+.bd-plates .bd-pl:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+.bd-plates .bd-pl:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .bd-plates .bd-pl:hover { filter: brightness(1.08); } }
+#app .bd-plates .badge { width: 44px; height: 44px; filter: drop-shadow(0 2px 0 var(--ink)); overflow: visible; }
+.bd-plates .bd-pl.placing .badge .em { filter: saturate(0.35) brightness(0.85); }
+.bd-plates .bd-st { position: absolute; right: -9px; bottom: -7px; padding: 3px 4px 2px; border-width: 1.5px; border-radius: 4px; font-size: 9px; box-shadow: 0 1.5px 0 var(--ink); transform: rotate(-8deg); z-index: 1; }
+.bd-plates .bd-pt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.bd-plates .bd-pq { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 10.5px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+.bd-plates .bd-pt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 3px; font: italic 900 22px/1 var(--display); text-transform: uppercase; color: var(--tc);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+.bd-plates .bd-pl.placing .bd-pt b { color: var(--text); }
+.bd-plates .bd-pt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 13px/1.1 var(--body); color: var(--text); font-variant-numeric: tabular-nums; }
+.bd-plates .bd-go { flex: none; width: 8px; height: 8px; margin: 0 4px 0 0; border-top: 2.5px solid var(--sand); border-right: 2.5px solid var(--sand); transform: rotate(45deg); }
+.bd-plates > :only-child { grid-column: 1 / -1; }
+.bd-plates .bd-pl.cpu { gap: 14px; }
+#app.narrow .bd-plates .badge { width: 34px; height: 34px; }
+#app.narrow .bd-plates .bd-pl, #app.narrow .bd-plates .bd-pl.cpu { gap: 9px; padding: 7px 6px 7px 8px; }
+#app.narrow .bd-plates .bd-pl.cpu { gap: 13px; }
+#app.narrow .bd-plates .bd-pq { font-size: 10px; letter-spacing: 0.08em; }
+#app.narrow .bd-plates .bd-rk, #app.narrow .bd-plates .bd-go { display: none; }
+#app.narrow .bd-plates .bd-pt b { font-size: 17px; }
+
+/* ---------- the menu's BOARDS pill: a fourth mini in .mm-row3 (shown by bdPill() where there is a server) ---------- */
+#scrMenu #bBoards[hidden] { display: none; }
+#scrMenu .mm-row3.bd4 { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) auto minmax(0, 1fr); }
+#scrMenu #bBoards { gap: 6px; padding: 0 12px; }
+#scrMenu #bBoards .bd-gl { width: 18px; height: 18px; flex: none; }
+#app.portrait #scrMenu .mm-row3.bd4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }   /* upright: two by two (the column has the height) */
+#app.portrait #scrMenu .mm-row3.bd4 .mini { font-size: 14px; }
+/* small phones in landscape (667x320, 568x320): the column is 372 / 336 px, so BOARDS keeps only its podium (the button still says Boards to a screen reader) */
+#app.tiny #scrMenu #bBoards span { display: none; }
+#app.tiny #scrMenu #bBoards { padding: 0 11px; }
+#app.tiny #scrMenu #bBoards .bd-gl { width: 20px; height: 20px; }
+@container mm (max-width: 620px) {   /* 568 wide: the four pills are 354 px of words in a 336 px column, so the gaps and the padding give way */
+  #app.tiny #scrMenu .mm-row3.bd4 { gap: 5px; }
+  #app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 6px; gap: 5px; }
+  #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 9px; }
+}
+
 /* ===== Rival record and streak bounty (ui/rivals.js; Fable's design: rival-stakes/fable-design.md) =====
    One rule: chips the game pays wear an ember sticker (WANTED, BOUNTY). The record is mint when you lead, ketchup when they do. */
 :root { --rv-chip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%230e1022' stroke-width='2'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E"); }
@@ -3636,7 +3997,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
     </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div></div>
-    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div><div id="qmStrip" class="livetag" hidden><i aria-hidden="true"></i><span id="qmStripT">Searching</span></div>
+    <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div><div id="qmStrip" class="livetag" hidden><i aria-hidden="true"></i><span id="qmStripT">Searching</span></div><div id="vcStrip" class="livetag vc" hidden><i aria-hidden="true"></i><span id="vcStripT">Ranked vs CPU</span></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
       <div class="pcard right" id="pc1"><div>
@@ -3704,7 +4065,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="mm-row3">
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
-        <button class="mini" id="bHelp" style="--i:5">How to play</button>
+        <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
+        <button class="mini" id="bHelp" style="--i:6">How to play</button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -3909,8 +4271,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="qm-idle" id="qmIdle">
             <div class="kick qm-kick"><span>Your match</span><span class="qm-krec" id="qmKRec"></span></div>
             <div class="qm-seg" role="radiogroup" aria-label="Mode">
-              <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">counts for rank</small></button>
+              <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">online rank</small></button>
               <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
+              <button id="qmV" role="radio" aria-checked="false"><b>VS CPU</b><small id="qmVSub">CPU rank</small></button>
             </div>
             <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><span class="qm-pips" id="qmPips" role="img"><i></i><i></i><i></i><i></i><i></i></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
             <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
@@ -3929,7 +4292,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <span class="tag ember">CPU</span>
             <b class="qm-cpt">Warm up vs a CPU</b>
             <span class="qm-cpl" id="qmCpuL">Keeps searching · chips, no rank change. A found player interrupts the fight.</span>
-            <button class="btn primary" id="qmWarm"><span>Fight a CPU</span></button>
+            <button class="btn primary" id="qmWarm"><span>Warm up</span></button>
+            <!-- nobody here: the way to a CPU match that counts (ui/vscpu.js) -->
+            <button class="qm-tov" id="qmToV" hidden>Want it to count? · <b>VS CPU</b> ›</button>
+          </div>
+          <!-- the CPU board in small (ui/boards.js bdPreview, css/97-boards.css): top 3, a gap, you; the VS CPU mode shows it in the warm-up card's place -->
+          <div class="on-card qm-board" id="qmBoard" role="button" tabindex="0" aria-label="CPU board. Open the full board" hidden>
+            <div class="qb-k"><span>CPU board</span><span class="qb-more">Full board ›</span></div>
+            <div class="qb-l" id="qbList"></div>
           </div>
           <div class="on-card qm-room scroll">
             <div class="kick">The queue</div>
@@ -3959,6 +4329,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </div>
         <button class="btn primary lg" id="ssGo"><span>Let's go</span></button>
       </div>
+    </div>
+  </section>
+
+  <!-- The Boards (ui/boards.js, css/97-boards.css; Fable's design quick-match/vs-cpu/fable-vs-cpu.md section 2): the CPU board and the online board, one sheet with tabs -->
+  <section id="scrBoards" class="screen modal" hidden>
+    <div class="sheet bd-sheet" role="dialog" aria-label="Boards">
+      <header class="sh-head"><h3>Boards</h3><button class="round x" id="bdClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="bd-tabs" id="bdTabs" role="tablist" aria-label="Boards"></div>
+      <div class="bd-kick kick" id="bdKick" aria-live="polite"></div>
+      <div class="bd-main" id="bdMain">
+        <div class="bd-hd" id="bdHd" aria-hidden="true"><span>#</span><span></span><span class="bd-hn">Player<span class="bd-hf"> · fighter</span></span><span class="bd-hw"></span><span class="bd-hr">Rating</span></div>
+        <div class="bd-list scroll" id="bdList"></div>
+        <div class="bd-state" id="bdState" hidden></div>
+      </div>
+      <div class="bd-gap" id="bdGap" aria-hidden="true" hidden>···</div>
+      <div class="bd-you" id="bdYou" hidden></div>
     </div>
   </section>
 
@@ -4161,7 +4547,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
-  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / qm-* messages
+  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / qm-* messages, and Ranked vs CPU's (ui/vscpu.js)
+  const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd"]);
   const rooms = new Map();
 
   function setConn(v) { if (v === welcomed) return; welcomed = v; for (const fn of [...connL]) fn(v); }
@@ -4182,7 +4569,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
-    if (m.t === "me" || (typeof m.t === "string" && m.t.slice(0, 3) === "qm-")) { for (const fn of [...qmL]) fn(m); return; }
+    if (m.t === "me" || (typeof m.t === "string" && m.t.slice(0, 3) === "qm-") || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -7201,6 +7588,7 @@ function cntMode(m) {
   if (!m) return "none";
   if (m.trial) return "trial";
   if (m.tutorial) return "tutorial";
+  if (m.vc) return "ranked";   // Ranked vs CPU (ui/vscpu.js): the old Ranked vs a CPU, now with the server's check
   if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
   if (m.warm) return "warmup";
   if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
@@ -7562,6 +7950,7 @@ function resize() {
   app.classList.toggle("short", H < 520);
   app.classList.toggle("tiny", H < 360);
   app.classList.toggle("narrow", W < 420);
+  app.classList.toggle("slim", W < 760);   // landscape phones like 667x375 (css/96-vscpu.css)
   $("rotHint").hidden = !(L.portrait && touchUI);
   L.canRotate = touchUI && uprightView;
   if (!$("scrSettings").hidden) renderSettings();
@@ -26685,7 +27074,7 @@ function togglePause(force) {
   $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
   $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : match && (match.road || (match.trial && TR.back !== null)) ? "Back to the Road" : "Quit to menu";
   $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
-  if (match && (match.qm || match.warm)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
+  if (match && (match.qm || match.warm || match.vc)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
   releaseTouch();
 }
 let quitArmed = false;
@@ -26699,6 +27088,7 @@ function finishMatch(forfeit) {
   if (match && match.duo) { duoMatchEnd(forfeit); return; }     // ui/duo.js
   if (match && match.road) { roadMatchEnd(forfeit); return; }   // ui/road.js
   if (match && match.warm) { qmWarmEnd(forfeit); return; }      // ui/quick.js: the CPU warm-up while searching
+  if (match && match.vc) { vcMatchEnd(forfeit); return; }       // ui/vscpu.js: Ranked vs CPU
   const me = G.fighters[0], op = G.fighters[1];
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, ranked: match.ranked, me, op, lines: [], total: 0 };
@@ -26827,7 +27217,7 @@ function showResults(R) {
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
   const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
-  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
+  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
     R.forfeit ? ["You left the match. It counts as a loss."] :
@@ -26858,7 +27248,7 @@ function showResults(R) {
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
-  const chipsOn = R.ranked || R.warm || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
+  const chipsOn = R.ranked || R.warm || R.vc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
@@ -26872,7 +27262,7 @@ function showResults(R) {
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
-  if (R.qm || R.warm) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
+  if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   show("result");
 }
 
@@ -31012,7 +31402,7 @@ tap("pQuit", () => {
   }
   if (match.road) { openRoad(); return; }   // a Road stop or its boss: back to the map, nothing lost
   if (match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; }   // the Combo trial opened from a Road stop: back to its sheet
-  if (!match.ranked && !match.cup && !match.daily) { goMenu(); return; }
+  if (!match.ranked && !match.cup && !match.daily && !match.vc) { goMenu(); return; }   // vc: Ranked vs CPU (ui/vscpu.js) counts a forfeit
   if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = "Tap again to forfeit"; return; }
   finishMatch(true);
 });
@@ -31022,7 +31412,7 @@ tap("rAgain", () => {
   goFull();
   if (match && match.tutorial) { quickOpen(); return; }
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
-  if (match && (match.qm || match.warm) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
+  if (match && (match.qm || match.warm || match.vc) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
   if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
     const lv = G.lv, boss = bossOf(G).spec.id, partner = G.fighters[1 - meSlot].spec.id;
     resetNet(); NET.phase = "idle"; lobbyPresence();
@@ -31043,7 +31433,7 @@ tap("rAgain", () => {
 });
 tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: the same stop (or boss level) again, beside Next stop
 tap("rChange", () => {
-  if (match && (match.qm || match.warm)) { qmChange(); return; }   // ui/quick.js
+  if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }
@@ -32056,6 +32446,9 @@ const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {}
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
 // Titles, earnable from the start (ten, Jack of Spuds, and a Lv 5 and a Lv 10 title per fighter from ui/mastery.js). `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
+  // the CPU board's (ui/vscpu.js): live, lost the moment someone passes you
+  { id: "cpu1", name: () => "#1 CPU board", ok: () => vcPlace() === 1, how: "Be #1 on the CPU board (Ranked vs CPU). It goes when someone passes you." },
+  { id: "cpu10", name: () => "Top 10 CPU", ok: () => vcPlace() >= 1 && vcPlace() <= 10, how: "Get into the top 10 of the CPU board (Ranked vs CPU)." },
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
   { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
@@ -32072,8 +32465,8 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
-const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
+const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const acShown = () => [...ACT_SHOWN.filter((id) => (window.__blQuick && !window.__blNoQuick) || (id !== "cpu1" && id !== "cpu10")), ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];   // the CPU board titles only where the boards are
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
   let t = pick || ACT.find((t) => t.ok());
@@ -32097,6 +32490,7 @@ function renderPill() {
   plateSet(me.querySelector(".plate"), shopWorn());   // the nameplate worn (ui/shop.js); Ink = today's look
   $("mTier").textContent = ti.t.name;
   $("mRating").textContent = rk.r;
+  me.querySelector(".plate").classList.toggle("vc", !!rk.cpu);   // the CPU rank (no online match yet): the ember CPU sticker on the emblem
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
   const tt = acTitle(), mt = $("mTitle");
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
@@ -32147,6 +32541,12 @@ function renderAccount() {
   $("acPicBtn").classList.toggle("on", acUI.pick === "av"); $("acTitBtn").classList.toggle("on", acUI.pick === "ti");
   paintBadge($("acBadge"), ti.i);
   acRing($("acRank").querySelector(".ring"), $("acRing"), ti);
+  if (typeof bdPlates === "function") {   // ui/boards.js: ONLINE RANK and CPU RANK, each opening its board
+    let bp = $("acBds");
+    if (!bp) { bp = acMk("div", "ac-bds"); bp.id = "acBds"; $("acRank").after(bp); }
+    bp.hidden = !qmOn(); if (qmOn()) bdPlates(bp);
+    $("acRank").hidden = qmOn();   // on our server the two plates take the rank card's place
+  }
   $("acRank").style.setProperty("--tc", ti.t.col);
   $("acTier").textContent = ti.t.name;
   $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;
@@ -32703,7 +33103,7 @@ const qmOn = () => !!window.__blQuick && !window.__blNoQuick;   // __blNoQuick: 
   try {
     const s = JSON.parse(localStorage.getItem(QM_KEY) || "null");
     if (!s || typeof s !== "object") return;
-    QM.mode = s.mode === "c" ? "c" : "r"; QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);
+    QM.mode = s.mode === "c" || s.mode === "v" ? s.mode : "r";   // v: Ranked vs CPU (ui/vscpu.js) QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);
     if (s.me && typeof s.code === "string") { QM.me = qmClean(s.me); QM.code = s.code; }
   } catch (e) { /* storage blocked: nothing remembered */ }
 })();
@@ -32726,7 +33126,8 @@ const qmMe = () => (QM.me && QM.code && QM.code === ACCT.code ? QM.me : null);  
 function rankView() {
   if (!qmOn()) return { online: false, r: P.rating | 0, pk: Math.max(P.peak | 0, P.rating | 0), w: P.wins | 0, l: P.losses | 0, d: P.draws | 0, n: P.matches | 0,
     h: (P.history || []).map((x) => ({ res: x.r, dr: x.d })) };
-  const m = qmMe() || QM_FRESH;
+  const m = qmMe() || QM_FRESH, c = m.n ? null : vcMine();   // no online match yet: the CPU rank of Ranked vs CPU (ui/vscpu.js), when there is one
+  if (c && c.n) return { online: true, cpu: true, r: c.r, pk: Math.max(c.pk, c.r), w: c.w, l: c.l, d: c.d, n: c.n, h: c.h.map((x) => ({ res: x.res, dr: x.dr })) };
   return { online: true, r: m.r, pk: Math.max(m.pk, m.r), w: m.w, l: m.l, d: m.d, n: m.n, h: m.h };
 }
 const qmAcctOff = () => QM.acct === "off" || (!ACCT.code && ACCT.avail === false);   // the server keeps no accounts: Casual only
@@ -32765,6 +33166,7 @@ function qmBoot() {   // loop.js, before the first menu
   QM.conn = api.connected();
   netInit().then(() => { if (NET.room) NET.room.onPeers(qmPeers); qmRefresh(); });   // whether accounts are on is asked when Quick match opens (quickOpen)
   document.addEventListener("visibilitychange", qmVis);
+  vcBoot();   // ui/vscpu.js: Ranked vs CPU's messages
 }
 function qmAuth() {
   if (!qmOn() || !ACCT.code || !QM.conn || QM.authing || QM.authed || QM.acct === "off" || QM.acct === "unknown") return;
@@ -33036,6 +33438,8 @@ function qmForfeit() {
 // screens.js showResults, at its end: what a Quick match's results (and a warm-up's) say and do
 function qmResults(R) {
   QM.shown = R;
+  if (R.vc) { vcResults(R); return; }   // ui/vscpu.js: Ranked vs CPU
+  { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); }
   const mn = $("rMenuSub");
   if (R.warm) {
     const k = $("rMode"); k.textContent = "";
@@ -33093,6 +33497,7 @@ function qmVerdictView(late) {
   }
   if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
   resRank({ before: v.r0, after: v.r1, delta: v.dr, tb: tierIdx(v.r0), ta: tierIdx(v.r1) });
+  st.querySelector("small").textContent = "Rating";   // was "Confirming"
   if (v.n < QM_PLACING) { $("rTier").textContent = `Placing ${v.n} of ${QM_PLACING}`; $("rPromo").textContent = ""; }
   else if (v.n === QM_PLACING) { $("rPromo").textContent = "Placed!"; $("rPromo").classList.remove("down"); }
   if (v.why !== "game") {
@@ -33185,12 +33590,13 @@ function qmWarmEnd(forfeit) {
 function qmWarmQuit() { quickOpen(); }   // Pause > Back to search
 // menus.js, the results' buttons: true when Quick match took the tap
 function qmAgain() {
+  if (match.vc) { vcFight(); return true; }   // ui/vscpu.js: Another CPU fight
   if (match.warm) { qmWarmStart(); return true; }
   if (match.qm && (match.qm.ranked || NET.phase !== "result")) { qmNext(); return true; }
   return false;   // Casual: the friend match's Rematch (both tap)
 }
 function qmChange() {
-  if (match.warm) { quickOpen(); return; }
+  if (match.warm || match.vc) { quickOpen(); return; }
   if (match.qm.ranked) { qmLeave(); quickOpen(); return; }
   qmNext();   // Casual: Next match
 }
@@ -33199,6 +33605,7 @@ function qmNext() { qmLeave(); quickOpen(); qmFind(); }
 // screens.js togglePause: what leaving costs
 function qmPauseText() {
   const quit = $("pQuit").querySelector("span"), note = $("pNote");
+  if (match.vc) { vcPauseText(); return; }   // ui/vscpu.js
   if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
   if (!match.qm || !match.qm.ranked) return;
   const me = qmMe() || QM_FRESH, o = match.qm.opp, dr = qmElo(me.r, o && Number.isInteger(o.r) ? o.r : 1000, 0, me.n);
@@ -33245,8 +33652,8 @@ function qmRender() {
   $("qmMyName").textContent = NET.myName || acctName();
   plateSet($("qmMyName").parentNode, shopWorn());   // your nameplate (ui/shop.js)
   // the mode: two big segments (Ranked waits for accounts on the server)
-  for (const [id, v] of [["qmR", "r"], ["qmC", "c"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
-  $("qmRSub").textContent = off ? "opens soon" : "counts for rank";
+  for (const [id, v] of [["qmR", "r"], ["qmC", "c"], ["qmV", "v"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
+  $("qmRSub").textContent = off ? "opens soon" : "online rank";
   qmPlate();
   $("qmIdle").hidden = searching; $("qmSearch").hidden = !searching;
   const find = $("qmFind");
@@ -33261,6 +33668,7 @@ function qmRender() {
   $("qmHelp").textContent = off ? "Ranked opens once accounts are switched on. Casual works now." : "Nobody searching? Find match anyway: you warm up vs a CPU while the queue fills.";
   qmLast();
   qmUi();
+  vcRender(lb);   // ui/vscpu.js: VS CPU mode (the rank, FIGHT A CPU, the CPU board in the warm-up's place)
   // the queue: a pill per player (gold pulsing dot: searching, mint: here, grey: in a match), names come from the lobby
   const others = lb.ps.filter((p) => !p.sameTab);
   namesFor(others).then((names) => {
@@ -33280,6 +33688,8 @@ function qmRender() {
 }
 // the rank plate: emblem, tier word in its colour, rating and what is left to the next tier, the bar, the record and the season
 function qmPlate() {
+  if (vcMode()) { vcPlate(); return; }   // ui/vscpu.js: the CPU rank
+  vcPlateOff();
   const me = qmMe(), rk = me || QM_FRESH, ti = tierInfo(rk.r), placing = rk.n < QM_PLACING;
   $("qmRank").style.setProperty("--tc", ti.t.col);
   $("qmRank").classList.toggle("placing", placing);
@@ -33313,10 +33723,10 @@ function qmThin() {
 if (window.ResizeObserver) new ResizeObserver(() => qmThin()).observe($("qmIdle"));
 // LAST FIVE: your last Ranked results (W / L / D, who, their fighter, the rating change)
 function qmLast() {
-  const ul = $("qmLast"), h = (qmMe() || QM_FRESH).h.slice(0, 5), sig = JSON.stringify(h);
+  const ul = $("qmLast"), h = vcMode() ? vcLast() : (qmMe() || QM_FRESH).h.slice(0, 5), sig = JSON.stringify(h);   // vcLast: your ranked CPU results
   if (ul.dataset.sig === sig) return;
   ul.dataset.sig = sig; ul.replaceChildren();
-  if (!h.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "Your Ranked results show here."; ul.appendChild(li); return; }
+  if (!h.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = vcMode() ? "Your ranked CPU results show here." : "Your Ranked results show here."; ul.appendChild(li); return; }
   for (const x of h) {
     const li = document.createElement("li"), r = document.createElement("i"), nm = document.createElement("span"), d = document.createElement("b");
     r.className = "tag st " + (x.res === 1 ? "mint" : x.res === 0 ? "red" : "grey"); r.textContent = x.res === 1 ? "W" : x.res === 0 ? "L" : "D";
@@ -33363,8 +33773,9 @@ function qmHero() {
   const hero = $("bRanked"), rk = rankView(), ti = tierInfo(rk.r), md = qmMode(), lb = qmLobby(), placing = rk.n < QM_PLACING;
   hero.classList.add("qm");
   hero.querySelector(".mm-ttl").textContent = "Quick match";
-  $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? `${lb.n} online` : "Offline"} · ${md === "r" ? `Ranked · ${placing ? "Placing" : `${ti.t.name} ${rk.r}`}` : "Casual"}`;
-  $("mRec").textContent = (md === "c" ? (qmAcctOff() ? ["Ranked opens soon"] : ["Casual", "no rank change"])
+  const vh = QM.mode === "v" ? vcHero() : null;   // ui/vscpu.js: VS CPU and your CPU rank
+  $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? `${lb.n} online` : "Offline"} · ${vh ? vh[0] : md === "r" ? `Ranked · ${placing ? "Placing" : `${ti.t.name} ${rk.r}`}` : "Casual"}`;
+  $("mRec").textContent = vh ? vh[1].replace(/ /g, " ") : (md === "c" ? (qmAcctOff() ? ["Ranked opens soon"] : ["Casual", "no rank change"])
     : (qmMe() || QM_FRESH).bty ? [`${qmMe().ws} win streak`, `${qmMe().bty} bounty on you`]
     : placing ? [`Placing`, `${rk.n} of ${QM_PLACING}`] : [`${rk.w}W`, `${rk.l}L`, ti.next ? `${ti.need} to ${ti.next.name}` : "top tier"]).map((t) => t.replace(/ /g, " ")).join(" · ");
   let s1 = hero.querySelector(".qm-s1");
@@ -33416,7 +33827,7 @@ tap("qmBack", goMenu);
 tap("qmChange", () => openSelect("quick"));
 tap("qmR", () => { QM.mode = "r"; qmSave(); qmRender(); });
 tap("qmC", () => { QM.mode = "c"; qmSave(); qmRender(); });
-tap("qmFind", qmFind);
+tap("qmFind", () => (vcMode() ? vcFight() : qmFind()));   // ui/vscpu.js: FIGHT A CPU
 tap("qmCancel", () => qmCancel());
 tap("qmWarm", qmWarmStart);
 tap("rQmX", () => { qmCancel(); $("rChange").querySelector("span").textContent = "Quick match"; $("rMenuSub").textContent = ""; });
@@ -33628,6 +34039,752 @@ function rvStats(pan) {
   }
   pan.appendChild(ul);
 }
+/* ===================== Ranked vs CPU: a CPU match that counts for its own rank (the server side is cpurank.js) =====================
+   The third choice on the Quick match screen (VS CPU, next to Ranked and Casual). The server deals the match (a ticket: the CPU, its
+   rating and strength, the map and the seed), this phone plays it with no lag and logs your inputs in the online encoding (encIn), and
+   the server plays the same match again from them before the CPU rank or the CPU board moves. So the CPU rank lives on the server (the
+   account file's `cpu` part); this page keeps a copy for the menu, and a finished match's log until the server has counted it (a
+   connection lost at the end sends it later). Chips are paid on this phone as in the old Ranked vs a CPU.
+   The CPU follows your rating (yours ±70; 1000 plays a bit above Easy, 1250 Normal, 1650 Hard) up to full strength at 1730, where its
+   rating stops: above that every point needs a cleaner win record. The first 5 matches are against a Hard CPU counted as 1650.
+   Fable's design: quick-match/vs-cpu/fable-vs-cpu.md. Styles: css/96-vscpu.css. The Boards sheet is ui/boards.js. */
+const VC_KEY = "potatobrawl.vc.v1";
+const VC_FRESH = Object.freeze({ r: 1000, pk: 1000, w: 0, l: 0, d: 0, n: 0, h: Object.freeze([]) });   // Season 1 starts everyone here
+const VC_CAP = 1730, VC_SPREAD = 70, VC_PLACE_R = 1650;   // the server's (cpurank.js)
+const VC = {
+  me: null, code: "",        // the server's CPU record { r, pk, w, l, d, n, h } and the sync code it belongs to
+  pl: 0, opl: 0, of: 0,      // your place on the CPU board and on the online board (0: not on it), players on the CPU board
+  pend: null,                // a finished match's result until the server counts it: { id, code, s (the packed log), ff, res, r0, n0, pl0, f, of, ni, cr }
+  asking: false, askT: 0, note: "", acct: "",
+  vsT: 0, tk: null, res: null, shown: null, applied: [], streak: 0,
+  bd: { c: null, o: null }, bdWait: { c: [], o: [] },
+};
+(function vcLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(VC_KEY) || "null");
+    if (!s || typeof s !== "object") return;
+    if (s.me && typeof s.code === "string") { VC.me = vcClean(s.me); VC.code = s.code; }
+    VC.pl = Math.max(0, s.pl | 0); VC.opl = Math.max(0, s.opl | 0); VC.of = Math.max(0, s.of | 0); VC.streak = Math.max(0, s.k | 0);
+    if (s.pend && typeof s.pend.id === "string" && typeof s.pend.s === "string") VC.pend = s.pend;
+  } catch (e) { /* storage blocked: nothing remembered */ }
+})();
+function vcSave() { try { localStorage.setItem(VC_KEY, JSON.stringify({ me: VC.me, code: VC.code, pl: VC.pl, opl: VC.opl, of: VC.of, pend: VC.pend, k: VC.streak })); } catch (e) { /* ignore */ } }
+function vcClean(o) {
+  const n = (v, d) => (Number.isInteger(v) && v >= 0 && v < 1e9 ? v : d);
+  const me = { r: n(o.r, 1000), pk: n(o.pk, 1000), w: n(o.w, 0), l: n(o.l, 0), d: n(o.d, 0), n: n(o.n, 0), h: [] };
+  me.pk = Math.max(me.pk, me.r);
+  if (Array.isArray(o.h)) me.h = o.h.filter((x) => x && typeof x === "object").slice(0, 20).map((x) => ({
+    t: Number.isFinite(x.t) ? x.t : 0, of: FIG[x.of] ? x.of : "", f: FIG[x.f] ? x.f : "", or: n(x.or, 0), ni: n(x.ni, 0),
+    res: [1, 0.5, 0].includes(x.res) ? x.res : 0, dr: Number.isInteger(x.dr) && Math.abs(x.dr) < 1000 ? x.dr : 0, why: typeof x.why === "string" ? x.why.slice(0, 8) : "" }));
+  return me;
+}
+const vcMine = () => (VC.me && VC.code && VC.code === ACCT.code ? VC.me : null);   // the record of the account this device is linked to
+const vcMode = () => qmOn() && QM.mode === "v" && !qmAcctOff();
+const vcCpuName = (ni) => CPU_NAMES[(ni | 0) % CPU_NAMES.length];
+// acct.js titles (#1 CPU board, Top 10 CPU): read before this part has run, so it can't touch VC yet
+function vcPlace() { try { return VC.pl | 0; } catch (e) { return 0; } }
+// ui/boards.js, Account > Profile's two plates
+function vcRanks() { const on = qmMe() || QM_FRESH, c = vcMine() || VC_FRESH; return { on: { r: on.r, n: on.n, pl: VC.opl }, cpu: { r: c.r, n: c.n, pl: VC.pl } }; }
+// the next CPU in words: "about Hard · Gold 1150–1300" (placement: "a Hard CPU")
+function vcNext() {
+  const me = vcMine() || VC_FRESH;
+  if (me.n < QM_PLACING) return { pm: true, word: "Hard", lo: VC_PLACE_R, hi: VC_PLACE_R };
+  const lo = clamp(me.r - VC_SPREAD, 600, VC_CAP), hi = clamp(me.r + VC_SPREAD, 600, VC_CAP);
+  return { pm: false, word: vcWord((lo + hi) / 2), lo, hi };
+}
+function vcWord(r) { const d = clamp((r - 750) / 1000, 0.08, 0.98); return d >= 0.98 ? "Max" : d >= 0.85 ? "Hard" : d >= 0.45 ? "Normal" : "Easy+"; }
+
+/* ----- the server's messages (net-ws.js passes cme / ct-ok / ct-no / cres / bd to every Quick match listener) ----- */
+function vcBoot() {   // qmBoot (ui/quick.js), once
+  if (!qmOn()) return;
+  window.__blQuick.on(vcMsg);
+  window.__blVc = VC;   // tests read it
+}
+function vcMsg(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.t === "me") { if (!m.err) vcAuthed(); else if (VC.asking) vcFail(m.err === "off" ? "Ranked vs CPU opens soon." : "This phone's account isn't on the server. Check Account."); }
+  else if (m.t === "cme") vcGotMe(m);
+  else if (m.t === "ct-ok") vcTicket(m);
+  else if (m.t === "ct-no") vcRefused(m.why);
+  else if (m.t === "cres") vcRes(m);
+  else if (m.t === "bd") vcBdDone(m.k, vcBdClean(m));
+}
+// signed in (ui/quick.js qmGotMe ran first): the last match's result goes first, then your record; a waiting FIGHT A CPU goes on
+function vcAuthed() {
+  if (VC.pend && VC.pend.code !== ACCT.code) { VC.pend = null; vcSave(); }   // another account's match: the server counts it on its own
+  vcFlush();
+  window.__blQuick.send({ t: "cme" });
+  if (VC.asking) vcGo();
+}
+function vcGotMe(m) {
+  if (m.err) { VC.acct = m.err; return; }
+  VC.acct = ""; VC.me = vcClean(m); VC.code = ACCT.code;
+  VC.pl = Math.max(0, m.pl | 0); VC.opl = Math.max(0, m.opl | 0); VC.of = Math.max(0, m.of | 0);
+  // the server no longer holds the ticket of the match on its way: it was counted (or voided) without its answer reaching us
+  if (VC.pend && m.tk !== VC.pend.id && VC.pend.sentT) VC.pend = null;
+  vcSave(); qmRefresh();
+}
+
+/* ----- FIGHT A CPU: the account, the last result, then a ticket ----- */
+function vcFight() {
+  if (!qmOn()) return;
+  if (QM.no === "old") { location.reload(); return; }
+  if (VC.asking) return;
+  VC.note = "";
+  if (!QM.conn) { VC.note = "Connecting to the server…"; qmRender(); return; }
+  if (qmAcctOff()) { VC.note = "Ranked vs CPU opens once accounts are on."; qmRender(); return; }
+  Sfx.init(); goFull();   // fullscreen needs the tap itself
+  VC.asking = true; VC.askT = Date.now();
+  qmRender();
+  vcGo();
+}
+async function vcGo() {
+  if (!ACCT.code) {
+    const ok = await qmMakeAcct();
+    if (!VC.asking) return;
+    if (!ok) { vcFail(qmAcctOff() ? "Ranked vs CPU opens soon." : "Couldn't reach the server. Try again."); return; }
+  }
+  if (!QM.authed) { qmAuth(); return; }   // vcAuthed goes on once signed in
+  if (VC.pend) { vcFlush(); return; }      // vcRes goes on once the last match is counted
+  window.__blQuick.send({ t: "ct", v: PROTO, f: sel.fighter, pi: palIdx(sel.fighter) });
+}
+function vcFail(note) { VC.asking = false; VC.note = note || ""; qmRender(); if (mode === "result" && VC.shown) $("rPromo").textContent = note || ""; }
+function vcRefused(why) {
+  if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then ask again
+  if (why === "slow") { setTimeout(() => { if (VC.asking) vcGo(); }, 1500); return; }
+  if (why === "old") { QM.no = "old"; vcFail(""); return; }
+  vcFail("Couldn't start a ranked CPU match. Try again.");
+}
+function vcTicketOk(m) {
+  return typeof m.id === "string" && /^[0-9a-f]{12}$/.test(m.id) && Number.isInteger(m.seed) && Number.isInteger(m.map) && m.map >= 0 && m.map < BL.POOL &&
+    Array.isArray(m.f) && m.f.length === 2 && m.f.every((id) => FIG[id]) && Array.isArray(m.p) && m.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < FIG[m.f[i]].palettes.length) &&
+    Number.isInteger(m.cr) && typeof m.d === "number" && m.d > 0 && m.d <= 1;
+}
+// the ticket: the VS screen over Quick match, then the fight (vcTick)
+function vcTicket(m) {
+  if (!VC.asking || !vcTicketOk(m)) return;
+  VC.asking = false; VC.tk = m;
+  qmEndWarm();   // ui/quick.js: from the results (ANOTHER CPU FIGHT) or Quick match, the Quick match screen under the VS screen
+  vcVs(m);
+}
+function vcVs(tk) {
+  const el = $("qmVs"), me = vcMine() || VC_FRESH;
+  const fs = newGame({ players: tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
+  qmVsArt.length = 0;
+  glazeMark(fs[0], glazeHas(tk.f[0], tk.p[0]));   // ui/glaze.js: your own glaze
+  for (const [k, f] of [["L", fs[0]], ["R", fs[1]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
+  const side = (k, name, fid, pi, r, words) => {
+    const spec = FIG[fid], pal = spec.palettes[pi] || spec.palettes[0];
+    el.style.setProperty(k === "L" ? "--cl" : "--cr", rgba(col(pal), 0.42));
+    $("vsName" + k).textContent = name;
+    $("vsF" + k).textContent = spec.name;
+    const t = $("vsT" + k); t.innerHTML = tierEmblem(tierIdx(r)); t.classList.toggle("un", false);
+    const w = document.createElement("span"); w.textContent = words; t.append(w);
+  };
+  side("L", NET.myName || acctName(), tk.f[0], tk.p[0], me.r, qmTierWords(me.r, me.n < QM_PLACING ? { n: me.n } : null, false));
+  side("R", vcCpuName(tk.ni), tk.f[1], tk.p[1], tk.cr, `${tierInfo(tk.cr).t.name} ${tk.cr} · ${tk.pm ? "Hard" : vcWord(tk.cr)} CPU`);
+  let st = $("vsCpu");
+  if (!st) { st = document.createElement("i"); st.id = "vsCpu"; st.className = "tag ember st vc-cpu"; st.textContent = "CPU"; $("vsNameR").parentNode.appendChild(st); }
+  st.hidden = false;
+  for (const id of ["vsRiv", "vsWL", "vsWR", "vsTagR"]) { const e = $(id); if (e) e.hidden = true; }   // the rival record's (ui/rivals.js): not for a CPU
+  $("vsMode").textContent = "Ranked · CPU";
+  $("vsStamp").className = "vs-st rk";
+  $("vsFb").hidden = true; $("vsWhy").hidden = true;
+  $("vsPing").textContent = tk.pm ? `Placement ${me.n + 1} of ${QM_PLACING} · ${mapName(tk.map)}` : mapName(tk.map);
+  el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
+  QM.vsT = VC.vsT = performance.now(); QM.vsN++;
+  Sfx.tone(120, 40, 0.35, "sine", 0.5); Sfx.noise(0.2, 0.3, 900);
+}
+// the fight: the server's match exactly (its seed, map, fighters and skins, the CPU's strength), your inputs logged (vcIn)
+function vcStart(tk) {
+  $("qmVs").hidden = true; QM.vsT = VC.vsT = 0;
+  const st = $("vsCpu"); if (st) st.hidden = true;
+  const me = FIG[tk.f[0]], op = FIG[tk.f[1]];
+  G = newGame({ players: [{ spec: me, pal: me.palettes[tk.p[0]] || me.palettes[0] }, { spec: op, pal: op.palettes[tk.p[1]] || op.palettes[0] }], stocks: 3, time: 240, countdown: 150, map: tk.map, seed: tk.seed });
+  match = { vc: tk, ranked: false, d: tk.d, oppRating: tk.cr, bot: makeBot(tk.d, BL.BOT_STYLES[op.id]), level: null, cpu: vcCpuName(tk.ni), log: [] };
+  meSlot = 0;
+  enterMatchUI();
+}
+// simTick (loop.js): your input this frame, in the online encoding (what the server will replay), logged until the match ends
+function vcIn(pi) {
+  const m = match;
+  if (!m || !m.vc || !G || G.phase === "end" || G.phase === "over") return pi;
+  const v = encIn(pi);   // ui/online.js
+  m.log.push(v);
+  return decIn(v);
+}
+// runs of one code, three characters each (cpurank.js unpack)
+function vcPack(codes) {
+  let s = "";
+  for (let i = 0; i < codes.length;) {
+    let n = 1;
+    while (n < 64 && codes[i + n] === codes[i]) n++;
+    s += B64[codes[i] >> 6] + B64[codes[i] & 63] + B64[n - 1];
+    i += n;
+  }
+  return s;
+}
+
+/* ----- the end: chips on this phone, the log to the server, the rank card waits for its verdict ----- */
+function vcMatchEnd(forfeit) {   // screens.js finishMatch
+  const tk = match.vc, me = G.fighters[0], op = G.fighters[1], rec = vcMine() || VC_FRESH;
+  const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
+  const R = { res, forfeit, vc: tk, me, op, lines: [], total: 0 };
+  const kos = (each) => { if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * each]); };
+  if (!forfeit) {   // the old Ranked's chips: win 20, draw 10, a match played 6, KOs, a win streak
+    if (res === 1) {
+      R.lines.push(["Win", 20]); kos(5);
+      const k = VC.streak + 1, sb = Math.min(20, (k - 1) * 5);
+      if (sb > 0) R.lines.push([`${k} win streak`, sb]);
+    } else if (res === 0.5) { R.lines.push(["Draw", 10]); kos(3); }
+    else { R.lines.push(["Match played", 6]); kos(2); }
+  }
+  R.total = R.lines.reduce((a, l) => a + l[1], 0);
+  if (R.total) { P.tokens += R.total; saveProfile(); }
+  VC.streak = res === 1 ? VC.streak + 1 : res === 0 ? 0 : VC.streak;
+  VC.pend = { id: tk.id, code: ACCT.code, s: vcPack(match.log), ff: forfeit ? 1 : 0, res, r0: rec.r, n0: rec.n, pl0: VC.pl, f: tk.f[0], of: tk.f[1], ni: tk.ni, cr: tk.cr, sentT: 0 };
+  vcSave(); vcFlush();
+  showResults(R);
+}
+// the log to the server, in parts the WebSocket takes (6,000 characters each)
+function vcFlush() {
+  const p = VC.pend;
+  if (!p || !qmOn() || !QM.conn || !QM.authed || p.code !== ACCT.code) return;
+  const n = Math.max(1, Math.ceil(p.s.length / 6000));
+  for (let k = 0; k < n; k++) window.__blQuick.send({ t: "cr", id: p.id, k, n, s: p.s.slice(k * 6000, (k + 1) * 6000), ff: p.ff });
+  p.sentT = Date.now(); vcSave();
+}
+function vcRes(m) {
+  if (!m || typeof m.id !== "string" || VC.applied.includes(m.id)) return;
+  VC.applied.push(m.id); if (VC.applied.length > 8) VC.applied.shift();
+  const p = VC.pend && VC.pend.id === m.id ? VC.pend : null;
+  if (m.res !== null && Number.isInteger(m.r1) && Number.isInteger(m.n)) {
+    const me = Object.assign({}, vcMine() || VC_FRESH);
+    Object.assign(me, { r: m.r1, pk: Math.max(m.pk | 0, m.r1), n: m.n, w: m.w | 0, l: m.l | 0, d: m.d | 0 });
+    me.h = [{ t: Date.now(), of: p ? p.of : "", f: p ? p.f : "", or: p ? p.cr : 0, ni: p ? p.ni : 0, res: m.res, dr: m.dr | 0, why: m.why }, ...me.h].slice(0, 20);
+    VC.me = me; VC.code = ACCT.code;
+    VC.pl = Math.max(0, m.pl1 | 0); VC.of = Math.max(0, m.of | 0);
+    if (p && FIG[p.f]) {   // the per-fighter record (Account > Stats) counts ranked matches, CPU ones too
+      const fs = P.fstats[p.f] || (P.fstats[p.f] = { w: 0, l: 0, d: 0 });
+      fs[m.res === 1 ? "w" : m.res === 0 ? "l" : "d"]++;
+      if (!P.fsince) P.fsince = Date.now();
+      saveProfile();
+    }
+  }
+  if (p) VC.pend = null;
+  if (m.why === "late") window.__blQuick.send({ t: "cme" });
+  VC.res = m; VC.bd.c = null;
+  vcSave(); qmRefresh();
+  if (mode === "result" && VC.shown && VC.shown.vc.id === m.id) vcVerdictView(true);
+  if (VC.asking) vcGo();   // ANOTHER CPU FIGHT waited for this one to count
+}
+
+/* ----- the results ----- */
+function vcResults(R) {   // ui/quick.js qmResults
+  VC.shown = R;
+  const tk = R.vc, k = $("rMode"); k.textContent = "";
+  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
+  k.append(t, `Ranked vs CPU · ${tierInfo(tk.cr).t.name} ${tk.cr} · ${tk.pm ? "placement" : vcWord(tk.cr)}`);
+  $("rAgain").querySelector("span").textContent = "Another CPU fight"; $("rAgain").disabled = false;
+  $("rChange").querySelector("span").textContent = "Quick match";
+  $("rMenuSub").textContent = "";
+  if (!R.lines.length) $("rWhy").textContent = masteryWhy("No chips for a match you left.");
+  vcRankCard();
+  if (VC.res && VC.res.id === tk.id) vcVerdictView(false);
+}
+function vcLine() {   // the board line under the rank card's bar (made once; a tap opens the CPU board)
+  let b = $("rBoardL");
+  if (!b) {
+    b = document.createElement("button"); b.id = "rBoardL"; b.className = "rk-bd";
+    $("rRank").querySelector(".rk-body").appendChild(b);
+    b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); if (typeof bdOpen === "function") bdOpen("c"); });
+  }
+  return b;
+}
+// the rank card while the server confirms: the rating before, a … sticker (css/96-quick.css qm-wait)
+function vcRankCard() {
+  const p = VC.pend && VC.shown && VC.pend.id === VC.shown.vc.id ? VC.pend : null, me = vcMine() || VC_FRESH;
+  const r0 = p ? p.r0 : me.r, n0 = p ? p.n0 : me.n, ti = tierInfo(r0), card = $("rRank");
+  card.hidden = false; card.classList.add("qm-wait", "vc"); card.classList.remove("qm-zero"); card.style.setProperty("--tc", ti.t.col);
+  paintBadge($("rBadge"), ti.i);
+  $("rTier").textContent = n0 < QM_PLACING ? "Placing" : ti.t.name;
+  $("rPromo").textContent = ""; $("rPromo").classList.remove("down");
+  const rt = $("rRating"), b = document.createElement("b"); b.textContent = `${r0} → …`; rt.textContent = ""; rt.append(b);
+  $("rBar").style.setProperty("--p", ti.p);
+  const g = $("rGain"); g.style.setProperty("--g0", ti.p); g.style.setProperty("--g1", ti.p);
+  $("rStick").className = "delta wait"; $("rDelta").textContent = "…"; $("rStick").querySelector("small").textContent = "Confirming";
+  const ln = vcLine(); ln.hidden = false; ln.className = "rk-bd mute"; ln.textContent = "… on the CPU board";
+  QM.cfT = performance.now();
+}
+// the server's verdict on the results on screen
+function vcVerdictView(late) {
+  const v = VC.res, R = VC.shown;
+  if (!v || !R || R.vc.id !== v.id || mode !== "result") return;
+  const card = $("rRank"), st = $("rStick"), sheet = $("resSheet"), ln = vcLine();
+  card.classList.remove("qm-wait"); QM.cfT = 0;
+  const look = (k) => { sheet.classList.remove("win", "loss", "draw"); sheet.classList.add(k); };
+  if (v.res === null) {
+    const me = vcMine() || VC_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r);
+    card.classList.add("qm-zero"); st.className = "delta zero"; $("rDelta").textContent = "±0"; st.querySelector("small").textContent = "No result";
+    rt.textContent = ""; rt.append(b, " · unchanged"); $("rPromo").textContent = "";
+    resTitle("No result"); look("draw");
+    resLine($("rSub"), [v.why === "late" ? "The server had already counted this match." : "The game was updated during this match. Your CPU rank doesn't change."]);
+    ln.hidden = true;
+    return;
+  }
+  if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
+  resRank({ before: v.r0, after: v.r1, delta: v.dr, tb: tierIdx(v.r0), ta: tierIdx(v.r1) });
+  st.querySelector("small").textContent = "Rating";   // was "Confirming"
+  if (v.n < QM_PLACING) { $("rTier").textContent = `Placing ${v.n} of ${QM_PLACING}`; $("rPromo").textContent = ""; }
+  else if (v.n === QM_PLACING) { $("rPromo").textContent = "Placed!"; $("rPromo").classList.remove("down"); }
+  // the board line: "#14 → #11 on the CPU board ▲3", "#11 on the CPU board", "Not on the CPU board yet · 3 more matches"
+  const a = v.pl0 | 0, b = v.pl1 | 0;
+  ln.hidden = false;
+  if (!b) { ln.className = "rk-bd mute"; ln.textContent = v.n < QM_PLACING ? `CPU board after ${QM_PLACING - v.n} more` : "Not on the CPU board"; }
+  else if (!a) { ln.className = "rk-bd up"; ln.textContent = `#${b} on the CPU board · Boards ›`; }
+  else if (b < a) { ln.className = "rk-bd up"; ln.textContent = `#${a} → #${b} on the CPU board ▲${a - b}`; }
+  else if (b > a) { ln.className = "rk-bd down"; ln.textContent = `#${a} → #${b} on the CPU board ▼${b - a}`; }
+  else { ln.className = "rk-bd"; ln.textContent = `#${b} on the CPU board · Boards ›`; }
+  if (v.why === "game" && v.res !== R.res) {   // the server's copy decides
+    resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
+    resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
+  } else if (v.why !== "game" && v.why !== "ff") {
+    st.querySelector("small").textContent = "Rating · not confirmed";
+    resTitle("Not confirmed"); look("loss");
+    resLine($("rSub"), [v.why === "gone" ? "That match had no result in time. It counts as a loss." : "The server couldn't confirm this match. It counts as a loss."]);
+  } else if (v.why === "ff") st.querySelector("small").textContent = "Rating · forfeit";
+}
+// Pause: what leaving costs (ui/quick.js qmPauseText)
+function vcPauseText() {
+  const tk = match.vc, me = vcMine() || VC_FRESH, dr = qmElo(me.r, tk.pm ? VC_PLACE_R : tk.cr, 0, me.n);
+  $("pQuit").querySelector("span").textContent = "Forfeit";
+  $("pNote").textContent = `Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
+}
+
+/* ----- the Quick match screen in VS CPU mode (ui/quick.js qmRender calls this last) ----- */
+function vcRender(lb) {
+  const on = vcMode(), off = qmAcctOff(), scr = $("scrQuick").querySelector(".qm2");
+  scr.classList.toggle("vc", on);
+  const v = $("qmV");
+  v.disabled = qmSearching() || off || !QM.conn;
+  $("qmVSub").textContent = off ? "opens soon" : !QM.conn ? "needs the server" : "CPU rank";
+  // the warm-up's way to a match that counts, when nobody is here
+  $("qmToV").hidden = on || off || !QM.conn || qmSearching() || lb.q > 0;
+  const bd = $("qmBoard");
+  if (bd) { bd.hidden = !on; if (on && typeof bdPreview === "function") bdPreview(); }
+  if (!on) return;
+  $("qmCpu").hidden = true;
+  const find = $("qmFind");
+  find.querySelector("span").textContent = QM.no === "old" ? "Reload" : VC.asking ? "Starting…" : "Fight a CPU";
+  find.disabled = QM.no !== "old" && (!QM.conn || off || VC.asking || QM.making);
+  const nx = vcNext(), me = vcMine() || VC_FRESH, truth = $("qmTruth");
+  truth.className = "qm-truth" + (VC.note || QM.no ? " note" : lb.q ? " live" : "");
+  truth.textContent = QM.no === "old" ? "A new version of the game is out. Reload to play." : VC.note ||
+    (!QM.conn ? "Connecting to the server…" : VC.pend ? "Sending your last match to the server…"
+      : lb.q ? `● ${lb.q} searching · switch to Ranked to meet ${lb.q === 1 ? "them" : "one"}`
+      : nx.pm ? `Placement ${me.n + 1} of ${QM_PLACING}: a Hard CPU · win to start high`
+      : `Next CPU: about ${nx.word} · ${tierInfo(nx.lo).t.name} ${nx.lo}–${nx.hi}`);
+  $("qmHelp").textContent = "Ranked vs CPU: the server checks every match. The CPU gets stronger as your CPU rank rises, up to its best at 1730.";
+}
+// the rank plate in VS CPU mode: your CPU rank, the ember CPU sticker on the emblem, the board line under the bar
+function vcPlate() {
+  const me = vcMine() || VC_FRESH, ti = tierInfo(me.r), placing = me.n < QM_PLACING, card = $("qmRank");
+  card.style.setProperty("--tc", ti.t.col);
+  card.classList.toggle("placing", placing); card.classList.add("vc"); card.classList.remove("wanted");
+  const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
+  $("qmTier").textContent = placing ? "Placing" : ti.t.name;
+  $("qmRating")._t = placing ? [`${me.n} of ${QM_PLACING} played · ${me.r}`] : ti.next ? [`${me.r} · ${ti.need} to ${ti.next.name}`, `${me.r} · ${ti.need} to go`] : [`${me.r} · top tier`];   // qmThin picks
+  $("qmBar").style.setProperty("--p", placing ? me.n / QM_PLACING : ti.p);
+  $("qmRec").textContent = `${me.w}W · ${me.l}L\nCPU rank`;
+  const pp = $("qmPips"); pp.setAttribute("aria-label", `${me.n} of ${QM_PLACING} placing matches played`);
+  [...pp.children].forEach((e, k) => e.classList.toggle("on", k < me.n));
+  $("qmKRec").textContent = $("qmRec").textContent.replace("\n", " · ");
+  let ln = $("qmBdl");
+  if (!ln) {
+    ln = document.createElement("button"); ln.id = "qmBdl"; ln.className = "qm-bdl";
+    card.appendChild(ln);
+    ln.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); if (typeof bdOpen === "function") bdOpen("c"); });
+  }
+  ln.hidden = false;
+  ln.classList.toggle("mute", !VC.pl);
+  ln.textContent = VC.pl ? `#${VC.pl} on the CPU board · Boards ›` : placing ? `CPU board after ${QM_PLACING - me.n} more ${QM_PLACING - me.n === 1 ? "match" : "matches"}` : "The CPU board · Boards ›";
+  const w = $("qmWant"); if (w) w.hidden = true;   // the online streak's WANTED tag (ui/rivals.js): not for the CPU rank
+  qmThin();   // ui/quick.js: the narrow plate below 820 px
+}
+function vcPlateOff() {   // back to the online rank
+  $("qmRank").classList.remove("vc");
+  const ln = $("qmBdl"); if (ln) ln.hidden = true;
+}
+// LAST FIVE in VS CPU mode: your last ranked CPU results
+function vcLast() {
+  return (vcMine() || VC_FRESH).h.slice(0, 5).map((x) => ({ res: x.res, o: vcCpuName(x.ni), of: x.of, dr: x.dr }));
+}
+// the menu's gold hero in VS CPU mode: [kicker after the online count, the line under it]
+function vcHero() {
+  const me = vcMine() || VC_FRESH, ti = tierInfo(me.r), placing = me.n < QM_PLACING;
+  return [`VS CPU · ${placing ? "Placing" : `${ti.t.name} ${me.r}`}`, placing ? `Placing · ${me.n} of ${QM_PLACING}` : VC.pl ? `#${VC.pl} on the CPU board` : `${me.w}W · ${me.l}L`];
+}
+
+/* ----- the boards (ui/boards.js shows them) ----- */
+// k "c" (vs CPU) or "o" (online): { k, n, at, top: [{ id, nm, f, r, w, l, pl }], me: null | { i, row } | { i: 0, pn } }, or null without the server.
+// window.__blBoardMock = { c: {...}, o: {...} } stands in for the server (tests).
+function vcBoard(k) {
+  if (window.__blBoardMock) return Promise.resolve(window.__blBoardMock[k] || null);
+  if (!qmOn() || !QM.conn || (k !== "c" && k !== "o")) return Promise.resolve(null);
+  const c = VC.bd[k];
+  if (c && performance.now() - c.t < 3000) return Promise.resolve(c.d);
+  return new Promise((res) => {
+    VC.bdWait[k].push(res);
+    if (VC.bdWait[k].length > 1) return;
+    window.__blQuick.send({ t: "bd", k });
+    setTimeout(() => { if (VC.bdWait[k].length) vcBdDone(k, null); }, 5000);
+  });
+}
+function vcBdClean(m) {
+  if (!m || (m.k !== "c" && m.k !== "o") || !Array.isArray(m.top)) return null;
+  const n = (v) => (Number.isInteger(v) && v >= 0 && v < 1e9 ? v : 0);
+  const row = (x) => (x && typeof x === "object" && typeof x.id === "string" ? { id: x.id.slice(0, 10), nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm : "") || "Potato",
+    f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), pl: typeof x.pl === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(x.pl) ? x.pl : "" } : null);
+  const d = { k: m.k, n: n(m.n), at: Number.isFinite(m.at) ? m.at : Date.now(), top: m.top.slice(0, 100).map(row).filter(Boolean), me: null };
+  if (m.me && typeof m.me === "object") d.me = m.me.row ? { i: n(m.me.i), row: row(m.me.row) } : { i: 0, pn: Math.min(QM_PLACING - 1, n(m.me.pn)) };
+  return d;
+}
+function vcBdDone(k, d) {
+  if (k !== "c" && k !== "o") return;
+  if (d) {
+    VC.bd[k] = { t: performance.now(), d };
+    if (d.me && ACCT.code) { const was = k === "c" ? VC.pl : VC.opl, now = d.me.row ? d.me.i : 0; if (now !== was) { if (k === "c") VC.pl = now; else VC.opl = now; vcSave(); renderPill(); } }
+  }
+  const w = VC.bdWait[k].splice(0);
+  for (const res of w) res(d || (VC.bd[k] ? VC.bd[k].d : null));
+}
+
+/* ----- every frame (loop.js) ----- */
+function vcStripText() {   // the HUD strip: this match counts, and for which rank
+  const me = vcMine() || VC_FRESH;
+  return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
+}
+function vcTick() {
+  if (!qmOn()) return;
+  if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
+  if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");
+  // a result sent with no answer: ask for the record (it shows whether the server still waits for it, and sends it again)
+  const p = VC.pend;
+  if (p && p.sentT && Date.now() - p.sentT > 15000 && QM.authed) { p.sentT = Date.now(); vcFlush(); window.__blQuick.send({ t: "cme" }); }
+  const strip = $("vcStrip"), show = mode === "match" && !!match && !!match.vc;
+  if (strip.hidden === show) { strip.hidden = !show; if (show) $("vcStripT").textContent = vcStripText(); }
+}
+
+/* ----- wiring ----- */
+tap("qmV", () => { QM.mode = "v"; VC.note = ""; qmSave(); qmRender(); });
+tap("qmToV", () => { QM.mode = "v"; VC.note = ""; qmSave(); qmRender(); });
+/* ===================== The Boards: the CPU board and the online board (ui/vscpu.js fetches them, cpurank.js keeps them) =====================
+   UI only, never in the simulation. Fable's design: quick-match/vs-cpu/fable-vs-cpu.md section 2, styles in css/97-boards.css.
+   - The Boards sheet (#scrBoards): ink band BOARDS, a tab row (VS CPU, ONLINE; BD_TABS is the list, more can follow), one kicker (the rank,
+     the season, the players, how old the list is), up to 100 rows (place, tier emblem, name on its nameplate, fighter, record, rating) and
+     YOUR row as a sticky bar under the list: your place, a dotted gap and `#143 of 187` when you are below the top 100, `PLACING 2 OF 5` while
+     you place, a line telling what gets you a place when you have no account. Opens over the menu, Quick match, the results and the Account
+     sheet (z-index 6): bdOpen(k) with k "c" (VS CPU) or "o" (ONLINE), default the last tab used (localStorage potatobrawl.boards.v1).
+   - The data comes from vcBoard(k) (ui/vscpu.js): a Promise of null (no server: the offline state) or { k, n, at, top: [{ id, nm, f, r, w, l, pl }],
+     me: null | { i, row } | { i: 0, pn } }. It is fetched every time the sheet opens, the tab changes or the active tab is tapped again.
+   - bdPreview() fills the CPU BOARD card on the Quick match screen (#qmBoard, shown by the VS CPU mode); bdPlates(box) draws the ONLINE RANK and
+     CPU RANK plates of Account > Profile (data: vcRanks()); bdPill() shows the menu's BOARDS pill where there is a server (qmOn()).
+   Every top-level name here starts with bd / BD (all ui parts share one scope). window.__blBoardMock = { c, o } stands in for the server in tests. */
+screens.boards = $("scrBoards");
+const BD_KEY = "potatobrawl.boards.v1";
+const BD_PLACING = 5;             // matches that place a player on a board
+const BD_SEASON = "Season 1";
+// the tabs: k = the board vcBoard() is asked for, kick = the kicker's first words, gone / hint = the empty board, fight = its button, none = your row without an account
+const BD_TABS = [
+  { k: "c", name: "VS CPU", kick: "CPU rank", gone: "Nobody on the board yet.", hint: `${BD_PLACING} Ranked CPU matches get you on.`, fight: true, none: "Play a Ranked CPU match to get a place" },
+  { k: "o", name: "Online", kick: "Online rank", gone: "Nobody has placed yet.", hint: `${BD_PLACING} Ranked matches get you on.`, fight: false, none: "Play a Ranked match to get a place" },
+];
+const BD = { k: "c", req: 0, st: "idle", data: null, got: 0, tm: 0, lt: 0 };   // st: idle | load | ok | empty | off
+const BDP = { at: 0, data: undefined, p: null };   // the preview's cache: undefined = nothing yet, null = offline
+
+/* ----- small helpers ----- */
+const bdMk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const bdInt = (v, d) => (Number.isFinite(v) ? Math.max(0, Math.round(v)) : d || 0);
+const bdStr = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
+const bdCur = () => BD_TABS.find((t) => t.k === BD.k) || BD_TABS[0];
+const bdTap = (el, fn) => el.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(el); fn(e); });
+const bdCalm = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+function bdLast() { try { const s = JSON.parse(localStorage.getItem(BD_KEY) || "null"); if (s && BD_TABS.some((t) => t.k === s.k)) return s.k; } catch (e) { /* storage blocked */ } return "c"; }
+function bdSave() { try { localStorage.setItem(BD_KEY, JSON.stringify({ k: BD.k })); } catch (e) { /* ignore */ } }
+BD.k = bdLast();
+
+// what the server sent, made safe to draw: numbers are whole numbers, text is cut to size, an unknown fighter shows nothing
+function bdRow(o) {
+  if (!o || typeof o !== "object") return null;
+  return { id: bdStr(o.id, 12), nm: bdStr(o.nm, 24).trim() || "Player", f: FIG[o.f] ? o.f : "", r: bdInt(o.r, 1000), w: bdInt(o.w), l: bdInt(o.l), pl: bdStr(o.pl, 24) };
+}
+function bdClean(d, k) {
+  if (!d || typeof d !== "object") return null;
+  const top = (Array.isArray(d.top) ? d.top : []).slice(0, 100).map(bdRow).filter(Boolean);
+  let me = null;
+  if (d.me && typeof d.me === "object") {
+    const i = bdInt(d.me.i), row = bdRow(d.me.row);
+    if (i > 0 && row) me = { i, row };
+    else if (i === 0) me = { i: 0, pn: Math.min(BD_PLACING, bdInt(d.me.pn)) };
+  }
+  return { k, n: Math.max(bdInt(d.n), top.length), at: bdInt(d.at), top, me };
+}
+// the board for k: vcBoard()'s answer, or null (no server, an error, or no answer in 10 s)
+function bdFetch(k) {
+  return new Promise((done) => {
+    let p, over = setTimeout(() => done(null), 10000);
+    try { p = typeof vcBoard === "function" ? vcBoard(k) : null; } catch (e) { p = null; }
+    Promise.resolve(p).then((d) => d, () => null).then((d) => { clearTimeout(over); done(bdClean(d, k)); });
+  });
+}
+const bdPlaceN = (n) => `${n} ${n === 1 ? "match" : "matches"}`;
+
+/* ----- one row: place (a disc for 1-3), tier emblem, name on its plate, fighter, record, rating -----
+   o.me: this is your row in the list; o.sticky: it is the bar under the list; o.of: "#143 of 187" for a bar below the top 100 */
+function bdRowEl(row, i, o) {
+  o = o || {};
+  const el = bdMk("div", "bd-r" + (i === 1 ? " first" : "") + (o.me ? " me" : "") + (o.sticky ? " you" : ""));
+  const p = bdMk("span", "bd-p");
+  if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
+  const ti = tierIdx(row.r), em = bdMk("i", "badge bd-em");
+  em.style.setProperty("--tc", TIERS[ti].col); em.innerHTML = tierEmblem(ti); em.title = TIERS[ti].name;
+  const n = bdMk("span", "bd-n"), t = bdMk("span", "bd-t");   // the title line (YOU · name) and under or beside it the fighter
+  if (o.me || o.sticky) t.appendChild(bdMk("em", "bd-yt", "You"));
+  const nm = bdMk("b", "bd-nm", row.nm); plateSet(nm, row.pl); nm.title = row.nm;
+  t.appendChild(nm); n.appendChild(t);
+  const fig = row.f ? FIG[row.f].name : "", rec = `${row.w}W\u00a0${row.l}L`;
+  const f1 = [fig, o.of].filter(Boolean).join(" · "), f2 = [fig, o.of ? "" : rec, o.of].filter(Boolean).join(" · ");   // wide: the record has its column; upright: it joins this line
+  const f = bdMk("small", "bd-f");
+  if (f1) f.appendChild(bdMk("span", "bd-f1", f1));
+  f.appendChild(bdMk("span", "bd-f2", f2));
+  n.appendChild(f);
+  el.append(p, em, n, bdMk("small", "bd-w", rec), bdMk("b", "bd-v", String(row.r)));
+  el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${row.w} wins ${row.l} losses, rating ${row.r}`);
+  return el;
+}
+const bdPips = (n) => { const e = bdMk("span", "bd-pips"); e.setAttribute("aria-hidden", "true"); for (let k = 0; k < BD_PLACING; k++) e.appendChild(bdMk("i", k < n ? "on" : "")); return e; };
+
+/* ----- the sheet ----- */
+function bdTabs() {
+  const box = $("bdTabs"); box.textContent = "";
+  for (const t of BD_TABS) {
+    const on = t.k === BD.k, b = bdMk("button", "bd-tab" + (on ? " on" : ""), t.name);
+    b.type = "button"; b.dataset.k = t.k; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false"); b.tabIndex = on ? 0 : -1;
+    b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); bdPick(t.k); });
+    box.appendChild(b);
+  }
+}
+function bdPick(k) {   // a tab was tapped: the other one opens; the active one again loads its board afresh
+  if (k !== BD.k) { BD.k = k; bdSave(); bdTabs(); }
+  bdLoad();
+}
+function bdOpen(k) {
+  BD.k = BD_TABS.some((t) => t.k === k) ? k : bdLast();
+  bdSave();
+  modal("boards", true);
+  bdTabs();
+  bdLoad();
+  clearInterval(BD.tm); BD.tm = setInterval(bdAge, 15000);
+  const on = $("bdTabs").querySelector(".bd-tab.on"); if (on && on.focus) try { on.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+}
+function bdClose() {
+  BD.req++; clearInterval(BD.tm); BD.tm = 0;
+  modal("boards", false);
+  if (BDP.data !== undefined && !$("qmBoard").hidden) bdPvDraw(BDP.data);   // the card behind may have a newer list now
+}
+function bdFight() { bdClose(); if (typeof vcFight === "function") vcFight(); }   // bdClose = modal("boards", false) and the timer off
+function bdLoad() {
+  const k = BD.k, req = ++BD.req;
+  BD.st = "load"; BD.data = null;
+  bdDraw();
+  bdFetch(k).then((d) => {
+    if (req !== BD.req || screens.boards.hidden) return;
+    BD.data = d; BD.got = Date.now();
+    if (k === "c") { BDP.data = d; BDP.at = Date.now(); }
+    BD.st = !d ? "off" : d.top.length ? "ok" : "empty";
+    bdDraw();
+  });
+}
+// how old the list is, as the kicker says it (the page's own clock from the moment it arrived)
+function bdAgo() {
+  const s = Math.max(0, (Date.now() - BD.got) / 1000);
+  return s < 30 ? "just now" : s < 3600 ? `${Math.max(1, Math.floor(s / 60))} min ago` : `${Math.floor(s / 3600)} h ago`;
+}
+function bdAge() { const e = $("bdKick").querySelector(".bd-up"); if (e && BD.st === "ok") e.textContent = ` · Updated ${bdAgo()}`; }
+function bdKickDraw() {
+  const k = $("bdKick"), t = bdCur(), d = BD.data;
+  k.textContent = "";
+  const tail = BD.st === "load" ? ["Loading"] : BD.st === "off" ? [] : [`${d.n} ${d.n === 1 ? "player" : "players"}`];
+  k.appendChild(document.createTextNode([t.kick, BD_SEASON].concat(tail).join(" · ")));
+  if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`));
+}
+// the three-bar podium of the empty states
+const bdPod = () => { const e = bdMk("div", "bd-pod"); e.setAttribute("aria-hidden", "true"); e.append(bdMk("i"), bdMk("i"), bdMk("i")); return e; };
+function bdStateDraw() {
+  const box = $("bdState"), t = bdCur();
+  box.textContent = "";
+  if (BD.st === "off") {
+    box.className = "bd-state off";
+    box.append(bdMk("div", "bd-off", "Offline"), bdMk("b", "bd-big", "Boards need the server."), bdMk("p", "bd-sub", "Check the connection, then try again."));
+    const b = bdMk("button", "mini bd-again", "Try again"); b.type = "button"; bdTap(b, bdLoad); box.appendChild(b);
+  } else {
+    box.className = "bd-state";
+    box.append(bdPod(), bdMk("b", "bd-big", t.gone), bdMk("p", "bd-sub", t.hint));
+    if (t.fight) { const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", "Fight a CPU")); bdTap(b, bdFight); box.appendChild(b); }
+  }
+}
+// ghost rows while the list is on its way
+function bdGhosts() {
+  const list = $("bdList"); list.textContent = "";
+  [58, 74, 46, 66, 52, 70, 44].forEach((w) => {
+    const r = bdMk("div", "bd-r sk");
+    r.appendChild(bdMk("i", "bd-gp")); r.appendChild(bdMk("i", "bd-ge"));
+    const n = bdMk("i", "bd-gn"); n.style.setProperty("--w", w + "%"); r.appendChild(n);
+    r.appendChild(bdMk("i", "bd-gv"));
+    list.appendChild(r);
+  });
+}
+function bdYouDraw(d) {
+  const box = $("bdYou"), gap = $("bdGap"), t = bdCur(), m = d && d.me;
+  box.textContent = ""; gap.hidden = true;
+  if (!d || (BD.st === "empty" && !m)) { box.hidden = true; return; }
+  box.hidden = false;
+  if (!m) {   // no account yet
+    const e = bdMk("div", "bd-r you none");
+    e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", t.none));
+    box.appendChild(e);
+  } else if (!m.i) {   // placing
+    const left = Math.max(0, BD_PLACING - m.pn), e = bdMk("div", "bd-r you placing"), txt = bdMk("span", "bd-pk");
+    txt.append(bdMk("b", "", `Placing ${m.pn} of ${BD_PLACING}`), bdMk("small", "", left ? `${bdPlaceN(left)} to get on` : "Almost there"));
+    e.append(bdMk("em", "bd-yt", "You"), txt, bdPips(m.pn));
+    box.appendChild(e);
+  } else {
+    const inTop = m.i <= d.top.length, e = bdRowEl(m.row, m.i, { sticky: true, of: inTop ? "" : `#${m.i} of ${d.n}` });
+    if (inTop) {
+      e.setAttribute("role", "button"); e.tabIndex = 0; e.title = "Show my place in the list";
+      e.addEventListener("click", () => { Sfx.init(); Sfx.ui(); bdToMe(); });
+      e.addEventListener("keydown", (ev) => { if (ev.code === "Enter" || ev.code === "Space") { ev.preventDefault(); bdToMe(); } });
+    } else gap.hidden = false;
+    box.appendChild(e);
+  }
+}
+function bdToMe() {   // scroll the list to your row and flash it
+  const list = $("bdList"), el = list.querySelector(".bd-r.me");
+  if (!el) return;
+  const to = Math.max(0, el.offsetTop - (list.clientHeight - el.offsetHeight) / 2);
+  if (list.scrollTo) list.scrollTo({ top: to, behavior: bdCalm() ? "auto" : "smooth" }); else list.scrollTop = to;
+  el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+}
+// everything under the tabs for the state BD.st
+function bdDraw() {
+  const d = BD.data, list = $("bdList"), st = BD.st;
+  bdKickDraw();
+  $("bdHd").hidden = !(st === "ok" || st === "load");
+  list.hidden = !(st === "ok" || st === "load");
+  $("bdState").hidden = !(st === "off" || st === "empty");
+  $("bdMain").classList.toggle("load", st === "load");
+  if (st === "load") { bdGhosts(); bdYouDraw(null); return; }
+  list.textContent = "";
+  if (st === "ok") {
+    const frag = document.createDocumentFragment(), me = d.me && d.me.i > 0 && d.me.i <= d.top.length ? d.me : null;
+    d.top.forEach((row, k) => frag.appendChild(bdRowEl(row, k + 1, { me: !!me && (me.row.id ? me.row.id === row.id : me.i === k + 1) })));
+    list.appendChild(frag);
+    list.scrollTop = 0;
+  } else bdStateDraw();
+  bdYouDraw(d);
+}
+
+/* ----- the CPU BOARD card on the Quick match screen: top 3, a dotted gap, you (name and rating only) ----- */
+function bdPvRow(row, i, o) {
+  o = o || {};
+  const el = bdMk("div", "qb-r" + (i === 1 ? " first" : "") + (o.you ? " you" : ""));
+  const p = bdMk("span", "bd-p");
+  if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
+  const ti = tierIdx(row.r), em = bdMk("i", "badge bd-em");
+  em.style.setProperty("--tc", TIERS[ti].col); em.innerHTML = tierEmblem(ti);
+  const n = bdMk("span", "bd-n");
+  if (o.you) n.appendChild(bdMk("em", "bd-yt", "You"));
+  const nm = bdMk("b", "bd-nm", row.nm); plateSet(nm, row.pl);
+  n.appendChild(nm);
+  el.append(p, em, n, bdMk("b", "bd-v", String(row.r)));
+  return el;
+}
+function bdPvDraw(d) {   // d: undefined (on its way), null (no server) or a cleaned board
+  const box = $("qbList"); if (!box) return;
+  box.textContent = "";
+  if (d === undefined) { for (let k = 0; k < 3; k++) { const r = bdMk("div", "qb-r sk"); r.append(bdMk("i", "bd-gp"), bdMk("i", "bd-ge"), bdMk("i", "bd-gn"), bdMk("i", "bd-gv")); box.appendChild(r); } return; }
+  if (!d) { box.appendChild(bdMk("p", "qb-note", "The board needs the server.")); return; }
+  if (!d.top.length) { box.appendChild(bdMk("p", "qb-note", `Nobody on the board yet. ${BD_PLACING} Ranked CPU matches get you on.`)); return; }
+  d.top.slice(0, 3).forEach((row, k) => box.appendChild(bdPvRow(row, k + 1, { you: !!d.me && d.me.i === k + 1 })));
+  const m = d.me;
+  if (m && m.i > 3 && m.row) {
+    if (m.i > 4) box.appendChild(bdMk("div", "qb-gap", "···"));
+    box.appendChild(bdPvRow(m.row, m.i, { you: true }));
+  } else if (m && !m.i) {   // placing: no place and no rating yet, the five pips say how far
+    const e = bdMk("div", "qb-r you placing"), n = bdMk("span", "bd-n");
+    n.append(bdMk("em", "bd-yt", "You"), bdMk("b", "bd-nm", `Placing ${m.pn} of ${BD_PLACING}`));
+    e.append(bdMk("span", "bd-p", "–"), n, bdPips(m.pn));
+    box.appendChild(e);
+  } else if (!m) box.appendChild(bdMk("p", "qb-note", BD_TABS[0].none));
+}
+function bdPreview() {
+  const card = $("qmBoard"); if (!card) return;
+  if (BDP.data !== undefined && Date.now() - BDP.at < 10000) { bdPvDraw(BDP.data); return; }   // fresh enough: no new fetch
+  if (BDP.p) return;
+  if (BDP.data === undefined) bdPvDraw(undefined);
+  BDP.p = bdFetch("c").then((d) => { BDP.p = null; BDP.data = d; BDP.at = Date.now(); bdPvDraw(d); });
+}
+
+/* ----- Account > Profile: the two rank plates, each opens its board (vcRanks() from ui/vscpu.js: { on: {r, n, pl}, cpu: {r, n, pl} }) ----- */
+function bdPlates(box) {
+  if (!box) return;
+  box.classList.add("bd-plates"); box.textContent = "";
+  const rk = typeof vcRanks === "function" ? vcRanks() : null;
+  if (!rk || typeof rk !== "object" || (!rk.on && !rk.cpu)) { box.hidden = true; return; }
+  box.hidden = false;
+  for (const [k, o, name] of [["o", rk.on, ["Online", "Online rank"]], ["c", rk.cpu, ["CPU", "CPU rank"]]]) {
+    if (!o || typeof o !== "object") continue;
+    const r = bdInt(o.r, 1000), n = bdInt(o.n), pl = bdInt(o.pl), placing = n < BD_PLACING, ti = tierIdx(r);
+    const b = bdMk("button", "bd-pl" + (placing ? " placing" : "") + (k === "c" ? " cpu" : ""));
+    b.type = "button"; b.dataset.k = k; b.style.setProperty("--tc", TIERS[ti].col);
+    const em = bdMk("i", "badge"); paintBadge(em, ti);
+    if (k === "c") em.appendChild(bdMk("span", "tag ember bd-st", "CPU"));
+    const t = bdMk("span", "bd-pt");
+    const q = bdMk("span", "bd-pq"); q.append(name[0], bdMk("span", "bd-rk", " rank"), pl > 0 ? ` · #${pl}` : "");   // upright: ONLINE · #14 (the plate is narrow)
+    t.append(q, bdMk("b", "", placing ? "Placing" : TIERS[ti].name),
+      bdMk("small", "", placing ? `${n} of ${BD_PLACING}` : String(r)));
+    b.append(em, t, bdMk("i", "bd-go"));
+    b.setAttribute("aria-label", `${name[1]}${pl > 0 ? `, place ${pl}` : ""}: ${placing ? `placing, ${n} of ${BD_PLACING} matches played` : `${TIERS[ti].name} ${r}`}. Open the board`);
+    bdTap(b, () => bdOpen(k));
+    box.appendChild(b);
+  }
+}
+
+/* ----- the menu's BOARDS pill: only where there is a server (Quick match's page) or a test board ----- */
+function bdPill() {
+  const b = $("bBoards"); if (!b) return;
+  const on = (typeof qmOn === "function" && qmOn()) || !!window.__blBoardMock;
+  b.hidden = !on;
+  if (b.parentNode) b.parentNode.classList.toggle("bd4", on);
+}
+
+/* ----- wiring ----- */
+tap("bBoards", () => bdOpen());
+tap("bdClose", bdClose);
+screens.boards.addEventListener("click", (e) => { if (e.target === screens.boards) bdClose(); });
+window.addEventListener("keydown", (e) => { if (e.code === "Escape" && !screens.boards.hidden) { e.preventDefault(); bdClose(); } });
+$("bdTabs").addEventListener("keydown", (e) => {
+  if (e.code !== "ArrowLeft" && e.code !== "ArrowRight") return;
+  e.preventDefault();
+  const i = BD_TABS.findIndex((t) => t.k === BD.k), j = (i + (e.code === "ArrowRight" ? 1 : BD_TABS.length - 1)) % BD_TABS.length;
+  bdPick(BD_TABS[j].k);
+  const on = $("bdTabs").querySelector(".bd-tab.on"); if (on) on.focus();
+});
+$("qmBoard").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); bdOpen("c"); });
+$("qmBoard").addEventListener("keydown", (e) => { if (e.code === "Enter" || e.code === "Space") { e.preventDefault(); Sfx.init(); Sfx.uiFlip(); bdOpen("c"); } });
+window.__blBoards = { open: bdOpen, close: bdClose, preview: bdPreview, plates: bdPlates, pill: bdPill, get state() { return { k: BD.k, st: BD.st }; } };   // tests
+bdPill();
+
 /* ----- guided practice: short prompts the first time someone plays ----- */
 const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0, dodges: 0 };
@@ -33750,6 +34907,7 @@ tap("hTry", startTutorial);
 /* ===================== loop ===================== */
 function simTick() {
   qmTick();   // ui/quick.js: the found match's handshake under any screen, its timers
+  vcTick();   // ui/vscpu.js: Ranked vs CPU's VS screen, its HUD pill, a result still on its way
   if (mode === "result") { if (match && match.online) netTick(); return; }
   if (mode === "online" || mode === "select") netTick();
   const live = mode === "match" && G;
@@ -33758,7 +34916,7 @@ function simTick() {
     if (paused) return;
     if (match.online) netTick();
     else {
-      const pi = readPlayer();
+      const pi = vcIn(readPlayer());   // ui/vscpu.js: a ranked CPU match logs your inputs for the server
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
       else if (match.duo) step(G, duoInputs(pi));   // ui/duo.js: you, your CPU partner and the two CPU foes
       else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);

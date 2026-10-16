@@ -7,7 +7,9 @@
  * answers 404 like any other unknown page (the game then stops sending for the visit).
  *
  *   POST /api/stats/hit   {e: ["key", ...]}   -> 204          the game adds 1 to each key (sendBeacon posts it as text/plain)
- *   POST /api/stats/data  {key, from?}        -> {today, tz, online, days: {"YYYY-MM-DD": {key: n}}}   or 404 after a pause
+ *   POST /api/stats/data  {key, from?}        -> {today, tz, online, days: {"YYYY-MM-DD": {key: n}}, board?}   or 404 after a pause
+ *                                                (board: [{id, nm, nb, c, o}], the names on both boards and their places, cpurank.js)
+ *   POST /api/stats/blank {key, id, on}       -> {board}       a name on the Ranked vs CPU boards shown as "Potato" (on false: back)
  *   GET  /stats                               -> the stats page (public/stats.html); it reads the key after the # of its link
  *
  * Nothing about a player is stored: no ID, no IP address, no cookie. A day file holds only totals ({key: count}), one file per
@@ -83,7 +85,8 @@ function clientIp(req) {
   return peer;
 }
 
-// dir: STATS_DIR. o.online: () => players connected now (server.js); o.page: the stats page file. Returns null while off.
+// dir: STATS_DIR. o.online: () => players connected now (server.js); o.board: () => cpurank.js or null (the board names);
+// o.page: the stats page file. Returns null while off.
 function init(dir, opts) {
   if (!dir) return null;
   const o = Object.assign({}, DEFAULTS, opts || {});
@@ -206,7 +209,21 @@ function init(dir, opts) {
         if (n >= first && n <= last) days[fm[1]] = readDay(fm[1]);
       }
       if (cur.n) days[t] = Object.assign({}, cur.c);
-      send(res, 200, { today: t, tz: o.tz, online: typeof o.online === "function" ? o.online() | 0 : 0, days });
+      const out = { today: t, tz: o.tz, online: typeof o.online === "function" ? o.online() | 0 : 0, days };
+      if (o.board && o.board()) out.board = o.board().names();   // the names on the Ranked vs CPU boards (cpurank.js)
+      send(res, 200, out);
+    });
+  }
+  // a name on the boards shown as "Potato" (on: true) or as the player wrote it again; the page key is needed as for data
+  function blank(req, res) {
+    if (!take(clientIp(req), "data", o.dataPerMin)) return send(res, 429, { error: "slow" }, { "retry-after": "60" });
+    readBody(req, res, (m) => {
+      const k = m && typeof m.key === "string" ? crypto.createHash("sha256").update(m.key.trim()).digest() : null;
+      if (!k || !crypto.timingSafeEqual(k, keyHash)) return setTimeout(() => send(res, 404, { error: "unknown" }), o.badKeyDelayMs);
+      const b = o.board && o.board();
+      if (!b || typeof m.id !== "string" || !/^[0-9A-Z]{10}$/.test(m.id)) return send(res, 400, { error: "bad" });
+      if (!b.blank(m.id, m.on !== false)) return send(res, 404, { error: "gone" });
+      send(res, 200, { board: b.names() });
     });
   }
 
@@ -224,10 +241,10 @@ function init(dir, opts) {
         return true;
       }
       const sub = url.slice(11);
-      if (sub !== "hit" && sub !== "data") { send(res, 404, "Not found"); return true; }
+      if (sub !== "hit" && sub !== "data" && sub !== "blank") { send(res, 404, "Not found"); return true; }
       if (req.method !== "POST") { send(res, 405, { error: "post" }, { allow: "POST" }); return true; }
       if (!jsonish(req)) { send(res, 415, { error: "json" }); return true; }
-      if (sub === "hit") hit(req, res); else data(req, res);
+      if (sub === "hit") hit(req, res); else if (sub === "blank") blank(req, res); else data(req, res);
     } catch (e) { console.warn("stats:", e && e.message); send(res, 500, { error: "server" }); }
     return true;
   }

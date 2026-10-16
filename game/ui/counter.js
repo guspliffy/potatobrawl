@@ -34,6 +34,7 @@ function cntMode(m) {
   if (!m) return "none";
   if (m.trial) return "trial";
   if (m.tutorial) return "tutorial";
+  if (m.vc) return "ranked";   // Ranked vs CPU (ui/vscpu.js): the old Ranked vs a CPU, now with the server's check
   if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
   if (m.warm) return "warmup";
   if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
