@@ -78,6 +78,13 @@
   box-shadow: 0 -12px 12px -10px rgba(0, 0, 0, 0.5); }
 #app.short .rd-sheet .rd-acts { margin: 0 -16px -16px; padding: 8px 20px 14px; }
 #app.tiny .rd-sheet .rd-acts { margin: 0 -14px -13px; padding: 6px 18px 11px; }
+/* a boss's sheet: Fight · <level> (wide), Team up with a friend online (ui/online.js teamUp), Back; upright: Fight on its own row */
+.rd-sheet.boss .rd-acts #rsGo { flex-grow: 1.6; }
+.rd-sheet .rd-acts .rd-team { flex-direction: column; gap: 3px; padding: 6px 10px; }
+.rd-sheet .rd-acts .rd-team small { margin: 0; transform: skewX(8deg); color: var(--mute); }
+.rd-sheet.boss .rd-acts #rsBack { flex-grow: 0.75; }
+#app.narrow .rd-sheet.boss .rd-acts { flex-wrap: wrap; }
+#app.narrow .rd-sheet.boss .rd-acts #rsGo { flex-basis: 100%; }
 #app.short .rd-sheet.boss .rd-line { display: none; }   /* on a short screen his line is said in the countdown instead */
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
 .rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }

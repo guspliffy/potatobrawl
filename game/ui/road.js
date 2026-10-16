@@ -69,7 +69,7 @@ const ROAD_DEEP = [
 ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
 // the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title;
 // hp / mate: on the Road each boss is tougher than the one before (his HP x hp, your CPU partner's strength mate on Normal, +0.1 a
-// level), where Practice and online use 3/4 HP and a .55 partner (ui/boss.js)
+// level), where Practice uses 3/4 HP and a .55 partner (ui/boss.js); online with a friend he has his Road HP x DUO_HP (ui/online.js)
 const ROAD_REG = [
   { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher", hp: 0.9, mate: 0.5 },
   { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker", hp: 1.2, mate: 0.4 },
@@ -414,6 +414,7 @@ function roadSheet(i) {
   $("rsMe").insertAdjacentHTML("beforeend", `<span class="rd-chg" aria-hidden="true">⇄</span>`);
   const sheet = $("roadStopSheet");
   sheet.classList.toggle("boss", boss);
+  $("rsTeam").hidden = !boss || !onlineHere();   // a boss: Team up with a friend online (ui/online.js teamUp), where online play exists
   if (boss) {
     const b = bspec, bb = roadBossBits(r, k), rs = roadSkinOf(me, b.id);
     const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
@@ -530,22 +531,28 @@ function roadMatchEnd(forfeit) {
 }
 // bossMatchEnd: a Road boss fight adds its star, the first win's reward and the fighter's Road skin to the results
 function roadBossEnd(R) {
-  const { k, lv } = match.road, RG_ = ROAD_REG[k], r = roadGet(), won = R.res === 1, bit = 1 << lv, had = r[RG_.bk] | 0;
-  let total = 0, save = false;
-  const lines = [];
-  if (won && !(had & bit)) { r[RG_.bk] = had | bit; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
-  if (won && !r[RG_.pk]) { r[RG_.pk] = true; total += ROAD_BOSS_CHIPS; lines.push(`${RG_.title} title + ${ROAD_BOSS_CHIPS}`); }
-  // every win unlocks this boss's Road skin for the fighter you played (if it doesn't have it yet)
-  const me = R.me.spec, rs = roadSkinOf(me, RG_.boss);
-  if (won && rs >= 0 && !(P.owned[me.id] || []).includes(rs)) { P.owned[me.id] = [...(P.owned[me.id] || [0]), rs]; save = true; lines.push(`${me.palettes[rs].name} skin for ${me.name}`); R.skin = { f: me.id, i: rs }; }
-  if (won && k + 1 < ROAD_REG.length && roadRegReady(k + 1) && !had) lines.push(`${ROAD_REG[k + 1].name} is open`);
-  if (total || save) { P.road = r; P.tokens += total; saveProfile(); }
-  R.total = total;
-  R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : lines.length ? lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
-  R.road = { boss: true, k, lv, got: won ? bit : 0, had: had & ~(won ? bit : 0), labels: BOSS_LV };
+  const { k, lv } = match.road, won = R.res === 1, bit = 1 << lv;
+  const w = won ? roadBossWin(k, lv, R.me.spec) : { total: 0, lines: [], had: roadBossBits(roadGet(), k), skin: null };
+  if (w.skin) R.skin = w.skin;
+  R.total = w.total;
+  R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : w.lines.length ? w.lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
+  R.road = { boss: true, k, lv, got: won ? bit : 0, had: w.had & ~(won ? bit : 0), labels: BOSS_LV };
   // a win goes on: into the next region when this first win opened it, else to the next level (after Nightmare, the next region)
   const nk = k + 1 < ROAD_REG.length && roadRegReady(k + 1) ? k + 1 : -1;
-  match.road.next = !won ? null : nk >= 0 && !had ? { k: nk } : lv + 1 < BOSS_LV.length ? { lv: lv + 1 } : nk >= 0 ? { k: nk } : null;
+  match.road.next = !won ? null : nk >= 0 && !w.had ? { k: nk } : lv + 1 < BOSS_LV.length ? { lv: lv + 1 } : nk >= 0 ? { k: nk } : null;
+}
+// region k's boss beaten on level lv, on the Road or online with a friend (ui/online.js finishBossOnline): the level's star, the first win's
+// title and chips, this boss's Road skin for the fighter played (if it doesn't have it yet), saved. Each is paid once. Returns
+// { total: chips, lines, had: his level bits before, skin: { f, i } or null }
+function roadBossWin(k, lv, spec) {
+  const RG_ = ROAD_REG[k], r = roadGet(), bit = 1 << lv, had = r[RG_.bk] | 0, lines = [], rs = roadSkinOf(spec, RG_.boss);
+  let total = 0, skin = null;
+  if (!(had & bit)) { r[RG_.bk] = had | bit; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
+  if (!r[RG_.pk]) { r[RG_.pk] = true; total += ROAD_BOSS_CHIPS; lines.push(`${RG_.title} title + ${ROAD_BOSS_CHIPS}`); }
+  if (rs >= 0 && !(P.owned[spec.id] || []).includes(rs)) { P.owned[spec.id] = [...(P.owned[spec.id] || [0]), rs]; skin = { f: spec.id, i: rs }; lines.push(`${spec.palettes[rs].name} skin for ${spec.name}`); }
+  if (k + 1 < ROAD_REG.length && roadRegReady(k + 1) && !had) lines.push(`${ROAD_REG[k + 1].name} is open`);
+  if (total || skin) { P.road = r; P.tokens += total; saveProfile(); }
+  return { total, lines, had, skin };
 }
 // the Road skin a boss gives this fighter: its palette index (-1 = none)
 const roadSkinOf = (spec, bossId) => spec.palettes.findIndex((p) => p.road === bossId);
@@ -636,6 +643,7 @@ $("roadBack").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); goMenu
 $("roadPrev").addEventListener("click", () => roadGo(-1));
 $("roadNext").addEventListener("click", () => roadGo(1));
 $("rsGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); if (roadIsBoss(RD.sel)) roadBossFight(RD.sel - ROAD.length, RD.blv | 0); else roadFight(RD.sel); });
+$("rsTeam").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); modal("roadStop", false); sel.fighter = (FIG[P.last] || FIGHTERS[0]).id; teamUp(ROAD_REG[RD.sel - ROAD.length].boss, RD.blv | 0); });
 $("rsMe").addEventListener("click", () => { Sfx.init(); Sfx.ui(); modal("roadStop", false); openSelect("road"); });   // your card: change fighter
 $("rsCombo").addEventListener("click", (e) => { if (!e.target.closest(".rd-cmb")) return; Sfx.init(); Sfx.ui(); roadTrial(RD.sel); });
 $("rStars").addEventListener("click", (e) => { const b = e.target.closest(".rd-stk"); if (!b) return; Sfx.init(); Sfx.ui(); roadTrial(+b.dataset.i); });
@@ -645,7 +653,7 @@ screens.roadStop = $("scrRoadStop");
 // test hooks: the stops, the progress, start a stop or the boss, open the map, set the stars (as a synced profile would bring them)
 // (boss(lv) = Old Scratch, as before; boss(lv, k) = region k's boss; region(k) shows region k; set(s, extra) also sets b / b2 / p2 ...;
 // walking / pos: your fighter on the map)
-window.__blRoad = { stops: ROAD, regions: ROAD_REG, get: roadGet, fight: (i) => roadFight(i), boss: (lv, k) => roadBossFight(k | 0, lv), open: openRoad,
+window.__blRoad = { stops: ROAD, regions: ROAD_REG, get: roadGet, fight: (i) => roadFight(i), boss: (lv, k) => roadBossFight(k | 0, lv), open: openRoad, sheet: (i) => roadSheet(i),
   region: (k) => { RD.reg = k; $("roadHits").dataset.key = ""; roadHeader(); rdArrive(null); },
   get walking() { return !!RD.walk; }, get pos() { return RD.pos; },
   set: (s, extra) => { const r = roadGet(); P.road = Object.assign({}, r, { s: s.slice() }, extra || {}); saveProfile(); } };
