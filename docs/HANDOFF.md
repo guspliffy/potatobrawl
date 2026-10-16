@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-16: online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -307,7 +307,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     TUNE.linkPop (13) knockback. Before it the defender rose about 15-30 px at 0%. Now up, up, jump, nair is a true combo at 0-50%
     for every fighter (Odin from 30%: his up light can't chain into itself at 0%), hAir lands for 7 of 8, uair for 4 (tests/combos.js
     checks the nair version; `node combos.js try up,up,jump,uair` for the rest). 14 still passed, 15 broke other routes.
-  - Jump routes at human speed (Jonny, 2026-10-16 07:30 UTC: "the combos with jump are still impossible to hit"; PROTO 15): they
+  - Jump routes at human speed (Jonny, 2026-10-16 07:30 UTC: "the combos with jump are still impossible to hit"; PROTO 16): they
     only landed when Jump was pressed during the hit's freeze. A player who presses it after seeing the hit (9-15 frames later, a
     normal tap) got Rising 10-30% of the time and Skyburn 14%: the defender was back on the ground, or the full hop flew past.
     Now (1) the popped defender floats: `f.pop` = TUNE.popFloat (30) frames of hitstun at TUNE.popGrav (0.35) of the hitstun
