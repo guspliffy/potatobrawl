@@ -10,7 +10,7 @@ Read docs/WORKFLOW.md (how we work) and docs/HANDOFF.md (state, rules, next step
 - `python3 game/build.py` writes `index.html` (repo root, the deployed file), `public/` (local server) and
   `build/` (test pages). Commit the rebuilt `index.html` together with the source change.
 - `web/` manifest + icons for the home-screen app (copied into `public/` by build.py and the deploy blocks).
-- `server.js` serves `public/` + WebSocket rooms; `accounts.js` the optional sync-code accounts (off unless `ACCOUNTS_DIR` is set). `deploy/` holds the server paste blocks.
+- `server.js` serves `public/` + WebSocket rooms; `accounts.js` the optional sync-code accounts (off unless `ACCOUNTS_DIR` is set); `stats.js` the anonymous play counts and Jonny's private `/stats` page (`web/stats.html`; off unless `STATS_DIR` is set; the game side is `game/ui/counter.js`, UI only). `deploy/` holds the server paste blocks.
 - `tests/` node + Playwright checks, `experiments/` prototypes not yet in the game.
 
 ## Rules

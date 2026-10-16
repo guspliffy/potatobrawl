@@ -298,7 +298,7 @@ function renderLocker() {
   }
   pan.appendChild(grid);
 }
-function acSetTab(t) { acUI.tab = t; renderAccount(); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
+function acSetTab(t) { acUI.tab = t; renderAccount(); cntScreen(t === "s" ? "stats" : t === "l" ? "locker" : ""); if (t !== "p") { const s = document.querySelector("#scrAccount .sheet"); if (s) s.scrollTop = 0; } }
 for (const b of document.querySelectorAll(".ac-tabs .chip")) {
   b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); acSetTab(b.dataset.t); });
   b.addEventListener("keydown", (e) => {
@@ -488,7 +488,7 @@ async function acctCreate() {
   if (code && Number.isSafeInteger(r.j.rev)) {
     ACCT.avail = true;
     ACCT.code = code; ACCT.rev = r.j.rev; ACCT.base = prof; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.lastC = SYNC.canon(prof);
-    acctStore();
+    acctStore(); cnt("acct");   // cnt: ui/counter.js
     acUI.fresh = true; acUI.showCode = true; acUI.manual = ""; acMsg("");
     clearTimeout(acShowT); acShowT = setTimeout(() => { acUI.showCode = false; acUI.fresh = false; renderSync(); }, 60000);
     renderSync();

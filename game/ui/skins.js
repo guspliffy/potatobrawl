@@ -143,6 +143,7 @@ function skGo() {
   if (P.tokens < p.price || skOwns(spec.id, i)) { skRender(); return; }
   const was = P.tokens;
   P.tokens -= p.price; P.owned[spec.id] = [...(P.owned[spec.id] || [0]), i]; P.pal[spec.id] = i; saveProfile();
+  cnt("skin:" + spec.id);   // ui/counter.js
   Sfx.uiCoin();
   skCoin(was, P.tokens);
   skChanged();

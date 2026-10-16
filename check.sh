@@ -202,6 +202,25 @@ else fail "the Road in the browser" "$LOGS/road-ui.log"; fi
 if grep -q "^no errors" "$LOGS/mastery-ui.log"; then pass "fighter mastery in the browser (XP, level up, rewards, titles, Locker; shots in build/shots/mastery)"
 else fail "fighter mastery in the browser" "$LOGS/mastery-ui.log"; fi
 
+# 8g. Play counts, the server side (stats.js): known keys counted, the rest ignored, size and rate limits, the page key, day files
+#     (Europe/Berlin midnight, the write on shutdown, a restart that goes on counting), off without STATS_DIR. Node only, port 8097.
+timeout 120 node tests/stats.js > "$LOGS/stats.log" 2>&1
+if grep -q "^stats ok" "$LOGS/stats.log"; then pass "play counts server ($(grep -c '^PASS' "$LOGS/stats.log") checks)"
+else fail "play counts server" "$LOGS/stats.log"; fi
+
+# 8h. Play counts in the browser (ui/counter.js) against a real server on port 8098: a new player's first visit (tutorial skipped, a
+#     match won, Rematch, a quit, where they left), the same day again, Settings > Play counts Off / On, Global Privacy Control, a player
+#     from before the counter (a 2v2 win counts as "team"), came back after three days, an error, and a server with the counter off (one try, then silence).
+timeout 900 python3 "$ROOT/tests/pwstats.py" > "$LOGS/stats-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/stats-ui.log"; then pass "play counts in the browser (first visit, Off/On, privacy signal, returning, counter off)"
+else fail "play counts in the browser" "$LOGS/stats-ui.log"; fi
+
+# 8i. The private stats page (web/stats.html, served at /stats) with sample data at 390x844, 844x390 and 1280x800, each range, dark mode,
+#     no data, a wrong key, no key: no page errors, no sideways scroll. Shots in build/shots/stats.
+(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwstatspage.py" stats) > "$LOGS/stats-page.log" 2>&1
+if grep -q "^no errors" "$LOGS/stats-page.log"; then pass "stats page (three sizes, ranges, dark mode, empty, wrong key; shots in build/shots/stats)"
+else fail "stats page" "$LOGS/stats-page.log"; fi
+
 # 8j. Team Brawl 2v2 in the browser: Practice > VS > Team Brawl 2v2 (the Partner chip, pool-only maps), a fight with four cards on the HUD (yours,
 #     the partner's mini card, two foe cards), Focus by a tap on a foe card (Tab on a keyboard), the Finish banner only for a foe, the team
 #     rims, the forced end into the KO page and the results, a 1v1 afterwards with its two cards back; the select header and the HUD at four

@@ -1,8 +1,8 @@
 /* ===================== screens & flow ===================== */
 let mode = "menu", paused = false, G = null, match = null, attract = null, tick = 0, lastCount = 0, meSlot = 0;
 const screens = { menu: $("scrMenu"), select: $("scrSelect"), result: $("scrResult"), pause: $("scrPause"), help: $("scrHelp"), settings: $("scrSettings"), online: $("scrOnline"), cup: $("scrCup") };
-function show(name) { for (const k of ["menu", "select", "result", "online", "cup", "road"]) if (screens[k]) screens[k].hidden = k !== name; }
-function modal(name, on) { screens[name].hidden = !on; }
+function show(name) { cntScreen(name); for (const k of ["menu", "select", "result", "online", "cup", "road"]) if (screens[k]) screens[k].hidden = k !== name; }
+function modal(name, on) { screens[name].hidden = !on; if (on) cntScreen(name); }   // cntScreen: ui/counter.js (play counts)
 
 const bannerEl = $("banner"), bMain = bannerEl.querySelector(".b-main"), bSub = bannerEl.querySelector(".b-sub");
 let bannerT = 0;
@@ -288,6 +288,7 @@ function startMatch() {
   enterMatchUI();
 }
 function enterMatchUI() {
+  cntStart();   // ui/counter.js: play counts (reads the match, never the fight)
   finStop();
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)
@@ -407,6 +408,7 @@ function togglePause(force) {
 let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
+  cntEnd(forfeit);   // ui/counter.js
   if (match && match.tutorial) { tutDone(); return; }
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
@@ -524,6 +526,7 @@ function resRank(R) {
   }
 }
 function showResults(R) {
+  if (R.online) cntEnd(false, R);   // ui/counter.js (offline matches are counted in finishMatch)
   const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;

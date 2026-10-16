@@ -218,15 +218,22 @@ async def flow(b, errs):
     if vals[0] < 0.3 or max(vals) - min(vals) > 0.01: errs.append(f'{tag} glow: with reduced motion it should be steady and visible, got {vals}')
     await ctx.close()
     # ---- the KO finisher: a real final lethal hit on the player (a Hard CPU next to a player on the last life at 300%) ----
-    ctx, pg = await start(b, tag, vp, False, errs, level='Hard')
-    await pg.wait_for_function(f"{HUD}.tag === 0", timeout=30000)
-    await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[0].stocks = 1; g.fighters[0].percent = 300; }})()")
-    seen = False
-    for i in range(160):   # up to 40 s: a Hard CPU sometimes spends a while on ultis and dodges before the last hit
-        if await pg.evaluate("window.__blastline.fin.on"): seen = True; break
-        await pg.evaluate(f"(() => {{ const g = {G}, me = g.fighters[0], op = g.fighters[1]; if (me.state === 'idle' && op.state === 'idle') {{ op.x = me.x + 50; op.y = me.y; op.facing = -1; }} }})()")
-        await pg.wait_for_timeout(250)
-    if not seen: errs.append(f'{tag} finisher: the CPU never landed the final hit (test setup)')
+    # The player never moves, so a weak hit near the edge (from before the 300%, or a move with fixed knockback) can leave them
+    # falling off the stage: a fall, no finisher. So the player is put back in the middle whenever both stand, and a match that
+    # ends without the finisher is tried again with a new CPU (at most three tries).
+    for attempt in range(3):
+        ctx, pg = await start(b, tag, vp, False, errs, level='Hard')
+        await pg.wait_for_function(f"{HUD}.tag === 0", timeout=30000)
+        await pg.evaluate(f"(() => {{ const g = {G}; g.fighters[0].stocks = 1; g.fighters[0].percent = 300; }})()")
+        seen = False
+        for i in range(160):   # up to 40 s: a Hard CPU sometimes spends a while on ultis and dodges before the last hit
+            if await pg.evaluate("window.__blastline.fin.on"): seen = True; break
+            if await pg.evaluate(f"{G}.phase !== 'play'"): break   # the player fell without a final hit
+            await pg.evaluate(f"(() => {{ const g = {G}, me = g.fighters[0], op = g.fighters[1]; if (me.state === 'idle' && op.state === 'idle' && me.y === 0) {{ me.x = 0; op.x = 50; op.y = 0; op.facing = -1; }} }})()")
+            await pg.wait_for_timeout(250)
+        if seen or attempt == 2: break
+        await ctx.close()
+    if not seen: errs.append(f'{tag} finisher: the CPU never landed the final hit in three tries (test setup)')
     else:
         for _ in range(8):
             if max(await pg.evaluate(EDGE)) > 0.001: errs.append(f'{tag} glow: edges lit during the KO finisher {await pg.evaluate(EDGE)}'); break

@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-16: the Skins menu and the new Play friends lobby, UI only; before it Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: the Skins menu and the new Play friends lobby, UI only; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -19,7 +19,24 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     Host / Cancel, invite link, note) | the room (open matches with the host's portrait and JOIN / TEAM UP, HERE NOW pills, help).
     Boss chips show the short names on phones. The select opened from the lobby says "Play friends · pick your fighter" and its
     button "Use <fighter>"; back in the lobby the card pops (fightCardIn).
+  - A skin bought in the Skin Rack is counted (cnt "skin:<fighter>", ui/counter.js); the rack opens with modal(), so the stats
+    page lists it as "skins" under Screens opened.
   - Test: tests/pwskins.py (check.sh 6a). pwux2.py / pwsel.py now open the Skins bar instead of tapping #dPals.
+- Analytics counter (2026-10-15, branch claude/project-thread-zit4fr, no PROTO bump, no reload needed): anonymous play counts and
+  Jonny's private stats page. Plan doc https://claude.ai/code/artifact/83606071-fca5-4d1d-98ee-19c8b3a0325c (all defaults approved).
+  - Server: stats.js (Node only), off unless STATS_DIR exists (deploy/stats-setup.txt makes /var/lib/potatobrawl/stats, a systemd
+    drop-in, and prints the link https://potatobrawl.cloud/stats#<key>). POST /api/stats/hit {e: [keys]} adds 1 per key (a whitelist
+    of key patterns, 40 keys and 4 KB a hit, 30 hits a minute per IP in memory); one JSON of totals per day (Europe/Berlin) written
+    every 30 s and on SIGTERM; `peak` = most WebSocket clients at once (a max). POST /api/stats/data {key, from} for the page (last 120
+    days by default); GET /stats serves public/stats.html (from web/stats.html) with a strict CSP. The key lives in STATS_DIR/key.
+  - Game: ui/counter.js, right after base.js in build.py (its hooks run before later parts load). A localStorage note
+    (potatobrawl.count.v1) holds the device's first day, last day/week/month, "came back within 1/3/7/14/30 days" bits, match counts,
+    once-only flags. Keys are listed at the top of stats.js. cntMode(match) names modes (tutorial, trial, practice, ranked, daily, cup,
+    road, boss, road-boss, online, online-boss, team = Team Brawl 2v2; a new mode needs a line there). Hooks: enterMatchUI (cntStart), finishMatch and
+    showResults for online (cntEnd), a match left any other way = quit (cntDrop on the 1 s tick), show/modal (cntScreen), skGo (a skin bought in the Skin Rack),
+    rAgain, tutShow, trialClear, acctCreate, acSetTab, renderSettings (Settings > Play counts On/Off), loop.js (cntBoot). Sends only
+    on our own server (__blStandalone), never with Global Privacy Control; a 202 (the server's counts are off) or a 404 stops it for
+    the visit. Tests: tests/stats.js, tests/pwstats.py, tests/pwstatspage.py (check.sh 8g-8i).
 - Session 6 of the big-features plan, part 1 (2026-10-15, branch claude/project-thread-qtfrko, PROTO 14, players reload once): Team Brawl 2v2, you and a
   CPU partner against two CPUs, offline. Plan doc https://claude.ai/code/artifact/f4ff6904-3262-4992-9c4c-7cc8b1cee3aa, Fable's design
   /mnt/project-files/2v2/fable-2v2.md. Online 2v2 is a later session (a four-input lockstep, a lobby for four, the snapshot size).
@@ -608,6 +625,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   time, main too). Cause: Playwright's in-memory browser profiles commit localStorage lazily, so a reload can read an older
   store. Fixed 2026-10-15 (PR #37): both carry the page's storage over the reload in window.name (KEEP + reload()); a new
   test that reloads should do the same. Still seen once: pwcombo.py timed out waiting for the trial.
+- pwhud.py's KO finisher step failed every time on main on 2026-10-15: the idle player was knocked off the edge by a weak hit and
+  fell (a fall plays no finisher). It now puts the player back in the middle whenever both fighters stand and tries a new match
+  up to three times.
 - Combos/Daily leftovers: the Daily's Brutal (0.87) is still below Practice Hard (0.9); changing the device clock gives an extra
   Daily try (accepted, offline game); a player who clears all 13 routes on two devices before they sync is paid twice.
 - The big-features plan (Jonny, 2026-10-14), approved with its default decisions:
