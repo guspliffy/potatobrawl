@@ -985,7 +985,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
               <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">counts for rank</small></button>
               <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
             </div>
-            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span></div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
             <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
             <p class="qm-truth" id="qmTruth"></p>
           </div>
@@ -1045,6 +1045,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span> <span class="rs-np" id="rPlate" hidden></span></div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
+          <!-- Quick match: the record against this opponent (ui/rivals.js); upright it moves over the side column's cards -->
+          <button class="rv-strip" id="rRiv" hidden aria-label="Rivals"></button>
           <p class="res-fin" id="rFin" hidden></p>
           <p class="res-stars" id="rStars" hidden></p>
         </div>
@@ -1181,8 +1183,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
     <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>
     <i class="vs-seam" aria-hidden="true"></i><b class="vs-x" aria-hidden="true">VS</b>
-    <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span></div>
-    <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span></div>
+    <!-- the rival record and the streak bounty (ui/rivals.js): the pill under VS, a RIVAL / NEMESIS / WANTED tag, the wanted plates -->
+    <span class="vs-riv" id="vsRiv" hidden></span>
+    <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span><span class="vs-w" id="vsWL" hidden></span></div>
+    <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b><i class="tag st" id="vsTagR" hidden></i></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span><span class="vs-w" id="vsWR" hidden></span></div>
     <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
     <div class="vs-foot"><span class="livetag"><i aria-hidden="true"></i><span id="vsPing">measuring…</span></span><span class="vs-bar"><i></i></span></div>
   </div>

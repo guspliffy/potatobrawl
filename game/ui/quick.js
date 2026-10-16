@@ -39,6 +39,9 @@ function qmClean(o) {
   if (Array.isArray(o.h)) me.h = o.h.filter((x) => x && typeof x === "object").slice(0, 20).map((x) => ({
     t: Number.isFinite(x.t) ? x.t : 0, o: SYNC.cleanName(s(x.o, 40)), of: FIG[x.of] ? x.of : "", f: FIG[x.f] ? x.f : "",
     or: n(x.or, 0), res: [1, 0.5, 0].includes(x.res) ? x.res : 0, dr: Number.isInteger(x.dr) && Math.abs(x.dr) < 1000 ? x.dr : 0, why: s(x.why, 8) }));
+  // ui/rivals.js: the last 30 opponents, the Ranked win streak and its bounty, the refereed count
+  me.rv = Array.isArray(o.rv) ? o.rv.map(rvClean).filter(Boolean).slice(0, 30) : [];
+  me.ws = n(o.ws, 0); me.bty = rvBounty(me.ws); me.g = n(o.g, 0);
   return me;
 }
 const qmMe = () => (QM.me && QM.code && QM.code === ACCT.code ? QM.me : null);   // the record of the account this device is linked to
@@ -100,6 +103,7 @@ function qmMsg(m) {
   else if (m.t === "qm-found") qmFound(m);
   else if (m.t === "qm-off") qmOff(m);
   else if (m.t === "qm-res") qmRes(m);
+  else if (m.t === "qm-cs") rvCasual(m);   // ui/rivals.js: a Casual game the server played to its end
 }
 function qmGotMe(m) {
   QM.authing = false;
@@ -109,7 +113,7 @@ function qmGotMe(m) {
   } else {
     QM.authed = true; QM.acct = ""; QM.code = ACCT.code; QM.me = qmClean(m);
     let k = 0; while (k < QM.me.h.length && QM.me.h[k].res === 1) k++;
-    QM.streak = k;
+    QM.streak = Number.isInteger(m.ws) ? QM.me.ws : k;   // the server's streak (a draw keeps it)
     qmSave(); qmPendMe();
     if (qmSearching()) qmSend();
   }
@@ -156,10 +160,11 @@ async function qmFind() {
   if (!QM.conn || !NET.room) { QM.note = "Connecting to the server…"; qmRender(); return; }
   QM.st = "search"; QM.t0 = Date.now(); QM.wait = null; QM.note = ""; QM.sentF = "";
   lobbyPresence(); qmRender();
-  if (qmMode() === "r" && !ACCT.code) {
+  // the silent account, for Casual too (the referee keeps your rival record); Casual searches on without one
+  if (!ACCT.code && (qmMode() === "r" || !qmAcctOff())) {
     const ok = await qmMakeAcct();
     if (!qmSearching()) return;   // cancelled meanwhile
-    if (!ok) { qmCancel(qmAcctOff() ? "Ranked opens soon. Casual works now." : "Couldn't reach the server. Try again."); return; }
+    if (!ok && qmMode() === "r") { qmCancel(qmAcctOff() ? "Ranked opens soon. Casual works now." : "Couldn't reach the server. Try again."); return; }
   }
   qmSend();
 }
@@ -204,6 +209,7 @@ function qmFound(m) {
   const opp = m.opp;
   opp.name = SYNC.cleanName(opp.name) || "Potato";
   QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
+  rvFound(m);   // ui/rivals.js
   const me = qmMe() || QM_FRESH;
   QM.pend = m.ranked ? { id: m.id, room: m.room, n0: me.n, r0: me.r, w0: me.w, l0: me.l, d0: me.d, k0: QM.streak, dead: 0 } : null;
   Sfx.init(); qmChime();
@@ -236,6 +242,7 @@ function qmFoundBanner(m) {
   const em = document.createElement("i"); em.className = "qf-em"; em.innerHTML = tierEmblem(tierIdx(o.r)); vs.append(em);
   const t = document.createElement("span"); t.textContent = qmTierWords(o.r, o.pl >= 0 ? { n: o.pl } : null, !o.id); vs.append(t);
   const st = document.createElement("span"); st.className = "tag st " + (m.ranked ? "gold" : "sky"); st.textContent = m.ranked ? "Ranked" : "Casual"; vs.append(st);
+  rvFoundLine(vs, m);   // ui/rivals.js: · WANTED 40
   $("qfN").textContent = "3";
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   QM.fdT = performance.now();
@@ -277,6 +284,7 @@ function qmVs(m) {
   $("vsStamp").className = "vs-st " + (m.ranked ? "rk" : "cs");
   $("vsFb").hidden = !m.fb; $("vsWhy").hidden = m.ranked;
   $("vsPing").textContent = `measuring… · ${mapName(m.seed % BL.POOL)}`;
+  rvVs(m);   // ui/rivals.js: the record, the tags, the wanted plates
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   QM.vsT = performance.now(); QM.vsN++;
   Sfx.tone(120, 40, 0.35, "sine", 0.5); Sfx.noise(0.2, 0.3, 900);
@@ -331,6 +339,7 @@ function qmFinish(left, lost) {
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
+  if (q.ranked) rvFinishLines(R, q);   // ui/rivals.js: a bounty the verdict already brought, shown only (the server pays it)
   if (lost || left || q.ranked) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked has no rematch: the room goes
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   QM.st = "idle";
@@ -363,6 +372,7 @@ function qmResults(R) {
   }
   const q = R.qm;
   $("rMode").textContent = `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
+  rvResults(R);   // ui/rivals.js: the record now, the rival strip
   if (q.ranked) {
     $("rAgain").querySelector("span").textContent = "Next match"; $("rAgain").disabled = false;
     $("rChange").querySelector("span").textContent = "Quick match";
@@ -401,6 +411,7 @@ function qmVerdictView(late) {
     const me = qmMe() || QM_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r); rt.textContent = ""; rt.append(b, " · unchanged");
     $("rPromo").textContent = ""; resTitle("No result"); look("draw");
     resLine($("rSub"), ["The server lost this match. Nobody's rank changes."]);
+    rvVerdict(late);
     return;
   }
   if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
@@ -420,11 +431,13 @@ function qmVerdictView(late) {
     resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
     resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
   }
+  rvVerdict(late);   // ui/rivals.js, after the story line: the record as the server has it, a bounty taken or lost
 }
 // a verdict: the online record moves (the copy on this device too), the results on screen show it
 function qmRes(m) {
   if (!m || typeof m.id !== "string" || QM.applied.includes(m.id)) return;
   QM.applied.push(m.id); if (QM.applied.length > 8) QM.applied.shift();
+  rvRanked(m);   // ui/rivals.js: the record, the streak, a bounty paid into the account
   const f = QM.found && QM.found.id === m.id ? QM.found : null;
   if (m.res !== null && Number.isInteger(m.r1) && Number.isInteger(m.n)) {
     const me = Object.assign({}, qmMe() || QM_FRESH);
@@ -432,7 +445,7 @@ function qmRes(m) {
     const mine = f && f.role === "guest" ? 1 : 0;
     me.h = [{ t: Date.now(), o: f ? f.opp.name : "", of: f ? f.f[1 - mine] : "", f: f ? f.f[mine] : "", or: f && Number.isInteger(f.opp.r) ? f.opp.r : 0, res: m.res, dr: m.dr | 0, why: m.why }, ...me.h].slice(0, 20);
     QM.me = me; QM.code = ACCT.code;
-    if (m.res === 1) QM.streak++; else if (m.res === 0) QM.streak = 0;
+    if (Number.isInteger(m.ws)) QM.streak = m.ws; else if (m.res === 1) QM.streak++; else if (m.res === 0) QM.streak = 0;
     qmSave();
     if (f) {   // the per-fighter record (Account > Stats) counts Ranked matches, online ones too
       const fs = P.fstats[f.f[mine]] || (P.fstats[f.f[mine]] = { w: 0, l: 0, d: 0 });
@@ -598,6 +611,7 @@ function qmPlate() {
   $("qmRating").textContent = placing ? `${rk.n} of ${QM_PLACING} played · ${rk.r}` : `${rk.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;
   $("qmBar").style.setProperty("--p", placing ? rk.n / QM_PLACING : ti.p);
   $("qmRec").textContent = `${rk.w}W · ${rk.l}L\nSeason 1`;
+  rvPlate();   // ui/rivals.js: on a streak, WANTED and the bounty
 }
 // LAST FIVE: your last Ranked results (W / L / D, who, their fighter, the rating change)
 function qmLast() {
@@ -653,6 +667,7 @@ function qmHero() {
   hero.querySelector(".mm-ttl").textContent = "Quick match";
   $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? `${lb.n} online` : "Offline"} · ${md === "r" ? `Ranked · ${placing ? "Placing" : `${ti.t.name} ${rk.r}`}` : "Casual"}`;
   $("mRec").textContent = (md === "c" ? (qmAcctOff() ? ["Ranked opens soon"] : ["Casual", "no rank change"])
+    : (qmMe() || QM_FRESH).bty ? [`${qmMe().ws} win streak`, `${qmMe().bty} bounty on you`]
     : placing ? [`Placing`, `${rk.n} of ${QM_PLACING}`] : [`${rk.w}W`, `${rk.l}L`, ti.next ? `${ti.need} to ${ti.next.name}` : "top tier"]).map((t) => t.replace(/ /g, " ")).join(" · ");
   let s1 = hero.querySelector(".qm-s1");
   if (!s1) { s1 = document.createElement("span"); s1.className = "tag ember qm-s1"; s1.textContent = "Season 1"; hero.appendChild(s1); }
