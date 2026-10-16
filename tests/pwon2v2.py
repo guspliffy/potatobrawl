@@ -5,7 +5,8 @@
 # host's copy in pieces, Victory with the CPUs' chips line, Rematch on both (the ready line), a Defeat, Board on both. Then four friends:
 # two more join from the list (Switch side, Ice is full, START glows, a fifth sees "full"), a desync forced on one phone repaired on all
 # four, a friend's page closing (a CPU on every phone from the same frame, all still in step, the drop banner), a CPU partner's Focus
-# applied on every phone at the same frame, the host's page closing (the next friend takes over as the lead), the results with friends
+# applied on every phone at the same frame, the host's page closing (the next friend takes over as the lead), both closings with the
+# lead missing the leaver's last messages (the others played further with them: no repair may be needed), the results with friends
 # among the foes and a Rematch of the two still here with CPUs in the empty seats. Last, the board at four sizes. Prints "on2v2 ok" and
 # "no errors".
 #   python3 pwon2v2.py [outdir]     (a server must listen on ON2V2_URL, default http://localhost:8099/)
@@ -69,6 +70,17 @@ async def in_step(pages, after, what):
         common = [k for k in cks[0] if k > after and all(k in c for c in cks)]
         if len(common) >= 2: break
     return need(len(common) >= 2 and all(len(set(c[k] for c in cks)) == 1 for k in common), f'{what}: the phones are not in step (frames {common}, after {after})')
+async def deaf(lead, s, pages, what):
+    """the lead stops hearing seat s (as when that friend's last messages and the leave come in together, and the leave wins); returns the
+    frames the other phones reach once they played past the end of the lead's copy of s's inputs, with s's own inputs"""
+    await lead.evaluate(f"window.__blDeaf = {s}")
+    for _ in range(60):
+        await lead.wait_for_timeout(250)
+        end = await lead.evaluate(f"(() => {{ let E = {N}.frame; while ({T}.logs[{s}][E] !== undefined) E++; return E; }})()")
+        frs = [await pg.evaluate(f"{N}.frame") for pg in pages]
+        if min(frs) > end: return frs
+    errs.append(f'{what}: the other phones did not play past the lead\'s copy of the inputs (theirs {frs}, the lead\'s ends at {end})')
+    return frs
 async def end(pages, losers):
     """the same frame on every phone: the losing team's two fighters on their last heart, far past the blast line"""
     fr = await frame(pages) + 60
@@ -221,11 +233,16 @@ async def main():
         await C.screenshot(path=f'{OUT}/match4_C_667.png')
         await desync(A, C, ALL, 'four phones')
         dn = [await pg.evaluate(f"{N}.desyncs") for pg in (D, B)]   # from here on the drops must keep the phones in step without a repair
-        # ----- a friend's page closes: a CPU from the same frame on every phone, all still in step
+        # ----- a friend's page closes: a CPU from the same frame on every phone, all still in step. The lead misses the friend's last
+        # messages first (a last message and the leave that come in together), so the other phones hold more of the friend's inputs
+        # and play further with them: the handover must come after all of those, not where the lead's own copy ends
+        played = await deaf(A, 2, [D, B], 'the friend\'s page')
         await C.goto('about:blank'); await cc.close()
         for pg in (A, D, B): await wait(pg, f"{T}.cpuFrom[2] !== undefined", 'no CPU took over the seat of the friend who left', 30000)
+        await A.evaluate("delete window.__blDeaf")
         cf = [await pg.evaluate(f"{T}.cpuFrom[2]") for pg in (A, D, B)]
         need(len(set(cf)) == 1, f'the phones hand the seat over at different frames: {cf}')
+        need(cf[0] >= max(played), f'the seat went to a CPU from frame {cf[0]}, but phones had played up to {played} with the friend\'s own inputs')
         need('dropped' in (await txt(A, '#banner')).lower() or 'dropped' in (await txt(B, '#banner')).lower(), f"drop banner {await txt(A, '#banner')!r}")
         await B.screenshot(path=f'{OUT}/dropped_B.png')
         need(await B.evaluate("document.querySelector('#pc1 .pc-tag').textContent") == 'CPU' and await B.evaluate("document.querySelector('#pc1 .pc-sub .nm').textContent") == 'Mash',
@@ -236,11 +253,15 @@ async def main():
         for pg in (A, D, B): await wait(pg, f"{T}.bots[2] && {T}.bots[2].focus === 0 && {T}.bots[2].focusT > {G}.t", "the CPU partner's Focus did not land on every phone", 15000)
         ft = [await pg.evaluate(f"{T}.bots[2].focusT") for pg in (A, D, B)]
         need(len(set(ft)) == 1, f'the Focus landed at different frames: {ft}')
-        # ----- the host's page closes: the next friend leads, hands the host's seat to a CPU, and both phones stay in step
+        # ----- the host's page closes: the next friend leads, hands the host's seat to a CPU, and both phones stay in step (the next
+        # lead misses the host's last messages, as above)
+        played = await deaf(D, 0, [B], 'the host\'s page')
         await A.goto('about:blank'); await ca.close()
         for pg in (D, B): await wait(pg, f"{T}.cpuFrom[0] !== undefined", 'no CPU took over the host\'s seat', 30000)
+        await D.evaluate("delete window.__blDeaf")
         cf0 = [await pg.evaluate(f"{T}.cpuFrom[0]") for pg in (D, B)]
         need(len(set(cf0)) == 1, f'the host\'s seat went to a CPU at different frames: {cf0}')
+        need(cf0[0] >= max(played), f'the host\'s seat went to a CPU from frame {cf0[0]}, but a phone had played up to {played} with the host\'s own inputs')
         need(await D.evaluate(f"{T}.cl.length") >= 1 and await D.evaluate(f"{T}.cl.some((c) => c[0] === 0)"), 'the claim did not come from the next friend (seat 1)')
         await in_step([D, B], cf0[0], 'after the host left')
         # ----- the end with friends among the foes; a Rematch of the two still here, CPUs in the other seats
