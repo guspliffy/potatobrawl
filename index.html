@@ -3819,6 +3819,109 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 9px; }
 }
 
+/* ===== Rival record and streak bounty (ui/rivals.js; Fable's design: rival-stakes/fable-design.md) =====
+   One rule: chips the game pays wear an ember sticker (WANTED, BOUNTY). The record is mint when you lead, ketchup when they do. */
+:root { --rv-chip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%230e1022' stroke-width='2'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E"); }
+.rv-cg { display: inline-block; flex: none; width: 1.15em; height: 0.95em; background: var(--rv-chip) center / contain no-repeat; vertical-align: -0.1em; }
+.dots { display: inline-flex; flex: none; gap: 4px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 1.5px rgba(14, 16, 34, 0.9); }
+.dots i.l { background: var(--ketchup); }
+.dots i.d { background: var(--mute); }
+
+/* PLAYER FOUND!: "· WANTED 40" after the mode tag */
+#qmFound .qf-want { display: inline-flex; align-items: center; gap: 4px; color: var(--ember); white-space: nowrap; }
+#qmFound .qf-want::before { content: "·"; margin-right: 4px; color: var(--mute); }
+#qmFound .qf-want .rv-cg { margin-left: 2px; }
+
+/* the VS screen: the record on a pill under the VS sticker, the tag on their nameplate, the wanted plate under a streaker's tier */
+#qmVs .vs-riv { position: absolute; z-index: 3; left: 50%; top: calc(50% + 50px); transform: translateX(-50%); display: inline-flex; align-items: center; height: 28px; max-width: 46%;
+  padding: 0 12px; border-radius: 7px; background: rgba(14, 16, 34, 0.92); border: 1.5px solid rgba(206, 210, 255, 0.24); font: 800 13px/1 var(--display); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#qmVs .vs-riv.up { color: var(--mint); }
+#qmVs .vs-riv.down { color: #ff9a8f; }
+#qmVs .vs-riv[hidden], #qmVs .vs-w[hidden], #qmVs .vs-pl .tag[hidden] { display: none; }
+#qmVs .vs-pl { display: inline-flex; align-items: center; gap: 8px; }
+#qmVs .vs-pl b { min-width: 0; }
+#qmVs .vs-pl .tag.st { flex: none; margin: -3px -4px -3px 0; padding: 4px 6px 3px; font-size: 10px; transform: skewX(12deg) rotate(-3deg); }
+#qmVs .vs-w { display: inline-flex; align-items: center; gap: 9px; height: 32px; padding: 0 10px 0 6px; border: 2px solid var(--ember); border-radius: 8px; background: rgba(14, 16, 34, 0.9);
+  font: 800 13px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); white-space: nowrap; box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.6); }
+#qmVs .vs-w .tag.st { padding: 4px 6px 3px; font-size: 10px; transform: rotate(-3deg); }
+#qmVs .vs-w .bty { display: inline-flex; align-items: center; gap: 4px; color: var(--gold); font-size: 15px; font-variant-numeric: tabular-nums; }
+#qmVs.in .vs-riv { animation: rvFade 0.3s 0.5s both; }
+#qmVs.in .vs-w { animation: rvStamp 0.3s 0.55s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+@keyframes rvFade { from { opacity: 0; } }
+@keyframes rvStamp { from { transform: scale(1.5) rotate(-4deg); opacity: 0; } }
+#app.tiny #qmVs .vs-riv { top: calc(50% + 40px); height: 24px; font-size: 11.5px; }
+#app.tiny #qmVs .vs-w { height: 28px; font-size: 11.5px; }
+#app:not(.short):not(.portrait) #qmVs .vs-riv { top: calc(50% + 68px); height: 34px; font-size: 16px; }
+#app:not(.short):not(.portrait) #qmVs .vs-w { height: 40px; font-size: 16px; }
+#app:not(.short):not(.portrait) #qmVs .vs-w .bty { font-size: 19px; }
+#app.portrait #qmVs .vs-riv { top: calc(50% + 46px); max-width: calc(100% - 48px); }
+
+/* the results: the story line's record and the rival strip (their portrait, the record, the last five); the bounty sticker on the chips */
+#resSheet .rv-strip { display: inline-flex; align-items: center; gap: 9px; max-width: 100%; height: 34px; margin-top: 6px; padding: 0 12px 0 4px; border: 2px solid var(--ink); border-radius: 9px;
+  background: rgba(14, 16, 34, 0.78); box-shadow: 0 2px 0 var(--ink); font: 800 13px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text);
+  white-space: nowrap; cursor: pointer; pointer-events: auto; }
+#resSheet .rv-strip[hidden] { display: none; }
+#resSheet .rv-strip .av { --d: 26px; flex: none; border-width: 2px; box-shadow: none; }
+#resSheet .rv-strip .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .rv-strip .sep { flex: none; width: 1px; height: 16px; background: rgba(206, 210, 255, 0.2); }
+#resSheet .rv-strip .rec { flex: none; font-size: 15px; color: var(--mute); }
+#resSheet .rv-strip .rec.up { color: var(--mint); }
+#resSheet .rv-strip .rec.down { color: var(--ketchup); }
+#resSheet .rv-strip.tight .nm, #resSheet .rv-strip.tight .sep { display: none; }
+#resSheet .rv-strip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#resSheet .res-side > .rv-strip { flex: none; align-self: stretch; height: 40px; margin: 0; padding-right: 14px; background: linear-gradient(180deg, #2b3058, #1b1f3d);
+  box-shadow: 0 4px 0 var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.22); font-size: 13.5px; }
+#resSheet .res-side > .rv-strip .av { --d: 30px; }
+#resSheet .stat.chips { position: relative; }
+#resSheet .stat.chips .rv-bty { position: absolute; right: -6px; top: -9px; padding: 4px 7px 3px; font-size: 10px; transform: rotate(4deg); animation: rvStamp 0.3s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+#app.tiny #resSheet .rv-strip { height: 28px; margin-top: 3px; font-size: 11.5px; }
+#app.tiny #resSheet .rv-strip .av { --d: 22px; }
+#app.tiny #resSheet .rv-strip .rec { font-size: 13px; }
+#app:not(.short):not(.portrait) #resSheet .rv-strip { height: 42px; font-size: 16px; }
+#app:not(.short):not(.portrait) #resSheet .rv-strip .av { --d: 32px; }
+#app:not(.short):not(.portrait) #resSheet .rv-strip .rec { font-size: 18px; }
+
+/* the Quick match rank plate on a streak: the WANTED sticker on its corner, the streak and the bounty for the record */
+#scrQuick .qm-rk { position: relative; }
+#scrQuick .qm-rk .rv-want { position: absolute; right: -6px; top: -10px; padding: 4px 7px 3px; font-size: 10px; transform: rotate(4deg); }
+#scrQuick .qm-rk .rv-want[hidden] { display: none; }
+#scrQuick .qm-rk.wanted { border-color: var(--ember); }
+#scrQuick .qm-rk.wanted .qm-rec { color: var(--sand); }
+
+/* Account > Stats: the Rivals list, your last 30 opponents, most games first */
+.rv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 2px 0 8px; }
+.rv-head .kicker { margin: 0; }
+.rv-head span { font: 500 12.5px/1.2 var(--body); color: var(--mute); }
+.rv-list { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.rv-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto 82px; gap: 12px; align-items: center; min-height: 52px; padding: 4px 10px 4px 8px; border: 2px solid var(--ink);
+  border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.22); }
+.rv-row .av { --d: 38px; }
+.rv-row .who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rv-row .who b { display: flex; align-items: center; gap: 8px; min-width: 0; font: 800 15px/1.05 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+.rv-row .who b .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rv-row .who b .tag.st { flex: none; padding: 4px 6px 3px; font-size: 10px; transform: rotate(-3deg); }
+.rv-row .who > span { font: 500 12px/1.2 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-row .who > span i { font-style: normal; color: var(--tc, #c9d0e4); }
+.rv-row .dots i { width: 9px; height: 9px; }
+.rv-row .rec { min-width: 54px; text-align: right; font: italic 900 28px/1 var(--display); font-variant-numeric: tabular-nums; color: #c9d0e4; -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+.rv-row .rec.up { color: var(--mint); }
+.rv-row .rec.down { color: var(--ketchup); }
+.rv-row .last { font: 700 10.5px/1.3 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sand); text-align: right; white-space: nowrap; }
+.rv-row .last small { display: block; color: var(--mute); letter-spacing: 0.08em; font-size: inherit; }
+#app.narrow .rv-row { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; }
+#app.narrow .rv-row .av { --d: 32px; }
+#app.narrow .rv-row > .dots, #app.narrow .rv-row .last { display: none; }
+#app.narrow .rv-row .rec { font-size: 24px; }
+.rv-row .who .sub2 { display: none; }
+#app.narrow .rv-row .who .sub2 { display: flex; align-items: center; gap: 8px; font: 700 10.5px/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sand); }
+
+@media (prefers-reduced-motion: reduce) {
+  #qmVs.in .vs-riv, #qmVs.in .vs-w, #resSheet .stat.chips .rv-bty { animation: none; }
+}
+
 </style>
 
 </head><body><div id="app">
@@ -4106,7 +4209,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
               <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
               <button id="qmV" role="radio" aria-checked="false"><b>VS CPU</b><small id="qmVSub">CPU rank</small></button>
             </div>
-            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span></div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
             <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
             <p class="qm-truth" id="qmTruth"></p>
           </div>
@@ -4189,6 +4292,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="kick res-kick"><span id="rMode">Ranked match</span><span id="rWho"></span> <span class="rs-np" id="rPlate" hidden></span></div>
           <h2 id="rTitle">Victory</h2>
           <p class="res-sub" id="rSub"></p>
+          <!-- Quick match: the record against this opponent (ui/rivals.js); upright it moves over the side column's cards -->
+          <button class="rv-strip" id="rRiv" hidden aria-label="Rivals"></button>
           <p class="res-fin" id="rFin" hidden></p>
           <p class="res-stars" id="rStars" hidden></p>
         </div>
@@ -4325,8 +4430,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
     <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>
     <i class="vs-seam" aria-hidden="true"></i><b class="vs-x" aria-hidden="true">VS</b>
-    <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span></div>
-    <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span></div>
+    <!-- the rival record and the streak bounty (ui/rivals.js): the pill under VS, a RIVAL / NEMESIS / WANTED tag, the wanted plates -->
+    <span class="vs-riv" id="vsRiv" hidden></span>
+    <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span><span class="vs-w" id="vsWL" hidden></span></div>
+    <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b><i class="tag st" id="vsTagR" hidden></i></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span><span class="vs-w" id="vsWR" hidden></span></div>
     <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
     <div class="vs-foot"><span class="livetag"><i aria-hidden="true"></i><span id="vsPing">measuring…</span></span><span class="vs-bar"><i></i></span></div>
   </div>
@@ -7750,6 +7857,7 @@ function resize() {
   L.panel = L.portrait && mode === "match" && touchUI && !finFull ? Math.round(clamp(H * 0.36, 200, 300)) : 0;
   L.gw = W; L.gh = H - L.panel;
   app.classList.toggle("portrait", L.portrait);
+  if (mode === "result") rvPlace();   // ui/rivals.js: the rival strip moves with the layout
   app.style.setProperty("--panelH", L.panel + "px");
   app.style.setProperty("--uh", H / 100 + "px");
   app.style.setProperty("--um", Math.min(W, H) / 100 + "px");
@@ -26969,6 +27077,7 @@ function resOpen(look, spec, solo) {
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
+  rvClear();   // ui/rivals.js
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -32305,6 +32414,7 @@ function acFav() {   // the fighter with the most counted matches (ties: the ear
 }
 function renderStats() {
   const pan = $("acPanS"); pan.innerHTML = "";
+  rvStats(pan);   // ui/rivals.js: the Rivals list on top (Quick match on our server)
   const st = acFstats(), fav = acFav();
   if (rankView().online && (P.matches | 0) > 0) { const ti = tierInfo(P.rating | 0); pan.appendChild(acMk("p", "ac-line", `Your CPU rank (before Season 1): ${ti.t.name} ${P.rating | 0} · best ${Math.max(P.peak | 0, P.rating | 0)} · ${P.wins | 0}W ${P.losses | 0}L. Ranked is online now.`)); }   // ui/quick.js
   pan.appendChild(acMk("p", "ac-line", P.fsince ? `Per-fighter records count ranked matches since ${acDate(P.fsince)}. Friend and cup matches are not counted.` : "Per-fighter records start with your next ranked match. Friend and cup matches are not counted."));
@@ -32797,6 +32907,9 @@ function qmClean(o) {
   if (Array.isArray(o.h)) me.h = o.h.filter((x) => x && typeof x === "object").slice(0, 20).map((x) => ({
     t: Number.isFinite(x.t) ? x.t : 0, o: SYNC.cleanName(s(x.o, 40)), of: FIG[x.of] ? x.of : "", f: FIG[x.f] ? x.f : "",
     or: n(x.or, 0), res: [1, 0.5, 0].includes(x.res) ? x.res : 0, dr: Number.isInteger(x.dr) && Math.abs(x.dr) < 1000 ? x.dr : 0, why: s(x.why, 8) }));
+  // ui/rivals.js: the last 30 opponents, the Ranked win streak and its bounty, the refereed count
+  me.rv = Array.isArray(o.rv) ? o.rv.map(rvClean).filter(Boolean).slice(0, 30) : [];
+  me.ws = n(o.ws, 0); me.bty = rvBounty(me.ws); me.g = n(o.g, 0);
   return me;
 }
 const qmMe = () => (QM.me && QM.code && QM.code === ACCT.code ? QM.me : null);   // the record of the account this device is linked to
@@ -32860,6 +32973,7 @@ function qmMsg(m) {
   else if (m.t === "qm-found") qmFound(m);
   else if (m.t === "qm-off") qmOff(m);
   else if (m.t === "qm-res") qmRes(m);
+  else if (m.t === "qm-cs") rvCasual(m);   // ui/rivals.js: a Casual game the server played to its end
 }
 function qmGotMe(m) {
   QM.authing = false;
@@ -32869,7 +32983,7 @@ function qmGotMe(m) {
   } else {
     QM.authed = true; QM.acct = ""; QM.code = ACCT.code; QM.me = qmClean(m);
     let k = 0; while (k < QM.me.h.length && QM.me.h[k].res === 1) k++;
-    QM.streak = k;
+    QM.streak = Number.isInteger(m.ws) ? QM.me.ws : k;   // the server's streak (a draw keeps it)
     qmSave(); qmPendMe();
     if (qmSearching()) qmSend();
   }
@@ -32916,10 +33030,11 @@ async function qmFind() {
   if (!QM.conn || !NET.room) { QM.note = "Connecting to the server…"; qmRender(); return; }
   QM.st = "search"; QM.t0 = Date.now(); QM.wait = null; QM.note = ""; QM.sentF = "";
   lobbyPresence(); qmRender();
-  if (qmMode() === "r" && !ACCT.code) {
+  // the silent account, for Casual too (the referee keeps your rival record); Casual searches on without one
+  if (!ACCT.code && (qmMode() === "r" || !qmAcctOff())) {
     const ok = await qmMakeAcct();
     if (!qmSearching()) return;   // cancelled meanwhile
-    if (!ok) { qmCancel(qmAcctOff() ? "Ranked opens soon. Casual works now." : "Couldn't reach the server. Try again."); return; }
+    if (!ok && qmMode() === "r") { qmCancel(qmAcctOff() ? "Ranked opens soon. Casual works now." : "Couldn't reach the server. Try again."); return; }
   }
   qmSend();
 }
@@ -32964,6 +33079,7 @@ function qmFound(m) {
   const opp = m.opp;
   opp.name = SYNC.cleanName(opp.name) || "Potato";
   QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
+  rvFound(m);   // ui/rivals.js
   const me = qmMe() || QM_FRESH;
   QM.pend = m.ranked ? { id: m.id, room: m.room, n0: me.n, r0: me.r, w0: me.w, l0: me.l, d0: me.d, k0: QM.streak, dead: 0 } : null;
   Sfx.init(); qmChime();
@@ -32996,6 +33112,7 @@ function qmFoundBanner(m) {
   const em = document.createElement("i"); em.className = "qf-em"; em.innerHTML = tierEmblem(tierIdx(o.r)); vs.append(em);
   const t = document.createElement("span"); t.textContent = qmTierWords(o.r, o.pl >= 0 ? { n: o.pl } : null, !o.id); vs.append(t);
   const st = document.createElement("span"); st.className = "tag st " + (m.ranked ? "gold" : "sky"); st.textContent = m.ranked ? "Ranked" : "Casual"; vs.append(st);
+  rvFoundLine(vs, m);   // ui/rivals.js: · WANTED 40
   $("qfN").textContent = "3";
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   QM.fdT = performance.now();
@@ -33037,6 +33154,7 @@ function qmVs(m) {
   $("vsStamp").className = "vs-st " + (m.ranked ? "rk" : "cs");
   $("vsFb").hidden = !m.fb; $("vsWhy").hidden = m.ranked;
   $("vsPing").textContent = `measuring… · ${mapName(m.seed % BL.POOL)}`;
+  rvVs(m);   // ui/rivals.js: the record, the tags, the wanted plates
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   QM.vsT = performance.now(); QM.vsN++;
   Sfx.tone(120, 40, 0.35, "sine", 0.5); Sfx.noise(0.2, 0.3, 900);
@@ -33091,6 +33209,7 @@ function qmFinish(left, lost) {
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
+  if (q.ranked) rvFinishLines(R, q);   // ui/rivals.js: a bounty the verdict already brought, shown only (the server pays it)
   if (lost || left || q.ranked) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked has no rematch: the room goes
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   QM.st = "idle";
@@ -33125,6 +33244,7 @@ function qmResults(R) {
   }
   const q = R.qm;
   $("rMode").textContent = `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
+  rvResults(R);   // ui/rivals.js: the record now, the rival strip
   if (q.ranked) {
     $("rAgain").querySelector("span").textContent = "Next match"; $("rAgain").disabled = false;
     $("rChange").querySelector("span").textContent = "Quick match";
@@ -33163,6 +33283,7 @@ function qmVerdictView(late) {
     const me = qmMe() || QM_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r); rt.textContent = ""; rt.append(b, " · unchanged");
     $("rPromo").textContent = ""; resTitle("No result"); look("draw");
     resLine($("rSub"), ["The server lost this match. Nobody's rank changes."]);
+    rvVerdict(late);
     return;
   }
   if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
@@ -33183,11 +33304,13 @@ function qmVerdictView(late) {
     resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
     resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
   }
+  rvVerdict(late);   // ui/rivals.js, after the story line: the record as the server has it, a bounty taken or lost
 }
 // a verdict: the online record moves (the copy on this device too), the results on screen show it
 function qmRes(m) {
   if (!m || typeof m.id !== "string" || QM.applied.includes(m.id)) return;
   QM.applied.push(m.id); if (QM.applied.length > 8) QM.applied.shift();
+  rvRanked(m);   // ui/rivals.js: the record, the streak, a bounty paid into the account
   const f = QM.found && QM.found.id === m.id ? QM.found : null;
   if (m.res !== null && Number.isInteger(m.r1) && Number.isInteger(m.n)) {
     const me = Object.assign({}, qmMe() || QM_FRESH);
@@ -33195,7 +33318,7 @@ function qmRes(m) {
     const mine = f && f.role === "guest" ? 1 : 0;
     me.h = [{ t: Date.now(), o: f ? f.opp.name : "", of: f ? f.f[1 - mine] : "", f: f ? f.f[mine] : "", or: f && Number.isInteger(f.opp.r) ? f.opp.r : 0, res: m.res, dr: m.dr | 0, why: m.why }, ...me.h].slice(0, 20);
     QM.me = me; QM.code = ACCT.code;
-    if (m.res === 1) QM.streak++; else if (m.res === 0) QM.streak = 0;
+    if (Number.isInteger(m.ws)) QM.streak = m.ws; else if (m.res === 1) QM.streak++; else if (m.res === 0) QM.streak = 0;
     qmSave();
     if (f) {   // the per-fighter record (Account > Stats) counts Ranked matches, online ones too
       const fs = P.fstats[f.f[mine]] || (P.fstats[f.f[mine]] = { w: 0, l: 0, d: 0 });
@@ -33366,6 +33489,7 @@ function qmPlate() {
   $("qmRating").textContent = placing ? `${rk.n} of ${QM_PLACING} played · ${rk.r}` : `${rk.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;
   $("qmBar").style.setProperty("--p", placing ? rk.n / QM_PLACING : ti.p);
   $("qmRec").textContent = `${rk.w}W · ${rk.l}L\nSeason 1`;
+  rvPlate();   // ui/rivals.js: on a streak, WANTED and the bounty
 }
 // LAST FIVE: your last Ranked results (W / L / D, who, their fighter, the rating change)
 function qmLast() {
@@ -33422,6 +33546,7 @@ function qmHero() {
   const vh = QM.mode === "v" ? vcHero() : null;   // ui/vscpu.js: VS CPU and your CPU rank
   $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? `${lb.n} online` : "Offline"} · ${vh ? vh[0] : md === "r" ? `Ranked · ${placing ? "Placing" : `${ti.t.name} ${rk.r}`}` : "Casual"}`;
   $("mRec").textContent = vh ? vh[1].replace(/ /g, " ") : (md === "c" ? (qmAcctOff() ? ["Ranked opens soon"] : ["Casual", "no rank change"])
+    : (qmMe() || QM_FRESH).bty ? [`${qmMe().ws} win streak`, `${qmMe().bty} bounty on you`]
     : placing ? [`Placing`, `${rk.n} of ${QM_PLACING}`] : [`${rk.w}W`, `${rk.l}L`, ti.next ? `${ti.need} to ${ti.next.name}` : "top tier"]).map((t) => t.replace(/ /g, " ")).join(" · ");
   let s1 = hero.querySelector(".qm-s1");
   if (!s1) { s1 = document.createElement("span"); s1.className = "tag ember qm-s1"; s1.textContent = "Season 1"; hero.appendChild(s1); }
@@ -33478,6 +33603,212 @@ tap("qmWarm", qmWarmStart);
 tap("rQmX", () => { qmCancel(); $("rChange").querySelector("span").textContent = "Quick match"; $("rMenuSub").textContent = ""; });
 tap("ssGo", qmSeasonDone);
 tap("ssClose", qmSeasonDone);
+
+/* ===================== Rival record and streak bounty (the server side is quick.js) =====================
+   The server plays every Ranked match and every Casual game between two accounts and keeps your last 30 opponents with your record
+   against each (`on`.rv, sent in `me`, qm-res and qm-cs), and your Ranked win streak (`on`.ws). Three Ranked wins in a row put a bounty
+   on you: 30 chips, +10 a win, 100 at most; whoever ends the streak takes it, once per pair a day. The server pays it into the
+   hunter's account file, so this page never adds it to P.tokens (the next sync brings it; adding it here would pay it twice).
+   Shown on PLAYER FOUND!, the VS screen (the record under VS, a RIVAL / NEMESIS / WANTED tag, the wanted plate), the results (the
+   story line, the rival strip, the BOUNTY sticker on the chips), the Quick match rank plate and Account > Stats (the Rivals list).
+   Fable's design: rival-stakes/fable-design.md. Styles: css/97-rivals.css. */
+const RV_TAGS = { rival: ["gold", "Rival"], nemesis: ["red", "Nemesis"], wanted: ["ember", "Wanted"] };
+const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0 };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to
+const rvN = (e) => e.w + e.l + e.d;
+const rvBounty = (ws) => (ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10));   // quick.js bounty()
+// one opponent from the server, cleaned (qmClean keeps the list)
+function rvClean(x) {
+  if (!x || typeof x !== "object" || typeof x.id !== "string" || !/^[0-9A-Z]{10}$/.test(x.id)) return null;
+  const n = (v) => (Number.isInteger(v) && v >= 0 && v < 1e6 ? v : 0);
+  return { id: x.id, nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm.slice(0, 40) : "") || "Potato", f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), d: n(x.d),
+    t: Number.isFinite(x.t) ? x.t : 0, k: typeof x.k === "string" ? x.k.replace(/[^WLD]/g, "").slice(0, 5) : "" };
+}
+const rvList = () => { const me = qmMe(); return me && Array.isArray(me.rv) ? me.rv : []; };
+// "You lead 3–1", "Mash Master leads 3–1", "Tied 2–2" (draws after a dot), and its colour
+function rvWords(e, name) {
+  if (!e || !rvN(e)) return { t: "First meeting", c: "" };
+  const d = e.d ? ` · ${e.d} draw${e.d > 1 ? "s" : ""}` : "";
+  return e.w > e.l ? { t: `You lead ${e.w}–${e.l}${d}`, c: "up" } : e.w < e.l ? { t: `${name} leads ${e.l}–${e.w}${d}`, c: "down" } : { t: `Tied ${e.w}–${e.l}${d}`, c: "" };
+}
+// one tag a rival can wear: NEMESIS (leads you by 3 or more after 4+ games), else RIVAL (your most played, 5+ games)
+function rvTag(e, list) {
+  if (!e) return "";
+  if (rvN(e) >= 4 && e.l - e.w >= 3) return "nemesis";
+  if (rvN(e) < 5) return "";
+  let top = e;
+  for (const x of list) if (rvN(x) > rvN(top)) top = x;
+  return top === e || top.id === e.id ? "rival" : "";
+}
+function rvTagEl(tag) { const [c, t] = RV_TAGS[tag]; return acMk("i", `tag st ${c}`, t); }
+// the last five, oldest first (k holds them newest first)
+function rvDots(k) { const s = acMk("span", "dots"); s.setAttribute("aria-hidden", "true"); for (const ch of [...k].reverse()) s.appendChild(acMk("i", ch === "L" ? "l" : ch === "D" ? "d" : "")); return s; }
+function rvCg() { const i = acMk("i", "rv-cg"); i.setAttribute("aria-hidden", "true"); return i; }
+
+/* ----- a player found ----- */
+function rvFound(m) {
+  const o = m.opp, mine = m.role === "host" ? 0 : 1, r = o.riv && typeof o.riv === "object" ? rvClean(Object.assign({ id: o.id }, o.riv)) : null;
+  RV.id = m.id; RV.opp = typeof o.id === "string" ? o.id : ""; RV.g = 0;
+  RV.rec = "riv" in o && RV.opp ? Object.assign({ id: RV.opp, nm: o.name, f: m.f[1 - mine], r: Number.isInteger(o.r) ? o.r : 0, w: 0, l: 0, d: 0, t: 0, k: "" }, r ? { w: r.w, l: r.l, d: r.d, k: r.k } : {}) : null;
+}
+const rvOppBty = (m) => (m.ranked && Number.isInteger(m.opp.bty) && m.opp.bty > 0 ? m.opp.bty : 0);
+// PLAYER FOUND!'s line: "· WANTED 40" when they carry a bounty
+function rvFoundLine(vs, m) {
+  const b = rvOppBty(m);
+  if (!b) return;
+  const w = acMk("span", "qf-want"); w.append("Wanted ", rvCg(), String(b)); vs.append(w);
+}
+// the VS screen: the record under the VS sticker, the tag on their nameplate, a wanted plate under each streaker's tier
+function rvVs(m) {
+  const o = m.opp, pill = $("vsRiv"), tg = $("vsTagR"), bty = rvOppBty(m), mine = m.ranked && m.you && Number.isInteger(m.you.bty) && m.you.bty > 0 ? m.you.bty : 0;
+  pill.hidden = !RV.rec;
+  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = w.t; pill.className = "vs-riv " + w.c; }
+  const tag = bty ? "wanted" : RV.rec ? rvTag(rvList().find((x) => x.id === RV.opp) || RV.rec, rvList()) : "";
+  tg.hidden = !tag;
+  if (tag) { tg.className = `tag st ${RV_TAGS[tag][0]}`; tg.textContent = RV_TAGS[tag][1]; }
+  rvWant($("vsWR"), bty, o.ws); rvWant($("vsWL"), mine, m.you && m.you.ws);
+  if (bty || mine) setTimeout(() => { if (QM.vsT) Sfx.tone(110, 40, 0.3, "sine", 0.4); }, 560);   // a thud as the plate stamps in
+}
+function rvWant(el, n, ws) {
+  el.hidden = !n; el.textContent = "";
+  if (!n) return;
+  const b = acMk("span", "bty"); b.append(rvCg(), String(n));
+  el.append(acMk("i", "tag ember st", "Wanted"), acMk("b", "", `${ws | 0} win streak`), b);
+}
+
+/* ----- the server's results: the record (qm-res, qm-cs), the streak, the bounty ----- */
+// the server's entry for an opponent replaces this device's copy (front of the list, as on the server)
+function rvGot(e, mid, g) {
+  const x = rvClean(e), me = qmMe();
+  if (!x) return;
+  if (me) { me.rv = [x, ...(me.rv || []).filter((y) => y.id !== x.id)].slice(0, 30); qmSave(); }
+  if (mid === RV.id && x.id === RV.opp) { RV.rec = x; RV.g = Math.max(RV.g, g); }
+}
+// qm-cs: a Casual game the server played to its end
+function rvCasual(m) {
+  if (!m || typeof m.id !== "string" || !Number.isInteger(m.g)) return;
+  rvGot(m.rv, m.id, m.g);
+  const me = qmMe(); if (me && Number.isInteger(m.gn)) { me.g = m.gn; qmSave(); }
+  if (mode === "result" && QM.shown && QM.shown.qm && QM.shown.qm.id === m.id && NET.matchId === m.g) rvStrip(QM.shown);
+}
+// qm-res, before qmRes applies it: the record, the streak, the bounty (the chips come with the next sync)
+function rvRanked(m) {
+  if (m.rv) rvGot(m.rv, m.id, 1);
+  const me = qmMe();
+  if (me && Number.isInteger(m.ws) && m.ws >= 0) { me.ws = m.ws; me.bty = rvBounty(m.ws); }
+  if (me && Number.isInteger(m.gn)) me.g = m.gn;
+  if (m.bh && Number.isInteger(m.bh.n) && m.bh.n > 0) acctSoon(800);   // acct.js: the server paid it into the account
+}
+const rvBh = (v) => (v && v.bh && Number.isInteger(v.bh.n) && Number.isInteger(v.bh.k) ? v.bh : null);
+const rvBl = (v) => (v && v.bl && Number.isInteger(v.bl.n) && Number.isInteger(v.bl.k) ? v.bl : null);
+
+/* ----- the results ----- */
+// qmFinish: a verdict already here pays its bounty line on the chips tile (shown only: the chips themselves come with the sync)
+function rvFinishLines(R, q) {
+  const v = QM.res && QM.res.id === q.id ? QM.res : null, bh = rvBh(v);
+  if (bh && bh.n > 0) { R.lines.push(["Bounty", bh.n]); R.total += bh.n; R.bty = bh.n; }
+}
+// qmResults: the story line's second sentence and the rival strip
+function rvResults(R) {
+  RV.shownT = performance.now();
+  rvStrip(R);   // a verdict already here follows in qmVerdictView -> rvVerdict
+}
+// the record as this game leaves it: the server's when it has counted this game, else this phone's own result added
+function rvNow(R) {
+  if (!RV.rec || R.qm.id !== RV.id) return null;
+  const e = Object.assign({}, RV.rec), g = NET.matchId || 1;
+  if (RV.g >= g || R.left || R.lost || R.forfeit) return RV.g >= g ? e : null;
+  if (R.res === 1) e.w++; else if (R.res === 0) e.l++; else e.d++;
+  e.k = ((R.res === 1 ? "W" : R.res === 0 ? "L" : "D") + e.k).slice(0, 5);
+  return e;
+}
+function rvStrip(R) {
+  const el = $("rRiv"), e = rvNow(R), sub = $("rSub");
+  const old = sub.querySelector(".rv-now"); if (old) old.remove();
+  el.hidden = !e;
+  if (!e) return;
+  const name = R.qm.opp ? R.qm.opp.name : NET.oppName || "Potato", w = rvWords(e, name);
+  sub.appendChild(acMk("span", "rv-now", ` ${w.t} now.`));
+  el.textContent = "";
+  const av = acMk("span", "av"); acSetAvatar(av, R.op.spec.id, 0);
+  const rec = e.w > e.l ? `You lead ${e.w}–${e.l}` : e.w < e.l ? `Leads ${e.l}–${e.w}` : `Tied ${e.w}–${e.l}`;   // next to their name and face
+  el.append(av, acMk("span", "nm", name), acMk("i", "sep"), acMk("span", "rec " + w.c, rec), rvDots(e.k));
+  el.setAttribute("aria-label", `${name}: ${w.t}. Open your rivals`);
+  rvPlace();
+}
+// the strip sits under the story line; upright, over the side column's cards (Fable's g)
+function rvPlace() {
+  const el = $("rRiv");
+  if (!el || el.hidden) return;
+  const side = document.querySelector("#resSheet .res-side"), txt = document.querySelector("#resSheet .res-txt");
+  if (L.portrait) { if (el.parentNode !== side) side.insertBefore(el, side.firstChild); }
+  else if (el.parentNode !== txt) txt.insertBefore(el, $("rFin"));
+  // too narrow for the name (the story line has it): the portrait, the record and the dots
+  el.classList.remove("tight");
+  const nm = el.querySelector(".nm");
+  if (nm && nm.scrollWidth > nm.clientWidth + 1) el.classList.add("tight");
+}
+// the verdict on the results on screen: the hunter's bounty on the chips, the streaker's lost streak, the record as the server has it
+function rvVerdict(late) {
+  const v = QM.res, R = QM.shown;
+  if (!v || !R || !R.qm || R.qm.id !== v.id || mode !== "result") return;
+  rvStrip(R);
+  const bh = rvBh(v), bl = rvBl(v), who = R.qm.opp ? R.qm.opp.name : "They", sub = $("rSub");
+  for (const x of sub.querySelectorAll(".rv-bt")) x.remove();
+  if (bh) sub.appendChild(acMk("span", "rv-bt", bh.n > 0 ? ` You ended their ${bh.k}-win streak.` : ` You ended their ${bh.k}-win streak (its bounty was taken today).`));
+  if (bl) sub.appendChild(acMk("span", "rv-bt", bl.n > 0 ? ` Your ${bl.k}-win streak ends; ${who} took the ${bl.n} bounty.` : ` Your ${bl.k}-win streak ends.`));
+  if (!bh || bh.n <= 0) return;
+  const t = $("rChipT");
+  if (!t.querySelector(".rv-bty")) t.appendChild(acMk("i", "tag ember st rv-bty", `Bounty +${bh.n}`));
+  if (R.bty) return;   // already on the tile (qmFinish had the verdict)
+  R.bty = bh.n;
+  const from = R.total; R.total += bh.n; R.lines.push(["Bounty", bh.n]);
+  $("rStats").classList.remove("nochips"); t.hidden = false;
+  const wait = late ? Math.max(0, RV.shownT + 900 - performance.now()) : 0;   // after the tile's own count
+  resCount($("rChipN"), from, R.total, "", { delay: wait, dur: 500, end: () => { Sfx.uiCoin(); setTimeout(() => Sfx.uiCoin(), 110); setTimeout(() => Sfx.uiCoin(), 220); } });
+  $("rWhy").textContent = R.lines.map(([n, x]) => `${n} +${x}`).join(" · ");
+}
+// resOpen (screens.js): every results screen starts without them
+function rvClear() {
+  const el = $("rRiv"); if (el) el.hidden = true;
+  const b = document.querySelector("#rChipT .rv-bty"); if (b) b.remove();
+}
+tap("rRiv", () => { openAccount(); acSetTab("s"); });
+
+/* ----- the Quick match rank plate on a streak ----- */
+function rvPlate() {
+  const me = qmMe(), b = me ? me.bty | 0 : 0;
+  $("qmWant").hidden = !b; $("qmRank").classList.toggle("wanted", !!b);
+  if (b) $("qmRec").textContent = `${me.ws} win streak\nBounty ${b}`;
+  return b;
+}
+
+/* ----- Account > Stats: the Rivals list, your last 30 opponents, most games first ----- */
+function rvStats(pan) {
+  if (!qmOn()) return;
+  const list = rvList().slice().sort((a, b) => rvN(b) - rvN(a) || b.t - a.t), me = qmMe();
+  const head = acMk("div", "rv-head"); head.appendChild(acMk("span", "kicker", "Rivals · last 30 opponents"));
+  if (list.length) {
+    const lead = list.filter((e) => e.w > e.l).length, n = me && Number.isInteger(me.g) ? me.g : list.reduce((a, e) => a + rvN(e), 0);
+    head.appendChild(acMk("span", "", `${list.length} ${list.length === 1 ? "rival" : "rivals"} · you lead ${lead} · ${n} online ${n === 1 ? "match" : "matches"}`));
+  }
+  pan.appendChild(head);
+  if (!list.length) { pan.appendChild(acMk("p", "ac-line", "Play Quick match: everyone you meet shows here with your record against them.")); return; }
+  const ul = acMk("ul", "rv-list");
+  for (const e of list) {
+    const li = acMk("li", "rv-row"), av = acMk("span", "av"), who = acMk("div", "who"), nb = acMk("b"), tag = rvTag(e, list), ti = tierInfo(e.r || 1000);
+    acSetAvatar(av, e.f || "samurai", 0);
+    nb.appendChild(acMk("span", "nm", e.nm));
+    if (tag) nb.appendChild(rvTagEl(tag));
+    const sub = acMk("span"); sub.append(`${FIG[e.f] ? FIG[e.f].name : "Potato"} · `, acMk("i", "", `${ti.t.name} ${e.r || 1000}`));
+    li.style.setProperty("--tc", ti.t.col);
+    const s2 = acMk("span", "sub2"); s2.append(rvDots(e.k), `${rvN(e)} ${rvN(e) === 1 ? "game" : "games"}`);
+    who.append(nb, sub, s2);
+    const last = acMk("span", "last", `${rvN(e)} ${rvN(e) === 1 ? "game" : "games"}`); last.appendChild(acMk("small", "", e.t ? acAgo(e.t) : ""));
+    li.append(av, who, rvDots(e.k), acMk("span", "rec " + (e.w > e.l ? "up" : e.w < e.l ? "down" : ""), `${e.w}–${e.l}`), last);
+    ul.appendChild(li);
+  }
+  pan.appendChild(ul);
+}
 /* ===================== Ranked vs CPU: a CPU match that counts for its own rank (the server side is cpurank.js) =====================
    The third choice on the Quick match screen (VS CPU, next to Ranked and Casual). The server deals the match (a ticket: the CPU, its
    rating and strength, the map and the seed), this phone plays it with no lag and logs your inputs in the online encoding (encIn), and
@@ -33829,7 +34160,7 @@ function vcRender(lb) {
 function vcPlate() {
   const me = vcMine() || VC_FRESH, ti = tierInfo(me.r), placing = me.n < QM_PLACING, card = $("qmRank");
   card.style.setProperty("--tc", ti.t.col);
-  card.classList.toggle("placing", placing); card.classList.add("vc");
+  card.classList.toggle("placing", placing); card.classList.add("vc"); card.classList.remove("wanted");
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("qmTier").textContent = placing ? "Placing" : ti.t.name;
   $("qmRating").textContent = placing ? `${me.n} of ${QM_PLACING} played · ${me.r}` : `${me.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;

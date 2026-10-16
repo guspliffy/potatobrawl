@@ -7,7 +7,11 @@
  * reserves for the two of them. The server already passes every presence message on, so it reads the inputs out of them,
  * plays the same game with core.js as both inputs of a frame arrive (about 4 microseconds a frame) and decides a Ranked
  * match from its own copy: a phone can never change the result or the rating. The rank lives in the account file's `on`
- * part (accounts.js), which only this module writes.
+ * part (accounts.js), which only this module writes. It referees Casual games too when both players have an account (each
+ * rematch in the room is its own game), for the rival record: the last 30 opponents with the record against each. Three Ranked
+ * wins in a row put a bounty on a player (30 chips, +10 a win to 100); whoever ends the streak gets it, once per pair a day.
+ * The bounty is the one thing here that writes chips: accounts.js addChips puts them into the hunter's account file, and the
+ * phone picks them up with its next sync (the page never adds them itself, or a merge would pay twice).
  *
  * WebSocket messages (server.js passes them here):
  *   phone -> server   auth {code}                      the account's sync code, once per connection
@@ -19,8 +23,14 @@
  *                     qm-x {why}                       your search ended: "elsewhere" (this account searches on another page)
  *                     qm-found {id, room, role, seed, f, p, r, ranked, fb, opp}
  *                     qm-off {id, why}                 the match never started ("nostart", "left"): no result
- *                     qm-res {id, res, why, r0, r1, dr, n, pk, w, l, d}   a Ranked verdict (res 1 / 0.5 / 0 for you; why: game,
- *                                                      left, quiet, start); qm-res {id, res: null, why: "void"} = no result
+ *                     qm-res {id, res, why, r0, r1, dr, n, pk, w, l, d, rv, ws, bh, bl}   a Ranked verdict (res 1 / 0.5 / 0 for
+ *                                                      you; why: game, left, quiet, start); qm-res {id, res: null, why: "void"} = no result
+ *                                                      rv: your record against them now, ws: your Ranked win streak, bh {n, k}: the
+ *                                                      bounty you took for ending their k-win streak (n 0: taken today already),
+ *                                                      bl {n, k}: your k-win streak ended and they took n, gn: your refereed matches
+ *                     qm-cs {id, g, res, rv, gn}       a Casual game the referee played to its end (g: the game's start id)
+ *   qm-found's opp also carries riv (your record against them, null = first meeting; absent = not kept: no account), ws and bty
+ *   (their streak and bounty, Ranked only), and you {ws, bty} is your own. me also carries rv, ws, bty and g (refereed matches).
  */
 const crypto = require("crypto");
 const fs = require("fs");
@@ -32,6 +42,8 @@ const SEASON = 1;
 const PLACING = 5;                            // the first ranked matches show "Placing n of 5" instead of a tier
 const PLACE_FLOOR = 900;                      // ...and can't drop you below Bronze (the game's TIERS)
 const HIST = 20;                              // online results kept per account
+const RIVALS = 30;                            // opponents kept in the rival record (the last 30 met)
+const TZ = "Europe/Berlin";                   // the day a bounty can be claimed once per pair (the play counts' day too)
 const TIMES = {
   tick: 1000,                                 // the pairing and timeout check
   range: [[10, 200], [20, 400]],              // rating range by seconds waited; anyone after the last
@@ -62,7 +74,22 @@ const pubId = () => { const b = crypto.randomBytes(10); let s = ""; for (let i =
 const isInt = Number.isInteger;
 // Elo: K 48 for the first 10 ranked matches, then 32 (the game's old Ranked numbers)
 function elo(ra, rb, res, n) { const K = n < 10 ? 48 : 32, E = 1 / (1 + Math.pow(10, (rb - ra) / 400)); return Math.round(K * (res - E)); }
-function freshOn() { return { id: pubId(), s: SEASON, r: 1000, pk: 1000, w: 0, l: 0, d: 0, n: 0, last: "", h: [] }; }
+function freshOn() { return { id: pubId(), s: SEASON, r: 1000, pk: 1000, w: 0, l: 0, d: 0, n: 0, last: "", h: [], rv: [], ws: 0, g: 0, bc: [] }; }
+// the bounty on a Ranked win streak: 30 chips at 3 wins, +10 a win, 100 at most
+const bounty = (ws) => (ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10));
+function dayIn(tz, t) {
+  const p = {};
+  for (const x of new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(t))) p[x.type] = x.value;
+  return `${p.year}-${p.month}-${p.day}`;
+}
+const ID_RE = /^[0-9A-Z]{10}$/;
+// one opponent in the rival record: their id, name, fighter and rating when last met, your record against them, when, the last five (W/L/D, newest first)
+function cleanRiv(x) {
+  if (!x || typeof x !== "object" || typeof x.id !== "string" || !ID_RE.test(x.id)) return null;
+  const n = (v) => (isInt(v) && v >= 0 && v < 1e6 ? v : 0);
+  return { id: x.id, nm: typeof x.nm === "string" ? x.nm.slice(0, 24) : "", f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), d: n(x.d),
+    t: Number.isFinite(x.t) ? x.t : 0, k: typeof x.k === "string" ? x.k.replace(/[^WLD]/g, "").slice(0, 5) : "" };
+}
 // a stored `on` part, cleaned (a missing or broken one = a fresh record with the same id if it had one)
 function cleanOn(o) {
   const on = freshOn();
@@ -72,9 +99,26 @@ function cleanOn(o) {
   on.pk = Math.max(on.pk, on.r);
   if (typeof o.last === "string" && o.last.length <= 10) on.last = o.last;
   if (Array.isArray(o.h)) on.h = o.h.filter((x) => x && typeof x === "object").slice(0, HIST);
+  if (Array.isArray(o.rv)) { const seen = new Set(); on.rv = o.rv.map(cleanRiv).filter((x) => x && !seen.has(x.id) && seen.add(x.id)).slice(0, RIVALS); }
+  for (const k of ["ws", "g"]) if (isInt(o[k]) && o[k] >= 0 && o[k] < 1e9) on[k] = o[k];
+  if (Array.isArray(o.bc)) on.bc = o.bc.filter((x) => typeof x === "string" && x.length <= 24).slice(-20);
   return on;
 }
-const meMsg = (on) => ({ t: "me", id: on.id, r: on.r, pk: on.pk, w: on.w, l: on.l, d: on.d, n: on.n, h: on.h });
+const meMsg = (on) => ({ t: "me", id: on.id, r: on.r, pk: on.pk, w: on.w, l: on.l, d: on.d, n: on.n, h: on.h, rv: on.rv, ws: on.ws, bty: bounty(on.ws), g: on.g });
+// your record against them, as qm-found shows it (null: you never met)
+const rivView = (e) => (e ? { w: e.w, l: e.l, d: e.d, k: e.k } : null);
+// a result against an opponent goes into the record: their entry moves to the front, the oldest beyond 30 drops out
+function rivAdd(on, opp, res, t) {
+  let e = on.rv.find((x) => x.id === opp.id);
+  if (e) on.rv.splice(on.rv.indexOf(e), 1);
+  else e = { id: opp.id, nm: "", f: "", r: 0, w: 0, l: 0, d: 0, t: 0, k: "" };
+  Object.assign(e, { nm: String(opp.name || "").slice(0, 24), f: opp.f, r: opp.r, t });
+  if (res === 1) e.w++; else if (res === 0) e.l++; else e.d++;
+  e.k = ((res === 1 ? "W" : res === 0 ? "L" : "D") + e.k).slice(0, 5);
+  on.rv.unshift(e);
+  on.rv = on.rv.slice(0, RIVALS);
+  return e;
+}
 
 /*
  * opts: { accounts (accounts.js instance or null), send(peer, msg), nameOf(peer), byOf(peer), online() (players connected), log }
@@ -89,7 +133,7 @@ function init(opts) {
   const ofPeer = new Map();   // peer -> room of the match it is in
   const authN = new Map();    // peer -> wrong codes tried (8 at most)
   const seats = new Map();    // peer -> { file, id } bound by auth
-  const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0 };
+  const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0 };
   let draining = false;
 
   const now = () => Date.now();
@@ -170,14 +214,19 @@ function init(opts) {
     const seed = crypto.randomInt(1, 1e9), f = [a.f, b.f], p = [a.pi, b.pi];
     if (f[0] === f[1] && p[0] === p[1]) p[1] = (p[1] + 1) % FIG[f[1]].palettes.length;   // the page's own mirror rule
     const fb = !ranked && (a.mode === "r" || b.mode === "r");
-    const m = { id: room, room, ranked, fb, peers: [a.peer, b.peer], q: [a, b], seed, f, p, t0: t, st: null, g: null, logs: [[], []], prog: [t, t],
+    // the referee plays every Ranked match, and a Casual one when both players have an account (the rival record)
+    const ref = ranked || !!(a.file && b.file && a.id && b.id && a.id !== b.id);
+    const m = { id: room, room, ranked, fb, ref, peers: [a.peer, b.peer], q: [a, b], seed, f, p, t0: t, st: null, gid: 0, g: null, logs: [[], []], prog: [t, t],
       fr: 0, sums: new Map(), cks: [], drift: [false, false], done: false, doneT: 0, left: new Set() };
     M.set(room, m); ofPeer.set(a.peer, room); ofPeer.set(b.peer, room);
     S.found++; S[ranked ? "ranked" : "casual"]++;
+    const ons = ref ? [onOf(a.file), onOf(b.file)] : [null, null];
     const opp = (q) => ({ name: q.name, f: q.f, r: q.r, pl: q.file && q.n < PLACING ? q.n : -1, id: q.id });
     for (let i = 0; i < 2; i++) {
-      const me = m.q[i], them = m.q[1 - i];
-      send(me.peer, { t: "qm-found", id: room, room, role: i === 0 ? "host" : "guest", seed, f, p, r: RULES, ranked, fb: fb && me.mode === "r", opp: opp(them) });
+      const me = m.q[i], them = m.q[1 - i], o2 = opp(them), mine = ons[i], theirs = ons[1 - i], msg = { t: "qm-found", id: room, room, role: i === 0 ? "host" : "guest", seed, f, p, r: RULES, ranked, fb: fb && me.mode === "r", opp: o2 };
+      if (mine && theirs) o2.riv = rivView(mine.rv.find((x) => x.id === them.id));
+      if (ranked && mine && theirs) { o2.ws = theirs.ws; o2.bty = bounty(theirs.ws); msg.you = { ws: mine.ws, bty: bounty(mine.ws) }; }
+      send(me.peer, msg);
     }
   }
 
@@ -188,8 +237,9 @@ function init(opts) {
     const m = M.get(room);
     return !!m && m.peers.includes(peer);
   }
-  function startOk(m, st) {
-    return !!st && typeof st === "object" && st.seed === m.seed && Array.isArray(st.f) && Array.isArray(st.p) &&
+  // the assigned match (or, for a Casual rematch, the same one with any seed)
+  function startOk(m, st, first) {
+    return !!st && typeof st === "object" && (first ? st.seed === m.seed : isInt(st.seed) && st.seed >= 0) && Array.isArray(st.f) && Array.isArray(st.p) &&
       st.f[0] === m.f[0] && st.f[1] === m.f[1] && st.p[0] === m.p[0] && st.p[1] === m.p[1] &&
       !!st.r && st.r.l === RULES.l && st.r.t === RULES.t && st.r.b === RULES.b && isInt(st.d) && st.d >= 1 && st.d <= 20 &&
       !!st.set && st.set.n === 1 && st.bo == null;
@@ -199,21 +249,22 @@ function init(opts) {
     if (!m || !p || typeof p !== "object") return;
     const i = m.peers.indexOf(peer);
     if (i < 0) return;
-    if (!m.st && i === 0 && p.start && typeof p.start === "object" && p.start.id === 1) {
-      if (!startOk(m, p.start)) { if (m.ranked) verdict(m, 0, "start"); else void_(m, "start"); return; }   // the host built a different match: the host's loss
-      m.st = p.start;
-      if (m.ranked) {
-        const players = m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] }));
-        m.g = BL.newGame({ players, stocks: RULES.l, time: RULES.t * 60, countdown: 150, seed: m.seed, map: m.seed % BL.POOL });
-        m.prog = [now(), now()];
-        // the first d frames are neutral on both phones (the input delay): a phone that starts behind the other sends its inputs
-        // from the other's frame - 2, which can be past 0, so they are filled in here and never leave a hole
-        m.logs = [new Array(p.start.d).fill(NEUTRAL), new Array(p.start.d).fill(NEUTRAL)];
+    const st = p.start;
+    if (i === 0 && !m.done && st && typeof st === "object" && isInt(st.id) && st.id > m.gid) {
+      if (!m.st) {
+        if (st.id !== 1) return;
+        if (!startOk(m, st, true)) { if (m.ranked) verdict(m, 0, "start"); else void_(m, "start"); return; }   // the host built a different match: the host's loss
+        m.st = st;
+        begin(m, st);
+      } else if (!m.ranked && st.id === m.gid + 1) {
+        // a Casual rematch (the friend match's own: same fighters and skins, a new seed): its own game; an odd one isn't refereed
+        if (m.g) S.unfinished++;   // the last game never reached its end on the server: no result
+        begin(m, startOk(m, st, false) ? st : null);
       }
     }
-    if (!m.ranked || !m.g || m.done) return;
+    if (!m.g || m.done) return;
     // the inputs: the first value a frame gets is the one both phones play (the page's readOpp does the same)
-    if (p.m === 1 && isInt(p.s) && p.s >= 0 && typeof p.i === "string" && p.i.length <= 400) {
+    if (p.m === m.gid && isInt(p.s) && p.s >= 0 && typeof p.i === "string" && p.i.length <= 400) {
       const L = m.logs[i];
       let grew = false;
       for (let k = 0; k * 2 + 1 < p.i.length; k++) {
@@ -232,15 +283,30 @@ function init(opts) {
       advance(m);
     }
   }
+  // a game starts: the referee's own copy (null: not refereed)
+  function begin(m, st) {
+    m.gid = st ? st.id : m.gid + 1; m.g = null; m.fr = 0; m.sums = new Map(); m.cks = []; m.drift = [false, false];
+    if (!st || !m.ref) return;
+    const players = m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] }));
+    m.g = BL.newGame({ players, stocks: RULES.l, time: RULES.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+    m.prog = [now(), now()];
+    // the first d frames are neutral on both phones (the input delay): a phone that starts behind the other sends its inputs
+    // from the other's frame - 2, which can be past 0, so they are filled in here and never leave a hole
+    m.logs = [new Array(st.d).fill(NEUTRAL), new Array(st.d).fill(NEUTRAL)];
+    m.d = st.d;
+  }
   function advance(m) {
-    const g = m.g, H = m.logs[0], G2 = m.logs[1], D = m.st.d;
-    while (!m.done && H[m.fr] !== undefined && G2[m.fr] !== undefined) {
+    const g = m.g, H = m.logs[0], G2 = m.logs[1], D = m.d;
+    while (!m.done && m.g === g && H[m.fr] !== undefined && G2[m.fr] !== undefined) {
       const a = m.fr < D ? NEUTRAL : H[m.fr], b = m.fr < D ? NEUTRAL : G2[m.fr];
       BL.step(g, [decIn(a), decIn(b)]);
       g.events.length = 0;
       m.fr++;
       if (m.fr % 60 === 0) { m.sums.set(m.fr, BL.checksum(g)); if (m.sums.size > 60) m.sums.delete(m.sums.keys().next().value); }
-      if (g.phase === "end" || g.phase === "over") return verdict(m, g.winner === 0 ? 0 : g.winner === 1 ? 1 : -1, "game");
+      if (g.phase === "end" || g.phase === "over") {
+        const k = g.winner === 0 ? 0 : g.winner === 1 ? 1 : -1;
+        return m.ranked ? verdict(m, k, "game") : casualEnd(m, k);
+      }
     }
     // each phone's game against ours, every second (a drift is logged; our copy decides either way)
     m.cks = m.cks.filter(([i, F, h]) => {
@@ -263,21 +329,57 @@ function init(opts) {
       const r0 = ons[i].r, r1 = Math.max(ons[i].n < PLACING ? PLACE_FLOOR : 0, r0 + elo(r0, ons[1 - i].r, res[i], ons[i].n));
       return { r0, dr: r1 - r0, or: ons[1 - i].r };
     });
+    const t = now(), ws0 = ons.map((on) => on.ws), rv = [null, null];
     for (let i = 0; i < 2; i++) {
       const me = ons[i], them = ons[1 - i], dr = out[i].dr;
-      me.r = me.r + dr; me.pk = Math.max(me.pk, me.r); me.n++;
+      me.r = me.r + dr; me.pk = Math.max(me.pk, me.r); me.n++; me.g++;
       if (res[i] === 1) me.w++; else if (res[i] === 0) me.l++; else me.d++;
       me.last = them.id;
-      me.h.unshift({ t: now(), o: m.q[1 - i].name, of: m.f[1 - i], f: m.f[i], or: out[i].or, res: res[i], dr, why });
+      me.h.unshift({ t, o: m.q[1 - i].name, of: m.f[1 - i], f: m.f[i], or: out[i].or, res: res[i], dr, why });
       me.h = me.h.slice(0, HIST);
+      me.ws = res[i] === 1 ? me.ws + 1 : res[i] === 0 ? 0 : me.ws;   // a draw keeps a streak
+      if (them.id !== me.id) rv[i] = rivAdd(me, { id: them.id, name: m.q[1 - i].name, f: m.f[1 - i], r: out[i].or }, res[i], t);
+    }
+    // a streak of 3 or more ended by a loss (a forfeit too): its bounty goes to the winner, once per pair a day
+    const bh = [null, null], bl = [null, null], pay = [0, 0];
+    for (let i = 0; i < 2; i++) {
+      const n0 = bounty(ws0[i]), w = 1 - i;
+      if (!n0 || res[i] !== 0) continue;
+      const key = `${ons[i].id}:${dayIn(TZ, t)}`, hunter = ons[w];
+      hunter.bc = hunter.bc.filter((x) => x.slice(-10) === key.slice(-10));   // only today's claims matter
+      const n = hunter.bc.includes(key) ? 0 : n0;
+      if (n) { hunter.bc.push(key); pay[w] = n; }
+      bh[w] = { n, k: ws0[i] }; bl[i] = { n, k: ws0[i] };
     }
     for (let i = 0; i < 2; i++) {
       try { acct.writeOn(files[i], ons[i]); } catch (e) { o.log.warn("quick: can't write a result", e.message); }
-      const on = ons[i];
-      send(m.peers[i], { t: "qm-res", id: m.id, res: res[i], why, r0: out[i].r0, r1: on.r, dr: out[i].dr, n: on.n, pk: on.pk, w: on.w, l: on.l, d: on.d });
+      if (pay[i]) {
+        try { acct.addChips(files[i], pay[i]); S.bounties++; } catch (e) { o.log.warn("quick: can't pay a bounty", e.message); bh[i].n = 0; if (bl[1 - i]) bl[1 - i].n = 0; }
+      }
+    }
+    for (let i = 0; i < 2; i++) {
+      const on = ons[i], msg = { t: "qm-res", id: m.id, res: res[i], why, r0: out[i].r0, r1: on.r, dr: out[i].dr, n: on.n, pk: on.pk, w: on.w, l: on.l, d: on.d, ws: on.ws, gn: on.g };
+      if (rv[i]) msg.rv = rv[i];
+      if (bh[i]) msg.bh = bh[i];
+      if (bl[i]) msg.bl = bl[i];
+      send(m.peers[i], msg);
     }
     S.verdicts++;
-    o.log.log(`quick: ${m.room} ${why} ${m.q[0].id} ${res[0]} - ${res[1]} ${m.q[1].id} (${out[0].dr >= 0 ? "+" : ""}${out[0].dr} / ${out[1].dr >= 0 ? "+" : ""}${out[1].dr})`);
+    const bt = pay[0] || pay[1] ? ` bounty ${pay[0] || pay[1]}` : "";
+    o.log.log(`quick: ${m.room} ${why} ${m.q[0].id} ${res[0]} - ${res[1]} ${m.q[1].id} (${out[0].dr >= 0 ? "+" : ""}${out[0].dr} / ${out[1].dr >= 0 ? "+" : ""}${out[1].dr})${bt}`);
+  }
+  // a Casual game the referee played to its end: the rival record only (no rank, no streak); the room stays for a rematch
+  function casualEnd(m, k) {
+    m.g = null;
+    const res = k < 0 ? [0.5, 0.5] : k === 0 ? [1, 0] : [0, 1], files = m.q.map((q) => q.file), ons = files.map((f) => onOf(f));
+    if (!ons[0] || !ons[1] || ons[0].id === ons[1].id) return;
+    const t = now(), rv = [0, 1].map((i) => rivAdd(ons[i], { id: ons[1 - i].id, name: m.q[1 - i].name, f: m.f[1 - i], r: ons[1 - i].r }, res[i], t));
+    for (let i = 0; i < 2; i++) {
+      ons[i].g++;
+      try { acct.writeOn(files[i], ons[i]); } catch (e) { o.log.warn("quick: can't write a result", e.message); }
+      if (!m.left.has(m.peers[i])) send(m.peers[i], { t: "qm-cs", id: m.id, g: m.gid, res: res[i], rv: rv[i], gn: ons[i].g });
+    }
+    S.casualGames++;
   }
   // no result: a match that never started, both players silent, or a server problem
   function void_(m, why) {
@@ -300,7 +402,7 @@ function init(opts) {
     if (ofPeer.get(peer) === room) ofPeer.delete(peer);
     if (!m.done) {
       if (m.ranked && m.g) verdict(m, i, "left");   // leaving a running Ranked match is a loss
-      else if (m.st) end(m);                         // a Casual match that ran: the room's own "left" tells the other phone
+      else if (m.st) { m.g = null; end(m); }         // a Casual match that ran: no result for a game cut short; the room's own "left" tells the other phone
       else void_(m, "left");                         // before the start: no result, the other phone searches again
     }
     if (m.left.size >= 2) release(m);
@@ -316,7 +418,7 @@ function init(opts) {
     for (const m of [...M.values()]) {
       if (m.done) { if (t - m.doneT > T.keep) release(m); continue; }
       if (!m.st) { if (t - m.t0 > T.noStart) void_(m, "nostart"); continue; }
-      if (!m.ranked || !m.g) continue;
+      if (!m.ranked || !m.g) continue;   // a Casual game that stalls is the phones' business (no result unless it ends)
       // who keeps the game waiting: the phone whose input for the next frame is missing
       const miss = [0, 1].filter((i) => m.logs[i][m.fr] === undefined);
       const quiet = miss.filter((i) => t - m.prog[i] > T.quiet);
@@ -346,4 +448,4 @@ function init(opts) {
   };
 }
 
-module.exports = { init, elo, cleanOn, decIn, RULES, PLACING, TIMES };
+module.exports = { init, elo, cleanOn, bounty, decIn, RULES, PLACING, TIMES };

@@ -507,6 +507,7 @@ function resOpen(look, spec, solo) {
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
+  rvClear();   // ui/rivals.js
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }

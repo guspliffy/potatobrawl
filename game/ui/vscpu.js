@@ -349,7 +349,7 @@ function vcRender(lb) {
 function vcPlate() {
   const me = vcMine() || VC_FRESH, ti = tierInfo(me.r), placing = me.n < QM_PLACING, card = $("qmRank");
   card.style.setProperty("--tc", ti.t.col);
-  card.classList.toggle("placing", placing); card.classList.add("vc");
+  card.classList.toggle("placing", placing); card.classList.add("vc"); card.classList.remove("wanted");
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("qmTier").textContent = placing ? "Placing" : ti.t.name;
   $("qmRating").textContent = placing ? `${me.n} of ${QM_PLACING} played · ${me.r}` : `${me.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;

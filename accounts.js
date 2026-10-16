@@ -14,6 +14,8 @@
  * An account file can also hold `on`, the online record of Quick match (quick.js: public id, rank, record, last results), and `cpu`,
  * the CPU rank of Ranked vs CPU (cpurank.js). Only the server writes them (writeOn, writeCpu); a save from a phone replaces `prof`
  * and keeps them as they are.
+ * The server can also pay chips into `prof` (addChips: a streak bounty). That is a new rev like a phone's save, so a phone that
+ * saves an older copy gets 409 and merges (chips merge as server + this device - the last synced copy: nothing is lost or paid twice).
  *
  * Everything is a JSON POST body, so codes never appear in URLs or logs. One account = one small file named
  * sha256(code).json, holding {rev, t, prof}; the folder never contains a code. Files are written to a temp name and
@@ -242,7 +244,18 @@ function init(dir, opts) {
     write(file, rec);
     return true;
   }
-  return { handle, count: () => sizes.size, bytes: () => total, dir, fileOfCode, readFile, writeOn, writeCpu,
+  // chips the server pays (quick.js: a bounty): into prof.tokens as a new rev. Read and write with nothing in between, so it
+  // can't interleave with a save (that handler is synchronous too). Never below 0. Throws on a disk problem.
+  function addChips(file, delta) {
+    const rec = readFile(file);
+    if (!rec || !Number.isSafeInteger(delta)) return false;
+    const have = Number.isSafeInteger(rec.prof.tokens) && rec.prof.tokens > 0 ? rec.prof.tokens : 0;
+    rec.prof.tokens = Math.max(0, have + delta);
+    rec.rev++; rec.t = Date.now();
+    write(file, rec);
+    return true;
+  }
+  return { handle, count: () => sizes.size, bytes: () => total, dir, fileOfCode, readFile, writeOn, writeCpu, addChips,
     files: () => [...sizes.keys()], watch: (fn) => { watchers.push(fn); } };
 }
 

@@ -46,6 +46,7 @@ async function stopServer(s) { if (!s) return; s.proc.kill(); await new Promise(
 const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), "pbqm-"));
 const hashOf = (code) => crypto.createHash("sha256").update(code.replace(/-/g, "")).digest("hex");
 async function newAccount(name) { const r = await call("POST", "/api/acct/new", { prof: { name, tokens: 5 } }, { "x-forwarded-for": "192.0.2." + (1 + Math.floor(Math.random() * 200)) }); return r.json.code; }
+const readAcct = (dir, code) => JSON.parse(fs.readFileSync(path.join(dir, hashOf(code) + ".json"), "utf8"));
 function setOn(dir, code, patch) {   // the test's own hand on an account's online record (the server reads the file each time)
   const f = path.join(dir, hashOf(code) + ".json"), rec = JSON.parse(fs.readFileSync(f, "utf8"));
   rec.on = Object.assign(rec.on || {}, patch); fs.writeFileSync(f, JSON.stringify(rec));
@@ -129,7 +130,7 @@ async function play(H, G, opts) {
       if (!all && to - sent[i] < 60) continue;
       const from = o.late === i && !sent[i] ? st.d - 2 : Math.max(0, sent[i] - 2);
       const c = o.ckLie === i && ck ? [ck[0], ck[1] ^ 1] : ck;
-      phones[i].send({ t: "presence", room: phones[i].found.room, p: { m: 1, s: from, i: pack(logs[i], from, to), fr: frame, ck: c } });
+      phones[i].send({ t: "presence", room: phones[i].found.room, p: { m: st.id, s: from, i: pack(logs[i], from, to), fr: frame, ck: c } });
       sent[i] = to;
     }
     await sleep(14);   // the server allows about 120 messages a second per phone
@@ -205,6 +206,14 @@ async function play(H, G, opts) {
     const oh = readOn(dir, H === A ? ca : cb);
     check(oh.n === 1 && oh.r === 1000 + dH && oh.h.length === 1 && oh.h[0].why === "game" && oh.last === (H === A ? B : A).me.id, "the account file holds the new rank, the result and the last opponent");
     check(!/drifted/.test(srv.log()), "both phones' checksums agreed with the referee");
+    {
+      const wH = want[0] === 1 ? "W" : want[0] === 0 ? "L" : "D", og = readOn(dir, H === A ? cb : ca);
+      check(resH.rv && resH.rv.id === G.me.id && resH.rv.k === wH && resH.rv.w + resH.rv.l + resH.rv.d === 1 && resH.rv.nm === G.name && resH.rv.f === H.found.f[1],
+        "the verdict carries the record against them (first entry, their name and fighter)");
+      check(resH.ws === (want[0] === 1 ? 1 : 0) && resG.ws === (want[1] === 1 ? 1 : 0) && !resH.bh && !resH.bl, "the verdict carries the Ranked win streak, no bounty yet");
+      check(oh.rv.length === 1 && oh.rv[0].id === G.me.id && og.rv[0].id === H.me.id && oh.g === 1 && og.g === 1, "both account files keep the rival record and the refereed count");
+      check(!H.found.opp.riv && H.found.opp.riv === null && H.found.opp.bty === 0 && H.found.you && H.found.you.bty === 0, "found: a first meeting (riv null), no bounty on either side");
+    }
 
     // ---- never the same opponent twice in a row in Ranked: they meet again as Casual ----
     for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
@@ -219,7 +228,83 @@ async function play(H, G, opts) {
     await sleep(100);
     for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
     await sleep(100);
-    check(!(await H.next((m) => m.t === "qm-res" || m.t === "qm-off", 500)), "a Casual match leaves no verdict");
+    check(!(await H.next((m) => m.t === "qm-res" || m.t === "qm-off" || m.t === "qm-cs", 500)), "a Casual match left before its end leaves no verdict and no record");
+
+    // ---- Casual with two accounts: the referee plays every game for the rival record, a rematch too; no rank, no streak ----
+    await sleep(100);
+    const rA0 = readOn(dir, ca), rB0 = readOn(dir, cb);
+    A.send({ t: "qm", v: PROTO, mode: "c", f: "samurai", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    pair = await enter(A, B);
+    [H, G] = pair;
+    const prior = H.found.opp.riv;
+    check(!!prior && prior.w + prior.l + prior.d === 1 && !("bty" in H.found.opp) && !H.found.you, "found (Casual): the record so far, no bounty shown");
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    let cg = await play(H, G);
+    let csH = await H.next((m) => m.t === "qm-cs", 4000), csG = await G.next((m) => m.t === "qm-cs", 4000);
+    const cw = cg.winner === 0 ? [1, 0] : cg.winner === 1 ? [0, 1] : [0.5, 0.5];
+    check(csH && csG && csH.g === 1 && csH.res === cw[0] && csG.res === cw[1] && csH.rv.w + csH.rv.l + csH.rv.d === 2, `a Casual game: qm-cs with the game's result to both (winner ${cg.winner})`);
+    // the rematch: the friend match's own start (id 2, a new seed), refereed on its own
+    H.st = startMsg(H.found, { id: 2, seed: 777123 });
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    cg = await play(H, G);
+    csH = await H.next((m) => m.t === "qm-cs" && m.g === 2, 4000); csG = await G.next((m) => m.t === "qm-cs" && m.g === 2, 4000);
+    const cw2 = cg.winner === 0 ? [1, 0] : cg.winner === 1 ? [0, 1] : [0.5, 0.5];
+    check(csH && csG && csH.res === cw2[0] && csG.res === cw2[1] && csH.rv.w + csH.rv.l + csH.rv.d === 3 && csH.rv.k.length === 3, "a Casual rematch is its own refereed game (g 2)");
+    const rA1 = readOn(dir, ca), rB1 = readOn(dir, cb);
+    check(rA1.r === rA0.r && rA1.n === rA0.n && rA1.ws === rA0.ws && rB1.r === rB0.r && rA1.g === rA0.g + 2 && rA1.rv[0].id === rB1.id, "Casual: rank, Ranked count and streak unchanged; the record and refereed count grow");
+    // a rematch the host changed (another fighter) isn't refereed
+    H.st = startMsg(H.found, { id: 3, seed: 5, f: ["reaper", H.found.f[1]] });
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G, { until: 600 });
+    check(!(await H.next((m) => m.t === "qm-cs", 500)) && readOn(dir, ca).g === rA1.g, "a rematch with other fighters isn't refereed");
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+
+    // ---- the streak bounty: 3 Ranked wins in a row put 30 on you; whoever ends the streak takes it, once per pair a day ----
+    await sleep(100);
+    const cd = await newAccount("Dan");
+    const Dn = await authed("Dan", cd);
+    setOn(dir, cd, { ws: 3 });
+    Dn.send({ t: "auth", code: cd }); Dn.me = await Dn.next((m) => m.t === "me");
+    check(Dn.me.ws === 3 && Dn.me.bty === 30, "me: the streak and the bounty on it (3 wins: 30)");
+    const tok0 = readAcct(dir, cb).prof.tokens, rev0 = readAcct(dir, cb).rev;
+    Dn.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
+    pair = await enter(Dn, B);
+    [H, G] = pair;
+    const hunter = H === B ? H : G, streaker = H === B ? G : H;
+    check(hunter.found.opp.ws === 3 && hunter.found.opp.bty === 30 && streaker.found.you.bty === 30 && streaker.found.opp.bty === 0, "found (Ranked): the hunter sees the bounty on them, the streaker their own");
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G, { until: 400 });
+    streaker.send({ t: "leave", room: streaker.found.room });   // a forfeit ends a streak like any loss
+    let bH = await hunter.next((m) => m.t === "qm-res", 3000), bS = await streaker.next((m) => m.t === "qm-res", 3000);
+    check(bH && bH.res === 1 && bH.bh && bH.bh.n === 30 && bH.bh.k === 3 && bS && bS.bl && bS.bl.n === 30 && bS.ws === 0, "ending a 3-win streak: the hunter takes 30, the streaker's streak is 0");
+    let accB = readAcct(dir, cb);
+    check(accB.prof.tokens === tok0 + 30 && accB.rev === rev0 + 1 && readOn(dir, cb).bc.length === 1, "the bounty is paid into the hunter's account file as a new rev");
+    r = await call("POST", "/api/acct/save", { code: cb, rev: rev0, prof: { name: "Bob", tokens: tok0 + 20 } });
+    check(r.status === 409 && r.json.prof.tokens === tok0 + 30, "a phone saving its older copy gets 409 with the paid chips (it merges, nothing lost)");
+    check(/bounty 30/.test(srv.log()), "the log line names the bounty");
+    hunter.send({ t: "leave", room: hunter.found.room });
+    // the same pair the same day: the streak still ends, no second bounty
+    await sleep(100);
+    setOn(dir, cd, { ws: 5, last: "" }); setOn(dir, cb, { last: "" });
+    Dn.send({ t: "auth", code: cd }); await Dn.next((m) => m.t === "me");
+    B.send({ t: "auth", code: cb }); await B.next((m) => m.t === "me");
+    Dn.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
+    pair = await enter(Dn, B);
+    [H, G] = pair;
+    const hunter2 = H === B ? H : G, streaker2 = H === B ? G : H;
+    check(hunter2.found.opp.bty === 50, "a 5-win streak carries 50");
+    H.st = startMsg(H.found);
+    H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G, { until: 400 });
+    streaker2.send({ t: "leave", room: streaker2.found.room });
+    bH = await hunter2.next((m) => m.t === "qm-res", 3000); bS = await streaker2.next((m) => m.t === "qm-res", 3000);
+    check(bH && bH.bh && bH.bh.n === 0 && bH.bh.k === 5 && bS.bl && bS.bl.n === 0 && readAcct(dir, cb).prof.tokens === tok0 + 30, "the same hunter and streaker the same day: the streak ends, no second bounty");
+    hunter2.send({ t: "leave", room: hunter2.found.room });
+    setOn(dir, cb, { last: "" });   // the tests below pair Bob again
+    B.send({ t: "auth", code: cb }); await B.next((m) => m.t === "me");
+    Dn.close();
 
     // ---- leaving a running Ranked match is a loss; a drifting phone is logged, the referee still decides ----
     const C = X;
@@ -327,6 +412,11 @@ async function play(H, G, opts) {
   // ---- the pure parts ----
   check(Q.elo(1000, 1000, 1, 0) === 24 && Q.elo(1000, 1000, 1, 10) === 16 && Q.elo(1200, 1000, 0, 20) === -24, "elo: K 48 for the first 10, then 32");
   check(Q.cleanOn({ r: -5, w: 3, id: "bad" }).r === 1000 && Q.cleanOn({ r: 1300, pk: 900 }).pk === 1300, "a broken online record is cleaned");
+  {
+    const c = Q.cleanOn({ rv: [{ id: "AAAAAAAAAA", w: 2, k: "WWx<>" }, { id: "AAAAAAAAAA", w: 9 }, { id: "bad" }, null], ws: -1, bc: ["X:2026-10-16", 5] });
+    check(c.rv.length === 1 && c.rv[0].w === 2 && c.rv[0].k === "WW" && c.ws === 0 && c.bc.length === 1, "a broken rival record is cleaned (one entry per id, no junk)");
+  }
+  check([0, 2, 3, 4, 5, 9, 10, 40].map(Q.bounty).join() === "0,0,30,40,50,90,100,100", "bounty: 30 / 40 / 50 at 3 / 4 / 5 wins, +10 a win, 100 at most");
   fs.rmSync(dir, { recursive: true, force: true });
   console.log(`${passes} passed, ${fails} failed`);
   if (!fails) console.log("quick ok");

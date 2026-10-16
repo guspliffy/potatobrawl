@@ -5,8 +5,11 @@ Three players (A on a phone, B on a desktop, C on a phone) as separate devices:
   2. B searches Ranked: PLAYER FOUND! over A's warm-up (no result for it), the VS screen on both, the fight; B walks off the stage
      three times, the server decides: both results show the server's rating, which the account files hold too.
   3. A and B again: they just played each other, so no Ranked rematch: after 20 s they meet as Casual (no rank change), B leaves.
-  4. C and A in Ranked: A forfeits from the pause menu (a loss on the server, C's win "Opponent left").
-  5. C picks VS CPU (Ranked vs CPU): the server's ticket, the VS screen with the CPU sticker, the HUD strip, a forfeit counted on the
+  4. C and A in Ranked: A forfeits from the pause menu (a loss on the server, C's win "Opponent left"). A carries a 3-win streak
+     (written into its account file), so C's VS screen shows A's wanted plate and C takes the 30-chip bounty, paid into C's account.
+  5. The rival record all along: the results' story line and rival strip, the VS pill, Account > Stats's Rivals list (A at 844,
+     C upright), and C's Quick match rank plate on a streak (WANTED).
+  6. C picks VS CPU (Ranked vs CPU): the server's ticket, the VS screen with the CPU sticker, the HUD strip, a forfeit counted on the
      CPU rank (the account file's `cpu` part), back to Quick match with the match counted, the Boards sheet from the board line.
 Screenshots (the Quick match screen idle and searching at 667x320, 844x390, 1280x760 and 390x844, the warm-up, PLAYER FOUND!, the VS
 screen, the results) go to the folder in argv[1]. Prints one line per problem, then "no errors".
@@ -45,10 +48,17 @@ def stop_server(p):
     except Exception: p.kill(); out = ''
     return out
 def norm(code): return re.sub(r'[^0-9A-Z]', '', code.upper())
+def acct_file(d, code): return pathlib.Path(d) / (hashlib.sha256(norm(code).encode()).hexdigest() + '.json')
 def on_rec(d, code):   # the server-only online record in the account file
-    f = pathlib.Path(d) / (hashlib.sha256(norm(code).encode()).hexdigest() + '.json')
-    try: return json.loads(f.read_text()).get('on')
+    try: return json.loads(acct_file(d, code).read_text()).get('on')
     except Exception: return None
+def set_on(d, code, patch):   # the test's own hand on an online record (the server reads the file each time)
+    f = acct_file(d, code); rec = json.loads(f.read_text()); rec['on'].update(patch); f.write_text(json.dumps(rec))
+def prof_rec(d, code):
+    try: return json.loads(acct_file(d, code).read_text())
+    except Exception: return None
+async def reauth(pg, code):   # the page signs in again, so its copy of the record is the file's
+    await pg.evaluate("(c) => window.__blQuick.send({ t: 'auth', code: c })", code)
 
 async def device(b, vp, mob, profile):
     ctx = await b.new_context(viewport=vp, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=mob)
@@ -186,6 +196,11 @@ async def main():
             expect(has(await text(A, '#rMode'), 'Quick match', 'Ranked'), 'A: the results kicker should say Quick match · Ranked')
             expect(has(await text(A, '#rAgain'), 'Next match'), 'A: Ranked results offer Next match')
             await shot(A, 'result-win-844'); await shot(B, 'result-loss-1280')
+            # the rival record: the story line's second sentence and the strip (A leads 1–0; on B's side Peel Appeal does)
+            expect(await shown(A, '#rRiv') and has(await text(A, '#rRiv'), 'Mash Master', 'You lead 1–0'), f"A: the rival strip should say You lead 1–0, got {await text(A, '#rRiv')!r}")
+            expect(has(await text(A, '#rSub'), 'You lead 1–0 now'), f"A: the story line should end with the record, got {await text(A, '#rSub')!r}")
+            expect(has(await text(B, '#rRiv'), 'Leads 1–0') and has(await text(B, '#rSub'), 'Peel Appeal leads 1–0 now'), f"B: Peel Appeal leads 1–0, got {await text(B, '#rRiv')!r}")
+            expect(ra and ra.get('rv') and ra['rv'][0]['w'] == 1, f'server: A\'s rival record should hold the win, got {ra and ra.get("rv")}')
 
             # ---- 3. no Ranked rematch: A and B meet again as Casual after the 20 s fallback; B leaves the match
             await tap(A, '#rAgain')
@@ -196,6 +211,8 @@ async def main():
             if await wait(A, "window.__blastline.qm.vsN >= 2", 'A: found again (Casual, after the fallback)', 40):
                 st = await text(A, '#vsStamp')
                 expect(has(st, 'Casual', 'no Ranked player found'), f'A: the rematch should be Casual with the fallback line, got {st!r}')
+                riv = await text(A, '#vsRiv')
+                expect(await shown(A, '#vsRiv') and has(riv, 'You lead 1–0'), f'A: the VS pill should say You lead 1–0, got {riv!r}')
                 if await shown(A, '#qmVs'): await shot(A, 'vs-casual-844')
             await wait(B, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", 'B: the Casual match starts', 25)
             await B.keyboard.press('Escape'); await B.wait_for_timeout(300)
@@ -208,7 +225,8 @@ async def main():
             expect(on_rec(d, ac)['n'] == 1, 'server: a Casual match must not count')
             await shot(A, 'result-casual-left-844')
 
-            # ---- 4. C and A in Ranked; A forfeits from the pause menu
+            # ---- 4. C and A in Ranked; A forfeits from the pause menu. A carries a 3-win streak: C takes its bounty
+            set_on(d, ac, {'ws': 3})
             await open_quick(C, 'C', None)
             await shot(C, 'quick-idle-390')
             await overflow(C, 'C idle 390')
@@ -219,7 +237,13 @@ async def main():
             await tap(A, '#rChange')   # Casual's Next match: straight back into the search (C is already searching, so it can be found at once)
             await wait(A, "window.__blastline.qm.st === 'search' || window.__blastline.qm.st === 'found'", 'A: Next match searches again')
             if await wait(C, "window.__blastline.qm.vsN >= 1", 'C: the VS screen (upright)', 20):
-                if await shown(C, '#qmVs'): await shot(C, 'vs-390')
+                w = await text(C, '#vsWR')
+                expect(not await C.evaluate("document.getElementById('vsWR').hidden") and has(w, 'Wanted', '3 win streak', '30'), f"C: A's wanted plate should show on the VS screen, got {w!r}")
+                if await shown(C, '#qmVs'):
+                    await C.wait_for_timeout(500); await shot(C, 'vs-390')
+                expect(has(await text(C, '#vsTagR'), 'Wanted'), 'C: the WANTED tag on A\'s nameplate')
+                expect(has(await text(C, '#vsRiv'), 'First meeting'), f"C: a first meeting, got {await text(C, '#vsRiv')!r}")
+            chips0 = (prof_rec(d, await code(C)) or {}).get('prof', {}).get('tokens')
             await wait(A, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", 'A: the Ranked match vs C starts', 25)
             await A.wait_for_timeout(600)
             await A.keyboard.press('Escape'); await A.wait_for_timeout(300)
@@ -238,6 +262,15 @@ async def main():
             expect(ra2 and ra2['l'] == 1 and ra2['n'] == 2, f'server: A should have a loss now, got {ra2}')
             expect(rc and rc['w'] == 1 and rc['h'][0]['why'] == 'left', f'server: C should have a win by forfeit, got {rc}')
             await shot(A, 'result-forfeit-844'); await shot(C, 'result-left-390')
+            await A.set_viewport_size(TINY); await A.wait_for_timeout(450); await shot(A, 'result-forfeit-667'); await A.set_viewport_size(PHONE)
+            # the bounty: C's chips tile wears it, the server paid it into C's account (the page never adds it), A's streak is gone
+            expect(await shown(C, '#rChipT .rv-bty') and has(await text(C, '#rWhy'), 'Bounty +30'), f"C: the BOUNTY +30 sticker and line, got {await text(C, '#rWhy')!r}")
+            expect(has(await text(C, '#rSub'), 'ended their 3-win streak'), f"C: the story line names the streak, got {await text(C, '#rSub')!r}")
+            expect(has(await text(A, '#rSub'), '3-win streak ends', 'took the 30 bounty'), f"A: the streak lost, got {await text(A, '#rSub')!r}")
+            pc = prof_rec(d, await code(C))
+            expect(pc and chips0 is not None and pc['prof']['tokens'] >= chips0 + 30, f"server: C's account should hold the 30 bounty (before {chips0}, now {pc and pc['prof'].get('tokens')})")
+            expect(rc and rc.get('ws') == 1 and ra2 and ra2.get('ws') == 0, f'server: the streaks should be C 1, A 0, got {rc and rc.get("ws")}, {ra2 and ra2.get("ws")}')
+            await wait(C, "window.__blastline.qm.me && JSON.parse(localStorage.getItem('potatobrawl.profile.v1') || '{}').tokens >= %d" % ((chips0 or 0) + 30), 'C: the bounty arrives on the phone with the sync', 20)
             # the menu: the hero shows the online rank and record, the plate the online rating
             await tap(A, '#rMenu')
             await wait(A, "window.__blastline.mode === 'menu'", 'A: the menu')
@@ -247,8 +280,29 @@ async def main():
             expect(ra2 and (await text(A, '#mRating')).strip() == str(ra2['r']), 'A: the profile plate shows the online rating')
             await shot(A, 'menu-844')
 
-            # ---- 5. C: VS CPU (Ranked vs CPU): the server deals the match, the VS screen wears the CPU sticker, a forfeit counts on the CPU rank
-            await tap(C, '#rMenu')
+            # ---- 5. the Rivals list (A: Mash Master and Tuber Tom) and a streaker's rank plate (C on a 4-win streak)
+            await tap(A, '#mRank'); await tap(A, '#acTabS'); await A.wait_for_timeout(500)
+            rl = await text(A, '#acPanS')
+            expect(has(rl, 'Rivals', 'Mash Master', 'Tuber Tom'), f'A: the Rivals list should name both opponents, got {(rl or "")[:200]!r}')
+            await shot(A, 'rivals-844')
+            await A.set_viewport_size(DESK); await A.wait_for_timeout(450); await shot(A, 'rivals-1280')
+            await A.set_viewport_size(TINY); await A.wait_for_timeout(450); await shot(A, 'rivals-667')
+            await A.set_viewport_size(PHONE)
+            await tap(C, '#rMenu'); await wait(C, "window.__blastline.mode === 'menu'", 'C: the menu')
+            set_on(d, await code(C), {'ws': 4}); await reauth(C, await code(C))
+            await wait(C, "window.__blastline.qm.me && window.__blastline.qm.me.ws === 4", 'C: the 4-win streak arrives with a new sign-in', 10)
+            await C.wait_for_timeout(300)
+            expect(has(await text(C, '#bRanked'), '4 win streak', '40 bounty on you'), f"C: the hero should say the bounty is on you, got {await text(C, '#bRanked')!r}")
+            await tap(C, '#bRanked'); await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match opens'); await C.wait_for_timeout(500)
+            expect(await shown(C, '#qmWant') and has(await text(C, '#qmRec'), '4 win streak', 'Bounty 40'), f"C: the rank plate should wear WANTED, got {await text(C, '#qmRec')!r}")
+            await shot(C, 'quick-wanted-390'); await overflow(C, 'C wanted 390')
+            await tap(C, '#qmBack'); await wait(C, "window.__blastline.mode === 'menu'", 'C: back to the menu')
+            await tap(C, '#mRank'); await tap(C, '#acTabS'); await C.wait_for_timeout(500)
+            expect(has(await text(C, '#acPanS'), 'Rivals', 'Peel Appeal'), 'C: the Rivals list upright names Peel Appeal')
+            await shot(C, 'rivals-390'); await overflow(C, 'C rivals 390')
+
+            # ---- 6. C: VS CPU (Ranked vs CPU): the server deals the match, the VS screen wears the CPU sticker, a forfeit counts on the CPU rank
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)   # the Account sheet from step 5
             await wait(C, "window.__blastline.mode === 'menu'", 'C: the menu')
             await tap(C, '#bRanked')
             await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match again')
