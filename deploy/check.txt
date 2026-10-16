@@ -9,7 +9,7 @@ GIT() { git -c safe.directory="$G" -C "$G" "$@"; }
 sum() { if [ -s "$1" ]; then sha256sum "$1" | cut -c1-12; else echo none; fi; }
 proto() { P=$(grep -o 'PROTO = [0-9]*' "$1" 2>/dev/null | head -1 | grep -o '[0-9]*$'); echo "${P:-?}"; }
 http() { curl -s -o /dev/null -m 10 -w '%{http_code}' "$@"; }
-unit() { S=$(systemctl is-active "$1" 2>/dev/null | head -1); echo "${S:-unknown}"; }
+unit() { U=$(systemctl is-active "$1" 2>/dev/null | head -1); echo "${U:-unknown}"; }
 yn() { if [ -e "$1" ]; then echo yes; else echo no; fi; }
 echo "===== PotatoBrawl server check, $(date -u '+%Y-%m-%d %H:%M UTC')"
 [ "$(id -u)" = 0 ] || echo "(not root: type sudo -i and paste again for the full check)"
