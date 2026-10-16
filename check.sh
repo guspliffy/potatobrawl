@@ -219,7 +219,8 @@ else fail "skins menu + Play friends lobby" "$LOGS/skins.log"; fi
 # 6a2. The Shop and Another go (UI only): the Account sheet's Shop tab (nameplates and Glaze, two-tap buy, one-tap wear, short of chips), the
 #      plate on the start page, the Profile and the results, the Daily sheet's Another go and its rules, at four sizes. Shots in build/shots/shop.
 s_shop() {
-(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwshop.py" shop) > "$LOGS/shop.log" 2>&1
+# (about 16 minutes alone and 23-25 beside the other browser steps: its limit leaves room for a busy machine)
+(cd "$SHOTS" && timeout 2400 python3 "$ROOT/tests/pwshop.py" shop) > "$LOGS/shop.log" 2>&1
 if grep -q "^shop ok" "$LOGS/shop.log" && grep -q "^no errors" "$LOGS/shop.log"; then pass "shop + Another go (nameplates, Glaze, buy / wear / short, Daily rules at four sizes; shots in build/shots/shop)"
 else fail "shop + Another go" "$LOGS/shop.log"; fi
 }
