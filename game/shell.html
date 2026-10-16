@@ -142,29 +142,65 @@ button { font: inherit; color: inherit; }
 .pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
 @keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 3px rgba(255, 70, 50, 0.3); } 50% { color: #ff8a7c; text-shadow: 0 0 14px rgba(255, 90, 60, 0.85); } }
 
-/* ---------- ultimate bar (hud.js): a slim slanted strip hung under each name card. It fills in the fighter's colour, turns gold and
-   flashes when full; the two pips are the ultis left (ultMax minus ultN), grey when both are spent ---------- */
-.hud-r .pcard { margin-bottom: 9px; }
-.pc-ult { --sl: 5px; position: absolute; left: -4px; right: 6px; bottom: -10px; height: 6px; display: flex; align-items: center; gap: 6px; pointer-events: none; transition: opacity 0.3s; }
+/* ---------- ultimate bar (hud.js): a slanted trough on the bottom edge of each name card, as wide as the card. It fills in the fighter's
+   colour (slow stripes drift toward the tip, a sand line marks the tip) and turns gold when full; the two pips are the ultis left (ultMax
+   minus ultN), grey when both are spent. Your own full bar (.me) burns: an ember glow and seven flames (.pc-fl, behind the card's text so they
+   never cover the percent or the hearts) and, on a keyboard, the ULTI [U] tag. The opponent's full bar is gold with a steady glow, no flames.
+   Height (--ubh): 8 px on the 320 px phone, 10 on phones, 12 on a computer, 14 on a big screen ---------- */
+.pcard { --ubh: 12px; }
+#app.short .pcard, #app.narrow .pcard { --ubh: 10px; }
+#app.tiny .pcard { --ubh: 8px; }
+@media (min-width: 1500px) and (min-height: 1000px) { .pcard { --ubh: 14px; } }
+.hud-r .pcard { margin-bottom: calc(var(--ubh) + 5px); }
+.pcard:not(.pmini) { min-width: calc(var(--ubh) * 15 + 20px); }   /* a bar long enough to read, however short the name and the hearts */
+.pc-ult { --sl: calc(var(--ubh) * 0.75); position: absolute; left: -4px; right: 6px; top: calc(100% - 2px); height: var(--ubh); display: flex; align-items: center; gap: 5px; pointer-events: none; transition: opacity 0.3s; }
 .pcard.right .pc-ult { left: 6px; right: -4px; flex-direction: row-reverse; }
 .pc-ult[hidden] { display: none; }
-.pc-ult .ub { position: relative; flex: 1 1 auto; height: 6px; min-width: 0; overflow: hidden; background: rgba(14, 16, 34, 0.78); clip-path: polygon(var(--sl) 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
-.pc-ult .uf { position: absolute; left: 0; top: 1px; bottom: 1px; width: calc(var(--u, 0) * 100%); background: var(--fc); transition: width 0.25s ease-out; clip-path: polygon(0 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
-.pcard.right .pc-ult .uf { left: auto; right: 0; clip-path: polygon(var(--sl) 0, 100% 0, 100% 100%, 0 100%); }
+.pc-ult .ub { position: relative; flex: 1 1 auto; height: 100%; min-width: 0; overflow: hidden; background: rgba(14, 16, 34, 0.86); box-shadow: inset 0 0 0 1px rgba(206, 210, 255, 0.16); clip-path: polygon(var(--sl) 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
+.pc-ult .uf { position: absolute; left: 0; top: 2px; bottom: 2px; width: calc(var(--u, 0) * 100%); background-color: var(--fc); transition: width 0.25s ease-out;
+  background-image: linear-gradient(180deg, rgba(255, 246, 220, 0.32), rgba(255, 246, 220, 0) 55%), repeating-linear-gradient(-60deg, rgba(14, 16, 34, 0.2) 0 3px, rgba(14, 16, 34, 0) 3px 9px);
+  background-size: 100% 100%, 18px 100%; animation: ultDrift 1.6s linear infinite; clip-path: polygon(0 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
+.pc-ult .uf::after { content: ""; position: absolute; top: 0; bottom: 0; right: calc(var(--sl) * 0.5); width: 2px; background: var(--sand); opacity: 0.9; }
+.pc-ult.e .uf::after { display: none; }
+.pcard.right .pc-ult .uf { left: auto; right: 0; clip-path: polygon(var(--sl) 0, 100% 0, 100% 100%, 0 100%); animation-direction: reverse; }
+.pcard.right .pc-ult .uf::after { right: auto; left: calc(var(--sl) * 0.5); }
 .pc-ult .up { display: flex; gap: 3px; flex: none; }
 .pcard.right .pc-ult .up { flex-direction: row-reverse; }
-.pc-ult .up i { width: 11px; height: 6px; background: #f3c84a; clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
+.pc-ult .up i { width: calc(var(--ubh) + 4px); height: calc(var(--ubh) - 2px); background: #f3c84a; clip-path: polygon(30% 0, 100% 0, 70% 100%, 0 100%); }
 .pc-ult .up i.sp { background: rgba(206, 210, 255, 0.22); }
-.pc-ult .uk { flex: none; transform: skewX(9deg); font: 800 11px/1 var(--display); letter-spacing: 0.04em; color: #f3c84a; padding: 2px 5px; border: 1px solid rgba(243, 200, 74, 0.8); border-radius: 3px; background: rgba(14, 16, 34, 0.8); }
-.pc-ult .uk[hidden] { display: none; }
-.pc-ult.full { filter: drop-shadow(0 0 4px rgba(243, 200, 74, 0.8)); }
-.pc-ult.full .uf { background: #f3c84a; }
-.pc-ult.flash .ub { animation: ultFlash 0.6s ease-out; }
-.pc-ult.full:not(.flash) .uf { animation: ultBreathe 1.4s ease-in-out infinite; }
 .pc-ult.none { opacity: 0.45; }
 .pc-ult.none .up i { background: rgba(206, 210, 255, 0.22); }
-@keyframes ultFlash { 0% { background: #fff3c4; transform: scaleY(2.4); } 55% { background: rgba(243, 200, 74, 0.7); transform: scaleY(1.7); } 100% { background: rgba(14, 16, 34, 0.78); transform: scaleY(1); } }
-@keyframes ultBreathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+/* full: gold with a light top edge and a gold rim; the glow sits behind the trough */
+.pc-ult.full .uf { background-color: #f3c84a; background-image: linear-gradient(180deg, rgba(255, 243, 196, 0.75), rgba(255, 243, 196, 0) 60%); background-size: 100% 100%; animation: ultBreathe 1.4s ease-in-out infinite; }
+.pc-ult.full .uf::after { display: none; }
+.pc-ult.full .ub { box-shadow: inset 0 0 0 1.5px rgba(255, 222, 130, 0.95); }
+.pc-ult.full::before { content: ""; position: absolute; left: 0; right: 0; top: -3px; bottom: -3px; z-index: -1; border-radius: 3px; background: rgba(243, 200, 74, 0.38); filter: blur(4px); }
+.pc-ult.full.me::before { top: -5px; bottom: -5px; background: linear-gradient(90deg, rgba(255, 122, 61, 0.75), rgba(243, 200, 74, 0.85)); filter: blur(7px); animation: ultEmber 1.1s ease-in-out infinite alternate; }
+.pc-ult.flash .ub { animation: ultFlash 0.6s ease-out; }
+/* the ULTI [U] tag at the end of your own full bar (a keyboard player; phones have the ULTI button) */
+.pc-ult .uk { position: absolute; left: calc(100% + 8px); top: 50%; margin-top: calc(var(--ubh) * -0.5 - 6px); display: inline-flex; align-items: center; gap: 5px; transform: skewX(9deg); font: italic 900 calc(var(--ubh) + 4px)/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: #3a2a00; padding: 3px 4px 3px 8px; border: 2px solid #0e1022; border-radius: 4px; background: #f3c84a; box-shadow: 0 2px 0 #0e1022, 0 0 12px rgba(255, 150, 60, 0.7); animation: ukPop 0.32s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.pc-ult .uk kbd { font: 800 calc(var(--ubh) + 1px)/1 var(--display); font-style: normal; color: #f3c84a; background: #0e1022; border-radius: 3px; padding: 2px 5px; }
+.pc-ult .uk[hidden] { display: none; }
+/* the flames: seven tongues along the bar, rising over the card's lower edge behind its text (z-index -1 in the card's own stacking context) */
+.pc-fl { display: none; position: absolute; z-index: -1; left: 1%; right: 6%; bottom: calc(var(--ubh) * -0.5 + 1px); height: calc(var(--ubh) * 3); pointer-events: none; }
+.pcard.right .pc-fl { left: 8%; right: 2%; }
+.pcard.burn .pc-fl { display: block; }
+.pcard.burn.bst .pc-fl { animation: flBurst 0.4s ease-out; transform-origin: 50% 100%; }
+.pc-fl i { position: absolute; bottom: 0; width: 16%; height: 100%; transform-origin: 50% 100%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 32'%3E%3ClinearGradient id='a' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ff5a3a' stop-opacity='.85'/%3E%3Cstop offset='.45' stop-color='%23ff8a3d'/%3E%3Cstop offset='1' stop-color='%23f3c84a'/%3E%3C/linearGradient%3E%3Cpath d='M11 0c1 6 8 10 8 19 0 7-4 12-9 12S1 27 1 20c0-5 3-7 4-11 1 3 2 4 3 5 1-5 0-9 3-14z' fill='url(%23a)'/%3E%3Cpath d='M10.5 13c1 4 4.5 6 4.5 11 0 4-2.3 6-5 6s-5-2-5-5.5c0-3 2-4 2.5-6.5 1 1.5 1.5 2 2 2.5.3-3 .2-5 1-7.5z' fill='%23ffe08a'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat; animation: flLick 0.6s ease-in-out infinite alternate; }
+.pc-fl i:nth-child(1) { left: 0; height: 70%; animation-duration: 0.55s; }
+.pc-fl i:nth-child(2) { left: 13%; height: 95%; animation-duration: 0.68s; animation-delay: -0.2s; }
+.pc-fl i:nth-child(3) { left: 27%; height: 78%; animation-duration: 0.5s; animation-delay: -0.35s; }
+.pc-fl i:nth-child(4) { left: 41%; height: 100%; animation-duration: 0.63s; animation-delay: -0.1s; }
+.pc-fl i:nth-child(5) { left: 55%; height: 82%; animation-duration: 0.57s; animation-delay: -0.45s; }
+.pc-fl i:nth-child(6) { left: 69%; height: 92%; animation-duration: 0.7s; animation-delay: -0.3s; }
+.pc-fl i:nth-child(7) { left: 83%; height: 66%; animation-duration: 0.52s; animation-delay: -0.15s; }
+@keyframes ultFlash { 0% { background: #fff3c4; transform: scaleY(1.9); } 55% { background: rgba(243, 200, 74, 0.7); transform: scaleY(1.4); } 100% { background: rgba(14, 16, 34, 0.86); transform: scaleY(1); } }
+@keyframes ultBreathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+@keyframes ultDrift { to { background-position: 0 0, 18px 0; } }
+@keyframes ultEmber { from { opacity: 0.7; } to { opacity: 1; } }
+@keyframes ukPop { from { transform: skewX(9deg) scale(0.3); opacity: 0; } to { transform: skewX(9deg) scale(1); opacity: 1; } }
+@keyframes flLick { 0% { transform: scale(1, 0.82) skewX(-4deg); } 50% { transform: scale(0.9, 1.06) skewX(3deg); } 100% { transform: scale(1.05, 0.94) skewX(-2deg); } }
+@keyframes flBurst { from { transform: scale(1.6); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
 
 /* ---------- danger edge glow (UI only, own fighter): a thin red glow on the side a hard launch is heading for; opacity is set by screens.js ---------- */
 #dgr { position: absolute; left: 0; right: 0; top: 0; bottom: var(--panelH); z-index: 1; overflow: hidden; pointer-events: none; --dw: clamp(26px, calc(var(--um) * 9), 84px); }
@@ -662,7 +698,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .dly-ph { width: 38px; height: 38px; }
 #app.narrow .dly-f, #app.narrow .dly-f.r { flex-direction: column; text-align: center; }
 /* ---------- end Daily Potato ---------- */
-@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult.full:not(.flash) .uf { animation: none; } .pc-ult .uf { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult .uf, .pc-ult.full .uf, .pc-ult.full.me::before, .pc-ult .uk, .pcard.burn.bst .pc-fl, .pc-fl i { animation: none; } .pc-ult .uf { transition: none; } }
 /*CSS*/
 </style>
 
@@ -674,7 +710,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="hud-l"><div class="pcard" id="pc0"><div>
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div></div>
     <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
@@ -682,7 +718,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
         <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
         <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-      </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+      </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
       <button id="pauseBtn" aria-label="Pause"></button>
     </div>
   </div>
@@ -693,12 +729,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
       <div class="pc-sub"><span class="nm"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
     <div class="pcard right pmini" id="pc3" role="button" aria-label="Focus this foe"><div>
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
       <div class="pc-sub"><span class="nm"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
   </template>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>

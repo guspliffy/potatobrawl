@@ -95,17 +95,23 @@ function hudPauseZone() {
 }
 
 /* ---------- ultimate bar and ULTI button (reads the sim, never writes it) ----------
-   Under each name card (.pc-ult, shell.html): a strip that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a short
-   flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. The player's own button
-   (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard player gets a U key
-   next to the own bar instead. The own bar becoming full plays Sfx.ultFull (added by the sound coder; absent = silent). Called every
-   frame from updateHud (screens.js). */
+   On each name card's bottom edge (.pc-ult, shell.html): a bar that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a
+   short flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. Your own full bar burns
+   (.me + the card's .burn: an ember glow and the flames of .pc-fl, a burst as it fills) and a small flame rides over your fighter
+   (hudUltCue, drawn with the tags), so a full bar is seen without looking at the corner; the opponent's full bar is gold, no flames. The
+   player's own button (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard
+   player gets the ULTI [U] tag at the end of the own bar instead. The own bar becoming full plays Sfx.ultFull (absent = silent). Called
+   every frame from updateHud (screens.js). */
 const HU = { g: null, c: [{}, {}], rdy: false, btn: document.querySelector('.pb[data-k="ulti"]') };
 function hudUltReset() {
   HU.g = G; HU.rdy = false;
-  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null }));
+  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null, me: null }));
   HU.btn.classList.remove("rdy", "on");
-  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none");
+  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none", "me", "e");
+  for (const card of document.querySelectorAll("#hud .pcard")) {
+    card.classList.remove("burn", "bst");
+    if (!card.querySelector(".pc-fl")) { const fl = document.createElement("span"); fl.className = "pc-fl"; fl.setAttribute("aria-hidden", "true"); fl.innerHTML = "<i></i>".repeat(7); card.appendChild(fl); }
+  }
 }
 function hudUlt() {
   if (HU.g !== G) hudUltReset();
@@ -114,19 +120,23 @@ function hudUlt() {
     const f = G.fighters[i], c = HU.c[i], el = $("pc" + i).querySelector(".pc-ult");
     if (c.off !== trial) { c.off = trial; el.hidden = trial; }
     if (trial) continue;
-    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need;
+    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need, mine = i === meSlot;
     const us = (need ? Math.max(0, Math.min(1, f.ult / need)) : 0).toFixed(3);
-    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); }
+    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); el.classList.toggle("e", us === "0.000"); }
+    if (c.me !== mine) { c.me = mine; el.classList.toggle("me", mine); }
     const left = BL.TUNE.ultMax - f.ultN;
     if (c.n !== left) { c.n = left; [...el.querySelectorAll(".up i")].forEach((p, k) => p.classList.toggle("sp", k >= left)); el.classList.toggle("none", left <= 0); }
     if (c.full !== full) {
       const was = c.full; c.full = full;
       el.classList.toggle("full", full);
+      const card = $("pc" + k);
+      card.classList.toggle("burn", full && mine);
       if (full && !was) {
         el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 650);
-        if (i === meSlot && Sfx.ultFull) Sfx.ultFull();
+        if (mine) { card.classList.add("bst"); setTimeout(() => card.classList.remove("bst"), 450); }
+        if (mine && Sfx.ultFull) Sfx.ultFull();
       }
-      el.querySelector(".uk").hidden = !(full && i === meSlot && !touchUI);
+      el.querySelector(".uk").hidden = !(full && mine && !touchUI);
     }
   }
   const me = G.fighters[meSlot], need = BL.ultNeed(me), rdy = !trial && G.phase !== "over" && (BL.ultReady(G, me) || (need > 0 && me.ult >= need));
@@ -135,6 +145,26 @@ function hudUlt() {
     // the press has already been read by the sim; a finger still down on a hidden button must not leave the input held
     if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
   }
+}
+
+// your ulti is ready: a small flame over your fighter (above the YOU tag while it shows), drawn in the world with the tags (effects.js)
+function hudUltCue(c, g) {
+  if (!HU.rdy || g !== G || HU.g !== G) return;
+  const f = g.fighters[meSlot];
+  if (!f || f.state === "dead" || f.state === "gone") return;
+  const k = 1 / cam.z, t = performance.now() / 1000, calm = resCalm();
+  const y = f.y - f.s.h - (tagAlpha() > 0.02 ? 44 : 16) * k, fl = calm ? 1 : 1 + 0.1 * Math.sin(t * 11) + 0.06 * Math.sin(t * 23 + 1);
+  const tongue = (h, w) => {
+    c.beginPath(); c.moveTo(0, -h);
+    c.bezierCurveTo(w * 0.45, -h * 0.62, w * 1.15, -h * 0.3, w * 0.9, 0); c.quadraticCurveTo(w * 0.62, h * 0.36, 0, h * 0.36);
+    c.quadraticCurveTo(-w * 0.62, h * 0.36, -w * 0.9, 0); c.bezierCurveTo(-w * 1.15, -h * 0.3, -w * 0.45, -h * 0.62, 0, -h); c.closePath();
+  };
+  c.save(); c.translate(f.x, y); c.scale(k, k); c.rotate(calm ? 0 : 0.06 * Math.sin(t * 7));
+  tongue(15 * fl, 6.5); c.lineJoin = "round"; c.lineWidth = 3; c.strokeStyle = "rgba(14,16,34,.85)"; c.stroke();
+  const gr = c.createLinearGradient(0, -15, 0, 5); gr.addColorStop(0, "#ff6a3d"); gr.addColorStop(0.5, "#f3a23a"); gr.addColorStop(1, "#f3c84a");
+  c.fillStyle = gr; c.fill();
+  tongue(8 * fl, 3.4); c.fillStyle = "#ffe08a"; c.fill();
+  c.restore();
 }
 
 /* ---------- 2v2: four name cards (the CSS is game/css/65-duo.css) ----------

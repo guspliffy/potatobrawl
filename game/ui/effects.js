@@ -282,6 +282,7 @@ function render2D(g, tk) {
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
     if (NICE.length) drawNice(c, g);   // ui/online.js: the partner's (or your own) NICE!
   }
+  if (mode === "match" && !FIN.on) hudUltCue(c, g);   // hud.js: a flame over your fighter while your ulti is ready
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   bossScreen(c, g, tk);   // a boss's layer in screen space, over the fight (Kraken Spud's ink; ui/draw-boss.js)
   drawScreenFx(c);

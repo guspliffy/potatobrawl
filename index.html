@@ -142,29 +142,65 @@ button { font: inherit; color: inherit; }
 .pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
 @keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 3px rgba(255, 70, 50, 0.3); } 50% { color: #ff8a7c; text-shadow: 0 0 14px rgba(255, 90, 60, 0.85); } }
 
-/* ---------- ultimate bar (hud.js): a slim slanted strip hung under each name card. It fills in the fighter's colour, turns gold and
-   flashes when full; the two pips are the ultis left (ultMax minus ultN), grey when both are spent ---------- */
-.hud-r .pcard { margin-bottom: 9px; }
-.pc-ult { --sl: 5px; position: absolute; left: -4px; right: 6px; bottom: -10px; height: 6px; display: flex; align-items: center; gap: 6px; pointer-events: none; transition: opacity 0.3s; }
+/* ---------- ultimate bar (hud.js): a slanted trough on the bottom edge of each name card, as wide as the card. It fills in the fighter's
+   colour (slow stripes drift toward the tip, a sand line marks the tip) and turns gold when full; the two pips are the ultis left (ultMax
+   minus ultN), grey when both are spent. Your own full bar (.me) burns: an ember glow and seven flames (.pc-fl, behind the card's text so they
+   never cover the percent or the hearts) and, on a keyboard, the ULTI [U] tag. The opponent's full bar is gold with a steady glow, no flames.
+   Height (--ubh): 8 px on the 320 px phone, 10 on phones, 12 on a computer, 14 on a big screen ---------- */
+.pcard { --ubh: 12px; }
+#app.short .pcard, #app.narrow .pcard { --ubh: 10px; }
+#app.tiny .pcard { --ubh: 8px; }
+@media (min-width: 1500px) and (min-height: 1000px) { .pcard { --ubh: 14px; } }
+.hud-r .pcard { margin-bottom: calc(var(--ubh) + 5px); }
+.pcard:not(.pmini) { min-width: calc(var(--ubh) * 15 + 20px); }   /* a bar long enough to read, however short the name and the hearts */
+.pc-ult { --sl: calc(var(--ubh) * 0.75); position: absolute; left: -4px; right: 6px; top: calc(100% - 2px); height: var(--ubh); display: flex; align-items: center; gap: 5px; pointer-events: none; transition: opacity 0.3s; }
 .pcard.right .pc-ult { left: 6px; right: -4px; flex-direction: row-reverse; }
 .pc-ult[hidden] { display: none; }
-.pc-ult .ub { position: relative; flex: 1 1 auto; height: 6px; min-width: 0; overflow: hidden; background: rgba(14, 16, 34, 0.78); clip-path: polygon(var(--sl) 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
-.pc-ult .uf { position: absolute; left: 0; top: 1px; bottom: 1px; width: calc(var(--u, 0) * 100%); background: var(--fc); transition: width 0.25s ease-out; clip-path: polygon(0 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
-.pcard.right .pc-ult .uf { left: auto; right: 0; clip-path: polygon(var(--sl) 0, 100% 0, 100% 100%, 0 100%); }
+.pc-ult .ub { position: relative; flex: 1 1 auto; height: 100%; min-width: 0; overflow: hidden; background: rgba(14, 16, 34, 0.86); box-shadow: inset 0 0 0 1px rgba(206, 210, 255, 0.16); clip-path: polygon(var(--sl) 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
+.pc-ult .uf { position: absolute; left: 0; top: 2px; bottom: 2px; width: calc(var(--u, 0) * 100%); background-color: var(--fc); transition: width 0.25s ease-out;
+  background-image: linear-gradient(180deg, rgba(255, 246, 220, 0.32), rgba(255, 246, 220, 0) 55%), repeating-linear-gradient(-60deg, rgba(14, 16, 34, 0.2) 0 3px, rgba(14, 16, 34, 0) 3px 9px);
+  background-size: 100% 100%, 18px 100%; animation: ultDrift 1.6s linear infinite; clip-path: polygon(0 0, 100% 0, calc(100% - var(--sl)) 100%, 0 100%); }
+.pc-ult .uf::after { content: ""; position: absolute; top: 0; bottom: 0; right: calc(var(--sl) * 0.5); width: 2px; background: var(--sand); opacity: 0.9; }
+.pc-ult.e .uf::after { display: none; }
+.pcard.right .pc-ult .uf { left: auto; right: 0; clip-path: polygon(var(--sl) 0, 100% 0, 100% 100%, 0 100%); animation-direction: reverse; }
+.pcard.right .pc-ult .uf::after { right: auto; left: calc(var(--sl) * 0.5); }
 .pc-ult .up { display: flex; gap: 3px; flex: none; }
 .pcard.right .pc-ult .up { flex-direction: row-reverse; }
-.pc-ult .up i { width: 11px; height: 6px; background: #f3c84a; clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
+.pc-ult .up i { width: calc(var(--ubh) + 4px); height: calc(var(--ubh) - 2px); background: #f3c84a; clip-path: polygon(30% 0, 100% 0, 70% 100%, 0 100%); }
 .pc-ult .up i.sp { background: rgba(206, 210, 255, 0.22); }
-.pc-ult .uk { flex: none; transform: skewX(9deg); font: 800 11px/1 var(--display); letter-spacing: 0.04em; color: #f3c84a; padding: 2px 5px; border: 1px solid rgba(243, 200, 74, 0.8); border-radius: 3px; background: rgba(14, 16, 34, 0.8); }
-.pc-ult .uk[hidden] { display: none; }
-.pc-ult.full { filter: drop-shadow(0 0 4px rgba(243, 200, 74, 0.8)); }
-.pc-ult.full .uf { background: #f3c84a; }
-.pc-ult.flash .ub { animation: ultFlash 0.6s ease-out; }
-.pc-ult.full:not(.flash) .uf { animation: ultBreathe 1.4s ease-in-out infinite; }
 .pc-ult.none { opacity: 0.45; }
 .pc-ult.none .up i { background: rgba(206, 210, 255, 0.22); }
-@keyframes ultFlash { 0% { background: #fff3c4; transform: scaleY(2.4); } 55% { background: rgba(243, 200, 74, 0.7); transform: scaleY(1.7); } 100% { background: rgba(14, 16, 34, 0.78); transform: scaleY(1); } }
-@keyframes ultBreathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+/* full: gold with a light top edge and a gold rim; the glow sits behind the trough */
+.pc-ult.full .uf { background-color: #f3c84a; background-image: linear-gradient(180deg, rgba(255, 243, 196, 0.75), rgba(255, 243, 196, 0) 60%); background-size: 100% 100%; animation: ultBreathe 1.4s ease-in-out infinite; }
+.pc-ult.full .uf::after { display: none; }
+.pc-ult.full .ub { box-shadow: inset 0 0 0 1.5px rgba(255, 222, 130, 0.95); }
+.pc-ult.full::before { content: ""; position: absolute; left: 0; right: 0; top: -3px; bottom: -3px; z-index: -1; border-radius: 3px; background: rgba(243, 200, 74, 0.38); filter: blur(4px); }
+.pc-ult.full.me::before { top: -5px; bottom: -5px; background: linear-gradient(90deg, rgba(255, 122, 61, 0.75), rgba(243, 200, 74, 0.85)); filter: blur(7px); animation: ultEmber 1.1s ease-in-out infinite alternate; }
+.pc-ult.flash .ub { animation: ultFlash 0.6s ease-out; }
+/* the ULTI [U] tag at the end of your own full bar (a keyboard player; phones have the ULTI button) */
+.pc-ult .uk { position: absolute; left: calc(100% + 8px); top: 50%; margin-top: calc(var(--ubh) * -0.5 - 6px); display: inline-flex; align-items: center; gap: 5px; transform: skewX(9deg); font: italic 900 calc(var(--ubh) + 4px)/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; color: #3a2a00; padding: 3px 4px 3px 8px; border: 2px solid #0e1022; border-radius: 4px; background: #f3c84a; box-shadow: 0 2px 0 #0e1022, 0 0 12px rgba(255, 150, 60, 0.7); animation: ukPop 0.32s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.pc-ult .uk kbd { font: 800 calc(var(--ubh) + 1px)/1 var(--display); font-style: normal; color: #f3c84a; background: #0e1022; border-radius: 3px; padding: 2px 5px; }
+.pc-ult .uk[hidden] { display: none; }
+/* the flames: seven tongues along the bar, rising over the card's lower edge behind its text (z-index -1 in the card's own stacking context) */
+.pc-fl { display: none; position: absolute; z-index: -1; left: 1%; right: 6%; bottom: calc(var(--ubh) * -0.5 + 1px); height: calc(var(--ubh) * 3); pointer-events: none; }
+.pcard.right .pc-fl { left: 8%; right: 2%; }
+.pcard.burn .pc-fl { display: block; }
+.pcard.burn.bst .pc-fl { animation: flBurst 0.4s ease-out; transform-origin: 50% 100%; }
+.pc-fl i { position: absolute; bottom: 0; width: 16%; height: 100%; transform-origin: 50% 100%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 32'%3E%3ClinearGradient id='a' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ff5a3a' stop-opacity='.85'/%3E%3Cstop offset='.45' stop-color='%23ff8a3d'/%3E%3Cstop offset='1' stop-color='%23f3c84a'/%3E%3C/linearGradient%3E%3Cpath d='M11 0c1 6 8 10 8 19 0 7-4 12-9 12S1 27 1 20c0-5 3-7 4-11 1 3 2 4 3 5 1-5 0-9 3-14z' fill='url(%23a)'/%3E%3Cpath d='M10.5 13c1 4 4.5 6 4.5 11 0 4-2.3 6-5 6s-5-2-5-5.5c0-3 2-4 2.5-6.5 1 1.5 1.5 2 2 2.5.3-3 .2-5 1-7.5z' fill='%23ffe08a'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat; animation: flLick 0.6s ease-in-out infinite alternate; }
+.pc-fl i:nth-child(1) { left: 0; height: 70%; animation-duration: 0.55s; }
+.pc-fl i:nth-child(2) { left: 13%; height: 95%; animation-duration: 0.68s; animation-delay: -0.2s; }
+.pc-fl i:nth-child(3) { left: 27%; height: 78%; animation-duration: 0.5s; animation-delay: -0.35s; }
+.pc-fl i:nth-child(4) { left: 41%; height: 100%; animation-duration: 0.63s; animation-delay: -0.1s; }
+.pc-fl i:nth-child(5) { left: 55%; height: 82%; animation-duration: 0.57s; animation-delay: -0.45s; }
+.pc-fl i:nth-child(6) { left: 69%; height: 92%; animation-duration: 0.7s; animation-delay: -0.3s; }
+.pc-fl i:nth-child(7) { left: 83%; height: 66%; animation-duration: 0.52s; animation-delay: -0.15s; }
+@keyframes ultFlash { 0% { background: #fff3c4; transform: scaleY(1.9); } 55% { background: rgba(243, 200, 74, 0.7); transform: scaleY(1.4); } 100% { background: rgba(14, 16, 34, 0.86); transform: scaleY(1); } }
+@keyframes ultBreathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+@keyframes ultDrift { to { background-position: 0 0, 18px 0; } }
+@keyframes ultEmber { from { opacity: 0.7; } to { opacity: 1; } }
+@keyframes ukPop { from { transform: skewX(9deg) scale(0.3); opacity: 0; } to { transform: skewX(9deg) scale(1); opacity: 1; } }
+@keyframes flLick { 0% { transform: scale(1, 0.82) skewX(-4deg); } 50% { transform: scale(0.9, 1.06) skewX(3deg); } 100% { transform: scale(1.05, 0.94) skewX(-2deg); } }
+@keyframes flBurst { from { transform: scale(1.6); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
 
 /* ---------- danger edge glow (UI only, own fighter): a thin red glow on the side a hard launch is heading for; opacity is set by screens.js ---------- */
 #dgr { position: absolute; left: 0; right: 0; top: 0; bottom: var(--panelH); z-index: 1; overflow: hidden; pointer-events: none; --dw: clamp(26px, calc(var(--um) * 9), 84px); }
@@ -662,7 +698,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .dly-ph { width: 38px; height: 38px; }
 #app.narrow .dly-f, #app.narrow .dly-f.r { flex-direction: column; text-align: center; }
 /* ---------- end Daily Potato ---------- */
-@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult.full:not(.flash) .uf { animation: none; } .pc-ult .uf { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #fxHit .fh-l, #fxHit .fh-w { display: none; } .pc-stocks i.last, .pc-stocks i.thump, .pc-stocks i.pop { animation: none; } .pc-stocks i.lost::before, .pc-stocks i.lost::after { animation: heartFade 0.3s forwards; } .pcard.finr .pc-pct, .pb[data-k="special"].fin { animation: none; } #banner.show .b-main { animation: none; } .bar i { transition: none; } .pb.tutpulse { animation: none; box-shadow: 0 0 0 4px rgba(243, 217, 164, 0.6); } .pb[data-k="special"] { transition: none; } .pb[data-k="ulti"].rdy { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75); } .pb[data-k="ulti"].rdy.tutpulse { animation: none; box-shadow: 0 0 14px 4px rgba(243, 200, 74, 0.75), 0 0 0 4px rgba(243, 217, 164, 0.6); } .pc-ult.flash .ub, .pc-ult .uf, .pc-ult.full .uf, .pc-ult.full.me::before, .pc-ult .uk, .pcard.burn.bst .pc-fl, .pc-fl i { animation: none; } .pc-ult .uf { transition: none; } }
 /* ---------- Menu redesign, shared base ("sunset ink", Fable 5.1, 2026-10-14) ----------
    Tokens + the shared pieces from the mockups (menu-redesign/mockups/gen.py BASE_CSS): .disp .kick .ink (stroked display text),
    .logo, .card / .card.gold, .tone (halftone corner), .rays (sunburst), .mini, .round, .plate (profile plate, emblem slot .emb),
@@ -1888,7 +1924,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.duo #pc2, #app.duo #pc3 { display: block; }
 
 #app.duo .hud-l { gap: 0; }
-#app.duo #pc0 { margin-bottom: 12px; }   /* the room the full card's ulti strip hangs into */
+#app.duo #pc0 { margin-bottom: calc(var(--ubh) + 4px); }   /* the room the full card's ulti bar hangs into */
 #app.duo .hud-r { gap: 4px; }
 #app.duo .hud-r .pcard.pmini { margin-bottom: 0; }
 #app.duo .hud-mid { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); }   /* the timer stays in the middle whatever the two columns weigh */
@@ -1910,11 +1946,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.duo .pcard.pmini .pc-stocks { gap: 2px; padding-bottom: 3px; }
 #app.duo .pcard.pmini .pc-stocks i { width: 10px; height: 9px; }
 #app.duo .pcard.pmini.finr .pc-name::after { content: none; }   /* the pulsing percent says it */
-/* the ulti bar: a thin line along the bottom edge (the pips and the U key are for the full card) */
-#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; bottom: 0; height: 3px; gap: 0; }
-#app.duo .pcard.pmini .pc-ult .ub { height: 3px; clip-path: none; }
-#app.duo .pcard.pmini .pc-ult .uf { top: 0; bottom: 0; clip-path: none; }
-#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk { display: none; }
+/* the ulti bar: a line along the bottom edge, 6 px (5 on the 320 px phone; the pips, the ULTI tag and the flames are for the full card) */
+#app.duo .pcard.pmini, #app.duo .pcard.right.pmini { --ubh: 6px; padding-bottom: 7px; }
+#app.duo.tiny .pcard.pmini, #app.duo.tiny .pcard.right.pmini { --ubh: 5px; padding-bottom: 6px; }
+#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; top: auto; bottom: 0; gap: 0; }
+#app.duo .pcard.pmini .pc-ult .ub { clip-path: none; box-shadow: none; }
+#app.duo .pcard.pmini .pc-ult .uf { top: 1px; bottom: 1px; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .uf::after { display: none; }
+#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk, #app.duo .pcard.pmini .pc-fl { display: none; }
 
 /* the computer (1280x760): the same card, a size up */
 #app:not(.short):not(.narrow).duo .pcard.pmini .pc-top { font-size: 12px; }
@@ -2780,7 +2819,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="hud-l"><div class="pcard" id="pc0"><div>
       <div class="pc-top"><span class="pc-name"></span><span class="pc-tag">You</span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div></div>
     <div class="hud-mid"><div id="clock">4:00</div><div id="pingBadge" hidden></div><div id="netBadge" hidden></div>
       <div id="bossBar" hidden><div class="bb-top"><b class="bb-name"></b><span class="bb-st">Staggered</span><span class="bb-lv"></span></div><div class="bb-hp"><i class="bb-lag"></i><i class="bb-fill"></i></div><div class="bb-po"><i></i></div><div class="bb-fin">Finish</div><p class="bb-q"></p></div></div>
     <div class="hud-r">
@@ -2788,7 +2827,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
         <div class="pc-sub" hidden><span class="nm"></span><span class="tr"></span></div>
         <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-      </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+      </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
       <button id="pauseBtn" aria-label="Pause"></button>
     </div>
   </div>
@@ -2799,12 +2838,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
       <div class="pc-sub"><span class="nm"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
     <div class="pcard right pmini" id="pc3" role="button" aria-label="Focus this foe"><div>
       <div class="pc-top"><span class="pc-tag">CPU</span><span class="pc-name"></span></div>
       <div class="pc-sub"><span class="nm"></span></div>
       <div class="pc-row"><span class="pc-pct"><span class="num">0</span><small>%</small></span><span class="pc-stocks"></span></div>
-    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>U</b></span></div>
+    </div><span class="pc-ult" aria-hidden="true"><span class="ub"><i class="uf"></i></span><span class="up"><i></i><i></i></span><b class="uk" hidden>Ulti<kbd>U</kbd></b></span></div>
   </template>
 
   <div id="banner" hidden><div class="b-main"></div><div class="b-sub"></div></div>
@@ -15982,6 +16021,7 @@ function render2D(g, tk) {
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
     if (NICE.length) drawNice(c, g);   // ui/online.js: the partner's (or your own) NICE!
   }
+  if (mode === "match" && !FIN.on) hudUltCue(c, g);   // hud.js: a flame over your fighter while your ulti is ready
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   bossScreen(c, g, tk);   // a boss's layer in screen space, over the fight (Kraken Spud's ink; ui/draw-boss.js)
   drawScreenFx(c);
@@ -25852,17 +25892,23 @@ function hudPauseZone() {
 }
 
 /* ---------- ultimate bar and ULTI button (reads the sim, never writes it) ----------
-   Under each name card (.pc-ult, shell.html): a strip that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a short
-   flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. The player's own button
-   (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard player gets a U key
-   next to the own bar instead. The own bar becoming full plays Sfx.ultFull (added by the sound coder; absent = silent). Called every
-   frame from updateHud (screens.js). */
+   On each name card's bottom edge (.pc-ult, shell.html): a bar that fills 0..1 of BL.ultNeed(f) in the fighter's colour, turns gold with a
+   short flash when full, two pips for the ultis left (TUNE.ultMax minus f.ultN), all grey once both are spent. Your own full bar burns
+   (.me + the card's .burn: an ember glow and the flames of .pc-fl, a burst as it fills) and a small flame rides over your fighter
+   (hudUltCue, drawn with the tags), so a full bar is seen without looking at the corner; the opponent's full bar is gold, no flames. The
+   player's own button (.pb[data-k="ulti"]) shows only while the own bar is full (BL.ultReady), popping out with a gold glow; a keyboard
+   player gets the ULTI [U] tag at the end of the own bar instead. The own bar becoming full plays Sfx.ultFull (absent = silent). Called
+   every frame from updateHud (screens.js). */
 const HU = { g: null, c: [{}, {}], rdy: false, btn: document.querySelector('.pb[data-k="ulti"]') };
 function hudUltReset() {
   HU.g = G; HU.rdy = false;
-  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null }));
+  HU.c = Array.from({ length: hudN() }, () => ({ u: "", n: -1, full: false, off: null, me: null }));
   HU.btn.classList.remove("rdy", "on");
-  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none");
+  for (const el of document.querySelectorAll(".pc-ult")) el.classList.remove("full", "flash", "none", "me", "e");
+  for (const card of document.querySelectorAll("#hud .pcard")) {
+    card.classList.remove("burn", "bst");
+    if (!card.querySelector(".pc-fl")) { const fl = document.createElement("span"); fl.className = "pc-fl"; fl.setAttribute("aria-hidden", "true"); fl.innerHTML = "<i></i>".repeat(7); card.appendChild(fl); }
+  }
 }
 function hudUlt() {
   if (HU.g !== G) hudUltReset();
@@ -25871,19 +25917,23 @@ function hudUlt() {
     const f = G.fighters[i], c = HU.c[i], el = $("pc" + i).querySelector(".pc-ult");
     if (c.off !== trial) { c.off = trial; el.hidden = trial; }
     if (trial) continue;
-    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need;
+    const need = BL.ultNeed(f), full = need > 0 && f.ult >= need, mine = i === meSlot;
     const us = (need ? Math.max(0, Math.min(1, f.ult / need)) : 0).toFixed(3);
-    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); }
+    if (c.u !== us) { c.u = us; el.style.setProperty("--u", us); el.classList.toggle("e", us === "0.000"); }
+    if (c.me !== mine) { c.me = mine; el.classList.toggle("me", mine); }
     const left = BL.TUNE.ultMax - f.ultN;
     if (c.n !== left) { c.n = left; [...el.querySelectorAll(".up i")].forEach((p, k) => p.classList.toggle("sp", k >= left)); el.classList.toggle("none", left <= 0); }
     if (c.full !== full) {
       const was = c.full; c.full = full;
       el.classList.toggle("full", full);
+      const card = $("pc" + k);
+      card.classList.toggle("burn", full && mine);
       if (full && !was) {
         el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 650);
-        if (i === meSlot && Sfx.ultFull) Sfx.ultFull();
+        if (mine) { card.classList.add("bst"); setTimeout(() => card.classList.remove("bst"), 450); }
+        if (mine && Sfx.ultFull) Sfx.ultFull();
       }
-      el.querySelector(".uk").hidden = !(full && i === meSlot && !touchUI);
+      el.querySelector(".uk").hidden = !(full && mine && !touchUI);
     }
   }
   const me = G.fighters[meSlot], need = BL.ultNeed(me), rdy = !trial && G.phase !== "over" && (BL.ultReady(G, me) || (need > 0 && me.ult >= need));
@@ -25892,6 +25942,26 @@ function hudUlt() {
     // the press has already been read by the sim; a finger still down on a hidden button must not leave the input held
     if (!rdy) { touch.ulti = false; HU.btn.classList.remove("on"); }
   }
+}
+
+// your ulti is ready: a small flame over your fighter (above the YOU tag while it shows), drawn in the world with the tags (effects.js)
+function hudUltCue(c, g) {
+  if (!HU.rdy || g !== G || HU.g !== G) return;
+  const f = g.fighters[meSlot];
+  if (!f || f.state === "dead" || f.state === "gone") return;
+  const k = 1 / cam.z, t = performance.now() / 1000, calm = resCalm();
+  const y = f.y - f.s.h - (tagAlpha() > 0.02 ? 44 : 16) * k, fl = calm ? 1 : 1 + 0.1 * Math.sin(t * 11) + 0.06 * Math.sin(t * 23 + 1);
+  const tongue = (h, w) => {
+    c.beginPath(); c.moveTo(0, -h);
+    c.bezierCurveTo(w * 0.45, -h * 0.62, w * 1.15, -h * 0.3, w * 0.9, 0); c.quadraticCurveTo(w * 0.62, h * 0.36, 0, h * 0.36);
+    c.quadraticCurveTo(-w * 0.62, h * 0.36, -w * 0.9, 0); c.bezierCurveTo(-w * 1.15, -h * 0.3, -w * 0.45, -h * 0.62, 0, -h); c.closePath();
+  };
+  c.save(); c.translate(f.x, y); c.scale(k, k); c.rotate(calm ? 0 : 0.06 * Math.sin(t * 7));
+  tongue(15 * fl, 6.5); c.lineJoin = "round"; c.lineWidth = 3; c.strokeStyle = "rgba(14,16,34,.85)"; c.stroke();
+  const gr = c.createLinearGradient(0, -15, 0, 5); gr.addColorStop(0, "#ff6a3d"); gr.addColorStop(0.5, "#f3a23a"); gr.addColorStop(1, "#f3c84a");
+  c.fillStyle = gr; c.fill();
+  tongue(8 * fl, 3.4); c.fillStyle = "#ffe08a"; c.fill();
+  c.restore();
 }
 
 /* ---------- 2v2: four name cards (the CSS is game/css/65-duo.css) ----------
