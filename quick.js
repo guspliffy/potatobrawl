@@ -15,6 +15,7 @@
  *
  * WebSocket messages (server.js passes them here):
  *   phone -> server   auth {code}                      the account's sync code, once per connection
+ *                     acct?                            are accounts on? (-> acct {on}; Play friends asks before it makes an account)
  *                     qm {v, mode "r"|"c", f, pi, w}   search (w: seconds already waited, kept across a hidden page; max 60)
  *                     qmx                              stop searching
  *   server -> phone   me {id, r, pk, w, l, d, n, h} | me {err}           your online record (err: "off" | "unknown")
@@ -30,7 +31,21 @@
  *                                                      bl {n, k}: your k-win streak ended and they took n, gn: your refereed matches
  *                     qm-cs {id, g, res, rv, gn}       a Casual game the referee played to its end (g: the game's start id)
  *   qm-found's opp also carries riv (your record against them, null = first meeting; absent = not kept: no account), ws and bty
- *   (their streak and bounty, Ranked only), and you {ws, bty} is your own. me also carries rv, ws, bty and g (refereed matches).
+ *   (their streak and bounty, Ranked only), and you {ws, bty} is your own. me also carries rv, ws, bty, g (refereed matches) and sk.
+ *
+ * Play friends: a 1v1 game between two signed-in players is refereed too (the host's presence names its start and its opponent);
+ * each start is its own game, the result goes to both as qm-cs {pf: 1}. Boss fights, team brawls and anything odd are not refereed.
+ *
+ * Chip stakes: right after a refereed result the two players may play a rematch for 10, 25 or 50 chips each. Every verdict carries
+ * sk {ok: [stakes both can play], why, k} (why: "off" your stakes are off, "new" k refereed matches to go, "day" the daily limit,
+ * "gap" ranks too far apart (Quick match only), "chips", "them": the other player can't, "acct").
+ *   phone -> server   stk {s}          challenge your last opponent      stk-ok   accept the challenge you got      stkx   cancel / decline
+ *   server -> phone   stk-out {s, ms}  your challenge is out             stk-in {s, name, ms}   a challenge for you
+ *                     stk-off {why}    the challenge is off ("no": no answer, declined or gone; "x": withdrawn; or a reason above)
+ *                     stk-no {why}     can't challenge (a reason above, "late", "hold": the server is about to update)
+ *   An accepted challenge is a server-assigned match like Ranked: qm-found {sk: s}, same fighters and skins, 3 lives, 4:00, refereed.
+ *   qm-sk {id, res, why, s, d, day, rv, gn, sk}: its verdict (d: the chips you won or lost; res null = no result: a forfeit in the
+ *   first 30 s of the fight, a host who built another match, or both silent). The server writes the chips into both account files.
  */
 const crypto = require("crypto");
 const fs = require("fs");
@@ -44,6 +59,9 @@ const PLACE_FLOOR = 900;                      // ...and can't drop you below Bro
 const HIST = 20;                              // online results kept per account
 const RIVALS = 30;                            // opponents kept in the rival record (the last 30 met)
 const TZ = "Europe/Berlin";                   // the day a bounty can be claimed once per pair (the play counts' day too)
+const STAKES = [10, 25, 50];                  // chips each player puts up in a rematch for chips
+const STK = { day: 5, gap: 250, min: 10 };    // staked matches a day, the rating gap in Quick match (Play friends: any), refereed matches first
+const EARLY = 150 + 30 * 60;                  // a staked match left or gone quiet before this frame (the countdown + 30 s of fight): no result
 const TIMES = {
   tick: 1000,                                 // the pairing and timeout check
   range: [[10, 200], [20, 400]],              // rating range by seconds waited; anyone after the last
@@ -52,6 +70,8 @@ const TIMES = {
   quiet: 15000,                               // a player who sends nothing this long in a running Ranked match loses
   keep: 120000,                               // a decided match's room stays reserved this long (results, rematch handshake)
   waitMsg: 2000,                              // qm-wait every
+  offer: 30000,                               // a chip challenge waits this long for an answer
+  rematch: 120000,                            // a chip challenge can follow a result this long
 };
 const ROOM_PREFIX = "qm";
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -74,7 +94,7 @@ const pubId = () => { const b = crypto.randomBytes(10); let s = ""; for (let i =
 const isInt = Number.isInteger;
 // Elo: K 48 for the first 10 ranked matches, then 32 (the game's old Ranked numbers)
 function elo(ra, rb, res, n) { const K = n < 10 ? 48 : 32, E = 1 / (1 + Math.pow(10, (rb - ra) / 400)); return Math.round(K * (res - E)); }
-function freshOn() { return { id: pubId(), s: SEASON, r: 1000, pk: 1000, w: 0, l: 0, d: 0, n: 0, last: "", h: [], rv: [], ws: 0, g: 0, bc: [] }; }
+function freshOn() { return { id: pubId(), s: SEASON, r: 1000, pk: 1000, w: 0, l: 0, d: 0, n: 0, last: "", h: [], rv: [], ws: 0, g: 0, bc: [], sk: { d: "", n: 0, w: 0, l: 0, net: 0 } }; }
 // the bounty on a Ranked win streak: 30 chips at 3 wins, +10 a win, 100 at most
 const bounty = (ws) => (ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10));
 function dayIn(tz, t) {
@@ -102,9 +122,28 @@ function cleanOn(o) {
   if (Array.isArray(o.rv)) { const seen = new Set(); on.rv = o.rv.map(cleanRiv).filter((x) => x && !seen.has(x.id) && seen.add(x.id)).slice(0, RIVALS); }
   for (const k of ["ws", "g"]) if (isInt(o[k]) && o[k] >= 0 && o[k] < 1e9) on[k] = o[k];
   if (Array.isArray(o.bc)) on.bc = o.bc.filter((x) => typeof x === "string" && x.length <= 24).slice(-20);
+  if (o.sk && typeof o.sk === "object") {   // chip stakes: today's count (by Berlin day) and the all-time record
+    if (typeof o.sk.d === "string" && /^\d{4}-\d\d-\d\d$/.test(o.sk.d)) on.sk.d = o.sk.d;
+    for (const k of ["n", "w", "l"]) if (isInt(o.sk[k]) && o.sk[k] >= 0 && o.sk[k] < 1e9) on.sk[k] = o.sk[k];
+    if (isInt(o.sk.net) && Math.abs(o.sk.net) < 1e9) on.sk.net = o.sk.net;
+  }
   return on;
 }
-const meMsg = (on) => ({ t: "me", id: on.id, r: on.r, pk: on.pk, w: on.w, l: on.l, d: on.d, n: on.n, h: on.h, rv: on.rv, ws: on.ws, bty: bounty(on.ws), g: on.g });
+// staked matches today (the count starts again each Berlin day)
+const skToday = (on, t) => (on.sk.d === dayIn(TZ, t) ? on.sk.n : 0);
+const meMsg = (on) => ({ t: "me", id: on.id, r: on.r, pk: on.pk, w: on.w, l: on.l, d: on.d, n: on.n, h: on.h, rv: on.rv, ws: on.ws, bty: bounty(on.ws), g: on.g,
+  sk: { n: skToday(on, Date.now()), w: on.sk.w, l: on.sk.l, net: on.sk.net, day: STK.day } });
+// can these two play a rematch for chips? (Fable's reasons, the first that applies; `ok` = the stakes both can afford)
+function stakeCheck(on, prof, oon, oprof, pf, t) {
+  if (!on || !oon || !prof || !oprof) return { ok: [], why: "acct" };
+  const chips = (pr) => (Number.isSafeInteger(pr.tokens) && pr.tokens > 0 ? pr.tokens : 0);
+  const why = (a, pr) => (pr.so === 1 ? "off" : a.g < STK.min ? "new" : skToday(a, t) >= STK.day ? "day" : chips(pr) < STAKES[0] ? "chips" : "");
+  const mine = why(on, prof), theirs = why(oon, oprof);
+  const out = mine ? { ok: [], why: mine } : theirs ? { ok: [], why: "them" } : !pf && Math.abs(on.r - oon.r) > STK.gap ? { ok: [], why: "gap" }
+    : { ok: STAKES.filter((s) => s <= chips(prof) && s <= chips(oprof)), why: "" };
+  if (out.why === "new") out.k = STK.min - on.g;
+  return out;
+}
 // your record against them, as qm-found shows it (null: you never met)
 const rivView = (e) => (e ? { w: e.w, l: e.l, d: e.d, k: e.k } : null);
 // a result against an opponent goes into the record: their entry moves to the front, the oldest beyond 30 drops out
@@ -133,7 +172,9 @@ function init(opts) {
   const ofPeer = new Map();   // peer -> room of the match it is in
   const authN = new Map();    // peer -> wrong codes tried (8 at most)
   const seats = new Map();    // peer -> { file, id } bound by auth
-  const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0 };
+  const last = new Map();     // peer -> its last refereed result { mid, i (its slot), peers, files, names, f, p, pf, t }: who a chip challenge goes to
+  const offers = new Map();   // challenger peer -> a chip challenge { to, s, t, mid }
+  const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0, friendGames: 0, staked: 0, stakeVerdicts: 0 };
   let draining = false;
 
   const now = () => Date.now();
@@ -208,24 +249,27 @@ function init(opts) {
       if (best) { used.add(a.peer); used.add(best.b.peer); found(a, best.b, best.k === "r", t); }
     }
   }
-  function found(a, b, ranked, t) {
+  // sk: a rematch for chips (each puts up sk): the fighters and skins of the match before, never Ranked
+  function found(a, b, ranked, t, sk) {
     Q.delete(a.peer); Q.delete(b.peer);
+    dropOffers(a.peer); dropOffers(b.peer);
     const room = ROOM_PREFIX + crypto.randomBytes(8).toString("hex").slice(0, 12);
     const seed = crypto.randomInt(1, 1e9), f = [a.f, b.f], p = [a.pi, b.pi];
     if (f[0] === f[1] && p[0] === p[1]) p[1] = (p[1] + 1) % FIG[f[1]].palettes.length;   // the page's own mirror rule
     const fb = !ranked && (a.mode === "r" || b.mode === "r");
     // the referee plays every Ranked match, and a Casual one when both players have an account (the rival record)
     const ref = ranked || !!(a.file && b.file && a.id && b.id && a.id !== b.id);
-    const m = { id: room, room, ranked, fb, ref, peers: [a.peer, b.peer], q: [a, b], seed, f, p, t0: t, st: null, gid: 0, g: null, logs: [[], []], prog: [t, t],
+    const m = { id: room, room, ranked, fb, ref, sk: sk || 0, peers: [a.peer, b.peer], q: [a, b], seed, f, p, rules: RULES, t0: t, st: null, gid: 0, g: null, logs: [[], []], prog: [t, t],
       fr: 0, sums: new Map(), cks: [], drift: [false, false], done: false, doneT: 0, left: new Set() };
     M.set(room, m); ofPeer.set(a.peer, room); ofPeer.set(b.peer, room);
-    S.found++; S[ranked ? "ranked" : "casual"]++;
+    S.found++; S[sk ? "staked" : ranked ? "ranked" : "casual"]++;
     const ons = ref ? [onOf(a.file), onOf(b.file)] : [null, null];
     const opp = (q) => ({ name: q.name, f: q.f, r: q.r, pl: q.file && q.n < PLACING ? q.n : -1, id: q.id });
     for (let i = 0; i < 2; i++) {
       const me = m.q[i], them = m.q[1 - i], o2 = opp(them), mine = ons[i], theirs = ons[1 - i], msg = { t: "qm-found", id: room, room, role: i === 0 ? "host" : "guest", seed, f, p, r: RULES, ranked, fb: fb && me.mode === "r", opp: o2 };
       if (mine && theirs) o2.riv = rivView(mine.rv.find((x) => x.id === them.id));
       if (ranked && mine && theirs) { o2.ws = theirs.ws; o2.bty = bounty(theirs.ws); msg.you = { ws: mine.ws, bty: bounty(mine.ws) }; }
+      if (sk) msg.sk = sk;
       send(me.peer, msg);
     }
   }
@@ -237,6 +281,34 @@ function init(opts) {
     const m = M.get(room);
     return !!m && m.peers.includes(peer);
   }
+  // Play friends: the room's record once its host starts a 1v1 game against a named opponent, both signed in (a new one for a new pair)
+  function friendRoom(room, peer, p) {
+    const m0 = M.get(room), live = m0 && !m0.done ? m0 : null;
+    const hostStart = p.role === "host" && typeof p.opp === "string" && !p.tb && friendStartOk(p.start);
+    if (live && (!hostStart || (live.peers[0] === peer && live.peers[1] === p.opp))) return live.peers.includes(peer) ? live : null;
+    if (!hostStart) return null;
+    const a = seats.get(peer), b = seats.get(p.opp);
+    if (m0) release(m0);   // the pair changed (a new guest), or the last one's record is done
+    if (!a || !b || a.file === b.file || a.id === b.id) return null;
+    const qa = qOf(peer, a), qb = qOf(p.opp, b);
+    if (!qa || !qb) return null;
+    const t = now();
+    const m = { pf: true, id: room, room, ranked: false, fb: false, ref: true, sk: 0, peers: [peer, p.opp], q: [qa, qb], seed: 0, f: [], p: [], rules: RULES, t0: t, st: null, gid: 0, g: null,
+      logs: [[], []], prog: [t, t], fr: 0, sums: new Map(), cks: [], drift: [false, false], done: false, doneT: 0, left: new Set() };
+    M.set(room, m);
+    return m;
+  }
+  function qOf(peer, seat) {
+    const on = onOf(seat.file);
+    return on ? { peer, file: seat.file, id: seat.id, name: o.nameOf(peer) || "Potato", by: o.byOf(peer) || peer, r: on.r, n: on.n } : null;
+  }
+  // a friend match's 1v1 start (the page's validStart, without a boss): any of the lobby's rules
+  function friendStartOk(st) {
+    return !!st && typeof st === "object" && isInt(st.id) && st.id >= 1 && isInt(st.seed) && st.seed >= 0 && isInt(st.d) && st.d >= 1 && st.d <= 20 &&
+      Array.isArray(st.f) && st.f.length === 2 && st.f.every((id) => FIG[id]) && Array.isArray(st.p) && st.p.length === 2 &&
+      st.p.every((v, k) => isInt(v) && v >= 0 && v < FIG[st.f[k]].palettes.length) && !!st.r && typeof st.r === "object" &&
+      [1, 3, 5].includes(st.r.l) && [2, 4, 0].includes(st.r.t) && [1, 3].includes(st.r.b) && st.bo == null && st.tb == null;
+  }
   // the assigned match (or, for a Casual rematch, the same one with any seed)
   function startOk(m, st, first) {
     return !!st && typeof st === "object" && (first ? st.seed === m.seed : isInt(st.seed) && st.seed >= 0) && Array.isArray(st.f) && Array.isArray(st.p) &&
@@ -245,18 +317,28 @@ function init(opts) {
       !!st.set && st.set.n === 1 && st.bo == null;
   }
   function presence(room, peer, p) {
-    const m = M.get(room);
-    if (!m || !p || typeof p !== "object") return;
+    if (!p || typeof p !== "object") return;
+    const m = room.slice(0, ROOM_PREFIX.length) === ROOM_PREFIX ? M.get(room) : friendRoom(room, peer, p);
+    if (!m) return;
     const i = m.peers.indexOf(peer);
     if (i < 0) return;
     const st = p.start;
-    if (i === 0 && !m.done && st && typeof st === "object" && isInt(st.id) && st.id > m.gid) {
+    if (m.pf) {
+      // Play friends: each valid 1v1 start of the host is its own game, with its own fighters and rules
+      if (i === 0 && st && typeof st === "object" && isInt(st.id) && st.id > m.gid) {
+        if (m.g) S.unfinished++;
+        const ok = friendStartOk(st);
+        if (ok) { m.st = m.st || st; m.f = st.f.slice(); m.p = st.p.slice(); m.rules = { l: st.r.l, t: st.r.t, b: st.r.b }; }
+        begin(m, ok ? st : null);
+        if (!ok) m.gid = st.id;
+      }
+    } else if (i === 0 && !m.done && st && typeof st === "object" && isInt(st.id) && st.id > m.gid) {
       if (!m.st) {
         if (st.id !== 1) return;
         if (!startOk(m, st, true)) { if (m.ranked) verdict(m, 0, "start"); else void_(m, "start"); return; }   // the host built a different match: the host's loss
         m.st = st;
         begin(m, st);
-      } else if (!m.ranked && st.id === m.gid + 1) {
+      } else if (!m.ranked && !m.sk && st.id === m.gid + 1) {
         // a Casual rematch (the friend match's own: same fighters and skins, a new seed): its own game; an odd one isn't refereed
         if (m.g) S.unfinished++;   // the last game never reached its end on the server: no result
         begin(m, startOk(m, st, false) ? st : null);
@@ -288,7 +370,7 @@ function init(opts) {
     m.gid = st ? st.id : m.gid + 1; m.g = null; m.fr = 0; m.sums = new Map(); m.cks = []; m.drift = [false, false];
     if (!st || !m.ref) return;
     const players = m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] }));
-    m.g = BL.newGame({ players, stocks: RULES.l, time: RULES.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+    m.g = BL.newGame({ players, stocks: m.rules.l, time: m.rules.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
     m.prog = [now(), now()];
     // the first d frames are neutral on both phones (the input delay): a phone that starts behind the other sends its inputs
     // from the other's frame - 2, which can be past 0, so they are filled in here and never leave a hole
@@ -305,7 +387,7 @@ function init(opts) {
       if (m.fr % 60 === 0) { m.sums.set(m.fr, BL.checksum(g)); if (m.sums.size > 60) m.sums.delete(m.sums.keys().next().value); }
       if (g.phase === "end" || g.phase === "over") {
         const k = g.winner === 0 ? 0 : g.winner === 1 ? 1 : -1;
-        return m.ranked ? verdict(m, k, "game") : casualEnd(m, k);
+        return m.ranked ? verdict(m, k, "game") : m.sk ? stakeEnd(m, k, "game") : casualEnd(m, k);
       }
     }
     // each phone's game against ours, every second (a drift is logged; our copy decides either way)
@@ -357,8 +439,9 @@ function init(opts) {
         try { acct.addChips(files[i], pay[i]); S.bounties++; } catch (e) { o.log.warn("quick: can't pay a bounty", e.message); bh[i].n = 0; if (bl[1 - i]) bl[1 - i].n = 0; }
       }
     }
+    const el = afterResult(m, t);
     for (let i = 0; i < 2; i++) {
-      const on = ons[i], msg = { t: "qm-res", id: m.id, res: res[i], why, r0: out[i].r0, r1: on.r, dr: out[i].dr, n: on.n, pk: on.pk, w: on.w, l: on.l, d: on.d, ws: on.ws, gn: on.g };
+      const on = ons[i], msg = { t: "qm-res", id: m.id, res: res[i], why, r0: out[i].r0, r1: on.r, dr: out[i].dr, n: on.n, pk: on.pk, w: on.w, l: on.l, d: on.d, ws: on.ws, gn: on.g, sk: el[i] };
       if (rv[i]) msg.rv = rv[i];
       if (bh[i]) msg.bh = bh[i];
       if (bl[i]) msg.bl = bl[i];
@@ -377,14 +460,105 @@ function init(opts) {
     for (let i = 0; i < 2; i++) {
       ons[i].g++;
       try { acct.writeOn(files[i], ons[i]); } catch (e) { o.log.warn("quick: can't write a result", e.message); }
-      if (!m.left.has(m.peers[i])) send(m.peers[i], { t: "qm-cs", id: m.id, g: m.gid, res: res[i], rv: rv[i], gn: ons[i].g });
     }
-    S.casualGames++;
+    const el = afterResult(m, t);
+    for (let i = 0; i < 2; i++) {
+      const msg = { t: "qm-cs", id: m.id, g: m.gid, res: res[i], rv: rv[i], gn: ons[i].g, sk: el[i] };
+      if (m.pf) msg.pf = 1;
+      if (!m.left.has(m.peers[i])) send(m.peers[i], msg);
+    }
+    S[m.pf ? "friendGames" : "casualGames"]++;
+  }
+  // after any refereed result: who each player can challenge for chips now, and whether they can (sent with the verdict)
+  function afterResult(m, t) {
+    const pair = { mid: m.id, peers: m.peers.slice(), files: m.q.map((q) => q.file), names: m.q.map((q) => q.name), ids: m.q.map((q) => q.id), f: m.f.slice(), p: m.p.slice(), pf: !!m.pf, t };
+    for (let i = 0; i < 2; i++) last.set(m.peers[i], Object.assign({ i }, pair));
+    return [0, 1].map((i) => stakeFor(pair, i, t));
+  }
+  function stakeFor(pair, i, t) {
+    const a = acct && acct.readFile(pair.files[i]), b = acct && acct.readFile(pair.files[1 - i]);
+    return stakeCheck(a && cleanOn(a.on), a && a.prof, b && cleanOn(b.on), b && b.prof, pair.pf, t);
+  }
+
+  /* ----- chip stakes: a rematch for chips, offered right after a refereed result ----- */
+  function offer(peer, s) {
+    const L = last.get(peer), t = now();
+    if (!L || t - L.t > T.rematch) return send(peer, { t: "stk-no", why: "late" });
+    if (!STAKES.includes(s)) return send(peer, { t: "stk-no", why: "bad" });
+    if (draining) return send(peer, { t: "stk-no", why: "hold" });
+    const to = L.peers[1 - L.i], LO = last.get(to);
+    if (!LO || LO.mid !== L.mid || busy(to) || busy(peer)) return send(peer, { t: "stk-no", why: "them" });
+    for (const x of offers.values()) if (x.to === peer && x.from === to) return send(peer, { t: "stk-no", why: "them" });   // they challenged you first: answer that one
+    const el = stakeFor(L, L.i, t);
+    if (!el.ok.includes(s)) return send(peer, { t: "stk-no", why: el.why || "chips" });
+    dropOffers(peer);
+    offers.set(peer, { from: peer, to, s, t, mid: L.mid });
+    send(peer, { t: "stk-out", s, ms: T.offer });
+    send(to, { t: "stk-in", s, name: L.names[L.i], ms: T.offer });
+  }
+  // in a game the referee is playing now (a Quick match or a friend match): no challenge in or out
+  const busy = (peer) => { for (const m of M.values()) if (!m.done && m.g && m.peers.includes(peer)) return true; return false; };
+  function accept(peer) {
+    const x = [...offers.values()].find((y) => y.to === peer);
+    if (!x) return send(peer, { t: "stk-off", why: "no" });
+    offers.delete(x.from);
+    const t = now(), L = last.get(x.from);
+    const off = (why) => { send(x.from, { t: "stk-off", why }); send(peer, { t: "stk-off", why }); };
+    if (!L || L.mid !== x.mid || t - x.t > T.offer + 2000) return off("no");
+    if (draining) return off("hold");
+    if (busy(x.from) || busy(peer)) return off("no");
+    const el = [stakeFor(L, L.i, t), stakeFor(L, 1 - L.i, t)];
+    if (!el[0].ok.includes(x.s) || !el[1].ok.includes(x.s)) return off(el[0].why || (el[1].why ? "them" : "chips"));
+    // the match: the fighters, skins and sides of the one before; today's count goes up for both now (a match left early still counts)
+    const day = dayIn(TZ, t), side = [0, 1].map((k) => {
+      const file = L.files[k], rec = acct.readFile(file), on = cleanOn(rec && rec.on);
+      if (on.sk.d !== day) on.sk = { d: day, n: 0, w: on.sk.w, l: on.sk.l, net: on.sk.net };
+      on.sk.n++;
+      try { acct.writeOn(file, on); } catch (e) { o.log.warn("quick: can't write a stake", e.message); }
+      return { peer: L.peers[k], file, id: on.id, last: on.last, name: L.names[k], by: o.byOf(L.peers[k]) || L.peers[k], mode: "s", f: L.f[k], pi: L.p[k], r: on.r, n: on.n, since: t, sent: 0 };
+    });
+    for (const k of side) { Q.delete(k.peer); last.delete(k.peer); }
+    found(side[0], side[1], false, t, x.s);
+    o.log.log(`quick: stake ${x.s} accepted (${side[0].id} vs ${side[1].id})`);
+  }
+  // withdrawn by the challenger, declined by the other, or one of them gone: both hear it's off
+  function cancelOffer(peer) {
+    const mine = offers.get(peer);
+    if (mine) { offers.delete(peer); send(mine.to, { t: "stk-off", why: "x" }); }
+    for (const x of [...offers.values()]) if (x.to === peer) { offers.delete(x.from); send(x.from, { t: "stk-off", why: "no" }); }
+  }
+  function dropOffers(peer) {
+    for (const x of [...offers.values()]) if (x.from === peer || x.to === peer) { offers.delete(x.from); send(x.from === peer ? x.to : x.from, { t: "stk-off", why: x.from === peer ? "x" : "no" }); }
+  }
+  // the verdict of a staked match: the winner takes the other's stake (both account files), a draw moves nothing.
+  // A forfeit in the first 30 s of the fight is no result (a Wi-Fi hiccup at 0:05 shouldn't cost 50 chips).
+  function stakeEnd(m, k, why) {
+    if (m.done) return;
+    if (why !== "game" && m.fr < EARLY) { void_(m, "early"); return; }
+    m.done = true; m.doneT = now();
+    const res = why === "game" ? (k < 0 ? [0.5, 0.5] : k === 0 ? [1, 0] : [0, 1]) : k === 0 ? [0, 1] : [1, 0];
+    const files = m.q.map((q) => q.file), ons = files.map((f) => onOf(f));
+    if (!ons[0] || !ons[1]) { void_(m, "acct"); return; }
+    const t = now(), s = m.sk, d = res.map((r) => (r === 1 ? s : r === 0 ? -s : 0)), rv = [null, null];
+    for (let i = 0; i < 2; i++) {
+      const me = ons[i];
+      me.g++;
+      if (d[i] > 0) me.sk.w++; else if (d[i] < 0) me.sk.l++;
+      me.sk.net += d[i];
+      rv[i] = rivAdd(me, { id: ons[1 - i].id, name: m.q[1 - i].name, f: m.f[1 - i], r: ons[1 - i].r }, res[i], t);
+      try { acct.writeOn(files[i], me); } catch (e) { o.log.warn("quick: can't write a stake result", e.message); }
+    }
+    for (let i = 0; i < 2; i++) if (d[i]) { try { acct.addChips(files[i], d[i]); } catch (e) { o.log.warn("quick: can't pay a stake", e.message); } }
+    const el = afterResult(m, t);
+    for (let i = 0; i < 2; i++) send(m.peers[i], { t: "qm-sk", id: m.id, res: res[i], why, s, d: d[i], day: skToday(ons[i], t), rv: rv[i], gn: ons[i].g, sk: el[i] });
+    S.stakeVerdicts++;
+    o.log.log(`quick: ${m.room} stake ${s} ${why} ${m.q[0].id} ${res[0]} - ${res[1]} ${m.q[1].id}`);
   }
   // no result: a match that never started, both players silent, or a server problem
   function void_(m, why) {
     m.done = true; m.doneT = now();
     if (m.ranked && m.st) { S.voids++; for (const peer of m.peers) send(peer, { t: "qm-res", id: m.id, res: null, why: "void" }); }
+    else if (m.sk && m.st) { S.voids++; for (const peer of m.peers) send(peer, { t: "qm-sk", id: m.id, res: null, why, s: m.sk, d: 0 }); }
     else for (const peer of m.peers) if (!m.left.has(peer)) send(peer, { t: "qm-off", id: m.id, why });
   }
   function end(m) { m.done = true; m.doneT = m.doneT || now(); }
@@ -402,6 +576,7 @@ function init(opts) {
     if (ofPeer.get(peer) === room) ofPeer.delete(peer);
     if (!m.done) {
       if (m.ranked && m.g) verdict(m, i, "left");   // leaving a running Ranked match is a loss
+      else if (m.sk && m.g) stakeEnd(m, i, "left");  // ...a staked one too (no result in its first 30 s)
       else if (m.st) { m.g = null; end(m); }         // a Casual match that ran: no result for a game cut short; the room's own "left" tells the other phone
       else void_(m, "left");                         // before the start: no result, the other phone searches again
     }
@@ -409,6 +584,7 @@ function init(opts) {
   }
   function gone(peer) {
     Q.delete(peer); seats.delete(peer); authN.delete(peer);
+    dropOffers(peer); last.delete(peer);
     const room = ofPeer.get(peer);
     if (room) left(peer, room);
   }
@@ -418,13 +594,15 @@ function init(opts) {
     for (const m of [...M.values()]) {
       if (m.done) { if (t - m.doneT > T.keep) release(m); continue; }
       if (!m.st) { if (t - m.t0 > T.noStart) void_(m, "nostart"); continue; }
-      if (!m.ranked || !m.g) continue;   // a Casual game that stalls is the phones' business (no result unless it ends)
+      if (!(m.ranked || m.sk) || !m.g) continue;   // a Casual game that stalls is the phones' business (no result unless it ends)
       // who keeps the game waiting: the phone whose input for the next frame is missing
       const miss = [0, 1].filter((i) => m.logs[i][m.fr] === undefined);
       const quiet = miss.filter((i) => t - m.prog[i] > T.quiet);
-      if (miss.length === 1 && quiet.length === 1) verdict(m, quiet[0], "quiet");
+      if (miss.length === 1 && quiet.length === 1) (m.ranked ? verdict : stakeEnd)(m, quiet[0], "quiet");
       else if (miss.length === 2 && quiet.length === 2) void_(m, "quiet");
     }
+    for (const x of [...offers.values()]) if (t - x.t > T.offer) { offers.delete(x.from); send(x.from, { t: "stk-off", why: "no" }); send(x.to, { t: "stk-off", why: "no" }); }
+    for (const [peer, L] of last) if (t - L.t > T.rematch + T.offer) last.delete(peer);
     pairAll();
     for (const q of Q.values()) if (t - q.sent >= T.waitMsg) waitMsg(q, t);
   }
@@ -435,16 +613,20 @@ function init(opts) {
     if (m.t === "auth") { if (typeof m.code === "string" && m.code.length <= 64) auth(peer, m.code); return true; }
     if (m.t === "qm") { search(peer, m); return true; }
     if (m.t === "qmx") { stop(peer); return true; }
+    if (m.t === "stk") { if (seats.has(peer)) offer(peer, m.s); else send(peer, { t: "stk-no", why: "acct" }); return true; }
+    if (m.t === "stk-ok") { accept(peer); return true; }
+    if (m.t === "stkx") { cancelOffer(peer); return true; }
+    if (m.t === "acct?") { send(peer, { t: "acct", on: !!acct }); return true; }   // Play friends asks before it makes the silent account
     return false;
   }
-  const running = () => [...M.values()].filter((m) => m.ranked && !m.done && m.st).length;
+  const running = () => [...M.values()].filter((m) => (m.ranked || m.sk) && !m.done && m.st).length;   // the update waits for these
   return {
     handle, canJoin, presence, left, gone, tick,
     drain() { draining = true; for (const q of Q.values()) waitMsg(q, now()); },
     draining: () => draining,
     running, searching: () => Q.size, stats: () => Object.assign({ running: running(), searching: Q.size }, S),
-    proto: PROTO, T, _M: M, _Q: Q,
+    proto: PROTO, T, _M: M, _Q: Q, _offers: offers,
   };
 }
 
-module.exports = { init, elo, cleanOn, bounty, decIn, RULES, PLACING, TIMES };
+module.exports = { init, elo, cleanOn, bounty, stakeCheck, decIn, RULES, PLACING, TIMES, STK, STAKES };

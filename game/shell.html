@@ -1035,6 +1035,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- chip stakes (ui/stakes.js): the rematch for chips, 10 / 25 / 50 -->
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -1061,6 +1062,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           </div>
           <div class="delta" id="rStick"><b id="rDelta">+0</b><small>Rating</small></div>
         </div>
+        <!-- a staked match (ui/stakes.js): the pot in the rank card's place -->
+        <div class="card res-pot" id="rPot" hidden>
+          <div class="pt-body"><b class="pt-head" id="rPotH"></b><span class="pt-sub" id="rPotS"></span><span class="pt-bar" aria-hidden="true"><i></i><i></i></span></div>
+          <div class="delta" id="rPotD"><b id="rPotN">…</b><small>Chips</small></div>
+        </div>
         <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
         <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
         <div class="res-stats" id="rStats">
@@ -1074,10 +1080,25 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="chips" id="rPickChips"></div>
         </div>
         <div class="res-actions">
-          <button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button>
+          <!-- chip stakes (ui/stakes.js): FOR CHIPS joins the gold button, or takes the second row; the reason it can't, under all -->
+          <div class="res-again"><button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button><button class="btn sk-btn" id="rStake" hidden></button></div>
           <button class="btn" id="rChange"><span>Fighters</span></button>
           <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>
+          <p class="sk-why" id="rStakeWhy" hidden></p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="scrStake" class="screen modal" hidden>
+    <div class="sheet sk-sheet scroll">
+      <header class="sh-head"><h3>Rematch for chips</h3><button class="round x" id="skClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body">
+        <p class="sk-who" id="skWho"></p>
+        <p class="sk-rules">Same fighters · 3 lives · 4:00 · not Ranked. Winner takes the pot; the server referees. Leaving is a loss.</p>
+        <div class="sk-tiles" id="skTiles" role="radiogroup" aria-label="Stake"></div>
+        <p class="sk-have" id="skHave"></p>
+        <div class="sk-btns"><button class="btn primary" id="skSend"><span>Challenge</span></button><button class="btn" id="skNo"><span>Not now</span></button></div>
       </div>
     </div>
   </section>
@@ -1130,6 +1151,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
         <div class="set-row" id="setCountRow" hidden><span>Play counts</span><span class="chips" id="setCount"></span></div>
         <p class="set-fine" id="setCountNote" hidden></p>
+        <div class="set-row" id="setStakeRow" hidden><span>Chip stakes</span><span class="chips" id="setStake"></span></div>
+        <p class="set-fine" id="setStakeNote" hidden>Rematches for 10, 25 or 50 chips after online matches. Off hides them, and nobody can challenge you.</p>
         <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
       </div>
     </div>
@@ -1187,8 +1210,17 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <span class="vs-riv" id="vsRiv" hidden></span>
     <div class="vs-s l"><span class="vs-pl"><b id="vsNameL"></b></span><b class="vs-f" id="vsFL"></b><span class="vs-t" id="vsTL"></span><span class="vs-w" id="vsWL" hidden></span></div>
     <div class="vs-s r"><span class="vs-pl"><b id="vsNameR"></b><i class="tag st" id="vsTagR" hidden></i></span><b class="vs-f" id="vsFR"></b><span class="vs-t" id="vsTR"></span><span class="vs-w" id="vsWR" hidden></span></div>
-    <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
+    <div class="vs-st" id="vsStamp"><b id="vsMode">Ranked</b><span class="vs-pot" id="vsPot" hidden></span><span class="vs-fb" id="vsFb" hidden>no Ranked player found</span><span class="vs-why" id="vsWhy" hidden>doesn't count for rank</span></div>
     <div class="vs-foot"><span class="livetag"><i aria-hidden="true"></i><span id="vsPing">measuring…</span></span><span class="vs-bar"><i></i></span></div>
+  </div>
+  <!-- chip stakes (ui/stakes.js): a challenge for you, over any screen but a fight -->
+  <div class="stk-card" id="stkCard" role="alertdialog" aria-labelledby="skcT" aria-describedby="skcL" hidden>
+    <i class="tag ember st skc-tag">Challenge</i>
+    <h4 id="skcT"></h4>
+    <p id="skcL"></p>
+    <span class="skc-time" id="skcTime"></span>
+    <span class="skc-bar" aria-hidden="true"><i id="skcBar"></i></span>
+    <div class="skc-btns"><button class="btn primary" id="skcOk"></button><button class="btn" id="skcNo"><span>Not now</span></button></div>
   </div>
 </div>
 

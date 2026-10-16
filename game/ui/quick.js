@@ -42,6 +42,7 @@ function qmClean(o) {
   // ui/rivals.js: the last 30 opponents, the Ranked win streak and its bounty, the refereed count
   me.rv = Array.isArray(o.rv) ? o.rv.map(rvClean).filter(Boolean).slice(0, 30) : [];
   me.ws = n(o.ws, 0); me.bty = rvBounty(me.ws); me.g = n(o.g, 0);
+  me.sk = stkRec(o.sk);   // ui/stakes.js: today's staked matches, the record, the net chips
   return me;
 }
 const qmMe = () => (QM.me && QM.code && QM.code === ACCT.code ? QM.me : null);   // the record of the account this device is linked to
@@ -102,8 +103,11 @@ function qmMsg(m) {
   else if (m.t === "qm-x") { if (qmSearching()) qmCancel("You're searching on another page or phone."); }
   else if (m.t === "qm-found") qmFound(m);
   else if (m.t === "qm-off") qmOff(m);
-  else if (m.t === "qm-res") qmRes(m);
-  else if (m.t === "qm-cs") rvCasual(m);   // ui/rivals.js: a Casual game the server played to its end
+  else if (m.t === "qm-res") { qmRes(m); stkGot(m, 1); }   // ui/stakes.js: who can play a rematch for chips now
+  else if (m.t === "qm-cs") { rvCasual(m); stkGot(m, m.g); }   // ui/rivals.js: a Casual game (or a Play friends one) the server played to its end
+  else if (m.t === "qm-sk") stkRes(m);   // ui/stakes.js: a staked match decided
+  else if (m.t === "acct") qmAcctAnswer(m);
+  else if (m.t === "stk-out" || m.t === "stk-in" || m.t === "stk-off" || m.t === "stk-no") stkMsg(m);
 }
 function qmGotMe(m) {
   QM.authing = false;
@@ -168,6 +172,17 @@ async function qmFind() {
   }
   qmSend();
 }
+// Play friends (online.js netHost / netJoin): the silent account too, so the referee keeps the rival record and stakes can follow.
+// Unknown whether this server keeps accounts: it says so over the socket first (an HTTP try would leave a 404 where they're off).
+function qmSilent() {
+  if (!qmOn() || ACCT.code || qmAcctOff() || QM.making) return;
+  if (ACCT.avail) { qmMakeAcct(); return; }
+  if (QM.conn) QM.asked = window.__blQuick.send({ t: "acct?" });
+}
+function qmAcctAnswer(m) {
+  ACCT.avail = !!m.on;
+  if (m.on && QM.asked) { QM.asked = false; qmMakeAcct(); }
+}
 function qmSend() {
   if (!qmSearching() || QM.hidden || !QM.conn) return;
   if (ACCT.code && !QM.authed && !QM.acct) { qmAuth(); return; }   // signed in first: the server pairs by your rank (it searches on `me`)
@@ -205,11 +220,13 @@ function qmFoundOk(m) {
     m.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < FIG[m.f[i]].palettes.length) && validRules(m.r) && !!m.opp && typeof m.opp === "object";
 }
 function qmFound(m) {
-  if (!qmSearching() || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  const sk = stkFoundOk(m);   // ui/stakes.js: the rematch for chips this phone challenged for or accepted
+  if (!(qmSearching() || sk) || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
   const opp = m.opp;
   opp.name = SYNC.cleanName(opp.name) || "Potato";
   QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
   rvFound(m);   // ui/rivals.js
+  if (sk) stkFound(m); else m.sk = 0;
   const me = qmMe() || QM_FRESH;
   QM.pend = m.ranked ? { id: m.id, room: m.room, n0: me.n, r0: me.r, w0: me.w, l0: me.l, d0: me.d, k0: QM.streak, dead: 0 } : null;
   Sfx.init(); qmChime();
@@ -223,7 +240,7 @@ async function qmJoin(m) {
   if (NET.mr) leaveMatchRoom();
   resetNet();
   const me = m.role === "host" ? 0 : 1;
-  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
+  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, sk: m.sk | 0, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
   NET.role = m.role; NET.phase = m.role === "host" ? "hosting" : "joining"; NET.joinT = performance.now(); NET.note = "";
   NET.oppName = m.opp.name; NET.mrCode = m.room;
   try { await openMatchRoom(m.room); }
@@ -280,9 +297,10 @@ function qmVs(m) {
   const my = me || QM_FRESH;
   side("L", NET.myName || acctName(), m.f[mine], m.p[mine], my.r, me && my.n < QM_PLACING ? { n: my.n } : null, !me);
   side("R", o.name, m.f[1 - mine], m.p[1 - mine], Number.isInteger(o.r) ? o.r : 1000, o.pl >= 0 ? { n: o.pl } : null, !o.id);
-  $("vsMode").textContent = m.ranked ? "Ranked" : "Casual";
-  $("vsStamp").className = "vs-st " + (m.ranked ? "rk" : "cs");
+  $("vsMode").textContent = m.sk ? "Rematch · for chips" : m.ranked ? "Ranked" : "Casual";
+  $("vsStamp").className = "vs-st " + (m.sk ? "sk" : m.ranked ? "rk" : "cs");
   $("vsFb").hidden = !m.fb; $("vsWhy").hidden = m.ranked;
+  stkVs(m);   // ui/stakes.js: the pot
   $("vsPing").textContent = `measuring… · ${mapName(m.seed % BL.POOL)}`;
   rvVs(m);   // ui/rivals.js: the record, the tags, the wanted plates
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
@@ -300,10 +318,10 @@ function qmStartMsg(D, rtt) {
   const q = NET.qm;
   return { id: NET.matchId + 1, seed: q.seed, d: D, f: q.f.slice(), p: q.p.slice(), rtt: Math.round(rtt), r: Object.assign({}, q.r), set: { n: 1, w: [0, 0] } };
 }
-// ...and the guest plays only that match (a Casual rematch is the friend-match one)
+// ...and the guest plays only that match (a Casual rematch is the friend-match one; Ranked and staked matches have none)
 function qmStartOk(st) {
   const q = NET.qm;
-  if (st.id !== 1) return !q.ranked;
+  if (st.id !== 1) return !q.ranked && !q.sk;
   return st.seed === q.seed && st.f[0] === q.f[0] && st.f[1] === q.f[1] && st.p[0] === q.p[0] && st.p[1] === q.p[1] &&
     st.r.l === q.r.l && st.r.t === q.r.t && st.r.b === q.r.b && st.set.n === 1 && st.bo == null;
 }
@@ -314,6 +332,7 @@ function qmOff(m) {
   $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
   if (NET.mr) leaveMatchRoom();
   resetNet(); NET.phase = "idle";
+  if (stkOff(m)) { QM.found = null; QM.st = "idle"; quickOpen(); lobbyPresence(); return; }   // ui/stakes.js: a staked match never searched
   QM.found = null; QM.pend = null; QM.st = "search"; QM.wait = null;
   if (banner && mode === "match" && match && match.warm) { paused = false; QM.note = ""; }   // the CPU fight goes on
   else { if (mode !== "quick") quickOpen(); QM.note = "The other player didn't connect. Searching again."; }
@@ -334,13 +353,13 @@ function qmFinish(left, lost) {
       if (sb > 0) R.lines.push([`${k} win streak`, sb]);
     } else if (res === 0.5) { R.lines.push(["Draw", 10]); kos(3); }
     else { R.lines.push(["Match played", 6]); kos(2); }
-  } else if (!q.ranked && over) {
+  } else if (!q.ranked && over) {   // Casual, and a staked match too: its pot shows only in the pot card (ui/stakes.js)
     R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]); kos(2);
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
   if (q.ranked) rvFinishLines(R, q);   // ui/rivals.js: a bounty the verdict already brought, shown only (the server pays it)
-  if (lost || left || q.ranked) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked has no rematch: the room goes
+  if (lost || left || q.ranked || q.sk) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked and staked matches have no rematch in the room: it goes
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   QM.st = "idle";
   $("netBadge").hidden = true;
@@ -351,7 +370,7 @@ function qmFinish(left, lost) {
 function qmForfeit() {
   const q = match.qm;
   leaveMatchRoom(); NET.phase = "idle"; QM.st = "idle";
-  if (!q.ranked) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
+  if (!q.ranked && !q.sk) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   showResults({ res: 0, online: true, qm: q, forfeit: true, me: G.fighters[meSlot], op: G.fighters[1 - meSlot], lines: [], total: 0 });
   lobbyPresence();
@@ -371,19 +390,20 @@ function qmResults(R) {
     return;
   }
   const q = R.qm;
-  $("rMode").textContent = `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
+  $("rMode").textContent = q.sk ? `Rematch for chips · ${q.sk} each` : `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
   rvResults(R);   // ui/rivals.js: the record now, the rival strip
-  if (q.ranked) {
+  if (q.ranked || q.sk) {
     $("rAgain").querySelector("span").textContent = "Next match"; $("rAgain").disabled = false;
     $("rChange").querySelector("span").textContent = "Quick match";
-    if (R.lost) { resTitle("Connection lost"); resLine($("rSub"), ["The connection dropped. The server decides this match."]); }
+    if (R.lost) { resTitle("Connection lost"); resLine($("rSub"), [`The connection dropped. The server decides this ${q.sk ? "pot" : "match"}.`]); }
     if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "No chips for a match you left." : "No chips for an unfinished match.");
-    qmRankCard();
-    if (QM.res && QM.res.id === q.id) qmVerdictView(false);
+    if (q.sk) stkResults(R);   // ui/stakes.js: the pot card in the rank card's place
+    else { qmRankCard(); if (QM.res && QM.res.id === q.id) qmVerdictView(false); }
   } else {
     $("rChange").querySelector("span").textContent = "Next match";
     if (!R.lines.length) $("rWhy").textContent = masteryWhy("No chips for an unfinished match. Casual doesn't change your rank.");
   }
+  stkButtons();   // ui/stakes.js: FOR CHIPS
 }
 // the rank card while the server confirms: the rating before, a mute … sticker, a shimmer on the bar (css/96-quick.css)
 function qmRankCard() {
@@ -509,12 +529,12 @@ function qmWarmQuit() { quickOpen(); }   // Pause > Back to search
 // menus.js, the results' buttons: true when Quick match took the tap
 function qmAgain() {
   if (match.warm) { qmWarmStart(); return true; }
-  if (match.qm && (match.qm.ranked || NET.phase !== "result")) { qmNext(); return true; }
+  if (match.qm && (match.qm.ranked || match.qm.sk || NET.phase !== "result")) { qmNext(); return true; }
   return false;   // Casual: the friend match's Rematch (both tap)
 }
 function qmChange() {
   if (match.warm) { quickOpen(); return; }
-  if (match.qm.ranked) { qmLeave(); quickOpen(); return; }
+  if (match.qm.ranked || match.qm.sk) { qmLeave(); quickOpen(); return; }
   qmNext();   // Casual: Next match
 }
 function qmLeave() { if (NET.mr) leaveMatchRoom(); resetNet(); NET.phase = "idle"; if (QM.st === "found") QM.st = "idle"; lobbyPresence(); }
@@ -523,6 +543,11 @@ function qmNext() { qmLeave(); quickOpen(); qmFind(); }
 function qmPauseText() {
   const quit = $("pQuit").querySelector("span"), note = $("pNote");
   if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
+  if (match.qm && match.qm.sk) {   // a staked match: no result in its first 30 s, then leaving costs the stake
+    quit.textContent = "Forfeit";
+    note.textContent = NET.frame < STK_EARLY ? "Leaving in the first 30 seconds is no result: nobody's chips move." : `Online matches keep running while this is open. Leaving counts as a loss · −${match.qm.sk} chips`;
+    return;
+  }
   if (!match.qm || !match.qm.ranked) return;
   const me = qmMe() || QM_FRESH, o = match.qm.opp, dr = qmElo(me.r, o && Number.isInteger(o.r) ? o.r : 1000, 0, me.n);
   quit.textContent = "Forfeit";
@@ -710,7 +735,7 @@ function qmTick() {
     if (QM.authCode !== ACCT.code || !ACCT.code) { QM.authed = false; QM.authing = false; QM.acct = ""; qmAuth(); }
     qmRefresh();
   }
-  if (now - QM.uiT > 250) { QM.uiT = now; qmUi(); }
+  if (now - QM.uiT > 250) { QM.uiT = now; qmUi(); stkTick(); }   // ui/stakes.js: the challenge clocks
 }
 
 /* ----- wiring ----- */
