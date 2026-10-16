@@ -2617,19 +2617,21 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
    start page (css/20-menu.css reads --np-fg / --np-sub / --np-stroke), the Profile's name field, the results; plateCls(id) in ui/shop.js gives the class. */
 
 /* ---- the plate looks: a background and the text colours that stay readable on it (contrast 5:1 or better, checked on every colour stop) ---- */
-.np-sunset { --np-fg: #0e1022; --np-sub: #2b2230; background: linear-gradient(90deg, #ffe08a, #f4c95d 45%, #ef7a52); color: var(--np-fg); }
-.np-mint { --np-fg: #0e1022; --np-sub: #16352c; background: linear-gradient(180deg, #b4f3d4, #6fcf9f); color: var(--np-fg); }
+.np-sunset { --np-fg: #0e1022; --np-sub: #2b2230; --np-bg: linear-gradient(90deg, #ffe08a, #f4c95d 45%, #ef7a52); }
+.np-mint { --np-fg: #0e1022; --np-sub: #16352c; --np-bg: linear-gradient(180deg, #b4f3d4, #6fcf9f); }
 .np-nightsky { --np-fg: #fff; --np-sub: #cdd5ff;
-  background: radial-gradient(circle at 7% 30%, #fff 0 0.8px, transparent 1.4px), radial-gradient(circle at 94% 72%, #fff 0 0.7px, transparent 1.3px), radial-gradient(circle at 90% 22%, #ffe08a 0 0.9px, transparent 1.5px),
+  --np-bg: radial-gradient(circle at 7% 30%, #fff 0 0.8px, transparent 1.4px), radial-gradient(circle at 94% 72%, #fff 0 0.7px, transparent 1.3px), radial-gradient(circle at 90% 22%, #ffe08a 0 0.9px, transparent 1.5px),
     radial-gradient(circle at 10% 78%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 62% 16%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 76% 84%, #ffe08a 0 0.6px, transparent 1.1px),
-    linear-gradient(180deg, #1b2160, #0b0e2e);
-  color: var(--np-fg); }
+    linear-gradient(180deg, #1b2160, #0b0e2e); }
 .np-roaddust { --np-fg: #f9e7bd; --np-sub: #f3dcae;
-  background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(243, 217, 164, 0.38) 6px 10px) 0 86% / 100% 2px no-repeat, linear-gradient(180deg, #7a3f27, #4e2517);
-  color: var(--np-fg); }
-.np-kraken { --np-fg: #fff; --np-sub: #f3edff; background: linear-gradient(90deg, #653b88, #186b62); color: var(--np-fg); }
-.np-halftone { --np-fg: #0e1022; --np-sub: #2b2d44; --np-stroke: 2px #fff; background: radial-gradient(#0e1022 0.9px, transparent 1.1px) 0 0 / 5px 5px, #fff; color: var(--np-fg); }
-.np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; background: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); color: var(--np-fg); }
+  --np-bg: repeating-linear-gradient(90deg, transparent 0 6px, rgba(243, 217, 164, 0.38) 6px 10px) 0 86% / 100% 2px no-repeat, linear-gradient(180deg, #7a3f27, #4e2517); }
+.np-kraken { --np-fg: #fff; --np-sub: #f3edff; --np-bg: linear-gradient(90deg, #653b88, #186b62); }
+/* Halftone: cream paper, ketchup dots that come in towards the right end, so the name and the tier line stay clean */
+.np-halftone { --np-fg: #0e1022; --np-sub: #3a2c22; --np-stroke: 2px #fff6e4;
+  --np-bg: linear-gradient(90deg, #fff6e4 0 38%, rgba(255, 246, 228, 0.55) 72%, rgba(255, 246, 228, 0) 100%), radial-gradient(#e8453c 1.1px, transparent 1.4px) 0 0 / 5px 5px, #fff6e4; }
+.np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; --np-bg: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); }
+/* every plate paints with its --np-bg (the lobby's plates below re-apply it where their own rules set a background) */
+[class*="np-"] { background: var(--np-bg); color: var(--np-fg); }
 /* the Profile's name field wears its plate; a plate with a halo (Halftone) outlines the typed letters too */
 #acName[class*="np-"] { -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; caret-color: var(--np-fg); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
 #acName[class*="np-"]::selection { background: rgba(14, 16, 34, 0.35); }
@@ -2754,6 +2756,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #dlyAgain.dim .tokglyph { filter: grayscale(1); }
 #app.narrow .dly-acts { flex-wrap: wrap; }
 #app.narrow .dly-acts #dlyBack { flex: 1 1 100%; }
+
+/* the friends lobby and Quick match (css/95-lobby.css): your name plate on the Fight Card, a friend's name in the match list and the Here now pills */
+#scrOnline .on-plate[class*="np-"], #scrQuick .on-plate[class*="np-"] { background: var(--np-bg); border: 2px solid var(--ink); border-left: 0; }
+#scrOnline .on-plate[class*="np-"] b, #scrQuick .on-plate[class*="np-"] b, #scrOnline .on-plate[class*="np-"] .on-name { color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-list .who b[class*="np-"] { align-self: flex-start; max-width: 100%; padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-pl[class*="np-"] { background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
 
 /* ---------- Play friends: "Fight Card" (Fable 5.1, skins-lobby/fable-design.md part 3; mockups skins-lobby/mockups/lobby_*.png) ----------
    Three cards read left to right as you · your match · the room (stacked upright). The Fight Card (#onChange) is one button: your
@@ -8209,7 +8217,7 @@ function scythe(c, f, P, RC, limb, lw) {
     c.quadraticCurveTo(lb * 0.16, lb * 0.44, -3, 3.5); c.closePath();                                // the cutting edge back to the collar
     c.fillStyle = RC.blade; c.fill(); c.lineWidth = 1.6 / Math.max(0.4, Math.abs(s)); c.strokeStyle = OUT; c.stroke();
     c.save(); c.clip(); c.fillStyle = RC.spine; c.beginPath(); c.moveTo(3, -3); c.quadraticCurveTo(lb * 0.58, lb * 0.3, -lb * 0.28, lb); c.quadraticCurveTo(lb * 0.42, lb * 0.32, 2, 2); c.closePath(); c.fill(); c.restore();
-    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // 200 chips: a ghost-lit edge
+    if (RC.ghost) { c.save(); c.globalAlpha = 0.45; c.strokeStyle = "#c8ffe0"; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke(); c.restore(); }   // the top chip skin (300 chips): a ghost-lit edge
     c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = 1.2 / Math.max(0.4, Math.abs(s)); c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(lb * 0.14, lb * 0.47, -lb * 0.24, lb * 0.93); c.stroke();
     c.restore();
   }
@@ -8537,7 +8545,7 @@ function drawSwooshes(c, f, P, tk, alpha) {
   else if (m && m.magic) { c.globalAlpha = alpha * 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
   else drawSwoosh(c, f, P, S);
 }
-// Slash arcs. Samurai skins from 120 chips get an ink-brush underlay with the same shape and size.
+// Slash arcs. Samurai skins from the second chip skin (150 chips) get an ink-brush underlay with the same shape and size.
 function drawSwoosh(c, f, P, S) {
   const ink = f.spec.look.costume === "samurai" && skinLvl(f) >= 2 && !S.body;
   const path = () => {
@@ -10153,6 +10161,17 @@ function glazeMatch() {
   for (const f of G.fighters) GLAZED.delete(f);
   const me = G.fighters[meSlot];
   if (me && !me.spec.boss) glazeMark(me, glazeHas(me.spec.id, glazeIdx(me)));
+}
+// online: your glazed skins ride in your presence (gz: { fighterId: [indices] }) so a friend's page draws them; an older page sends none (no glaze)
+function glazePres() {
+  const o = {}, g = P.glazed && typeof P.glazed === "object" ? P.glazed : {};
+  for (const id in g) if (FIG[id] && Array.isArray(g[id])) { const l = g[id].filter((i) => Number.isInteger(i) && i >= 0 && i < FIG[id].palettes.length); if (l.length) o[id] = l; }
+  return o;
+}
+// does a friend's presence glaze the skin this fighter wears?
+function glazeFrom(pr, f) {
+  const g = pr && pr.gz, l = g && typeof g === "object" ? g[f.spec.id] : null;
+  return Array.isArray(l) && l.includes(glazeIdx(f));
 }
 const GLZ_LAND = new WeakMap();   // fighter -> { g: grounded last frame, t: the frame he landed, k: the frame last drawn }
 const GLZ_C = ["rgba(255,170,215,", "rgba(150,236,200,", "rgba(206,172,255,"];   // pink, mint, lilac (+ alpha)
@@ -28641,9 +28660,9 @@ function skMakeCard(spec, i, list, tap) {
   b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
-  const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
+  const f = glazeMark(BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
   f.x = 0; f.y = 0; f.facing = -1;
-  list.push({ cv: b.querySelector("canvas"), f, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94 });
   return b;
 }
 const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
@@ -28705,6 +28724,7 @@ function skPreview(spec) {
     f.x = 0; f.y = 0; f.facing = -1;
     SK.art = { cv: $("skArt"), f, i, fit: 0.8, bottom: 0.94 };
   }
+  glazeMark(SK.art.f, glazeHas(spec.id, i));   // ui/glaze.js: the preview shines when the skin is glazed
 }
 // the loop draws the preview while the sheet is open (loop.js)
 function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
@@ -29014,7 +29034,7 @@ function lobbyPresence() {
   if (!NET.room || !NET.ok) return;
   const busy = NET.phase === "match" || NET.phase === "handshake" || NET.phase === "result";
   const hosting = NET.phase === "hosting" && !NET.qm, q = qmPresence();   // ui/quick.js: searching (qs) or in a Quick match
-  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, bo: hosting ? hostBo() : null, busy: busy || q.busy, qs: q.qs }).catch(() => {});
+  NET.room.presence({ v: PROTO, f: sel.fighter, host: hosting ? NET.hostCode : null, r: hosting ? P.rules : null, bo: hosting ? hostBo() : null, busy: busy || q.busy, qs: q.qs, np: shopWorn() || null }).catch(() => {});   // np: your nameplate (ui/shop.js)
 }
 // The lobby's second mode, a boss fight with a friend. P.onBoss = { on, b (boss id), lv (0-2) }: this device's last pick (not synced).
 function onBoss() {
@@ -29120,6 +29140,7 @@ async function renderOnline() {
   const names = await namesFor(peers);
   if (seq !== onSeq || mode !== "online") return;
   $("onMyName").textContent = NET.myName || "You";
+  plateSet($("onMyName").parentNode, shopWorn());   // your nameplate on the Fight Card (ui/shop.js)
   const nameIn = $("onName");
   $("onMyName").hidden = NET.standalone; nameIn.hidden = !NET.standalone;
   if (NET.standalone && document.activeElement !== nameIn) nameIn.value = NET.myName;
@@ -29145,6 +29166,7 @@ async function renderOnline() {
     if (NET.invite && h.presence.host === NET.invite) li.className = "invited";
     const who = document.createElement("div"); who.className = "who";
     const b = document.createElement("b"); b.textContent = names[h.peer] || "Friend";
+    plateSet(b, h.presence.np);   // the host's nameplate (ui/shop.js; unknown or none = plain)
     const sp = document.createElement("span"); const hf = FIG[h.presence.f];
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
@@ -29168,7 +29190,7 @@ async function renderOnline() {
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
-  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy) })));
+  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy), np: plateCls(p.presence && p.presence.np) })));
   hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
   const ob = onBoss().on;
   hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : "Host a match";
@@ -29201,7 +29223,7 @@ function hereNow(ps) {
   if (!ps) return;
   if (!ps.length) { box.textContent = "Just you. Friends show up here when they open this page."; return; }
   for (const p of ps) {
-    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "");
+    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "") + (p.np ? " " + p.np : "");
     el.textContent = p.busy ? `${p.n} · in a match` : p.n;
     box.appendChild(el);
   }
@@ -29225,7 +29247,7 @@ function onlineArtFighter() {
     o.f = newGame({ players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     o.f.x = 0; o.f.y = 0;
   }
-  return o.f;
+  return glazeMark(o.f, glazeHas(spec.id, o.pi));   // ui/glaze.js
 }
 // the Fight Card's model, live in the worn skin (the select's paintModel: 88 % of the art area, the Reaper's scythe fitted)
 const onArt = { cv: null, f: null, fit: 0.88, bottom: 0.93 };
@@ -29261,7 +29283,7 @@ async function netHost() {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
-  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo() });
+  namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -29274,7 +29296,7 @@ async function netJoin(code) {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
-  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter) });
+  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres() });
   if (NET.invite === code) NET.invite = null;
   lobbyPresence(); renderOnline();
 }
@@ -29388,6 +29410,10 @@ function startOnlineMatch(st) {
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, nf: null, np: null, em: 0 });
   lobbyPresence();
   enterMatchUI();
+  { // your friend's glaze, read from his presence (ui/glaze.js); yours comes from enterMatchUI
+    const o = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null, f = G.fighters[1 - meSlot];
+    if (f) glazeMark(f, glazeFrom(o && o.presence, f));
+  }
   resolveOppName();
 }
 function readOpp(pr) {
@@ -30999,6 +31025,7 @@ function renderLocker() {
     a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
     a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
     if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
+    if (glazeOn(a.f) !== glazeHas(f.id, pi)) { glazeMark(a.f, glazeHas(f.id, pi)); a.dirty = true; }   // ui/glaze.js
   }
   // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
   if (LKR.cardsFor !== spec.id) {
@@ -31010,6 +31037,7 @@ function renderLocker() {
   }
   $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
+  for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
 }
 // closing the sheet: the next time it opens, the Locker starts on the fighter played last again
@@ -31563,7 +31591,7 @@ async function qmJoin(m) {
   try { await openMatchRoom(m.room); }
   catch (e) { return; }   // the server calls the match off (qm-off) and the search goes on
   if (NET.mrCode !== m.room) return;
-  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0 });
+  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js)
 }
 function qmChime() { Sfx.tone(784, 784, 0.12, "triangle", 0.08); Sfx.at(0.13, 1175, 1175, 0.22, "triangle", 0.08); Sfx.at(0.06, 110, 40, 0.4, "sine", 0.45); }
 // over a running CPU warm-up: the fight freezes under PLAYER FOUND! and a 3·2·1 (qmTick), then ends with no result
@@ -31600,6 +31628,7 @@ function qmVs(m) {
   const mine = m.role === "host" ? 0 : 1, o = m.opp, me = qmMe(), el = $("qmVs");
   const fs = newGame({ players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
+  glazeMark(fs[mine], glazeHas(m.f[mine], m.p[mine]));   // ui/glaze.js: your own glaze on the VS screen
   for (const [k, f] of [["L", fs[mine]], ["R", fs[1 - mine]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
   const side = (k, name, fid, pi, r, pl, unranked) => {
     const spec = FIG[fid], pal = spec.palettes[pi] || spec.palettes[0];
@@ -31892,6 +31921,7 @@ function qmRender() {
   $("qmFName").textContent = spec.name; $("qmFSkin").textContent = pal.name; $("qmFRole").textContent = spec.role;
   $("qmChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${pal.name}. Change fighter`);
   $("qmMyName").textContent = NET.myName || acctName();
+  plateSet($("qmMyName").parentNode, shopWorn());   // your nameplate (ui/shop.js)
   // the mode: two big segments (Ranked waits for accounts on the server)
   for (const [id, v] of [["qmR", "r"], ["qmC", "c"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
   $("qmRSub").textContent = off ? "opens soon" : "counts for rank";
@@ -32216,7 +32246,7 @@ function frame(now) {
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
 qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)

@@ -223,7 +223,7 @@ async function qmJoin(m) {
   try { await openMatchRoom(m.room); }
   catch (e) { return; }   // the server calls the match off (qm-off) and the search goes on
   if (NET.mrCode !== m.room) return;
-  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0 });
+  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js)
 }
 function qmChime() { Sfx.tone(784, 784, 0.12, "triangle", 0.08); Sfx.at(0.13, 1175, 1175, 0.22, "triangle", 0.08); Sfx.at(0.06, 110, 40, 0.4, "sine", 0.45); }
 // over a running CPU warm-up: the fight freezes under PLAYER FOUND! and a 3·2·1 (qmTick), then ends with no result
@@ -260,6 +260,7 @@ function qmVs(m) {
   const mine = m.role === "host" ? 0 : 1, o = m.opp, me = qmMe(), el = $("qmVs");
   const fs = newGame({ players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
+  glazeMark(fs[mine], glazeHas(m.f[mine], m.p[mine]));   // ui/glaze.js: your own glaze on the VS screen
   for (const [k, f] of [["L", fs[mine]], ["R", fs[1 - mine]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
   const side = (k, name, fid, pi, r, pl, unranked) => {
     const spec = FIG[fid], pal = spec.palettes[pi] || spec.palettes[0];
@@ -552,6 +553,7 @@ function qmRender() {
   $("qmFName").textContent = spec.name; $("qmFSkin").textContent = pal.name; $("qmFRole").textContent = spec.role;
   $("qmChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${pal.name}. Change fighter`);
   $("qmMyName").textContent = NET.myName || acctName();
+  plateSet($("qmMyName").parentNode, shopWorn());   // your nameplate (ui/shop.js)
   // the mode: two big segments (Ranked waits for accounts on the server)
   for (const [id, v] of [["qmR", "r"], ["qmC", "c"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
   $("qmRSub").textContent = off ? "opens soon" : "counts for rank";

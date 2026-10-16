@@ -6,19 +6,21 @@
    start page (css/20-menu.css reads --np-fg / --np-sub / --np-stroke), the Profile's name field, the results; plateCls(id) in ui/shop.js gives the class. */
 
 /* ---- the plate looks: a background and the text colours that stay readable on it (contrast 5:1 or better, checked on every colour stop) ---- */
-.np-sunset { --np-fg: #0e1022; --np-sub: #2b2230; background: linear-gradient(90deg, #ffe08a, #f4c95d 45%, #ef7a52); color: var(--np-fg); }
-.np-mint { --np-fg: #0e1022; --np-sub: #16352c; background: linear-gradient(180deg, #b4f3d4, #6fcf9f); color: var(--np-fg); }
+.np-sunset { --np-fg: #0e1022; --np-sub: #2b2230; --np-bg: linear-gradient(90deg, #ffe08a, #f4c95d 45%, #ef7a52); }
+.np-mint { --np-fg: #0e1022; --np-sub: #16352c; --np-bg: linear-gradient(180deg, #b4f3d4, #6fcf9f); }
 .np-nightsky { --np-fg: #fff; --np-sub: #cdd5ff;
-  background: radial-gradient(circle at 7% 30%, #fff 0 0.8px, transparent 1.4px), radial-gradient(circle at 94% 72%, #fff 0 0.7px, transparent 1.3px), radial-gradient(circle at 90% 22%, #ffe08a 0 0.9px, transparent 1.5px),
+  --np-bg: radial-gradient(circle at 7% 30%, #fff 0 0.8px, transparent 1.4px), radial-gradient(circle at 94% 72%, #fff 0 0.7px, transparent 1.3px), radial-gradient(circle at 90% 22%, #ffe08a 0 0.9px, transparent 1.5px),
     radial-gradient(circle at 10% 78%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 62% 16%, #fff 0 0.5px, transparent 1px), radial-gradient(circle at 76% 84%, #ffe08a 0 0.6px, transparent 1.1px),
-    linear-gradient(180deg, #1b2160, #0b0e2e);
-  color: var(--np-fg); }
+    linear-gradient(180deg, #1b2160, #0b0e2e); }
 .np-roaddust { --np-fg: #f9e7bd; --np-sub: #f3dcae;
-  background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(243, 217, 164, 0.38) 6px 10px) 0 86% / 100% 2px no-repeat, linear-gradient(180deg, #7a3f27, #4e2517);
-  color: var(--np-fg); }
-.np-kraken { --np-fg: #fff; --np-sub: #f3edff; background: linear-gradient(90deg, #653b88, #186b62); color: var(--np-fg); }
-.np-halftone { --np-fg: #0e1022; --np-sub: #2b2d44; --np-stroke: 2px #fff; background: radial-gradient(#0e1022 0.9px, transparent 1.1px) 0 0 / 5px 5px, #fff; color: var(--np-fg); }
-.np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; background: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); color: var(--np-fg); }
+  --np-bg: repeating-linear-gradient(90deg, transparent 0 6px, rgba(243, 217, 164, 0.38) 6px 10px) 0 86% / 100% 2px no-repeat, linear-gradient(180deg, #7a3f27, #4e2517); }
+.np-kraken { --np-fg: #fff; --np-sub: #f3edff; --np-bg: linear-gradient(90deg, #653b88, #186b62); }
+/* Halftone: cream paper, ketchup dots that come in towards the right end, so the name and the tier line stay clean */
+.np-halftone { --np-fg: #0e1022; --np-sub: #3a2c22; --np-stroke: 2px #fff6e4;
+  --np-bg: linear-gradient(90deg, #fff6e4 0 38%, rgba(255, 246, 228, 0.55) 72%, rgba(255, 246, 228, 0) 100%), radial-gradient(#e8453c 1.1px, transparent 1.4px) 0 0 / 5px 5px, #fff6e4; }
+.np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; --np-bg: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); }
+/* every plate paints with its --np-bg (the lobby's plates below re-apply it where their own rules set a background) */
+[class*="np-"] { background: var(--np-bg); color: var(--np-fg); }
 /* the Profile's name field wears its plate; a plate with a halo (Halftone) outlines the typed letters too */
 #acName[class*="np-"] { -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; caret-color: var(--np-fg); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
 #acName[class*="np-"]::selection { background: rgba(14, 16, 34, 0.35); }
@@ -143,3 +145,9 @@
 #dlyAgain.dim .tokglyph { filter: grayscale(1); }
 #app.narrow .dly-acts { flex-wrap: wrap; }
 #app.narrow .dly-acts #dlyBack { flex: 1 1 100%; }
+
+/* the friends lobby and Quick match (css/95-lobby.css): your name plate on the Fight Card, a friend's name in the match list and the Here now pills */
+#scrOnline .on-plate[class*="np-"], #scrQuick .on-plate[class*="np-"] { background: var(--np-bg); border: 2px solid var(--ink); border-left: 0; }
+#scrOnline .on-plate[class*="np-"] b, #scrQuick .on-plate[class*="np-"] b, #scrOnline .on-plate[class*="np-"] .on-name { color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-list .who b[class*="np-"] { align-self: flex-start; max-width: 100%; padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+#scrOnline .on-pl[class*="np-"] { background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }

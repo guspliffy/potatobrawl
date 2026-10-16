@@ -18,6 +18,17 @@ function glazeMatch() {
   const me = G.fighters[meSlot];
   if (me && !me.spec.boss) glazeMark(me, glazeHas(me.spec.id, glazeIdx(me)));
 }
+// online: your glazed skins ride in your presence (gz: { fighterId: [indices] }) so a friend's page draws them; an older page sends none (no glaze)
+function glazePres() {
+  const o = {}, g = P.glazed && typeof P.glazed === "object" ? P.glazed : {};
+  for (const id in g) if (FIG[id] && Array.isArray(g[id])) { const l = g[id].filter((i) => Number.isInteger(i) && i >= 0 && i < FIG[id].palettes.length); if (l.length) o[id] = l; }
+  return o;
+}
+// does a friend's presence glaze the skin this fighter wears?
+function glazeFrom(pr, f) {
+  const g = pr && pr.gz, l = g && typeof g === "object" ? g[f.spec.id] : null;
+  return Array.isArray(l) && l.includes(glazeIdx(f));
+}
 const GLZ_LAND = new WeakMap();   // fighter -> { g: grounded last frame, t: the frame he landed, k: the frame last drawn }
 const GLZ_C = ["rgba(255,170,215,", "rgba(150,236,200,", "rgba(206,172,255,"];   // pink, mint, lilac (+ alpha)
 // called by drawPotato in body space (translated to the feet, flipped to the facing, turned with the lean), after the body and its costume

@@ -100,8 +100,8 @@ SRV=$!
 sleep 1
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 
 # 5c. Online boss fights (2v1 on two phones): the repair copy of every boss fits a presence in pieces and restores frame for frame

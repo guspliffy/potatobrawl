@@ -344,6 +344,7 @@ function renderLocker() {
     a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
     a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
     if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
+    if (glazeOn(a.f) !== glazeHas(f.id, pi)) { glazeMark(a.f, glazeHas(f.id, pi)); a.dirty = true; }   // ui/glaze.js
   }
   // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
   if (LKR.cardsFor !== spec.id) {
@@ -355,6 +356,7 @@ function renderLocker() {
   }
   $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
+  for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
 }
 // closing the sheet: the next time it opens, the Locker starts on the fighter played last again
