@@ -30,6 +30,7 @@ const { BL } = require("./game/core.js");
 const RULES = { l: 3, t: 4, b: 1 };           // every Quick match: 3 lives, 4 minutes, one game
 const SEASON = 1;
 const PLACING = 5;                            // the first ranked matches show "Placing n of 5" instead of a tier
+const PLACE_FLOOR = 900;                      // ...and can't drop you below Bronze (the game's TIERS)
 const HIST = 20;                              // online results kept per account
 const TIMES = {
   tick: 1000,                                 // the pairing and timeout check
@@ -86,7 +87,7 @@ function init(opts) {
   const Q = new Map();        // peer -> a search { peer, file, id, last, name, by, mode, f, pi, r, n, since, sent }
   const M = new Map();        // room -> a match
   const ofPeer = new Map();   // peer -> room of the match it is in
-  const authN = new Map();    // peer -> auth tries (8 at most per peer)
+  const authN = new Map();    // peer -> wrong codes tried (8 at most)
   const seats = new Map();    // peer -> { file, id } bound by auth
   const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0 };
   let draining = false;
@@ -102,13 +103,11 @@ function init(opts) {
     return rec ? cleanOn(rec.on) : null;
   }
   function auth(peer, code) {
-    const n = (authN.get(peer) || 0) + 1;
-    authN.set(peer, n);
-    if (n > 8) return;
+    if ((authN.get(peer) || 0) >= 8) return;   // 8 wrong codes per connection (a page signs in again after every reconnect)
     if (!acct) return send(peer, { t: "me", err: "off" });
     const file = acct.fileOfCode(code);
     const rec = file && acct.readFile(file);
-    if (!rec) { setTimeout(() => send(peer, { t: "me", err: "unknown" }), 350); return; }   // as slow as the HTTP side
+    if (!rec) { authN.set(peer, (authN.get(peer) || 0) + 1); setTimeout(() => send(peer, { t: "me", err: "unknown" }), 350); return; }   // as slow as the HTTP side
     const on = cleanOn(rec.on);   // the first time: a fresh record (Season 1 at 1000) with its public id
     if (!rec.on || rec.on.id !== on.id) { try { acct.writeOn(file, on); } catch (e) { o.log.warn("quick: can't write", e.message); } }
     seats.set(peer, { file, id: on.id });
@@ -207,6 +206,9 @@ function init(opts) {
         const players = m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] }));
         m.g = BL.newGame({ players, stocks: RULES.l, time: RULES.t * 60, countdown: 150, seed: m.seed, map: m.seed % BL.POOL });
         m.prog = [now(), now()];
+        // the first d frames are neutral on both phones (the input delay): a phone that starts behind the other sends its inputs
+        // from the other's frame - 2, which can be past 0, so they are filled in here and never leave a hole
+        m.logs = [new Array(p.start.d).fill(NEUTRAL), new Array(p.start.d).fill(NEUTRAL)];
       }
     }
     if (!m.ranked || !m.g || m.done) return;
@@ -256,10 +258,14 @@ function init(opts) {
     const res = why === "game" ? (k < 0 ? [0.5, 0.5] : k === 0 ? [1, 0] : [0, 1]) : k === 0 ? [0, 1] : [1, 0];
     const files = m.q.map((q) => q.file), ons = files.map((f) => onOf(f));
     if (!ons[0] || !ons[1]) { void_(m, "acct"); return; }
-    const out = [0, 1].map((i) => ({ r0: ons[i].r, dr: elo(ons[i].r, ons[1 - i].r, res[i], ons[i].n), or: ons[1 - i].r }));   // both from the ratings before
+    // both from the ratings before; a placement match never drops you below Bronze (Tin is for players who have placed)
+    const out = [0, 1].map((i) => {
+      const r0 = ons[i].r, r1 = Math.max(ons[i].n < PLACING ? PLACE_FLOOR : 0, r0 + elo(r0, ons[1 - i].r, res[i], ons[i].n));
+      return { r0, dr: r1 - r0, or: ons[1 - i].r };
+    });
     for (let i = 0; i < 2; i++) {
       const me = ons[i], them = ons[1 - i], dr = out[i].dr;
-      me.r = Math.max(0, me.r + dr); me.pk = Math.max(me.pk, me.r); me.n++;
+      me.r = me.r + dr; me.pk = Math.max(me.pk, me.r); me.n++;
       if (res[i] === 1) me.w++; else if (res[i] === 0) me.l++; else me.d++;
       me.last = them.id;
       me.h.unshift({ t: now(), o: m.q[1 - i].name, of: m.f[1 - i], f: m.f[i], or: out[i].or, res: res[i], dr, why });

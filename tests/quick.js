@@ -13,7 +13,7 @@ const { BL } = require("../game/core.js");
 const Q = require("../quick.js");
 
 const ROOT = path.join(__dirname, "..");
-const PORT = 8093;
+const PORT = 8092;
 const PROTO = +/const PROTO = (\d+);/.exec(fs.readFileSync(path.join(ROOT, "game/ui/online.js"), "utf8"))[1];
 const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400 };
 let fails = 0, passes = 0;
@@ -112,7 +112,8 @@ async function enter(a, b) {
 }
 /* Plays the match both phones agreed on (the same game the referee builds) with two bots, sending each phone's inputs the way the
    page does, 60 frames to a message. stopAt: { slot, frame } = that phone goes silent from that frame on; until: both stop there
-   (the match keeps running). ckLie: slot whose checksums are wrong. Returns the local game. */
+   (the match keeps running). ckLie: slot whose checksums are wrong. late: slot that starts behind the other, so its first message
+   starts at the other's frame - 2 (d - 2, past 0), as the page's does. Returns the local game. */
 async function play(H, G, opts) {
   const o = opts || {}, st = H.st;
   const players = st.f.map((id, i) => ({ spec: FIG[id], pal: FIG[id].palettes[st.p[i]] }));
@@ -126,7 +127,7 @@ async function play(H, G, opts) {
       if (o.stopAt && o.stopAt.slot === i && sent[i] >= o.stopAt.frame) continue;
       const to = logs[i].length;
       if (!all && to - sent[i] < 60) continue;
-      const from = Math.max(0, sent[i] - 2);
+      const from = o.late === i && !sent[i] ? st.d - 2 : Math.max(0, sent[i] - 2);
       const c = o.ckLie === i && ck ? [ck[0], ck[1] ^ 1] : ck;
       phones[i].send({ t: "presence", room: phones[i].found.room, p: { m: 1, s: from, i: pack(logs[i], from, to), fr: frame, ck: c } });
       sent[i] = to;
@@ -195,7 +196,7 @@ async function play(H, G, opts) {
     await sleep(150);
     r = await call("GET", "/health");
     check(/ranked matches running: 1/.test(r.text), "/health: one ranked match running");
-    const g = await play(H, G, {});
+    const g = await play(H, G, { late: 1 });   // the guest starts behind the host, as on real phones
     const resH = await H.next((m) => m.t === "qm-res", 5000), resG = await G.next((m) => m.t === "qm-res", 5000);
     const want = g.winner === 0 ? [1, 0] : g.winner === 1 ? [0, 1] : [0.5, 0.5];
     check(resH && resG && resH.res === want[0] && resG.res === want[1] && resH.why === "game", `the referee's verdict is the game's (winner ${g.winner}, ${g.t} frames)`);
