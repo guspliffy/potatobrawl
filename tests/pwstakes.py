@@ -14,7 +14,7 @@ Two players: A on a phone sideways (844x390), B on a phone upright (390x844), bo
      Then B turns Settings > Chip stakes Off, which reaches B's account file (the server reads it before any challenge).
 Screenshots go to the folder in argv[1]. Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwstakes.py [outdir]        (needs `python3 game/build.py` first)"""
-import asyncio, sys, os, json, subprocess, tempfile, shutil, time, hashlib, pathlib, re, urllib.request
+import asyncio, traceback, sys, os, json, subprocess, tempfile, shutil, time, hashlib, pathlib, re, urllib.request
 from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get('PWSTAKES_PORT', 8102))
@@ -233,7 +233,7 @@ async def main():
                 expect(has(await text(A, '#stkCard'), 'Mash Master wants a rematch for'), f"A: the card, got {await text(A, '#stkCard')!r}")
                 await shot(A, 'result-card-844')
                 await A.set_viewport_size(DESK); await A.wait_for_timeout(450); await shot(A, 'result-card-1280'); await A.set_viewport_size(PHONE)
-                await tap(A, '#skcNo')
+                if await shown(A, '#stkCard'): await tap(A, '#skcNo')   # a loaded machine can spend the 30 s on the shots: then it ran out
             await wait(B, "window.__blastline.stk.out === null && window.__blastline.stk.busy === 0", "B: A passed", 10)
             await tap(A, '#rMenu')
             await wait(A, "window.__blastline.mode === 'menu'", 'A: the menu')
@@ -243,7 +243,7 @@ async def main():
                 expect(not await A.evaluate("document.getElementById('stkCard').classList.contains('side')"), 'A: on the menu the card sits at the bottom')
                 await shot(A, 'menu-card-844'); await overflow(A, 'A menu card 844', '#stkCard')
                 await A.set_viewport_size(TINY); await A.wait_for_timeout(450); await shot(A, 'menu-card-667'); await overflow(A, 'A menu card 667', '#stkCard'); await A.set_viewport_size(PHONE)
-                await tap(A, '#skcNo')
+                if await shown(A, '#stkCard'): await tap(A, '#skcNo')
             await wait(B, "window.__blastline.stk.out === null", 'B: the second challenge is off', 10)
             # Account > Stats: the stake line
             await tap(A, '#mRank'); await tap(A, '#acTabS'); await A.wait_for_timeout(500)
@@ -279,7 +279,8 @@ async def main():
             expect(r and r['prof'].get('so') == 1, f"server: B's account holds Chip stakes Off, got {r and r['prof'].get('so')}")
             await b.close()
     except Exception as e:
-        errs.append(f'stopped: {type(e).__name__}: {str(e).splitlines()[0]}')
+        at = [fr.lineno for fr in traceback.extract_tb(e.__traceback__) if fr.filename.endswith('pwstakes.py')]
+        errs.append(f'stopped at line {at[-1] if at else "?"}: {type(e).__name__}: {str(e).splitlines()[0]}')
     finally:
         log = stop_server(srv)
         shutil.rmtree(d, ignore_errors=True)
