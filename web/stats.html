@@ -154,6 +154,10 @@ p { margin: 8px 0 0; }
 /* health */
 .err { display: grid; grid-template-columns: 34px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .err b { font-weight: 700; text-align: right; }
+.bdn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.bdn .bp { min-width: 92px; color: var(--muted); font: 600 12.5px/1.2 var(--body); font-variant-numeric: tabular-nums; }
+.bdn b { min-width: 0; font: 700 16px/1.2 var(--head); overflow-wrap: anywhere; }
+.bdn.off b { color: var(--muted); text-decoration: line-through; }
 .err code { font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 @media (min-width: 600px) {
@@ -603,6 +607,28 @@ p { margin: 8px 0 0; }
     return s;
   }
 
+  // ---------- 6b. the names on the Ranked vs CPU boards (cpurank.js): Hide shows one as "Potato" on both boards
+  function secBoard() {
+    var b = st.data.board;
+    if (!Array.isArray(b) || !b.length) return document.createDocumentFragment();   // nobody on the boards (or no accounts): nothing to hide
+    var s = sec("Board names", plural(b.length, "player") + " on the CPU and online boards");
+    var best = function (x) { return Math.min(x.c || 999, x.o || 999); };
+    b.slice().sort(function (x, y) { return best(x) - best(y); }).slice(0, 150).forEach(function (x) {
+      var where = [x.c ? "CPU #" + x.c : "", x.o ? "online #" + x.o : ""].filter(Boolean).join(" · ");
+      var btn = h("button", { class: "mini", type: "button" }, x.nb ? "Show" : "Hide");
+      btn.addEventListener("click", function () { blankName(x.id, !x.nb, btn); });
+      s.appendChild(h("div", { class: "bdn" + (x.nb ? " off" : "") }, h("span", { class: "bp" }, where), h("b", null, String(x.nm || "")), btn));
+    });
+    return s;
+  }
+  function blankName(id, on, btn) {
+    btn.disabled = true;
+    fetch("/api/stats/blank", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: st.key, id: id, on: on }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" })
+      .then(function (r) { if (!r.ok) throw "net"; return r.json(); })
+      .then(function (j) { if (st.data && j && Array.isArray(j.board)) st.data.board = j.board; render(); })
+      .catch(function () { btn.disabled = false; btn.textContent = "Try again"; });
+  }
+
   // ---------- 7. health
   function secHealth() {
     var R = C.R, d = R.days, errs = P(d, "err:"), e = sorted(errs), nErr = total(errs);
@@ -650,7 +676,7 @@ p { margin: 8px 0 0; }
     Array.prototype.forEach.call(document.querySelectorAll(".pill"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-range") === st.range ? "true" : "false"); });
     C = context(d, st.range); C.tz = d.tz || "Europe/Berlin";
     var m = $("main"); m.textContent = ""; m.setAttribute("data-state", "ok");
-    [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
+    [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secBoard, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
     drawSpark();
   }
 

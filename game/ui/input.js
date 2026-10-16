@@ -110,11 +110,13 @@ const FS = {
   ios: /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
 };
 FS.can = FS.web && !FS.app && !/iPhone|iPod/.test(navigator.userAgent) && !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
-const fsWanted = () => (P.fs === undefined ? touchUI : !!P.fs);
+FS.btn = FS.can || (FS.web && FS.ios && !FS.app);   // the menu's fullscreen button: the real thing, or on iPhone the Add to Home Screen steps
+const fsWanted = () => (P.fs === undefined ? touchUI : !!P.fs);   // "Fullscreen in fights" (Settings)
 const isFull = () => !!document.fullscreenElement;
 // Called from taps that start play (Fight, Rematch, Host, Join): browsers only allow fullscreen from a tap.
-function goFull() {
-  if (!FS.can || !fsWanted() || isFull()) return;
+function goFull() { if (fsWanted()) enterFull(); }
+function enterFull() {
+  if (!FS.can || isFull()) return;
   try {
     document.documentElement.requestFullscreen({ navigationUI: "hide" }).then(() => {
       if (touchUI && P.screen !== "up" && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
@@ -122,5 +124,5 @@ function goFull() {
   } catch (e) { /* not allowed here */ }
 }
 function leaveFull() { if (isFull()) document.exitFullscreen().catch(() => {}); }
-document.addEventListener("fullscreenchange", () => setTimeout(resize, 60));
+document.addEventListener("fullscreenchange", () => { fsSync(); setTimeout(resize, 60); });   // fsSync (ui/menus.js): the button and the Settings row follow the real state
 

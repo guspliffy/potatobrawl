@@ -1,9 +1,25 @@
-# PotatoBrawl handoff (updated 2026-10-16: chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Road and fullscreen fixes (2026-10-16, branch claude/road-fullscreen-fixes-ucjbgm, UI only, no PROTO; plan "Before step 6",
+  thread 1; brief /mnt/project-files/pre-step6/briefs/thread-1.md):
+  - Road results: after a win with a star missing, Retry (#rRetry, dark, 1fr) sits beside Next stop (1.6fr; .res-actions.retry) and
+    its second line names the first star missing ("★ No heart lost", "★ Three-piece combo", roadStarShort); after a boss win it sits
+    beside Next: Hard with the level it replays. Three stars (or no next step) hide it. roadResRetry / roadRetry in ui/road.js.
+  - Combo stars (11 of 24 stops, bonus.k "route"; "own" follows your fighter): the stop sheet shows #rsCombo under the stars, the route's
+    name and its How to play key chips (routeKeysHTML); a tap opens the Combo trial on that route with your fighter (startTrial(fid,
+    { route, back })), whose Back and pause quit return to the stop's sheet (TR.back). The results show the chips on a missed combo
+    star (.rd-stk, also a trial link). On a short sheet the CPU's line hides when the combo line would sit under Fight (roadSheetFit).
+  - Fullscreen: the menu's round button left of the gear and the Settings row "Fullscreen in fights" with "Now: windowed /
+    fullscreen" under it; on iPhone Safari the button and the row's How open #scrA2hs (see the file map's fullscreen line).
+  - Quick match's YOUR MATCH plate below 820 px wide (740-800 px phones, desktop windows near 800): #qmIdle takes .thin (qmThin in
+    ui/quick.js, a ResizeObserver: under 270 px on phones, 340 px on the desktop). The record and season move into the kicker (#qmKRec),
+    five pips (#qmPips) stand for "n of 5 played" while placing, and the tier word, "counts for rank" and the kicker's record shrink
+    until they fit. The rating line falls back to "1561 · 89 to go" wherever "89 to Blastmaster" doesn't fit (any width). The desktop
+    columns give way below 1180 px (clamp on .qm2's cqw). tests/pwquick.py step 6 sweeps 16 sizes for overlapping or cut plate text.
 - Online 2v2 (2026-10-16, branch claude/project-thread-x0j4lg, PROTO 15, players reload once): Team Brawl for up to four phones through
   Play friends. Plan https://claude.ai/code/artifact/e0202bd2-7a22-4909-ad75-9687c69130d9 (16 defaults, Jonny's go 05:54 UTC), Fable's
   board /mnt/project-files/online-2v2/fable-online2v2.md. No server change (rooms hold 64; presence stays under 4 KB).
@@ -49,6 +65,24 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   - The online name is the account name (acctName()). A hidden page keeps its search (w = seconds waited goes with a re-search).
   - Tests: tests/quick.js (node, port 8092, check.sh 5d), tests/pwquick.py (three browsers, port 8099, check.sh 5e). Older tests on
     a real server that check the offline rank (pwacct.py, pwskins.py) set window.__blNoQuick to switch Quick match off.
+- Ranked vs CPU (2026-10-16, branch claude/ranked-vs-cpu-3u63np, pre-step-6 thread 3; no PROTO bump). Plan doc in the "Ranked vs CPU"
+  thread (Jonny took every default). Jonny: Ranked vs CPU for when nobody is online, a CPU-ranked leaderboard, CPUs that get better
+  the higher your rank.
+  - VS CPU is the third choice on the Quick match screen (Ranked / Casual / VS CPU; QM.mode "v"). FIGHT A CPU asks the server for a
+    ticket (the CPU fighter and palette, its rating and strength, the map, the seed), shows the VS screen with a CPU sticker, then this
+    phone plays the match with no lag and logs your inputs in the online encoding. The server (cpurank.js) plays the same match again
+    from them before the CPU rank moves, so the rank and the boards can be trusted. The warm-up card says "Want it to count? · VS CPU".
+  - The curve: the CPU is yours ±70 (600..1730) with strength d = (r - 750) / 1000 clamped 0.08..0.98 (1000 a bit above Easy, 1250
+    Normal, 1650 Hard, 1730 full); its rating stops at 1730, so above that only a cleaner record climbs. Placement: 5 matches vs a Hard
+    CPU counted as 1650 (can't drop below 900). Elo as Quick match (K 48 for 10, then 32). Chips as the old Ranked vs CPU (paid on the
+    phone). Pause > Forfeit = a loss; leaving, a log that doesn't finish, a match sent faster than it can be played, or no result in
+    24 h = a loss; a ticket from an older game version = no result.
+  - Boards (ui/boards.js, css/97-boards.css): a sheet with two tabs, CPU board and Online board (top 100, best first; name, nameplate,
+    most played fighter, rating, W-L; your own row pinned). Opened from the board line on the Quick match plate and on the results, and
+    from Account > Profile. Titles "#1 CPU board" and "Top 10 CPU". Names with a bad word show as "Potato"; Jonny can hide any name on
+    the stats page (Board names section).
+  - The offline Ranked vs CPU (P.rating) stays as it was for build/ pages and file://; on our server the menu's Practice stays Practice.
+  - Tests: tests/cpurank.js (node, check.sh 5d2, runs alone), tests/pwquick.py step 5 (VS CPU forfeit in the browser).
 - Skins menu + Play friends lobby (2026-10-15, branch claude/project-thread-i6zx2q, UI only, no PROTO change). Jonny: the seven skin dots
   on the select looked unclean and "Change fighter" in the lobby was a small link he kept missing. Fable's design
   /mnt/project-files/skins-lobby/fable-design.md (mockups next to it), plan doc https://claude.ai/code/artifact/a4f11ea5-3906-4084-9f4b-8b8bd983bcb7.
@@ -581,13 +615,21 @@ index.html is committed with every source change (check.sh flags a stale one).
   any screen but a fight; stkFound / stkRes / stkPotView = the staked match's VS pot and the pot card #rPot; stkSettings = Settings >
   Chip stakes; stkStats = the line in Account > Stats). CSS in game/css/98-stakes.css. Test hook `window.__blastline.stk`.
   Test hook `window.__blastline.qm` (the QM object). `window.__blNoQuick = true` before the page loads switches Quick match off.
+- ui/vscpu.js (after quick.js): VC (the CPU record copy, the pending result, the board cache), vcBoot / vcMsg (cme, ct-ok, ct-no, cres,
+  bd), vcFight / vcTicket / vcVs / vcStart (the ticket, the VS screen, the match), vcIn (logs the inputs), vcMatchEnd / vcFlush / vcRes
+  (the result in parts of 6000 characters, resent after a lost connection), vcResults / vcVerdictView (results), vcRender / vcPlate
+  (the Quick match screen in VS CPU mode), vcBoard (the boards for ui/boards.js), vcTick. CSS css/96-vscpu.css. Test hook window.__blVc.
+- ui/boards.js (after vscpu.js): bdOpen(k) the Boards sheet, bdPreview (the top three on the Quick match screen), bdPlates (Account > Profile).
 - skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only; `window.__blQuick` = {send, on, connected, onConnection} for ui/quick.js) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
 - web/ (repo root): manifest.webmanifest + icons. server.js serves them from public/ if present; build.py and
   the deploy blocks copy them there.
-- Fullscreen helpers (FS, goFull, leaveFull) live in ui/input.js next to touchUI; the Fullscreen setting is
-  P.fs (undefined = on for touch devices); the iPhone tip is dismissed with P.a2hs.
+- Fullscreen helpers (FS, goFull, enterFull, leaveFull) live in ui/input.js next to touchUI; the "Fullscreen in fights" setting is
+  P.fs (undefined = on for touch devices; goFull, called from taps that start play, only goes fullscreen when it is On); the iPhone
+  tip is dismissed with P.a2hs. The menu's round button left of the gear (#bFull, ui/menus.js fsSync) shows the real state
+  (fullscreenchange), toggles with enterFull / leaveFull, and on iPhone Safari (FS.btn without FS.can) opens #scrA2hs (Share, then
+  Add to Home Screen); it is hidden in the home-screen app and is the first thing menuFit drops (.nofs) when the top bar is full.
 
 ## Accounts (sync codes): what is stored and where
 - Server side is accounts.js (called from server.js), off unless `ACCOUNTS_DIR` names a writable folder; then `/api/acct/ping|new|load|save`
@@ -653,6 +695,15 @@ index.html is committed with every source change (check.sh flags a stale one).
   me / acct / qm-* / stk-* (anything else from the server is a room message); a new server message type for ui/quick.js or ui/stakes.js
   must be added there too.
 
+## Ranked vs CPU (cpurank.js on the server): what it does and stores
+- cpurank.js is called from server.js only (cme, ct, cr, bd; see its header comment). It needs Quick match's sign-in (quick.seatOf) and
+  the accounts (off without ACCOUNTS_DIR: VS CPU says it needs the server). It plays matches with game/core.js like quick.js.
+- Stored in the account file's `cpu` part {s, r, pk, w, l, d, n, h (last 20), fc (fighters played), rt, tk (the open ticket), nb (name
+  hidden)}; accounts.js never lets a phone's save touch it (like `on`). An account shows on the boards once it has an online id.
+- The replay runs in chunks of 2000 frames between other work (a 4-minute match takes about 75 ms), so lockstep relays don't wait.
+- Boards are built from the account files at start (200 files at a time) and kept up to date by accounts.js's watch(); bd answers
+  the top 100 plus your row, 5 asks per 2 s per phone. Open tickets older than 24 h count as losses at start and every hour.
+
 ## Rules that keep online play working
 - A core.js change that can change simulation results must stay deterministic, add new fighter fields to
   the newFighter defaults, FKEYS and checksum, reset them where needed (ko, startSudden), bump `PROTO` in
@@ -683,7 +734,7 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, Play friends referee, chip stakes (eligibility, offer, decline, timeout, accept, verdict, early leave, daily limit), accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list; shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwstakes.py (chip stakes in two browsers, check.sh port PORT_BASE+11: FOR CHIPS dimmed with its reasons, the Casual rematch refereed, the stake sheet, decline and accept, VS with the pot, the pot card and the chips through the sync, the challenge card on the results and the menu, a Play friends game, Stats line, Settings Off; shots at 4 sizes; check.sh 5g) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, Play friends referee, chip stakes (eligibility, offer, decline, timeout, accept, verdict, early leave, daily limit), accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwstakes.py (chip stakes in two browsers, check.sh port PORT_BASE+11: FOR CHIPS dimmed with its reasons, the Casual rematch refereed, the stake sheet, decline and accept, VS with the pot, the pot card and the chips through the sync, the challenge card on the results and the menu, a Play friends game, Stats line, Settings Off; shots at 4 sizes; check.sh 5g) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
 pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
 return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
@@ -701,7 +752,10 @@ clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone 
 steps, desktop through to the results, touch sizes up to the ulti; tags desk desktouch se phone up; check.sh 6e) · pwultreel.py (above) ·
 boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
 Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
-map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, four sizes; check.sh 8e) ·
+map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, Retry beside Next stop, a
+combo star's combo line and its Combo trial with Back to the stop, five sizes; check.sh 8e) · pwfs.py (the fullscreen button and
+Settings row, the iPhone sheet, the home-screen app, a full top bar; the website build on a made-up origin routed by Playwright, no
+port; check.sh 8k) ·
 roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
 tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py

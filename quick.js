@@ -622,6 +622,7 @@ function init(opts) {
   const running = () => [...M.values()].filter((m) => (m.ranked || m.sk) && !m.done && m.st).length;   // the update waits for these
   return {
     handle, canJoin, presence, left, gone, tick,
+    seatOf: (peer) => seats.get(peer) || null,   // cpurank.js: the account a connection signed in with
     drain() { draining = true; for (const q of Q.values()) waitMsg(q, now()); },
     draining: () => draining,
     running, searching: () => Q.size, stats: () => Object.assign({ running: running(), searching: Q.size }, S),

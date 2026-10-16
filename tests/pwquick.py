@@ -9,7 +9,13 @@ Three players (A on a phone, B on a desktop, C on a phone) as separate devices:
      (written into its account file), so C's VS screen shows A's wanted plate and C takes the 30-chip bounty, paid into C's account.
   5. The rival record all along: the results' story line and rival strip, the VS pill, Account > Stats's Rivals list (A at 844,
      C upright), and C's Quick match rank plate on a streak (WANTED).
-Screenshots (the Quick match screen idle and searching at 667x320, 844x390, 1280x760 and 390x844, the warm-up, PLAYER FOUND!, the VS
+  6. The rank plate and the menu's profile plate fit at 16 sizes from 667 to 1920 wide (nothing overlaps or is cut): fresh (A, phone
+     sizes), on a streak (C, upright), Diamond with a long rating line (A again) and placing 1 of 5 (B, desktop sizes). Below 820 px
+     wide in landscape the plate is the narrow one: the record and season in the YOUR MATCH kicker, five pips under PLACING.
+  7. C picks VS CPU (Ranked vs CPU): the server's ticket, the VS screen with the CPU sticker, the HUD strip, a forfeit counted on the
+     CPU rank (the account file's `cpu` part), back to Quick match with the match counted, the Boards sheet from the board line.
+Screenshots (the Quick match screen idle and searching at 667x320, 844x390, 1280x760 and 390x844, idle at 740x360, the narrow plate as
+Diamond at 740x360 and placing at 800x700, the warm-up, PLAYER FOUND!, the VS
 screen, the results) go to the folder in argv[1]. Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwquick.py [outdir]        (needs `python3 game/build.py` first)"""
 import asyncio, sys, os, json, subprocess, tempfile, shutil, time, hashlib, pathlib, re, urllib.request
@@ -93,6 +99,32 @@ async def overflow(pg, tag):   # nothing on the Quick match screen spills out of
     })()""")
     expect(not bad, f'{tag}: off the screen sideways: {bad}')
 
+PH_SIZES = [(740, 360), (800, 360), (667, 320), (844, 390), (851, 393), (915, 412), (932, 430)]
+DK_SIZES = [(800, 700), (1024, 768), (1280, 760), (1366, 657), (1536, 730), (1920, 969)]
+UP_SIZES = [(360, 780), (390, 844), (412, 915)]
+PLATE = """(() => {
+  const ids = ['qmBadge', 'qmTier', 'qmRating', 'qmRec', 'qmKRec', 'qmPips', 'qmRSub', 'mRankKick', 'mName', 'mTier', 'mRating', 'mBadge', 'mTokens', 'mStreak'];
+  const r = {}, out = [];
+  for (const id of ids) { const e = document.getElementById(id); if (e && e.getClientRects().length && !e.closest('[hidden]')) { const b = e.getBoundingClientRect(); r[id] = [b.left, b.top, b.right, b.bottom, e.scrollWidth > e.clientWidth + 1]; } }
+  const k = Object.keys(r);
+  for (let i = 0; i < k.length; i++) { if (r[k[i]][4]) out.push(k[i] + ' cut'); for (let j = i + 1; j < k.length; j++) { const a = r[k[i]], b = r[k[j]]; if (a[0] < b[2] - 1 && b[0] < a[2] - 1 && a[1] < b[3] - 1 && b[1] < a[3] - 1) out.push(k[i] + ' over ' + k[j]); } }
+  const kr = document.getElementById('qmKRec');
+  if (r.qmKRec && kr.offsetTop - kr.previousElementSibling.offsetTop > 5) out.push('the kicker record wraps');
+  const pp = document.getElementById('qmPips');
+  return { bad: out, thin: document.getElementById('qmIdle').classList.contains('thin'), pips: r.qmPips ? pp.querySelectorAll('.on').length : -1, krec: kr.textContent };
+})()"""
+async def plates(pg, tag, sizes, back, quick=True, check=None):   # the plate at each size (6.), then back to the test's own size
+    for w, h in sizes:
+        await pg.set_viewport_size({'width': w, 'height': h}); await pg.wait_for_timeout(300)
+        r = await pg.evaluate(PLATE)
+        expect(not r['bad'], f'{tag} {w}x{h}: rank plate: {", ".join(r["bad"])}')
+        if quick:
+            want = h < w < 820 and not (w < 760 and h >= 360)   # below 760 wide the side columns shrink (css/96-vscpu.css .slim) and the full plate fits again, except on the shortest phones
+            expect(r['thin'] == want, f'{tag} {w}x{h}: the narrow plate should be {"on" if want else "off"}')
+            await overflow(pg, f'{tag} {w}x{h}')
+            if check: check(w, h, r)
+    await pg.set_viewport_size(back); await pg.wait_for_timeout(300)
+
 async def open_quick(pg, tag, season):
     await pg.goto(URL)
     await wait(pg, "window.__blastline && window.__blastline.mode === 'menu' && window.__blastline.qm.conn", f'{tag}: connected on the menu')
@@ -133,6 +165,10 @@ async def main():
             expect(has(await text(A, '#qmRank'), 'Placing', '0 of 5', '1000'), f"A: the rank plate should show Placing 0 of 5 at 1000, got {await text(A, '#qmRank')!r}")
             for name, vp in (('844', PHONE), ('667', TINY), ('1280', DESK)):
                 await A.set_viewport_size(vp); await A.wait_for_timeout(450); await shot(A, f'quick-idle-{name}'); await overflow(A, f'A idle {name}')
+            def fresh(w, h, r):
+                if r['thin']: expect(r['pips'] == 0 and r['krec'] == '0W · 0L · Season 1', f'A {w}x{h}: five empty pips and "0W · 0L · Season 1" in the kicker, got {r["pips"]} on, {r["krec"]!r}')
+            await plates(A, 'A fresh', PH_SIZES, PHONE, check=fresh)
+            await A.set_viewport_size({'width': 740, 'height': 360}); await A.wait_for_timeout(300); await shot(A, 'quick-idle-740')
             await A.set_viewport_size(PHONE); await A.wait_for_timeout(300)
             await tap(A, '#qmFind')
             await wait(A, "window.__blastline.qm.st === 'search' && window.__blastline.qm.authed", 'A: searching Ranked with a new account', 15)
@@ -294,10 +330,70 @@ async def main():
             await tap(C, '#bRanked'); await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match opens'); await C.wait_for_timeout(500)
             expect(await shown(C, '#qmWant') and has(await text(C, '#qmRec'), '4 win streak', 'Bounty 40'), f"C: the rank plate should wear WANTED, got {await text(C, '#qmRec')!r}")
             await shot(C, 'quick-wanted-390'); await overflow(C, 'C wanted 390')
+            await plates(C, 'C wanted', UP_SIZES, UP)
             await tap(C, '#qmBack'); await wait(C, "window.__blastline.mode === 'menu'", 'C: back to the menu')
             await tap(C, '#mRank'); await tap(C, '#acTabS'); await C.wait_for_timeout(500)
             expect(has(await text(C, '#acPanS'), 'Rivals', 'Peel Appeal'), 'C: the Rivals list upright names Peel Appeal')
             await shot(C, 'rivals-390'); await overflow(C, 'C rivals 390')
+
+            # ---- 6. the plates at every size: A as Diamond 1561 (the long "89 to Blastmaster" line), B placing 1 of 5 on the desktop
+            set_on(d, ac, {'n': 40, 'r': 1561, 'w': 104, 'l': 98})
+            for t, pg, sizes, vp in (('A', A, PH_SIZES, PHONE), ('B', B, DK_SIZES, DESK)):
+                await pg.goto(URL)
+                await wait(pg, "window.__blastline && window.__blastline.mode === 'menu' && window.__blastline.qm.conn && window.__blastline.qm.me", f'{t}: the menu signed in')
+                await pg.wait_for_timeout(400)
+                await plates(pg, f'{t} menu', sizes, vp, quick=False)
+                await tap(pg, '#bRanked'); await wait(pg, "window.__blastline.mode === 'quick'", f'{t}: Quick match opens'); await pg.wait_for_timeout(500)
+                def placed(w, h, r, t=t):
+                    if t == 'B' and r['thin']: expect(r['pips'] == 1, f'B {w}x{h}: one pip of five should be lit, got {r["pips"]}')
+                await plates(pg, f'{t} plate', sizes, vp, check=placed)
+            expect(has(await text(A, '#qmTier'), 'Diamond'), f"A: the plate should show Diamond, got {await text(A, '#qmTier')!r}")
+            await A.set_viewport_size({'width': 740, 'height': 360}); await A.wait_for_timeout(300); await shot(A, 'quick-diamond-740')
+            await B.set_viewport_size({'width': 800, 'height': 700}); await B.wait_for_timeout(300); await shot(B, 'quick-placing-800x700')
+
+            # ---- 7. C: VS CPU (Ranked vs CPU): the server deals the match, the VS screen wears the CPU sticker, a forfeit counts on the CPU rank
+            await tap(C, '#acClose'); await C.wait_for_timeout(300)   # the Account sheet from step 5
+            await wait(C, "window.__blastline.mode === 'menu'", 'C: the menu')
+            await tap(C, '#bRanked')
+            await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match again')
+            await tap(C, '#qmV')
+            await C.wait_for_timeout(400)
+            expect(await C.evaluate("window.__blastline.qm.mode") == 'v' and has(await text(C, '#qmFind'), 'Fight a CPU'), f"C: VS CPU picked, the button says Fight a CPU, got {await text(C, '#qmFind')!r}")
+            expect(has(await text(C, '#qmRank'), 'Placing', '0 of 5', 'CPU rank', 'CPU board after 5 more'), f"C: the plate shows the CPU rank, got {await text(C, '#qmRank')!r}")
+            expect(has(await text(C, '#qmTruth'), 'Placement 1 of 5', 'Hard CPU'), f"C: the line under the button names the next CPU, got {await text(C, '#qmTruth')!r}")
+            await shot(C, 'quick-vscpu-390'); await overflow(C, 'C VS CPU 390')
+            await tap(C, '#qmFind')
+            if await wait(C, "!document.getElementById('qmVs').hidden", 'C: the VS screen for the CPU match', 15):
+                await C.wait_for_timeout(500)
+                expect(await shown(C, '#vsCpu') and has(await text(C, '#vsMode'), 'Ranked', 'CPU') and has(await text(C, '#qmVs'), '1650', 'Hard CPU'), f"C: the VS screen shows the CPU sticker and its rating, got {await text(C, '#qmVs')!r}")
+                await shot(C, 'vs-cpu-390')
+            await wait(C, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", 'C: the CPU match starts', 15)
+            expect(await shown(C, '#vcStrip') and has(await text(C, '#vcStrip'), 'Ranked vs CPU', 'placement 1 of 5'), f"C: the HUD says the match counts, got {await text(C, '#vcStrip')!r}")
+            await C.wait_for_timeout(400)
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)
+            expect(has(await text(C, '#pQuit'), 'Forfeit') and has(await text(C, '#pNote'), 'counts as a loss'), f"C: VS CPU pause says Forfeit, got {await text(C, '#pNote')!r}")
+            await tap(C, '#pQuit'); await tap(C, '#pQuit')
+            await wait(C, "window.__blastline.mode === 'result'", 'C: the VS CPU results')
+            await wait(C, "window.__blVc.res && window.__blVc.res.why === 'ff' && !window.__blVc.pend", 'C: the server counts the CPU forfeit', 15)
+            await C.wait_for_timeout(1200)
+            expect(has(await text(C, '#rTitle'), 'Forfeit') and has(await text(C, '#rStick'), 'forfeit') and has(await text(C, '#rBoardL'), 'CPU board after 4 more'), f"C: Forfeit, the sticker and the board line, got {await text(C, '#rRank')!r}")
+            expect(has(await text(C, '#rAgain'), 'Another CPU fight'), 'C: the results offer Another CPU fight')
+            await shot(C, 'result-vscpu-390')
+            rc = None
+            for f in pathlib.Path(d).glob('*.json'):
+                j = json.loads(f.read_text())
+                if j.get('cpu'): rc = j['cpu']
+            expect(rc and rc['n'] == 1 and rc['l'] == 1 and rc['h'][0]['why'] == 'ff' and not rc['tk'], f'server: C should have one CPU loss by forfeit, got {rc}')
+            await tap(C, '#rChange')
+            await wait(C, "window.__blastline.mode === 'quick'", 'C: back to Quick match from the CPU results')
+            expect(has(await text(C, '#qmRank'), '1 of 5', 'CPU rank'), f"C: the plate counts the match, got {await text(C, '#qmRank')!r}")
+            await tap(C, '#qmBdl')   # the board line opens the Boards sheet on the CPU board: nobody placed yet, your row says placing
+            await C.wait_for_timeout(900)
+            bd = await text(C, '#scrBoards')
+            expect(await shown(C, '#scrBoards') and has(bd, 'VS CPU', 'Online', 'Nobody on the board yet', 'Placing 1 of 5'), f"C: the Boards sheet on the CPU board, got {bd!r}")
+            await shot(C, 'boards-cpu-390')
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)
+            expect(not await shown(C, '#scrBoards'), 'C: Esc closes the Boards sheet')
             await b.close()
     except Exception as e:
         errs.append(f'stopped: {type(e).__name__}: {str(e).splitlines()[0]}')

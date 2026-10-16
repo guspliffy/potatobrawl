@@ -67,6 +67,9 @@ const acFstats = () => (P.fstats && typeof P.fstats === "object" ? P.fstats : {}
 const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
 // Titles, earnable from the start (ten, Jack of Spuds, and a Lv 5 and a Lv 10 title per fighter from ui/mastery.js). `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
+  // the CPU board's (ui/vscpu.js): live, lost the moment someone passes you
+  { id: "cpu1", name: () => "#1 CPU board", ok: () => vcPlace() === 1, how: "Be #1 on the CPU board (Ranked vs CPU). It goes when someone passes you." },
+  { id: "cpu10", name: () => "Top 10 CPU", ok: () => vcPlace() >= 1 && vcPlace() <= 10, how: "Get into the top 10 of the CPU board (Ranked vs CPU)." },
   { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
   { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
   { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
@@ -83,8 +86,8 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
-const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
+const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const acShown = () => [...ACT_SHOWN.filter((id) => (window.__blQuick && !window.__blNoQuick) || (id !== "cpu1" && id !== "cpu10")), ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];   // the CPU board titles only where the boards are
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
   let t = pick || ACT.find((t) => t.ok());
@@ -108,6 +111,7 @@ function renderPill() {
   plateSet(me.querySelector(".plate"), shopWorn());   // the nameplate worn (ui/shop.js); Ink = today's look
   $("mTier").textContent = ti.t.name;
   $("mRating").textContent = rk.r;
+  me.querySelector(".plate").classList.toggle("vc", !!rk.cpu);   // the CPU rank (no online match yet): the ember CPU sticker on the emblem
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
   const tt = acTitle(), mt = $("mTitle");
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
@@ -158,6 +162,12 @@ function renderAccount() {
   $("acPicBtn").classList.toggle("on", acUI.pick === "av"); $("acTitBtn").classList.toggle("on", acUI.pick === "ti");
   paintBadge($("acBadge"), ti.i);
   acRing($("acRank").querySelector(".ring"), $("acRing"), ti);
+  if (typeof bdPlates === "function") {   // ui/boards.js: ONLINE RANK and CPU RANK, each opening its board
+    let bp = $("acBds");
+    if (!bp) { bp = acMk("div", "ac-bds"); bp.id = "acBds"; $("acRank").after(bp); }
+    bp.hidden = !qmOn(); if (qmOn()) bdPlates(bp);
+    $("acRank").hidden = qmOn();   // on our server the two plates take the rank card's place
+  }
   $("acRank").style.setProperty("--tc", ti.t.col);
   $("acTier").textContent = ti.t.name;
   $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;

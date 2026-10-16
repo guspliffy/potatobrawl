@@ -7,14 +7,14 @@
 # and goes on To The Kitchen (in at its gate, walking to stop 1), a later win offers Next: Hard; The Kitchen's last stop goes on
 # To Zorp.
 # A second part shows the menu, the map and a sheet at each size and checks the stops sit on the screen and the card fits.
-#   python3 pwroad.py [outdir [tag ...]]   tags: flow (844x390) s667 p844 d1280 up390; no tag runs everything
+#   python3 pwroad.py [outdir [tag ...]]   tags: flow retry (844x390) s667 p740 p844 d1280 up390; no tag runs everything
 import asyncio, sys, json, pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'road'
 ONLY = sys.argv[2:]
 from playwright.async_api import async_playwright
 ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
-SIZES = {'s667': (667, 320, False), 'p844': (844, 390, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
+SIZES = {'s667': (667, 320, False), 'p740': (740, 360, False), 'p844': (844, 390, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
 PROF = "potatobrawl.profile.v1"
 G = "window.__blastline.game"
 ROAD_NAMES = ['The Farm Gate', 'The Sprout Patch']
@@ -218,6 +218,90 @@ async def flow(b, errs):
     await pg.screenshot(path=f'{OUT}/flow_zorp_sheet.png')
     await ctx.close()
 
+# Retry beside Next stop, and the combo stars' combo: a win with a star missing shows Retry (its second line names the first star
+# missing) and Retry plays the same stop; three stars hide it; a boss win shows it beside Next: Hard; a combo stop's sheet names the
+# combo and its buttons, your fighter's own combo follows the fighter, a tap opens the Combo trial on that combo and its Back (and the
+# pause menu) return to the stop's sheet; the results show the chips on a missed combo star.
+async def retry(b, errs):
+    tag = 'retry'
+    ctx, pg, mob = await new_page(b, tag, (844, 390), False, errs, {'tut': True, 'last': 'samurai', 'tokens': 5, 'mpaid': {'samurai': 10}})
+    clk = pg.tap if mob else pg.click
+    def need(ok, msg):
+        if not ok: errs.append(f'{tag}: {msg}')
+        return ok
+    R = 'window.__blRoad'
+    T = 'window.__blastline.trial'
+    # stop 1 with three stars: Next stop takes the whole row, no Retry
+    await pg.evaluate(f"{R}.fight(0)"); await in_play(pg); await win_now(pg)
+    need(await txt(pg, '#rAgain') == 'Next stop' and not await shown(pg, '#rRetry'), f"three stars: {await txt(pg, '.res-actions')!r}")
+    one = await pg.evaluate("(() => { const a = document.getElementById('rAgain').getBoundingClientRect(), r = document.querySelector('.res-actions').getBoundingClientRect(); return a.width > r.width * 0.9; })()")
+    need(one, 'with three stars Next stop does not span the row')
+    # stop 2 (the Three-piece combo) won with a heart lost: Retry beside Next stop names it; the missed combo star shows its chips
+    await pg.evaluate(f"{R}.fight(1)"); await in_play(pg)
+    await pg.evaluate(f"{G}.fighters[0].falls = 1")
+    await win_now(pg)
+    need(await txt(pg, '#rAgain') == 'Next stop' and await shown(pg, '#rRetry') and await txt(pg, '#rRetrySub') == '★ No heart lost', f"a star missing: {await txt(pg, '.res-actions')!r}")
+    lay = await pg.evaluate("""(() => { const q = (id) => document.getElementById(id).getBoundingClientRect(), a = q('rAgain'), r = q('rRetry'), c = q('rChange'), m = q('rMenu');
+      return { row: Math.abs(a.top - r.top) < 2 && r.left > a.right - 1, ratio: Math.round(a.width / r.width * 10) / 10, cols: Math.abs(c.left - a.left) < 2 && Math.abs(m.left - r.left) < 2 && c.top > a.bottom - 1 }; })()""")
+    need(lay['row'] and lay['cols'] and 1.4 <= lay['ratio'] <= 1.8, f'Retry layout {lay}')
+    miss = await pg.evaluate("(() => { const s = document.querySelector('#rStars .rd-stk'); return s ? [s.querySelector('small').textContent, s.querySelectorAll('.rk').length] : null; })()")
+    need(miss == ['Three-piece', 3], f'missed combo star on the results: {miss}')
+    await pg.screenshot(path=f'{OUT}/retry_win.png')
+    await clk('#rRetry')
+    await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
+    need(await pg.evaluate(f"window.__blastline.game.fighters[1].spec.id") == 'odin' and 'Mash' in await txt(pg, '#pc1'), 'Retry does not replay stop 2')
+    await in_play(pg); await win_now(pg)
+    # the combo line on the stop's sheet: name and buttons; a tap opens the Combo trial on it, Back returns to the sheet
+    await clk('#rChange'); await pg.wait_for_timeout(700)
+    await hit(pg, 1)
+    need(await shown(pg, '#rsCombo') and await txt(pg, '#rsCombo .rd-cn') == 'Three-piece' and await pg.evaluate("document.querySelectorAll('#rsCombo .rk').length") == 3, f"combo line {await txt(pg, '#rsCombo')!r}")
+    need(await pg.evaluate(ONSCREEN % '#rsComboGo'), 'the combo line is off the screen or under Fight')
+    await pg.screenshot(path=f'{OUT}/retry_sheet_combo.png')
+    await clk('#rsComboGo')
+    await pg.wait_for_function(f"window.__blastline.mode === 'match' && !!{T}", timeout=20000)
+    tr = await pg.evaluate(f"{T}.id")
+    need(tr == 'three' and await txt(pg, '#tutSkip') == 'Back' and await pg.evaluate(f"{G}.fighters[0].spec.id") == 'samurai', f"the trial opened on {tr!r}, its button reads {await txt(pg, '#tutSkip')!r}")
+    await clk('#tutSkip')
+    await pg.wait_for_function("window.__blastline.mode === 'road' && !window.__blRoad.walking", timeout=10000); await pg.wait_for_timeout(400)
+    need(await shown(pg, '#scrRoadStop') and await txt(pg, '#rsName') == ROAD_NAMES[1] and not await shown(pg, '#tut'), f"Back from the trial: sheet {await txt(pg, '#rsName')!r}")
+    # the pause menu's quit goes back to the stop too
+    await clk('#rsComboGo'); await pg.wait_for_function(f"window.__blastline.mode === 'match' && !!{T}", timeout=20000); await pg.wait_for_timeout(300)
+    await clk('#pauseBtn'); await pg.wait_for_timeout(300)
+    need(await txt(pg, '#pQuit') == 'Back to the Road', f"the trial's pause quit reads {await txt(pg, '#pQuit')!r}")
+    await clk('#pQuit')
+    await pg.wait_for_function("window.__blastline.mode === 'road' && !window.__blRoad.walking", timeout=10000); await pg.wait_for_timeout(400)
+    need(await shown(pg, '#scrRoadStop') and await txt(pg, '#rsName') == ROAD_NAMES[1], 'the pause menu does not return to the stop')
+    await clk('#rsBack'); await pg.wait_for_timeout(300)
+    # a stop without a combo star has no combo line
+    await hit(pg, 2)
+    need(not await shown(pg, '#rsCombo'), 'a finisher stop shows a combo line')
+    await clk('#rsBack'); await pg.wait_for_timeout(300)
+    # your fighter's own combo (The Kitchen's stop 7): Samurai's Blink Cut; after a change of fighter, Odin's Hammer Fall
+    own = await pg.evaluate(f"{R}.stops.findIndex((s) => s.bonus.r === 'own')")
+    await pg.evaluate(f"{R}.set({[7] * 14}, {{ b: 1, paid: true }})"); await pg.evaluate(f"{R}.region(1)"); await fresh(pg)
+    await hit(pg, own)
+    need(await txt(pg, '#rsCombo .rd-cn') == 'Blink Cut', f"own combo for Samurai {await txt(pg, '#rsCombo')!r}")
+    await clk('#rsMe'); await pg.wait_for_timeout(600)
+    await clk('#tiles .tile[data-id="odin"]'); await pg.wait_for_timeout(300)
+    await clk('#selBack'); await pg.wait_for_timeout(600); await fresh(pg)
+    await hit(pg, own)
+    need(await txt(pg, '#rsCombo .rd-cn') == 'Hammer Fall' and 'hold' in await txt(pg, '#rsCombo'), f"own combo after the change to Odin {await txt(pg, '#rsCombo')!r}")
+    await clk('#rsBack'); await pg.wait_for_timeout(300)
+    # a boss win: Retry beside Next: Hard replays the level just won
+    await pg.evaluate(f"{R}.set([7, 7, 7, 7, 0, 0, 0, 0], {{ b: 0, paid: false }})")
+    await pg.evaluate(f"{R}.boss(0, 0)"); await in_play(pg)
+    await pg.evaluate(f"(() => {{ const b = {G}.fighters[2]; b.hp = 1; b.poise = 0; }})()")
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=180000); await pg.wait_for_timeout(1400)
+    await pg.evaluate(f"{R}.boss(0, 0)"); await in_play(pg)   # the second win: the button reads Next: Hard (the first goes To The Kitchen)
+    await pg.evaluate(f"(() => {{ const b = {G}.fighters[2]; b.hp = 1; b.poise = 0; }})()")
+    await pg.wait_for_function("window.__blastline.mode === 'result'", timeout=180000); await pg.wait_for_timeout(1400)
+    need(await txt(pg, '#rAgain') == 'Next: Hard' and await txt(pg, '#rRetry span') == 'Retry' and await txt(pg, '#rRetrySub') == 'Normal', f"boss win buttons {await txt(pg, '.res-actions')!r}")
+    await pg.screenshot(path=f'{OUT}/retry_boss.png')
+    await clk('#rRetry')
+    await pg.wait_for_function("window.__blastline.mode === 'match'", timeout=20000)
+    need(await pg.evaluate(f"{G}.fighters.length === 3 && {G}.lv === 0"), 'Retry after a boss win is not the same level')
+    await ctx.close()
+
 # on the screen and not covered (by the sticky button row, say): the element's centre hits the element itself
 ONSCREEN = "(() => { const e = document.querySelector('%s'), r = e.getBoundingClientRect(), h = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2); return r.width > 0 && r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth && !!h && e.contains(h); })()"
 FIT = """(() => {
@@ -256,6 +340,13 @@ async def size(b, tag, errs):
         if not sc: errs.append(f'{tag}: the stop sheet does not fit and does not scroll')
     if not await pg.evaluate(ONSCREEN % '#rsGo'): errs.append(f'{tag}: the stop sheet\'s Fight button is off the screen')
     await pg.screenshot(path=f'{OUT}/{tag}_sheet.png')
+    # a combo stop (stop 4, Lift & Smash): the combo line sits above Fight, not under it, and fits the sheet
+    await pg.evaluate("document.getElementById('rsBack').click()"); await pg.wait_for_timeout(300)
+    await hit(pg, 3)
+    if not await pg.evaluate(ONSCREEN % '#rsComboGo'): errs.append(f'{tag}: the combo line is off the screen or under Fight')
+    if await pg.evaluate("(() => { const c = document.getElementById('rsComboGo').getBoundingClientRect(), s = document.querySelector('#roadStopSheet .sh-body').getBoundingClientRect(); return c.left < s.left - 0.5 || c.right > s.right + 0.5; })()"):
+        errs.append(f'{tag}: the combo line is wider than the sheet')
+    await pg.screenshot(path=f'{OUT}/{tag}_sheet_combo.png')
     # the boss's sheet: the level stars and Fight are on the screen without scrolling
     await pg.evaluate("document.getElementById('rsBack').click()"); await pg.wait_for_timeout(300)
     await pg.evaluate("window.__blRoad.set([7, 7, 7, 7, 0, 0, 0, 0])"); await pg.evaluate("window.__blRoad.open()"); await fresh(pg)
@@ -271,6 +362,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(args=ARGS)
         if not ONLY or 'flow' in ONLY: await flow(b, errs)
+        if not ONLY or 'retry' in ONLY: await retry(b, errs)
         for tag in SIZES:
             if not ONLY or tag in ONLY: await size(b, tag, errs)
         await b.close()
