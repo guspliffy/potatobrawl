@@ -11,7 +11,7 @@
 #   python3 pwon2v2.py [outdir]     (a server must listen on ON2V2_URL, default http://localhost:8099/)
 import asyncio, sys, os, json
 from playwright.async_api import async_playwright
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'on2v2'
 URL = os.environ.get('ON2V2_URL', 'http://localhost:8099/')
 PROF = "potatobrawl.profile.v1"
@@ -50,7 +50,9 @@ async def list_row(pg, has):
     return await pg.evaluate(f"(() => {{ const li = [...document.querySelectorAll('#onList li')].find((li) => li.textContent.includes({json.dumps(has)})); return li ? [li.textContent, li.querySelector('.chip') ? li.querySelector('.chip').disabled : null] : null; }})()")
 async def join(pg, tag):
     await press(pg, '#bOnline')
-    if not await wait(pg, "[...document.querySelectorAll('#onList li')].some((li) => li.textContent.includes('Team brawl'))", f"{tag}: the team brawl is not in the list", 20000): return None
+    # exactly one: a host page closed a moment ago keeps its room listed for the server's 8 s grace (the board at four sizes
+    # opens a new host right after closing the last one), and Join on that room never reaches a board
+    if not await wait(pg, "[...document.querySelectorAll('#onList li')].filter((li) => li.textContent.includes('Team brawl')).length === 1", f"{tag}: not exactly one team brawl in the list", 20000): return None
     row = await list_row(pg, 'Team brawl')
     await pg.evaluate("[...document.querySelectorAll('#onList li')].find((li) => li.textContent.includes('Team brawl')).querySelector('.chip').click()")
     await wait(pg, f"{N}.phase === 'board'", f"{tag}: not on the board after Join ({row})", 20000)

@@ -64,7 +64,7 @@ def shot(pg, name):
     pg.screenshot(path=f"fin-{name}.png")
 
 with sync_playwright() as p:
-    b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+    b = p.chromium.launch(args=["--disable-gpu"])
     for fid in ids:
         ctx = b.new_context(viewport={"width": W, "height": H}, has_touch=True, is_mobile=True, device_scale_factor=1)
         ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": gfx, "sound": False, "fs": False, "screen": screen}))

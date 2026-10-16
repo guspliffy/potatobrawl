@@ -10,7 +10,7 @@ from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get('PWSTATS_PORT', 8098))
 URL = f'http://127.0.0.1:{PORT}/'
-ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
+ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 TZ = 'Europe/Berlin'
 PROF = 'potatobrawl.profile.v1'
 NOTE = 'potatobrawl.count.v1'

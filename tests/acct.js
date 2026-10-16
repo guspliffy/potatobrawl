@@ -12,7 +12,7 @@ const ROOT = path.join(__dirname, "..");
 const SYNC = require(path.join(ROOT, "game/sync.js"));
 const { FIGHTERS } = require(path.join(ROOT, "game/core.js")).BL;
 const ACC = require(path.join(ROOT, "accounts.js"));
-const PORT = 8094;
+const PORT = +process.env.ACCT_PORT || 8094;   // check.sh gives every server its own port
 let bad = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) bad++; };
 const eq = (a, b) => SYNC.canon(a) === SYNC.canon(b);

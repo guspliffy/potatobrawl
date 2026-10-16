@@ -85,7 +85,7 @@ def part(pg, cap, setup, inputs, frames, speed=None, still=None, crop=True):
 
 
 with sync_playwright() as p:
-    b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+    b = p.chromium.launch(args=["--disable-gpu"])
     ctx = b.new_context(viewport={"width": W, "height": H}, device_scale_factor=dsf, has_touch=False, is_mobile=False)
     ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps({"tut": True, "last": fid, "gfx": "2d", "sound": False, "fs": False}))
     ctx.add_init_script(CLOCK)

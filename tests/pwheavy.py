@@ -142,7 +142,7 @@ def sheet(fid, tiles):
 
 
 with sync_playwright() as p:
-    b = p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"])
+    b = p.chromium.launch(args=["--disable-gpu", "--autoplay-policy=no-user-gesture-required"])
     allsheets, chgsheets, finsheets = {}, {}, {}
     for fid in ids:
         ctx = b.new_context(viewport={"width": W, "height": H}, has_touch=True, is_mobile=True, device_scale_factor=DSF)
