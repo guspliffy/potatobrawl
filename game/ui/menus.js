@@ -31,6 +31,7 @@ tap("rAgain", () => {
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
   if (match && match.tutorial) { openSelect("ranked"); return; }
+  if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
   if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
     const lv = G.lv, boss = bossOf(G).spec.id, partner = G.fighters[1 - meSlot].spec.id;
     resetNet(); NET.phase = "idle"; lobbyPresence();
@@ -51,6 +52,7 @@ tap("rAgain", () => {
 });
 tap("rChange", () => {
   if (match && match.tutorial) { openSelect("practice"); return; }
+  if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }
   if (match && match.road) { openRoad(); return; }
   openSelect(match && !match.ranked ? "practice" : "ranked");
@@ -59,7 +61,13 @@ tap("rMenu", goMenu);
 tap("bOnline", openOnline);
 tap("onBack", goMenu);
 tap("onChange", () => openSelect("online"));
-tap("onHost", () => { if (NET.phase === "hosting") netCancel(); else { goFull(); netHost(); } });
+tap("onHost", () => {
+  if (NET.tb && NET.phase === "hosting") { goFull(); tbGo(); return; }   // a team brawl's START (ui/online-team.js)
+  if (NET.tb && NET.phase === "board") { NET.note = ""; netCancel(); return; }   // a friend on the board: Leave
+  if (NET.phase === "hosting") netCancel(); else { goFull(); netHost(); }
+});
+tap("onSwitch", tbSwitchMe);   // Switch side
+tap("onClose", () => { if (NET.tb && NET.phase === "hosting") netCancel(); });   // the host closes the brawl
 {
   const nameIn = $("onName");
   const commit = () => { if (window.__blSetName) { NET.myName = window.__blSetName(nameIn.value); nameIn.value = NET.myName; acctOnlineName(NET.myName); renderOnline(); } };

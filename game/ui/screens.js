@@ -293,12 +293,14 @@ function enterMatchUI() {
   mode = "match"; paused = false; lastCount = 0;
   show(null); hideOnline(); modal("pause", false); modal("help", false); modal("settings", false); if (SK.id) closeSkins();   // a friend's match can start under the Skin Rack (ui/skins.js)
   $("hud").hidden = false; $("ctl").hidden = !touchUI; $("netBadge").hidden = true; $("pingBadge").hidden = true; $("pingBadge").textContent = "";
+  // the cards' seats: yours top-left; in an online 2v2 (any seat) your partner's under it and the foes' on the right
+  cardSlot = match.duo && match.online ? [meSlot, meSlot ^ 1, ...(meSlot < 2 ? [2, 3] : [0, 1])] : [0, 1, 2, 3];
   hudDuo();   // ui/hud.js: the 2v2's four cards (and the 1v1's two again)
-  for (let i = 0; i < hudN(); i++) {
-    const f = G.fighters[i], el = $("pc" + i);
+  for (let c = 0; c < hudN(); c++) {
+    const i = cardSlot[c], f = G.fighters[i], el = $("pc" + c);
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
-    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.online ? NET.oppName || "Friend" : match.duo && f.team === G.fighters[meSlot].team ? "Partner" : "CPU";
+    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.tb ? tbTag(i) : match.online ? NET.oppName || "Friend" : match.duo && f.team === G.fighters[meSlot].team ? "Partner" : "CPU";
     el.classList.toggle("nice", !!(match.online && match.boss && i === meSlot));   // ui/online.js: a tap on your own card says NICE! to your partner
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   }
@@ -308,6 +310,7 @@ function enterMatchUI() {
     sub.querySelector(".nm").textContent = match.cpu || "";
     sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : match.boss ? "partner" : "";
   }
+  if (match.tb) tbTags();   // ui/online-team.js: friends' names, CPU tags and their potato names
   bossHudReset();   // ui/boss.js: the boss bar in the timer's place (hidden when there is no boss)
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
   hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
@@ -317,7 +320,8 @@ function enterMatchUI() {
   if (!match.tutorial) tutEnd(); else { $("tut").hidden = false; app.classList.add("tut"); }
   releaseTouch(); resize(); camStep(G, true);
 }
-const hudCache = [{}, {}, {}, {}], hudX = { spFin: null, ch: -1, jb: false };
+const hudCache = [{}, {}, {}, {}], hudX = { spFin: null, ch: -1, jb: false };   // hudCache by fighter slot
+let cardSlot = [0, 1, 2, 3];   // the name cards #pc0..#pc3 -> fighter slots (enterMatchUI)
 const hudN = () => (match && match.duo && G ? G.fighters.length : 2);   // name cards on the HUD: both fighters, or the four of a 2v2
 const btnSpec = document.querySelector('.pb[data-k="special"]'), btnHeavy = document.querySelector('.pb[data-k="heavy"]');
 // A fighter at finish percent just crossed it: tell both players once, in the colour of the fighter who can finish.
@@ -355,8 +359,8 @@ function setHearts(box, n, prev) {
   }
 }
 function updateHud() {
-  for (let i = 0; i < hudN(); i++) {
-    const f = G.fighters[i], el = $("pc" + i), hc = hudCache[i];
+  for (let c = 0; c < hudN(); c++) {
+    const i = cardSlot[c], f = G.fighters[i], el = $("pc" + c), hc = hudCache[i];
     const pct = Math.floor(f.percent);
     const num = el.querySelector(".num"), wrap = el.querySelector(".pc-pct");
     if (hc.pct !== pct) { num.textContent = pct; wrap.style.color = pctColor(pct); hc.pct = pct; }
@@ -367,7 +371,7 @@ function updateHud() {
     if (hc.stocks !== f.stocks) { setHearts(el.querySelector(".pc-stocks"), Math.max(0, f.stocks), hc.stocks); hc.stocks = f.stocks; }
     const out = f.state === "dead" || f.state === "gone";
     if (hc.out !== out) { el.classList.toggle("out", out); hc.out = out; }
-    if (match.duo && i > 1) { const foc = duoFocused() === i; if (hc.foc !== foc) { hc.foc = foc; el.classList.toggle("focus", foc); } }   // the foe the partner was sent after
+    if (match.duo && c > 1) { const foc = duoFocused() === i; if (hc.foc !== foc) { hc.foc = foc; el.classList.toggle("focus", foc); } }   // the foe the partner was sent after
   }
   const secs = Math.max(0, Math.ceil(G.timer / 60));
   const clock = $("clock");
@@ -534,7 +538,7 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.online && R.boss ? `Boss fight · ${R.dropped ? `${NET.oppName || "Your partner"} dropped` : `with ${NET.oppName || "your friend"}`}` : R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.duo ? `Team Brawl 2v2 · ${R.duo.lv}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.tb ? tbResMode(R) : R.online && R.boss ? `Boss fight · ${R.dropped ? `${NET.oppName || "Your partner"} dropped` : `with ${NET.oppName || "your friend"}`}` : R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.duo ? `Team Brawl 2v2 · ${R.duo.lv}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
   $("rWho").textContent = R.me.spec.name;
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
@@ -546,7 +550,7 @@ function showResults(R) {
     won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
     lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
   if (R.boss) line.splice(0, line.length, ...bossResLine(R));   // ui/boss.js: you and your partner against him
-  if (R.duo) line.splice(0, line.length, ...duoResLine(R));     // ui/duo.js: both teams
+  if (R.duo) line.splice(0, line.length, ...(R.tb ? tbResLine(R) : duoResLine(R)));     // ui/duo.js, ui/online-team.js: both teams
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
     line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
@@ -574,13 +578,14 @@ function showResults(R) {
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
+    : R.tb ? R.whyNo
     : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
     : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
     : R.duo ? `Team Brawl doesn't change your rating. A win on Hard pays ${DUO_CHIPS} chips.`
     : "Practice doesn't change your rating or earn chips.");
   $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.online && R.boss ? NET.again : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
-  $("rChange").querySelector("span").textContent = R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
+  $("rChange").querySelector("span").textContent = R.tb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   show("result");
 }

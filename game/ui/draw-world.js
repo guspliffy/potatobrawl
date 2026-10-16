@@ -346,12 +346,12 @@ function duoTags(c, g) {
   const placed = [], z = cam.z;
   for (const f of [...g.fighters].sort((a, b) => a.x - b.x)) {
     if (f.state === "dead" || f.state === "gone") continue;
-    const nm = f.slot === meSlot ? "YOU" : ((match.names && match.names[f.slot]) || "CPU").toUpperCase();
+    const nm = match.tb ? tbMark(f.slot) : f.slot === meSlot ? "YOU" : ((match.names && match.names[f.slot]) || "CPU").toUpperCase();   // online: friends' names, CPU (ui/online-team.js)
     const label = nm.length > 12 ? nm.slice(0, 11) + "…" : nm, w = label.length * 6.4 + 12, x = f.x * z, y = (f.y - f.s.h) * z;
     let lift = 0;
     while (lift < 60 && placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - (y - lift)) < 20)) lift += 20;
     placed.push({ x, y: y - lift, w });
-    drawTag(c, f, f.slot === meSlot, lift, { label, col: TEAM_COL[f.team] || "#ffffff" });
+    drawTag(c, f, f.slot === meSlot, lift, { label, col: match.tb && f.slot === meSlot ? "#f3d9a4" : TEAM_COL[f.team] || "#ffffff" });   // online: a gold YOU (the colours are the teams')
   }
 }
 

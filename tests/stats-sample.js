@@ -59,7 +59,7 @@ const add = (i, k, v) => { F[i][k] = (F[i][k] || 0) + (v === undefined ? 1 : v);
 // ---------- the game's vocabulary
 const STEPS = ["move", "jump", "light", "heavy", "charge", "special", "dodge", "ult", "off"];
 const FIGHTERS = { dragon: 20, samurai: 16, wizard: 14, phoenix: 14, odin: 12, alchemist: 9, gunslinger: 9, reaper: 6 };
-const MODE_W = { ranked: 34, practice: 14, daily: 9, cup: 7, road: 14, boss: 5, "road-boss": 3, online: 8, "online-boss": 1.5, trial: 4 };
+const MODE_W = { ranked: 34, practice: 14, daily: 9, cup: 7, road: 14, boss: 5, "road-boss": 3, online: 8, "online-boss": 1.5, "online-team": 1.5, trial: 4 };
 const LANGS = { en: 52, de: 15, es: 8, fr: 6, pt: 5, ru: 4, tr: 3, other: 7 };
 const SCREENS = { help: 4, settings: 7, account: 2.5, stats: 3, locker: 5 };
 const ERRORS = [
@@ -95,7 +95,7 @@ function playMatch(p, i, mode, st) {
     if (p.started === 1) { add(i, "fn:s1"); add(i, "first:" + mode); }
     if (p.started === 2) add(i, "fn:s2");
   }
-  const online = mode === "online" || mode === "online-boss";
+  const online = mode === "online" || mode === "online-boss" || mode === "online-team";
   const bossy = mode === "boss" || mode === "road-boss" || mode === "online-boss";
   let boss = null, lv = 0;
   if (bossy) { boss = pick({ scratch: 5, zorp: 3, kraken: 2 }); lv = pick({ 0: 6, 1: 3, 2: 1.2 }); add(i, `bs:${boss}:${lv}`); }
@@ -165,13 +165,13 @@ function visit(p, i, first) {
   for (let m = 0; m < planned; m++) {
     if (!mode) {                                              // a new pick from the menu
       const w = Object.assign({}, MODE_W);
-      if (p.finished < 2) { delete w.online; delete w["online-boss"]; delete w["road-boss"]; delete w.boss; }
+      if (p.finished < 2) { delete w.online; delete w["online-boss"]; delete w["online-team"]; delete w["road-boss"]; delete w.boss; }
       if (p.finished < 1) delete w.trial;
       mode = pick(w);
     }
     screen("select");
     if (mode === "road" || mode === "road-boss") screen("road");
-    if (mode === "online" || mode === "online-boss") screen("online");
+    if (mode === "online" || mode === "online-boss" || mode === "online-team") screen("online");
     if (mode === "cup") screen("cup");
     if (mode === "trial" && !p.route && chance(0.12)) { p.route = true; add(i, "route"); }
     const out = playMatch(p, i, mode, st);
