@@ -123,6 +123,20 @@ timeout 120 node tests/acct.js > "$LOGS/acct.log" 2>&1
 if grep -q "^acct ok" "$LOGS/acct.log"; then pass "accounts server + merge ($(grep -c '^PASS' "$LOGS/acct.log") checks)"
 else fail "accounts server + merge" "$LOGS/acct.log"; fi
 
+# 5d. Quick match on the server (quick.js): the queue (Ranked and Casual, the ±200/±400 widening, Ranked falls back to Casual, no Ranked
+#     rematch), the referee (bot matches replayed from the relayed inputs give the game's verdict, a late phone, a leaver, a quiet phone,
+#     a wrong start), the Elo and placement, accounts off (Casual only). Node only, port 8092.
+timeout 300 node tests/quick.js > "$LOGS/quick.log" 2>&1
+if grep -q "^quick ok" "$LOGS/quick.log"; then pass "Quick match server + referee ($(grep -c '^PASS' "$LOGS/quick.log") checks)"
+else fail "Quick match server + referee" "$LOGS/quick.log"; fi
+
+# 5e. Quick match in the browser: three players through a real server on port 8099: the Season sheet, Find match, the CPU warm-up while
+#     searching, PLAYER FOUND!, the VS screen, a Ranked match decided by the server, no Ranked rematch (Casual after 20 s), a Casual
+#     leave, a Ranked forfeit, the menu's online rank. Shots in build/shots/quick.
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwquick.py" quick) > "$LOGS/quick-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/quick-ui.log"; then pass "Quick match in the browser (search, warm-up, found, VS, Ranked by the server, Casual, forfeit; shots in build/shots/quick)"
+else fail "Quick match in the browser" "$LOGS/quick-ui.log"; fi
+
 # 6. Screens on small phone, phone and desktop, without page errors.
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwux2.py" .) > "$LOGS/screens.log" 2>&1
 if grep -q "^no errors" "$LOGS/screens.log"; then pass "screens 667x320, 844x390, 1280x760 (shots in build/shots/)"

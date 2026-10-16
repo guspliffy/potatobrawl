@@ -1,9 +1,31 @@
-# PotatoBrawl handoff (updated 2026-10-16: the Skins menu and the new Play friends lobby, UI only; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby, UI only; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Quick match (2026-10-16, branch claude/server-accounts-quick-match-1gfirf, step 4 of the build order; no PROTO bump, players reload
+  once). Plan doc https://claude.ai/code/artifact/e5f195e3-6626-4794-bb6c-fbd5c807bc6f (17 decision rows, Jonny took every default).
+  Live once update.txt is pasted (accounts are already on, on the live server since 2026-10-16; without ACCOUNTS_DIR a server offers
+  Casual only and Ranked "opens soon").
+  - One shared 1v1 queue for Ranked and Casual against real people (3 lives, 4 minutes); 2v1 and 2v2 stay invite-only (Play friends).
+    The server (quick.js, see "Quick match" below) pairs, reserves the room and decides every Ranked match by replaying the inputs.
+  - Game: ui/quick.js, css/96-quick.css, #scrQuick / #qmVs / #scrSeason in shell.html. Only where window.__blQuick exists (net-ws.js,
+    our server); build/ pages and file:// keep the old offline Ranked vs CPU. On our server the menu's gold hero is Quick match.
+    First open: the Season 1 sheet (QM.s1) says the online rank starts at 1000 and the CPU rank is kept in Account > Stats.
+    Ranked / Casual toggle; Find match makes an account by itself when there is none (Ranked needs one). While nobody else searches the
+    page offers a clearly marked CPU warm-up (CPU at least Normal, by rank; Casual chips, never the rank) with the searching strip on its HUD;
+    PLAYER FOUND! ends it. Then the VS screen (both fighters drawn live, 2.5 s, 3·2·1) and the match on the friend-match lockstep.
+    Results: Ranked shows the rank card ("Placing n of 5", then the tier) with the change marked "confirming" until the server's
+    verdict (qm-res) arrives; Next match searches again; no rematch. Casual: no rank, Rematch offered, Next match searches again.
+    Chips: Ranked win 20 (+5 per KO, +5 per win in a streak from the 2nd, at most +20), draw 10 (+3/KO), loss 6 (+2/KO);
+    Casual 15 / 8 / 5 (+2/KO); a leaver's opponent gets the win (Ranked) or "Opponent left" (Casual, no chips).
+    Pause > Forfeit in Ranked = a loss (the server's too); Casual says Leave match.
+  - rankView() (ui/quick.js) is what the profile pill, the menu hero plate, the Account sheet and the results show: the online record
+    on our server, the offline CPU rank (P.rating) elsewhere. localStorage potatobrawl.qm.v1 keeps mode, s1, streak and the last `me`.
+  - The online name is the account name (acctName()). A hidden page keeps its search (w = seconds waited goes with a re-search).
+  - Tests: tests/quick.js (node, port 8092, check.sh 5d), tests/pwquick.py (three browsers, port 8099, check.sh 5e). Older tests on
+    a real server that check the offline rank (pwacct.py, pwskins.py) set window.__blNoQuick to switch Quick match off.
 - Skins menu + Play friends lobby (2026-10-15, branch claude/project-thread-i6zx2q, UI only, no PROTO change). Jonny: the seven skin dots
   on the select looked unclean and "Change fighter" in the lobby was a small link he kept missing. Fable's design
   /mnt/project-files/skins-lobby/fable-design.md (mockups next to it), plan doc https://claude.ai/code/artifact/a4f11ea5-3906-4084-9f4b-8b8bd983bcb7.
@@ -505,8 +527,13 @@ index.html is committed with every source change (check.sh flags a stale one).
   reset), not in the profile. Test hooks: `window.__blAcct` (P, st, ui, sync, save).
 - ui/mastery.js (fighter mastery, see State): XP/level maths (`mxXp`, `mxLevel`, `mxInfo`), `mxGain` + `mxMult` (XP of a match), `mxAward` (XP, chips, `P.mpaid`),
   `masteryResults` / `masteryCup` / `masteryTile` / `masteryDetail` / `masteryCollection` / `masteryPage` / `masteryGlint`, the titles `mxActs` + `mxJack` (read by ACT in acct.js).
+- ui/quick.js (after acct.js; see State and "Quick match"): QM (search state), qmBoot / qmMsg (the server's messages over __blQuick from
+  net-ws.js), quickOpen / qmRender (#scrQuick), qmWarmStart / qmWarmEnd (the CPU warm-up), qmFound / qmVs / qmMatchStarts (PLAYER FOUND!,
+  the VS screen, the friend-match lockstep in the reserved room), qmFinish / qmRes / qmResults (results and the server's verdict),
+  rankView (online or CPU rank, used by the pill, the hero, the Account sheet), qmTick (from simTick). CSS in game/css/96-quick.css.
+  Test hook `window.__blastline.qm` (the QM object). `window.__blNoQuick = true` before the page loads switches Quick match off.
 - skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
-  shim (server build only) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
+  shim (server build only; `window.__blQuick` = {send, on, connected, onConnection} for ui/quick.js) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
 - web/ (repo root): manifest.webmanifest + icons. server.js serves them from public/ if present; build.py and
   the deploy blocks copy them there.
@@ -528,12 +555,30 @@ index.html is committed with every source change (check.sh flags a stale one).
   are not counted. History keeps 50. Locker: every fighter and skin; owned ones equip via `equipSkin` (screens.js, shared with the select screen).
   Sync: new fields are optional in sync.js; a MISSING one (older page) is "unchanged", never zero (`OPT_COUNTERS`, fstats, avatar, title).
   Wanderer needs 7 although there are more fighters (the number is fixed on purpose, not the roster size).
-- Live: deploy/accounts-setup.txt (Jonny pastes it once, after update.txt) makes /var/lib/potatobrawl/accounts, adds the systemd drop-in
+- Live (pasted; Jonny's server check on 2026-10-16 06:12 UTC shows accounts on): deploy/accounts-setup.txt makes /var/lib/potatobrawl/accounts, adds the systemd drop-in
   (ACCOUNTS_DIR, HOST=127.0.0.1, ReadWritePaths), installs the nightly backup (/var/backups/potatobrawl, 14 days) and closes port 8080.
   Until then the Account sheet says "Saving to an account isn't available yet." and nothing else changes.
 - Two devices: the server keeps a revision; a stale save gets 409 with the newer copy and the page merges (counters add what each side
   changed since the last sync, skins are a union, everything else takes the side that changed it, the newer one if both did) and saves
   again. A reset on a linked device is a forced save that wins. Linking a device that has progress asks first and the account wins.
+
+## Quick match (quick.js on the server): what it does and stores
+- quick.js is called from server.js only (auth, qm, qmx messages; see the header comment for every message). It reads PROTO from
+  game/ui/online.js and plays with game/core.js, so a PROTO bump or a core change needs no server change, only the usual update.
+- Queue: rating range +-200 for 10 s, +-400 until 20 s, then anyone; a Ranked player takes a Casual opponent after 20 s (fb: that
+  match counts as Casual); never the same Ranked opponent twice in a row. Rooms are "qm" + id, reserved for the two peers.
+- Referee: the server reads the inputs out of the presences it relays (the first D frames are neutral on both phones), plays the game
+  with core.js as both inputs of a frame arrive, and decides at "end". A player who leaves a running Ranked match or sends nothing for
+  15 s loses; a host whose start differs from the assignment loses; no valid start in 25 s = no result. A phone checksum that differs
+  from the referee's is logged only (the referee decides).
+- Rank: Elo with K 48 for the first 10 matches, then 32; the first 5 are placement and can't drop below 900. Stored in the account
+  file's `on` part {id, r, pk, w, l, d, n, h (last 20)}; accounts.js never lets a phone's save touch it. Season 1 starts everyone at 1000.
+- Accounts: Quick match makes an account by itself, so accounts.js allows 60 new accounts an hour per address (a class on one Wi-Fi).
+- hello carries a page secret: a reconnect may take over a peer id only with the same secret.
+- Updates: SIGUSR2 drains (no new matches, the running ones play on); /health lists "ranked matches running" and "searching";
+  deploy/update.txt waits up to 5 minutes for running Ranked matches before the restart.
+- Step 5 (rival record, streak bounty, chip stakes) builds on this: the server already knows both ids and the verdict of every
+  Ranked match (finish() in quick.js), so a rival record and stakes are a few fields in `on` plus a check at pairing time.
 
 ## Rules that keep online play working
 - A core.js change that can change simulation results must stay deterministic, add new fighter fields to
@@ -565,7 +610,7 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit; shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
 pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
 return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
@@ -617,6 +662,11 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
+- NEXT (build order step 5): rival record, streak bounty and chip stakes on top of Quick match (see "Quick match" above; the chip
+  stakes rules are in project memory: never bought, traded or cashed out; 10/25/50 only vs friends or similar rank; daily limit;
+  none for new accounts; the server replays staked matches). Then 6 leaderboards (weekly boss boards) and replays.
+- Quick match leftovers: a phone whose own connection drops for more than 15 s in a Ranked match loses ("quiet"); an online-rank
+  leaderboard is step 6; Casual matches are not recorded on the server (no Casual history).
 - NEXT: 2v2 (session 6, offline vs CPUs first, then online). Online boss fights are done (see State). Their leftovers: the team colour
   for both players' markers (Fable's idea) is not done; a guest picks no boss or level (the host's pick); a phone whose own
   connection drops plays on with a CPU too (it can't tell who dropped); P.friendW/L do not count boss fights.
