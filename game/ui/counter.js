@@ -29,13 +29,14 @@ function cntOnce(k) {
   if (!CNT.on || !N || !N.f || N.k[k]) return;
   N.k[k] = 1; cntSave(); cnt(k);
 }
-// the mode names the stats page knows (a new mode can be added here; until then it counts as practice)
+// the mode names the stats page knows (a new mode can be added here and to MODES in web/stats.html; until then it counts as practice)
 function cntMode(m) {
   if (!m) return "none";
   if (m.trial) return "trial";
   if (m.tutorial) return "tutorial";
   if (m.online) return m.boss ? "online-boss" : "online";
   if (m.boss) return m.road ? "road-boss" : "boss";
+  if (m.duo) return "team";   // Team Brawl 2v2 (ui/duo.js; match.team is the CPU team's name)
   return m.road ? "road" : m.daily ? "daily" : m.cup ? "cup" : m.ranked ? "ranked" : "practice";
 }
 function cntDev() {

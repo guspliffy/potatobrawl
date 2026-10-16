@@ -1,5 +1,5 @@
 /* ===================== effects ===================== */
-const fx = [], sfx = [], trails = [[], [], []], combos = [null, null, null], chgPops = [], finDash = [null, null, null];   // per slot (a boss fight has three)
+const fx = [], sfx = [], trails = [[], [], [], []], combos = [null, null, null, null], chgPops = [], finDash = [null, null, null, null];   // per slot (a boss fight has three, a 2v2 four)
 const clearTrails = () => { for (const t of trails) t.length = 0; };
 function addFx(o) { if (fx.length < 260) fx.push(o); }
 function spark(x, y, col, kb, dx, dy) {
@@ -164,6 +164,7 @@ function drawCombos(c, g) {
   drawChargedPops(c);
 }
 // "CHARGED" pops at the spot of a full-charge hit: same pop-up style as the combo counter, rising and fading
+// a word popping over the fight: CHARGED on a full-charge heavy, CAUGHT! on a 2v2 Catch (duo.js; txt)
 function chargedPop(e) { chgPops.push({ x: e.x, y: e.y, t: 0, pop: 1, col: col(e.pal) }); }
 function drawChargedPops(c) {
   for (const q of chgPops) {
@@ -172,8 +173,8 @@ function drawChargedPops(c) {
     c.save(); c.globalAlpha = Math.max(0, a); c.translate(x, y); c.scale(sc, sc);
     c.textAlign = "center"; c.lineJoin = "round";
     c.font = 'italic 900 22px "Barlow Condensed", "Arial Narrow", sans-serif';
-    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText("CHARGED", 0, 0);
-    c.fillStyle = q.col; c.fillText("CHARGED", 0, 0);
+    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText(q.txt || "CHARGED", 0, 0);
+    c.fillStyle = q.col; c.fillText(q.txt || "CHARGED", 0, 0);
     c.restore();
   }
 }
@@ -258,6 +259,7 @@ function render2D(g, tk) {
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
   bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
+  TEAM_RIM = !!(match && match.duo && g.fighters.length === 4);   // 2v2: team rims on the fighters (draw-world.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
@@ -270,9 +272,11 @@ function render2D(g, tk) {
     uvVeil(c, g, tk);
     uvLitFighter(c, g.fighters[us], tk);
   } else for (const f of order) if (f.state !== "dead" && f.state !== "gone") drawFighter(c, f, tk);
+  TEAM_RIM = false;
   uvFront(c, g, tk);   // Ultimates: what is drawn over the fighters (flame column, comet, chains, fire stream, slashes)
   drawFx(c);
-  if (mode === "match" && !FIN.on) {
+  if (mode === "match" && !FIN.on && match && match.duo && g.fighters.length === 4) duoTags(c, g);   // 2v2: a tag on all four (draw-world.js)
+  else if (mode === "match" && !FIN.on) {
     const [a, b] = g.fighters;
     const close = Math.abs(a.x - b.x) * cam.z < 44 && Math.abs((a.y - a.s.h) - (b.y - b.s.h)) * cam.z < 22;
     drawTag(c, a, meSlot === 0, meSlot === 1 && close ? 20 : 0); drawTag(c, b, meSlot === 1, meSlot === 0 && close ? 20 : 0);
@@ -291,6 +295,7 @@ function render2D(g, tk) {
 function handleEvent(g, e, live) {
   skinEvent(g, e);
   bossEvent(g, e, live);   // a boss's moves, staggers and fall: looks and sounds (ui/draw-boss.js)
+  duoEvent(g, e, live);    // 2v2: the Catch's pop (ui/duo.js)
   switch (e.type) {
     case "hit": {
       if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
@@ -399,7 +404,7 @@ function handleEvent(g, e, live) {
    The looks of each ulti are in draw-fighters.js (poses, uvFloor, uvFront), draw-world.js (the projectiles) and below (events). */
 const UV_GOLD = "#ffd23f", UV_PALE = "#fff2c2";
 const UV_FREEZE = BL.TUNE.ultFreeze, UV_BANNER = 60;
-const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false, false], dash: [null, null, null], at: [null, null, null] };
+const UV = { g: null, slot: -1, t: 999, name: "", col: UV_GOLD, cueG: null, cues: new Set(), pulse: new WeakMap(), spear: [false, false, false, false], dash: [null, null, null, null], at: [null, null, null, null] };
 const uvLive = (g) => UV.g === g && mode === "match" && !FIN.on;
 // once per move and name (a cue that waits on a frame must not fire again while the game is held in hitstop)
 function uvCue(f, name) { const k = f.slot + "." + f.moveT + "." + name; if (UV.cues.has(k)) return false; UV.cues.add(k); return true; }
@@ -465,7 +470,7 @@ function uvLitFighter(c, f, tk) {
 // ---- once per sim tick ----
 function uvTick(g) {
   if (UV.t < 999) UV.t++;
-  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false, false]; UV.dash = [null, null, null]; UV.at = [null, null, null]; }
+  if (UV.cueG !== g) { UV.cueG = g; UV.cues.clear(); UV.spear = [false, false, false, false]; UV.dash = [null, null, null, null]; UV.at = [null, null, null, null]; }
   if (UV.t > 1 && UV.t < UV_FREEZE - 2 && uvLive(g)) cam.shake = Math.max(cam.shake, 1.8);   // the held screen trembles
   for (const f of g.fighters) {
     if (uvHeld(f)) uvFighterTick(g, f);

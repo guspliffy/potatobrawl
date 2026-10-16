@@ -1,6 +1,6 @@
 """Play counts in the browser (ui/counter.js) against a real `node server.js` with a temporary STATS_DIR on port 8098: what a new
 player's first visit sends (tutorial skipped, a Practice match won, Rematch, a quit, where they left), a second visit on the same
-day, Settings > Play counts Off and On, a browser with Global Privacy Control, a player from before the counter, a player coming back
+day, Settings > Play counts Off and On, a browser with Global Privacy Control, a player from before the counter (and their Team Brawl 2v2 win), a player coming back
 three days later (came back within 3/7/14/30 days, not 1), an error on the page, and a server with the counter off (one try, then
 silence). Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwstats.py        (needs `python3 game/build.py` first)"""
@@ -145,6 +145,18 @@ async def counted(b, sd):
     note = await pg.evaluate("window.__blCount.note")
     c4 = counts(sd)
     expect(note.get('f') == '' and note.get('x') == 1 and c4.get('day:back') == 2 and c4.get('day:new') == 1, f'old: not counted as a returning player ({note}, {c4.get("day:back")})')
+    # Team Brawl 2v2 (ui/duo.js) is its own mode, "team"
+    await pg.click('#bPractice'); await mode_is(pg, 'select')
+    await pg.click('#oppPick'); await pg.wait_for_timeout(250)
+    await pg.evaluate("[...document.querySelectorAll('#oppPop button')].find((b) => b.textContent.endsWith('Team Brawl 2v2')).click()"); await pg.wait_for_timeout(250)
+    await pg.click('#selGo')
+    await pg.wait_for_function(f"{G} && {G}.phase === 'play' && {G}.fighters.length === 4", timeout=90000)
+    await pg.wait_for_timeout(300)
+    await pg.evaluate(f"(() => {{ const g = {G}; for (const i of [2, 3]) {{ g.fighters[i].stocks = 1; g.fighters[i].x = 5000; }} }})()")
+    await mode_is(pg, 'result', 90000)
+    await flush(pg)
+    c4 = counts(sd)
+    expect(c4.get('ms:team') == 1 and c4.get('me:team:win') == 1 and c4.get('fp:odin') == 1, f'old: a 2v2 win is not counted as team ({c4.get("ms:team")}, {c4.get("me:team:win")}, {c4.get("fp:odin")})')
     await ctx.close()
 
     # --- back three days after the first visit: came back within 3, 7, 14 and 30 days (not 1); an error on the page is counted once
