@@ -100,8 +100,8 @@ SRV=$!
 sleep 1
 (cd "$SHOTS" && timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, rematch after the KO finisher, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 
 # 5c. Online boss fights (2v1 on two phones): the repair copy of every boss fits a presence in pieces and restores frame for frame
@@ -162,6 +162,12 @@ else fail "screens" "$LOGS/screens.log"; fi
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwskins.py" skins) > "$LOGS/skins.log" 2>&1
 if grep -q "^skins ok" "$LOGS/skins.log" && grep -q "^no errors" "$LOGS/skins.log"; then pass "skins menu + Play friends lobby (Skin Rack states, buy, wear, Fight Card at four sizes; shots in build/shots/skins)"
 else fail "skins menu + Play friends lobby" "$LOGS/skins.log"; fi
+
+# 6a2. The Shop and Another go (UI only): the Account sheet's Shop tab (nameplates and Glaze, two-tap buy, one-tap wear, short of chips), the
+#      plate on the start page, the Profile and the results, the Daily sheet's Another go and its rules, at four sizes. Shots in build/shots/shop.
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwshop.py" shop) > "$LOGS/shop.log" 2>&1
+if grep -q "^shop ok" "$LOGS/shop.log" && grep -q "^no errors" "$LOGS/shop.log"; then pass "shop + Another go (nameplates, Glaze, buy / wear / short, Daily rules at four sizes; shots in build/shots/shop)"
+else fail "shop + Another go" "$LOGS/shop.log"; fi
 
 # 6b. Accounts in the browser: profile pill, Account sheet, two devices syncing through a real server (port 8093).
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwacct.py" acct) > "$LOGS/accounts-ui.log" 2>&1

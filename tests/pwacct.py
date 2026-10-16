@@ -70,7 +70,7 @@ async def acst(pg): return await pg.evaluate('JSON.parse(JSON.stringify(window._
 async def text(pg, sel): return await pg.evaluate("(s) => { const e = document.querySelector(s); return e ? e.innerText : null }", sel)
 async def open_sheet(pg):
     if await pg.evaluate("document.getElementById('scrAccount').hidden"):
-        await pg.click('#mRank'); await pg.wait_for_function("!document.getElementById('scrAccount').hidden", timeout=5000)
+        await pg.click('#mRank .plate'); await pg.wait_for_function("!document.getElementById('scrAccount').hidden", timeout=5000)   # the plate: a tap on the chip coin opens the Shop (at 667x320 the button's centre is on the coin)
         await pg.wait_for_timeout(250)
 async def close_sheet(pg): await pg.click('#acClose'); await pg.wait_for_timeout(150)
 async def btn(pg, label, force=False):   # a button or link inside the sync section, by its text
