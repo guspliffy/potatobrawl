@@ -1989,13 +1989,14 @@ function checkLethal(g, L) {
 // A fighter free to act (standing, running or in the air) that touches a teammate tumbling from a launch ends that launch: the
 // teammate's hitstun is over and every speed halves (no free invincibility: they can be hit again at once). Not on the final launch
 // (the match is decided at that hit), not in its first catchAfter frames (a hit in a crowd still sends you), one per catchCd frames.
+// (the launch speed is compared squared: Math.hypot may round differently on different phones, a multiplication is exact everywhere)
 function catches(g) {
   const P = TUNE.catchPad;
   for (const c of g.fighters) {
     if (c.catchCd > 0 || !canAct(c) || c.held >= 0) continue;
     const a = hurt(c);
     for (const t of g.fighters) {
-      if (t === c || t.team !== c.team || t.state !== "hitstun" || !t.tumble || t.doomed || t.held >= 0 || t.st < TUNE.catchAfter || Math.hypot(t.kbx, t.kby) < TUNE.catchKb) continue;
+      if (t === c || t.team !== c.team || t.state !== "hitstun" || !t.tumble || t.doomed || t.held >= 0 || t.st < TUNE.catchAfter || t.kbx * t.kbx + t.kby * t.kby < TUNE.catchKb * TUNE.catchKb) continue;
       const b = hurt(t);
       if (a.x2 + P < b.x1 || b.x2 + P < a.x1 || a.y2 + P < b.y1 || b.y2 + P < a.y1) continue;
       const k = TUNE.catchSlow;
@@ -2125,6 +2126,42 @@ const BOT_STYLES = {
 };
 function makeBot(level, style) {
   return { d: level, st: Object.assign({}, BOT_NEUTRAL, style), mem: [], think: 0, hold: { x: 0, y: 0 }, cool: 0, wasPress: false, ledgeWait: -1, chg: 0 };
+}
+/* Online CPU seats (2v2): every phone runs the same CPUs from the same random numbers, so their state travels in the repair copy.
+   botSave / botLoad copy a bot (its style `st` stays with the bot it is loaded into); a memory entry is an array (MEMK order) and its
+   move becomes [fighter id, move key]. rngOf(seed) = mulberry32 with its state in .s, to stand in for g.rng where a copy must carry it. */
+const MEMK = ["x", "y", "st", "mv", "mt", "pct", "gone", "inv", "bs", "sx"];
+function botSave(g, bot) {
+  const o = {};
+  for (const k in bot) if (k !== "st" && k !== "mem") o[k] = copy(bot[k]);
+  o.mem = bot.mem.map((m) => MEMK.map((k) => {
+    if (k !== "mv") return copy(m[k]);
+    if (!m.mv) return null;
+    for (const f of g.fighters) for (const key in f.spec.moves) if (f.spec.moves[key] === m.mv) return [f.spec.id, key];
+    return null;
+  }));
+  return o;
+}
+function botLoad(g, bot, o) {
+  for (const k of Object.keys(bot)) if (k !== "st") delete bot[k];
+  for (const k in o) if (k !== "mem") bot[k] = copy(o[k]);
+  bot.mem = o.mem.map((a) => {
+    const m = {};
+    MEMK.forEach((k, j) => { m[k] = copy(a[j]); });
+    const f = m.mv && g.fighters.find((x) => x.spec.id === m.mv[0]);
+    m.mv = f ? f.spec.moves[m.mv[1]] || null : null;
+    return m;
+  });
+}
+function rngOf(seed) {
+  const r = function () {
+    let a = r.s | 0; a = (a + 0x6D2B79F5) | 0; r.s = a;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  r.s = seed | 0;
+  return r;
 }
 function botInput(g, me, opp, bot) {
   const out = blankInput();
@@ -2399,5 +2436,5 @@ function checksum(g) {
   return h >>> 0;
 }
 
-root.BL = { teamGame, teamBotInput, ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
+root.BL = { teamGame, teamBotInput, botSave, botLoad, rngOf, ultReady, ultNeed, serialize, restore, checksum, STAGE, MAPS, POOL, useStage, FIGHTERS, BOSSES, TUNE, newGame, step, makeBot, botInput, BOT_STYLES, canAct, intangible, armored, activeBoxes, knockback, blankInput, clamp, lerp, sign };
 })(typeof module !== "undefined" ? module.exports : window);

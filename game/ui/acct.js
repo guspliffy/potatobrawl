@@ -72,7 +72,7 @@ const ACT = [
   { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
   { id: "kraken", name: () => "Kraken Fryer", ok: () => ((roadGet().b3 | 0) & 7) > 0, how: "Beat Kraken Spud at the end of the pier in The Deep." },
   { id: "duo", name: () => "Double Trouble", ok: () => (P.duo | 0) > 0, how: "Beat a boss on Hard or Nightmare with a friend online (Play friends, Vs boss)." },
-  { id: "dynamic", name: () => "Dynamic Duo", ok: () => (P.duoW | 0) >= DUO_TITLE, how: `Win ${DUO_TITLE} Team Brawl 2v2 matches (Practice).` },
+  { id: "dynamic", name: () => "Dynamic Duo", ok: () => (P.duoW | 0) >= DUO_TITLE, how: `Win ${DUO_TITLE} Team Brawl 2v2 matches (Practice or online).` },
   ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
