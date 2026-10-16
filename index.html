@@ -3171,12 +3171,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #scrQuick .sel-head .back { width: 44px; height: 44px; }
 #app:not(.short):not(.portrait) #scrQuick .sel-head h2 { font-size: 40px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
 #app:not(.short):not(.portrait) #scrQuick .sel-head .coin { height: 44px; font-size: 21px; }
-#app:not(.short):not(.portrait) #scrQuick .qm-grid { grid-template-columns: 220px minmax(0, 1fr) 380px; gap: 18px 24px; }
+#app:not(.short):not(.portrait) #scrQuick .qm2 { container-type: inline-size; }
+#app:not(.short):not(.portrait) #scrQuick .qm-grid { grid-template-columns: clamp(164px, 19.6cqw, 220px) minmax(0, 1fr) clamp(290px, 33.9cqw, 380px); gap: 18px 24px; }   /* the sides give way below 1180 px */
 #app:not(.short):not(.portrait) #scrQuick .on-card { gap: 12px; padding: 16px 18px; border-radius: 14px; }
 #app:not(.short):not(.portrait) #scrQuick .on-card > .kick { font-size: 12px; }
 #app:not(.short):not(.portrait) #scrQuick .on-fcb { border-radius: 14px; }
 #app:not(.short):not(.portrait) #scrQuick .on-ft { gap: 8px; padding: 12px 16px 15px; }
-#app:not(.short):not(.portrait) #scrQuick .on-ft b { font-size: 32px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrQuick .on-ft b { font-size: min(32px, 16cqw); -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
 #app:not(.short):not(.portrait) #scrQuick .on-fs { font-size: 14.5px; }
 #app:not(.short):not(.portrait) #scrQuick .on-fs em { font-size: 13.5px; }
 #app:not(.short):not(.portrait) #scrQuick .on-ft small { font-size: 12px; }
@@ -3340,6 +3341,24 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #scrQuick .qm-last span small { font-size: 13.5px; }
 #app:not(.short):not(.portrait) #scrQuick .qm-last b { font-size: 17px; }
 #app:not(.short):not(.portrait) #scrQuick .qm-last li.empty { font-size: 13.5px; }
+/* a narrow YOUR MATCH (.thin, ui/quick.js qmThin: under 270 px on phones, 340 px on the desktop): the record and season ride in the
+   kicker, the plate keeps the emblem and the tier word, five pips under PLACING, "counts for rank" on one line */
+#scrQuick .qm-idle > .qm-kick { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+#scrQuick .qm-krec { margin-left: auto; color: var(--mute); white-space: nowrap; }
+#scrQuick .qm-idle:not(.thin) .qm-krec, #scrQuick .qm-pips { display: none; }
+#app #scrQuick .qm-idle.thin .qm-kick { letter-spacing: 0.1em; }
+#app.short:not(.tiny) #scrQuick .qm-idle.thin { gap: 7px; }
+#app #scrQuick .qm-idle.thin .qm-seg button { padding-inline: 4px; }
+#app #scrQuick .qm-idle.thin .qm-seg button small { max-width: 100%; overflow: hidden; white-space: nowrap; letter-spacing: -0.01em; }
+#app #scrQuick .qm-idle.thin .qm-rk { grid-template-columns: auto minmax(0, 1fr); }
+#app #scrQuick .qm-idle.thin .qm-rec { display: none; }
+#app #scrQuick .qm-idle.thin .qm-rk.placing .qm-rks, #app #scrQuick .qm-idle.thin .qm-rk.placing .bar { display: none; }
+#app #scrQuick .qm-idle.thin .qm-rk.placing .qm-pips { display: flex; gap: 6px; margin-top: 7px; }
+#scrQuick .qm-pips i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--sand); background: rgba(14, 16, 34, 0.9); box-shadow: 0 1px 0 var(--ink); }
+#scrQuick .qm-pips i.on { background: var(--sand); }
+#app:not(.short):not(.portrait) #scrQuick .qm-pips i { width: 14px; height: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle.thin .qm-rk { gap: 12px; padding: 10px 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle.thin .qm-rk .badge { width: 48px; height: 48px; }
 /* upright: the Fight Card on top, your match (the timer) in the middle, the CPU offer under the thumb, then the queue */
 #app.portrait #scrQuick .qm-mid, #app.portrait #scrQuick .qm-room, #app.portrait #scrQuick .qm-side { flex: none; overflow: visible; }
 #app.portrait #scrQuick .qm-idle, #app.portrait #scrQuick .qm-search { flex: none; }
@@ -3888,12 +3907,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </div>
         <div class="on-card qm-mid">
           <div class="qm-idle" id="qmIdle">
-            <div class="kick">Your match</div>
+            <div class="kick qm-kick"><span>Your match</span><span class="qm-krec" id="qmKRec"></span></div>
             <div class="qm-seg" role="radiogroup" aria-label="Mode">
               <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">counts for rank</small></button>
               <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
             </div>
-            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><span class="qm-pips" id="qmPips" role="img"><i></i><i></i><i></i><i></i><i></i></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
             <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
             <p class="qm-truth" id="qmTruth"></p>
           </div>
@@ -33224,11 +33243,32 @@ function qmPlate() {
   $("qmRank").classList.toggle("placing", placing);
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("qmTier").textContent = placing ? "Placing" : ti.t.name;
-  $("qmRating").textContent = placing ? `${rk.n} of ${QM_PLACING} played · ${rk.r}` : `${rk.r}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : " · top tier"}`;
+  $("qmRating")._t = placing ? [`${rk.n} of ${QM_PLACING} played · ${rk.r}`] : ti.next ? [`${rk.r} · ${ti.need} to ${ti.next.name}`, `${rk.r} · ${ti.need} to go`] : [`${rk.r} · top tier`];   // qmThin picks
   $("qmBar").style.setProperty("--p", placing ? rk.n / QM_PLACING : ti.p);
   $("qmRec").textContent = `${rk.w}W · ${rk.l}L\nSeason 1`;
+  const pp = $("qmPips"); pp.setAttribute("aria-label", `${rk.n} of ${QM_PLACING} placing matches played`);
+  [...pp.children].forEach((e, k) => e.classList.toggle("on", k < rk.n));
   rvPlate();   // ui/rivals.js: on a streak, WANTED and the bounty
+  $("qmKRec").textContent = $("qmRec").textContent.replace("\n", " · ");
+  qmThin();
 }
+/* A narrow YOUR MATCH column (740-800 px phones, small desktop windows) takes .thin (96-quick.css): the record moves up into the
+   kicker and five pips stand for "n of 5 played". The tier word and "counts for rank" shrink until they fit, at any width. */
+function qmThin() {
+  const idle = $("qmIdle"), w = idle.clientWidth, app = $("app"), rt = $("qmRating"), tx = rt._t || [""];
+  rt.textContent = tx[0];   // the rating line: "1360 · 140 to Diamond", or "1360 · 140 to go" where that doesn't fit
+  if (!w) return;
+  idle.classList.toggle("thin", w < (app.classList.contains("short") || app.classList.contains("portrait") ? 270 : 340));
+  if (tx[1] && rt.scrollWidth > rt.clientWidth + 1) rt.textContent = tx[1];
+  for (const t of [$("qmTier"), $("qmRSub")]) {
+    t.style.fontSize = "";
+    for (let f = parseFloat(getComputedStyle(t).fontSize); t.scrollWidth > t.clientWidth + 1 && f > 9; ) t.style.fontSize = `${--f}px`;
+  }
+  const kr = $("qmKRec"), k0 = kr.previousElementSibling;   // the kicker's record stays on the kicker's line (a streak's is long)
+  kr.style.fontSize = "";
+  for (let f = parseFloat(getComputedStyle(kr).fontSize); kr.offsetTop - k0.offsetTop > 5 && f > 8; ) kr.style.fontSize = `${--f}px`;
+}
+if (window.ResizeObserver) new ResizeObserver(() => qmThin()).observe($("qmIdle"));
 // LAST FIVE: your last Ranked results (W / L / D, who, their fighter, the rating change)
 function qmLast() {
   const ul = $("qmLast"), h = (qmMe() || QM_FRESH).h.slice(0, 5), sig = JSON.stringify(h);

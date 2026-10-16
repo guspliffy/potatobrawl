@@ -90,12 +90,13 @@
 #app:not(.short):not(.portrait) #scrQuick .sel-head .back { width: 44px; height: 44px; }
 #app:not(.short):not(.portrait) #scrQuick .sel-head h2 { font-size: 40px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
 #app:not(.short):not(.portrait) #scrQuick .sel-head .coin { height: 44px; font-size: 21px; }
-#app:not(.short):not(.portrait) #scrQuick .qm-grid { grid-template-columns: 220px minmax(0, 1fr) 380px; gap: 18px 24px; }
+#app:not(.short):not(.portrait) #scrQuick .qm2 { container-type: inline-size; }
+#app:not(.short):not(.portrait) #scrQuick .qm-grid { grid-template-columns: clamp(164px, 19.6cqw, 220px) minmax(0, 1fr) clamp(290px, 33.9cqw, 380px); gap: 18px 24px; }   /* the sides give way below 1180 px */
 #app:not(.short):not(.portrait) #scrQuick .on-card { gap: 12px; padding: 16px 18px; border-radius: 14px; }
 #app:not(.short):not(.portrait) #scrQuick .on-card > .kick { font-size: 12px; }
 #app:not(.short):not(.portrait) #scrQuick .on-fcb { border-radius: 14px; }
 #app:not(.short):not(.portrait) #scrQuick .on-ft { gap: 8px; padding: 12px 16px 15px; }
-#app:not(.short):not(.portrait) #scrQuick .on-ft b { font-size: 32px; -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+#app:not(.short):not(.portrait) #scrQuick .on-ft b { font-size: min(32px, 16cqw); -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
 #app:not(.short):not(.portrait) #scrQuick .on-fs { font-size: 14.5px; }
 #app:not(.short):not(.portrait) #scrQuick .on-fs em { font-size: 13.5px; }
 #app:not(.short):not(.portrait) #scrQuick .on-ft small { font-size: 12px; }
@@ -259,6 +260,24 @@
 #app:not(.short):not(.portrait) #scrQuick .qm-last span small { font-size: 13.5px; }
 #app:not(.short):not(.portrait) #scrQuick .qm-last b { font-size: 17px; }
 #app:not(.short):not(.portrait) #scrQuick .qm-last li.empty { font-size: 13.5px; }
+/* a narrow YOUR MATCH (.thin, ui/quick.js qmThin: under 270 px on phones, 340 px on the desktop): the record and season ride in the
+   kicker, the plate keeps the emblem and the tier word, five pips under PLACING, "counts for rank" on one line */
+#scrQuick .qm-idle > .qm-kick { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+#scrQuick .qm-krec { margin-left: auto; color: var(--mute); white-space: nowrap; }
+#scrQuick .qm-idle:not(.thin) .qm-krec, #scrQuick .qm-pips { display: none; }
+#app #scrQuick .qm-idle.thin .qm-kick { letter-spacing: 0.1em; }
+#app.short:not(.tiny) #scrQuick .qm-idle.thin { gap: 7px; }
+#app #scrQuick .qm-idle.thin .qm-seg button { padding-inline: 4px; }
+#app #scrQuick .qm-idle.thin .qm-seg button small { max-width: 100%; overflow: hidden; white-space: nowrap; letter-spacing: -0.01em; }
+#app #scrQuick .qm-idle.thin .qm-rk { grid-template-columns: auto minmax(0, 1fr); }
+#app #scrQuick .qm-idle.thin .qm-rec { display: none; }
+#app #scrQuick .qm-idle.thin .qm-rk.placing .qm-rks, #app #scrQuick .qm-idle.thin .qm-rk.placing .bar { display: none; }
+#app #scrQuick .qm-idle.thin .qm-rk.placing .qm-pips { display: flex; gap: 6px; margin-top: 7px; }
+#scrQuick .qm-pips i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--sand); background: rgba(14, 16, 34, 0.9); box-shadow: 0 1px 0 var(--ink); }
+#scrQuick .qm-pips i.on { background: var(--sand); }
+#app:not(.short):not(.portrait) #scrQuick .qm-pips i { width: 14px; height: 14px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle.thin .qm-rk { gap: 12px; padding: 10px 12px; }
+#app:not(.short):not(.portrait) #scrQuick .qm-idle.thin .qm-rk .badge { width: 48px; height: 48px; }
 /* upright: the Fight Card on top, your match (the timer) in the middle, the CPU offer under the thumb, then the queue */
 #app.portrait #scrQuick .qm-mid, #app.portrait #scrQuick .qm-room, #app.portrait #scrQuick .qm-side { flex: none; overflow: visible; }
 #app.portrait #scrQuick .qm-idle, #app.portrait #scrQuick .qm-search { flex: none; }

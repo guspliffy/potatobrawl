@@ -990,12 +990,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         </div>
         <div class="on-card qm-mid">
           <div class="qm-idle" id="qmIdle">
-            <div class="kick">Your match</div>
+            <div class="kick qm-kick"><span>Your match</span><span class="qm-krec" id="qmKRec"></span></div>
             <div class="qm-seg" role="radiogroup" aria-label="Mode">
               <button id="qmR" role="radio" aria-checked="true"><b>Ranked</b><small id="qmRSub">counts for rank</small></button>
               <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
             </div>
-            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><span class="qm-pips" id="qmPips" role="img"><i></i><i></i><i></i><i></i><i></i></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
             <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
             <p class="qm-truth" id="qmTruth"></p>
           </div>
