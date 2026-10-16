@@ -9,7 +9,7 @@
    simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 13;
+const PROTO = 14;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",

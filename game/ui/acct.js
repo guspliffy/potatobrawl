@@ -72,6 +72,7 @@ const ACT = [
   { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
   { id: "kraken", name: () => "Kraken Fryer", ok: () => ((roadGet().b3 | 0) & 7) > 0, how: "Beat Kraken Spud at the end of the pier in The Deep." },
   { id: "duo", name: () => "Double Trouble", ok: () => (P.duo | 0) > 0, how: "Beat a boss on Hard or Nightmare with a friend online (Play friends, Vs boss)." },
+  { id: "dynamic", name: () => "Dynamic Duo", ok: () => (P.duoW | 0) >= DUO_TITLE, how: `Win ${DUO_TITLE} Team Brawl 2v2 matches (Practice).` },
   ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
   { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
@@ -82,7 +83,7 @@ const ACT = [
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(Math.max(P.peak | 0, P.rating | 0)).t.name, ok: () => (P.matches | 0) > 0, how: "Play a ranked match. It shows the best tier you reached." },
 ];
-const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const ACT_SHOWN = ["tier", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN, ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
@@ -164,6 +165,7 @@ function renderAccount() {
   const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
   if (fw + fl > 0) more.push(`Friend matches: ${fw} won, ${fl} lost`);
   if (cups > 0) more.push(`Cups won: ${cups}${(P.flawless | 0) > 0 ? ` (${P.flawless} flawless)` : ""}`);
+  if ((P.duoW | 0) + (P.duoC | 0) > 0) more.push(`2v2: ${P.duoW | 0} won, ${P.duoC | 0} ${(P.duoC | 0) === 1 ? "Catch" : "Catches"}`);
   $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
   const form = $("acForm"); form.innerHTML = "";
   const hist = (P.history || []).slice(0, 10);

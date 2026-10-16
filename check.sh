@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check; details go to build/check-logs/.
 #   ./check.sh          everything (about 5 minutes; the screenshot pass is the slow part)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights + 2v2 only (seconds)
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 set -u
@@ -63,6 +63,13 @@ else fail "ultimates" "$LOGS/ulti.log"; fi
 (cd tests && node boss.js) > "$LOGS/boss.log" 2>&1
 if grep -q "^boss ok" "$LOGS/boss.log"; then pass "boss fights (Normal win rates: $(grep -o '^boss ok (Normal: [^)]*' "$LOGS/boss.log" | sed 's/^boss ok (Normal: //'); determinism, final launch, lethal calls)"
 else fail "boss fights" "$LOGS/boss.log"; fi
+
+# 3g. 2v2 (Team Brawl): replay and save/restore with four fighters, spawn and respawn sides, no friendly fire, the time-out by team hearts and
+#     sudden death for four, the Catch (and never on the final launch, by a foe, in 1v1 or a boss fight), then mirrored CPU teams: sides,
+#     every fighter's 2v2 win rate, match length.
+(cd tests && node duo.js) > "$LOGS/duo.log" 2>&1
+if grep -q "^duo ok" "$LOGS/duo.log"; then pass "2v2 ($(grep -o '[0-9]* games at[^:]*: left side wins [0-9.]*%' "$LOGS/duo.log" | sed 's/^.*left/left/'); rules, the Catch, determinism)"
+else fail "2v2" "$LOGS/duo.log"; fi
 
 if [ $QUICK = 1 ]; then echo "--- quick run: $FAILS failed"; exit $((FAILS > 0)); fi
 
@@ -187,6 +194,14 @@ else fail "the Road in the browser" "$LOGS/road-ui.log"; fi
 (cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwmastery.py" mastery) > "$LOGS/mastery-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/mastery-ui.log"; then pass "fighter mastery in the browser (XP, level up, rewards, titles, Locker; shots in build/shots/mastery)"
 else fail "fighter mastery in the browser" "$LOGS/mastery-ui.log"; fi
+
+# 8j. Team Brawl 2v2 in the browser: Practice > VS > Team Brawl 2v2 (the Partner chip, pool-only maps), a fight with four cards on the HUD (yours,
+#     the partner's mini card, two foe cards), Focus by a tap on a foe card (Tab on a keyboard), the Finish banner only for a foe, the team
+#     rims, the forced end into the KO page and the results, a 1v1 afterwards with its two cards back; the select header and the HUD at four
+#     sizes, a Catch. Shots in build/shots/duo.
+(cd "$SHOTS" && timeout 1500 python3 "$ROOT/tests/pwduo.py" duo) > "$LOGS/duo-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/duo-ui.log"; then pass "2v2 in the browser (picker, four-card HUD, Focus, rims, results; shots in build/shots/duo)"
+else fail "2v2 in the browser" "$LOGS/duo-ui.log"; fi
 
 echo "--- $FAILS failed"
 exit $((FAILS > 0))
