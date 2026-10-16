@@ -1,4 +1,5 @@
 update.txt        the short update block for the live game, pasted after a pull request is merged (waits up to 5 minutes for running Ranked Quick matches to finish before the restart)
+check.txt         read-only server check: shows whether the server runs GitHub's newest page and whether accounts and play counts are on, and lists what to paste next
 beta-setup.txt    one-time setup of https://beta.potatobrawl.cloud (second copy on 127.0.0.1:8081)
 beta-update.txt   put any branch on the beta address to try it before it goes live
 first-setup.txt   first-time install of Node, the potatobrawl user, the repo and the systemd unit
