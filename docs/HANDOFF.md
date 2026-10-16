@@ -1,9 +1,27 @@
-# PotatoBrawl handoff (updated 2026-10-16: play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14; before it online boss fights on two phones, PROTO 13)
+# PotatoBrawl handoff (updated 2026-10-16: the Skins menu and the new Play friends lobby, UI only; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Skins menu + Play friends lobby (2026-10-15, branch claude/project-thread-i6zx2q, UI only, no PROTO change). Jonny: the seven skin dots
+  on the select looked unclean and "Change fighter" in the lobby was a small link he kept missing. Fable's design
+  /mnt/project-files/skins-lobby/fable-design.md (mockups next to it), plan doc https://claude.ai/code/artifact/a4f11ea5-3906-4084-9f4b-8b8bd983bcb7.
+  - Select: one Skins bar (#dSkins: worn skin swatch, name, ROAD sticker, effect line, SKINS n/7) replaces the dot row (#dPals) and
+    the Upgrade button (#selUp); FIGHT stands alone; the stage model only ever shows the worn skin (sel.pending is gone).
+  - The Skin Rack (ui/skins.js, css/90-skins.css, #scrSkins modal over the select): the looked-at skin big (model drawn live), the four
+    chip skins and three Road skins as cards (models drawn once per open). States worn / own / buy / short / road (region open) /
+    shut (region locked); a locked card is always previewable and the preview says what it needs (Beat X on the Road with F; why it
+    is not yet possible; N more chips needed). Buy = two taps (Sure? for 3 s), the bought skin is worn; an owned skin is worn with
+    one tap; the sheet stays open and the select follows (skChanged). Closes on X, the backdrop, Esc, and when a match starts.
+  - Lobby (#scrOnline, css/95-lobby.css; the old lobby CSS in shell.html and 30-select.css is gone): Fight Card (#onChange, the whole
+    card is the button; the Road card's ⇄ badge at 40 px; name plate #onMyName / #onName on it) | host card YOUR MATCH (rule pills,
+    Host / Cancel, invite link, note) | the room (open matches with the host's portrait and JOIN / TEAM UP, HERE NOW pills, help).
+    Boss chips show the short names on phones. The select opened from the lobby says "Play friends · pick your fighter" and its
+    button "Use <fighter>"; back in the lobby the card pops (fightCardIn).
+  - A skin bought in the Skin Rack is counted (cnt "skin:<fighter>", ui/counter.js); the rack opens with modal(), so the stats
+    page lists it as "skins" under Screens opened.
+  - Test: tests/pwskins.py (check.sh 6a). pwux2.py / pwsel.py now open the Skins bar instead of tapping #dPals.
 - Analytics counter (2026-10-15, branch claude/project-thread-zit4fr, no PROTO bump, no reload needed): anonymous play counts and
   Jonny's private stats page. Plan doc https://claude.ai/code/artifact/83606071-fca5-4d1d-98ee-19c8b3a0325c (all defaults approved).
   - Server: stats.js (Node only), off unless STATS_DIR exists (deploy/stats-setup.txt makes /var/lib/potatobrawl/stats, a systemd
@@ -15,7 +33,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     (potatobrawl.count.v1) holds the device's first day, last day/week/month, "came back within 1/3/7/14/30 days" bits, match counts,
     once-only flags. Keys are listed at the top of stats.js. cntMode(match) names modes (tutorial, trial, practice, ranked, daily, cup,
     road, boss, road-boss, online, online-boss, team = Team Brawl 2v2; a new mode needs a line there). Hooks: enterMatchUI (cntStart), finishMatch and
-    showResults for online (cntEnd), a match left any other way = quit (cntDrop on the 1 s tick), show/modal (cntScreen), buyPending,
+    showResults for online (cntEnd), a match left any other way = quit (cntDrop on the 1 s tick), show/modal (cntScreen), skGo (a skin bought in the Skin Rack),
     rAgain, tutShow, trialClear, acctCreate, acSetTab, renderSettings (Settings > Play counts On/Off), loop.js (cntBoot). Sends only
     on our own server (__blStandalone), never with Global Privacy Control; a 202 (the server's counts are off) or a 404 stops it for
     the visit. Tests: tests/stats.js, tests/pwstats.py, tests/pwstatspage.py (check.sh 8g-8i).
@@ -308,11 +326,12 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   /mnt/project-files/menu-redesign/; UI only, PROTO stays 9): ink outlines, hard shadows, a gold hero, stickers.
   - CSS lives in game/css/*.css, spliced in name order at `/*CSS*/` (the end of shell.html's style block) by build.py: 00-ink
     (tokens, .disp .kick .card .tag .livetag .round .plate .coin ...), 10-surfaces (shared buttons/chips/back), 20-menu, 30-select,
-    40-results, 50-sheets (Pause, Help, Settings, Account, Daily, Cup). Screen rules stay scoped under their screen id.
+    40-results, 50-sheets (Pause, Help, Settings, Account, Daily, Cup), 60-boss, 70-road, 80-mastery, 90-skins (Skins bar + Skin Rack),
+    95-lobby (Play friends). Screen rules stay scoped under their screen id.
   - Main menu: plate (#mRank: picture + emblem, name, tier + rating, title sticker), chips/streak/cups coins, gold Ranked hero
     (#bRanked) with the last fighter and record, Daily tile with today's portraits, Tournament tile, three mini pills, LIVE tag.
     Select: 2x4 roster (#tiles), stage portrait with a crossfade and the fighter's tint, stat bars, Special + ULTI cards, FIGHT /
-    UPGRADE; tests address tiles as `#tiles .tile` and skins as `#dPals .sw` (the menu also has .tile). Results (#scrResult,
+    the Skins bar; tests address tiles as `#tiles .tile` and skins as `#skChip .sk` / `#skRoad .sk` after opening #dSkins (the menu also has .tile). Results (#scrResult,
     #resSheet is no longer a .sheet): winner panel with VICTORY / DEFEAT stamp + finisher plate, rank card with emblem spin on
     promotion, four stat tiles, NEXT MATCH over Fighters / Menu; resCount(el, from, to, pre, {delay, dur, end}).
   - UI sounds (ui/base.js): Sfx.uiGo / uiBack / uiFlip / uiCoin / uiNo; the shared tap() plays Sfx.cue(el): data-sfx="go|back|flip|
@@ -559,6 +578,8 @@ map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence,
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
 (online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,
 KO page + Victory + Next: Hard on both, a dropped friend, the lobby at four sizes; check.sh 5c) ·
+pwskins.py (the Skins bar, the Skin Rack states / lines / two-tap Buy / Wear / closing, a Road boss beaten with another fighter, the
+lobby's Fight Card + "Use <fighter>" + Back + the public name input; tags se phone desk upright; check.sh 6a) ·
 pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
 `PORT=8091 KEEPALIVE_MINUTES=0 node server.js`). Playwright scripts load build/test.html and write
 screenshots into the current directory (check.sh uses build/shots/).
@@ -600,10 +621,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 - Ultimates leftovers: Odin's shared combo routes mostly miss lighter fighters (a lever if Jonny wants Odin to combo more); an
   ulti can KO without a "lethal" call when escapes would have survived it (no finisher then, by design); finish.js at 60 seeds
   still finds a rare wrong call where a bot attacker acts after the call (the same class as the old Dragon case).
-- Flaky browser tests seen on 2026-10-14 (each passed when run alone, the Daily one also fails now and then on main): pwdaily.py
-  flow sometimes comes back from a reload with the starting profile (chips 85, the Daily open again), pwcup.py flow once missed
-  the bracket after a reload, pwcombo.py timed out waiting for the trial. Worth a look: a localStorage write right before
-  pg.reload() may not have reached the store yet.
+- Flaky browser tests: pwdaily.py and pwcup.py flow came back from a reload with the starting profile (on 2026-10-15 every
+  time, main too). Cause: Playwright's in-memory browser profiles commit localStorage lazily, so a reload can read an older
+  store. Fixed 2026-10-15 (PR #37): both carry the page's storage over the reload in window.name (KEEP + reload()); a new
+  test that reloads should do the same. Still seen once: pwcombo.py timed out waiting for the trial.
 - pwhud.py's KO finisher step failed every time on main on 2026-10-15: the idle player was knocked off the edge by a weak hit and
   fell (a fall plays no finisher). It now puts the player back in the middle whenever both fighters stand and tries a new match
   up to three times.

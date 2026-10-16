@@ -28,13 +28,21 @@ CLOCK = """(() => {
   window.Date = D; window.__pwNow = set;
 })();"""
 
+# Playwright's in-memory browser profiles commit localStorage lazily, and a reload can come back to an older store (the
+# starting profile, the Daily open again). A real browser keeps what the page wrote, so reload() carries the page's storage
+# (the profile and the test clock) over in window.name and KEEP puts it back before the game loads.
+KEEP = "try { if (window.name.indexOf('pwkeep:') === 0) { const s = JSON.parse(window.name.slice(7)); window.name = ''; for (const k in s) localStorage.setItem(k, s[k]); } } catch (e) {}\n"
+async def reload(pg):
+    await pg.evaluate("window.name = 'pwkeep:' + JSON.stringify(Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])))")
+    await pg.reload()
+
 async def new_page(b, tag, vp, up, errs, prof, when):
     mob = vp[0] < 1000
     ctx = await b.new_context(viewport={'width': vp[0], 'height': vp[1]}, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=mob, timezone_id=TZ, locale='en-US')
     p = dict(prof)
     if up: p['screen'] = 'up'
     # a fresh page gets the starting profile and time; once the game has saved one (also after a reload) it is kept
-    await ctx.add_init_script("if (localStorage.getItem('%s') === null) { localStorage.setItem('%s', %s); localStorage.setItem('pwdaily.at', %s); }"
+    await ctx.add_init_script(KEEP + "if (localStorage.getItem('%s') === null) { localStorage.setItem('%s', %s); localStorage.setItem('pwdaily.at', %s); }"
                               % (PROF, PROF, json.dumps(json.dumps(p)), json.dumps(when)))
     await ctx.add_init_script(CLOCK)
     pg = await ctx.new_page()
@@ -50,7 +58,7 @@ async def reload_at(pg, when, daily=None):
     js = "localStorage.setItem('pwdaily.at', %s);" % json.dumps(when)
     if daily is not None: js += "{ const p = JSON.parse(localStorage.getItem('%s')); p.daily = %s; localStorage.setItem('%s', JSON.stringify(p)); }" % (PROF, json.dumps(daily), PROF)
     await pg.evaluate(js)
-    await pg.reload(); await pg.wait_for_timeout(900)
+    await reload(pg); await pg.wait_for_timeout(900)
     await pg.wait_for_function("window.__blastline && window.__blastline.mode === 'menu'", timeout=20000)
 
 async def in_match(pg):

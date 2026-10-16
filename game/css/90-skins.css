@@ -1,0 +1,222 @@
+/* ---------- Skins: the Skins bar on the fighter select and the Skin Rack sheet (Fable 5.1, skins-lobby/fable-design.md) ----------
+   The bar (#dSkins) is the stage's ink strip as one button: the worn skin's swatch with a gold ring, its name (a ROAD sticker after a
+   Road skin), its effect line in sand, and the gold-rimmed SKINS n/7 pill. The sheet (#scrSkins, ui/skins.js) is the sheet recipe with a
+   42 px band: the looked-at skin in big on the left (sunburst in the skin colour, the model drawn live, the name stroked, the effect
+   line, one action), the rack on the right (four chip skins, three Road skins). Card states: worn (gold ring, WORN tag), own, buy
+   (gold price), short (dimmed, padlock, grey price), road (ROAD sticker, dimmed, padlock), shut (near black); the looked-at card has a
+   white ring. --c is a skin's `ui` colour, --cg its glow (both set by skins.js). Phone landscape (844x390) is the base; #app.tiny
+   (667x320), the desktop and upright phones (a bottom sheet) adjust it below. */
+
+/* ---- the Skins bar ---- */
+#scrSelect .sl-skins { appearance: none; cursor: pointer; flex: none; position: relative; z-index: 5; display: flex; align-items: center; gap: 10px; height: 48px; min-width: 0;
+  padding: 0 6px 0 12px; border: 0; border-top: 2px solid var(--ink); border-radius: 0; background: var(--ink); color: var(--text); font: inherit; text-align: left; }
+#scrSelect .sl-skins > * { transition: transform 0.08s; }
+#scrSelect .sl-skins:active > * { transform: translateY(2px); }   /* the strip sinks under the thumb */
+#scrSelect .sl-skins:focus-visible { outline: 2px solid var(--sand); outline-offset: -4px; }
+#scrSelect .sk-dot { flex: none; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.5), transparent 46%), var(--c, var(--sand));
+  border: 2.5px solid var(--ink); box-shadow: 0 0 0 2px var(--gold); }
+#scrSelect .sk-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#scrSelect .sk-nm { display: flex; align-items: center; gap: 7px; min-width: 0; }
+#scrSelect .sk-nm b { min-width: 0; font: 800 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#scrSelect .sk-txt small { font: 500 11.5px/1.2 var(--body); color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the ROAD sticker (bar, preview, cards) */
+.sk-rt { flex: none; display: inline-block; font: 800 9.5px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--ember);
+  border: 1.5px solid var(--ink); border-radius: 4px; padding: 3px 5px 2px; transform: rotate(-6deg); box-shadow: 0 1.5px 0 var(--ink); }
+.sk-rt[hidden] { display: none; }
+#scrSelect .sk-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 11px 0 13px; border: 2px solid var(--gold); border-radius: 999px;
+  background: rgba(14, 16, 34, 0.9); box-shadow: 0 0 0 1.5px var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: background 0.12s, transform 0.08s; }
+#scrSelect .sk-pill span { font: 800 14px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+#scrSelect .sk-pill b { font: 800 15px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--text); }
+#scrSelect .sk-pill i { width: 7px; height: 7px; margin: 0 1px 0 -1px; border-top: 2.5px solid var(--sand); border-right: 2.5px solid var(--sand); transform: rotate(45deg); }
+@media (hover: hover) { #scrSelect .sl-skins:hover .sk-pill { background: #262b52; } }
+
+/* ---- the sheet ---- */
+#scrSkins { --pw: 296px; --ft: 36px; }
+#app #scrSkins > .sk-sheet { width: min(800px, 100%); height: min(350px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.sk-head { height: 42px; gap: 12px; padding: 0 6px 0 18px; }
+.sheet .sk-head h3 { font-size: 22px; }
+.sk-head h3 em { font-style: inherit; color: var(--gold); }
+.sk-head .kick { color: var(--mute); letter-spacing: 0.14em; }
+.sk-head .sk-coin { height: 32px; padding: 0 10px 0 7px; gap: 5px; font-size: 17px; border-color: #070818; box-shadow: 0 2px 0 #05060f, var(--bevel); }
+.sk-head .sk-coin::before { width: 20px; height: 16px; }
+.sk-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--pw) minmax(0, 1fr); gap: 14px; padding: 12px 14px 14px; }
+
+/* the preview: the looked-at skin in big */
+.sk-prev { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  background: radial-gradient(ellipse 72% 56% at 50% 34%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+.sk-pa { position: absolute; inset: 0; }
+.sk-pa .rays { inset: -60% -60% -16%; opacity: 0.8; background: repeating-conic-gradient(from 0deg, var(--cg, rgba(243, 217, 164, 0.42)) 0 4deg, transparent 4deg 12deg); }
+.sk-pa::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, transparent 40%, rgba(14, 16, 34, 0.9) 74%); pointer-events: none; }
+.sk-pa canvas { position: absolute; left: 0; top: 0; width: 100%; height: 64%; z-index: 0; }
+.sk-yours { z-index: 4; top: 12px; right: 12px; font-size: 17px; padding: 7px 11px 5px; transform: rotate(-6deg); }
+.sk-yours.sk-pop { animation: skYours 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes skYours { from { opacity: 0; transform: rotate(-14deg) scale(1.7); } }
+.sk-pt { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; flex-direction: column; gap: 7px; padding: 0 14px 13px; }
+.sk-pn { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.sk-pn b { min-width: 0; font: italic 900 30px/0.95 var(--display); letter-spacing: -0.005em; text-transform: uppercase; color: #fff; white-space: nowrap;
+  -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); padding: 2px 4px 0 0; }
+.sk-pn .sk-rt { font-size: 11px; padding: 4px 6px 3px; border-width: 2px; }
+#scrSkins .sk-fx { margin: 0; font: 500 13.5px/1.3 var(--body); color: var(--sand); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.sk-act { display: flex; flex-direction: column; gap: 6px; }
+.sk-act:empty { display: none; }
+#app .sk-go { width: 100%; min-height: 48px; font-size: 22px; }
+.sk-go .tokglyph { margin: 0 0.12em 0 0.3em; }
+.sk-act .sk-pill { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; border: 2px solid var(--ink); border-radius: 9px; transform: skewX(-8deg);
+  background: rgba(14, 16, 34, 0.72); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35); font: 800 18px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.sk-act .sk-pill > * { transform: skewX(8deg); }
+.sk-act .sk-pill i { font-style: normal; color: var(--mint); }
+.sk-act .sk-pill.dim { color: var(--mute); }
+.sk-act .sk-pill.dim .tokglyph, .sk.short .sk-f .tokglyph { filter: grayscale(1) brightness(0.9); }
+#scrSkins .sk-l1 { margin: 0; font: 600 14px/1.3 var(--body); color: #fff; }
+#scrSkins .sk-l1.sk-lock { position: relative; padding-left: 26px; }
+#scrSkins .sk-l1.sk-lock::before { content: ""; position: absolute; left: 0; top: 1px; width: 18px; height: 18px; background: var(--lock) center / contain no-repeat; }
+#scrSkins .sk-l2 { margin: 0; font: 500 12.5px/1.3 var(--body); color: var(--mute); }
+#scrSkins { --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'%3E%3Cpath d='M4.6 8.2V5.6a3.4 3.4 0 0 1 6.8 0v2.6' fill='none' stroke='%23f3d9a4' stroke-width='2.2'/%3E%3Crect x='2' y='8' width='12' height='9' rx='2' fill='%23f3d9a4'/%3E%3Ccircle cx='8' cy='12.4' r='1.5' fill='%230e1022'/%3E%3C/svg%3E"); }
+
+/* the rack: two kickers, a row of four chip skins, a row of three Road skins */
+.sk-rack { display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; min-width: 0; min-height: 0; }
+.sk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 2px 2px 0; }
+.sk-k + .sk-row + .sk-k { padding-top: 5px; }
+.sk-k b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.sk-k span { min-width: 0; font: 500 12.5px/1 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; min-height: 0; padding: 3px 3px 4px; margin: -3px -3px -4px; }   /* room for the rings */
+.sk-row.r3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* a skin card */
+#scrSkins .sk { appearance: none; cursor: pointer; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0; text-align: left;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); color: var(--text); font: inherit;
+  box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
+.sk-a { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 7px 7px 0 0;
+  background: radial-gradient(ellipse 62% 70% at 50% 62%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #31376a, #1f2346); }
+.sk-a canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: filter 0.18s; }
+.sk-a .sk-rt { position: absolute; left: 4px; top: 5px; z-index: 2; }
+.sk-lk { display: none; position: absolute; right: 5px; bottom: 5px; z-index: 2; width: 24px; height: 24px; border-radius: 50%; background: var(--ink) var(--lock) center / 12px 13px no-repeat;
+  box-shadow: 0 0 0 1.5px rgba(243, 217, 164, 0.25); }
+.sk-f { flex: none; height: var(--ft); display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; padding: 0 8px 1px; }
+.sk-f b { font: 800 12.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-f small { display: flex; align-items: center; min-width: 0; font: 700 11px/1 var(--display); letter-spacing: 0.04em; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-f small .tokglyph { flex: none; margin-right: 4px; }
+.sk.own .sk-f small { color: var(--sand); }
+.sk.buy .sk-f small { color: var(--gold); font-size: 12px; }
+.sk.short .sk-f small { font-size: 12px; }
+.sk.short canvas, .sk.road canvas { filter: saturate(0.45) brightness(0.6); }
+.sk.shut canvas { filter: saturate(0.4) brightness(0.32); }
+.sk.short .sk-lk, .sk.road .sk-lk, .sk.shut .sk-lk { display: block; }
+/* worn: gold ring, the name in gold, the roster's corner tag */
+#scrSkins .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
+.sk.worn .sk-f b { color: var(--gold); }
+.sk.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; animation: skTag 0.16s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes skTag { from { transform: scale(0.4); opacity: 0; } }
+/* looked at (not worn): a white ring, 1.03 */
+#scrSkins .sk.sel:not(.worn) { z-index: 1; transform: scale(1.03); box-shadow: 0 0 0 3px #fff, 0 4px 0 2px var(--ink); }
+@media (hover: hover) { #scrSkins .sk:hover:not(.sel) { transform: translateY(-1px); } #scrSkins .sk:hover canvas { filter: none; } #scrSkins .sk.short:hover canvas, #scrSkins .sk.road:hover canvas { filter: saturate(0.6) brightness(0.72); } #scrSkins .sk.shut:hover canvas { filter: saturate(0.4) brightness(0.4); } }
+#scrSkins .sk:active { transform: translateY(2px); }
+#scrSkins .sk:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+/* ---- small phones (667x320): a tighter sheet, no kicker subtitles, a smaller preview ---- */
+#app.tiny #scrSkins { --pw: 232px; --ft: 32px; padding: 10px 16px; }
+#app.tiny #scrSkins > .sk-sheet { width: min(635px, 100%); height: min(296px, 100%); }
+#app.tiny .sk-head { height: 38px; }
+#app.tiny .sheet .sk-head h3 { font-size: 20px; }
+#app.tiny .sk-head .sk-coin { height: 30px; font-size: 16px; }
+#app.tiny .sk-body { gap: 10px; padding: 9px 10px 10px; }
+#app.tiny .sk-pt { gap: 5px; padding: 0 10px 10px; }
+#app.tiny .sk-pn b { font-size: 26px; -webkit-text-stroke-width: 3.5px; text-shadow: 0 3px 0 var(--ink); }
+#app.tiny #scrSkins .sk-fx { font-size: 12px; }
+#app.tiny .sk-pa canvas { height: 58%; }
+/* the locked states carry more lines: their effect line takes one, and the short state drops where chips come from */
+#app.tiny #scrSkins .sk-prev:is(.short, .road, .shut) .sk-fx { -webkit-line-clamp: 1; }
+#app.tiny #scrSkins .sk-prev.short .sk-l2 { display: none; }
+#app.tiny .sk-go { min-height: 42px; font-size: 19px; }
+#app.tiny .sk-act .sk-pill { height: 40px; font-size: 16px; }
+#app.tiny #scrSkins .sk-l1 { font-size: 12.5px; }
+#app.tiny #scrSkins .sk-l1.sk-lock { padding-left: 22px; }
+#app.tiny #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
+#app.tiny #scrSkins .sk-l2 { font-size: 11.5px; }
+#app.tiny .sk-rack { gap: 5px; }
+#app.tiny .sk-k span { display: none; }
+#app.tiny .sk-k b { font-size: 11px; }
+#app.tiny .sk-row { gap: 6px; }
+#app.tiny .sk-f { padding: 0 6px 1px; gap: 3px; }
+#app.tiny .sk-f b { font-size: 11px; }
+#app.tiny .sk-f small { font-size: 10px; }
+#app.tiny .sk-lk { width: 20px; height: 20px; right: 4px; bottom: 4px; background-size: 10px 11px; }
+#app.tiny .sk.worn::after { padding: 3px 5px 2px; font-size: 9px; }
+#app.tiny #scrSelect .sl-skins { height: 44px; gap: 8px; padding: 0 5px 0 10px; }
+#app.tiny #scrSelect .sk-dot { width: 22px; height: 22px; }
+#app.tiny #scrSelect .sk-txt small { display: none; }
+#app.tiny #scrSelect .sk-nm b { font-size: 13px; }
+#app.tiny #scrSelect .sk-pill { height: 32px; gap: 6px; padding: 0 9px 0 11px; }
+#app.tiny #scrSelect .sk-pill span { font-size: 13px; }
+#app.tiny #scrSelect .sk-pill b { font-size: 14px; }
+
+/* ---- desktop (1280x760): a 960x560 sheet, bigger cards and names ---- */
+#app:not(.short):not(.portrait) #scrSkins { --pw: 360px; --ft: 42px; }
+#app:not(.short):not(.portrait) #scrSkins > .sk-sheet { width: min(960px, 100%); height: min(560px, 100%); }
+#app:not(.short):not(.portrait) .sk-head { height: 48px; padding-left: 22px; }
+#app:not(.short):not(.portrait) .sheet .sk-head h3 { font-size: 26px; }
+#app:not(.short):not(.portrait) .sk-head .sk-coin { height: 36px; font-size: 19px; }
+#app:not(.short):not(.portrait) .sk-head .round { width: 34px; height: 34px; }
+#app:not(.short):not(.portrait) .sk-body { gap: 18px; padding: 16px 18px 18px; }
+#app:not(.short):not(.portrait) .sk-pt { gap: 9px; padding: 0 18px 18px; }
+#app:not(.short):not(.portrait) .sk-pn b { font-size: 40px; -webkit-text-stroke-width: 5px; text-shadow: 0 5px 0 var(--ink); }
+#app:not(.short):not(.portrait) .sk-pn .sk-rt { font-size: 12px; }
+#app:not(.short):not(.portrait) #scrSkins .sk-fx { font-size: 15px; }
+#app:not(.short):not(.portrait) .sk-go { min-height: 56px; font-size: 25px; }
+#app:not(.short):not(.portrait) .sk-act .sk-pill { height: 50px; font-size: 20px; }
+#app:not(.short):not(.portrait) #scrSkins .sk-l1 { font-size: 15.5px; }
+#app:not(.short):not(.portrait) #scrSkins .sk-l2 { font-size: 13.5px; }
+#app:not(.short):not(.portrait) .sk-rack { gap: 9px; }
+#app:not(.short):not(.portrait) .sk-k b { font-size: 13px; }
+#app:not(.short):not(.portrait) .sk-k span { font-size: 13.5px; }
+#app:not(.short):not(.portrait) .sk-row { gap: 12px; }
+#app:not(.short):not(.portrait) .sk-f { padding: 0 10px 2px; gap: 5px; }
+#app:not(.short):not(.portrait) .sk-f b { font-size: 14px; }
+#app:not(.short):not(.portrait) .sk-f small { font-size: 12.5px; }
+#app:not(.short):not(.portrait) .sk-lk { width: 28px; height: 28px; right: 7px; bottom: 7px; background-size: 14px 15px; }
+#app:not(.short):not(.portrait) .sk.worn::after { padding: 5px 8px 4px; font-size: 11px; }
+#app:not(.short):not(.portrait) #scrSelect .sl-skins { height: 56px; gap: 12px; padding: 0 8px 0 16px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-dot { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-nm b { font-size: 16px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-txt small { font-size: 13px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-pill { height: 40px; padding: 0 13px 0 15px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-pill span { font-size: 15px; }
+#app:not(.short):not(.portrait) #scrSelect .sk-pill b { font-size: 16px; }
+
+/* ---- upright phones (390x844): a bottom sheet in thumb reach; the preview goes horizontal (model left, words right) ---- */
+#app.portrait #scrSkins { --ft: 34px; align-items: end; padding: 0 10px; }
+#app.portrait #scrSkins > .sk-sheet { width: 100%; height: auto; max-height: calc(100% - 40px); border-bottom: 0; border-radius: 14px 14px 0 0; box-shadow: var(--soft); }
+#app.portrait #scrSkins:not([hidden]) > .sk-sheet { animation: skUp 0.28s cubic-bezier(0.2, 0.9, 0.25, 1); }
+@keyframes skUp { from { transform: translateY(40px); } 70% { transform: translateY(-2px); } to { transform: none; } }
+#app.portrait .sk-head { border-radius: 12px 12px 0 0; gap: 8px; padding-left: 14px; }
+#app.portrait .sheet .sk-head h3 { font-size: 21px; }
+#app.portrait .sk-head h3::after { display: none; }   /* the band is full: GUNSLINGER SKINS, the count, the coin and the X */
+#app.portrait .sk-head .kick { font-size: 10.5px; letter-spacing: 0.1em; }
+#app.portrait .sk-head .sk-coin { font-size: 16px; padding: 0 8px 0 6px; }
+#app.portrait .sk-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 12px max(14px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait .sk-prev { flex: none; height: 168px; background: radial-gradient(ellipse 46% 80% at 20% 50%, var(--cg, rgba(243, 217, 164, 0.42)), transparent 74%), linear-gradient(180deg, #2a2f55, #15172e); }
+#app.portrait .sk-pa .rays { inset: -100% 40% -100% -100%; }
+#app.portrait .sk-pa::after { background: linear-gradient(90deg, transparent 30%, rgba(14, 16, 34, 0.55) 60%); }
+#app.portrait .sk-pa canvas { left: 2px; width: 146px; height: 100%; }
+#app.portrait .sk-pt { left: 140px; top: 0; justify-content: center; gap: 5px; padding: 8px 12px 8px 4px; }
+#app.portrait .sk-pn b { font-size: 26px; -webkit-text-stroke-width: 3.5px; text-shadow: 0 3px 0 var(--ink); }
+#app.portrait #scrSkins .sk-fx { font-size: 12.5px; }
+#app.portrait .sk-go { min-height: 44px; font-size: 20px; }
+#app.portrait .sk-act .sk-pill { height: 40px; font-size: 16px; }
+#app.portrait #scrSkins .sk-l1 { font-size: 13px; }
+#app.portrait #scrSkins .sk-l1.sk-lock { padding-left: 22px; }
+#app.portrait #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
+#app.portrait #scrSkins .sk-l2 { font-size: 11.5px; }
+#app.portrait .sk-yours { top: auto; bottom: 10px; right: auto; left: 70px; }
+#app.portrait .sk-rack { grid-template-rows: auto 106px auto 112px; }
+#app.portrait .sk-row { gap: 6px; }
+#app.portrait .sk-f { padding: 0 7px 1px; }
+#app.portrait .sk-f b { font-size: 11.5px; }
+#app.portrait .sk-f small { font-size: 10.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrSkins .sk, #scrSkins .sk-a canvas, #scrSelect .sl-skins > *, #scrSelect .sk-pill { transition: none; }
+  #scrSkins:not([hidden]) > .sk-sheet, .sk-yours.sk-pop, .sk.worn::after { animation: none !important; }
+  #scrSkins .sk.sel:not(.worn) { transform: none; }
+}

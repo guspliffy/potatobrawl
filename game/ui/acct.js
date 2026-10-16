@@ -273,7 +273,7 @@ function renderStats() {
 function renderLocker() {
   const pan = $("acPanL"); pan.innerHTML = "";
   masteryCollection(pan);   // ui/mastery.js: KO pages, Ultimate KOs, combo routes
-  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are bought with chips on the fighter select screen; Road skins are won from the Road's bosses."));
+  pan.appendChild(acMk("p", "ac-line", "Tap a skin you own to wear it. Locked skins are in the Skins menu on the fighter select: chip skins are bought there, Road skins are won from the Road's bosses."));
   const grid = acMk("div", "lk");
   for (const f of FIGHTERS) {
     const own = P.owned[f.id] || [0], cur = P.pal[f.id] || 0, card = acMk("div", "lk-f");
@@ -290,7 +290,7 @@ function renderLocker() {
       if (has) b.appendChild(document.createTextNode(p.name)); else b.disabled = true;
       if (has) b.addEventListener("click", () => {
         Sfx.init(); Sfx.ui();
-        if (equipSkin(f.id, i)) { if (typeof sel === "object" && sel.pending && sel.pending.id === f.id) sel.pending = null; renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
+        if (equipSkin(f.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); }
       });
       row.appendChild(b);
     });

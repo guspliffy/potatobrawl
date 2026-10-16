@@ -152,8 +152,7 @@ async function renderOnline() {
   const st = $("onStatus"), hostBtn = $("onHost"), note = $("onNote"), list = $("onList");
   $("onTokens").textContent = P.tokens;
   buildRules();
-  const spec = FIG[sel.fighter];
-  $("onMyFighter").textContent = `${spec.name} · ${spec.role}`;
+  fightCard();
   if (NET.tried && !NET.ok) {
     st.textContent = NET.dead ? "Disconnected from online play" : "Online play isn't available here";
     st.className = "kicker on-status bad";
@@ -163,7 +162,7 @@ async function renderOnline() {
     const li = document.createElement("li"); li.className = "empty";
     li.textContent = NET.standalone ? "Online play needs the game's web link. A downloaded copy can't reach other players." : "Online play works when this page is open in Claude and you're signed in. It doesn't work from a public link or a downloaded copy.";
     list.appendChild(li);
-    $("onHere").textContent = "";
+    hereNow(null);
     note.textContent = ""; note.className = "on-note";
     return;
   }
@@ -203,10 +202,16 @@ async function renderOnline() {
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
     const bo = validBo(h.presence.bo) ? h.presence.bo : null;   // a boss fight: the row reads as an invitation to team up
-    sp.textContent = old ? "Different game version. Both of you reload the page." :
-      (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter") +
-      (bo ? ` · vs ${boSpec(bo).name} · ${BOSS_LV[bo.lv]}` : validRules(h.presence.r) ? ` · ${ruleText(h.presence.r)}` : "");
+    if (old) sp.textContent = "Different game version. Both of you reload the page.";
+    else {
+      sp.textContent = (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter");
+      if (bo) { const em = document.createElement("em"); em.textContent = `vs ${boSpec(bo).name}`; sp.append(" · ", em, ` · ${BOSS_LV[bo.lv]}`); }
+      else if (validRules(h.presence.r)) sp.append(` · ${ruleText(h.presence.r)}`);
+    }
     who.append(b, sp);
+    const por = document.createElement("i"); por.className = "on-por";   // the host's fighter
+    if (hf && PORTRAITS[hf.id]) { const im = document.createElement("img"); im.src = PORTRAITS[hf.id]; im.alt = ""; por.appendChild(im); }
+    li.appendChild(por);
     const btn = document.createElement("button"); btn.className = "chip";
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
     btn.textContent = joining ? "Joining" : bo ? "Team up" : "Join";
@@ -216,12 +221,11 @@ async function renderOnline() {
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
-  $("onHere").textContent = others.length
-    ? others.map((p) => `${names[p.peer] || "Friend"}${p.presence && p.presence.busy ? " (in a match)" : ""}`).join(", ")
-    : "Just you. Friends show up here when they open this page.";
+  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy) })));
   hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
   const ob = onBoss().on;
   hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : "Host a match";
+  hostBtn.classList.toggle("primary", NET.phase !== "hosting");   // Cancel is the ink button
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   note.textContent =
     NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
@@ -229,17 +233,43 @@ async function renderOnline() {
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
     NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
       : NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
-  const inv = $("onInvite");
+  const inv = $("onInvite"), invWas = inv.hidden;
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
     $("onInvT").textContent = ob ? "Your boss fight is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
+    if (invWas) inv.scrollIntoView({ block: "nearest" });   // on a small phone the host card scrolls: the link comes into view
   }
   $("onHelp").textContent = NET.standalone
     ? "No account needed. Matches connect while both of you have the page open."
     : "Friends need a Claude account and access to this page. Share it from the page's Share menu, then you both open it and pick Play friends. A public link won't connect.";
 }
+// "Here now": a pill per player (a mint dot; grey "· in a match" when busy); rebuilt only when it changes. null = nothing (offline)
+function hereNow(ps) {
+  const box = $("onHere"), sig = JSON.stringify(ps);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig; box.replaceChildren();
+  box.classList.toggle("empty", !!ps && !ps.length);
+  if (!ps) return;
+  if (!ps.length) { box.textContent = "Just you. Friends show up here when they open this page."; return; }
+  for (const p of ps) {
+    const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "");
+    el.textContent = p.busy ? `${p.n} · in a match` : p.n;
+    box.appendChild(el);
+  }
+}
+// the Fight Card: your fighter in the worn skin, its name, the skin and the role; the whole card opens the fighter select
+function fightCard() {
+  const spec = FIG[sel.fighter], pi = palIdx(spec.id), p = spec.palettes[pi] || spec.palettes[0], fc = $("onFc");
+  fc.style.setProperty("--c", col(p)); fc.style.setProperty("--cg", rgba(col(p), 0.42));
+  $("onFName").textContent = spec.name;
+  $("onFSkin").textContent = p.name;
+  $("onFRole").textContent = spec.role;
+  $("onChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${p.name}. Change fighter`);
+}
+// back from the fighter select: the card pops and the model comes in (css/95-lobby.css)
+function fightCardIn() { const fc = $("onFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
 function inviteLink() { return location.origin + location.pathname + "#join-" + NET.hostCode; }
 function onlineArtFighter() {
   const spec = FIG[sel.fighter], o = onlineArtFighter;
@@ -250,15 +280,13 @@ function onlineArtFighter() {
   }
   return o.f;
 }
+// the Fight Card's model, live in the worn skin (the select's paintModel: 88 % of the art area, the Reaper's scythe fitted)
+const onArt = { cv: null, f: null, fit: 0.88, bottom: 0.93 };
 function drawOnlineArt(tk) {
-  const cvA = $("onArt"); if (!cvA || !cvA.clientWidth) return;
-  onlineArtFighter();
-  const w = Math.round(cvA.clientWidth * DPR), h = Math.round(cvA.clientHeight * DPR);
-  if (cvA.width !== w || cvA.height !== h) { cvA.width = w; cvA.height = h; }
-  const c = cvA.getContext("2d"); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
-  const f = onlineArtFighter.f, sc = (h * 0.8) / f.s.h;
-  c.setTransform(sc, 0, 0, sc, w * 0.5, h * 0.92);
-  drawFighter(c, f, tk);
+  onArt.cv = onArt.cv || $("onArt");
+  onArt.f = onlineArtFighter();
+  onArt.fit = onArt.cv.clientWidth > onArt.cv.clientHeight ? 0.76 : 0.88;   // the upright card's art is wide and short: room for the hats
+  paintModel(onArt, tk);
 }
 
 async function openMatchRoom(code) {

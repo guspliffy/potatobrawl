@@ -10,9 +10,9 @@ tap("bDaily", dailyOpen);
 tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
-tap("selBack", () => { if (sel.mode === "road") openRoad(); else goMenu(); });
-tap("selUp", buyPending);
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+// from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
+tap("selBack", () => { if (sel.mode === "road") openRoad(); else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
+tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);

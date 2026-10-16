@@ -21,7 +21,9 @@ async def shoot(b, tag, vp, mob, errs):
     await clk('#bHelp'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_2_help.png'); await clk('#hClose'); await pg.wait_for_timeout(200)
     await clk('#bRanked'); await pg.wait_for_timeout(700); await pg.screenshot(path=f'{OUT}/{tag}_3_select.png')
     await pg.evaluate("document.querySelectorAll('#tiles .tile')[5].click()"); await pg.wait_for_timeout(200)
-    await pg.evaluate("document.querySelectorAll('#dPals .sw')[2].click()"); await pg.wait_for_timeout(500); await pg.screenshot(path=f'{OUT}/{tag}_4_select_skin.png')
+    await clk('#dSkins'); await pg.wait_for_timeout(500)   # the Skins bar opens the Skin Rack
+    await pg.evaluate("document.querySelectorAll('#skChip .sk')[2].click()"); await pg.wait_for_timeout(400); await pg.screenshot(path=f'{OUT}/{tag}_4_select_skin.png')
+    await clk('#skClose'); await pg.wait_for_timeout(300)
     await pg.evaluate("document.querySelectorAll('#tiles .tile')[0].click()"); await pg.wait_for_timeout(200)
     await clk('#selGo'); await pg.wait_for_timeout(700)
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase !== 'countdown'", timeout=60000)

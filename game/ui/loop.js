@@ -41,7 +41,7 @@ function frame(now) {
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
-  if (mode === "select") drawCards(tick);
+  if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
