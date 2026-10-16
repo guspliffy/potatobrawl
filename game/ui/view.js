@@ -30,6 +30,7 @@ function resize() {
   L.panel = L.portrait && mode === "match" && touchUI && !finFull ? Math.round(clamp(H * 0.36, 200, 300)) : 0;
   L.gw = W; L.gh = H - L.panel;
   app.classList.toggle("portrait", L.portrait);
+  if (mode === "result") rvPlace();   // ui/rivals.js: the rival strip moves with the layout
   app.style.setProperty("--panelH", L.panel + "px");
   app.style.setProperty("--uh", H / 100 + "px");
   app.style.setProperty("--um", Math.min(W, H) / 100 + "px");

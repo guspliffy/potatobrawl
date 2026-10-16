@@ -234,6 +234,7 @@ function acFav() {   // the fighter with the most counted matches (ties: the ear
 }
 function renderStats() {
   const pan = $("acPanS"); pan.innerHTML = "";
+  rvStats(pan);   // ui/rivals.js: the Rivals list on top (Quick match on our server)
   const st = acFstats(), fav = acFav();
   if (rankView().online && (P.matches | 0) > 0) { const ti = tierInfo(P.rating | 0); pan.appendChild(acMk("p", "ac-line", `Your CPU rank (before Season 1): ${ti.t.name} ${P.rating | 0} · best ${Math.max(P.peak | 0, P.rating | 0)} · ${P.wins | 0}W ${P.losses | 0}L. Ranked is online now.`)); }   // ui/quick.js
   pan.appendChild(acMk("p", "ac-line", P.fsince ? `Per-fighter records count ranked matches since ${acDate(P.fsince)}. Friend and cup matches are not counted.` : "Per-fighter records start with your next ranked match. Friend and cup matches are not counted."));
