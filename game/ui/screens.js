@@ -189,7 +189,7 @@ function buildDetail() {
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
-  $("selTokens").textContent = P.tokens;
+  $("selTokens").textContent = fmtChips(P.tokens);
   if (sel.mode === "online" || sel.mode === "quick") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }

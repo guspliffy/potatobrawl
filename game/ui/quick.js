@@ -545,7 +545,7 @@ function qmRender() {
   const stt = $("qmStatus");
   stt.textContent = QM.conn ? `Online · ${lb.n} here` : "Connecting";
   stt.className = "kicker qm-status" + (QM.conn ? " ok" : "");
-  $("qmTokens").textContent = P.tokens;
+  $("qmTokens").textContent = fmtChips(P.tokens);
   // the Fight Card
   const spec = FIG[sel.fighter], pi = palIdx(spec.id), pal = spec.palettes[pi] || spec.palettes[0], fc = $("qmFc");
   fc.style.setProperty("--c", col(pal)); fc.style.setProperty("--cg", rgba(col(pal), 0.42));

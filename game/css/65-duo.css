@@ -11,7 +11,7 @@
 #app.duo #pc2, #app.duo #pc3 { display: block; }
 
 #app.duo .hud-l { gap: 0; }
-#app.duo #pc0 { margin-bottom: 12px; }   /* the room the full card's ulti strip hangs into */
+#app.duo #pc0 { margin-bottom: calc(var(--ubh) + 4px); }   /* the room the full card's ulti bar hangs into */
 #app.duo .hud-r { gap: 4px; }
 #app.duo .hud-r .pcard.pmini { margin-bottom: 0; }
 #app.duo .hud-mid { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); }   /* the timer stays in the middle whatever the two columns weigh */
@@ -33,11 +33,14 @@
 #app.duo .pcard.pmini .pc-stocks { gap: 2px; padding-bottom: 3px; }
 #app.duo .pcard.pmini .pc-stocks i { width: 10px; height: 9px; }
 #app.duo .pcard.pmini.finr .pc-name::after { content: none; }   /* the pulsing percent says it */
-/* the ulti bar: a thin line along the bottom edge (the pips and the U key are for the full card) */
-#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; bottom: 0; height: 3px; gap: 0; }
-#app.duo .pcard.pmini .pc-ult .ub { height: 3px; clip-path: none; }
-#app.duo .pcard.pmini .pc-ult .uf { top: 0; bottom: 0; clip-path: none; }
-#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk { display: none; }
+/* the ulti bar: a line along the bottom edge, 6 px (5 on the 320 px phone; the pips, the ULTI tag and the flames are for the full card) */
+#app.duo .pcard.pmini, #app.duo .pcard.right.pmini { --ubh: 6px; padding-bottom: 7px; }
+#app.duo.tiny .pcard.pmini, #app.duo.tiny .pcard.right.pmini { --ubh: 5px; padding-bottom: 6px; }
+#app.duo .pcard.pmini .pc-ult { left: 0; right: 0; top: auto; bottom: 0; gap: 0; }
+#app.duo .pcard.pmini .pc-ult .ub { clip-path: none; box-shadow: none; }
+#app.duo .pcard.pmini .pc-ult .uf { top: 1px; bottom: 1px; clip-path: none; }
+#app.duo .pcard.pmini .pc-ult .uf::after { display: none; }
+#app.duo .pcard.pmini .pc-ult .up, #app.duo .pcard.pmini .pc-ult .uk, #app.duo .pcard.pmini .pc-fl { display: none; }
 
 /* the computer (1280x760): the same card, a size up */
 #app:not(.short):not(.narrow).duo .pcard.pmini .pc-top { font-size: 12px; }

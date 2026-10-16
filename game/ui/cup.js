@@ -191,7 +191,7 @@ function cupRender() {
   const c = P.cup;
   if (!cupOk(c)) return;
   const [kick, title] = cupHead(c);
-  $("cupKick").textContent = kick; $("cupTitle").textContent = title; $("cupTokens").textContent = P.tokens;
+  $("cupKick").textContent = kick; $("cupTitle").textContent = title; $("cupTokens").textContent = fmtChips(P.tokens);
   $("cupGrid").innerHTML = cupGridHTML(c);
   $("cupList").innerHTML = cupListHTML(c);
   cupLines(c);
