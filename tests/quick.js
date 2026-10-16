@@ -15,9 +15,9 @@ const Q = require("../quick.js");
 const ROOT = path.join(__dirname, "..");
 const PORT = +process.env.QUICK_PORT || 8092;   // check.sh gives every server its own port
 const PROTO = +/const PROTO = (\d+);/.exec(fs.readFileSync(path.join(ROOT, "game/ui/online.js"), "utf8"))[1];
-const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400 };
+const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400, offer: 1500, rematch: 8000 };
 let fails = 0, passes = 0;
-function check(ok, what) { if (ok) { passes++; console.log("PASS " + what); } else { fails++; console.log("FAIL " + what); } }
+function check(ok, what) { if (ok) { passes++; console.log("PASS " + what); } else { fails++; console.log("FAIL " + what); if (process.env.QM_DEBUG && global.__log) console.log(global.__log().split("\n").filter((l) => /rror|at /.test(l)).slice(0, 12).join("\n")); } }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const rid = (n) => crypto.randomBytes(n).toString("hex").slice(0, n);
 
@@ -47,6 +47,12 @@ const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), "pbqm-"));
 const hashOf = (code) => crypto.createHash("sha256").update(code.replace(/-/g, "")).digest("hex");
 async function newAccount(name) { const r = await call("POST", "/api/acct/new", { prof: { name, tokens: 5 } }, { "x-forwarded-for": "192.0.2." + (1 + Math.floor(Math.random() * 200)) }); return r.json.code; }
 const readAcct = (dir, code) => JSON.parse(fs.readFileSync(path.join(dir, hashOf(code) + ".json"), "utf8"));
+function setProf(dir, code, patch) {   // the test's hand on an account's progress (chips, the stakes switch)
+  const f = path.join(dir, hashOf(code) + ".json"), rec = JSON.parse(fs.readFileSync(f, "utf8"));
+  Object.assign(rec.prof, patch); fs.writeFileSync(f, JSON.stringify(rec));
+}
+const berlinDay = () => { const p = {}; for (const x of new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date())) p[x.type] = x.value; return `${p.year}-${p.month}-${p.day}`; };
+const won = (g, slot) => (g.winner === slot ? 1 : g.winner === 1 - slot ? 0 : 0.5);
 function setOn(dir, code, patch) {   // the test's own hand on an account's online record (the server reads the file each time)
   const f = path.join(dir, hashOf(code) + ".json"), rec = JSON.parse(fs.readFileSync(f, "utf8"));
   rec.on = Object.assign(rec.on || {}, patch); fs.writeFileSync(f, JSON.stringify(rec));
@@ -151,7 +157,7 @@ async function play(H, G, opts) {
 
 (async () => {
   const dir = tmpDir();
-  let srv = await startServer({ ACCOUNTS_DIR: dir });
+  let srv = await startServer({ ACCOUNTS_DIR: dir }); global.__log = srv.log;
   try {
     check(/Quick match: on \(game version \d+, Ranked on\)/.test(srv.log()), "the server starts Quick match with Ranked on");
     let r = await call("GET", "/health");
@@ -173,6 +179,8 @@ async function play(H, G, opts) {
     // ---- refusals ----
     bad.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 });
     check(!!(await bad.next((m) => m.t === "qm-no" && m.why === "acct")), "Ranked without an account: refused (acct)");
+    bad.send({ t: "acct?" });
+    check(!!(await bad.next((m) => m.t === "acct" && m.on === true)), "acct? (Play friends, before the silent account): accounts are on");
     A.send({ t: "qm", v: PROTO - 1, mode: "r", f: "samurai", pi: 0 });
     check(!!(await A.next((m) => m.t === "qm-no" && m.why === "old")), "an older page can't search (old: reload)");
     A.send({ t: "qm", v: PROTO, mode: "r", f: "nobody", pi: 0 });
@@ -304,6 +312,117 @@ async function play(H, G, opts) {
     hunter2.send({ t: "leave", room: hunter2.found.room });
     setOn(dir, cb, { last: "" });   // the tests below pair Bob again
     B.send({ t: "auth", code: cb }); await B.next((m) => m.t === "me");
+
+    // ---- chip stakes: a rematch for 10 / 25 / 50 after a refereed result; the server referees it and moves the chips ----
+    await sleep(100);
+    // too new: under 10 refereed matches
+    Dn.send({ t: "qm", v: PROTO, mode: "c", f: "samurai", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    pair = await enter(Dn, B); [H, G] = pair;
+    H.st = startMsg(H.found); H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G);
+    let sk1 = await Dn.next((m) => m.t === "qm-cs", 4000);
+    await B.next((m) => m.t === "qm-cs", 4000);   // Bob's copy too, or the next game's check reads this one
+    check(sk1 && sk1.sk && sk1.sk.why === "new" && sk1.sk.k === 10 - readOn(dir, cd).g && sk1.sk.ok.length === 0, `stakes: locked under 10 refereed matches (${sk1 && JSON.stringify(sk1.sk)})`);
+    Dn.send({ t: "stk", s: 10 });
+    check(!!(await Dn.next((m) => m.t === "stk-no" && m.why === "new", 1500)), "stakes: a challenge from a new account is refused (new)");
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+    // both experienced, chips enough: a Casual game, then the challenge
+    setOn(dir, cd, { g: 12, sk: { d: "", n: 0, w: 0, l: 0, net: 0 } }); setOn(dir, cb, { g: 12 });
+    setProf(dir, cd, { tokens: 200 }); setProf(dir, cb, { tokens: 40 });
+    await sleep(100);
+    Dn.send({ t: "qm", v: PROTO, mode: "c", f: "samurai", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    pair = await enter(Dn, B); [H, G] = pair;
+    H.st = startMsg(H.found); H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G);
+    sk1 = await Dn.next((m) => m.t === "qm-cs", 4000); let sk2 = await B.next((m) => m.t === "qm-cs", 4000);
+    check(sk1 && sk1.sk.why === "" && sk1.sk.ok.join() === "10,25" && sk2 && sk2.sk.ok.join() === "10,25", `stakes: open, only what both can afford (Bob has 40: ${sk1 && sk1.sk.ok} / ${sk2 && sk2.sk.ok})`);
+    Dn.send({ t: "stk", s: 50 });
+    check(!!(await Dn.next((m) => m.t === "stk-no" && m.why === "chips", 1500)), "stakes: more than the other can afford is refused (chips)");
+    // declined
+    Dn.send({ t: "stk", s: 25 });
+    let out = await Dn.next((m) => m.t === "stk-out", 1500), inn = await B.next((m) => m.t === "stk-in", 1500);
+    check(out && out.s === 25 && inn && inn.s === 25 && inn.name === "Dan" && inn.ms === 1500, "stakes: the challenge goes out (stk-out) and arrives (stk-in, with the name)");
+    B.send({ t: "stkx" });
+    check(!!(await Dn.next((m) => m.t === "stk-off" && m.why === "no", 1500)), "stakes: declined reads as no answer (stk-off no)");
+    // no answer
+    Dn.send({ t: "stk", s: 10 }); await B.next((m) => m.t === "stk-in", 1500);
+    const ta = await Dn.next((m) => m.t === "stk-off", 3000), tb = await B.next((m) => m.t === "stk-off", 3000);
+    check(ta && ta.why === "no" && tb, "stakes: a challenge nobody answers goes off on both phones");
+    // accepted: a server-assigned match, the same fighters and skins, refereed; the winner takes the other's stake
+    const rdn = readAcct(dir, cd), rbb = readAcct(dir, cb);
+    Dn.send({ t: "stk", s: 25 }); await B.next((m) => m.t === "stk-in", 1500);
+    B.send({ t: "stk-ok" });
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+    pair = await enter(Dn, B);
+    check(!!pair && pair[0].found.sk === 25 && pair[0].found.ranked === false && pair[0].found.f.join() === H.found.f.join() && pair[0].found.p.join() === H.found.p.join(),
+      "stakes: accepted, both get a staked match (qm-found sk 25) with the fighters and skins of the last one");
+    check(readOn(dir, cd).sk.n === 1 && readOn(dir, cb).sk.n === 1 && readOn(dir, cd).sk.d === berlinDay(), "stakes: today's count goes up for both at the accept");
+    [H, G] = pair;
+    H.st = startMsg(H.found); H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await sleep(150);
+    r = await call("GET", "/health");
+    check(/ranked matches running: 1/.test(r.text), "/health counts a staked match as running (the update waits for it)");
+    const sg = await play(H, G);
+    let vH = await H.next((m) => m.t === "qm-sk", 4000), vG = await G.next((m) => m.t === "qm-sk", 4000);
+    const exp = [won(sg, 0), won(sg, 1)].map((x) => (x === 1 ? 25 : x === 0 ? -25 : 0));
+    check(vH && vG && vH.res === won(sg, 0) && vH.d === exp[0] && vG.d === exp[1] && vH.s === 25 && vH.day === 1, `stakes: the referee's verdict moves 25 (${exp.join(" / ")})`);
+    const dn1 = readAcct(dir, cd), bb1 = readAcct(dir, cb), dnD = H === Dn ? exp[0] : exp[1], bbD = H === Dn ? exp[1] : exp[0];
+    check(dn1.prof.tokens === rdn.prof.tokens + dnD && bb1.prof.tokens === rbb.prof.tokens + bbD && dn1.rev === rdn.rev + (dnD ? 1 : 0), "stakes: the chips move in both account files (a new rev each)");
+    check(readOn(dir, cd).sk.net === dnD && readOn(dir, cd).ws === rdn.on.ws && readOn(dir, cd).r === rdn.on.r, "stakes: the stake record keeps the net; rank and streak don't move");
+    check(vH.rv && vH.rv.w + vH.rv.l + vH.rv.d >= 3 && vH.sk && Array.isArray(vH.sk.ok), "stakes: the verdict carries the record and the next stake check");
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+    // leaving in the first 30 s of the fight: no result, nothing moves; later: a loss
+    setProf(dir, cd, { tokens: 200 }); setProf(dir, cb, { tokens: 200 });
+    Dn.send({ t: "stk", s: 10 }); await B.next((m) => m.t === "stk-in", 1500); B.send({ t: "stk-ok" });
+    pair = await enter(Dn, B); [H, G] = pair;
+    H.st = startMsg(H.found); H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G, { until: 600 });
+    G.send({ t: "leave", room: G.found.room });
+    vH = await H.next((m) => m.t === "qm-sk", 3000);
+    check(vH && vH.res === null && vH.why === "early" && readAcct(dir, cd).prof.tokens === 200 && readAcct(dir, cb).prof.tokens === 200, "stakes: a forfeit in the first 30 s of the fight is no result");
+    H.send({ t: "leave", room: H.found.room });
+    await sleep(100);
+    Dn.send({ t: "stk", s: 10 }); await B.next((m) => m.t === "stk-in", 1500); B.send({ t: "stk-ok" });
+    check(!(await Dn.next((m) => m.t === "qm-found", 800)), "stakes: no rematch for chips without a result just before (the early one wasn't)");
+    // the daily limit, the rank gap (Quick match only), the switch
+    setOn(dir, cd, { sk: { d: berlinDay(), n: 5, w: 0, l: 0, net: 0 } });
+    Dn.send({ t: "qm", v: PROTO, mode: "c", f: "samurai", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    pair = await enter(Dn, B); [H, G] = pair;
+    H.st = startMsg(H.found); H.send({ t: "presence", room: H.found.room, p: { role: "host", start: H.st } });
+    await play(H, G);
+    sk1 = await Dn.next((m) => m.t === "qm-cs", 4000); sk2 = await B.next((m) => m.t === "qm-cs", 4000);
+    check(sk1 && sk1.sk.why === "day" && sk2 && sk2.sk.why === "them", "stakes: 5 a day (day); the other phone reads them");
+    for (const p of [H, G]) p.send({ t: "leave", room: p.found.room });
+    check(Q.stakeCheck({ g: 20, r: 1000, sk: { d: "", n: 0 } }, { tokens: 99 }, { g: 20, r: 1300, sk: { d: "", n: 0 } }, { tokens: 99 }, false, Date.now()).why === "gap" &&
+      Q.stakeCheck({ g: 20, r: 1000, sk: { d: "", n: 0 } }, { tokens: 99 }, { g: 20, r: 1300, sk: { d: "", n: 0 } }, { tokens: 99 }, true, Date.now()).ok.join() === "10,25,50",
+      "stakes: ranks 300 apart can't in Quick match (gap), can in Play friends");
+    check(Q.stakeCheck({ g: 20, r: 1000, sk: { d: "", n: 0 } }, { tokens: 99, so: 1 }, { g: 20, r: 1000, sk: { d: "", n: 0 } }, { tokens: 99 }, false, Date.now()).why === "off" &&
+      Q.stakeCheck({ g: 20, r: 1000, sk: { d: "", n: 0 } }, { tokens: 99 }, { g: 20, r: 1000, sk: { d: "", n: 0 } }, { tokens: 99, so: 1 }, false, Date.now()).why === "them", "stakes: the switch off hides them (off / them)");
+    setOn(dir, cd, { sk: { d: "", n: 0, w: 0, l: 0, net: 0 } });
+
+    // ---- Play friends: a 1v1 game between two signed-in players is refereed too; a stake can follow it ----
+    await sleep(100);
+    const room = "bl" + rid(7);
+    for (const p of [Dn, B]) { p.send({ t: "join", room }); await p.next((m) => m.t === "peers" && m.room === room, 2000); }
+    const fst = { id: 1, seed: 4242, d: 4, f: ["wizard", "dragon"], p: [1, 0], rtt: 40, r: { l: 1, t: 2, b: 3 }, set: { n: 1, w: [0, 0] } };
+    Dn.found = { room }; B.found = { room }; Dn.st = fst;
+    Dn.send({ t: "presence", room, p: { role: "host", opp: B.peer, f: "wizard", r: fst.r, start: fst } });
+    B.send({ t: "presence", room, p: { role: "guest", f: "dragon" } });
+    const fg = await play(Dn, B);
+    sk1 = await Dn.next((m) => m.t === "qm-cs" && m.pf === 1, 4000); sk2 = await B.next((m) => m.t === "qm-cs" && m.pf === 1, 4000);
+    check(sk1 && sk2 && sk1.id === room && sk1.g === 1 && sk1.res === won(fg, 0) && sk2.res === won(fg, 1) && sk1.rv && sk1.rv.id === B.me.id, "Play friends: a 1v1 game is refereed (qm-cs pf, the rival record)");
+    // a boss fight isn't
+    Dn.st = Object.assign({}, fst, { id: 2, bo: { b: "scratch", lv: 0 } });
+    Dn.send({ t: "presence", room, p: { role: "host", opp: B.peer, start: Dn.st } });
+    await play(Dn, B, { until: 400 });
+    check(!(await Dn.next((m) => m.t === "qm-cs", 600)), "Play friends: a boss fight isn't refereed");
+    Dn.send({ t: "stk", s: 10 });
+    check(!!(await B.next((m) => m.t === "stk-in", 1500)), "Play friends: a chip challenge can follow a friend game");
+    B.send({ t: "stk-ok" });
+    for (const p of [Dn, B]) p.send({ t: "leave", room });
+    pair = await enter(Dn, B);
+    check(!!pair && pair[0].found.sk === 10 && pair[0].found.f.join() === "wizard,dragon" && pair[0].found.room !== room, "Play friends: the staked match is a server-assigned room with the friend game's fighters");
+    for (const p of pair) p.send({ t: "leave", room: p.found.room });
     Dn.close();
 
     // ---- leaving a running Ranked match is a loss; a drifting phone is logged, the referee still decides ----
@@ -401,6 +520,8 @@ async function play(H, G, opts) {
     check(/Quick match: on \(game version \d+, Ranked off: needs accounts\)/.test(srv.log()), "accounts off: Quick match runs Casual only");
     const A = await authed("Ann", "0000-0000-0000-0000"), B = await authed("Bob", null);
     check(A.me && A.me.err === "off", "accounts off: auth answers off");
+    B.send({ t: "acct?" });
+    check(!!(await B.next((m) => m.t === "acct" && m.on === false)), "accounts off: acct? answers off (no HTTP 404 on the page)");
     B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
     check(!!(await B.next((m) => m.t === "qm-no" && m.why === "acct")), "accounts off: Ranked is refused");
     A.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 }); B.send({ t: "qm", v: PROTO, mode: "c", f: "samurai", pi: 0 });
