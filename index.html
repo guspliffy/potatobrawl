@@ -30663,8 +30663,7 @@ function qmBoot() {   // loop.js, before the first menu
     qmRefresh();
   });
   QM.conn = api.connected();
-  netInit().then(() => { if (NET.room) NET.room.onPeers(qmPeers); qmRefresh(); });
-  if (!ACCT.code) acctPing().then(qmRefresh);
+  netInit().then(() => { if (NET.room) NET.room.onPeers(qmPeers); qmRefresh(); });   // whether accounts are on is asked when Quick match opens (quickOpen)
   document.addEventListener("visibilitychange", qmVis);
 }
 function qmAuth() {
