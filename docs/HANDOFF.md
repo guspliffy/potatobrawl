@@ -459,11 +459,14 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 npm install                                   # ws only
 python3 -m pip install playwright==1.56.0     # matches the preinstalled Chromium 1194
 ./check.sh --quick                            # build + PROTO + replay, seconds
-./check.sh                                    # everything, ~40 min: steps run side by side (it was ~2 h one by one)
+./check.sh                                    # everything, ~21 min: steps run side by side (it was ~2 h one by one)
 ```
-check.sh builds first, then runs up to CHECK_JOBS (default 3) browser/server steps at once next to the simulations (two at a
-time at low priority); each PASS/FAIL line carries the step's time and the lines keep their usual order. Its test servers use
-ports PORT_BASE..PORT_BASE+10 (default 8091), so every step has its own port; the tests keep their old ports when run by hand.
+check.sh builds, runs the three server tests alone (short timers), then up to CHECK_JOBS (default 2; more only starves 4 cores)
+browser steps at once next to the simulations (two at a time at the lowest priority); each PASS/FAIL line carries the step's
+time and the lines keep their usual order. Its test servers use ports PORT_BASE..PORT_BASE+10 (default 8091), one per step; the
+tests keep their old ports when run by hand. The browser tests draw on the CPU (--disable-gpu): the game is canvas 2D only, and
+SwiftShader's emulated GPU took about three cores per browser, so the game ran slower than real time (notes:
+/mnt/project-files/faster-check/wrap-up.md).
 `python3 game/build.py` writes index.html (root, deployed), public/ (local `node server.js`) and build/
 (blastline.html = artifact copy, test.html, online-test.html). build/ and public/ are git-ignored;
 index.html is committed with every source change (check.sh flags a stale one).
