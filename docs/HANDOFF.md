@@ -271,6 +271,8 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     says to let go of up (up + Heavy in the air is the recovery). tests/combos.js `humanBox` plays every jump/aerial timing in
     that box and needs 75% to land (now 94-100%; the old engine fails it). New fighter field `pop` (defaults, ko, startSudden,
     ultMark, FKEYS, checksum).
+    tests/botstyle.js: a row outside 35-65% now plays 2N more games and is judged on all 3N (the change moved Alchemist 0.5 from
+    63% to 69% on the first 100 seeds; over 400 games it is 56% on main and 59% with the change).
   - Gunslinger's lights are point-blank shots (Jonny, 14:38 UTC: "low range shots, not punches"): every light has `shot: true` and
     a thin box (r 10-11) sweeping out from the muzzle over its active frames (jab to 62 px, side 80, up/uair straight up to -112,
     down at the feet to 70, nair both pistols to +-64, dair straight down to 50); side 6 dmg, sair 7 (were 7/8). First try at

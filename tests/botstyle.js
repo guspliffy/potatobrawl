@@ -10,6 +10,9 @@ const mapOf = (seed) => (process.env.MAP === "all" ? seed % BL.POOL : +(process.
 const N = +(process.argv[2] || 100), LV = (process.argv[3] || "0.5,0.8").split(",").map(Number);
 const LO = 35, HI = 65;
 // STYLE='{"wizard":{"gap":2}}' tries other numbers; ONLY=wizard runs one fighter
+// 100 games put a style's win rate within about +-10 points, so a row outside the aim plays 2N more games (the next seeds) and is
+// judged on all 3N: a style that really sits near the edge (Alchemist 0.5 is ~57% over 400 games) no longer fails on the luck of
+// the first 100 seeds after any change to the fight engine.
 if (process.env.STYLE) for (const [id, v] of Object.entries(JSON.parse(process.env.STYLE))) BOT_STYLES[id] = v;
 
 function play(spec, d, seed, styledSlot) {
@@ -42,18 +45,22 @@ for (const spec of FIGHTERS) {
   if (process.env.ONLY && process.env.ONLY !== spec.id) continue;
   if (!BOT_STYLES[spec.id]) { console.log(spec.id.padEnd(10), "no style"); continue; }
   for (const d of LV) {
-    let w = 0, draws = 0;
+    let w = 0, draws = 0, n = 0;
     const sum = [0, 1].map(() => ({ fwd: 0, back: 0, air: 0, edge: 0, frames: 0, spec: 0, heavy: 0, chg: 0 }));
-    for (let k = 0; k < N; k++) {
-      const slot = k % 2, r = play(spec, d, 1000 + k, slot);
-      if (r.winner === slot) w++; else if (r.winner < 0) draws++;
-      for (const [role, idx] of [[0, slot], [1, 1 - slot]]) for (const key of Object.keys(sum[role])) sum[role][key] += r.m[idx][key];
-    }
-    const pct = (100 * (w + draws / 2)) / N;
+    const games = (upto) => {
+      for (; n < upto; n++) {
+        const slot = n % 2, r = play(spec, d, 1000 + n, slot);
+        if (r.winner === slot) w++; else if (r.winner < 0) draws++;
+        for (const [role, idx] of [[0, slot], [1, 1 - slot]]) for (const key of Object.keys(sum[role])) sum[role][key] += r.m[idx][key];
+      }
+      return (100 * (w + draws / 2)) / n;
+    };
+    let pct = games(N), more = "";
+    if (pct < LO || pct > HI) { more = `  (${pct.toFixed(1)}% in the first ${N}, judged on ${3 * N})`; pct = games(3 * N); }
     const pc = (v, s) => (100 * v / s.frames).toFixed(1).padStart(4);
     const row = (s) => `${pc(s.fwd, s)}  ${pc(s.back, s)}  ${pc(s.air, s)}  ${(s.edge * 3600 / s.frames).toFixed(2).padStart(9)}  ${(s.spec * 3600 / s.frames).toFixed(1).padStart(6)}  ${(s.heavy * 3600 / s.frames).toFixed(1).padStart(8)}  ${(s.chg * 3600 / s.frames).toFixed(1).padStart(10)}`;
-    const flag = pct < LO || pct > HI ? "  <-- outside the aim" : "";
-    if (flag) bad++;
+    const out = pct < LO || pct > HI, flag = (out ? "  <-- outside the aim" : "") + more;
+    if (out) bad++;
     console.log(spec.id.padEnd(10), String(d).padEnd(5), (pct.toFixed(1) + "%").padStart(10), "  ", row(sum[0]), "   |  ", row(sum[1]), flag);
   }
 }
