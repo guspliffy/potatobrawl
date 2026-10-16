@@ -166,6 +166,7 @@ function renderAccount() {
     let bp = $("acBds");
     if (!bp) { bp = acMk("div", "ac-bds"); bp.id = "acBds"; $("acRank").after(bp); }
     bp.hidden = !qmOn(); if (qmOn()) bdPlates(bp);
+    $("acRank").hidden = qmOn();   // on our server the two plates take the rank card's place
   }
   $("acRank").style.setProperty("--tc", ti.t.col);
   $("acTier").textContent = ti.t.name;

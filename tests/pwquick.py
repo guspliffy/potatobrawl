@@ -255,7 +255,7 @@ async def main():
             await tap(C, '#qmV')
             await C.wait_for_timeout(400)
             expect(await C.evaluate("window.__blastline.qm.mode") == 'v' and has(await text(C, '#qmFind'), 'Fight a CPU'), f"C: VS CPU picked, the button says Fight a CPU, got {await text(C, '#qmFind')!r}")
-            expect(has(await text(C, '#qmRank'), 'Placing', '0 of 5', 'CPU rank', 'Not on the CPU board'), f"C: the plate shows the CPU rank, got {await text(C, '#qmRank')!r}")
+            expect(has(await text(C, '#qmRank'), 'Placing', '0 of 5', 'CPU rank', 'CPU board after 5 more'), f"C: the plate shows the CPU rank, got {await text(C, '#qmRank')!r}")
             expect(has(await text(C, '#qmTruth'), 'Placement 1 of 5', 'Hard CPU'), f"C: the line under the button names the next CPU, got {await text(C, '#qmTruth')!r}")
             await shot(C, 'quick-vscpu-390'); await overflow(C, 'C VS CPU 390')
             await tap(C, '#qmFind')

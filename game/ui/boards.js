@@ -16,7 +16,7 @@ const BD_PLACING = 5;             // matches that place a player on a board
 const BD_SEASON = "Season 1";
 // the tabs: k = the board vcBoard() is asked for, kick = the kicker's first words, gone / hint = the empty board, fight = its button, none = your row without an account
 const BD_TABS = [
-  { k: "c", name: "VS CPU", kick: "CPU rank", gone: "Nobody on the board yet.", hint: "Win a Ranked CPU match and you're #1.", fight: true, none: "Play a Ranked CPU match to get a place" },
+  { k: "c", name: "VS CPU", kick: "CPU rank", gone: "Nobody on the board yet.", hint: `${BD_PLACING} Ranked CPU matches get you on.`, fight: true, none: "Play a Ranked CPU match to get a place" },
   { k: "o", name: "Online", kick: "Online rank", gone: "Nobody has placed yet.", hint: `${BD_PLACING} Ranked matches get you on.`, fight: false, none: "Play a Ranked match to get a place" },
 ];
 const BD = { k: "c", req: 0, st: "idle", data: null, got: 0, tm: 0, lt: 0 };   // st: idle | load | ok | empty | off
@@ -234,7 +234,7 @@ function bdPvDraw(d) {   // d: undefined (on its way), null (no server) or a cle
   box.textContent = "";
   if (d === undefined) { for (let k = 0; k < 3; k++) { const r = bdMk("div", "qb-r sk"); r.append(bdMk("i", "bd-gp"), bdMk("i", "bd-ge"), bdMk("i", "bd-gn"), bdMk("i", "bd-gv")); box.appendChild(r); } return; }
   if (!d) { box.appendChild(bdMk("p", "qb-note", "The board needs the server.")); return; }
-  if (!d.top.length) { box.appendChild(bdMk("p", "qb-note", "Nobody on the board yet. Win a Ranked CPU match and you're #1.")); return; }
+  if (!d.top.length) { box.appendChild(bdMk("p", "qb-note", `Nobody on the board yet. ${BD_PLACING} Ranked CPU matches get you on.`)); return; }
   d.top.slice(0, 3).forEach((row, k) => box.appendChild(bdPvRow(row, k + 1, { you: !!d.me && d.me.i === k + 1 })));
   const m = d.me;
   if (m && m.i > 3 && m.row) {
@@ -272,7 +272,7 @@ function bdPlates(box) {
     const t = bdMk("span", "bd-pt");
     const q = bdMk("span", "bd-pq"); q.append(name[0], bdMk("span", "bd-rk", " rank"), pl > 0 ? ` · #${pl}` : "");   // upright: ONLINE · #14 (the plate is narrow)
     t.append(q, bdMk("b", "", placing ? "Placing" : TIERS[ti].name),
-      bdMk("small", "", placing ? `${n} of ${BD_PLACING} played` : String(r)));
+      bdMk("small", "", placing ? `${n} of ${BD_PLACING}` : String(r)));
     b.append(em, t, bdMk("i", "bd-go"));
     b.setAttribute("aria-label", `${name[1]}${pl > 0 ? `, place ${pl}` : ""}: ${placing ? `placing, ${n} of ${BD_PLACING} matches played` : `${TIERS[ti].name} ${r}`}. Open the board`);
     bdTap(b, () => bdOpen(k));
@@ -304,3 +304,4 @@ $("qmBoard").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); bdOpen(
 $("qmBoard").addEventListener("keydown", (e) => { if (e.code === "Enter" || e.code === "Space") { e.preventDefault(); Sfx.init(); Sfx.uiFlip(); bdOpen("c"); } });
 window.__blBoards = { open: bdOpen, close: bdClose, preview: bdPreview, plates: bdPlates, pill: bdPill, get state() { return { k: BD.k, st: BD.st }; } };   // tests
 bdPill();
+

@@ -363,7 +363,7 @@ function vcPlate() {
   }
   ln.hidden = false;
   ln.classList.toggle("mute", !VC.pl);
-  ln.textContent = VC.pl ? `#${VC.pl} on the CPU board · Boards ›` : placing ? `Not on the CPU board yet · ${QM_PLACING - me.n} more ${QM_PLACING - me.n === 1 ? "match" : "matches"}` : "The CPU board · Boards ›";
+  ln.textContent = VC.pl ? `#${VC.pl} on the CPU board · Boards ›` : placing ? `CPU board after ${QM_PLACING - me.n} more ${QM_PLACING - me.n === 1 ? "match" : "matches"}` : "The CPU board · Boards ›";
   const w = $("qmWant"); if (w) w.hidden = true;   // the online streak's WANTED tag (ui/rivals.js): not for the CPU rank
 }
 function vcPlateOff() {   // back to the online rank

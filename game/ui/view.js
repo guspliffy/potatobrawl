@@ -36,6 +36,7 @@ function resize() {
   app.classList.toggle("short", H < 520);
   app.classList.toggle("tiny", H < 360);
   app.classList.toggle("narrow", W < 420);
+  app.classList.toggle("slim", W < 760);   // landscape phones like 667x375 (css/96-vscpu.css)
   $("rotHint").hidden = !(L.portrait && touchUI);
   L.canRotate = touchUI && uprightView;
   if (!$("scrSettings").hidden) renderSettings();
