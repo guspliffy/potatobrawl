@@ -1,9 +1,29 @@
-# PotatoBrawl handoff (updated 2026-10-16: Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Road bosses with an online friend (2026-10-16, branch claude/road-bosses-with-friend-8h2oo8, pre-step-6 thread 4, PROTO 17: the online
+  boss's HP changed, players reload once; brief /mnt/project-files/pre-step6/briefs/thread-4.md). Jonny: online Road-boss wins count for
+  Road stars, with a tougher boss for two.
+  - Team up (#rsTeam, "Team up / with a friend") between Fight and Back on a Road boss's sheet (only where online play exists:
+    onlineHere()); upright Fight takes its own row. It sets P.onBoss = { on, b, lv } (the sheet's boss and picked level), P.onTeam off,
+    sel.fighter = your Road fighter, opens Play friends and hosts as soon as the lobby is connected (teamUp / autoHost in ui/online.js;
+    NET.autoHost, cleared by any other openOnline). The invite link shows on the public site as for any hosted fight.
+  - His HP online: ROAD_REG hp x DUO_HP[boss][level] (ui/online.js duoHp), from the start message's bo, so no new field. DUO_HP was
+    tuned with bots (tests/bossduo.js, check.sh 4d): two player bots (0.7 and 0.9) win about as often as one and the Road's CPU partner
+    against his Road HP, per boss and level (fail at 8 points apart; every K 1 or more). One K per boss fit as well as one per level
+    (within 4 points everywhere over 384 fights a side): Old Scratch x1.05, Zorp x1.15, Kraken Spud x1.55 of his Road HP (0.9 / 1.2 / 1.3),
+    so online he has 0.95 / 1.38 / 2.0 of his base HP. Fights with a friend run a little longer than the Road's (Kraken about 15 s).
+  - A win counts on each phone's own Road where that boss's fence is open (roadRegOpen + roadGateOpen on that device): roadBossWin(k, lv,
+    spec) in ui/road.js, shared with roadBossEnd: the level's star (+10), the first win's title (+150), his Road skin for the fighter
+    played, "<next region> is open"; each paid once ("<level> already won on your Road"). The results show the level stars (R.road) and
+    the chips tile adds them. A closed fence: the online chips and "Open the fence on your Road to earn this star". Any online boss win
+    counts (Team up or the room list), also when a CPU took over a dropped friend. Loss lines and Next: Hard / Retry are unchanged.
+  - Tests: pwonboss.py now starts from Team up on the Road sheet, checks the HP x K, the open fence's star / title / chips / skin, the
+    closed fence's line, and a win after the drop with Hard already won (nothing paid twice; the drop's loss line is no longer checked);
+    onsnap.js plays the online HP. Left as before: no team colour on name markers, boss fights not in the friend W/L.
 - Road and fullscreen fixes (2026-10-16, branch claude/road-fullscreen-fixes-ucjbgm, UI only, no PROTO; plan "Before step 6",
   thread 1; brief /mnt/project-files/pre-step6/briefs/thread-1.md):
   - Road results: after a win with a star missing, Retry (#rRetry, dark, 1fr) sits beside Next stop (1.6fr; .res-actions.retry) and
@@ -145,7 +165,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   defaults), Fable's design /mnt/project-files/online-2v1/fable-online.md. All in ui/online.js; core.js and the server are unchanged.
   - Same lockstep as 1v1 with two inputs: host = slot 0, guest = slot 1, the boss (slot 2) moves himself from the shared seed. The
     start message carries `bo: { b, lv }` (boss id, level); his map comes from the boss (bossMap), rules are BOSS_RULES (3 hearts,
-    no time), HP is all of his (no BOSS_SOLO). match = { online, boss, level }.
+    no time), HP his Road HP x DUO_HP (duoHp, since the Road bosses with a friend PR; before it all of his). match = { online, boss, level }.
   - Lobby: a Mode row (1 vs 1 / Vs boss) on the host card; Vs boss swaps Lives / Time / Format for Boss and Level (P.onBoss
     = { on, b, lv }, this device only, not synced). The lobby and room presence carry `bo`; the list row reads "Samurai · vs Old
     Scratch · Hard" with Team up. On the smallest phones (#app.tiny) and upright the Boss chips show short names; on the smallest the rows are tighter.
@@ -154,7 +174,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     desync is raised until the last piece is confirmed (the guest's checks before it are stale); after restoring, the guest never
     sends a check made before the repair (ckSend). 1v1 uses the same path.
   - Results (finishBossOnline): chips win 20 / 30 / 45 by level (+5 for the final launch, b.lastHitBy), loss 5 + 1 per 10% of his HP
-    taken (max 10); the why line says Road stars come from the solo Road (online wins never count for the Road). P.duo (an
+    taken (max 10); a win also counts on this phone's Road where his fence is open (roadBossWin, see State). P.duo (an
     OPT_COUNTER in sync.js) counts wins on Hard / Nightmare: the Double Trouble title (ui/acct.js). After a win Next: Hard / Next:
     Nightmare / Again, after a loss Retry, through the rematch handshake (both tap). The partner's KO page says "<FIGHTER> WINS IT"
     (finWinWord, also offline when the CPU partner finishes). Mastery x1; the partner's page gives you no page XP.
@@ -734,7 +754,7 @@ map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence,
 combo star's combo line and its Combo trial with Back to the stop, five sizes; check.sh 8e) · pwfs.py (the fullscreen button and
 Settings row, the iPhone sheet, the home-screen app, a full top bar; the website build on a made-up origin routed by Playwright, no
 port; check.sh 8k) ·
-roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
+bossduo.js (each Road boss and level: two player bots vs his Road HP x DUO_HP against a player bot and the Road partner vs his Road HP, within 8 points; check.sh 4d; DUO=/ONLY= to retune) · roadcurve.js (every Road stop played by a 0.7 and a 0.9 bot: the curve falls stop by stop and region by region, Road bosses get
 tougher; check.sh 4c) ·
 onsnap.js (the online repair copy of every boss: pieces fit a presence, restored game plays on frame for frame; check.sh 5c) · pwonboss.py
 (online boss fight in two browsers against a server on port 8095: lobby Vs boss, Team up, NICE!, a forced desync repaired in pieces,

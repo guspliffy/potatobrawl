@@ -3,7 +3,7 @@
    FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
 const BOSS_LV = ["Normal", "Hard", "Nightmare"];
 const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   // each boss fights on his own map (spec.map)
-const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (with a friend on a second phone, ui/online.js, all of it)
+const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (the Road: its own, ui/road.js; with a friend online: more, ui/online.js duoHp)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
 const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt.",

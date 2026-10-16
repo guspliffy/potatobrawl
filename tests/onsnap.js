@@ -1,7 +1,7 @@
 // The repair copy of an online boss fight (ui/online.js onDesync / syncPiece): for every boss, the largest copy seen in bot fights is
 // cut into the pieces the host sends (SYNC_PART characters, read from ui/online.js), each piece must fit a whole match presence under the
 // 4 KB a presence may hold (the other fields at their largest), and the pieces joined and restored into a fresh game must play on frame
-// for frame like the original. Then the same for an online Team Brawl's copy with three CPUs (below). Prints "onsnap ok" when all of
+// for frame like the original. The fights are the online ones: his Road HP x the two-player K (ui/online.js duoHp). Then the same for an online Team Brawl's copy with three CPUs (below). Prints "onsnap ok" when all of
 // that holds (check.sh step 5c).
 //   node onsnap.js [fights per boss]
 const fs = require("fs");
@@ -13,9 +13,14 @@ let bad = 0;
 const fail = (m) => { bad++; console.log("FAIL", m); };
 if (!PART) fail("SYNC_PART not found in ui/online.js");
 const mapOf = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));
+// his HP online: ui/road.js ROAD_REG hp x ui/online.js DUO_HP[boss][level], as duoHp builds it
+const road = fs.readFileSync(__dirname + "/../game/ui/road.js", "utf8");
+const REG = new Function(road.slice(road.indexOf("const ROAD_REG = ["), road.indexOf("];", road.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
+const DUO = new Function(`return ${(/const DUO_HP = (\{[^\n]*\});/.exec(src) || [, "{}"])[1]};`)();
+const duoHp = (boss, lv) => (REG.find((g) => g.boss === boss.id) || { hp: 1 }).hp * DUO[boss.id][lv];
 const game = (boss, s) => {
   const a = F[s % F.length], b = F[(s * 3 + 1) % F.length];
-  return BL.newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[1] }, { spec: boss, pal: boss.palettes[0] }], stocks: 3, time: 0, countdown: 30, seed: s * 7919 + 13, map: mapOf(boss), level: s % 3 });
+  return BL.newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[1] }, { spec: boss, pal: boss.palettes[0] }], stocks: 3, time: 0, countdown: 30, seed: s * 7919 + 13, map: mapOf(boss), level: s % 3, hpMul: duoHp(boss, s % 3) });
 };
 const ins = (g, bots) => [BL.botInput(g, g.fighters[0], g.fighters[2], bots[0]), BL.botInput(g, g.fighters[1], g.fighters[2], bots[1])];
 // a guest's match presence with every other field at its largest (72 frames of input, the start message, a peer id, the ping stamps)
