@@ -7,7 +7,7 @@ Three players (A on a phone, B on a desktop, C on a phone) as separate devices:
   3. A and B again: they just played each other, so no Ranked rematch: after 20 s they meet as Casual (no rank change), B leaves.
   4. C and A in Ranked: A forfeits from the pause menu (a loss on the server, C's win "Opponent left").
   5. C picks VS CPU (Ranked vs CPU): the server's ticket, the VS screen with the CPU sticker, the HUD strip, a forfeit counted on the
-     CPU rank (the account file's `cpu` part), back to Quick match with the match counted.
+     CPU rank (the account file's `cpu` part), back to Quick match with the match counted, the Boards sheet from the board line.
 Screenshots (the Quick match screen idle and searching at 667x320, 844x390, 1280x760 and 390x844, the warm-up, PLAYER FOUND!, the VS
 screen, the results) go to the folder in argv[1]. Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwquick.py [outdir]        (needs `python3 game/build.py` first)"""
@@ -283,6 +283,13 @@ async def main():
             await tap(C, '#rChange')
             await wait(C, "window.__blastline.mode === 'quick'", 'C: back to Quick match from the CPU results')
             expect(has(await text(C, '#qmRank'), '1 of 5', 'CPU rank'), f"C: the plate counts the match, got {await text(C, '#qmRank')!r}")
+            await tap(C, '#qmBdl')   # the board line opens the Boards sheet on the CPU board: nobody placed yet, your row says placing
+            await C.wait_for_timeout(900)
+            bd = await text(C, '#scrBoards')
+            expect(await shown(C, '#scrBoards') and has(bd, 'VS CPU', 'Online', 'Nobody on the board yet', 'Placing 1 of 5'), f"C: the Boards sheet on the CPU board, got {bd!r}")
+            await shot(C, 'boards-cpu-390')
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)
+            expect(not await shown(C, '#scrBoards'), 'C: Esc closes the Boards sheet')
             await b.close()
     except Exception as e:
         errs.append(f'stopped: {type(e).__name__}: {str(e).splitlines()[0]}')
