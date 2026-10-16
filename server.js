@@ -16,6 +16,8 @@
  *
  * Quick match (quick.js): the queue for Ranked and Casual 1v1 against real players, and the referee that plays every Ranked match
  * itself from the inputs passing through here. Ranked needs the accounts; Casual works without them.
+ * Ranked vs CPU (cpurank.js): the server deals each ranked CPU match and plays it again from the player's inputs before the CPU rank
+ * moves; it also keeps the Boards (the CPU rank and the online rank) in memory.
  * SIGUSR2 = drain before an update: no new Quick matches are made, the running ones play on; /health counts them.
  */
 const http = require("http");
@@ -80,6 +82,18 @@ try {
   });
   console.log(`Quick match: on (game version ${quick.proto}, Ranked ${accounts ? "on" : "off: needs accounts"})`);
 } catch (e) { console.warn("Quick match: off,", e.message); }
+// Ranked vs CPU and the Boards (cpurank.js): needs Quick match's sign-in; the CPU rank needs the accounts too.
+let cpurank = null;
+try {
+  if (quick) {
+    cpurank = require("./cpurank.js").init({
+      accounts, proto: quick.proto, seatOf: quick.seatOf,
+      send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+      T: process.env.CPU_T ? JSON.parse(process.env.CPU_T) : undefined,   // tests only: shorter waits
+    });
+    console.log(`Ranked vs CPU: ${accounts ? "on" : "off: needs accounts"}`);
+  }
+} catch (e) { console.warn("Ranked vs CPU: off,", e.message); }
 process.on("SIGUSR2", () => { if (quick) { quick.drain(); console.log(`Quick match: draining for an update, ${quick.running()} ranked matches still running`); } });
 
 const server = http.createServer((req, res) => {
@@ -152,6 +166,7 @@ function drop(peer) {
   for (const name of [...c.rooms]) leaveRoom(peer, name);
   clients.delete(peer);
   if (quick) quick.gone(peer);
+  if (cpurank) cpurank.gone(peer);
 }
 
 wss.on("connection", (ws) => {
@@ -192,6 +207,7 @@ wss.on("connection", (ws) => {
     if (!c || c.ws !== ws) return;
 
     if (quick && quick.handle(peer, m)) return;   // auth, qm, qmx
+    if (cpurank && cpurank.handle(peer, m)) return;   // cme, ct, cr, bd
     if (m.t === "join") {
       const name = m.room;
       if (typeof name !== "string" || !ROOM_RE.test(name)) return;

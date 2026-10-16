@@ -181,6 +181,15 @@ if grep -q "^quick ok" "$LOGS/quick.log"; then pass "Quick match server + refere
 else fail "Quick match server + referee" "$LOGS/quick.log"; fi
 }
 
+# 5d2. Ranked vs CPU on the server (cpurank.js): the ticket (placement vs a Hard CPU at 1650, then yours ±70, capped at 1730), the replay
+#      of a played CPU match from the logged inputs, a log that stops early, arrives too fast or forfeits, a match with no result, an
+#      old game version, the boards built from the account files. Node only.
+s_cpu() {
+CPU_PORT=$((PB + 1)) timeout 200 node tests/cpurank.js > "$LOGS/cpu.log" 2>&1
+if grep -q "^cpurank ok" "$LOGS/cpu.log"; then pass "Ranked vs CPU server + boards ($(grep -c '^PASS' "$LOGS/cpu.log") checks)"
+else fail "Ranked vs CPU server + boards" "$LOGS/cpu.log"; fi
+}
+
 # 5e. Quick match in the browser: three players through a real server: the Season sheet, Find match, the CPU warm-up while
 #     searching, PLAYER FOUND!, the VS screen, a Ranked match decided by the server, no Ranked rematch (Casual after 20 s), a Casual
 #     leave, a Ranked forfeit, the menu's online rank. Shots in build/shots/quick.
@@ -349,12 +358,12 @@ else fail "2v2 in the browser" "$LOGS/duo-ui.log"; fi
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve online onboss on2v2 acct quick quickui screens skins shop acctui hud ultui tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve online onboss on2v2 acct quick cpu quickui screens skins shop acctui hud ultui tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
-# priority next to the rest; the server tests (quick, acct, stats) have short timers, so they run alone first (about 20 seconds).
+# priority next to the rest; the server tests (quick, cpu, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve duo boss snap finish lock combos ulti)
-SOLO=(quick acct stats)
+SOLO=(quick cpu acct stats)
 REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui tut skins bossui ultui onboss comboui cup statsui online statspage finisher)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos ulti); SOLO=(); REAL=(); fi
 
