@@ -6,6 +6,8 @@ Three players (A on a phone, B on a desktop, C on a phone) as separate devices:
      three times, the server decides: both results show the server's rating, which the account files hold too.
   3. A and B again: they just played each other, so no Ranked rematch: after 20 s they meet as Casual (no rank change), B leaves.
   4. C and A in Ranked: A forfeits from the pause menu (a loss on the server, C's win "Opponent left").
+  5. C picks VS CPU (Ranked vs CPU): the server's ticket, the VS screen with the CPU sticker, the HUD strip, a forfeit counted on the
+     CPU rank (the account file's `cpu` part), back to Quick match with the match counted.
 Screenshots (the Quick match screen idle and searching at 667x320, 844x390, 1280x760 and 390x844, the warm-up, PLAYER FOUND!, the VS
 screen, the results) go to the folder in argv[1]. Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwquick.py [outdir]        (needs `python3 game/build.py` first)"""
@@ -244,6 +246,43 @@ async def main():
             expect(has(hero, 'Quick match', 'Placing', '2 of 5') and not await shown(A, '#bRanked .qm-s1'), f'A: the hero shows the placement and no sticker now, got {hero!r}')
             expect(ra2 and (await text(A, '#mRating')).strip() == str(ra2['r']), 'A: the profile plate shows the online rating')
             await shot(A, 'menu-844')
+
+            # ---- 5. C: VS CPU (Ranked vs CPU): the server deals the match, the VS screen wears the CPU sticker, a forfeit counts on the CPU rank
+            await tap(C, '#rMenu')
+            await wait(C, "window.__blastline.mode === 'menu'", 'C: the menu')
+            await tap(C, '#bRanked')
+            await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match again')
+            await tap(C, '#qmV')
+            await C.wait_for_timeout(400)
+            expect(await C.evaluate("window.__blastline.qm.mode") == 'v' and has(await text(C, '#qmFind'), 'Fight a CPU'), f"C: VS CPU picked, the button says Fight a CPU, got {await text(C, '#qmFind')!r}")
+            expect(has(await text(C, '#qmRank'), 'Placing', '0 of 5', 'CPU rank', 'Not on the CPU board'), f"C: the plate shows the CPU rank, got {await text(C, '#qmRank')!r}")
+            expect(has(await text(C, '#qmTruth'), 'Placement 1 of 5', 'Hard CPU'), f"C: the line under the button names the next CPU, got {await text(C, '#qmTruth')!r}")
+            await shot(C, 'quick-vscpu-390'); await overflow(C, 'C VS CPU 390')
+            await tap(C, '#qmFind')
+            if await wait(C, "!document.getElementById('qmVs').hidden", 'C: the VS screen for the CPU match', 15):
+                await C.wait_for_timeout(500)
+                expect(await shown(C, '#vsCpu') and has(await text(C, '#vsMode'), 'Ranked', 'CPU') and has(await text(C, '#qmVs'), '1650', 'Hard CPU'), f"C: the VS screen shows the CPU sticker and its rating, got {await text(C, '#qmVs')!r}")
+                await shot(C, 'vs-cpu-390')
+            await wait(C, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", 'C: the CPU match starts', 15)
+            expect(await shown(C, '#vcStrip') and has(await text(C, '#vcStrip'), 'Ranked vs CPU', 'placement 1 of 5'), f"C: the HUD says the match counts, got {await text(C, '#vcStrip')!r}")
+            await C.wait_for_timeout(400)
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)
+            expect(has(await text(C, '#pQuit'), 'Forfeit') and has(await text(C, '#pNote'), 'counts as a loss'), f"C: VS CPU pause says Forfeit, got {await text(C, '#pNote')!r}")
+            await tap(C, '#pQuit'); await tap(C, '#pQuit')
+            await wait(C, "window.__blastline.mode === 'result'", 'C: the VS CPU results')
+            await wait(C, "window.__blVc.res && window.__blVc.res.why === 'ff' && !window.__blVc.pend", 'C: the server counts the CPU forfeit', 15)
+            await C.wait_for_timeout(1200)
+            expect(has(await text(C, '#rTitle'), 'Forfeit') and has(await text(C, '#rStick'), 'forfeit') and has(await text(C, '#rBoardL'), 'CPU board after 4 more'), f"C: Forfeit, the sticker and the board line, got {await text(C, '#rRank')!r}")
+            expect(has(await text(C, '#rAgain'), 'Another CPU fight'), 'C: the results offer Another CPU fight')
+            await shot(C, 'result-vscpu-390')
+            rc = None
+            for f in pathlib.Path(d).glob('*.json'):
+                j = json.loads(f.read_text())
+                if j.get('cpu'): rc = j['cpu']
+            expect(rc and rc['n'] == 1 and rc['l'] == 1 and rc['h'][0]['why'] == 'ff' and not rc['tk'], f'server: C should have one CPU loss by forfeit, got {rc}')
+            await tap(C, '#rChange')
+            await wait(C, "window.__blastline.mode === 'quick'", 'C: back to Quick match from the CPU results')
+            expect(has(await text(C, '#qmRank'), '1 of 5', 'CPU rank'), f"C: the plate counts the match, got {await text(C, '#qmRank')!r}")
             await b.close()
     except Exception as e:
         errs.append(f'stopped: {type(e).__name__}: {str(e).splitlines()[0]}')
