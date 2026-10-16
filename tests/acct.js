@@ -206,6 +206,28 @@ function pureTests() {
   check(eq(dev2.daily, dy("2026-10-14", 1, 2, "2026-10-14", 2)), "daily apply: a prof without it leaves this device's record");
   SYNC.applyTo(dev2, dS);
   check(eq(dev2.daily, dS.daily) && dev2.daily !== dS.daily, "daily apply: a prof with it replaces it (a copy)");
+  // Another go (ui/daily.js): p = the streak before today's first try (kept while the go is open), x = 1 once it was taken. Both are left out while not set.
+  const dpx = SYNC.sanitize({ daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 5, p: 4, x: 1 } }, FIGHTERS).daily;
+  check(eq(dpx, { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 5, p: 4, x: 1 }) && eq(SYNC.sanitize({ daily: dpx }, FIGHTERS).daily, dpx), "another go: p and x pass, cleaning twice changes nothing");
+  check(eq(dok.daily, dy("2026-10-14", 1, 3, "2026-10-14", 5)) && !("p" in dok.daily) && !("x" in dok.daily), "another go: a record without them stays as it is (no p, no x invented)");
+  const dpj = SYNC.sanitize({ daily: { d: "2026-10-14", r: 0, s: 0, w: "", b: 0, p: "3", x: 2 } }, FIGHTERS).daily;
+  check(eq(dpj, dy("2026-10-14", 0, 0, "", 0)), "another go: a p that is not a number and an x that is not 1 are dropped");
+  const dpc = SYNC.sanitize({ daily: { d: "2026-10-14", r: 0.5, s: 2, w: "2026-10-14", b: 2, p: -7.4, x: true } }, FIGHTERS).daily, dpb = SYNC.sanitize({ daily: { d: "2026-10-14", r: 0, s: 0, w: "", b: 0, p: 1e12 } }, FIGHTERS).daily;
+  check(dpc.p === 0 && dpc.x === 1 && dpb.p === 1e6, "another go: p is clamped to 0 - 1,000,000, x = true counts as 1");
+  check(!("p" in SYNC.sanitize({ daily: { d: "bad", r: 0, s: 0, p: 3, x: 1 } }, FIGHTERS).daily) && !("x" in SYNC.sanitize({ daily: { d: "bad", x: 1 } }, FIGHTERS).daily), "another go: a record with no valid day carries no p or x");
+  const gB = prof({ daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 4, p: 3 } });                       // lost the first try; Another go open
+  const gL = prof({ daily: { d: "2026-10-14", r: 1, s: 4, w: "2026-10-14", b: 4, x: 1 } });                       // this device took it and won
+  const gS = prof({ daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 4, x: 1 } });                       // the server's copy: taken on another device, lost again
+  check(eq(SYNC.mergeProf(gL, gB, gB, true).daily, gL.daily) && eq(SYNC.mergeProf(gB, gB, gL, false).daily, gL.daily), "another go: only one side took it -> that side's record (x and the streak it made)");
+  check(eq(SYNC.mergeProf(gL, gB, gS, true).daily, gL.daily) && eq(SYNC.mergeProf(gL, gB, gS, false).daily, gS.daily), "another go: both took it (a race of two devices) -> the newer side, never a mix of the two");
+  const gRun = prof({ daily: { d: "2026-10-14", r: -1, s: 0, w: "2026-10-13", b: 4, x: 1 } });                     // taken here, still playing
+  const gFin = prof({ daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 4, p: 3 } });                      // the other device only finished the first try
+  check(eq(SYNC.mergeProf(gRun, dB, gFin, true).daily, gRun.daily) && eq(SYNC.mergeProf(gFin, dB, gRun, false).daily, gRun.daily) && eq(SYNC.mergeProf(gRun, dB, gFin, false).daily, gRun.daily) && eq(SYNC.mergeProf(gFin, dB, gRun, true).daily, gRun.daily), "another go: same day, one side took it (still running) and the other only has the first result -> the one that took it, so it cannot be taken twice");
+  const gOld = SYNC.sanitize(oldPage(gB), FIGHTERS);
+  check(eq(SYNC.mergeProf(gL, gB, gOld, true).daily, gL.daily) && eq(SYNC.mergeProf(gOld, gB, gL, false).daily, gL.daily), "another go: an older page's prof has no daily at all -> the other side's record, x included");
+  const dev5 = { tokens: 1, owned: {}, pal: {}, daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 4, p: 3 } };
+  SYNC.applyTo(dev5, gL);
+  check(eq(dev5.daily, gL.daily) && dev5.daily.x === 1 && !("p" in dev5.daily), "another go apply: a record with x replaces one with p (a copy; p is gone with it)");
   // combo routes (ui/combos.js): a set of route ids, merged as a union; the 30 chips for all of them stay paid once paid anywhere
   const rc = SYNC.sanitize({ routes: ["sig", "three", "sig", "Bad!", 7, "lift"], comboPaid: true }, FIGHTERS);
   check(eq(rc.routes, ["lift", "sig", "three"]) && rc.comboPaid === true && eq(SYNC.sanitize(rc, FIGHTERS), rc), "routes: cleaned to a sorted set of ids, cleaning twice changes nothing");
@@ -263,6 +285,41 @@ function pureTests() {
   check(eq(SYNC.mergeProf(qR, prof({ road: { s: [1], b: 1, paid: true } }), qT, false).road, { s: [1], b: 1, paid: true, b2: 3, p2: true, b3: 4, p3: true }), "road regions: two devices -> each region's boss levels and paid flags merge as a union");
   check(eq(SYNC.mergeProf(qR, qR, prof({ road: { s: [1], b: 1, paid: true } }), false).road, qR.road), "road regions: an older page without b2 keeps this device's b2");
   check(SYNC.hasProgress({ mxp: { odin: 30 } }) && !SYNC.hasProgress({ mxp: { odin: 0 } }), "mastery: XP from Practice counts as progress worth asking about");
+  // the Shop (ui/shop.js): skins glazed per fighter, nameplates owned, the plate worn. Added later: a missing field means "not known", never empty.
+  const FG = FIGHTERS.find((f) => f.id === "phoenix"), nFG = FG.palettes.length;
+  const gz = SYNC.sanitize({ glazed: { phoenix: [3, 1, 3, 9, -1, 1.5, "a", nFG], odin: [], samurai: [0], "Bad Id": [1], "__proto__": [1], mystery: [2, 15, 16] }, plates: ["sunset", "mint", "sunset", "Bad!", 7, "x".repeat(20), "gold_leaf"], plate: "mint" }, FIGHTERS);
+  check(eq(gz.glazed, { mystery: [2, 15], phoenix: [1, 3], samurai: [0] }), "glazed: whole skin numbers in range (this copy's skin count; 16 for a fighter it does not know), sorted, unique; an empty fighter and odd ids are left out");
+  check(!Object.prototype.hasOwnProperty.call(gz.glazed, "__proto__") && Object.getPrototypeOf(gz.glazed) === Object.prototype, "glazed: no __proto__ key");
+  check(eq(gz.plates, ["gold_leaf", "mint", "sunset"]) && gz.plate === "mint", "plates: a sorted set of well formed ids; the plate worn is kept");
+  check(eq(SYNC.sanitize(gz, FIGHTERS), gz), "glazed / plates / plate: cleaning twice changes nothing");
+  const gj = SYNC.sanitize({ glazed: { phoenix: "x" }, plates: ["Bad!"], plate: "Not A Plate!" }, FIGHTERS);
+  check(eq(gj.glazed, {}) && eq(gj.plates, []) && gj.plate === "", "shop junk: a bad glaze list is empty, bad plate ids are dropped, a bad worn plate becomes Ink (empty)");
+  const gn = SYNC.sanitize({ glazed: [1], plates: "sunset", plate: 5 }, FIGHTERS);
+  check(!("glazed" in gn) && !("plates" in gn) && !("plate" in gn), "shop: not an object / not a list / not text counts as missing");
+  const noShop = (x) => { const o = Object.assign({}, x); for (const k of ["glazed", "plates", "plate"]) delete o[k]; return o; };
+  const sOld = SYNC.sanitize(noShop(gz), FIGHTERS);
+  check(!("glazed" in sOld) && !("plates" in sOld) && !("plate" in sOld) && !("glazed" in prof({})) && !("plates" in prof({})), "shop: a prof from an older page has none of them (sanitize invents nothing)");
+  const sB = prof({ glazed: { phoenix: [1] }, plates: ["sunset"], plate: "sunset" });
+  const sL = prof({ glazed: { phoenix: [1, 3], odin: [2] }, plates: ["mint", "sunset"], plate: "mint" });         // this device: glazed two more, bought Mint and wore it
+  const sS = prof({ glazed: { phoenix: [1, 2], dragon: [1] }, plates: ["goldleaf", "sunset"], plate: "goldleaf" }); // the other device: another glaze, Gold Leaf worn
+  const sm = SYNC.mergeProf(sL, sB, sS, true);
+  check(eq(sm.glazed, { dragon: [1], odin: [2], phoenix: [1, 2, 3] }) && eq(sm.plates, ["goldleaf", "mint", "sunset"]), "shop merge: glazed skins and plates owned are a union of both devices");
+  check(sm.plate === "mint" && SYNC.mergeProf(sL, sB, sS, false).plate === "goldleaf", "shop merge: both changed the plate worn -> the newer side");
+  const sm2 = SYNC.mergeProf(sB, sB, sS, true);
+  check(sm2.plate === "goldleaf" && eq(sm2.plates, sS.plates) && SYNC.mergeProf(sL, sB, sB, false).plate === "mint", "shop merge: only one side changed the plate -> that side");
+  check(SYNC.mergeProf(prof({ plate: "" }), sB, prof({ plate: "sunset", plates: ["sunset"] }), false).plate === "", "shop merge: back to Ink on this device -> stays Ink");
+  const sk1 = SYNC.mergeProf(sL, sB, sOld, true), sk2 = SYNC.mergeProf(sOld, sB, sS, false), sk3 = SYNC.mergeProf(sL, sB, sOld, false);
+  check(eq(sk1.glazed, sL.glazed) && eq(sk1.plates, sL.plates) && sk1.plate === "mint" && sk3.plate === "mint", "shop merge: the server copy has none (an older page) -> this device's glazes, plates and worn plate stay");
+  check(eq(sk2.glazed, sS.glazed) && eq(sk2.plates, sS.plates) && sk2.plate === "goldleaf", "shop merge: this side has none (an older page) -> the server's are kept");
+  const sNone = SYNC.mergeProf(sOld, sOld, sOld, true);
+  check(!("glazed" in sNone) && !("plates" in sNone) && !("plate" in sNone), "shop merge: neither side has them -> the result has none");
+  check(eq(SYNC.mergeProf(sm, sm, sm, true), sm), "shop merge: nothing changed anywhere -> the same copy");
+  const sDev = { tokens: 1, owned: {}, pal: {}, glazed: { phoenix: [0] }, plates: ["sunset"], plate: "sunset" };
+  SYNC.applyTo(sDev, sOld);
+  check(eq(sDev.glazed, { phoenix: [0] }) && eq(sDev.plates, ["sunset"]) && sDev.plate === "sunset", "shop apply: a prof without the fields leaves this device's");
+  SYNC.applyTo(sDev, sm);
+  check(eq(sDev.glazed, sm.glazed) && sDev.glazed !== sm.glazed && sDev.glazed.phoenix !== sm.glazed.phoenix && eq(sDev.plates, sm.plates) && sDev.plates !== sm.plates && sDev.plate === "mint", "shop apply: a prof with them replaces them (copies)");
+  check(SYNC.hasProgress({ plates: ["sunset"] }) && SYNC.hasProgress({ glazed: { odin: [1] } }) && !SYNC.hasProgress({ plates: [], glazed: { odin: [] }, plate: "" }), "shop: a plate bought or a skin glazed counts as progress worth asking about");
   const hist = Array.from({ length: 60 }, (_, i) => ({ r: 1, d: i, me: F0, op: F1, opr: 1000, t: i + 1 }));
   check(SYNC.sanitize({ history: hist }, FIGHTERS).history.length === 50, "sanitize: the match history keeps 50");
 }
