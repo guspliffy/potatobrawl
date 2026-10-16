@@ -11,8 +11,9 @@
  *   POST /api/acct/load   {code}             -> {prof, rev, t, on?}   or 404 {error:"unknown"}
  *   POST /api/acct/save   {code, rev, prof}  -> {rev}                 or 409 {prof, rev, t} when rev is not the stored one
  *
- * An account file can also hold `on`, the online record of Quick match (quick.js: public id, rank, record, last results).
- * Only the server writes it (writeOn); a save from a phone replaces `prof` and keeps `on` as it is.
+ * An account file can also hold `on`, the online record of Quick match (quick.js: public id, rank, record, last results), and `cpu`,
+ * the CPU rank of Ranked vs CPU (cpurank.js). Only the server writes them (writeOn, writeCpu); a save from a phone replaces `prof`
+ * and keeps them as they are.
  * The server can also pay chips into `prof` (addChips: a streak bounty). That is a new rev like a phone's save, so a phone that
  * saves an older copy gets 409 and merges (chips merge as server + this device - the last synced copy: nothing is lost or paid twice).
  *
@@ -129,6 +130,7 @@ function init(dir, opts) {
     return null;
   }
   // temp file + rename, so a crash never leaves half an account. Throws on a disk problem.
+  const watchers = [];   // cpurank.js keeps the boards up to date from every write
   function write(file, rec) {
     const data = JSON.stringify(rec), full = path.join(dir, file), tmp = full + "." + crypto.randomBytes(4).toString("hex") + ".tmp";
     let fd = -1;
@@ -143,6 +145,7 @@ function init(dir, opts) {
     }
     const n = Buffer.byteLength(data);
     total += n - (sizes.get(file) || 0); sizes.set(file, n);
+    for (const fn of watchers) { try { fn(file, rec); } catch (e) { console.warn("accounts: a watcher failed,", e.message); } }
   }
 
   function readBody(req, res, cb) {
@@ -194,7 +197,7 @@ function init(dir, opts) {
         const rec = read(code);
         if (!rec) return unknown(res);
         if (rec.rev !== m.rev) return send(res, 409, { prof: rec.prof, rev: rec.rev, t: rec.t });
-        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}), file = fileOf(code);   // the online record stays the server's
+        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}, rec.cpu ? { cpu: rec.cpu } : {}), file = fileOf(code);   // the online and CPU records stay the server's
         if (total - (sizes.get(file) || 0) + Buffer.byteLength(JSON.stringify(next)) > o.maxBytes) return send(res, 503, { error: "full" });
         write(file, next);
         return send(res, 200, { rev: next.rev, t: next.t });
@@ -233,6 +236,14 @@ function init(dir, opts) {
     write(file, rec);
     return true;
   }
+  // the same for the CPU rank (cpurank.js)
+  function writeCpu(file, cpu) {
+    const rec = readFile(file);
+    if (!rec || !isObj(cpu)) return false;
+    rec.cpu = cpu;
+    write(file, rec);
+    return true;
+  }
   // chips the server pays (quick.js: a bounty): into prof.tokens as a new rev. Read and write with nothing in between, so it
   // can't interleave with a save (that handler is synchronous too). Never below 0. Throws on a disk problem.
   function addChips(file, delta) {
@@ -244,7 +255,8 @@ function init(dir, opts) {
     write(file, rec);
     return true;
   }
-  return { handle, count: () => sizes.size, bytes: () => total, dir, fileOfCode, readFile, writeOn, addChips };
+  return { handle, count: () => sizes.size, bytes: () => total, dir, fileOfCode, readFile, writeOn, writeCpu, addChips,
+    files: () => [...sizes.keys()], watch: (fn) => { watchers.push(fn); } };
 }
 
 module.exports = { init, normCode, fmtCode, newCode, hashOf };

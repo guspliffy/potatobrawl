@@ -12,6 +12,8 @@ Three players (A on a phone, B on a desktop, C on a phone) as separate devices:
   6. The rank plate and the menu's profile plate fit at 16 sizes from 667 to 1920 wide (nothing overlaps or is cut): fresh (A, phone
      sizes), on a streak (C, upright), Diamond with a long rating line (A again) and placing 1 of 5 (B, desktop sizes). Below 820 px
      wide in landscape the plate is the narrow one: the record and season in the YOUR MATCH kicker, five pips under PLACING.
+  7. C picks VS CPU (Ranked vs CPU): the server's ticket, the VS screen with the CPU sticker, the HUD strip, a forfeit counted on the
+     CPU rank (the account file's `cpu` part), back to Quick match with the match counted, the Boards sheet from the board line.
 Screenshots (the Quick match screen idle and searching at 667x320, 844x390, 1280x760 and 390x844, idle at 740x360, the narrow plate as
 Diamond at 740x360 and placing at 800x700, the warm-up, PLAYER FOUND!, the VS
 screen, the results) go to the folder in argv[1]. Prints one line per problem, then "no errors".
@@ -117,7 +119,8 @@ async def plates(pg, tag, sizes, back, quick=True, check=None):   # the plate at
         r = await pg.evaluate(PLATE)
         expect(not r['bad'], f'{tag} {w}x{h}: rank plate: {", ".join(r["bad"])}')
         if quick:
-            expect(r['thin'] == (h < w < 820), f'{tag} {w}x{h}: the narrow plate should be {"on" if h < w < 820 else "off"}')
+            want = h < w < 820 and not (w < 760 and h >= 360)   # below 760 wide the side columns shrink (css/96-vscpu.css .slim) and the full plate fits again, except on the shortest phones
+            expect(r['thin'] == want, f'{tag} {w}x{h}: the narrow plate should be {"on" if want else "off"}')
             await overflow(pg, f'{tag} {w}x{h}')
             if check: check(w, h, r)
     await pg.set_viewport_size(back); await pg.wait_for_timeout(300)
@@ -347,6 +350,50 @@ async def main():
             expect(has(await text(A, '#qmTier'), 'Diamond'), f"A: the plate should show Diamond, got {await text(A, '#qmTier')!r}")
             await A.set_viewport_size({'width': 740, 'height': 360}); await A.wait_for_timeout(300); await shot(A, 'quick-diamond-740')
             await B.set_viewport_size({'width': 800, 'height': 700}); await B.wait_for_timeout(300); await shot(B, 'quick-placing-800x700')
+
+            # ---- 7. C: VS CPU (Ranked vs CPU): the server deals the match, the VS screen wears the CPU sticker, a forfeit counts on the CPU rank
+            await tap(C, '#acClose'); await C.wait_for_timeout(300)   # the Account sheet from step 5
+            await wait(C, "window.__blastline.mode === 'menu'", 'C: the menu')
+            await tap(C, '#bRanked')
+            await wait(C, "window.__blastline.mode === 'quick'", 'C: Quick match again')
+            await tap(C, '#qmV')
+            await C.wait_for_timeout(400)
+            expect(await C.evaluate("window.__blastline.qm.mode") == 'v' and has(await text(C, '#qmFind'), 'Fight a CPU'), f"C: VS CPU picked, the button says Fight a CPU, got {await text(C, '#qmFind')!r}")
+            expect(has(await text(C, '#qmRank'), 'Placing', '0 of 5', 'CPU rank', 'CPU board after 5 more'), f"C: the plate shows the CPU rank, got {await text(C, '#qmRank')!r}")
+            expect(has(await text(C, '#qmTruth'), 'Placement 1 of 5', 'Hard CPU'), f"C: the line under the button names the next CPU, got {await text(C, '#qmTruth')!r}")
+            await shot(C, 'quick-vscpu-390'); await overflow(C, 'C VS CPU 390')
+            await tap(C, '#qmFind')
+            if await wait(C, "!document.getElementById('qmVs').hidden", 'C: the VS screen for the CPU match', 15):
+                await C.wait_for_timeout(500)
+                expect(await shown(C, '#vsCpu') and has(await text(C, '#vsMode'), 'Ranked', 'CPU') and has(await text(C, '#qmVs'), '1650', 'Hard CPU'), f"C: the VS screen shows the CPU sticker and its rating, got {await text(C, '#qmVs')!r}")
+                await shot(C, 'vs-cpu-390')
+            await wait(C, "window.__blastline.mode === 'match' && window.__blastline.game && window.__blastline.game.phase !== 'countdown'", 'C: the CPU match starts', 15)
+            expect(await shown(C, '#vcStrip') and has(await text(C, '#vcStrip'), 'Ranked vs CPU', 'placement 1 of 5'), f"C: the HUD says the match counts, got {await text(C, '#vcStrip')!r}")
+            await C.wait_for_timeout(400)
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)
+            expect(has(await text(C, '#pQuit'), 'Forfeit') and has(await text(C, '#pNote'), 'counts as a loss'), f"C: VS CPU pause says Forfeit, got {await text(C, '#pNote')!r}")
+            await tap(C, '#pQuit'); await tap(C, '#pQuit')
+            await wait(C, "window.__blastline.mode === 'result'", 'C: the VS CPU results')
+            await wait(C, "window.__blVc.res && window.__blVc.res.why === 'ff' && !window.__blVc.pend", 'C: the server counts the CPU forfeit', 15)
+            await C.wait_for_timeout(1200)
+            expect(has(await text(C, '#rTitle'), 'Forfeit') and has(await text(C, '#rStick'), 'forfeit') and has(await text(C, '#rBoardL'), 'CPU board after 4 more'), f"C: Forfeit, the sticker and the board line, got {await text(C, '#rRank')!r}")
+            expect(has(await text(C, '#rAgain'), 'Another CPU fight'), 'C: the results offer Another CPU fight')
+            await shot(C, 'result-vscpu-390')
+            rc = None
+            for f in pathlib.Path(d).glob('*.json'):
+                j = json.loads(f.read_text())
+                if j.get('cpu'): rc = j['cpu']
+            expect(rc and rc['n'] == 1 and rc['l'] == 1 and rc['h'][0]['why'] == 'ff' and not rc['tk'], f'server: C should have one CPU loss by forfeit, got {rc}')
+            await tap(C, '#rChange')
+            await wait(C, "window.__blastline.mode === 'quick'", 'C: back to Quick match from the CPU results')
+            expect(has(await text(C, '#qmRank'), '1 of 5', 'CPU rank'), f"C: the plate counts the match, got {await text(C, '#qmRank')!r}")
+            await tap(C, '#qmBdl')   # the board line opens the Boards sheet on the CPU board: nobody placed yet, your row says placing
+            await C.wait_for_timeout(900)
+            bd = await text(C, '#scrBoards')
+            expect(await shown(C, '#scrBoards') and has(bd, 'VS CPU', 'Online', 'Nobody on the board yet', 'Placing 1 of 5'), f"C: the Boards sheet on the CPU board, got {bd!r}")
+            await shot(C, 'boards-cpu-390')
+            await C.keyboard.press('Escape'); await C.wait_for_timeout(300)
+            expect(not await shown(C, '#scrBoards'), 'C: Esc closes the Boards sheet')
             await b.close()
     except Exception as e:
         errs.append(f'stopped: {type(e).__name__}: {str(e).splitlines()[0]}')
