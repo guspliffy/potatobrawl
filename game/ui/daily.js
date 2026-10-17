@@ -6,7 +6,7 @@
    Chips: a win 40 (streak +1), a draw 15 (streak kept), a finished loss 5, a forfeit or an unfinished match nothing; any loss ends the
    streak. No rating, record, history or per-fighter stats change.
    Another go (a way to spend chips, see ui/shop.js): after a finished loss or draw (not a forfeit, a quit or a win) the sheet offers the same
-   match again for 50 chips, once a day, two taps. Its result replaces today's: a win pays 40 and continues the streak as if the first try had
+   match again for 50 chips, once a day, two taps; a free try from the Harvest (P.ago, ui/harvest.js) is used first, instead of the chips. Its result replaces today's: a win pays 40 and continues the streak as if the first try had
    been won (that is what `p` is for), a draw 15, a loss 5. Starting it writes the day down as tried again (r = -1, x = 1), so quitting or a
    reload counts as a loss.
    P.daily = { d (last day tried), r (1 / 0.5 / 0, -1 = started, not finished), s (streak), w (the last day that kept the streak going:
@@ -68,11 +68,13 @@ function dailyCard(el, id, pi, who) {
   el.style.setProperty("--fc", col(pal));
   el.innerHTML = `<span class="dly-ph">${PORTRAITS[id] ? `<img src="${PORTRAITS[id]}" alt="">` : ""}</span><span class="dly-t"><b>${spec.name}</b><small>${cupEsc(who)}</small></span>`;
 }
+// the sheet: the Harvest on top (ui/harvest.js), today's gift beside it, the Daily Potato below (the flame on the start page and the Daily tile open it)
 function dailyOpen() {
   const key = dailyKey(), st = dailyGet(), pk = dailyPick(key), [mi, oi] = dailyPals(pk), done = st.d === key, s = dailyStreak(st, key), again = dailyAgainOk(st, key);
   DLY.key = key; dailyDisarm();
   $("dlyDate").textContent = dailyLabel(key);
   dailyCard($("dlyMe"), pk.me, mi, "You"); dailyCard($("dlyOp"), pk.opp, oi, pk.cpu);
+  $("dlyWho").textContent = `${FIG[pk.me].name} vs ${FIG[pk.opp].name} · ${pk.cpu}`;
   const best = st.b > 0 ? ` Best streak: ${st.b} ${st.b === 1 ? "day" : "days"}.` : "";
   $("dlyRule").innerHTML = done ? `<b>${dailyRes(st.r)} today.</b>${again ? ` One more go for ${DAILY.again} chips.` : s > 0 ? ` ${s}-day streak.` : ""}` : `<b>One try.</b> Win: ${DAILY.win} chips${s > 0 ? ` and a ${s + 1}-day streak` : ""}.`;
   $("dlyLine").textContent = again ? `The same match again. Its result replaces today's: a win pays ${DAILY.win} chips${st.p > 0 ? ` and makes it a ${st.p + 1}-day streak` : ""}, a draw ${DAILY.draw}, a loss ${DAILY.loss}.`
@@ -81,13 +83,15 @@ function dailyOpen() {
   $("dlyAgain").hidden = !again;
   dailyAgainLabel();
   modal("daily", true);
+  hvRender();
 }
 // the Another go button: its price, "Sure?" for 3 s after the first tap, dimmed (and answering with the missing chips) while short
+// (a free try from the Harvest says "free" instead of the price)
 function dailyAgainLabel() {
-  const b = $("dlyAgain"), short = P.tokens < DAILY.again;
+  const b = $("dlyAgain"), free = (P.ago | 0) > 0, short = !free && P.tokens < DAILY.again;
   b.classList.toggle("ember", DLY.arm); b.classList.toggle("primary", !DLY.arm && !short); b.classList.toggle("dim", short);
-  b.querySelector("span").innerHTML = `${DLY.arm ? "Sure?" : "Another go"} <span class="tokglyph"></span>${DAILY.again}`;
-  b.setAttribute("aria-label", DLY.arm ? `Sure? Another go for ${DAILY.again} chips` : short ? `Another go costs ${DAILY.again} chips, you have ${fmtChips(P.tokens)}` : `Another go for ${DAILY.again} chips`);
+  b.querySelector("span").innerHTML = `${DLY.arm ? "Sure?" : "Another go"} ${free ? "· free" : `<span class="tokglyph"></span>${DAILY.again}`}`;
+  b.setAttribute("aria-label", free ? `${DLY.arm ? "Sure? " : ""}Another go, free (${P.ago | 0} left from the Harvest)` : DLY.arm ? `Sure? Another go for ${DAILY.again} chips` : short ? `Another go costs ${DAILY.again} chips, you have ${fmtChips(P.tokens)}` : `Another go for ${DAILY.again} chips`);
 }
 function dailyDisarm() { clearTimeout(DLY.armT); DLY.arm = false; }
 function dailyFight() {
@@ -102,7 +106,8 @@ function dailyFight() {
 function dailyAgain() {
   const key = dailyKey(), st = dailyGet();
   if (key !== DLY.key || !dailyAgainOk(st, key)) { dailyOpen(); return; }   // midnight, or the go went elsewhere (a sync)
-  if (P.tokens < DAILY.again) {
+  const free = (P.ago | 0) > 0;
+  if (!free && P.tokens < DAILY.again) {
     dailyDisarm(); Sfx.uiNo(); dailyAgainLabel();
     $("dlyLine").textContent = `Another go costs ${DAILY.again} chips and you have ${fmtChips(P.tokens)}: ${DAILY.again - P.tokens} more needed. Chips come from ranked wins, the Daily Potato, tournaments and Road stars.`;
     return;
@@ -114,7 +119,7 @@ function dailyAgain() {
   }
   dailyDisarm();
   const was = dailyBefore(st, key);
-  P.tokens -= DAILY.again;
+  if (free) P.ago = (P.ago | 0) - 1; else P.tokens -= DAILY.again;
   P.daily = { d: key, r: -1, s: 0, w: was.w, b: st.b, x: 1 };   // tried again from the first frame, like the first try
   saveProfile(); Sfx.uiCoin();
   dailyStart(dailyPick(key), { key, prev: st.p, again: true, w: was.w });
@@ -145,7 +150,9 @@ function dailyMatchEnd(forfeit) {
 screens.daily = $("scrDaily");
 $("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); dailyFight(); });
 $("dlyAgain").addEventListener("click", () => { Sfx.init(); goFull(); dailyAgain(); });
-for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); });
+$("dlyClose").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); });
+// a tap on the dimmed backdrop closes it too
+screens.daily.addEventListener("click", (e) => { if (e.target === screens.daily) { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); } });
 // a tap anywhere but the armed button puts "Another go" back
 $("scrDaily").addEventListener("click", (e) => { if (DLY.arm && !e.target.closest("#dlyAgain")) { dailyDisarm(); dailyAgainLabel(); } }, true);
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open

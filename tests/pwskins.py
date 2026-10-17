@@ -1,7 +1,7 @@
 # The Skins bar and the Skin Rack on the fighter select (ui/skins.js, css/90-skins.css), and the Play friends lobby's Fight Card
 # (ui/online.js, css/95-lobby.css). UI only. At 667x320, 844x390, 1280x760 and 390x844:
-#  - the select shows one Skins bar (the worn skin, SKINS 2/7) as a 44+ px tap target at the foot of the stage, no swatch row;
-#  - the bar opens the sheet, which fits the screen; seven cards, each with its model drawn, in their states (worn, own, buy, short,
+#  - the select shows one Skins bar (the worn skin, SKINS 2/8) as a 44+ px tap target at the foot of the stage, no swatch row;
+#  - the bar opens the sheet, which fits the screen; eight cards, each with its model drawn, in their states (worn, own, buy, short,
 #    Road with its region open, Road with its region shut); nothing in the sheet runs past its edges;
 #  - the preview says what each locked skin needs (the Road lines in both cases, "140 more chips needed.", "You have 160 · 10 left after");
 #  - Buy is two taps (Sure? for 3 s, a tap elsewhere puts Buy back), the bought skin is worn, chips counted down, YOURS!; an owned skin
@@ -67,16 +67,16 @@ async def select_part(b, tag, w, h):
       return { h: r.height, inStage: r.left >= s.left - 1 && r.right <= s.right + 1 && r.bottom <= s.bottom + 1, onScreen: r.top >= 0 && r.bottom <= innerHeight + 0.5 }; })()""")
     need(bar['h'] >= 43.5 and bar['inStage'], f'{tag}: the Skins bar {bar}')
     if tag != 'upright': need(bar['onScreen'], f'{tag}: the Skins bar is off the screen {bar}')
-    need(await txt(pg, '#dSkN') == '2/7' and await txt(pg, '#dSkName') == 'Steel', f"{tag}: the bar reads {await txt(pg, '#dSkName')!r} {await txt(pg, '#dSkN')!r}")
+    need(await txt(pg, '#dSkN') == '2/8' and await txt(pg, '#dSkName') == 'Steel', f"{tag}: the bar reads {await txt(pg, '#dSkName')!r} {await txt(pg, '#dSkN')!r}")
     await pg.screenshot(path=f'{OUT}/{tag}_1_select.png')
     # the sheet
     await (pg.tap if w < 1000 else pg.click)('#dSkins'); await pg.wait_for_timeout(600); await settle(pg)
     need(await ev(pg, "!document.getElementById('scrSkins').hidden"), f'{tag}: the Skins bar does not open the sheet')
-    need(await txt(pg, '#skTitle') == 'Samurai Skins' and await txt(pg, '#skOwned') == '2 / 7 owned' and await txt(pg, '#skTokens') == '160', f"{tag}: the band reads {await txt(pg, '#skTitle')!r} {await txt(pg, '#skOwned')!r} {await txt(pg, '#skTokens')!r}")
+    need(await txt(pg, '#skTitle') == 'Samurai Skins' and await txt(pg, '#skOwned') == '2 / 8 owned' and await txt(pg, '#skTokens') == '160', f"{tag}: the band reads {await txt(pg, '#skTitle')!r} {await txt(pg, '#skOwned')!r} {await txt(pg, '#skTokens')!r}")
     st = await ev(pg, STATES)
-    need(st == ['own', 'worn', 'buy', 'short', 'road', 'shut', 'shut'], f'{tag}: card states {st}')
+    need(st == ['own', 'worn', 'buy', 'short', 'road', 'shut', 'shut', 'shut'], f'{tag}: card states {st}')
     inked = await ev(pg, INKED)
-    need(len(inked) == 7 and all(n > 0 for n in inked), f'{tag}: card models not drawn {inked}')
+    need(len(inked) == 8 and all(n > 0 for n in inked), f'{tag}: card models not drawn {inked}')
     fit = await ev(pg, FIT)
     need(not fit, f'{tag}: {fit[:4]}')
     need(await txt(pg, '#skChip .sk:nth-child(3) .sk-f small') == '150' and await txt(pg, '#skRoad .sk:nth-child(1) .sk-f small') == 'Beat Old Scratch'
@@ -90,6 +90,11 @@ async def select_part(b, tag, w, h):
     await pg.screenshot(path=f'{OUT}/{tag}_3_road.png')
     await ev(pg, card('skRoad', 1)); await pg.wait_for_timeout(200)
     need(await txt(pg, '#skAct .sk-l1') == 'Beat Zorp on the Road with Samurai.' and await txt(pg, '#skAct .sk-l2') == 'The Kitchen opens once Old Scratch is beaten.', f"{tag}: shut Road lines {await txt(pg, '#skAct')!r}")
+    # the Harvest skin (day 30 of the daily gifts, ui/harvest.js): with the won skins, its own tag and lines
+    await ev(pg, card('skRoad', 3)); await pg.wait_for_timeout(200)
+    need(await txt(pg, '#skRoad .sk:nth-child(4) .sk-f small') == 'Harvest day 30' and await txt(pg, '#skRoad .sk:nth-child(4) .sk-rt') == 'Harvest' and await txt(pg, '#skRoadTag') == 'Harvest'
+         and await txt(pg, '#skAct .sk-l1') == 'Day 30 of the Harvest gives this skin to the fighter you pick.' and 'day 1 of 30' in await txt(pg, '#skAct .sk-l2'), f"{tag}: Harvest lines {await txt(pg, '#skAct')!r}")
+    need(not await ev(pg, FIT), f'{tag}: the Harvest preview runs out: {(await ev(pg, FIT))[:3]}')
     await ev(pg, card('skChip', 3)); await pg.wait_for_timeout(200)
     need(await txt(pg, '#skAct .sk-l1') == '140 more chips needed.' and not await ev(pg, "!!document.getElementById('skGo')"), f"{tag}: short lines {await txt(pg, '#skAct')!r}")
     need(not await ev(pg, FIT), f'{tag}: the short preview runs out: {(await ev(pg, FIT))[:3]}')
@@ -118,7 +123,7 @@ async def select_part(b, tag, w, h):
     await pg.screenshot(path=f'{OUT}/{tag}_6_yours.png')
     await pg.wait_for_timeout(600)
     st = await ev(pg, STATES)
-    need(st[2] == 'worn' and st[3] == 'short' and await txt(pg, '#skTokens') == '10' and await txt(pg, '#dSkN') == '3/7' and await txt(pg, '#skOwned') == '3 / 7 owned',
+    need(st[2] == 'worn' and st[3] == 'short' and await txt(pg, '#skTokens') == '10' and await txt(pg, '#dSkN') == '3/8' and await txt(pg, '#skOwned') == '3 / 8 owned',
          f"{tag}: after the buy {st} coin {await txt(pg, '#skTokens')!r} bar {await txt(pg, '#dSkN')!r}")
     need(await ev(pg, "!!document.querySelector('#skAct .sk-pill')") and await txt(pg, '#skAct') == '✓Worn', f"{tag}: the preview after the buy {await txt(pg, '#skAct')!r}")
     # closing: Esc, the backdrop, the X
@@ -140,7 +145,7 @@ async def beaten_part(b):
     await ev(pg, "document.getElementById('bRanked').click()"); await pg.wait_for_timeout(500)
     await ev(pg, "document.getElementById('dSkins').click()"); await pg.wait_for_timeout(400)
     st = await ev(pg, STATES)
-    need(st[4:] == ['road', 'road', 'shut'], f'beaten: Road card states {st[4:]}')
+    need(st[4:] == ['road', 'road', 'shut', 'shut'], f'beaten: Road card states {st[4:]}')
     await ev(pg, card('skRoad', 0)); await pg.wait_for_timeout(200)
     need(await txt(pg, '#skAct .sk-l2') == 'You beat him with Phoenix · every fighter wins his own.', f"beaten: {await txt(pg, '#skAct .sk-l2')!r}")
     await ev(pg, card('skRoad', 1)); await pg.wait_for_timeout(200)

@@ -9,8 +9,9 @@
    simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on.
    A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
-   so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 17;
+   so a friend with an older copy open is told to reload instead of joining and drifting apart.
+   18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start. */
+const PROTO = 18;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",

@@ -2678,7 +2678,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
    The Shop is the Account sheet's fourth tab (#acPanH). Top: the balance coin and where chips come from. Then the eight nameplates as cards
    (the plate on a pill, its name, and a line: Worn / Tap to wear / the price), then one Glaze card per fighter (his worn skin drawn on a canvas, the price or
    Glazed). Card states: worn (gold ring, WORN tag), own, buy (gold price), short (grey price, no buy), arm (ember foot: "Sure?" for 3 s), glazed (pearl border).
-   Eight across on a landscape sheet, four across upright. The plate looks (.np-<id>) are used wherever a name stands on a plate: the pill on the
+   Eight across on a landscape sheet (the plates nine, with the Harvest's Sprout), four across upright (the plates three). The plate looks (.np-<id>) are used wherever a name stands on a plate: the pill on the
    start page (css/20-menu.css reads --np-fg / --np-sub / --np-stroke), the Profile's name field, the results; plateCls(id) in ui/shop.js gives the class. */
 
 /* ---- the plate looks: a background and the text colours that stay readable on it (contrast 5:1 or better, checked on every colour stop) ---- */
@@ -2695,6 +2695,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .np-halftone { --np-fg: #0e1022; --np-sub: #3a2c22; --np-stroke: 2px #fff6e4;
   --np-bg: linear-gradient(90deg, #fff6e4 0 38%, rgba(255, 246, 228, 0.55) 72%, rgba(255, 246, 228, 0) 100%), radial-gradient(#e8453c 1.1px, transparent 1.4px) 0 0 / 5px 5px, #fff6e4; }
 .np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; --np-bg: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); }
+/* Sprout: the Harvest's day-7 gift (never sold): a fresh green plate with two leaves sprouting at its end and a strip of soil */
+.np-sprout { --np-fg: #0e1022; --np-sub: #1f3a1a;
+  --np-bg: radial-gradient(ellipse 4px 2.5px at calc(100% - 10px) 20%, #2f8a3a 0 85%, transparent 100%), radial-gradient(ellipse 4px 2.5px at calc(100% - 4px) 26%, #3fa84a 0 85%, transparent 100%),
+    linear-gradient(180deg, transparent 0 80%, #7a5232 80%), linear-gradient(180deg, #e2f8a8, #9edb6e); }
 /* every plate paints with its --np-bg (the lobby's plates below re-apply it where their own rules set a background) */
 [class*="np-"] { background: var(--np-bg); color: var(--np-fg); }
 /* the Profile's name field wears its plate; a plate with a halo (Halftone) outlines the typed letters too */
@@ -2827,6 +2831,214 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrOnline .on-plate[class*="np-"] b, #scrQuick .on-plate[class*="np-"] b, #scrOnline .on-plate[class*="np-"] .on-name { color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
 #scrOnline .on-list .who b[class*="np-"] { align-self: flex-start; max-width: 100%; padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
 #scrOnline .on-pl[class*="np-"] { background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+
+/* ---- the Harvest's pieces (ui/harvest.js): the ad row on top (SOON, not tappable), nine plates with Sprout, a Glaze token ---- */
+.sh-ad { flex: none; position: relative; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 5px 12px 5px 8px; border: 2px dashed rgba(206, 210, 255, 0.28); border-radius: 10px; background: rgba(14, 16, 34, 0.35); }
+.sh-adi { flex: none; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); position: relative; opacity: 0.7; }
+.sh-adi::after { content: ""; position: absolute; left: 10px; top: 7px; border-left: 9px solid var(--text); border-top: 5.5px solid transparent; border-bottom: 5.5px solid transparent; }
+.sh-adt { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 8px; opacity: 0.7; }
+.sh-adt b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text); }
+#acPanH .sh-adt span { min-width: 0; font: 500 12.5px/1.25 var(--body); color: var(--mute); }
+.sh-adv { flex: none; display: inline-flex; align-items: center; gap: 3px; font: 800 18px/1 var(--display); color: var(--gold); opacity: 0.5; }
+.sh-ad .sh-soon { position: relative; top: auto; right: auto; flex: none; }   /* in the row, after the chips it will pay */
+#app.short .sh-ad { min-height: 32px; padding: 3px 10px 3px 6px; }
+#app.short .sh-adi { width: 24px; height: 24px; }
+#app.short .sh-adi::after { left: 8px; top: 5px; }
+#app.short .sh-adv { font-size: 16px; }
+#app.portrait .sh-adt, #app.narrow .sh-adt { flex-direction: column; gap: 3px; }
+#app.portrait .sh-adt span, #app.narrow .sh-adt span { font-size: 11.5px; }
+.sh-grid.sh-plates { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+/* nine across on a landscape sheet: a closer row and slimmer pill sides keep a "Potato 74" whole on every plate */
+#app:not(.portrait):not(.narrow) .sh-grid.sh-plates { gap: 8px 5px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-pa { padding-inline: 1px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-np { padding: 0 4px; letter-spacing: 0.04em; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f { padding-inline: 5px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-grid.sh-plates { gap: 6px 4px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-np { padding: 0 3px; letter-spacing: 0.02em; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-f { padding-inline: 4px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-c.arm .sh-f small { font-size: 11px; letter-spacing: 0; }   /* "Sure?" and the price on one slim foot */
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f small .tokglyph { margin-right: 3px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f small > span + .tokglyph { margin-left: 2px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-f small, #app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-c.arm .sh-f small { font-size: 10px; letter-spacing: 0; }
+#app.portrait .sh-grid.sh-plates, #app.narrow .sh-grid.sh-plates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sh-c.gift .sh-f small { font-size: 11px; color: var(--mint); }
+.sh-gz.tk .sh-f small { color: var(--mint); }
+
+/* ---------- the Daily sheet: the Harvest (ui/harvest.js) and the Daily Potato (ui/daily.js); the flame on the start page ----------
+   Fable's "Mock B" (/mnt/project-files/pre-step6/fable-mockup.html). Landscape: the track of 30 days (ten across) with the Daily Potato under it
+   on the left, today's gift on the right. Upright: six across, then today's gift, then the Daily Potato. Everything sits under #scrDaily, because
+   the Road's stop sheet shares the .dly-* pieces. */
+#scrDaily .hv-sheet { width: min(880px, 100%); }
+#scrDaily .hv-body { display: grid; grid-template-columns: minmax(0, 1fr) 232px; grid-template-areas: "track gift" "dp gift"; align-items: start; gap: 12px 14px; padding: 14px 16px 16px; }
+.hv-track { grid-area: track; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.hv-k { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 800 11.5px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+.hv-k > span:first-child { color: var(--text); white-space: nowrap; }
+.hv-k b { color: var(--sand); font-weight: 800; }
+.hv-wait { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ----- the 30 days ----- */
+.hv-grid { --dh: 40px; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; padding: 6px 4px 3px 0; margin: -6px -4px -3px 0; }   /* room for the ticks */
+.hv-d { position: relative; min-width: 0; height: var(--dh); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 2px solid var(--ink); border-radius: 7px;
+  background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 2px 0 var(--ink); font: 800 13px/1 var(--display); color: var(--text); font-variant-numeric: tabular-nums; }
+.hv-d small { font: 700 9px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(164, 169, 200, 0.8); }
+.hv-amt { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+.hv-amt .tokglyph, .hv-d .tokglyph { width: 11px; height: 9px; margin: 0; }
+.hv-plus { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); padding: 1px 4px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--mint); color: var(--ink); font: 800 8px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; font-style: normal; white-space: nowrap; }
+.hv-d.big { background: linear-gradient(180deg, #3b2c5a, #241a3a); }
+.hv-d.big .hv-amt { color: var(--gold); }
+.hv-pl { width: 22px; height: 12px; border: 1.5px solid var(--ink); border-radius: 999px; }
+.hv-tt { font: italic 900 12px/1 var(--display); color: var(--gold); text-transform: uppercase; letter-spacing: 0.02em; }
+.hv-d.last { justify-content: flex-start; padding-top: 3px; background: linear-gradient(180deg, #5a2c2c, #3a1a2a); overflow: hidden; }
+.hv-d.last small { position: relative; z-index: 1; text-shadow: 0 1px 0 var(--ink), 0 0 3px var(--ink); }
+.hv-sil { position: absolute; left: 0; top: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 1px rgba(244, 201, 93, 0.95)) drop-shadow(0 0 3px rgba(244, 201, 93, 0.45)); }
+.hv-sil.on { filter: none; }
+.hv-d.last b { position: absolute; right: 3px; bottom: 2px; z-index: 1; font: 900 15px/1 var(--display); color: var(--gold); text-shadow: 0 1px 0 var(--ink), 0 0 3px var(--ink); }
+.hv-d.last.got small { color: var(--ink); background: var(--gold); padding: 1px 3px; border-radius: 3px; text-shadow: none; }
+.hv-gzi { font-style: normal; font-size: 16px; color: var(--gold3); }
+/* claimed: gold with a mint tick */
+.hv-d.got { background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); }
+.hv-d.got small, .hv-d.got .hv-amt, .hv-d.got .hv-tt { color: var(--ink); }
+.hv-d.got::after { content: ""; position: absolute; right: -5px; top: -6px; z-index: 2; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink);
+  background: var(--mint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' fill='none' stroke='%2314172e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat; }
+/* today, waiting: a sand ring that breathes */
+.hv-d.now { border-color: var(--sand); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 2px 0 var(--ink), 0 0 0 3px rgba(243, 217, 164, 0.25), 0 0 14px rgba(244, 201, 93, 0.45); animation: hvBreathe 1.4s ease-in-out infinite; }
+.hv-d.now small { color: var(--sand); }
+@keyframes hvBreathe { 50% { box-shadow: 0 2px 0 var(--ink), 0 0 0 4px rgba(243, 217, 164, 0.4), 0 0 20px rgba(244, 201, 93, 0.6); } }
+.hv-pop { animation: hvPop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes hvPop { from { transform: scale(1.3); } }
+.hv-leg { margin: 0; font: 500 11.5px/1.3 var(--body); color: var(--mute); }
+#scrDaily .hv-leg b { color: var(--text); font-weight: 600; }
+
+/* ----- today's gift ----- */
+.hv-gift { grid-area: gift; min-width: 0; display: flex; flex-direction: column; gap: 9px; padding: 11px 12px 13px; border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+.hv-dn { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hv-dn b { flex: none; font: italic 900 30px/1 var(--display); text-transform: uppercase; color: var(--text); }
+.hv-dn small { min-width: 0; font: 800 11.5px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+.hv-ok { align-self: center; margin-left: auto; width: 22px; height: 22px; flex: none; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: var(--mint); color: var(--ink); font: 900 13px/1 var(--display); font-style: normal; }
+.hv-what { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.hv-wc { display: flex; align-items: center; gap: 6px; font: 800 26px/1 var(--display); color: var(--gold); white-space: nowrap; }
+.hv-wc .tokglyph { width: 22px; height: 18px; margin: 0 2px 0 0; }
+.hv-wc em { font: 600 13px/1 var(--body); font-style: normal; color: var(--mute); }
+.hv-wl { font: 500 13px/1.3 var(--body); color: var(--text); }
+.hv-wl b { color: var(--gold); font-weight: 700; }
+.hv-wp { display: inline-block; padding: 1px 8px; border: 2px solid var(--ink); border-radius: 999px; font: 800 11px/1.2 var(--display); letter-spacing: 0.07em; text-transform: uppercase; vertical-align: 1px; }
+.hv-k2 { margin: 2px 0 -3px; font: 800 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; }
+#scrDaily .hv-k2 { color: var(--mute); }
+#scrDaily .hv-gift.done .hv-wc { font-size: 22px; color: var(--sand); }
+#scrDaily .hv-note { margin: 0; font: 500 11.5px/1.3 var(--body); text-align: center; }
+#scrDaily .hv-claim { min-height: 46px; }
+/* ×2 with an ad: dark, a SOON sticker, the doubled value as a ghost; not tappable until ads exist */
+#scrDaily .hv-ad { position: relative; min-height: 44px; flex-direction: column; gap: 3px; font-size: 15px; opacity: 1; cursor: default; }
+#scrDaily .hv-ad > span, #scrDaily .hv-ad > small { opacity: 0.55; }
+#scrDaily .hv-ad small { font: 600 12px/1 var(--body); letter-spacing: 0; text-transform: none; }
+.hv-soon, .sh-soon { position: absolute; right: -6px; top: -11px; z-index: 2; padding: 4px 7px 3px; border: 2px solid var(--ink); border-radius: 6px; background: var(--ember); color: var(--ink);
+  font: 800 10px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; transform: rotate(6deg); box-shadow: 0 2px 0 var(--ink); }
+#scrDaily .hv-soon { right: 6px; }   /* inside the button's right edge, so the button never grows sideways */
+/* day 30: the fighter picked, in Harvest Gold, and the eight to pick from */
+.hv-art { position: relative; height: 92px; border-radius: 9px; background: radial-gradient(ellipse at 50% 85%, rgba(244, 201, 93, 0.35), transparent 70%), linear-gradient(180deg, #3b2c5a, #241a3a); border: 2px solid var(--ink); }
+.hv-art canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hv-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.hv-pf { appearance: none; height: 34px; padding: 0; border: 2px solid var(--ink); border-radius: 7px; background: #1b1f3d center 28% / cover no-repeat; box-shadow: 0 2px 0 var(--ink); cursor: pointer; }
+.hv-pf.on { box-shadow: 0 0 0 3px var(--gold), 0 2px 0 2px var(--ink); }
+.hv-pf[disabled] { filter: grayscale(1) brightness(0.55); cursor: default; }
+.hv-pf:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+
+/* ----- the Daily Potato under the track: the two pictures, the day's lines, Fight ----- */
+.dly-dp { grid-area: dp; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 12px 9px 9px; border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+#scrDaily .dly-vs { display: flex; align-items: center; gap: 0; }
+#scrDaily .dly-f { padding: 0; background: none; gap: 0; }
+#scrDaily .dly-t { display: none; }
+#scrDaily .dly-ph { width: 46px; height: 46px; border: 2px solid var(--ink); box-shadow: 0 0 0 2px var(--fc); }
+#scrDaily .dly-x { position: relative; z-index: 1; margin: 0 -6px; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px; background: var(--ketchup); color: #fff; font-size: 14px; transform: rotate(-6deg); }
+.dly-tx { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dly-tx h4 { margin: 0; font: italic 900 17px/1 var(--display); text-transform: uppercase; color: var(--text); }
+#scrDaily .dly-who { margin: 0; font: 600 13px/1.25 var(--body); color: var(--text); }
+#scrDaily .dly-rule { margin: 0; font-size: 13px; line-height: 1.3; }
+#scrDaily .dly-line { margin: 0; font-size: 12px; line-height: 1.3; }
+#scrDaily .dly-acts { padding: 0; flex-direction: column; }
+#scrDaily .dly-acts .btn { min-width: 118px; min-height: 44px; font-size: 18px; }
+
+/* short landscape phones (844x390, 740x360): smaller days and gift */
+#app.short #scrDaily .hv-body { gap: 9px 12px; padding: 11px 14px 13px; grid-template-columns: minmax(0, 1fr) 214px; }
+#app.short .hv-grid { --dh: 34px; gap: 4px; }
+#app.short .hv-gift { gap: 7px; padding: 9px 11px 11px; }
+#app.short .hv-dn b { font-size: 26px; }
+#app.short .hv-wc { font-size: 23px; }
+#app.short #scrDaily .hv-claim { min-height: 40px; }
+#app.short #scrDaily .hv-ad { min-height: 38px; font-size: 14px; }
+#app.short .hv-art { height: 66px; }
+#app.short .hv-pf { height: 30px; }
+#app.short .dly-dp { padding: 7px 10px 7px 7px; gap: 10px; }
+#app.short #scrDaily .dly-ph { width: 40px; height: 40px; }
+#app.short .dly-tx h4 { font-size: 15px; }
+#app.short #scrDaily .dly-who, #app.short #scrDaily .dly-rule { font-size: 12px; }
+#app.short #scrDaily .dly-line { font-size: 11px; }
+#app.short #scrDaily .dly-acts .btn { min-height: 40px; min-width: 104px; font-size: 17px; }
+/* landscape phones under 375 px high (740x360, 667x320): the Daily Potato's small print goes (its rule line stays; the Daily tile has the rest) */
+@media (max-height: 375px) { #app:not(.portrait) #scrDaily .dly-line { display: none; } }
+/* tiny (667x320): tighter still */
+#app.tiny #scrDaily .hv-body { gap: 6px 10px; padding: 8px 12px 10px; grid-template-columns: minmax(0, 1fr) 196px; }
+#app.tiny .hv-track { gap: 5px; }
+#app.tiny .hv-grid { --dh: 28px; gap: 3px; }
+#app.tiny .hv-d { font-size: 12px; }
+#app.tiny .hv-d small { font-size: 8px; }
+#app.tiny .hv-leg { font-size: 10.5px; line-height: 1.25; }
+#app.tiny .hv-gift { gap: 6px; padding: 8px 10px 10px; }
+#app.tiny .hv-dn b { font-size: 23px; }
+#app.tiny .hv-wc { font-size: 21px; }
+#app.tiny #scrDaily .hv-claim { min-height: 36px; }
+#app.tiny #scrDaily .hv-ad { min-height: 34px; }
+#app.tiny #scrDaily .hv-note { font-size: 10.5px; }
+#app.tiny .hv-art { height: 48px; }
+#app.tiny .hv-pf { height: 24px; }
+#app.tiny .hv-pick { gap: 4px; }
+#app.tiny .dly-dp { padding: 6px 9px 6px 6px; }
+#app.tiny #scrDaily .dly-ph { width: 36px; height: 36px; }
+#app.tiny #scrDaily .dly-acts .btn { min-height: 36px; min-width: 96px; font-size: 16px; }
+/* desktop: roomier */
+#app:not(.short):not(.portrait) .hv-grid { --dh: 46px; gap: 6px; }
+#app:not(.short):not(.portrait) .hv-d { font-size: 15px; }
+#app:not(.short):not(.portrait) .hv-d small { font-size: 10px; }
+#app:not(.short):not(.portrait) .hv-leg { font-size: 12.5px; }
+#app:not(.short):not(.portrait) #scrDaily .hv-body { grid-template-columns: minmax(0, 1fr) 250px; gap: 14px 16px; padding: 16px 18px 18px; }
+#app:not(.short):not(.portrait) .hv-art { height: 110px; }
+#app:not(.short):not(.portrait) .hv-pf { height: 40px; }
+/* upright (and narrow windows): one column, six days across */
+#app.portrait #scrDaily .hv-body, #app.narrow #scrDaily .hv-body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "track" "gift" "dp"; gap: 11px; padding: 12px 12px 14px; }
+#app.portrait .hv-grid, #app.narrow .hv-grid { --dh: 38px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+#app.portrait .hv-k, #app.narrow .hv-k { letter-spacing: 0.07em; }
+#app.portrait .hv-leg, #app.narrow .hv-leg { font-size: 11px; }
+/* today's gift: Claim and ×2 side by side */
+#app.portrait .hv-gift:not(.sk), #app.narrow .hv-gift:not(.sk) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 10px; }
+#app.portrait .hv-gift:not(.sk) > :not(.btn), #app.narrow .hv-gift:not(.sk) > :not(.btn) { grid-column: 1 / -1; }
+#app.portrait .hv-gift.done, #app.narrow .hv-gift.done { display: flex; }
+#app.portrait #scrDaily .hv-ad, #app.narrow #scrDaily .hv-ad { font-size: 13px; white-space: nowrap; }
+#app.portrait .hv-art, #app.narrow .hv-art { height: 76px; }
+#app.portrait .hv-pick, #app.narrow .hv-pick { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+#app.portrait .hv-pf, #app.narrow .hv-pf { height: 42px; }
+/* the Daily Potato: the pictures beside its name, the day's lines under them */
+#app.portrait .dly-dp, #app.narrow .dly-dp { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "vs h4" "vs who" "rule rule" "line line" "acts acts"; gap: 4px 12px; padding: 9px 11px 11px 9px; }
+#app.portrait .dly-tx, #app.narrow .dly-tx { display: contents; }
+#app.portrait #scrDaily .dly-vs, #app.narrow #scrDaily .dly-vs { grid-area: vs; }
+#app.portrait .dly-tx h4, #app.narrow .dly-tx h4 { grid-area: h4; align-self: end; }
+#app.portrait #scrDaily .dly-who, #app.narrow #scrDaily .dly-who { grid-area: who; align-self: start; }
+#app.portrait #scrDaily .dly-rule, #app.narrow #scrDaily .dly-rule { grid-area: rule; margin-top: 4px; }
+#app.portrait #scrDaily .dly-line, #app.narrow #scrDaily .dly-line { grid-area: line; }
+#app.portrait #scrDaily .dly-acts, #app.narrow #scrDaily .dly-acts { grid-area: acts; flex-direction: row; margin-top: 6px; }
+
+/* ----- the flame on the start page: always there (a muted 0 without a streak), a gold dot while today's gift waits ----- */
+#scrMenu .coin.flame { position: relative; }
+#scrMenu .coin.flame b { font: inherit; }
+#scrMenu .coin.flame.zero { color: var(--mute); }
+#scrMenu .coin.flame.zero::before { filter: grayscale(0.85) brightness(0.85); }
+.mm-gift { position: absolute; right: 1px; top: -7px; width: 15px; height: 15px; border-radius: 50%; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 0 0 3px rgba(244, 201, 93, 0.3); animation: hvDot 1.4s ease-in-out infinite; }
+.mm-gift[hidden] { display: none; }
+@keyframes hvDot { 50% { transform: scale(1.18); box-shadow: 0 0 0 5px rgba(244, 201, 93, 0.18); } }
+@media (prefers-reduced-motion: reduce) { .hv-d.now, .mm-gift, .hv-pop { animation: none; } }
+/* day 30's button names the fighter on one line ("Claim for Gunslinger" is the longest) */
+#scrDaily .hv-gift.sk .hv-claim { white-space: nowrap; }
+#app.short #scrDaily .hv-gift.sk .hv-claim, #app.portrait #scrDaily .hv-gift.sk .hv-claim { font-size: 17px; }
+#app.tiny #scrDaily .hv-gift.sk .hv-claim { font-size: 15px; }
 
 /* ---------- Play friends: "Fight Card" (Fable 5.1, skins-lobby/fable-design.md part 3; mockups skins-lobby/mockups/lobby_*.png) ----------
    Three cards read left to right as you · your match · the room (stacked upright). The Fight Card (#onChange) is one button: your
@@ -4207,7 +4419,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <header class="mm-bar">
       <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
       <div class="mm-topr">
-        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin flame" id="mStreak" hidden>0</span><span class="coin cup" id="mCups" hidden>0</span></button>
+        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
         <button class="round mm-fs" id="bFull" aria-label="Fullscreen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="fs-go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fs-out" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g></svg></button>
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
@@ -4290,8 +4502,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="sk-rack">
           <div class="sk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div>
           <div class="sk-row" id="skChip" role="group" aria-label="Chip skins"></div>
-          <div class="sk-k"><b>Road skins</b><span id="skRoadSub"></span></div>
-          <div class="sk-row r3" id="skRoad" role="group" aria-label="Road skins"></div>
+          <div class="sk-k"><b>Won skins</b><span id="skRoadSub"></span></div>
+          <div class="sk-row" id="skRoad" role="group" aria-label="Won skins"></div>
         </div>
       </div>
     </div>
@@ -4338,15 +4550,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
-  <!-- Daily Potato (ui/daily.js): today's matchup, Fight or Back -->
+  <!-- the Daily sheet: the Harvest (ui/harvest.js, css/94-harvest.css) with today's gift, and the Daily Potato (ui/daily.js): today's matchup, Fight -->
   <section id="scrDaily" class="screen modal" hidden>
-    <div class="sheet dly-sheet scroll">
-      <header class="sh-head"><h3>Daily Potato</h3><span class="kick" id="dlyDate"></span><button class="round x" id="dlyClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
-      <div class="sh-body">
-        <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
-        <p class="dly-rule" id="dlyRule"></p>
-        <p class="dly-line" id="dlyLine"></p>
-        <div class="dly-acts"><button class="btn primary lg" id="dlyGo"><span>Fight</span></button><button class="btn primary lg" id="dlyAgain" hidden><span>Another go</span></button><button class="btn" id="dlyBack"><span>Back</span></button></div>
+    <div class="sheet dly-sheet hv-sheet scroll">
+      <header class="sh-head"><h3>Daily</h3><span class="kick" id="dlyDate"></span><button class="round x" id="dlyClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="sh-body hv-body">
+        <div class="hv-track">
+          <div class="hv-k"><span id="hvHead">The Harvest</span><span class="hv-wait">A missed day waits for you</span></div>
+          <div class="hv-grid" id="hvGrid" role="list" aria-label="The Harvest: thirty daily gifts"></div>
+          <p class="hv-leg" id="hvLeg"></p>
+        </div>
+        <div class="hv-gift" id="hvGift" aria-live="polite"></div>
+        <div class="dly-dp">
+          <div class="dly-vs"><div class="dly-f" id="dlyMe"></div><b class="dly-x">vs</b><div class="dly-f r" id="dlyOp"></div></div>
+          <div class="dly-tx"><h4>Daily Potato</h4><p class="dly-who" id="dlyWho"></p><p class="dly-rule" id="dlyRule"></p><p class="dly-line" id="dlyLine"></p></div>
+          <div class="dly-acts"><button class="btn primary" id="dlyGo"><span>Fight</span></button><button class="btn primary" id="dlyAgain" hidden><span>Another go</span></button></div>
+        </div>
       </div>
     </div>
   </section>
@@ -5351,6 +5570,10 @@ const ROAD_SKINS = [
   { name: "Deep Catch", road: "kraken", body: "#b89a62", trim: "#1a2430", ui: "#3ef2c0",
     accent: { phoenix: "#ff7a8a", alchemist: "#3a2f6e", odin: "#4a7a8a", wizard: "#1e3a4a", samurai: "#1fa88a", dragon: "#5a8a9a", gunslinger: "#8a7a5a", reaper: "#22343a" }, lining: "#3ef2c0" },
 ];
+// the Harvest skin (ui/harvest.js): day 30 of the daily gifts gives it to one fighter the player picks; after the Road skins, never bought.
+// pal.road = "harvest" puts it with the won skins and gives it the shared gold-dust overlay (skinfx.js).
+ROAD_SKINS.push({ name: "Harvest Gold", road: "harvest", body: "#d9a957", trim: "#3a2614", ui: "#f4c95d",
+  accent: { phoenix: "#ff9a1f", alchemist: "#7a4a1e", odin: "#c08a2e", wizard: "#8a3f1a", samurai: "#c4561e", dragon: "#d98a1f", gunslinger: "#6e4a24", reaper: "#3a2614" }, lining: "#ffd66b" });
 for (const f of FIGHTERS) for (const r of ROAD_SKINS)
   f.palettes.push({ name: r.name, road: r.road, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
@@ -17257,12 +17480,14 @@ const FXTEXT = {
   gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
   reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
 };
-// a Road skin (palettes 4-6, pal.road = the boss that gives it) has none of the chip skins' effects: its own overlay (skinRoad)
+// a Road skin (palettes 4-6, pal.road = the boss that gives it) and the Harvest skin (palette 7, pal.road = "harvest", ui/harvest.js) have none of
+// the chip skins' effects: their own overlay (skinRoad)
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road ? 0 : i; };
 const skinRoad = (f) => (f.pal && f.pal.road) || "";
 // what each Road skin does (the select screen's note)
 const ROADFX = { scratch: "Roasted dark at the feet, with ember cracks that glow and spit sparks",
-  zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp" };
+  zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp",
+  harvest: "A sun-warmed sheen with twinkling gold dust that drifts off and bursts on every KO" };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [0, 1, 2, 3].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three, a 2v2 four)
@@ -17488,6 +17713,8 @@ const RS_DOME = { phoenix: [1.2, 0.95], alchemist: [1.25, 0.7], odin: [1.35, 0.5
 // where the Deep Catch kelp hangs from: the back of the costume's top point (x rx, y below the top of the potato x ry)
 const RS_KELP = { phoenix: [-0.3, -0.5], alchemist: [-0.75, 0.05], odin: [-0.9, -0.1], wizard: [-0.95, -1.2], samurai: [-0.25, -0.15], dragon: [-0.45, -0.45], gunslinger: [-1.35, -0.05], reaper: [-0.95, 0.2] };
 const rsPulse = (tk, ph) => 0.8 + 0.2 * Math.sin(tk * 0.044 + ph);
+// the Harvest skin's gold dust on the body: x, y (of the half-sizes), size, phase
+const RS_DUST = [[-0.55, -0.35, 1, 0], [0.38, -0.55, 0.8, 1.7], [0.62, 0.12, 1.1, 3.1], [-0.3, 0.35, 0.75, 4.4], [0.1, 0.62, 0.9, 5.6]];
 function rsStar(c, x, y, r, a) {
   c.beginPath();
   for (let i = 0; i < 10; i++) { const q = a + (i / 10) * Math.PI * 2, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(q) * rr, y + Math.sin(q) * rr); }
@@ -17519,6 +17746,15 @@ function roadSkinBody(c, f, P, tk, flash) {
     const g = c.createRadialGradient(0, cy + ry * 1.15, ry * 0.1, 0, cy + ry * 1.15, ry * 1.25);
     g.addColorStop(0, "rgba(157,255,90,0.38)"); g.addColorStop(1, "rgba(157,255,90,0)");
     c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 0.2, rx * 2.6, ry * 1.4);
+  } else if (rs === "harvest") {   // late sun from the upper left, and specks of gold dust that twinkle in turn
+    const g = c.createRadialGradient(-rx * 0.45, cy - ry * 0.6, ry * 0.1, -rx * 0.45, cy - ry * 0.6, ry * 1.5);
+    g.addColorStop(0, "rgba(255,230,150,0.42)"); g.addColorStop(1, "rgba(255,230,150,0)");
+    c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 1.3, rx * 2.6, ry * 2.6);
+    for (const [x, y, s, ph] of RS_DUST) {
+      const tw = Math.max(0, Math.sin(tk * 0.06 + ph)), r = (1.2 + 1.6 * tw) * k * s;
+      c.globalAlpha = a0 * (0.45 + 0.55 * tw);
+      rsStar(c, x * rx, cy + y * ry, r, tk * 0.01 + ph); c.fillStyle = "#ffe08a"; c.fill();
+    }
   } else if (rs === "kraken") {
     c.strokeStyle = "rgba(200,240,255,0.3)"; c.lineWidth = 3 * k;
     c.beginPath(); c.ellipse(0, cy, rx * 0.78, ry * 0.8, 0, Math.PI * 1.08, Math.PI * 1.42); c.stroke();
@@ -17587,6 +17823,9 @@ function roadSkinTick(f, rs, tk, slot) {
     const [x, y] = RS_CRACK[(tk / 30 | 0) % 3];
     mote(f.x + fc * x * w * 0.56, f.y - h * (0.36 - y * 0.24), rnd(-0.3, 0.3), rnd(-0.9, -0.5), Math.random() < 0.5 ? "#ff9a3a" : "#ff6a2b", 1.5, 40, -0.01);
   }
+  if (rs === "harvest" && tk % 14 === (slot * 5) % 14) {   // a fleck of gold dust lifts off and sinks away
+    mote(f.x + rnd(-0.5, 0.5) * w, f.y - h * rnd(0.3, 0.85), rnd(-0.25, 0.25), rnd(-0.6, -0.2), Math.random() < 0.6 ? "#ffd66b" : "#fff3c4", rnd(1, 1.6), 46, 0.012);
+  }
   if (rs === "kraken" && tk % 40 === (slot * 13) % 40) {
     const [ax] = RS_KELP[f.spec.look.costume] || [-0.8];
     addFx({ k: "drip", x: f.x + fc * (ax * w * 0.56 - 10), y: f.y - h * 0.5, vx: 0, vy: 0.3, col: "#bfe8e0", r: rnd(1.4, 1.9), t: 0, life: 15, g: 0.2, damp: 0.98 });
@@ -17600,6 +17839,8 @@ function roadSkinKo(k, rs) {
   } else if (rs === "zorp") {
     addFx({ k: "ring", x, y: y - 6, t: 0, life: 16, r0: 10, r1: 44, col: "#9dff5a" });
     for (let i = 0; i < 6; i++) addFx({ k: "shard", x: x + rnd(-12, 12), y: y - 14 + rnd(-6, 6), vx: rnd(-3, 3), vy: rnd(-4, -1.5), rot: rnd(0, 6), vr: rnd(-0.3, 0.3), r: rnd(2.4, 3.4), col: "rgba(216,243,255,0.8)", t: 0, life: 26, g: 0.2, damp: 0.96 });
+  } else if (rs === "harvest") {   // a puff of gold dust, no ring (gold rings mean armour)
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, v = rnd(1, 2.2); mote(x + Math.cos(a) * 8, y + Math.sin(a) * 8, Math.cos(a) * v, Math.sin(a) * v - 0.5, i % 3 ? "#ffd66b" : "#fff3c4", rnd(1.2, 2), rnd(30, 44), 0.03); }
   } else if (rs === "kraken") {
     addFx({ k: "ring", x, y: k.y - 4, t: 0, life: 18, r0: 8, r1: 46, col: "#3ef2c0" });
     for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });
@@ -29424,7 +29665,7 @@ setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true })
    Chips: a win 40 (streak +1), a draw 15 (streak kept), a finished loss 5, a forfeit or an unfinished match nothing; any loss ends the
    streak. No rating, record, history or per-fighter stats change.
    Another go (a way to spend chips, see ui/shop.js): after a finished loss or draw (not a forfeit, a quit or a win) the sheet offers the same
-   match again for 50 chips, once a day, two taps. Its result replaces today's: a win pays 40 and continues the streak as if the first try had
+   match again for 50 chips, once a day, two taps; a free try from the Harvest (P.ago, ui/harvest.js) is used first, instead of the chips. Its result replaces today's: a win pays 40 and continues the streak as if the first try had
    been won (that is what `p` is for), a draw 15, a loss 5. Starting it writes the day down as tried again (r = -1, x = 1), so quitting or a
    reload counts as a loss.
    P.daily = { d (last day tried), r (1 / 0.5 / 0, -1 = started, not finished), s (streak), w (the last day that kept the streak going:
@@ -29486,11 +29727,13 @@ function dailyCard(el, id, pi, who) {
   el.style.setProperty("--fc", col(pal));
   el.innerHTML = `<span class="dly-ph">${PORTRAITS[id] ? `<img src="${PORTRAITS[id]}" alt="">` : ""}</span><span class="dly-t"><b>${spec.name}</b><small>${cupEsc(who)}</small></span>`;
 }
+// the sheet: the Harvest on top (ui/harvest.js), today's gift beside it, the Daily Potato below (the flame on the start page and the Daily tile open it)
 function dailyOpen() {
   const key = dailyKey(), st = dailyGet(), pk = dailyPick(key), [mi, oi] = dailyPals(pk), done = st.d === key, s = dailyStreak(st, key), again = dailyAgainOk(st, key);
   DLY.key = key; dailyDisarm();
   $("dlyDate").textContent = dailyLabel(key);
   dailyCard($("dlyMe"), pk.me, mi, "You"); dailyCard($("dlyOp"), pk.opp, oi, pk.cpu);
+  $("dlyWho").textContent = `${FIG[pk.me].name} vs ${FIG[pk.opp].name} · ${pk.cpu}`;
   const best = st.b > 0 ? ` Best streak: ${st.b} ${st.b === 1 ? "day" : "days"}.` : "";
   $("dlyRule").innerHTML = done ? `<b>${dailyRes(st.r)} today.</b>${again ? ` One more go for ${DAILY.again} chips.` : s > 0 ? ` ${s}-day streak.` : ""}` : `<b>One try.</b> Win: ${DAILY.win} chips${s > 0 ? ` and a ${s + 1}-day streak` : ""}.`;
   $("dlyLine").textContent = again ? `The same match again. Its result replaces today's: a win pays ${DAILY.win} chips${st.p > 0 ? ` and makes it a ${st.p + 1}-day streak` : ""}, a draw ${DAILY.draw}, a loss ${DAILY.loss}.`
@@ -29499,13 +29742,15 @@ function dailyOpen() {
   $("dlyAgain").hidden = !again;
   dailyAgainLabel();
   modal("daily", true);
+  hvRender();
 }
 // the Another go button: its price, "Sure?" for 3 s after the first tap, dimmed (and answering with the missing chips) while short
+// (a free try from the Harvest says "free" instead of the price)
 function dailyAgainLabel() {
-  const b = $("dlyAgain"), short = P.tokens < DAILY.again;
+  const b = $("dlyAgain"), free = (P.ago | 0) > 0, short = !free && P.tokens < DAILY.again;
   b.classList.toggle("ember", DLY.arm); b.classList.toggle("primary", !DLY.arm && !short); b.classList.toggle("dim", short);
-  b.querySelector("span").innerHTML = `${DLY.arm ? "Sure?" : "Another go"} <span class="tokglyph"></span>${DAILY.again}`;
-  b.setAttribute("aria-label", DLY.arm ? `Sure? Another go for ${DAILY.again} chips` : short ? `Another go costs ${DAILY.again} chips, you have ${fmtChips(P.tokens)}` : `Another go for ${DAILY.again} chips`);
+  b.querySelector("span").innerHTML = `${DLY.arm ? "Sure?" : "Another go"} ${free ? "· free" : `<span class="tokglyph"></span>${DAILY.again}`}`;
+  b.setAttribute("aria-label", free ? `${DLY.arm ? "Sure? " : ""}Another go, free (${P.ago | 0} left from the Harvest)` : DLY.arm ? `Sure? Another go for ${DAILY.again} chips` : short ? `Another go costs ${DAILY.again} chips, you have ${fmtChips(P.tokens)}` : `Another go for ${DAILY.again} chips`);
 }
 function dailyDisarm() { clearTimeout(DLY.armT); DLY.arm = false; }
 function dailyFight() {
@@ -29520,7 +29765,8 @@ function dailyFight() {
 function dailyAgain() {
   const key = dailyKey(), st = dailyGet();
   if (key !== DLY.key || !dailyAgainOk(st, key)) { dailyOpen(); return; }   // midnight, or the go went elsewhere (a sync)
-  if (P.tokens < DAILY.again) {
+  const free = (P.ago | 0) > 0;
+  if (!free && P.tokens < DAILY.again) {
     dailyDisarm(); Sfx.uiNo(); dailyAgainLabel();
     $("dlyLine").textContent = `Another go costs ${DAILY.again} chips and you have ${fmtChips(P.tokens)}: ${DAILY.again - P.tokens} more needed. Chips come from ranked wins, the Daily Potato, tournaments and Road stars.`;
     return;
@@ -29532,7 +29778,7 @@ function dailyAgain() {
   }
   dailyDisarm();
   const was = dailyBefore(st, key);
-  P.tokens -= DAILY.again;
+  if (free) P.ago = (P.ago | 0) - 1; else P.tokens -= DAILY.again;
   P.daily = { d: key, r: -1, s: 0, w: was.w, b: st.b, x: 1 };   // tried again from the first frame, like the first try
   saveProfile(); Sfx.uiCoin();
   dailyStart(dailyPick(key), { key, prev: st.p, again: true, w: was.w });
@@ -29563,16 +29809,170 @@ function dailyMatchEnd(forfeit) {
 screens.daily = $("scrDaily");
 $("dlyGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); dailyFight(); });
 $("dlyAgain").addEventListener("click", () => { Sfx.init(); goFull(); dailyAgain(); });
-for (const id of ["dlyBack", "dlyClose"]) $(id).addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); });
+$("dlyClose").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); });
+// a tap on the dimmed backdrop closes it too
+screens.daily.addEventListener("click", (e) => { if (e.target === screens.daily) { Sfx.init(); Sfx.uiBack(); dailyDisarm(); modal("daily", false); } });
 // a tap anywhere but the armed button puts "Another go" back
 $("scrDaily").addEventListener("click", (e) => { if (DLY.arm && !e.target.closest("#dlyAgain")) { dailyDisarm(); dailyAgainLabel(); } }, true);
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open
 setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
 window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, again: dailyAgainOk, price: DAILY.again, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
+/* ===================== the Harvest: a gift for every day you come by (UI only; Fable's design, /mnt/project-files/pre-step6/fable-ideas.md) =====================
+   Thirty gifts in a row on top of the Daily sheet (ui/daily.js, styles css/94-harvest.css), one claimed per day with one tap. It counts the days
+   claimed, not a streak: a missed day costs only that day, the calendar waits (the Daily Potato keeps the game's one streak). A day is the phone's
+   date (dailyKey), and a gift opens only when today is later than the last day claimed, so a day can't be claimed twice and a clock set back
+   claims nothing. After day 30 the next claim starts round 2 at day 1: the nameplate and title days pay 100 chips instead, and day 30 gives the
+   Harvest skin (palette "Harvest Gold", pal.road = "harvest", core.js) to another fighter; once all eight have it, a Glaze token instead.
+   P.harvest = { n: days claimed this round, c: rounds finished, d: the last day claimed, sk: fighters given the skin }; free Another go tries
+   (day 21) are P.ago, Glaze tokens P.gzt; all synced (sync.js). Chips land in P.tokens like the Daily Potato's.
+   The ×2 button (watch an ad) waits with a SOON sticker until ads exist: it can't be tapped, and would double chips only. */
+const HV = { pick: "", raf: 0, art: null, popT: 0 };
+const HV_N = 30;
+// what day n (1-30) of round c (0 = the first) gives; `sk` = it gives the Harvest skin (to a fighter picked when claiming), `gz` = a Glaze token
+function hvGift(n, c) {
+  const later = c > 0;
+  if (n === 7) return later ? { chips: 100 } : { chips: 60, plate: "sprout" };
+  if (n === 14) return later ? { chips: 100 } : { chips: 100, title: true };
+  if (n === 21) return { chips: 150, ago: 2 };
+  if (n === 28) return { chips: 200 };
+  if (n === HV_N) return hvSkinLeft().length ? { chips: 0, sk: true } : { chips: 0, gz: 1 };
+  return { chips: n < 7 ? 15 : n < 14 ? 20 : n < 21 ? 25 : 30 };
+}
+const hvSkinIdx = (spec) => spec.palettes.findIndex((p) => p.road === "harvest");
+const hvHasSkin = (id) => (P.owned[id] || []).includes(hvSkinIdx(FIG[id]));
+const hvSkinLeft = () => FIGHTERS.filter((f) => !hvHasSkin(f.id)).map((f) => f.id);
+function hvGet() { return SYNC.cleanHarvest(P.harvest) || { n: 0, c: 0, d: "", sk: [] }; }   // tidy (sync.js); an older profile has none
+// today's gift is waiting: today is later than the last day claimed
+const hvOpen = (h, key) => !h.d || key > h.d;
+const hvWaiting = () => hvOpen(hvGet(), dailyKey());
+// the round as the sheet shows it: a finished round turns over to the next once today's gift waits
+function hvView(h, key) {
+  const open = hvOpen(h, key), turn = open && h.n >= HV_N;
+  return { open, n: turn ? 0 : h.n, c: turn ? h.c + 1 : h.c };
+}
+// the fighter played most (mastery XP), among those still without the skin: the day-30 tile's silhouette and the picker's first choice
+function hvFav() {
+  const left = hvSkinLeft(), xp = P.mxp && typeof P.mxp === "object" ? P.mxp : {};
+  if (!left.length) return P.last;
+  return left.reduce((a, id) => ((xp[id] | 0) > (xp[a] | 0) ? id : a), left.includes(P.last) ? P.last : left[0]);
+}
+const hvTitleOk = () => { const h = hvGet(); return h.c > 0 || h.n >= 14; };   // the title Couch Potato (acct.js ACT): day 14 reached once
+
+/* ----- claiming ----- */
+// claim today's gift; pick = the fighter for the Harvest skin on day 30. Returns what was given, or null (not open, or no fighter picked)
+function hvClaim(pick) {
+  const key = dailyKey(), h = hvGet(), v = hvView(h, key);
+  if (!v.open) return null;
+  const n = v.n + 1, g = hvGift(n, v.c), sk = h.sk.slice();
+  if (g.sk && !(FIG[pick] && !hvHasSkin(pick))) return null;
+  if (g.chips) P.tokens += g.chips;
+  if (g.plate) P.plates = [...new Set([...(Array.isArray(P.plates) ? P.plates : []), g.plate])];
+  if (g.ago) P.ago = (P.ago | 0) + g.ago;
+  if (g.gz) P.gzt = (P.gzt | 0) + g.gz;
+  if (g.sk) { P.owned[pick] = [...new Set([...(P.owned[pick] || [0]), hvSkinIdx(FIG[pick])])].sort((a, b) => a - b); if (!sk.includes(pick)) sk.push(pick); }
+  P.harvest = { n, c: v.c, d: key, sk: sk.sort() };
+  saveProfile();
+  return Object.assign({ n, c: v.c, pick: g.sk ? pick : "" }, g);
+}
+
+/* ----- the track and today's gift on the Daily sheet ----- */
+const hvEsc = (s) => cupEsc(String(s));
+const hvChip = (n) => `<span class="tokglyph"></span>${n}`;
+function hvTile(i, v, h, key) {   // day i (1-30)
+  const g = hvGift(i, v.c), got = i <= v.n, now = v.open && i === v.n + 1, today = !v.open && i === v.n && h.d === key, big = i % 7 === 0;
+  const el = document.createElement("div");
+  el.className = `hv-d${got ? " got" : ""}${now ? " now" : ""}${big ? " big" : ""}${i === HV_N ? " last" : ""}`;
+  el.setAttribute("role", "listitem");
+  let body, say;
+  if (i === HV_N) {   // the fighter who got the skin this round, or (still to come) the one played most as a silhouette
+    const id = got ? h.sk[h.sk.length - 1] || "" : g.sk ? hvFav() : "";
+    body = !id ? `<i class="hv-gzi" aria-hidden="true">✦</i>` : `<canvas class="hv-sil${got ? " on" : ""}" data-f="${id}" aria-hidden="true"></canvas>${got ? "" : "<b>?</b>"}`;
+    say = !id ? "a Glaze token" : got ? `the Harvest skin for ${FIG[id] ? FIG[id].name : "a fighter"}` : "the Harvest skin for a fighter you choose";
+  } else if (g.plate) { body = `<span class="hv-pl np-sprout" aria-hidden="true"></span>`; say = `${g.chips} chips and the Sprout nameplate`; }
+  else if (g.title) { body = `<span class="hv-tt">Title</span>`; say = `${g.chips} chips and the title Couch Potato`; }
+  else { body = `<span class="hv-amt">${big ? hvChip(g.chips) : g.chips}</span>${g.ago ? `<em class="hv-plus">+2 go</em>` : ""}`; say = `${g.chips} chips${g.ago ? " and 2 free Another go tries" : ""}`; }
+  el.innerHTML = `<small>${now || today ? "Today" : i}</small>${body}`;
+  el.setAttribute("aria-label", `Day ${i}: ${say}${got ? ", claimed" : now ? ", today's gift" : ""}`);
+  return el;
+}
+function hvLegend(c) {
+  const sk = hvSkinLeft().length ? `the Harvest skin for ${c > 0 ? "another fighter" : "a fighter you choose"}` : "a Glaze token";
+  return c > 0 ? `<b>Day 7</b> and <b>14</b> 100 chips · <b>21</b> 150 chips + 2 Another go · <b>28</b> 200 chips · <b>30</b> ${sk}`
+    : `<b>Day 7</b> Sprout nameplate · <b>14</b> title Couch Potato · <b>21</b> 150 chips + 2 Another go · <b>28</b> 200 chips · <b>30</b> ${sk}`;
+}
+// the gift's lines: chips, then what comes with them
+function hvWhat(g) {
+  const more = g.plate ? `<span class="hv-wl">+ the <span class="hv-wp np-sprout">Sprout</span> nameplate</span>` : g.title ? `<span class="hv-wl">+ the title <b>Couch Potato</b></span>`
+    : g.ago ? `<span class="hv-wl">+ 2 free Daily <b>Another go</b> tries</span>` : g.gz ? `<span class="hv-wl">A <b>Glaze token</b>: glaze any skin for free in the Shop</span>` : "";
+  return `${g.chips ? `<span class="hv-wc">${hvChip("+" + g.chips)} <em>chips</em></span>` : ""}${more}`;
+}
+function hvRender() {
+  const key = dailyKey(), h = hvGet(), v = hvView(h, key), grid = $("hvGrid");
+  cancelAnimationFrame(HV.raf); HV.raf = 0; HV.art = null;
+  $("hvHead").innerHTML = `The Harvest${v.c > 0 ? ` ${v.c + 1}` : ""} · <b>day ${Math.max(1, v.open ? v.n + 1 : v.n)} of ${HV_N}</b>`;
+  grid.innerHTML = "";
+  for (let i = 1; i <= HV_N; i++) grid.appendChild(hvTile(i, v, h, key));
+  $("hvLeg").innerHTML = hvLegend(v.c);
+  const sil = grid.querySelector("canvas.hv-sil");
+  if (sil) hvSil(sil, sil.dataset.f, sil.classList.contains("on"));
+  const box = $("hvGift");
+  if (!v.open) {   // claimed today (or the clock was set back): tomorrow's gift, and when it opens
+    const back = h.d > key, nn = h.n >= HV_N ? 1 : h.n + 1, nc = h.n >= HV_N ? h.c + 1 : h.c, g = hvGift(nn, nc);
+    box.className = "hv-gift done";
+    box.innerHTML = `<div class="hv-dn"><b>Day ${h.n}</b><small>claimed</small><i class="hv-ok" aria-hidden="true">✓</i></div>
+      <p class="hv-k2">Next · day ${nn}</p><div class="hv-what">${g.sk ? `<span class="hv-wl">the Harvest skin for a fighter you choose</span>` : hvWhat(g)}</div>
+      <p class="hv-note">${back ? `Your next gift opens the day after ${dailyLabel(h.d)}.` : `It opens in ${dailyNextIn()}. A missed day waits for you.`}</p>`;
+    return;
+  }
+  const n = v.n + 1, g = hvGift(n, v.c);
+  box.className = `hv-gift${g.sk ? " sk" : ""}`;
+  if (g.sk) {   // day 30: pick the fighter, see him in Harvest Gold, claim
+    if (!FIG[HV.pick] || hvHasSkin(HV.pick)) HV.pick = hvFav();
+    const left = hvSkinLeft();
+    box.innerHTML = `<div class="hv-dn"><b>Day ${n}</b><small>Harvest skin</small></div>
+      <div class="hv-art"><canvas id="hvArt" aria-hidden="true"></canvas></div>
+      <div class="hv-pick" role="radiogroup" aria-label="The fighter who gets the Harvest skin">${FIGHTERS.map((f) => `<button class="hv-pf${f.id === HV.pick ? " on" : ""}" data-f="${f.id}" role="radio" aria-checked="${f.id === HV.pick}" aria-label="${hvEsc(f.name)}${left.includes(f.id) ? "" : ", has it already"}"${left.includes(f.id) ? "" : " disabled"} style="background-image:url('${PORTRAITS[f.id] || ""}')"></button>`).join("")}</div>
+      <button class="btn primary lg hv-claim" id="hvClaim"><span>Claim for ${hvEsc(FIG[HV.pick].name)}</span></button>`;
+    for (const b of box.querySelectorAll(".hv-pf:not([disabled])")) b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); HV.pick = b.dataset.f; hvRender(); });
+    const spec = FIG[HV.pick], f = BL.newGame({ players: [{ spec, pal: spec.palettes[hvSkinIdx(spec)] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+    f.x = 0; f.y = 0; f.facing = -1;
+    HV.art = { cv: $("hvArt"), f, fit: 0.86, bottom: 0.95 };
+    const step = () => { HV.raf = 0; if (!HV.art || screens.daily.hidden) return; paintModel(HV.art, tick); HV.raf = requestAnimationFrame(step); };
+    HV.raf = requestAnimationFrame(step);
+  } else {
+    box.innerHTML = `<div class="hv-dn"><b>Day ${n}</b><small>today's gift</small></div><div class="hv-what">${hvWhat(g)}</div>
+      <button class="btn primary lg hv-claim" id="hvClaim"><span>Claim</span></button>
+      ${g.chips ? `<button class="btn hv-ad" id="hvAd" disabled aria-disabled="true" aria-label="Double it by watching an ad: coming soon"><span>×2 · watch an ad</span><small>${g.chips} → ${g.chips * 2}</small><i class="hv-soon" aria-hidden="true">Soon</i></button>
+      <p class="hv-note">Ads come later and are never needed. Today's gift is yours as it is.</p>` : ""}`;
+  }
+  $("hvClaim").addEventListener("click", hvTapClaim);
+}
+// the day-30 tile: the fighter drawn small, as a dark silhouette while the skin is still to come, in Harvest Gold once it is his
+function hvSil(cv, id, lit) {
+  const spec = FIG[id];
+  if (!spec) return;
+  const f = BL.newGame({ players: [{ spec, pal: spec.palettes[lit ? hvSkinIdx(spec) : 0] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+  f.x = 0; f.y = 0; f.facing = -1;
+  paintModel({ cv, f, fit: 0.86, bottom: 0.97 }, 0);
+  if (lit) return;
+  const c = cv.getContext("2d");
+  c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = "source-atop"; c.fillStyle = "#0e1022"; c.fillRect(0, 0, cv.width, cv.height); c.globalCompositeOperation = "source-over";
+}
+function hvTapClaim() {
+  Sfx.init();
+  const r = hvClaim(HV.pick);
+  if (!r) { hvRender(); return; }   // midnight passed or a sync claimed it on another device: show what stands now
+  Sfx.uiCoin(); renderPill(); if (mode === "menu") renderMenu();
+  hvRender(); dailyAgainLabel();   // day 21's free tries show on Another go at once
+  const t = $("hvGrid").children[r.n - 1];
+  if (t && !resCalm()) slReplay(t, "hv-pop");
+  if (r.sk) { const k = $("hvGift").querySelector(".hv-dn small"); if (k) k.textContent = `Harvest Gold · ${FIG[r.pick].name}`; }
+}
+window.__blHarvest = { gift: hvGift, claim: hvClaim, get st() { return hvGet(); }, view: hvView, open: hvOpen };
 /* ===================== the Skin Rack (UI only; Fable's design, /mnt/project-files/skins-lobby/fable-design.md) =====================
    The fighter select shows one Skins bar under the stage (#dSkins: the worn skin, its effect and SKINS n/7). A tap opens #scrSkins over
    the select: the looked-at skin in big (the model drawn live in it, its name, its effect and one action), then the four chip skins and
-   the three Road skins as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
+   the won skins (the three Road skins and the Harvest's, ui/harvest.js) as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
    with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
    looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css.
    The Account sheet's Locker (ui/acct.js) draws its skin cards with the same builder (skMakeCard, skStyle) and opens this sheet on a locked
@@ -29585,15 +29985,22 @@ const skCount = (spec) => spec.palettes.reduce((n, p, i) => n + (skOwns(spec.id,
 // the effect line: the chip skins' FXTEXT, a Road skin's ROADFX (skinfx.js)
 const skFx = (spec, i) => `${(spec.palettes[i].road ? ROADFX[spec.palettes[i].road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`;
 const skRegOf = (p) => ROAD_REG.findIndex((g) => g.boss === p.road);
+const skHv = (p) => p.road === "harvest";   // the Harvest skin: day 30 of the daily gifts, never bought
+const skWonTag = (p) => (skHv(p) ? "Harvest" : "Road");
 // worn, own (tap to wear), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
 function skState(spec, i) {
   const p = spec.palettes[i];
   if (skOwns(spec.id, i)) return palIdx(spec.id) === i ? "worn" : "own";
+  if (skHv(p)) return "shut";
   if (p.road) return roadRegOpen(roadGet(), skRegOf(p)) ? "road" : "shut";
   return P.tokens >= p.price ? "buy" : "short";
 }
 // a Road skin: who gives it and what stands between you and him (the card's short line, the preview's two lines)
 function skRoad(spec, i) {
+  if (skHv(spec.palettes[i])) {
+    const h = hvGet(), v = hvView(h, dailyKey());
+    return { foot: "Harvest day 30", how: `Day 30 of the Harvest gives this skin to the fighter you pick.`, why: `One gift a day behind the flame on the start page · you are on day ${Math.min(30, v.open ? v.n + 1 : v.n)} of 30.` };
+  }
   const p = spec.palettes[i], k = skRegOf(p), reg = ROAD_REG[k], boss = BL.BOSSES.find((b) => b.id === p.road), r = roadGet();
   if (!reg || !boss) return { foot: "Road", how: "Won on the Road.", why: "" };
   const how = `Beat ${boss.name} on the Road with ${spec.name}.`;
@@ -29611,7 +30018,7 @@ function skinsBar(spec, pi) {
   const p = spec.palettes[pi] || spec.palettes[0], n = skCount(spec), bar = $("dSkins");
   bar.style.setProperty("--c", col(p));
   $("dSkName").textContent = p.name;
-  $("dSkRoad").hidden = !p.road;
+  $("dSkRoad").hidden = !p.road; $("dSkRoad").textContent = skWonTag(p);
   $("dSkFx").textContent = skFx(spec, pi);
   $("dSkN").textContent = `${n}/${spec.palettes.length}`;
   bar.setAttribute("aria-label", `Skins. ${spec.name} wears ${p.name}. ${n} of ${spec.palettes.length} owned`);
@@ -29638,7 +30045,7 @@ function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
 function skMakeCard(spec, i, list, tap) {
   const p = spec.palettes[i], b = document.createElement("button");
   b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
-  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
+  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
   const f = glazeMark(BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
@@ -29670,7 +30077,7 @@ function skRender(full) {
   const n = spec.palettes.length, own = skCount(spec);
   if (full) {
     $("skFig").textContent = spec.name;
-    $("skRoadSub").textContent = `won from the bosses, with ${spec.name}`;
+    $("skRoadSub").textContent = `from the bosses and the Harvest, with ${spec.name}`;
     const chip = $("skChip"), road = $("skRoad");
     chip.innerHTML = ""; road.innerHTML = ""; SK.cards = [];
     spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skCard(spec, i)));
@@ -29690,7 +30097,7 @@ function skPreview(spec) {
   $("skPrev").style.setProperty("--c", col(p)); $("skPrev").style.setProperty("--cg", rgba(col(p), 0.42));
   $("skPrev").className = `sk-prev ${st}`;
   $("skName").textContent = p.name;
-  $("skRoadTag").hidden = !p.road;
+  $("skRoadTag").hidden = !p.road; $("skRoadTag").textContent = skWonTag(p);
   $("skFx").textContent = skFx(spec, i);
   const act = $("skAct");
   if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;
@@ -29771,7 +30178,10 @@ if (window.ResizeObserver) new ResizeObserver(() => { if (SK.id) skDrawCards(); 
    GLAZE_PRICE (ui/glaze.js: P.glazed = { fighterId: [skin indices] }). A glazed card is marked for the sheen's drawing (glazeMark), so it shows on it.
    Buying anything takes two taps: the first arms the card ("Sure?", ember, for 3 s, as the Skin Rack's Buy), the second pays, plays the coin, saves and
    redraws the pill. A card you cannot pay does not buy: the line at the top says how many chips are missing for a few seconds.
-   plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element. */
+   plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element.
+   The Harvest (ui/harvest.js) adds to it: the Sprout plate is never sold (day 7 gives it, `harvest`), a Glaze token (P.gzt, day 30 once every
+   fighter has the Harvest skin) glazes one skin instead of the chips, and the first row offers chips for a short ad, waiting with a SOON sticker
+   until ads exist (never required; chips are never bought). */
 const PLATES = [
   { id: "", name: "Ink", price: 0 },
   { id: "sunset", name: "Sunset", price: 150 },
@@ -29781,7 +30191,9 @@ const PLATES = [
   { id: "kraken", name: "Kraken Ink", price: 200 },
   { id: "halftone", name: "Halftone", price: 300 },
   { id: "goldleaf", name: "Gold Leaf", price: 300 },
+  { id: "sprout", name: "Sprout", price: 0, harvest: true },   // day 7 of the Harvest only
 ];
+const SH_AD = 25;   // the ad row's chips (3 a day), once ads exist
 const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null };
 const SH_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 const plateInfo = (id) => PLATES.find((p) => p.id === id);
@@ -29824,8 +30236,8 @@ function shopGlazeCard(spec) {
   b.addEventListener("click", () => shopGlazeTap(spec.id));
   return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };
 }
-function plState(id) { return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : P.tokens >= plateInfo(id).price ? "buy" : "short"; }
-function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
+function plState(id) { const p = plateInfo(id); return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : p.harvest ? "gift" : P.tokens >= p.price ? "buy" : "short"; }
+function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : (P.gzt | 0) > 0 ? "token" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
 
 /* ----- the tab ----- */
 function renderShop() {
@@ -29838,6 +30250,10 @@ function renderShop() {
   sk.innerHTML = `Skins <b>${acSkinCount(P)} / ${acSkinTotal()}</b> · in the Locker`;
   top.append(bal, from, sk);
   SH.top = { bal, from };
+  const ad = shMk("div", "sh-ad");   // not a button until ads exist
+  ad.setAttribute("aria-disabled", "true");
+  ad.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>Free chips</b><span>A short ad, +${SH_AD} chips, 3 a day. Never required.</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span><i class="sh-soon">Soon</i>`;
+  ad.setAttribute("aria-label", `Free chips: a short ad, ${SH_AD} chips, 3 a day, never required. Coming soon.`);
   const kick = (title, text, more) => {   // more: a second sentence, shown here on a landscape sheet (under the cards the rest of the time, .sh-note)
     const k = shMk("div", "sh-k"), s = shMk("span", "", text);
     if (more) s.appendChild(shMk("em", "sh-k2", more));
@@ -29848,7 +30264,7 @@ function renderShop() {
   g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze");
   for (const c of SH.pl) g1.appendChild(c.el);
   for (const c of SH.gz) g2.appendChild(c.el);
-  pan.append(top, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
+  pan.append(top, ad, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
     kick("Glaze", "a pearl sheen on a skin you own", `, ${GLAZE_PRICE} chips each. ${NOTE}`), g2,
     shMk("p", "sh-note", NOTE));
   shopRefresh();
@@ -29866,15 +30282,16 @@ function shopRefresh() {
     const p = plateInfo(c.id), st = plState(c.id), arm = SH.arm === "p:" + c.id;
     c.nm.textContent = name;
     c.el.className = `sh-c sh-pl ${st}${arm ? " arm" : ""}`;
-    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(p.price)}` : st === "worn" ? "Worn" : st === "own" ? "Tap to wear" : shCoin(p.price);
+    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(p.price)}` : st === "worn" ? "Worn" : st === "own" ? "Tap to wear" : st === "gift" ? "Harvest gift" : shCoin(p.price);
     c.el.setAttribute("aria-pressed", String(st === "worn"));
-    c.el.setAttribute("aria-label", `${p.name} nameplate: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : arm ? `tap again to buy for ${p.price} chips` : `${p.price} chips`}`);
+    c.el.setAttribute("aria-label", `${p.name} nameplate: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "gift" ? "a gift on day 7 of the Harvest" : arm ? `tap again to buy for ${p.price} chips` : `${p.price} chips`}`);
   }
   for (const c of SH.gz) {
     const st = gzState(c), arm = SH.arm === "g:" + c.id, spec = FIG[c.id], pal = spec.palettes[c.i] || spec.palettes[0];
-    c.el.className = `sh-c sh-gz ${st}${arm ? " arm" : ""}`;
-    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(GLAZE_PRICE)}` : st === "glazed" ? "Glazed ✦" : `<span>Glaze</span>${shCoin(GLAZE_PRICE)}`;
-    c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${GLAZE_PRICE} chips` : `glaze for ${GLAZE_PRICE} chips`}`);
+    const tk = st === "token" || (arm && (P.gzt | 0) > 0), price = tk ? "token" : shCoin(GLAZE_PRICE), say = tk ? "a Glaze token" : `${GLAZE_PRICE} chips`;
+    c.el.className = `sh-c sh-gz ${st === "token" ? "buy tk" : st}${arm ? " arm" : ""}`;
+    c.small.innerHTML = arm ? `<span>Sure?</span>${tk ? " token" : price}` : st === "glazed" ? "Glazed ✦" : `<span>Glaze</span>${tk ? " · token" : price}`;
+    c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${say}` : `glaze for ${say}`}`);
     if (glazeOn(c.art.f) !== (st === "glazed")) { glazeMark(c.art.f, st === "glazed"); shopPaint(false); }
   }
 }
@@ -29900,6 +30317,7 @@ function shopPlateTap(id) {
   if (st === "own") {   // owned: worn at once
     shopDisarm(); P.plate = id; saveProfile(); Sfx.uiFlip(); renderPill(); shopRefresh(); return;
   }
+  if (st === "gift") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} isn't sold: it is the gift on day 7 of the Harvest, behind the flame on the start page.`); return; }
   if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} costs ${p.price} chips and you have ${fmtChips(P.tokens)}: ${p.price - P.tokens} more needed.`); return; }
   if (SH.arm !== "p:" + id) { shopArm("p:" + id); return; }
   shopDisarm();
@@ -29914,10 +30332,12 @@ function shopGlazeTap(id) {
   if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`Glaze costs ${GLAZE_PRICE} chips and you have ${fmtChips(P.tokens)}: ${GLAZE_PRICE - P.tokens} more needed.`); return; }
   if (SH.arm !== "g:" + id) { shopArm("g:" + id); return; }
   shopDisarm();
-  if (P.tokens < GLAZE_PRICE || glazeHas(id, c.i)) { shopRefresh(); return; }
+  const tk = (P.gzt | 0) > 0;   // a Glaze token from the Harvest goes first
+  if ((!tk && P.tokens < GLAZE_PRICE) || glazeHas(id, c.i)) { shopRefresh(); return; }
   if (!P.glazed || typeof P.glazed !== "object" || Array.isArray(P.glazed)) P.glazed = {};
   P.glazed[id] = [...new Set([...(Array.isArray(P.glazed[id]) ? P.glazed[id] : []), c.i])].sort((a, b) => a - b);
-  shopPaid(GLAZE_PRICE); shopRefresh();
+  if (tk) P.gzt = (P.gzt | 0) - 1;
+  shopPaid(tk ? 0 : GLAZE_PRICE); shopRefresh();
 }
 // a tap anywhere in the tab but on the armed card puts it back
 $("acPanH").addEventListener("click", (e) => { if (SH.arm && !e.target.closest(".sh-c.arm")) { shopDisarm(); shopRefresh(); } }, true);
@@ -29957,8 +30377,9 @@ window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn };
    simulation from the shared seed. If the partner drops, a CPU takes over their fighter on this phone and the fight goes on.
    A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
-   so a friend with an older copy open is told to reload instead of joining and drifting apart. */
-const PROTO = 17;
+   so a friend with an older copy open is told to reload instead of joining and drifting apart.
+   18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start. */
+const PROTO = 18;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -32332,7 +32753,8 @@ const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
   // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
-  const OPT_COUNTERS = ["flawless", "duo", "duoW", "duoC"];   // duo: online boss wins on Hard or Nightmare (the Double Trouble title); duoW / duoC: 2v2 wins and your Catches (ui/duo.js)
+  const OPT_COUNTERS = ["flawless", "duo", "duoW", "duoC", "ago", "gzt"];   // duo: online boss wins on Hard or Nightmare (the Double Trouble title); duoW / duoC: 2v2 wins and your Catches (ui/duo.js);
+  // ago / gzt: free Daily "Another go" tries and Glaze tokens the Harvest gave and not yet used (ui/harvest.js), counted like chips
   const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
   const HIST = 50;
@@ -32394,6 +32816,13 @@ const SYNC = (function () {
     if (d && (q.x === 1 || q.x === true)) out.x = 1;
     return out;
   }
+  // The Harvest (ui/harvest.js): { n: days claimed in this round (0-30), c: rounds finished before it, d: the last day claimed,
+  // sk: the fighters given the Harvest skin }. Not an object -> null (missing).
+  function cleanHarvest(q) {
+    if (!isObj(q)) return null;
+    const d = typeof q.d === "string" && DAY_RE.test(q.d) ? q.d : "";
+    return { n: d ? num(q.n, 0, 30, 0) : 0, c: num(q.c, 0, 1e6, 0), d, sk: cleanIds(q.sk) };
+  }
   // The Road (ui/road.js): { s: per stop (24 in three regions), the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: Old
   // Scratch's levels won as bits (1 Normal, 2 Hard, 4 Nightmare), paid: his first win's reward was paid; b2 / p2: the same for Zorp,
   // b3 / p3 for Kraken Spud (left out while 0 / false, so an older page's road has one spelling) }. Trailing empty stops are dropped.
@@ -32448,6 +32877,7 @@ const SYNC = (function () {
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
     if (p.so === 0 || p.so === 1) out.so = p.so;   // Settings > Chip stakes: 1 = Off (the server reads it before a challenge)
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    { const hv = cleanHarvest(p.harvest); if (hv) out.harvest = hv; }
     // fighter mastery: XP played per fighter (a counter), the one-time head start XP (max), the highest level whose reward was paid (max), the KO pages / Ultimate KO pages landed (union)
     if (isObj(p.mxp)) out.mxp = cleanMap(p.mxp, MAXN);
     if (isObj(p.mseed)) out.mseed = cleanMap(p.mseed, MSEED_MAX);
@@ -32488,6 +32918,7 @@ const SYNC = (function () {
     if (S.title !== undefined) P.title = S.title;
     if (S.so !== undefined) P.so = S.so;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
+    if (S.harvest !== undefined) P.harvest = Object.assign({}, S.harvest, { sk: S.harvest.sk.slice() });
     if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
@@ -32564,6 +32995,16 @@ const SYNC = (function () {
       }
       out.daily = Object.assign({}, v);
     }
+    // the Harvest: the side further along (more rounds, then more days claimed), the later day claimed, every fighter given its skin on
+    // either side. A side without the field is "unchanged".
+    if (have(S.harvest) || have(L.harvest)) {
+      const l = L.harvest, s = S.harvest;
+      if (!have(l) || !have(s)) out.harvest = Object.assign({}, l || s, { sk: (l || s).sk.slice() });
+      else {
+        const w = l.c !== s.c ? (l.c > s.c ? l : s) : l.n >= s.n ? l : s;
+        out.harvest = { n: w.n, c: w.c, d: l.d > s.d ? l.d : s.d, sk: [...new Set([...l.sk, ...s.sk])].sort() };
+      }
+    }
     // the Shop: skins glazed and nameplates owned are a union (a side without the field is "unchanged"); the plate worn follows the newer side
     if (have(S.glazed) || have(L.glazed)) {
       const r = {}, a = L.glazed || {}, b = S.glazed || {};
@@ -32610,7 +33051,7 @@ const SYNC = (function () {
     return out;
   }
 
-  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, cleanRoad, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, cleanHarvest, cleanRoad, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;
 
@@ -32694,10 +33135,11 @@ const ACT = [
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
   { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) + qmWins() >= 100, how: "Win 100 ranked matches." },
   ...mxActs(5),    // the Lv 5 title of each fighter
+  { id: "couch", name: () => "Couch Potato", ok: hvTitleOk, how: "Reach day 14 of the Harvest, the daily gifts behind the flame." },   // ui/harvest.js
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
-const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack", "couch"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN.filter((id) => (window.__blQuick && !window.__blNoQuick) || (id !== "cpu1" && id !== "cpu10")), ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];   // the CPU board titles only where the boards are
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
@@ -32713,7 +33155,8 @@ function acRing(ringBox, arc, ti) {   // the Account sheet's tier ring
   arc.style.strokeDashoffset = String(94.25 * (1 - ti.p));
 }
 // #mRank is one button: the plate (picture with the rank emblem on its corner, name, tier + rating, the chosen title as a sticker)
-// and the coins beside it (chips; the Daily Potato streak while there is one; cups once one is won). Styles: game/css/20-menu.css.
+// and the coins beside it (chips; the flame: the Daily Potato streak, a muted 0 without one, and a gold dot while today's Harvest gift waits;
+// cups once one is won). Styles: game/css/20-menu.css.
 function renderPill() {
   const rk = rankView(), ti = tierInfo(rk.r), name = acctName(), cups = P.cups | 0, me = $("mRank");   // rankView: ui/quick.js (the online rank on our own server)
   acSetMe($("mAvatar"));
@@ -32729,8 +33172,9 @@ function renderPill() {
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("mTokens").textContent = fmtChips(P.tokens);
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
-  const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  const ds = dailyStreakNow(), gift = hvWaiting();   // the Daily Potato streak (ui/daily.js), today's Harvest gift (ui/harvest.js)
+  $("mStreakN").textContent = ds; $("mStreak").classList.toggle("zero", !(ds > 0)); $("mGift").hidden = !gift;
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -32907,7 +33351,7 @@ function lkBuild() {
     '<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="Fighters"></div>' +
     '<div class="lk-rack" id="lkRack">' +
     '<div class="lk-grp"><div class="lk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="Chip skins"></div></div>' +
-    '<div class="lk-grp"><div class="lk-k"><b>Road skins</b><span id="lkRoadSub"></span></div><div class="lk-row r3" id="lkRoad" role="group" aria-label="Road skins"></div></div></div>';
+    '<div class="lk-grp"><div class="lk-k"><b>Won skins</b><span id="lkRoadSub"></span></div><div class="lk-row r4" id="lkRoad" role="group" aria-label="Won skins"></div></div></div>';
   const strip = $("lkStrip");
   LKR.tiles = FIGHTERS.map((f) => {
     const b = acMk("button", "lk-tile");
@@ -32976,7 +33420,7 @@ function renderLocker() {
     for (const a of LKR.cards) a.dirty = true;
     LKR.cardsFor = spec.id;
   }
-  $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
+  $("lkRoadSub").innerHTML = `from the bosses and the Harvest<em>, with ${spec.name}</em>`;
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
   for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
@@ -33265,7 +33709,8 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-tap("mRank", (e) => openAccount(e && e.target && e.target.closest && e.target.closest("#mTokens") ? "h" : "p"));   // the chip coin opens the Shop, the rest of the plate the Profile
+// the chip coin opens the Shop, the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
+tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
 tap("acClose", () => {
   modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"

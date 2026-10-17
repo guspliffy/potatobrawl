@@ -117,7 +117,7 @@ SHOP_FIT = """(() => {
   if (sh.scrollWidth > sh.clientWidth + 1) bad.push('the sheet scrolls sideways');
   if (pan.scrollWidth > pan.clientWidth + 1) bad.push('the Shop scrolls sideways');
   const cards = [...pan.querySelectorAll('.sh-c')];
-  if (cards.length !== 16) bad.push('cards: ' + cards.length);
+  if (cards.length !== 17) bad.push('cards: ' + cards.length);
   for (const c of cards) {
     const r = c.getBoundingClientRect(), id = c.dataset.id || '?';
     if (r.left < p.left - 1 || r.right > p.right + 1) bad.push('card ' + id + ' runs out of the panel sideways');
@@ -191,9 +191,9 @@ async def shop_size(b, tag):
     need(await txt(pg, '#acTabH') == 'Shop', f'{tag}: the tab says {await txt(pg, "#acTabH")!r}')
     need(await txt(pg, '#shBal') == '1,500', f"{tag}: balance {await txt(pg, '#shBal')!r}")
     need(await txt(pg, '#shFrom') == 'Chips come from ranked wins, the Daily Potato, tournaments and Road stars.', f"{tag}: top line {await txt(pg, '#shFrom')!r}")
-    need(await pg.evaluate("document.querySelectorAll('#acPanH .sh-pl').length") == 8 and await pg.evaluate("document.querySelectorAll('#acPanH .sh-gz').length") == 8, f'{tag}: not 8 + 8 cards')
+    need(await pg.evaluate("document.querySelectorAll('#acPanH .sh-pl').length") == 9 and await pg.evaluate("document.querySelectorAll('#acPanH .sh-gz').length") == 8, f'{tag}: not 9 + 8 cards')
     names = await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-pl')].map((c) => c.querySelector('.sh-f b').textContent + ' ' + (c.querySelector('.tokglyph') ? c.querySelector('.sh-f small').textContent.trim() : '-'))")
-    need(names == ['Ink -', 'Sunset 150', 'Mint 150', 'Night Sky 200', 'Road Dust 200', 'Kraken Ink 200', 'Halftone 300', 'Gold Leaf 300'], f'{tag}: plates {names}')
+    need(names == ['Ink -', 'Sunset 150', 'Mint 150', 'Night Sky 200', 'Road Dust 200', 'Kraken Ink 200', 'Halftone 300', 'Gold Leaf 300', 'Sprout -'], f'{tag}: plates {names}')
     need('worn' in await cls(pg, card('pl', '')), f'{tag}: Ink is not worn at the start')
     need(await txt(pg, '#mRank .plate .who b') != '' and not any(c.startswith('np-') for c in await cls(pg, '#mRank .plate')), f'{tag}: the start-page plate is not Ink')
     gl = await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-gz')].map((c) => c.querySelector('.sh-f b').textContent + ' ' + c.querySelector('.sh-f small').textContent.trim())")
@@ -365,10 +365,10 @@ async def rules(b):
     need('ember' not in await cls(pg, '#dlyAgain') and await txt(pg, '#dlyAgain') == 'Another go 50' and await tokens() == 305, 'the arming stays after 3 s')
     await clk('#dlyAgain'); await armed(pg, '#dlyAgain', 'ember'); await fast(pg, '#dlyRule'); await pg.wait_for_timeout(200)
     need('ember' not in await cls(pg, '#dlyAgain'), 'a tap elsewhere does not put Another go back')
-    await clk('#dlyAgain'); await armed(pg, '#dlyAgain', 'ember'); await clk('#dlyBack'); await pg.wait_for_timeout(400)
+    await clk('#dlyAgain'); await armed(pg, '#dlyAgain', 'ember'); await clk('#dlyClose'); await pg.wait_for_timeout(400)
     await sheet()
     need('ember' not in await cls(pg, '#dlyAgain') and await tokens() == 305, 'closing the sheet keeps Another go armed')
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     # a reload keeps it open; the go itself: two taps, 50 chips, the same match again
     await reload_at(pg, at(14, '10:05'))
     await sheet()
@@ -388,7 +388,7 @@ async def rules(b):
     need(await txt(pg, '#mStreak') == '4' and (await txt(pg, '#mDaily')).startswith('Won · 4-day streak'), f"the menu after the go: {await txt(pg, '#mDaily')!r}, streak {await txt(pg, '#mStreak')!r}")
     await sheet()
     need(not await shown(pg, '#dlyAgain') and not await shown(pg, '#dlyGo') and await pg.evaluate(f"{D}.again({D}.st, {D}.key())") is False, 'a win offers Another go')
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     # ----- day 15: lost, the go lost too: +5 and +5, the streak (4) is gone, no second go
     await reload_at(pg, at(15))
     await sheet(); await clk('#dlyGo'); await end_match(pg, False)
@@ -401,11 +401,11 @@ async def rules(b):
     need('Daily played +5' in await txt(pg, '#rChips') and 'another go' in await txt(pg, '#rChips'), f"go loss line {await txt(pg, '#rChips')!r}")
     await to_menu(); await sheet()
     need(not await shown(pg, '#dlyAgain') and not await shown(pg, '#dlyGo') and 'Lost today' in await txt(pg, '#dlyRule') and 'One more go' not in await txt(pg, '#dlyRule'), f"a second go is offered: {await txt(pg, '#dlyRule')!r}")
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     await reload_at(pg, at(15, '10:30'))
     await sheet()
     need(not await shown(pg, '#dlyAgain'), 'after a reload a second go is offered')
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     # ----- day 16: a draw (pays 15, no streak running), the go: a win makes a 1-day streak
     await reload_at(pg, at(16))
     await sheet(); await clk('#dlyGo'); await end_draw(pg)
@@ -426,7 +426,7 @@ async def rules(b):
     need(await txt(pg, '#rTitle') == 'Forfeit' and (await daily()).get('p') is None and (await daily())['r'] == 0, f'a forfeit: {await daily()}')
     await to_menu(); await sheet()
     need(not await shown(pg, '#dlyAgain') and 'One more go' not in await txt(pg, '#dlyRule'), 'a forfeit offers Another go')
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     # ----- day 18: a reload in the middle of the match counts as a loss and offers no go
     await reload_at(pg, at(18))
     await sheet(); await clk('#dlyGo'); await in_match(pg)
@@ -434,7 +434,7 @@ async def rules(b):
     await sheet()
     need(not await shown(pg, '#dlyAgain') and not await shown(pg, '#dlyGo'), 'a reload mid-match leaves a go or a second try')
     need((await daily())['r'] == -1 and (await daily()).get('p') is None, f'reload mid-match: {await daily()}')
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     # ----- day 19: short of chips: the button looks dim, a tap says what is missing and takes nothing
     await reload_at(pg, at(19), {'d': '2026-10-19', 'r': 0, 's': 0, 'w': '2026-10-18', 'b': 4, 'p': 2}, tokens=30)
     await sheet()
@@ -445,7 +445,7 @@ async def rules(b):
     await clk('#dlyAgain'); await pg.wait_for_timeout(250)
     need(await tokens() == 30 and await daily() == {'d': '2026-10-19', 'r': 0, 's': 0, 'w': '2026-10-18', 'b': 4, 'p': 2} and not await pg.evaluate(f"{G} !== null && {G} !== undefined && window.__blastline.mode === 'play'"), f'short of chips took something: {await daily()}, chips {await tokens()}')
     await pg.screenshot(path=f'{OUT}/{tag}_2_short.png')
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     # ----- day 20: a reload in the middle of the go counts as a loss and there is no second go; the 50 chips stay paid
     await reload_at(pg, at(20), {'d': '2026-10-20', 'r': 0, 's': 0, 'w': '2026-10-19', 'b': 4, 'p': 2}, tokens=200)
     await sheet(); await again_two(); await in_match(pg)

@@ -1,7 +1,7 @@
 /* ===================== the Skin Rack (UI only; Fable's design, /mnt/project-files/skins-lobby/fable-design.md) =====================
    The fighter select shows one Skins bar under the stage (#dSkins: the worn skin, its effect and SKINS n/7). A tap opens #scrSkins over
    the select: the looked-at skin in big (the model drawn live in it, its name, its effect and one action), then the four chip skins and
-   the three Road skins as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
+   the won skins (the three Road skins and the Harvest's, ui/harvest.js) as cards, each with the model drawn once in that skin and a line saying where it stands. An owned skin is worn
    with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
    looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css.
    The Account sheet's Locker (ui/acct.js) draws its skin cards with the same builder (skMakeCard, skStyle) and opens this sheet on a locked
@@ -14,15 +14,22 @@ const skCount = (spec) => spec.palettes.reduce((n, p, i) => n + (skOwns(spec.id,
 // the effect line: the chip skins' FXTEXT, a Road skin's ROADFX (skinfx.js)
 const skFx = (spec, i) => `${(spec.palettes[i].road ? ROADFX[spec.palettes[i].road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`;
 const skRegOf = (p) => ROAD_REG.findIndex((g) => g.boss === p.road);
+const skHv = (p) => p.road === "harvest";   // the Harvest skin: day 30 of the daily gifts, never bought
+const skWonTag = (p) => (skHv(p) ? "Harvest" : "Road");
 // worn, own (tap to wear), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
 function skState(spec, i) {
   const p = spec.palettes[i];
   if (skOwns(spec.id, i)) return palIdx(spec.id) === i ? "worn" : "own";
+  if (skHv(p)) return "shut";
   if (p.road) return roadRegOpen(roadGet(), skRegOf(p)) ? "road" : "shut";
   return P.tokens >= p.price ? "buy" : "short";
 }
 // a Road skin: who gives it and what stands between you and him (the card's short line, the preview's two lines)
 function skRoad(spec, i) {
+  if (skHv(spec.palettes[i])) {
+    const h = hvGet(), v = hvView(h, dailyKey());
+    return { foot: "Harvest day 30", how: `Day 30 of the Harvest gives this skin to the fighter you pick.`, why: `One gift a day behind the flame on the start page · you are on day ${Math.min(30, v.open ? v.n + 1 : v.n)} of 30.` };
+  }
   const p = spec.palettes[i], k = skRegOf(p), reg = ROAD_REG[k], boss = BL.BOSSES.find((b) => b.id === p.road), r = roadGet();
   if (!reg || !boss) return { foot: "Road", how: "Won on the Road.", why: "" };
   const how = `Beat ${boss.name} on the Road with ${spec.name}.`;
@@ -40,7 +47,7 @@ function skinsBar(spec, pi) {
   const p = spec.palettes[pi] || spec.palettes[0], n = skCount(spec), bar = $("dSkins");
   bar.style.setProperty("--c", col(p));
   $("dSkName").textContent = p.name;
-  $("dSkRoad").hidden = !p.road;
+  $("dSkRoad").hidden = !p.road; $("dSkRoad").textContent = skWonTag(p);
   $("dSkFx").textContent = skFx(spec, pi);
   $("dSkN").textContent = `${n}/${spec.palettes.length}`;
   bar.setAttribute("aria-label", `Skins. ${spec.name} wears ${p.name}. ${n} of ${spec.palettes.length} owned`);
@@ -67,7 +74,7 @@ function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
 function skMakeCard(spec, i, list, tap) {
   const p = spec.palettes[i], b = document.createElement("button");
   b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
-  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">Road</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
+  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
   const f = glazeMark(BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
@@ -99,7 +106,7 @@ function skRender(full) {
   const n = spec.palettes.length, own = skCount(spec);
   if (full) {
     $("skFig").textContent = spec.name;
-    $("skRoadSub").textContent = `won from the bosses, with ${spec.name}`;
+    $("skRoadSub").textContent = `from the bosses and the Harvest, with ${spec.name}`;
     const chip = $("skChip"), road = $("skRoad");
     chip.innerHTML = ""; road.innerHTML = ""; SK.cards = [];
     spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skCard(spec, i)));
@@ -119,7 +126,7 @@ function skPreview(spec) {
   $("skPrev").style.setProperty("--c", col(p)); $("skPrev").style.setProperty("--cg", rgba(col(p), 0.42));
   $("skPrev").className = `sk-prev ${st}`;
   $("skName").textContent = p.name;
-  $("skRoadTag").hidden = !p.road;
+  $("skRoadTag").hidden = !p.road; $("skRoadTag").textContent = skWonTag(p);
   $("skFx").textContent = skFx(spec, i);
   const act = $("skAct");
   if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;

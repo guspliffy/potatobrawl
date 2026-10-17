@@ -2,7 +2,7 @@
    The Shop is the Account sheet's fourth tab (#acPanH). Top: the balance coin and where chips come from. Then the eight nameplates as cards
    (the plate on a pill, its name, and a line: Worn / Tap to wear / the price), then one Glaze card per fighter (his worn skin drawn on a canvas, the price or
    Glazed). Card states: worn (gold ring, WORN tag), own, buy (gold price), short (grey price, no buy), arm (ember foot: "Sure?" for 3 s), glazed (pearl border).
-   Eight across on a landscape sheet, four across upright. The plate looks (.np-<id>) are used wherever a name stands on a plate: the pill on the
+   Eight across on a landscape sheet (the plates nine, with the Harvest's Sprout), four across upright (the plates three). The plate looks (.np-<id>) are used wherever a name stands on a plate: the pill on the
    start page (css/20-menu.css reads --np-fg / --np-sub / --np-stroke), the Profile's name field, the results; plateCls(id) in ui/shop.js gives the class. */
 
 /* ---- the plate looks: a background and the text colours that stay readable on it (contrast 5:1 or better, checked on every colour stop) ---- */
@@ -19,6 +19,10 @@
 .np-halftone { --np-fg: #0e1022; --np-sub: #3a2c22; --np-stroke: 2px #fff6e4;
   --np-bg: linear-gradient(90deg, #fff6e4 0 38%, rgba(255, 246, 228, 0.55) 72%, rgba(255, 246, 228, 0) 100%), radial-gradient(#e8453c 1.1px, transparent 1.4px) 0 0 / 5px 5px, #fff6e4; }
 .np-goldleaf { --np-fg: #0e1022; --np-sub: #2e2210; --np-bg: linear-gradient(115deg, #ffeeb0, #e8a640 38%, #ffe08a 58%, #c98a2a); }
+/* Sprout: the Harvest's day-7 gift (never sold): a fresh green plate with two leaves sprouting at its end and a strip of soil */
+.np-sprout { --np-fg: #0e1022; --np-sub: #1f3a1a;
+  --np-bg: radial-gradient(ellipse 4px 2.5px at calc(100% - 10px) 20%, #2f8a3a 0 85%, transparent 100%), radial-gradient(ellipse 4px 2.5px at calc(100% - 4px) 26%, #3fa84a 0 85%, transparent 100%),
+    linear-gradient(180deg, transparent 0 80%, #7a5232 80%), linear-gradient(180deg, #e2f8a8, #9edb6e); }
 /* every plate paints with its --np-bg (the lobby's plates below re-apply it where their own rules set a background) */
 [class*="np-"] { background: var(--np-bg); color: var(--np-fg); }
 /* the Profile's name field wears its plate; a plate with a halo (Halftone) outlines the typed letters too */
@@ -151,3 +155,35 @@
 #scrOnline .on-plate[class*="np-"] b, #scrQuick .on-plate[class*="np-"] b, #scrOnline .on-plate[class*="np-"] .on-name { color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
 #scrOnline .on-list .who b[class*="np-"] { align-self: flex-start; max-width: 100%; padding: 3px 9px 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
 #scrOnline .on-pl[class*="np-"] { background: var(--np-bg); color: var(--np-fg); -webkit-text-stroke: var(--np-stroke, 0); paint-order: stroke fill; }
+
+/* ---- the Harvest's pieces (ui/harvest.js): the ad row on top (SOON, not tappable), nine plates with Sprout, a Glaze token ---- */
+.sh-ad { flex: none; position: relative; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 5px 12px 5px 8px; border: 2px dashed rgba(206, 210, 255, 0.28); border-radius: 10px; background: rgba(14, 16, 34, 0.35); }
+.sh-adi { flex: none; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); position: relative; opacity: 0.7; }
+.sh-adi::after { content: ""; position: absolute; left: 10px; top: 7px; border-left: 9px solid var(--text); border-top: 5.5px solid transparent; border-bottom: 5.5px solid transparent; }
+.sh-adt { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 8px; opacity: 0.7; }
+.sh-adt b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text); }
+#acPanH .sh-adt span { min-width: 0; font: 500 12.5px/1.25 var(--body); color: var(--mute); }
+.sh-adv { flex: none; display: inline-flex; align-items: center; gap: 3px; font: 800 18px/1 var(--display); color: var(--gold); opacity: 0.5; }
+.sh-ad .sh-soon { position: relative; top: auto; right: auto; flex: none; }   /* in the row, after the chips it will pay */
+#app.short .sh-ad { min-height: 32px; padding: 3px 10px 3px 6px; }
+#app.short .sh-adi { width: 24px; height: 24px; }
+#app.short .sh-adi::after { left: 8px; top: 5px; }
+#app.short .sh-adv { font-size: 16px; }
+#app.portrait .sh-adt, #app.narrow .sh-adt { flex-direction: column; gap: 3px; }
+#app.portrait .sh-adt span, #app.narrow .sh-adt span { font-size: 11.5px; }
+.sh-grid.sh-plates { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+/* nine across on a landscape sheet: a closer row and slimmer pill sides keep a "Potato 74" whole on every plate */
+#app:not(.portrait):not(.narrow) .sh-grid.sh-plates { gap: 8px 5px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-pa { padding-inline: 1px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-np { padding: 0 4px; letter-spacing: 0.04em; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f { padding-inline: 5px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-grid.sh-plates { gap: 6px 4px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-np { padding: 0 3px; letter-spacing: 0.02em; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-f { padding-inline: 4px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-c.arm .sh-f small { font-size: 11px; letter-spacing: 0; }   /* "Sure?" and the price on one slim foot */
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f small .tokglyph { margin-right: 3px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f small > span + .tokglyph { margin-left: 2px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-f small, #app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-c.arm .sh-f small { font-size: 10px; letter-spacing: 0; }
+#app.portrait .sh-grid.sh-plates, #app.narrow .sh-grid.sh-plates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sh-c.gift .sh-f small { font-size: 11px; color: var(--mint); }
+.sh-gz.tk .sh-f small { color: var(--mint); }

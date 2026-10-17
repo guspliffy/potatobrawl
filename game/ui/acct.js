@@ -83,10 +83,11 @@ const ACT = [
   { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
   { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) + qmWins() >= 100, how: "Win 100 ranked matches." },
   ...mxActs(5),    // the Lv 5 title of each fighter
+  { id: "couch", name: () => "Couch Potato", ok: hvTitleOk, how: "Reach day 14 of the Harvest, the daily gifts behind the flame." },   // ui/harvest.js
   { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
   { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
 ];
-const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack"];   // the order of the list (fighter titles follow once earned)
+const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack", "couch"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN.filter((id) => (window.__blQuick && !window.__blNoQuick) || (id !== "cpu1" && id !== "cpu10")), ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];   // the CPU board titles only where the boards are
 function acTitle() {   // the one that shows: the chosen one if earned, else the best earned (of several fighter titles of one rank, the fighter with the most XP), else none
   const pick = ACT.find((t) => t.id === P.title && t.ok());
@@ -102,7 +103,8 @@ function acRing(ringBox, arc, ti) {   // the Account sheet's tier ring
   arc.style.strokeDashoffset = String(94.25 * (1 - ti.p));
 }
 // #mRank is one button: the plate (picture with the rank emblem on its corner, name, tier + rating, the chosen title as a sticker)
-// and the coins beside it (chips; the Daily Potato streak while there is one; cups once one is won). Styles: game/css/20-menu.css.
+// and the coins beside it (chips; the flame: the Daily Potato streak, a muted 0 without one, and a gold dot while today's Harvest gift waits;
+// cups once one is won). Styles: game/css/20-menu.css.
 function renderPill() {
   const rk = rankView(), ti = tierInfo(rk.r), name = acctName(), cups = P.cups | 0, me = $("mRank");   // rankView: ui/quick.js (the online rank on our own server)
   acSetMe($("mAvatar"));
@@ -118,8 +120,9 @@ function renderPill() {
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("mTokens").textContent = fmtChips(P.tokens);
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
-  const ds = dailyStreakNow(), sb = $("mStreak"); sb.hidden = !(ds > 0); sb.textContent = ds;   // Daily Potato streak (ui/daily.js)
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}`);
+  const ds = dailyStreakNow(), gift = hvWaiting();   // the Daily Potato streak (ui/daily.js), today's Harvest gift (ui/harvest.js)
+  $("mStreakN").textContent = ds; $("mStreak").classList.toggle("zero", !(ds > 0)); $("mGift").hidden = !gift;
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -296,7 +299,7 @@ function lkBuild() {
     '<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="Fighters"></div>' +
     '<div class="lk-rack" id="lkRack">' +
     '<div class="lk-grp"><div class="lk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="Chip skins"></div></div>' +
-    '<div class="lk-grp"><div class="lk-k"><b>Road skins</b><span id="lkRoadSub"></span></div><div class="lk-row r3" id="lkRoad" role="group" aria-label="Road skins"></div></div></div>';
+    '<div class="lk-grp"><div class="lk-k"><b>Won skins</b><span id="lkRoadSub"></span></div><div class="lk-row r4" id="lkRoad" role="group" aria-label="Won skins"></div></div></div>';
   const strip = $("lkStrip");
   LKR.tiles = FIGHTERS.map((f) => {
     const b = acMk("button", "lk-tile");
@@ -365,7 +368,7 @@ function renderLocker() {
     for (const a of LKR.cards) a.dirty = true;
     LKR.cardsFor = spec.id;
   }
-  $("lkRoadSub").innerHTML = `won from the bosses<em>, with ${spec.name}</em>`;
+  $("lkRoadSub").innerHTML = `from the bosses and the Harvest<em>, with ${spec.name}</em>`;
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
   for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
@@ -654,7 +657,8 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-tap("mRank", (e) => openAccount(e && e.target && e.target.closest && e.target.closest("#mTokens") ? "h" : "p"));   // the chip coin opens the Shop, the rest of the plate the Profile
+// the chip coin opens the Shop, the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
+tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
 tap("acClose", () => {
   modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"
