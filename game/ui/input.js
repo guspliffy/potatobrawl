@@ -8,12 +8,28 @@ const KEYMAP = {
   KeyU: "ulti",
 };
 const GAMEKEYS = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", ...Object.keys(KEYMAP)]);
+/* The sprint (core.js TUNE.sprint): a flick of the stick (touch, a gamepad's stick) or a direction tapped twice (keys, a gamepad's d-pad)
+   sends one `sprint` press, the stick full to that side. A sprint frame carries no button presses (its online code has no room), so one
+   that meets a new press waits a frame. n counts frames (readPlayer calls); low = the last frame the stick was in the middle. */
+const SPR = { n: 0, low: -99, hi: false, tapS: 0, tapT: -99, want: 0, padX: 0, glowT: 0 };
+const SIDEKEY = { KeyA: -1, ArrowLeft: -1, KeyD: 1, ArrowRight: 1 };
+function sprTap(side) {
+  if (SPR.tapS === side && SPR.n - SPR.tapT <= BL.TUNE.sprint.tap) { SPR.want = side; SPR.tapT = -99; }
+  else { SPR.tapS = side; SPR.tapT = SPR.n; }
+}
+function sprFlick(ax) {
+  const [lo, hi, win] = BL.TUNE.sprint.flick, a = Math.abs(ax);
+  if (a < lo) SPR.low = SPR.n;
+  if (a > hi && !SPR.hi && SPR.n - SPR.low <= win) SPR.want = Math.sign(ax);
+  SPR.hi = a > hi;
+}
 window.addEventListener("keydown", (e) => {
   Sfx.init();
   if (mode === "match" && (e.code === "Escape" || e.code === "KeyP")) { e.preventDefault(); togglePause(); return; }
   if (mode === "match" && e.code === "Tab" && match && match.duo) { e.preventDefault(); if (!e.repeat) duoFocusNext(); return; }   // 2v2: Focus (ui/duo.js)
   if (mode === "match" && GAMEKEYS.has(e.code)) e.preventDefault();
   if (!keys.has(e.code) && KEYMAP[e.code]) latch.add(KEYMAP[e.code]);
+  if (!keys.has(e.code) && SIDEKEY[e.code] && mode === "match") sprTap(SIDEKEY[e.code]);
   keys.add(e.code);
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -28,6 +44,7 @@ function readPad() {
     const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
     const b = (i) => !!(p.buttons[i] && p.buttons[i].pressed);
     r.x = Math.abs(ax) > 0.2 ? ax : (b(15) ? 1 : 0) - (b(14) ? 1 : 0);
+    r.ax = Math.abs(ax) > 0.2 ? ax : 0; r.dx = (b(15) ? 1 : 0) - (b(14) ? 1 : 0);   // the stick alone (flicks), the d-pad alone (double taps)
     r.y = Math.abs(ay) > 0.2 ? ay : (b(13) ? 1 : 0) - (b(12) ? 1 : 0);
     r.light = b(0); r.special = b(1); r.jump = b(2); r.ulti = b(3); r.heavy = b(4) || b(6); r.dodge = b(5) || b(7);
     break;
@@ -42,8 +59,13 @@ function readPlayer() {
   const held = (k) => touch[k] || latch.has(k) || !!pad[k] || Object.keys(KEYMAP).some((c) => KEYMAP[c] === k && keys.has(c));
   const inp = {
     x: clamp(touch.x + kx + pad.x, -1, 1), y: clamp(touch.y + ky + pad.y, -1, 1),
-    jump: held("jump"), light: held("light"), heavy: held("heavy"), special: held("special"), dodge: held("dodge"), ulti: held("ulti"),
+    jump: held("jump"), light: held("light"), heavy: held("heavy"), special: held("special"), dodge: held("dodge"), ulti: held("ulti"), sprint: false,
   };
+  SPR.n++;
+  sprFlick(clamp(touch.x + (pad.ax || 0), -1, 1));
+  if (pad.dx && pad.dx !== SPR.padX) sprTap(pad.dx);
+  SPR.padX = pad.dx || 0;
+  if (SPR.want && !latch.size) { inp.sprint = true; inp.x = SPR.want; SPR.want = 0; sprGlow(); }
   latch.clear();
   return inp;
 }
@@ -51,7 +73,9 @@ function readPlayer() {
 const stickZone = $("stickZone"), stickBase = $("stickBase"), stickKnob = $("stickKnob");
 const STICK_R = 50;
 function placeBase(x, y) { stickBase.style.left = x + "px"; stickBase.style.top = y + "px"; stickBase.style.bottom = "auto"; stickBase.style.margin = "-58px 0 0 -58px"; }
-function resetBase() { stickBase.style.left = ""; stickBase.style.top = ""; stickBase.style.bottom = ""; stickBase.style.margin = ""; stickKnob.style.transform = ""; stickBase.classList.remove("on"); }
+function resetBase() { stickBase.style.left = ""; stickBase.style.top = ""; stickBase.style.bottom = ""; stickBase.style.margin = ""; stickKnob.style.transform = ""; stickBase.classList.remove("on"); stickKnob.classList.remove("full"); }
+// the knob glows ember at a full push to a side (where a flick sprints), brighter for a moment when a sprint goes out
+function sprGlow() { stickKnob.classList.add("spr"); clearTimeout(SPR.glowT); SPR.glowT = setTimeout(() => stickKnob.classList.remove("spr"), 300); }
 stickZone.addEventListener("pointerdown", (e) => {
   e.preventDefault(); Sfx.init();
   if (touch.id !== null) return;
@@ -76,6 +100,7 @@ stickZone.addEventListener("pointermove", (e) => {
   const nx = dx / STICK_R, ny = dy / STICK_R;
   touch.x = Math.abs(nx) < 0.2 ? 0 : nx;
   touch.y = Math.abs(ny) < 0.2 ? 0 : ny;
+  stickKnob.classList.toggle("full", Math.abs(touch.x) > BL.TUNE.sprint.flick[1]);
 });
 function endStick(e) {
   if (e && e.pointerId !== touch.id) return;

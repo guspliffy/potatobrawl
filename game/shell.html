@@ -221,6 +221,9 @@ button { font: inherit; color: inherit; }
 #stickBase.on { opacity: 1; transition: none; }
 /* the knob: a state class can light it without restating the rest, e.g. #stickKnob.x { --knobGlow: 0 0 14px 4px var(--ember); } */
 #stickKnob { --knobGlow: 0 0 0 0 transparent; position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; border: 2px solid var(--ink); background: linear-gradient(180deg, #f8e3b8, #e8c98a); box-shadow: 0 3px 0 var(--ink), inset 0 2px 0 rgba(255, 255, 255, 0.5), var(--knobGlow); }
+/* the sprint (ui/input.js): an ember rim at a full push to a side, where a flick sprints; a brighter flare as one goes out */
+#stickKnob.full { --knobGlow: 0 0 10px 2px rgba(239, 122, 82, 0.7); border-color: #7a2e16; background: linear-gradient(180deg, #fbe2b4, #f0b87e); }
+#stickKnob.spr { --knobGlow: 0 0 18px 6px var(--ember); background: linear-gradient(180deg, #ffe7bf, #f39a68); }
 .pad { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: 8px; width: 262px; height: 182px; pointer-events: none; }
 /* sideways mode with browser bars: keep thumbs about 28px away from the bar edge */
 #app.barside #stickBase { left: calc(max(16px, env(safe-area-inset-left, 0px)) + 98px); }

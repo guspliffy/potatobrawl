@@ -25,7 +25,7 @@
  */
 const crypto = require("crypto");
 const { BL } = require("./game/core.js");
-const { elo, decIn, PLACING } = require("./quick.js");
+const { elo, decIn, codeOk, PLACING } = require("./quick.js");
 
 const SEASON = 1;
 const HIST = 20;                 // results kept per account
@@ -41,7 +41,6 @@ const CHUNK = 2000;              // frames replayed between two looks at the net
 const RULES = { stocks: 3, time: 240, countdown: 150 };   // the old Ranked vs a CPU: 3 lives, 4 minutes
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
-const CODES = 2592 + 81 * 16;    // input codes a 1v1 can use (online.js: buttons, and ULTI held)
 const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
 const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;
 const isInt = Number.isInteger;
@@ -57,7 +56,7 @@ function unpack(s) {
     const a = B64I[s[i]], b = B64I[s[i + 1]], c = B64I[s[i + 2]];
     if (a === undefined || b === undefined || c === undefined) return null;
     const v = a * 64 + b;
-    if (v >= CODES || out.length + c + 1 > MAX_FRAMES) return null;
+    if (!codeOk(v) || out.length + c + 1 > MAX_FRAMES) return null;
     for (let k = 0; k <= c; k++) out.push(v);
   }
   return out;

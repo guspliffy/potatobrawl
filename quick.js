@@ -76,7 +76,9 @@ const TIMES = {
 const ROOM_PREFIX = "qm";
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
-const ULTI_BASE = 2592, CODES = ULTI_BASE + 81 * 16, NEUTRAL = 1280;
+// the input codes a 1v1 can use (game/ui/online.js): buttons, ULTI held, a sprint press (SPRINT_BASE + side x 9 + the stick's y); not Focus (2v2)
+const ULTI_BASE = 2592, SPRINT_BASE = ULTI_BASE + 81 * 16 + 81 * 2, CODES = SPRINT_BASE + 18, NEUTRAL = 1280;
+const codeOk = (v) => v < ULTI_BASE + 81 * 16 || (v >= SPRINT_BASE && v < CODES);
 const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
 const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -87,6 +89,7 @@ function readProto() {
 }
 // the same decoding as the page's decIn (game/ui/online.js)
 function decIn(v) {
+  if (v >= SPRINT_BASE) { const k = v - SPRINT_BASE; return { x: k >= 9 ? 1 : -1, y: ((k % 9) - 4) / 4, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: true }; }
   const u = v >= ULTI_BASE, b = u ? (v - ULTI_BASE) & 15 : v & 31, q = u ? (v - ULTI_BASE) >> 4 : v >> 5;
   return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: !!(b & 1), light: !!(b & 2), heavy: !!(b & 4), special: !!(b & 8), dodge: !!(b & 16), ulti: u };
 }
@@ -356,7 +359,7 @@ function init(opts) {
         const a = B64I[p.i[k * 2]], b = B64I[p.i[k * 2 + 1]];
         if (a === undefined || b === undefined) break;
         const v = a * 64 + b;
-        if (v >= CODES) break;
+        if (!codeOk(v)) break;
         if (fr > L.length) break;   // never a hole: frames arrive in order
         L[fr] = v; grew = true;
       }
@@ -630,4 +633,4 @@ function init(opts) {
   };
 }
 
-module.exports = { init, elo, cleanOn, bounty, stakeCheck, decIn, RULES, PLACING, TIMES, STK, STAKES };
+module.exports = { init, elo, cleanOn, bounty, stakeCheck, decIn, codeOk, RULES, PLACING, TIMES, STK, STAKES };

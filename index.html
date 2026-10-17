@@ -221,6 +221,9 @@ button { font: inherit; color: inherit; }
 #stickBase.on { opacity: 1; transition: none; }
 /* the knob: a state class can light it without restating the rest, e.g. #stickKnob.x { --knobGlow: 0 0 14px 4px var(--ember); } */
 #stickKnob { --knobGlow: 0 0 0 0 transparent; position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; border: 2px solid var(--ink); background: linear-gradient(180deg, #f8e3b8, #e8c98a); box-shadow: 0 3px 0 var(--ink), inset 0 2px 0 rgba(255, 255, 255, 0.5), var(--knobGlow); }
+/* the sprint (ui/input.js): an ember rim at a full push to a side, where a flick sprints; a brighter flare as one goes out */
+#stickKnob.full { --knobGlow: 0 0 10px 2px rgba(239, 122, 82, 0.7); border-color: #7a2e16; background: linear-gradient(180deg, #fbe2b4, #f0b87e); }
+#stickKnob.spr { --knobGlow: 0 0 18px 6px var(--ember); background: linear-gradient(180deg, #ffe7bf, #f39a68); }
 .pad { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: 8px; width: 262px; height: 182px; pointer-events: none; }
 /* sideways mode with browser bars: keep thumbs about 28px away from the bar edge */
 #app.barside #stickBase { left: calc(max(16px, env(safe-area-inset-left, 0px)) + 98px); }
@@ -5196,6 +5199,12 @@ const TUNE = {
   catchSlow: 0.5,
   catchUlt: 5,
   catchPad: 10,
+  // The sprint (all its numbers, to tune after Jonny plays it): the phone sends a `sprint` press on a flick of the stick (from below
+  // flick[0] to above flick[1] within flick[2] frames), a computer on a direction tapped twice within `tap` frames (ui/input.js).
+  // On the ground from idle or a run: `burst` frames at `mul` x the run speed (the stick held to that side), then a normal run.
+  // Cancels from the burst's frame: jump, light (the side light with +lightKb base knockback), heavy; dodge on any frame; never
+  // special or ulti. `cd` frames after it ends before the next one. No invincibility (the roll keeps that).
+  sprint: { flick: [0.35, 0.9, 6], tap: 12, burst: 18, mul: 1.5, jump: 4, light: 8, heavy: 10, lightKb: 1, cd: 45 },
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -5694,8 +5703,8 @@ const BOSSES = [
 ];
 
 /* ---------- state ---------- */
-const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti"];
-const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false });
+const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti", "sprint"];
+const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: false });
 
 function newFighter(spec, slot, pal, x, facing) {
   const s = spec.stats;
@@ -5709,7 +5718,7 @@ function newFighter(spec, slot, pal, x, facing) {
     percent: 0, stocks: 3, invuln: 0, hitstun: 0, tumble: false,
     specCd: 0, recUsed: false, ledge: 0, ledgeCd: 0, ledgeInv: false,
     flash: 0, armorFlash: 0, dead: 0,
-    inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0, ulti: 0 },
+    inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0, ulti: 0, sprint: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
     techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false, pop: 0,
@@ -5723,6 +5732,8 @@ function newFighter(spec, slot, pal, x, facing) {
     ph: 0, held: -1, bx: 0, bk: 0,
     // catchCd: frames until this fighter can make its next Catch (2v2)
     catchCd: 0,
+    // the sprint: spr = the burst's frame (0 = none), sprCd = frames before the next one, sprL = the light out of a sprint (+lightKb)
+    spr: 0, sprCd: 0, sprL: false,
     anim: { run: 0 },
   };
 }
@@ -5850,7 +5861,10 @@ function step(g, inputs) {
 
 function readInput(f, inp, frozen) {
   f.prevInp = f.inp;
-  f.inp = { x: clamp(inp.x || 0, -1, 1), y: clamp(inp.y || 0, -1, 1), jump: !!inp.jump, light: !!inp.light, heavy: !!inp.heavy, special: !!inp.special, dodge: !!inp.dodge, ulti: !!inp.ulti };
+  const x = clamp(inp.x || 0, -1, 1), spr = !!inp.sprint && Math.abs(x) > 0.5;
+  // a sprint frame keeps the buttons of the frame before: its online code has no room for them, and a held button stays held
+  const b = spr ? f.prevInp : inp;
+  f.inp = { x, y: clamp(inp.y || 0, -1, 1), jump: !!b.jump, light: !!b.light, heavy: !!b.heavy, special: !!b.special, dodge: !!b.dodge, ulti: !!b.ulti, sprint: spr };
   for (const k of BTN) {
     if (f.inp[k] && !f.prevInp[k]) f.buf[k] = TUNE.buffer;
     else if (f.buf[k] > 0 && !frozen) f.buf[k]--;
@@ -5873,6 +5887,8 @@ function updateFighter(g, f) {
   if (f.armorFlash > 0) f.armorFlash--;
   if (f.link > 0) f.link--;
   if (f.catchCd > 0) f.catchCd--;
+  if (f.sprCd > 0) f.sprCd--;
+  if (f.spr && (f.state !== "run" || !f.grounded)) endSprint(f);   // hit, or ran off the edge
 
   switch (f.state) {
     case "respawn": {
@@ -5917,6 +5933,7 @@ function updateFighter(g, f) {
 
 function actOrMove(g, f) {
   const b = f.buf, dir = dirOf(f.inp);
+  if (f.spr) return sprintStep(g, f, dir);
   if (b.ulti) { consume(f, "ulti"); if (ultReady(g, f)) return startUlti(g, f); }
   if (f.grounded) {
     if (b.dodge) { consume(f, "dodge"); return startDodge(g, f); }
@@ -5927,6 +5944,7 @@ function actOrMove(g, f) {
       if (dir === "side") faceStick(f);
       return startMove(g, f, dir === "up" ? "up" : dir === "down" ? "down" : dir === "side" ? "side" : "jab");
     }
+    if (b.sprint) { consume(f, "sprint"); if (f.sprCd <= 0 && Math.abs(f.inp.x) > 0.5) return startSprint(g, f); }
     groundMove(g, f);
   } else {
     if (f.state !== "air") setState(f, "air");
@@ -6076,6 +6094,29 @@ function groundMove(g, f) {
   } else f.downHold = 0;
 }
 
+/* ---------- the sprint (TUNE.sprint) ---------- */
+function startSprint(g, f) {
+  f.facing = sign(f.inp.x); f.spr = 1;
+  f.vx = f.facing * f.s.run * TUNE.sprint.mul;
+  f.anim.run += Math.abs(f.vx) * 0.075;
+  if (f.state !== "run") setState(f, "run");
+  g.events.push({ type: "sprint", slot: f.slot, x: f.x, y: f.y, dir: f.facing });
+}
+function endSprint(f) { f.spr = 0; f.sprCd = TUNE.sprint.cd; }
+// a burst frame (on the ground, running): its cancels, else full speed while the stick stays held that way (let go or turn: a run)
+function sprintStep(g, f, dir) {
+  const S = TUNE.sprint, b = f.buf, n = ++f.spr;
+  for (const k of ["jump", "light", "heavy"]) if (b[k] > 0 && n < S[k]) b[k] = TUNE.buffer;   // a press made early waits for its frame
+  if (b.dodge) { endSprint(f); consume(f, "dodge"); return startDodge(g, f); }
+  if (b.jump && n >= S.jump) { endSprint(f); consume(f, "jump"); f.tumble = false; f.lk = false; return setState(f, "jumpsquat"); }
+  if (b.heavy && n >= S.heavy) { endSprint(f); consume(f, "heavy"); return startMove(g, f, dir === "up" ? "hUp" : dir === "down" ? "hDown" : "hSide"); }
+  if (b.light && n >= S.light) { endSprint(f); consume(f, "light"); startMove(g, f, "side"); f.sprL = true; return; }
+  consume(f, "sprint");
+  if (n > S.burst || f.inp.x * f.facing <= 0.25) { endSprint(f); return groundMove(g, f); }
+  f.vx = f.facing * f.s.run * S.mul;
+  f.anim.run += Math.abs(f.vx) * 0.075;
+}
+
 function airDrift(f, mult) {
   const s = f.s, x = f.inp.x;
   if (Math.abs(x) > 0.2) {
@@ -6100,7 +6141,7 @@ function airJump(g, f) {
 function startMove(g, f, key) {
   const m = f.spec.moves[key];
   setState(f, "attack");
-  f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0;
+  f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0; f.sprL = false;
   if (key === "spec") f.specCd = m.cooldown || 0;
   // the link: started from (or soon after) the second light hit in a row, the wind-up skips its first linkFast frames
   // (a charging heavy still reaches the frame where it charges)
@@ -6473,7 +6514,8 @@ function applyHit(g, h) {
   // the ulti bar: dealt and taken damage fill it (an ulti's own hits don't)
   const ultHit = !!h.hit.ult || (!h.proj && att.mid === "ulti");
   if (!ultHit) { ultGain(att, dmg * TUNE.ultDealt); ultGain(def, dmg * TUNE.ultTaken); }
-  let kb = knockback(hit, def.percent, def.s.weight);
+  // the light out of a sprint: +lightKb base knockback
+  let kb = knockback(!h.proj && att.sprL && att.mid === "side" ? Object.assign({}, hit, { bkb: hit.bkb + TUNE.sprint.lightKb }) : hit, def.percent, def.s.weight);
   if (ck) kb *= 1 + TUNE.chgKb * ck;
   if (ultHit && kb >= TUNE.tumbleKb) kb *= TUNE.ultKb;   // only the launching hits, so a multi-hit ulti still carries its target into the last hit
   let hdir;
@@ -7443,6 +7485,9 @@ function botInput(g, me, opp, bot) {
   if (!hy && o.st === "attack" && adx < 140 && Math.abs(dy) < 120 && R() < lerp(0.1, 0.7, d)) hy = -1;
   bot.hold.x = hx; bot.hold.y = hy;
   out.x = hx; out.y = hy; avoidEdge(me, out);
+  // a long way to go on the ground (to the opponent, or to the ledge after one knocked out): sprint, the stronger the CPU the more often.
+  // Not at a boss: his numbers (the Road's, DUO_HP, boss.js's bands) were tuned with CPU players and partners that walk.
+  if (act && me.grounded && !opp.spec.boss && !me.spr && me.sprCd <= 0 && out.x === sx && !hy && adx > 200 && R() < lerp(0.15, 0.5, d)) out.sprint = true;
   return out;
 }
 function avoidEdge(me, out) {
@@ -7485,7 +7530,7 @@ function teamBotInput(g, me, bot) {
     if (!bot.catchOn) continue;
     const tx = t.x + (t.vx + t.kbx) * 10, ty = t.y + (t.vy + t.kby) * 10, dx = tx - me.x;
     if (Math.abs(dx) > 280 || tx < S.x1 - 40 || tx > S.x2 + 40 || ty > S.top + 40) continue;
-    Object.assign(out, { light: false, heavy: false, special: false, dodge: false, ulti: false, y: 0 });
+    Object.assign(out, { light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: false, y: 0 });
     out.x = Math.abs(dx) > 12 ? sign(dx) : 0;
     out.jump = me.grounded && ty < me.y - 70 && Math.abs(dx) < 140;
     avoidEdge(me, out);
@@ -7500,7 +7545,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"];
+  "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd", "spr", "sprCd", "sprL"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part", "z", "w", "pass"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -7537,7 +7582,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd", "spr", "sprCd", "sprL"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }
@@ -7790,6 +7835,7 @@ const Sfx = {
   armor() { this.tone(520, 380, 0.12, "square", 0.08); this.noise(0.05, 0.2, 3000); },
   ko() { this.noise(0.7, 0.75, 700); this.tone(110, 28, 0.8, "sawtooth", 0.3); this.tone(900, 180, 0.45, "square", 0.06); },
   jump() { this.tone(280, 520, 0.08, "triangle", 0.1); },
+  dash() { this.noise(0.1, 0.07, 1500); },   // the sprint's push-off
   swing(h) { this.noise(h ? 0.13 : 0.06, h ? 0.12 : 0.06, h ? 1000 : 2200); },
   count(go) { this.tone(go ? 880 : 440, go ? 880 : 440, go ? 0.32 : 0.12, "square", 0.08); },
   ui() { this.tone(620, 840, 0.05, "triangle", 0.07); },
@@ -8206,12 +8252,28 @@ const KEYMAP = {
   KeyU: "ulti",
 };
 const GAMEKEYS = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", ...Object.keys(KEYMAP)]);
+/* The sprint (core.js TUNE.sprint): a flick of the stick (touch, a gamepad's stick) or a direction tapped twice (keys, a gamepad's d-pad)
+   sends one `sprint` press, the stick full to that side. A sprint frame carries no button presses (its online code has no room), so one
+   that meets a new press waits a frame. n counts frames (readPlayer calls); low = the last frame the stick was in the middle. */
+const SPR = { n: 0, low: -99, hi: false, tapS: 0, tapT: -99, want: 0, padX: 0, glowT: 0 };
+const SIDEKEY = { KeyA: -1, ArrowLeft: -1, KeyD: 1, ArrowRight: 1 };
+function sprTap(side) {
+  if (SPR.tapS === side && SPR.n - SPR.tapT <= BL.TUNE.sprint.tap) { SPR.want = side; SPR.tapT = -99; }
+  else { SPR.tapS = side; SPR.tapT = SPR.n; }
+}
+function sprFlick(ax) {
+  const [lo, hi, win] = BL.TUNE.sprint.flick, a = Math.abs(ax);
+  if (a < lo) SPR.low = SPR.n;
+  if (a > hi && !SPR.hi && SPR.n - SPR.low <= win) SPR.want = Math.sign(ax);
+  SPR.hi = a > hi;
+}
 window.addEventListener("keydown", (e) => {
   Sfx.init();
   if (mode === "match" && (e.code === "Escape" || e.code === "KeyP")) { e.preventDefault(); togglePause(); return; }
   if (mode === "match" && e.code === "Tab" && match && match.duo) { e.preventDefault(); if (!e.repeat) duoFocusNext(); return; }   // 2v2: Focus (ui/duo.js)
   if (mode === "match" && GAMEKEYS.has(e.code)) e.preventDefault();
   if (!keys.has(e.code) && KEYMAP[e.code]) latch.add(KEYMAP[e.code]);
+  if (!keys.has(e.code) && SIDEKEY[e.code] && mode === "match") sprTap(SIDEKEY[e.code]);
   keys.add(e.code);
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -8226,6 +8288,7 @@ function readPad() {
     const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
     const b = (i) => !!(p.buttons[i] && p.buttons[i].pressed);
     r.x = Math.abs(ax) > 0.2 ? ax : (b(15) ? 1 : 0) - (b(14) ? 1 : 0);
+    r.ax = Math.abs(ax) > 0.2 ? ax : 0; r.dx = (b(15) ? 1 : 0) - (b(14) ? 1 : 0);   // the stick alone (flicks), the d-pad alone (double taps)
     r.y = Math.abs(ay) > 0.2 ? ay : (b(13) ? 1 : 0) - (b(12) ? 1 : 0);
     r.light = b(0); r.special = b(1); r.jump = b(2); r.ulti = b(3); r.heavy = b(4) || b(6); r.dodge = b(5) || b(7);
     break;
@@ -8240,8 +8303,13 @@ function readPlayer() {
   const held = (k) => touch[k] || latch.has(k) || !!pad[k] || Object.keys(KEYMAP).some((c) => KEYMAP[c] === k && keys.has(c));
   const inp = {
     x: clamp(touch.x + kx + pad.x, -1, 1), y: clamp(touch.y + ky + pad.y, -1, 1),
-    jump: held("jump"), light: held("light"), heavy: held("heavy"), special: held("special"), dodge: held("dodge"), ulti: held("ulti"),
+    jump: held("jump"), light: held("light"), heavy: held("heavy"), special: held("special"), dodge: held("dodge"), ulti: held("ulti"), sprint: false,
   };
+  SPR.n++;
+  sprFlick(clamp(touch.x + (pad.ax || 0), -1, 1));
+  if (pad.dx && pad.dx !== SPR.padX) sprTap(pad.dx);
+  SPR.padX = pad.dx || 0;
+  if (SPR.want && !latch.size) { inp.sprint = true; inp.x = SPR.want; SPR.want = 0; sprGlow(); }
   latch.clear();
   return inp;
 }
@@ -8249,7 +8317,9 @@ function readPlayer() {
 const stickZone = $("stickZone"), stickBase = $("stickBase"), stickKnob = $("stickKnob");
 const STICK_R = 50;
 function placeBase(x, y) { stickBase.style.left = x + "px"; stickBase.style.top = y + "px"; stickBase.style.bottom = "auto"; stickBase.style.margin = "-58px 0 0 -58px"; }
-function resetBase() { stickBase.style.left = ""; stickBase.style.top = ""; stickBase.style.bottom = ""; stickBase.style.margin = ""; stickKnob.style.transform = ""; stickBase.classList.remove("on"); }
+function resetBase() { stickBase.style.left = ""; stickBase.style.top = ""; stickBase.style.bottom = ""; stickBase.style.margin = ""; stickKnob.style.transform = ""; stickBase.classList.remove("on"); stickKnob.classList.remove("full"); }
+// the knob glows ember at a full push to a side (where a flick sprints), brighter for a moment when a sprint goes out
+function sprGlow() { stickKnob.classList.add("spr"); clearTimeout(SPR.glowT); SPR.glowT = setTimeout(() => stickKnob.classList.remove("spr"), 300); }
 stickZone.addEventListener("pointerdown", (e) => {
   e.preventDefault(); Sfx.init();
   if (touch.id !== null) return;
@@ -8274,6 +8344,7 @@ stickZone.addEventListener("pointermove", (e) => {
   const nx = dx / STICK_R, ny = dy / STICK_R;
   touch.x = Math.abs(nx) < 0.2 ? 0 : nx;
   touch.y = Math.abs(ny) < 0.2 ? 0 : ny;
+  stickKnob.classList.toggle("full", Math.abs(touch.x) > BL.TUNE.sprint.flick[1]);
 });
 function endStick(e) {
   if (e && e.pointerId !== touch.id) return;
@@ -8471,6 +8542,12 @@ function pose(f, tk) {
     hF = [w * 0.15 - Math.sin(ph) * w * 0.45, -leg - tor * 0.45];
     hB = [w * 0.05 + Math.sin(ph) * w * 0.45, -leg - tor * 0.4];
     P.lean = 0.16;
+    if (f.spr && f.grounded) {   // the sprint burst: leaning hard into it, long strides, arms swept back
+      fF = [Math.sin(ph) * w * 0.72, -Math.max(0, Math.cos(ph)) * 13];
+      fB = [-Math.sin(ph) * w * 0.72, -Math.max(0, -Math.cos(ph)) * 13];
+      hF = [w * 0.48 - Math.sin(ph) * w * 0.2, -leg - tor * 0.34]; hB = [-w * 0.62 + Math.sin(ph) * w * 0.2, -leg - tor * 0.5];
+      P.lean = 0.48;
+    }
   }
   const airy = st === "air" || st === "helpless" || (st === "dodge" && f.dodgeKind === "air");
   if (airy) {
@@ -9532,6 +9609,17 @@ function drawMagic(c, from, S, tk) {
   } else for (let i = 1; i <= 3; i++) { const t = ((tk * 0.07 + i / 3) % 1) * len; c.beginPath(); c.arc(t, Math.sin(tk * 0.4 + i) * S.r * 0.4, 2, 0, Math.PI * 2); c.fill(); }
   c.restore();
 }
+// the sprint burst: speed lines streaming off behind the potato (drawn in its own space, where x < 0 is behind), fading as the burst ends
+function sprintLines(c, f, P, tk, alpha) {
+  const k = 1 - f.spr / (BL.TUNE.sprint.burst + 2);
+  c.save(); c.lineCap = "round"; c.strokeStyle = "#fff6e4";
+  for (let i = 0; i < 4; i++) {
+    const ph = (tk * 0.21 + i * 0.29) % 1, y = -P.h * (0.2 + i * 0.19), x0 = -P.w * 0.5 - 6 - ph * 26, len = 22 + ((i * 7) % 3) * 10;
+    c.globalAlpha = alpha * k * 0.8 * (1 - ph * 0.7); c.lineWidth = i % 2 ? 2.5 : 3.5;
+    c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 - len, y); c.stroke();
+  }
+  c.restore();
+}
 function drawPotato(c, f, tk, at) {
   const ox = at ? at[0] : f.x, oy = at ? at[1] : f.y;
   const look = f.spec.look, pal0 = f.pal, cos = look.costume;
@@ -9551,6 +9639,7 @@ function drawPotato(c, f, tk, at) {
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
   const shR = rot(P.sh, P.hip, P.lean), shB = rot(P.shB, P.hip, P.lean);
   if (TEAM_RIM && !at) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js)
+  if (f.spr && f.state === "run" && f.grounded && !at) sprintLines(c, f, P, tk, alpha);
   if (cos === "phoenix") {
     const air = !f.grounded && f.state !== "ledge";
     const len = P.w * (air ? 1.35 : 1.0);
@@ -17278,6 +17367,7 @@ function updateFx(g) {
   for (let i = 0; i < combos.length; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
   for (let i = chgPops.length - 1; i >= 0; i--) { const q = chgPops[i]; q.t++; q.pop *= 0.8; if (q.t > 56) chgPops.splice(i, 1); }
   finDashTick(g);
+  for (const f of g.fighters) if (f.spr && f.state === "run" && f.grounded && f.spr % 3 === 0) addFx({ k: "puff", x: f.x - f.facing * 10, y: f.y - 2, vx: -f.facing * frand(0.6, 1.8), vy: -frand(0.1, 0.7), r: frand(3, 5.5), t: 0, life: frand(12, 18) });   // the sprint's dust trail
   for (let i = sfx.length - 1; i >= 0; i--) if (sfx[i].t >= sfx[i].life) sfx.splice(i, 1);
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
@@ -17961,6 +18051,10 @@ function handleEvent(g, e, live) {
       if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "reaper") { graveRise(e, g.fighters[e.slot], live); break; }   // Reaper: a dark cloud lifts him
       if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "land": dust(e.x, e.y, 3, 22); break;
+    case "sprint":   // the sprint's push-off: a puff of dust kicked back from the feet, a short whoosh
+      for (let i = 0; i < 7; i++) addFx({ k: "puff", x: e.x - e.dir * frand(4, 16), y: e.y - 2, vx: -e.dir * frand(1, 3.4), vy: -frand(0.2, 1.3), r: frand(4, 8), t: 0, life: frand(16, 26) });
+      if (live) Sfx.dash();
+      break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
     case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
     case "swing": {
@@ -30378,8 +30472,9 @@ window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn };
    A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart.
-   18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start. */
-const PROTO = 18;
+   18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start.
+   19: the sprint (a new input and its codes, new fighter fields, CPUs that sprint). */
+const PROTO = 19;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -30402,15 +30497,20 @@ const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 const NEUTRAL = 1280;
 // One frame of input in two base64 characters (0-4095). 0-2591: the stick (81 spots) x 32 button sets. ULTI held uses the
 // spare codes ULTI_BASE + stick x 16 (jump, light, heavy, special; dodge is dropped on those frames: the ulti wins anyway).
-// A Team Brawl's Focus tap uses FOCUS_BASE + stick x 2 + the foe (0 or 1, in seat order), no buttons on that frame; IN_END ends the codes.
-const ULTI_BASE = 2592, FOCUS_BASE = ULTI_BASE + 81 * 16, IN_END = FOCUS_BASE + 81 * 2;
+// A Team Brawl's Focus tap uses FOCUS_BASE + stick x 2 + the foe (0 or 1, in seat order), no buttons on that frame.
+// A sprint press uses SPRINT_BASE + side (0 left, 1 right) x 9 + the stick's y: its x is a full push that way, and it has no buttons (the
+// game keeps the frame before's held buttons on a sprint frame, core.js readInput). IN_END ends the codes; a 1v1 takes all but Focus.
+const ULTI_BASE = 2592, FOCUS_BASE = ULTI_BASE + 81 * 16, SPRINT_BASE = FOCUS_BASE + 81 * 2, IN_END = SPRINT_BASE + 18;
+const code1v1 = (v) => v < FOCUS_BASE || (v >= SPRINT_BASE && v < IN_END);
 function encIn(i) {
   const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4), q = (qx + 4) * 9 + (qy + 4);
   if (i.focus === 0 || i.focus === 1) return FOCUS_BASE + q * 2 + i.focus;
+  if (i.sprint && (qx === 4 || qx === -4)) return SPRINT_BASE + (qx > 0 ? 9 : 0) + qy + 4;
   const b4 = (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0);
   return i.ulti ? ULTI_BASE + q * 16 + b4 : q * 32 + b4 + (i.dodge ? 16 : 0);
 }
 function decIn(v) {
+  if (v >= SPRINT_BASE) { const k = v - SPRINT_BASE; return { x: k >= 9 ? 1 : -1, y: ((k % 9) - 4) / 4, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: true }; }
   if (v >= FOCUS_BASE) { const q = (v - FOCUS_BASE) >> 1; return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, focus: (v - FOCUS_BASE) & 1 }; }
   const u = v >= ULTI_BASE, b = u ? (v - ULTI_BASE) & 15 : v & 31, q = u ? (v - ULTI_BASE) >> 4 : v >> 5;
   return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: !!(b & 1), light: !!(b & 2), heavy: !!(b & 4), special: !!(b & 8), dodge: !!(b & 16), ulti: u };
@@ -30902,7 +31002,7 @@ function readOpp(pr) {
       const a = B64I[pr.i[k * 2]], b = B64I[pr.i[k * 2 + 1]];
       if (a === undefined || b === undefined) break;
       const v = a * 64 + b;
-      if (v >= ULTI_BASE + 81 * 16) break;
+      if (!code1v1(v)) break;
       NET.opLog[fr] = v;
     }
   }
@@ -32205,6 +32305,7 @@ const CTRL = [
   { k: "special", name: "Special", col: "#8fb6ff", key: "L", text: "Signature move, then a short recharge." },
   { k: "jump", name: "Jump", col: "#eef0fa", key: "Space", text: "Works again in the air." },
   { k: "dodge", name: "Dodge", col: "#a4a9c8", key: "Shift", text: "Slip through attacks. Softens a hard landing." },
+  { k: "sprint", name: "Sprint", col: "#ef7a52", key: "D D", text: "Flick the stick to a side (keys: tap a direction twice)." },
   { k: "ulti", name: "Ulti", col: "#f3c84a", key: "U", text: "Only with a full gold bar. Freezes the game, then one huge move." },
 ];
 function phoneFig() {

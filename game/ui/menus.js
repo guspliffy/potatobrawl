@@ -184,6 +184,7 @@ const CTRL = [
   { k: "special", name: "Special", col: "#8fb6ff", key: "L", text: "Signature move, then a short recharge." },
   { k: "jump", name: "Jump", col: "#eef0fa", key: "Space", text: "Works again in the air." },
   { k: "dodge", name: "Dodge", col: "#a4a9c8", key: "Shift", text: "Slip through attacks. Softens a hard landing." },
+  { k: "sprint", name: "Sprint", col: "#ef7a52", key: "D D", text: "Flick the stick to a side (keys: tap a direction twice)." },
   { k: "ulti", name: "Ulti", col: "#f3c84a", key: "U", text: "Only with a full gold bar. Freezes the game, then one huge move." },
 ];
 function phoneFig() {

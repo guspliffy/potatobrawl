@@ -28,6 +28,12 @@ function pose(f, tk) {
     hF = [w * 0.15 - Math.sin(ph) * w * 0.45, -leg - tor * 0.45];
     hB = [w * 0.05 + Math.sin(ph) * w * 0.45, -leg - tor * 0.4];
     P.lean = 0.16;
+    if (f.spr && f.grounded) {   // the sprint burst: leaning hard into it, long strides, arms swept back
+      fF = [Math.sin(ph) * w * 0.72, -Math.max(0, Math.cos(ph)) * 13];
+      fB = [-Math.sin(ph) * w * 0.72, -Math.max(0, -Math.cos(ph)) * 13];
+      hF = [w * 0.48 - Math.sin(ph) * w * 0.2, -leg - tor * 0.34]; hB = [-w * 0.62 + Math.sin(ph) * w * 0.2, -leg - tor * 0.5];
+      P.lean = 0.48;
+    }
   }
   const airy = st === "air" || st === "helpless" || (st === "dodge" && f.dodgeKind === "air");
   if (airy) {
@@ -1089,6 +1095,17 @@ function drawMagic(c, from, S, tk) {
   } else for (let i = 1; i <= 3; i++) { const t = ((tk * 0.07 + i / 3) % 1) * len; c.beginPath(); c.arc(t, Math.sin(tk * 0.4 + i) * S.r * 0.4, 2, 0, Math.PI * 2); c.fill(); }
   c.restore();
 }
+// the sprint burst: speed lines streaming off behind the potato (drawn in its own space, where x < 0 is behind), fading as the burst ends
+function sprintLines(c, f, P, tk, alpha) {
+  const k = 1 - f.spr / (BL.TUNE.sprint.burst + 2);
+  c.save(); c.lineCap = "round"; c.strokeStyle = "#fff6e4";
+  for (let i = 0; i < 4; i++) {
+    const ph = (tk * 0.21 + i * 0.29) % 1, y = -P.h * (0.2 + i * 0.19), x0 = -P.w * 0.5 - 6 - ph * 26, len = 22 + ((i * 7) % 3) * 10;
+    c.globalAlpha = alpha * k * 0.8 * (1 - ph * 0.7); c.lineWidth = i % 2 ? 2.5 : 3.5;
+    c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 - len, y); c.stroke();
+  }
+  c.restore();
+}
 function drawPotato(c, f, tk, at) {
   const ox = at ? at[0] : f.x, oy = at ? at[1] : f.y;
   const look = f.spec.look, pal0 = f.pal, cos = look.costume;
@@ -1108,6 +1125,7 @@ function drawPotato(c, f, tk, at) {
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
   const shR = rot(P.sh, P.hip, P.lean), shB = rot(P.shB, P.hip, P.lean);
   if (TEAM_RIM && !at) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js)
+  if (f.spr && f.state === "run" && f.grounded && !at) sprintLines(c, f, P, tk, alpha);
   if (cos === "phoenix") {
     const air = !f.grounded && f.state !== "ledge";
     const len = P.w * (air ? 1.35 : 1.0);

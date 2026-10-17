@@ -241,6 +241,7 @@ const Sfx = {
   armor() { this.tone(520, 380, 0.12, "square", 0.08); this.noise(0.05, 0.2, 3000); },
   ko() { this.noise(0.7, 0.75, 700); this.tone(110, 28, 0.8, "sawtooth", 0.3); this.tone(900, 180, 0.45, "square", 0.06); },
   jump() { this.tone(280, 520, 0.08, "triangle", 0.1); },
+  dash() { this.noise(0.1, 0.07, 1500); },   // the sprint's push-off
   swing(h) { this.noise(h ? 0.13 : 0.06, h ? 0.12 : 0.06, h ? 1000 : 2200); },
   count(go) { this.tone(go ? 880 : 440, go ? 880 : 440, go ? 0.32 : 0.12, "square", 0.08); },
   ui() { this.tone(620, 840, 0.05, "triangle", 0.07); },
