@@ -5,7 +5,8 @@ const SYNC = (function () {
   // Numbers that only go up by playing or down by spending: two devices add their changes together.
   const COUNTERS = ["tokens", "wins", "losses", "draws", "matches", "friendW", "friendL", "cups"];
   // Added later (an older page does not know them and syncs a prof without them): a MISSING one is "not known", never zero or empty.
-  const OPT_COUNTERS = ["flawless", "duo", "duoW", "duoC"];   // duo: online boss wins on Hard or Nightmare (the Double Trouble title); duoW / duoC: 2v2 wins and your Catches (ui/duo.js)
+  const OPT_COUNTERS = ["flawless", "duo", "duoW", "duoC", "ago", "gzt"];   // duo: online boss wins on Hard or Nightmare (the Double Trouble title); duoW / duoC: 2v2 wins and your Catches (ui/duo.js);
+  // ago / gzt: free Daily "Another go" tries and Glaze tokens the Harvest gave and not yet used (ui/harvest.js), counted like chips
   const FS_KEYS = ["w", "l", "d"];
   const MAXN = 1e9;
   const HIST = 50;
@@ -67,6 +68,13 @@ const SYNC = (function () {
     if (d && (q.x === 1 || q.x === true)) out.x = 1;
     return out;
   }
+  // The Harvest (ui/harvest.js): { n: days claimed in this round (0-30), c: rounds finished before it, d: the last day claimed,
+  // sk: the fighters given the Harvest skin }. Not an object -> null (missing).
+  function cleanHarvest(q) {
+    if (!isObj(q)) return null;
+    const d = typeof q.d === "string" && DAY_RE.test(q.d) ? q.d : "";
+    return { n: d ? num(q.n, 0, 30, 0) : 0, c: num(q.c, 0, 1e6, 0), d, sk: cleanIds(q.sk) };
+  }
   // The Road (ui/road.js): { s: per stop (24 in three regions), the stars won as bits (1 win, 2 no heart lost, 4 the bonus), b: Old
   // Scratch's levels won as bits (1 Normal, 2 Hard, 4 Nightmare), paid: his first win's reward was paid; b2 / p2: the same for Zorp,
   // b3 / p3 for Kraken Spud (left out while 0 / false, so an older page's road has one spelling) }. Trailing empty stops are dropped.
@@ -121,6 +129,7 @@ const SYNC = (function () {
     if (typeof p.title === "string") out.title = /^[a-z][a-z0-9_]{0,15}$/.test(p.title) ? p.title : "";                   // a title id, "" = the best earned
     if (p.so === 0 || p.so === 1) out.so = p.so;   // Settings > Chip stakes: 1 = Off (the server reads it before a challenge)
     { const dl = cleanDaily(p.daily); if (dl) out.daily = dl; }
+    { const hv = cleanHarvest(p.harvest); if (hv) out.harvest = hv; }
     // fighter mastery: XP played per fighter (a counter), the one-time head start XP (max), the highest level whose reward was paid (max), the KO pages / Ultimate KO pages landed (union)
     if (isObj(p.mxp)) out.mxp = cleanMap(p.mxp, MAXN);
     if (isObj(p.mseed)) out.mseed = cleanMap(p.mseed, MSEED_MAX);
@@ -161,6 +170,7 @@ const SYNC = (function () {
     if (S.title !== undefined) P.title = S.title;
     if (S.so !== undefined) P.so = S.so;
     if (S.daily !== undefined) P.daily = Object.assign({}, S.daily);
+    if (S.harvest !== undefined) P.harvest = Object.assign({}, S.harvest, { sk: S.harvest.sk.slice() });
     if (S.road !== undefined) P.road = Object.assign({}, S.road, { s: S.road.s.slice() });
     if (S.routes !== undefined) P.routes = S.routes.slice();
     if (S.comboPaid !== undefined) P.comboPaid = S.comboPaid;
@@ -237,6 +247,16 @@ const SYNC = (function () {
       }
       out.daily = Object.assign({}, v);
     }
+    // the Harvest: the side further along (more rounds, then more days claimed), the later day claimed, every fighter given its skin on
+    // either side. A side without the field is "unchanged".
+    if (have(S.harvest) || have(L.harvest)) {
+      const l = L.harvest, s = S.harvest;
+      if (!have(l) || !have(s)) out.harvest = Object.assign({}, l || s, { sk: (l || s).sk.slice() });
+      else {
+        const w = l.c !== s.c ? (l.c > s.c ? l : s) : l.n >= s.n ? l : s;
+        out.harvest = { n: w.n, c: w.c, d: l.d > s.d ? l.d : s.d, sk: [...new Set([...l.sk, ...s.sk])].sort() };
+      }
+    }
     // the Shop: skins glazed and nameplates owned are a union (a side without the field is "unchanged"); the plate worn follows the newer side
     if (have(S.glazed) || have(L.glazed)) {
       const r = {}, a = L.glazed || {}, b = S.glazed || {};
@@ -283,6 +303,6 @@ const SYNC = (function () {
     return out;
   }
 
-  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, cleanRoad, sanitize, snapshot, applyTo, hasProgress, mergeProf };
+  return { COUNTERS, OPT_COUNTERS, HIST, ALPHA, normCode, fmtCode, typing, canon, same, cleanName, cleanDaily, cleanHarvest, cleanRoad, sanitize, snapshot, applyTo, hasProgress, mergeProf };
 })();
 if (typeof module !== "undefined") module.exports = SYNC;

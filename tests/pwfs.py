@@ -111,7 +111,7 @@ async def tight(b, errs):
     def need(ok, msg):
         if not ok: errs.append(f'{tag}: {msg}')
         return ok
-    await pg.evaluate("(() => { document.getElementById('mName').textContent = 'Sir Mashalot'; document.getElementById('mTokens').textContent = '128,450'; for (const id of ['mStreak', 'mCups']) { const e = document.getElementById(id); e.hidden = false; e.textContent = '88'; } })()")
+    await pg.evaluate("(() => { document.getElementById('mName').textContent = 'Sir Mashalot'; document.getElementById('mTokens').textContent = '128,450'; for (const id of ['mStreakN', 'mCups']) { const e = document.getElementById(id); e.hidden = false; e.textContent = '88'; } document.getElementById('mGift').hidden = false; })()")
     await pg.set_viewport_size({'width': 667, 'height': 320}); await pg.wait_for_timeout(500)
     ST = "(() => { const bar = document.querySelector('#scrMenu .mm-bar'), top = bar.querySelector('.mm-topr'); return { nofs: bar.classList.contains('nofs'), fit: document.getElementById('mRank').className, over: bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1 }; })()"
     st = await pg.evaluate(ST)

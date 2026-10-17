@@ -1,9 +1,28 @@
-# PotatoBrawl handoff (updated 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-17: the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- The Harvest (2026-10-17, branch claude/harvest-daily-gifts-tqx1lv, pre-step-6 thread 3, PROTO 18: the Harvest skin is a new palette an
+  older copy can't accept in a match start, players reload once; brief /mnt/project-files/pre-step6/briefs/thread-3.md). Jonny: the flame
+  opens a daily log-in page, every 7th day special, day 30 a skin for a fighter you pick, gifts doubled by an ad (coming soon).
+  - The flame on the start page is always there now (muted .zero without a Daily Potato streak); a gold dot (#mGift) sits on it while
+    today's gift waits. Tapping the flame opens the Daily sheet (scrDaily, ui/daily.js + ui/harvest.js, css/94-harvest.css): the 30-day
+    track and today's gift on top, the Daily Potato below (dlyClose closes; dlyBack is gone).
+  - It counts days claimed, not a streak: a missed day waits. One claim per phone date (dailyKey); a clock set back claims nothing.
+    P.harvest = { n: days claimed this round, c: rounds finished, d: last claimed day, sk: fighters with the Harvest skin }.
+    Gifts (hvGift): 1-6 15, 7 60 + the Sprout plate, 8-13 20, 14 100 + the Couch Potato title, 15-20 25, 21 150 + 2 free Another go
+    tries (P.ago), 22-27 30, 28 200, 29 30, 30 the Harvest skin for the fighter you pick (default: most played without it). Round 2 on:
+    plate/title days pay 100 chips; once all eight own the skin, day 30 is a Glaze token (P.gzt, used before chips on the next Glaze).
+  - ×2 with an ad (#hvAd) is a disabled button with a SOON sticker and the doubled chips as a ghost; hidden on day 30. The Shop has the
+    same promise as a dashed "Free chips" row (.sh-ad, +25 chips, 3 a day, SOON), inert. No ad code anywhere.
+  - The Harvest skin is ROAD_SKINS' "Harvest Gold" (core.js, road: "harvest", palette 7; skinfx.js: warm sheen, gold dust, a dust puff on
+    every KO). It shows in the Skin Rack's and Locker's "Won skins" row (shut with "Harvest day 30" until won). Sprout is a plate that is
+    never sold (PLATES harvest: true; "Harvest gift" in the Shop until won); the Shop's plates run nine across in landscape.
+  - Sync (sync.js): harvest merges by more rounds, then more days; d the later day; sk the union. ago and gzt merge like chips.
+  - Tests: pwdaily.py's harvest part (claim, no double claim, missed day, clock back, days 7/14/21/30, round 2, the Glaze token) and the
+    sheet fit at five sizes; tests/acct.js for the merge; pwshop/pwskins/pwacct counts.
 - Road bosses with an online friend (2026-10-16, branch claude/road-bosses-with-friend-8h2oo8, pre-step-6 thread 4, PROTO 17: the online
   boss's HP changed, players reload once; brief /mnt/project-files/pre-step6/briefs/thread-4.md). Jonny: online Road-boss wins count for
   Road stars, with a tougher boss for two.

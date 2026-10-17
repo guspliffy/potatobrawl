@@ -1,0 +1,175 @@
+/* ---------- the Daily sheet: the Harvest (ui/harvest.js) and the Daily Potato (ui/daily.js); the flame on the start page ----------
+   Fable's "Mock B" (/mnt/project-files/pre-step6/fable-mockup.html). Landscape: the track of 30 days (ten across) with the Daily Potato under it
+   on the left, today's gift on the right. Upright: six across, then today's gift, then the Daily Potato. Everything sits under #scrDaily, because
+   the Road's stop sheet shares the .dly-* pieces. */
+#scrDaily .hv-sheet { width: min(880px, 100%); }
+#scrDaily .hv-body { display: grid; grid-template-columns: minmax(0, 1fr) 232px; grid-template-areas: "track gift" "dp gift"; align-items: start; gap: 12px 14px; padding: 14px 16px 16px; }
+.hv-track { grid-area: track; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.hv-k { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 800 11.5px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+.hv-k > span:first-child { color: var(--text); white-space: nowrap; }
+.hv-k b { color: var(--sand); font-weight: 800; }
+.hv-wait { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ----- the 30 days ----- */
+.hv-grid { --dh: 40px; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; padding: 6px 4px 3px 0; margin: -6px -4px -3px 0; }   /* room for the ticks */
+.hv-d { position: relative; min-width: 0; height: var(--dh); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 2px solid var(--ink); border-radius: 7px;
+  background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: 0 2px 0 var(--ink); font: 800 13px/1 var(--display); color: var(--text); font-variant-numeric: tabular-nums; }
+.hv-d small { font: 700 9px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(164, 169, 200, 0.8); }
+.hv-amt { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+.hv-amt .tokglyph, .hv-d .tokglyph { width: 11px; height: 9px; margin: 0; }
+.hv-plus { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); padding: 1px 4px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--mint); color: var(--ink); font: 800 8px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; font-style: normal; white-space: nowrap; }
+.hv-d.big { background: linear-gradient(180deg, #3b2c5a, #241a3a); }
+.hv-d.big .hv-amt { color: var(--gold); }
+.hv-pl { width: 22px; height: 12px; border: 1.5px solid var(--ink); border-radius: 999px; }
+.hv-tt { font: italic 900 12px/1 var(--display); color: var(--gold); text-transform: uppercase; letter-spacing: 0.02em; }
+.hv-d.last { justify-content: flex-start; padding-top: 3px; background: linear-gradient(180deg, #5a2c2c, #3a1a2a); overflow: hidden; }
+.hv-d.last small { position: relative; z-index: 1; text-shadow: 0 1px 0 var(--ink), 0 0 3px var(--ink); }
+.hv-sil { position: absolute; left: 0; top: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 1px rgba(244, 201, 93, 0.95)) drop-shadow(0 0 3px rgba(244, 201, 93, 0.45)); }
+.hv-sil.on { filter: none; }
+.hv-d.last b { position: absolute; right: 3px; bottom: 2px; z-index: 1; font: 900 15px/1 var(--display); color: var(--gold); text-shadow: 0 1px 0 var(--ink), 0 0 3px var(--ink); }
+.hv-d.last.got small { color: var(--ink); background: var(--gold); padding: 1px 3px; border-radius: 3px; text-shadow: none; }
+.hv-gzi { font-style: normal; font-size: 16px; color: var(--gold3); }
+/* claimed: gold with a mint tick */
+.hv-d.got { background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); }
+.hv-d.got small, .hv-d.got .hv-amt, .hv-d.got .hv-tt { color: var(--ink); }
+.hv-d.got::after { content: ""; position: absolute; right: -5px; top: -6px; z-index: 2; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink);
+  background: var(--mint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' fill='none' stroke='%2314172e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat; }
+/* today, waiting: a sand ring that breathes */
+.hv-d.now { border-color: var(--sand); background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 2px 0 var(--ink), 0 0 0 3px rgba(243, 217, 164, 0.25), 0 0 14px rgba(244, 201, 93, 0.45); animation: hvBreathe 1.4s ease-in-out infinite; }
+.hv-d.now small { color: var(--sand); }
+@keyframes hvBreathe { 50% { box-shadow: 0 2px 0 var(--ink), 0 0 0 4px rgba(243, 217, 164, 0.4), 0 0 20px rgba(244, 201, 93, 0.6); } }
+.hv-pop { animation: hvPop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes hvPop { from { transform: scale(1.3); } }
+.hv-leg { margin: 0; font: 500 11.5px/1.3 var(--body); color: var(--mute); }
+#scrDaily .hv-leg b { color: var(--text); font-weight: 600; }
+
+/* ----- today's gift ----- */
+.hv-gift { grid-area: gift; min-width: 0; display: flex; flex-direction: column; gap: 9px; padding: 11px 12px 13px; border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+.hv-dn { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hv-dn b { flex: none; font: italic 900 30px/1 var(--display); text-transform: uppercase; color: var(--text); }
+.hv-dn small { min-width: 0; font: 800 11.5px/1.1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+.hv-ok { align-self: center; margin-left: auto; width: 22px; height: 22px; flex: none; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: var(--mint); color: var(--ink); font: 900 13px/1 var(--display); font-style: normal; }
+.hv-what { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.hv-wc { display: flex; align-items: center; gap: 6px; font: 800 26px/1 var(--display); color: var(--gold); white-space: nowrap; }
+.hv-wc .tokglyph { width: 22px; height: 18px; margin: 0 2px 0 0; }
+.hv-wc em { font: 600 13px/1 var(--body); font-style: normal; color: var(--mute); }
+.hv-wl { font: 500 13px/1.3 var(--body); color: var(--text); }
+.hv-wl b { color: var(--gold); font-weight: 700; }
+.hv-wp { display: inline-block; padding: 1px 8px; border: 2px solid var(--ink); border-radius: 999px; font: 800 11px/1.2 var(--display); letter-spacing: 0.07em; text-transform: uppercase; vertical-align: 1px; }
+.hv-k2 { margin: 2px 0 -3px; font: 800 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; }
+#scrDaily .hv-k2 { color: var(--mute); }
+#scrDaily .hv-gift.done .hv-wc { font-size: 22px; color: var(--sand); }
+#scrDaily .hv-note { margin: 0; font: 500 11.5px/1.3 var(--body); text-align: center; }
+#scrDaily .hv-claim { min-height: 46px; }
+/* ×2 with an ad: dark, a SOON sticker, the doubled value as a ghost; not tappable until ads exist */
+#scrDaily .hv-ad { position: relative; min-height: 44px; flex-direction: column; gap: 3px; font-size: 15px; opacity: 1; cursor: default; }
+#scrDaily .hv-ad > span, #scrDaily .hv-ad > small { opacity: 0.55; }
+#scrDaily .hv-ad small { font: 600 12px/1 var(--body); letter-spacing: 0; text-transform: none; }
+.hv-soon, .sh-soon { position: absolute; right: -6px; top: -11px; z-index: 2; padding: 4px 7px 3px; border: 2px solid var(--ink); border-radius: 6px; background: var(--ember); color: var(--ink);
+  font: 800 10px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; transform: rotate(6deg); box-shadow: 0 2px 0 var(--ink); }
+#scrDaily .hv-soon { right: 6px; }   /* inside the button's right edge, so the button never grows sideways */
+/* day 30: the fighter picked, in Harvest Gold, and the eight to pick from */
+.hv-art { position: relative; height: 92px; border-radius: 9px; background: radial-gradient(ellipse at 50% 85%, rgba(244, 201, 93, 0.35), transparent 70%), linear-gradient(180deg, #3b2c5a, #241a3a); border: 2px solid var(--ink); }
+.hv-art canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hv-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.hv-pf { appearance: none; height: 34px; padding: 0; border: 2px solid var(--ink); border-radius: 7px; background: #1b1f3d center 28% / cover no-repeat; box-shadow: 0 2px 0 var(--ink); cursor: pointer; }
+.hv-pf.on { box-shadow: 0 0 0 3px var(--gold), 0 2px 0 2px var(--ink); }
+.hv-pf[disabled] { filter: grayscale(1) brightness(0.55); cursor: default; }
+.hv-pf:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+
+/* ----- the Daily Potato under the track: the two pictures, the day's lines, Fight ----- */
+.dly-dp { grid-area: dp; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 12px 9px 9px; border: 2px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #2b3058, #1b1f3d); box-shadow: var(--hard), var(--bevel); }
+#scrDaily .dly-vs { display: flex; align-items: center; gap: 0; }
+#scrDaily .dly-f { padding: 0; background: none; gap: 0; }
+#scrDaily .dly-t { display: none; }
+#scrDaily .dly-ph { width: 46px; height: 46px; border: 2px solid var(--ink); box-shadow: 0 0 0 2px var(--fc); }
+#scrDaily .dly-x { position: relative; z-index: 1; margin: 0 -6px; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px; background: var(--ketchup); color: #fff; font-size: 14px; transform: rotate(-6deg); }
+.dly-tx { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dly-tx h4 { margin: 0; font: italic 900 17px/1 var(--display); text-transform: uppercase; color: var(--text); }
+#scrDaily .dly-who { margin: 0; font: 600 13px/1.25 var(--body); color: var(--text); }
+#scrDaily .dly-rule { margin: 0; font-size: 13px; line-height: 1.3; }
+#scrDaily .dly-line { margin: 0; font-size: 12px; line-height: 1.3; }
+#scrDaily .dly-acts { padding: 0; flex-direction: column; }
+#scrDaily .dly-acts .btn { min-width: 118px; min-height: 44px; font-size: 18px; }
+
+/* short landscape phones (844x390, 740x360): smaller days and gift */
+#app.short #scrDaily .hv-body { gap: 9px 12px; padding: 11px 14px 13px; grid-template-columns: minmax(0, 1fr) 214px; }
+#app.short .hv-grid { --dh: 34px; gap: 4px; }
+#app.short .hv-gift { gap: 7px; padding: 9px 11px 11px; }
+#app.short .hv-dn b { font-size: 26px; }
+#app.short .hv-wc { font-size: 23px; }
+#app.short #scrDaily .hv-claim { min-height: 40px; }
+#app.short #scrDaily .hv-ad { min-height: 38px; font-size: 14px; }
+#app.short .hv-art { height: 66px; }
+#app.short .hv-pf { height: 30px; }
+#app.short .dly-dp { padding: 7px 10px 7px 7px; gap: 10px; }
+#app.short #scrDaily .dly-ph { width: 40px; height: 40px; }
+#app.short .dly-tx h4 { font-size: 15px; }
+#app.short #scrDaily .dly-who, #app.short #scrDaily .dly-rule { font-size: 12px; }
+#app.short #scrDaily .dly-line { font-size: 11px; }
+#app.short #scrDaily .dly-acts .btn { min-height: 40px; min-width: 104px; font-size: 17px; }
+/* landscape phones under 375 px high (740x360, 667x320): the Daily Potato's small print goes (its rule line stays; the Daily tile has the rest) */
+@media (max-height: 375px) { #app:not(.portrait) #scrDaily .dly-line { display: none; } }
+/* tiny (667x320): tighter still */
+#app.tiny #scrDaily .hv-body { gap: 6px 10px; padding: 8px 12px 10px; grid-template-columns: minmax(0, 1fr) 196px; }
+#app.tiny .hv-track { gap: 5px; }
+#app.tiny .hv-grid { --dh: 28px; gap: 3px; }
+#app.tiny .hv-d { font-size: 12px; }
+#app.tiny .hv-d small { font-size: 8px; }
+#app.tiny .hv-leg { font-size: 10.5px; line-height: 1.25; }
+#app.tiny .hv-gift { gap: 6px; padding: 8px 10px 10px; }
+#app.tiny .hv-dn b { font-size: 23px; }
+#app.tiny .hv-wc { font-size: 21px; }
+#app.tiny #scrDaily .hv-claim { min-height: 36px; }
+#app.tiny #scrDaily .hv-ad { min-height: 34px; }
+#app.tiny #scrDaily .hv-note { font-size: 10.5px; }
+#app.tiny .hv-art { height: 48px; }
+#app.tiny .hv-pf { height: 24px; }
+#app.tiny .hv-pick { gap: 4px; }
+#app.tiny .dly-dp { padding: 6px 9px 6px 6px; }
+#app.tiny #scrDaily .dly-ph { width: 36px; height: 36px; }
+#app.tiny #scrDaily .dly-acts .btn { min-height: 36px; min-width: 96px; font-size: 16px; }
+/* desktop: roomier */
+#app:not(.short):not(.portrait) .hv-grid { --dh: 46px; gap: 6px; }
+#app:not(.short):not(.portrait) .hv-d { font-size: 15px; }
+#app:not(.short):not(.portrait) .hv-d small { font-size: 10px; }
+#app:not(.short):not(.portrait) .hv-leg { font-size: 12.5px; }
+#app:not(.short):not(.portrait) #scrDaily .hv-body { grid-template-columns: minmax(0, 1fr) 250px; gap: 14px 16px; padding: 16px 18px 18px; }
+#app:not(.short):not(.portrait) .hv-art { height: 110px; }
+#app:not(.short):not(.portrait) .hv-pf { height: 40px; }
+/* upright (and narrow windows): one column, six days across */
+#app.portrait #scrDaily .hv-body, #app.narrow #scrDaily .hv-body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "track" "gift" "dp"; gap: 11px; padding: 12px 12px 14px; }
+#app.portrait .hv-grid, #app.narrow .hv-grid { --dh: 38px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+#app.portrait .hv-k, #app.narrow .hv-k { letter-spacing: 0.07em; }
+#app.portrait .hv-leg, #app.narrow .hv-leg { font-size: 11px; }
+/* today's gift: Claim and ×2 side by side */
+#app.portrait .hv-gift:not(.sk), #app.narrow .hv-gift:not(.sk) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 10px; }
+#app.portrait .hv-gift:not(.sk) > :not(.btn), #app.narrow .hv-gift:not(.sk) > :not(.btn) { grid-column: 1 / -1; }
+#app.portrait .hv-gift.done, #app.narrow .hv-gift.done { display: flex; }
+#app.portrait #scrDaily .hv-ad, #app.narrow #scrDaily .hv-ad { font-size: 13px; white-space: nowrap; }
+#app.portrait .hv-art, #app.narrow .hv-art { height: 76px; }
+#app.portrait .hv-pick, #app.narrow .hv-pick { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+#app.portrait .hv-pf, #app.narrow .hv-pf { height: 42px; }
+/* the Daily Potato: the pictures beside its name, the day's lines under them */
+#app.portrait .dly-dp, #app.narrow .dly-dp { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "vs h4" "vs who" "rule rule" "line line" "acts acts"; gap: 4px 12px; padding: 9px 11px 11px 9px; }
+#app.portrait .dly-tx, #app.narrow .dly-tx { display: contents; }
+#app.portrait #scrDaily .dly-vs, #app.narrow #scrDaily .dly-vs { grid-area: vs; }
+#app.portrait .dly-tx h4, #app.narrow .dly-tx h4 { grid-area: h4; align-self: end; }
+#app.portrait #scrDaily .dly-who, #app.narrow #scrDaily .dly-who { grid-area: who; align-self: start; }
+#app.portrait #scrDaily .dly-rule, #app.narrow #scrDaily .dly-rule { grid-area: rule; margin-top: 4px; }
+#app.portrait #scrDaily .dly-line, #app.narrow #scrDaily .dly-line { grid-area: line; }
+#app.portrait #scrDaily .dly-acts, #app.narrow #scrDaily .dly-acts { grid-area: acts; flex-direction: row; margin-top: 6px; }
+
+/* ----- the flame on the start page: always there (a muted 0 without a streak), a gold dot while today's gift waits ----- */
+#scrMenu .coin.flame { position: relative; }
+#scrMenu .coin.flame b { font: inherit; }
+#scrMenu .coin.flame.zero { color: var(--mute); }
+#scrMenu .coin.flame.zero::before { filter: grayscale(0.85) brightness(0.85); }
+.mm-gift { position: absolute; right: 1px; top: -7px; width: 15px; height: 15px; border-radius: 50%; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 0 0 3px rgba(244, 201, 93, 0.3); animation: hvDot 1.4s ease-in-out infinite; }
+.mm-gift[hidden] { display: none; }
+@keyframes hvDot { 50% { transform: scale(1.18); box-shadow: 0 0 0 5px rgba(244, 201, 93, 0.18); } }
+@media (prefers-reduced-motion: reduce) { .hv-d.now, .mm-gift, .hv-pop { animation: none; } }
+/* day 30's button names the fighter on one line ("Claim for Gunslinger" is the longest) */
+#scrDaily .hv-gift.sk .hv-claim { white-space: nowrap; }
+#app.short #scrDaily .hv-gift.sk .hv-claim, #app.portrait #scrDaily .hv-gift.sk .hv-claim { font-size: 17px; }
+#app.tiny #scrDaily .hv-gift.sk .hv-claim { font-size: 15px; }

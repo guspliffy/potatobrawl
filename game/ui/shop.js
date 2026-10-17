@@ -6,7 +6,10 @@
    GLAZE_PRICE (ui/glaze.js: P.glazed = { fighterId: [skin indices] }). A glazed card is marked for the sheen's drawing (glazeMark), so it shows on it.
    Buying anything takes two taps: the first arms the card ("Sure?", ember, for 3 s, as the Skin Rack's Buy), the second pays, plays the coin, saves and
    redraws the pill. A card you cannot pay does not buy: the line at the top says how many chips are missing for a few seconds.
-   plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element. */
+   plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element.
+   The Harvest (ui/harvest.js) adds to it: the Sprout plate is never sold (day 7 gives it, `harvest`), a Glaze token (P.gzt, day 30 once every
+   fighter has the Harvest skin) glazes one skin instead of the chips, and the first row offers chips for a short ad, waiting with a SOON sticker
+   until ads exist (never required; chips are never bought). */
 const PLATES = [
   { id: "", name: "Ink", price: 0 },
   { id: "sunset", name: "Sunset", price: 150 },
@@ -16,7 +19,9 @@ const PLATES = [
   { id: "kraken", name: "Kraken Ink", price: 200 },
   { id: "halftone", name: "Halftone", price: 300 },
   { id: "goldleaf", name: "Gold Leaf", price: 300 },
+  { id: "sprout", name: "Sprout", price: 0, harvest: true },   // day 7 of the Harvest only
 ];
+const SH_AD = 25;   // the ad row's chips (3 a day), once ads exist
 const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null };
 const SH_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 const plateInfo = (id) => PLATES.find((p) => p.id === id);
@@ -59,8 +64,8 @@ function shopGlazeCard(spec) {
   b.addEventListener("click", () => shopGlazeTap(spec.id));
   return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };
 }
-function plState(id) { return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : P.tokens >= plateInfo(id).price ? "buy" : "short"; }
-function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
+function plState(id) { const p = plateInfo(id); return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : p.harvest ? "gift" : P.tokens >= p.price ? "buy" : "short"; }
+function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : (P.gzt | 0) > 0 ? "token" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
 
 /* ----- the tab ----- */
 function renderShop() {
@@ -73,6 +78,10 @@ function renderShop() {
   sk.innerHTML = `Skins <b>${acSkinCount(P)} / ${acSkinTotal()}</b> · in the Locker`;
   top.append(bal, from, sk);
   SH.top = { bal, from };
+  const ad = shMk("div", "sh-ad");   // not a button until ads exist
+  ad.setAttribute("aria-disabled", "true");
+  ad.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>Free chips</b><span>A short ad, +${SH_AD} chips, 3 a day. Never required.</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span><i class="sh-soon">Soon</i>`;
+  ad.setAttribute("aria-label", `Free chips: a short ad, ${SH_AD} chips, 3 a day, never required. Coming soon.`);
   const kick = (title, text, more) => {   // more: a second sentence, shown here on a landscape sheet (under the cards the rest of the time, .sh-note)
     const k = shMk("div", "sh-k"), s = shMk("span", "", text);
     if (more) s.appendChild(shMk("em", "sh-k2", more));
@@ -83,7 +92,7 @@ function renderShop() {
   g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze");
   for (const c of SH.pl) g1.appendChild(c.el);
   for (const c of SH.gz) g2.appendChild(c.el);
-  pan.append(top, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
+  pan.append(top, ad, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
     kick("Glaze", "a pearl sheen on a skin you own", `, ${GLAZE_PRICE} chips each. ${NOTE}`), g2,
     shMk("p", "sh-note", NOTE));
   shopRefresh();
@@ -101,15 +110,16 @@ function shopRefresh() {
     const p = plateInfo(c.id), st = plState(c.id), arm = SH.arm === "p:" + c.id;
     c.nm.textContent = name;
     c.el.className = `sh-c sh-pl ${st}${arm ? " arm" : ""}`;
-    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(p.price)}` : st === "worn" ? "Worn" : st === "own" ? "Tap to wear" : shCoin(p.price);
+    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(p.price)}` : st === "worn" ? "Worn" : st === "own" ? "Tap to wear" : st === "gift" ? "Harvest gift" : shCoin(p.price);
     c.el.setAttribute("aria-pressed", String(st === "worn"));
-    c.el.setAttribute("aria-label", `${p.name} nameplate: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : arm ? `tap again to buy for ${p.price} chips` : `${p.price} chips`}`);
+    c.el.setAttribute("aria-label", `${p.name} nameplate: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "gift" ? "a gift on day 7 of the Harvest" : arm ? `tap again to buy for ${p.price} chips` : `${p.price} chips`}`);
   }
   for (const c of SH.gz) {
     const st = gzState(c), arm = SH.arm === "g:" + c.id, spec = FIG[c.id], pal = spec.palettes[c.i] || spec.palettes[0];
-    c.el.className = `sh-c sh-gz ${st}${arm ? " arm" : ""}`;
-    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(GLAZE_PRICE)}` : st === "glazed" ? "Glazed ✦" : `<span>Glaze</span>${shCoin(GLAZE_PRICE)}`;
-    c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${GLAZE_PRICE} chips` : `glaze for ${GLAZE_PRICE} chips`}`);
+    const tk = st === "token" || (arm && (P.gzt | 0) > 0), price = tk ? "token" : shCoin(GLAZE_PRICE), say = tk ? "a Glaze token" : `${GLAZE_PRICE} chips`;
+    c.el.className = `sh-c sh-gz ${st === "token" ? "buy tk" : st}${arm ? " arm" : ""}`;
+    c.small.innerHTML = arm ? `<span>Sure?</span>${tk ? " token" : price}` : st === "glazed" ? "Glazed ✦" : `<span>Glaze</span>${tk ? " · token" : price}`;
+    c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${say}` : `glaze for ${say}`}`);
     if (glazeOn(c.art.f) !== (st === "glazed")) { glazeMark(c.art.f, st === "glazed"); shopPaint(false); }
   }
 }
@@ -135,6 +145,7 @@ function shopPlateTap(id) {
   if (st === "own") {   // owned: worn at once
     shopDisarm(); P.plate = id; saveProfile(); Sfx.uiFlip(); renderPill(); shopRefresh(); return;
   }
+  if (st === "gift") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} isn't sold: it is the gift on day 7 of the Harvest, behind the flame on the start page.`); return; }
   if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} costs ${p.price} chips and you have ${fmtChips(P.tokens)}: ${p.price - P.tokens} more needed.`); return; }
   if (SH.arm !== "p:" + id) { shopArm("p:" + id); return; }
   shopDisarm();
@@ -149,10 +160,12 @@ function shopGlazeTap(id) {
   if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`Glaze costs ${GLAZE_PRICE} chips and you have ${fmtChips(P.tokens)}: ${GLAZE_PRICE - P.tokens} more needed.`); return; }
   if (SH.arm !== "g:" + id) { shopArm("g:" + id); return; }
   shopDisarm();
-  if (P.tokens < GLAZE_PRICE || glazeHas(id, c.i)) { shopRefresh(); return; }
+  const tk = (P.gzt | 0) > 0;   // a Glaze token from the Harvest goes first
+  if ((!tk && P.tokens < GLAZE_PRICE) || glazeHas(id, c.i)) { shopRefresh(); return; }
   if (!P.glazed || typeof P.glazed !== "object" || Array.isArray(P.glazed)) P.glazed = {};
   P.glazed[id] = [...new Set([...(Array.isArray(P.glazed[id]) ? P.glazed[id] : []), c.i])].sort((a, b) => a - b);
-  shopPaid(GLAZE_PRICE); shopRefresh();
+  if (tk) P.gzt = (P.gzt | 0) - 1;
+  shopPaid(tk ? 0 : GLAZE_PRICE); shopRefresh();
 }
 // a tap anywhere in the tab but on the armed card puts it back
 $("acPanH").addEventListener("click", (e) => { if (SH.arm && !e.target.closest(".sh-c.arm")) { shopDisarm(); shopRefresh(); } }, true);

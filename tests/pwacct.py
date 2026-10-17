@@ -337,7 +337,7 @@ async def hub_fit(pg, tag, what):   # nothing sideways, no control outside the s
       return bad; })()""")
     for x in bad: errs.append(f'{tag}: hub {what}: {x}')
 
-# ---------- the Locker tab (Account): the strip of eight, the picked fighter's seven cards, and the Chips box on the Profile tab
+# ---------- the Locker tab (Account): the strip of eight, the picked fighter's eight cards, and the Chips box on the Profile tab
 LK_INK = """() => { const ink = (c) => { if (!c.width || !c.height) return 0; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 64) if (d[i] > 200) n++; return n; };
   return { tiles: [...document.querySelectorAll('#lkStrip canvas')].map(ink), cards: [...document.querySelectorAll('#lkRack canvas')].map(ink) }; }"""
 LK_STATE = """() => ({ on: (document.querySelector('.lk-tile.on') || { dataset: {} }).dataset.f, active: (document.activeElement.dataset || {}).f,
@@ -357,19 +357,19 @@ async def locker(pg, tag, ids):
     sheet = "(() => { const s = document.querySelector('.acct-sheet'); return s.scrollHeight - s.clientHeight; })()"
     st = await pg.evaluate(LK_STATE)
     tiles = await pg.evaluate("document.querySelectorAll('.lk-tile').length"); cards = len(st['states'])
-    expect(tiles == len(ids) and cards == 7 and st['on'] == ids[1], f"{tag}: the locker shows {len(ids)} fighters and 7 skins, opened on the fighter played last ({tiles}, {cards}, {st['on']})")
+    expect(tiles == len(ids) and cards == 8 and st['on'] == ids[1], f"{tag}: the locker shows {len(ids)} fighters and 8 skins, opened on the fighter played last ({tiles}, {cards}, {st['on']})")
     expect(await pg.evaluate("document.querySelector('#acPanL .lk-top .mx-line') !== null && document.getElementById('mxColKo') !== null") and 'skins' in st['own'].lower() and st['tokens'] == '240',
            f"{tag}: the top line has the Collection, the skins owned and the chips ({st['own']!r}, {st['tokens']!r})")
     expect(await pg.evaluate("[...document.querySelectorAll('.lk-tile')].every((t) => t.getAttribute('role') === 'radio' && /wearing/.test(t.getAttribute('aria-label')) && t.hasAttribute('aria-checked')) && [...document.querySelectorAll('#lkRack .sk')].every((b) => /:/.test(b.getAttribute('aria-label')))"),
            f'{tag}: the tiles and cards have aria labels')
     await hub_fit(pg, tag, 'locker'); await hub_shot(pg, tag, '6_locker')
     over = await pg.evaluate(sheet)
-    expect(over <= 1, f'{tag}: the Locker tab scrolls by {over}px (the strip and the seven cards should fit)')
-    # every fighter: his eight tiles and seven cards are drawn (the models have pixels)
+    expect(over <= 1, f'{tag}: the Locker tab scrolls by {over}px (the strip and the eight cards should fit)')
+    # every fighter: his eight tiles and eight cards are drawn (the models have pixels)
     for fid in ids:
         await lk_pick(pg, fid)
         ink = await pg.evaluate(LK_INK)
-        expect(len(ink['tiles']) == len(ids) and all(v > 0 for v in ink['tiles']) and len(ink['cards']) == 7 and all(v > 0 for v in ink['cards']), f'{tag}: {fid}: a tile or card has no model drawn ({ink})')
+        expect(len(ink['tiles']) == len(ids) and all(v > 0 for v in ink['tiles']) and len(ink['cards']) == 8 and all(v > 0 for v in ink['cards']), f'{tag}: {fid}: a tile or card has no model drawn ({ink})')
     # arrow keys move along the strip and pick
     await lk_pick(pg, ids[0]); await pg.focus('.lk-tile.on'); await pg.keyboard.press('ArrowRight')
     st = await pg.evaluate(LK_STATE)

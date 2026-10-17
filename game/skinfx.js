@@ -16,12 +16,14 @@ const FXTEXT = {
   gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
   reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
 };
-// a Road skin (palettes 4-6, pal.road = the boss that gives it) has none of the chip skins' effects: its own overlay (skinRoad)
+// a Road skin (palettes 4-6, pal.road = the boss that gives it) and the Harvest skin (palette 7, pal.road = "harvest", ui/harvest.js) have none of
+// the chip skins' effects: their own overlay (skinRoad)
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road ? 0 : i; };
 const skinRoad = (f) => (f.pal && f.pal.road) || "";
 // what each Road skin does (the select screen's note)
 const ROADFX = { scratch: "Roasted dark at the feet, with ember cracks that glow and spit sparks",
-  zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp" };
+  zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp",
+  harvest: "A sun-warmed sheen with twinkling gold dust that drifts off and bursts on every KO" };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [0, 1, 2, 3].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three, a 2v2 four)
@@ -247,6 +249,8 @@ const RS_DOME = { phoenix: [1.2, 0.95], alchemist: [1.25, 0.7], odin: [1.35, 0.5
 // where the Deep Catch kelp hangs from: the back of the costume's top point (x rx, y below the top of the potato x ry)
 const RS_KELP = { phoenix: [-0.3, -0.5], alchemist: [-0.75, 0.05], odin: [-0.9, -0.1], wizard: [-0.95, -1.2], samurai: [-0.25, -0.15], dragon: [-0.45, -0.45], gunslinger: [-1.35, -0.05], reaper: [-0.95, 0.2] };
 const rsPulse = (tk, ph) => 0.8 + 0.2 * Math.sin(tk * 0.044 + ph);
+// the Harvest skin's gold dust on the body: x, y (of the half-sizes), size, phase
+const RS_DUST = [[-0.55, -0.35, 1, 0], [0.38, -0.55, 0.8, 1.7], [0.62, 0.12, 1.1, 3.1], [-0.3, 0.35, 0.75, 4.4], [0.1, 0.62, 0.9, 5.6]];
 function rsStar(c, x, y, r, a) {
   c.beginPath();
   for (let i = 0; i < 10; i++) { const q = a + (i / 10) * Math.PI * 2, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(q) * rr, y + Math.sin(q) * rr); }
@@ -278,6 +282,15 @@ function roadSkinBody(c, f, P, tk, flash) {
     const g = c.createRadialGradient(0, cy + ry * 1.15, ry * 0.1, 0, cy + ry * 1.15, ry * 1.25);
     g.addColorStop(0, "rgba(157,255,90,0.38)"); g.addColorStop(1, "rgba(157,255,90,0)");
     c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 0.2, rx * 2.6, ry * 1.4);
+  } else if (rs === "harvest") {   // late sun from the upper left, and specks of gold dust that twinkle in turn
+    const g = c.createRadialGradient(-rx * 0.45, cy - ry * 0.6, ry * 0.1, -rx * 0.45, cy - ry * 0.6, ry * 1.5);
+    g.addColorStop(0, "rgba(255,230,150,0.42)"); g.addColorStop(1, "rgba(255,230,150,0)");
+    c.fillStyle = g; c.fillRect(-rx * 1.3, cy - ry * 1.3, rx * 2.6, ry * 2.6);
+    for (const [x, y, s, ph] of RS_DUST) {
+      const tw = Math.max(0, Math.sin(tk * 0.06 + ph)), r = (1.2 + 1.6 * tw) * k * s;
+      c.globalAlpha = a0 * (0.45 + 0.55 * tw);
+      rsStar(c, x * rx, cy + y * ry, r, tk * 0.01 + ph); c.fillStyle = "#ffe08a"; c.fill();
+    }
   } else if (rs === "kraken") {
     c.strokeStyle = "rgba(200,240,255,0.3)"; c.lineWidth = 3 * k;
     c.beginPath(); c.ellipse(0, cy, rx * 0.78, ry * 0.8, 0, Math.PI * 1.08, Math.PI * 1.42); c.stroke();
@@ -346,6 +359,9 @@ function roadSkinTick(f, rs, tk, slot) {
     const [x, y] = RS_CRACK[(tk / 30 | 0) % 3];
     mote(f.x + fc * x * w * 0.56, f.y - h * (0.36 - y * 0.24), rnd(-0.3, 0.3), rnd(-0.9, -0.5), Math.random() < 0.5 ? "#ff9a3a" : "#ff6a2b", 1.5, 40, -0.01);
   }
+  if (rs === "harvest" && tk % 14 === (slot * 5) % 14) {   // a fleck of gold dust lifts off and sinks away
+    mote(f.x + rnd(-0.5, 0.5) * w, f.y - h * rnd(0.3, 0.85), rnd(-0.25, 0.25), rnd(-0.6, -0.2), Math.random() < 0.6 ? "#ffd66b" : "#fff3c4", rnd(1, 1.6), 46, 0.012);
+  }
   if (rs === "kraken" && tk % 40 === (slot * 13) % 40) {
     const [ax] = RS_KELP[f.spec.look.costume] || [-0.8];
     addFx({ k: "drip", x: f.x + fc * (ax * w * 0.56 - 10), y: f.y - h * 0.5, vx: 0, vy: 0.3, col: "#bfe8e0", r: rnd(1.4, 1.9), t: 0, life: 15, g: 0.2, damp: 0.98 });
@@ -359,6 +375,8 @@ function roadSkinKo(k, rs) {
   } else if (rs === "zorp") {
     addFx({ k: "ring", x, y: y - 6, t: 0, life: 16, r0: 10, r1: 44, col: "#9dff5a" });
     for (let i = 0; i < 6; i++) addFx({ k: "shard", x: x + rnd(-12, 12), y: y - 14 + rnd(-6, 6), vx: rnd(-3, 3), vy: rnd(-4, -1.5), rot: rnd(0, 6), vr: rnd(-0.3, 0.3), r: rnd(2.4, 3.4), col: "rgba(216,243,255,0.8)", t: 0, life: 26, g: 0.2, damp: 0.96 });
+  } else if (rs === "harvest") {   // a puff of gold dust, no ring (gold rings mean armour)
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, v = rnd(1, 2.2); mote(x + Math.cos(a) * 8, y + Math.sin(a) * 8, Math.cos(a) * v, Math.sin(a) * v - 0.5, i % 3 ? "#ffd66b" : "#fff3c4", rnd(1.2, 2), rnd(30, 44), 0.03); }
   } else if (rs === "kraken") {
     addFx({ k: "ring", x, y: k.y - 4, t: 0, life: 18, r0: 8, r1: 46, col: "#3ef2c0" });
     for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });

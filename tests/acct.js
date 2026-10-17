@@ -147,7 +147,7 @@ function pureTests() {
   const dk = SYNC.mergeProf(prof(Object.assign({}, fb, { duo: 2 })), prof(fb), SYNC.sanitize(fb, FIGHTERS), false);
   check(dk.duo === 2, "duo: a server copy from a page without it keeps this device's count");
   // an older page: it syncs a prof WITHOUT the new fields. Missing = unchanged, never zero.
-  const oldPage = (p) => { const o = Object.assign({}, p); for (const k of ["fstats", "fsince", "flawless", "avatar", "title", "daily"]) delete o[k]; return o; };
+  const oldPage = (p) => { const o = Object.assign({}, p); for (const k of ["fstats", "fsince", "flawless", "avatar", "title", "daily", "harvest"]) delete o[k]; return o; };
   const o1 = SYNC.sanitize(oldPage(fb), FIGHTERS);
   check(!("fstats" in o1) && !("flawless" in o1) && !("avatar" in o1) && !("title" in o1) && !("fsince" in o1), "old page: sanitize does not invent the new fields (a missing one stays missing)");
   const keep1 = SYNC.mergeProf(fA, fb, o1, true);
@@ -230,6 +230,25 @@ function pureTests() {
   const gRun = prof({ daily: { d: "2026-10-14", r: -1, s: 0, w: "2026-10-13", b: 4, x: 1 } });                     // taken here, still playing
   const gFin = prof({ daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 4, p: 3 } });                      // the other device only finished the first try
   check(eq(SYNC.mergeProf(gRun, dB, gFin, true).daily, gRun.daily) && eq(SYNC.mergeProf(gFin, dB, gRun, false).daily, gRun.daily) && eq(SYNC.mergeProf(gRun, dB, gFin, false).daily, gRun.daily) && eq(SYNC.mergeProf(gFin, dB, gRun, true).daily, gRun.daily), "another go: same day, one side took it (still running) and the other only has the first result -> the one that took it, so it cannot be taken twice");
+  // the Harvest (ui/harvest.js): { n: days claimed this round, c: rounds finished, d: the last day claimed, sk: fighters given its skin }
+  const hv = (n, c, d, sk) => ({ n, c, d, sk: sk || [] });
+  const hok = SYNC.sanitize({ harvest: hv(4, 0, "2026-10-14", ["samurai", "odin"]) }, FIGHTERS);
+  check(eq(hok.harvest, hv(4, 0, "2026-10-14", ["odin", "samurai"])) && eq(SYNC.sanitize(hok, FIGHTERS), hok), "harvest: a good record passes (fighters sorted), cleaning twice changes nothing");
+  check(eq(SYNC.sanitize({ harvest: { n: 44.6, c: -3, d: "2026-10-14", sk: ["odin", "odin", "Bad Id", 7] } }, FIGHTERS).harvest, hv(30, 0, "2026-10-14", ["odin"])), "harvest: numbers are clamped (30 days at most), odd fighter ids and repeats dropped");
+  check(eq(SYNC.sanitize({ harvest: { n: 5, c: 1, d: "someday" } }, FIGHTERS).harvest, hv(0, 1, "")), "harvest: no valid day -> no days claimed this round");
+  check(!("harvest" in SYNC.sanitize({ harvest: 3 }, FIGHTERS)) && !("harvest" in o1), "harvest: not an object, or not there (an older page), counts as missing");
+  const hB = prof({ harvest: hv(3, 0, "2026-10-13") }), hL = prof({ harvest: hv(4, 0, "2026-10-14") }), hS = prof({ harvest: hv(5, 0, "2026-10-12", ["dragon"]) });
+  check(eq(SYNC.mergeProf(hL, hB, oldPage(hB), false).harvest, hL.harvest) && eq(SYNC.mergeProf(oldPage(hB), oldPage(hB), hS, true).harvest, hS.harvest), "harvest: a side without it (an older page) -> the other side's");
+  check(eq(SYNC.mergeProf(hL, hB, hS, true).harvest, hv(5, 0, "2026-10-14", ["dragon"])) && eq(SYNC.mergeProf(hS, hB, hL, false).harvest, hv(5, 0, "2026-10-14", ["dragon"])), "harvest: two devices -> the higher count, the later day claimed, either way round");
+  const hR2 = prof({ harvest: hv(1, 1, "2026-10-15", ["odin"]) }), hR1 = prof({ harvest: hv(30, 0, "2026-10-16", ["samurai"]) });
+  check(eq(SYNC.mergeProf(hR2, hB, hR1, true).harvest, hv(1, 1, "2026-10-16", ["odin", "samurai"])), "harvest: a later round beats more days in an earlier one; the skins given are a union");
+  const hgB = prof({ ago: 2, gzt: 1 }), hgm = SYNC.mergeProf(prof({ ago: 1, gzt: 1 }), hgB, prof({ ago: 4, gzt: 2 }), true);
+  check(hgm.ago === 3 && hgm.gzt === 2 && !("ago" in o1), "harvest: free Another go tries and Glaze tokens count like chips (one used here, one more given there)");
+  const hdev = { tokens: 1, owned: {}, pal: {}, harvest: hv(2, 0, "2026-10-14") };
+  SYNC.applyTo(hdev, o1);
+  check(eq(hdev.harvest, hv(2, 0, "2026-10-14")), "harvest apply: a prof without it leaves this device's");
+  SYNC.applyTo(hdev, hS);
+  check(eq(hdev.harvest, hS.harvest) && hdev.harvest !== hS.harvest && hdev.harvest.sk !== hS.harvest.sk, "harvest apply: a prof with it replaces it (a copy)");
   const gOld = SYNC.sanitize(oldPage(gB), FIGHTERS);
   check(eq(SYNC.mergeProf(gL, gB, gOld, true).daily, gL.daily) && eq(SYNC.mergeProf(gOld, gB, gL, false).daily, gL.daily), "another go: an older page's prof has no daily at all -> the other side's record, x included");
   const dev5 = { tokens: 1, owned: {}, pal: {}, daily: { d: "2026-10-14", r: 0, s: 0, w: "2026-10-13", b: 4, p: 3 } };

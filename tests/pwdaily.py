@@ -2,7 +2,12 @@
 # profile pill, a reload can't give a second try, a forfeit / a finished loss / a reload mid-match end the streak, the next day brings
 # the next matchup and keeps a streak won yesterday, a streak with a gap shows 0, the menu line turns over at midnight by itself.
 # A second part plays a won Daily at each size and takes screenshots of the menu, the sheet, the results and the menu after.
-#   python3 pwdaily.py [outdir [tag ...]]   tags: flow (844x390, the checks above) s667 p844 d1280 up390; no tag runs everything
+# The Harvest (ui/harvest.js) has its own part (tag harvest, 844x390): the flame (always there, a gold dot while today's gift waits) opens the
+# Daily sheet while the rest of the pill still opens the Account; claiming moves the day and pays; a missed day waits; a clock set back claims
+# nothing; day 7 gives the Sprout plate, day 14 the title Couch Potato, day 21 two free Another go tries (used before the chips), day 30 the
+# Harvest skin for the fighter picked, and then round 2 starts at day 1 (plate days pay 100); with every fighter skinned, a Glaze token. The x2
+# (an ad) button and the Shop's ad row are there and can't be used.
+#   python3 pwdaily.py [outdir [tag ...]]   tags: flow (844x390, the checks above) harvest s667 s740 p844 d1280 up390; no tag runs everything
 # The page's clock is moved with a Date stand-in (init script, time zone Europe/Berlin; timers and performance.now are untouched).
 # The CPU is put out of the arena through window.__blastline.game (test only), as pwcup.py does.
 import asyncio, sys, json, pathlib
@@ -11,7 +16,7 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else 'daily'
 ONLY = sys.argv[2:]
 from playwright.async_api import async_playwright
 ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
-SIZES = {'s667': (667, 320, False), 'p844': (844, 390, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
+SIZES = {'s667': (667, 320, False), 's740': (740, 360, False), 'p844': (844, 390, False), 'd1280': (1280, 760, False), 'up390': (390, 844, True)}
 PROF = "potatobrawl.profile.v1"
 G = "window.__blastline.game"
 TZ = 'Europe/Berlin'
@@ -74,6 +79,7 @@ async def end_match(pg, win):
     await pg.wait_for_timeout(1100)   # the chip count-up ends
 
 async def txt(pg, sel): return ' '.join((await pg.text_content(sel) or '').split())
+async def zero(pg): return await pg.evaluate("document.querySelector('#mStreak').classList.contains('zero') && document.querySelector('#mStreakN').textContent === '0' && !!document.querySelector('#mStreak').getClientRects().length")
 async def shown(pg, sel): return await pg.evaluate(f"(() => {{ const e = document.querySelector('{sel}'); return !!e && !e.closest('[hidden]') && e.getClientRects().length > 0; }})()")
 async def name(pg, fid): return await pg.evaluate(f"BL.FIGHTERS.find((f) => f.id === '{fid}').name")
 async def pick(pg, key): return await pg.evaluate(f"window.__blDaily.pick('{key}')")
@@ -135,7 +141,7 @@ async def flow(b, errs):
     need(len({(m['me'], m['opp']) for m in many}) >= 10 and len({m['me'] for m in many}) >= 5, 'four weeks of picks hardly vary')
     week = [(m['d'], m['word']) for m in many[:7]]
     need(week == [(0.45, 'Normal'), (0.52, 'Normal'), (0.59, 'Normal'), (0.66, 'Hard'), (0.73, 'Hard'), (0.8, 'Hard'), (0.87, 'Brutal')], f'weekly strength {week}')
-    need(not await shown(pg, '#mStreak'), 'a streak shows on the pill before any Daily')
+    need(await zero(pg), 'the flame does not show a muted 0 before any Daily')
     # the result rules (pure): draw keeps a running streak, a loss ends it, a forfeit pays nothing
     st0 = {'d': '2026-10-13', 'r': 1, 's': 3, 'w': '2026-10-13', 'b': 5}
     a = lambda prev, res, ff: pg.evaluate(f"{D}.after({json.dumps(st0)}, '2026-10-14', {prev}, {res}, {json.dumps(ff)})")
@@ -151,10 +157,10 @@ async def flow(b, errs):
     sh = await txt(pg, '#scrDaily')
     me_n, op_n = await name(pg, pk['me']), await name(pg, pk['opp'])
     need(me_n.upper() in sh.upper() and op_n.upper() in sh.upper() and pk['cpu'] in sh, f'sheet does not show the matchup: {sh!r}')
-    need('One try' in sh and '40 chips' in sh and 'Wed 14 Oct' in sh, f'sheet text: {sh!r}')
+    need('One try' in sh and '40 chips' in sh and 'Wed 14 Oct' in sh and 'The Harvest' in sh, f'sheet text: {sh!r}')
     need(await shown(pg, '#dlyGo'), 'no Fight button')
     await shot(pg, tag, '1_sheet', errs, (SHEET, '#scrDaily .sheet'))
-    await clk('#dlyBack'); await pg.wait_for_timeout(300)
+    await clk('#dlyClose'); await pg.wait_for_timeout(300)
     need(not await shown(pg, '#scrDaily') and await pg.evaluate("window.__blastline.mode") == 'menu', 'Back does not close the sheet')
     # ----- the match
     await clk('#bDaily'); await pg.wait_for_timeout(300); await clk('#dlyGo')
@@ -197,13 +203,13 @@ async def flow(b, errs):
     sh = await txt(pg, '#scrDaily')
     need(not await shown(pg, '#dlyGo') and 'Won today' in sh and '14 h' in sh and 'Best streak: 1 day' in sh, f'done sheet: {sh!r}')
     await shot(pg, tag, '3_done_sheet', errs, (SHEET, '#scrDaily .sheet'))
-    await clk('#dlyBack'); await pg.wait_for_timeout(200)
+    await clk('#dlyClose'); await pg.wait_for_timeout(200)
     # ----- one try: a reload changes nothing
     await reload_at(pg, at(14, '10:05'))
     need((await txt(pg, '#mDaily')).startswith('Won · 1-day streak'), 'after a reload the Daily is open again')
     await clk('#bDaily'); await pg.wait_for_timeout(300)
     need(not await shown(pg, '#dlyGo'), 'after a reload the sheet offers Fight again')
-    await clk('#dlyBack'); await pg.wait_for_timeout(200)
+    await clk('#dlyClose'); await pg.wait_for_timeout(200)
     need((await prof(pg))['tokens'] == 125, 'chips changed over a reload')
     # ----- the next day: a new matchup, yesterday's streak still shows; a forfeit ends it and pays nothing
     await reload_at(pg, at(15))
@@ -223,7 +229,7 @@ async def flow(b, errs):
     need(p3['tokens'] == 125 and p3['daily'] == {'d': '2026-10-15', 'r': 0, 's': 0, 'w': '2026-10-14', 'b': 1}, f"after a forfeit: chips {p3['tokens']}, daily {p3['daily']}")
     await shot(pg, tag, '4_forfeit', errs)
     await clk('#rAgain'); await pg.wait_for_timeout(400)
-    need(await txt(pg, '#mDaily') == 'Lost · next in 14 h' and not await shown(pg, '#mStreak'), f"menu after a forfeit {await txt(pg, '#mDaily')!r}")
+    need(await txt(pg, '#mDaily') == 'Lost · next in 14 h' and await zero(pg), f"menu after a forfeit {await txt(pg, '#mDaily')!r}")
     # ----- a finished loss: +5, no streak to lose
     await reload_at(pg, at(16))
     await clk('#bDaily'); await pg.wait_for_timeout(300); await clk('#dlyGo')
@@ -238,15 +244,15 @@ async def flow(b, errs):
     need(await txt(pg, '#mStreak') == '4', 'the 4-day streak from yesterday does not show')
     await clk('#bDaily'); await pg.wait_for_timeout(300); await clk('#dlyGo'); await in_match(pg)
     await reload_at(pg, at(17, '10:02'))
-    need(await txt(pg, '#mDaily') == 'Lost · next in 14 h' and not await shown(pg, '#mStreak'), f"after a reload mid-match: {await txt(pg, '#mDaily')!r}")
+    need(await txt(pg, '#mDaily') == 'Lost · next in 14 h' and await zero(pg), f"after a reload mid-match: {await txt(pg, '#mDaily')!r}")
     p5 = await prof(pg)
     need(p5['tokens'] == 130 and p5['daily'] == {'d': '2026-10-17', 'r': -1, 's': 0, 'w': '2026-10-16', 'b': 6}, f"after a reload mid-match: chips {p5['tokens']}, daily {p5['daily']}")
     await clk('#bDaily'); await pg.wait_for_timeout(300)
     need(not await shown(pg, '#dlyGo') and 'Lost today' in await txt(pg, '#dlyRule'), 'an unfinished Daily can be started again')
-    await clk('#dlyBack'); await pg.wait_for_timeout(200)
+    await clk('#dlyClose'); await pg.wait_for_timeout(200)
     # ----- a streak with a gap shows 0 and a win starts again at 1 (the best stays); Sunday is Brutal
     await reload_at(pg, at(18), {'d': '2026-10-16', 'r': 1, 's': 3, 'w': '2026-10-16', 'b': 3})
-    need(not await shown(pg, '#mStreak') and (await txt(pg, '#mDaily')).endswith('· Brutal'), 'a streak with a gap still shows, or Sunday is not Brutal')
+    need(await zero(pg) and (await txt(pg, '#mDaily')).endswith('· Brutal'), 'a streak with a gap still shows, or Sunday is not Brutal')
     await clk('#bDaily'); await pg.wait_for_timeout(300); await clk('#dlyGo'); await in_match(pg)
     need(await pg.evaluate(f"{D}.match.bot.d") == 0.87, 'Sunday is not 0.87')
     await end_match(pg, True)
@@ -261,6 +267,163 @@ async def flow(b, errs):
     try: await pg.wait_for_function(f"document.querySelector('#mDaily').textContent === {json.dumps(want)}", timeout=40000)
     except Exception: need(False, f"the menu did not turn over at midnight: {await txt(pg, '#mDaily')!r}, want {want!r}")
     need(await txt(pg, '#mStreak') == '2', "yesterday's draw (with a streak) does not keep the streak")
+    await ctx.close()
+
+HVFIT = """(() => {
+  const bad = [];
+  for (const d of document.querySelectorAll('#hvGrid .hv-d')) {
+    const r = d.getBoundingClientRect();
+    for (const e of d.querySelectorAll('small, .hv-amt, .hv-tt')) { const q = e.getBoundingClientRect(); if (q.left < r.left - 0.5 || q.right > r.right + 0.5 || q.top < r.top - 0.5 || q.bottom > r.bottom + 0.5) bad.push((d.getAttribute('aria-label') || '').split(':')[0] + ': its text runs out of the tile'); }
+  }
+  const g = document.querySelector('#hvGift').getBoundingClientRect();
+  for (const e of document.querySelectorAll('#hvGift .hv-wc, #hvGift .btn, #hvGift .hv-pick, #hvGift .hv-dn b')) {
+    const q = e.getBoundingClientRect();
+    if (q.right > g.right + 0.5 || q.left < g.left - 0.5 || q.bottom > g.bottom + 0.5) bad.push('the gift panel: ' + e.className + ' sticks out');
+    if (!e.classList.contains('btn') && e.scrollWidth > e.clientWidth + 1) bad.push('the gift panel: ' + (e.className || e.tagName) + ' is cut');
+  }
+  for (const e of document.querySelectorAll('#hvGift .btn > span, #hvGift .btn > small')) {   // a button's words stay inside it (the SOON sticker may stick out)
+    const q = e.getBoundingClientRect(), r = e.parentNode.getBoundingClientRect();
+    if (q.left < r.left - 0.5 || q.right > r.right + 0.5 || q.top < r.top - 0.5 || q.bottom > r.bottom + 0.5) bad.push('the words "' + e.textContent + '" run out of their button');
+  }
+  const sh = document.querySelector('#scrDaily .sheet');
+  if (sh.scrollHeight > sh.clientHeight + 1) bad.push('the Daily sheet has to scroll (' + sh.scrollHeight + ' > ' + sh.clientHeight + ')');
+  return bad;
+})()"""
+
+async def harvest(b, errs):
+    tag, vp = 'harvest', (844, 390)
+    p0 = dict(START, mxp={'samurai': 900, 'odin': 200})
+    ctx, pg, mob = await new_page(b, tag, vp, False, errs, p0, at(14))
+    clk = pg.tap
+    def need(ok, msg):
+        if not ok: errs.append(f'{tag}: {msg}')
+        return ok
+    H = 'window.__blHarvest'
+    async def hv(): return (await prof(pg)).get('harvest')
+    async def setp(when, **kw):   # change the stored profile (and the clock), reload
+        await pg.evaluate("(([kw]) => { const p = JSON.parse(localStorage.getItem('%s')); Object.assign(p, kw); localStorage.setItem('%s', JSON.stringify(p)); })" % (PROF, PROF), [kw])
+        await reload_at(pg, when)
+    async def sheet(): await clk('#mStreak'); await pg.wait_for_timeout(400)
+    async def close(): await clk('#dlyClose'); await pg.wait_for_timeout(250)
+    dot = lambda: shown(pg, '#mGift')
+    # ----- the flame: a muted 0 and the gift dot; it opens the Daily sheet, the rest of the pill the Account
+    need(await zero(pg) and await dot(), 'the flame is not a muted 0 with the gift dot on a new profile')
+    need("Harvest gift waits" in (await pg.get_attribute('#mRank', 'aria-label') or ''), 'the pill label does not say the gift waits')
+    await sheet()
+    need(await shown(pg, '#scrDaily') and not await shown(pg, '#scrAccount'), 'the flame does not open the Daily sheet')
+    need(await txt(pg, '#hvHead') == 'The Harvest · day 1 of 30', f"head {await txt(pg, '#hvHead')!r}")
+    cls = await pg.evaluate("[...document.querySelectorAll('#hvGrid .hv-d')].map((d) => d.className)")
+    need(len(cls) == 30 and 'now' in cls[0] and not any('got' in c for c in cls), f'the track: {cls[:3]}')
+    # the x2 button: there, with SOON and the doubled value, and it does nothing
+    need(await shown(pg, '#hvAd') and await pg.evaluate("document.querySelector('#hvAd').disabled") and 'Soon' in await txt(pg, '#hvAd') and '15 → 30' in await txt(pg, '#hvAd'), f"x2 button: {await txt(pg, '#hvAd')!r}")
+    await pg.evaluate("document.querySelector('#hvAd').click()"); await pg.wait_for_timeout(200)
+    need((await prof(pg))['tokens'] == 85 and not await hv(), 'the x2 button gave something')
+    await shot(pg, tag, '1_sheet', errs, (HVFIT,))
+    # ----- claim day 1: +15, the tile turns gold, the dot goes, a second claim gives nothing
+    await clk('#hvClaim'); await pg.wait_for_timeout(500)
+    p1 = await prof(pg)
+    need(p1['tokens'] == 100 and p1['harvest'] == {'n': 1, 'c': 0, 'd': '2026-10-14', 'sk': []}, f"after day 1: chips {p1['tokens']}, harvest {p1.get('harvest')}")
+    need('got' in await pg.evaluate("document.querySelector('#hvGrid .hv-d').className") and not await shown(pg, '#hvClaim') and 'claimed' in await txt(pg, '#hvGift'), 'the sheet does not show day 1 claimed')
+    need(await pg.evaluate(f"{H}.claim('')") is None and (await prof(pg))['tokens'] == 100, 'a second claim the same day paid')
+    await shot(pg, tag, '2_claimed', errs, (HVFIT,))
+    await close()
+    need(not await dot() and await txt(pg, '#mTokens') == '100', 'the gift dot stays (or the chips did not show) after claiming')
+    # the rest of the pill still opens the Account
+    await clk('#mName'); await pg.wait_for_timeout(400)
+    need(await shown(pg, '#scrAccount') and not await shown(pg, '#scrDaily'), 'the pill no longer opens the Account')
+    await clk('#acClose'); await pg.wait_for_timeout(250)
+    # ----- a reload the same day changes nothing; a missed day waits (the 15th skipped: the 16th is day 2)
+    await reload_at(pg, at(14, '18:00'))
+    need(not await dot(), 'after a reload the gift is open again')
+    await reload_at(pg, at(16))
+    need(await dot(), 'the next day has no gift dot')
+    await sheet()
+    need(await txt(pg, '#hvHead') == 'The Harvest · day 2 of 30', f"a missed day did not wait: {await txt(pg, '#hvHead')!r}")
+    await clk('#hvClaim'); await pg.wait_for_timeout(400)
+    need((await hv()) == {'n': 2, 'c': 0, 'd': '2026-10-16', 'sk': []} and (await prof(pg))['tokens'] == 115, f'day 2: {await hv()}')
+    await close()
+    # ----- the clock set back to the 15th claims nothing
+    await reload_at(pg, at(15))
+    need(not await dot(), 'a clock set back shows the gift dot')
+    await sheet()
+    need(not await shown(pg, '#hvClaim') and 'Fri 16 Oct' in await txt(pg, '#hvGift'), f"clock set back: {await txt(pg, '#hvGift')!r}")
+    need(await pg.evaluate(f"{H}.claim('')") is None and (await hv())['n'] == 2, 'a clock set back claimed a day')
+    await close()
+    # ----- day 7: 60 chips and the Sprout plate (in the Shop, owned, not for sale before)
+    await setp(at(17), harvest={'n': 6, 'c': 0, 'd': '2026-10-16', 'sk': []}, tokens=0)
+    await clk('#mTokens'); await pg.wait_for_timeout(500)
+    sp = await pg.evaluate("(() => { const c = document.querySelector('.sh-pl[data-id=\"sprout\"]'); return c ? [c.className, c.textContent] : null; })()")
+    need(sp and 'gift' in sp[0] and 'Harvest gift' in sp[1], f'Sprout in the Shop before day 7: {sp}')
+    need(await shown(pg, '.sh-ad') and 'Soon' in await txt(pg, '.sh-ad') and await pg.get_attribute('.sh-ad', 'aria-disabled') == 'true', "the Shop's ad row is missing")
+    await pg.evaluate("document.querySelector('.sh-ad').click()"); await clk('.sh-pl[data-id="sprout"]'); await pg.wait_for_timeout(300)
+    need((await prof(pg))['tokens'] == 0 and 'sprout' not in ((await prof(pg)).get('plates') or []), 'the ad row or the Sprout card gave something')
+    await clk('#acClose'); await pg.wait_for_timeout(250)
+    await sheet(); await clk('#hvClaim'); await pg.wait_for_timeout(400)
+    p7 = await prof(pg)
+    need(p7['tokens'] == 60 and 'sprout' in (p7.get('plates') or []) and p7['harvest']['n'] == 7, f"day 7: chips {p7['tokens']}, plates {p7.get('plates')}")
+    await close()
+    # ----- day 14: 100 chips and the title Couch Potato (locked before, earned after)
+    async def couch():
+        await clk('#mName'); await pg.wait_for_timeout(300); await clk('#acTitBtn'); await pg.wait_for_timeout(300)
+        r = await pg.evaluate("(() => { const b = [...document.querySelectorAll('#acPick .ac-t')].find((x) => x.querySelector('b').textContent === 'Couch Potato'); return b ? b.className : null; })()")
+        await clk('#acClose'); await pg.wait_for_timeout(250)
+        return r
+    await setp(at(18), harvest={'n': 13, 'c': 0, 'd': '2026-10-17', 'sk': []})
+    need((await couch() or '').endswith('lock'), 'Couch Potato is not locked before day 14')
+    await sheet(); await clk('#hvClaim'); await pg.wait_for_timeout(400); await close()
+    need((await prof(pg))['tokens'] == 160 and await couch() == 'ac-t', 'day 14 did not pay 100 chips and give Couch Potato')
+    # ----- day 21: 150 chips and two free Another go tries, used before the chips
+    await setp(at(19), harvest={'n': 20, 'c': 0, 'd': '2026-10-18', 'sk': []}, daily={'d': '2026-10-19', 'r': 0, 's': 0, 'w': '', 'b': 0, 'p': 0})
+    await sheet(); await clk('#hvClaim'); await pg.wait_for_timeout(400)
+    p21 = await prof(pg)
+    need(p21['tokens'] == 310 and p21.get('ago') == 2, f"day 21: chips {p21['tokens']}, free tries {p21.get('ago')}")
+    need(await txt(pg, '#dlyAgain') == 'Another go · free', f"Another go says {await txt(pg, '#dlyAgain')!r}")
+    await clk('#dlyAgain'); await pg.wait_for_timeout(200); await clk('#dlyAgain')
+    await pg.wait_for_function(f"{G} !== null", timeout=20000)
+    pa = await prof(pg)
+    need(pa['tokens'] == 310 and pa.get('ago') == 1 and pa['daily'].get('x') == 1, f"a free try: chips {pa['tokens']}, tries {pa.get('ago')}, daily {pa['daily']}")
+    await end_match(pg, True)
+    await clk('#rAgain'); await pg.wait_for_timeout(400)
+    # ----- day 30: the picker starts on the fighter played most, a fighter who has it can't be picked, the skin goes to the one picked
+    hix = await pg.evaluate("BL.FIGHTERS[0].palettes.findIndex((p) => p.road === 'harvest')")
+    await setp(at(20), harvest={'n': 29, 'c': 0, 'd': '2026-10-19', 'sk': ['dragon']}, owned={'dragon': [0, hix]})
+    await sheet()
+    need(not await shown(pg, '#hvAd') and await txt(pg, '#hvClaim') == 'Claim for Samurai', f"day 30: {await txt(pg, '#hvClaim')!r}")
+    need(await pg.evaluate("document.querySelector('.hv-pf[data-f=\"dragon\"]').disabled"), 'a fighter who has the skin can be picked')
+    await shot(pg, tag, '3_day30', errs, (HVFIT,))
+    await clk('.hv-pf[data-f="odin"]'); await pg.wait_for_timeout(200)
+    need(await txt(pg, '#hvClaim') == 'Claim for Odin', 'picking Odin does not change the button')
+    tk0 = (await prof(pg))['tokens']
+    await clk('#hvClaim'); await pg.wait_for_timeout(400)
+    p30 = await prof(pg)
+    need(p30['harvest'] == {'n': 30, 'c': 0, 'd': '2026-10-20', 'sk': ['dragon', 'odin']} and hix in p30['owned']['odin'] and p30['tokens'] == tk0, f"day 30: {p30['harvest']}, odin {p30['owned']['odin']}")
+    await close()
+    # the Skin Rack knows it (and a fighter without it sees where it comes from)
+    rk = await pg.evaluate("(() => { const s = BL.FIGHTERS.find((f) => f.id === 'odin'); return s.palettes[%d].name; })()" % hix)
+    need(rk == 'Harvest Gold', f'the skin is called {rk!r}')
+    # ----- the next day: round 2 at day 1; its day 7 pays 100 chips, no plate
+    await reload_at(pg, at(21))
+    need(await dot(), 'round 2 does not start the next day')
+    await sheet()
+    need(await txt(pg, '#hvHead') == 'The Harvest 2 · day 1 of 30', f"round 2 head {await txt(pg, '#hvHead')!r}")
+    await clk('#hvClaim'); await pg.wait_for_timeout(400); await close()
+    need((await hv()) == {'n': 1, 'c': 1, 'd': '2026-10-21', 'sk': ['dragon', 'odin']}, f'round 2 day 1: {await hv()}')
+    await setp(at(22), harvest={'n': 6, 'c': 1, 'd': '2026-10-21', 'sk': ['dragon', 'odin']}, tokens=0, plates=[])
+    await sheet(); await clk('#hvClaim'); await pg.wait_for_timeout(400); await close()
+    need((await prof(pg))['tokens'] == 100 and not (await prof(pg)).get('plates'), 'round 2 day 7 does not pay 100 chips only')
+    # ----- every fighter has the skin: day 30 gives a Glaze token, and the Shop glazes with it instead of chips
+    figs = await pg.evaluate("BL.FIGHTERS.map((f) => f.id)")
+    await setp(at(23), harvest={'n': 29, 'c': 1, 'd': '2026-10-22', 'sk': figs}, owned={f: [0, hix] for f in figs}, tokens=10)
+    await sheet()
+    need('Glaze token' in await txt(pg, '#hvGift'), f"day 30 with every skin: {await txt(pg, '#hvGift')!r}")
+    await clk('#hvClaim'); await pg.wait_for_timeout(400); await close()
+    need((await prof(pg)).get('gzt') == 1, 'no Glaze token')
+    await clk('#mTokens'); await pg.wait_for_timeout(500)
+    card = '.sh-gz[data-id="%s"]' % figs[0]
+    need('token' in await txt(pg, card), f"the Glaze card says {await txt(pg, card)!r}")
+    await clk(card); await pg.wait_for_timeout(150); await clk(card); await pg.wait_for_timeout(300)
+    pg2 = await prof(pg)
+    need(pg2.get('gzt') == 0 and pg2['tokens'] == 10 and pg2.get('glazed', {}).get(figs[0]) == [0], f"glazing with the token: {pg2.get('gzt')}, chips {pg2['tokens']}, glazed {pg2.get('glazed')}")
     await ctx.close()
 
 async def sizes(b, tag, errs):
@@ -281,6 +444,13 @@ async def sizes(b, tag, errs):
         await shot(pg, tag, '0_menu_longline', errs)
     await clk('#bDaily'); await pg.wait_for_timeout(500)
     await shot(pg, tag, '1_sheet', errs, (SHEET, '#scrDaily .sheet'))
+    if await pg.evaluate(HVFIT): errs.append(f'{tag} 1_sheet: ' + '; '.join((await pg.evaluate(HVFIT))[:4]))
+    # day 30 (the picker and the fighter in Harvest Gold) and a claimed day, at this size
+    await pg.evaluate("(() => { P.harvest = { n: 29, c: 0, d: '2026-10-13', sk: [] }; hvRender(); })()".replace('P.harvest', 'window.__blAcct.P.harvest').replace('hvRender()', 'document.querySelector(\'#dlyClose\').click(), document.querySelector(\'#bDaily\').click()'))
+    await pg.wait_for_timeout(500)
+    await shot(pg, tag, '1b_day30', errs, (HVFIT,))
+    await clk('#hvClaim'); await pg.wait_for_timeout(500)
+    await shot(pg, tag, '1c_claimed', errs, (HVFIT,))
     await clk('#dlyGo')
     await end_match(pg, True)
     await shot(pg, tag, '2_results', errs, (SHEET, '#resSheet'))
@@ -297,13 +467,14 @@ async def sizes(b, tag, errs):
 async def main():
     errs = []
     pathlib.Path(OUT).mkdir(parents=True, exist_ok=True)
-    tags = ONLY or ['flow', 's667', 'p844', 'd1280', 'up390']
+    tags = ONLY or ['flow', 'harvest', 's667', 's740', 'p844', 'd1280', 'up390']
     async with async_playwright() as p:
         b = await p.chromium.launch(args=ARGS)
         for t in tags:
             print('running', t, flush=True)
             try:
                 if t == 'flow': await flow(b, errs)
+                elif t == 'harvest': await harvest(b, errs)
                 else: await sizes(b, t, errs)
             except Exception as e:
                 errs.append(f'{t}: {type(e).__name__}: {str(e)[:300]}')

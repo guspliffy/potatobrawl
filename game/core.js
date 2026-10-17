@@ -474,6 +474,10 @@ const ROAD_SKINS = [
   { name: "Deep Catch", road: "kraken", body: "#b89a62", trim: "#1a2430", ui: "#3ef2c0",
     accent: { phoenix: "#ff7a8a", alchemist: "#3a2f6e", odin: "#4a7a8a", wizard: "#1e3a4a", samurai: "#1fa88a", dragon: "#5a8a9a", gunslinger: "#8a7a5a", reaper: "#22343a" }, lining: "#3ef2c0" },
 ];
+// the Harvest skin (ui/harvest.js): day 30 of the daily gifts gives it to one fighter the player picks; after the Road skins, never bought.
+// pal.road = "harvest" puts it with the won skins and gives it the shared gold-dust overlay (skinfx.js).
+ROAD_SKINS.push({ name: "Harvest Gold", road: "harvest", body: "#d9a957", trim: "#3a2614", ui: "#f4c95d",
+  accent: { phoenix: "#ff9a1f", alchemist: "#7a4a1e", odin: "#c08a2e", wizard: "#8a3f1a", samurai: "#c4561e", dragon: "#d98a1f", gunslinger: "#6e4a24", reaper: "#3a2614" }, lining: "#ffd66b" });
 for (const f of FIGHTERS) for (const r of ROAD_SKINS)
   f.palettes.push({ name: r.name, road: r.road, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
