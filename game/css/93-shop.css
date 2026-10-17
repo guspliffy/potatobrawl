@@ -163,8 +163,8 @@
 .sh-adt { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 8px; opacity: 0.7; }
 .sh-adt b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text); }
 #acPanH .sh-adt span { min-width: 0; font: 500 12.5px/1.25 var(--body); color: var(--mute); }
-.sh-adv { flex: none; display: inline-flex; align-items: center; gap: 3px; font: 800 18px/1 var(--display); color: var(--gold); opacity: 0.5; margin-right: 24px; }
-.sh-ad .sh-soon { top: 50%; right: 8px; margin-top: -10px; }
+.sh-adv { flex: none; display: inline-flex; align-items: center; gap: 3px; font: 800 18px/1 var(--display); color: var(--gold); opacity: 0.5; }
+.sh-ad .sh-soon { position: relative; top: auto; right: auto; flex: none; }   /* in the row, after the chips it will pay */
 #app.short .sh-ad { min-height: 32px; padding: 3px 10px 3px 6px; }
 #app.short .sh-adi { width: 24px; height: 24px; }
 #app.short .sh-adi::after { left: 8px; top: 5px; }
@@ -180,6 +180,10 @@
 #app.tiny:not(.portrait):not(.narrow) .sh-grid.sh-plates { gap: 6px 4px; }
 #app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-np { padding: 0 3px; letter-spacing: 0.02em; }
 #app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-f { padding-inline: 4px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-c.arm .sh-f small { font-size: 11px; letter-spacing: 0; }   /* "Sure?" and the price on one slim foot */
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f small .tokglyph { margin-right: 3px; }
+#app:not(.portrait):not(.narrow) .sh-plates .sh-f small > span + .tokglyph { margin-left: 2px; }
+#app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-f small, #app.tiny:not(.portrait):not(.narrow) .sh-plates .sh-c.arm .sh-f small { font-size: 10px; letter-spacing: 0; }
 #app.portrait .sh-grid.sh-plates, #app.narrow .sh-grid.sh-plates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .sh-c.gift .sh-f small { font-size: 11px; color: var(--mint); }
 .sh-gz.tk .sh-f small { color: var(--mint); }
