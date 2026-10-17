@@ -100,6 +100,12 @@ const TUNE = {
   catchSlow: 0.5,
   catchUlt: 5,
   catchPad: 10,
+  // The sprint (all its numbers, to tune after Jonny plays it): the phone sends a `sprint` press on a flick of the stick (from below
+  // flick[0] to above flick[1] within flick[2] frames), a computer on a direction tapped twice within `tap` frames (ui/input.js).
+  // On the ground from idle or a run: `burst` frames at `mul` x the run speed (the stick held to that side), then a normal run.
+  // Cancels from the burst's frame: jump, light (the side light with +lightKb base knockback), heavy; dodge on any frame; never
+  // special or ulti. `cd` frames after it ends before the next one. No invincibility (the roll keeps that).
+  sprint: { flick: [0.35, 0.9, 6], tap: 12, burst: 18, mul: 1.5, jump: 4, light: 8, heavy: 10, lightKb: 1, cd: 45 },
 };
 const LIGHT = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
 
@@ -598,8 +604,8 @@ const BOSSES = [
 ];
 
 /* ---------- state ---------- */
-const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti"];
-const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false });
+const BTN = ["jump", "light", "heavy", "special", "dodge", "ulti", "sprint"];
+const blankInput = () => ({ x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: false });
 
 function newFighter(spec, slot, pal, x, facing) {
   const s = spec.stats;
@@ -613,7 +619,7 @@ function newFighter(spec, slot, pal, x, facing) {
     percent: 0, stocks: 3, invuln: 0, hitstun: 0, tumble: false,
     specCd: 0, recUsed: false, ledge: 0, ledgeCd: 0, ledgeInv: false,
     flash: 0, armorFlash: 0, dead: 0,
-    inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0, ulti: 0 },
+    inp: blankInput(), prevInp: blankInput(), buf: { jump: 0, light: 0, heavy: 0, special: 0, dodge: 0, ulti: 0, sprint: 0 },
     kos: 0, dmgDealt: 0, falls: 0, sds: 0, lastHitBy: null, lastHitT: -9999,
     freeT: 99, strN: 0, strBy: -1, strMv: -1, strLaunched: false, combo: 0, comboDmg: 0, comboBy: -1, moveT: 0,
     techT: 0, techLock: 0, techDir: 0, chg: 0, doomed: false, finShot: false, link: 0, lk: false, pop: 0,
@@ -627,6 +633,8 @@ function newFighter(spec, slot, pal, x, facing) {
     ph: 0, held: -1, bx: 0, bk: 0,
     // catchCd: frames until this fighter can make its next Catch (2v2)
     catchCd: 0,
+    // the sprint: spr = the burst's frame (0 = none), sprCd = frames before the next one, sprL = the light out of a sprint (+lightKb)
+    spr: 0, sprCd: 0, sprL: false,
     anim: { run: 0 },
   };
 }
@@ -754,7 +762,10 @@ function step(g, inputs) {
 
 function readInput(f, inp, frozen) {
   f.prevInp = f.inp;
-  f.inp = { x: clamp(inp.x || 0, -1, 1), y: clamp(inp.y || 0, -1, 1), jump: !!inp.jump, light: !!inp.light, heavy: !!inp.heavy, special: !!inp.special, dodge: !!inp.dodge, ulti: !!inp.ulti };
+  const x = clamp(inp.x || 0, -1, 1), spr = !!inp.sprint && Math.abs(x) > 0.5;
+  // a sprint frame keeps the buttons of the frame before: its online code has no room for them, and a held button stays held
+  const b = spr ? f.prevInp : inp;
+  f.inp = { x, y: clamp(inp.y || 0, -1, 1), jump: !!b.jump, light: !!b.light, heavy: !!b.heavy, special: !!b.special, dodge: !!b.dodge, ulti: !!b.ulti, sprint: spr };
   for (const k of BTN) {
     if (f.inp[k] && !f.prevInp[k]) f.buf[k] = TUNE.buffer;
     else if (f.buf[k] > 0 && !frozen) f.buf[k]--;
@@ -777,6 +788,8 @@ function updateFighter(g, f) {
   if (f.armorFlash > 0) f.armorFlash--;
   if (f.link > 0) f.link--;
   if (f.catchCd > 0) f.catchCd--;
+  if (f.sprCd > 0) f.sprCd--;
+  if (f.spr && (f.state !== "run" || !f.grounded)) endSprint(f);   // hit, or ran off the edge
 
   switch (f.state) {
     case "respawn": {
@@ -821,6 +834,7 @@ function updateFighter(g, f) {
 
 function actOrMove(g, f) {
   const b = f.buf, dir = dirOf(f.inp);
+  if (f.spr) return sprintStep(g, f, dir);
   if (b.ulti) { consume(f, "ulti"); if (ultReady(g, f)) return startUlti(g, f); }
   if (f.grounded) {
     if (b.dodge) { consume(f, "dodge"); return startDodge(g, f); }
@@ -831,6 +845,7 @@ function actOrMove(g, f) {
       if (dir === "side") faceStick(f);
       return startMove(g, f, dir === "up" ? "up" : dir === "down" ? "down" : dir === "side" ? "side" : "jab");
     }
+    if (b.sprint) { consume(f, "sprint"); if (f.sprCd <= 0 && Math.abs(f.inp.x) > 0.5) return startSprint(g, f); }
     groundMove(g, f);
   } else {
     if (f.state !== "air") setState(f, "air");
@@ -980,6 +995,29 @@ function groundMove(g, f) {
   } else f.downHold = 0;
 }
 
+/* ---------- the sprint (TUNE.sprint) ---------- */
+function startSprint(g, f) {
+  f.facing = sign(f.inp.x); f.spr = 1;
+  f.vx = f.facing * f.s.run * TUNE.sprint.mul;
+  f.anim.run += Math.abs(f.vx) * 0.075;
+  if (f.state !== "run") setState(f, "run");
+  g.events.push({ type: "sprint", slot: f.slot, x: f.x, y: f.y, dir: f.facing });
+}
+function endSprint(f) { f.spr = 0; f.sprCd = TUNE.sprint.cd; }
+// a burst frame (on the ground, running): its cancels, else full speed while the stick stays held that way (let go or turn: a run)
+function sprintStep(g, f, dir) {
+  const S = TUNE.sprint, b = f.buf, n = ++f.spr;
+  for (const k of ["jump", "light", "heavy"]) if (b[k] > 0 && n < S[k]) b[k] = TUNE.buffer;   // a press made early waits for its frame
+  if (b.dodge) { endSprint(f); consume(f, "dodge"); return startDodge(g, f); }
+  if (b.jump && n >= S.jump) { endSprint(f); consume(f, "jump"); f.tumble = false; f.lk = false; return setState(f, "jumpsquat"); }
+  if (b.heavy && n >= S.heavy) { endSprint(f); consume(f, "heavy"); return startMove(g, f, dir === "up" ? "hUp" : dir === "down" ? "hDown" : "hSide"); }
+  if (b.light && n >= S.light) { endSprint(f); consume(f, "light"); startMove(g, f, "side"); f.sprL = true; return; }
+  consume(f, "sprint");
+  if (n > S.burst || f.inp.x * f.facing <= 0.25) { endSprint(f); return groundMove(g, f); }
+  f.vx = f.facing * f.s.run * S.mul;
+  f.anim.run += Math.abs(f.vx) * 0.075;
+}
+
 function airDrift(f, mult) {
   const s = f.s, x = f.inp.x;
   if (Math.abs(x) > 0.2) {
@@ -1004,7 +1042,7 @@ function airJump(g, f) {
 function startMove(g, f, key) {
   const m = f.spec.moves[key];
   setState(f, "attack");
-  f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0;
+  f.move = m; f.mid = key; f.mt = 0; f.hitLog = {}; f.poundT = 0; f.downHold = 0; f.tumble = false; f.moveT = g.t; f.chg = 0; f.sprL = false;
   if (key === "spec") f.specCd = m.cooldown || 0;
   // the link: started from (or soon after) the second light hit in a row, the wind-up skips its first linkFast frames
   // (a charging heavy still reaches the frame where it charges)
@@ -1377,7 +1415,8 @@ function applyHit(g, h) {
   // the ulti bar: dealt and taken damage fill it (an ulti's own hits don't)
   const ultHit = !!h.hit.ult || (!h.proj && att.mid === "ulti");
   if (!ultHit) { ultGain(att, dmg * TUNE.ultDealt); ultGain(def, dmg * TUNE.ultTaken); }
-  let kb = knockback(hit, def.percent, def.s.weight);
+  // the light out of a sprint: +lightKb base knockback
+  let kb = knockback(!h.proj && att.sprL && att.mid === "side" ? Object.assign({}, hit, { bkb: hit.bkb + TUNE.sprint.lightKb }) : hit, def.percent, def.s.weight);
   if (ck) kb *= 1 + TUNE.chgKb * ck;
   if (ultHit && kb >= TUNE.tumbleKb) kb *= TUNE.ultKb;   // only the launching hits, so a multi-hit ulti still carries its target into the last hit
   let hdir;
@@ -2347,6 +2386,8 @@ function botInput(g, me, opp, bot) {
   if (!hy && o.st === "attack" && adx < 140 && Math.abs(dy) < 120 && R() < lerp(0.1, 0.7, d)) hy = -1;
   bot.hold.x = hx; bot.hold.y = hy;
   out.x = hx; out.y = hy; avoidEdge(me, out);
+  // a long way to go on the ground (to the opponent, or to the ledge after one knocked out): sprint, the stronger the CPU the more often
+  if (act && me.grounded && !me.spr && me.sprCd <= 0 && out.x === sx && !hy && adx > 200 && R() < lerp(0.15, 0.5, d)) out.sprint = true;
   return out;
 }
 function avoidEdge(me, out) {
@@ -2389,7 +2430,7 @@ function teamBotInput(g, me, bot) {
     if (!bot.catchOn) continue;
     const tx = t.x + (t.vx + t.kbx) * 10, ty = t.y + (t.vy + t.kby) * 10, dx = tx - me.x;
     if (Math.abs(dx) > 280 || tx < S.x1 - 40 || tx > S.x2 + 40 || ty > S.top + 40) continue;
-    Object.assign(out, { light: false, heavy: false, special: false, dodge: false, ulti: false, y: 0 });
+    Object.assign(out, { light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: false, y: 0 });
     out.x = Math.abs(dx) > 12 ? sign(dx) : 0;
     out.jump = me.grounded && ty < me.y - 70 && Math.abs(dx) < 140;
     avoidEdge(me, out);
@@ -2404,7 +2445,7 @@ const FKEYS = ["x", "y", "vx", "vy", "kbx", "kby", "facing", "grounded", "plat",
   "hitstun", "tumble", "specCd", "recUsed", "ledge", "ledgeCd", "ledgeInv", "flash", "armorFlash", "dead",
   "inp", "prevInp", "buf", "kos", "dmgDealt", "falls", "sds", "lastHitT",
   "freeT", "strN", "strBy", "strMv", "strLaunched", "combo", "comboDmg", "comboBy", "moveT", "techT", "techLock", "techDir",
-  "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"];
+  "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "hpMax", "poise", "stag", "bq", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd", "spr", "sprCd", "sprL"];
 const PKEYS = ["owner", "x", "y", "dir", "vx", "vy", "grav", "boomer", "style", "speed", "r", "life", "t", "hit", "burst", "pulse", "last", "part", "z", "w", "pass"];
 const copy = (v) => (v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v);
 function serialize(g) {
@@ -2441,7 +2482,7 @@ function checksum(g) {
   let h = 2166136261;
   const mix = (v) => { const t = String(v); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
   mix(g.t); mix(g.phase); mix(g.timer); mix(g.sudden); mix(g.map); mix(g.br);
-  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd"]) mix(f[k]);
+  for (const f of g.fighters) for (const k of ["x", "y", "vx", "vy", "kbx", "kby", "percent", "stocks", "state", "st", "mt", "facing", "specCd", "invuln", "airJumps", "strN", "strLaunched", "techT", "chg", "doomed", "finShot", "link", "lk", "pop", "ult", "ultN", "ultX", "ultTgt", "team", "hp", "poise", "stag", "bt", "aim", "lifePct", "ph", "held", "bx", "bk", "catchCd", "spr", "sprCd", "sprL"]) mix(f[k]);
   for (const p of g.projs) { mix(p.x); mix(p.y); mix(p.t); }
   return h >>> 0;
 }

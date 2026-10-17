@@ -98,6 +98,7 @@ const ULTI_BASE = 2592, NEUTRAL = 1280, B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefg
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function encIn(i) {
   const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4), q = (qx + 4) * 9 + (qy + 4);
+  if (i.sprint && (qx === 4 || qx === -4)) return ULTI_BASE + 81 * 18 + (qx > 0 ? 9 : 0) + qy + 4;   // a sprint press (SPRINT_BASE)
   const b4 = (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0);
   return i.ulti ? ULTI_BASE + q * 16 + b4 : q * 32 + b4 + (i.dodge ? 16 : 0);
 }

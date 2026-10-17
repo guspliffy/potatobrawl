@@ -10,8 +10,9 @@
    A Team Brawl (2v2, up to four phones and CPUs in the empty seats) is ui/online-team.js: the same lockstep with an input log per person. */
 /* Bumped whenever a change could make two copies of the game simulate differently,
    so a friend with an older copy open is told to reload instead of joining and drifting apart.
-   18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start. */
-const PROTO = 18;
+   18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start.
+   19: the sprint (a new input and its codes, new fighter fields, CPUs that sprint). */
+const PROTO = 19;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
@@ -34,15 +35,20 @@ const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 const NEUTRAL = 1280;
 // One frame of input in two base64 characters (0-4095). 0-2591: the stick (81 spots) x 32 button sets. ULTI held uses the
 // spare codes ULTI_BASE + stick x 16 (jump, light, heavy, special; dodge is dropped on those frames: the ulti wins anyway).
-// A Team Brawl's Focus tap uses FOCUS_BASE + stick x 2 + the foe (0 or 1, in seat order), no buttons on that frame; IN_END ends the codes.
-const ULTI_BASE = 2592, FOCUS_BASE = ULTI_BASE + 81 * 16, IN_END = FOCUS_BASE + 81 * 2;
+// A Team Brawl's Focus tap uses FOCUS_BASE + stick x 2 + the foe (0 or 1, in seat order), no buttons on that frame.
+// A sprint press uses SPRINT_BASE + side (0 left, 1 right) x 9 + the stick's y: its x is a full push that way, and it has no buttons (the
+// game keeps the frame before's held buttons on a sprint frame, core.js readInput). IN_END ends the codes; a 1v1 takes all but Focus.
+const ULTI_BASE = 2592, FOCUS_BASE = ULTI_BASE + 81 * 16, SPRINT_BASE = FOCUS_BASE + 81 * 2, IN_END = SPRINT_BASE + 18;
+const code1v1 = (v) => v < FOCUS_BASE || (v >= SPRINT_BASE && v < IN_END);
 function encIn(i) {
   const qx = clamp(Math.round(i.x * 4), -4, 4), qy = clamp(Math.round(i.y * 4), -4, 4), q = (qx + 4) * 9 + (qy + 4);
   if (i.focus === 0 || i.focus === 1) return FOCUS_BASE + q * 2 + i.focus;
+  if (i.sprint && (qx === 4 || qx === -4)) return SPRINT_BASE + (qx > 0 ? 9 : 0) + qy + 4;
   const b4 = (i.jump ? 1 : 0) + (i.light ? 2 : 0) + (i.heavy ? 4 : 0) + (i.special ? 8 : 0);
   return i.ulti ? ULTI_BASE + q * 16 + b4 : q * 32 + b4 + (i.dodge ? 16 : 0);
 }
 function decIn(v) {
+  if (v >= SPRINT_BASE) { const k = v - SPRINT_BASE; return { x: k >= 9 ? 1 : -1, y: ((k % 9) - 4) / 4, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, sprint: true }; }
   if (v >= FOCUS_BASE) { const q = (v - FOCUS_BASE) >> 1; return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, focus: (v - FOCUS_BASE) & 1 }; }
   const u = v >= ULTI_BASE, b = u ? (v - ULTI_BASE) & 15 : v & 31, q = u ? (v - ULTI_BASE) >> 4 : v >> 5;
   return { x: (Math.floor(q / 9) - 4) / 4, y: ((q % 9) - 4) / 4, jump: !!(b & 1), light: !!(b & 2), heavy: !!(b & 4), special: !!(b & 8), dodge: !!(b & 16), ulti: u };
@@ -534,7 +540,7 @@ function readOpp(pr) {
       const a = B64I[pr.i[k * 2]], b = B64I[pr.i[k * 2 + 1]];
       if (a === undefined || b === undefined) break;
       const v = a * 64 + b;
-      if (v >= ULTI_BASE + 81 * 16) break;
+      if (!code1v1(v)) break;
       NET.opLog[fr] = v;
     }
   }

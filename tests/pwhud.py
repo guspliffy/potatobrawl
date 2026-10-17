@@ -1,5 +1,5 @@
 # The match HUD: a calmer screen and danger readability (UI only).
-#   python3 pwhud.py [outdir [tag ...]]   tags: se phone desk up btn   (default all; screenshots go to outdir)
+#   python3 pwhud.py [outdir [tag ...]]   tags: se phone desk up btn spr   (default all; screenshots go to outdir; spr alone: the sprint at 844x390, spr all: at five sizes)
 # Every size (667x320, 844x390, 1280x760, upright 390x844):
 #   layout   the timer is a strip clear of both cards, the pause icon sits under the opponent's card, small, clear of every touch
 #            button, and the percent is the biggest text on each card and on the screen
@@ -13,6 +13,8 @@
 # Touch buttons (five sizes incl. 740x360, on The Field and The Kitchen): every button (.pb) and the stick keep the touch areas they
 #   had before the ink-glass look (the rects measured on main), the words are heavy italic, a pressed button sinks 3px; pictures of
 #   Light pressed, Heavy held and charging, Special cooling, ULTI ready (tag 6_buttons) and pressed / finish (tag 6b_buttons).
+# The sprint (five sizes): a flick of the touch stick starts one, a slow push to full doesn't, the knob glows ember at a full push and not
+#   in the middle; at 1280x760 a double tap of a direction key starts one and a held key doesn't; a picture of the burst (tag 7_sprint).
 # Prints "no errors" when every check passed and no page errors happened.
 import asyncio, sys, math, re, os
 import pathlib
@@ -274,6 +276,7 @@ async def buttons(b, errs):
     sizes = [('se', 667, 320, False, 5), ('mid', 740, 360, False, 6), ('phone', 844, 390, False, 5), ('desk', 1280, 760, False, 6), ('up', 390, 844, True, 5)]   # map buttons: 5 The Field, 6 The Kitchen
     for tag, w, h, up, mapb in sizes:
         if ONLY and tag not in ONLY and 'btn' not in ONLY: continue
+        if ONLY and 'spr' in ONLY: continue
         ctx, pg = await start(b, tag, {'width': w, 'height': h}, up, errs, mapb=mapb)
         await frames(pg, 10)
         got = await pg.evaluate(BTN_MEASURE)
@@ -302,6 +305,50 @@ async def buttons(b, errs):
         await pg.screenshot(path=f'{OUT}/{tag}_6b_buttons.png')
         await ctx.close()
 
+# ---- the sprint: a flick of the touch stick and a double tap of a direction key each start one; a slow push to full and a held key don't;
+#      the knob glows ember at a full push; a picture of the lean, the speed lines and the knob (tag 7_sprint) ----
+SPR = f"{G}.fighters[0].spr"
+async def sprint(b, errs):
+    sizes = [('se', 667, 320, False), ('mid', 740, 360, False), ('phone', 844, 390, False), ('desk', 1280, 760, False), ('up', 390, 844, True)]
+    for tag, w, h, up in sizes:
+        if ONLY and tag not in ONLY and 'spr' not in ONLY: continue
+        if ONLY and 'spr' in ONLY and 'all' not in ONLY and tag != 'phone': continue   # while iterating: one size
+        ctx, pg = await start(b, tag, {'width': w, 'height': h}, up, errs)
+        await pg.evaluate(f"(() => {{ const me = {G}.fighters[0], o = {G}.fighters[1]; me.x = -250; me.facing = 1; o.x = 240; }})()")
+        await frames(pg, 6)
+        z = await pg.evaluate("(() => { const r = document.getElementById('stickZone').getBoundingClientRect(); return [r.left + r.width * 0.4, r.top + r.height * 0.6]; })()")
+        # a slow push to full: no sprint, the knob glows at full
+        await pg.mouse.move(z[0], z[1]); await pg.mouse.down()
+        for k in range(1, 6): await pg.mouse.move(z[0] + k * 10, z[1]); await pg.wait_for_timeout(60)
+        await frames(pg, 4)
+        if await pg.evaluate(SPR): errs.append(f'{tag} sprint: a slow push to full started a sprint')
+        if not await pg.evaluate("document.getElementById('stickKnob').classList.contains('full')"): errs.append(f'{tag} sprint: no ember knob at a full push')
+        await pg.mouse.move(z[0], z[1]); await pg.wait_for_timeout(120)
+        if await pg.evaluate("document.getElementById('stickKnob').classList.contains('full')"): errs.append(f'{tag} sprint: the ember knob stays on in the middle')
+        await pg.evaluate(f"(() => {{ const me = {G}.fighters[0]; me.x = -110; me.vx = 0; me.sprCd = 0; {G}.fighters[1].x = 290; }})()")
+        await frames(pg, 2)
+        # a flick: from the middle to full in one move
+        await pg.mouse.move(z[0] + 60, z[1])
+        try:
+            await pg.wait_for_function(f"{SPR} >= 3", timeout=3000)
+            await pg.evaluate(f"{G}.hitstop = 100000")   # hold the burst for the picture
+            await ticks(pg, 4)
+            await pg.screenshot(path=f'{OUT}/{tag}_7_sprint.png')
+            await pg.evaluate(f"{G}.hitstop = 0")
+        except Exception: errs.append(f'{tag} sprint: a flick of the stick did not start a sprint')
+        await pg.mouse.up(); await frames(pg, 60)
+        if tag == 'desk':
+            await pg.evaluate(f"(() => {{ const me = {G}.fighters[0]; me.x = -250; me.vx = 0; me.sprCd = 0; }})()")
+            await pg.keyboard.down('ArrowRight'); await frames(pg, 30)
+            if await pg.evaluate(SPR): errs.append(f'{tag} sprint: holding a direction key started a sprint')
+            await pg.keyboard.up('ArrowRight'); await frames(pg, 20)
+            await pg.evaluate(f"(() => {{ const me = {G}.fighters[0]; me.x = -250; me.vx = 0; me.sprCd = 0; }})()")
+            await pg.keyboard.down('ArrowRight'); await pg.wait_for_timeout(40); await pg.keyboard.up('ArrowRight'); await pg.wait_for_timeout(40); await pg.keyboard.down('ArrowRight')
+            try: await pg.wait_for_function(f"{SPR} > 0", timeout=3000)
+            except Exception: errs.append(f'{tag} sprint: a double tap of a direction key did not start a sprint')
+            await pg.keyboard.up('ArrowRight')
+        await ctx.close()
+
 async def main():
     errs = []
     sizes = [('se', {'width': 667, 'height': 320}, False), ('phone', {'width': 844, 'height': 390}, False), ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True)]
@@ -311,6 +358,7 @@ async def main():
             if not ONLY or tag in ONLY: await layout_run(b, tag, vp, up, errs)
         if not ONLY or 'phone' in ONLY: await flow(b, errs)
         await buttons(b, errs)
+        await sprint(b, errs)
         await b.close()
     print('\n'.join(errs) or 'no errors')
 asyncio.run(main())

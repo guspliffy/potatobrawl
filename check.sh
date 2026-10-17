@@ -74,6 +74,15 @@ if grep -q "^combos ok" "$LOGS/combos.log"; then pass "combo routes + the link (
 else fail "combo routes / the link" "$LOGS/combos.log"; fi
 }
 
+# 3d2. The sprint: a flick / double tap's press starts it on the ground only, 18 burst frames at 1.5x run, the cancels from their frames
+#      (never special or ulti), the 45-frame cooldown, no i-frames, held buttons kept on a sprint frame, the sprint light's knockback,
+#      and its online codes both ways (the page and the Ranked referee).
+s_sprint() {
+(cd tests && node sprint.js) > "$LOGS/sprint.log" 2>&1
+if grep -q "^sprint ok" "$LOGS/sprint.log"; then pass "the sprint (trigger, burst, cancels, cooldown, no i-frames, online codes)"
+else fail "the sprint" "$LOGS/sprint.log"; fi
+}
+
 # 3e. Ultimates: every ulti KOs the lightest and the heaviest fighter in its percent band (never from 0), the first hit lands 24+
 #     frames after the freeze, the bar is spent on the press, a third use is refused, and save/restore mid-ulti matches.
 s_ulti() {
@@ -253,7 +262,7 @@ else fail "accounts in the browser" "$LOGS/accounts-ui.log"; fi
 #     their touch areas at five sizes (pictures of pressed, charging, cooling, ULTI ready). Pictures in build/shots/hud.
 s_hud() {
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwhud.py" hud) > "$LOGS/hud.log" 2>&1
-if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow, touch buttons' areas and states; shots in build/shots/hud)"
+if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow, touch buttons' areas and states, the sprint's flick and double tap; shots in build/shots/hud)"
 else fail "match HUD" "$LOGS/hud.log"; fi
 }
 
@@ -386,15 +395,15 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 }
 
 # The order the lines come in (the numbering above).
-QUICK_STEPS=(build proto snap lock finish combos ulti boss duo)
+QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
 ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu quickui stakesui screens skins shop acctui hud ultui tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, acct, stats) have short timers, so they run alone first (about 20 seconds).
-SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos ulti)
+SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
 SOLO=(quick cpu acct stats)
 REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tut skins bossui ultui onboss comboui cup statsui online statspage finisher fsui)
-if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos ulti); SOLO=(); REAL=(); fi
+if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)
 run() { STEP=$1; local t0=$SECONDS; "s_$1"; echo $((SECONDS - t0)) > "$RES/$1.t"; }

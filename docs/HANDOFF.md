@@ -1,9 +1,25 @@
-# PotatoBrawl handoff (updated 2026-10-17: the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- The sprint (2026-10-17, branch claude/sprint-w0q7je, pre-step-6 thread 5, PROTO 19: a new input, its online codes, new fighter fields;
+  brief /mnt/project-files/pre-step6/briefs/thread-5.md). Jonny: straight into the engine and kept, no test page; he plays it live and the
+  numbers get tuned in a small follow-up: they are all in core.js TUNE.sprint (flick 0.35 -> 0.9 within 6 frames, double tap within 12,
+  18 burst frames at 1.5x run, jump from 4, light from 8 (side light, +1 base knockback), heavy from 10, dodge any time, never special or
+  ulti, 45 frames cooldown after the burst, no i-frames).
+  - The device sends a one-frame `sprint` press (ui/input.js SPR: a flick of the touch stick or a gamepad stick, a double tap of A/D, the
+    arrows or the d-pad); one that meets a new button press waits a frame. core.js readInput keeps the frame before's buttons on a sprint
+    frame (its online code has no room for buttons), so a held heavy keeps charging through one.
+  - Fighter fields spr (the burst's frame), sprCd, sprL (the sprint light) in defaults, FKEYS and checksum. The burst runs while the stick
+    is held that way (letting go or turning ends it into a run); a hit or running off the edge ends it on the next frame.
+  - Online codes: SPRINT_BASE 4050 + side x 9 + the stick's y (18 codes, IN_END 4068); a 1v1 takes every code but Focus (code1v1);
+    quick.js decIn / codeOk and cpurank.js take them too (the server picks them up with the normal update paste).
+  - CPUs sprint to close a gap over 200 px on the ground (or toward the ledge), 15-50% of their thinks by strength: about 2 a minute.
+  - Look: lean + long strides + arms pumping, speed lines (sprintLines) and a dust trail during the burst, a dust puff + Sfx.dash at the
+    start; the stick's knob glows ember at a full side push (#stickKnob.full) and flares as a sprint goes out (.spr). How to play: Sprint row.
+  - Tests: tests/sprint.js (check step "sprint"), pwhud.py "spr" (flick / slow push / double tap / held key, the knob, pictures at five sizes).
 - The Harvest (2026-10-17, branch claude/harvest-daily-gifts-tqx1lv, pre-step-6 thread 3, PROTO 18: the Harvest skin is a new palette an
   older copy can't accept in a match start, players reload once; brief /mnt/project-files/pre-step6/briefs/thread-3.md). Jonny: the flame
   opens a daily log-in page, every 7th day special, day 30 a skin for a fighter you pick, gifts doubled by an ad (coming soon).

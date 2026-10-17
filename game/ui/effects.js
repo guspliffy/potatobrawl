@@ -36,6 +36,7 @@ function updateFx(g) {
   for (let i = 0; i < combos.length; i++) { const cb = combos[i]; if (cb) { cb.t++; cb.pop *= 0.82; if (cb.t > 80) combos[i] = null; } }
   for (let i = chgPops.length - 1; i >= 0; i--) { const q = chgPops[i]; q.t++; q.pop *= 0.8; if (q.t > 56) chgPops.splice(i, 1); }
   finDashTick(g);
+  for (const f of g.fighters) if (f.spr && f.state === "run" && f.grounded && f.spr % 3 === 0) addFx({ k: "puff", x: f.x - f.facing * 10, y: f.y - 2, vx: -f.facing * frand(0.6, 1.8), vy: -frand(0.1, 0.7), r: frand(3, 5.5), t: 0, life: frand(12, 18) });   // the sprint's dust trail
   for (let i = sfx.length - 1; i >= 0; i--) if (sfx[i].t >= sfx[i].life) sfx.splice(i, 1);
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
@@ -335,6 +336,10 @@ function handleEvent(g, e, live) {
       if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "reaper") { graveRise(e, g.fighters[e.slot], live); break; }   // Reaper: a dark cloud lifts him
       if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "land": dust(e.x, e.y, 3, 22); break;
+    case "sprint":   // the sprint's push-off: a puff of dust kicked back from the feet, a short whoosh
+      for (let i = 0; i < 7; i++) addFx({ k: "puff", x: e.x - e.dir * frand(4, 16), y: e.y - 2, vx: -e.dir * frand(1, 3.4), vy: -frand(0.2, 1.3), r: frand(4, 8), t: 0, life: frand(16, 26) });
+      if (live) Sfx.dash();
+      break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
     case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
     case "swing": {
