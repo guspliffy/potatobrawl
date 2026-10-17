@@ -7485,8 +7485,9 @@ function botInput(g, me, opp, bot) {
   if (!hy && o.st === "attack" && adx < 140 && Math.abs(dy) < 120 && R() < lerp(0.1, 0.7, d)) hy = -1;
   bot.hold.x = hx; bot.hold.y = hy;
   out.x = hx; out.y = hy; avoidEdge(me, out);
-  // a long way to go on the ground (to the opponent, or to the ledge after one knocked out): sprint, the stronger the CPU the more often
-  if (act && me.grounded && !me.spr && me.sprCd <= 0 && out.x === sx && !hy && adx > 200 && R() < lerp(0.15, 0.5, d)) out.sprint = true;
+  // a long way to go on the ground (to the opponent, or to the ledge after one knocked out): sprint, the stronger the CPU the more often.
+  // Not at a boss: his numbers (the Road's, DUO_HP, boss.js's bands) were tuned with CPU players and partners that walk.
+  if (act && me.grounded && !opp.spec.boss && !me.spr && me.sprCd <= 0 && out.x === sx && !hy && adx > 200 && R() < lerp(0.15, 0.5, d)) out.sprint = true;
   return out;
 }
 function avoidEdge(me, out) {

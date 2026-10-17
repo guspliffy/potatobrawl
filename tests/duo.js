@@ -159,7 +159,7 @@ function balance(N, D) {
 }
 if (process.argv[2]) { balance(+process.argv[2], (process.argv[3] || "0.5,0.8").split(",").map(Number)); process.exit(0); }
 {
-  const b = balance(100, [0.5, 0.8]);
+  const b = balance(200, [0.5, 0.8]);   // 200 pairs: at 100 the Reaper sat on the band's edge (38.0%, and 37.0% with the sprint) while 1000 pairs put him at 46-48%
   check(b.left >= 44 && b.left <= 56, `sides: the left team wins ${b.left.toFixed(1)}% (want 44-56%)`);
   for (const [id, v] of b.rates) check(v >= 38 && v <= 64, `${id} wins ${v.toFixed(1)}% of 2v2s (want 38-64%)`);
   check(b.secs >= 50 && b.secs <= 200, `matches last ${b.secs.toFixed(0)} s (want 50-200)`);

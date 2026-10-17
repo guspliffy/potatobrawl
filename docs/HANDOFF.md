@@ -17,6 +17,9 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   - Online codes: SPRINT_BASE 4050 + side x 9 + the stick's y (18 codes, IN_END 4068); a 1v1 takes every code but Focus (code1v1);
     quick.js decIn / codeOk and cpurank.js take them too (the server picks them up with the normal update paste).
   - CPUs sprint to close a gap over 200 px on the ground (or toward the ledge), 15-50% of their thinks by strength: about 2 a minute.
+    Not at a boss: the boss numbers (Road HP, DUO_HP, boss.js bands) were tuned with CPUs that walk, so boss fights' CPUs play as before.
+  - duo.js's balance check plays 200 pairs (was 100): at 100 the Reaper sat on the 38% edge on main too (38.0%), 1000 pairs put him at
+    46-48% with or without the sprint. tests/quick.js play() waits 30 ms after the host's start (the guest's first inputs could beat it).
   - Look: lean + long strides + arms pumping, speed lines (sprintLines) and a dust trail during the burst, a dust puff + Sfx.dash at the
     start; the stick's knob glows ember at a full side push (#stickKnob.full) and flares as a sprint goes out (.spr). How to play: Sprint row.
   - Tests: tests/sprint.js (check step "sprint"), pwhud.py "spr" (flick / slow push / double tap / held key, the knob, pictures at five sizes).

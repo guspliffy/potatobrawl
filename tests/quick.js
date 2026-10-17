@@ -130,6 +130,7 @@ async function play(H, G, opts) {
   const logs = [[], []], sent = [0, 0], phones = [H, G];
   for (let f = 0; f < st.d; f++) { logs[0].push(NEUTRAL); logs[1].push(NEUTRAL); }
   let ck = null, frame = 0;
+  await sleep(30);   // the host's start reaches the server first: inputs for a match it hasn't started are dropped, and a log never has holes
   const flush = async (all) => {
     for (let i = 0; i < 2; i++) {
       if (o.stopAt && o.stopAt.slot === i && sent[i] >= o.stopAt.frame) continue;
