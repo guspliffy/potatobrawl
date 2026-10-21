@@ -518,6 +518,7 @@ function resOpen(look, spec, solo) {
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
+  $("rChl").hidden = true;   // ui/challenge.js: showResults shows it where it fits
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -620,6 +621,7 @@ function showResults(R) {
   if (R.bw) bwResults(R);   // ui/bossweek.js: the time, the place and the server's verdict in the rank card's place
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
+  chlRes(R);   // ui/challenge.js: Challenge a friend
   show("result");
 }
 

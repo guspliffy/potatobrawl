@@ -8,7 +8,7 @@ core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
 UI_PARTS = ['base', 'counter', 'input', 'view', 'draw-fighters', 'glaze', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'finisher', 'manga',
-            'screens', 'hud', 'boss', 'duo', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'harvest', 'skins', 'shop', 'online', 'online-team', 'menus', 'combos', 'mastery', 'acct', 'quick', 'rivals', 'vscpu', 'boards', 'stakes', 'bossweek', 'bwsheet', 'tutorial', 'welcome', 'loop']
+            'screens', 'hud', 'boss', 'duo', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'harvest', 'skins', 'shop', 'online', 'online-team', 'menus', 'combos', 'mastery', 'acct', 'quick', 'rivals', 'vscpu', 'boards', 'stakes', 'challenge', 'bossweek', 'bwsheet', 'tutorial', 'welcome', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
@@ -41,6 +41,10 @@ web = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
        '<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png">'
        '<link rel="icon" type="image/png" href="/icon-192.png">'
        '<meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser.">'
+       # the card a chat app shows for a shared link (a Challenge a friend link, ui/challenge.js); the picture needs a full address
+       '<meta property="og:type" content="website"><meta property="og:site_name" content="PotatoBrawl"><meta property="og:title" content="PotatoBrawl">'
+       '<meta property="og:description" content="A 1v1 potato brawl in your browser. No download, no account: open the link and fight.">'
+       '<meta property="og:image" content="https://potatobrawl.cloud/icon-512.png"><meta name="twitter:card" content="summary">'
        '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>'
        + head_part + '</head><body>' + body_part + '</body></html>')
 # index.html at the repo root is what the server deploys (deploy/update.txt copies it to public/).

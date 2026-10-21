@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -21,6 +21,16 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     with Remove (POST /api/stats/bwrm), and Boss Week tries count as their own mode (boss-week).
   - Tests: tests/bossweek.js (node, check.sh 5d3, alone), tests/pwbw.py (a counted run in the browser, port PORT_BASE+12, 5d4: the boss has a
     tenth of his HP there via BW_T), tests/pwbwsheet.py (the tile, sheet, tab and Monday card at five sizes with window.__blBwMock, 6d2).
+- Challenge a friend (2026-10-21, branch claude/project-thread-fuj54z, no PROTO change; wrap-up /mnt/project-files/challenge-link/wrap-up.md).
+  ui/challenge.js + css/96-challenge.css. After a finished 1v1 vs a CPU (practice, the first fight, the old local Ranked), a Quick match
+  (not a warm-up while the search runs) or Ranked vs CPU, the results' winner's panel has "Challenge a friend" (#rChl), on our own server
+  only. The tap opens the share sheet on a phone (coarse pointer + navigator.share) or copies "Think you can beat my <fighter>? <link>" on a
+  computer, both inside the tap; then it leaves the results like Menu does and hosts a Play friends 1v1 with that code (NET.chlNext, which
+  netHost takes; a failed open keeps it for the next Host). Challenge rooms are "ch" + 7 characters; the friend's side is the usual
+  #join- invite (turn screen, lobby, no welcome sheet). The lobby's link card says "Your challenge is open" / "Link copied", and its Share
+  sends the same line for any 1v1. A friend whose link's match isn't up reads "isn't open right now ... shows up here when they're back".
+  Counts chl:make / chl:open / chl:new / chl:play (a 1v1 started in a challenge room, on the friend's phone); one row in the stats page's
+  Online section; stats.js accepts the keys. Tests: pwon.py (a phone challenges, a new upright phone opens the link and plays), pwstats.py.
 - First minute (2026-10-21, branch claude/project-thread-qtlxk4, no PROTO change; plan in the project chat, design
   /mnt/project-files/first-minute/fable.md, wrap-up /mnt/project-files/first-minute/wrap-up.md). From an outside review + a friend who quit the
   old 9-step tutorial.
@@ -722,6 +732,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   the Boards tab's rows (bwBdPrep / bwBdRow / bwBdKick / bwBdEmpty, called from boards.js), the Monday card (bwWeekCard), bwArt (the
   boss drawn once to a data URL). CSS css/97-bossweek.css. Test hook window.__blBwSheet.
 - ui/boards.js (after vscpu.js): bdOpen(k) the Boards sheet, bdPreview (the top three on the Quick match screen), bdPlates (Account > Profile).
+- ui/challenge.js (after stakes.js): Challenge a friend (CHL; chlRoom(code) tells a challenge room, chlRes(R) from showResults, the #rChl tap,
+  chlCopied for the lobby's link card). CSS in game/css/96-challenge.css.
 - skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only; `window.__blQuick` = {send, on, connected, onConnection} for ui/quick.js) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
