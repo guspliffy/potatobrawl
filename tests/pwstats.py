@@ -41,7 +41,7 @@ def counts(stats_dir):
     d = json.loads(urllib.request.urlopen(rq, timeout=5).read())
     return d['days'].get(d['today'], {})
 
-async def page(b, tag, init=None, vp=(1280, 760)):
+async def page(b, tag, init=None, vp=(1280, 760), path=''):
     ctx = await b.new_context(viewport={'width': vp[0], 'height': vp[1]}, timezone_id=TZ, locale='en-US')
     if init: await ctx.add_init_script(init)
     pg = await ctx.new_page()
@@ -49,7 +49,7 @@ async def page(b, tag, init=None, vp=(1280, 760)):
     pg.on('request', lambda r: pg.hits.append(r.post_data or '') if '/api/stats/hit' in r.url else None)
     pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}') if 'pwstats boom' not in str(e) else None)
     pg.on('console', lambda m: errs.append(f'{tag} console: {m.text}') if m.type == 'error' else None)   # also none when the counts are off
-    await pg.goto(URL)
+    await pg.goto(URL + path)
     await pg.wait_for_function("window.__blastline && window.__blCount", timeout=20000)
     await pg.evaluate("window.__blastline.perf.lockQ = true")
     return ctx, pg
@@ -179,6 +179,28 @@ async def counted(b, sd):
     expect(c5.get('day:back') == 3, f'back: day:back = {c5.get("day:back")}')
     boom = [k for k in c5 if k.startswith('err:Error: pwstats boom')]
     expect(len(boom) == 1 and c5[boom[0]] == 1, f'back: the error was not counted once: {boom}')
+    # Challenge a friend (ui/challenge.js) on a computer: after a practice win the tap copies the line and the link, hosts that room, and
+    # the lobby's link card says Link copied; a link made is counted
+    await pg.evaluate("window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: (t) => { window.__copied = t; return Promise.resolve(); } } })")
+    await pg.click('#bPractice'); await mode_is(pg, 'select'); await pg.click('#selGo')
+    await win_match(pg)
+    expect(await pg.is_visible('#rChl'), 'challenge: no Challenge a friend after a practice win')
+    await pg.click('#rChl')
+    await pg.wait_for_function("window.__blastline.net.phase === 'hosting'", timeout=20000)
+    code = await pg.evaluate("window.__blastline.net.hostCode")
+    cp = await pg.evaluate("window.__copied")
+    expect(re.fullmatch(r'ch[a-z0-9]{7}', code or '') is not None and cp == f'Think you can beat my Odin? {URL}#join-{code}', f'challenge: copied {cp!r} for the room {code!r}')
+    await pg.wait_for_timeout(300)
+    expect(await pg.evaluate("document.getElementById('onCopy').textContent") == 'Link copied', 'challenge: the link card does not say Link copied')
+    await flush(pg)
+    expect(counts(sd).get('chl:make') == 1, f'challenge: chl:make = {counts(sd).get("chl:make")}')
+    await ctx.close()
+    # a brand-new device opens a challenge link whose match is closed: counted as opened (and by a new player), the lobby says it isn't open right now
+    ctx, pg = await page(b, 'link', path='#join-chabc1234')
+    await mode_is(pg, 'online'); await flush(pg)
+    c6 = counts(sd)
+    expect(c6.get('chl:open') == 1 and c6.get('chl:new') == 1 and c6.get('inv') == 1, f'link: chl:open {c6.get("chl:open")}, chl:new {c6.get("chl:new")}, inv {c6.get("inv")}')
+    await pg.wait_for_function("document.querySelector('#onList li.empty') && document.querySelector('#onList li.empty').textContent.includes('right now')", timeout=15000)
     await ctx.close()
 
 async def off(b):

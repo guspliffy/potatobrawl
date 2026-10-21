@@ -23,6 +23,8 @@ const NET = {
   syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
   cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, qm: null,   // qm: the Quick match being joined or played (ui/quick.js)
   standalone: !!window.__blStandalone, invite: null, inviteT: 0, autoHost: false,   // autoHost: Team up on the Road hosts once connected
+  joinLong: false,   // this join came from an invite link: it waits for the host up to JOIN_LONG
+  chlNext: null,   // the room code a Challenge a friend link already carries: the next netHost opens it (ui/challenge.js)
   tb: null, hs: null,   // a Team Brawl's board and its start (ui/online-team.js)
 };
 let TM = null;   // the online Team Brawl being played (ui/online-team.js)
@@ -227,7 +229,7 @@ async function renderOnline() {
     if (inv) hosts = [inv, ...hosts.filter((h) => h !== inv)];
     else {
       const li = document.createElement("li"); li.className = "empty";
-      li.textContent = performance.now() - NET.inviteT < 6000 ? "Looking for your friend's match…" : "That invite's match isn't open anymore. Ask your friend for a new link.";
+      li.textContent = performance.now() - NET.inviteT < 6000 ? "Looking for your friend's match…" : "Your friend's match isn't open right now. It shows up here when they're back, or ask them for a new link.";
       frag.appendChild(li);
     }
   }
@@ -288,7 +290,7 @@ async function renderOnline() {
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   if (!tbOn) note.textContent =
     NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
-    NET.phase === "joining" ? "Joining…" :
+    NET.phase === "joining" ? (NET.joinLong && performance.now() - NET.joinT > 6000 ? "Waiting for your friend to come back to the game…" : "Joining…") :
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
     NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
       : ot ? (NET.standalone ? "Pick the CPU level, host, then send up to three friends the link." : "Pick the CPU level and host. Your friends see the brawl in their list.")
@@ -299,10 +301,11 @@ async function renderOnline() {
   else if (!NET.tb && inv.parentNode !== note.parentNode) note.before(inv);
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
-    $("onInvT").textContent = NET.tb ? "Your team brawl is open" : ob ? "Your boss fight is open" : "Your match is open";
+    $("onInvT").textContent = NET.tb ? "Your team brawl is open" : ob ? "Your boss fight is open" : chlRoom(NET.hostCode) ? "Your challenge is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
     if (invWas) inv.scrollIntoView({ block: "nearest" });   // on a small phone the host card scrolls: the link comes into view
+    chlCopied();   // ui/challenge.js: "Link copied" after a challenge on a computer
   }
   $("onHelp").textContent = NET.standalone
     ? "No account needed. Matches connect while both of you have the page open."
@@ -333,7 +336,7 @@ function fightCard() {
 }
 // back from the fighter select: the card pops and the model comes in (css/95-lobby.css)
 function fightCardIn() { const fc = $("onFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
-function inviteLink() { return location.origin + location.pathname + "#join-" + NET.hostCode; }
+function inviteLink(code) { return location.origin + location.pathname + "#join-" + (code || NET.hostCode); }
 function onlineArtFighter() {
   const spec = FIG[sel.fighter], o = onlineArtFighter;
   if (!o.f || o.f.spec !== spec || o.pi !== palIdx(spec.id)) {
@@ -373,7 +376,8 @@ function resetNet() {
 function netCancel() { leaveMatchRoom(); resetNet(); NET.phase = "idle"; lobbyPresence(); renderOnline(); }
 async function netHost() {
   if (!NET.ok || NET.phase !== "idle") return;
-  const code = "bl" + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, "0");
+  const code = NET.chlNext || "bl" + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, "0");   // chlNext: the code a challenge link already carries
+  NET.chlNext = null;
   resetNet();
   NET.phase = "hosting"; NET.role = "host"; NET.hostCode = code; NET.note = "";
   const team = !onBoss().on && onTeam().on;
@@ -381,7 +385,10 @@ async function netHost() {
   if (team) tbHostOpen();   // a team brawl: the board, you in the first Ice seat (ui/online-team.js)
   renderOnline();
   try { await openMatchRoom(code); }
-  catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
+  catch (e) {
+    if (chlRoom(code)) NET.chlNext = code;   // the link is out already: Host tries the same room again
+    NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return;
+  }
   if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
   else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
   lobbyPresence(); renderOnline();
@@ -392,6 +399,7 @@ async function netJoin(code) {
   if (NET.phase !== "idle") return;
   resetNet();
   NET.phase = "joining"; NET.role = "guest"; NET.note = ""; NET.joinT = performance.now();
+  NET.joinLong = NET.invite === code;   // an invite's link: its host may still be in the app they sent it from, so this waits for them (JOIN_LONG)
   NET.mrCode = code;
   qmSilent();   // ui/quick.js: the silent account, for the referee
   renderOnline();
@@ -447,9 +455,12 @@ function opponentLeft() {
   NET.note = "The host left."; netCancel();
 }
 
+const JOIN_LONG = 180000;   // how long a friend who opened an invite link waits for its host to come back to the page (ms)
 function handshakeTick(now) {
   const opp = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
-  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > 8000 && !NET.qm) { NET.note = "No answer from the host."; netCancel(); return; }   // a Quick match: the server calls it off
+  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > (NET.joinLong ? JOIN_LONG : 8000) && !NET.qm) {   // a Quick match: the server calls it off
+    NET.note = NET.joinLong ? "Your friend didn't come back to the game. Ask them for a new link." : "No answer from the host."; netCancel(); return;
+  }
   if (!opp) return;
   const pr = opp.presence || {};
   const echo = typeof pr.pg === "number" ? pr.pg : null;
@@ -615,7 +626,7 @@ function applySync(sy) {
 }
 function netTick() {
   const now = performance.now();
-  if (mode === "online" && NET.invite && NET.phase === "idle" && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
+  if (mode === "online" && ((NET.invite && NET.phase === "idle") || (NET.joinLong && NET.phase === "joining")) && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
   if (NET.tb && TM && NET.phase === "match") { tbTick(); return; }   // a team brawl: ui/online-team.js
   if (NET.tb && TM && NET.phase === "result") { tbResultTick(); return; }
   if (NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake")) { tbLobbyTick(now); return; }

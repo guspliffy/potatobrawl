@@ -147,13 +147,13 @@ if grep -q "^bossduo ok" "$LOGS/bossduo.log"; then pass "Road bosses for two ($(
 else fail "Road bosses for two (two players and you + the CPU partner too far apart)" "$LOGS/bossduo.log"; fi
 }
 
-# 5. Online: two browsers play a match through a local server.
+# 5. Online: two browsers play a match through a local server; then Challenge a friend: a phone's link after a CPU match, opened on a new upright phone.
 s_online() {
 serve $PB "$LOGS/server.log"
 (cd "$SHOTS" && PWON_URL=http://localhost:$PB/ timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 stop
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^challenge ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, a challenge link played, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 }
 
