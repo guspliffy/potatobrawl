@@ -198,10 +198,29 @@ const res = (P) => P.next((m) => m.t === "bw-res", 8000);
     const order = [runA, runB].map((r, i) => ({ t: r.t, fl: r.fl, i })).sort((a, b) => a.t - b.t || a.fl - b.fl || a.i - b.i);
     check(bd && bd.n === 2 && bd.top.length === 2 && bd.top[0].t === order[0].t && bd.top[1].t === order[1].t && bd.top.every((r) => r.nm && FIG[r.f] && r.t > 0), "the board: two times, the faster first, names and fighters");
     check(bd.me && bd.me.i === (order[0].i === 0 ? 1 : 2) && bd.me.row.nm === "Ann", "your own row on the board");
+    // replays: every top row and yours carry the run's id and version, and GET /api/run/<id> gives the run to watch
+    const runIdA = readRec(dir, codeA).bw.b.id;
+    check(bd.top.every((r) => /^[0-9a-f]{12}$/.test(r.r) && r.v === PROTO) && bd.me.row.r === runIdA && bd.fin === false, "the board's rows carry their runs (id and game version)");
+    me = await A.ask({ t: "bwme" }, "bw-me");
+    check(me.me && me.me.r === runIdA && me.me.v === PROTO, "your record carries your best run's id");
+    let g = await call("GET", "/api/run/" + runIdA);
+    const J = g.json;
+    check(g.status === 200 && J && J.id === runIdA && J.t === runA.t && J.fl === runA.fl && J.boss === sp.boss && J.pf === sp.pf && J.wk === wk && J.nm === "Ann" && J.place >= 1 && J.n === 2 && J.fin === false && J.lg === C.pack(runA.codes), "GET /api/run/<id>: the run, its week, the name and place, the log");
+    let rp = null; W.replay(J, Object.assign(W.weekSpec(J.wk), { hp: J.hp, d: J.d, lv: J.lv, map: J.map, pf: J.pf, boss: J.boss }), C.unpack(J.lg, W.MAX_FRAMES), (o) => { rp = o; }, console);
+    for (let i = 0; i < 100 && !rp; i++) await sleep(20);
+    check(rp && rp.won && rp.t === J.t, "the run from GET /api/run plays the same fight again (what the page's viewer does)");
+    check((await call("GET", "/api/run/" + "0".repeat(12))).status === 404 && (await call("GET", "/api/run/nothex")).status === 404 && (await call("POST", "/api/run/" + runIdA, {})).status === 405, "an unknown run: 404; GET only");
+    let lim = 0;
+    for (let i = 0; i < 62; i++) lim = (await call("GET", "/api/run/" + runIdA, undefined, { "x-forwarded-for": "198.51.100.7" })).status;
+    check(lim === 429 && (await call("GET", "/api/run/" + runIdA, undefined, { "x-forwarded-for": "198.51.100.8" })).status === 200, "60 runs a minute per address (429 past that), another address still gets one");
     // a phone's save keeps the server's part
     const loadA = await call("POST", "/api/acct/load", { code: codeA });
     const save = await call("POST", "/api/acct/save", { code: codeA, rev: loadA.json.rev, prof: Object.assign({}, loadA.json.prof, { tokens: 7 }) });
     check(save.status === 200 && readRec(dir, codeA).bw.b.t === runA.t, "a phone's save keeps the Boss Week record");
+    await sleep(300);   // the save reaches the board (accounts.js watch)
+    me = await A.ask({ t: "bwme" }, "bw-me");
+    const bd2 = await A.ask({ t: "bd", k: "w" }, "bd");
+    check(me.me && me.me.t === runA.t && me.me.pl === bd.me.i && bd2.me && bd2.me.i === bd.me.i && bd2.me.row && bd2.me.row.t === runA.t, "after a save that changes nothing on the board, your place and your row stay");
     A.close(); Bn.close();
     await stopServer(srv);
 
@@ -217,6 +236,15 @@ const res = (P) => P.next((m) => m.t === "bw-res", 8000);
     const x = fs.existsSync(wf) ? JSON.parse(fs.readFileSync(wf, "utf8")) : null;
     check(x && x.n === 2 && x.top.length === 2 && x.top[0].run && typeof x.top[0].run.lg === "string" && x.boss === sp.boss, "the week file: its ranking and the top runs with their logs");
     const A2 = await authed("Ann", codeA);
+    // last week's board (its week file) and its runs, still watchable
+    const lw = await A2.ask({ t: "bd", k: "w", wk }, "bd");
+    check(lw && lw.wk === wk && lw.fin === true && lw.n === 2 && lw.top.length === 2 && lw.top[0].t === order[0].t && lw.top.every((r) => /^[0-9a-f]{12}$/.test(r.r)) && lw.me && lw.me.i === (order[0].i === 0 ? 1 : 2) && lw.me.row.nm === "Ann", "last week's board: final, its top runs and your place");
+    const tw = await A2.ask({ t: "bd", k: "w" }, "bd");
+    check(tw && tw.wk === wk + 1 && tw.n === 0 && tw.fin === false, "this week's board is a new one");
+    g = await call("GET", "/api/run/" + runIdA);
+    check(g.status === 200 && g.json.fin === true && g.json.wk === wk && g.json.t === runA.t && g.json.place === (order[0].i === 0 ? 1 : 2) && g.json.lg === C.pack(runA.codes), "last week's run is served from the week file (fin)");
+    const old = await A2.ask({ t: "bd", k: "w", wk: wk - 9 }, "bd");
+    check(old && old.wk === wk - 9 && old.fin === true && old.n === 0 && old.top.length === 0, "a week older than the kept four: an empty finished board");
     me = await A2.ask({ t: "bwme" }, "bw-me");
     check(me && me.wk === wk + 1 && me.boss === W.weekSpec(wk + 1).boss && me.n === 0 && me.lr && me.lr.wk === wk && me.lr.c === (first === ra ? 300 : 150), "a new week: the next boss, an empty board, last week's prize card");
     tk = await A2.ask({ t: "bwt", v: PROTO, f: "samurai", pi: 0 }, "bw-tk");

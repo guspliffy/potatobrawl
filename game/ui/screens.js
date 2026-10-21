@@ -415,6 +415,7 @@ function updateHud() {
   if (match.boss) bossHud();   // ui/boss.js
 }
 function togglePause(force) {
+  if (match && match.rp) { if (mode === "match") rpPauseSet(force === undefined ? !RP.pause : !!force); return; }   // ui/replay.js: Esc and P play and pause a replay; a hidden tab pauses it
   if (mode !== "match" || (G && G.phase === "over") || FIN.on) return;
   const open = force !== undefined ? force : screens.pause.hidden;
   paused = match && match.online ? false : open;
@@ -430,6 +431,7 @@ function togglePause(force) {
 let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
+  if (match && match.rp) { rpEnd(); return; }   // ui/replay.js: a replay counts nothing; its end card
   cntEnd(forfeit);   // ui/counter.js
   if (!forfeit && match && !match.tutorial) markPlayed();   // a finished match counts, the tutorial and the Combo trial (match.tutorial too) do not: base.js playedOnce
   if (match && match.tutorial) { tutDone(); return; }
@@ -622,6 +624,8 @@ function showResults(R) {
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   chlRes(R);   // ui/challenge.js: Challenge a friend
+  rpKeep(R);   // ui/replay.js: this run, to watch again (a Boss Week try, a Ranked vs CPU match)
+  if (typeof rpvResults === "function") rpvResults(R);   // ui/rpview.js: WATCH on the results
   show("result");
 }
 

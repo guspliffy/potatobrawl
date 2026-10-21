@@ -20,15 +20,20 @@
  *   phone -> server   bwme                       this week (anyone), your best and place, last week's prize (signed in)
  *                     bwt {v, f, pi}             a ticket for a try (v: the game version, f / pi: your fighter and skin)
  *                     bwr {id, k, n, s, fr}      a won try: part k (0..n-1) of the packed input log; fr: the time the phone saw, in frames
- *                     bd {k: "w"}                the Boss Week board
- *   server -> phone   bw-me {wk, no, ends, boss, lv, pf, n, me: null | {t, fl, f, pl, cr, tries}, lr: null | {wk, no, boss, pl, of, c}}
+ *                     bd {k: "w", wk?}           the Boss Week board (wk: a finished week of the last KEEP_WEEKS)
+ *   server -> phone   bw-me {wk, no, ends, boss, lv, pf, n, me: null | {t, fl, f, pl, cr, tries, r, v}, lr: null | {wk, no, boss, pl, of, c}}
  *                     bw-tk {id, wk, no, seed, boss, lv, hp, d, map, f, p, pf, pp}   the try to play
  *                     bw-no {why}                "old" (reload), "acct", "bad", "slow"
  *                     bw-res {id, ok, why, time, fl, b0, b1, pl0, pl1, n}   the verdict (time: the server's, in frames). ok true: why "best" (a new best) or "slower" (checked,
  *                                                not better than b0). ok false: "claim" (not checked: the phone's time doesn't beat your best),
  *                                                "nowin" (the server's copy isn't a win in time), "fast", "late" (no such ticket), "void"
  *                                                (another game version), "week" (dealt last week)
- *                     bd {k: "w", wk, no, boss, n, at, top: [{id, nm, f, t, fl, cr, pl}], me: null | {i, row} | {i: 0}}
+ *                     bd {k: "w", wk, no, boss, n, at, fin, top: [{id, nm, f, t, fl, cr, pl, r?, v?}], me: null | {i, row} | {i: 0}}
+ *                                                (r, v: the run's id and game version, on the top KEEP_TOP rows and yours: a run to watch;
+ *                                                fin: a finished week, from its week file)
+ *
+ * HTTP: GET /api/run/<id>   one run to watch (a share link #watch=<id>, the board's ▶): this week's top 100 or a kept week's top 10
+ *   -> {id, wk, no, boss, lv, hp, d, pf, map, f, p, pp, seed, v, t, fl, nm, pl, place, n, cr, fin, lg}   or 404; RUN_PER_MIN per address
  */
 const fs = require("fs");
 const path = require("path");
@@ -50,12 +55,22 @@ const CHUNK = 2000;                         // frames replayed between two looks
 const OPEN = 3;                             // open tickets kept per account (the last try can still arrive while the next one starts)
 const GAP_MS = 2000;                        // one ticket per account this often at most
 const TOP = 100, KEEP_TOP = 10, KEEP_WEEKS = 4;
+const RUN_PER_MIN = 60;                     // GET /api/run/<id> per address and minute
 const prize = (pl) => (pl === 1 ? 300 : pl <= 3 ? 150 : pl <= 10 ? 80 : 25);   // chips for a place (one prize per player)
 const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
 const BOSS = Object.fromEntries(BL.BOSSES.map((b) => [b.id, b]));
 const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;
 const isInt = Number.isInteger;
 const hex12 = (s) => typeof s === "string" && /^[0-9a-f]{12}$/.test(s);
+// the caller's address (behind our own Caddy on localhost the real one is the last x-forwarded-for entry; stats.js does the same)
+function clientIp(req) {
+  const peer = String(req.socket.remoteAddress || "");
+  if (peer === "127.0.0.1" || peer === "::1" || peer === "::ffff:127.0.0.1") {
+    const last = String(req.headers["x-forwarded-for"] || "").split(",").pop().trim();
+    if (last) return last.slice(0, 64);
+  }
+  return peer;
+}
 
 /* ----- the week, in Berlin time ----- */
 const BFMT = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" });
@@ -167,17 +182,26 @@ function init(opts) {
     if (!rec || !rec.on || typeof rec.on.id !== "string") { if (B.delete(file)) sorted = null; return; }
     const bw = cleanBw(rec.bw), b = bw.b, old = B.get(file);
     const e = { file, id: rec.on.id, nm: boardName(rec.prof, rec.cpu && rec.cpu.nb), pl: rec.prof && PLATE_RE.test(rec.prof.plate || "") ? rec.prof.plate : "",
-      w: b ? bw.w : -1, t: b ? b.t : 0, fl: b ? b.fl : 0, f: b ? b.f : "", at: b ? b.at : 0, cr: bw.cr, pw: bw.pw };
-    B.set(file, e);
-    if (!old || JSON.stringify(old) !== JSON.stringify(e)) sorted = null;
+      w: b ? bw.w : -1, t: b ? b.t : 0, fl: b ? b.fl : 0, f: b ? b.f : "", at: b ? b.at : 0, cr: bw.cr, pw: bw.pw, rid: b ? b.id : "", rv: b ? b.v : 0 };
+    if (old && JSON.stringify(old) === JSON.stringify(e)) return;   // the same entry object stays: the sorted list finds it by identity
+    B.set(file, e); sorted = null;
   }
   const rowOf = (e) => ({ id: e.id, nm: e.nm, f: e.f, t: e.t, fl: e.fl, cr: e.cr, pl: e.pl });
-  function board(file) {
+  const rowRun = (e) => Object.assign(rowOf(e), { r: e.rid, v: e.rv });   // a row whose run can be watched
+  // this week's board, or a finished week's (wk: one of the last KEEP_WEEKS, from its week file)
+  function board(file, wk) {
     week();
+    if (isInt(wk) && wk < S.cur) {
+      const x = wk >= S.cur - KEEP_WEEKS ? readWeekC(wk) : null, spec = specOf(wk);
+      const top = x ? x.top.map((r) => Object.assign({ id: r.id, nm: r.nm, f: r.f, t: r.t, fl: r.fl, cr: r.cr, pl: r.pl }, r.run ? { r: r.run.id, v: r.run.v } : {})) : [];
+      const pl = x && file ? (x.rank.find((q) => q[0] === file) || [0, 0])[1] : 0, e = file ? B.get(file) : null;
+      const row = pl ? top[pl - 1] || (e && e.w === wk && e.t > 0 ? rowOf(e) : null) : null;
+      return { t: "bd", k: "w", wk, no: spec.no, boss: spec.boss, n: x ? x.n : 0, at: now(), fin: true, top, me: !file ? null : row ? { i: pl, row } : { i: 0 } };
+    }
     const L = list(), e = file ? B.get(file) : null, spec = specOf(S.cur);
     const i = e ? L.indexOf(e) + 1 : 0;
-    return { t: "bd", k: "w", wk: S.cur, no: spec.no, boss: spec.boss, n: L.length, at: now(), top: L.slice(0, TOP).map(rowOf),
-      me: !file ? null : i ? { i, row: rowOf(e) } : { i: 0 } };
+    return { t: "bd", k: "w", wk: S.cur, no: spec.no, boss: spec.boss, n: L.length, at: now(), fin: false, top: L.slice(0, TOP).map((x, j) => (j < KEEP_TOP ? rowRun(x) : rowOf(x))),
+      me: !file ? null : i ? { i, row: rowRun(e) } : { i: 0 } };
   }
   function build() {
     if (!acct) { S.built = true; return; }
@@ -194,14 +218,17 @@ function init(opts) {
 
   /* ----- the end of a week: its ranking and top 10 into weeks/<wk>.json, then each player's prize, once ----- */
   const wfile = (wk) => path.join(WDIR, wk + ".json");
-  function readWeek(wk) { try { const x = JSON.parse(fs.readFileSync(wfile(wk), "utf8")); return x && x.wk === wk && Array.isArray(x.rank) ? x : null; } catch (e) { return null; } }
+  function readWeek(wk) { try { const x = JSON.parse(fs.readFileSync(wfile(wk), "utf8")); return x && x.wk === wk && Array.isArray(x.rank) && Array.isArray(x.top) ? x : null; } catch (e) { return null; } }
+  const WC = new Map();   // the kept weeks' files, read once (a week file never changes after it is written)
+  function readWeekC(wk) { if (!acct) return null; let x = WC.get(wk); if (!x) { x = readWeek(wk); if (x) WC.set(wk, x); } return x || null; }
   function writeWeek(x) {
     fs.mkdirSync(WDIR, { recursive: true, mode: 0o700 });
     const full = wfile(x.wk), tmp = full + "." + crypto.randomBytes(4).toString("hex") + ".tmp";
     fs.writeFileSync(tmp, JSON.stringify(x), { mode: 0o600 }); fs.renameSync(tmp, full);
+    WC.set(x.wk, x);
     // the last KEEP_WEEKS weeks are kept
     const old = fs.readdirSync(WDIR).map((f) => /^(-?\d+)\.json$/.exec(f)).filter(Boolean).map((m) => +m[1]).sort((a, b) => b - a).slice(KEEP_WEEKS);
-    for (const w of old) { try { fs.unlinkSync(wfile(w)); } catch (e) { /* gone */ } }
+    for (const w of old) { WC.delete(w); try { fs.unlinkSync(wfile(w)); } catch (e) { /* gone */ } }
   }
   // called before anything that reads or writes this week: a new week starts the board again and pays the weeks before it
   function week() {
@@ -256,7 +283,7 @@ function init(opts) {
   function meMsg(file, bw) {
     week();
     const spec = specOf(S.cur), e = file ? B.get(file) : null, pl = file ? placeOf(file) : 0;
-    const me = !bw ? null : Object.assign({ cr: bw.cr, tries: bw.nw === S.cur ? bw.n : 0 }, pl && e ? { t: e.t, fl: e.fl, f: e.f, pl } : { t: 0 });
+    const me = !bw ? null : Object.assign({ cr: bw.cr, tries: bw.nw === S.cur ? bw.n : 0 }, pl && e ? { t: e.t, fl: e.fl, f: e.f, pl, r: e.rid, v: e.rv } : { t: 0 });
     return { t: "bw-me", wk: S.cur, no: spec.no, ends: spec.ends, boss: spec.boss, lv: spec.lv, pf: spec.pf, n: list().length, me,
       lr: bw && bw.lr && bw.lr.wk === S.cur - 1 ? bw.lr : null };
   }
@@ -350,7 +377,7 @@ function init(opts) {
       if (!w || t - w.t > 2000) lastBd.set(peer, { t, n: 1 });
       else if (++w.n > 5) return true;
       const seat = o.seatOf(peer);
-      send(peer, board(seat ? seat.file : null));
+      send(peer, board(seat ? seat.file : null, m.wk));
       return true;
     }
     return false;
@@ -371,8 +398,43 @@ function init(opts) {
     return false;
   }
 
+  /* ----- one run to watch: GET /api/run/<id> (this week's top 100 and anyone's own row, a kept week's top 10) ----- */
+  function findRun(id) {
+    week();
+    for (const e of B.values()) {
+      if (e.rid !== id || e.w !== S.cur || e.t <= 0) continue;
+      const b = cleanBw((acct.readFile(e.file) || {}).bw).b;
+      return b && b.id === id ? { run: b, wk: S.cur, nm: e.nm, pl: e.pl, place: placeOf(e.file), n: list().length, cr: e.cr } : null;
+    }
+    for (let wk = S.cur - 1; wk >= S.cur - KEEP_WEEKS; wk--) {
+      const x = readWeekC(wk), i = x ? x.top.findIndex((r) => r.run && r.run.id === id) : -1;
+      if (i >= 0) { const r = x.top[i]; return { run: cleanRun(r.run), wk, nm: r.nm, pl: r.pl, place: i + 1, n: x.n, cr: r.cr | 0 }; }
+    }
+    return null;
+  }
+  const hits = new Map();   // address -> { t, n } this minute
+  function http(req, res, url) {
+    if (!url.startsWith("/api/run/")) return false;
+    const end = (code, body) => {
+      res.writeHead(code, { "content-type": code === 200 ? "application/json" : "text/plain", "cache-control": "no-store", "x-content-type-options": "nosniff" });
+      res.end(body);
+    };
+    if (req.method !== "GET") { end(405, "GET only"); return true; }
+    const ip = clientIp(req), t = now();
+    if (hits.size > 5000) for (const [k, v] of hits) if (t - v.t > 60e3) hits.delete(k);
+    const h = hits.get(ip);
+    if (!h || t - h.t > 60e3) hits.set(ip, { t, n: 1 });
+    else if (++h.n > RUN_PER_MIN) { end(429, "Too many"); return true; }
+    const id = url.slice(9), f = acct && hex12(id) ? findRun(id) : null;
+    if (!f || !f.run) { end(404, "No such run"); return true; }
+    const r = f.run, spec = specOf(f.wk);
+    end(200, JSON.stringify({ id: r.id, wk: f.wk, no: spec.no, boss: spec.boss, lv: spec.lv, hp: spec.hp, d: spec.d, pf: spec.pf, map: spec.map,
+      f: r.f, p: r.p, pp: r.pp, seed: r.seed, v: r.v, t: r.t, fl: r.fl, nm: f.nm, pl: f.pl, place: f.place, n: f.n, cr: f.cr, fin: f.wk < S.cur, lg: r.lg }));
+    return true;
+  }
+
   build();
-  return { handle, gone, runs, remove, week, stats: () => Object.assign({ board: list().length }, S), _B: B, T };
+  return { handle, gone, http, runs, remove, week, stats: () => Object.assign({ board: list().length }, S), _B: B, T };
 }
 
 module.exports = { init, weekOf, weekStart, weekSpec, isoWeek, cleanBw, replay, prize, ROAD, ROT, LV, CAP, MAX_FRAMES, RULES };

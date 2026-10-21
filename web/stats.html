@@ -573,7 +573,8 @@ p { margin: 8px 0 0; }
     var top = sorted(skins).slice(0, 3).map(function (e) { return fighterName(e[0]) + " " + e[1]; }).join(" · ");
     s.appendChild(h("div", { class: "kv" },
       kvRow("Combo routes cleared", fmt(routes), "first time cleared"), kvRow("Skins bought with chips", fmt(skinN), top || null),
-      kvRow("Sync accounts made", fmt(acct)), kvRow("Invite links opened", fmt(inv))));
+      kvRow("Sync accounts made", fmt(acct)), kvRow("Invite links opened", fmt(inv)),
+      kvRow("Replays watched", fmt(S(d, "rp:watch")), [plural(S(d, "rp:link"), "link opened", "links opened"), plural(S(d, "rp:share"), "shared", "shared")].join(" · "))));   // Boss Week replays
     var sr = sorted(scr);
     if (sr.length) { s.appendChild(h("h3", null, "Screens opened")); s.appendChild(barRows(topRows(scr, cap, 10))); }
     return s;

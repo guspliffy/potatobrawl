@@ -4599,6 +4599,234 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 }
 @media (prefers-reduced-motion: reduce) { #bwPill .bp-s, #bwPill.ember .bp-b, #resSheet .res-bw.wait .bw-l::before { animation: none; } }
 
+/* ---------- Replays: the viewer, the share card, the WATCH buttons ("sunset ink", Fable 5.1: step6/fable-step6.md frames D, E, G and the share landing) ----------
+   Markup: ui/rpview.js makes the strip (#rpv), the livetag (in the HUD's left column), the end card, the title card and the toast; shell.html has #rWatch (results) and
+   #bdLast (the Boards tab's kicker row); the board's ▶ buttons and tags are ui/bwsheet.js. Sizes follow the #app classes view.js sets: desktop (default), .short (844x390,
+   740x360), .tiny (667x320), .portrait / .narrow (upright). #app.replay: a replay owns the match screen; .rpidle: the controls have faded out; .rpclean: clean view;
+   .rpend: the end card is up. */
+
+/* ===== under a replay: no touch pad, no pause button (Esc and P pause through togglePause) ===== */
+#app.replay #ctl, #app.replay #pauseBtn { display: none !important; }
+#app.rpclean #hud, #app.rpclean .rpv, #app.rpclean #fhint { visibility: hidden; }
+
+/* ===== the strip: ▶/❚❚ · bar · time · speed · ⟲ · ⏭ KO · ◉ · ⤴ · ✕ ===== */
+.rpv { --rg: max(12px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)); --rb: 34px;
+  position: absolute; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom, 0px)); z-index: 4; width: min(920px, calc(100% - 2 * var(--rg))); margin: 0 auto;
+  display: flex; align-items: center; gap: 7px; height: 48px; padding: 0 9px; border: 2px solid var(--ink); border-radius: 12px; background: rgba(14, 16, 34, 0.88);
+  box-shadow: 0 3px 0 var(--ink), 0 8px 18px rgba(0, 0, 0, 0.35), var(--bevel); transition: opacity 0.25s; user-select: none; -webkit-user-select: none; touch-action: none; }
+.rpv .round { position: relative; width: var(--rb); height: var(--rb); cursor: pointer; font: 800 13px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.rpv .round svg { width: 18px; height: 18px; display: block; }
+.rpv .round::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }   /* a 42px touch target */
+.rpv .rpv-play { background: linear-gradient(180deg, #ffe08a, #e8a640); color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevelgold); }
+.rpv .rpv-play:active { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+.rpv .rpv-kob { width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 11px 0 9px; border-radius: 999px; }
+.rpv .rpv-kob svg { width: 15px; height: 15px; }
+.rpv .rpv-sp { flex: none; min-width: 46px; height: 30px; padding: 0 8px; border: 2px solid var(--ink); border-radius: 999px; background: linear-gradient(180deg, #343b6a, #22264a); color: var(--text); cursor: pointer;
+  box-shadow: 0 2px 0 var(--ink), var(--bevel); font: 800 13px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; white-space: nowrap; position: relative; }
+.rpv .rpv-sp::after { content: ""; position: absolute; inset: -6px -3px; }
+.rpv .rpv-sp:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+.rpv button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.rpv-br { display: none; }
+.rpv-time { flex: none; min-width: 7.7em; text-align: center; font: 800 14px/1 var(--display); letter-spacing: 0.03em; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rpv-time > span { font-weight: 700; color: var(--mute); }
+/* the bar: a rail with a fill and a knob; ☠ over it where he broke, ⚑ where the final launch is; the knob wears a ring turning while the run plays again to reach the tick */
+.rpv-seek { position: relative; flex: 1 1 0; min-width: 60px; height: 36px; padding: 0 9px; cursor: pointer; touch-action: none; }
+.rpv-rail { position: relative; height: 100%; }
+.rpv-tr { position: absolute; left: 0; right: 0; top: 50%; height: 8px; margin-top: -4px; overflow: hidden; border: 1px solid var(--ink); border-radius: 4px; background: rgba(255, 255, 255, 0.15); }
+.rpv-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(180deg, #ffe08a, #f4c95d 55%, #e8a640); }
+.rpv-knob { position: absolute; top: 50%; left: 0; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; box-shadow: 0 2px 0 var(--ink); }
+.rpv-seek.sk .rpv-knob { background: var(--gold); }
+.rpv-seek.sk .rpv-knob::after, .rpv-spin { content: ""; position: absolute; inset: -7px; border: 2.5px solid transparent; border-top-color: var(--gold); border-right-color: var(--gold); border-radius: 50%; animation: rpvSpin 0.75s linear infinite; }
+.rpv-mk { position: absolute; bottom: calc(50% + 7px); width: 14px; height: 14px; margin-left: -7px; pointer-events: none; filter: drop-shadow(0 1px 0 var(--ink)); }
+.rpv-mk svg { display: block; width: 100%; height: 100%; }
+@keyframes rpvSpin { to { transform: rotate(360deg); } }
+/* fades after 3 s of playing; a tap brings it back (a faded strip takes no taps) */
+#app.rpidle .rpv, #app.rpidle .rpv-tag { opacity: 0; pointer-events: none; }
+#app.rpend .rpv-tag { visibility: hidden; }   /* the end card says what the run was (and the HUD it hangs from is gone after a KO anyway) */
+/* upright: the bar and the time on their own row above the buttons */
+#app.portrait .rpv { flex-wrap: wrap; height: auto; padding: 7px 10px 9px; row-gap: 4px; bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait .rpv-seek { order: -3; flex: 1 1 0; }
+#app.portrait .rpv-time { order: -2; min-width: 0; padding-right: 2px; }
+#app.portrait .rpv-br { display: block; order: -1; flex: 0 0 100%; height: 0; }
+#app.portrait .rpv-x { margin-left: auto; }
+#app.narrow .rpv { gap: 6px; }
+/* 667x320 */
+#app.tiny .rpv { bottom: max(7px, env(safe-area-inset-bottom, 0px)); height: 44px; gap: 6px; padding: 0 8px; --rb: 32px; }
+#app.tiny .rpv-seek { height: 32px; }
+#app.tiny .rpv-time { font-size: 13px; }
+/* desktop: a little more of everything */
+#app:not(.short):not(.portrait) .rpv { height: 54px; gap: 10px; padding: 0 14px; --rb: 38px; bottom: 14px; }
+#app:not(.short):not(.portrait) .rpv .round svg { width: 20px; height: 20px; }
+#app:not(.short):not(.portrait) .rpv .rpv-kob svg { width: 17px; height: 17px; }
+#app:not(.short):not(.portrait) .rpv .round, #app:not(.short):not(.portrait) .rpv .rpv-sp { font-size: 14px; }
+#app:not(.short):not(.portrait) .rpv-time { font-size: 16px; }
+#app:not(.short):not(.portrait) .rpv-seek { height: 40px; }
+
+/* ===== the livetag: REPLAY · TUBER TOM · #1 · 1:21.44, under your card and its Ultimate bar ===== */
+.rpv-tag { --ubh: 12px; position: absolute; left: var(--rpL, 18px); top: calc(var(--rpT, 60px) + var(--ubh) + 6px); z-index: 1; max-width: min(340px, var(--rpW, 340px)); transition: opacity 0.25s; pointer-events: none; }   /* --rpW: the left column's width (the name gives way first) */
+#app.short .rpv-tag, #app.narrow .rpv-tag { --ubh: 10px; }
+#app.tiny .rpv-tag { --ubh: 8px; }
+@media (min-width: 1500px) and (min-height: 1000px) { .rpv-tag { --ubh: 14px; } }
+.rpv-tag i { flex: none; background: var(--gold); box-shadow: 0 0 0 3px rgba(244, 201, 93, 0.28); animation: none; }
+.rpv-tag b, .rpv-tag .rpv-p { color: var(--text); font-weight: 700; }
+.rpv-tag .rpv-p { color: var(--mute); white-space: nowrap; }
+.rpv-tag .rpv-p::before { content: "\00b7"; margin-right: 7px; color: rgba(206, 210, 255, 0.4); }
+.rpv-tag .rpv-tn { min-width: 0; max-width: 17ch; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+#app.tiny:not(.narrow) .rpv-tag .rpv-pt { display: none; }   /* 667x320: the end time is on the strip, and the boss's line during the countdown needs the room */
+#app.narrow .rpv-tag { gap: 5px; padding: 0 8px; letter-spacing: 0.08em; }
+#app.narrow .rpv-tag .rpv-p::before { margin-right: 5px; }
+#app.narrow .rpv-tag .rpv-tn { max-width: 10ch; }
+#app.tiny .rpv-tag { height: 24px; }
+
+/* ===== the end card, over the frozen last frame ===== */
+.rpv-end { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 8px 12px 66px; background: radial-gradient(ellipse at 50% 46%, rgba(10, 11, 28, 0.3), rgba(10, 11, 28, 0.76)); }
+#app.portrait .rpv-end { padding-bottom: 124px; }
+#app.tiny .rpv-end { padding-bottom: 56px; }
+.rpv-ec { width: min(440px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 16px 16px; text-align: center; border-color: var(--ember); animation: shDrop 0.26s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.rpv-ek { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sand); }
+.rpv-et { max-width: 100%; display: block; padding-right: 0.06em; font: italic 900 46px/1.05 var(--display); text-transform: uppercase; white-space: nowrap; color: var(--text); font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+.rpv-et.time { color: var(--gold); font-size: 56px; }
+.rpv-ep { font: 800 13px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rpv-ea { align-self: stretch; margin-top: 8px; }
+.rpv-ea2 { align-self: stretch; display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 4px; }
+.rpv-ec .btn { width: 100%; min-height: 48px; padding: 4px 14px; font-size: 21px; white-space: nowrap; }
+.rpv-ec .btn > span { min-width: 0; }
+.rpv-ea2 .btn { flex: 1 1 auto; width: auto; min-width: 0; min-height: 40px; padding: 4px 10px; font-size: 15px; letter-spacing: 0.03em; }
+.rpv-ea2 .rpv-esh { flex: 0 1 auto; }
+#app.short .rpv-ec { width: min(500px, 100%); gap: 4px; padding: 12px 16px 14px; }   /* room for four buttons on one row */
+#app.short .rpv-et { font-size: 40px; }
+#app.short .rpv-et.time { font-size: 48px; }
+#app.tiny .rpv-ec { gap: 3px; padding: 9px 14px 12px; }
+#app.tiny .rpv-et { font-size: 34px; -webkit-text-stroke-width: 2.5px; }
+#app.tiny .rpv-et.time { font-size: 42px; }
+#app.tiny .rpv-ea { margin-top: 5px; }
+#app.tiny .rpv-ec .btn { min-height: 42px; font-size: 19px; }
+#app.tiny .rpv-ea2 .btn { min-height: 36px; font-size: 15px; }
+#app:not(.short):not(.portrait) .rpv-ec { width: min(500px, 100%); gap: 8px; padding: 20px 22px 22px; }
+#app:not(.short):not(.portrait) .rpv-et { font-size: 56px; }
+#app:not(.short):not(.portrait) .rpv-et.time { font-size: 72px; }
+#app:not(.short):not(.portrait) .rpv-ep { font-size: 15px; }
+#app:not(.short):not(.portrait) .rpv-ec .btn { min-height: 56px; font-size: 24px; }
+#app:not(.short):not(.portrait) .rpv-ea2 .btn { min-height: 44px; font-size: 18px; padding-inline: 14px; }
+#app.narrow .rpv-ec .btn { font-size: 18px; padding-inline: 8px; }
+#app.narrow .rpv-ea2 .btn { flex: 1 1 calc(50% - 5px); font-size: 15px; }   /* upright: two by two (three: the last takes the row) */
+#app.narrow .rpv-et { font-size: 40px; }
+#app.narrow .rpv-et.time { font-size: 52px; }
+
+/* ===== the title card of a share link: TUBER TOM VS ZORP · BOSS WEEK 42 · 1:21.44 · #1 ===== */
+.rpv-ti { position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; padding: max(10px, env(safe-area-inset-top, 0px)) 14px max(10px, env(safe-area-inset-bottom, 0px)); background: rgba(8, 9, 20, 0.78); }
+.rpv-tc { position: relative; width: min(460px, 100%); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 20px 20px; text-align: center; border-color: var(--ember); animation: shDrop 0.26s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.rpv-tx { position: absolute; right: 8px; top: 8px; width: 32px; height: 32px; cursor: pointer; }
+.rpv-tx svg { width: 17px; height: 17px; display: block; }
+.rpv-tx::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; }   /* a 44px touch target */
+.rpv-tk { max-width: calc(100% - 44px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sand); }
+.rpv-tw { align-self: stretch; display: flex; align-items: center; justify-content: center; gap: 14px; min-width: 0; margin-top: 2px; }
+.rpv-tw .bw-pp { flex: none; width: 60px; height: 60px; border-radius: 16px; }
+.rpv-tn2 { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; }
+.rpv-tn2 b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 0.08em 0 0; font: italic 900 28px/1.05 var(--display); text-transform: uppercase; color: #fff;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+.rpv-tn2 span { font: 800 15px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sand); white-space: nowrap; }
+.rpv-bd { --bc: var(--ember); position: relative; flex: none; width: 60px; height: 60px; overflow: hidden; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 0 0 3px var(--bc), 0 3px 0 var(--ink); }
+.rpv-bd img { position: absolute; left: 50%; top: 53%; width: 122%; height: 122%; max-width: none; transform: translate(-50%, -50%); object-fit: contain; }
+.rpv-bd.noart img { display: none; }
+.rpv-tr2 { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 12px; }
+.rpv-tt { font: italic 900 46px/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0.06em; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+.rpv-tt.old { color: var(--mute); }
+.rpv-tc .tag.st { position: static; display: inline-block; transform: rotate(-4deg); white-space: nowrap; }
+.rpv-th { font: 700 12px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.rpv-tb { font: italic 900 24px/1.1 var(--display); text-transform: uppercase; color: var(--text); text-wrap: balance; }
+.rpv-tm { margin: 0; font: 500 14px/1.35 var(--body); color: var(--mute); }
+.rpv-tm.big { font: 700 15px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sand); }
+.rpv-ta { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; margin-top: 6px; }
+.rpv-ta .btn { width: auto; min-width: 0; flex: 0 1 auto; white-space: nowrap; }
+.rpv-ta .btn.lg { flex: 1 1 auto; min-height: 54px; font-size: 25px; padding-inline: 22px; }
+.rpv-ta .btn.sm { min-height: 44px; padding-inline: 16px; }
+.rpv-spin { position: relative; display: block; width: 26px; height: 26px; margin: 4px auto 2px; inset: auto; border-width: 3px; }
+#app.short .rpv-tc { gap: 6px; padding: 14px 18px 16px; }
+#app.short .rpv-tt { font-size: 38px; }
+#app.short .rpv-tw .bw-pp, #app.short .rpv-bd { width: 52px; height: 52px; }
+#app.short .rpv-tn2 b { font-size: 24px; }
+#app.tiny .rpv-tc { gap: 4px; padding: 10px 16px 12px; }
+#app.tiny .rpv-tt { font-size: 32px; -webkit-text-stroke-width: 2.5px; }
+#app.tiny .rpv-tw .bw-pp, #app.tiny .rpv-bd { width: 44px; height: 44px; }
+#app.tiny .rpv-tw .bw-pp { border-radius: 12px; }
+#app.tiny .rpv-tn2 b { font-size: 21px; -webkit-text-stroke-width: 2.5px; }
+#app.tiny .rpv-tn2 span { font-size: 13px; }
+#app.tiny .rpv-ta { margin-top: 2px; }
+#app.tiny .rpv-ta .btn.lg { min-height: 46px; font-size: 22px; }
+#app.tiny .rpv-ta .btn.sm { min-height: 38px; font-size: 15px; }
+#app:not(.short):not(.portrait) .rpv-tc { width: min(520px, 100%); gap: 10px; padding: 24px 26px 26px; }
+#app:not(.short):not(.portrait) .rpv-tt { font-size: 56px; }
+#app:not(.short):not(.portrait) .rpv-tn2 b { font-size: 34px; }
+#app.narrow .rpv-ta .btn.lg { flex: 1 1 100%; }
+#app.narrow .rpv-ta .btn.sm { flex: 1 1 100%; }
+
+/* ===== the toast and the loading pill, over every sheet and over the match ===== */
+.rpv-toast { position: absolute; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); z-index: 9; transform: translateX(-50%); display: flex; align-items: center; gap: 9px; max-width: calc(100% - 32px); padding: 9px 16px 9px;
+  border: 2px solid var(--ink); border-radius: 14px; background: linear-gradient(180deg, #343b6a, #22264a); box-shadow: 0 3px 0 var(--ink), var(--soft), var(--bevel); text-align: center;
+  font: 700 14px/1.25 var(--body); color: var(--text); pointer-events: none; }
+.rpv-toast.in { animation: rpvToast 0.22s ease-out; }
+@keyframes rpvToast { from { transform: translate(-50%, 8px); opacity: 0; } }
+.rpv-load i { flex: none; width: 14px; height: 14px; border: 2.5px solid rgba(206, 210, 255, 0.25); border-top-color: var(--gold); border-radius: 50%; animation: rpvSpin 0.75s linear infinite; }
+#app.replay .rpv-toast { bottom: 76px; }
+#app.replay.portrait .rpv-toast { bottom: 128px; }
+#app.replay.tiny .rpv-toast { bottom: 64px; }
+
+/* ===== board rows: ▶ at the end, "older version" under the time of a run from another version ===== */
+.rpv-pl { appearance: none; cursor: pointer; position: relative; flex: none; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 2px solid var(--ink); border-radius: 50%;
+  background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 2px 0 var(--ink), var(--bevel); justify-self: center; -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+.rpv-pl::before { content: ""; width: 0; height: 0; margin-left: 2px; border-left: 9px solid var(--gold); border-top: 5.5px solid transparent; border-bottom: 5.5px solid transparent; }
+.rpv-pl::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; }
+.rpv-pl:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink), var(--bevel); }
+.rpv-pl:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .rpv-pl:hover { filter: brightness(1.15); } }
+.rpv-pl.no { visibility: hidden; pointer-events: none; }
+.bw-tm.old, .bd-v.old { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; color: var(--mute); }
+.rpv-old { display: block; font: 600 9px/1 var(--body); letter-spacing: 0.02em; text-transform: none; color: var(--mute); opacity: 0.9; white-space: nowrap; }
+/* the sheet's top 3: the ▶ is a fifth column (implicit, as wide as the button) */
+.bw-r { grid-auto-columns: 28px; }
+.bw-r > .rpv-pl { grid-column: 5; grid-row: 1; }
+#app.short .bw-r > .rpv-pl, #app.tiny .bw-r > .rpv-pl { width: 26px; height: 26px; }
+#app.tiny .bw-r { grid-auto-columns: 26px; }
+/* the Boards tab: a sixth column in the header and in every row (a fifth upright, where the hearts go under the name) */
+#scrBoards.bw-tab #bdMain, #scrBoards.bw-tab #bdYou { --bd-pl: 28px; }
+#app:not(.short):not(.portrait) #scrBoards.bw-tab #bdMain, #app:not(.short):not(.portrait) #scrBoards.bw-tab #bdYou { --bd-pl: 30px; }
+#scrBoards.bw-tab .bd-r, #scrBoards.bw-tab .bd-hd { grid-template-columns: var(--bd-pc) var(--bd-ec) minmax(0, 1fr) var(--bd-wc) var(--bd-rc) var(--bd-pl); }
+@container bdsheet (max-width: 479px) {
+  #scrBoards.bw-tab .bd-r, #scrBoards.bw-tab .bd-hd { grid-template-columns: var(--bd-pc) var(--bd-ec) minmax(0, 1fr) var(--bd-rc) var(--bd-pl); }
+}
+#scrBoards .bd-r > .rpv-pl { width: 26px; height: 26px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-r > .rpv-pl { width: 30px; height: 30px; }
+#scrBoards.bw-tab .bd-r.you.none .rpv-pl { display: none; }
+/* LAST WEEK › / ‹ THIS WEEK in the kicker row */
+#scrBoards .bd-kr { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 4px; min-width: 0; }   /* a long kicker (upright) puts LAST WEEK › on its own line */
+#scrBoards .bd-kr .bd-kick { flex: 1 1 auto; min-width: 0; padding-right: 4px; }
+#scrBoards .bd-last { appearance: none; cursor: pointer; flex: none; position: relative; margin: 0 0 0 auto; padding: 7px 16px 5px 8px; border: 0; background: none; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+#scrBoards .bd-last::after { content: ""; position: absolute; inset: -6px 0; }
+#scrBoards .bd-last:focus-visible { outline: 2px solid var(--sand); outline-offset: -2px; border-radius: 4px; }
+#scrBoards:not(.bw-tab) .bd-last { display: none; }
+#scrBoards.bw-past .bd-up { display: none; }
+#app.tiny #scrBoards .bd-last { padding: 5px 16px 4px 8px; font-size: 10px; }
+#app:not(.short):not(.portrait) #scrBoards .bd-last { padding: 9px 22px 7px 8px; font-size: 12px; }
+/* the sheet's "your best" line: ... · WATCH ▶ */
+.bw-sub .rpv-wl { appearance: none; cursor: pointer; position: relative; margin: 0; padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--mint); white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.bw-sub .rpv-wl::after { content: ""; position: absolute; inset: -9px -6px; }   /* a 36px touch target, drawn outside the line */
+.bw-sub .rpv-wl:focus-visible { outline: 2px solid var(--sand); outline-offset: 1px; border-radius: 3px; }
+@media (hover: hover) and (pointer: fine) { .bw-sub .rpv-wl:hover { text-decoration: underline; } }
+
+/* ===== the results: WATCH ▶ beside Board / Fighters and Menu (Boss Week: Retry on top, then Watch, Board, Menu) ===== */
+#resSheet .res-actions:has(#rWatch:not([hidden])) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#resSheet .res-actions:has(#rWatch:not([hidden])) #rChange { grid-column: auto; }
+#resSheet .res-actions #rWatch { padding: 0 8px; }
+#resSheet .res-actions:has(#rWatch:not([hidden])) #rChange, #resSheet .res-actions:has(#rWatch:not([hidden])) #rMenu { padding-inline: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rpv, .rpv-tag { transition: none; }
+  .rpv-seek.sk .rpv-knob::after, .rpv-spin, .rpv-load i { animation-duration: 2.4s; }
+  .rpv-toast.in, .rpv-ec, .rpv-tc { animation: none; }
+}
+
 /* ===== Rival record and streak bounty (ui/rivals.js; Fable's design: rival-stakes/fable-design.md) =====
    One rule: chips the game pays wear an ember sticker (WANTED, BOUNTY). The record is mint when you lead, ketchup when they do. */
 :root { --rv-chip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%230e1022' stroke-width='2'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E"); }
@@ -5306,7 +5534,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="sheet bd-sheet" role="dialog" aria-label="Boards">
       <header class="sh-head"><h3>Boards</h3><button class="round x" id="bdClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="bd-tabs" id="bdTabs" role="tablist" aria-label="Boards"></div>
-      <div class="bd-kick kick" id="bdKick" aria-live="polite"></div>
+      <div class="bd-kr"><div class="bd-kick kick" id="bdKick" aria-live="polite"></div><button class="bd-last" id="bdLast" hidden>Last week &rsaquo;</button></div>
       <div class="bd-main" id="bdMain">
         <div class="bd-hd" id="bdHd" aria-hidden="true"><span>#</span><span></span><span class="bd-hn">Player<span class="bd-hf"> · fighter</span></span><span class="bd-hw"></span><span class="bd-hr">Rating</span></div>
         <div class="bd-list scroll" id="bdList"></div>
@@ -5404,6 +5632,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="res-actions">
           <!-- chip stakes (ui/stakes.js): FOR CHIPS joins the gold button, or takes the second row; the reason it can't, under all -->
           <div class="res-again"><button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button><button class="btn sk-btn" id="rStake" hidden></button></div>
+          <button class="btn" id="rWatch" hidden><span>Watch &#9654;&#xFE0E;</span></button>
           <button class="btn" id="rRetry" hidden><span>Retry</span><small id="rRetrySub"></small></button>
           <button class="btn" id="rChange"><span>Fighters</span></button>
           <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>
@@ -8739,7 +8968,7 @@ function cntDaily() {
 
 /* ----- matches: started, ended (how), quit ----- */
 function cntStart() {   // screens.js enterMatchUI, before the mode changes
-  if (!CNT.on) return;
+  if (!CNT.on || (match && match.rp)) return;   // a replay is no match (ui/replay.js counts rp:watch)
   cntDrop();
   const md = cntMode(match), real = md !== "tutorial" && md !== "trial";
   CNT.live = { md, real };
@@ -9082,7 +9311,7 @@ function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   L.portrait = H > W * 1.05;
-  L.panel = L.portrait && mode === "match" && touchUI && !finFull ? Math.round(clamp(H * 0.36, 200, 300)) : 0;
+  L.panel = L.portrait && mode === "match" && touchUI && !finFull && !(match && match.rp) ? Math.round(clamp(H * 0.36, 200, 300)) : 0;   // match.rp: a replay has no pad (ui/replay.js)
   L.gw = W; L.gh = H - L.panel;
   app.classList.toggle("portrait", L.portrait);
   if (mode === "result") rvPlace();   // ui/rivals.js: the rival strip moves with the layout
@@ -14927,7 +15156,7 @@ function drawTag(c, f, isP1, lift, o) {   // o: a 2v2's { label, col } (duoTags 
   if (f.state === "dead" || f.state === "gone") return;
   const fade = tagAlpha();   // hud.js: off 3 s after the start, back for 3 s after a respawn
   if (fade < 0.02) return;
-  const label = o ? o.label : isP1 ? "YOU" : match && match.online && !NET.cpuMate ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
+  const label = o ? o.label : isP1 ? (match && match.rpTag) || "YOU" : match && match.online && !NET.cpuMate ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
@@ -28256,6 +28485,7 @@ function updateHud() {
   if (match.boss) bossHud();   // ui/boss.js
 }
 function togglePause(force) {
+  if (match && match.rp) { if (mode === "match") rpPauseSet(force === undefined ? !RP.pause : !!force); return; }   // ui/replay.js: Esc and P play and pause a replay; a hidden tab pauses it
   if (mode !== "match" || (G && G.phase === "over") || FIN.on) return;
   const open = force !== undefined ? force : screens.pause.hidden;
   paused = match && match.online ? false : open;
@@ -28271,6 +28501,7 @@ function togglePause(force) {
 let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
+  if (match && match.rp) { rpEnd(); return; }   // ui/replay.js: a replay counts nothing; its end card
   cntEnd(forfeit);   // ui/counter.js
   if (!forfeit && match && !match.tutorial) markPlayed();   // a finished match counts, the tutorial and the Combo trial (match.tutorial too) do not: base.js playedOnce
   if (match && match.tutorial) { tutDone(); return; }
@@ -28463,6 +28694,8 @@ function showResults(R) {
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   chlRes(R);   // ui/challenge.js: Challenge a friend
+  rpKeep(R);   // ui/replay.js: this run, to watch again (a Boss Week try, a Ranked vs CPU match)
+  if (typeof rpvResults === "function") rpvResults(R);   // ui/rpview.js: WATCH on the results
   show("result");
 }
 
@@ -36808,6 +37041,7 @@ const BW = {
   seen: -1, lrSeen: -1, lrNew: null,   // the last week whose sheet was opened (the NEW tag), the last Monday card shown
   bk: -1,         // the break of your best run, frames from GO (the pill's split; this phone's own runs only)
   bd: null, bdWait: [], run: null,
+  bdl: null, bdlWait: [],   // a finished week's board (Last week ›), its waiting callers
 };
 (function bwLoad() {
   try {
@@ -36827,7 +37061,8 @@ function bwCleanWk(o) {
 }
 function bwCleanMe(o) {
   if (!o || typeof o !== "object") return null;
-  return { t: bwN(o.t, 0), fl: bwN(o.fl, 0), f: FIG[o.f] ? o.f : "", pl: bwN(o.pl, 0), cr: bwN(o.cr, 0), tries: bwN(o.tries, 0) };
+  return { t: bwN(o.t, 0), fl: bwN(o.fl, 0), f: FIG[o.f] ? o.f : "", pl: bwN(o.pl, 0), cr: bwN(o.cr, 0), tries: bwN(o.tries, 0),
+    r: typeof o.r === "string" && /^[0-9a-f]{12}$/.test(o.r) ? o.r : "", v: bwN(o.v, 0) };   // r, v: your best run to watch (ui/replay.js)
 }
 
 /* ----- the week, from this phone's clock (the server's answer replaces it when it comes) ----- */
@@ -36897,6 +37132,7 @@ function bwBoot() {   // vcBoot (ui/vscpu.js), once
   window.__blQuick.on(bwMsg);
   window.__blBw = BW;   // tests read it
   window.__blBwFight = bwFight;   // tests: a try without the sheet
+  window.__blBwBoard = bwBoard;   // tests: the board (a week: a finished one)
 }
 function bwMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -36905,7 +37141,7 @@ function bwMsg(m) {
   else if (m.t === "bw-tk") bwTicket(m);
   else if (m.t === "bw-no") bwRefused(m.why);
   else if (m.t === "bw-res") bwRes(m);
-  else if (m.t === "bd" && m.k === "w") bwBdDone(bwBdClean(m));
+  else if (m.t === "bd" && m.k === "w") { if (m.fin) bwBdlDone(bwBdClean(m)); else bwBdDone(bwBdClean(m)); }
 }
 function bwAskMe(force, ms) {
   if (!qmOn() || !QM.conn) return;
@@ -37000,7 +37236,7 @@ function bwPractice() {
 
 /* ----- the run: GO, the break, the final launch (roadEvent passes the live match's events), the clock pill, the cap ----- */
 function bwEvent(g, e) {
-  const r = match && match.bw && match.bwr;
+  const r = match && (match.bw || match.rp) && match.bwr;   // match.rp: a replay of a run (ui/replay.js) keeps the same clock
   if (!r) return;
   if (e.type === "go") r.go = g.t;
   else if (e.type === "lethal" && e.slot === 2 && r.ko < 0) r.ko = g.t;
@@ -37017,15 +37253,15 @@ function bwPill() {   // made once, under the boss bar (inside it, so it hides w
 const BP = { t: "", b: "", cls: "", s: "" };
 // every drawn frame of a Boss Week try (bossHud, ui/boss.js)
 function bwHud() {
-  const el = bwPill(), r = match && match.bw && match.bwr;
+  const el = bwPill(), r = match && (match.bw || match.rp) && match.bwr, rp = !!(match && match.rp);
   if (!r || r.go < 0) { if (!el.hidden) el.hidden = true; return; }   // from GO (his line has the place under the bar during the countdown)
   if (el.hidden) { el.hidden = false; BP.t = BP.b = BP.cls = BP.s = ""; }
   const b = bossOf(G);
   if (r.brk < 0 && b && (b.state === "broken" || b.doomed)) {   // the break: the split against your best run's break
     r.brk = G.t;
-    if (BW.bk > 0 && bwMine() && bwMine().t) r.spl = { d: r.brk - r.go - BW.bk, at: performance.now() };
+    if (!rp && BW.bk > 0 && bwMine() && bwMine().t) r.spl = { d: r.brk - r.go - BW.bk, at: performance.now() };
   }
-  const run = (r.ko >= 0 ? r.ko : G.t) - r.go, mine = bwMine();
+  const run = (r.ko >= 0 ? r.ko : G.t) - r.go, mine = rp ? null : bwMine();   // a replay's pill: its clock only
   if (r.go >= 0 && r.ko < 0 && run >= BW_CAP && G.phase === "play" && !r.cap) { r.cap = true; finishMatch(false); return; }   // 4:00: out of time
   const t = r.ko >= 0 ? bwClock(run, 2) : bwClock(run, 1), left = r.ko < 0 && run >= BW_CAP - BW_LAST;
   const bt = left ? `${mmss(Math.ceil((BW_CAP - run) / 60))} left` : mine && mine.t ? `Best ${bwClock(mine.t, 2)}` : "";
@@ -37071,7 +37307,7 @@ function bwRes(m) {
   const p = BW.pend && BW.pend.id === m.id ? BW.pend : null;
   const me = bwMine() || (ACCT.code ? { t: 0, fl: 0, f: "", pl: 0, cr: 0, tries: 0 } : null);
   if (me) {
-    if (m.ok && m.why === "best") { Object.assign(me, { t: bwN(m.time, 0), fl: bwN(m.fl, 0), f: p ? p.f : me.f, pl: bwN(m.pl1, 0) }); if (p && p.brk > 0) BW.bk = p.brk; }
+    if (m.ok && m.why === "best") { Object.assign(me, { t: bwN(m.time, 0), fl: bwN(m.fl, 0), f: p ? p.f : me.f, pl: bwN(m.pl1, 0), r: /^[0-9a-f]{12}$/.test(m.id) ? m.id : "", v: PROTO }); if (p && p.brk > 0) BW.bk = p.brk; }
     else if (m.ok || m.why === "claim") { if (bwN(m.b0, 0)) me.t = m.b0; if (bwN(m.pl1 || m.pl0, 0)) me.pl = m.pl1 || m.pl0; }
     BW.me = me; BW.code = ACCT.code;
     if (BW.wk && Number.isInteger(m.n)) BW.wk.n = m.n;
@@ -37169,9 +37405,12 @@ function bwVerdictView(late) {
 // Pause: leaving a try costs nothing
 function bwPauseText() { $("pQuit").querySelector("span").textContent = "Quit to menu"; $("pNote").textContent = "Leaving costs nothing. Only a finished run counts."; }
 
-/* ----- the board (the Boards sheet's Boss Week tab, ui/bwsheet.js): { k: "w", wk, no, boss, n, at, top: [{ id, nm, f, t, fl, cr, pl }], me: null | { i, row } | { i: 0 } } or null ----- */
-function bwBoard() {
+/* ----- the board (the Boards sheet's Boss Week tab, ui/bwsheet.js): { k: "w", wk, no, boss, n, at, fin, top: [{ id, nm, f, t, fl, cr, pl, r, v }],
+   me: null | { i, row } | { i: 0 } } or null. r / v: the run's id and game version (the top 10 and your row: ▶ when v is PROTO, ui/replay.js).
+   bwBoard(wk): a finished week (fin), one of the last four the server keeps ("Last week ›"). ----- */
+function bwBoard(wk) {
   const M = window.__blBwMock;
+  if (Number.isInteger(wk)) return bwBoardPast(wk);
   if (M) return Promise.resolve(M.board || null);
   if (!qmOn() || !QM.conn) return Promise.resolve(null);
   const c = BW.bd;
@@ -37183,11 +37422,29 @@ function bwBoard() {
     setTimeout(() => { if (BW.bdWait.length) bwBdDone(null); }, 5000);
   });
 }
+function bwBoardPast(wk) {
+  const M = window.__blBwMock;
+  if (M) return Promise.resolve(M.last || null);
+  if (!qmOn() || !QM.conn) return Promise.resolve(null);
+  const c = BW.bdl;
+  if (c && c.d.wk === wk && performance.now() - c.t < 60000) return Promise.resolve(c.d);   // a finished week doesn't change
+  return new Promise((res) => {
+    BW.bdlWait.push(res);
+    if (BW.bdlWait.length > 1) return;
+    window.__blQuick.send({ t: "bd", k: "w", wk });
+    setTimeout(() => { if (BW.bdlWait.length) bwBdlDone(null); }, 5000);
+  });
+}
+function bwBdlDone(d) {
+  if (d) BW.bdl = { t: performance.now(), d };
+  for (const res of BW.bdlWait.splice(0)) res(d);
+}
 function bwBdClean(m) {
   if (!m || m.k !== "w" || !Array.isArray(m.top) || !Number.isInteger(m.wk)) return null;
   const row = (x) => (x && typeof x === "object" && typeof x.id === "string" ? { id: x.id.slice(0, 10), nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm : "") || "Potato",
-    f: FIG[x.f] ? x.f : "", t: bwN(x.t, 0), fl: bwN(x.fl, 0), cr: bwN(x.cr, 0), pl: typeof x.pl === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(x.pl) ? x.pl : "" } : null);
-  const d = { k: "w", wk: m.wk, no: bwN(m.no, 0), boss: BOSS_IDS.has(m.boss) ? m.boss : bwSpec().boss, n: bwN(m.n, 0), at: Number.isFinite(m.at) ? m.at : Date.now(),
+    f: FIG[x.f] ? x.f : "", t: bwN(x.t, 0), fl: bwN(x.fl, 0), cr: bwN(x.cr, 0), pl: typeof x.pl === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(x.pl) ? x.pl : "",
+    r: typeof x.r === "string" && /^[0-9a-f]{12}$/.test(x.r) ? x.r : "", v: bwN(x.v, 0) } : null);
+  const d = { k: "w", wk: m.wk, no: bwN(m.no, 0), boss: BOSS_IDS.has(m.boss) ? m.boss : bwSpec().boss, n: bwN(m.n, 0), at: Number.isFinite(m.at) ? m.at : Date.now(), fin: !!m.fin,
     top: m.top.slice(0, 100).map(row).filter((r) => r && r.t > 0), me: null };
   if (m.me && typeof m.me === "object") d.me = m.me.row ? { i: bwN(m.me.i, 0), row: row(m.me.row) } : { i: 0 };
   return d;
@@ -37225,6 +37482,8 @@ function bwTick() {
      the top 3 and what Monday pays. Your fighter card opens the fighter select in mode "bw" (menus.js selBack / selGo come back here, as the Road's does).
      The board comes from bwBoard() (bossweek.js) each time the sheet opens. FIGHT is bwFight(): a counted try, or Practice without the server.
    - The Boards sheet's third tab "Boss Week" (ui/boards.js calls bwBdPrep, bwBdRow, bwBdKick, bwBdEmpty below).
+   - Replays (ui/replay.js, ui/rpview.js): a ▶ at the end of a row (the top 10 and your row) plays that run, an "older version" tag stands in for it
+     when the run is from another game version; WATCH ▶ on your best; LAST WEEK › in the Boards tab's kicker row (the finished week's board, bwsPast).
    - The Monday card #scrBwWk (bwWeekCard, called once by bwTick): last week's place and the chips it paid.
    The bosses have no portrait files: bwArt() draws each boss with his own drawing once and keeps it as a data URL (the Road's skull on his colour if that fails).
    Test hooks: window.__blBwMock (bossweek.js; this part also reads its `checking`) and window.__blBwSheet. Styles: css/97-bossweek.css. */
@@ -37334,7 +37593,14 @@ function bwSheetRender() {
     best.classList.toggle("none", !has);
     const n = s.n, place = has && m.pl > 0 ? `#${m.pl}${n > 0 ? ` of ${n}` : ""}` : "", hl = has ? `${m.fl} ♥ lost` : "";
     if (chk) { sub.append(bdMk("i", "dot q"), "Checking…"); if (place) sub.append(` · ${place}`); }
-    else if (has) sub.textContent = [place, hl].filter(Boolean).join(" · ");
+    else if (has) {
+      sub.textContent = [place, hl].filter(Boolean).join(" · ");
+      if (m.r && m.v === PROTO) {   // your best run, to watch (ui/replay.js)
+        const w = bdMk("button", "rpv-wl", "Watch \u25B6\uFE0E"); w.type = "button"; w.setAttribute("aria-label", "Watch your best run");
+        w.addEventListener("click", () => { Sfx.init(); Sfx.ui(); rpWatchRun(m.r, "sheet", true); });
+        sub.append(" · ", w);
+      }
+    }
     else sub.textContent = "Finish him once and you're on the board";
   }
   // your fighter (the picker) and the partner this week
@@ -37363,6 +37629,14 @@ function bwsPay(m) {
     return `<span class="bw-st cg${k === mine ? " g" : ""}">${l} ${c}</span>`;
   }).join("");
 }
+// a row's run to watch: the top 10 and your row. ▶ when it is from this game version, the tag "older version" under the time when not (bwRunOf: ok / old / "")
+const bwRunOf = (row, i, own) => (row.r && (i <= 10 || own) ? (row.v === PROTO ? "ok" : "old") : "");
+function bwWatchEl(row, from, own) {
+  const b = bdMk("button", "rpv-pl"); b.type = "button"; b.title = "Watch"; b.setAttribute("aria-label", `Watch ${row.nm}'s run`);
+  b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); rpWatchRun(row.r, from, own); });
+  return b;
+}
+const bwOldEl = () => bdMk("small", "rpv-old", "older version");
 // the top 3 (a verdict or the board arriving redraws only this)
 function bwsRows() {
   if (!BWS.open) return;
@@ -37391,7 +37665,10 @@ function bwsRow(row, i, o) {
   if (o.me) nm.appendChild(bdMk("em", "", "You"));
   nm.appendChild(bdMk("b", "", row.nm));
   if (row.cr > 0) nm.appendChild(bwCrown(row.cr));
-  el.append(p, bwPortrait(row.f), nm, bdMk("b", "bw-tm", bwClock(row.t, 2)));
+  const tm = bdMk("b", "bw-tm", bwClock(row.t, 2)), run = bwRunOf(row, i, !!(o.me || o.you));
+  if (run === "old") { tm.classList.add("old"); tm.appendChild(bwOldEl()); }
+  el.append(p, bwPortrait(row.f), nm, tm);
+  if (run === "ok") el.appendChild(bwWatchEl(row, "sheet", !!(o.me || o.you)));
   el.title = `${row.nm}${row.f ? `, ${FIG[row.f].name}` : ""}, ${row.fl} hearts lost`;
   return el;
 }
@@ -37406,11 +37683,11 @@ const bwCrown = (n) => { const e = bdMk("span", "bw-crown", String(n)); e.title 
 /* ----- the Boards sheet's tab (ui/boards.js): a board made safe to draw, the rows, the kicker, the empty state ----- */
 function bwBdPrep(d) {
   if (!d || typeof d !== "object" || !Array.isArray(d.top)) return null;
-  const row = (x) => (x && typeof x === "object" && Number.isFinite(x.t) ? { id: bdStr(x.id, 12), nm: bdStr(x.nm, 24).trim() || "Potato", f: FIG[x.f] ? x.f : "", t: bdInt(x.t), fl: bdInt(x.fl), cr: bdInt(x.cr), pl: bdStr(x.pl, 24) } : null);
+  const row = (x) => (x && typeof x === "object" && Number.isFinite(x.t) ? { id: bdStr(x.id, 12), nm: bdStr(x.nm, 24).trim() || "Potato", f: FIG[x.f] ? x.f : "", t: bdInt(x.t), fl: bdInt(x.fl), cr: bdInt(x.cr), pl: bdStr(x.pl, 24), r: /^[0-9a-f]{12}$/.test(x.r) ? x.r : "", v: bdInt(x.v) } : null);   // r, v: the run to watch and its game version
   const top = d.top.slice(0, 100).map(row).filter((r) => r && r.t > 0);
   let me = null;
   if (d.me && typeof d.me === "object") { const i = bdInt(d.me.i), r = row(d.me.row); me = i > 0 && r ? { i, row: r } : { i: 0 }; }
-  return { k: "w", wk: bdInt(d.wk), no: bdInt(d.no), boss: BOSS_IDS.has(d.boss) ? d.boss : bwSpec().boss, n: Math.max(bdInt(d.n), top.length), at: bdInt(d.at), top, me };
+  return { k: "w", wk: bdInt(d.wk), no: bdInt(d.no), boss: BOSS_IDS.has(d.boss) ? d.boss : bwSpec().boss, n: Math.max(bdInt(d.n), top.length), at: bdInt(d.at), fin: !!d.fin, top, me };
 }
 // one row: place, portrait, name (+ crowns), fighter, hearts lost, time; o.me / o.sticky / o.of as bdRowEl's
 function bwBdRow(row, i, o) {
@@ -37429,13 +37706,20 @@ function bwBdRow(row, i, o) {
   if (f1) f.appendChild(bdMk("span", "bd-f1", f1));
   f.appendChild(bdMk("span", "bd-f2", f2));
   n.appendChild(f);
-  el.append(p, bwPortrait(row.f), n, bdMk("small", "bd-w", hl), bdMk("b", "bd-v", bwClock(row.t, 2)));
+  const tm = bdMk("b", "bd-v", bwClock(row.t, 2)), run = bwRunOf(row, i, !!(o.me || o.sticky));
+  if (run === "old") { tm.classList.add("old"); tm.appendChild(bwOldEl()); }
+  el.append(p, bwPortrait(row.f), n, bdMk("small", "bd-w", hl), tm);
+  if (run === "ok") el.appendChild(bwWatchEl(row, "board", !!(o.me || o.sticky)));
   el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${bwClock(row.t, 2)}, ${row.fl} ${row.fl === 1 ? "heart" : "hearts"} lost`);
   return el;
 }
 // "KRAKEN SPUD · HARD · 23 HAVE A TIME · ENDS 3D 4H" (st: the sheet's state)
 function bwBdKick(st, d) {
-  const s = bwSpec(), name = bwBossSpec(d && d.boss ? d.boss : s.boss).name;
+  const s = bwSpec(), name = bwBossSpec(d && d.boss ? d.boss : s.boss).name, past = !!(d && d.fin), lw = $("bdLast");
+  lw.hidden = !((st === "ok" || st === "empty") && d && d.wk > 0);   // LAST WEEK › / ‹ THIS WEEK once the board is in
+  lw.textContent = past ? "\u2039 This week" : "Last week \u203A";
+  screens.boards.classList.toggle("bw-past", past);
+  if (past) return `Last week · ${name} · Final`;
   return [name, BOSS_LV[s.lv]].concat(st === "load" ? ["Loading"] : st === "off" ? [] : [`${d.n} ${d.n === 1 ? "has a time" : "have a time"}`, `Ends ${bwLeft(s.ends)}`]).join(" · ");
 }
 // "Nobody has a time yet. Finish Zorp once and you're #1." with FIGHT ZORP (the sheet's top 3 gets the short one)
@@ -37445,11 +37729,28 @@ function bwBdEmptyEl(full) {
   return e;
 }
 function bwBdEmpty(box) {
+  if (BD.data && BD.data.fin) { box.append(bdPod(), bdMk("b", "bd-big", "No times last week.")); return; }   // a finished week nobody finished
   const boss = bwBossSpec(bwSpec().boss).name;
   box.append(bdPod(), bdMk("b", "bd-big", "Nobody has a time yet."), bdMk("p", "bd-sub", `Finish ${boss} once and you're #1.`));
   const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", `Fight ${boss}`));
   bdTap(b, () => { bdClose(); bwFight(); });
   box.appendChild(b);
+}
+
+/* ----- Last week ›: the finished week's board in the same tab (bossweek.js bwBoard(wk); a week with no board shows "No times last week.") ----- */
+function bwsPast(on) {
+  if (!on) { bdLoad(); return; }
+  const req = ++BD.req, wk = bwSpec().wk - 1;
+  BD.st = "load"; BD.data = null;
+  bdDraw();
+  bwBoard(wk).then((raw) => {
+    if (req !== BD.req || screens.boards.hidden) return;
+    const d = bwBdPrep(raw) || bwBdPrep({ top: [], wk, boss: bwLocal(wk).boss, n: 0 });
+    d.fin = true;
+    BD.data = d; BD.got = Date.now();
+    BD.st = d.top.length ? "ok" : "empty";
+    bdDraw();
+  });
 }
 
 /* ----- the Monday card: last week's place and the chips it paid (bwTick passes lr: { wk, no, boss, pl, of, c }) ----- */
@@ -37475,6 +37776,7 @@ tap("bwMe", bwSheetPick);
 tap("bwGo", bwsFight);
 tap("bwFull", () => bdOpen("w"));
 tap("bwwClose", bwWeekClose);
+tap("bdLast", () => bwsPast(!(BD.data && BD.data.fin)));
 tap("bwwOk", bwWeekClose);
 tap("bwwGo", () => { bwWeekClose(); bwSheetOpen(); });
 screens.bw.addEventListener("click", (e) => { if (e.target === screens.bw) bwSheetClose(); });
@@ -37485,6 +37787,617 @@ window.addEventListener("keydown", (e) => {
 });
 $("bHelp").addEventListener("click", () => modal("settings", false));   // How to play is Settings' first row: the sheet gives way to it
 window.__blBwSheet = { open: bwSheetOpen, close: bwSheetClose, render: bwSheetRender, tile: bwTile, card: bwWeekCard, art: bwArt };   // tests
+/* ===================== Replays: a run played again from its inputs (UI only; Boss Week runs, Ranked vs CPU matches) =====================
+   A run is its seed, its fighters and your logged inputs (vcIn, ui/vscpu.js). It plays again through the same engine and match screen:
+   simTick takes the log's input in place of the pad (rpLive) and the CPU partner or foe thinks again from the same random numbers, so
+   the HUD, the camera, the sounds and the KO page come back as they were. Nothing a replay does counts: finishMatch hands it to rpEnd
+   before anything else (no chips, XP, Road stars, rating), cntStart skips it, the log isn't logged again (no match.bw / match.vc).
+   Where a run comes from:
+   - the server, GET /api/run/<id> (bossweek.js): the Boss Week board's top 10 and your row, your best on the sheet, last week's top 10,
+     a share link potatobrawl.cloud/#watch=<id> (a title card first, rpLanding);
+   - this phone: your last finished run from its results (a Boss Week try, won, lost or out of time; a Ranked vs CPU match), rpKeep.
+   A run plays only on the game version it was played on (meta.v === PROTO); an older one keeps its time and shows "older version".
+   Before it plays, the whole run is simulated once without drawing (rpScan): its length, GO, the break, the final launch, its time.
+   Seeking plays it again from the start without drawing, a slice a frame so the page stays live (RP.seeking: the controls' spinner).
+   The controls strip, the title and end cards and the WATCH buttons are ui/rpview.js (rpv*, each optional here); this part is the
+   engine and the data. Test hook: window.__blRp. */
+const RP_IDLE = encIn(BL.blankInput());   // no stick, no button: what plays once the log has run out (the end's slow motion)
+const RP_SP = [0.5, 1, 2];
+const RP = {
+  on: false,       // a replay owns the match screen
+  loading: false, err: "", req: 0,
+  cfg: null,       // the fight: { kind: "bw" | "vc", pl: [[id, skin], ...], map, lv, hp, seed, d (the CPU's strength), bs (its style: a fighter id) }
+  meta: null,      // what the cards say: { kind, id (a server run to share, or ""), tid, own, nm, f, pf, boss, wk, no, t, fl, place, n, cr, fin, v, plate, cpu, res }
+  codes: null,     // the inputs, one a tick
+  i: 0,            // ticks played
+  mk: null,        // rpScan: { n (ticks to the end), go, goT, brk, brkT, ko, koT, end, t, won }
+  sp: 1, pause: false, seeking: false, to: 0, ended: false, clean: false, from: "",
+  last: null,      // your last finished run on this phone { cfg, codes, meta } (rpKeep)
+  land: null,      // a share link: { id, st: "load" | "ok" | "old" | "gone" | "net" | "off", cfg, codes, meta }
+};
+// a packed log (vcPack: runs of one code, three characters each) back to its codes; null if it isn't one
+function rpUnpack(s, max) {
+  if (typeof s !== "string" || s.length % 3) return null;
+  const out = [];
+  for (let i = 0; i < s.length; i += 3) {
+    const a = B64I[s[i]], b = B64I[s[i + 1]], c = B64I[s[i + 2]];
+    if (a === undefined || b === undefined || c === undefined || out.length + c + 1 > max) return null;
+    for (let k = 0, v = a * 64 + b; k <= c; k++) out.push(v);
+  }
+  return out;
+}
+const rpBossSpec = (id) => BL.BOSSES.find((b) => b.id === id) || null;
+const rpSpec = (id) => FIG[id] || rpBossSpec(id);
+// the fight exactly as it was dealt (ui/bossweek.js bwStart, ui/vscpu.js vcStart)
+function rpNewGame(cfg) {
+  const players = cfg.pl.map(([id, p]) => { const s = rpSpec(id); return { spec: s, pal: s.palettes[p] || s.palettes[0] }; });
+  const g = cfg.kind === "bw" ? newGame({ players, stocks: 3, time: 0, countdown: 150, map: cfg.map, level: cfg.lv, hpMul: cfg.hp, seed: cfg.seed })
+    : newGame({ players, stocks: 3, time: 240, countdown: 150, map: cfg.map, seed: cfg.seed });
+  return { g, bot: makeBot(cfg.d, BL.BOT_STYLES[cfg.bs]) };
+}
+// this tick's inputs: the log's for you, the CPU's own (Boss Week: your partner against the boss, boss.js bossInputs; Ranked vs CPU: your foe)
+const rpInputs = (g, bot, pi, kind) => [pi, kind === "bw" ? botInput(g, g.fighters[1], g.fighters[2], bot) : botInput(g, g.fighters[1], g.fighters[0], bot)];
+function rpCode(i) { const c = RP.codes; return decIn(i < c.length ? c[i] : RP_IDLE); }
+function rpCfgOk(cfg) {
+  if (!cfg || (cfg.kind !== "bw" && cfg.kind !== "vc") || !Array.isArray(cfg.pl) || cfg.pl.length !== (cfg.kind === "bw" ? 3 : 2)) return false;
+  if (!cfg.pl.every((x, i) => Array.isArray(x) && (i === 2 ? !!rpBossSpec(x[0]) : !!FIG[x[0]]) && Number.isInteger(x[1]) && x[1] >= 0)) return false;
+  return Number.isInteger(cfg.seed) && Number.isInteger(cfg.map) && cfg.map >= 0 && cfg.map < BL.MAPS.length && typeof cfg.d === "number" && !!FIG[cfg.bs] &&
+    (cfg.kind === "vc" || (Number.isInteger(cfg.lv) && typeof cfg.hp === "number" && cfg.hp > 0));
+}
+
+/* ----- the scan: the whole run once, not drawn ----- */
+// the marks on the seek bar and the run's own time; done(mk) on a later frame (a long run takes a few slices)
+function rpScan(cfg, codes, done) {
+  const { g, bot } = rpNewGame(cfg), mk = { n: 0, go: -1, goT: 0, brk: -1, brkT: 0, ko: -1, koT: 0, end: -1, t: 0, won: false };
+  const max = codes.length + 4000, req = RP.req;
+  let i = 0;
+  const slice = () => {
+    if (req !== RP.req) return;
+    const t0 = performance.now();
+    while (i < max && performance.now() - t0 < 12) {
+      for (let k = 0; k < 200 && i < max; k++) {
+        const pi = i < codes.length ? decIn(codes[i]) : decIn(RP_IDLE);
+        step(g, rpInputs(g, bot, pi, cfg.kind));
+        i++;
+        for (const e of g.events) {
+          if (e.type === "go" && mk.go < 0) { mk.go = i; mk.goT = g.t; }
+          else if (e.type === "lethal" && mk.ko < 0 && (cfg.kind === "bw" ? e.slot === 2 : e.final)) { mk.ko = i; mk.koT = g.t; }
+          else if (e.type === "game" && mk.end < 0) mk.end = i;
+        }
+        g.events.length = 0;
+        const b = cfg.kind === "bw" ? g.fighters[2] : null;
+        if (b && mk.brk < 0 && (b.state === "broken" || b.doomed)) { mk.brk = i; mk.brkT = g.t; }
+        if (cfg.kind === "bw" && mk.go >= 0 && mk.ko < 0 && g.t - mk.goT >= BW_CAP) { mk.end = mk.n = i; i = max; break; }   // the 4:00 cap (bwHud ends the try there)
+        if (g.phase === "over") { mk.n = i; i = max; break; }
+      }
+    }
+    BL.useStage(mode === "match" && G ? G : attract ? attract.g : g);   // the stage is one for all games: the one on screen again
+    if (i < max) { requestAnimationFrame(slice); return; }
+    if (!mk.n) mk.n = max;
+    mk.won = cfg.kind === "bw" ? mk.ko >= 0 : g.winner === 0;
+    mk.t = mk.ko >= 0 && mk.go >= 0 ? mk.koT - mk.goT : Math.max(0, g.t - mk.goT);
+    done(mk);
+  };
+  slice();
+}
+
+/* ----- opening a run ----- */
+// a server run (the board's ▶, the sheet's WATCH, a share link): GET /api/run/<id>
+function rpFetch(id, own) {
+  if (!qmOn()) return Promise.resolve({ st: "off" });
+  return fetch("/api/run/" + id, { cache: "no-store" }).then((r) => (r.status === 200 ? r.json().then((j) => rpFromServer(j, own)) : { st: r.status === 404 ? "gone" : "net" }), () => ({ st: "net" }));
+}
+function rpFromServer(j, own) {
+  if (!j || typeof j !== "object" || typeof j.id !== "string") return { st: "gone" };
+  const cfg = { kind: "bw", pl: [[j.f, j.p | 0], [j.pf, j.pp | 0], [j.boss, 0]], map: j.map, lv: j.lv, hp: j.hp, seed: j.seed, d: j.d, bs: j.pf };
+  const meta = { kind: "bw", id: j.id, tid: j.id, own: !!own, nm: SYNC.cleanName(typeof j.nm === "string" ? j.nm : "") || "Potato",
+    f: j.f, pf: j.pf, boss: j.boss, wk: j.wk | 0, no: j.no | 0, t: j.t | 0, fl: j.fl | 0, place: j.place | 0, n: j.n | 0, cr: j.cr | 0, fin: !!j.fin, v: j.v | 0,
+    plate: typeof j.pl === "string" ? j.pl : "" };
+  if (meta.v !== PROTO) return { st: "old", cfg, meta, codes: null };
+  const codes = rpCfgOk(cfg) ? rpUnpack(j.lg, 30000) : null;
+  return codes && codes.length ? { st: "ok", cfg, meta, codes } : { st: "gone", meta };
+}
+// own: your own row or best (the marker says YOU)
+function rpWatchRun(id, from, own) {
+  if (RP.on || RP.loading) return;
+  RP.loading = true; RP.err = "";
+  if (typeof rpvLoad === "function") rpvLoad(true);
+  rpFetch(id, own).then((x) => {
+    RP.loading = false;
+    if (typeof rpvLoad === "function") rpvLoad(false);
+    if (x.st === "ok") { rpOpen(x.cfg, x.codes, x.meta, from); return; }
+    RP.err = x.st === "old" ? "This run is from an older version of the game" : x.st === "gone" ? "This run isn't on the board any more" : x.st === "off" ? "Replays need the server" : "Couldn't reach the server. Try again.";
+    if (typeof rpvToast === "function") rpvToast(RP.err);
+  });
+}
+// your last run from its results (showResults keeps it: rpKeep)
+function rpKeep(R) {
+  RP.last = null;
+  const log = match && match.log;
+  if (!log || !log.length || R.forfeit) return;   // a run you left plays nothing more
+  const nm = P.name || "You";
+  if (R.bw) {
+    const tk = R.bw.tk;
+    RP.last = { cfg: { kind: "bw", pl: [[tk.f, tk.p], [tk.pf, tk.pp], [tk.boss, 0]], map: tk.map, lv: tk.lv, hp: tk.hp, seed: tk.seed, d: tk.d, bs: tk.pf }, codes: log.slice(),
+      meta: { kind: "bw", id: "", tid: tk.id, own: true, nm, f: tk.f, pf: tk.pf, boss: tk.boss, wk: tk.wk, no: tk.no | 0, t: R.bw.won ? R.bw.t : 0, fl: R.bw.fl, place: 0, n: 0, cr: 0, fin: false, v: PROTO, plate: P.plate || "", cpu: match.cpu || "" } };   // cpu: the partner's nickname, as it was
+  } else if (R.vc) {
+    const tk = R.vc;
+    RP.last = { cfg: { kind: "vc", pl: [[tk.f[0], tk.p[0]], [tk.f[1], tk.p[1]]], map: tk.map, seed: tk.seed, d: tk.d, bs: tk.f[1] }, codes: log.slice(),
+      meta: { kind: "vc", id: "", tid: tk.id, own: true, nm, f: tk.f[0], pf: tk.f[1], boss: "", wk: 0, no: 0, t: 0, fl: 0, place: 0, n: 0, cr: 0, fin: false, v: PROTO, plate: P.plate || "", cpu: match.cpu || "", res: R.res } };
+  }
+  if (RP.last && !rpCfgOk(RP.last.cfg)) RP.last = null;
+}
+const rpLocalOk = () => !!RP.last;
+function rpWatchLocal() { const L = RP.last; if (L && !RP.on) rpOpen(L.cfg, L.codes, Object.assign({}, L.meta), "results"); }
+// a run to watch: scanned first, then played from its start
+function rpOpen(cfg, codes, meta, from) {
+  if (!rpCfgOk(cfg) || !codes || !codes.length) return;
+  const req = ++RP.req;
+  Object.assign(RP, { cfg, codes, meta, from: from || "", mk: null, loading: true, err: "", sp: 1, pause: false, seeking: false, ended: false, clean: false });
+  if (typeof rpvLoad === "function") rpvLoad(true);
+  cnt("rp:watch");   // ui/counter.js
+  rpScan(cfg, codes, (mk) => {
+    if (req !== RP.req) return;
+    RP.loading = false; RP.mk = mk;
+    if (typeof rpvLoad === "function") rpvLoad(false);
+    if (meta.kind === "bw" && !meta.t && mk.won) meta.t = mk.t;
+    rpBegin();
+  });
+}
+// the match screen, fed from the log
+function rpBegin() {
+  const { g, bot } = rpNewGame(RP.cfg), M = RP.meta, k = RP.cfg.kind;
+  G = g; meSlot = 0; RP.i = 0; RP.on = true; RP.ended = false;
+  match = k === "bw" ? { boss: true, rp: true, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0 }, level: RP.cfg.lv, d: RP.cfg.d, bot, cpu: M.cpu || cpuName(), road: null }
+    : { rp: true, ranked: false, d: RP.cfg.d, bot, level: null, cpu: M.cpu || cpuName() };
+  match.rpTag = M.own ? "YOU" : M.nm.slice(0, 10).toUpperCase();   // the marker over your fighter (draw-world.js drawTag)
+  if (typeof bdClose === "function" && screens.boards && !screens.boards.hidden) bdClose();
+  if (typeof bwSheetClose === "function") bwSheetClose();
+  enterMatchUI();
+  if (!M.own) GLAZED.delete(G.fighters[0]);   // your glaze is yours (ui/glaze.js), not on someone else's run
+  $("pc0").querySelector(".pc-tag").textContent = M.own ? "You" : M.nm;
+  $("ctl").hidden = true;
+  app.classList.add("replay"); app.classList.remove("rpclean");
+  if (typeof rpvOpen === "function") rpvOpen();
+}
+
+/* ----- playing (loop.js) ----- */
+// simTick: one tick of the replay; false while paused, seeking or ended (the frame holds)
+function rpLive() {
+  if (RP.pause || RP.seeking || RP.ended) return false;
+  step(G, rpInputs(G, match.bot, rpCode(RP.i), RP.cfg.kind));
+  RP.i++;
+  return true;
+}
+const rpRate = () => (RP.on && mode === "match" && !RP.pause ? RP.sp : 1);   // frame(): the replay's speed
+function rpFrame() { if (RP.on && typeof rpvFrame === "function") rpvFrame(); }   // every drawn frame (loop.js)
+// finishMatch: the run is over (the KO page has played): the end card
+function rpEnd() {
+  RP.ended = true; RP.pause = false;
+  if (RP.clean) rpClean(false);
+  if (typeof rpvEnd === "function") rpvEnd();
+}
+// the clock: the run's time now and at its end, in frames from GO (Boss Week: to the final launch, as the board counts)
+function rpTimeNow() {
+  const mk = RP.mk, r = match && match.bwr;
+  if (!mk || !G) return 0;
+  if (r) return r.go < 0 ? 0 : Math.max(0, (r.ko >= 0 ? r.ko : G.t) - r.go);
+  return mk.go < 0 || RP.i < mk.go ? 0 : Math.max(0, Math.min(G.t, mk.koT || G.t) - mk.goT);
+}
+const rpTimeEnd = () => (RP.meta && RP.meta.t ? RP.meta.t : RP.mk ? RP.mk.t : 0);
+
+/* ----- the controls (ui/rpview.js calls these) ----- */
+function rpToggle() {
+  if (!RP.on) return;
+  if (RP.ended) { rpRestart(); return; }
+  RP.pause = !RP.pause;
+  if (typeof rpvFrame === "function") rpvFrame();
+}
+function rpPauseSet(on) { if (RP.on && !RP.ended && RP.pause !== on) rpToggle(); }
+function rpSpeed(s) { if (RP_SP.includes(s)) RP.sp = s; }
+function rpSpeedNext() { RP.sp = RP_SP[(RP_SP.indexOf(RP.sp) + 1) % RP_SP.length]; return RP.sp; }
+// to tick `to` (the seek bar): forward from here, or from the start again; a slice a frame, the frame holds meanwhile
+function rpSeek(to) {
+  if (!RP.on || !RP.mk) return;
+  RP.to = clamp(Math.round(to), 0, Math.max(0, RP.mk.end > 0 ? RP.mk.end - 1 : RP.mk.n - 1));
+  if (RP.ended) { RP.ended = false; if (typeof rpvOpen === "function") rpvOpen(); }
+  finStop(); hideBanner();
+  if (RP.to < RP.i || G.phase === "over") rpFresh();
+  if (!RP.seeking) { RP.seeking = true; rpSeekSlice(); }
+}
+function rpFresh() {   // the run from its first tick
+  const { g, bot } = rpNewGame(RP.cfg);
+  G = g; match.bot = bot; RP.i = 0; lastCount = 0;
+  if (match.bwr) Object.assign(match.bwr, { go: -1, ko: -1, brk: -1, cap: false, spl: 0 });
+  if (!RP.meta.own) GLAZED.delete(G.fighters[0]);
+  else glazeMatch();
+}
+function rpSeekSlice() {
+  if (!RP.on || !RP.seeking) return;
+  const t0 = performance.now(), r = match.bwr;
+  while (RP.i < RP.to && performance.now() - t0 < 10) {
+    for (let k = 0; k < 100 && RP.i < RP.to; k++) {
+      step(G, rpInputs(G, match.bot, rpCode(RP.i), RP.cfg.kind));
+      RP.i++;
+      if (r) for (const e of G.events) { if (e.type === "go") r.go = G.t; else if (e.type === "lethal" && e.slot === 2 && r.ko < 0) r.ko = G.t; }
+      if (r && r.brk < 0 && G.fighters[2] && (G.fighters[2].state === "broken" || G.fighters[2].doomed)) r.brk = G.t;
+      G.events.length = 0;   // looks and sounds of the skipped part are dropped (effects.js handleEvent never sees them)
+    }
+  }
+  if (RP.i < RP.to) { requestAnimationFrame(rpSeekSlice); return; }
+  RP.seeking = false;
+  // the screen as if it had been playing: no leftover sparks, trails, banners or a KO page, the camera on the fighters
+  fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
+  for (let k = 0; k < 4; k++) hudCache[k] = { pct: -1, stocks: -1, out: null };
+  bossHudReset(); camStep(G, true);
+  if (typeof rpvFrame === "function") rpvFrame();
+}
+function rpRestart() { if (RP.on) { RP.pause = false; rpSeek(0); } }
+function rpToKo() { if (RP.on && RP.mk && RP.mk.ko > 0) { RP.pause = false; rpSeek(Math.max(0, RP.mk.ko - 150)); } }   // 2.5 s before the final launch: the blow and the KO page
+function rpClean(on) { RP.clean = !!on; app.classList.toggle("rpclean", RP.clean); }   // no HUD and no controls: a clean screen recording
+// a link anyone can open (no account): only for a run the server keeps
+function rpShareId() {
+  const M = RP.meta;
+  if (!M || M.kind !== "bw") return "";
+  if (M.id) return M.id;
+  const v = BW.res;   // your own try, if the server just made it your best
+  return M.own && v && v.id === M.tid && v.ok && v.why === "best" ? M.tid : "";
+}
+function rpLink(id) { return `${location.origin}${location.pathname}#watch=${id}`; }
+function rpShareText() {
+  const M = RP.meta, b = rpBossSpec(M.boss);
+  return `${M.own ? "My" : `${M.nm}'s`} Boss Week run vs ${b ? b.name : "the boss"}: ${bwClock(rpTimeEnd(), 2)}${M.place ? ` · #${M.place}` : ""}. Think you can beat it?`;
+}
+function rpShare() {
+  const id = rpShareId();
+  if (!id) return false;
+  const link = rpLink(id);
+  cnt("rp:share");
+  if (chlPhone()) { try { navigator.share({ title: "PotatoBrawl", text: rpShareText(), url: link }).catch(() => {}); } catch (e) { /* no share sheet */ } return true; }   // ui/challenge.js chlPhone
+  try { navigator.clipboard.writeText(`${rpShareText()} ${link}`).then(() => { if (typeof rpvToast === "function") rpvToast("Link copied"); }, () => {}); } catch (e) { /* no clipboard */ }
+  return true;
+}
+// leave the replay: the menu, then where the end card's button points ("sheet": the Boss Week sheet, "board": the Boards tab,
+// "fight": a try of your own, "again": the same run from the start, "": the menu); no next (✕): back to the board or sheet it came from
+function rpClose(next) {
+  if (!RP.on) return;
+  if (next === "again") { RP.ended = false; if (typeof rpvOpen === "function") rpvOpen(); rpRestart(); return; }
+  if (next === undefined && (RP.from === "board" || RP.from === "sheet")) next = RP.from;   // ✕: back where you opened it
+  const land = RP.from === "link";
+  RP.on = false; RP.req++; RP.seeking = false; RP.pause = false; RP.ended = false;
+  app.classList.remove("replay", "rpclean");
+  if (typeof rpvClose === "function") rpvClose();
+  goMenu();
+  if (next === "sheet" && typeof bwSheetOpen === "function") bwSheetOpen();
+  else if (next === "board" && typeof bdOpen === "function") bdOpen("w");
+  else if (next === "fight") bwFight();
+  else if (land && firstRun && !ACCT.hash && !playedOnce()) welcomeOpen();   // a brand-new player from a share link: the welcome sheet (ui/welcome.js) once they leave
+}
+// keys while watching: Space / K play and pause, ← → 5 s back and on (Esc and P pause through togglePause)
+window.addEventListener("keydown", (e) => {
+  if (!RP.on || mode !== "match" || RP.loading) return;
+  if (e.code === "Space" || e.code === "KeyK") { e.preventDefault(); rpToggle(); }
+  else if ((e.code === "ArrowLeft" || e.code === "ArrowRight") && RP.mk) { e.preventDefault(); rpSeek(RP.i + (e.code === "ArrowLeft" ? -300 : 300)); }
+});
+
+/* ----- a share link: potatobrawl.cloud/#watch=<id> ----- */
+function rpHashId() { const m = /^#watch=([0-9a-f]{12})$/.exec(location.hash || ""); return m ? m[1] : ""; }
+// loop.js, after the turn-sideways screen: a link's run comes before the welcome sheet
+function rpLanding() {
+  const id = rpHashId();
+  if (!id) return false;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* the hash stays: harmless */ }
+  RP.land = { id, st: "load" };
+  cnt("rp:link");
+  if (RP.on) rpClose();
+  if (typeof rpvTitle === "function") rpvTitle();
+  rpFetch(id).then((x) => {
+    if (!RP.land || RP.land.id !== id) return;
+    Object.assign(RP.land, x);
+    if (typeof rpvTitle === "function") rpvTitle();
+  });
+  return true;
+}
+// the title card's WATCH (the tap also turns the sound on)
+function rpLandGo() {
+  const L = RP.land;
+  if (!L || L.st !== "ok") return;
+  Sfx.init(); goFull();
+  if (typeof rpvTitleClose === "function") rpvTitleClose();
+  RP.land = null;
+  rpOpen(L.cfg, L.codes, L.meta, "link");
+}
+// the title card without watching: the menu (a brand-new player's welcome sheet), or "sheet" for FIGHT
+function rpLandClose(next) {
+  RP.land = null;
+  if (typeof rpvTitleClose === "function") rpvTitleClose();
+  if (next === "sheet" && typeof bwSheetOpen === "function") { bwSheetOpen(); return; }
+  if (firstRun && !ACCT.hash && !playedOnce()) welcomeOpen();
+}
+window.addEventListener("hashchange", () => { if (rpHashId() && mode !== "match") rpLanding(); });   // a link opened in a tab the game is already in
+
+// tests: a run played by a bot in your place, its codes as vcIn would have logged them (to the end of the fight)
+function rpBotRun(cfg, lv) {
+  if (!rpCfgOk(cfg)) return null;
+  const { g, bot } = rpNewGame(cfg), me = makeBot(lv, BL.BOT_STYLES[cfg.pl[0][0]]), R = BL.rngOf(4242), codes = [], foe = cfg.kind === "bw" ? 2 : 1;
+  for (let i = 0; i < 30000 && g.phase !== "end" && g.phase !== "over"; i++) {
+    const r0 = g.rng; g.rng = R;   // the bot's own random numbers: the game's stay the game's
+    let pi; try { pi = botInput(g, g.fighters[0], g.fighters[foe], me); } finally { g.rng = r0; }
+    const c = encIn(Object.assign(BL.blankInput(), pi));
+    codes.push(c);
+    step(g, rpInputs(g, bot, decIn(c), cfg.kind));
+    g.events.length = 0;
+  }
+  BL.useStage(mode === "match" && G ? G : attract ? attract.g : g);
+  return codes;
+}
+window.__blRp = { get st() { return RP; }, botRun: rpBotRun, open: rpOpen, watch: rpWatchRun, local: rpWatchLocal, seek: rpSeek, toggle: rpToggle, speed: rpSpeed, restart: rpRestart, toKo: rpToKo, clean: rpClean, close: rpClose, share: rpShare, shareId: rpShareId, unpack: rpUnpack, landGo: rpLandGo, landClose: rpLandClose, now: rpTimeNow, end: rpTimeEnd };
+/* ===================== the replay viewer: controls strip, livetag, end card, title card, toast, WATCH on the results (ui/replay.js is the engine) =====================
+   UI only, never in the simulation: it reads RP, G and match and calls the engine's controls (rpToggle, rpSeek, rpSpeedNext, rpRestart, rpToKo, rpClean, rpShare, rpClose,
+   rpLandGo, rpLandClose). Fable's design: /mnt/project-files/step6/fable-step6.md (Viewer E / G, Share landing). Every hook below is called by replay.js (each optional there):
+   - rpvOpen / rpvFrame / rpvEnd / rpvClose: the strip (#rpv) in the bottom 48 px, ▶/❚❚ · seek bar (☠ the break, ⚑ the final launch, a spinner while it re-simulates) · time · speed ·
+     ⟲ · ⏭ KO · ◉ clean view · ⤴ share · ✕; upright the bar has its own row above the buttons. Under it the livetag in the HUD's left column ("REPLAY · TUBER TOM · #1 · 1:21.44").
+     Both fade out after 3 s of playing with no pointer or key (a tap brings them back, and in clean view a tap leaves it); paused, seeking and ended they stay.
+     The end card (rpvEnd) sits over the frozen last frame, the buttons by who is watching (your turn, your retry, a CPU match).
+   - rpvTitle / rpvTitleClose: the share link's title card (RP.land: load, ok, old, gone, net, off), over the menu and every sheet.
+   - rpvToast, rpvLoad: a short message and a "Loading the run…" pill, over everything.
+   - rpvResults: WATCH ▶ on the results of a Boss Week try and a Ranked vs CPU match (#rWatch, in shell.html).
+   Styles: css/97-replay.css. Test hook: window.__blRpv. */
+const RPV = { ready: false, act: 0, drag: -1, c: {}, toastT: 0 };   // act: the last pointer or key (ms); drag: the tick the knob is held at (-1: not held); c: what is drawn now (the DOM is written only when a value changes)
+const RPV_X = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg>';
+const RPV_IC = {
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6l11-6.8z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" fill="currentColor"/></svg>',
+  again: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 9.2A7.6 7.6 0 1 1 4.6 13.2" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path d="M4.4 4v5.6h5.6" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  ko: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5v13l9-6.5z" fill="currentColor"/><path d="M18.5 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+  clean: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3" fill="none" stroke="currentColor" stroke-width="2.7"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>',
+  share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4.2M7.6 8.4L12 4l4.4 4.4M5 12.5V19h14v-6.5" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  skull: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.4c-3.3 0-5.6 2.2-5.6 5.3 0 1.9.9 3.1 2 3.8v2.7h7.2v-2.7c1.1-.7 2-1.9 2-3.8C13.6 3.6 11.3 1.4 8 1.4z" fill="#eef0fa" stroke="#0e1022" stroke-width="1.3" stroke-linejoin="round"/><circle cx="5.7" cy="7" r="1.6" fill="#0e1022"/><circle cx="10.3" cy="7" r="1.6" fill="#0e1022"/><path d="M6.7 11.6v1.8M9.3 11.6v1.8" stroke="#0e1022" stroke-width="1.1"/></svg>',
+  flag: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.6v13" stroke="#eef0fa" stroke-width="1.8" stroke-linecap="round"/><path d="M4.8 2.4h8.2l-2.3 3.2L13 8.8H4.8z" fill="#e8453c" stroke="#0e1022" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+};
+const rpvMk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const rpvTx = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = text; return e; };
+const rpvBtn = (cls, label, html) => { const b = rpvMk("button", cls, html); b.type = "button"; if (label) b.setAttribute("aria-label", label); return b; };
+// a tap: the sound, the action, no focus left on the button (Space would press it again, the engine's own Space plays and pauses)
+function rpvTap(el, fn, sfx) {
+  if (sfx) el.dataset.sfx = sfx;
+  el.addEventListener("click", (e) => { Sfx.init(); Sfx.cue(el); rpvPoke(); fn(e); if (e.detail && el.blur) el.blur(); });
+}
+const rpvBoss = (id) => bwBossSpec(id).name;   // ui/bossweek.js
+const rpvWeekBoss = () => bwBossSpec(bwSpec().boss).name;   // the boss FIGHT starts a try against: this week's
+const rpvTime = (fr) => bwClock(fr, 2);
+const rpvPlace = (M) => (M.place > 0 ? `#${M.place}${M.n > 0 ? ` of ${M.n}` : ""}` : "");
+function rpvRange() { return RP.mk ? Math.max(1, RP.mk.end > 0 ? RP.mk.end : RP.mk.n) : 1; }   // ticks the bar spans: to the final launch (the engine's seek stops there)
+function rpvPoke() { RPV.act = performance.now(); if (RPV.c.idle) { RPV.c.idle = false; app.classList.remove("rpidle"); } }
+
+/* ----- the pieces, made once ----- */
+function rpvMake() {
+  if (RPV.ready) return;
+  RPV.ready = true;
+  // the strip
+  const bar = RPV.bar = rpvMk("div", "rpv"); bar.id = "rpv"; bar.hidden = true; bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Replay controls");
+  RPV.play = rpvBtn("round rpv-play", "Pause", RPV_IC.pause);
+  const seek = RPV.seek = rpvMk("div", "rpv-seek", '<div class="rpv-rail"><i class="rpv-tr"><i class="rpv-fill"></i></i><span class="rpv-mk brk" hidden></span><span class="rpv-mk ko" hidden></span><b class="rpv-knob"></b></div>');
+  seek.setAttribute("role", "slider"); seek.setAttribute("aria-label", "Seek"); seek.setAttribute("aria-valuemin", "0"); seek.setAttribute("aria-valuemax", "100"); seek.setAttribute("aria-valuenow", "0");
+  RPV.rail = seek.firstChild; RPV.fill = seek.querySelector(".rpv-fill"); RPV.knob = seek.querySelector(".rpv-knob");
+  RPV.mBrk = seek.querySelector(".rpv-mk.brk"); RPV.mKo = seek.querySelector(".rpv-mk.ko");
+  RPV.mBrk.innerHTML = RPV_IC.skull; RPV.mKo.innerHTML = RPV_IC.flag;
+  RPV.time = rpvMk("span", "rpv-time", '<b class="rpv-now">0:00.0</b><span> / <span class="rpv-te">0:00.00</span></span>');
+  RPV.now = RPV.time.querySelector(".rpv-now"); RPV.endT = RPV.time.querySelector(".rpv-te");
+  RPV.sp = rpvBtn("rpv-sp", "Speed", "1×");
+  RPV.re = rpvBtn("round", "Watch from the start", RPV_IC.again);
+  RPV.ko = rpvBtn("round rpv-kob", "Jump to the knockout", RPV_IC.ko + "<span>KO</span>");
+  RPV.cl = rpvBtn("round", "Clean view", RPV_IC.clean);
+  RPV.sh = rpvBtn("round", "Share this run", RPV_IC.share);
+  RPV.x = rpvBtn("round rpv-x", "Close the replay", RPV_X);
+  bar.append(RPV.play, seek, RPV.time, rpvMk("i", "rpv-br"), RPV.sp, RPV.re, RPV.ko, RPV.cl, RPV.sh, RPV.x);
+  rpvTap(RPV.play, () => rpToggle(), "flip");
+  rpvTap(RPV.sp, () => { rpSpeedNext(); rpvFrame(); }, "flip");
+  rpvTap(RPV.re, () => rpRestart(), "flip");
+  rpvTap(RPV.ko, () => rpToKo(), "flip");
+  rpvTap(RPV.cl, () => { rpClean(true); }, "flip");
+  rpvTap(RPV.sh, () => rpShare(), "go");
+  rpvTap(RPV.x, () => rpClose(), "back");
+  // the bar: a tap or a drag; the run seeks to the tick under the pointer when it is let go (it plays again from the start to get there, so not while dragging)
+  seek.addEventListener("pointerdown", (e) => {
+    if (!RP.on || !RP.mk || (e.pointerType === "mouse" && e.button !== 0)) return;
+    e.preventDefault();
+    try { seek.setPointerCapture(e.pointerId); } catch (err) { /* no capture: the move events stay on the bar */ }
+    RPV.drag = rpvAt(e); rpvPoke(); rpvFrame();
+  });
+  seek.addEventListener("pointermove", (e) => { if (RPV.drag >= 0) { RPV.drag = rpvAt(e); rpvFrame(); } });
+  const up = (go) => (e) => {
+    if (RPV.drag < 0) return;
+    const to = go ? rpvAt(e) : -1;
+    RPV.drag = -1; rpvPoke();
+    if (go) { Sfx.init(); Sfx.uiFlip(); rpSeek(to); }
+    rpvFrame();
+  };
+  seek.addEventListener("pointerup", up(true)); seek.addEventListener("pointercancel", up(false));
+  // the livetag: in the HUD's left column, under your card (and its Ultimate bar)
+  const tag = RPV.tag = rpvMk("span", "livetag rpv-tag"); tag.hidden = true;
+  (document.querySelector(".hud-l") || app).appendChild(tag);
+  // the end card
+  const end = RPV.endEl = rpvMk("div", "rpv-end"); end.hidden = true;
+  RPV.ec = rpvMk("div", "card rpv-ec"); RPV.ec.setAttribute("role", "dialog"); RPV.ec.setAttribute("aria-label", "Replay over");
+  end.appendChild(RPV.ec);
+  // the title card of a share link
+  const ti = RPV.title = rpvMk("section", "rpv-ti"); ti.hidden = true;
+  // the toast and the loading pill
+  const to = RPV.toast = rpvMk("div", "rpv-toast"); to.hidden = true; to.setAttribute("role", "status");
+  const ld = RPV.load = rpvMk("div", "rpv-toast rpv-load", '<i aria-hidden="true"></i>Loading the run…'); ld.hidden = true; ld.setAttribute("role", "status");
+  app.append(bar, end, ti, to, ld);
+  // any tap, move or key brings the controls back; in clean view a tap or a key leaves it
+  const wake = (e) => {
+    if (!RP.on || mode !== "match") return;
+    if (RP.clean && e.type !== "pointermove") rpClean(false);
+    rpvPoke();
+  };
+  app.addEventListener("pointerdown", wake, true);
+  app.addEventListener("pointermove", wake, true);
+  window.addEventListener("keydown", wake, true);
+  window.addEventListener("keydown", (e) => { if (e.code === "Escape" && !RPV.title.hidden) { e.preventDefault(); rpLandClose(); } });
+  window.addEventListener("resize", () => { if (RP.on) requestAnimationFrame(rpvTagPlace); });   // after view.js has laid the HUD out again
+}
+// the tick under the pointer on the bar (the app may be turned sideways: toApp, ui/view.js)
+function rpvAt(e) {
+  const r = RPV.rail.getBoundingClientRect(), a = toApp(r.left, r.top), b = toApp(r.right, r.bottom), p = toApp(e.clientX, e.clientY);
+  const x0 = Math.min(a[0], b[0]), w = Math.max(1, Math.abs(b[0] - a[0]));
+  return Math.round(clamp((p[0] - x0) / w, 0, 1) * rpvRange());
+}
+// the livetag hangs under your card (and its Ultimate bar) without widening the HUD's left column: placed from #pc0, whose offsets
+// tutorial.js and others read against #hud (so the column itself stays unpositioned)
+function rpvTagPlace() {
+  const a = $("pc0"), s = RPV.tag.style, w = Math.max(120, RPV.tag.parentNode.offsetWidth - 6);
+  s.setProperty("--rpT", a.offsetTop + a.offsetHeight + "px"); s.setProperty("--rpL", a.offsetLeft + 6 + "px"); s.setProperty("--rpW", w + "px");
+}
+// about where a tick is on the clock (the bar while it is dragged or re-simulating): the run's time spread over the ticks from GO to the final launch
+function rpvTimeAt(t) {
+  const mk = RP.mk;
+  if (!mk || mk.go < 0) return 0;
+  const to = mk.ko > mk.go ? mk.ko : mk.end > mk.go ? mk.end : mk.n, span = Math.max(1, to - mk.go);
+  return (clamp(t - mk.go, 0, span) * rpTimeEnd()) / span;
+}
+// the livetag's parts: [text, class]; REPLAY · TUBER TOM · #1 · 1:21.44 (REPLAY · YOU VS HARD CPU)
+const rpvTagParts = () => {
+  const M = RP.meta;
+  return M.kind === "vc" ? [["You vs " + (M.cpu || "CPU"), "rpv-tn"]] : [[M.own ? "You" : M.nm, "rpv-tn"], [M.place > 0 ? `#${M.place}` : "", ""], [rpTimeEnd() > 0 ? rpvTime(rpTimeEnd()) : "", "rpv-pt"]].filter((x) => x[0]);
+};
+
+/* ----- the hooks of ui/replay.js ----- */
+// the replay took the match screen (again when it starts over after its end)
+function rpvOpen() {
+  rpvMake();
+  const M = RP.meta, mk = RP.mk;
+  RPV.c = {}; RPV.drag = -1;
+  RPV.bar.hidden = false; RPV.tag.hidden = false; RPV.endEl.hidden = true;
+  app.classList.remove("rpidle", "rpend");
+  const parts = rpvTagParts(), tag = RPV.tag;
+  tag.textContent = ""; tag.setAttribute("aria-label", ["Replay"].concat(parts.map((x) => x[0])).join(", "));
+  tag.append(rpvMk("i"), rpvTx("span", "", "Replay"));
+  parts.forEach(([t, c], k) => tag.appendChild(rpvTx(k === 0 ? "b" : "span", `rpv-p ${c}`.trim(), t)));
+  // the marks: the break (Boss Week) and the final launch
+  const D = rpvRange(), at = (n) => `${Math.round(clamp(n / D, 0, 1) * 1000) / 10}%`;
+  RPV.mBrk.hidden = !(RP.cfg.kind === "bw" && mk.brk > 0); if (!RPV.mBrk.hidden) RPV.mBrk.style.left = at(mk.brk);
+  RPV.mKo.hidden = !(mk.ko > 0); if (!RPV.mKo.hidden) RPV.mKo.style.left = at(mk.ko);
+  RPV.ko.hidden = !(mk.ko > 0);
+  RPV.endT.textContent = rpvTime(rpTimeEnd());
+  RPV.act = performance.now();
+  rpvTagPlace();
+  rpvFrame();
+}
+// every drawn frame of a replay (and after a pause or a seek)
+function rpvFrame() {
+  if (!RPV.ready || !RP.on || !RP.mk) return;
+  if ((RPV.n = (RPV.n | 0) + 1) % 30 === 0) rpvTagPlace();   // the left column's width follows your card (the percent's digits)
+  const c = RPV.c, live = !RP.pause && !RP.seeking && !RP.ended && RPV.drag < 0, idle = live && performance.now() - RPV.act > 3000;
+  if (c.idle !== idle) { c.idle = idle; app.classList.toggle("rpidle", idle); }
+  const paused = RP.pause || RP.ended;
+  if (c.paused !== paused) { c.paused = paused; RPV.play.innerHTML = paused ? RPV_IC.play : RPV_IC.pause; RPV.play.setAttribute("aria-label", RP.ended ? "Watch again" : paused ? "Play" : "Pause"); }
+  const tk = RPV.drag >= 0 ? RPV.drag : RP.seeking ? RP.to : RP.i, pct = Math.round(Math.min(1, tk / rpvRange()) * 1000) / 10;
+  if (c.pct !== pct) { c.pct = pct; RPV.fill.style.width = `${pct}%`; RPV.knob.style.left = `${pct}%`; RPV.seek.setAttribute("aria-valuenow", String(Math.round(pct))); }
+  if (c.seeking !== RP.seeking) { c.seeking = RP.seeking; RPV.seek.classList.toggle("sk", RP.seeking); }
+  const t = bwClock(RPV.drag >= 0 || RP.seeking ? rpvTimeAt(tk) : rpTimeNow(), 1);
+  if (c.now !== t) { c.now = t; RPV.now.textContent = t; }
+  if (c.sp !== RP.sp) { c.sp = RP.sp; RPV.sp.textContent = `${RP.sp}×`; }
+  const sh = !!rpShareId();   // your own try becomes shareable when the server's verdict says it is your best
+  if (c.sh !== sh) { c.sh = sh; RPV.sh.hidden = !sh; }
+}
+// the run is over and its KO page has played: the end card
+function rpvEnd() {
+  rpvMake();
+  const M = RP.meta, mk = RP.mk, bw = RP.cfg.kind === "bw", mine = bw && M.own && RP.from !== "link", won = bw ? mk.won : G && G.winner === 0, ec = RPV.ec;
+  ec.textContent = "";
+  // what happened: the time (and the place), or what stopped it
+  const kick = bw ? ["Boss Week" + (M.no ? ` ${M.no}` : ""), rpvBoss(M.boss), BOSS_LV[RP.cfg.lv] || "Hard"] : ["Ranked vs CPU", "Replay"];
+  const big = bw ? (won ? rpvTime(rpTimeEnd()) : mk.t >= BW_CAP ? "Out of time" : "He's still up") : G && G.winner === 0 ? "Victory" : G && G.winner === 1 ? "Defeat" : "Draw";
+  ec.append(rpvTx("span", "kick rpv-ek", kick.join(" · ")), rpvTx("b", "rpv-et" + (bw && won ? " time" : ""), big));
+  const sub = bw && won ? [rpvPlace(M), Number.isInteger(M.fl) ? `${M.fl} ♥ lost` : ""].filter(Boolean) : [];
+  if (sub.length) ec.appendChild(rpvTx("span", "rpv-ep", sub.join(" · ")));
+  // the buttons
+  const mkb = (cls, text, fn) => { const b = rpvBtn("btn " + cls, "", ""); b.appendChild(rpvTx("span", "", text)); rpvTap(b, fn, cls.includes("primary") ? "go" : "flip"); return b; };
+  const row = rpvMk("div", "rpv-ea"), sec = rpvMk("div", "rpv-ea2");
+  if (bw) {
+    row.appendChild(mkb("primary", mine ? "Retry" : `Your turn: Fight ${rpvWeekBoss()}`, () => rpClose("fight")));
+    sec.append(mkb("sm", "Watch again", () => rpClose("again")), mkb("sm", "Board ›", () => rpClose("board")), mkb("sm", "Menu", () => rpClose("")));
+    if (rpShareId()) sec.appendChild(mkb("sm rpv-esh", "Share ⤴︎", () => rpShare()));
+  } else {
+    row.appendChild(mkb("primary", "Watch again", () => rpClose("again")));
+    sec.appendChild(mkb("sm", "Menu", () => rpClose("")));
+  }
+  ec.append(row, sec);
+  RPV.endEl.hidden = false; RPV.bar.hidden = false; RPV.tag.hidden = false;
+  app.classList.add("rpend"); app.classList.remove("rpidle");
+  RPV.c.idle = false; RPV.act = performance.now();
+  rpvFrame();
+}
+// the replay left the match screen
+function rpvClose() {
+  if (!RPV.ready) return;
+  RPV.bar.hidden = true; RPV.tag.hidden = true; RPV.endEl.hidden = true; RPV.drag = -1; RPV.c = {};
+  app.classList.remove("rpidle", "rpend");
+}
+// a run on its way (a fetch or the scan)
+function rpvLoad(on) { rpvMake(); RPV.load.hidden = !on; }
+function rpvToast(msg) {
+  rpvMake();
+  const t = RPV.toast;
+  t.textContent = msg; t.hidden = false;
+  t.classList.remove("in"); void t.offsetWidth; t.classList.add("in");
+  clearTimeout(RPV.toastT); RPV.toastT = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+/* ----- the share link's title card: TUBER TOM VS ZORP · BOSS WEEK 42 · 1:21.44 · #1, then ▶ WATCH ----- */
+function rpvTitle() {
+  rpvMake();
+  const LD = RP.land, el = RPV.title;
+  if (!LD) { rpvTitleClose(); return; }
+  const M = LD.meta, st = LD.st, here = rpvWeekBoss();
+  el.textContent = ""; el.hidden = false;
+  const card = rpvMk("div", "card rpv-tc " + st);
+  card.setAttribute("role", "dialog"); card.setAttribute("aria-label", "A run to watch");
+  const x = rpvBtn("round x rpv-tx", "Close", RPV_X); rpvTap(x, () => rpLandClose(), "back");
+  card.appendChild(x);
+  const mkb = (cls, text, fn, sfx) => { const b = rpvBtn("btn " + cls, ""); b.appendChild(rpvTx("span", "", text)); rpvTap(b, fn, sfx); return b; };
+  const acts = rpvMk("div", "rpv-ta");
+  let focus = null;
+  if ((st === "ok" || st === "old") && M) {
+    const spec = rpBossSpec(M.boss) || BL.BOSSES[0], lv = LD.cfg && BOSS_LV[LD.cfg.lv] || "Hard";
+    card.appendChild(rpvTx("span", "kick rpv-tk", ["Boss Week" + (M.no ? ` ${M.no}` : ""), lv].join(" · ")));
+    const who = rpvMk("div", "rpv-tw"), bd = rpvMk("span", `rpv-bd rd-bossph rd-${spec.id}`), im = document.createElement("img"); im.alt = "";
+    bd.style.setProperty("--bc", bwsCol(spec)); bwsImg(im, bwArt(spec.id), bd); bd.appendChild(im);
+    const nm = rpvMk("span", "rpv-tn2"); nm.append(rpvTx("b", "", M.nm), rpvTx("span", "", `vs ${spec.name}`));
+    who.append(bwPortrait(M.f), nm, bd);
+    card.appendChild(who);
+    const res = rpvMk("div", "rpv-tr2"), pl = rpvPlace(M);
+    res.appendChild(rpvTx("b", "rpv-tt" + (st === "old" ? " old" : ""), M.t > 0 ? rpvTime(M.t) : "--:--.--"));
+    if (pl) res.appendChild(rpvTx("span", "tag gold st", pl));
+    if (M.t > 0) res.appendChild(rpvTx("span", "rpv-th", `${M.fl} ♥ lost`));
+    card.appendChild(res);
+    if (st === "old") card.appendChild(rpvTx("p", "rpv-tm", "This run is from an older version of the game"));
+    else { focus = mkb("primary lg rpv-go", "▶︎ Watch", () => rpLandGo(), "go"); acts.appendChild(focus); }
+    acts.appendChild(mkb(st === "old" ? "primary" : "sm", `Fight ${here}`, () => rpLandClose("sheet"), "go"));
+  } else if (st === "load") {
+    card.append(rpvMk("i", "rpv-spin"), rpvTx("p", "rpv-tm big", "Loading the run…"));
+  } else {
+    const msg = st === "gone" ? ["This run isn't on the board any more", "The board keeps this week's top 10 and yours."] : st === "net" ? ["Couldn't reach the server", "Check the connection and try again."] : ["Replays need the server", "Open the game at potatobrawl.cloud to watch runs."];
+    card.append(rpvTx("span", "kick rpv-tk", "Boss Week"), rpvTx("b", "rpv-tb", msg[0]), rpvTx("p", "rpv-tm", msg[1]));
+    if (st === "net") { focus = mkb("primary", "Try again", () => { location.hash = "#watch=" + LD.id; }, "flip"); acts.appendChild(focus); acts.appendChild(mkb("sm", "Close", () => rpLandClose(), "back")); }
+    else { focus = mkb("primary", st === "gone" ? `Fight ${here}` : "OK", () => rpLandClose(st === "gone" ? "sheet" : undefined), "go"); acts.appendChild(focus); }
+  }
+  if (acts.childNodes.length) card.appendChild(acts);
+  el.appendChild(card);
+  if (focus && focus.focus) try { focus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+}
+function rpvTitleClose() { if (RPV.ready) RPV.title.hidden = true; }
+
+/* ----- WATCH ▶ on the results of a Boss Week try and a Ranked vs CPU match (showResults, last) ----- */
+function rpvResults(R) {
+  const b = $("rWatch");
+  if (b) b.hidden = !(rpLocalOk() && (R.bw || R.vc));
+}
+$("rWatch").addEventListener("click", () => { Sfx.init(); Sfx.cue($("rWatch")); rpWatchLocal(); });
+window.__blRpv = { title: rpvTitle, titleClose: rpvTitleClose, toast: rpvToast, load: rpvLoad, end: rpvEnd, results: rpvResults, proto: PROTO };   // tests
 /* ----- the first minute: a 4-step tutorial (about 55 s), then the first fight with hints (Fable's first-minute pass, 2026-10-21) -----
    All UI: the tutorial and the first fight are offline, and like before the UI sets fields on G (percent, stocks, ulti bar, the players' spots) and
    scripts the CPU's input in step 3 (tutBot). Nothing here is read by the simulation otherwise. The welcome sheet and the turn-sideways screen are in welcome.js. */
@@ -37814,6 +38727,7 @@ function simTick() {
   if (live) {
     if (paused) return;
     if (match.online) netTick();
+    else if (match.rp) { if (!rpLive()) return; }   // ui/replay.js: the log's input in place of yours (paused, seeking or ended: the frame holds)
     else {
       const pi = vcIn(readPlayer());   // ui/vscpu.js: a ranked CPU match logs your inputs for the server
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
@@ -37842,13 +38756,14 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = now - last; last = now;
   if (dt > 120) dt = 120;
-  acc += dt;
+  acc += dt * rpRate();   // ui/replay.js: a replay at 0.5x or 2x
   let n = 0;
   while (acc >= STEP && n < 5) { acc -= STEP; n++; simTick(); }
   if (n === 5) acc = 0;
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
+  rpFrame();   // ui/replay.js: the replay's controls
   if (FH.on && (mode !== "match" || !match || !match.first)) fhStop();   // the first fight's hint strip goes with the match
   if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
@@ -37864,6 +38779,7 @@ goMenu();
 // the turn-sideways screen comes before everything else (ui/welcome.js); then an invite link's lobby, or a brand-new player's welcome sheet
 turnOpen(() => {
   if (NET.invite) openOnline();
+  else if (rpLanding()) { /* ui/replay.js: a share link's run (its title card), the welcome sheet after it */ }
   else if (firstRun && !ACCT.hash) welcomeOpen();
 });
 camStep(attract.g, true);

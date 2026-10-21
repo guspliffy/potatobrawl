@@ -21,6 +21,7 @@ const BW = {
   seen: -1, lrSeen: -1, lrNew: null,   // the last week whose sheet was opened (the NEW tag), the last Monday card shown
   bk: -1,         // the break of your best run, frames from GO (the pill's split; this phone's own runs only)
   bd: null, bdWait: [], run: null,
+  bdl: null, bdlWait: [],   // a finished week's board (Last week ›), its waiting callers
 };
 (function bwLoad() {
   try {
@@ -40,7 +41,8 @@ function bwCleanWk(o) {
 }
 function bwCleanMe(o) {
   if (!o || typeof o !== "object") return null;
-  return { t: bwN(o.t, 0), fl: bwN(o.fl, 0), f: FIG[o.f] ? o.f : "", pl: bwN(o.pl, 0), cr: bwN(o.cr, 0), tries: bwN(o.tries, 0) };
+  return { t: bwN(o.t, 0), fl: bwN(o.fl, 0), f: FIG[o.f] ? o.f : "", pl: bwN(o.pl, 0), cr: bwN(o.cr, 0), tries: bwN(o.tries, 0),
+    r: typeof o.r === "string" && /^[0-9a-f]{12}$/.test(o.r) ? o.r : "", v: bwN(o.v, 0) };   // r, v: your best run to watch (ui/replay.js)
 }
 
 /* ----- the week, from this phone's clock (the server's answer replaces it when it comes) ----- */
@@ -110,6 +112,7 @@ function bwBoot() {   // vcBoot (ui/vscpu.js), once
   window.__blQuick.on(bwMsg);
   window.__blBw = BW;   // tests read it
   window.__blBwFight = bwFight;   // tests: a try without the sheet
+  window.__blBwBoard = bwBoard;   // tests: the board (a week: a finished one)
 }
 function bwMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -118,7 +121,7 @@ function bwMsg(m) {
   else if (m.t === "bw-tk") bwTicket(m);
   else if (m.t === "bw-no") bwRefused(m.why);
   else if (m.t === "bw-res") bwRes(m);
-  else if (m.t === "bd" && m.k === "w") bwBdDone(bwBdClean(m));
+  else if (m.t === "bd" && m.k === "w") { if (m.fin) bwBdlDone(bwBdClean(m)); else bwBdDone(bwBdClean(m)); }
 }
 function bwAskMe(force, ms) {
   if (!qmOn() || !QM.conn) return;
@@ -213,7 +216,7 @@ function bwPractice() {
 
 /* ----- the run: GO, the break, the final launch (roadEvent passes the live match's events), the clock pill, the cap ----- */
 function bwEvent(g, e) {
-  const r = match && match.bw && match.bwr;
+  const r = match && (match.bw || match.rp) && match.bwr;   // match.rp: a replay of a run (ui/replay.js) keeps the same clock
   if (!r) return;
   if (e.type === "go") r.go = g.t;
   else if (e.type === "lethal" && e.slot === 2 && r.ko < 0) r.ko = g.t;
@@ -230,15 +233,15 @@ function bwPill() {   // made once, under the boss bar (inside it, so it hides w
 const BP = { t: "", b: "", cls: "", s: "" };
 // every drawn frame of a Boss Week try (bossHud, ui/boss.js)
 function bwHud() {
-  const el = bwPill(), r = match && match.bw && match.bwr;
+  const el = bwPill(), r = match && (match.bw || match.rp) && match.bwr, rp = !!(match && match.rp);
   if (!r || r.go < 0) { if (!el.hidden) el.hidden = true; return; }   // from GO (his line has the place under the bar during the countdown)
   if (el.hidden) { el.hidden = false; BP.t = BP.b = BP.cls = BP.s = ""; }
   const b = bossOf(G);
   if (r.brk < 0 && b && (b.state === "broken" || b.doomed)) {   // the break: the split against your best run's break
     r.brk = G.t;
-    if (BW.bk > 0 && bwMine() && bwMine().t) r.spl = { d: r.brk - r.go - BW.bk, at: performance.now() };
+    if (!rp && BW.bk > 0 && bwMine() && bwMine().t) r.spl = { d: r.brk - r.go - BW.bk, at: performance.now() };
   }
-  const run = (r.ko >= 0 ? r.ko : G.t) - r.go, mine = bwMine();
+  const run = (r.ko >= 0 ? r.ko : G.t) - r.go, mine = rp ? null : bwMine();   // a replay's pill: its clock only
   if (r.go >= 0 && r.ko < 0 && run >= BW_CAP && G.phase === "play" && !r.cap) { r.cap = true; finishMatch(false); return; }   // 4:00: out of time
   const t = r.ko >= 0 ? bwClock(run, 2) : bwClock(run, 1), left = r.ko < 0 && run >= BW_CAP - BW_LAST;
   const bt = left ? `${mmss(Math.ceil((BW_CAP - run) / 60))} left` : mine && mine.t ? `Best ${bwClock(mine.t, 2)}` : "";
@@ -284,7 +287,7 @@ function bwRes(m) {
   const p = BW.pend && BW.pend.id === m.id ? BW.pend : null;
   const me = bwMine() || (ACCT.code ? { t: 0, fl: 0, f: "", pl: 0, cr: 0, tries: 0 } : null);
   if (me) {
-    if (m.ok && m.why === "best") { Object.assign(me, { t: bwN(m.time, 0), fl: bwN(m.fl, 0), f: p ? p.f : me.f, pl: bwN(m.pl1, 0) }); if (p && p.brk > 0) BW.bk = p.brk; }
+    if (m.ok && m.why === "best") { Object.assign(me, { t: bwN(m.time, 0), fl: bwN(m.fl, 0), f: p ? p.f : me.f, pl: bwN(m.pl1, 0), r: /^[0-9a-f]{12}$/.test(m.id) ? m.id : "", v: PROTO }); if (p && p.brk > 0) BW.bk = p.brk; }
     else if (m.ok || m.why === "claim") { if (bwN(m.b0, 0)) me.t = m.b0; if (bwN(m.pl1 || m.pl0, 0)) me.pl = m.pl1 || m.pl0; }
     BW.me = me; BW.code = ACCT.code;
     if (BW.wk && Number.isInteger(m.n)) BW.wk.n = m.n;
@@ -382,9 +385,12 @@ function bwVerdictView(late) {
 // Pause: leaving a try costs nothing
 function bwPauseText() { $("pQuit").querySelector("span").textContent = "Quit to menu"; $("pNote").textContent = "Leaving costs nothing. Only a finished run counts."; }
 
-/* ----- the board (the Boards sheet's Boss Week tab, ui/bwsheet.js): { k: "w", wk, no, boss, n, at, top: [{ id, nm, f, t, fl, cr, pl }], me: null | { i, row } | { i: 0 } } or null ----- */
-function bwBoard() {
+/* ----- the board (the Boards sheet's Boss Week tab, ui/bwsheet.js): { k: "w", wk, no, boss, n, at, fin, top: [{ id, nm, f, t, fl, cr, pl, r, v }],
+   me: null | { i, row } | { i: 0 } } or null. r / v: the run's id and game version (the top 10 and your row: ▶ when v is PROTO, ui/replay.js).
+   bwBoard(wk): a finished week (fin), one of the last four the server keeps ("Last week ›"). ----- */
+function bwBoard(wk) {
   const M = window.__blBwMock;
+  if (Number.isInteger(wk)) return bwBoardPast(wk);
   if (M) return Promise.resolve(M.board || null);
   if (!qmOn() || !QM.conn) return Promise.resolve(null);
   const c = BW.bd;
@@ -396,11 +402,29 @@ function bwBoard() {
     setTimeout(() => { if (BW.bdWait.length) bwBdDone(null); }, 5000);
   });
 }
+function bwBoardPast(wk) {
+  const M = window.__blBwMock;
+  if (M) return Promise.resolve(M.last || null);
+  if (!qmOn() || !QM.conn) return Promise.resolve(null);
+  const c = BW.bdl;
+  if (c && c.d.wk === wk && performance.now() - c.t < 60000) return Promise.resolve(c.d);   // a finished week doesn't change
+  return new Promise((res) => {
+    BW.bdlWait.push(res);
+    if (BW.bdlWait.length > 1) return;
+    window.__blQuick.send({ t: "bd", k: "w", wk });
+    setTimeout(() => { if (BW.bdlWait.length) bwBdlDone(null); }, 5000);
+  });
+}
+function bwBdlDone(d) {
+  if (d) BW.bdl = { t: performance.now(), d };
+  for (const res of BW.bdlWait.splice(0)) res(d);
+}
 function bwBdClean(m) {
   if (!m || m.k !== "w" || !Array.isArray(m.top) || !Number.isInteger(m.wk)) return null;
   const row = (x) => (x && typeof x === "object" && typeof x.id === "string" ? { id: x.id.slice(0, 10), nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm : "") || "Potato",
-    f: FIG[x.f] ? x.f : "", t: bwN(x.t, 0), fl: bwN(x.fl, 0), cr: bwN(x.cr, 0), pl: typeof x.pl === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(x.pl) ? x.pl : "" } : null);
-  const d = { k: "w", wk: m.wk, no: bwN(m.no, 0), boss: BOSS_IDS.has(m.boss) ? m.boss : bwSpec().boss, n: bwN(m.n, 0), at: Number.isFinite(m.at) ? m.at : Date.now(),
+    f: FIG[x.f] ? x.f : "", t: bwN(x.t, 0), fl: bwN(x.fl, 0), cr: bwN(x.cr, 0), pl: typeof x.pl === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(x.pl) ? x.pl : "",
+    r: typeof x.r === "string" && /^[0-9a-f]{12}$/.test(x.r) ? x.r : "", v: bwN(x.v, 0) } : null);
+  const d = { k: "w", wk: m.wk, no: bwN(m.no, 0), boss: BOSS_IDS.has(m.boss) ? m.boss : bwSpec().boss, n: bwN(m.n, 0), at: Number.isFinite(m.at) ? m.at : Date.now(), fin: !!m.fin,
     top: m.top.slice(0, 100).map(row).filter((r) => r && r.t > 0), me: null };
   if (m.me && typeof m.me === "object") d.me = m.me.row ? { i: bwN(m.me.i, 0), row: row(m.me.row) } : { i: 0 };
   return d;
