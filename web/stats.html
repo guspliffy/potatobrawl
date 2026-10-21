@@ -201,7 +201,7 @@ p { margin: 8px 0 0; }
   var BOSSES = tbl({ scratch: "Old Scratch", zorp: "Zorp", kraken: "Kraken Spud" });
   var LEVELS = ["Normal", "Hard", "Nightmare"];
   var REGIONS = ["The Field", "The Kitchen", "The Deep"];
-  var STEPS = ["move", "jump", "light", "heavy", "charge", "special", "dodge", "ult", "off"];
+  var STEPS = ["move", "hits", "dodge", "ko"];   // the 4-step tutorial; the old nine ids (jump, light, heavy, charge, special, ult, off) still show when they have counts
   var WHERE = tbl({ menu: "Menu", select: "Fighter select", result: "Results", online: "Online", road: "Road", cup: "Tournament", quick: "Quick match" });
   var FL = [["0", "Under 1 min"], ["1", "1–3 min"], ["3", "3–10 min"], ["10", "10–30 min"], ["30", "30+ min"]];
   var FM = [["0", "None"], ["1", "1 match"], ["2", "2 matches"], ["3", "3 or more"]];
@@ -283,6 +283,7 @@ p { margin: 8px 0 0; }
 
   function fxName(id) {
     if (WHERE[id]) return WHERE[id];
+    if (id === "tut:go" || id === "tut:fight") return id === "tut:go" ? "Welcome · picked the tutorial" : "Welcome · picked just fight";   // the welcome sheet's two buttons, not tutorial steps
     if (id.indexOf("tut:") === 0) return "Tutorial · " + cap(id.slice(4));
     if (id.indexOf("match:") === 0) {
       var m = modeName(id.slice(6)), art = /^[aeiou]/i.test(m) ? "an " : "a ";
@@ -413,10 +414,10 @@ p { margin: 8px 0 0; }
 
   // ---------- 2. new players
   function secNew() {
-    var R = C.R, d = R.days, nNew = S(d, "day:new"), done = S(d, "tut:done"), skip = S(d, "tut:skip");
+    var R = C.R, d = R.days, nNew = S(d, "day:new"), done = S(d, "tut:done"), skip = S(d, "tut:skip"), go = S(d, "tut:go"), fight = S(d, "tut:fight");
     var s = sec("New players", plural(nNew, "new player") + " " + R.now);
     var steps = [
-      { l: "New players", v: nNew, first: true }, { l: "Tutorial", v: done + skip, tut: true },
+      { l: "New players", v: nNew, first: true }, { l: "Picked", v: go + fight, pick: true }, { l: "Tutorial", v: done + skip, tut: true },
       { l: "1st match started", v: S(d, "fn:s1") }, { l: "1st match finished", v: S(d, "fn:d1") },
       { l: "2nd match started", v: S(d, "fn:s2"), key: true },
       { l: "5th match finished", v: S(d, "fn:d5") }, { l: "10th match finished", v: S(d, "fn:d10") }, { l: "25th match finished", v: S(d, "fn:d25") }];
@@ -424,13 +425,13 @@ p { margin: 8px 0 0; }
     if (steps.every(function (x) { return x.v === 0; }) && !total(fx) && !total(first)) { s.appendChild(note("No new players " + R.now + " yet.")); return s; }
     var max = Math.max.apply(null, steps.map(function (x) { return x.v; }).concat(1));
     steps.forEach(function (x) {
-      var right = x.tut ? "done " + fmt(done) + " · skipped " + fmt(skip) : x.first ? "" : pct(x.v, nNew);
-      var tr = x.tut ? segTrack([{ v: done, cls: "hi" }, { v: skip, cls: "lo" }], max, true) : track(x.v, max, x.key ? "em" : "");
+      var right = x.pick ? "tutorial " + fmt(go) + " · just fight " + fmt(fight) : x.tut ? "done " + fmt(done) + " · skipped " + fmt(skip) : x.first ? "" : pct(x.v, nNew);
+      var tr = x.pick ? segTrack([{ v: go, cls: "hi" }, { v: fight, cls: "lo" }], max, true) : x.tut ? segTrack([{ v: done, cls: "hi" }, { v: skip, cls: "lo" }], max, true) : track(x.v, max, x.key ? "em" : "");
       s.appendChild(h("div", { class: "fn" + (x.key ? " key" : "") }, h("div", { class: "lh" }, h("span", { class: "lab" }, x.l), h("span", { class: "mut" }, right)), tr));
     });
     s.appendChild(note("Each step counts everyone who got there " + R.now + ", even if they joined earlier."));
 
-    var known = STEPS.slice(), extra = Object.keys(vis).filter(function (k) { return k !== "done" && k !== "skip" && known.indexOf(k) < 0 && vis[k] > 0; });
+    var known = STEPS.slice(), extra = Object.keys(vis).filter(function (k) { return k !== "done" && k !== "skip" && k !== "go" && k !== "fight" && known.indexOf(k) < 0 && vis[k] > 0; });
     var order = known.concat(extra);
     s.appendChild(h("h3", null, "Tutorial steps reached"));
     s.appendChild(h("p", { class: "steps" }, order.map(function (k) { return h("span", null, cap(k) + " ", h("b", null, fmt(vis[k] || 0))); })));

@@ -56,7 +56,7 @@ async def wait_rec(d, code, pred, what, secs=10):
 async def device(b, vp, mob, profile=None, perms=False, name=''):
     ctx = await b.new_context(viewport=vp, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=mob,
                               permissions=['clipboard-read', 'clipboard-write'] if perms else [])
-    await ctx.add_init_script("window.__blNoQuick = true")   # these pages check the offline rank pill and Ranked; tests/pwquick.py covers Quick match
+    await ctx.add_init_script("window.__blNoQuick = true; window.__blNoTurn = true")   # these pages check the offline rank pill and Ranked; tests/pwquick.py covers Quick match (and pwtut.py the turn-sideways screen)
     if profile is not None:
         await ctx.add_init_script("if (!localStorage.getItem('potatobrawl.profile.v1')) localStorage.setItem('potatobrawl.profile.v1', %s)" % json.dumps(json.dumps(profile)))
     return ctx

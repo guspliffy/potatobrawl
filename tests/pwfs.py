@@ -126,12 +126,34 @@ async def tight(b, errs):
     await pg.screenshot(path=f'{OUT}/s568_menu.png')
     await ctx.close()
 
+# the Add to Home Screen tip never covers the Road card (or its arrow) or a menu button
+TIP = """(() => {
+  const t = document.getElementById('a2hsHint').getBoundingClientRect(), bad = [];
+  for (const s of ['#bRoad', '#bRoad .mm-rdgo', '#bRanked', '#bDaily', '#bBw', '#bCup', '#bOnline', '#bPractice', '#bBoards', '#bHelp', '#mRank', '#bSettings', '#bFull']) {
+    const e = document.querySelector(s); if (!e || e.hidden || !e.getClientRects().length) continue;
+    const r = e.getBoundingClientRect();
+    if (t.left < r.right && r.left < t.right && t.top < r.bottom && r.top < t.bottom) bad.push(s);
+  }
+  if (t.right > innerWidth + 0.5 || t.bottom > innerHeight + 0.5 || t.left < -0.5) bad.push('off the screen');
+  return bad;
+})()"""
+
 async def iphone(b, errs):
     tag = 'iphone'
-    ctx, pg, mob = await new_page(b, tag, (844, 390), errs, ua=IPHONE)
+    # the tip waits for the first finished match (ui/base.js playedOnce): a fresh profile gets none
+    ctx, pg, mob = await new_page(b, 'iphone fresh', (844, 390), errs, ua=IPHONE)
+    if await shown(pg, '#a2hsHint'): errs.append('iphone fresh: the Add to Home Screen tip shows before the first match')
+    await ctx.close()
+    ctx, pg, mob = await new_page(b, tag, (844, 390), errs, ua=IPHONE, prof={'matches': 1})
     def need(ok, msg):
         if not ok: errs.append(f'{tag}: {msg}')
         return ok
+    need(await shown(pg, '#a2hsHint'), 'the tip should show once a match has been played')
+    for vp in ((667, 320), (740, 360), (844, 390), (1280, 760)):
+        await pg.set_viewport_size({'width': vp[0], 'height': vp[1]}); await pg.wait_for_timeout(400)
+        bad = await pg.evaluate(TIP)
+        need(not bad, f'the tip covers {bad} at {vp[0]}x{vp[1]}')
+    await pg.set_viewport_size({'width': 844, 'height': 390}); await pg.wait_for_timeout(300)
     need(await shown(pg, '#bFull') and await pg.get_attribute('#bFull', 'aria-label') == 'Play without the browser bars', 'no button on iPhone Safari')
     await pg.tap('#bFull'); await pg.wait_for_timeout(400)
     need(not await pg.evaluate(FULL), 'iPhone tried the fullscreen API')
@@ -148,6 +170,19 @@ async def iphone(b, errs):
     await pg.tap('#setFull .chip'); await pg.wait_for_timeout(300)
     need(await shown(pg, '#scrA2hs'), 'How does not open the sheet')
     await pg.screenshot(path=f'{OUT}/iphone_settings_how.png')
+    await ctx.close()
+    # the tip shows on one page load only: the next load (OK or not) never shows it
+    ctx, pg, mob = await new_page(b, 'iphone tip', (844, 390), errs, ua=IPHONE, prof={'matches': 1})
+    if not await shown(pg, '#a2hsHint'): errs.append('iphone tip: the tip does not show on the first load')
+    if not await pg.evaluate(f"JSON.parse(localStorage.getItem('{PROF}')).a2hsSeen === true"): errs.append('iphone tip: the first showing is not remembered')
+    await pg.reload(); await pg.wait_for_timeout(1200)
+    if await shown(pg, '#a2hsHint'): errs.append('iphone tip: the tip shows again on the next load')
+    await ctx.close()
+    # upright
+    ctx, pg, mob = await new_page(b, 'iphone upright', (390, 844), errs, ua=IPHONE, prof={'matches': 1, 'screen': 'up'})
+    if not await shown(pg, '#a2hsHint'): errs.append('iphone upright: the tip does not show')
+    bad = await pg.evaluate(TIP)
+    if bad: errs.append(f'iphone upright: the tip covers {bad}')
     await ctx.close()
     # opened from the home screen: already fullscreen, no button, no row
     tag = 'app'

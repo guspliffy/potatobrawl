@@ -161,7 +161,7 @@ for (const [fid, rid] of [...FIGHTERS.map((f) => [f.id, "rising"]), ["phoenix", 
 }
 // combo damage: hits from the 4th of a combo deal 85%, from the 6th 70%
 {
-  const g = newGame({ players: [{ spec: FIG.samurai, pal: FIG.samurai.palettes[0] }, { spec: FIG.odin, pal: FIG.odin.palettes[0] }], countdown: 0 });
+  const g = newGame({ seed: 1, players: [{ spec: FIG.samurai, pal: FIG.samurai.palettes[0] }, { spec: FIG.odin, pal: FIG.odin.palettes[0] }], countdown: 0 });
   step(g, [BL.blankInput(), BL.blankInput()]);
   const a = g.fighters[0], d = g.fighters[1], got = [];
   a.x = -20; d.x = 22;

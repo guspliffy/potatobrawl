@@ -17,7 +17,7 @@ function hideBanner() { clearTimeout(bannerT); bannerEl.hidden = true; }
 function newAttract() {
   const pick = () => FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
   const a = pick(), b = pick();
-  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.POOL) | 0 });
+  const g = newGame({ seed: newSeed(), players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.POOL) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   clearTrails();
   $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
@@ -30,6 +30,7 @@ function menuImg(img, id) {
   if (img._src !== src) { img._src = src; if (src) img.src = src; else img.removeAttribute("src"); }
   img.dataset.f = id;
 }
+let a2hsNow = false;   // the tip showed on this page load (renderMenu)
 function renderMenu() {
   fsSync();   // ui/menus.js: the fullscreen button beside the gear (before renderPill, whose menuFit measures the bar with it)
   renderPill();   // the profile plate and the coins, ui/acct.js
@@ -50,7 +51,10 @@ function renderMenu() {
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "" : "needs the web link";
-  $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
+  // the iPhone tip: only after the first finished match, and on one page load only (P.a2hsSeen is saved when it first shows, so the next load never shows it)
+  const a2hsOn = FS.web && FS.ios && !FS.app && !P.a2hs && playedOnce() && (a2hsNow || !P.a2hsSeen);
+  if (a2hsOn && !a2hsNow) { a2hsNow = true; P.a2hsSeen = true; saveProfile(); }
+  $("a2hsHint").hidden = !a2hsOn;
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
   bwTile();   // ui/bwsheet.js: the Boss Week tile (boss, time left, your best and place)
   qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
@@ -188,7 +192,7 @@ function buildDetail() {
   screens.select.classList.toggle("sl-skin", pi !== 0 || gz);
   cardArt.length = 0;
   if (pi !== 0 || gz) {
-    const f = glazeMark(BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
+    const f = glazeMark(BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
@@ -293,7 +297,7 @@ function startMatch() {
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
   const map = !ranked && sel.map !== "random" ? sel.map : randMap();   // ranked always draws a map; practice can pick one
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map });
   match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
@@ -427,6 +431,7 @@ let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
   cntEnd(forfeit);   // ui/counter.js
+  if (!forfeit && match && !match.tutorial) markPlayed();   // a finished match counts, the tutorial and the Combo trial (match.tutorial too) do not: base.js playedOnce
   if (match && match.tutorial) { tutDone(); return; }
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
@@ -550,7 +555,10 @@ function resRank(R) {
   }
 }
 function showResults(R) {
-  if (R.online) cntEnd(false, R);   // ui/counter.js (offline matches are counted in finishMatch)
+  if (R.online) {   // offline matches are counted (and marked as played) in finishMatch
+    cntEnd(false, R);   // ui/counter.js
+    if (!R.forfeit && !R.left && !R.lost) markPlayed();   // base.js: a match that ran to its end
+  }
   const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;

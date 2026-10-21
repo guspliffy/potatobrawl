@@ -310,9 +310,11 @@
 /* ---- the menu's gold hero as Quick match: the live dot in the kicker, the ember SEASON 1 sticker in the corner ---- */
 #scrMenu .mm-hero .qm-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #1c8a52; box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.25); vertical-align: 0; }
 #scrMenu .mm-hero .qm-dot.off { background: var(--ketchup); }
-#scrMenu .mm-hero .qm-s1 { right: 12px; top: 10px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-hero .qm-s1 { left: 10px; top: 10px; z-index: 3; pointer-events: none; }   /* over the art, so it never sits on the kicker's line (top right it ran under "1 ONLINE · RANKED · PLACING") */
 #scrMenu .mm-hero .qm-s1[hidden] { display: none; }
-#app.tiny #scrMenu .mm-hero .qm-s1 { right: 8px; top: 7px; font-size: 10px; padding: 4px 6px 3px; }
+#app.tiny #scrMenu .mm-hero .qm-s1 { left: 8px; top: 7px; font-size: 10px; padding: 4px 6px 3px; }
+/* "QUICK MATCH" in two lines on the desktop and upright hero squeezed the kicker (online, rank) to nothing: a little smaller there (upright it fits one line) */
+#app:not(.short):not(.tiny) #scrMenu .mm-hero.qm .mm-ttl { font-size: calc(var(--mm-title) * 0.82); }
 
 /* ---- the Season 1 sheet: the gold-edged online plate, the dim CPU plate, three lines, LET'S GO ---- */
 #scrSeason .ss-sheet { width: min(560px, 100%); max-height: 100%; }

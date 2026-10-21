@@ -81,6 +81,7 @@ function clientIp(req) {
   const peer = String(req.socket.remoteAddress || "");
   if (peer === "127.0.0.1" || peer === "::1" || peer === "::ffff:127.0.0.1") {
     // behind our own reverse proxy: it adds the real address last, so take the last one
+    // (that is safe because the server sits behind our own Caddy on localhost; if the port were ever exposed directly, a client could spoof this header)
     const last = String(req.headers["x-forwarded-for"] || "").split(",").pop().trim();
     if (last) return last.slice(0, 64);
   }

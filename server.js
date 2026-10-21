@@ -113,6 +113,8 @@ const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];
   if (accounts && accounts.handle(req, res, url)) return;
   if (stats && stats.handle(req, res, url)) return;
+  // accounts off here: 202 tells the page there are none (acctPing: anything but 200 or a failed call means off; a 404 would show as an error in the browser console)
+  if (!accounts && url === "/api/acct/ping") { res.writeHead(202, { "cache-control": "no-store" }); res.end(); return; }
   // counts off here: 202 tells the page to stop sending for the visit (a 404 would show as an error in the browser console)
   if (!stats && url === "/api/stats/hit") { res.writeHead(202, { "cache-control": "no-store" }); res.end(); return; }
   const file = (req.method === "GET" || req.method === "HEAD") && FILES[url];

@@ -115,7 +115,7 @@ function hvRender() {
       <div class="hv-pick" role="radiogroup" aria-label="The fighter who gets the Harvest skin">${FIGHTERS.map((f) => `<button class="hv-pf${f.id === HV.pick ? " on" : ""}" data-f="${f.id}" role="radio" aria-checked="${f.id === HV.pick}" aria-label="${hvEsc(f.name)}${left.includes(f.id) ? "" : ", has it already"}"${left.includes(f.id) ? "" : " disabled"} style="background-image:url('${PORTRAITS[f.id] || ""}')"></button>`).join("")}</div>
       <button class="btn primary lg hv-claim" id="hvClaim"><span>Claim for ${hvEsc(FIG[HV.pick].name)}</span></button>`;
     for (const b of box.querySelectorAll(".hv-pf:not([disabled])")) b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); HV.pick = b.dataset.f; hvRender(); });
-    const spec = FIG[HV.pick], f = BL.newGame({ players: [{ spec, pal: spec.palettes[hvSkinIdx(spec)] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+    const spec = FIG[HV.pick], f = BL.newGame({ seed: 1, players: [{ spec, pal: spec.palettes[hvSkinIdx(spec)] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     f.x = 0; f.y = 0; f.facing = -1;
     HV.art = { cv: $("hvArt"), f, fit: 0.86, bottom: 0.95 };
     const step = () => { HV.raf = 0; if (!HV.art || screens.daily.hidden) return; paintModel(HV.art, tick); HV.raf = requestAnimationFrame(step); };
@@ -132,7 +132,7 @@ function hvRender() {
 function hvSil(cv, id, lit) {
   const spec = FIG[id];
   if (!spec) return;
-  const f = BL.newGame({ players: [{ spec, pal: spec.palettes[lit ? hvSkinIdx(spec) : 0] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+  const f = BL.newGame({ seed: 1, players: [{ spec, pal: spec.palettes[lit ? hvSkinIdx(spec) : 0] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
   f.x = 0; f.y = 0; f.facing = -1;
   paintModel({ cv, f, fit: 0.86, bottom: 0.97 }, 0);
   if (lit) return;

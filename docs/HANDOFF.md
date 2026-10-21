@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -21,6 +21,25 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     with Remove (POST /api/stats/bwrm), and Boss Week tries count as their own mode (boss-week).
   - Tests: tests/bossweek.js (node, check.sh 5d3, alone), tests/pwbw.py (a counted run in the browser, port PORT_BASE+12, 5d4: the boss has a
     tenth of his HP there via BW_T), tests/pwbwsheet.py (the tile, sheet, tab and Monday card at five sizes with window.__blBwMock, 6d2).
+- First minute (2026-10-21, branch claude/project-thread-qtlxk4, no PROTO change; plan in the project chat, design
+  /mnt/project-files/first-minute/fable.md, wrap-up /mnt/project-files/first-minute/wrap-up.md). From an outside review + a friend who quit the
+  old 9-step tutorial.
+  - Turn-sideways screen (ui/welcome.js #turn, outside #app so it stays upright): every page load on a touch phone held upright with Screen not
+    Upright; READY is drawn in the game's turn; "Play upright instead" sets P.screen "up"; a browser that rotates by itself closes it.
+  - Welcome sheet (#scrWelcome) on a first run instead of the auto tutorial: "Play the tutorial · 1 min" or "Skip, just fight"; counted as
+    tut:go / tut:fight (the stats page's "Picked" row).
+  - Tutorial (ui/tutorial.js): 4 steps (move, hits, dodge, ko): Move & jump, Land 3 hits, Dodge then recover (the dummy's scripted side heavy
+    launches you off the right ledge: tutBot in loop.js; one retry, then it lets you on), Knock them out (CPU at 120%, one life). The card sits
+    in the top band between the name cards (topPlace; fades while your YOU marker is under it: tutPeek). Ends on YOU'RE READY with FIGHT.
+  - First fight (startFirstFight, match.first): Easy CPU that doesn't edge-guard (bot style edge 0), 3 lives, 4:00, five one-time hints under
+    the timer (fhTick) and DRAG in the stick. Skip on the welcome, FIGHT after the tutorial, and the card's Skip for a player who hasn't played.
+  - playedOnce() / markPlayed() (base.js, P.fin1, merged in sync.js): the Season 1 sheet and the iPhone Add to Home Screen tip (once, under the
+    Road card) wait for a first finished match. Quick match's save had lost QM.s1 and the win streak to a comment; fixed.
+  - Fight buttons (css/91-pads.css, hud.js padsStep): the five discs 8% smaller, touch areas unchanged; see-through while a fighter is near the
+    right ledge (only when that ledge is in the buttons' corner on screen) or behind a disc.
+  - core.js newGame throws without a seed; the UI passes newSeed() (base.js) for offline matches, seed 1 for fighter pictures.
+  - Small: Boards label at every size, SEASON 1 sticker on the art side, /api/acct/ping 202 without accounts, check.sh on macOS bash 3.2,
+    README rewritten. Tests: pwtut.py (welcome, turn screen, 4 steps, first fight), pwhud.py see-through part, pwquick/pwfs/pwstats updates.
 - The sprint (2026-10-17, branch claude/sprint-w0q7je, pre-step-6 thread 5, PROTO 19: a new input, its online codes, new fighter fields;
   brief /mnt/project-files/pre-step6/briefs/thread-5.md). Jonny: straight into the engine and kept, no test page; he plays it live and the
   numbers get tuned in a small follow-up: they are all in core.js TUNE.sprint (flick 0.35 -> 0.9 within 6 frames, double tap within 12,

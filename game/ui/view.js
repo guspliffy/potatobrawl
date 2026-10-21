@@ -4,6 +4,7 @@ const L = { gw: 1, gh: 1, panel: 0, portrait: false };
 /* Sideways mode: when the viewer stays upright (the Claude app's artifact view does not rotate),
    the whole game is rotated 90 degrees so it plays in landscape with the phone turned. */
 let rotMode = 0;
+const TURN = { on: false, shown: false, next: null };   // the turn-sideways screen (ui/welcome.js): showing now, shown once this page load, what follows it
 let finFull = false; // the KO finisher uses the whole screen, also where the upright controls panel sits
 const rotBox = { W0: 1, H0: 1 };
 function toApp(cx, cy) {
@@ -41,6 +42,8 @@ function resize() {
   $("rotHint").hidden = !(L.portrait && touchUI);
   L.canRotate = touchUI && uprightView;
   if (!$("scrSettings").hidden) renderSettings();
+  if (TURN.on && !rotMode) turnClose();   // the browser turned the page by itself: the turn screen has done its job
+  if (TUT.on || (match && match.first)) topPlace();   // ui/tutorial.js: the tutorial card and the first fight's hints sit in the top band
 }
 window.addEventListener("resize", resize);
 window.addEventListener("orientationchange", () => setTimeout(resize, 120));

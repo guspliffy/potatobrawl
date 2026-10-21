@@ -40,6 +40,8 @@ async def fresh(b, tag, vp, mob, errs):
     pg = await ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
     await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true")
+    await pg.wait_for_function("!document.getElementById('scrWelcome').hidden", timeout=30000)   # a first run: the welcome sheet, then the tutorial
+    await pg.screenshot(path=f'{OUT}/{tag}_t0.png'); await pg.click('#welGo')
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=60000)
     await frames(pg, 20); await pg.screenshot(path=f'{OUT}/{tag}_t1.png')
     await ctx.close()

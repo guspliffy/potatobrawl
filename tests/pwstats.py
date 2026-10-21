@@ -1,5 +1,5 @@
 """Play counts in the browser (ui/counter.js) against a real `node server.js` with a temporary STATS_DIR on port 8098: what a new
-player's first visit sends (tutorial skipped, a Practice match won, Rematch, a quit, where they left), a second visit on the same
+player's first visit sends (welcome sheet, tutorial skipped into the first fight, that won, Rematch, a quit, where they left), a second visit on the same
 day, Settings > Play counts Off and On, a browser with Global Privacy Control, a player from before the counter (and their Team Brawl 2v2 win), a player coming back
 three days later (came back within 3/7/14/30 days, not 1), an error on the page, and a server with the counter off (one try, then
 silence). Prints one line per problem, then "no errors".
@@ -68,19 +68,24 @@ async def win_match(pg):
     await mode_is(pg, 'result', 90000)
     await pg.wait_for_timeout(1100)
 
+async def welcome_go(pg):
+    # a brand-new device: the welcome sheet (ui/welcome.js) over the menu; "Play the tutorial" starts the tutorial
+    await mode_is(pg, 'menu')
+    await pg.wait_for_function("!document.getElementById('scrWelcome').hidden", timeout=10000)
+    await pg.click('#welGo'); await mode_is(pg, 'match')
+
 def day_str(days_ago=0):
     return (datetime.datetime.now(ZoneInfo(TZ)) - datetime.timedelta(days=days_ago)).strftime('%Y-%m-%d')
 
 async def counted(b, sd):
-    # --- a brand-new player: the guided round starts by itself; skip it, win a Practice match, Rematch, quit it, leave the page
+    # --- a brand-new player: the welcome sheet; take the tutorial, skip it (a new player goes on to the first fight), win that, Rematch, quit it, leave the page
     ctx, pg = await page(b, 'new')
-    await mode_is(pg, 'match')
+    await welcome_go(pg)
     expect(await pg.evaluate("window.__blCount.on"), 'new: counting is not on')
     note = await pg.evaluate("window.__blCount.note")
     expect(note and note.get('f') == day_str() and note.get('x') == 0, f'new: the note does not mark a new device today: {note}')
-    await pg.click('#tutSkip'); await mode_is(pg, 'menu')
-    await pg.click('#bPractice'); await mode_is(pg, 'select')
-    await pg.click('#selGo')
+    await pg.click('#tutSkip')
+    await pg.wait_for_function("window.__blastline.fh.on", timeout=30000)   # the first fight (a Practice match with the hints)
     await win_match(pg)
     await pg.click('#rAgain')
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=90000)
@@ -91,11 +96,11 @@ async def counted(b, sd):
     await pg.goto('about:blank'); await pg.wait_for_timeout(800)   # pagehide: the first-visit beacon
     c = counts(sd)
     want = {'day': 1, 'day:new': 1, 'wk': 1, 'mo': 1, 'dev:desktop': 1, 'app:web': 1, 'lang:en': 1, f'ver:{PROTO}': 1,
-            'ms:tutorial': 1, 'tut:move': 1, 'me:tutorial:quit': 1, 'tut:skip': 1,
+            'ms:tutorial': 1, 'tut:go': 1, 'tut:move': 1, 'me:tutorial:quit': 1, 'tut:skip': 1,
             'ms:practice': 2, f'fp:{fighter}': 2, 'me:practice:win': 1, 'me:practice:quit': 1, 'ml:0': 1, 'again:practice': 1,
-            'fn:s1': 1, 'first:practice': 1, 'fn:d1': 1, 'fn:s2': 1, 'scr:select': 1, 'fx:menu': 1, 'fl:0': 1, 'fm:1': 1}
+            'fn:s1': 1, 'first:practice': 1, 'fn:d1': 1, 'fn:s2': 1, 'fx:menu': 1, 'fl:0': 1, 'fm:1': 1}
     for k, v in want.items(): expect(c.get(k) == v, f'new: {k} = {c.get(k)}, want {v}')
-    for k in ('day:back', 'tut:done', 'mslow', 'me:practice:loss', 'inv'): expect(k not in c, f'new: {k} should not be counted ({c.get(k)})')
+    for k in ('day:back', 'tut:done', 'tut:fight', 'mslow', 'me:practice:loss', 'inv'): expect(k not in c, f'new: {k} should not be counted ({c.get(k)})')
     expect(not any(k.startswith('err:') for k in c), f'new: errors were counted: {[k for k in c if k.startswith("err:")]}')
 
     # --- the same device again today: no second hello, no new-player steps; Settings > Play counts Off stops it, On starts again
@@ -179,9 +184,12 @@ async def counted(b, sd):
 async def off(b):
     # --- a server with the counter off: one try at the start, then nothing more for the visit, and no page errors
     ctx, pg = await page(b, 'off')
-    await mode_is(pg, 'match')
+    await welcome_go(pg)
     await pg.wait_for_timeout(600)
-    await pg.click('#tutSkip'); await mode_is(pg, 'menu'); await flush(pg)
+    await pg.click('#tutSkip')
+    await pg.wait_for_function("window.__blastline.fh.on", timeout=30000)
+    await pg.click('#pauseBtn'); await pg.wait_for_timeout(200)
+    await pg.click('#pQuit'); await mode_is(pg, 'menu'); await flush(pg)
     expect(len(pg.hits) == 1 and await pg.evaluate("window.__blCount.dead"), f'off: {len(pg.hits)} hits sent, want 1 and then silence')
     await pg.click('#bSettings'); await pg.wait_for_timeout(300)
     expect(await pg.is_visible('#setCountRow'), 'off: the Settings row should still show on our own server')

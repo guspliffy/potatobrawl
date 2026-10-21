@@ -228,7 +228,7 @@ function rdPuppet() {
   const spec = FIG[P.last] || FIGHTERS[0];
   if (RD.pupId !== spec.id + ":" + (P.pal[spec.id] || 0)) {
     const pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0];
-    RD.pup = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+    RD.pup = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
     RD.pup.x = 0; RD.pup.y = 0; RD.pup.facing = 1; RD.pupId = spec.id + ":" + (P.pal[spec.id] || 0);
   }
   return glazeMark(RD.pup, glazeHas(spec.id, P.pal[spec.id] || 0));   // ui/glaze.js
@@ -473,7 +473,7 @@ function roadFight(i) {
   const me = FIG[P.last] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], op = FIG[st.f];
   const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(op) : 0];
   const [a, b] = roadLives(st), map = Math.max(0, BL.MAPS.findIndex((m) => m.id === st.map));
-  G = newGame({ players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
     stocks: a, time: roadSecs(st), countdown: 150, map });
   match = { ranked: false, road: { i, go: -1, end: -1, bonus: false }, d: st.d, oppRating: 0, bot: makeBot(st.d, BL.BOT_STYLES[op.id]), level: st.name, cpu: st.cpu };
   meSlot = 0;

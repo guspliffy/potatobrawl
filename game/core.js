@@ -650,7 +650,9 @@ function teamSpot(team, k) {
 // o: players [{spec, pal, team?}], seed, stocks, time (s, 0 = none), countdown, map, level (boss difficulty 0-2), hpMul (boss HP x).
 // g.winner is the winning TEAM (1v1: team = slot). With a boss in the game: the boss is team 1, everyone else team 0.
 function newGame(o) {
-  const seed = o.seed ?? ((Math.random() * 1e9) | 0);
+  // every caller passes its seed (the UI picks one for an offline match): the simulation never picks one itself
+  if (o.seed == null) throw new Error("newGame: no seed");
+  const seed = o.seed;
   const g = {
     t: 0, phase: "countdown", cd: o.countdown ?? 150, hitstop: 0, timer: (o.time ?? 240) * 60, timed: (o.time ?? 240) > 0, sudden: false,
     fighters: [], projs: [], events: [], winner: -1, endT: 0, endReason: "",

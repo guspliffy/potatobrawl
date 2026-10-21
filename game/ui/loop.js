@@ -13,7 +13,7 @@ function simTick() {
       const pi = vcIn(readPlayer());   // ui/vscpu.js: a ranked CPU match logs your inputs for the server
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
       else if (match.duo) step(G, duoInputs(pi));   // ui/duo.js: you, your CPU partner and the two CPU foes
-      else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
+      else step(G, [pi, tutBot() || botInput(G, G.fighters[1], G.fighters[0], match.bot)]);   // tutBot: ui/tutorial.js, the tutorial CPU's scripted moves
     }
     if (G.phase === "countdown") {
       const n = Math.ceil(G.cd / 50);
@@ -25,6 +25,7 @@ function simTick() {
   }
   const evs = g.events.splice(0);
   if (live && match && match.tutorial) tutTick(evs);
+  if (live && match && match.first) fhTick();   // ui/tutorial.js: the first fight's hints
   for (const e of evs) handleEvent(g, e, live);
   if (mode === "match" && G !== g) return;
   updateFx(g);
@@ -43,19 +44,23 @@ function frame(now) {
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
+  if (FH.on && (mode !== "match" || !match || !match.first)) fhStop();   // the first fight's hint strip goes with the match
   if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
   if (mode === "quick") drawQmArt(tick);   // ui/quick.js: the Fight Card's model
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get stk() { return STK; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get stk() { return STK; }, get tut() { return { on: TUT.on, i: TUT.i, id: TUT.id, ph: TUT.ph, falls: TUT.falls, tries: TUT.tries, hits: TUT.hits, moved: TUT.moved }; }, get fh() { return { on: FH.on, cur: FH.cur, t: FH.t }; }, get head() { const f = G && G.fighters[meSlot]; return f ? toScreen(f.x, f.y - f.s.h) : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
 qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)
 goMenu();
-if (NET.invite) openOnline();
-else if (firstRun && !ACCT.hash) startTutorial(); // a brand-new player starts with the guided round
+// the turn-sideways screen comes before everything else (ui/welcome.js); then an invite link's lobby, or a brand-new player's welcome sheet
+turnOpen(() => {
+  if (NET.invite) openOnline();
+  else if (firstRun && !ACCT.hash) welcomeOpen();
+});
 camStep(attract.g, true);
 requestAnimationFrame(frame);
 })();

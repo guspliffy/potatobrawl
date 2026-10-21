@@ -1,109 +1,104 @@
 # PotatoBrawl
 
-A 1v1 potato platform fighter that runs in the browser. Anyone with the link can play,
-with no account and no install. One small Node.js process serves the page and relays
-online matches.
+A platform fighter for phones and desktops, played in the browser: eight potato fighters in 1v1 and 2v2 matches, CPU
+bosses, a Road of stops, a tournament and a Daily Potato. Online play is lockstep: both browsers run the same
+simulation and only exchange inputs. Live at https://potatobrawl.cloud.
 
-## What is in here
+Read `CLAUDE.md` (the file map and the rules), `docs/WORKFLOW.md` (how we work) and `docs/HANDOFF.md` (state and next steps)
+before changing anything.
 
-| File | What it does |
-|---|---|
-| `public/index.html` | The game: menus, eight potato fighters, CPU ranked ladder, tournament, practice, online play |
-| `server.js` | Serves the page, relays online matches over WebSocket (`/ws`), keeps itself awake |
-| `package.json` | One dependency: `ws` (pinned to 8.21.3) |
-| `render.yaml` | Render setup: free web service in Frankfurt |
-| `potatobrawl.service` | For running on your own Linux server instead (systemd) |
+## Layout
 
-## Put it online on Render (free)
+- `game/` is the source: `core.js` (the deterministic simulation, also a node module), `ui/*.js` (the page logic, joined
+  into one script), `css/`, `shell.html` (markup), `net-ws.js` (the WebSocket layer for the server build) and `build.py`.
+  `CLAUDE.md` has the full list.
+- `index.html` (repo root) is the built page that gets deployed. Commit it together with every source change.
+- `server.js` serves `public/` and relays online matches over WebSocket (`/ws`); `accounts.js`, `quick.js`, `cpurank.js`
+  and `stats.js` are the optional parts it loads (below).
+- `web/` holds the home-screen app files (manifest, icons), `tests/` the node and Playwright checks, `deploy/` the blocks
+  Jonny pastes on the server.
+- `potatobrawl.service` is the systemd unit. `render.yaml` is left from the first free-host setup: the live game runs on
+  the VPS below.
 
-1. **Put this folder on GitHub.** Create a new repository (private is fine), then use
-   *Add file → Upload files* and drag in everything from this folder, so `render.yaml`
-   sits at the top level of the repository. Commit.
-2. **Create the service.** In the Render dashboard choose *New → Blueprint*, connect your
-   GitHub account, pick the repository and confirm. Render reads `render.yaml` and creates
-   a free web service called `potatobrawl` in Frankfurt.
-3. **Wait for the first deploy** (a minute or two). Your game is then at
-   `https://potatobrawl.onrender.com`, or a similar name if that one is taken. That link is
-   what you send to friends.
-4. **Check it's awake.** Open `https://<your-service>.onrender.com/health`. A few minutes
-   after a deploy it shows the time of the last keep-alive ping.
+## Build
 
-To update the game later, replace `public/index.html` in the repository. Render redeploys
-on its own after each commit.
+```bash
+python3 game/build.py
+```
 
-### Graphics
+It writes `index.html`, `public/` (what a local `node server.js` serves) and `build/` (test pages, not committed).
 
-The fighters and stage are drawn in 2D on a canvas. Graphics never affect online play: both
-browsers simulate the same game regardless of what each one draws.
+## Run it locally
 
-### Staying awake for free
-
-Render stops a free web service after 15 minutes without incoming traffic, and the first
-visit after that takes about a minute to load. `server.js` prevents this on its own: every
-4 minutes it requests its own public address (`RENDER_EXTERNAL_URL`, which Render sets),
-and that request counts as incoming traffic. You don't need UptimeRobot or another outside
-pinger. If you ever want one anyway, point it at `/health`; any interval under 15 minutes
-works.
-
-Things to know about Render's free plan:
-
-- Each workspace gets 750 free instance hours per calendar month. One service running all
-  month uses at most 744, so this fits only if it's your only free service in that
-  workspace. When the hours run out, Render suspends free services until the next month.
-- Render may restart free services at any time. Matches in progress at that moment end;
-  everything else (ratings, tokens, colors) is stored in each player's own browser, so
-  nothing is lost.
-- To spend fewer hours, set `KEEPALIVE_MINUTES` to `0` in the service's environment
-  settings. The game then sleeps when nobody plays and takes about a minute to wake up.
-
-## How online play works
-
-- Both players' browsers run the same game simulation in lockstep and only send stick and
-  button inputs. The server never runs the game; a match is a few KB per second.
-- The input delay is set from the measured ping at the start of each match: about 100 ms on
-  a good connection, up to about 250 ms on a weak one.
-- Every second both browsers compare a checksum of the game state. If they ever disagree,
-  the host's state is sent over and the match continues.
-- If a player's connection drops briefly, the server holds their seat for 8 seconds so the
-  match can resume.
-- The lobby shows everyone who has the page open. Treat the link like a group-chat link.
-
-## Try it on your own computer
-
-Needs Node.js 18 or newer.
+Needs Node.js 18 or newer and one dependency, `ws` (pinned in `package.json`).
 
 ```bash
 npm install
-npm start
+python3 game/build.py
+node server.js        # http://localhost:8080
 ```
 
-Open http://localhost:8080. Phones on the same Wi-Fi can join at
-`http://<your computer's local IP>:8080`.
-
-## Run it on your own server instead
-
-If you move off Render later, use a separate small server, not the one running your
-trading bot. On a fresh Ubuntu 24.04 machine:
-
-```bash
-apt update && apt install -y nodejs npm
-adduser --system --group --no-create-home potatobrawl
-mkdir -p /opt/potatobrawl          # copy this folder's files in here
-cd /opt/potatobrawl && npm install --omit=dev
-chown -R potatobrawl:potatobrawl /opt/potatobrawl
-cp potatobrawl.service /etc/systemd/system/
-systemctl daemon-reload && systemctl enable --now potatobrawl
-ufw allow OpenSSH && ufw allow 8080/tcp && ufw enable
-```
-
-The game is then at `http://SERVER_IP:8080`. Set `KEEPALIVE_MINUTES=0` there; a normal
-server doesn't sleep.
-
-## Settings
+The server reads the page and the other files once at start-up, so restart it after a build. All settings are
+environment variables:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `PORT` | `8080` | Port to listen on (Render sets its own) |
-| `KEEPALIVE_MINUTES` | `4` | How often the server pings itself; `0` turns it off |
-| `KEEPALIVE_URL` | Render's URL | Public address to ping, if not on Render |
+| `PORT` | `8080` | Port to listen on |
+| `HOST` | all addresses | Address to listen on (the VPS uses `127.0.0.1`, behind Caddy) |
+| `ACCOUNTS_DIR` | off | Folder for the sync-code accounts. Off unless it exists and is writable |
+| `STATS_DIR` | off | Folder for the anonymous play counts. Off unless it exists and is writable |
+| `KEEPALIVE_MINUTES` | `4` | How often the server requests its own public address; `0` turns it off |
+| `KEEPALIVE_URL` | none | The address to request (only used when set); a server on a normal host needs neither |
 | `LAG_MS` | `0` | Adds artificial delay to every message, for testing netcode |
+| `QM_T`, `CPU_T` | none | Tests only: shorter waits in Quick match and Ranked vs CPU (JSON) |
+
+`/health` answers `ok` with the number of players online, the Ranked matches running and the last keep-alive.
+
+## What the server does besides relaying
+
+- **Accounts** (`accounts.js`, needs `ACCOUNTS_DIR`): optional. A sync code instead of a password carries a profile
+  to another device. One small JSON file per account, named after the SHA-256 of the code (the code itself is never
+  stored). Without it the Account sheet says saving isn't available.
+- **Quick match and Ranked** (`quick.js`): one queue for Ranked and Casual 1v1 against real players. The server is the
+  referee: it replays the inputs passing through it with `core.js` and decides every Ranked match itself, so a phone
+  can't change a result or the rating. The online rank is kept in the account file, so Ranked needs accounts; Casual
+  works without them.
+- **Ranked vs CPU** (`cpurank.js`, needs accounts): the server deals each ranked CPU match, then replays the player's
+  logged inputs with `core.js` before the CPU rank moves. It also keeps the Boards (CPU rank, online rank).
+- **Play counts** (`stats.js`, needs `STATS_DIR`): anonymous totals per day, no player ID, IP address or cookie. Jonny's
+  private page is `/stats#<key>`; the key is made on first start and kept in `STATS_DIR/key`. The game stops sending
+  when the counter is off, on Global Privacy Control, or after Settings > Play counts > Off.
+
+## The live server
+
+A Hostinger VPS (Ubuntu 24.04, Node 20) that also runs Jonny's trading bot, so anything that adds ports, stored data or
+dependencies there is his call. The checkout is `/opt/potatobrawl`, run by the systemd unit `potatobrawl`
+(`server.js` on 127.0.0.1:8080); Caddy in front serves HTTPS for `potatobrawl.cloud`. Everything is done by pasting a block
+from `deploy/` as root (`deploy/README.txt` lists them):
+
+- **Deploy:** after a pull request is merged, paste `deploy/update.txt`. It pulls `main`, copies `index.html` and `web/*` into
+  `public/`, waits up to 5 minutes for running Ranked matches to finish, restarts the game and checks that the served page is
+  the one from GitHub.
+- **Check:** `deploy/check.txt` only reads. It compares the server with GitHub and shows whether accounts and play counts are
+  on.
+- **One-time setups:** `deploy/accounts-setup.txt` (accounts folder, nightly backup kept 14 days),
+  `deploy/stats-setup.txt` (play counts and the stats link), `deploy/beta-setup.txt` and `deploy/beta-update.txt`
+  (a test copy at https://beta.potatobrawl.cloud), `deploy/first-setup.txt` (a new server).
+
+## Tests
+
+```bash
+./check.sh            # everything, about 20 minutes: build, replays, simulations, server tests, the browser checks
+./check.sh --quick    # build, PROTO, replay, lock, finish, routes, ultimates, bosses, 2v2 only (seconds)
+```
+
+It prints one PASS or FAIL line per check and writes details to `build/check-logs/` and screenshots to `build/shots/`.
+`CHECK_JOBS` and `PORT_BASE` are in its header. It needs node, python3, `npm install` and Python Playwright 1.56 matching
+the installed Chromium (`python3 -m pip install playwright==1.56.0`). A single browser test runs on its own after a build, e.g.
+`cd build/shots && python3 ../../tests/pwfs.py fs`.
+
+## Rules that matter
+
+- `core.js` must stay deterministic (no `Math.random` or `Math.sin` in the simulation). A change that can alter results
+  adds the new fighter fields to the defaults, `FKEYS` and the checksum, and bumps `PROTO` in `game/ui/online.js`.
+- There is no service worker.
