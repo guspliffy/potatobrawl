@@ -121,11 +121,14 @@ async function enter(a, b) {
 /* Plays the match both phones agreed on (the same game the referee builds) with two bots, sending each phone's inputs the way the
    page does, 60 frames to a message. stopAt: { slot, frame } = that phone goes silent from that frame on; until: both stop there
    (the match keeps running). ckLie: slot whose checksums are wrong. late: slot that starts behind the other, so its first message
-   starts at the other's frame - 2 (d - 2, past 0), as the page's does. Returns the local game. */
+   starts at the other's frame - 2 (d - 2, past 0), as the page's does. A start with bo is a boss fight with a friend (the page's
+   startOnlineMatch): both bots go for the boss. Returns the local game. */
 async function play(H, G, opts) {
-  const o = opts || {}, st = H.st;
+  const o = opts || {}, st = H.st, boss = st.bo && BL.BOSSES.find((b) => b.id === st.bo.b);
   const players = st.f.map((id, i) => ({ spec: FIG[id], pal: FIG[id].palettes[st.p[i]] }));
-  const g = BL.newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+  const g = boss ? BL.newGame({ players: [...players, { spec: boss, pal: boss.palettes[0] }], stocks: 3, time: 0, countdown: 150, seed: st.seed,
+    map: Math.max(0, BL.MAPS.findIndex((x) => x.id === boss.map)), level: st.bo.lv, hpMul: Q.ROAD_HP[st.bo.b] * Q.DUO_HP[st.bo.b][st.bo.lv] })
+    : BL.newGame({ players, stocks: st.r.l, time: st.r.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
   const bots = [BL.makeBot(o.lv0 || 0.95, BL.BOT_STYLES[st.f[0]]), BL.makeBot(o.lv1 || 0.2, BL.BOT_STYLES[st.f[1]])];
   const logs = [[], []], sent = [0, 0], phones = [H, G];
   for (let f = 0; f < st.d; f++) { logs[0].push(NEUTRAL); logs[1].push(NEUTRAL); }
@@ -144,7 +147,7 @@ async function play(H, G, opts) {
     await sleep(14);   // the server allows about 120 messages a second per phone
   };
   while (g.phase !== "over" && frame < 60 * 60 * 5) {
-    for (let i = 0; i < 2; i++) logs[i].push(encIn(BL.botInput(g, g.fighters[i], g.fighters[1 - i], bots[i])));   // the input for frame + D
+    for (let i = 0; i < 2; i++) logs[i].push(encIn(BL.botInput(g, g.fighters[i], g.fighters[boss ? 2 : 1 - i], bots[i])));   // the input for frame + D
     BL.step(g, [Q.decIn(logs[0][frame]), Q.decIn(logs[1][frame])]);
     g.events.length = 0;
     frame++;
@@ -413,11 +416,19 @@ async function play(H, G, opts) {
     const fg = await play(Dn, B);
     sk1 = await Dn.next((m) => m.t === "qm-cs" && m.pf === 1, 4000); sk2 = await B.next((m) => m.t === "qm-cs" && m.pf === 1, 4000);
     check(sk1 && sk2 && sk1.id === room && sk1.g === 1 && sk1.res === won(fg, 0) && sk2.res === won(fg, 1) && sk1.rv && sk1.rv.id === B.me.id, "Play friends: a 1v1 game is refereed (qm-cs pf, the rival record)");
-    // a boss fight isn't
+    // a boss fight with odd rules isn't refereed; a boss beaten together counts on both entries' b, never their W/L
     Dn.st = Object.assign({}, fst, { id: 2, bo: { b: "scratch", lv: 0 } });
     Dn.send({ t: "presence", room, p: { role: "host", opp: B.peer, start: Dn.st } });
     await play(Dn, B, { until: 400 });
-    check(!(await Dn.next((m) => m.t === "qm-cs", 600)), "Play friends: a boss fight isn't refereed");
+    check(!(await Dn.next((m) => m.t === "qm-cs" || m.t === "qm-bo", 600)), "Play friends: a boss fight with odd rules isn't refereed");
+    Dn.st = Object.assign({}, fst, { id: 3, seed: 4243, r: { l: 3, t: 0, b: 1 }, bo: { b: "scratch", lv: 0 } });
+    Dn.send({ t: "presence", room, p: { role: "host", opp: B.peer, start: Dn.st } });
+    const bg = await play(Dn, B, { lv0: 0.95, lv1: 0.95 });
+    const bo1 = await Dn.next((m) => m.t === "qm-bo", 4000), bo2 = await B.next((m) => m.t === "qm-bo", 4000), rvB = readOn(dir, cb).rv.find((e) => e.id === Dn.me.id);
+    check(bg.winner === 0 && bg.fighters[2].hpMax === Math.round(1150 * 0.9 * 1.05) && bo1 && bo2 && bo1.id === room && bo1.g === 3 && bo1.rv.id === B.me.id && bo1.rv.b === 1 && bo2.rv.b === 1 &&
+      bo1.rv.w === sk1.rv.w && bo1.rv.l === sk1.rv.l && bo1.rv.d === sk1.rv.d && bo1.rv.k === sk1.rv.k && bo2.rv.w === sk2.rv.w && bo2.rv.l === sk2.rv.l && !!rvB && rvB.b === 1 && rvB.w === sk2.rv.w && rvB.l === sk2.rv.l,
+      "Play friends: a boss beaten together is refereed (qm-bo, b 1 on both, saved, the W/L as it was)");
+    check(!(await Dn.next((m) => m.t === "qm-cs", 300)), "Play friends: a boss fight is never a W/L game");
     Dn.send({ t: "stk", s: 10 });
     check(!!(await B.next((m) => m.t === "stk-in", 1500)), "Play friends: a chip challenge can follow a friend game");
     B.send({ t: "stk-ok" });
@@ -540,6 +551,16 @@ async function play(H, G, opts) {
     check(c.rv.length === 1 && c.rv[0].w === 2 && c.rv[0].k === "WW" && c.ws === 0 && c.bc.length === 1, "a broken rival record is cleaned (one entry per id, no junk)");
   }
   check([0, 2, 3, 4, 5, 9, 10, 40].map(Q.bounty).join() === "0,0,30,40,50,90,100,100", "bounty: 30 / 40 / 50 at 3 / 4 / 5 wins, +10 a win, 100 at most");
+  {
+    // the referee's boss HP with a friend: his Road HP (game/ui/road.js ROAD_REG) x the two-player K (game/ui/online.js DUO_HP), as the page reads them
+    const src = (f) => fs.readFileSync(path.join(ROOT, "game/ui", f), "utf8");
+    const road = Object.fromEntries([...src("road.js").matchAll(/boss: "(\w+)", bk: "\w+", pk: "\w+", title: "[^"]+", hp: ([0-9.]+)/g)].map((m) => [m[1], +m[2]]));
+    const duo = JSON.parse(/const DUO_HP = (\{[^\n]*\});/.exec(src("online.js"))[1].replace(/(\w+):/g, '"$1":'));
+    check(JSON.stringify(road) === JSON.stringify(Q.ROAD_HP) && JSON.stringify(duo) === JSON.stringify(Q.DUO_HP) && BL.BOSSES.every((b) => Q.DUO_HP[b.id]),
+      "the referee's boss HP with a friend is the page's (ROAD_REG hp x DUO_HP)");
+    const c = Q.cleanOn({ rv: [{ id: "BBBBBBBBBB", w: 1, b: 3 }, { id: "CCCCCCCCCC", b: -2 }] });
+    check(c.rv[0].b === 3 && c.rv[1].b === 0, "the rival record keeps bosses beaten together (b), cleaned");
+  }
   fs.rmSync(dir, { recursive: true, force: true });
   console.log(`${passes} passed, ${fails} failed`);
   if (!fails) console.log("quick ok");

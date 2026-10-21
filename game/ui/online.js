@@ -673,11 +673,11 @@ function netTick() {
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
 /* A boss fight goes on when the partner drops (they leave, their connection or ours goes, or nothing comes from them for 15 s): a CPU
-   takes over their fighter on this phone at the partner strength of the level, and this phone plays on alone, sending nothing. */
+   takes over their fighter on this phone, and this phone plays on alone, sending nothing. From then on it is the Road's fight (duoSolo). */
 function cpuTakeover() {
   if (NET.cpuMate || !G || !match || !match.boss) return;
   const mate = G.fighters[1 - meSlot], live = G.phase === "countdown" || G.phase === "play";
-  NET.cpuMate = makeBot(BOSS_PARTNER[G.lv], BL.BOT_STYLES[mate.spec.id]);
+  NET.cpuMate = makeBot(live ? duoSolo(NET.boss) : BOSS_PARTNER[G.lv], BL.BOT_STYLES[mate.spec.id]);
   NET.dropLive = live;   // it dropped during the fight (not after the boss was already down): the results say so
   NET.oppLeft = true; NET.rtt = NET.rttLive = 0;
   leaveMatchRoom();
@@ -687,6 +687,17 @@ function cpuTakeover() {
   showBanner(`${NET.oppName || "Your partner"} dropped`, `CPU has ${mate.spec.name} now`, "fin", 2200, "#f3d9a4");
   $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = "CPU";
   tagShow();   // hud.js: the markers come back for 3 s, the partner's now reads CPU
+}
+// the fight a friend dropped out of, made the Road's: the boss keeps the share of HP he has left, but of his Road HP (his HP with a friend
+// is that x DUO_HP), and the CPU plays at the Road's partner strength for him and this level. Only this phone plays on, so changing its
+// game here can't put it out of step with another. Returns the CPU's strength.
+function duoSolo(bo) {
+  const rg = bo && ROAD_REG.find((r) => r.boss === bo.b), b = bossOf(G);
+  if (!rg || !b) return BOSS_PARTNER[G.lv];
+  const B = b.spec.boss, max = Math.round(B.hp * B.lvHp[G.lv] * rg.hp);   // core.js newGame's HP with the Road's hpMul
+  if (b.hp > 0) b.hp = Math.max(1, Math.round((b.hp * max) / b.hpMax));
+  b.hpMax = max;
+  return rg.mate + 0.1 * G.lv;   // ui/road.js roadBossFight
 }
 function soloTick() {
   const ins = [];
@@ -791,6 +802,7 @@ function finishBossOnline() {
   NET.again = NET.cpuMate ? "Retry vs CPU" : won ? (lv < 2 ? `Next: ${BOSS_LV[lv + 1]}` : "Again") : "Retry";
   $("netBadge").hidden = true;
   showResults(R);
+  if (won && !NET.cpuMate) rvBossRes(R);   // ui/rivals.js: bosses beaten together, once the server has counted this one
   lobbyPresence();
 }
 

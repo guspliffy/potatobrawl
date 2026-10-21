@@ -36,6 +36,7 @@ const DEFAULTS = {
   newPerHour: 60,                // new accounts per IP per hour (Quick match makes one by itself: a class on one Wi-Fi all gets one)
   maxFiles: 20000,               // accounts in total
   maxBytes: 200 * 1024 * 1024,   // size of the whole folder
+  warnAt: 0.8,                   // past this share of either cap: one line in the server log and a warning on the private stats page
   unknownDelayMs: 350,           // an unknown code is answered after this pause, so codes cannot be guessed fast
   bodyMs: 10000,                 // a request body must arrive within this time
 };
@@ -147,6 +148,7 @@ function init(dir, opts) {
     }
     const n = Buffer.byteLength(data);
     total += n - (sizes.get(file) || 0); sizes.set(file, n);
+    fillCheck();
     for (const fn of watchers) { try { fn(file, rec); } catch (e) { console.warn("accounts: a watcher failed,", e.message); } }
   }
 
@@ -208,6 +210,22 @@ function init(dir, opts) {
     });
   }
 
+  // how full the folder is against its caps; warn: past warnAt of either (new accounts and bigger saves get 503 at the cap)
+  function fill() {
+    const f = sizes.size / o.maxFiles, b = total / o.maxBytes;
+    return { files: sizes.size, maxFiles: o.maxFiles, bytes: total, maxBytes: o.maxBytes, warn: f >= o.warnAt || b >= o.warnAt };
+  }
+  // the server log says so once, the first time either cap is past warnAt (at the start too); accounts are never deleted
+  let warned = false;
+  function fillCheck() {
+    const f = fill();
+    if (warned || !f.warn) return;
+    warned = true;
+    const mb = (n) => (n / 1048576).toFixed(1) + " MB", pc = (a, b) => Math.round((a / b) * 100) + "%";
+    console.warn(`accounts: nearly full: ${f.files} of ${f.maxFiles} accounts (${pc(f.files, f.maxFiles)}), ${mb(f.bytes)} of ${mb(f.maxBytes)} (${pc(f.bytes, f.maxBytes)}). ` +
+      "At either cap new accounts and bigger saves get 503: raise maxFiles / maxBytes in accounts.js (and check the disk).");
+  }
+  fillCheck();
   // true when the request was ours (any /api/acct/ address); never throws
   function handle(req, res, url) {
     if (url.slice(0, 10) !== "/api/acct/") return false;
@@ -257,7 +275,7 @@ function init(dir, opts) {
     write(file, rec);
     return true;
   }
-  return { handle, count: () => sizes.size, bytes: () => total, dir, fileOfCode, readFile, writeOn, writeCpu, addChips,
+  return { handle, count: () => sizes.size, bytes: () => total, fill, dir, fileOfCode, readFile, writeOn, writeCpu, addChips,
     files: () => [...sizes.keys()], watch: (fn) => { watchers.push(fn); } };
 }
 

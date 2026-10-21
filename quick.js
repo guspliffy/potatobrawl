@@ -34,7 +34,9 @@
  *   (their streak and bounty, Ranked only), and you {ws, bty} is your own. me also carries rv, ws, bty, g (refereed matches) and sk.
  *
  * Play friends: a 1v1 game between two signed-in players is refereed too (the host's presence names its start and its opponent);
- * each start is its own game, the result goes to both as qm-cs {pf: 1}. Boss fights, team brawls and anything odd are not refereed.
+ * each start is its own game, the result goes to both as qm-cs {pf: 1}. A boss fight of the two (2v1, co-op) is refereed the same way:
+ * a win adds one to both entries' b (bosses beaten together, never their W/L) and goes to both as qm-bo {id, g, rv}; a loss, or a fight
+ * a friend dropped out of, counts nothing. Team brawls and anything odd are not refereed.
  *
  * Chip stakes: right after a refereed result the two players may play a rematch for 10, 25 or 50 chips each. Every verdict carries
  * sk {ok: [stakes both can play], why, k} (why: "off" your stakes are off, "new" k refereed matches to go, "day" the daily limit,
@@ -80,6 +82,11 @@ const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 const ULTI_BASE = 2592, SPRINT_BASE = ULTI_BASE + 81 * 16 + 81 * 2, CODES = SPRINT_BASE + 18, NEUTRAL = 1280;
 const codeOk = (v) => v < ULTI_BASE + 81 * 16 || (v >= SPRINT_BASE && v < CODES);
 const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+// a boss fight with a friend (game/ui/online.js): 3 hearts each, no clock, one fight; his HP is his Road HP (game/ui/road.js ROAD_REG hp)
+// x the two-player K (game/ui/online.js DUO_HP), multiplied in that order as the page does (tests/quick.js checks they match the page's)
+const BOSS_RULES = { l: 3, t: 0, b: 1 };
+const ROAD_HP = { scratch: 0.9, zorp: 1.2, kraken: 1.3 };
+const DUO_HP = { scratch: [1.05, 1.05, 1.05], zorp: [1.15, 1.15, 1.15], kraken: [1.55, 1.55, 1.55] };
 const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 // the game version the phones must have: the same PROTO as the page this server serves (game/ui/online.js)
@@ -106,11 +113,12 @@ function dayIn(tz, t) {
   return `${p.year}-${p.month}-${p.day}`;
 }
 const ID_RE = /^[0-9A-Z]{10}$/;
-// one opponent in the rival record: their id, name, fighter and rating when last met, your record against them, when, the last five (W/L/D, newest first)
+// one opponent in the rival record: their id, name, fighter and rating when last met, your record against them, bosses beaten together
+// (b), when, the last five (W/L/D, newest first)
 function cleanRiv(x) {
   if (!x || typeof x !== "object" || typeof x.id !== "string" || !ID_RE.test(x.id)) return null;
   const n = (v) => (isInt(v) && v >= 0 && v < 1e6 ? v : 0);
-  return { id: x.id, nm: typeof x.nm === "string" ? x.nm.slice(0, 24) : "", f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), d: n(x.d),
+  return { id: x.id, nm: typeof x.nm === "string" ? x.nm.slice(0, 24) : "", f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), d: n(x.d), b: n(x.b),
     t: Number.isFinite(x.t) ? x.t : 0, k: typeof x.k === "string" ? x.k.replace(/[^WLD]/g, "").slice(0, 5) : "" };
 }
 // a stored `on` part, cleaned (a missing or broken one = a fresh record with the same id if it had one)
@@ -151,12 +159,19 @@ function stakeCheck(on, prof, oon, oprof, pf, t) {
 const rivView = (e) => (e ? { w: e.w, l: e.l, d: e.d, k: e.k } : null);
 // a result against an opponent goes into the record: their entry moves to the front, the oldest beyond 30 drops out
 function rivAdd(on, opp, res, t) {
-  let e = on.rv.find((x) => x.id === opp.id);
-  if (e) on.rv.splice(on.rv.indexOf(e), 1);
-  else e = { id: opp.id, nm: "", f: "", r: 0, w: 0, l: 0, d: 0, t: 0, k: "" };
-  Object.assign(e, { nm: String(opp.name || "").slice(0, 24), f: opp.f, r: opp.r, t });
+  const e = rivMet(on, opp, t);
   if (res === 1) e.w++; else if (res === 0) e.l++; else e.d++;
   e.k = ((res === 1 ? "W" : res === 0 ? "L" : "D") + e.k).slice(0, 5);
+  return e;
+}
+// a boss beaten together: one more on their entry, the W/L as it was
+function rivBoss(on, opp, t) { const e = rivMet(on, opp, t); e.b++; return e; }
+// their entry (a new one the first time), met now: at the front of the list
+function rivMet(on, opp, t) {
+  let e = on.rv.find((x) => x.id === opp.id);
+  if (e) on.rv.splice(on.rv.indexOf(e), 1);
+  else e = { id: opp.id, nm: "", f: "", r: 0, w: 0, l: 0, d: 0, b: 0, t: 0, k: "" };
+  Object.assign(e, { nm: String(opp.name || "").slice(0, 24), f: opp.f, r: opp.r, t });
   on.rv.unshift(e);
   on.rv = on.rv.slice(0, RIVALS);
   return e;
@@ -177,7 +192,7 @@ function init(opts) {
   const seats = new Map();    // peer -> { file, id } bound by auth
   const last = new Map();     // peer -> its last refereed result { mid, i (its slot), peers, files, names, f, p, pf, t }: who a chip challenge goes to
   const offers = new Map();   // challenger peer -> a chip challenge { to, s, t, mid }
-  const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0, friendGames: 0, staked: 0, stakeVerdicts: 0 };
+  const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0, friendGames: 0, staked: 0, stakeVerdicts: 0, bossWins: 0 };
   let draining = false;
 
   const now = () => Date.now();
@@ -305,12 +320,14 @@ function init(opts) {
     const on = onOf(seat.file);
     return on ? { peer, file: seat.file, id: seat.id, name: o.nameOf(peer) || "Potato", by: o.byOf(peer) || peer, r: on.r, n: on.n } : null;
   }
-  // a friend match's 1v1 start (the page's validStart, without a boss): any of the lobby's rules
+  // a friend match's start (the page's validStart): a 1v1 with any of the lobby's rules, or a boss fight (bo: which boss, his level) with its own
   function friendStartOk(st) {
     return !!st && typeof st === "object" && isInt(st.id) && st.id >= 1 && isInt(st.seed) && st.seed >= 0 && isInt(st.d) && st.d >= 1 && st.d <= 20 &&
       Array.isArray(st.f) && st.f.length === 2 && st.f.every((id) => FIG[id]) && Array.isArray(st.p) && st.p.length === 2 &&
-      st.p.every((v, k) => isInt(v) && v >= 0 && v < FIG[st.f[k]].palettes.length) && !!st.r && typeof st.r === "object" &&
-      [1, 3, 5].includes(st.r.l) && [2, 4, 0].includes(st.r.t) && [1, 3].includes(st.r.b) && st.bo == null && st.tb == null;
+      st.p.every((v, k) => isInt(v) && v >= 0 && v < FIG[st.f[k]].palettes.length) && !!st.r && typeof st.r === "object" && st.tb == null &&
+      (st.bo == null ? [1, 3, 5].includes(st.r.l) && [2, 4, 0].includes(st.r.t) && [1, 3].includes(st.r.b)
+        : !!st.bo && typeof st.bo === "object" && !!DUO_HP[st.bo.b] && [0, 1, 2].includes(st.bo.lv) && BL.BOSSES.some((b) => b.id === st.bo.b) &&
+          st.r.l === BOSS_RULES.l && st.r.t === BOSS_RULES.t && st.r.b === BOSS_RULES.b);
   }
   // the assigned match (or, for a Casual rematch, the same one with any seed)
   function startOk(m, st, first) {
@@ -331,7 +348,7 @@ function init(opts) {
       if (i === 0 && st && typeof st === "object" && isInt(st.id) && st.id > m.gid) {
         if (m.g) S.unfinished++;
         const ok = friendStartOk(st);
-        if (ok) { m.st = m.st || st; m.f = st.f.slice(); m.p = st.p.slice(); m.rules = { l: st.r.l, t: st.r.t, b: st.r.b }; }
+        if (ok) { m.st = m.st || st; m.f = st.f.slice(); m.p = st.p.slice(); m.rules = { l: st.r.l, t: st.r.t, b: st.r.b }; m.bo = st.bo ? { b: st.bo.b, lv: st.bo.lv } : null; }
         begin(m, ok ? st : null);
         if (!ok) m.gid = st.id;
       }
@@ -373,7 +390,11 @@ function init(opts) {
     m.gid = st ? st.id : m.gid + 1; m.g = null; m.fr = 0; m.sums = new Map(); m.cks = []; m.drift = [false, false];
     if (!st || !m.ref) return;
     const players = m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] }));
-    m.g = BL.newGame({ players, stocks: m.rules.l, time: m.rules.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
+    const bo = m.pf && m.bo, boss = bo && BL.BOSSES.find((b) => b.id === bo.b);
+    // a boss fight: the two of them (team 0) and the boss (slot 2) on his own map, as the page's startOnlineMatch builds it
+    m.g = boss ? BL.newGame({ players: [...players, { spec: boss, pal: boss.palettes[0] }], stocks: m.rules.l, time: 0, countdown: 150, seed: st.seed,
+      map: Math.max(0, BL.MAPS.findIndex((x) => x.id === boss.map)), level: bo.lv, hpMul: ROAD_HP[bo.b] * DUO_HP[bo.b][bo.lv] })
+      : BL.newGame({ players, stocks: m.rules.l, time: m.rules.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
     m.prog = [now(), now()];
     // the first d frames are neutral on both phones (the input delay): a phone that starts behind the other sends its inputs
     // from the other's frame - 2, which can be past 0, so they are filled in here and never leave a hole
@@ -389,6 +410,7 @@ function init(opts) {
       m.fr++;
       if (m.fr % 60 === 0) { m.sums.set(m.fr, BL.checksum(g)); if (m.sums.size > 60) m.sums.delete(m.sums.keys().next().value); }
       if (g.phase === "end" || g.phase === "over") {
+        if (g.fighters.length === 3) return bossEnd(m, g.winner === 0);   // a boss fight: team 0 (the two of them) won
         const k = g.winner === 0 ? 0 : g.winner === 1 ? 1 : -1;
         return m.ranked ? verdict(m, k, "game") : m.sk ? stakeEnd(m, k, "game") : casualEnd(m, k);
       }
@@ -471,6 +493,20 @@ function init(opts) {
       if (!m.left.has(m.peers[i])) send(m.peers[i], msg);
     }
     S[m.pf ? "friendGames" : "casualGames"]++;
+  }
+  // a boss fight with a friend the referee played to its end: a win is one more boss beaten together on both entries (no W/L between
+  // partners, no refereed match counted, no chip challenge after it); the room stays for the next fight
+  function bossEnd(m, won) {
+    m.g = null;
+    if (!won) return;
+    const files = m.q.map((q) => q.file), ons = files.map((f) => onOf(f));
+    if (!ons[0] || !ons[1] || ons[0].id === ons[1].id) return;
+    const t = now(), rv = [0, 1].map((i) => rivBoss(ons[i], { id: ons[1 - i].id, name: m.q[1 - i].name, f: m.f[1 - i], r: ons[1 - i].r }, t));
+    for (let i = 0; i < 2; i++) {
+      try { acct.writeOn(files[i], ons[i]); } catch (e) { o.log.warn("quick: can't write a result", e.message); }
+      if (!m.left.has(m.peers[i])) send(m.peers[i], { t: "qm-bo", id: m.id, g: m.gid, rv: rv[i] });
+    }
+    S.bossWins++;
   }
   // after any refereed result: who each player can challenge for chips now, and whether they can (sent with the verdict)
   function afterResult(m, t) {
@@ -633,4 +669,4 @@ function init(opts) {
   };
 }
 
-module.exports = { init, elo, cleanOn, bounty, stakeCheck, decIn, codeOk, RULES, PLACING, TIMES, STK, STAKES };
+module.exports = { init, elo, cleanOn, bounty, stakeCheck, decIn, codeOk, RULES, PLACING, TIMES, STK, STAKES, ROAD_HP, DUO_HP };

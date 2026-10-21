@@ -198,7 +198,8 @@
 #app.tiny #resSheet .res-actions .btn.primary { min-height: 44px; font-size: 20px; }
 #app.tiny #resSheet .res-actions .btn small { font-size: 11px; }
 
-/* ---- desktop and tablets (taller than 520px, landscape): a bigger panel, the column centred ---- */
+/* ---- desktop and tablets (taller than 520px, landscape, 1000px wide and more): a bigger panel, the column centred ---- */
+@container (min-width: 1000px) {
 #app:not(.short):not(.portrait) #resSheet { --pw: clamp(400px, 44cqw, 600px); --hs: min(124px, calc((var(--pw) * 0.79 - 40px) / 2.9)); --padl: max(48px, calc(env(safe-area-inset-left, 0px) + 16px)); --artH: 60%; }
 #app:not(.short):not(.portrait) #resSheet .res-txt { bottom: 44px; gap: 10px; }
 #app:not(.short):not(.portrait) #resSheet .res-kick { font-size: 14px; }
@@ -228,6 +229,22 @@
 #app:not(.short):not(.portrait) #resSheet .res-actions .btn { min-height: 52px; font-size: 21px; }
 #app:not(.short):not(.portrait) #resSheet .res-actions .btn.primary { min-height: 64px; font-size: 28px; }
 #app:not(.short):not(.portrait) #resSheet .res-actions .btn small { font-size: 13px; }
+}
+
+/* ---- desktop windows under 1000px wide (760 to 960): the desktop sizes above need a column of 400px and more, so here the phones' sizes
+   (the rules without a class) sit in a column of about 400px beside a slimmer panel, and the column is centred like the desktop's ---- */
+@container (max-width: 999px) {
+  #app:not(.short):not(.portrait) #resSheet { --pw: clamp(300px, 40cqw, 400px); --hs: min(100px, calc((var(--pw) * 0.72 - 36px) / 2.9)); --padl: max(32px, calc(env(safe-area-inset-left, 0px) + 12px)); --artH: 62%; }
+  #app:not(.short):not(.portrait) #resSheet .res-txt { right: calc(var(--cut) + 10px); bottom: 36px; gap: 8px; }
+  #app:not(.short):not(.portrait) #resSheet .res-sub { font-size: 14px; max-width: 320px; }
+  #app:not(.short):not(.portrait) #resSheet .res-side { left: calc(var(--pw) + 28px); right: max(24px, env(safe-area-inset-right, 0px)); max-width: 520px; justify-content: center; gap: 12px; padding: 24px 6px; }
+  #app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-stats, #app:not(.short):not(.portrait) #resSheet.solo .res-rank { margin-top: 0; }
+  #app:not(.short):not(.portrait) #resSheet .res-stats:not(.nochips) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }   /* the chips tile takes what its number needs (+160) */
+  #app:not(.short):not(.portrait) #resSheet .stat { min-height: 64px; }
+  #app:not(.short):not(.portrait) #resSheet .res-actions { margin-top: 12px; gap: 10px; }
+  #app:not(.short):not(.portrait) #resSheet .res-actions .btn { min-height: 48px; }
+  #app:not(.short):not(.portrait) #resSheet .res-actions .btn.primary { min-height: 58px; }
+}
 
 /* ---- upright phones: the panel is a 180px banner on top (VICTORY left, the portrait right), the cards stack under it ---- */
 #app.portrait #resSheet { --pw: 100cqw; --hs: 54px; --padl: 16px; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }

@@ -8,7 +8,8 @@
  *
  *   POST /api/stats/hit   {e: ["key", ...]}   -> 204          the game adds 1 to each key (sendBeacon posts it as text/plain)
  *   POST /api/stats/data  {key, from?}        -> {today, tz, online, days: {"YYYY-MM-DD": {key: n}}, board?}   or 404 after a pause
- *                                                (board: [{id, nm, nb, c, o}], the names on both boards and their places, cpurank.js)
+ *                                                (board: [{id, nm, nb, c, o}], the names on both boards and their places, cpurank.js;
+ *                                                acct: {files, maxFiles, bytes, maxBytes, warn}, how full the accounts folder is, accounts.js)
  *   POST /api/stats/blank {key, id, on}       -> {board}       a name on the Ranked vs CPU boards shown as "Potato" (on false: back)
  *   GET  /stats                               -> the stats page (public/stats.html); it reads the key after the # of its link
  *
@@ -87,7 +88,7 @@ function clientIp(req) {
   return peer;
 }
 
-// dir: STATS_DIR. o.online: () => players connected now (server.js); o.board: () => cpurank.js or null (the board names);
+// dir: STATS_DIR. o.online: () => players connected now (server.js); o.board: () => cpurank.js or null (the board names); o.accounts: () => accounts.js or null;
 // o.page: the stats page file. Returns null while off.
 function init(dir, opts) {
   if (!dir) return null;
@@ -213,6 +214,7 @@ function init(dir, opts) {
       if (cur.n) days[t] = Object.assign({}, cur.c);
       const out = { today: t, tz: o.tz, online: typeof o.online === "function" ? o.online() | 0 : 0, days };
       if (o.board && o.board()) out.board = o.board().names();   // the names on the Ranked vs CPU boards (cpurank.js)
+      if (o.accounts && o.accounts()) out.acct = o.accounts().fill();   // how full the accounts folder is (accounts.js); the page warns past 80%
       send(res, 200, out);
     });
   }

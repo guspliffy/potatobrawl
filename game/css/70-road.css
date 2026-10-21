@@ -35,6 +35,8 @@
 #app.narrow .rd-head .coin { display: none; }
 #app.narrow .rd-sum { font-size: 13px; }
 #app.tiny .rd-head h2 { font-size: 24px; }
+/* upright, the stars line gets its own row under the region's name, so neither is cut */
+#app.portrait .rd-sum { order: 3; flex-basis: 100%; text-align: center; }
 
 /* a stop's sheet: the stars, the reward line; past the fence, three level buttons instead of Fight */
 .rd-line { font-style: italic; }
@@ -69,6 +71,7 @@
 .rd-me .rd-chg { margin-left: auto; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
   background: #ffd23f; color: var(--ink); font: 900 17px/1 var(--body); box-shadow: 0 2px 0 var(--ink); }
 #app.narrow .rd-me .rd-chg { margin: 0; }
+.rd-me .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; }   /* "You · tap to change" wraps beside the ⇄ badge, never cut */
 /* a boss's card: the three level stars are the level picker; Fight plays the picked one */
 .rd-lvb { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; min-height: 48px; padding: 5px 4px; border-radius: 10px; }
 .rd-lvb.sel { background: rgba(255, 210, 63, 0.13); box-shadow: inset 0 0 0 2px #ffd23f; }
@@ -86,6 +89,18 @@
 #app.narrow .rd-sheet.boss .rd-acts { flex-wrap: wrap; }
 #app.narrow .rd-sheet.boss .rd-acts #rsGo { flex-basis: 100%; }
 #app.short .rd-sheet.boss .rd-line { display: none; }   /* on a short screen his line is said in the countdown instead */
+/* upright, on every Road sheet: both cards are columns (as the narrow phones' already are, 430px wide too) and their names and lines wrap
+   inside them; on a boss's card "role · you + a CPU partner" is two lines (the dot goes) */
+#app.portrait .rd-sheet .dly-f, #app.portrait .rd-sheet .dly-f.r { flex-direction: column; text-align: center; }
+#app.portrait .rd-sheet .rd-me .rd-chg { margin: 0; }
+#app.portrait .rd-sheet .dly-t b, #app.portrait .rd-sheet .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
+#app.portrait .rd-sheet.boss #rsOp .rd-sep { display: none; }
+#app.portrait .rd-sheet.boss #rsOp .rd-cp { display: block; }
+/* sideways his card has room for his role only: "you + a CPU partner" is the rule line's first words right under it */
+#app:not(.portrait) .rd-sheet.boss #rsOp .rd-sep, #app:not(.portrait) .rd-sheet.boss #rsOp .rd-cp { display: none; }
+/* upright: the kicker ("The Deep · past the fence") goes under the name, so a long name like Kraken Spud is never cut */
+#app.portrait .rd-sheet .sh-head { flex-wrap: wrap; height: auto; min-height: 36px; padding-top: 4px; padding-bottom: 6px; row-gap: 2px; }
+#app.portrait .rd-sheet .sh-head .kick { order: 3; flex-basis: 100%; }
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
 .rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }
 .rd-bossph.rd-kraken { background: radial-gradient(circle at 50% 35%, #8a5aa8, #3a1f55); }

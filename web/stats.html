@@ -64,6 +64,7 @@ h3 { margin: 24px 0 9px; font: 700 13px/1.2 var(--head); text-transform: upperca
 h3 + .empty { margin-top: 0; }
 .small { font-size: 13px; }
 p { margin: 8px 0 0; }
+.warn { margin: 4px 0 18px; padding: 10px 12px; border-left: 4px solid var(--ember); background: var(--raised); font-size: 14px; line-height: 1.35; }
 .foot { margin-top: 38px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 
 /* messages (no link, wrong link, no network) */
@@ -645,6 +646,13 @@ p { margin: 8px 0 0; }
     return s;
   }
 
+  // the accounts folder past 80% of a cap (accounts.js): new accounts and bigger saves stop at the cap
+  function acctWarn(a) {
+    var pc = function (x, y) { return Math.round((x / y) * 100) + "%"; }, mb = function (n) { return (n / 1048576).toFixed(1) + " MB"; };
+    return h("p", { class: "warn", role: "status" }, h("b", null, "Accounts nearly full. "),
+      fmt(a.files) + " of " + fmt(a.maxFiles) + " accounts (" + pc(a.files, a.maxFiles) + ") · " + mb(a.bytes) + " of " + mb(a.maxBytes) + " (" + pc(a.bytes, a.maxBytes) + "). " +
+      "At the cap new players can't make an account and saves that grow stop: raise the caps in accounts.js.");
+  }
   function foot() {
     return h("p", { class: "foot" }, "Anonymous totals per day. Days are calendar days in " + C.tz + "; weeks start on Monday. Showing the last 120 days that have counts.");
   }
@@ -679,6 +687,7 @@ p { margin: 8px 0 0; }
     Array.prototype.forEach.call(document.querySelectorAll(".pill"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-range") === st.range ? "true" : "false"); });
     C = context(d, st.range); C.tz = d.tz || "Europe/Berlin";
     var m = $("main"); m.textContent = ""; m.setAttribute("data-state", "ok");
+    if (d.acct && d.acct.warn && d.acct.maxFiles > 0 && d.acct.maxBytes > 0) m.appendChild(acctWarn(d.acct));
     [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secBoard, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
     drawSpark();
   }
