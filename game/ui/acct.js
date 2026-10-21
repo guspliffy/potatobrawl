@@ -320,7 +320,7 @@ function lkBuild() {
   if (window.ResizeObserver) new ResizeObserver(() => { if (!pan.hidden && !screens.account.hidden) lkPaint(); }).observe(pan);
 }
 function lkFighter(spec, pal) {
-  const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  const f = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
   f.x = 0; f.y = 0; f.facing = -1;
   return f;
 }

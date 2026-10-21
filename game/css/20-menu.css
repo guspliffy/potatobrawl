@@ -129,6 +129,10 @@
   max-width: calc(100% - var(--mm-colw) - 3 * var(--mm-px)); pointer-events: none; }
 #scrMenu .mm-live span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #scrMenu .a2hs:not([hidden]) ~ .mm-live { display: none; }   /* the iPhone tip sits where the tag goes */
+/* the iPhone tip (shell.html .a2hs, shown once after the first match: ui/screens.js) stays in the space beside the card column, under the Road card (the
+   Road card's own width), so it never covers a button or the Road card's arrow; the short phones get it a little smaller */
+#scrMenu .a2hs { right: max(var(--mm-px), env(safe-area-inset-right, 0px)); width: min(400px, calc(100% - var(--mm-colw) - 3 * var(--mm-px))); }
+#app.tiny #scrMenu .a2hs { gap: 8px; padding: 6px 10px; font-size: 11px; line-height: 1.3; }
 #scrMenu .hint { font: 500 11px/1.2 var(--body); color: var(--mute); text-align: center; }
 
 /* entrance: the cards slide up and fade in, 40 ms apart, the hero first (each time the menu shows) */

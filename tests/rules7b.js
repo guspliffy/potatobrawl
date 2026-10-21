@@ -2,7 +2,7 @@ const { BL } = require("../game/core.js");
 const { FIGHTERS, newGame, step } = BL;
 const F = (id) => FIGHTERS.find((f) => f.id === id);
 for (const [press, stick] of [[false, 0], [true, 0], [true, 1]]) {
-  const g = newGame({ players: [{ spec: F("odin"), pal: F("odin").palettes[0] }, { spec: F("phoenix"), pal: F("phoenix").palettes[0] }], countdown: 0 });
+  const g = newGame({ seed: 1, players: [{ spec: F("odin"), pal: F("odin").palettes[0] }, { spec: F("phoenix"), pal: F("phoenix").palettes[0] }], countdown: 0 });
   step(g, [{}, {}]);
   const D = g.fighters[1];
   // knocked downward toward the stage while in hitstun

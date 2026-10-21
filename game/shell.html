@@ -778,7 +778,19 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </div>
 
-  <div id="tut" hidden><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div><div class="tut-h" id="tutH"></div><span class="tut-btns"><button class="chip" id="tutNext" hidden>Next</button><button class="chip" id="tutSkip">Skip</button></span></div>
+  <div id="tut" hidden><div class="tut-l1"><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div></div><div class="tut-h" id="tutH"></div><span class="tut-btns"><button class="chip" id="tutNext" hidden>Next</button><button class="chip" id="tutSkip">Skip</button></span></div>
+  <!-- the first fight's hints (ui/tutorial.js fhTick, css/99-first.css): one line at a time under the timer -->
+  <div id="fhint" aria-live="polite"><span></span></div>
+
+  <!-- first open (ui/welcome.js, css/99-first.css): the welcome sheet, over the attract fight; the menu is hidden while it is open -->
+  <section id="scrWelcome" class="screen wl" hidden>
+    <div class="sheet wl-sheet">
+      <div class="wl-k">How to win</div>
+      <p class="wl-p">Hits raise their %. The higher it is, the farther they fly — knock them off the screen.</p>
+      <button class="btn primary lg" id="welGo"><span>Play the tutorial · 1 min</span></button>
+      <button class="btn wl-skip" id="welSkip"><span>Skip, just fight</span></button>
+    </div>
+  </section>
 
   <!-- main menu (Fable's "sunset ink" design, menu-redesign/fable-menu-design.md): the top bar (logo, the profile plate + coins, the
        gear), the gold Ranked hero with your fighter, the Daily Potato and Tournament tiles, three mini pills; the attract match plays
@@ -1184,7 +1196,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="help-body"><div id="helpFig"></div><dl class="help-keys" id="helpKeys"></dl></div>
       <div class="help-combos help-ult" id="helpUlt"></div>
       <div class="help-combos" id="helpCombos"></div>
-      <div class="help-go"><span id="helpGo"><button class="btn primary" id="hTry"><span>Practice with tips</span></button></span>
+      <div class="help-go"><span id="helpGo"><button class="btn primary" id="hTry"><span>Play the tutorial · 1 min</span></button></span>
         <details class="help-more">
         <summary>More tips</summary>
         <dl>
@@ -1298,6 +1310,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <span class="skc-bar" aria-hidden="true"><i id="skcBar"></i></span>
     <div class="skc-btns"><button class="btn primary" id="skcOk"></button><button class="btn" id="skcNo"><span>Not now</span></button></div>
   </div>
+</div>
+
+<!-- the turn-sideways screen (ui/welcome.js): outside #app, so it stays upright while #app is rotated; READY is drawn in the game's turn -->
+<div id="turn" hidden role="dialog" aria-modal="true" aria-labelledby="turnT">
+  <div class="tn-art" aria-hidden="true">
+    <span class="tn-phone"><i class="tn-sky"></i><i class="tn-sun"></i><i class="tn-gnd"></i><i class="tn-cam"></i></span>
+    <svg class="tn-arrow" viewBox="0 0 132 132"><path d="M22 52A48 48 0 0 1 100 30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M104 14l1 22-21-5z" fill="currentColor"/></svg>
+  </div>
+  <h2 class="tn-t" id="turnT">Turn it sideways</h2>
+  <p class="tn-l">It's a wide game. Rotation lock on? Turn anyway, then tap.</p>
+  <button class="tn-go" id="turnGo"><span>Ready</span></button>
+  <button class="link tn-up" id="turnUp">Play upright instead</button>
 </div>
 
 <script>

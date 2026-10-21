@@ -57,7 +57,7 @@ const F = Array.from({ length: N }, () => ({}));
 const add = (i, k, v) => { F[i][k] = (F[i][k] || 0) + (v === undefined ? 1 : v); };
 
 // ---------- the game's vocabulary
-const STEPS = ["move", "jump", "light", "heavy", "charge", "special", "dodge", "ult", "off"];
+const STEPS = ["move", "hits", "dodge", "ko"];
 const FIGHTERS = { dragon: 20, samurai: 16, wizard: 14, phoenix: 14, odin: 12, alchemist: 9, gunslinger: 9, reaper: 6 };
 const MODE_W = { ranked: 34, practice: 14, daily: 9, cup: 7, road: 14, boss: 5, "road-boss": 3, online: 8, "online-boss": 1.5, "online-team": 1.5, trial: 4 };
 const LANGS = { en: 52, de: 15, es: 8, fr: 6, pt: 5, ru: 4, tr: 3, other: 7 };
@@ -138,7 +138,8 @@ function visit(p, i, first) {
   if (first || p.tutLeft >= 0) {
     // the tutorial: a new device walks it step by step; one that left in the middle may pick it up again or skip it on its next visit
     let from = first ? 0 : p.tutLeft, skipped = false;
-    if (first && chance(0.05)) { add(i, "tut:skip"); st.min += 0.2; skipped = true; from = STEPS.length; }
+    if (first && chance(0.2)) { add(i, "tut:fight"); st.min += 0.1; skipped = true; from = STEPS.length; }   // the welcome sheet's "Skip, just fight"
+    else if (first && (add(i, "tut:go"), chance(0.05))) { add(i, "tut:skip"); st.min += 0.2; skipped = true; from = STEPS.length; }
     else if (!first && chance(0.45)) { add(i, "tut:skip"); skipped = true; from = STEPS.length; }
     p.tutLeft = -1;
     for (let k = from; k < STEPS.length && !skipped; k++) {

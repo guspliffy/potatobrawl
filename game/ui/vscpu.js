@@ -128,7 +128,7 @@ function vcTicket(m) {
 }
 function vcVs(tk) {
   const el = $("qmVs"), me = vcMine() || VC_FRESH;
-  const fs = newGame({ players: tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
+  const fs = newGame({ seed: 1, players: tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
   glazeMark(fs[0], glazeHas(tk.f[0], tk.p[0]));   // ui/glaze.js: your own glaze
   for (const [k, f] of [["L", fs[0]], ["R", fs[1]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }

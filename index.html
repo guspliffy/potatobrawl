@@ -1019,6 +1019,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   max-width: calc(100% - var(--mm-colw) - 3 * var(--mm-px)); pointer-events: none; }
 #scrMenu .mm-live span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #scrMenu .a2hs:not([hidden]) ~ .mm-live { display: none; }   /* the iPhone tip sits where the tag goes */
+/* the iPhone tip (shell.html .a2hs, shown once after the first match: ui/screens.js) stays in the space beside the card column, under the Road card (the
+   Road card's own width), so it never covers a button or the Road card's arrow; the short phones get it a little smaller */
+#scrMenu .a2hs { right: max(var(--mm-px), env(safe-area-inset-right, 0px)); width: min(400px, calc(100% - var(--mm-colw) - 3 * var(--mm-px))); }
+#app.tiny #scrMenu .a2hs { gap: 8px; padding: 6px 10px; font-size: 11px; line-height: 1.3; }
 #scrMenu .hint { font: 500 11px/1.2 var(--body); color: var(--mute); text-align: center; }
 
 /* entrance: the cards slide up and fade in, 40 ms apart, the hero first (each time the menu shows) */
@@ -2541,6 +2545,64 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   #scrSkins .sk.sel:not(.worn) { transform: none; }
 }
 
+/* ---------- the fight buttons: a smaller disc, and see-through near the right ledge (UI only; logic in ui/hud.js padsStep) ----------
+   Fable "First minute" E. Light, Heavy, Jump, Special and Dodge keep every pixel of their touch circle (the .pb element: same size, same
+   place, now with no border, fill or shadow of its own); the disc you see is its ::before, inset 4% on every side, so it is 8% smaller:
+   Heavy 67, Light 74, Jump 64, Special 59, Dodge 50 px. The rim, the fill and the shadows moved there with it, and so did the three
+   animations that glowed the element (the Heavy's full-charge flash, the Special's finish glow, the tutorial pulse), which now glow the
+   disc; the Heavy's charge ring and the Special's cooldown (::after) sit just inside the disc's rim. ULTI is untouched.
+   See-through (.see, set per button by padsStep): one number, --see, 0 = as before, 1 = see-through. Fill 0.72 -> 0.25 (x0.35), rim 3 px ->
+   2 px at 0.9, word at 0.85, the shadows thin out with the fill. It goes see-through in 100 ms and comes back in 400 ms. A pressed
+   button (.on) is always whole and snaps there at once. */
+@property --see { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.pb[data-k]:not([data-k="ulti"]) {
+  --see: 0; --ins: 4%; --rim: 3px;   /* --see set here too: a browser without @property would otherwise drop every rule that reads it */
+  --ring: calc(var(--rim) - var(--see) * 1px); --fade: calc(1 - var(--see) * 0.65);
+  border: 0; background: none; box-shadow: none; overflow: visible;
+  transition: --see 400ms ease-out;
+}
+.pb[data-k]:not([data-k="ulti"]):not(.on) {
+  --pbBev: inset 0 1px 0 rgba(255, 255, 255, calc(0.18 * var(--fade))), inset 0 -3px 0 rgba(0, 0, 0, calc(0.3 * var(--fade)));
+  --pbSh: 0 3px 0 rgba(14, 16, 34, calc(0.95 * var(--fade))), var(--pbBev);
+}
+.pb[data-k]:not([data-k="ulti"]).see { --see: 1; transition: --see 100ms ease-in; }
+.pb[data-k]:not([data-k="ulti"]).on { --see: 0; transition: none; }
+.pb[data-k="special"]:not([data-k="ulti"]) { transition: --see 400ms ease-out, transform 90ms ease-out; }
+.pb[data-k="special"]:not([data-k="ulti"]).see { transition: --see 100ms ease-in, transform 90ms ease-out; }
+.pb[data-k="special"]:not([data-k="ulti"]).on { transition: transform 90ms ease-out; }
+
+.pb[data-k]:not([data-k="ulti"])::before {
+  content: ""; position: absolute; inset: var(--ins); border-radius: 50%; pointer-events: none;
+  border: var(--ring) solid var(--bc); border-color: color-mix(in srgb, var(--bc) calc(85% + var(--see) * 5%), transparent);
+  background: radial-gradient(circle at 50% 28%, rgba(40, 44, 80, calc(0.55 * (1 - var(--see) * 0.653))), rgba(14, 16, 34, calc(0.74 * (1 - var(--see) * 0.653))) 75%);
+  box-shadow: var(--pbGlow), var(--pbSh);
+}
+.pb[data-k]:not([data-k="ulti"]).on::before { background: var(--bc); }
+.pb[data-k]:not([data-k="ulti"]) > span { opacity: calc(1 - var(--see) * 0.15); }
+
+/* the pseudo-elements that sat inside the old rim now sit inside the disc's rim */
+.pb[data-k="special"]::after { inset: calc(var(--ins) + var(--ring)); background: conic-gradient(rgba(5, 6, 15, calc(0.66 * (1 - var(--see) * 0.35))) calc(var(--cd, 0) * 360deg), transparent 0); }
+.pb[data-k="heavy"]::after { inset: calc(var(--ins) + var(--ring) + 1px); }
+/* the Special's finish name stays inside the smaller disc */
+.pb[data-k="special"].fin > span { padding: 0 calc(3px + 6%); }
+
+/* the animations that lit the element's own box-shadow light the disc instead (the shadows use --pbSh, which the disc inherits) */
+.pb.tutpulse:not([data-k="ulti"]) { animation: none; }
+.pb.tutpulse:not([data-k="ulti"])::before { animation: tutPulse 1.1s ease-in-out infinite; }
+.pb[data-k="heavy"].chgfull { animation: padGrow 0.4s ease-out; }
+.pb[data-k="heavy"].chgfull::before { animation: padFlash 0.4s ease-out; }
+.pb[data-k="special"].fin { animation: none; }
+.pb[data-k="special"].fin::before { animation: specFin 0.7s ease-in-out infinite; }
+@keyframes padGrow { 0% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes padFlash { 0% { box-shadow: 0 0 26px 10px var(--bc), var(--pbSh); } 100% { box-shadow: 0 0 0 0 var(--bc), var(--pbSh); } }
+
+/* reduced motion: the state, no fade (the Special's little pop stays as it was) */
+@media (prefers-reduced-motion: reduce) {
+  .pb[data-k]:not([data-k="ulti"]), .pb[data-k]:not([data-k="ulti"]).see, .pb[data-k]:not([data-k="ulti"]).on { transition: none; }
+  .pb[data-k="special"]:not([data-k="ulti"]), .pb[data-k="special"]:not([data-k="ulti"]).see, .pb[data-k="special"]:not([data-k="ulti"]).on { transition: transform 90ms ease-out; }
+}
+
 /* ---------- Account > Locker: a strip of the eight fighters, then the picked fighter's seven skins (Fable 5.1, locker-chips/fable-design.md section 1) ----------
    The top line is the Collection on one line (.mx-line, ui/mastery.js), the skins owned of all (32 / 56 SKINS) and the chips coin. The strip
    (.lk-strip, ui/acct.js) has one tile per fighter: his model in the worn skin on a glow in that skin's colour, his name and n/7 (gold at 7/7);
@@ -3626,9 +3688,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 /* ---- the menu's gold hero as Quick match: the live dot in the kicker, the ember SEASON 1 sticker in the corner ---- */
 #scrMenu .mm-hero .qm-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #1c8a52; box-shadow: 0 0 0 2px rgba(14, 16, 34, 0.25); vertical-align: 0; }
 #scrMenu .mm-hero .qm-dot.off { background: var(--ketchup); }
-#scrMenu .mm-hero .qm-s1 { right: 12px; top: 10px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-hero .qm-s1 { left: 10px; top: 10px; z-index: 3; pointer-events: none; }   /* over the art, so it never sits on the kicker's line (top right it ran under "1 ONLINE · RANKED · PLACING") */
 #scrMenu .mm-hero .qm-s1[hidden] { display: none; }
-#app.tiny #scrMenu .mm-hero .qm-s1 { right: 8px; top: 7px; font-size: 10px; padding: 4px 6px 3px; }
+#app.tiny #scrMenu .mm-hero .qm-s1 { left: 8px; top: 7px; font-size: 10px; padding: 4px 6px 3px; }
+/* "QUICK MATCH" in two lines on the desktop and upright hero squeezed the kicker (online, rank) to nothing: a little smaller there (upright it fits one line) */
+#app:not(.short):not(.tiny) #scrMenu .mm-hero.qm .mm-ttl { font-size: calc(var(--mm-title) * 0.82); }
 
 /* ---- the Season 1 sheet: the gold-edged online plate, the dim CPU plate, three lines, LET'S GO ---- */
 #scrSeason .ss-sheet { width: min(560px, 100%); max-height: 100%; }
@@ -4108,14 +4172,16 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrMenu #bBoards .bd-gl { width: 18px; height: 18px; flex: none; }
 #app.portrait #scrMenu .mm-row3.bd4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }   /* upright: two by two (the column has the height) */
 #app.portrait #scrMenu .mm-row3.bd4 .mini { font-size: 14px; }
-/* small phones in landscape (667x320, 568x320): the column is 372 / 336 px, so BOARDS keeps only its podium (the button still says Boards to a screen reader) */
-#app.tiny #scrMenu #bBoards span { display: none; }
-#app.tiny #scrMenu #bBoards { padding: 0 11px; }
-#app.tiny #scrMenu #bBoards .bd-gl { width: 20px; height: 20px; }
-@container mm (max-width: 620px) {   /* 568 wide: the four pills are 354 px of words in a 336 px column, so the gaps and the padding give way */
-  #app.tiny #scrMenu .mm-row3.bd4 { gap: 5px; }
-  #app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 6px; gap: 5px; }
-  #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 9px; }
+/* small phones in landscape (667x320, 568x320): the column is 372 / 336 px, so the four pills give up gaps, padding and a little font, never the word Boards */
+#app.tiny #scrMenu .mm-row3.bd4 { gap: 6px; }
+#app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 7px; gap: 5px; font-size: 12px; }
+#app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 8px; }
+#app.tiny #scrMenu #bBoards .bd-gl { width: 18px; height: 18px; }
+@container mm (max-width: 620px) {   /* 568 wide: the column is 336 px, so one more notch */
+  #app.tiny #scrMenu .mm-row3.bd4 { gap: 4px; }
+  #app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 5px; gap: 4px; font-size: 11.5px; }
+  #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 6px; }
+  #app.tiny #scrMenu #bBoards .bd-gl { width: 16px; height: 16px; }
 }
 
 /* ===== Rival record and streak bounty (ui/rivals.js; Fable's design: rival-stakes/fable-design.md) =====
@@ -4359,6 +4425,99 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 }
 .stk-card .sk-nw { white-space: nowrap; }
 
+/* ---------- First minute (Fable's first-minute pass): the turn-sideways screen, the welcome sheet, the 4-step tutorial card,
+   the first fight's hint strip. Scripts: ui/welcome.js (turn screen, welcome), ui/tutorial.js (steps, first fight, hints). ---------- */
+
+/* ---- the turn-sideways screen: a sibling of #app (never rotated), plain ink, READY drawn in the game's turn (--ga) ---- */
+#turn { --tr: -90deg; --ga: 90deg; position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px 24px 290px; background: var(--ink); color: var(--text); text-align: center; touch-action: none; transition: opacity 0.2s; }
+#turn.out { opacity: 0; }
+.tn-art { position: relative; width: 132px; height: 132px; display: grid; place-items: center; }
+.tn-phone { position: relative; width: 56px; height: 112px; overflow: hidden; border: 4px solid var(--text); border-radius: 12px; background: #231a48; animation: tnTurn 3s ease-in-out infinite; }
+.tn-phone i { position: absolute; display: block; }
+.tn-sky { inset: 0; background: linear-gradient(180deg, #2a2150 0%, #7a3f6b 55%, #ef7a52 82%, #f3d9a4 100%); }
+.tn-sun { left: 50%; bottom: 22px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #ffd23f; }
+.tn-gnd { left: 5px; right: 5px; bottom: 14px; height: 9px; border-radius: 2px; background: linear-gradient(180deg, #7bc96a 0 38%, #2a2745 38%); }
+.tn-cam { left: 50%; top: 5px; width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: var(--ink); }
+.tn-arrow { position: absolute; left: 0; top: 0; width: 132px; height: 132px; display: none; color: var(--ember); }
+#turn.ccw .tn-arrow { transform: scaleX(-1); }
+@keyframes tnTurn {   /* 3 s: appears upright, turns in 0.4 s, holds 1.4 s, fades */
+  0% { transform: rotate(0deg); opacity: 0; } 10% { transform: rotate(0deg); opacity: 1; } 27% { transform: rotate(0deg); opacity: 1; }
+  40% { transform: rotate(var(--tr)); opacity: 1; } 87% { transform: rotate(var(--tr)); opacity: 1; } 100% { transform: rotate(var(--tr)); opacity: 0; }
+}
+.tn-t { margin: 22px 0 0; font: italic 900 clamp(34px, 11vw, 46px)/0.95 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--text); }
+.tn-l { margin: 12px 0 0; max-width: 270px; font: 500 16px/1.4 var(--body); color: var(--mute); }
+.tn-go { position: absolute; left: 50%; bottom: calc(160px + env(safe-area-inset-bottom, 0px)); width: 104px; height: 104px; margin-left: -52px; padding: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; color: var(--text); border: 3px solid var(--ember); -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.16), rgba(14, 16, 34, 0.55) 62%), rgba(14, 16, 34, 0.5);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 5px rgba(239, 122, 82, 0.2), 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); animation: tnRing 1.6s ease-in-out infinite; }
+.tn-go span { display: block; font: italic 900 27px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; transform: rotate(var(--ga)); }
+.tn-go:active { transform: scale(0.96); }
+.tn-go:focus-visible, .tn-up:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+@keyframes tnRing { 0%, 100% { box-shadow: 0 0 0 5px rgba(239, 122, 82, 0.2), 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); }
+  50% { box-shadow: 0 0 0 12px rgba(239, 122, 82, 0), 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); } }
+.tn-up { position: absolute; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 12px 18px; font-size: 13px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .tn-phone { animation: none; transform: rotate(var(--tr)); }
+  .tn-arrow { display: block; }
+  .tn-go { animation: none; }
+  #turn { transition: none; }
+}
+
+/* ---- the welcome sheet: the attract fight shows through a 50% dim; no close X ---- */
+.wl { display: grid; place-items: center; padding: 16px; background: rgba(8, 9, 20, 0.5); }
+.wl-sheet { width: min(360px, 100%); padding: 20px 20px 22px; gap: 12px; text-align: center; animation: shDrop 0.26s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.wl-k { font: 800 14px/1 var(--display); letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+.wl-k::after { content: ""; display: block; width: 44px; height: 5px; margin: 8px auto 0; background: linear-gradient(90deg, var(--ember), var(--gold)); transform: skewX(-35deg); }
+.wl-sheet .wl-p { margin: 2px 0 6px; font: 600 21px/1.22 var(--display); letter-spacing: 0.01em; color: var(--text); }
+.wl-sheet .btn { width: 100%; }
+.wl-sheet .btn.lg { padding-inline: 10px; font-size: 21px; letter-spacing: 0.02em; white-space: nowrap; }   /* "Play the tutorial · 1 min" on one line in the 360 px sheet */
+.wl-sheet .wl-skip { --bg: transparent; --bev: inset 0 0 0 transparent; border-color: rgba(206, 210, 255, 0.4); box-shadow: none; }
+.wl-sheet .wl-skip:active:not(:disabled) { box-shadow: none; }
+#app.short .wl-sheet { padding: 14px 18px 16px; gap: 9px; }
+#app.short .wl-sheet .wl-p { font-size: 19px; margin: 0 0 2px; }
+#app.tiny .wl-sheet .btn.lg { min-height: 46px; font-size: 21px; }
+@media (prefers-reduced-motion: reduce) { .wl-sheet { animation: none; } }
+
+/* ---- the tutorial card (4 steps): two lines, about 52 px tall, in the top band between the two name cards ---- */
+#tut .tut-l1 { display: contents; }   /* the Combo trial keeps its own layout: the wrapper is not there for it */
+#tut.t4 { top: 8px; left: var(--tl, 50%); width: var(--tw, min(400px, 62%)); max-width: none; transform: none; min-height: 52px; padding: 5px 8px 5px 12px; gap: 0 10px; align-content: center; }
+#tut.t4 .tut-l1 { display: flex; align-items: baseline; gap: 9px; min-width: 0; white-space: nowrap; overflow: hidden; }
+#tut.t4 .tut-n { flex: none; font-size: 11px; letter-spacing: 0.16em; color: var(--sand); }
+#tut.t4 .tut-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; line-height: 1.15; }
+#tut.t4 .tut-h { font-size: 13px; line-height: 1.25; color: #dfe2f5; white-space: nowrap; }
+#tut.t4 .tut-btns { grid-column: 2; grid-row: 1 / span 2; align-self: center; flex-direction: row; }
+#tut.t4 .chip { position: relative; min-height: 28px; padding: 2px 12px; font-size: 13px; }
+#tut.t4 .chip::after { content: ""; position: absolute; inset: -9px -6px; }
+#tut.t4 { transition: opacity 0.15s; }
+/* a computer-sized window (not .short): the same card, bigger type, so it reads at arm's length (topPlace makes it up to 480 px wide) */
+#app:not(.short):not(.portrait) #tut.t4 { min-height: 64px; padding: 7px 10px 7px 14px; }
+#app:not(.short):not(.portrait) #tut.t4 .tut-n { font-size: 12px; }
+#app:not(.short):not(.portrait) #tut.t4 .tut-t { font-size: 20px; }
+#app:not(.short):not(.portrait) #tut.t4 .tut-h { font-size: 15px; }
+#tut.t4.peek { opacity: 0.25; }   /* your YOU marker is under it (tutPeek, ui/tutorial.js) */
+#app.portrait #tut.t4 { top: auto; bottom: calc(var(--panelH) + 12px); left: 50%; transform: translateX(-50%); width: min(400px, calc(100% - 24px)); }
+#app.tut .pc-stocks { display: none; }   /* the tutorial's cards are name + % (nine lives would only widen them) */
+
+/* ---- the first fight's hints: one 26 px strip under the timer, 300 ms fade ---- */
+#fhint { position: absolute; z-index: 3; top: var(--fy, 40px); left: var(--fl, 50%); width: var(--fw, auto); height: 26px; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+#fhint.on { opacity: 1; }
+#fhint.on.peek { opacity: 0.25; }
+#fhint span { max-width: 100%; padding: 0 13px; border-radius: 13px; background: rgba(14, 16, 34, 0.62); font: 700 16px/26px var(--display); letter-spacing: 0.03em; color: var(--sand); white-space: nowrap; text-shadow: 0 1px 0 var(--ink); }
+#app.portrait #fhint { top: auto; bottom: calc(var(--panelH) + 12px); left: 50%; width: calc(100% - 24px); transform: translateX(-50%); }
+@media (prefers-reduced-motion: reduce) { #fhint { transition: none; } }
+/* DRAG in the stick's knob for the first seconds of the first fight (touch) */
+#stickKnob.drag::after { content: "DRAG"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--display); letter-spacing: 0.06em; color: var(--ink); animation: dragPulse 1s ease-in-out infinite; }
+@keyframes dragPulse { 0%, 100% { opacity: 0.45; transform: scale(0.92); } 50% { opacity: 1; transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { #stickKnob.drag::after { animation: none; } }
+
+/* ---- YOU'RE READY: the tutorial's results are one card and one button, and Menu ---- */
+#resSheet.solo #rChange { display: none; }
+#resSheet.solo .res-actions { margin-block: auto; }
+#resSheet.solo .res-actions #rMenu { grid-column: 1 / -1; }
+
 </style>
 
 </head><body><div id="app">
@@ -4413,7 +4572,19 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </div>
 
-  <div id="tut" hidden><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div><div class="tut-h" id="tutH"></div><span class="tut-btns"><button class="chip" id="tutNext" hidden>Next</button><button class="chip" id="tutSkip">Skip</button></span></div>
+  <div id="tut" hidden><div class="tut-l1"><div class="tut-n" id="tutN"></div><div class="tut-t" id="tutT"></div></div><div class="tut-h" id="tutH"></div><span class="tut-btns"><button class="chip" id="tutNext" hidden>Next</button><button class="chip" id="tutSkip">Skip</button></span></div>
+  <!-- the first fight's hints (ui/tutorial.js fhTick, css/99-first.css): one line at a time under the timer -->
+  <div id="fhint" aria-live="polite"><span></span></div>
+
+  <!-- first open (ui/welcome.js, css/99-first.css): the welcome sheet, over the attract fight; the menu is hidden while it is open -->
+  <section id="scrWelcome" class="screen wl" hidden>
+    <div class="sheet wl-sheet">
+      <div class="wl-k">How to win</div>
+      <p class="wl-p">Hits raise their %. The higher it is, the farther they fly — knock them off the screen.</p>
+      <button class="btn primary lg" id="welGo"><span>Play the tutorial · 1 min</span></button>
+      <button class="btn wl-skip" id="welSkip"><span>Skip, just fight</span></button>
+    </div>
+  </section>
 
   <!-- main menu (Fable's "sunset ink" design, menu-redesign/fable-menu-design.md): the top bar (logo, the profile plate + coins, the
        gear), the gold Ranked hero with your fighter, the Daily Potato and Tournament tiles, three mini pills; the attract match plays
@@ -4819,7 +4990,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="help-body"><div id="helpFig"></div><dl class="help-keys" id="helpKeys"></dl></div>
       <div class="help-combos help-ult" id="helpUlt"></div>
       <div class="help-combos" id="helpCombos"></div>
-      <div class="help-go"><span id="helpGo"><button class="btn primary" id="hTry"><span>Practice with tips</span></button></span>
+      <div class="help-go"><span id="helpGo"><button class="btn primary" id="hTry"><span>Play the tutorial · 1 min</span></button></span>
         <details class="help-more">
         <summary>More tips</summary>
         <dl>
@@ -4933,6 +5104,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <span class="skc-bar" aria-hidden="true"><i id="skcBar"></i></span>
     <div class="skc-btns"><button class="btn primary" id="skcOk"></button><button class="btn" id="skcNo"><span>Not now</span></button></div>
   </div>
+</div>
+
+<!-- the turn-sideways screen (ui/welcome.js): outside #app, so it stays upright while #app is rotated; READY is drawn in the game's turn -->
+<div id="turn" hidden role="dialog" aria-modal="true" aria-labelledby="turnT">
+  <div class="tn-art" aria-hidden="true">
+    <span class="tn-phone"><i class="tn-sky"></i><i class="tn-sun"></i><i class="tn-gnd"></i><i class="tn-cam"></i></span>
+    <svg class="tn-arrow" viewBox="0 0 132 132"><path d="M22 52A48 48 0 0 1 100 30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M104 14l1 22-21-5z" fill="currentColor"/></svg>
+  </div>
+  <h2 class="tn-t" id="turnT">Turn it sideways</h2>
+  <p class="tn-l">It's a wide game. Rotation lock on? Turn anyway, then tap.</p>
+  <button class="tn-go" id="turnGo"><span>Ready</span></button>
+  <button class="link tn-up" id="turnUp">Play upright instead</button>
 </div>
 
 <script>/* Standalone network layer. Inside Claude the page uses the platform's `room` and `user`
@@ -5749,7 +5932,9 @@ function teamSpot(team, k) {
 // o: players [{spec, pal, team?}], seed, stocks, time (s, 0 = none), countdown, map, level (boss difficulty 0-2), hpMul (boss HP x).
 // g.winner is the winning TEAM (1v1: team = slot). With a boss in the game: the boss is team 1, everyone else team 0.
 function newGame(o) {
-  const seed = o.seed ?? ((Math.random() * 1e9) | 0);
+  // every caller passes its seed (the UI picks one for an offline match): the simulation never picks one itself
+  if (o.seed == null) throw new Error("newGame: no seed");
+  const seed = o.seed;
   const g = {
     t: 0, phase: "countdown", cd: o.countdown ?? 150, hitstop: 0, timer: (o.time ?? 240) * 60, timed: (o.time ?? 240) > 0, sudden: false,
     fighters: [], projs: [], events: [], winner: -1, endT: 0, endReason: "",
@@ -7610,6 +7795,8 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
   };
 }
 const STEP = 1000 / 60;
+// a fresh seed for an offline match: the UI picks it, the simulation never does (core.js newGame throws without one)
+const newSeed = () => (Math.random() * 1e9) | 0;
 
 /* ===================== profile (per device) ===================== */
 const SAVE_KEY = "potatobrawl.profile.v1", OLD_SAVE_KEY = "blastline.profile.v1";
@@ -7650,6 +7837,13 @@ function saveProfile() {
   try { acctDirty(); } catch (e) { /* accounts (ui/acct.js) not set up yet */ }   // a linked account saves itself shortly after
 }
 let P = loadProfile();
+// True once the player finished a match that is not the tutorial or the Combo trial (P.fin1, set by markPlayed). A profile from before the flag
+// counts too: any ranked, friend, Team Brawl or cup record or mastery XP (all kept by the sync), so it never depends on the flag riding along.
+function playedOnce() {
+  return !!(P.fin1 || (P.matches | 0) > 0 || (P.friendW | 0) + (P.friendL | 0) > 0 || (P.duoW | 0) > 0 || (P.cups | 0) > 0 ||
+    (P.mxp && typeof P.mxp === "object" && Object.values(P.mxp).some((v) => v > 0)));
+}
+function markPlayed() { if (!P.fin1) { P.fin1 = true; saveProfile(); } }
 
 const TIERS = [
   { name: "Tin", min: 0, col: "#9097ad" },
@@ -8128,8 +8322,8 @@ function cntEnd(forfeit, R) {   // screens.js finishMatch and showResults (onlin
   if (d === 5 || d === 10 || d === 25) cntOnce("fn:d" + d);
 }
 // a match left without an end (the pause menu's Quit, the tutorial's Skip, Back to the Road): counted as quit
-function cntDrop() {
-  if (!CNT.live || mode === "match") return;
+function cntDrop(force) {   // force: the tutorial's Skip goes straight into the first fight, so the mode is still "match" (ui/tutorial.js)
+  if (!CNT.live || (mode === "match" && !force)) return;
   const md = CNT.live.md;
   CNT.live = null;
   cnt(`me:${md}:quit`);
@@ -8401,6 +8595,7 @@ const L = { gw: 1, gh: 1, panel: 0, portrait: false };
 /* Sideways mode: when the viewer stays upright (the Claude app's artifact view does not rotate),
    the whole game is rotated 90 degrees so it plays in landscape with the phone turned. */
 let rotMode = 0;
+const TURN = { on: false, shown: false, next: null };   // the turn-sideways screen (ui/welcome.js): showing now, shown once this page load, what follows it
 let finFull = false; // the KO finisher uses the whole screen, also where the upright controls panel sits
 const rotBox = { W0: 1, H0: 1 };
 function toApp(cx, cy) {
@@ -8438,6 +8633,8 @@ function resize() {
   $("rotHint").hidden = !(L.portrait && touchUI);
   L.canRotate = touchUI && uprightView;
   if (!$("scrSettings").hidden) renderSettings();
+  if (TURN.on && !rotMode) turnClose();   // the browser turned the page by itself: the turn screen has done its job
+  if (TUT.on || (match && match.first)) topPlace();   // ui/tutorial.js: the tutorial card and the first fight's hints sit in the top band
 }
 window.addEventListener("resize", resize);
 window.addEventListener("orientationchange", () => setTimeout(resize, 120));
@@ -27198,7 +27395,7 @@ function hideBanner() { clearTimeout(bannerT); bannerEl.hidden = true; }
 function newAttract() {
   const pick = () => FIGHTERS[(Math.random() * FIGHTERS.length) | 0];
   const a = pick(), b = pick();
-  const g = newGame({ players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.POOL) | 0 });
+  const g = newGame({ seed: newSeed(), players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.POOL) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   clearTrails();
   $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
@@ -27211,6 +27408,7 @@ function menuImg(img, id) {
   if (img._src !== src) { img._src = src; if (src) img.src = src; else img.removeAttribute("src"); }
   img.dataset.f = id;
 }
+let a2hsNow = false;   // the tip showed on this page load (renderMenu)
 function renderMenu() {
   fsSync();   // ui/menus.js: the fullscreen button beside the gear (before renderPill, whose menuFit measures the bar with it)
   renderPill();   // the profile plate and the coins, ui/acct.js
@@ -27231,7 +27429,10 @@ function renderMenu() {
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
   $("mOnline").textContent = onOk ? "" : "needs the web link";
-  $("a2hsHint").hidden = !(FS.web && FS.ios && !FS.app && !P.a2hs);
+  // the iPhone tip: only after the first finished match, and on one page load only (P.a2hsSeen is saved when it first shows, so the next load never shows it)
+  const a2hsOn = FS.web && FS.ios && !FS.app && !P.a2hs && playedOnce() && (a2hsNow || !P.a2hsSeen);
+  if (a2hsOn && !a2hsNow) { a2hsNow = true; P.a2hsSeen = true; saveProfile(); }
+  $("a2hsHint").hidden = !a2hsOn;
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
   qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
 }
@@ -27368,7 +27569,7 @@ function buildDetail() {
   screens.select.classList.toggle("sl-skin", pi !== 0 || gz);
   cardArt.length = 0;
   if (pi !== 0 || gz) {
-    const f = glazeMark(BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
+    const f = glazeMark(BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0], gz);
     f.x = 0; f.y = 0; f.facing = -1;
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
@@ -27473,7 +27674,7 @@ function startMatch() {
   let oppPal = opp.palettes[0];
   if (opp.id === me.id) oppPal = opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length];
   const map = !ranked && sel.map !== "random" ? sel.map : randMap();   // ranked always draws a map; practice can pick one
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map });
   match = { ranked, d, oppRating, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: ranked ? null : LEVELS[sel.level].name, cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
@@ -27606,6 +27807,7 @@ let quitArmed = false;
 function finishMatch(forfeit) {
   if (mode !== "match") return;
   cntEnd(forfeit);   // ui/counter.js
+  if (!forfeit && match && !match.tutorial) markPlayed();   // a finished match counts, the tutorial and the Combo trial (match.tutorial too) do not: base.js playedOnce
   if (match && match.tutorial) { tutDone(); return; }
   if (match && match.cup) { cupMatchEnd(forfeit); return; }
   if (match && match.daily) { dailyMatchEnd(forfeit); return; }
@@ -27728,7 +27930,10 @@ function resRank(R) {
   }
 }
 function showResults(R) {
-  if (R.online) cntEnd(false, R);   // ui/counter.js (offline matches are counted in finishMatch)
+  if (R.online) {   // offline matches are counted (and marked as played) in finishMatch
+    cntEnd(false, R);   // ui/counter.js
+    if (!R.forfeit && !R.left && !R.lost) markPlayed();   // base.js: a match that ran to its end
+  }
   const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;
@@ -27806,11 +28011,13 @@ function buildNextPick() {
 }
 
 /* ===================== match HUD extras (UI only) =====================
-   Reads the game state, never writes it. Two things live here:
+   Reads the game state, never writes it. Three things live here:
    1. The YOU / CPU markers over the fighters: shown from the countdown, faded out 3 s after the match starts, and back for 3 s
       after every respawn (and at the start of sudden death). The tutorial keeps them on. drawTag (draw-world.js) asks tagAlpha().
    2. The danger edge glow (#dgr): while the player's own fighter is flying out of a hard launch, a thin red glow lights the edge
-      the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger). */
+      the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger).
+   3. The fight buttons go see-through when a fighter is near the right ledge or behind a button (padsStep, css/91-pads.css).
+   The ultimate bars and the ULTI button come after them (see below). */
 const HX = { g: null, ph: "", sd: false, alive: [true, true, true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
 const TAG_HOLD = 180, TAG_FADE = 30, TAG_IN = 12;   // sim ticks (60 per second): shown 3 s, fades out in 0.5 s, comes back in 0.2 s
 const dgrEls = [...$("dgr").children];               // left, right, top, bottom
@@ -27884,12 +28091,67 @@ function hudDanger() {
     if (HX.k[i]) any = true;
   }
   HX.on = any;
+  padsStep();
 }
 // outside a match (menus, results): make sure no glow is left over
 function hudIdle() {
+  padsOff();
   if (!HX.on) return;
   for (let i = 0; i < 4; i++) { HX.k[i] = 0; dgrEls[i].style.opacity = "0"; }
   HX.on = false;
+}
+/* ---------- the fight buttons see through (UI only; the look and the fade are css/91-pads.css) ----------
+   On a landscape phone the five round buttons on the right (all but ULTI) cover the right ledge. Two cases, only in a landscape match
+   (not under the upright control panel, not in the KO finisher, not on a menu), for every fighter that is not a boss:
+   1. all five at once while a fighter is within 60 world px of the right ledge (STAGE.main.x2) or out beyond it, if that ledge is in the
+      buttons' corner on screen;
+   2. one button alone while a fighter's box, with 24 screen px around it, overlaps that button's disc.
+   Each case holds for 0.3 s after it ends, so a fighter stepping to and fro makes no flicker. The class .see goes on the button; a pressed
+   button is whole whatever the class says (CSS). Reads the sim, never writes it; the touch areas are not touched. */
+const PADS = { b: [...document.querySelectorAll('.pb:not([data-k="ulti"])')], d: [], box: null, key: "", dT: -9999, all: 0, one: [0, 0, 0, 0, 0], on: [false, false, false, false, false] };
+const PADS_RIGHT = 60, PADS_PAD = 24, PADS_HOLD = 300;   // world px from the ledge, screen px around a box, ms
+// each disc as a circle in the app's own pixels (toApp undoes the sideways turn); the disc is 92% of its touch circle. Re-measured now and then.
+function padsMeasure(now) {
+  const key = W + "x" + H + "r" + rotMode;
+  if (key === PADS.key && now - PADS.dT < 500) return;
+  PADS.key = key; PADS.dT = now;
+  PADS.d = PADS.b.map((b) => {
+    const q = b.getBoundingClientRect();
+    if (q.width < 1) return null;
+    const [x1, y1] = toApp(q.left, q.top), [x2, y2] = toApp(q.right, q.bottom);
+    return { x: (x1 + x2) / 2, y: (y1 + y2) / 2, r: Math.abs(x2 - x1) * 0.46 };
+  });
+  const ds = PADS.d.filter(Boolean);   // the corner the five discs take up (left and top edges)
+  PADS.box = ds.length ? { x: Math.min(...ds.map((d) => d.x - d.r)), y: Math.min(...ds.map((d) => d.y - d.r)) } : null;
+}
+function padsOff() {
+  PADS.all = 0; PADS.one.fill(0);
+  PADS.b.forEach((b, k) => { if (PADS.on[k]) { PADS.on[k] = false; b.classList.remove("see"); } });
+}
+// every frame of a match (hudDanger)
+function padsStep() {
+  if (mode === "match" && paused) return;   // a pause keeps things as they are
+  if (mode !== "match" || !G || G.phase === "over" || FIN.on || L.panel || $("ctl").hidden) { padsOff(); return; }
+  const now = performance.now(), S = STAGE.main, hit = [false, false, false, false, false];
+  padsMeasure(now);
+  // the ledge rule only while the ledge itself is on screen in the buttons' corner (a big window shows it above them, clear)
+  const lg = toScreen(S.x2, S.top), under = !!PADS.box && lg[0] > PADS.box.x - 30 && lg[1] > PADS.box.y - 30;
+  for (const f of G.fighters) {
+    if (f.state === "dead" || f.state === "gone" || f.spec.boss) continue;
+    if (under && f.x > S.x2 - PADS_RIGHT) PADS.all = now + PADS_HOLD;
+    const hw = f.s.w / 2, a = toScreen(f.x - hw, f.y - f.s.h), c = toScreen(f.x + hw, f.y);
+    const x1 = a[0] - PADS_PAD, y1 = a[1] - PADS_PAD, x2 = c[0] + PADS_PAD, y2 = c[1] + PADS_PAD;
+    PADS.d.forEach((d, k) => {
+      if (!d) return;
+      const dx = Math.max(x1 - d.x, 0, d.x - x2), dy = Math.max(y1 - d.y, 0, d.y - y2);
+      if (dx * dx + dy * dy < d.r * d.r) hit[k] = true;
+    });
+  }
+  PADS.b.forEach((b, k) => {
+    if (hit[k]) PADS.one[k] = now + PADS_HOLD;
+    const want = now < PADS.all || now < PADS.one[k];
+    if (want !== PADS.on[k]) { PADS.on[k] = want; b.classList.toggle("see", want); }
+  });
 }
 // The pause icon sits under the opponent's card; the off-screen bubble (effects.js) keeps clear of it. Measured now and then.
 function hudPauseZone() {
@@ -28023,7 +28285,7 @@ function startBoss(o) {
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(mate) : 0];
   const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
     stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: o.hpMul ?? BOSS_SOLO });
   const md = o.mate ?? BOSS_PARTNER[lv];
   match = { boss: true, level: lv, d: md, bot: makeBot(md, BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };
@@ -28126,7 +28388,7 @@ function startDuo(o) {
   const pick = o.map === undefined || o.map === "random" ? -1 : o.map | 0;
   const map = BL.MAPS[pick] && BL.MAPS[pick].pool !== false ? pick : randMap();
   const players = [{ spec: me, pal: me.palettes[mine] || me.palettes[0] }, { spec: mate, pal: skin(mate) }, { spec: a, pal: skin(a) }, { spec: b, pal: skin(b) }];
-  G = newGame({ players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
+  G = newGame({ seed: newSeed(), players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
   const names = ["You"];
   for (let i = 0; i < 3; i++) names.push(cpuNameNot(names));   // three different potato names
   match = { duo: true, level: LEVELS[lv].name, lv, d, cpu: names[1], names, team: duoTeamName(), caught: 0,
@@ -28430,7 +28692,7 @@ function rdPuppet() {
   const spec = FIG[P.last] || FIGHTERS[0];
   if (RD.pupId !== spec.id + ":" + (P.pal[spec.id] || 0)) {
     const pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0];
-    RD.pup = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+    RD.pup = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
     RD.pup.x = 0; RD.pup.y = 0; RD.pup.facing = 1; RD.pupId = spec.id + ":" + (P.pal[spec.id] || 0);
   }
   return glazeMark(RD.pup, glazeHas(spec.id, P.pal[spec.id] || 0));   // ui/glaze.js
@@ -28675,7 +28937,7 @@ function roadFight(i) {
   const me = FIG[P.last] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], op = FIG[st.f];
   const opPal = op.palettes[op.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(op) : 0];
   const [a, b] = roadLives(st), map = Math.max(0, BL.MAPS.findIndex((m) => m.id === st.map));
-  G = newGame({ players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal, stocks: a, pct: st.myPct || 0, lifePct: st.myLifePct || 0 }, { spec: op, pal: opPal, stocks: b, pct: st.cpuPct || 0 }],
     stocks: a, time: roadSecs(st), countdown: 150, map });
   match = { ranked: false, road: { i, go: -1, end: -1, bonus: false }, d: st.d, oppRating: 0, bot: makeBot(st.d, BL.BOT_STYLES[op.id]), level: st.name, cpu: st.cpu };
   meSlot = 0;
@@ -29557,7 +29819,7 @@ function cupFight() {
   Sfx.init();
   const d = clamp((os.r - 750) / 1000, 0.08, 0.98);
   const map = (((c.seed % BL.POOL) + BL.POOL) % BL.POOL + r) % BL.POOL;   // quarter, semi and final on different maps
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150, map });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: CUP.lives[r], time: CUP.secs[r], countdown: 150, map });
   match = { ranked: false, cup: true, round: r, d, oppRating: os.r, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: null, cpu: os.n };
   meSlot = 0;
   enterMatchUI();
@@ -30028,7 +30290,7 @@ function hvRender() {
       <div class="hv-pick" role="radiogroup" aria-label="The fighter who gets the Harvest skin">${FIGHTERS.map((f) => `<button class="hv-pf${f.id === HV.pick ? " on" : ""}" data-f="${f.id}" role="radio" aria-checked="${f.id === HV.pick}" aria-label="${hvEsc(f.name)}${left.includes(f.id) ? "" : ", has it already"}"${left.includes(f.id) ? "" : " disabled"} style="background-image:url('${PORTRAITS[f.id] || ""}')"></button>`).join("")}</div>
       <button class="btn primary lg hv-claim" id="hvClaim"><span>Claim for ${hvEsc(FIG[HV.pick].name)}</span></button>`;
     for (const b of box.querySelectorAll(".hv-pf:not([disabled])")) b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); HV.pick = b.dataset.f; hvRender(); });
-    const spec = FIG[HV.pick], f = BL.newGame({ players: [{ spec, pal: spec.palettes[hvSkinIdx(spec)] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+    const spec = FIG[HV.pick], f = BL.newGame({ seed: 1, players: [{ spec, pal: spec.palettes[hvSkinIdx(spec)] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     f.x = 0; f.y = 0; f.facing = -1;
     HV.art = { cv: $("hvArt"), f, fit: 0.86, bottom: 0.95 };
     const step = () => { HV.raf = 0; if (!HV.art || screens.daily.hidden) return; paintModel(HV.art, tick); HV.raf = requestAnimationFrame(step); };
@@ -30045,7 +30307,7 @@ function hvRender() {
 function hvSil(cv, id, lit) {
   const spec = FIG[id];
   if (!spec) return;
-  const f = BL.newGame({ players: [{ spec, pal: spec.palettes[lit ? hvSkinIdx(spec) : 0] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+  const f = BL.newGame({ seed: 1, players: [{ spec, pal: spec.palettes[lit ? hvSkinIdx(spec) : 0] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
   f.x = 0; f.y = 0; f.facing = -1;
   paintModel({ cv, f, fit: 0.86, bottom: 0.97 }, 0);
   if (lit) return;
@@ -30142,7 +30404,7 @@ function skMakeCard(spec, i, list, tap) {
   b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
-  const f = glazeMark(BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
+  const f = glazeMark(BL.newGame({ seed: 1, players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
   f.x = 0; f.y = 0; f.facing = -1;
   list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94 });
   return b;
@@ -30202,7 +30464,7 @@ function skPreview(spec) {
   const go = $("skGo");
   if (go) go.addEventListener("click", skGo);
   if (!SK.art || SK.art.f.spec !== spec || SK.art.i !== i) {
-    const f = BL.newGame({ players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
+    const f = BL.newGame({ seed: 1, players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0];
     f.x = 0; f.y = 0; f.facing = -1;
     SK.art = { cv: $("skArt"), f, i, fit: 0.8, bottom: 0.94 };
   }
@@ -30325,7 +30587,7 @@ function shopGlazeCard(spec) {
   cv.setAttribute("aria-hidden", "true"); a.appendChild(cv);
   f.appendChild(shMk("b", "", spec.name)); f.appendChild(shMk("small"));
   b.append(a, f);
-  const fig = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  const fig = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
   fig.x = 0; fig.y = 0; fig.facing = -1;
   b.addEventListener("click", () => shopGlazeTap(spec.id));
   return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };
@@ -30800,7 +31062,7 @@ function onlineArtFighter() {
   const spec = FIG[sel.fighter], o = onlineArtFighter;
   if (!o.f || o.f.spec !== spec || o.pi !== palIdx(spec.id)) {
     o.pi = palIdx(spec.id);
-    o.f = newGame({ players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+    o.f = newGame({ seed: 1, players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     o.f.x = 0; o.f.y = 0;
   }
   return glazeMark(o.f, glazeHas(spec.id, o.pi));   // ui/glaze.js
@@ -32158,7 +32420,7 @@ tap("rAgain", () => {
   stkLeave();   // ui/stakes.js: a challenge still out is withdrawn
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
-  if (match && match.tutorial) { quickOpen(); return; }
+  if (match && match.tutorial) { startFirstFight(); return; }   // YOU'RE READY: FIGHT (ui/tutorial.js)
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
   if (match && (match.qm || match.warm || match.vc) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
   if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)
@@ -32470,7 +32732,7 @@ function startTrial(fid, o) {
   // the dummy is always Odin (the heaviest fighter, the one every route is tested on: tests/combos.js); against Odin himself in another skin
   const me = FIG[fid] || FIGHTERS[0], opp = FIG.odin, mi = P.pal[me.id] || 0;
   const myPal = me.palettes[mi] || me.palettes[0], opPal = opp.palettes[me.id === "odin" ? (mi + 1) % chipN(opp) : 0];
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: opPal }], stocks: 9, time: 0, countdown: 90 });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: opPal }], stocks: 9, time: 0, countdown: 90 });
   match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
   meSlot = 0;
   const list = ROUTES.forFighter(me.id), done = new Set(routesDone());
@@ -32953,6 +33215,7 @@ const SYNC = (function () {
     const known = new Map((figs || []).map((f) => [f.id, f.palettes.length]));
     out.last = typeof p.last === "string" && known.has(p.last) ? p.last : figs && figs.length ? figs[0].id : "";
     if (p.tut) out.tut = true;
+    if (p.fin1) out.fin1 = true;   // finished a first real match (ui/base.js playedOnce)
     const owned = {}, pal = {};
     const po = isObj(p.owned) ? p.owned : {}, pp = isObj(p.pal) ? p.pal : {};
     const ids = new Set([...known.keys(), ...Object.keys(po).filter((k) => ID_RE.test(k)).slice(0, 24), ...Object.keys(pp).filter((k) => ID_RE.test(k)).slice(0, 24)]);
@@ -33008,6 +33271,7 @@ const SYNC = (function () {
     if (S.name) P.name = S.name; else delete P.name;
     P.last = S.last;
     if (S.tut) P.tut = true;
+    if (S.fin1) P.fin1 = true;
     P.owned = Object.assign({}, P.owned, Object.fromEntries(Object.entries(S.owned).map(([k, v]) => [k, v.slice()])));
     P.pal = Object.assign({}, P.pal, S.pal);
     P.history = S.history.map((h) => Object.assign({}, h));
@@ -33057,6 +33321,7 @@ const SYNC = (function () {
     const name = pick(L.name, B.name, S.name); if (name) out.name = name;
     out.last = pick(L.last, B.last, S.last);
     if (L.tut || S.tut) out.tut = true;
+    if (L.fin1 || S.fin1) out.fin1 = true;
     const ids = [...new Set([...Object.keys(L.owned || {}), ...Object.keys(S.owned || {}), ...Object.keys(L.pal || {}), ...Object.keys(S.pal || {})])].sort();
     out.owned = {}; out.pal = {};
     for (const id of ids) {
@@ -33473,7 +33738,7 @@ function lkBuild() {
   if (window.ResizeObserver) new ResizeObserver(() => { if (!pan.hidden && !screens.account.hidden) lkPaint(); }).observe(pan);
 }
 function lkFighter(spec, pal) {
-  const f = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  const f = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
   f.x = 0; f.y = 0; f.facing = -1;
   return f;
 }
@@ -33881,7 +34146,7 @@ const qmOn = () => !!window.__blQuick && !window.__blNoQuick;   // __blNoQuick: 
   try {
     const s = JSON.parse(localStorage.getItem(QM_KEY) || "null");
     if (!s || typeof s !== "object") return;
-    QM.mode = s.mode === "c" || s.mode === "v" ? s.mode : "r";   // v: Ranked vs CPU (ui/vscpu.js) QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);
+    QM.mode = s.mode === "c" || s.mode === "v" ? s.mode : "r"; QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);   // v: Ranked vs CPU (ui/vscpu.js)
     if (s.me && typeof s.code === "string") { QM.me = qmClean(s.me); QM.code = s.code; }
   } catch (e) { /* storage blocked: nothing remembered */ }
 })();
@@ -34139,7 +34404,7 @@ function qmEndWarm() {
 const qmVsArt = [];
 function qmVs(m) {
   const mine = m.role === "host" ? 0 : 1, o = m.opp, me = qmMe(), el = $("qmVs");
-  const fs = newGame({ players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
+  const fs = newGame({ seed: 1, players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
   glazeMark(fs[mine], glazeHas(m.f[mine], m.p[mine]));   // ui/glaze.js: your own glaze on the VS screen
   for (const [k, f] of [["L", fs[mine]], ["R", fs[1 - mine]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
@@ -34365,7 +34630,7 @@ function qmWarmStart() {
   const me = FIG[sel.fighter], myPal = me.palettes[palIdx(me.id)] || me.palettes[0], opp = cpuFoe(me);
   const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
   const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));   // never below Normal (Fable's review)
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
   match = { warm: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
@@ -34428,7 +34693,7 @@ function quickOpen() {
   resize();
   if (qmSearching() && sel.fighter !== QM.sentF) qmSend();   // a new fighter rides into the next match found
   qmRender();
-  if (!QM.s1) qmSeason();
+  if (!QM.s1 && playedOnce()) qmSeason();   // the Season 1 sheet waits for the first finished match (base.js)
   if (!ACCT.code && ACCT.avail == null) acctPing().then(qmRefresh);
 }
 function qmCardIn() { const fc = $("qmFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
@@ -34984,7 +35249,7 @@ function vcTicket(m) {
 }
 function vcVs(tk) {
   const el = $("qmVs"), me = vcMine() || VC_FRESH;
-  const fs = newGame({ players: tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
+  const fs = newGame({ seed: 1, players: tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
   glazeMark(fs[0], glazeHas(tk.f[0], tk.p[0]));   // ui/glaze.js: your own glaze
   for (const [k, f] of [["L", fs[0]], ["R", fs[1]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
@@ -35935,125 +36200,324 @@ function stkStats(pan) {
   const net = k.net > 0 ? `+${fmtChips(k.net)}` : k.net < 0 ? `−${fmtChips(-k.net)}` : "±0";
   pan.appendChild(acMk("p", "ac-line sk-stat", `Chip stakes: ${k.w}–${k.l} · net ${net} chips · ${k.n} of ${k.day} today`));
 }
-/* ----- guided practice: short prompts the first time someone plays ----- */
-const LIGHTK = new Set(["jab", "side", "up", "down", "nair", "sair", "uair", "dair"]);
-const TUT = { on: false, i: 0, id: "move", x0: 0, lights: 0, hold: 0, calm: 0, dodges: 0 };
-const TUT_CALM = 240;   // sim ticks the CPU waits (4 s) once the player is next to it, in the steps that need a hit to land
+/* ----- the first minute: a 4-step tutorial (about 55 s), then the first fight with hints (Fable's first-minute pass, 2026-10-21) -----
+   All UI: the tutorial and the first fight are offline, and like before the UI sets fields on G (percent, stocks, ulti bar, the players' spots) and
+   scripts the CPU's input in step 3 (tutBot). Nothing here is read by the simulation otherwise. The welcome sheet and the turn-sideways screen are in welcome.js. */
+const TUT = { on: false, i: 0, id: "move", x0: 0, hits: 0, hold: 0, calm: 0, dodges: 0, moved: false, ph: "", t: 0, tries: 0, falls: 0, scr: null };
+const TUT_CALM = 240;   // sim ticks the CPU waits (4 s) once the player is next to it, in the step that needs hits to land
+// Step 3's launch: the player's percent, how far inside the right ledge it stands, how far the dummy stands behind it, and the fall speed cap while it
+// recovers. Tuned in node against all eight fighters (tests/pwtut.py checks it live): the heavy sends the player 10 to 120 px past the ledge, and
+// with the cap even a late first jump plus a push toward the stage gets back.
+const TUT_LAUNCH = { pct: 0, inside: 60, gap: 60, fall: 4.5 };
 function tutSteps() {
-  const t = touchUI, spec = G.fighters[0].spec;
   return [
-    { id: "move", t: "Move", h: t ? "Drag on the left side of the screen." : "A and D, or the arrow keys.", b: null },
-    { id: "jump", t: "Jump, then jump again", h: t ? "Tap Jump twice. The second jump happens in the air." : "Space twice. The second jump happens in the air.", b: "jump" },
-    { id: "light", t: "Three light hits", h: `${t ? "Tap Light" : "Press J"} three times next to the CPU. The third hit launches.`, b: "light" },
-    { id: "heavy", t: "Heavy attack", h: `${t ? "Tap Heavy" : "Press K"}. Slower, but it hits hard. Hold up or down to aim it.`, b: "heavy" },
-    { id: "charge", t: "Hold to charge", h: t ? "Hold Heavy until its ring fills, then let go. Land one on the CPU." : "Hold K to power up, then let go. Land one on the CPU.", b: "heavy" },
-    { id: "special", t: spec.signature.name, h: `${t ? "Tap Special" : "Press L"} for your signature move. It recharges after each use.`, b: "special" },
-    { id: "dodge", t: "Dodge", h: `${t ? "Tap Dodge" : "Press Shift or V"} as the CPU attacks to slip through the hit. Hold a direction to roll.`, b: "dodge" },
-    { id: "ult", t: "Ultimate", h: `Your bar is full. ${t ? "Tap ULTI" : "Press U"} for ${spec.ultimate.name}. The game freezes for a moment first.`, b: "ulti" },
-    { id: "off", t: "Knock them off", h: "Their damage is high now, so they fly far. Hit them off the screen.", b: null },
+    { id: "move", t: "Move & jump", b: null },
+    { id: "hits", t: "Land 3 hits", b: "light" },
+    { id: "dodge", t: "Dodge, then recover", b: "dodge" },
+    { id: "ko", t: "Knock them out", b: "heavy" },
   ];
+}
+// the card's second line (touch / keyboard copy)
+function tutHint() {
+  const t = touchUI;
+  switch (TUT.id) {
+    case "move": return TUT.moved ? (t ? "Tap JUMP twice" : "SPACE, twice") : (t ? "Drag left to move" : "A or D to move");
+    case "hits": return `${t ? "LIGHT is fast, HEAVY hurts" : "J light, K heavy"} · ${TUT.hits}/3`;
+    case "dodge":
+      if (TUT.ph === "dodge") return t ? "Tap DODGE as they swing" : "SHIFT as they swing";
+      if (TUT.falls > 1 || TUT.tries > 2) return "No worries, a real fight teaches it";   // the "On we go!" after two falls (or a launch that never came)
+      if (TUT.ph !== "recover") return "Here comes a big hit…";
+      if (TUT.falls) return `${t ? "Jump" : "SPACE"} twice, then push toward the stage`;
+      return `Off you go! ${t ? "JUMP" : "SPACE"} twice, back to the stage`;
+    default: return t ? "They're at 120%. HEAVY sends them flying" : "They're at 120%. K sends them flying";
+  }
+}
+function tutPulse() {   // the button the step is about glows (not while the "Nice!" shows)
+  const id = TUT.id, k = id === "move" ? (TUT.moved ? "jump" : null) : id === "hits" ? "light" : id === "dodge" ? (TUT.ph === "dodge" ? "dodge" : TUT.ph === "recover" ? "jump" : null) : "heavy";
+  for (const b of padBtns) b.classList.toggle("tutpulse", b.dataset.k === k && !TUT.hold);
+}
+function tutRefresh() {
+  const h = $("tutH");
+  h.textContent = tutHint(); h.style.fontSize = "";
+  for (let s = 13; h.scrollWidth > h.clientWidth + 1 && s > 11;) h.style.fontSize = --s + "px";   // one line: a narrow card sets it smaller
+  tutPulse();
+}
+// The top band between the two name cards (app pixels): the tutorial card and the first fight's hint strip sit in it, y = 8 and just under the timer.
+// Measured, because the cards' widths follow the names and the percent. Upright (portrait) both sit above the control panel instead (css/99-first.css).
+function topPlace() {
+  if ($("hud").hidden) return;
+  const a = $("pc0"), b = $("pc1"), el = $("tut"), fh = $("fhint");
+  const l = a.offsetLeft + a.offsetWidth + 12, r = b.offsetLeft - 12, w = Math.max(160, Math.min(H >= 520 ? 480 : 400, r - l)), mid = Math.round((l + r) / 2);
+  el.style.setProperty("--tl", Math.round(mid - w / 2) + "px"); el.style.setProperty("--tw", w + "px");
+  const c = $("clock"), m = c.offsetParent, fw = Math.max(160, r - l);
+  fh.style.setProperty("--fy", (m ? m.offsetTop + c.offsetTop + c.offsetHeight + 4 : 40) + "px");
+  fh.style.setProperty("--fl", Math.round(mid - fw / 2) + "px"); fh.style.setProperty("--fw", fw + "px");
+}
+// The card and the first fight's hint strip fade to a ghost while your YOU marker would sit under them (on the top platform of a small screen). App pixels.
+function tutPeek() {
+  const f = G && G.fighters[meSlot], tag = f && f.state !== "dead" && f.state !== "gone" && tagAlpha() > 0.02, [hx, hy] = tag ? toScreen(f.x, f.y - f.s.h) : [0, 0];
+  for (const el of [$("tut"), $("fhint")]) {
+    const sp = el.id === "fhint" ? el.firstElementChild : null, x = el.offsetLeft + (sp ? sp.offsetLeft : 0), w = sp ? sp.offsetWidth : el.offsetWidth;
+    el.classList.toggle("peek", !!tag && !el.hidden && hx + 18 > x && hx - 18 < x + w && hy - 36 < el.offsetTop + el.offsetHeight && hy - 12 > el.offsetTop);
+  }
 }
 function startTutorial() {
   Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
   P.tut = true; saveProfile();
   const me = FIG[sel.fighter] || FIGHTERS[0], opp = me.id === "odin" ? FIG.wizard : FIG.odin;
   const myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: opp.palettes[0] }], stocks: 9, time: 0, countdown: 120 });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: opp.palettes[0] }], stocks: 9, time: 0, countdown: 120 });
   const easy = LEVELS.find((l) => l.name === "Easy").d;   // the same CPU as Practice > Easy
   match = { ranked: false, tutorial: true, d: easy, bot: makeBot(easy), level: "Tutorial" };
   meSlot = 0;
-  Object.assign(TUT, { on: true, i: 0, x0: G.fighters[0].x, lights: 0, hold: 0, calm: TUT_CALM, dodges: 0 });
+  Object.assign(TUT, { on: true, i: 0, x0: G.fighters[0].x, hold: 0, scr: null });
   enterMatchUI();
-  app.classList.toggle("tutpad", touchUI);
+  $("tut").classList.add("t4");   // the compact two-line card (the Combo trial keeps the old one)
   tutShow();
 }
 function tutShow() {
   const st = tutSteps(), s = st[TUT.i], el = $("tut");
   el.classList.remove("done");
-  TUT.calm = TUT_CALM; TUT.id = s.id; TUT.dodges = 0;
-  if (s.id === "ult") {   // offline and UI-side only: the player's bar is filled for this step (an ulti used by accident earlier is given back)
-    const me = G.fighters[0];
-    me.ultN = Math.min(me.ultN, BL.TUNE.ultMax - 1); me.ult = BL.ultNeed(me);
-  }
+  Object.assign(TUT, { id: s.id, calm: TUT_CALM, dodges: 0, hits: 0, moved: false, ph: s.id === "dodge" ? "dodge" : "", t: 0, tries: 0, falls: 0, scr: null });
   cntOnce("tut:" + s.id);   // ui/counter.js: the furthest step new players reach
-  $("tutN").textContent = `Tutorial · ${TUT.i + 1} of ${st.length}`;
-  $("tutT").textContent = s.t; $("tutH").textContent = s.h;
-  for (const b of padBtns) b.classList.toggle("tutpulse", b.dataset.k === s.b);
+  $("tutN").textContent = `Tutorial ${TUT.i + 1}/${st.length}`;
+  $("tutT").textContent = s.t;
+  $("pc1").querySelector(".pc-tag").textContent = s.id === "ko" ? "CPU" : "Dummy";   // it only fights back in the last step
+  if (s.id === "ko") { const op = G.fighters[1]; op.percent = Math.max(op.percent, 120); op.stocks = 1; }   // one hit away from flying
+  topPlace(); tutRefresh();
 }
 function tutEnd() {
-  TUT.on = false; $("tut").hidden = true; app.classList.remove("tut", "tutpad");
+  TUT.on = false; TUT.scr = null; $("tut").hidden = true; $("tut").classList.remove("t4", "done", "peek"); app.classList.remove("tut", "tutpad");
   $("tutNext").hidden = true; $("tutSkip").textContent = "Skip";   // the Combo trial's buttons (ui/combos.js)
   for (const b of padBtns) b.classList.remove("tutpulse");
+}
+// The tutorial's CPU is told what to do now and then (step 3's launch): loop.js asks here before it asks the CPU's own brain.
+function tutBot() {
+  if (!TUT.on || !TUT.scr || !match || !match.tutorial || match.trial) return null;
+  const s = TUT.scr, i = BL.blankInput();
+  if (s.n++ < s.heavy) { i.heavy = true; i.x = 1; }   // a side heavy toward the player (on its right)
+  return i;
+}
+function tutDoneStep(title) {
+  TUT.hold = 50;
+  $("tut").classList.add("done"); $("tutT").textContent = title;
+  tutRefresh();
+  Sfx.ui();
+}
+// the "Nice!" is over: the launch after the dodge, or the next step
+function tutAfter() {
+  if (TUT.id === "dodge" && TUT.ph === "dodge") {
+    $("tut").classList.remove("done"); $("tutT").textContent = tutSteps()[TUT.i].t;
+    Object.assign(TUT, { ph: "set", t: 0, scr: { n: 0, heavy: 0 } }); tutRefresh();   // the dummy stands still until the launch
+  } else { TUT.i++; tutShow(); }
+}
+// Step 3, after the dodge: the dummy launches the player off the right ledge (a scripted side heavy), then JUMP twice and back. UI only: both fighters are
+// placed, the dummy's input is scripted, and the player falls a little slower while it recovers. A fall (it respawns) repeats it once; a second fall,
+// or a heavy that keeps missing, counts as done: no dead end. Returns the card's title when the step is done.
+function tutLaunch(me, op) {
+  const S = STAGE.main, K = TUT_LAUNCH, ph = TUT.ph;
+  const off = !me.grounded && (me.x > S.x2 + 6 || me.x < S.x1 - 6) && me.state !== "dead" && me.state !== "respawn";
+  TUT.t++;
+  if (ph === "set") {   // wait (7 s at the most) until the player stands free, then put both in place
+    const free = me.grounded && me.plat < 0 && (me.state === "idle" || me.state === "run" || me.state === "walk");
+    if (!free && TUT.t < 420) return "";
+    for (const [f, x, face] of [[me, S.x2 - K.inside, -1], [op, S.x2 - K.inside - K.gap, 1]]) {
+      Object.assign(f, { x, y: S.top, vx: 0, vy: 0, kbx: 0, kby: 0, facing: face, grounded: true, plat: -1, hitstun: 0, tumble: false, invuln: 0, doomed: false, freeT: 99, airJumps: f.s.airJumps, ledge: 0, ledgeCd: 0, chg: 0 });
+      f.state = "idle"; f.st = 0; f.move = null; f.mid = null;
+    }
+    me.percent = K.pct;
+    Object.assign(TUT, { ph: "wait", t: 0, scr: { n: 0, heavy: 0 } }); tutRefresh();
+  } else if (ph === "wait") {
+    if (TUT.t >= 45) Object.assign(TUT, { ph: "swing", t: 0, scr: { n: 0, heavy: 3 } });
+  } else if (ph === "swing") {   // the heavy lands about 30 ticks in; the player is off the stage a few ticks later
+    if (off) { Object.assign(TUT, { ph: "recover", t: 0 }); tutRefresh(); }
+    else if (TUT.t > 150) {   // it never got them off (a dodge, a step away): once more, and after the third time on
+      if (++TUT.tries >= 3) return "On we go!";
+      Object.assign(TUT, { ph: "set", t: 0 });
+    }
+  } else if (ph === "recover") {
+    if (me.state === "air" && me.vy > K.fall) me.vy = K.fall;
+    if (me.state === "dead" || me.state === "respawn") {
+      if (++TUT.falls >= 2) return "On we go!";
+      Object.assign(TUT, { ph: "set", t: 0 }); tutRefresh();
+    } else if (me.grounded && me.x >= S.x1 && me.x <= S.x2 && me.state !== "hitstun" && TUT.t > 10) return "Nice!";
+  }
+  return "";
 }
 function tutTick(evs) {
   if (match && match.trial) { for (const f of G.fighters) f.ult = 0; trialTick(evs); return; }   // the Combo trial runs on this engine (ui/combos.js); it has no ultimates
   if (!TUT.on || !match || !match.tutorial || !G || G.phase !== "play") return;
   const me = G.fighters[0], op = G.fighters[1], id = TUT.id;
+  if ((G.t & 15) === 0) topPlace();   // the cards grow with the percent
+  if ((G.t & 3) === 0) tutPeek();
   // nobody runs out of lives or gets launched far while learning
   me.stocks = Math.max(me.stocks, 5); me.percent = Math.min(me.percent, 60);
-  // The CPU is a real Easy CPU, but it stands still while there is nothing it should punish: in the first two steps,
-  // and for TUT_CALM ticks after the player walks up to it (again after every hit) in the steps that need a hit to land.
+  // The CPU is a real Easy CPU, but it stands still while there is nothing it should punish: in the first step, and for TUT_CALM ticks after the
+  // player walks up to it (again after every hit) in the step that needs hits to land.
   const near = Math.abs(me.x - op.x) < 170 && Math.abs(me.y - op.y) < 90;
-  const hitStep = id === "light" || id === "charge";
+  const hitStep = id === "hits";
   if (hitStep && evs.some((e) => e.type === "hit" && e.def !== undefined)) TUT.calm = TUT_CALM;   // every hit, either way, gives the player another quiet spell
   if (hitStep && near && TUT.calm > 0) TUT.calm--;
-  // the bar stays below full until the Ultimate step hands the player a full one (the ULTI button would pop out untaught)
-  if (id !== "ult" && id !== "off") me.ult = Math.min(me.ult, BL.ultNeed(me) * 0.7);
-  // the CPU attacks in the Dodge step, and stands still while the ulti is read
-  const calm = id === "move" || id === "jump" || id === "ult" || (hitStep && TUT.calm > 0);
-  match.bot.d = calm ? -1 : match.d;
-  if (TUT.hold > 0) {
-    if (--TUT.hold === 0) {
-      TUT.i++; tutShow();
-      if (TUT.id === "off") { op.percent = Math.max(op.percent, 120); op.stocks = 1; }
-    }
-    return;
-  }
-  let done = false;
+  // the ulti bar stays below full: the ULTI button is taught by the first fight's hint, not here
+  me.ult = Math.min(me.ult, BL.ultNeed(me) * 0.7);
+  match.bot.d = id === "move" || (hitStep && TUT.calm > 0) ? -1 : match.d;
+  if (TUT.hold > 0) { if (--TUT.hold === 0) tutAfter(); return; }
+  let done = "";
   switch (id) {
-    case "move": done = Math.abs(me.x - TUT.x0) > 110; break;
-    case "jump": done = evs.some((e) => e.type === "jump" && e.slot === 0 && !e.ground); break;
-    case "light": for (const e of evs) if (e.type === "hit" && e.slot === 0 && LIGHTK.has(me.mid)) TUT.lights++; done = TUT.lights >= 3; break;
-    case "heavy": done = me.state === "attack" && !!me.mid && !LIGHTK.has(me.mid) && me.mid !== "spec"; break;
-    case "charge": done = evs.some((e) => e.type === "hit" && e.slot === 0 && e.chg > 0); break;   // "hit" carries chg > 0 for a charged heavy
-    case "special": done = me.mid === "spec"; break;
-    case "dodge": {   // a dodge while the CPU is attacking close by (the dodge is what saves the player), or simply two dodges
-      TUT.dodges += evs.filter((e) => e.type === "dodge" && e.slot === 0).length;
-      const atk = op.state === "attack" && Math.abs(me.x - op.x) < 260 && Math.abs(me.y - op.y) < 160;
-      done = (me.state === "dodge" && atk) || TUT.dodges >= 2;
+    case "move":   // far enough along the floor, then a jump in the air
+      if (!TUT.moved && Math.abs(me.x - TUT.x0) > 110) { TUT.moved = true; tutRefresh(); }
+      if (TUT.moved && evs.some((e) => e.type === "jump" && e.slot === 0 && !e.ground)) done = "Nice!";
+      break;
+    case "hits": {   // any hit of yours counts
+      const n = evs.filter((e) => e.type === "hit" && e.slot === 0 && e.def !== undefined).length;
+      if (n) { TUT.hits = Math.min(3, TUT.hits + n); if (TUT.hits < 3) tutRefresh(); else done = "Nice!"; }
       break;
     }
-    case "ult": done = evs.some((e) => e.type === "ulti" && e.slot === 0); break;
+    case "dodge":
+      if (TUT.ph !== "dodge") { done = tutLaunch(me, op); break; }
+      // a dodge while the CPU is attacking close by (the dodge is what saves the player), or simply two dodges
+      TUT.dodges += evs.filter((e) => e.type === "dodge" && e.slot === 0).length;
+      if ((me.state === "dodge" && op.state === "attack" && Math.abs(me.x - op.x) < 260 && Math.abs(me.y - op.y) < 160) || TUT.dodges >= 2) done = "Nice!";
+      break;
   }
-  if (done) {
-    TUT.hold = id === "ult" ? 170 : 50;   // the ulti plays out (freeze 30 + up to 100 frames) before the last step starts
-    $("tut").classList.add("done"); $("tutT").textContent = "Nice!";
-    for (const b of padBtns) b.classList.remove("tutpulse");
-    Sfx.ui();
-  }
+  if (done) tutDoneStep(done);   // the last step ends with the KO (finishMatch -> tutDone)
 }
+// the end: your fighter on the results screen, one card and one button
 function tutDone() {
   tutEnd();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
-  // the results screen (screens.js resOpen): your fighter on the panel, READY!, and on the right your rank as it stands (what the
-  // Ranked match button plays for) instead of the match's stats and chips
   const me = G.fighters[0].spec;
-  resOpen("win", me, true);
+  resOpen("win", me, true);   // solo: css/99-first.css keeps only FIGHT and Menu
   if (match) match.finBy = "";
   $("rMode").textContent = "Tutorial"; $("rWho").textContent = me.name;
-  resTitle("Ready!");
-  $("rSub").textContent = "That's the basics. Ranked matches earn potato chips, and chips unlock new skins.";
-  resRank(null);
+  resTitle("You're ready");
+  $("rSub").textContent = "Now a real fight: the Easy CPU, three lives.";
   $("rStats").hidden = true;
-  $("rAgain").querySelector("span").textContent = "Ranked match";
-  $("rChange").querySelector("span").textContent = "Practice";
+  $("rAgain").querySelector("span").textContent = "Fight";
   show("result");
 }
-tap("tutSkip", () => { if (match && match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; } tutEnd(); goMenu(); });   // a trial from a Road stop: Back to its sheet (openRoad ends the trial)
+tap("tutSkip", () => {
+  if (match && match.trial && TR.back !== null) { openRoad({ to: TR.back }); return; }   // a trial from a Road stop: Back to its sheet (openRoad ends the trial)
+  if (match && match.tutorial && !match.trial && !playedOnce()) { tutEnd(); cntDrop(true); startFirstFight(); return; }   // a new player goes on to the first fight (cntDrop counts the skip)
+  tutEnd(); goMenu();
+});
 tap("hTry", startTutorial);
 
+/* ----- the first fight: a Practice 1v1 against the Easy CPU, 3 lives, 4:00 (Skip on the welcome, FIGHT after the tutorial, Skip on the card of a new player) -----
+   match.first = true counts as Practice in the stats (cntMode). The hints below only run in this match, each once. */
+function startFirstFight() {
+  Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
+  const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], opp = cpuFoe(me);
+  const oppPal = opp.id === me.id ? opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length] : opp.palettes[0];
+  const li = LEVELS.findIndex((l) => l.name === "Easy"), easy = LEVELS[li].d;
+  Object.assign(sel, { mode: "practice", opp: "random", level: li });   // Rematch plays another Practice fight, not a Ranked one
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
+  // Fable: the first fight's CPU does not edge-guard (the Dragon's style would follow the player out past the ledge)
+  match = { ranked: false, d: easy, bot: makeBot(easy, Object.assign({}, BL.BOT_STYLES[opp.id], { edge: 0 })), level: LEVELS[li].name, cpu: cpuName(), first: true };
+  meSlot = 0;
+  enterMatchUI();
+  fhStart();
+}
+const FH = { on: false, t: 0, cur: "", end: 0, gap: 0, seen: new Set(), q: [] };
+function fhLines() {
+  const t = touchUI;
+  return {
+    go: t ? "Drag left to move · tap JUMP twice" : "A D move · SPACE jump, twice",
+    mix: t ? "LIGHT and HEAVY hit · DODGE through attacks" : "J light · K heavy · SHIFT dodge",
+    edge: t ? "Off the edge? JUMP twice to get back" : "Off the edge? SPACE twice to get back",
+    pct: t ? "They're over 100%. HEAVY launches them" : "They're over 100%. K launches them",
+    ult: t ? "ULTI is ready. Tap it" : "ULTI ready — press U",
+  };
+}
+function fhStart() {
+  Object.assign(FH, { on: true, t: 0, cur: "", end: 0, gap: 0, seen: new Set(), q: [] });
+  $("fhint").classList.remove("on");
+  stickKnob.classList.toggle("drag", touchUI);   // DRAG pulses in the stick (css/99-first.css: a still label under reduced motion)
+  topPlace();
+}
+function fhStop() {
+  FH.on = false; $("fhint").classList.remove("on", "peek"); stickKnob.classList.remove("drag");
+}
+function fhOut() { $("fhint").classList.remove("on"); FH.cur = ""; FH.gap = FH.t + 18; }   // 300 ms to fade, then the next line may come
+function fhTick() {
+  if (!FH.on || !match || !match.first) return;
+  if (G.phase === "over" || FIN.on) { if (FH.cur) fhOut(); return; }
+  if (G.phase !== "play") return;
+  const me = G.fighters[meSlot], op = G.fighters[1 - meSlot], S = STAGE.main, k = FH;
+  k.t++;
+  if ((k.t & 15) === 0) topPlace();
+  if ((k.t & 3) === 0) tutPeek();
+  if (k.t === 240) stickKnob.classList.remove("drag");   // DRAG: the first 4 s
+  const off = !me.grounded && me.state !== "dead" && me.state !== "respawn" && (me.x > S.x2 + 10 || me.x < S.x1 - 10);
+  // 0 s and 7 s are on the clock; the others come when it happens and go first (they only help right then)
+  for (const [id, on] of [["go", true], ["mix", k.t >= 420], ["edge", off], ["pct", op.percent >= 100], ["ult", HU.rdy]]) {
+    if (!on || k.seen.has(id)) continue;
+    k.seen.add(id);
+    if (id === "go" || id === "mix") k.q.push(id); else k.q.unshift(id);
+  }
+  const clock = k.cur === "go" || k.cur === "mix";
+  if (k.cur && (k.t >= k.end || (clock && k.q.length && k.q[0] !== "go" && k.q[0] !== "mix"))) fhOut();
+  if (!k.cur && k.q.length && k.t >= k.gap) {
+    const id = k.q.shift(), sp = $("fhint").firstElementChild;
+    k.cur = id; k.end = k.t + 300;   // 5 s
+    sp.textContent = fhLines()[id]; sp.style.fontSize = "";
+    for (let s = 16; sp.scrollWidth > sp.clientWidth + 1 && s > 11;) sp.style.fontSize = --s + "px";   // one line: a narrow band sets it smaller
+    $("fhint").classList.add("on");
+  }
+}
+// the stick was touched: DRAG has done its job
+stickZone.addEventListener("pointerdown", () => stickKnob.classList.remove("drag"));
+/* ===================== first open: the turn-sideways screen and the welcome sheet (UI only) =====================
+   1. Turn it sideways: a touch phone held upright (rotMode, view.js) gets a full-screen note before anything else, on every page load, because rotation
+      lock is permanent and costs one tap. It sits outside #app (a sibling in body) so it stays upright while #app is rotated; READY is drawn in the game's
+      turn, so it reads right once the phone is turned. READY closes it, "Play upright instead" sets Settings > Screen to Upright, and a browser that turns
+      the page by itself closes it with no tap (view.js resize). Shown once per page load; never on a computer or with Screen set to Upright.
+   2. Welcome: a brand-new player (no saved profile, no account, no invite link) picks the 1-minute tutorial or goes straight to the first fight (tutorial.js).
+      The menu is hidden and the attract fight shows through a 50% dim, with one fighter at 110% so a launch happens soon. */
+function turnOpen(next) {
+  if (!rotMode || TURN.shown) { next(); return; }
+  TURN.on = TURN.shown = true; TURN.next = next;
+  const el = $("turn");
+  el.style.setProperty("--tr", rotMode === 1 ? "-90deg" : "90deg");   // the phone is turned the other way round from the game's own turn
+  el.style.setProperty("--ga", rotMode === 1 ? "90deg" : "-90deg");   // READY wears the game's turn (the same as #app)
+  el.classList.toggle("ccw", rotMode === 1);
+  el.classList.remove("out"); el.hidden = false;
+  releaseTouch();
+}
+function turnClose() {
+  if (!TURN.on) return;
+  TURN.on = false;
+  const el = $("turn"), n = TURN.next;
+  TURN.next = null;
+  el.classList.add("out");   // 200 ms fade, still in the way of touches until it is gone
+  setTimeout(() => { el.hidden = true; el.classList.remove("out"); if (n) n(); }, 200);
+}
+$("turnGo").addEventListener("click", () => { Sfx.init(); Sfx.ui(); turnClose(); });
+$("turnUp").addEventListener("click", () => { Sfx.init(); P.screen = "up"; saveProfile(); releaseTouch(); resize(); turnClose(); });   // resize() first: rotMode 0 also closes it, once
+// nothing under the screen hears a touch that lands on it
+$("turn").addEventListener("pointerdown", (e) => e.stopPropagation());
+
+const WEL = { on: false, g: null, tm: 0 };
+screens.welcome = $("scrWelcome");
+function welcomeSeed() {   // the attract fight is new now and then: its first fighter always starts at 110%
+  if (attract && WEL.g !== attract.g) { WEL.g = attract.g; attract.g.fighters[0].percent = 110; }
+}
+function welcomeOpen() {
+  WEL.on = true;
+  show(null); modal("welcome", true);   // show(null) hides the menu
+  welcomeSeed();
+  clearInterval(WEL.tm);
+  WEL.tm = setInterval(() => { if (WEL.on) { welcomeSeed(); screens.menu.hidden = true; } }, 400);
+  try { $("welGo").focus({ preventScroll: true }); } catch (e) { /* no focus for a touch screen: fine */ }
+}
+function welcomeClose() {
+  WEL.on = false; clearInterval(WEL.tm);
+  modal("welcome", false);
+}
+tap("welGo", () => { welcomeClose(); cntOnce("tut:go"); goFull(); startTutorial(); });   // ui/counter.js cntOnce: the funnel's "picked" row
+tap("welSkip", () => { welcomeClose(); cntOnce("tut:fight"); P.tut = true; saveProfile(); goFull(); startFirstFight(); });
 /* ===================== loop ===================== */
 function simTick() {
   qmTick();   // ui/quick.js: the found match's handshake under any screen, its timers
@@ -36069,7 +36533,7 @@ function simTick() {
       const pi = vcIn(readPlayer());   // ui/vscpu.js: a ranked CPU match logs your inputs for the server
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
       else if (match.duo) step(G, duoInputs(pi));   // ui/duo.js: you, your CPU partner and the two CPU foes
-      else step(G, [pi, botInput(G, G.fighters[1], G.fighters[0], match.bot)]);
+      else step(G, [pi, tutBot() || botInput(G, G.fighters[1], G.fighters[0], match.bot)]);   // tutBot: ui/tutorial.js, the tutorial CPU's scripted moves
     }
     if (G.phase === "countdown") {
       const n = Math.ceil(G.cd / 50);
@@ -36081,6 +36545,7 @@ function simTick() {
   }
   const evs = g.events.splice(0);
   if (live && match && match.tutorial) tutTick(evs);
+  if (live && match && match.first) fhTick();   // ui/tutorial.js: the first fight's hints
   for (const e of evs) handleEvent(g, e, live);
   if (mode === "match" && G !== g) return;
   updateFx(g);
@@ -36099,19 +36564,23 @@ function frame(now) {
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
+  if (FH.on && (mode !== "match" || !match || !match.first)) fhStop();   // the first fight's hint strip goes with the match
   if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
   if (mode === "quick") drawQmArt(tick);   // ui/quick.js: the Fight Card's model
   if (mode === "road") roadDraw(tick);   // ui/road.js: the map
 }
 
-window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get stk() { return STK; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
+window.__blastline = { get game() { return G; }, get mode() { return mode; }, get net() { return NET; }, get tm() { return TM; }, r3: PERF, perf: PERF, fin: FIN, get trial() { return match && match.trial ? { i: TR.i, id: TR.list[TR.i].id, keys: TR.list[TR.i].keys.slice(), k: TR.k, miss: TR.miss, hold: TR.hold } : null; }, get duoFocus() { return duoFocused(); }, glazed: (i) => !!(G && G.fighters[i] && glazeOn(G.fighters[i])), get qm() { return QM; }, get stk() { return STK; }, get tut() { return { on: TUT.on, i: TUT.i, id: TUT.id, ph: TUT.ph, falls: TUT.falls, tries: TUT.tries, hits: TUT.hits, moved: TUT.moved }; }, get fh() { return { on: FH.on, cur: FH.cur, t: FH.t }; }, get head() { const f = G && G.fighters[meSlot]; return f ? toScreen(f.x, f.y - f.s.h) : null; }, get hud() { return { tag: tagAlpha(), glow: HX.k.slice(), reach: G && G.fighters[meSlot] ? launchReach(G.fighters[meSlot]) : null, tick }; } };
 cntBoot();   // ui/counter.js: play counts, before the first screen
 newAttract();
 qmBoot();   // ui/quick.js: Quick match on our own server (sign in, the lobby, the queue)
 goMenu();
-if (NET.invite) openOnline();
-else if (firstRun && !ACCT.hash) startTutorial(); // a brand-new player starts with the guided round
+// the turn-sideways screen comes before everything else (ui/welcome.js); then an invite link's lobby, or a brand-new player's welcome sheet
+turnOpen(() => {
+  if (NET.invite) openOnline();
+  else if (firstRun && !ACCT.hash) welcomeOpen();
+});
 camStep(attract.g, true);
 requestAnimationFrame(frame);
 })();
