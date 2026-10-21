@@ -2075,6 +2075,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .rd-head .coin { display: none; }
 #app.narrow .rd-sum { font-size: 13px; }
 #app.tiny .rd-head h2 { font-size: 24px; }
+/* upright, the stars line gets its own row under the region's name, so neither is cut */
+#app.portrait .rd-sum { order: 3; flex-basis: 100%; text-align: center; }
 
 /* a stop's sheet: the stars, the reward line; past the fence, three level buttons instead of Fight */
 .rd-line { font-style: italic; }
@@ -2127,11 +2129,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .rd-sheet.boss .rd-acts { flex-wrap: wrap; }
 #app.narrow .rd-sheet.boss .rd-acts #rsGo { flex-basis: 100%; }
 #app.short .rd-sheet.boss .rd-line { display: none; }   /* on a short screen his line is said in the countdown instead */
-/* upright: both cards are columns (as the narrow phones' already are, 430px wide too); his name wraps inside his card, and "role · you + a CPU partner"
-   is two lines (the dot goes) that wrap too */
-#app.portrait .rd-sheet.boss .dly-f, #app.portrait .rd-sheet.boss .dly-f.r { flex-direction: column; text-align: center; }
-#app.portrait .rd-sheet.boss .rd-me .rd-chg { margin: 0; }
-#app.portrait .rd-sheet.boss #rsOp .dly-t b, #app.portrait .rd-sheet.boss #rsOp .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
+/* upright, on every Road sheet: both cards are columns (as the narrow phones' already are, 430px wide too) and their names and lines wrap
+   inside them; on a boss's card "role · you + a CPU partner" is two lines (the dot goes) */
+#app.portrait .rd-sheet .dly-f, #app.portrait .rd-sheet .dly-f.r { flex-direction: column; text-align: center; }
+#app.portrait .rd-sheet .rd-me .rd-chg { margin: 0; }
+#app.portrait .rd-sheet .dly-t b, #app.portrait .rd-sheet .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
 #app.portrait .rd-sheet.boss #rsOp .rd-sep { display: none; }
 #app.portrait .rd-sheet.boss #rsOp .rd-cp { display: block; }
 /* sideways his card has room for his role only: "you + a CPU partner" is the rule line's first words right under it */
