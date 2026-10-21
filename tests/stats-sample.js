@@ -135,6 +135,8 @@ function visit(p, i, first) {
   let planned;           // matches this visit
   let forced = null;
   if (first && chance(0.04)) add(i, "inv");
+  if (!first && chance(0.02)) add(i, "chl:make");   // Challenge a friend: a link made after a match; opened, often on a new device, and played
+  if (first && chance(0.03)) { add(i, "inv"); add(i, "chl:open"); add(i, "chl:new"); if (chance(0.6)) add(i, "chl:play"); }
   if (first || p.tutLeft >= 0) {
     // the tutorial: a new device walks it step by step; one that left in the middle may pick it up again or skip it on its next visit
     let from = first ? 0 : p.tutLeft, skipped = false;

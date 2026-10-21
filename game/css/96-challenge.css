@@ -1,0 +1,35 @@
+/* ---------- Results: the Challenge a friend button (ui/challenge.js), under the story line in the winner's panel; "sunset ink" raised pill, same height and border as the rival strip ---------- */
+#resSheet .res-chl { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; align-self: flex-start; max-width: 100%; height: 34px; margin: 6px 0 0; padding: 0 13px 0 10px;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #3a4170, #262b50); color: #fff; box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  font: 800 14px/1 var(--display); letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
+#resSheet .res-chl[hidden] { display: none; }
+#resSheet .res-chl svg { flex: none; width: 17px; height: 17px; color: var(--mint); }
+#resSheet .res-chl > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .res-chl:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#resSheet .res-chl:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) { #resSheet .res-chl:hover { filter: brightness(1.06); } }
+/* comes in with the panel's other lines (40-results.css: resUp) */
+#resSheet.in:not(.still) .res-chl { animation: resUp 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.42s backwards; }
+
+/* smallest phones (667x320, 568x320) */
+#app.tiny #resSheet .res-chl { height: 30px; margin-top: 3px; gap: 6px; padding: 0 11px 0 8px; font-size: 13px; }
+#app.tiny #resSheet .res-chl svg { width: 15px; height: 15px; }
+
+/* computers and tablets */
+#app:not(.short):not(.portrait) #resSheet .res-chl { height: 38px; margin-top: 8px; gap: 8px; padding: 0 16px 0 12px; font-size: 16px; }
+#app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 20px; height: 20px; }
+/* desktop windows under 1000 px wide take the phones' sizes on the results (40-results.css), this too; under 800 px "a friend" goes */
+@container (max-width: 999px) {
+  #app:not(.short):not(.portrait) #resSheet .res-chl { height: 34px; margin-top: 6px; gap: 7px; padding: 0 13px 0 10px; font-size: 14px; }
+  #app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 17px; height: 17px; }
+}
+@container (max-width: 799px) { #app:not(.short):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
+
+/* upright phones: in the banner */
+#app.portrait #resSheet .res-chl { height: 32px; margin-top: 4px; font-size: 13px; }
+#app.portrait #resSheet .res-chl svg { width: 16px; height: 16px; }
+
+/* narrow phones: the panel's text column is too narrow for the whole label, so "a friend" goes (the plane says the rest); the screen's own width, as in 40-results.css */
+@container (max-width: 689px) { #app.short:not(.tiny):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
+@container (max-width: 629px) { #app.tiny #resSheet .res-chl .chl-af { display: none; } }

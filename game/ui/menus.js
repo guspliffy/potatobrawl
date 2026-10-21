@@ -93,7 +93,10 @@ tap("onCopy", () => {
   const fallback = () => { const r = document.createRange(); r.selectNodeContents($("onLink")); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); done(false); };
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
-tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
+tap("onShare", () => {   // a 1v1 says what Challenge a friend says (ui/challenge.js)
+  const text = NET.tb || hostBo() ? "Fight me in PotatoBrawl" : chlText();
+  try { navigator.share({ title: "PotatoBrawl", text, url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ }
+});
 /* ----- settings: sound, fullscreen, screen turning (Reset progress is in the Account sheet, ui/acct.js) ----- */
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";

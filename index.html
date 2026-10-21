@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0e1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="PotatoBrawl"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" type="image/png" href="/icon-192.png"><meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser."><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>PotatoBrawl</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0e1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="PotatoBrawl"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" type="image/png" href="/icon-192.png"><meta name="description" content="PotatoBrawl: a 1v1 platform fighter you can play against friends in the browser."><meta property="og:type" content="website"><meta property="og:site_name" content="PotatoBrawl"><meta property="og:title" content="PotatoBrawl"><meta property="og:description" content="A 1v1 potato brawl in your browser. No download, no account: open the link and fight."><meta property="og:image" content="https://potatobrawl.cloud/icon-512.png"><meta name="twitter:card" content="summary"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>PotatoBrawl</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&family=Barlow:wght@400;500;600&display=swap">
@@ -3410,6 +3410,42 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 @media (prefers-reduced-motion: reduce) { #scrOnline #onHost.full { animation: none; box-shadow: 0 4px 0 var(--ink), var(--bevelgold), 0 0 14px 3px rgba(255, 210, 63, 0.5); } }
 
+/* ---------- Results: the Challenge a friend button (ui/challenge.js), under the story line in the winner's panel; "sunset ink" raised pill, same height and border as the rival strip ---------- */
+#resSheet .res-chl { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; align-self: flex-start; max-width: 100%; height: 34px; margin: 6px 0 0; padding: 0 13px 0 10px;
+  border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #3a4170, #262b50); color: #fff; box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  font: 800 14px/1 var(--display); letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
+#resSheet .res-chl[hidden] { display: none; }
+#resSheet .res-chl svg { flex: none; width: 17px; height: 17px; color: var(--mint); }
+#resSheet .res-chl > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .res-chl:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#resSheet .res-chl:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) { #resSheet .res-chl:hover { filter: brightness(1.06); } }
+/* comes in with the panel's other lines (40-results.css: resUp) */
+#resSheet.in:not(.still) .res-chl { animation: resUp 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.42s backwards; }
+
+/* smallest phones (667x320, 568x320) */
+#app.tiny #resSheet .res-chl { height: 30px; margin-top: 3px; gap: 6px; padding: 0 11px 0 8px; font-size: 13px; }
+#app.tiny #resSheet .res-chl svg { width: 15px; height: 15px; }
+
+/* computers and tablets */
+#app:not(.short):not(.portrait) #resSheet .res-chl { height: 38px; margin-top: 8px; gap: 8px; padding: 0 16px 0 12px; font-size: 16px; }
+#app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 20px; height: 20px; }
+/* desktop windows under 1000 px wide take the phones' sizes on the results (40-results.css), this too; under 800 px "a friend" goes */
+@container (max-width: 999px) {
+  #app:not(.short):not(.portrait) #resSheet .res-chl { height: 34px; margin-top: 6px; gap: 7px; padding: 0 13px 0 10px; font-size: 14px; }
+  #app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 17px; height: 17px; }
+}
+@container (max-width: 799px) { #app:not(.short):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
+
+/* upright phones: in the banner */
+#app.portrait #resSheet .res-chl { height: 32px; margin-top: 4px; font-size: 13px; }
+#app.portrait #resSheet .res-chl svg { width: 16px; height: 16px; }
+
+/* narrow phones: the panel's text column is too narrow for the whole label, so "a friend" goes (the plane says the rest); the screen's own width, as in 40-results.css */
+@container (max-width: 689px) { #app.short:not(.tiny):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
+@container (max-width: 629px) { #app.tiny #resSheet .res-chl .chl-af { display: none; } }
+
 /* ---------- Quick match (ui/quick.js; Fable 5.1, quick-match/fable-quick.md, mockup quick-match/fable-quick-mock.html) ----------
    The Quick match screen is the Play friends lobby's three columns (you · your match · the queue): the first block below is
    95-lobby.css's Fight Card, cards and pills restated for #scrQuick (a change there may belong here too). Then the parts of its own:
@@ -4948,6 +4984,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <!-- Quick match: the record against this opponent (ui/rivals.js); upright it moves over the side column's cards -->
           <button class="rv-strip" id="rRiv" hidden aria-label="Rivals"></button>
           <p class="res-fin" id="rFin" hidden></p>
+          <!-- Challenge a friend (ui/challenge.js): hosts a Play friends match and shares its link -->
+          <button class="res-chl" id="rChl" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L3 10.2l7.4 3.4L13.8 21zM21 3L10.4 13.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Challenge <span class="chl-af">a friend</span></span></button>
           <p class="res-stars" id="rStars" hidden></p>
         </div>
       </div>
@@ -8319,6 +8357,7 @@ function cntStart() {   // screens.js enterMatchUI, before the mode changes
   const md = cntMode(match), real = md !== "tutorial" && md !== "trial";
   CNT.live = { md, real };
   cnt("ms:" + md);
+  if (md === "online" && NET.role === "guest" && chlRoom(NET.mrCode)) cnt("chl:play");   // the friend's phone, in a Challenge a friend room
   const me = G && G.fighters[meSlot];
   if (real && me && !me.spec.boss) cnt("fp:" + me.spec.id);
   const b = match && match.boss ? bossOf(G) : null;
@@ -8438,6 +8477,7 @@ function cntBoot() {   // loop.js, before the first menu
   for (const k of CNT.pre) cnt(k);
   CNT.pre.length = 0;
   if (NET.invite) cnt("inv");
+  if (chlRoom(NET.invite)) { cnt("chl:open"); if (isNew) cnt("chl:new"); }   // a Challenge a friend link (ui/challenge.js), and on a brand-new device
   cntDaily(); cntFlush(false); cntListen();
 }
 function cntListen() {
@@ -27929,6 +27969,7 @@ function resOpen(look, spec, solo) {
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
+  $("rChl").hidden = true;   // ui/challenge.js: showResults shows it where it fits
   $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
@@ -28030,6 +28071,7 @@ function showResults(R) {
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
+  chlRes(R);   // ui/challenge.js: Challenge a friend
   show("result");
 }
 
@@ -30783,6 +30825,8 @@ const NET = {
   syncN: 0, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, desyncs: 0, rm: 0, oppLeft: false,
   cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, qm: null,   // qm: the Quick match being joined or played (ui/quick.js)
   standalone: !!window.__blStandalone, invite: null, inviteT: 0, autoHost: false,   // autoHost: Team up on the Road hosts once connected
+  joinLong: false,   // this join came from an invite link: it waits for the host up to JOIN_LONG
+  chlNext: null,   // the room code a Challenge a friend link already carries: the next netHost opens it (ui/challenge.js)
   tb: null, hs: null,   // a Team Brawl's board and its start (ui/online-team.js)
 };
 let TM = null;   // the online Team Brawl being played (ui/online-team.js)
@@ -30987,7 +31031,7 @@ async function renderOnline() {
     if (inv) hosts = [inv, ...hosts.filter((h) => h !== inv)];
     else {
       const li = document.createElement("li"); li.className = "empty";
-      li.textContent = performance.now() - NET.inviteT < 6000 ? "Looking for your friend's match…" : "That invite's match isn't open anymore. Ask your friend for a new link.";
+      li.textContent = performance.now() - NET.inviteT < 6000 ? "Looking for your friend's match…" : "Your friend's match isn't open right now. It shows up here when they're back, or ask them for a new link.";
       frag.appendChild(li);
     }
   }
@@ -31048,7 +31092,7 @@ async function renderOnline() {
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   if (!tbOn) note.textContent =
     NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
-    NET.phase === "joining" ? "Joining…" :
+    NET.phase === "joining" ? (NET.joinLong && performance.now() - NET.joinT > 6000 ? "Waiting for your friend to come back to the game…" : "Joining…") :
     NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
     NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
       : ot ? (NET.standalone ? "Pick the CPU level, host, then send up to three friends the link." : "Pick the CPU level and host. Your friends see the brawl in their list.")
@@ -31059,10 +31103,11 @@ async function renderOnline() {
   else if (!NET.tb && inv.parentNode !== note.parentNode) note.before(inv);
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
-    $("onInvT").textContent = NET.tb ? "Your team brawl is open" : ob ? "Your boss fight is open" : "Your match is open";
+    $("onInvT").textContent = NET.tb ? "Your team brawl is open" : ob ? "Your boss fight is open" : chlRoom(NET.hostCode) ? "Your challenge is open" : "Your match is open";
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
     if (invWas) inv.scrollIntoView({ block: "nearest" });   // on a small phone the host card scrolls: the link comes into view
+    chlCopied();   // ui/challenge.js: "Link copied" after a challenge on a computer
   }
   $("onHelp").textContent = NET.standalone
     ? "No account needed. Matches connect while both of you have the page open."
@@ -31093,7 +31138,7 @@ function fightCard() {
 }
 // back from the fighter select: the card pops and the model comes in (css/95-lobby.css)
 function fightCardIn() { const fc = $("onFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
-function inviteLink() { return location.origin + location.pathname + "#join-" + NET.hostCode; }
+function inviteLink(code) { return location.origin + location.pathname + "#join-" + (code || NET.hostCode); }
 function onlineArtFighter() {
   const spec = FIG[sel.fighter], o = onlineArtFighter;
   if (!o.f || o.f.spec !== spec || o.pi !== palIdx(spec.id)) {
@@ -31133,7 +31178,8 @@ function resetNet() {
 function netCancel() { leaveMatchRoom(); resetNet(); NET.phase = "idle"; lobbyPresence(); renderOnline(); }
 async function netHost() {
   if (!NET.ok || NET.phase !== "idle") return;
-  const code = "bl" + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, "0");
+  const code = NET.chlNext || "bl" + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, "0");   // chlNext: the code a challenge link already carries
+  NET.chlNext = null;
   resetNet();
   NET.phase = "hosting"; NET.role = "host"; NET.hostCode = code; NET.note = "";
   const team = !onBoss().on && onTeam().on;
@@ -31141,7 +31187,10 @@ async function netHost() {
   if (team) tbHostOpen();   // a team brawl: the board, you in the first Ice seat (ui/online-team.js)
   renderOnline();
   try { await openMatchRoom(code); }
-  catch (e) { NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return; }
+  catch (e) {
+    if (chlRoom(code)) NET.chlNext = code;   // the link is out already: Host tries the same room again
+    NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return;
+  }
   if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
   else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
   lobbyPresence(); renderOnline();
@@ -31152,6 +31201,7 @@ async function netJoin(code) {
   if (NET.phase !== "idle") return;
   resetNet();
   NET.phase = "joining"; NET.role = "guest"; NET.note = ""; NET.joinT = performance.now();
+  NET.joinLong = NET.invite === code;   // an invite's link: its host may still be in the app they sent it from, so this waits for them (JOIN_LONG)
   NET.mrCode = code;
   qmSilent();   // ui/quick.js: the silent account, for the referee
   renderOnline();
@@ -31207,9 +31257,12 @@ function opponentLeft() {
   NET.note = "The host left."; netCancel();
 }
 
+const JOIN_LONG = 180000;   // how long a friend who opened an invite link waits for its host to come back to the page (ms)
 function handshakeTick(now) {
   const opp = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
-  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > 8000 && !NET.qm) { NET.note = "No answer from the host."; netCancel(); return; }   // a Quick match: the server calls it off
+  if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > (NET.joinLong ? JOIN_LONG : 8000) && !NET.qm) {   // a Quick match: the server calls it off
+    NET.note = NET.joinLong ? "Your friend didn't come back to the game. Ask them for a new link." : "No answer from the host."; netCancel(); return;
+  }
   if (!opp) return;
   const pr = opp.presence || {};
   const echo = typeof pr.pg === "number" ? pr.pg : null;
@@ -31375,7 +31428,7 @@ function applySync(sy) {
 }
 function netTick() {
   const now = performance.now();
-  if (mode === "online" && NET.invite && NET.phase === "idle" && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
+  if (mode === "online" && ((NET.invite && NET.phase === "idle") || (NET.joinLong && NET.phase === "joining")) && now - (NET.inviteR || 0) > 1000) { NET.inviteR = now; renderOnline(); }
   if (NET.tb && TM && NET.phase === "match") { tbTick(); return; }   // a team brawl: ui/online-team.js
   if (NET.tb && TM && NET.phase === "result") { tbResultTick(); return; }
   if (NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake")) { tbLobbyTick(now); return; }
@@ -32524,7 +32577,10 @@ tap("onCopy", () => {
   const fallback = () => { const r = document.createRange(); r.selectNodeContents($("onLink")); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); done(false); };
   try { navigator.clipboard.writeText(link).then(() => done(true), fallback); } catch (e) { fallback(); }
 });
-tap("onShare", () => { try { navigator.share({ title: "PotatoBrawl", text: "Fight me in PotatoBrawl", url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ } });
+tap("onShare", () => {   // a 1v1 says what Challenge a friend says (ui/challenge.js)
+  const text = NET.tb || hostBo() ? "Fight me in PotatoBrawl" : chlText();
+  try { navigator.share({ title: "PotatoBrawl", text, url: inviteLink() }).catch(() => {}); } catch (e) { /* not available */ }
+});
 /* ----- settings: sound, fullscreen, screen turning (Reset progress is in the Account sheet, ui/acct.js) ----- */
 function chipRow(id, items, cur, pick, disabled) {
   const row = $(id); row.innerHTML = "";
@@ -36270,6 +36326,54 @@ function stkStats(pan) {
   if (!k || !(k.w + k.l + k.n)) return;
   const net = k.net > 0 ? `+${fmtChips(k.net)}` : k.net < 0 ? `−${fmtChips(-k.net)}` : "±0";
   pan.appendChild(acMk("p", "ac-line sk-stat", `Chip stakes: ${k.w}–${k.l} · net ${net} chips · ${k.n} of ${k.day} today`));
+}
+/* ===================== Challenge a friend: a link after a 1v1 (UI only) =====================
+   The results of a finished 1v1 against a CPU, a Quick match or Ranked vs CPU carry "Challenge a friend" (#rChl, css/96-challenge.css),
+   on our own server only (a link can't reach anyone from inside Claude or from a downloaded copy). A tap hosts a Play friends 1v1 with
+   your fighter and your lobby rules, the lobby's own room (netHost), and in that same tap opens the share sheet on a phone or copies
+   "Think you can beat my Samurai? <link>" on a computer: both need the tap itself, so the room's code is picked first and the hosting
+   follows (NET.chlNext). A challenge room's code starts with "ch": that is how the friend's page and the play counts tell it from an
+   ordinary invite. The friend's side is the lobby's invite link as before (online.js NET.invite; loop.js: the turn screen first, then the
+   lobby, no welcome sheet). Counts (ui/counter.js): chl:make, chl:open, chl:new (opened on a brand-new device) and chl:play (a 1v1
+   started in a challenge room, counted on the friend's phone). */
+const CHL = { copied: 0 };   // 1: the line is on the clipboard and the lobby's link card hasn't said so yet
+const chlRoom = (code) => typeof code === "string" && /^ch[a-z0-9]{7}$/.test(code);
+const chlCan = () => !!NET.standalone && onlineAvailable() && !(NET.tried && !NET.ok);
+const chlText = () => `Think you can beat my ${FIG[sel.fighter].name}?`;
+const chlPhone = () => !!navigator.share && !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);   // a computer copies the link instead
+// screens.js showResults: after a finished 1v1 against a CPU (the Road, the Daily, bosses, 2v2, the Tournament and the tutorial have their
+// own ends), a Quick match and Ranked vs CPU (not a warm-up while the search runs: the tap would stop it); not after Play friends
+function chlRes(R) {
+  const solo = R.qm || R.vc || (R.warm ? !qmSearching() : !R.online && !R.daily && !R.road && !R.boss && !R.duo);
+  $("rChl").hidden = !(solo && !R.forfeit && !R.left && !R.lost && chlCan());
+}
+tap("rChl", () => {
+  if (mode !== "result" || !chlCan()) return;
+  const code = ("ch" + Math.random().toString(36).slice(2, 9).replace(/[^a-z0-9]/g, "0")).padEnd(9, "0"), link = inviteLink(code);
+  CHL.copied = 0;
+  if (chlPhone()) { try { navigator.share({ title: "PotatoBrawl", text: chlText(), url: link }).catch(() => {}); } catch (e) { /* no share sheet: the lobby's link card has it */ } }
+  else {
+    try { navigator.clipboard.writeText(`${chlText()} ${link}`).then(() => { CHL.copied = 1; chlCopied(); }, () => {}); } catch (e) { /* the card's Copy link */ }
+  }
+  cnt("chl:make");
+  // leave the results the way Menu does (a chip challenge withdrawn, a Quick match search stopped, its room left), then host a 1v1
+  stkLeave(); qmStop();
+  if (NET.mr) leaveMatchRoom();
+  if (NET.phase !== "idle") { resetNet(); NET.phase = "idle"; }
+  P.onBoss = Object.assign({}, P.onBoss, { on: false }); P.onTeam = Object.assign({}, P.onTeam, { on: false });
+  saveProfile();
+  NET.chlNext = code;
+  openOnline();
+  NET.autoHost = NET.phase === "idle";
+  autoHost();
+});
+// "Link copied" on the lobby's link card, once it is up (renderOnline calls this too: the copy can land before or after the room opens)
+function chlCopied() {
+  const btn = $("onCopy");
+  if (!CHL.copied || mode !== "online" || $("onInvite").hidden || !chlRoom(NET.hostCode)) return;
+  CHL.copied = 0;
+  btn.textContent = "Link copied";
+  setTimeout(() => { btn.textContent = "Copy link"; }, 2500);
 }
 /* ----- the first minute: a 4-step tutorial (about 55 s), then the first fight with hints (Fable's first-minute pass, 2026-10-21) -----
    All UI: the tutorial and the first fight are offline, and like before the UI sets fields on G (percent, stocks, ulti bar, the players' spots) and

@@ -133,6 +133,9 @@ async def populated(b, data):
             errl = await pg.evaluate("[...document.querySelectorAll('.err code')].map((e) => e.textContent)")
             expect(any('<u id=xss>' in x for x in errl), f'{tag}: the error message with markup is not shown as text ({errl[:2]})')
             expect(await pg.evaluate("!document.getElementById('xss')"), f'{tag}: markup from an error message was turned into an element')
+            if r == 'month':
+                chl = await pg.evaluate("[...document.querySelectorAll('.kv > div')].map((e) => e.textContent).find((t) => t.startsWith('Challenge links made')) || ''")
+                expect(re.search(r'opened · \d+ new players? · \d+ match', chl) is not None, f'{tag}: the Challenge links row reads {chl!r}')
             await sane(pg, tag); await fit(pg, tag)
             await shot(pg, tag)
         if name == 'phone':

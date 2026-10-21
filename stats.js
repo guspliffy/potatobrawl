@@ -28,6 +28,7 @@
  *   fx:<where> fl:<0|1|3|10|30> fm:<0|1|2|3>     the first time a new device left the page: where, minutes in, matches done
  *   ms:<mode> me:<mode>:<win|loss|draw|quit|drop> ml:<0|1|2|3|5> mslow fp:<fighter> again:<mode>
  *   rw:<stop> bs:<boss>:<0-2> bw:<boss>:<0-2> route skin:<fighter> acct scr:<screen> inv err:<message>
+ *   chl:<make|open|new|play>              Challenge a friend: a link made, opened (new: on a brand-new device), a match started from one
  *   peak                                  (written here) the most players online at once that day: a maximum, not a sum
  */
 const fs = require("fs");
@@ -60,7 +61,7 @@ const KEY_RES = [
   new RegExp(`^fx:${W}(:${W})?$`), /^fl:(0|1|3|10|30)$/, /^fm:[0-3]$/,
   new RegExp(`^ms:${W}$`), new RegExp(`^me:${W}:(win|loss|draw|quit|drop)$`), /^ml:(0|1|2|3|5)$/,
   new RegExp(`^fp:${W}$`), new RegExp(`^again:${W}$`), /^rw:\d{1,2}$/, new RegExp(`^b[sw]:${W}:[0-2]$`),
-  new RegExp(`^skin:${W}$`), new RegExp(`^scr:${W}$`),
+  new RegExp(`^skin:${W}$`), new RegExp(`^scr:${W}$`), /^chl:(make|open|new|play)$/,
 ];
 // an error message: printable ASCII without quotes or backslashes, 1-80 characters (the game trims and cleans it before sending)
 const ERR_RE = /^err:[\x20-\x21\x23-\x26\x28-\x5b\x5d-\x7e]{1,80}$/;

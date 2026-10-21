@@ -586,9 +586,10 @@ p { margin: 8px 0 0; }
     var sum = function (f) { return ON.reduce(function (a, m) { return a + S(d, f(m)); }, 0); };
     var started = sum(function (m) { return "ms:" + m; }), fin = finishedOf(d, isOn);
     var drops = sum(function (m) { return "me:" + m + ":drop"; }), again = sum(function (m) { return "again:" + m; }), inv = S(d, "inv");
+    var chl = S(d, "chl:make"), chlSub = [plural(S(d, "chl:open"), "opened", "opened"), plural(S(d, "chl:new"), "new player"), plural(S(d, "chl:play"), "match", "matches")].join(" · ");   // Challenge a friend
     var peaks = d.map(function (day) { return cnt(day, "peak"); }), pk = Math.max.apply(null, peaks.concat(0));
     var s = sec("Online", "Online, Online boss and Online 2v2 · " + R.now);
-    if (!started && !fin && !again && !inv && !pk) { s.appendChild(note("No online play " + R.now + " yet.")); return s; }
+    if (!started && !fin && !again && !inv && !chl && !pk) { s.appendChild(note("No online play " + R.now + " yet.")); return s; }
     var peakSub = null;
     if (R.id !== "today" && pk > 0) {
       var at = peaks.lastIndexOf(pk); peakSub = "highest on " + WD[wdi(R.from + at)] + " " + fd(R.from + at);
@@ -598,6 +599,7 @@ p { margin: 8px 0 0; }
       kvRow("Online matches finished", fmt(fin), drops ? plural(drops, "connection drop") : null),
       kvRow("Rematches pressed", fmt(again)),
       kvRow("Invite links opened", fmt(inv)),
+      kvRow("Challenge links made", fmt(chl), chl ? chlSub : null),
       kvRow(R.id === "today" ? "Peak online today" : "Peak online", fmt(pk), peakSub)));
     if (R.id !== "today" && pk > 0) {
       var hi = peaks.lastIndexOf(pk);
