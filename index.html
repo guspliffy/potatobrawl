@@ -2109,6 +2109,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .rd-me .rd-chg { margin-left: auto; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
   background: #ffd23f; color: var(--ink); font: 900 17px/1 var(--body); box-shadow: 0 2px 0 var(--ink); }
 #app.narrow .rd-me .rd-chg { margin: 0; }
+.rd-me .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; }   /* "You · tap to change" wraps beside the ⇄ badge, never cut */
 /* a boss's card: the three level stars are the level picker; Fight plays the picked one */
 .rd-lvb { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; min-height: 48px; padding: 5px 4px; border-radius: 10px; }
 .rd-lvb.sel { background: rgba(255, 210, 63, 0.13); box-shadow: inset 0 0 0 2px #ffd23f; }
@@ -2133,6 +2134,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .rd-sheet.boss #rsOp .dly-t b, #app.portrait .rd-sheet.boss #rsOp .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
 #app.portrait .rd-sheet.boss #rsOp .rd-sep { display: none; }
 #app.portrait .rd-sheet.boss #rsOp .rd-cp { display: block; }
+/* sideways his card has room for his role only: "you + a CPU partner" is the rule line's first words right under it */
+#app:not(.portrait) .rd-sheet.boss #rsOp .rd-sep, #app:not(.portrait) .rd-sheet.boss #rsOp .rd-cp { display: none; }
 /* upright: the kicker ("The Deep · past the fence") goes under the name, so a long name like Kraken Spud is never cut */
 #app.portrait .rd-sheet .sh-head { flex-wrap: wrap; height: auto; min-height: 36px; padding-top: 4px; padding-bottom: 6px; row-gap: 2px; }
 #app.portrait .rd-sheet .sh-head .kick { order: 3; flex-basis: 100%; }
