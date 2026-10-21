@@ -103,12 +103,19 @@ function rpvMake() {
   app.addEventListener("pointermove", wake, true);
   window.addEventListener("keydown", wake, true);
   window.addEventListener("keydown", (e) => { if (e.code === "Escape" && !RPV.title.hidden) { e.preventDefault(); rpLandClose(); } });
+  window.addEventListener("resize", () => { if (RP.on) requestAnimationFrame(rpvTagPlace); });   // after view.js has laid the HUD out again
 }
 // the tick under the pointer on the bar (the app may be turned sideways: toApp, ui/view.js)
 function rpvAt(e) {
   const r = RPV.rail.getBoundingClientRect(), a = toApp(r.left, r.top), b = toApp(r.right, r.bottom), p = toApp(e.clientX, e.clientY);
   const x0 = Math.min(a[0], b[0]), w = Math.max(1, Math.abs(b[0] - a[0]));
   return Math.round(clamp((p[0] - x0) / w, 0, 1) * rpvRange());
+}
+// the livetag hangs under your card (and its Ultimate bar) without widening the HUD's left column: placed from #pc0, whose offsets
+// tutorial.js and others read against #hud (so the column itself stays unpositioned)
+function rpvTagPlace() {
+  const a = $("pc0"), s = RPV.tag.style, w = Math.max(120, RPV.tag.parentNode.offsetWidth - 6);
+  s.setProperty("--rpT", a.offsetTop + a.offsetHeight + "px"); s.setProperty("--rpL", a.offsetLeft + 6 + "px"); s.setProperty("--rpW", w + "px");
 }
 // about where a tick is on the clock (the bar while it is dragged or re-simulating): the run's time spread over the ticks from GO to the final launch
 function rpvTimeAt(t) {
@@ -142,11 +149,13 @@ function rpvOpen() {
   RPV.ko.hidden = !(mk.ko > 0);
   RPV.endT.textContent = rpvTime(rpTimeEnd());
   RPV.act = performance.now();
+  rpvTagPlace();
   rpvFrame();
 }
 // every drawn frame of a replay (and after a pause or a seek)
 function rpvFrame() {
   if (!RPV.ready || !RP.on || !RP.mk) return;
+  if ((RPV.n = (RPV.n | 0) + 1) % 30 === 0) rpvTagPlace();   // the left column's width follows your card (the percent's digits)
   const c = RPV.c, live = !RP.pause && !RP.seeking && !RP.ended && RPV.drag < 0, idle = live && performance.now() - RPV.act > 3000;
   if (c.idle !== idle) { c.idle = idle; app.classList.toggle("rpidle", idle); }
   const paused = RP.pause || RP.ended;

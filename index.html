@@ -4607,7 +4607,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 /* ===== under a replay: no touch pad, no pause button (Esc and P pause through togglePause) ===== */
 #app.replay #ctl, #app.replay #pauseBtn { display: none !important; }
-.hud-l { position: relative; }   /* the livetag hangs from it, without widening it */
 #app.rpclean #hud, #app.rpclean .rpv, #app.rpclean #fhint { visibility: hidden; }
 
 /* ===== the strip: ▶/❚❚ · bar · time · speed · ⟲ · ⏭ KO · ◉ · ⤴ · ✕ ===== */
@@ -4664,7 +4663,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) .rpv-seek { height: 40px; }
 
 /* ===== the livetag: REPLAY · TUBER TOM · #1 · 1:21.44, under your card and its Ultimate bar ===== */
-.rpv-tag { --ubh: 12px; position: absolute; left: 6px; top: calc(100% + var(--ubh) + 6px); z-index: 1; max-width: 340px; transition: opacity 0.25s; pointer-events: none; }
+.rpv-tag { --ubh: 12px; position: absolute; left: var(--rpL, 18px); top: calc(var(--rpT, 60px) + var(--ubh) + 6px); z-index: 1; max-width: min(340px, var(--rpW, 340px)); transition: opacity 0.25s; pointer-events: none; }   /* --rpW: the left column's width (the name gives way first) */
 #app.short .rpv-tag, #app.narrow .rpv-tag { --ubh: 10px; }
 #app.tiny .rpv-tag { --ubh: 8px; }
 @media (min-width: 1500px) and (min-height: 1000px) { .rpv-tag { --ubh: 14px; } }
@@ -4801,9 +4800,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #scrBoards .bd-r > .rpv-pl { width: 30px; height: 30px; }
 #scrBoards.bw-tab .bd-r.you.none .rpv-pl { display: none; }
 /* LAST WEEK › / ‹ THIS WEEK in the kicker row */
-#scrBoards .bd-kr { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
+#scrBoards .bd-kr { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 4px; min-width: 0; }   /* a long kicker (upright) puts LAST WEEK › on its own line */
 #scrBoards .bd-kr .bd-kick { flex: 1 1 auto; min-width: 0; padding-right: 4px; }
-#scrBoards .bd-last { appearance: none; cursor: pointer; flex: none; position: relative; margin: 0; padding: 7px 16px 5px 8px; border: 0; background: none; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+#scrBoards .bd-last { appearance: none; cursor: pointer; flex: none; position: relative; margin: 0 0 0 auto; padding: 7px 16px 5px 8px; border: 0; background: none; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 #scrBoards .bd-last::after { content: ""; position: absolute; inset: -6px 0; }
 #scrBoards .bd-last:focus-visible { outline: 2px solid var(--sand); outline-offset: -2px; border-radius: 4px; }
 #scrBoards:not(.bw-tab) .bd-last { display: none; }
@@ -38238,12 +38237,19 @@ function rpvMake() {
   app.addEventListener("pointermove", wake, true);
   window.addEventListener("keydown", wake, true);
   window.addEventListener("keydown", (e) => { if (e.code === "Escape" && !RPV.title.hidden) { e.preventDefault(); rpLandClose(); } });
+  window.addEventListener("resize", () => { if (RP.on) requestAnimationFrame(rpvTagPlace); });   // after view.js has laid the HUD out again
 }
 // the tick under the pointer on the bar (the app may be turned sideways: toApp, ui/view.js)
 function rpvAt(e) {
   const r = RPV.rail.getBoundingClientRect(), a = toApp(r.left, r.top), b = toApp(r.right, r.bottom), p = toApp(e.clientX, e.clientY);
   const x0 = Math.min(a[0], b[0]), w = Math.max(1, Math.abs(b[0] - a[0]));
   return Math.round(clamp((p[0] - x0) / w, 0, 1) * rpvRange());
+}
+// the livetag hangs under your card (and its Ultimate bar) without widening the HUD's left column: placed from #pc0, whose offsets
+// tutorial.js and others read against #hud (so the column itself stays unpositioned)
+function rpvTagPlace() {
+  const a = $("pc0"), s = RPV.tag.style, w = Math.max(120, RPV.tag.parentNode.offsetWidth - 6);
+  s.setProperty("--rpT", a.offsetTop + a.offsetHeight + "px"); s.setProperty("--rpL", a.offsetLeft + 6 + "px"); s.setProperty("--rpW", w + "px");
 }
 // about where a tick is on the clock (the bar while it is dragged or re-simulating): the run's time spread over the ticks from GO to the final launch
 function rpvTimeAt(t) {
@@ -38277,11 +38283,13 @@ function rpvOpen() {
   RPV.ko.hidden = !(mk.ko > 0);
   RPV.endT.textContent = rpvTime(rpTimeEnd());
   RPV.act = performance.now();
+  rpvTagPlace();
   rpvFrame();
 }
 // every drawn frame of a replay (and after a pause or a seek)
 function rpvFrame() {
   if (!RPV.ready || !RP.on || !RP.mk) return;
+  if ((RPV.n = (RPV.n | 0) + 1) % 30 === 0) rpvTagPlace();   // the left column's width follows your card (the percent's digits)
   const c = RPV.c, live = !RP.pause && !RP.seeking && !RP.ended && RPV.drag < 0, idle = live && performance.now() - RPV.act > 3000;
   if (c.idle !== idle) { c.idle = idle; app.classList.toggle("rpidle", idle); }
   const paused = RP.pause || RP.ended;
