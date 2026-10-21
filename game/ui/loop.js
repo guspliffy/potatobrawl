@@ -9,6 +9,7 @@ function simTick() {
   if (live) {
     if (paused) return;
     if (match.online) netTick();
+    else if (match.rp) { if (!rpLive()) return; }   // ui/replay.js: the log's input in place of yours (paused, seeking or ended: the frame holds)
     else {
       const pi = vcIn(readPlayer());   // ui/vscpu.js: a ranked CPU match logs your inputs for the server
       if (match.boss) step(G, bossInputs(pi));   // ui/boss.js: you and the CPU partner (the boss moves himself)
@@ -37,13 +38,14 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = now - last; last = now;
   if (dt > 120) dt = 120;
-  acc += dt;
+  acc += dt * rpRate();   // ui/replay.js: a replay at 0.5x or 2x
   let n = 0;
   while (acc >= STEP && n < 5) { acc -= STEP; n++; simTick(); }
   if (n === 5) acc = 0;
   const g = (mode === "match" || mode === "result") && G ? G : attract.g;
   if (mode !== "road") render(g, tick);   // the Road's map covers the whole screen: no fight drawn behind it
   if (mode === "match" && G) { updateHud(); hudDanger(); } else hudIdle();   // hud.js: danger edge glow
+  rpFrame();   // ui/replay.js: the replay's controls
   if (FH.on && (mode !== "match" || !match || !match.first)) fhStop();   // the first fight's hint strip goes with the match
   if (mode === "select") { drawCards(tick); skinsDraw(tick); }   // skinsDraw: the Skin Rack's preview (ui/skins.js)
   if (mode === "online") drawOnlineArt(tick);
@@ -59,6 +61,7 @@ goMenu();
 // the turn-sideways screen comes before everything else (ui/welcome.js); then an invite link's lobby, or a brand-new player's welcome sheet
 turnOpen(() => {
   if (NET.invite) openOnline();
+  else if (rpLanding()) { /* ui/replay.js: a share link's run (its title card), the welcome sheet after it */ }
   else if (firstRun && !ACCT.hash) welcomeOpen();
 });
 camStep(attract.g, true);

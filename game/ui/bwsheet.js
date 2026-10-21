@@ -6,6 +6,8 @@
      the top 3 and what Monday pays. Your fighter card opens the fighter select in mode "bw" (menus.js selBack / selGo come back here, as the Road's does).
      The board comes from bwBoard() (bossweek.js) each time the sheet opens. FIGHT is bwFight(): a counted try, or Practice without the server.
    - The Boards sheet's third tab "Boss Week" (ui/boards.js calls bwBdPrep, bwBdRow, bwBdKick, bwBdEmpty below).
+   - Replays (ui/replay.js, ui/rpview.js): a ▶ at the end of a row (the top 10 and your row) plays that run, an "older version" tag stands in for it
+     when the run is from another game version; WATCH ▶ on your best; LAST WEEK › in the Boards tab's kicker row (the finished week's board, bwsPast).
    - The Monday card #scrBwWk (bwWeekCard, called once by bwTick): last week's place and the chips it paid.
    The bosses have no portrait files: bwArt() draws each boss with his own drawing once and keeps it as a data URL (the Road's skull on his colour if that fails).
    Test hooks: window.__blBwMock (bossweek.js; this part also reads its `checking`) and window.__blBwSheet. Styles: css/97-bossweek.css. */
@@ -115,7 +117,14 @@ function bwSheetRender() {
     best.classList.toggle("none", !has);
     const n = s.n, place = has && m.pl > 0 ? `#${m.pl}${n > 0 ? ` of ${n}` : ""}` : "", hl = has ? `${m.fl} ♥ lost` : "";
     if (chk) { sub.append(bdMk("i", "dot q"), "Checking…"); if (place) sub.append(` · ${place}`); }
-    else if (has) sub.textContent = [place, hl].filter(Boolean).join(" · ");
+    else if (has) {
+      sub.textContent = [place, hl].filter(Boolean).join(" · ");
+      if (m.r && m.v === PROTO) {   // your best run, to watch (ui/replay.js)
+        const w = bdMk("button", "rpv-wl", "Watch \u25B6\uFE0E"); w.type = "button"; w.setAttribute("aria-label", "Watch your best run");
+        w.addEventListener("click", () => { Sfx.init(); Sfx.ui(); rpWatchRun(m.r, "sheet", true); });
+        sub.append(" · ", w);
+      }
+    }
     else sub.textContent = "Finish him once and you're on the board";
   }
   // your fighter (the picker) and the partner this week
@@ -144,6 +153,14 @@ function bwsPay(m) {
     return `<span class="bw-st cg${k === mine ? " g" : ""}">${l} ${c}</span>`;
   }).join("");
 }
+// a row's run to watch: the top 10 and your row. ▶ when it is from this game version, the tag "older version" under the time when not (bwRunOf: ok / old / "")
+const bwRunOf = (row, i, own) => (row.r && (i <= 10 || own) ? (row.v === PROTO ? "ok" : "old") : "");
+function bwWatchEl(row, from, own) {
+  const b = bdMk("button", "rpv-pl"); b.type = "button"; b.title = "Watch"; b.setAttribute("aria-label", `Watch ${row.nm}'s run`);
+  b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); rpWatchRun(row.r, from, own); });
+  return b;
+}
+const bwOldEl = () => bdMk("small", "rpv-old", "older version");
 // the top 3 (a verdict or the board arriving redraws only this)
 function bwsRows() {
   if (!BWS.open) return;
@@ -172,7 +189,10 @@ function bwsRow(row, i, o) {
   if (o.me) nm.appendChild(bdMk("em", "", "You"));
   nm.appendChild(bdMk("b", "", row.nm));
   if (row.cr > 0) nm.appendChild(bwCrown(row.cr));
-  el.append(p, bwPortrait(row.f), nm, bdMk("b", "bw-tm", bwClock(row.t, 2)));
+  const tm = bdMk("b", "bw-tm", bwClock(row.t, 2)), run = bwRunOf(row, i, !!(o.me || o.you));
+  if (run === "old") { tm.classList.add("old"); tm.appendChild(bwOldEl()); }
+  el.append(p, bwPortrait(row.f), nm, tm);
+  if (run === "ok") el.appendChild(bwWatchEl(row, "sheet", !!(o.me || o.you)));
   el.title = `${row.nm}${row.f ? `, ${FIG[row.f].name}` : ""}, ${row.fl} hearts lost`;
   return el;
 }
@@ -187,11 +207,11 @@ const bwCrown = (n) => { const e = bdMk("span", "bw-crown", String(n)); e.title 
 /* ----- the Boards sheet's tab (ui/boards.js): a board made safe to draw, the rows, the kicker, the empty state ----- */
 function bwBdPrep(d) {
   if (!d || typeof d !== "object" || !Array.isArray(d.top)) return null;
-  const row = (x) => (x && typeof x === "object" && Number.isFinite(x.t) ? { id: bdStr(x.id, 12), nm: bdStr(x.nm, 24).trim() || "Potato", f: FIG[x.f] ? x.f : "", t: bdInt(x.t), fl: bdInt(x.fl), cr: bdInt(x.cr), pl: bdStr(x.pl, 24) } : null);
+  const row = (x) => (x && typeof x === "object" && Number.isFinite(x.t) ? { id: bdStr(x.id, 12), nm: bdStr(x.nm, 24).trim() || "Potato", f: FIG[x.f] ? x.f : "", t: bdInt(x.t), fl: bdInt(x.fl), cr: bdInt(x.cr), pl: bdStr(x.pl, 24), r: /^[0-9a-f]{12}$/.test(x.r) ? x.r : "", v: bdInt(x.v) } : null);   // r, v: the run to watch and its game version
   const top = d.top.slice(0, 100).map(row).filter((r) => r && r.t > 0);
   let me = null;
   if (d.me && typeof d.me === "object") { const i = bdInt(d.me.i), r = row(d.me.row); me = i > 0 && r ? { i, row: r } : { i: 0 }; }
-  return { k: "w", wk: bdInt(d.wk), no: bdInt(d.no), boss: BOSS_IDS.has(d.boss) ? d.boss : bwSpec().boss, n: Math.max(bdInt(d.n), top.length), at: bdInt(d.at), top, me };
+  return { k: "w", wk: bdInt(d.wk), no: bdInt(d.no), boss: BOSS_IDS.has(d.boss) ? d.boss : bwSpec().boss, n: Math.max(bdInt(d.n), top.length), at: bdInt(d.at), fin: !!d.fin, top, me };
 }
 // one row: place, portrait, name (+ crowns), fighter, hearts lost, time; o.me / o.sticky / o.of as bdRowEl's
 function bwBdRow(row, i, o) {
@@ -210,13 +230,20 @@ function bwBdRow(row, i, o) {
   if (f1) f.appendChild(bdMk("span", "bd-f1", f1));
   f.appendChild(bdMk("span", "bd-f2", f2));
   n.appendChild(f);
-  el.append(p, bwPortrait(row.f), n, bdMk("small", "bd-w", hl), bdMk("b", "bd-v", bwClock(row.t, 2)));
+  const tm = bdMk("b", "bd-v", bwClock(row.t, 2)), run = bwRunOf(row, i, !!(o.me || o.sticky));
+  if (run === "old") { tm.classList.add("old"); tm.appendChild(bwOldEl()); }
+  el.append(p, bwPortrait(row.f), n, bdMk("small", "bd-w", hl), tm);
+  if (run === "ok") el.appendChild(bwWatchEl(row, "board", !!(o.me || o.sticky)));
   el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${bwClock(row.t, 2)}, ${row.fl} ${row.fl === 1 ? "heart" : "hearts"} lost`);
   return el;
 }
 // "KRAKEN SPUD · HARD · 23 HAVE A TIME · ENDS 3D 4H" (st: the sheet's state)
 function bwBdKick(st, d) {
-  const s = bwSpec(), name = bwBossSpec(d && d.boss ? d.boss : s.boss).name;
+  const s = bwSpec(), name = bwBossSpec(d && d.boss ? d.boss : s.boss).name, past = !!(d && d.fin), lw = $("bdLast");
+  lw.hidden = !((st === "ok" || st === "empty") && d && d.wk > 0);   // LAST WEEK › / ‹ THIS WEEK once the board is in
+  lw.textContent = past ? "\u2039 This week" : "Last week \u203A";
+  screens.boards.classList.toggle("bw-past", past);
+  if (past) return `Last week · ${name} · Final`;
   return [name, BOSS_LV[s.lv]].concat(st === "load" ? ["Loading"] : st === "off" ? [] : [`${d.n} ${d.n === 1 ? "has a time" : "have a time"}`, `Ends ${bwLeft(s.ends)}`]).join(" · ");
 }
 // "Nobody has a time yet. Finish Zorp once and you're #1." with FIGHT ZORP (the sheet's top 3 gets the short one)
@@ -226,11 +253,28 @@ function bwBdEmptyEl(full) {
   return e;
 }
 function bwBdEmpty(box) {
+  if (BD.data && BD.data.fin) { box.append(bdPod(), bdMk("b", "bd-big", "No times last week.")); return; }   // a finished week nobody finished
   const boss = bwBossSpec(bwSpec().boss).name;
   box.append(bdPod(), bdMk("b", "bd-big", "Nobody has a time yet."), bdMk("p", "bd-sub", `Finish ${boss} once and you're #1.`));
   const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", `Fight ${boss}`));
   bdTap(b, () => { bdClose(); bwFight(); });
   box.appendChild(b);
+}
+
+/* ----- Last week ›: the finished week's board in the same tab (bossweek.js bwBoard(wk); a week with no board shows "No times last week.") ----- */
+function bwsPast(on) {
+  if (!on) { bdLoad(); return; }
+  const req = ++BD.req, wk = bwSpec().wk - 1;
+  BD.st = "load"; BD.data = null;
+  bdDraw();
+  bwBoard(wk).then((raw) => {
+    if (req !== BD.req || screens.boards.hidden) return;
+    const d = bwBdPrep(raw) || bwBdPrep({ top: [], wk, boss: bwLocal(wk).boss, n: 0 });
+    d.fin = true;
+    BD.data = d; BD.got = Date.now();
+    BD.st = d.top.length ? "ok" : "empty";
+    bdDraw();
+  });
 }
 
 /* ----- the Monday card: last week's place and the chips it paid (bwTick passes lr: { wk, no, boss, pl, of, c }) ----- */
@@ -256,6 +300,7 @@ tap("bwMe", bwSheetPick);
 tap("bwGo", bwsFight);
 tap("bwFull", () => bdOpen("w"));
 tap("bwwClose", bwWeekClose);
+tap("bdLast", () => bwsPast(!(BD.data && BD.data.fin)));
 tap("bwwOk", bwWeekClose);
 tap("bwwGo", () => { bwWeekClose(); bwSheetOpen(); });
 screens.bw.addEventListener("click", (e) => { if (e.target === screens.bw) bwSheetClose(); });

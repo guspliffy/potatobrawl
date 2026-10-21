@@ -72,7 +72,7 @@ function cntDaily() {
 
 /* ----- matches: started, ended (how), quit ----- */
 function cntStart() {   // screens.js enterMatchUI, before the mode changes
-  if (!CNT.on) return;
+  if (!CNT.on || (match && match.rp)) return;   // a replay is no match (ui/replay.js counts rp:watch)
   cntDrop();
   const md = cntMode(match), real = md !== "tutorial" && md !== "trial";
   CNT.live = { md, real };

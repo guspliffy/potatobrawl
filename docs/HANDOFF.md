@@ -1,10 +1,31 @@
-# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
-- Boss Week (2026-10-21, branch claude/weekly-boss-boards-xe7hm4, build order step 6 PR 1 of 2; no PROTO bump, no new server setup).
+- Boss Week replays (2026-10-21, branch claude/weekly-boss-boards-xe7hm4, build order step 6 PR 2 of 2; no PROTO bump, no new server setup).
+  - A run plays again from its logged inputs through the normal match screen (ui/replay.js): the CPU partner or foe thinks again from
+    the same random numbers, so the HUD, camera, sounds and KO page come back as they were. Nothing a replay does counts (finishMatch hands
+    it to rpEnd first; cntStart skips it). Before it plays, the whole run is simulated once without drawing (rpScan: length, GO, the
+    break, the final launch, the time); seeking plays it again from the start without drawing, a slice a frame (exact, no snapshots).
+  - What can be watched: the Boss Week board's top 10 and your own row (▶), your best on the sheet (WATCH ▶), last week's top 10
+    (Boards tab, LAST WEEK ›), your own last finished run from its results (WATCH ▶: a Boss Week try won, lost or out of time, or a Ranked
+    vs CPU match; kept in memory, not stored), and a share link potatobrawl.cloud/#watch=<id> (a title card first; the tap turns the
+    sound on; a brand-new player gets the welcome sheet after it). Only runs from the same game version (PROTO) play; older ones keep
+    their time and show "older version".
+  - The viewer (ui/rpview.js): the controls strip (play/pause, a seek bar with the break ☠ and the KO ⚑, the time, 0.5x/1x/2x, restart,
+    ⏭ KO = 2.5 s before the final launch, clean view, share, close), the REPLAY livetag, the end card (YOUR TURN: FIGHT <BOSS> / RETRY,
+    WATCH AGAIN, BOARD ›, MENU). Keys: Space/K play and pause, ← → 5 s, Esc pauses.
+  - Server: GET /api/run/<id> (bossweek.js http, 60 a minute per address) gives one run: this week's from the account file (any run on
+    the board), a kept week's top 10 from its week file. The board's rows carry r (run id = its ticket id) and v (its PROTO); bd
+    {k: "w", wk} gives a finished week (fin). Play counts rp:watch / rp:link / rp:share (stats page: Hooks, "Replays watched").
+  - Also fixed: the board kept a stale entry object after a save that changed nothing on it, so your place read 0 (no time) on bw-me and
+    your row until the board sorted again (bossweek.js touch).
+  - Tests: tests/bossweek.js (now 45 checks), tests/pwreplay.py (check.sh 5d5, port PORT_BASE+13: a real try played again to the server's
+    time frame for frame, seek, ⏭ KO, nothing counts, a share link on a fresh phone, a Ranked vs CPU match to the same end),
+    tests/pwrpview.py (6d3: the viewer, cards and ▶ rows at five sizes from mocks; window.__blRp.botRun makes a run without a server).
+- Boss Week (2026-10-21, build order step 6 PR 1 of 2 = PR #60; no PROTO bump, no new server setup).
   Plan doc "Boss Week: step 6 plan" https://claude.ai/artifact/N6XrmAFNWMN9qaGbxbcQew (Jonny took every default); Fable's design
   /mnt/project-files/step6/fable-step6.md. PR 2 is the replays (watch a run, seek, share link, last week's board).
   - One boss a week, Monday 00:00 to Monday 00:00 Berlin time, turning Old Scratch -> Zorp -> Kraken Spud, always Hard with the Road's
@@ -751,6 +772,13 @@ index.html is committed with every source change (check.sh flags a stale one).
 - ui/bwsheet.js (after bossweek.js): the start tile (bwTile), the Boss Week sheet (bwSheetOpen, select mode "bw" for its fighter picker),
   the Boards tab's rows (bwBdPrep / bwBdRow / bwBdKick / bwBdEmpty, called from boards.js), the Monday card (bwWeekCard), bwArt (the
   boss drawn once to a data URL). CSS css/97-bossweek.css. Test hook window.__blBwSheet.
+- ui/replay.js (after bwsheet.js): RP (the replay's state), rpScan (the run simulated once: its marks and time), rpFetch / rpFromServer
+  (GET /api/run/<id>), rpKeep (your last run, from showResults), rpOpen / rpBegin (the match screen fed from the log; loop.js simTick
+  calls rpLive, frame() rpRate and rpFrame), rpSeek / rpSeekSlice (from the start, without drawing), rpEnd (from finishMatch), rpShare,
+  rpClose, rpLanding / rpLandGo (the #watch= link, from loop.js after the turn-sideways screen). Test hook window.__blRp (botRun: a run
+  played by a bot in your place, for tests without a server).
+- ui/rpview.js (after replay.js): the view, through optional hooks replay.js calls (rpvOpen, rpvFrame, rpvEnd, rpvClose, rpvLoad,
+  rpvToast, rpvTitle, rpvTitleClose, rpvResults). CSS css/97-replay.css.
 - ui/boards.js (after vscpu.js): bdOpen(k) the Boards sheet, bdPreview (the top three on the Quick match screen), bdPlates (Account > Profile).
 - ui/challenge.js (after stakes.js): Challenge a friend (CHL; chlRoom(code) tells a challenge room, chlRes(R) from showResults, the #rChl tap,
   chlCopied for the lobby's link card). CSS in game/css/96-challenge.css.
@@ -849,6 +877,9 @@ index.html is committed with every source change (check.sh flags a stale one).
 - A replay only for a win whose claimed time beats your best (about 30-130 ms in chunks of 2000 frames); one ticket per account every
   2 s; a log that arrives faster than it can be played is refused. The board is in memory, built from the files at start and kept by
   accounts.js's watch(); top 100 plus your row, 5 asks per 2 s per phone. A ticket from another game version: not counted ("void").
+- Replays: GET /api/run/<id> (http(), before the static files in server.js; 60 a minute per address, x-forwarded-for from Caddy like
+  stats.js) answers a run on this week's board (read from its account file's bw.b) or in a kept week file's top 10, with the week's
+  spec (boss, HP, partner, map) so the page can deal the same fight. Week files are cached in memory (WC) once read.
 - Test knobs (env, never on the VPS): BW_T {gap, minSpeed, hp}, BW_NOW (a stand-in clock).
 
 ## Rules that keep online play working
@@ -881,7 +912,7 @@ performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
 WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
-breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, Play friends referee, chip stakes (eligibility, offer, decline, timeout, accept, verdict, early leave, daily limit), accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · bossweek.js (Boss Week on the server: the Berlin week, the rotation, the Road's numbers, tickets, the replay of a won try, claim / nowin / late, the board, the week paid once also after a restart; check.sh 5d3) · pwbw.py (Boss Week in the browser on port PORT_BASE+12 with the boss at a tenth of his HP: a try checked by the server frame for frame, Board, leaving costs nothing, a slower win not sent, the 4:00 cap, the Monday card and the chips by sync; check.sh 5d4) · pwbwsheet.py (the Boss Week tile, sheet, Boards tab and Monday card from window.__blBwMock at five sizes; check.sh 6d2) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwstakes.py (chip stakes in two browsers, check.sh port PORT_BASE+11: FOR CHIPS dimmed with its reasons, the Casual rematch refereed, the stake sheet, decline and accept, VS with the pot, the pot card and the chips through the sync, the challenge card on the results and the menu, a Play friends game, Stats line, Settings Off; shots at 4 sizes; check.sh 5g) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
+breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, Play friends referee, chip stakes (eligibility, offer, decline, timeout, accept, verdict, early leave, daily limit), accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · bossweek.js (Boss Week on the server: the Berlin week, the rotation, the Road's numbers, tickets, the replay of a won try, claim / nowin / late, the board, the week paid once also after a restart; check.sh 5d3) · pwbw.py (Boss Week in the browser on port PORT_BASE+12 with the boss at a tenth of his HP: a try checked by the server frame for frame, Board, leaving costs nothing, a slower win not sent, the 4:00 cap, the Monday card and the chips by sync; check.sh 5d4) · pwbwsheet.py (the Boss Week tile, sheet, Boards tab and Monday card from window.__blBwMock at five sizes; check.sh 6d2) · pwreplay.py (replays against a real server on port PORT_BASE+13: a won try played again from the phone and from GET /api/run to the server's time, seek back and on to the same checksum, ⏭ KO, nothing counts, a #watch= link on a fresh phone, a Ranked vs CPU match to the same end, WATCH ▶ on the results at five sizes; check.sh 5d5) · pwrpview.py (the replay viewer's strip, end card, title card states and the board's ▶ rows at five sizes, from window.__blRp.botRun and window.__blBwMock; check.sh 6d3) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwstakes.py (chip stakes in two browsers, check.sh port PORT_BASE+11: FOR CHIPS dimmed with its reasons, the Casual rematch refereed, the stake sheet, decline and accept, VS with the pot, the pot card and the chips through the sync, the challenge card on the results and the menu, a Play friends game, Stats line, Settings Off; shots at 4 sizes; check.sh 5g) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
 pwhud.py (the match HUD: layout of the timer strip / pause icon / percent at 667x320, 844x390, 1280x760 and upright 390x844, marker fade and
 return, percent tint, danger glow incl. reduced motion, none in the KO finisher, tutorial prompt vs the pause icon; check.sh step 6c; tags se phone desk up) ·
@@ -941,9 +972,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: build order step 6 PR 2, Boss Week replays: watch a run from its log (the match loop fed by the log, bots recomputed),
-  seek, the share link (#watch=<id>, GET /api/run/<id>), last week's board, WATCH ▶ on the board and the results (plan doc above).
-  Boss Week leftovers: if a Zorp week ends with fewer than 10 times, think about his week on Normal (Fable); the tile's second line
+- NEXT: Jonny picks from the later list (build order step 6 is done with the replays).
+  Replay leftovers: a run is kept only for its game version (a PROTO bump makes every older run "older version"); seeking far into a
+  long run takes a moment on a slow phone (it plays from the start; snapshots would make it instant); your own last run lives only
+  in memory until the next results. Boss Week leftovers: if a Zorp week ends with fewer than 10 times, think about his week on Normal (Fable); the tile's second line
   can lose "· #6 of 23" on small phones (the gold #6 tag still shows the place). Step 5 is done (rival record, bounty, chip stakes; plan
   https://claude.ai/code/artifact/0817259b-885f-4018-a6d0-be027c9f0636). Stakes leftovers: chips still live on phones (a real server
   wallet comes with Pommes, step 8); a server restart mid staked match = no result; an old page never sees a challenge until it

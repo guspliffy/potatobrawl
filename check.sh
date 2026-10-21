@@ -6,7 +6,7 @@
 # browser steps at once, which play in real time, and the simulations next to them at low priority, so they only take the CPU the
 # browsers leave over. More browsers at once don't finish sooner on 4 cores, they only starve each other. The lines keep the order below.
 #   CHECK_JOBS=1 ./check.sh     one browser step at a time (a slow or busy machine)
-#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+12 (default 8091), e.g. for a second checkout
+#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+13 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 # macOS: bash 3.2 works (it polls instead of `wait -n`), and without `timeout` the steps run with no time limit unless coreutils' gtimeout is installed.
@@ -228,6 +228,16 @@ if grep -q "^no errors" "$LOGS/bw-ui.log" && grep -q "^bw ok" "$LOGS/bw-ui.log";
 else fail "Boss Week in the browser" "$LOGS/bw-ui.log"; fi
 }
 
+# 5d5. Replays in the browser against a real server (ui/replay.js): a won Boss Week try played again from the phone's log and from the
+#      server (GET /api/run/<id>) to the server's own time, frame for frame; seeking back and on lands on the same state, ⏭ KO, nothing
+#      counts; a #watch= share link on a fresh phone; a Ranked vs CPU match played again to the same end; WATCH ▶ on the results at five
+#      sizes. Shots in build/shots/replay.
+s_replay() {
+(cd "$SHOTS" && PWREPLAY_PORT=$((PB + 13)) timeout 1200 python3 "$ROOT/tests/pwreplay.py" replay) > "$LOGS/replay.log" 2>&1
+if grep -q "^no errors" "$LOGS/replay.log"; then pass "replays in the browser (local and server runs, seek, share link, Ranked vs CPU; shots in build/shots/replay)"
+else fail "replays in the browser" "$LOGS/replay.log"; fi
+}
+
 # 5e. Quick match in the browser: three players through a real server: the Season sheet, Find match, the CPU warm-up while
 #     searching, PLAYER FOUND!, the VS screen, a Ranked match decided by the server, no Ranked rematch (Casual after 20 s), a Casual
 #     leave, a Ranked forfeit, the menu's online rank. Shots in build/shots/quick.
@@ -302,6 +312,15 @@ s_bwsheet() {
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwbwsheet.py" bwsheet) > "$LOGS/bwsheet.log" 2>&1
 if grep -q "^no errors" "$LOGS/bwsheet.log" && grep -q "^bwsheet ok" "$LOGS/bwsheet.log"; then pass "Boss Week menu (tile, sheet, Boards tab, Monday card at five sizes; shots in build/shots/bwsheet)"
 else fail "Boss Week menu" "$LOGS/bwsheet.log"; fi
+}
+
+# 6d3. The replay viewer (UI only, ui/rpview.js): the controls strip, the seek bar's marks, speed, ⏭ KO, clean view, the end card, the share
+#      link's title card in each state, ▶ on the board's rows and Last week ›, at five sizes: nothing cut, overlapping or off the screen.
+#      Shots in build/shots/rpview.
+s_rpview() {
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwrpview.py" rpview) > "$LOGS/rpview.log" 2>&1
+if grep -q "^no errors" "$LOGS/rpview.log"; then pass "replay viewer (strip, end card, title card, board ▶ at five sizes; shots in build/shots/rpview)"
+else fail "replay viewer" "$LOGS/rpview.log"; fi
 }
 
 # 6e. The first minute: the turn-sideways screen, the welcome sheet, the 4-step tutorial (Move & jump, Land 3 hits, Dodge then recover,
@@ -427,13 +446,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw bwui quickui stakesui screens skins shop acctui hud ultui bwsheet tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw bwui replay quickui stakesui screens skins shop acctui hud ultui bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, bw, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
 SOLO=(quick cpu bw acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui tut skins bossui ultui bwsheet onboss comboui cup statsui online statspage finisher fsui)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui replay tut skins bossui ultui bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

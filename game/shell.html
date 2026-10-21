@@ -1095,7 +1095,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="sheet bd-sheet" role="dialog" aria-label="Boards">
       <header class="sh-head"><h3>Boards</h3><button class="round x" id="bdClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="bd-tabs" id="bdTabs" role="tablist" aria-label="Boards"></div>
-      <div class="bd-kick kick" id="bdKick" aria-live="polite"></div>
+      <div class="bd-kr"><div class="bd-kick kick" id="bdKick" aria-live="polite"></div><button class="bd-last" id="bdLast" hidden>Last week &rsaquo;</button></div>
       <div class="bd-main" id="bdMain">
         <div class="bd-hd" id="bdHd" aria-hidden="true"><span>#</span><span></span><span class="bd-hn">Player<span class="bd-hf"> · fighter</span></span><span class="bd-hw"></span><span class="bd-hr">Rating</span></div>
         <div class="bd-list scroll" id="bdList"></div>
@@ -1193,6 +1193,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="res-actions">
           <!-- chip stakes (ui/stakes.js): FOR CHIPS joins the gold button, or takes the second row; the reason it can't, under all -->
           <div class="res-again"><button class="btn primary" id="rAgain"><span>Next match</span><small id="rAgainSub"></small></button><button class="btn sk-btn" id="rStake" hidden></button></div>
+          <button class="btn" id="rWatch" hidden><span>Watch &#9654;&#xFE0E;</span></button>
           <button class="btn" id="rRetry" hidden><span>Retry</span><small id="rRetrySub"></small></button>
           <button class="btn" id="rChange"><span>Fighters</span></button>
           <button class="btn" id="rMenu"><span>Menu</span><small id="rMenuSub"></small></button>

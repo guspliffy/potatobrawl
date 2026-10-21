@@ -28,7 +28,7 @@ function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   L.portrait = H > W * 1.05;
-  L.panel = L.portrait && mode === "match" && touchUI && !finFull ? Math.round(clamp(H * 0.36, 200, 300)) : 0;
+  L.panel = L.portrait && mode === "match" && touchUI && !finFull && !(match && match.rp) ? Math.round(clamp(H * 0.36, 200, 300)) : 0;   // match.rp: a replay has no pad (ui/replay.js)
   L.gw = W; L.gh = H - L.panel;
   app.classList.toggle("portrait", L.portrait);
   if (mode === "result") rvPlace();   // ui/rivals.js: the rival strip moves with the layout
