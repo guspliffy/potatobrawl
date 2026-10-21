@@ -76,6 +76,7 @@ function cntStart() {   // screens.js enterMatchUI, before the mode changes
   const md = cntMode(match), real = md !== "tutorial" && md !== "trial";
   CNT.live = { md, real };
   cnt("ms:" + md);
+  if (md === "online" && NET.role === "guest" && chlRoom(NET.mrCode)) cnt("chl:play");   // the friend's phone, in a Challenge a friend room
   const me = G && G.fighters[meSlot];
   if (real && me && !me.spec.boss) cnt("fp:" + me.spec.id);
   const b = match && match.boss ? bossOf(G) : null;
@@ -195,6 +196,7 @@ function cntBoot() {   // loop.js, before the first menu
   for (const k of CNT.pre) cnt(k);
   CNT.pre.length = 0;
   if (NET.invite) cnt("inv");
+  if (chlRoom(NET.invite)) { cnt("chl:open"); if (isNew) cnt("chl:new"); }   // a Challenge a friend link (ui/challenge.js), and on a brand-new device
   cntDaily(); cntFlush(false); cntListen();
 }
 function cntListen() {
