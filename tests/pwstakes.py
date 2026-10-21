@@ -56,6 +56,7 @@ def set_on(d, code, patch):   # the test's own hand on an online record (the ser
 
 async def device(b, vp, mob, profile):
     ctx = await b.new_context(viewport=vp, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=mob)
+    await ctx.add_init_script("window.__blNoTurn = true")   # the upright phone plays sideways; tests/pwtut.py covers the turn-sideways screen
     await ctx.add_init_script("if (!localStorage.getItem('potatobrawl.profile.v1')) localStorage.setItem('potatobrawl.profile.v1', %s)" % json.dumps(json.dumps(profile)))
     return ctx
 def watch(pg, tag):

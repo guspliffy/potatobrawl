@@ -197,8 +197,9 @@ async def flow(b):
     check((await prof(pg2))['mseed']['phoenix'] == 542, 'the head start is never given again on that device')
     await ctx.close()
     ctx, _ = await new_ctx(b, vp); pg = await open_page(ctx, 'fresh')
-    mode, mem, saved = await pg.evaluate("window.__blastline.mode"), await pg.evaluate("window.__blAcct.P.mseed"), (await prof(pg)).get('mseed')
-    check(mode == 'match' and mem == {} and saved == {}, f'a brand new profile: the tutorial still starts (the first-run flag is not spent by mastery) and it has no head start ({mode}, {mem}, {saved})')
+    mode, mem, saved = await pg.evaluate("window.__blastline.mode"), await pg.evaluate("window.__blAcct.P.mseed"), ((await prof(pg)) or {}).get('mseed')
+    wel = await pg.evaluate("!document.getElementById('scrWelcome').hidden")
+    check(wel and mem == {} and not saved, f'a brand new profile: the welcome sheet still opens (the first-run flag is not spent by mastery) and it has no head start ({mode}, {wel}, {mem}, {saved})')
     await ctx.close()
 
     # ----- the tile shield, the detail row and what comes next

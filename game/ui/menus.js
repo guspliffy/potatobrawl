@@ -37,7 +37,7 @@ tap("rAgain", () => {
   stkLeave();   // ui/stakes.js: a challenge still out is withdrawn
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
   goFull();
-  if (match && match.tutorial) { quickOpen(); return; }
+  if (match && match.tutorial) { startFirstFight(); return; }   // YOU'RE READY: FIGHT (ui/tutorial.js)
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
   if (match && (match.qm || match.warm || match.vc) && qmAgain()) return;   // ui/quick.js: Next match, Another CPU fight
   if (match && match.online && match.boss && NET.cpuMate) {   // the partner dropped: Retry vs CPU (a Practice boss fight, same boss, level and partner)

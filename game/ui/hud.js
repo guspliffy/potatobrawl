@@ -1,9 +1,11 @@
 /* ===================== match HUD extras (UI only) =====================
-   Reads the game state, never writes it. Two things live here:
+   Reads the game state, never writes it. Three things live here:
    1. The YOU / CPU markers over the fighters: shown from the countdown, faded out 3 s after the match starts, and back for 3 s
       after every respawn (and at the start of sudden death). The tutorial keeps them on. drawTag (draw-world.js) asks tagAlpha().
    2. The danger edge glow (#dgr): while the player's own fighter is flying out of a hard launch, a thin red glow lights the edge
-      the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger). */
+      the launch is heading for. Calibrated against the simulation's own "lethal" call (see the comment on launchDanger).
+   3. The fight buttons go see-through when a fighter is near the right ledge or behind a button (padsStep, css/91-pads.css).
+   The ultimate bars and the ULTI button come after them (see below). */
 const HX = { g: null, ph: "", sd: false, alive: [true, true, true, true], from: 0, until: Infinity, k: [0, 0, 0, 0], t: 0, on: false, pz: null, pzT: -99 };
 const TAG_HOLD = 180, TAG_FADE = 30, TAG_IN = 12;   // sim ticks (60 per second): shown 3 s, fades out in 0.5 s, comes back in 0.2 s
 const dgrEls = [...$("dgr").children];               // left, right, top, bottom
@@ -77,12 +79,67 @@ function hudDanger() {
     if (HX.k[i]) any = true;
   }
   HX.on = any;
+  padsStep();
 }
 // outside a match (menus, results): make sure no glow is left over
 function hudIdle() {
+  padsOff();
   if (!HX.on) return;
   for (let i = 0; i < 4; i++) { HX.k[i] = 0; dgrEls[i].style.opacity = "0"; }
   HX.on = false;
+}
+/* ---------- the fight buttons see through (UI only; the look and the fade are css/91-pads.css) ----------
+   On a landscape phone the five round buttons on the right (all but ULTI) cover the right ledge. Two cases, only in a landscape match
+   (not under the upright control panel, not in the KO finisher, not on a menu), for every fighter that is not a boss:
+   1. all five at once while a fighter is within 60 world px of the right ledge (STAGE.main.x2) or out beyond it, if that ledge is in the
+      buttons' corner on screen;
+   2. one button alone while a fighter's box, with 24 screen px around it, overlaps that button's disc.
+   Each case holds for 0.3 s after it ends, so a fighter stepping to and fro makes no flicker. The class .see goes on the button; a pressed
+   button is whole whatever the class says (CSS). Reads the sim, never writes it; the touch areas are not touched. */
+const PADS = { b: [...document.querySelectorAll('.pb:not([data-k="ulti"])')], d: [], box: null, key: "", dT: -9999, all: 0, one: [0, 0, 0, 0, 0], on: [false, false, false, false, false] };
+const PADS_RIGHT = 60, PADS_PAD = 24, PADS_HOLD = 300;   // world px from the ledge, screen px around a box, ms
+// each disc as a circle in the app's own pixels (toApp undoes the sideways turn); the disc is 92% of its touch circle. Re-measured now and then.
+function padsMeasure(now) {
+  const key = W + "x" + H + "r" + rotMode;
+  if (key === PADS.key && now - PADS.dT < 500) return;
+  PADS.key = key; PADS.dT = now;
+  PADS.d = PADS.b.map((b) => {
+    const q = b.getBoundingClientRect();
+    if (q.width < 1) return null;
+    const [x1, y1] = toApp(q.left, q.top), [x2, y2] = toApp(q.right, q.bottom);
+    return { x: (x1 + x2) / 2, y: (y1 + y2) / 2, r: Math.abs(x2 - x1) * 0.46 };
+  });
+  const ds = PADS.d.filter(Boolean);   // the corner the five discs take up (left and top edges)
+  PADS.box = ds.length ? { x: Math.min(...ds.map((d) => d.x - d.r)), y: Math.min(...ds.map((d) => d.y - d.r)) } : null;
+}
+function padsOff() {
+  PADS.all = 0; PADS.one.fill(0);
+  PADS.b.forEach((b, k) => { if (PADS.on[k]) { PADS.on[k] = false; b.classList.remove("see"); } });
+}
+// every frame of a match (hudDanger)
+function padsStep() {
+  if (mode === "match" && paused) return;   // a pause keeps things as they are
+  if (mode !== "match" || !G || G.phase === "over" || FIN.on || L.panel || $("ctl").hidden) { padsOff(); return; }
+  const now = performance.now(), S = STAGE.main, hit = [false, false, false, false, false];
+  padsMeasure(now);
+  // the ledge rule only while the ledge itself is on screen in the buttons' corner (a big window shows it above them, clear)
+  const lg = toScreen(S.x2, S.top), under = !!PADS.box && lg[0] > PADS.box.x - 30 && lg[1] > PADS.box.y - 30;
+  for (const f of G.fighters) {
+    if (f.state === "dead" || f.state === "gone" || f.spec.boss) continue;
+    if (under && f.x > S.x2 - PADS_RIGHT) PADS.all = now + PADS_HOLD;
+    const hw = f.s.w / 2, a = toScreen(f.x - hw, f.y - f.s.h), c = toScreen(f.x + hw, f.y);
+    const x1 = a[0] - PADS_PAD, y1 = a[1] - PADS_PAD, x2 = c[0] + PADS_PAD, y2 = c[1] + PADS_PAD;
+    PADS.d.forEach((d, k) => {
+      if (!d) return;
+      const dx = Math.max(x1 - d.x, 0, d.x - x2), dy = Math.max(y1 - d.y, 0, d.y - y2);
+      if (dx * dx + dy * dy < d.r * d.r) hit[k] = true;
+    });
+  }
+  PADS.b.forEach((b, k) => {
+    if (hit[k]) PADS.one[k] = now + PADS_HOLD;
+    const want = now < PADS.all || now < PADS.one[k];
+    if (want !== PADS.on[k]) { PADS.on[k] = want; b.classList.toggle("see", want); }
+  });
 }
 // The pause icon sits under the opponent's card; the off-screen bubble (effects.js) keeps clear of it. Measured now and then.
 function hudPauseZone() {

@@ -104,6 +104,7 @@ const SYNC = (function () {
     const known = new Map((figs || []).map((f) => [f.id, f.palettes.length]));
     out.last = typeof p.last === "string" && known.has(p.last) ? p.last : figs && figs.length ? figs[0].id : "";
     if (p.tut) out.tut = true;
+    if (p.fin1) out.fin1 = true;   // finished a first real match (ui/base.js playedOnce)
     const owned = {}, pal = {};
     const po = isObj(p.owned) ? p.owned : {}, pp = isObj(p.pal) ? p.pal : {};
     const ids = new Set([...known.keys(), ...Object.keys(po).filter((k) => ID_RE.test(k)).slice(0, 24), ...Object.keys(pp).filter((k) => ID_RE.test(k)).slice(0, 24)]);
@@ -159,6 +160,7 @@ const SYNC = (function () {
     if (S.name) P.name = S.name; else delete P.name;
     P.last = S.last;
     if (S.tut) P.tut = true;
+    if (S.fin1) P.fin1 = true;
     P.owned = Object.assign({}, P.owned, Object.fromEntries(Object.entries(S.owned).map(([k, v]) => [k, v.slice()])));
     P.pal = Object.assign({}, P.pal, S.pal);
     P.history = S.history.map((h) => Object.assign({}, h));
@@ -208,6 +210,7 @@ const SYNC = (function () {
     const name = pick(L.name, B.name, S.name); if (name) out.name = name;
     out.last = pick(L.last, B.last, S.last);
     if (L.tut || S.tut) out.tut = true;
+    if (L.fin1 || S.fin1) out.fin1 = true;
     const ids = [...new Set([...Object.keys(L.owned || {}), ...Object.keys(S.owned || {}), ...Object.keys(L.pal || {}), ...Object.keys(S.pal || {})])].sort();
     out.owned = {}; out.pal = {};
     for (const id of ids) {

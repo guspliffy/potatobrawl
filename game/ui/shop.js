@@ -59,7 +59,7 @@ function shopGlazeCard(spec) {
   cv.setAttribute("aria-hidden", "true"); a.appendChild(cv);
   f.appendChild(shMk("b", "", spec.name)); f.appendChild(shMk("small"));
   b.append(a, f);
-  const fig = BL.newGame({ players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+  const fig = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
   fig.x = 0; fig.y = 0; fig.facing = -1;
   b.addEventListener("click", () => shopGlazeTap(spec.id));
   return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };

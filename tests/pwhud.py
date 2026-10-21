@@ -11,8 +11,16 @@
 #   tutorial keeps them on and its prompt stays clear of the pause icon; the glow is steady with reduced motion and pulses without;
 #   no glow in the KO finisher (a real final lethal hit on the player) and none left on the results screen.
 # Touch buttons (five sizes incl. 740x360, on The Field and The Kitchen): every button (.pb) and the stick keep the touch areas they
-#   had before the ink-glass look (the rects measured on main), the words are heavy italic, a pressed button sinks 3px; pictures of
+#   had before the ink-glass look (the rects measured on main), the words are heavy italic, the drawn disc of Light, Heavy, Jump, Special
+#   and Dodge is its ::before at 92% of the touch circle with the 3px rim (ULTI stays whole), a pressed button sinks 3px; pictures of
 #   Light pressed, Heavy held and charging, Special cooling, ULTI ready (tag 6_buttons) and pressed / finish (tag 6b_buttons).
+# See-through buttons (same five sizes, on The Field; hud.js padsStep + css/91-pads.css): standing mid-stage leaves the five round buttons
+#   whole (3px rim, word at 1); a player at the right ledge turns all five see-through (class .see, --see 1, rim 2px, word at 0.85), and so
+#   does the CPU alone at the ledge; a pressed button shows whole while the others stay see-through and fades back on release; the state
+#   holds a moment after the fighter steps away and is gone after about a second; a fighter next to the stage's right side but outside the
+#   60px zone (the camera pulled wide by the other one far left) turns only the buttons behind him (Jump, not Dodge) from 667 to 844 wide;
+#   a boss at the ledge changes nothing; the upright layout (control panel) and 1280x760 (the ledge shows above the buttons) never turn see-through at the ledge; with reduced motion there is no fade
+#   (transition 0s); pictures of the player at the ledge (tag 8_seethrough).
 # The sprint (five sizes): a flick of the touch stick starts one, a slow push to full doesn't, the knob glows ember at a full push and not
 #   in the middle; at 1280x760 a double tap of a direction key starts one and a held key doesn't; a picture of the burst (tag 7_sprint).
 # Prints "no errors" when every check passed and no page errors happened.
@@ -279,13 +287,14 @@ async def buttons(b, errs):
         if ONLY and 'spr' in ONLY: continue
         ctx, pg = await start(b, tag, {'width': w, 'height': h}, up, errs, mapb=mapb)
         await frames(pg, 10)
+        await place(pg, 0, -150); await pg.wait_for_timeout(900)   # mid-stage: at 667 wide the CPU's spawn already stands behind a button (see-through, below)
         got = await pg.evaluate(BTN_MEASURE)
         for k, want in BTN_RECTS[tag].items():
             if k not in got: errs.append(f'{tag} buttons: no {k}'); continue
             if max(abs(a - c) for a, c in zip(got[k], want)) > 0.6: errs.append(f'{tag} buttons: {k} touch area is {[round(v, 1) for v in got[k]]}, was {want}')
-        look = await pg.evaluate("""(() => { const s = getComputedStyle(document.querySelector('.pb[data-k="light"] > span')), b = getComputedStyle(document.querySelector('.pb[data-k="light"]'));
+        look = await pg.evaluate("""(() => { const s = getComputedStyle(document.querySelector('.pb[data-k="light"] > span')), b = getComputedStyle(document.querySelector('.pb[data-k="light"]'), '::before');
           return [s.fontStyle, s.fontWeight, b.borderTopWidth]; })()""")
-        if look != ['italic', '900', '3px']: errs.append(f'{tag} buttons: the look is {look}, want italic 900 words and a 3px rim')
+        if look != ['italic', '900', '3px']: errs.append(f'{tag} buttons: the look is {look}, want italic 900 words and a 3px rim (on the disc, the ::before)')
         # the states: Light pressed (sinks 3px), Heavy held and charging, Special cooling (a real cooldown in the sim), ULTI ready, the stick pushed
         y0 = await pg.evaluate("document.querySelector('.pb[data-k=\"light\"]').getBoundingClientRect().top")
         await pg.evaluate(f"""(() => {{ const g = {G}, me = g.fighters[0], q = (k) => document.querySelector('.pb[data-k="' + k + '"]');
@@ -304,6 +313,86 @@ async def buttons(b, errs):
         await ticks(pg, 30)
         await pg.screenshot(path=f'{OUT}/{tag}_6b_buttons.png')
         await ctx.close()
+
+# ---- see-through buttons: near the right ledge the five round buttons (not ULTI) turn see-through (UI only; hud.js padsStep, css/91-pads.css) ----
+SEE = """(() => { const o = {}; for (const b of document.querySelectorAll('.pb')) { const k = b.dataset.k; if (k === 'ulti') continue;
+  const sp = getComputedStyle(b.firstElementChild), rim = getComputedStyle(b, '::before');
+  o[k] = { see: b.classList.contains('see'), v: getComputedStyle(b).getPropertyValue('--see').trim(), word: +sp.opacity, rim: rim.borderTopWidth, disc: parseFloat(rim.width) / b.offsetWidth, dur: getComputedStyle(b).transitionDuration }; } return o; })()"""
+KEYS5 = ['light', 'heavy', 'jump', 'special', 'dodge']
+
+async def place(pg, me, op):   # freeze the sim and stand the player and the CPU on the floor at these world x
+    await pg.evaluate(f"(() => {{ const g = {G}; g.hitstop = 100000; g.fighters[0].x = {me}; g.fighters[0].y = 0; g.fighters[1].x = {op}; g.fighters[1].y = 0; }})()")
+
+async def seeWait(pg, want, ms=3000):   # wait until the (first four) buttons' --see is `want` ('1' or '0'); False when it never gets there
+    try:
+        await pg.wait_for_function("(w) => ['light', 'heavy', 'jump', 'special', 'dodge'].every((k) => getComputedStyle(document.querySelector('.pb[data-k=\"' + k + '\"]')).getPropertyValue('--see').trim() === w)", arg=want, timeout=ms)
+        return True
+    except Exception: return False
+
+async def seethrough(b, errs):
+    sizes = [('se', 667, 320, False), ('mid', 740, 360, False), ('phone', 844, 390, False), ('desk', 1280, 760, False), ('up', 390, 844, True)]
+    for tag, w, h, up in sizes:
+        if ONLY and tag not in ONLY and 'btn' not in ONLY: continue
+        if ONLY and 'spr' in ONLY: continue
+        pre = f'{tag} see-through:'
+        ctx, pg = await start(b, tag, {'width': w, 'height': h}, up, errs, mapb=5)   # The Field: its right ledge is at x 400
+        # mid-stage: whole, 3px rim, the disc 92% of its touch circle
+        await place(pg, 0, -150); await pg.wait_for_timeout(1000)
+        s = await pg.evaluate(SEE)
+        for k in KEYS5:
+            if s[k]['see'] or s[k]['v'] != '0' or s[k]['rim'] != '3px' or s[k]['word'] != 1: errs.append(f'{pre} {k} mid-stage is {s[k]}, want whole')
+            if abs(s[k]['disc'] - 0.92) > 0.005: errs.append(f'{pre} {k} disc is {s[k]["disc"]:.3f} of the touch circle, want 0.92')
+        # the player at the right ledge (400): all five
+        await place(pg, 380, -150)
+        if up or tag == 'desk':   # upright: the buttons sit in the control panel; 1280x760: the ledge is on screen above them, clear
+            await pg.wait_for_timeout(1000)
+            s = await pg.evaluate(SEE)
+            if any(s[k]['see'] or s[k]['v'] != '0' for k in KEYS5): errs.append(f'{pre} the buttons turned see-through with the ledge clear of them: {s}')
+            await pg.screenshot(path=f'{OUT}/{tag}_8_seethrough.png')
+            await ctx.close(); continue
+        if not await seeWait(pg, '1'): errs.append(f'{pre} the player at the right ledge did not turn all five see-through: {await pg.evaluate(SEE)}')
+        s = await pg.evaluate(SEE)
+        for k in KEYS5:
+            if not s[k]['see'] or s[k]['rim'] != '2px' or abs(s[k]['word'] - 0.85) > 0.01: errs.append(f'{pre} {k} at the ledge is {s[k]}, want .see, a 2px rim, the word at 0.85')
+        await pg.screenshot(path=f'{OUT}/{tag}_8_seethrough.png')
+        # a pressed button shows whole, the rest stay see-through; it goes back on release
+        await pg.evaluate("document.querySelector('.pb[data-k=\"jump\"]').dispatchEvent(new PointerEvent('pointerdown', { pointerId: 7, bubbles: true, cancelable: true }))")
+        await pg.wait_for_timeout(120)
+        s = await pg.evaluate(SEE)
+        if s['jump']['v'] != '0' or s['jump']['word'] != 1 or s['jump']['rim'] != '3px': errs.append(f'{pre} a pressed Jump is {s["jump"]}, want whole')
+        if any(s[k]['v'] != '1' for k in KEYS5 if k != 'jump'): errs.append(f'{pre} the other buttons are not see-through while Jump is held: {s}')
+        await pg.evaluate("document.querySelector('.pb[data-k=\"jump\"]').dispatchEvent(new PointerEvent('pointerup', { pointerId: 7, bubbles: true, cancelable: true }))")
+        if not await seeWait(pg, '1'): errs.append(f'{pre} Jump did not go see-through again after the press')
+        # the fighter steps away: still see-through 0.1 s later (the hold), whole again after about a second
+        await pg.evaluate(f"(async () => {{ {G}.fighters[0].x = 0; window.__seeHold = await new Promise((r) => setTimeout(() => r(document.querySelector('.pb[data-k=\"light\"]').classList.contains('see')), 100)); }})()")
+        if not await pg.evaluate("window.__seeHold"): errs.append(f'{pre} no hold: the buttons went whole at once when the player stepped away')
+        if not await seeWait(pg, '0', 3000): errs.append(f'{pre} the buttons did not come back after the player stepped away: {await pg.evaluate(SEE)}')
+        if any(v['see'] for v in (await pg.evaluate(SEE)).values()): errs.append(f'{pre} .see is left on after the player stepped away')
+        # one button: the CPU just outside the 60px zone (x 338), the camera pulled wide by the player far to the left: Jump is behind him, Dodge is not
+        if tag != 'desk':
+            await place(pg, 338, -600); await pg.wait_for_timeout(1500)
+            s = await pg.evaluate(SEE)
+            if not s['jump']['see']: errs.append(f'{pre} a fighter behind Jump did not turn it see-through: {[k for k in KEYS5 if s[k]["see"]]}')
+            if s['dodge']['see']: errs.append(f'{pre} Dodge turned see-through with no one behind it (the one-button rule turned into the all-five rule)')
+        # the CPU alone at the ledge also does it; a boss there does not (phone only)
+        if tag == 'phone':
+            await place(pg, 0, 380)
+            if not await seeWait(pg, '1'): errs.append(f'{pre} the CPU at the right ledge did not turn the buttons see-through')
+            await place(pg, 0, 0)
+            if not await seeWait(pg, '0', 4000): errs.append(f'{pre} the buttons did not come back before the boss check')
+            await pg.evaluate(f"(() => {{ const f = {G}.fighters[1]; f.spec = Object.assign({{}}, f.spec, {{ boss: {{ hp: 100 }} }}); }})()")
+            await place(pg, 0, 380); await pg.wait_for_timeout(1200)
+            if any(v['see'] for v in (await pg.evaluate(SEE)).values()): errs.append(f'{pre} a boss at the right ledge turned the buttons see-through')
+        await ctx.close()
+    # reduced motion: the state, no fade
+    if not ONLY or 'btn' in ONLY or 'phone' in ONLY:
+        if not (ONLY and 'spr' in ONLY):
+            ctx, pg = await start(b, 'phone', {'width': 844, 'height': 390}, False, errs, reduced=True, mapb=5)
+            await place(pg, 380, -150); await pg.wait_for_timeout(800)
+            s = await pg.evaluate(SEE)
+            if not all(s[k]['see'] and s[k]['v'] == '1' for k in KEYS5): errs.append(f'phone see-through (reduced motion): {s}')
+            if any(s[k]['dur'].split(',')[0].strip() != '0s' for k in KEYS5 if k != 'special'): errs.append(f'phone see-through (reduced motion): the buttons still fade: {[s[k]["dur"] for k in KEYS5]}')
+            await ctx.close()
 
 # ---- the sprint: a flick of the touch stick and a double tap of a direction key each start one; a slow push to full and a held key don't;
 #      the knob glows ember at a full push; a picture of the lean, the speed lines and the knob (tag 7_sprint) ----
@@ -358,6 +447,7 @@ async def main():
             if not ONLY or tag in ONLY: await layout_run(b, tag, vp, up, errs)
         if not ONLY or 'phone' in ONLY: await flow(b, errs)
         await buttons(b, errs)
+        await seethrough(b, errs)
         await sprint(b, errs)
         await b.close()
     print('\n'.join(errs) or 'no errors')

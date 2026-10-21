@@ -260,12 +260,14 @@
 #scrMenu #bBoards .bd-gl { width: 18px; height: 18px; flex: none; }
 #app.portrait #scrMenu .mm-row3.bd4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }   /* upright: two by two (the column has the height) */
 #app.portrait #scrMenu .mm-row3.bd4 .mini { font-size: 14px; }
-/* small phones in landscape (667x320, 568x320): the column is 372 / 336 px, so BOARDS keeps only its podium (the button still says Boards to a screen reader) */
-#app.tiny #scrMenu #bBoards span { display: none; }
-#app.tiny #scrMenu #bBoards { padding: 0 11px; }
-#app.tiny #scrMenu #bBoards .bd-gl { width: 20px; height: 20px; }
-@container mm (max-width: 620px) {   /* 568 wide: the four pills are 354 px of words in a 336 px column, so the gaps and the padding give way */
-  #app.tiny #scrMenu .mm-row3.bd4 { gap: 5px; }
-  #app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 6px; gap: 5px; }
-  #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 9px; }
+/* small phones in landscape (667x320, 568x320): the column is 372 / 336 px, so the four pills give up gaps, padding and a little font, never the word Boards */
+#app.tiny #scrMenu .mm-row3.bd4 { gap: 6px; }
+#app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 7px; gap: 5px; font-size: 12px; }
+#app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 8px; }
+#app.tiny #scrMenu #bBoards .bd-gl { width: 18px; height: 18px; }
+@container mm (max-width: 620px) {   /* 568 wide: the column is 336 px, so one more notch */
+  #app.tiny #scrMenu .mm-row3.bd4 { gap: 4px; }
+  #app.tiny #scrMenu .mm-row3.bd4 .mini { padding: 0 5px; gap: 4px; font-size: 11.5px; }
+  #app.tiny #scrMenu .mm-row3.bd4 #bBoards { padding: 0 6px; }
+  #app.tiny #scrMenu #bBoards .bd-gl { width: 16px; height: 16px; }
 }

@@ -465,12 +465,12 @@ async function serverTests() {
     srv = await startServer(env);
     try {
       let r = await call("GET", "/api/acct/ping");
-      const a = r.status;
+      const a = r.status, r0 = r.text;   // 202 with no body: the page reads it as "off" (a 404 would be a console error on every load)
       r = await post("new", { prof: {} }); const b = r.status;
       r = await post("load", { code: "7K3F-9QXM-2PMA-W8RT" }); const c = r.status;
       r = await post("save", { code: "7K3F-9QXM-2PMA-W8RT", rev: 1, prof: {} }); const d = r.status;
       const h = await call("GET", "/health");
-      check(a === 404 && b === 404 && c === 404 && d === 404 && h.status === 200 && /Accounts: off/.test(srv.log()), `off (${label}): every /api/acct/* answers 404, the game still runs`);
+      check(a === 202 && !r0 && b === 404 && c === 404 && d === 404 && h.status === 200 && /Accounts: off/.test(srv.log()), `off (${label}): ping answers 202 with no body, the other /api/acct/* 404, the game still runs`);
     } finally { await stopServer(srv); }
   }
 }

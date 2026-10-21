@@ -16,6 +16,8 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
   };
 }
 const STEP = 1000 / 60;
+// a fresh seed for an offline match: the UI picks it, the simulation never does (core.js newGame throws without one)
+const newSeed = () => (Math.random() * 1e9) | 0;
 
 /* ===================== profile (per device) ===================== */
 const SAVE_KEY = "potatobrawl.profile.v1", OLD_SAVE_KEY = "blastline.profile.v1";
@@ -56,6 +58,13 @@ function saveProfile() {
   try { acctDirty(); } catch (e) { /* accounts (ui/acct.js) not set up yet */ }   // a linked account saves itself shortly after
 }
 let P = loadProfile();
+// True once the player finished a match that is not the tutorial or the Combo trial (P.fin1, set by markPlayed). A profile from before the flag
+// counts too: any ranked, friend, Team Brawl or cup record or mastery XP (all kept by the sync), so it never depends on the flag riding along.
+function playedOnce() {
+  return !!(P.fin1 || (P.matches | 0) > 0 || (P.friendW | 0) + (P.friendL | 0) > 0 || (P.duoW | 0) > 0 || (P.cups | 0) > 0 ||
+    (P.mxp && typeof P.mxp === "object" && Object.values(P.mxp).some((v) => v > 0)));
+}
+function markPlayed() { if (!P.fin1) { P.fin1 = true; saveProfile(); } }
 
 const TIERS = [
   { name: "Tin", min: 0, col: "#9097ad" },

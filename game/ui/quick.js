@@ -26,7 +26,7 @@ const qmOn = () => !!window.__blQuick && !window.__blNoQuick;   // __blNoQuick: 
   try {
     const s = JSON.parse(localStorage.getItem(QM_KEY) || "null");
     if (!s || typeof s !== "object") return;
-    QM.mode = s.mode === "c" || s.mode === "v" ? s.mode : "r";   // v: Ranked vs CPU (ui/vscpu.js) QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);
+    QM.mode = s.mode === "c" || s.mode === "v" ? s.mode : "r"; QM.s1 = !!s.s1; QM.streak = Math.max(0, s.k | 0);   // v: Ranked vs CPU (ui/vscpu.js)
     if (s.me && typeof s.code === "string") { QM.me = qmClean(s.me); QM.code = s.code; }
   } catch (e) { /* storage blocked: nothing remembered */ }
 })();
@@ -285,7 +285,7 @@ function qmEndWarm() {
 const qmVsArt = [];
 function qmVs(m) {
   const mine = m.role === "host" ? 0 : 1, o = m.opp, me = qmMe(), el = $("qmVs");
-  const fs = newGame({ players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
+  const fs = newGame({ seed: 1, players: m.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[m.p[k]] || FIG[id].palettes[0] })), countdown: 1 }).fighters;
   qmVsArt.length = 0;
   glazeMark(fs[mine], glazeHas(m.f[mine], m.p[mine]));   // ui/glaze.js: your own glaze on the VS screen
   for (const [k, f] of [["L", fs[mine]], ["R", fs[1 - mine]]]) { f.x = 0; f.y = 0; f.facing = k === "L" ? 1 : -1; qmVsArt.push({ cv: $("vsArt" + k), f, fit: 0.6, bottom: 0.9 }); }
@@ -511,7 +511,7 @@ function qmWarmStart() {
   const me = FIG[sel.fighter], myPal = me.palettes[palIdx(me.id)] || me.palettes[0], opp = cpuFoe(me);
   const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
   const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));   // never below Normal (Fable's review)
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
   match = { warm: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
@@ -574,7 +574,7 @@ function quickOpen() {
   resize();
   if (qmSearching() && sel.fighter !== QM.sentF) qmSend();   // a new fighter rides into the next match found
   qmRender();
-  if (!QM.s1) qmSeason();
+  if (!QM.s1 && playedOnce()) qmSeason();   // the Season 1 sheet waits for the first finished match (base.js)
   if (!ACCT.code && ACCT.avail == null) acctPing().then(qmRefresh);
 }
 function qmCardIn() { const fc = $("qmFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }

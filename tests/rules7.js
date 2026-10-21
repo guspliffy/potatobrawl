@@ -2,7 +2,7 @@ const { BL } = require("../game/core.js");
 const { FIGHTERS, newGame, step } = BL;
 const F = (id) => FIGHTERS.find((f) => f.id === id);
 function setup(a = "odin", b = "phoenix") {
-  const g = newGame({ players: [{ spec: F(a), pal: F(a).palettes[0] }, { spec: F(b), pal: F(b).palettes[0] }], countdown: 0 });
+  const g = newGame({ seed: 1, players: [{ spec: F(a), pal: F(a).palettes[0] }, { spec: F(b), pal: F(b).palettes[0] }], countdown: 0 });
   step(g, [{}, {}]); g.events.length = 0; return g;
 }
 // 1) breakfall: defender launched at mid-stage, presses dodge just before landing
@@ -33,12 +33,12 @@ for (const stick of [{}, { y: -1 }, { x: 1 }, { x: -1, y: -1 }]) {
 }
 // 3) sudden death on equal stocks at time-out
 {
-  const g = newGame({ players: [{ spec: F("samurai"), pal: F("samurai").palettes[0] }, { spec: F("wizard"), pal: F("wizard").palettes[0] }], countdown: 0, time: 2 });
+  const g = newGame({ seed: 1, players: [{ spec: F("samurai"), pal: F("samurai").palettes[0] }, { spec: F("wizard"), pal: F("wizard").palettes[0] }], countdown: 0, time: 2 });
   g.fighters[0].percent = 40;
   let ev = [];
   for (let t = 0; t < 200; t++) { step(g, [{}, {}]); ev.push(...g.events.map((e) => e.type)); g.events.length = 0; }
   console.log("time-out with equal stocks:", ev.includes("sudden") ? "sudden death" : "no sudden", "| percents", g.fighters.map((f) => f.percent), "| stocks", g.fighters.map((f) => f.stocks), "| timer", g.timer, "| phase", g.phase);
-  const g2 = newGame({ players: [{ spec: F("samurai"), pal: F("samurai").palettes[0] }, { spec: F("wizard"), pal: F("wizard").palettes[0] }], countdown: 0, time: 0 });
+  const g2 = newGame({ seed: 1, players: [{ spec: F("samurai"), pal: F("samurai").palettes[0] }, { spec: F("wizard"), pal: F("wizard").palettes[0] }], countdown: 0, time: 0 });
   for (let t = 0; t < 600; t++) step(g2, [{}, {}]);
   console.log("no time limit after 10 s:", g2.phase, "timed", g2.timed);
 }

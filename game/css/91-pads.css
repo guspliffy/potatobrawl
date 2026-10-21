@@ -1,0 +1,57 @@
+/* ---------- the fight buttons: a smaller disc, and see-through near the right ledge (UI only; logic in ui/hud.js padsStep) ----------
+   Fable "First minute" E. Light, Heavy, Jump, Special and Dodge keep every pixel of their touch circle (the .pb element: same size, same
+   place, now with no border, fill or shadow of its own); the disc you see is its ::before, inset 4% on every side, so it is 8% smaller:
+   Heavy 67, Light 74, Jump 64, Special 59, Dodge 50 px. The rim, the fill and the shadows moved there with it, and so did the three
+   animations that glowed the element (the Heavy's full-charge flash, the Special's finish glow, the tutorial pulse), which now glow the
+   disc; the Heavy's charge ring and the Special's cooldown (::after) sit just inside the disc's rim. ULTI is untouched.
+   See-through (.see, set per button by padsStep): one number, --see, 0 = as before, 1 = see-through. Fill 0.72 -> 0.25 (x0.35), rim 3 px ->
+   2 px at 0.9, word at 0.85, the shadows thin out with the fill. It goes see-through in 100 ms and comes back in 400 ms. A pressed
+   button (.on) is always whole and snaps there at once. */
+@property --see { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.pb[data-k]:not([data-k="ulti"]) {
+  --see: 0; --ins: 4%; --rim: 3px;   /* --see set here too: a browser without @property would otherwise drop every rule that reads it */
+  --ring: calc(var(--rim) - var(--see) * 1px); --fade: calc(1 - var(--see) * 0.65);
+  border: 0; background: none; box-shadow: none; overflow: visible;
+  transition: --see 400ms ease-out;
+}
+.pb[data-k]:not([data-k="ulti"]):not(.on) {
+  --pbBev: inset 0 1px 0 rgba(255, 255, 255, calc(0.18 * var(--fade))), inset 0 -3px 0 rgba(0, 0, 0, calc(0.3 * var(--fade)));
+  --pbSh: 0 3px 0 rgba(14, 16, 34, calc(0.95 * var(--fade))), var(--pbBev);
+}
+.pb[data-k]:not([data-k="ulti"]).see { --see: 1; transition: --see 100ms ease-in; }
+.pb[data-k]:not([data-k="ulti"]).on { --see: 0; transition: none; }
+.pb[data-k="special"]:not([data-k="ulti"]) { transition: --see 400ms ease-out, transform 90ms ease-out; }
+.pb[data-k="special"]:not([data-k="ulti"]).see { transition: --see 100ms ease-in, transform 90ms ease-out; }
+.pb[data-k="special"]:not([data-k="ulti"]).on { transition: transform 90ms ease-out; }
+
+.pb[data-k]:not([data-k="ulti"])::before {
+  content: ""; position: absolute; inset: var(--ins); border-radius: 50%; pointer-events: none;
+  border: var(--ring) solid var(--bc); border-color: color-mix(in srgb, var(--bc) calc(85% + var(--see) * 5%), transparent);
+  background: radial-gradient(circle at 50% 28%, rgba(40, 44, 80, calc(0.55 * (1 - var(--see) * 0.653))), rgba(14, 16, 34, calc(0.74 * (1 - var(--see) * 0.653))) 75%);
+  box-shadow: var(--pbGlow), var(--pbSh);
+}
+.pb[data-k]:not([data-k="ulti"]).on::before { background: var(--bc); }
+.pb[data-k]:not([data-k="ulti"]) > span { opacity: calc(1 - var(--see) * 0.15); }
+
+/* the pseudo-elements that sat inside the old rim now sit inside the disc's rim */
+.pb[data-k="special"]::after { inset: calc(var(--ins) + var(--ring)); background: conic-gradient(rgba(5, 6, 15, calc(0.66 * (1 - var(--see) * 0.35))) calc(var(--cd, 0) * 360deg), transparent 0); }
+.pb[data-k="heavy"]::after { inset: calc(var(--ins) + var(--ring) + 1px); }
+/* the Special's finish name stays inside the smaller disc */
+.pb[data-k="special"].fin > span { padding: 0 calc(3px + 6%); }
+
+/* the animations that lit the element's own box-shadow light the disc instead (the shadows use --pbSh, which the disc inherits) */
+.pb.tutpulse:not([data-k="ulti"]) { animation: none; }
+.pb.tutpulse:not([data-k="ulti"])::before { animation: tutPulse 1.1s ease-in-out infinite; }
+.pb[data-k="heavy"].chgfull { animation: padGrow 0.4s ease-out; }
+.pb[data-k="heavy"].chgfull::before { animation: padFlash 0.4s ease-out; }
+.pb[data-k="special"].fin { animation: none; }
+.pb[data-k="special"].fin::before { animation: specFin 0.7s ease-in-out infinite; }
+@keyframes padGrow { 0% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes padFlash { 0% { box-shadow: 0 0 26px 10px var(--bc), var(--pbSh); } 100% { box-shadow: 0 0 0 0 var(--bc), var(--pbSh); } }
+
+/* reduced motion: the state, no fade (the Special's little pop stays as it was) */
+@media (prefers-reduced-motion: reduce) {
+  .pb[data-k]:not([data-k="ulti"]), .pb[data-k]:not([data-k="ulti"]).see, .pb[data-k]:not([data-k="ulti"]).on { transition: none; }
+  .pb[data-k="special"]:not([data-k="ulti"]), .pb[data-k="special"]:not([data-k="ulti"]).see, .pb[data-k="special"]:not([data-k="ulti"]).on { transition: transform 90ms ease-out; }
+}

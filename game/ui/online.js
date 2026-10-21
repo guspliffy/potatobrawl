@@ -338,7 +338,7 @@ function onlineArtFighter() {
   const spec = FIG[sel.fighter], o = onlineArtFighter;
   if (!o.f || o.f.spec !== spec || o.pi !== palIdx(spec.id)) {
     o.pi = palIdx(spec.id);
-    o.f = newGame({ players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
+    o.f = newGame({ seed: 1, players: [{ spec, pal: spec.palettes[o.pi] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     o.f.x = 0; o.f.y = 0;
   }
   return glazeMark(o.f, glazeHas(spec.id, o.pi));   // ui/glaze.js
