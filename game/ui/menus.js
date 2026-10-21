@@ -11,8 +11,8 @@ tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 // from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
-tap("selBack", () => { if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
+tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -36,6 +36,7 @@ tap("rAgain", () => {
   cntAgain();   // ui/counter.js
   stkLeave();   // ui/stakes.js: a challenge still out is withdrawn
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
+  if (match && match.bw) { bwFight(); return; }   // ui/bossweek.js: Retry, a new try
   goFull();
   if (match && match.tutorial) { quickOpen(); return; }
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
@@ -62,6 +63,7 @@ tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: th
 tap("rChange", () => {
   stkLeave();   // ui/stakes.js
   if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
+  if (match && match.bw) { bdOpen("w"); return; }   // ui/bossweek.js: Board, the Boss Week tab
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }

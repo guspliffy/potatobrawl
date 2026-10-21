@@ -24,6 +24,7 @@ async def run(b, tag, vp, touch, up, errs, full):
     pg = await ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
     await pg.goto(TEST_URL); await pg.wait_for_timeout(500)
+    await (pg.tap('#bSettings') if touch else pg.click('#bSettings')); await pg.wait_for_timeout(250)
     await (pg.tap('#bHelp') if touch else pg.click('#bHelp')); await pg.wait_for_timeout(200)
     await (pg.tap('#hTry') if touch else pg.click('#hTry'))
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=60000)

@@ -196,7 +196,7 @@ p { margin: 8px 0 0; }
   var WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   var EMBER = "239,122,82";
   var tbl = function (o) { return Object.assign(Object.create(null), o); };
-  var MODES = tbl({ tutorial: "Tutorial", trial: "Combo trial", practice: "Practice", ranked: "Ranked", daily: "Daily Potato", cup: "Tournament", road: "Road", boss: "Boss fight", "road-boss": "Road boss", online: "Online", "online-boss": "Online boss", "online-team": "Online 2v2", team: "Team Brawl 2v2", "quick-r": "Quick match Ranked", "quick-c": "Quick match Casual", warmup: "CPU warm-up" });
+  var MODES = tbl({ tutorial: "Tutorial", trial: "Combo trial", practice: "Practice", ranked: "Ranked", daily: "Daily Potato", cup: "Tournament", road: "Road", boss: "Boss fight", "road-boss": "Road boss", online: "Online", "online-boss": "Online boss", "online-team": "Online 2v2", team: "Team Brawl 2v2", "quick-r": "Quick match Ranked", "quick-c": "Quick match Casual", warmup: "CPU warm-up", "boss-week": "Boss Week" });
   var FIGHTERS = tbl({ dragon: "Dragon", samurai: "Samurai", wizard: "Wizard", phoenix: "Phoenix", odin: "Odin", alchemist: "Alchemist", gunslinger: "Gunslinger", reaper: "Reaper" });
   var BOSSES = tbl({ scratch: "Old Scratch", zorp: "Zorp", kraken: "Kraken Spud" });
   var LEVELS = ["Normal", "Hard", "Nightmare"];
@@ -629,6 +629,30 @@ p { margin: 8px 0 0; }
       .catch(function () { btn.disabled = false; btn.textContent = "Try again"; });
   }
 
+  // ---------- 6c. this week's Boss Week runs (bossweek.js): Remove takes one off the board (the player's next best counts again)
+  function wkClock(fr) {   // 60 frames a second, as m:ss.cc like the game
+    var cs = Math.floor(Math.max(0, fr | 0) * 100 / 60), m = Math.floor(cs / 6000), sec = Math.floor(cs / 100) % 60, c = cs % 100;
+    return m + ":" + ("0" + sec).slice(-2) + "." + ("0" + c).slice(-2);
+  }
+  function secBossWeek() {
+    var r = st.data.bw;
+    if (!Array.isArray(r) || !r.length) return document.createDocumentFragment();   // no runs this week (or no Boss Week on this server)
+    var s = sec("Boss Week runs", plural(r.length, "run") + " on this week's board");
+    r.slice(0, 100).forEach(function (x) {
+      var btn = h("button", { class: "mini", type: "button" }, "Remove");
+      btn.addEventListener("click", function () { removeRun(x.id, btn); });
+      s.appendChild(h("div", { class: "bdn" }, h("span", { class: "bp" }, "#" + x.pl + " · " + wkClock(x.t) + (x.f ? " · " + fighterName(x.f) : "")), h("b", null, String(x.nm || "")), btn));
+    });
+    return s;
+  }
+  function removeRun(id, btn) {
+    btn.disabled = true;
+    fetch("/api/stats/bwrm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: st.key, id: id }), cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" })
+      .then(function (r) { if (!r.ok) throw "net"; return r.json(); })
+      .then(function (j) { if (st.data && j && Array.isArray(j.bw)) st.data.bw = j.bw; render(); })
+      .catch(function () { btn.disabled = false; btn.textContent = "Try again"; });
+  }
+
   // ---------- 7. health
   function secHealth() {
     var R = C.R, d = R.days, errs = P(d, "err:"), e = sorted(errs), nErr = total(errs);
@@ -676,7 +700,7 @@ p { margin: 8px 0 0; }
     Array.prototype.forEach.call(document.querySelectorAll(".pill"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-range") === st.range ? "true" : "false"); });
     C = context(d, st.range); C.tz = d.tz || "Europe/Berlin";
     var m = $("main"); m.textContent = ""; m.setAttribute("data-state", "ok");
-    [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secBoard, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
+    [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secBoard, secBossWeek, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
     drawSpark();
   }
 

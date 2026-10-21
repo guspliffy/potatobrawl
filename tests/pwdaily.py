@@ -91,10 +91,10 @@ FIT = """(() => {
   const bad = [], vw = innerWidth, vh = innerHeight;
   const btns = [...document.querySelectorAll('#scrMenu .mm-col button')];
   for (const b of btns) { const r = b.getBoundingClientRect(); if (r.top < -0.5 || r.bottom > vh + 0.5 || r.left < -0.5 || r.right > vw + 0.5) bad.push('menu button ' + b.id + ' off screen'); }
-  // the Daily tile: its lines (the matchup or the day's result, the reward) stay inside it and do not stretch it past the Tournament tile
-  const d = document.querySelector('#bDaily'), dr = d.getBoundingClientRect(), t = document.querySelector('#bCup').getBoundingClientRect();
+  // the Daily tile: its lines (the matchup or the day's result, the reward) stay inside it and do not stretch it past the Boss Week tile
+  const d = document.querySelector('#bDaily'), dr = d.getBoundingClientRect(), t = document.querySelector('#bBw').getBoundingClientRect();
   for (const l of d.querySelectorAll('.mm-tb > *')) { const r = l.getBoundingClientRect(); if (!r.width) continue; if (r.right > dr.right + 1 || r.bottom > dr.bottom + 1 || l.scrollWidth > l.clientWidth + 1) bad.push('the Daily line "' + l.textContent.slice(0, 20) + '" runs out of its tile'); }
-  if (dr.height > t.height + 1) bad.push('the Daily tile is taller than the Tournament tile (its lines do not fit)');
+  if (dr.height > t.height + 1) bad.push('the Daily tile is taller than the Boss Week tile (its lines do not fit)');
   const pill = document.querySelector('#mRank'), pr = pill.getBoundingClientRect(), rg = document.createRange();
   rg.selectNodeContents(document.querySelector('#scrMenu h1'));
   const h1 = rg.getBoundingClientRect();   // the letters, not the block's full width
