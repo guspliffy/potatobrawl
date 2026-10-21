@@ -351,6 +351,7 @@ async def skip(b, errs):
     # the card's Skip: a new player goes on to the first fight (the skip is counted by the play counts, ui/counter.js); one who has played goes to the menu
     for tag, prof, goes in [('skipnew', {'tut': True}, 'fight'), ('skipold', {'tut': True, 'matches': 4, 'wins': 2, 'losses': 2}, 'menu')]:
         ctx, pg = await new_page(b, {'width': 1280, 'height': 760}, False, errs, tag, prof)
+        await pg.click('#bSettings'); await pg.wait_for_timeout(250)   # How to play is the first row of Settings
         await pg.click('#bHelp'); await pg.wait_for_timeout(200)
         t = await pg.evaluate("document.querySelector('#hTry span').textContent")
         if t != 'Play the tutorial · 1 min': errs.append(f'{tag}: the How to play button reads {t!r}')
@@ -366,6 +367,7 @@ async def skip(b, errs):
 async def peek(b, errs):
     # the card fades to a ghost while the YOU marker would sit under it (the top platform at 667x320), and comes back when the player leaves it
     ctx, pg = await new_page(b, {'width': 667, 'height': 320}, True, errs, 'peek', {'tut': True})
+    await pg.tap('#bSettings'); await pg.wait_for_timeout(250)
     await pg.tap('#bHelp'); await pg.wait_for_timeout(200); await pg.tap('#hTry')
     await pg.wait_for_function(f"{G} && {G}.phase === 'play'", timeout=60000)
     await pg.wait_for_timeout(800)

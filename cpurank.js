@@ -49,14 +49,14 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // the CPU's strength from its rating: the page's old Ranked formula (1000 a bit above Easy, 1250 Normal, 1650 Hard, 1730 full)
 const strength = (r) => clamp((r - 750) / 1000, 0.08, 0.98);
 // the packed log: runs of one input code, each three characters (the code in two, then the run's length 1-64 in one)
-function unpack(s) {
+function unpack(s, max = MAX_FRAMES) {   // max: bossweek.js allows longer runs
   if (typeof s !== "string" || s.length % 3) return null;
   const out = [];
   for (let i = 0; i < s.length; i += 3) {
     const a = B64I[s[i]], b = B64I[s[i + 1]], c = B64I[s[i + 2]];
     if (a === undefined || b === undefined || c === undefined) return null;
     const v = a * 64 + b;
-    if (!codeOk(v) || out.length + c + 1 > MAX_FRAMES) return null;
+    if (!codeOk(v) || out.length + c + 1 > max) return null;
     for (let k = 0; k <= c; k++) out.push(v);
   }
   return out;

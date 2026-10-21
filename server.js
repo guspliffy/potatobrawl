@@ -65,7 +65,7 @@ try {
 // Play counts (stats.js): off unless STATS_DIR is set. clients is declared further down; it is only read once the server runs.
 let stats = null;
 try {
-  stats = require("./stats.js").init(process.env.STATS_DIR, { online: () => clients.size, board: () => cpurank, accounts: () => accounts });   // cpurank is set further down
+  stats = require("./stats.js").init(process.env.STATS_DIR, { online: () => clients.size, board: () => cpurank, bw: () => bossweek, accounts: () => accounts });   // cpurank is set further down
   console.log(stats ? `Play counts: on (${stats.dir})` : process.env.STATS_DIR ? "Play counts: off (STATS_DIR is not a folder this server can write to)" : "Play counts: off");
 } catch (e) { console.warn("Play counts: off,", e.message); }
 
@@ -94,6 +94,19 @@ try {
     console.log(`Ranked vs CPU: ${accounts ? "on" : "off: needs accounts"}`);
   }
 } catch (e) { console.warn("Ranked vs CPU: off,", e.message); }
+// Boss Week (bossweek.js): the weekly boss board, its tickets and the server's replay of each new best; needs the sign-in and the accounts.
+let bossweek = null;
+try {
+  if (quick && accounts) {
+    bossweek = require("./bossweek.js").init({
+      accounts, proto: quick.proto, seatOf: quick.seatOf,
+      send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+      T: process.env.BW_T ? JSON.parse(process.env.BW_T) : undefined,   // tests only: shorter waits
+      now: process.env.BW_NOW ? (() => { const d = +process.env.BW_NOW - Date.now(); return () => Date.now() + d; })() : undefined,   // tests only: another week
+    });
+    console.log("Boss Week: on");
+  } else if (quick) console.log("Boss Week: off: needs accounts");
+} catch (e) { console.warn("Boss Week: off,", e.message); }
 process.on("SIGUSR2", () => { if (quick) { quick.drain(); console.log(`Quick match: draining for an update, ${quick.running()} ranked matches still running`); } });
 
 const server = http.createServer((req, res) => {
@@ -169,6 +182,7 @@ function drop(peer) {
   clients.delete(peer);
   if (quick) quick.gone(peer);
   if (cpurank) cpurank.gone(peer);
+  if (bossweek) bossweek.gone(peer);
 }
 
 wss.on("connection", (ws) => {
@@ -209,6 +223,7 @@ wss.on("connection", (ws) => {
     if (!c || c.ws !== ws) return;
 
     if (quick && quick.handle(peer, m)) return;   // auth, qm, qmx
+    if (bossweek && bossweek.handle(peer, m)) return;   // bwme, bwt, bwr, bd {k: "w"}
     if (cpurank && cpurank.handle(peer, m)) return;   // cme, ct, cr, bd
     if (m.t === "join") {
       const name = m.room;

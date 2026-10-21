@@ -81,7 +81,7 @@ async def run(b, tag, errs):
     def need(ok, msg):
         if not ok: errs.append(f'{tag}: {msg}')
     # How to play: six route cards for the fighter played last, then another fighter's
-    await clk('#bHelp'); await pg.wait_for_timeout(400)
+    await clk('#bSettings'); await pg.wait_for_timeout(250); await clk('#bHelp'); await pg.wait_for_timeout(400)
     n = await pg.eval_on_selector_all('#helpCombos .rc', 'e => e.length')
     need(n == 6, f'{n} route cards, want 6')
     names = await pg.eval_on_selector_all('#helpCombos .rc-n', 'e => e.map((x) => x.firstChild.textContent)')
@@ -142,7 +142,7 @@ async def run(b, tag, errs):
     await clk('#tutSkip'); await pg.wait_for_timeout(300)
     need(await pg.evaluate("window.__blastline.mode") == 'menu', 'Exit did not go to the menu')
     # How to play now marks the cleared routes
-    await clk('#bHelp'); await pg.wait_for_timeout(300)
+    await clk('#bSettings'); await pg.wait_for_timeout(250); await clk('#bHelp'); await pg.wait_for_timeout(300)
     ok = await pg.eval_on_selector_all('#helpCombos .rc.ok', 'e => e.length')
     need(ok == 2, f'{ok} cleared cards, want 2 ({seen})')
     count = await pg.text_content('#helpCombos .rc-count')
@@ -152,7 +152,7 @@ async def run(b, tag, errs):
     allr = ["three", "lift", "trip", "rising", "sig", "skyburn", "lab", "hammer", "staff", "blink", "tail", "whip"]
     ctx, pg, mob = await new_page(b, tag + '-all', (vp[0], vp[1]), False, errs, dict(START, routes=allr, last='reaper', tokens=10))
     clk = pg.tap
-    await clk('#bHelp'); await pg.wait_for_timeout(300); await clk('#hTrial')
+    await clk('#bSettings'); await pg.wait_for_timeout(250); await clk('#bHelp'); await pg.wait_for_timeout(300); await clk('#hTrial')
     await pg.wait_for_function("window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=30000)
     t = await trial(pg)
     need(t['id'] == 'reap', f'the trial should start on the one route left: {t}')

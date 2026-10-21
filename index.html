@@ -4254,6 +4254,351 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   #app.tiny #scrMenu #bBoards .bd-gl { width: 16px; height: 16px; }
 }
 
+/* ---------- Boss Week: the start tile, the sheet, the Boards tab, the Monday card ("sunset ink", Fable 5.1: step6/fable-step6.md frames A, B, D, F) ----------
+   Markup: shell.html (#bBw in #scrMenu, #bCup as a mini, #bHelp in #scrSettings, #scrBw, #scrBwWk); texts and rows: ui/bwsheet.js.
+   The run's own styles (clock pill, results card) are 97-bwrun.css. Sizes follow the #app classes view.js sets: desktop (default), .short (844x390 and
+   740x360), .tiny (667x320), .portrait / .narrow (upright). */
+
+/* ===== the start page ===== */
+/* the tile: the boss in a disc ringed in his colour (--bc, set by bwTile); the Road's boss picture classes (.rd-bossph .rd-<id>) give the disc its
+   colour, the boss's own drawing (bwArt) stands in it, and the Road's skull only shows when the drawing is missing (.noart) */
+#scrMenu .mm-bwd { position: relative; flex: none; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--ink); overflow: hidden;
+  box-shadow: 0 0 0 2px var(--bc, var(--ember)), 0 3px 0 var(--ink); }
+#scrMenu .mm-bwd img { position: absolute; left: 50%; top: 53%; width: 122%; height: 122%; max-width: none; transform: translate(-50%, -50%); object-fit: contain; }
+#scrMenu .mm-bwd i { display: none; }
+#scrMenu .mm-bwd.noart i { display: block; }
+#scrMenu .mm-bwd.noart img { display: none; }
+#scrMenu .bw-p { white-space: nowrap; }
+#scrMenu .mm-bwt { right: -4px; top: -13px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-bwt[hidden] { display: none; }
+#app.short #scrMenu .mm-bw { gap: 7px; padding: 0 7px; }   /* the second line ("Best 1:42.18 · #6 of 23", "No time yet · 23 have one") keeps one line */
+#app.short #scrMenu .mm-bwd { width: 44px; height: 44px; }
+#app.short #scrMenu .mm-bw .mm-l2 { font-size: 11.5px; }
+#app.tiny #scrMenu .mm-bwd { width: 46px; height: 46px; }
+#app.portrait #scrMenu .mm-bwd { width: 44px; height: 44px; }
+#app.portrait #scrMenu .mm-bwt { right: -6px; }
+#app.tiny #scrMenu .mm-bwt { right: -12px; top: -14px; }   /* clear of the end of "BOSS WEEK" in the narrow tile */
+@container mm (max-width: 620px) { #app.tiny #scrMenu .mm-bwd { width: 40px; height: 40px; } }
+/* the second line is the point of the tile (your time, or that you have none), so it stays on the small phone where the Daily's is gone. Its parts
+   (Best 1:42.18 | #6 of 23) are separated by a dot after the first (.bw-pb). On the phone the line is always one line tall: a part that does not fit wraps
+   into the clipped second line (it takes its own dot along, .bw-pn) and the first part stays */
+#scrMenu .mm-bw .bw-pb::after { content: "\00a0\00b7"; }
+#app.short #scrMenu .mm-bw .mm-l2 { display: flex; flex-wrap: wrap; height: 1.2em; overflow: hidden; }
+#app.short #scrMenu .mm-bw .bw-pb::after { content: none; }
+#app.short #scrMenu .mm-bw .bw-pn { margin-left: 0.3em; }
+#app.short #scrMenu .mm-bw .bw-pn::before { content: "\00b7\00a0"; }
+#app.tiny #scrMenu .mm-bw .mm-l2 { display: flex; }
+/* Tournament: a mini where How to play was; its second line is the cup's state in #mCup (kept for ui/screens.js, hidden here) */
+#scrMenu #bCup #mCup { display: none; }
+/* How to play: the first row of Settings, a plate that opens the sheet */
+.set-help { appearance: none; cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px 10px 14px; text-align: left; color: var(--text);
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+.set-help > span:first-child { flex: none; }
+.set-help .set-hl { flex: 1 1 auto; min-width: 0; text-align: right; font: 500 13px/1.2 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-help > i { flex: none; width: 8px; height: 8px; margin-right: 3px; border: solid var(--gold); border-width: 3px 3px 0 0; transform: rotate(45deg); }
+.set-help:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.set-help:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .set-help:hover { filter: brightness(1.08); } }
+#app.narrow .set-help .set-hl { display: none; }
+#app.narrow .set-help > i { margin-left: auto; }
+
+/* ===== the sheet ===== */
+.tag.ink { background: var(--ink); color: var(--sand); }
+.bw-sheet { --bw-row: 38px; --bw-tm: 46px; --bw-bn: 34px; display: flex; flex-direction: column; overflow: hidden; }
+#app #scrBw > .bw-sheet { width: min(900px, 100%); height: min(540px, 100%); }
+#app.short #scrBw > .bw-sheet { width: min(760px, 100%); height: min(350px, 100%); --bw-row: 36px; --bw-tm: 44px; }
+#app.tiny #scrBw { padding: 8px 10px; }
+#app.tiny #scrBw > .bw-sheet { width: min(647px, 100%); height: min(304px, 100%); --bw-row: 30px; --bw-tm: 34px; --bw-bn: 26px; }
+#app.portrait #scrBw { padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(14px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait #scrBw > .bw-sheet { width: 100%; height: 100%; --bw-row: 42px; --bw-tm: 40px; }
+.bw-sheet .sh-head { flex: none; }
+.bw-hk b { font-weight: 700; color: var(--sand); }
+#app.tiny .bw-hk1, #app.narrow .bw-hk1 { display: none; }
+.bw-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: clamp(140px, 24%, 230px) minmax(0, 1fr) clamp(204px, 34%, 320px); grid-template-rows: minmax(0, 1fr); gap: 12px; padding: 12px; }
+#app.tiny .bw-body { gap: 10px; padding: 10px; grid-template-columns: 146px minmax(0, 1fr) 204px; }
+#app.portrait .bw-body { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overscroll-behavior: contain; }
+.bw-sheet .kick { white-space: nowrap; }
+.bw-sheet i.dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); vertical-align: 1px; }
+.bw-sheet i.dot.q { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); }
+.bw-sheet i.dot.r { background: var(--ketchup); box-shadow: 0 0 0 3px rgba(232, 69, 60, 0.3); }
+/* stickers (the boss's rules, what Monday pays) */
+.bw-sts { display: flex; flex-wrap: wrap; gap: 4px; }
+.bw-st { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 3px; border: 2px solid var(--ink); border-radius: 6px; background: var(--raise); color: var(--text); box-shadow: 0 2px 0 var(--ink);
+  font: 800 10.5px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.bw-st.hot { background: var(--ember); color: var(--ink); }
+.bw-st.g { background: var(--gold); color: var(--ink); }
+.bw-st.cg::before { content: ""; flex: none; width: 11px; height: 9px; border: 1.5px solid var(--ink); border-radius: 50% 50% 45% 55% / 60% 55% 45% 40%; background: var(--gold); box-shadow: inset 0 -2px 0 #d6912f; }
+
+/* the boss card: his picture, THIS WEEK, his name, "The Alien · The Kitchen" and his rules */
+.bw-boss { --bc: var(--ember); --b1: #7a2d24; --b2: #1a1424; display: flex; flex-direction: column; min-width: 0; min-height: 0; border-color: var(--ember);
+  background: radial-gradient(ellipse at 50% 38%, var(--b1), var(--b2) 74%); }
+.bw-boss[data-b="zorp"] { --b1: #2f5a3a; --b2: #131d2c; }
+.bw-boss[data-b="kraken"] { --b1: #5a3a78; --b2: #1a1230; }
+.bw-this { left: 8px; top: 10px; z-index: 3; pointer-events: none; }
+.bw-pic { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; border-radius: 10px 10px 0 0; }
+.bw-pic img { position: absolute; left: 50%; top: 10px; bottom: 0; height: calc(100% - 10px); width: 92%; max-width: none; transform: translateX(-50%); object-fit: contain; object-position: 50% 60%; }
+.bw-pic i { display: none; position: absolute; inset: 0; place-items: center; font-style: normal; font-size: 64px; color: #ffd84a; }
+.bw-pic.noart i { display: grid; }
+.bw-pic.noart img { display: none; }
+.bw-bt { flex: none; position: relative; z-index: 2; display: flex; flex-direction: column; gap: 5px; padding: 18px 10px 10px; margin-top: -26px; background: linear-gradient(rgba(14, 16, 34, 0), rgba(14, 16, 34, 0.92) 46%); border-radius: 0 0 10px 10px; }
+.bw-bn { display: block; font: italic 900 var(--bw-bn)/1 var(--display); text-transform: uppercase; color: #fff; white-space: nowrap; padding-right: 0.08em; }
+.bw-bn.long { font-size: calc(var(--bw-bn) * 0.78); }
+.bw-bs { font: 700 10px/1.2 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+.bw-boss .bw-sts { margin-top: 2px; }
+
+/* you: your best, your fighter and the partner, FIGHT */
+.bw-you { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+.bw-best { flex: 1 1 0; min-height: 0; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 5px; overflow: hidden; }
+.bw-time { display: block; font: italic 900 var(--bw-tm)/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0.06em; }
+.bw-best.none .bw-time { color: var(--mute); opacity: 0.85; }
+.bw-sub { font: 700 11px/1.25 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+.bw-best.off .bw-time { font-size: calc(var(--bw-tm) * 0.5); line-height: 1.05; color: var(--text); white-space: normal; text-wrap: balance; }
+.bw-best.off .bw-sub { letter-spacing: 0.02em; text-transform: none; font: 500 12.5px/1.3 var(--body); }
+.bw-fs { flex: none; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bw-plus { flex: none; font: 900 20px/1 var(--display); font-style: normal; color: var(--mute); }
+.bw-fs .dly-ph { width: 44px; height: 44px; }
+.bw-fs .dly-t b { font: 800 14px/1 var(--display); letter-spacing: 0.03em; }
+.bw-fs .dly-t small { font-size: 11px; }
+.bw-me { flex: 1 1 0; position: relative; padding: 4px 6px; gap: 8px; width: auto; }
+.bw-me .rd-chg { position: absolute; left: 36px; bottom: -3px; width: 22px; height: 22px; margin: 0; font-size: 13px; }
+#app.narrow .bw-me .rd-chg { margin: 0; }
+.bw-pf { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 2px 0 6px; --fc: var(--mute); }
+.bw-pf .dly-ph { position: relative; width: 34px; height: 34px; overflow: visible; background: var(--fc); }
+.bw-pf .dly-ph img { border-radius: 5px; }
+.bw-pf .cpu { position: absolute; right: -9px; bottom: -7px; z-index: 2; font: 800 8.5px/1 var(--display); font-style: normal; letter-spacing: 0.06em; padding: 3px 4px 2px; background: var(--ember); color: var(--ink);
+  border: 1.5px solid var(--ink); border-radius: 4px; transform: rotate(-8deg); box-shadow: 0 1.5px 0 var(--ink); }
+.bw-me .dly-t, .bw-pf .dly-t { gap: 2px; }
+.bw-go { flex: none; }
+.bw-go > span { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 8px; row-gap: 1px; }
+.bw-go b { font-weight: 800; }
+.bw-go small { margin: 0; font-weight: 600; }
+.bw-note { margin: 0; text-align: center; font: 600 12px/1.3 var(--body); color: #ff9a8f; }
+.bw-note:empty { display: none; }
+
+/* the top 3 and what Monday pays */
+.bw-top { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.bw-th { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 8px 6px; }
+.bw-full { appearance: none; cursor: pointer; border: 0; background: none; padding: 4px 0 4px 8px; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+.bw-full:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; border-radius: 4px; }
+.bw-rows { flex: none; display: flex; flex-direction: column; }
+.bw-r { display: grid; grid-template-columns: 26px 28px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; height: var(--bw-row); padding: 0 8px 0 4px; border-bottom: 1px solid var(--line); }
+.bw-r.first { border-radius: 6px; border-bottom-color: transparent; box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+.bw-r.me { background: linear-gradient(90deg, rgba(244, 201, 93, 0.2), rgba(244, 201, 93, 0.05) 70%, transparent); box-shadow: inset 3px 0 0 var(--gold); border-radius: 6px; }
+.bw-r.me.first { box-shadow: inset 3px 0 0 var(--gold), inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+.bw-r.you { margin-top: 6px; border: 2px solid var(--gold); border-radius: 8px; background: linear-gradient(180deg, #3a3450, #262646); box-shadow: 0 3px 0 var(--ink); }
+.bw-pl { text-align: center; font: 800 14px/1 var(--display); color: var(--mute); }
+.bw-r.you .bw-pl { color: var(--gold); }
+.bw-d { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 var(--ink); font: 900 13px/1 var(--display); font-style: normal; color: var(--ink); }
+.bw-d.g { background: linear-gradient(180deg, #ffe08a, #e8a640); }
+.bw-d.s { background: linear-gradient(180deg, #e9edf7, #aab2cc); }
+.bw-d.b { background: linear-gradient(180deg, #e0a877, #b4733f); }
+.bw-pp { position: relative; flex: none; width: 28px; height: 28px; overflow: hidden; border: 2px solid var(--ink); border-radius: 9px; background: var(--fc, #444a6a); box-shadow: 0 2px 0 var(--ink); }
+.bw-pp img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.bw-nm { min-width: 0; display: flex; align-items: center; gap: 5px; font: 800 15px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
+.bw-nm b { min-width: 0; overflow: hidden; text-overflow: ellipsis; padding-top: 1px; font-weight: 800; }
+.bw-nm em { flex: none; font-style: normal; color: var(--gold); }
+.bw-tm { font: 800 16px/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.bw-crown { flex: none; display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; font: 800 10px/1 var(--display); color: var(--gold); }
+.bw-crown::before { content: ""; width: 12px; height: 9px; background: var(--gold); clip-path: polygon(0 100%, 0 25%, 25% 55%, 50% 0, 75% 55%, 100% 25%, 100% 100%); }
+.bw-gap { text-align: center; color: var(--mute); font: 800 14px/10px var(--display); letter-spacing: 0.3em; padding-left: 0.3em; margin-top: 4px; }
+.bw-rows.ghost { opacity: 0.85; }
+.bw-r.sk { pointer-events: none; }
+.bw-r.sk > i { display: block; height: 12px; border-radius: 6px; background: rgba(206, 210, 255, 0.1); animation: bdPulse 1s ease-in-out infinite alternate; }
+.bw-gp { width: 14px; justify-self: center; }
+.bw-r.sk > .bw-ge { width: 28px; height: 28px; border-radius: 9px; }
+.bw-gn { width: 62%; }
+.bw-gt { width: 48px; }
+.bw-cap { margin: 8px 0 0; text-align: center; font: 600 12px/1.2 var(--body); color: var(--mute); }
+.bw-empty { display: flex; flex-direction: column; gap: 6px; padding: 14px 8px 4px; text-align: center; }
+.bw-empty .bd-big { display: block; font: italic 900 20px/1.05 var(--display); text-transform: uppercase; color: var(--text); }
+.bw-empty .bd-sub { margin: 0; font: 500 13px/1.3 var(--body); color: var(--mute); }
+.bw-pay { margin-top: auto; padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.bw-pay .kick { color: var(--mute); }
+
+/* ----- 740x360 and 844x390 (#app.short) ----- */
+#app.short .bw-body { grid-template-columns: 156px minmax(0, 1fr) clamp(224px, 34%, 300px); }   /* the top 3 gets the room: a name and a crown fit */
+#app.short .bw-r { grid-template-columns: 24px 26px minmax(0, 1fr) auto; column-gap: 6px; padding: 0 6px 0 3px; }
+#app.short .bw-pp { width: 26px; height: 26px; }
+#app.short .bw-d { width: 24px; height: 24px; font-size: 12px; }
+#app.short .bw-nm { font-size: 14px; }
+#app.short .bw-tm { font-size: 15px; }
+@media (max-width: 800px) { #app.short .bw-tw { display: none; } }   /* "partner", not "partner this week", at 740 wide */
+#app.short .bw-fs .dly-ph { width: 40px; height: 40px; }
+#app.short .bw-me .rd-chg { left: 32px; }
+#app.short .bw-pf .dly-ph { width: 32px; height: 32px; }
+#app.short .bw-bt { padding: 16px 8px 8px; gap: 4px; }
+/* ----- 667x320 (#app.tiny) ----- */
+#app.tiny .bw-fs .dly-ph { width: 34px; height: 34px; }
+#app.tiny .bw-me .rd-chg { left: 26px; width: 20px; height: 20px; font-size: 12px; }
+#app.tiny .bw-pf .dly-ph { width: 28px; height: 28px; }
+#app.tiny .bw-fs { gap: 3px; }
+#app.tiny .bw-plus { font-size: 16px; }
+#app.tiny .bw-me, #app.tiny .bw-pf { flex: 1 1 auto; }   /* each as wide as its fighter's name: ALCHEMIST and GUNSLINGER fit */
+#app.tiny .bw-me { gap: 5px; padding: 3px 4px; }
+#app.tiny .bw-pf { gap: 5px; padding-left: 1px; }
+#app.tiny .bw-pf .cpu { right: -3px; bottom: -8px; }   /* the CPU sticker stays off "partner" */
+#app.tiny .bw-tw { display: none; }
+#app.tiny .bw-crown { font-size: 0; gap: 0; }   /* the crown without its count: the name needs the room */
+#app.tiny .bw-fs .dly-t b { font-size: 13px; }
+#app.tiny .bw-best { padding: 6px 10px; gap: 3px; }
+#app.tiny .bw-sub { font-size: 10px; letter-spacing: 0.08em; }
+#app.tiny .bw-boss .bw-sts, #app.tiny .bw-pay .bw-sts { gap: 3px; }
+#app.tiny .bw-st { font-size: 9.5px; padding: 3px 5px 2px; }
+#app.tiny .bw-bt { padding: 14px 8px 8px; gap: 3px; margin-top: -20px; }
+#app.tiny .bw-bs { font-size: 9px; }
+#app.tiny .bw-th { padding-bottom: 4px; }
+#app.tiny .bw-r.you { margin-top: 4px; }
+#app.tiny .bw-pay { padding-top: 4px; gap: 3px; }
+#app.tiny .bw-pp { width: 24px; height: 24px; border-radius: 8px; }
+#app.tiny .bw-r { grid-template-columns: 24px 24px minmax(0, 1fr) auto; column-gap: 6px; }
+#app.tiny .bw-nm { font-size: 14px; }
+#app.tiny .bw-tm { font-size: 15px; }
+#app.tiny .bw-d { width: 24px; height: 24px; font-size: 12px; }
+/* ----- desktop ----- */
+#app:not(.short):not(.portrait) .bw-body { gap: 16px; padding: 16px; }
+#app:not(.short):not(.portrait) .bw-sheet .sh-head { height: 44px; padding-left: 20px; }
+#app:not(.short):not(.portrait) .bw-sheet .sh-head h3 { font-size: 26px; }
+#app:not(.short):not(.portrait) .bw-sheet .sh-head .round { width: 34px; height: 34px; }
+#app:not(.short):not(.portrait) .bw-sheet { --bw-bn: 40px; --bw-tm: 54px; }
+#app:not(.short):not(.portrait) .bw-bs { font-size: 11px; }
+#app:not(.short):not(.portrait) .bw-st { font-size: 11.5px; padding: 5px 7px 4px; }
+#app:not(.short):not(.portrait) .bw-sub { font-size: 12.5px; }
+#app:not(.short):not(.portrait) .bw-fs .dly-ph { width: 50px; height: 50px; }
+#app:not(.short):not(.portrait) .bw-me .rd-chg { left: 40px; }
+#app:not(.short):not(.portrait) .bw-pf .dly-ph { width: 38px; height: 38px; }
+#app:not(.short):not(.portrait) .bw-fs .dly-t b { font-size: 16px; }
+#app:not(.short):not(.portrait) .bw-fs .dly-t small { font-size: 12px; }
+#app:not(.short):not(.portrait) .bw-r { grid-template-columns: 30px 32px minmax(0, 1fr) auto; column-gap: 10px; }
+#app:not(.short):not(.portrait) .bw-pp { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) .bw-d { width: 30px; height: 30px; font-size: 15px; }
+#app:not(.short):not(.portrait) .bw-nm { font-size: 17px; }
+#app:not(.short):not(.portrait) .bw-tm { font-size: 19px; }
+#app:not(.short):not(.portrait) .bw-th .kick, #app:not(.short):not(.portrait) .bw-full { font-size: 12px; }
+#app:not(.short):not(.portrait) .bw-empty .bd-big { font-size: 24px; }
+#app:not(.short):not(.portrait) .bw-empty .bd-sub { font-size: 15px; }
+/* ----- upright: the boss card lies down (picture left, name and rules right), then your best, your fighter, FIGHT, the top 3 ----- */
+#app.portrait .bw-boss { flex: none; flex-direction: row; height: 150px; }
+#app.portrait .bw-pic { flex: 0 0 120px; border-radius: 10px 0 0 10px; }
+#app.portrait .bw-pic img { top: 18px; height: calc(100% - 26px); width: 100px; }
+#app.portrait .bw-bt { flex: 1 1 auto; min-width: 0; margin: 0; padding: 10px 12px 10px 4px; justify-content: center; background: none; }
+#app.portrait .bw-this { top: 8px; }
+#app.portrait .bw-you { flex: none; }
+#app.portrait .bw-best { flex: none; padding: 10px 12px; }
+#app.portrait .bw-top { flex: none; }
+#app.portrait .bw-pay { margin-top: 0; padding-top: 10px; }
+#app.portrait .bw-fs .dly-ph { width: 46px; height: 46px; }
+#app.portrait .bw-me .rd-chg { left: 38px; }
+#app.portrait .bw-pf .dly-ph { width: 36px; height: 36px; }
+#app.narrow .bw-me { flex-direction: row; text-align: left; }
+#app.narrow .bw-me .dly-t { text-align: left; }
+
+/* ===== the Boards sheet's Boss Week tab (rows are ui/bwsheet.js bwBdRow; the grid is 97-boards.css's) ===== */
+#scrBoards.bw-tab #bdMain, #scrBoards.bw-tab #bdYou { --bd-rc: 78px; }
+#app:not(.short):not(.portrait) #scrBoards.bw-tab #bdMain, #app:not(.short):not(.portrait) #scrBoards.bw-tab #bdYou { --bd-rc: 92px; }
+#scrBoards .bw-bdr .bw-pp { width: var(--bd-ec); height: var(--bd-ec); }
+#app.tiny #scrBoards .bw-bdr .bw-pp { border-radius: 8px; }
+#scrBoards .bw-bdr .bw-crown { align-self: center; }
+
+/* ===== the Monday card ===== */
+#scrBwWk { z-index: 6; }
+.bw-wk { width: min(540px, 100%); }
+.bw-wkb { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px 22px; padding: 18px 22px 20px; }
+#app.short .bw-wkb { padding: 14px 18px 16px; gap: 12px 18px; }
+#app.tiny .bw-wkb { padding: 10px 16px 12px; gap: 10px 16px; }
+.bw-wkp { position: relative; display: grid; place-items: center; padding-top: 18px; }
+.bw-wkd { --bc: var(--ember); position: relative; width: 112px; height: 112px; border-radius: 50%; border: 2px solid var(--ink); overflow: hidden; box-shadow: 0 0 0 3px var(--bc), 0 4px 0 var(--ink); }
+#app.short .bw-wkd { width: 96px; height: 96px; }
+#app.tiny .bw-wkd { width: 78px; height: 78px; }
+.bw-wkd img { position: absolute; left: 50%; top: 53%; width: 122%; height: 122%; max-width: none; transform: translate(-50%, -50%); object-fit: contain; }
+.bw-wkd i { display: none; font-style: normal; font-size: 44px; line-height: 1; color: #ffd84a; }
+.bw-wkd.noart i { display: block; }
+.bw-wkd.noart img { display: none; }
+.bw-wkc { position: absolute; left: 50%; top: 0; z-index: 2; width: 46px; height: 32px; margin-left: -23px; background: linear-gradient(180deg, #ffe08a, #e8a640); filter: drop-shadow(0 2px 0 var(--ink)) drop-shadow(0 0 0 var(--ink));
+  clip-path: polygon(0 100%, 0 22%, 24% 56%, 50% 0, 76% 56%, 100% 22%, 100% 100%); animation: bwCrown 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.15s backwards; }
+.bw-wkc[hidden] { display: none; }
+@keyframes bwCrown { from { transform: translateY(-14px) scale(0.4); opacity: 0; } }
+.bw-wkt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.bw-wkt .kick { white-space: nowrap; color: var(--mute); }
+.bw-wkh { font: italic 900 30px/1 var(--display); text-transform: uppercase; color: var(--gold); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); padding-right: 0.08em; }
+.bw-wkh[hidden] { display: none; }
+.bw-wkf { font: italic 900 26px/1.05 var(--display); text-transform: uppercase; color: var(--text); font-variant-numeric: tabular-nums; }
+.bw-wkm { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.bw-wkm[hidden] { display: none; }
+.bw-wkm .coin { height: 36px; font-size: 18px; }
+.bw-wkm small { font: 500 12.5px/1.2 var(--body); color: var(--mute); }
+.bw-wka { align-self: stretch; display: flex; gap: 10px; margin-top: 6px; padding: 0 4px; }
+.bw-wka .btn { flex: 0 0 auto; width: auto; min-width: 0; min-height: 46px; font-size: 18px; padding: 4px 14px; white-space: nowrap; }
+.bw-wka #bwwGo { flex: 1 1 auto; }   /* "This week: Kraken Spud ›" stays on one line; OK takes what it needs */
+.bw-wka #bwwOk { min-width: 84px; }
+#app.tiny .bw-wka { margin-top: 2px; }
+#app.tiny .bw-wka .btn { min-height: 40px; font-size: 16px; }
+#app.tiny .bw-wkh { font-size: 24px; }
+#app.tiny .bw-wkf { font-size: 21px; }
+#app.narrow .bw-wkb { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+#app.narrow .bw-wkt { align-items: center; }
+#app.narrow .bw-wka { flex-direction: column; align-items: stretch; }   /* two full-width buttons: the long one does not fit beside OK on a phone held upright */
+#app.narrow .bw-wka .btn { flex: 0 0 auto; font-size: 17px; }
+#app.narrow .bw-wkm { justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .set-help, #scrMenu .mm-bw { transition: none; }
+  .bw-r.sk > i, .bw-wkc { animation: none; }
+}
+
+/* ===== Boss Week's run (ui/bossweek.js): the clock pill under the boss bar, the results card in the rank card's place ===== */
+/* the pill: "1:12.4 · BEST 1:42.18", the split at the break, ember for the last 30 s before the 4:00 cap */
+#bwPill { position: absolute; left: 50%; top: calc(100% + 5px); display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px;
+  transform: translateX(-50%) skewX(9deg); white-space: nowrap; border: 2px solid var(--ink); border-radius: 999px;
+  background: rgba(14, 16, 34, 0.86); box-shadow: inset 0 0 0 1.5px rgba(244, 201, 93, 0.45), 0 2px 0 var(--ink); font-variant-numeric: tabular-nums; }
+#bwPill[hidden] { display: none; }
+#bwPill .bp-t { min-width: 4.6ch; font: italic 900 17px/1 var(--display); color: var(--gold); letter-spacing: 0.01em; }
+#bwPill .bp-b { font: 700 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); }
+#bwPill .bp-b::before { content: "·"; margin-right: 7px; color: rgba(206, 210, 255, 0.35); }
+#bwPill .bp-b[hidden] { display: none; }
+#bwPill .bp-s { position: absolute; left: calc(100% + 6px); top: 50%; padding: 3px 7px 2px; border: 2px solid var(--ink); border-radius: 6px; transform: translateY(-50%) rotate(-4deg);
+  font: italic 900 14px/1 var(--display); font-style: italic; box-shadow: 0 2px 0 var(--ink); animation: bwSplit 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+#bwPill .bp-s[hidden] { display: none; }
+#bwPill .bp-s.up { background: var(--mint); color: var(--ink); }
+#bwPill .bp-s.down { background: var(--ketchup); color: #fff; }
+#bwPill.ember { box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.8), 0 2px 0 var(--ink); }
+#bwPill.ember .bp-t, #bwPill.ember .bp-b { color: var(--ember); }
+#bwPill.ember .bp-b { animation: blink 1s ease-in-out infinite; }
+#bwPill.best { box-shadow: inset 0 0 0 1.5px var(--mint), 0 2px 0 var(--ink); }
+#bwPill.best .bp-t { color: var(--mint); }
+#bwPill.done .bp-t { color: var(--text); }
+@keyframes bwSplit { from { transform: translateY(-50%) rotate(-4deg) scale(0.4); opacity: 0; } }
+/* his line during the countdown sits where the pill will be */
+#app.narrow #bwPill { height: 24px; padding: 0 9px; }
+#app.narrow #bwPill .bp-t { font-size: 15px; }
+
+/* the results card: "YOUR TIME 1:38.02", the sticker (−4.16 NEW BEST / CHECKING… / BEST 1:42.18 / NOT COUNTED), the place line under it */
+#resSheet .res-bw { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; flex: none;
+  box-shadow: inset 0 0 0 2px rgba(239, 122, 82, 0.55), 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-bw[hidden] { display: none; }
+#resSheet .res-bw .bw-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#resSheet .res-bw .bw-k { font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--sand); }
+#resSheet .res-bw .bw-t { font: italic 900 34px/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+#resSheet .res-bw .bw-l { align-self: flex-start; max-width: 100%; margin: 1px 0 0; padding: 0; border: 0; background: none; text-align: left;
+  font: 600 12.5px/1.3 var(--body); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+#resSheet .res-bw .bw-l:empty { display: none; }
+#resSheet .res-bw .bw-l.mute { color: var(--mute); font-weight: 500; }
+#resSheet .res-bw .bw-l.up { color: var(--mint); }
+#resSheet .res-bw .bw-l.down { color: #ff9a8f; }
+#resSheet .res-bw.wait .bw-l::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--gold); vertical-align: 1px; animation: blink 1.2s ease-in-out infinite; }
+#resSheet .res-bw .delta small { white-space: nowrap; }
+#resSheet .res-bw .delta.up { background: linear-gradient(180deg, #ffe08a, #f4c95d 55%, #e8a640); }
+#app.tiny #resSheet .res-bw { gap: 10px; padding: 7px 10px; }
+#app.tiny #resSheet .res-bw .bw-t { font-size: 28px; }
+#app.tiny #resSheet .res-bw .bw-l { font-size: 11.5px; }
+/* desktop sizes only in windows 1000px and wider, like 40-results.css (760-999px windows keep the phones' sizes) */
+@container (min-width: 1000px) {
+  #app:not(.short):not(.portrait) #resSheet .res-bw { gap: 18px; padding: 16px 20px; }
+  #app:not(.short):not(.portrait) #resSheet .res-bw .bw-t { font-size: 44px; }
+  #app:not(.short):not(.portrait) #resSheet .res-bw .bw-l { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { #bwPill .bp-s, #bwPill.ember .bp-b, #resSheet .res-bw.wait .bw-l::before { animation: none; } }
+
 /* ===== Rival record and streak bounty (ui/rivals.js; Fable's design: rival-stakes/fable-design.md) =====
    One rule: chips the game pays wear an ember sticker (WANTED, BOUNTY). The record is mint when you lead, ketchup when they do. */
 :root { --rv-chip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 26'%3E%3Cpath d='M3.5 9.5C2.6 4.6 8.4 1.2 15 1.6c6.8-.5 13.3 1.6 14.6 7.3 1.4 5-1 12.5-8.6 15-7 1.9-15.6-.8-17.7-6.6-1-2.8.6-4.8.2-7.8z' fill='%23f4c95d' stroke='%230e1022' stroke-width='2'/%3E%3Cpath d='M7.5 8.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4-1.5 5.6-.3M6.6 13.6c2.3-1.7 4.5-1.7 6.8 0s4.5 1.7 6.8 0 4.1-1.5 6 0M8 18.6c2.2-1.6 4.3-1.6 6.5 0s4.3 1.6 6.5 0' fill='none' stroke='%23d6912f' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M9 5.2c3-1.4 7-1.6 10-.9' fill='none' stroke='%23fff3c4' stroke-width='1.3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E"); }
@@ -4659,7 +5004,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <!-- main menu (Fable's "sunset ink" design, menu-redesign/fable-menu-design.md): the top bar (logo, the profile plate + coins, the
-       gear), the gold Ranked hero with your fighter, the Daily Potato and Tournament tiles, three mini pills; the attract match plays
+       gear), the gold Ranked hero with your fighter, the Daily Potato and Boss Week tiles, the mini pills (Tournament is one); the attract match plays
        behind on the right (upright: in the middle). Styles: game/css/20-menu.css; texts: renderMenu (ui/screens.js), renderPill (ui/acct.js). -->
   <section id="scrMenu" class="screen mm scroll">
     <header class="mm-bar">
@@ -4676,13 +5021,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <button class="card gold tone mm-hero" id="bRanked" data-sfx="go" style="--i:0"><span class="mm-art"><img id="mHeroArt" alt=""></span><span class="mm-edge" aria-hidden="true"></span><span class="mm-body"><span class="kick" id="mRankKick">Ranked match</span><span class="mm-ttl">Ranked</span><span class="mm-sub" id="mRec">0W · 0L</span><span class="mm-cta"><span>Play</span><i aria-hidden="true"></i></span></span></button>
       <div class="mm-row2">
         <button class="card mm-tile mm-daily" id="bDaily" data-sfx="flip" style="--i:1"><span class="mm-vs" aria-hidden="true"><img id="mDailyA" alt=""><img id="mDailyB" alt=""><i>VS</i></span><span class="mm-tb"><b>Daily Potato</b><span class="mm-l" id="mDaily">today's match</span><span class="mm-l mm-l2" id="mDailyR"></span></span><span class="tag ember mm-today" id="mDailyTag">Today</span></button>
-        <button class="card mm-tile mm-cup" id="bCup" data-sfx="flip" style="--i:2"><span class="mm-medal" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v4.5a6 6 0 0 1-12 0z" fill="#f4c95d" stroke="#0e1022" stroke-width="1.8" stroke-linejoin="round"/><path d="M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11" fill="none" stroke="#0e1022" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13.5V17M8.5 21h7M9.5 17h5" fill="none" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M9 5c0 2 .5 4 2 5" fill="none" stroke="#fff3c4" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></svg></span><span class="mm-tb"><b>Tournament</b><span class="mm-l">8 players · bracket</span><span class="mm-l mm-l2" id="mCup"></span></span></button>
+        <!-- Boss Week (ui/bwsheet.js bwTile, css/97-bossweek.css): this week's boss in a disc ringed in his colour, the time left, your best and place; the tag is #6 (gold) or NEW (ember) -->
+        <button class="card mm-tile mm-bw" id="bBw" data-sfx="flip" style="--i:2"><span class="mm-bwd rd-bossph rd-scratch" id="mBwD" aria-hidden="true"><img id="mBwArt" alt=""><i>&#9760;</i></span><span class="mm-tb"><b>Boss Week</b><span class="mm-l" id="mBw"></span><span class="mm-l mm-l2" id="mBwR"></span></span><span class="tag gold mm-bwt" id="mBwTag" hidden></span></button>
       </div>
       <div class="mm-row3">
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
-        <button class="mini" id="bHelp" style="--i:6">How to play</button>
+        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small>8 players<span id="mCup" hidden></span></small></span></button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -4971,6 +5317,45 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- Boss Week (ui/bwsheet.js, css/97-bossweek.css; Fable's design step6/fable-step6.md): this week's boss, your best time and fighter, the top 3, FIGHT; -->
+  <section id="scrBw" class="screen modal" hidden>
+    <div class="sheet bw-sheet" role="dialog" aria-label="Boss Week">
+      <header class="sh-head"><h3>Boss Week</h3><span class="kick bw-hk"><span class="bw-hk1" id="bwWeek"></span><b id="bwLeft"></b></span><button class="round x" id="bwClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="bw-body" id="bwBody">
+        <div class="card bw-boss" id="bwBoss"><span class="tag ink bw-this">This week</span><div class="bw-pic"><img id="bwArt" alt=""><i aria-hidden="true">&#9760;</i></div>
+          <div class="bw-bt"><b class="bw-bn ink" id="bwBn"></b><span class="bw-bs" id="bwBs"></span><span class="bw-sts" id="bwSts"></span></div></div>
+        <div class="bw-you">
+          <div class="card bw-best" id="bwBest"><span class="kick" id="bwBk">Your best</span><b class="bw-time" id="bwTime"></b><span class="bw-sub" id="bwSub"></span></div>
+          <div class="bw-fs"><button class="dly-f rd-me bw-me" id="bwMe" aria-label="Change fighter"></button><i class="bw-plus" aria-hidden="true">+</i><div class="bw-pf" id="bwPf"></div></div>
+          <button class="btn primary lg bw-go" id="bwGo"><span><b id="bwGoT">Fight</b><small id="bwGoS">unlimited tries</small></span></button>
+          <p class="bw-note" id="bwNote" role="status"></p>
+        </div>
+        <div class="bw-top" id="bwTop">
+          <div class="bw-th"><span class="kick">Top 3</span><button class="bw-full" id="bwFull">Full board &rsaquo;</button></div>
+          <div class="bw-rows" id="bwRows" aria-live="polite"></div>
+          <div class="bw-pay"><span class="kick">Paid Monday &middot; chips</span><span class="bw-sts" id="bwPay"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the Monday card: last week's place and the chips it paid (ui/bwsheet.js bwWeekCard), once, over the menu -->
+  <section id="scrBwWk" class="screen modal" hidden>
+    <div class="sheet bw-wk" role="dialog" aria-label="Boss Week, last week">
+      <header class="sh-head"><h3>Boss Week</h3><span class="kick">Last week</span><button class="round x" id="bwwClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="bw-wkb" id="bwwBody">
+        <div class="bw-wkp"><i class="bw-wkc" id="bwwCrown" hidden></i><span class="bw-wkd rd-bossph rd-scratch" id="bwwD"><img id="bwwArt" alt=""><i>&#9760;</i></span></div>
+        <div class="bw-wkt">
+          <span class="kick" id="bwwK"></span>
+          <b class="bw-wkh" id="bwwH"></b>
+          <b class="bw-wkf" id="bwwF"></b>
+          <span class="bw-wkm" id="bwwM"><span class="coin chips plus" id="bwwC"></span><small>paid into your account</small></span>
+          <div class="bw-wka"><button class="btn primary" id="bwwGo"><span id="bwwGoT"></span></button><button class="btn" id="bwwOk"><span>OK</span></button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -5085,6 +5470,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="sheet set-sheet scroll">
       <header class="sh-head"><h3>Settings</h3><button class="round x" id="setClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="sh-body">
+        <button class="set-row set-help" id="bHelp" data-sfx="flip"><span>How to play</span><span class="set-hl">Controls, moves and combos</span><i aria-hidden="true"></i></button>
         <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
         <div class="set-row" id="setFullRow"><span id="setFullL">Fullscreen in fights</span><span class="chips" id="setFull"></span><small id="setFullNow"></small></div>
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
@@ -5216,7 +5602,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
-  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* messages (stk-*: ui/stakes.js), and Ranked vs CPU's (ui/vscpu.js)
+  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* / bw-* messages (stk-*: ui/stakes.js, bw-*: ui/bossweek.js), and Ranked vs CPU's (ui/vscpu.js)
   const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd"]);
   const rooms = new Map();
 
@@ -5238,7 +5624,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
-    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
+    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -8319,6 +8705,7 @@ function cntMode(m) {
   if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
   if (m.warm) return "warmup";
   if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
+  if (m.bw) return "boss-week";   // a Boss Week try (ui/bossweek.js)
   if (m.boss) return m.road ? "road-boss" : "boss";
   if (m.duo) return "team";   // Team Brawl 2v2 (ui/duo.js; match.team is the CPU team's name)
   return m.road ? "road" : m.daily ? "daily" : m.cup ? "cup" : m.ranked ? "ranked" : "practice";
@@ -27510,6 +27897,7 @@ function renderMenu() {
   if (a2hsOn && !a2hsNow) { a2hsNow = true; P.a2hsSeen = true; saveProfile(); }
   $("a2hsHint").hidden = !a2hsOn;
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
+  bwTile();   // ui/bwsheet.js: the Boss Week tile (boss, time left, your best and place)
   qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
@@ -27650,7 +28038,7 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = fmtChips(P.tokens);
-  if (sel.mode === "online" || sel.mode === "quick") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
+  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
@@ -27716,10 +28104,10 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -27877,6 +28265,7 @@ function togglePause(force) {
   $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : match && (match.road || (match.trial && TR.back !== null)) ? "Back to the Road" : "Quit to menu";
   $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
   if (match && (match.qm || match.warm || match.vc)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
+  if (match && match.bw) bwPauseText();   // ui/bossweek.js: leaving a try costs nothing
   releaseTouch();
 }
 let quitArmed = false;
@@ -27965,6 +28354,7 @@ function resOpen(look, spec, solo) {
   void sheet.offsetWidth; sheet.classList.add("in");
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
+  { const c = $("rBw"); if (c) c.hidden = true; }   // ui/bossweek.js: Boss Week's card
   $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
@@ -28069,6 +28459,7 @@ function showResults(R) {
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
+  if (R.bw) bwResults(R);   // ui/bossweek.js: the time, the place and the server's verdict in the rank card's place
   if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   chlRes(R);   // ui/challenge.js: Challenge a friend
@@ -28405,6 +28796,7 @@ function bossHud() {
   }
   const quote = G.phase === "countdown";   // his line while the countdown runs
   if (BB.quote !== quote) { BB.quote = quote; el.classList.toggle("talk", quote); }
+  bwHud();   // ui/bossweek.js: a Boss Week try's clock under the bar
 }
 
 /* ----- the end of a boss fight: the results (the Road adds its stars in road.js) ----- */
@@ -28414,6 +28806,7 @@ function bossMatchEnd(forfeit) {
   const R = { res, forfeit, ranked: false, me, op: b, lines: [], total: 0,
     boss: { lv: G.lv, mate, hp: b.hpMax ? b.hp / b.hpMax : 0, secs: Math.round(G.t / 60), name: b.spec.name } };
   if (match.road) roadBossEnd(R);   // ui/road.js: the level's star, the first win's title and chips
+  if (match.bw) bwEnd(R);   // ui/bossweek.js: a Boss Week try's time to the server
   showResults(R);
 }
 function bossVs() {
@@ -29030,6 +29423,7 @@ function roadBossFight(k, lv) {
 }
 // handleEvent (effects.js) passes the live match's events: the start, the end, the KOs (a finisher special, an ulti)
 function roadEvent(g, e) {
+  bwEvent(g, e);   // ui/bossweek.js: a Boss Week try's GO and final launch
   const rd = match && match.road;
   if (!rd || rd.boss) return;
   if (e.type === "go") rd.go = g.t;
@@ -32495,8 +32889,8 @@ tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 // from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
-tap("selBack", () => { if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
-tap("selGo", () => { goFull(); if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
+tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
@@ -32520,6 +32914,7 @@ tap("rAgain", () => {
   cntAgain();   // ui/counter.js
   stkLeave();   // ui/stakes.js: a challenge still out is withdrawn
   if (match && match.daily) { goMenu(); return; }   // one try a day: this button reads "Menu"
+  if (match && match.bw) { bwFight(); return; }   // ui/bossweek.js: Retry, a new try
   goFull();
   if (match && match.tutorial) { startFirstFight(); return; }   // YOU'RE READY: FIGHT (ui/tutorial.js)
   if (match && match.online && match.tb) { tbAgain(); return; }   // a team brawl: Rematch (everyone still here taps), or Retry vs CPU after a lost connection
@@ -32546,6 +32941,7 @@ tap("rRetry", () => { cntAgain(); goFull(); roadRetry(); });   // ui/road.js: th
 tap("rChange", () => {
   stkLeave();   // ui/stakes.js
   if (match && (match.qm || match.warm || match.vc)) { qmChange(); return; }   // ui/quick.js
+  if (match && match.bw) { bdOpen("w"); return; }   // ui/bossweek.js: Board, the Boss Week tab
   if (match && match.tutorial) { openSelect("practice"); return; }
   if (match && match.online && match.tb) { tbBoard(); return; }   // a team brawl: Board, back to the seats in the same room
   if (match && match.online) { leaveMatchRoom(); resetNet(); NET.phase = "idle"; openOnline(); return; }
@@ -35306,6 +35702,7 @@ function vcBoot() {   // qmBoot (ui/quick.js), once
   if (!qmOn()) return;
   window.__blQuick.on(vcMsg);
   window.__blVc = VC;   // tests read it
+  bwBoot();   // ui/bossweek.js: Boss Week's messages
 }
 function vcMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -35415,7 +35812,7 @@ function vcStart(tk) {
 // simTick (loop.js): your input this frame, in the online encoding (what the server will replay), logged until the match ends
 function vcIn(pi) {
   const m = match;
-  if (!m || !m.vc || !G || G.phase === "end" || G.phase === "over") return pi;
+  if (!m || !(m.vc || m.bw) || !G || G.phase === "end" || G.phase === "over") return pi;   // m.bw: a Boss Week try (ui/bossweek.js)
   const v = encIn(pi);   // ui/online.js
   m.log.push(v);
   return decIn(v);
@@ -35672,6 +36069,7 @@ function vcStripText() {   // the HUD strip: this match counts, and for which ra
   return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
 }
 function vcTick() {
+  bwTick();   // ui/bossweek.js: a Boss Week result still on its way, the Monday card
   if (!qmOn()) return;
   if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
   if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");
@@ -35687,11 +36085,11 @@ tap("qmV", () => { QM.mode = "v"; VC.note = ""; qmSave(); qmRender(); });
 tap("qmToV", () => { QM.mode = "v"; VC.note = ""; qmSave(); qmRender(); });
 /* ===================== The Boards: the CPU board and the online board (ui/vscpu.js fetches them, cpurank.js keeps them) =====================
    UI only, never in the simulation. Fable's design: quick-match/vs-cpu/fable-vs-cpu.md section 2, styles in css/97-boards.css.
-   - The Boards sheet (#scrBoards): ink band BOARDS, a tab row (VS CPU, ONLINE; BD_TABS is the list, more can follow), one kicker (the rank,
+   - The Boards sheet (#scrBoards): ink band BOARDS, a tab row (VS CPU, ONLINE, BOSS WEEK; BD_TABS is the list, more can follow), one kicker (the rank,
      the season, the players, how old the list is), up to 100 rows (place, tier emblem, name on its nameplate, fighter, record, rating) and
      YOUR row as a sticky bar under the list: your place, a dotted gap and `#143 of 187` when you are below the top 100, `PLACING 2 OF 5` while
      you place, a line telling what gets you a place when you have no account. Opens over the menu, Quick match, the results and the Account
-     sheet (z-index 6): bdOpen(k) with k "c" (VS CPU) or "o" (ONLINE), default the last tab used (localStorage potatobrawl.boards.v1).
+     sheet (z-index 6): bdOpen(k) with k "c" (VS CPU), "o" (ONLINE) or "w" (BOSS WEEK: bwBoard(), times not ratings, ui/bwsheet.js), default the last tab used (localStorage potatobrawl.boards.v1).
    - The data comes from vcBoard(k) (ui/vscpu.js): a Promise of null (no server: the offline state) or { k, n, at, top: [{ id, nm, f, r, w, l, pl }],
      me: null | { i, row } | { i: 0, pn } }. It is fetched every time the sheet opens, the tab changes or the active tab is tapped again.
    - bdPreview() fills the CPU BOARD card on the Quick match screen (#qmBoard, shown by the VS CPU mode); bdPlates(box) draws the ONLINE RANK and
@@ -35705,6 +36103,7 @@ const BD_SEASON = "Season 1";
 const BD_TABS = [
   { k: "c", name: "VS CPU", kick: "CPU rank", gone: "Nobody on the board yet.", hint: `${BD_PLACING} Ranked CPU matches get you on.`, fight: true, none: "Play a Ranked CPU match to get a place" },
   { k: "o", name: "Online", kick: "Online rank", gone: "Nobody has placed yet.", hint: `${BD_PLACING} Ranked matches get you on.`, fight: false, none: "Play a Ranked match to get a place" },
+  { k: "w", name: "Boss Week", kick: "Boss Week", gone: "", hint: "", fight: false, none: "Finish the boss once to get a place" },   // ui/bwsheet.js draws its rows, kicker and empty state
 ];
 const BD = { k: "c", req: 0, st: "idle", data: null, got: 0, tm: 0, lt: 0 };   // st: idle | load | ok | empty | off
 const BDP = { at: 0, data: undefined, p: null };   // the preview's cache: undefined = nothing yet, null = offline
@@ -35726,6 +36125,7 @@ function bdRow(o) {
   return { id: bdStr(o.id, 12), nm: bdStr(o.nm, 24).trim() || "Player", f: FIG[o.f] ? o.f : "", r: bdInt(o.r, 1000), w: bdInt(o.w), l: bdInt(o.l), pl: bdStr(o.pl, 24) };
 }
 function bdClean(d, k) {
+  if (k === "w") return bwBdPrep(d);   // ui/bwsheet.js: times, hearts lost and crowns instead of ratings
   if (!d || typeof d !== "object") return null;
   const top = (Array.isArray(d.top) ? d.top : []).slice(0, 100).map(bdRow).filter(Boolean);
   let me = null;
@@ -35740,7 +36140,7 @@ function bdClean(d, k) {
 function bdFetch(k) {
   return new Promise((done) => {
     let p, over = setTimeout(() => done(null), 10000);
-    try { p = typeof vcBoard === "function" ? vcBoard(k) : null; } catch (e) { p = null; }
+    try { p = k === "w" ? bwBoard() : typeof vcBoard === "function" ? vcBoard(k) : null; } catch (e) { p = null; }
     Promise.resolve(p).then((d) => d, () => null).then((d) => { clearTimeout(over); done(bdClean(d, k)); });
   });
 }
@@ -35750,6 +36150,7 @@ const bdPlaceN = (n) => `${n} ${n === 1 ? "match" : "matches"}`;
    o.me: this is your row in the list; o.sticky: it is the bar under the list; o.of: "#143 of 187" for a bar below the top 100 */
 function bdRowEl(row, i, o) {
   o = o || {};
+  if (BD.k === "w") return bwBdRow(row, i, o);   // ui/bwsheet.js
   const el = bdMk("div", "bd-r" + (i === 1 ? " first" : "") + (o.me ? " me" : "") + (o.sticky ? " you" : ""));
   const p = bdMk("span", "bd-p");
   if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
@@ -35821,6 +36222,7 @@ function bdAge() { const e = $("bdKick").querySelector(".bd-up"); if (e && BD.st
 function bdKickDraw() {
   const k = $("bdKick"), t = bdCur(), d = BD.data;
   k.textContent = "";
+  if (t.k === "w") { k.appendChild(document.createTextNode(bwBdKick(BD.st, d))); if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`)); return; }
   const tail = BD.st === "load" ? ["Loading"] : BD.st === "off" ? [] : [`${d.n} ${d.n === 1 ? "player" : "players"}`];
   k.appendChild(document.createTextNode([t.kick, BD_SEASON].concat(tail).join(" · ")));
   if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`));
@@ -35836,6 +36238,7 @@ function bdStateDraw() {
     const b = bdMk("button", "mini bd-again", "Try again"); b.type = "button"; bdTap(b, bdLoad); box.appendChild(b);
   } else {
     box.className = "bd-state";
+    if (t.k === "w") { bwBdEmpty(box); return; }   // ui/bwsheet.js: Nobody has a time yet + FIGHT <boss>
     box.append(bdPod(), bdMk("b", "bd-big", t.gone), bdMk("p", "bd-sub", t.hint));
     if (t.fight) { const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", "Fight a CPU")); bdTap(b, bdFight); box.appendChild(b); }
   }
@@ -35854,8 +36257,13 @@ function bdGhosts() {
 function bdYouDraw(d) {
   const box = $("bdYou"), gap = $("bdGap"), t = bdCur(), m = d && d.me;
   box.textContent = ""; gap.hidden = true;
-  if (!d || (BD.st === "empty" && !m)) { box.hidden = true; return; }
+  if (!d || (BD.st === "empty" && (!m || t.k === "w"))) { box.hidden = true; return; }
   box.hidden = false;
+  if (t.k === "w" && m && !m.i) {   // an account with no time yet
+    const e = bdMk("div", "bd-r you none");
+    e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", `No time yet. Finish ${bwBossSpec(bwSpec().boss).name} once to get a place`));
+    box.appendChild(e); return;
+  }
   if (!m) {   // no account yet
     const e = bdMk("div", "bd-r you none");
     e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", t.none));
@@ -35886,6 +36294,8 @@ function bdToMe() {   // scroll the list to your row and flash it
 function bdDraw() {
   const d = BD.data, list = $("bdList"), st = BD.st;
   bdKickDraw();
+  screens.boards.classList.toggle("bw-tab", BD.k === "w");   // css/97-bossweek.css: the time column is wider
+  $("bdHd").querySelector(".bd-hr").textContent = BD.k === "w" ? "Time" : "Rating";
   $("bdHd").hidden = !(st === "ok" || st === "load");
   list.hidden = !(st === "ok" || st === "load");
   $("bdState").hidden = !(st === "off" || st === "empty");
@@ -36375,6 +36785,706 @@ function chlCopied() {
   btn.textContent = "Link copied";
   setTimeout(() => { btn.textContent = "Copy link"; }, 2500);
 }
+/* ===================== Boss Week: one boss a week on Hard, the fastest KO is #1 (the server side is bossweek.js) =====================
+   The week runs Monday to Monday, Berlin time; the boss turns Old Scratch -> Zorp -> Kraken Spud with the Road's HP and partner strength
+   (ROAD_REG) and one CPU partner fighter for everyone that week. A try is dealt by the server as a ticket (its own seed); this phone plays
+   it with no lag and logs your inputs in the online encoding (vcIn, ui/vscpu.js). A win whose time beats your best goes to the server,
+   which plays the same fight again from the log before it counts (a slower win or a loss is never sent). Your time: the frames from
+   GO to the final launch on the boss. The server pays the week's places in chips on Monday (into the account file, synced here).
+   This part: the week, the record, the tickets, the run (its clock pill under the boss bar, the 4:00 cap), the results card and the
+   verdict. The sheet, the start tile, the Boards tab and the Monday card are ui/bwsheet.js (they read BW and the bw* helpers below).
+   Fable's design: /mnt/project-files/step6/fable-step6.md. Styles: css/97-bwrun.css (this part), css/97-bossweek.css (the sheet). */
+const BW_KEY = "potatobrawl.bw.v1";
+const BW_ROT = ["scratch", "zorp", "kraken"], BW_D0 = Date.UTC(2026, 0, 5) / 864e5, BW_LV = 1;   // the server's (bossweek.js)
+const BW_CAP = 240 * 60, BW_LAST = 30 * 60;   // a run has 4:00 from GO; the pill turns ember for the last 30 s
+const BW_PRIZE = [[1, 300], [3, 150], [10, 80], [1e9, 25]];   // chips for a place, paid on Monday: #1, #2-3, top 10, a time
+const BW = {
+  wk: null,       // the server's week { wk, no, ends, boss, lv, pf, n } (bw-me), kept for the menu
+  me: null, code: "",   // your record this week { t (frames, 0 = no time yet), fl, f, pl, cr, tries } and the sync code it belongs to
+  lr: null,       // last week's result { wk, no, boss, pl, of, c } (the Monday card)
+  asking: false, askT: 0, note: "", meAt: -1e9,
+  pend: null,     // a won try until the server's verdict: { id, code, wk, s (the packed log), fr, fl, brk, f, b0, pl0, sentT }
+  res: null, shown: null, applied: [],
+  seen: -1, lrSeen: -1, lrNew: null,   // the last week whose sheet was opened (the NEW tag), the last Monday card shown
+  bk: -1,         // the break of your best run, frames from GO (the pill's split; this phone's own runs only)
+  bd: null, bdWait: [], run: null,
+};
+(function bwLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(BW_KEY) || "null");
+    if (!s || typeof s !== "object") return;
+    if (s.wk && typeof s.wk === "object") BW.wk = bwCleanWk(s.wk);
+    if (s.me && typeof s.code === "string") { BW.me = bwCleanMe(s.me); BW.code = s.code; }
+    for (const k of ["seen", "lrSeen", "bk"]) if (Number.isInteger(s[k])) BW[k] = s[k];
+    if (s.pend && typeof s.pend.id === "string" && typeof s.pend.s === "string") BW.pend = s.pend;
+  } catch (e) { /* storage blocked: nothing remembered */ }
+})();
+function bwSave() { try { localStorage.setItem(BW_KEY, JSON.stringify({ wk: BW.wk, me: BW.me, code: BW.code, seen: BW.seen, lrSeen: BW.lrSeen, bk: BW.bk, pend: BW.pend })); } catch (e) { /* ignore */ } }
+const bwN = (v, d) => (Number.isInteger(v) && v >= 0 && v < 1e9 ? v : d);
+function bwCleanWk(o) {
+  if (!o || !Number.isInteger(o.wk) || !BOSS_IDS.has(o.boss) || !FIG[o.pf] || !Number.isFinite(o.ends)) return null;
+  return { wk: o.wk, no: bwN(o.no, 0), ends: o.ends, boss: o.boss, lv: bwN(o.lv, BW_LV), pf: o.pf, n: bwN(o.n, 0) };
+}
+function bwCleanMe(o) {
+  if (!o || typeof o !== "object") return null;
+  return { t: bwN(o.t, 0), fl: bwN(o.fl, 0), f: FIG[o.f] ? o.f : "", pl: bwN(o.pl, 0), cr: bwN(o.cr, 0), tries: bwN(o.tries, 0) };
+}
+
+/* ----- the week, from this phone's clock (the server's answer replaces it when it comes) ----- */
+const BW_FMT = (() => { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }); } catch (e) { return null; } })();
+function bwBerlin(t) {
+  if (!BW_FMT) return { day: Math.floor((t + 3600e3) / 864e5), h: new Date(t + 3600e3).getUTCHours() };   // no time zones here: winter time
+  const p = {};
+  for (const x of BW_FMT.formatToParts(new Date(t))) p[x.type] = x.value;
+  return { day: Date.UTC(+p.year, +p.month - 1, +p.day) / 864e5, h: +p.hour };
+}
+const bwWeekOf = (t) => Math.floor((bwBerlin(t).day - BW_D0) / 7);
+function bwWeekStart(wk) {   // Monday 00:00 in Berlin
+  const day = BW_D0 + wk * 7;
+  for (const off of [1, 2]) { const t = day * 864e5 - off * 3600e3, b = bwBerlin(t); if (b.day === day && b.h === 0) return t; }
+  return day * 864e5 - 3600e3;
+}
+function bwIsoWeek(wk) { const th = (BW_D0 + wk * 7 + 3) * 864e5, y = new Date(th).getUTCFullYear(); return 1 + Math.floor((th - Date.UTC(y, 0, 1)) / (7 * 864e5)); }
+function bwRoadOf(boss) { const k = ROAD_REG.findIndex((r) => r.boss === boss); return { k, hp: k >= 0 ? ROAD_REG[k].hp : 1, mate: k >= 0 ? ROAD_REG[k].mate : 0.5 }; }
+function bwLocal(wk) {
+  const n = FIGHTERS.length, boss = BW_ROT[((wk % 3) + 3) % 3], R = bwRoadOf(boss), b = BL.BOSSES.find((x) => x.id === boss);
+  return { wk, no: bwIsoWeek(wk), ends: bwWeekStart(wk + 1), boss, lv: BW_LV, pf: FIGHTERS[(((wk * 5 + 2) % n) + n) % n].id,
+    hp: R.hp, d: Math.round((R.mate + 0.1 * BW_LV) * 100) / 100, map: b ? bossMap(b) : 0, n: -1 };
+}
+// this week as the page shows it: { wk, no, ends, boss, lv, pf, hp, d, map, n (players with a time; -1 not known) }.
+// window.__blBwMock = { wk, me, lr, board, live } stands in for the server (the sheet's tests and screenshots).
+function bwSpec() {
+  const M = window.__blBwMock;
+  if (M && M.wk) return Object.assign(bwLocal(M.wk.wk | 0), M.wk);
+  const wk = bwWeekOf(Date.now()), s = BW.wk && BW.wk.wk >= wk ? BW.wk : null;   // the server's clock decides at the boundary
+  return Object.assign(bwLocal(s ? s.wk : wk), s ? { no: s.no, ends: s.ends, boss: s.boss, lv: s.lv, pf: s.pf, n: s.n } : {});
+}
+// a counted try can start now: our server, connected, accounts on
+function bwLive() { const M = window.__blBwMock; if (M) return !!M.live; return qmOn() && QM.conn && !qmAcctOff(); }
+// your record this week: null (not known: no account, or not heard from the server yet) or { t, fl, f, pl, cr, tries } (t 0: no time yet)
+function bwMine() {
+  const M = window.__blBwMock;
+  if (M) return M.me || null;
+  return BW.me && BW.code && BW.code === ACCT.code && BW.wk && BW.wk.wk === bwSpec().wk ? BW.me : null;
+}
+const bwChecking = () => !!(BW.pend && BW.pend.code === ACCT.code);   // a won try on its way to the server
+const bwNew = () => bwSpec().wk > BW.seen;   // the start tile's NEW tag: this week's sheet not opened yet
+function bwSeen() { const wk = bwSpec().wk; if (BW.seen !== wk) { BW.seen = wk; bwSave(); } bwAskMe(false, 5000); }   // the sheet opened
+const bwPrize = (pl) => BW_PRIZE.find(([to]) => pl <= to)[1];
+// frames as a time: "1:42.18" (d 2) or "1:42.1" (d 1); always rounded down, as the board is
+function bwClock(fr, d) {
+  const cs = Math.floor((Math.max(0, fr) * 100) / 60), m = Math.floor(cs / 6000), s = Math.floor(cs / 100) % 60;
+  const frac = d === 1 ? String(Math.floor((cs % 100) / 10)) : String(cs % 100).padStart(2, "0");
+  return `${m}:${String(s).padStart(2, "0")}.${frac}`;
+}
+// a signed difference of two times in seconds: "−4.16", "+2.1"
+function bwDiff(fr, d) { const s = (Math.abs(fr) / 60).toFixed(d === 1 ? 1 : 2); return (fr < 0 ? "−" : "+") + s; }
+// what is left of the week: "3d 4h", "5h 12m", "12m"
+function bwLeft(ends) {
+  const m = Math.max(0, Math.floor((ends - Date.now()) / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
+  return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${Math.max(1, m)}m`;
+}
+const bwBossSpec = (id) => BL.BOSSES.find((b) => b.id === id) || BL.BOSSES[0];
+// the sheet, the tile and the Monday card follow every change (ui/bwsheet.js)
+function bwRefresh() {
+  if (typeof bwTile === "function" && mode === "menu") bwTile();
+  if (typeof bwSheetRender === "function") bwSheetRender();
+}
+
+/* ----- the server's messages (net-ws.js passes bw-* and bd to every Quick match listener) ----- */
+function bwBoot() {   // vcBoot (ui/vscpu.js), once
+  if (!qmOn()) return;
+  window.__blQuick.on(bwMsg);
+  window.__blBw = BW;   // tests read it
+  window.__blBwFight = bwFight;   // tests: a try without the sheet
+}
+function bwMsg(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.t === "me") { if (!m.err) bwAuthed(); else if (BW.asking) bwFail("This phone's account isn't on the server. Check Account."); }
+  else if (m.t === "bw-me") bwGotMe(m);
+  else if (m.t === "bw-tk") bwTicket(m);
+  else if (m.t === "bw-no") bwRefused(m.why);
+  else if (m.t === "bw-res") bwRes(m);
+  else if (m.t === "bd" && m.k === "w") bwBdDone(bwBdClean(m));
+}
+function bwAskMe(force, ms) {
+  if (!qmOn() || !QM.conn) return;
+  if (ACCT.code && !QM.authed) { qmAuth(); return; }   // bwAuthed asks once signed in
+  if (!force && performance.now() - BW.meAt < (ms || 60000)) return;
+  BW.meAt = performance.now();
+  window.__blQuick.send({ t: "bwme" });
+}
+// signed in: a try still on its way goes first, then your record; a waiting FIGHT goes on
+function bwAuthed() {
+  if (BW.pend && BW.pend.code !== ACCT.code) { BW.pend = null; bwSave(); }   // another account's try: it stays unsent
+  bwFlush();
+  bwAskMe(true);
+  if (BW.asking) bwGo();
+}
+function bwGotMe(m) {
+  const wk = bwCleanWk(m);
+  if (!wk) return;
+  BW.wk = wk;
+  if (m.me && ACCT.code && QM.authed) { BW.me = bwCleanMe(m.me); BW.code = ACCT.code; }
+  else if (!m.me && BW.code === ACCT.code) BW.me = null;
+  if (m.lr && Number.isInteger(m.lr.wk) && m.lr.wk > BW.lrSeen && Number.isInteger(m.lr.pl) && (!BW.lrNew || BW.lrNew.wk !== m.lr.wk)) {
+    BW.lrNew = { wk: m.lr.wk, no: bwN(m.lr.no, 0), boss: BOSS_IDS.has(m.lr.boss) ? m.lr.boss : "scratch", pl: bwN(m.lr.pl, 0), of: bwN(m.lr.of, 0), c: bwN(m.lr.c, 0) };
+    if (ACCT.code && typeof acctSoon === "function") acctSoon(300);   // the chips the server paid come with the next sync
+  }
+  BW.lr = BW.lrNew || BW.lr;
+  bwSave(); bwRefresh();
+}
+
+/* ----- FIGHT: the account, a try still on its way, then a ticket ----- */
+function bwFight() {
+  if (!bwLive()) { bwPractice(); return; }
+  if (mode === "result") $("rAgainSub").textContent = "Starting…";
+  if (QM.no === "old") { location.reload(); return; }
+  if (BW.asking) return;
+  Sfx.init(); goFull();   // fullscreen needs the tap itself
+  BW.note = ""; BW.asking = true; BW.askT = Date.now();
+  bwRefresh();
+  bwGo();
+}
+async function bwGo() {
+  if (!ACCT.code) {
+    const ok = await qmMakeAcct();
+    if (!BW.asking) return;
+    if (!ok) { bwFail(qmAcctOff() ? "Boss Week opens soon." : "Couldn't reach the server. Try again."); return; }
+  }
+  if (!QM.authed) { qmAuth(); return; }   // bwAuthed goes on once signed in
+  if (bwChecking() && !BW.pend.sentT) { bwFlush(); }   // the last win goes first (its verdict doesn't hold this try up)
+  const f = FIG[P.last] ? P.last : FIGHTERS[0].id;   // the fighter you play (the sheet's picture, as the Road's)
+  window.__blQuick.send({ t: "bwt", v: PROTO, f, pi: palIdx(f) });
+}
+function bwFail(note) {
+  BW.asking = false; BW.note = note || "";
+  bwRefresh();
+  if (mode === "result" && BW.shown) $("rBwL").textContent = note || "";
+}
+function bwRefused(why) {
+  if (!BW.asking) return;
+  if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then ask again
+  if (why === "slow") { setTimeout(() => { if (BW.asking) bwGo(); }, 1500); return; }
+  if (why === "old") { QM.no = "old"; bwFail("A new version of the game is out. Reload to play."); return; }
+  bwFail("Couldn't start a Boss Week try. Try again.");
+}
+function bwTicketOk(m) {
+  const okP = (f, p) => !!FIG[f] && Number.isInteger(p) && p >= 0 && p < FIG[f].palettes.length;
+  return typeof m.id === "string" && /^[0-9a-f]{12}$/.test(m.id) && Number.isInteger(m.wk) && Number.isInteger(m.seed) && BOSS_IDS.has(m.boss) &&
+    Number.isInteger(m.lv) && m.lv >= 0 && m.lv <= 2 && typeof m.hp === "number" && m.hp > 0 && m.hp < 5 && typeof m.d === "number" && m.d > 0 && m.d <= 1 &&
+    Number.isInteger(m.map) && m.map >= 0 && m.map < BL.MAPS.length && okP(m.f, m.p) && okP(m.pf, m.pp);
+}
+function bwTicket(m) {
+  if (!BW.asking || !bwTicketOk(m)) return;
+  BW.asking = false; BW.note = "";
+  if (typeof bwSheetClose === "function") bwSheetClose();
+  if (typeof bdClose === "function" && screens.boards && !screens.boards.hidden) bdClose();
+  bwStart(m);
+}
+// the fight: the server's exactly (its seed, the boss, his HP and level, the partner and his strength), your inputs logged (vcIn)
+function bwStart(tk) {
+  const me = FIG[tk.f], pf = FIG[tk.pf], boss = bwBossSpec(tk.boss);
+  G = newGame({ players: [{ spec: me, pal: me.palettes[tk.p] || me.palettes[0] }, { spec: pf, pal: pf.palettes[tk.pp] || pf.palettes[0] }, { spec: boss, pal: boss.palettes[0] }],
+    stocks: 3, time: 0, countdown: 150, map: tk.map, level: tk.lv, hpMul: tk.hp, seed: tk.seed });
+  match = { boss: true, bw: tk, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0 }, level: tk.lv, d: tk.d, bot: makeBot(tk.d, BL.BOT_STYLES[pf.id]), cpu: cpuName(), road: null, log: [] };
+  BW.run = match.bwr;   // tests read it
+  meSlot = 0;
+  enterMatchUI();
+}
+// no server: the week's boss in Practice, the same rules, not counted
+function bwPractice() {
+  const s = bwSpec(), R = bwRoadOf(s.boss);
+  startBoss({ level: BW_LV, boss: s.boss, partner: s.pf, hpMul: R.hp, mate: s.d });
+}
+
+/* ----- the run: GO, the break, the final launch (roadEvent passes the live match's events), the clock pill, the cap ----- */
+function bwEvent(g, e) {
+  const r = match && match.bw && match.bwr;
+  if (!r) return;
+  if (e.type === "go") r.go = g.t;
+  else if (e.type === "lethal" && e.slot === 2 && r.ko < 0) r.ko = g.t;
+}
+function bwPill() {   // made once, under the boss bar (inside it, so it hides with it)
+  let el = $("bwPill");
+  if (!el) {
+    el = document.createElement("div"); el.id = "bwPill"; el.hidden = true;
+    el.innerHTML = '<b class="bp-t"></b><span class="bp-b"></span><i class="bp-s" hidden></i>';
+    $("bossBar").appendChild(el);
+  }
+  return el;
+}
+const BP = { t: "", b: "", cls: "", s: "" };
+// every drawn frame of a Boss Week try (bossHud, ui/boss.js)
+function bwHud() {
+  const el = bwPill(), r = match && match.bw && match.bwr;
+  if (!r || r.go < 0) { if (!el.hidden) el.hidden = true; return; }   // from GO (his line has the place under the bar during the countdown)
+  if (el.hidden) { el.hidden = false; BP.t = BP.b = BP.cls = BP.s = ""; }
+  const b = bossOf(G);
+  if (r.brk < 0 && b && (b.state === "broken" || b.doomed)) {   // the break: the split against your best run's break
+    r.brk = G.t;
+    if (BW.bk > 0 && bwMine() && bwMine().t) r.spl = { d: r.brk - r.go - BW.bk, at: performance.now() };
+  }
+  const run = (r.ko >= 0 ? r.ko : G.t) - r.go, mine = bwMine();
+  if (r.go >= 0 && r.ko < 0 && run >= BW_CAP && G.phase === "play" && !r.cap) { r.cap = true; finishMatch(false); return; }   // 4:00: out of time
+  const t = r.ko >= 0 ? bwClock(run, 2) : bwClock(run, 1), left = r.ko < 0 && run >= BW_CAP - BW_LAST;
+  const bt = left ? `${mmss(Math.ceil((BW_CAP - run) / 60))} left` : mine && mine.t ? `Best ${bwClock(mine.t, 2)}` : "";
+  const cls = left ? "ember" : r.ko >= 0 ? (mine && mine.t && run < mine.t ? "best" : "done") : "";
+  if (BP.t !== t) { BP.t = t; el.querySelector(".bp-t").textContent = t; }
+  if (BP.b !== bt) { BP.b = bt; const s = el.querySelector(".bp-b"); s.textContent = bt; s.hidden = !bt; }
+  if (BP.cls !== cls) { BP.cls = cls; el.className = cls; }
+  const sp = r.spl && performance.now() - r.spl.at < 2600 ? r.spl : null, st = sp ? bwDiff(sp.d, 1) : "";
+  if (BP.s !== st) { BP.s = st; const s = el.querySelector(".bp-s"); s.hidden = !sp; s.textContent = st; s.className = "bp-s " + (sp && sp.d <= 0 ? "up" : "down"); }
+}
+
+/* ----- the end: a win that beats your best goes to the server; the Road's Hard star where his fence is open ----- */
+function bwEnd(R) {   // bossMatchEnd (ui/boss.js)
+  const tk = match.bw, r = match.bwr, mine = bwMine(), fl = R.me.falls | 0;
+  const won = !R.forfeit && R.res === 1 && r.go >= 0 && r.ko >= 0 && !r.cap, t = won ? r.ko - r.go : 0;
+  const b0 = mine ? mine.t : 0, beat = won && t <= BW_CAP && (!b0 || t < b0 || (t === b0 && fl < mine.fl));
+  if (r.cap) { R.res = 0; R.forfeit = false; }
+  R.bw = { tk, won, t, fl, cap: r.cap, brk: r.brk >= 0 && r.go >= 0 ? r.brk - r.go : -1, b0, pl0: mine ? mine.pl : 0, n0: bwSpec().n, sent: beat, road: null };
+  if (mine) mine.tries++;
+  if (won) {   // ui/road.js roadBossWin: his Hard star on your Road (and the first win's title, a Road skin), each paid once
+    const k = bwRoadOf(tk.boss).k, rd = roadGet();
+    if (k >= 0 && roadRegOpen(rd, k) && roadGateOpen(rd, k)) {
+      const w = roadBossWin(k, tk.lv, R.me.spec);
+      R.total = w.total; R.bw.road = w;
+    }
+  }
+  if (beat) {
+    BW.pend = { id: tk.id, code: ACCT.code, wk: tk.wk, s: vcPack(match.log), fr: t, fl, brk: R.bw.brk, f: tk.f, b0, pl0: R.bw.pl0, sentT: 0 };
+    bwSave(); bwFlush();
+  }
+}
+// the log to the server, in parts the WebSocket takes (6,000 characters each)
+function bwFlush() {
+  const p = BW.pend;
+  if (!p || !qmOn() || !QM.conn || !QM.authed || p.code !== ACCT.code) return;
+  const n = Math.max(1, Math.ceil(p.s.length / 6000));
+  for (let k = 0; k < n; k++) window.__blQuick.send({ t: "bwr", id: p.id, k, n, s: p.s.slice(k * 6000, (k + 1) * 6000), fr: p.fr });
+  p.sentT = Date.now(); bwSave();
+}
+function bwRes(m) {
+  if (!m || typeof m.id !== "string" || BW.applied.includes(m.id)) return;
+  BW.applied.push(m.id); if (BW.applied.length > 8) BW.applied.shift();
+  const p = BW.pend && BW.pend.id === m.id ? BW.pend : null;
+  const me = bwMine() || (ACCT.code ? { t: 0, fl: 0, f: "", pl: 0, cr: 0, tries: 0 } : null);
+  if (me) {
+    if (m.ok && m.why === "best") { Object.assign(me, { t: bwN(m.time, 0), fl: bwN(m.fl, 0), f: p ? p.f : me.f, pl: bwN(m.pl1, 0) }); if (p && p.brk > 0) BW.bk = p.brk; }
+    else if (m.ok || m.why === "claim") { if (bwN(m.b0, 0)) me.t = m.b0; if (bwN(m.pl1 || m.pl0, 0)) me.pl = m.pl1 || m.pl0; }
+    BW.me = me; BW.code = ACCT.code;
+    if (BW.wk && Number.isInteger(m.n)) BW.wk.n = m.n;
+  }
+  if (p) BW.pend = null;
+  BW.res = m; BW.bd = null;
+  bwSave(); bwRefresh();
+  if (mode === "result" && BW.shown && BW.shown.bw.tk.id === m.id) bwVerdictView(true);
+}
+
+/* ----- the results: the rank card's slot holds the time, the place, the verdict ----- */
+function bwCard() {   // made once, in the rank card's place
+  let c = $("rBw");
+  if (!c) {
+    c = document.createElement("div"); c.className = "card res-bw"; c.id = "rBw"; c.hidden = true;
+    c.innerHTML = '<div class="bw-body"><span class="bw-k" id="rBwK"></span><b class="bw-t" id="rBwT"></b><button class="bw-l" id="rBwL"></button></div><div class="delta" id="rBwD"><b id="rBwN"></b><small id="rBwS"></small></div>';
+    $("rPot").insertAdjacentElement("afterend", c);
+    $("rBwL").addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); if (typeof bdOpen === "function") bdOpen("w"); });
+  }
+  return c;
+}
+const bwBossName = (id) => bwBossSpec(id).name;
+function bwResults(R) {   // showResults (ui/screens.js), last
+  const B = R.bw, tk = B.tk, name = bwBossName(tk.boss);
+  BW.shown = R;
+  $("rMode").textContent = `Boss Week · ${name} · ${BOSS_LV[tk.lv]}`; $("rWho").textContent = "";
+  resTitle(B.won ? "Finished!" : B.cap ? "Out of time" : R.forfeit ? "Left the fight" : "He's still up");
+  if (B.cap) resLine($("rSub"), [{ b: name }, " held on for 4:00. A run has 4 minutes from GO."]);
+  else if (B.won) resLine($("rSub"), ["You and ", { b: match.cpu || "your partner" }, ` (${G.fighters[1].spec.name}) beat `, { b: name }, ` in ${bwClock(B.t, 2)}.`]);
+  // the tiles: hearts lost, the break, damage, the Road's chips (if this win gave some)
+  $("rKOs").textContent = B.fl; $("rKOsL").textContent = B.fl === 1 ? "Heart lost" : "Hearts lost";
+  $("rFalls").textContent = B.brk >= 0 ? bwClock(B.brk, 1) : "—"; $("rFallsL").textContent = "Broken at";
+  const road = B.road, chips = R.total > 0;
+  $("rStats").classList.toggle("nochips", !chips); $("rChipT").hidden = !chips;
+  if (chips) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => Sfx.uiCoin() }); else $("rChipN").textContent = "0";
+  $("rWhy").textContent = road && road.lines.length ? `The Road: ${road.lines.join(" · ")}` : "Boss Week pays on Monday: #1 300 · #2–3 150 · top 10 80 · a time 25 chips.";
+  $("rAgain").querySelector("span").textContent = "Retry"; $("rAgain").disabled = false; $("rAgainSub").textContent = "";
+  $("rChange").querySelector("span").textContent = "Board";
+  $("rRank").hidden = true; $("rPot").hidden = true;
+  const c = bwCard(); c.hidden = false;
+  bwCardView();
+  if (BW.res && BW.res.id === tk.id) bwVerdictView(false);
+}
+// the card before the verdict: the time and its sticker, the line under it
+function bwCardView() {
+  const R = BW.shown, B = R.bw, c = $("rBw"), D = $("rBwD"), L = $("rBwL"), mine = bwMine(), best = mine && mine.t ? mine.t : B.b0;
+  c.className = "card res-bw"; D.className = "delta"; D.style.animation = "";
+  $("rBwK").textContent = B.won ? "Your time" : "No time";
+  $("rBwT").textContent = B.won ? bwClock(B.t, 2) : "--:--.--";
+  const place = mine && mine.pl ? ` · #${mine.pl}` : "";
+  if (B.sent && bwChecking()) {   // a new best on its way: the gold dot until the server's copy says so
+    c.classList.add("wait"); D.classList.add("wait");
+    $("rBwN").textContent = B.b0 ? bwDiff(B.t - B.b0, 2) : "New"; $("rBwS").textContent = "Checking…";
+    L.className = "bw-l mute"; L.textContent = QM.conn ? "The server is playing your run again" : "Waiting for the server";
+  } else if (B.sent) {   // sent, the answer already in (bwVerdictView shows it)
+    $("rBwN").textContent = "…"; $("rBwS").textContent = "Checking…";
+  } else if (B.won) {   // a win, not faster than your best: nothing to check
+    D.classList.add("zero"); $("rBwN").textContent = bwDiff(B.t - best, 2); $("rBwS").textContent = `Best ${bwClock(best, 2)}`;
+    L.className = "bw-l"; L.textContent = `Your best stays ${bwClock(best, 2)}${place} · Board ›`;
+  } else {
+    D.classList.add("zero"); $("rBwN").textContent = best ? bwClock(best, 2) : "—"; $("rBwS").textContent = best ? "Your best" : "No time yet";
+    L.className = "bw-l mute";
+    L.textContent = !bwLive() && !mine ? "Boss Week counts with the server on" : best ? `Your best stays ${bwClock(best, 2)}${place} · Board ›` : `Finish ${bwBossName(B.tk.boss)} once and you're on the board`;
+  }
+}
+// the server's verdict on the results on screen
+function bwVerdictView(late) {
+  const v = BW.res, R = BW.shown;
+  if (!v || !R || R.bw.tk.id !== v.id || mode !== "result" || !R.bw.sent) return;
+  const c = $("rBw"), D = $("rBwD"), L = $("rBwL"), N = $("rBwN"), S = $("rBwS");
+  c.classList.remove("wait"); D.className = "delta";
+  if (late) { D.style.animation = "none"; void D.offsetWidth; D.style.animation = ""; }   // the sticker pops again (40-results.css)
+  if (v.ok && v.why === "best") {
+    const a = v.pl0 | 0, b = v.pl1 | 0, n = v.n | 0;
+    $("rBwT").textContent = bwClock(v.time, 2);
+    D.classList.add("up"); N.textContent = v.b0 ? bwDiff(v.time - v.b0, 2) : `#${b}`; S.textContent = "New best";
+    L.className = "bw-l up";
+    L.textContent = !a ? `#${b} of ${n} · Board ›` : b < a ? `#${a} → #${b} of ${n} ▲${a - b}` : `#${b} of ${n} · Board ›`;
+    return;
+  }
+  if (v.ok) {   // the server's copy is a win, not faster than your best after all
+    $("rBwT").textContent = bwClock(v.time, 2);
+    D.classList.add("zero"); N.textContent = bwDiff(v.time - v.b0, 2); S.textContent = `Best ${bwClock(v.b0, 2)}`;
+    L.className = "bw-l"; L.textContent = `Your best stays ${bwClock(v.b0, 2)}${v.pl1 ? ` · #${v.pl1}` : ""} · Board ›`;
+    return;
+  }
+  D.classList.add("down"); N.textContent = "✕"; S.textContent = "Not counted";
+  L.className = "bw-l down";
+  L.textContent = v.why === "void" ? "Not counted · the game was updated during this run"
+    : v.why === "week" ? "Not counted · the week ended during this run"
+    : v.why === "late" ? "Already counted"
+    : v.why === "claim" ? `Your best stays ${bwClock(v.b0, 2)}`
+    : "Not counted · the replay didn't match";
+}
+// Pause: leaving a try costs nothing
+function bwPauseText() { $("pQuit").querySelector("span").textContent = "Quit to menu"; $("pNote").textContent = "Leaving costs nothing. Only a finished run counts."; }
+
+/* ----- the board (the Boards sheet's Boss Week tab, ui/bwsheet.js): { k: "w", wk, no, boss, n, at, top: [{ id, nm, f, t, fl, cr, pl }], me: null | { i, row } | { i: 0 } } or null ----- */
+function bwBoard() {
+  const M = window.__blBwMock;
+  if (M) return Promise.resolve(M.board || null);
+  if (!qmOn() || !QM.conn) return Promise.resolve(null);
+  const c = BW.bd;
+  if (c && performance.now() - c.t < 3000) return Promise.resolve(c.d);
+  return new Promise((res) => {
+    BW.bdWait.push(res);
+    if (BW.bdWait.length > 1) return;
+    window.__blQuick.send({ t: "bd", k: "w" });
+    setTimeout(() => { if (BW.bdWait.length) bwBdDone(null); }, 5000);
+  });
+}
+function bwBdClean(m) {
+  if (!m || m.k !== "w" || !Array.isArray(m.top) || !Number.isInteger(m.wk)) return null;
+  const row = (x) => (x && typeof x === "object" && typeof x.id === "string" ? { id: x.id.slice(0, 10), nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm : "") || "Potato",
+    f: FIG[x.f] ? x.f : "", t: bwN(x.t, 0), fl: bwN(x.fl, 0), cr: bwN(x.cr, 0), pl: typeof x.pl === "string" && /^[a-z][a-z0-9_]{0,15}$/.test(x.pl) ? x.pl : "" } : null);
+  const d = { k: "w", wk: m.wk, no: bwN(m.no, 0), boss: BOSS_IDS.has(m.boss) ? m.boss : bwSpec().boss, n: bwN(m.n, 0), at: Number.isFinite(m.at) ? m.at : Date.now(),
+    top: m.top.slice(0, 100).map(row).filter((r) => r && r.t > 0), me: null };
+  if (m.me && typeof m.me === "object") d.me = m.me.row ? { i: bwN(m.me.i, 0), row: row(m.me.row) } : { i: 0 };
+  return d;
+}
+function bwBdDone(d) {
+  if (d) {
+    BW.bd = { t: performance.now(), d };
+    const me = bwMine();
+    if (me && d.me && d.wk === bwSpec().wk) { const pl = d.me.row ? d.me.i : 0; if (pl !== me.pl) { me.pl = pl; bwSave(); } }
+    if (BW.wk && d.wk === BW.wk.wk) BW.wk.n = d.n;
+  }
+  const w = BW.bdWait.splice(0);
+  for (const res of w) res(d || (BW.bd ? BW.bd.d : null));
+}
+
+/* ----- every frame (vcTick, ui/vscpu.js) ----- */
+function bwTick() {
+  if (!qmOn()) return;
+  if (BW.asking && Date.now() - BW.askT > 10000) bwFail("Couldn't reach the server. Try again.");
+  if (mode === "menu") bwAskMe(false);
+  // a won try sent with no answer: send it again (the server answers "late" if it already counted it)
+  const p = BW.pend;
+  if (p && p.sentT && Date.now() - p.sentT > 15000 && QM.authed) bwFlush();
+  // Monday: last week's result, once, over the menu (ui/bwsheet.js)
+  if (BW.lrNew && mode === "menu" && typeof bwWeekCard === "function" && screens.settings.hidden && (!screens.boards || screens.boards.hidden)) {
+    const lr = BW.lrNew; BW.lrNew = null; BW.lrSeen = lr.wk; bwSave();
+    bwWeekCard(lr);
+  }
+}
+/* ===================== Boss Week's sheet, start tile, Boards tab and Monday card (ui/bossweek.js holds the data) =====================
+   UI only, never in the simulation. Fable's design: /mnt/project-files/step6/fable-step6.md (start page A, sheet B / F, Boards tab D, week-end card).
+   - The start tile #bBw (bwTile, called by renderMenu and bwRefresh): the boss in a disc ringed in his colour, "Kraken Spud · Hard · 3d 4h left",
+     your best and place (or "No time yet · 23 have one" / "needs the server"); the tag is #6 (gold) when placed, NEW (ember) until this week's sheet is opened.
+   - The sheet #scrBw (bwSheetOpen / bwSheetClose / bwSheetRender): the boss card, your best + your fighter (the picker, with the partner this week) + FIGHT,
+     the top 3 and what Monday pays. Your fighter card opens the fighter select in mode "bw" (menus.js selBack / selGo come back here, as the Road's does).
+     The board comes from bwBoard() (bossweek.js) each time the sheet opens. FIGHT is bwFight(): a counted try, or Practice without the server.
+   - The Boards sheet's third tab "Boss Week" (ui/boards.js calls bwBdPrep, bwBdRow, bwBdKick, bwBdEmpty below).
+   - The Monday card #scrBwWk (bwWeekCard, called once by bwTick): last week's place and the chips it paid.
+   The bosses have no portrait files: bwArt() draws each boss with his own drawing once and keeps it as a data URL (the Road's skull on his colour if that fails).
+   Test hooks: window.__blBwMock (bossweek.js; this part also reads its `checking`) and window.__blBwSheet. Styles: css/97-bossweek.css. */
+screens.bw = $("scrBw"); screens.bwwk = $("scrBwWk");
+const BWS = { open: false, req: 0, board: undefined, resId: null, art: {} };   // board: undefined = on its way, null = none (no server, no answer), else bwBdPrep's
+// where each boss's drawing sits around his feet (world units: left, right, top, bottom of the pixels), so each picture is framed on him
+const BWS_BOX = { scratch: [-112, 72, -205, 7], zorp: [-82, 81, -123, 23], kraken: [-99, 100, -145, 1] };
+const bwsChecking = () => { const M = window.__blBwMock; return M && M.checking !== undefined ? !!M.checking : bwChecking(); };
+const bwsCol = (spec) => spec.palettes[0].ui || spec.palettes[0].body;
+
+/* ----- the boss as a picture ----- */
+function bwArt(id) {
+  if (BWS.art[id] !== undefined) return BWS.art[id];
+  let url = "";
+  try {
+    const spec = bwBossSpec(id), S = 280, B = BWS_BOX[id] || [-spec.stats.w, spec.stats.w, -spec.stats.h, 0];
+    const f = BL.newGame({ players: [{ spec, pal: spec.palettes[0] }, { spec: FIGHTERS[0], pal: FIGHTERS[0].palettes[0] }], countdown: 1, seed: 1 }).fighters[0];
+    f.x = 0; f.y = 0; f.facing = 1;
+    const cv = document.createElement("canvas"); cv.width = cv.height = S;
+    const c = cv.getContext("2d"), sc = Math.min((S * 0.94) / (B[1] - B[0]), (S * 0.94) / (B[3] - B[2]));
+    c.setTransform(sc, 0, 0, sc, S / 2 - ((B[0] + B[1]) / 2) * sc, S / 2 - ((B[2] + B[3]) / 2) * sc);
+    drawFighter(c, f, 0);
+    url = cv.toDataURL("image/png");
+  } catch (e) { url = ""; }
+  return (BWS.art[id] = url);
+}
+// a picture into an <img> (and the skull of the Road's boss picture shows only without one: .noart on the box)
+function bwsImg(img, src, box) {
+  if (img._s !== src) { img._s = src; if (src) img.src = src; else img.removeAttribute("src"); }
+  if (box) box.classList.toggle("noart", !src);
+}
+const bwsPart = (t) => `<span class="bw-p">${cupEsc(t)}</span>`;
+const bwsNb = (t) => t.replace(/ /g, " ");
+const bwsHave = (n) => `${n} ${n === 1 ? "has" : "have"}`;
+
+/* ----- the start tile ----- */
+function bwTile() {
+  const b = $("bBw"); if (!b) return;
+  const s = bwSpec(), m = bwMine(), sp = bwBossSpec(s.boss), live = bwLive(), has = !!(m && m.t > 0), n = s.n;
+  b.style.setProperty("--bc", bwsCol(sp));
+  const d = $("mBwD"); d.className = `mm-bwd rd-bossph rd-${s.boss}`; bwsImg($("mBwArt"), bwArt(s.boss), d);
+  $("mBw").innerHTML = [bwsPart(sp.name), `<span class="bw-p bw-lv">${cupEsc(BOSS_LV[s.lv])}</span>`, bwsPart(`${bwLeft(s.ends)} left`)].join(" · ");
+  const place = has && m.pl > 0 ? `#${m.pl}${n > 0 ? ` of ${n}` : ""}` : "";
+  const l2 = has ? [`Best ${bwClock(m.t, 2)}`].concat(place ? [place] : []) : !live ? ["needs the server"] : ["No time yet"].concat(n > 0 ? [`${bwsHave(n)} one`] : []);
+  $("mBwR").innerHTML = l2.map((t, i) => `<span class="bw-p${i < l2.length - 1 ? " bw-pb" : ""}${i ? " bw-pn" : ""}">${cupEsc(bwsNb(t))}</span>`).join(" ");
+  const tag = $("mBwTag"), fresh = bwNew();
+  tag.hidden = !(fresh || place);
+  if (!tag.hidden) { tag.textContent = fresh ? "New" : `#${m.pl}`; tag.className = `tag ${fresh ? "ember" : "gold"} mm-bwt`; }
+  b.setAttribute("aria-label", `Boss Week: ${sp.name}, ${BOSS_LV[s.lv]}, ${bwLeft(s.ends)} left. ${l2.join(", ")}${fresh ? ". New" : ""}`);
+}
+setInterval(() => { if (mode === "menu") bwTile(); }, 30000);   // the time left
+
+/* ----- the sheet ----- */
+function bwSheetOpen() {
+  BWS.open = true; BWS.board = undefined; BWS.resId = BW.res ? BW.res.id : null;
+  bwSeen();   // the NEW tag goes, and the server is asked for your record
+  bwTile();
+  bwSheetRender();
+  modal("bw", true);
+  bwsLoad();
+}
+function bwSheetClose() {
+  if (!BWS.open) return;
+  BWS.open = false; BWS.req++;
+  modal("bw", false);
+  if (mode === "menu") bwTile();
+}
+// the fighter card: the fighter select in mode "bw"; its Back and Use <fighter> come back here (menus.js)
+function bwSheetPick() { if (FIG[P.last]) sel.fighter = P.last; bwSheetClose(); openSelect("bw"); }
+function bwSheetBack() { goMenu(); bwSheetOpen(); }
+// FIGHT: the counted try, or Practice without the server (bwPractice plays the fighter of `sel`: the one shown here)
+function bwsFight() {
+  if (FIG[P.last]) sel.fighter = P.last;
+  if (!bwLive()) { bwSheetClose(); if (!screens.boards.hidden) bdClose(); }   // a Practice fight starts at once; a counted try waits for its ticket (bwTicket closes both)
+  bwFight();
+}
+function bwsLoad() {
+  const req = ++BWS.req;
+  bwBoard().then((d) => {
+    if (req !== BWS.req || !BWS.open) return;
+    BWS.board = bwBdPrep(d);
+    bwsRows();
+  });
+}
+function bwSheetRender() {
+  if (!BWS.open) return;
+  const s = bwSpec(), sp = bwBossSpec(s.boss), m = bwMine(), live = bwLive(), chk = bwsChecking(), has = !!(m && m.t > 0), name = sp.name, asking = !!BW.asking;
+  if (BW.res && BW.res.id !== BWS.resId) { BWS.resId = BW.res.id; bwsLoad(); }   // a verdict came in: the board may have moved
+  $("bwWeek").textContent = `Week ${s.no} · ends Mon 00:00 · `; $("bwLeft").textContent = bwLeft(s.ends);
+  // the boss
+  const bc = $("bwBoss"); bc.dataset.b = s.boss; bc.style.setProperty("--bc", bwsCol(sp));
+  bwsImg($("bwArt"), bwArt(s.boss), bc.querySelector(".bw-pic"));
+  $("bwBn").textContent = name; $("bwBn").classList.toggle("long", name.length > 7);
+  $("bwBs").textContent = `${sp.role} · ${mapName(bossMap(sp))}`;
+  $("bwSts").innerHTML = `<span class="bw-st hot">${cupEsc(BOSS_LV[s.lv])}</span><span class="bw-st">Road HP</span><span class="bw-st">${Math.floor(BW_CAP / 3600)}:00 cap</span>`;
+  // your best
+  const best = $("bwBest"), sub = $("bwSub"), tm = $("bwTime"), pend = BW.pend && BW.pend.fr > 0 ? BW.pend.fr : 0;
+  sub.textContent = "";
+  best.className = "card bw-best";
+  if (!live) {   // no server: nothing counts, the button practises him
+    best.classList.add("off");
+    $("bwBk").innerHTML = '<i class="dot r"></i>Offline';
+    tm.textContent = "Boss Week needs the server"; sub.textContent = "Practise him here. Only the server counts times.";
+  } else {
+    $("bwBk").textContent = "Your best";
+    tm.textContent = has ? bwClock(m.t, 2) : chk && pend ? bwClock(pend, 2) : "--:--.--";
+    best.classList.toggle("none", !has);
+    const n = s.n, place = has && m.pl > 0 ? `#${m.pl}${n > 0 ? ` of ${n}` : ""}` : "", hl = has ? `${m.fl} ♥ lost` : "";
+    if (chk) { sub.append(bdMk("i", "dot q"), "Checking…"); if (place) sub.append(` · ${place}`); }
+    else if (has) sub.textContent = [place, hl].filter(Boolean).join(" · ");
+    else sub.textContent = "Finish him once and you're on the board";
+  }
+  // your fighter (the picker) and the partner this week
+  const me = FIG[P.last] || FIGHTERS[0], mi = palIdx(me.id), pf = FIG[s.pf] || FIGHTERS[1];
+  dailyCard($("bwMe"), me.id, mi, mi ? me.palettes[mi].name : "You");
+  $("bwMe").insertAdjacentHTML("beforeend", '<span class="rd-chg" aria-hidden="true">⇄</span>');
+  $("bwMe").setAttribute("aria-label", `Change fighter. You play ${me.name}`);
+  const pp = $("bwPf"); pp.style.setProperty("--fc", col(pf.palettes[0]));
+  pp.innerHTML = `<span class="dly-ph">${PORTRAITS[pf.id] ? `<img src="${PORTRAITS[pf.id]}" alt="">` : ""}<i class="cpu">CPU</i></span><span class="dly-t"><b>${cupEsc(pf.name)}</b><small>partner<span class="bw-tw"> this week</span></small></span>`;
+  // FIGHT
+  const go = $("bwGo");
+  $("bwGoT").textContent = asking ? "Starting…" : `${live ? "Fight" : "Practice"} ${name}`;
+  $("bwGoS").textContent = asking ? "" : live ? "unlimited tries" : "not counted";
+  go.disabled = asking;
+  $("bwNote").textContent = BW.note || "";
+  bwsPay(m);
+  bwsRows();
+}
+// what Monday pays: the gold sticker is your tier (the top one before you have a place)
+function bwsPay(m) {
+  const mine = m && m.pl > 0 ? BW_PRIZE.findIndex(([to]) => m.pl <= to) : 0;
+  let from = 1;
+  $("bwPay").innerHTML = BW_PRIZE.map(([to, c], k) => {
+    const l = to === 1 ? "#1" : to < 10 ? `${from}–${to}` : to < 1e9 ? `Top ${to}` : "A time";
+    from = to + 1;
+    return `<span class="bw-st cg${k === mine ? " g" : ""}">${l} ${c}</span>`;
+  }).join("");
+}
+// the top 3 (a verdict or the board arriving redraws only this)
+function bwsRows() {
+  if (!BWS.open) return;
+  const box = $("bwRows"), b = BWS.board;
+  box.textContent = "";
+  box.classList.remove("ghost");
+  if (!b) {   // on its way, no server, no answer: ghost rows
+    box.classList.add("ghost");
+    for (let k = 0; k < 3; k++) { const r = bdMk("div", "bw-r sk"); r.append(bdMk("i", "bw-gp"), bdMk("i", "bw-ge"), bdMk("i", "bw-gn"), bdMk("i", "bw-gt")); box.appendChild(r); }
+    if (b === null) box.appendChild(bdMk("p", "bw-cap", bwLive() ? "The board didn't load." : "Offline"));
+    return;
+  }
+  if (!b.top.length) { box.append(bwBdEmptyEl(false)); return; }
+  const me = b.me && b.me.i > 0 ? b.me : null;
+  b.top.slice(0, 3).forEach((row, k) => box.appendChild(bwsRow(row, k + 1, { me: !!me && me.i === k + 1 })));
+  if (me && me.i > 3) {
+    if (me.i > 4) box.appendChild(bdMk("div", "bw-gap", "···"));
+    box.appendChild(bwsRow(me.row, me.i, { me: true, you: true }));
+  }
+}
+function bwsRow(row, i, o) {
+  const el = bdMk("div", "bw-r" + (i === 1 ? " first" : "") + (o.me ? " me" : "") + (o.you ? " you" : ""));
+  const p = bdMk("span", "bw-pl");
+  if (i <= 3) p.appendChild(bdMk("i", "bw-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
+  const nm = bdMk("span", "bw-nm");
+  if (o.me) nm.appendChild(bdMk("em", "", "You"));
+  nm.appendChild(bdMk("b", "", row.nm));
+  if (row.cr > 0) nm.appendChild(bwCrown(row.cr));
+  el.append(p, bwPortrait(row.f), nm, bdMk("b", "bw-tm", bwClock(row.t, 2)));
+  el.title = `${row.nm}${row.f ? `, ${FIG[row.f].name}` : ""}, ${row.fl} hearts lost`;
+  return el;
+}
+// a fighter's portrait in a small rounded square (the board's rows); a gap where the fighter is not known
+function bwPortrait(f) {
+  const e = bdMk("span", "bw-pp");
+  if (FIG[f]) { e.style.setProperty("--fc", col(FIG[f].palettes[0])); if (PORTRAITS[f]) { const i = document.createElement("img"); i.alt = ""; i.src = PORTRAITS[f]; e.appendChild(i); } }
+  return e;
+}
+const bwCrown = (n) => { const e = bdMk("span", "bw-crown", String(n)); e.title = `${n} Boss Week ${n === 1 ? "win" : "wins"}`; return e; };
+
+/* ----- the Boards sheet's tab (ui/boards.js): a board made safe to draw, the rows, the kicker, the empty state ----- */
+function bwBdPrep(d) {
+  if (!d || typeof d !== "object" || !Array.isArray(d.top)) return null;
+  const row = (x) => (x && typeof x === "object" && Number.isFinite(x.t) ? { id: bdStr(x.id, 12), nm: bdStr(x.nm, 24).trim() || "Potato", f: FIG[x.f] ? x.f : "", t: bdInt(x.t), fl: bdInt(x.fl), cr: bdInt(x.cr), pl: bdStr(x.pl, 24) } : null);
+  const top = d.top.slice(0, 100).map(row).filter((r) => r && r.t > 0);
+  let me = null;
+  if (d.me && typeof d.me === "object") { const i = bdInt(d.me.i), r = row(d.me.row); me = i > 0 && r ? { i, row: r } : { i: 0 }; }
+  return { k: "w", wk: bdInt(d.wk), no: bdInt(d.no), boss: BOSS_IDS.has(d.boss) ? d.boss : bwSpec().boss, n: Math.max(bdInt(d.n), top.length), at: bdInt(d.at), top, me };
+}
+// one row: place, portrait, name (+ crowns), fighter, hearts lost, time; o.me / o.sticky / o.of as bdRowEl's
+function bwBdRow(row, i, o) {
+  const el = bdMk("div", "bd-r bw-bdr" + (i === 1 ? " first" : "") + (o.me ? " me" : "") + (o.sticky ? " you" : ""));
+  const p = bdMk("span", "bd-p");
+  if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
+  const n = bdMk("span", "bd-n"), t = bdMk("span", "bd-t");
+  if (o.me || o.sticky) t.appendChild(bdMk("em", "bd-yt", "You"));
+  const nm = bdMk("b", "bd-nm", row.nm); plateSet(nm, row.pl); nm.title = row.nm;
+  t.appendChild(nm);
+  if (row.cr > 0) t.appendChild(bwCrown(row.cr));
+  n.appendChild(t);
+  const fig = row.f ? FIG[row.f].name : "", hl = `${row.fl} ♥ lost`;
+  const f1 = [fig, o.of].filter(Boolean).join(" · "), f2 = [fig, o.of ? "" : hl, o.of].filter(Boolean).join(" · ");   // wide: the hearts have their column; upright: they join this line
+  const f = bdMk("small", "bd-f");
+  if (f1) f.appendChild(bdMk("span", "bd-f1", f1));
+  f.appendChild(bdMk("span", "bd-f2", f2));
+  n.appendChild(f);
+  el.append(p, bwPortrait(row.f), n, bdMk("small", "bd-w", hl), bdMk("b", "bd-v", bwClock(row.t, 2)));
+  el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${bwClock(row.t, 2)}, ${row.fl} ${row.fl === 1 ? "heart" : "hearts"} lost`);
+  return el;
+}
+// "KRAKEN SPUD · HARD · 23 HAVE A TIME · ENDS 3D 4H" (st: the sheet's state)
+function bwBdKick(st, d) {
+  const s = bwSpec(), name = bwBossSpec(d && d.boss ? d.boss : s.boss).name;
+  return [name, BOSS_LV[s.lv]].concat(st === "load" ? ["Loading"] : st === "off" ? [] : [`${d.n} ${d.n === 1 ? "has a time" : "have a time"}`, `Ends ${bwLeft(s.ends)}`]).join(" · ");
+}
+// "Nobody has a time yet. Finish Zorp once and you're #1." with FIGHT ZORP (the sheet's top 3 gets the short one)
+function bwBdEmptyEl(full) {
+  const boss = bwBossSpec(bwSpec().boss).name, e = bdMk("div", "bw-empty");
+  e.append(bdMk("b", "bd-big", "Nobody has a time yet."), bdMk("p", "bd-sub", full ? `Finish ${boss} once and you're #1.` : "First to finish him is #1."));
+  return e;
+}
+function bwBdEmpty(box) {
+  const boss = bwBossSpec(bwSpec().boss).name;
+  box.append(bdPod(), bdMk("b", "bd-big", "Nobody has a time yet."), bdMk("p", "bd-sub", `Finish ${boss} once and you're #1.`));
+  const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", `Fight ${boss}`));
+  bdTap(b, () => { bdClose(); bwFight(); });
+  box.appendChild(b);
+}
+
+/* ----- the Monday card: last week's place and the chips it paid (bwTick passes lr: { wk, no, boss, pl, of, c }) ----- */
+function bwWeekCard(lr) {
+  const sp = bwBossSpec(lr.boss), nx = bwBossSpec(bwSpec().boss), champ = lr.pl === 1, d = $("bwwD");
+  d.className = `bw-wkd rd-bossph rd-${lr.boss}`; bwsImg($("bwwArt"), bwArt(lr.boss), d);
+  d.style.setProperty("--bc", bwsCol(sp));
+  $("bwwK").textContent = `${sp.name}${lr.no ? ` · week ${lr.no}` : ""}`;
+  $("bwwCrown").hidden = !champ;
+  $("bwwH").hidden = !champ; $("bwwH").textContent = "Champion";
+  $("bwwF").textContent = lr.pl > 0 ? `You finished #${lr.pl}${lr.of > 0 ? ` of ${lr.of}` : ""}` : "You were on the board";
+  $("bwwM").hidden = !(lr.c > 0); $("bwwC").textContent = `+${lr.c} chips`;
+  $("bwwGoT").textContent = `This week: ${nx.name} ›`;
+  $("bwwBody").classList.toggle("champ", champ);
+  modal("bwwk", true);
+}
+function bwWeekClose() { modal("bwwk", false); }
+
+/* ----- wiring ----- */
+tap("bBw", bwSheetOpen);
+tap("bwClose", bwSheetClose);
+tap("bwMe", bwSheetPick);
+tap("bwGo", bwsFight);
+tap("bwFull", () => bdOpen("w"));
+tap("bwwClose", bwWeekClose);
+tap("bwwOk", bwWeekClose);
+tap("bwwGo", () => { bwWeekClose(); bwSheetOpen(); });
+screens.bw.addEventListener("click", (e) => { if (e.target === screens.bw) bwSheetClose(); });
+screens.bwwk.addEventListener("click", (e) => { if (e.target === screens.bwwk) bwWeekClose(); });
+window.addEventListener("keydown", (e) => {
+  if (e.code !== "Escape") return;
+  if (!screens.bwwk.hidden) { e.preventDefault(); bwWeekClose(); } else if (BWS.open && screens.boards.hidden) { e.preventDefault(); bwSheetClose(); }
+});
+$("bHelp").addEventListener("click", () => modal("settings", false));   // How to play is Settings' first row: the sheet gives way to it
+window.__blBwSheet = { open: bwSheetOpen, close: bwSheetClose, render: bwSheetRender, tile: bwTile, card: bwWeekCard, art: bwArt };   // tests
 /* ----- the first minute: a 4-step tutorial (about 55 s), then the first fight with hints (Fable's first-minute pass, 2026-10-21) -----
    All UI: the tutorial and the first fight are offline, and like before the UI sets fields on G (percent, stocks, ulti bar, the players' spots) and
    scripts the CPU's input in step 3 (tutBot). Nothing here is read by the simulation otherwise. The welcome sheet and the turn-sideways screen are in welcome.js. */

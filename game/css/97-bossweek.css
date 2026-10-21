@@ -1,0 +1,291 @@
+/* ---------- Boss Week: the start tile, the sheet, the Boards tab, the Monday card ("sunset ink", Fable 5.1: step6/fable-step6.md frames A, B, D, F) ----------
+   Markup: shell.html (#bBw in #scrMenu, #bCup as a mini, #bHelp in #scrSettings, #scrBw, #scrBwWk); texts and rows: ui/bwsheet.js.
+   The run's own styles (clock pill, results card) are 97-bwrun.css. Sizes follow the #app classes view.js sets: desktop (default), .short (844x390 and
+   740x360), .tiny (667x320), .portrait / .narrow (upright). */
+
+/* ===== the start page ===== */
+/* the tile: the boss in a disc ringed in his colour (--bc, set by bwTile); the Road's boss picture classes (.rd-bossph .rd-<id>) give the disc its
+   colour, the boss's own drawing (bwArt) stands in it, and the Road's skull only shows when the drawing is missing (.noart) */
+#scrMenu .mm-bwd { position: relative; flex: none; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--ink); overflow: hidden;
+  box-shadow: 0 0 0 2px var(--bc, var(--ember)), 0 3px 0 var(--ink); }
+#scrMenu .mm-bwd img { position: absolute; left: 50%; top: 53%; width: 122%; height: 122%; max-width: none; transform: translate(-50%, -50%); object-fit: contain; }
+#scrMenu .mm-bwd i { display: none; }
+#scrMenu .mm-bwd.noart i { display: block; }
+#scrMenu .mm-bwd.noart img { display: none; }
+#scrMenu .bw-p { white-space: nowrap; }
+#scrMenu .mm-bwt { right: -4px; top: -13px; z-index: 3; pointer-events: none; }
+#scrMenu .mm-bwt[hidden] { display: none; }
+#app.short #scrMenu .mm-bw { gap: 7px; padding: 0 7px; }   /* the second line ("Best 1:42.18 · #6 of 23", "No time yet · 23 have one") keeps one line */
+#app.short #scrMenu .mm-bwd { width: 44px; height: 44px; }
+#app.short #scrMenu .mm-bw .mm-l2 { font-size: 11.5px; }
+#app.tiny #scrMenu .mm-bwd { width: 46px; height: 46px; }
+#app.portrait #scrMenu .mm-bwd { width: 44px; height: 44px; }
+#app.portrait #scrMenu .mm-bwt { right: -6px; }
+#app.tiny #scrMenu .mm-bwt { right: -12px; top: -14px; }   /* clear of the end of "BOSS WEEK" in the narrow tile */
+@container mm (max-width: 620px) { #app.tiny #scrMenu .mm-bwd { width: 40px; height: 40px; } }
+/* the second line is the point of the tile (your time, or that you have none), so it stays on the small phone where the Daily's is gone. Its parts
+   (Best 1:42.18 | #6 of 23) are separated by a dot after the first (.bw-pb). On the phone the line is always one line tall: a part that does not fit wraps
+   into the clipped second line (it takes its own dot along, .bw-pn) and the first part stays */
+#scrMenu .mm-bw .bw-pb::after { content: "\00a0\00b7"; }
+#app.short #scrMenu .mm-bw .mm-l2 { display: flex; flex-wrap: wrap; height: 1.2em; overflow: hidden; }
+#app.short #scrMenu .mm-bw .bw-pb::after { content: none; }
+#app.short #scrMenu .mm-bw .bw-pn { margin-left: 0.3em; }
+#app.short #scrMenu .mm-bw .bw-pn::before { content: "\00b7\00a0"; }
+#app.tiny #scrMenu .mm-bw .mm-l2 { display: flex; }
+/* Tournament: a mini where How to play was; its second line is the cup's state in #mCup (kept for ui/screens.js, hidden here) */
+#scrMenu #bCup #mCup { display: none; }
+/* How to play: the first row of Settings, a plate that opens the sheet */
+.set-help { appearance: none; cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px 10px 14px; text-align: left; color: var(--text);
+  border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s; }
+.set-help > span:first-child { flex: none; }
+.set-help .set-hl { flex: 1 1 auto; min-width: 0; text-align: right; font: 500 13px/1.2 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-help > i { flex: none; width: 8px; height: 8px; margin-right: 3px; border: solid var(--gold); border-width: 3px 3px 0 0; transform: rotate(45deg); }
+.set-help:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.set-help:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .set-help:hover { filter: brightness(1.08); } }
+#app.narrow .set-help .set-hl { display: none; }
+#app.narrow .set-help > i { margin-left: auto; }
+
+/* ===== the sheet ===== */
+.tag.ink { background: var(--ink); color: var(--sand); }
+.bw-sheet { --bw-row: 38px; --bw-tm: 46px; --bw-bn: 34px; display: flex; flex-direction: column; overflow: hidden; }
+#app #scrBw > .bw-sheet { width: min(900px, 100%); height: min(540px, 100%); }
+#app.short #scrBw > .bw-sheet { width: min(760px, 100%); height: min(350px, 100%); --bw-row: 36px; --bw-tm: 44px; }
+#app.tiny #scrBw { padding: 8px 10px; }
+#app.tiny #scrBw > .bw-sheet { width: min(647px, 100%); height: min(304px, 100%); --bw-row: 30px; --bw-tm: 34px; --bw-bn: 26px; }
+#app.portrait #scrBw { padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(14px, env(safe-area-inset-bottom, 0px)); }
+#app.portrait #scrBw > .bw-sheet { width: 100%; height: 100%; --bw-row: 42px; --bw-tm: 40px; }
+.bw-sheet .sh-head { flex: none; }
+.bw-hk b { font-weight: 700; color: var(--sand); }
+#app.tiny .bw-hk1, #app.narrow .bw-hk1 { display: none; }
+.bw-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: clamp(140px, 24%, 230px) minmax(0, 1fr) clamp(204px, 34%, 320px); grid-template-rows: minmax(0, 1fr); gap: 12px; padding: 12px; }
+#app.tiny .bw-body { gap: 10px; padding: 10px; grid-template-columns: 146px minmax(0, 1fr) 204px; }
+#app.portrait .bw-body { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overscroll-behavior: contain; }
+.bw-sheet .kick { white-space: nowrap; }
+.bw-sheet i.dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 2px rgba(134, 220, 174, 0.25); vertical-align: 1px; }
+.bw-sheet i.dot.q { background: var(--gold); box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.3); }
+.bw-sheet i.dot.r { background: var(--ketchup); box-shadow: 0 0 0 3px rgba(232, 69, 60, 0.3); }
+/* stickers (the boss's rules, what Monday pays) */
+.bw-sts { display: flex; flex-wrap: wrap; gap: 4px; }
+.bw-st { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 3px; border: 2px solid var(--ink); border-radius: 6px; background: var(--raise); color: var(--text); box-shadow: 0 2px 0 var(--ink);
+  font: 800 10.5px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.bw-st.hot { background: var(--ember); color: var(--ink); }
+.bw-st.g { background: var(--gold); color: var(--ink); }
+.bw-st.cg::before { content: ""; flex: none; width: 11px; height: 9px; border: 1.5px solid var(--ink); border-radius: 50% 50% 45% 55% / 60% 55% 45% 40%; background: var(--gold); box-shadow: inset 0 -2px 0 #d6912f; }
+
+/* the boss card: his picture, THIS WEEK, his name, "The Alien · The Kitchen" and his rules */
+.bw-boss { --bc: var(--ember); --b1: #7a2d24; --b2: #1a1424; display: flex; flex-direction: column; min-width: 0; min-height: 0; border-color: var(--ember);
+  background: radial-gradient(ellipse at 50% 38%, var(--b1), var(--b2) 74%); }
+.bw-boss[data-b="zorp"] { --b1: #2f5a3a; --b2: #131d2c; }
+.bw-boss[data-b="kraken"] { --b1: #5a3a78; --b2: #1a1230; }
+.bw-this { left: 8px; top: 10px; z-index: 3; pointer-events: none; }
+.bw-pic { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; border-radius: 10px 10px 0 0; }
+.bw-pic img { position: absolute; left: 50%; top: 10px; bottom: 0; height: calc(100% - 10px); width: 92%; max-width: none; transform: translateX(-50%); object-fit: contain; object-position: 50% 60%; }
+.bw-pic i { display: none; position: absolute; inset: 0; place-items: center; font-style: normal; font-size: 64px; color: #ffd84a; }
+.bw-pic.noart i { display: grid; }
+.bw-pic.noart img { display: none; }
+.bw-bt { flex: none; position: relative; z-index: 2; display: flex; flex-direction: column; gap: 5px; padding: 18px 10px 10px; margin-top: -26px; background: linear-gradient(rgba(14, 16, 34, 0), rgba(14, 16, 34, 0.92) 46%); border-radius: 0 0 10px 10px; }
+.bw-bn { display: block; font: italic 900 var(--bw-bn)/1 var(--display); text-transform: uppercase; color: #fff; white-space: nowrap; padding-right: 0.08em; }
+.bw-bn.long { font-size: calc(var(--bw-bn) * 0.78); }
+.bw-bs { font: 700 10px/1.2 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+.bw-boss .bw-sts { margin-top: 2px; }
+
+/* you: your best, your fighter and the partner, FIGHT */
+.bw-you { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+.bw-best { flex: 1 1 0; min-height: 0; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 5px; overflow: hidden; }
+.bw-time { display: block; font: italic 900 var(--bw-tm)/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0.06em; }
+.bw-best.none .bw-time { color: var(--mute); opacity: 0.85; }
+.bw-sub { font: 700 11px/1.25 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+.bw-best.off .bw-time { font-size: calc(var(--bw-tm) * 0.5); line-height: 1.05; color: var(--text); white-space: normal; text-wrap: balance; }
+.bw-best.off .bw-sub { letter-spacing: 0.02em; text-transform: none; font: 500 12.5px/1.3 var(--body); }
+.bw-fs { flex: none; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bw-plus { flex: none; font: 900 20px/1 var(--display); font-style: normal; color: var(--mute); }
+.bw-fs .dly-ph { width: 44px; height: 44px; }
+.bw-fs .dly-t b { font: 800 14px/1 var(--display); letter-spacing: 0.03em; }
+.bw-fs .dly-t small { font-size: 11px; }
+.bw-me { flex: 1 1 0; position: relative; padding: 4px 6px; gap: 8px; width: auto; }
+.bw-me .rd-chg { position: absolute; left: 36px; bottom: -3px; width: 22px; height: 22px; margin: 0; font-size: 13px; }
+#app.narrow .bw-me .rd-chg { margin: 0; }
+.bw-pf { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 2px 0 6px; --fc: var(--mute); }
+.bw-pf .dly-ph { position: relative; width: 34px; height: 34px; overflow: visible; background: var(--fc); }
+.bw-pf .dly-ph img { border-radius: 5px; }
+.bw-pf .cpu { position: absolute; right: -9px; bottom: -7px; z-index: 2; font: 800 8.5px/1 var(--display); font-style: normal; letter-spacing: 0.06em; padding: 3px 4px 2px; background: var(--ember); color: var(--ink);
+  border: 1.5px solid var(--ink); border-radius: 4px; transform: rotate(-8deg); box-shadow: 0 1.5px 0 var(--ink); }
+.bw-me .dly-t, .bw-pf .dly-t { gap: 2px; }
+.bw-go { flex: none; }
+.bw-go > span { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 8px; row-gap: 1px; }
+.bw-go b { font-weight: 800; }
+.bw-go small { margin: 0; font-weight: 600; }
+.bw-note { margin: 0; text-align: center; font: 600 12px/1.3 var(--body); color: #ff9a8f; }
+.bw-note:empty { display: none; }
+
+/* the top 3 and what Monday pays */
+.bw-top { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.bw-th { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 8px 6px; }
+.bw-full { appearance: none; cursor: pointer; border: 0; background: none; padding: 4px 0 4px 8px; font: 700 11px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+.bw-full:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; border-radius: 4px; }
+.bw-rows { flex: none; display: flex; flex-direction: column; }
+.bw-r { display: grid; grid-template-columns: 26px 28px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; height: var(--bw-row); padding: 0 8px 0 4px; border-bottom: 1px solid var(--line); }
+.bw-r.first { border-radius: 6px; border-bottom-color: transparent; box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+.bw-r.me { background: linear-gradient(90deg, rgba(244, 201, 93, 0.2), rgba(244, 201, 93, 0.05) 70%, transparent); box-shadow: inset 3px 0 0 var(--gold); border-radius: 6px; }
+.bw-r.me.first { box-shadow: inset 3px 0 0 var(--gold), inset 0 0 0 1px rgba(244, 201, 93, 0.45); }
+.bw-r.you { margin-top: 6px; border: 2px solid var(--gold); border-radius: 8px; background: linear-gradient(180deg, #3a3450, #262646); box-shadow: 0 3px 0 var(--ink); }
+.bw-pl { text-align: center; font: 800 14px/1 var(--display); color: var(--mute); }
+.bw-r.you .bw-pl { color: var(--gold); }
+.bw-d { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 var(--ink); font: 900 13px/1 var(--display); font-style: normal; color: var(--ink); }
+.bw-d.g { background: linear-gradient(180deg, #ffe08a, #e8a640); }
+.bw-d.s { background: linear-gradient(180deg, #e9edf7, #aab2cc); }
+.bw-d.b { background: linear-gradient(180deg, #e0a877, #b4733f); }
+.bw-pp { position: relative; flex: none; width: 28px; height: 28px; overflow: hidden; border: 2px solid var(--ink); border-radius: 9px; background: var(--fc, #444a6a); box-shadow: 0 2px 0 var(--ink); }
+.bw-pp img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.bw-nm { min-width: 0; display: flex; align-items: center; gap: 5px; font: 800 15px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
+.bw-nm b { min-width: 0; overflow: hidden; text-overflow: ellipsis; padding-top: 1px; font-weight: 800; }
+.bw-nm em { flex: none; font-style: normal; color: var(--gold); }
+.bw-tm { font: 800 16px/1 var(--display); color: var(--gold); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.bw-crown { flex: none; display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; font: 800 10px/1 var(--display); color: var(--gold); }
+.bw-crown::before { content: ""; width: 12px; height: 9px; background: var(--gold); clip-path: polygon(0 100%, 0 25%, 25% 55%, 50% 0, 75% 55%, 100% 25%, 100% 100%); }
+.bw-gap { text-align: center; color: var(--mute); font: 800 14px/10px var(--display); letter-spacing: 0.3em; padding-left: 0.3em; margin-top: 4px; }
+.bw-rows.ghost { opacity: 0.85; }
+.bw-r.sk { pointer-events: none; }
+.bw-r.sk > i { display: block; height: 12px; border-radius: 6px; background: rgba(206, 210, 255, 0.1); animation: bdPulse 1s ease-in-out infinite alternate; }
+.bw-gp { width: 14px; justify-self: center; }
+.bw-r.sk > .bw-ge { width: 28px; height: 28px; border-radius: 9px; }
+.bw-gn { width: 62%; }
+.bw-gt { width: 48px; }
+.bw-cap { margin: 8px 0 0; text-align: center; font: 600 12px/1.2 var(--body); color: var(--mute); }
+.bw-empty { display: flex; flex-direction: column; gap: 6px; padding: 14px 8px 4px; text-align: center; }
+.bw-empty .bd-big { display: block; font: italic 900 20px/1.05 var(--display); text-transform: uppercase; color: var(--text); }
+.bw-empty .bd-sub { margin: 0; font: 500 13px/1.3 var(--body); color: var(--mute); }
+.bw-pay { margin-top: auto; padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.bw-pay .kick { color: var(--mute); }
+
+/* ----- 740x360 and 844x390 (#app.short) ----- */
+#app.short .bw-body { grid-template-columns: 156px minmax(0, 1fr) clamp(224px, 34%, 300px); }   /* the top 3 gets the room: a name and a crown fit */
+#app.short .bw-r { grid-template-columns: 24px 26px minmax(0, 1fr) auto; column-gap: 6px; padding: 0 6px 0 3px; }
+#app.short .bw-pp { width: 26px; height: 26px; }
+#app.short .bw-d { width: 24px; height: 24px; font-size: 12px; }
+#app.short .bw-nm { font-size: 14px; }
+#app.short .bw-tm { font-size: 15px; }
+@media (max-width: 800px) { #app.short .bw-tw { display: none; } }   /* "partner", not "partner this week", at 740 wide */
+#app.short .bw-fs .dly-ph { width: 40px; height: 40px; }
+#app.short .bw-me .rd-chg { left: 32px; }
+#app.short .bw-pf .dly-ph { width: 32px; height: 32px; }
+#app.short .bw-bt { padding: 16px 8px 8px; gap: 4px; }
+/* ----- 667x320 (#app.tiny) ----- */
+#app.tiny .bw-fs .dly-ph { width: 34px; height: 34px; }
+#app.tiny .bw-me .rd-chg { left: 26px; width: 20px; height: 20px; font-size: 12px; }
+#app.tiny .bw-pf .dly-ph { width: 28px; height: 28px; }
+#app.tiny .bw-fs { gap: 3px; }
+#app.tiny .bw-plus { font-size: 16px; }
+#app.tiny .bw-me, #app.tiny .bw-pf { flex: 1 1 auto; }   /* each as wide as its fighter's name: ALCHEMIST and GUNSLINGER fit */
+#app.tiny .bw-me { gap: 5px; padding: 3px 4px; }
+#app.tiny .bw-pf { gap: 5px; padding-left: 1px; }
+#app.tiny .bw-pf .cpu { right: -3px; bottom: -8px; }   /* the CPU sticker stays off "partner" */
+#app.tiny .bw-tw { display: none; }
+#app.tiny .bw-crown { font-size: 0; gap: 0; }   /* the crown without its count: the name needs the room */
+#app.tiny .bw-fs .dly-t b { font-size: 13px; }
+#app.tiny .bw-best { padding: 6px 10px; gap: 3px; }
+#app.tiny .bw-sub { font-size: 10px; letter-spacing: 0.08em; }
+#app.tiny .bw-boss .bw-sts, #app.tiny .bw-pay .bw-sts { gap: 3px; }
+#app.tiny .bw-st { font-size: 9.5px; padding: 3px 5px 2px; }
+#app.tiny .bw-bt { padding: 14px 8px 8px; gap: 3px; margin-top: -20px; }
+#app.tiny .bw-bs { font-size: 9px; }
+#app.tiny .bw-th { padding-bottom: 4px; }
+#app.tiny .bw-r.you { margin-top: 4px; }
+#app.tiny .bw-pay { padding-top: 4px; gap: 3px; }
+#app.tiny .bw-pp { width: 24px; height: 24px; border-radius: 8px; }
+#app.tiny .bw-r { grid-template-columns: 24px 24px minmax(0, 1fr) auto; column-gap: 6px; }
+#app.tiny .bw-nm { font-size: 14px; }
+#app.tiny .bw-tm { font-size: 15px; }
+#app.tiny .bw-d { width: 24px; height: 24px; font-size: 12px; }
+/* ----- desktop ----- */
+#app:not(.short):not(.portrait) .bw-body { gap: 16px; padding: 16px; }
+#app:not(.short):not(.portrait) .bw-sheet .sh-head { height: 44px; padding-left: 20px; }
+#app:not(.short):not(.portrait) .bw-sheet .sh-head h3 { font-size: 26px; }
+#app:not(.short):not(.portrait) .bw-sheet .sh-head .round { width: 34px; height: 34px; }
+#app:not(.short):not(.portrait) .bw-sheet { --bw-bn: 40px; --bw-tm: 54px; }
+#app:not(.short):not(.portrait) .bw-bs { font-size: 11px; }
+#app:not(.short):not(.portrait) .bw-st { font-size: 11.5px; padding: 5px 7px 4px; }
+#app:not(.short):not(.portrait) .bw-sub { font-size: 12.5px; }
+#app:not(.short):not(.portrait) .bw-fs .dly-ph { width: 50px; height: 50px; }
+#app:not(.short):not(.portrait) .bw-me .rd-chg { left: 40px; }
+#app:not(.short):not(.portrait) .bw-pf .dly-ph { width: 38px; height: 38px; }
+#app:not(.short):not(.portrait) .bw-fs .dly-t b { font-size: 16px; }
+#app:not(.short):not(.portrait) .bw-fs .dly-t small { font-size: 12px; }
+#app:not(.short):not(.portrait) .bw-r { grid-template-columns: 30px 32px minmax(0, 1fr) auto; column-gap: 10px; }
+#app:not(.short):not(.portrait) .bw-pp { width: 32px; height: 32px; }
+#app:not(.short):not(.portrait) .bw-d { width: 30px; height: 30px; font-size: 15px; }
+#app:not(.short):not(.portrait) .bw-nm { font-size: 17px; }
+#app:not(.short):not(.portrait) .bw-tm { font-size: 19px; }
+#app:not(.short):not(.portrait) .bw-th .kick, #app:not(.short):not(.portrait) .bw-full { font-size: 12px; }
+#app:not(.short):not(.portrait) .bw-empty .bd-big { font-size: 24px; }
+#app:not(.short):not(.portrait) .bw-empty .bd-sub { font-size: 15px; }
+/* ----- upright: the boss card lies down (picture left, name and rules right), then your best, your fighter, FIGHT, the top 3 ----- */
+#app.portrait .bw-boss { flex: none; flex-direction: row; height: 150px; }
+#app.portrait .bw-pic { flex: 0 0 120px; border-radius: 10px 0 0 10px; }
+#app.portrait .bw-pic img { top: 18px; height: calc(100% - 26px); width: 100px; }
+#app.portrait .bw-bt { flex: 1 1 auto; min-width: 0; margin: 0; padding: 10px 12px 10px 4px; justify-content: center; background: none; }
+#app.portrait .bw-this { top: 8px; }
+#app.portrait .bw-you { flex: none; }
+#app.portrait .bw-best { flex: none; padding: 10px 12px; }
+#app.portrait .bw-top { flex: none; }
+#app.portrait .bw-pay { margin-top: 0; padding-top: 10px; }
+#app.portrait .bw-fs .dly-ph { width: 46px; height: 46px; }
+#app.portrait .bw-me .rd-chg { left: 38px; }
+#app.portrait .bw-pf .dly-ph { width: 36px; height: 36px; }
+#app.narrow .bw-me { flex-direction: row; text-align: left; }
+#app.narrow .bw-me .dly-t { text-align: left; }
+
+/* ===== the Boards sheet's Boss Week tab (rows are ui/bwsheet.js bwBdRow; the grid is 97-boards.css's) ===== */
+#scrBoards.bw-tab #bdMain, #scrBoards.bw-tab #bdYou { --bd-rc: 78px; }
+#app:not(.short):not(.portrait) #scrBoards.bw-tab #bdMain, #app:not(.short):not(.portrait) #scrBoards.bw-tab #bdYou { --bd-rc: 92px; }
+#scrBoards .bw-bdr .bw-pp { width: var(--bd-ec); height: var(--bd-ec); }
+#app.tiny #scrBoards .bw-bdr .bw-pp { border-radius: 8px; }
+#scrBoards .bw-bdr .bw-crown { align-self: center; }
+
+/* ===== the Monday card ===== */
+#scrBwWk { z-index: 6; }
+.bw-wk { width: min(540px, 100%); }
+.bw-wkb { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px 22px; padding: 18px 22px 20px; }
+#app.short .bw-wkb { padding: 14px 18px 16px; gap: 12px 18px; }
+#app.tiny .bw-wkb { padding: 10px 16px 12px; gap: 10px 16px; }
+.bw-wkp { position: relative; display: grid; place-items: center; padding-top: 18px; }
+.bw-wkd { --bc: var(--ember); position: relative; width: 112px; height: 112px; border-radius: 50%; border: 2px solid var(--ink); overflow: hidden; box-shadow: 0 0 0 3px var(--bc), 0 4px 0 var(--ink); }
+#app.short .bw-wkd { width: 96px; height: 96px; }
+#app.tiny .bw-wkd { width: 78px; height: 78px; }
+.bw-wkd img { position: absolute; left: 50%; top: 53%; width: 122%; height: 122%; max-width: none; transform: translate(-50%, -50%); object-fit: contain; }
+.bw-wkd i { display: none; font-style: normal; font-size: 44px; line-height: 1; color: #ffd84a; }
+.bw-wkd.noart i { display: block; }
+.bw-wkd.noart img { display: none; }
+.bw-wkc { position: absolute; left: 50%; top: 0; z-index: 2; width: 46px; height: 32px; margin-left: -23px; background: linear-gradient(180deg, #ffe08a, #e8a640); filter: drop-shadow(0 2px 0 var(--ink)) drop-shadow(0 0 0 var(--ink));
+  clip-path: polygon(0 100%, 0 22%, 24% 56%, 50% 0, 76% 56%, 100% 22%, 100% 100%); animation: bwCrown 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.15s backwards; }
+.bw-wkc[hidden] { display: none; }
+@keyframes bwCrown { from { transform: translateY(-14px) scale(0.4); opacity: 0; } }
+.bw-wkt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.bw-wkt .kick { white-space: nowrap; color: var(--mute); }
+.bw-wkh { font: italic 900 30px/1 var(--display); text-transform: uppercase; color: var(--gold); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); padding-right: 0.08em; }
+.bw-wkh[hidden] { display: none; }
+.bw-wkf { font: italic 900 26px/1.05 var(--display); text-transform: uppercase; color: var(--text); font-variant-numeric: tabular-nums; }
+.bw-wkm { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.bw-wkm[hidden] { display: none; }
+.bw-wkm .coin { height: 36px; font-size: 18px; }
+.bw-wkm small { font: 500 12.5px/1.2 var(--body); color: var(--mute); }
+.bw-wka { align-self: stretch; display: flex; gap: 10px; margin-top: 6px; padding: 0 4px; }
+.bw-wka .btn { flex: 0 0 auto; width: auto; min-width: 0; min-height: 46px; font-size: 18px; padding: 4px 14px; white-space: nowrap; }
+.bw-wka #bwwGo { flex: 1 1 auto; }   /* "This week: Kraken Spud ›" stays on one line; OK takes what it needs */
+.bw-wka #bwwOk { min-width: 84px; }
+#app.tiny .bw-wka { margin-top: 2px; }
+#app.tiny .bw-wka .btn { min-height: 40px; font-size: 16px; }
+#app.tiny .bw-wkh { font-size: 24px; }
+#app.tiny .bw-wkf { font-size: 21px; }
+#app.narrow .bw-wkb { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+#app.narrow .bw-wkt { align-items: center; }
+#app.narrow .bw-wka { flex-direction: column; align-items: stretch; }   /* two full-width buttons: the long one does not fit beside OK on a phone held upright */
+#app.narrow .bw-wka .btn { flex: 0 0 auto; font-size: 17px; }
+#app.narrow .bw-wkm { justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .set-help, #scrMenu .mm-bw { transition: none; }
+  .bw-r.sk > i, .bw-wkc { animation: none; }
+}

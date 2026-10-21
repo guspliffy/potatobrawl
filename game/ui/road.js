@@ -488,6 +488,7 @@ function roadBossFight(k, lv) {
 }
 // handleEvent (effects.js) passes the live match's events: the start, the end, the KOs (a finisher special, an ulti)
 function roadEvent(g, e) {
+  bwEvent(g, e);   // ui/bossweek.js: a Boss Week try's GO and final launch
   const rd = match && match.road;
   if (!rd || rd.boss) return;
   if (e.type === "go") rd.go = g.t;

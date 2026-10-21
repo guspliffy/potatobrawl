@@ -6,7 +6,7 @@
 # browser steps at once, which play in real time, and the simulations next to them at low priority, so they only take the CPU the
 # browsers leave over. More browsers at once don't finish sooner on 4 cores, they only starve each other. The lines keep the order below.
 #   CHECK_JOBS=1 ./check.sh     one browser step at a time (a slow or busy machine)
-#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+11 (default 8091), e.g. for a second checkout
+#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+12 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 # macOS: bash 3.2 works (it polls instead of `wait -n`), and without `timeout` the steps run with no time limit unless coreutils' gtimeout is installed.
@@ -210,6 +210,24 @@ if grep -q "^cpurank ok" "$LOGS/cpu.log"; then pass "Ranked vs CPU server + boar
 else fail "Ranked vs CPU server + boards" "$LOGS/cpu.log"; fi
 }
 
+# 5d3. Boss Week on the server (bossweek.js): the Berlin week and the boss rotation, the Road's numbers, tickets, the replay of a won
+#      try from the logged inputs (a new best, a time that doesn't beat yours, a log that isn't a win, a used ticket), the board, a phone's
+#      save keeping the record, the week paid once on Monday (also after a restart) and its week file. Node only.
+s_bw() {
+BW_PORT=$((PB + 1)) timeout 300 node tests/bossweek.js > "$LOGS/bw.log" 2>&1
+if grep -q "^bossweek ok" "$LOGS/bw.log"; then pass "Boss Week server ($(grep -c '^PASS' "$LOGS/bw.log") checks)"
+else fail "Boss Week server" "$LOGS/bw.log"; fi
+}
+
+# 5d4. Boss Week in the browser against a real server (the boss with a tenth of his HP): FIGHT makes the account, the ticket, the clock
+#      pill, a win the server plays again (CHECKING… then NEW BEST, the same time frame for frame), Board, leaving costs nothing, a slower
+#      win isn't sent, the 4:00 cap, Monday's payout card and the chips by sync. Shots in build/shots/bw.
+s_bwui() {
+(cd "$SHOTS" && PWBW_PORT=$((PB + 12)) timeout 900 python3 "$ROOT/tests/pwbw.py" bw) > "$LOGS/bw-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/bw-ui.log" && grep -q "^bw ok" "$LOGS/bw-ui.log"; then pass "Boss Week in the browser (a try checked by the server, cap, Monday payout; shots in build/shots/bw)"
+else fail "Boss Week in the browser" "$LOGS/bw-ui.log"; fi
+}
+
 # 5e. Quick match in the browser: three players through a real server: the Season sheet, Find match, the CPU warm-up while
 #     searching, PLAYER FOUND!, the VS screen, a Ranked match decided by the server, no Ranked rematch (Casual after 20 s), a Casual
 #     leave, a Ranked forfeit, the menu's online rank. Shots in build/shots/quick.
@@ -224,7 +242,7 @@ else fail "Quick match in the browser" "$LOGS/quick-ui.log"; fi
 #     accounts and on both phones after the sync, the challenge card on the results and on the menu, a Play friends game refereed,
 #     Settings > Chip stakes Off. Shots in build/shots/stakes.
 s_stakesui() {
-(cd "$SHOTS" && PWSTAKES_PORT=$((PB + 11)) timeout 900 python3 "$ROOT/tests/pwstakes.py" stakes) > "$LOGS/stakes-ui.log" 2>&1
+(cd "$SHOTS" && PWSTAKES_PORT=$((PB + 11)) timeout 1200 python3 "$ROOT/tests/pwstakes.py" stakes) > "$LOGS/stakes-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/stakes-ui.log"; then pass "chip stakes in the browser (FOR CHIPS, stake sheet, challenge card, pot card, chips synced, Play friends; shots in build/shots/stakes)"
 else fail "chip stakes in the browser" "$LOGS/stakes-ui.log"; fi
 }
@@ -275,6 +293,15 @@ s_ultui() {
 (cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwult.py" ult) > "$LOGS/ult-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/ult-ui.log"; then pass "ulti bar + ULTI button (tap, U key, gamepad Y; shots in build/shots/ult)"
 else fail "ulti bar + ULTI button" "$LOGS/ult-ui.log"; fi
+}
+
+# 6d2. Boss Week's menu parts (UI only): the start-page tile (with and without a time, NEW / PAID tag), the Boss Week sheet (boss card, your best,
+#      fighter picker and the select round trip, FIGHT / PRACTICE, no time / checking / empty board / offline) and its Boards tab, the Monday
+#      card, at five sizes: nothing cut, overlapping or off the screen. Shots in build/shots/bwsheet.
+s_bwsheet() {
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwbwsheet.py" bwsheet) > "$LOGS/bwsheet.log" 2>&1
+if grep -q "^no errors" "$LOGS/bwsheet.log" && grep -q "^bwsheet ok" "$LOGS/bwsheet.log"; then pass "Boss Week menu (tile, sheet, Boards tab, Monday card at five sizes; shots in build/shots/bwsheet)"
+else fail "Boss Week menu" "$LOGS/bwsheet.log"; fi
 }
 
 # 6e. The first minute: the turn-sideways screen, the welcome sheet, the 4-step tutorial (Move & jump, Land 3 hits, Dodge then recover,
@@ -400,13 +427,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu quickui stakesui screens skins shop acctui hud ultui tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw bwui quickui stakesui screens skins shop acctui hud ultui bwsheet tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
-# priority next to the rest; the server tests (quick, cpu, acct, stats) have short timers, so they run alone first (about 20 seconds).
+# priority next to the rest; the server tests (quick, cpu, bw, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
-SOLO=(quick cpu acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tut skins bossui ultui onboss comboui cup statsui online statspage finisher fsui)
+SOLO=(quick cpu bw acct stats)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui tut skins bossui ultui bwsheet onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

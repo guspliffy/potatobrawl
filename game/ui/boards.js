@@ -1,10 +1,10 @@
 /* ===================== The Boards: the CPU board and the online board (ui/vscpu.js fetches them, cpurank.js keeps them) =====================
    UI only, never in the simulation. Fable's design: quick-match/vs-cpu/fable-vs-cpu.md section 2, styles in css/97-boards.css.
-   - The Boards sheet (#scrBoards): ink band BOARDS, a tab row (VS CPU, ONLINE; BD_TABS is the list, more can follow), one kicker (the rank,
+   - The Boards sheet (#scrBoards): ink band BOARDS, a tab row (VS CPU, ONLINE, BOSS WEEK; BD_TABS is the list, more can follow), one kicker (the rank,
      the season, the players, how old the list is), up to 100 rows (place, tier emblem, name on its nameplate, fighter, record, rating) and
      YOUR row as a sticky bar under the list: your place, a dotted gap and `#143 of 187` when you are below the top 100, `PLACING 2 OF 5` while
      you place, a line telling what gets you a place when you have no account. Opens over the menu, Quick match, the results and the Account
-     sheet (z-index 6): bdOpen(k) with k "c" (VS CPU) or "o" (ONLINE), default the last tab used (localStorage potatobrawl.boards.v1).
+     sheet (z-index 6): bdOpen(k) with k "c" (VS CPU), "o" (ONLINE) or "w" (BOSS WEEK: bwBoard(), times not ratings, ui/bwsheet.js), default the last tab used (localStorage potatobrawl.boards.v1).
    - The data comes from vcBoard(k) (ui/vscpu.js): a Promise of null (no server: the offline state) or { k, n, at, top: [{ id, nm, f, r, w, l, pl }],
      me: null | { i, row } | { i: 0, pn } }. It is fetched every time the sheet opens, the tab changes or the active tab is tapped again.
    - bdPreview() fills the CPU BOARD card on the Quick match screen (#qmBoard, shown by the VS CPU mode); bdPlates(box) draws the ONLINE RANK and
@@ -18,6 +18,7 @@ const BD_SEASON = "Season 1";
 const BD_TABS = [
   { k: "c", name: "VS CPU", kick: "CPU rank", gone: "Nobody on the board yet.", hint: `${BD_PLACING} Ranked CPU matches get you on.`, fight: true, none: "Play a Ranked CPU match to get a place" },
   { k: "o", name: "Online", kick: "Online rank", gone: "Nobody has placed yet.", hint: `${BD_PLACING} Ranked matches get you on.`, fight: false, none: "Play a Ranked match to get a place" },
+  { k: "w", name: "Boss Week", kick: "Boss Week", gone: "", hint: "", fight: false, none: "Finish the boss once to get a place" },   // ui/bwsheet.js draws its rows, kicker and empty state
 ];
 const BD = { k: "c", req: 0, st: "idle", data: null, got: 0, tm: 0, lt: 0 };   // st: idle | load | ok | empty | off
 const BDP = { at: 0, data: undefined, p: null };   // the preview's cache: undefined = nothing yet, null = offline
@@ -39,6 +40,7 @@ function bdRow(o) {
   return { id: bdStr(o.id, 12), nm: bdStr(o.nm, 24).trim() || "Player", f: FIG[o.f] ? o.f : "", r: bdInt(o.r, 1000), w: bdInt(o.w), l: bdInt(o.l), pl: bdStr(o.pl, 24) };
 }
 function bdClean(d, k) {
+  if (k === "w") return bwBdPrep(d);   // ui/bwsheet.js: times, hearts lost and crowns instead of ratings
   if (!d || typeof d !== "object") return null;
   const top = (Array.isArray(d.top) ? d.top : []).slice(0, 100).map(bdRow).filter(Boolean);
   let me = null;
@@ -53,7 +55,7 @@ function bdClean(d, k) {
 function bdFetch(k) {
   return new Promise((done) => {
     let p, over = setTimeout(() => done(null), 10000);
-    try { p = typeof vcBoard === "function" ? vcBoard(k) : null; } catch (e) { p = null; }
+    try { p = k === "w" ? bwBoard() : typeof vcBoard === "function" ? vcBoard(k) : null; } catch (e) { p = null; }
     Promise.resolve(p).then((d) => d, () => null).then((d) => { clearTimeout(over); done(bdClean(d, k)); });
   });
 }
@@ -63,6 +65,7 @@ const bdPlaceN = (n) => `${n} ${n === 1 ? "match" : "matches"}`;
    o.me: this is your row in the list; o.sticky: it is the bar under the list; o.of: "#143 of 187" for a bar below the top 100 */
 function bdRowEl(row, i, o) {
   o = o || {};
+  if (BD.k === "w") return bwBdRow(row, i, o);   // ui/bwsheet.js
   const el = bdMk("div", "bd-r" + (i === 1 ? " first" : "") + (o.me ? " me" : "") + (o.sticky ? " you" : ""));
   const p = bdMk("span", "bd-p");
   if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
@@ -134,6 +137,7 @@ function bdAge() { const e = $("bdKick").querySelector(".bd-up"); if (e && BD.st
 function bdKickDraw() {
   const k = $("bdKick"), t = bdCur(), d = BD.data;
   k.textContent = "";
+  if (t.k === "w") { k.appendChild(document.createTextNode(bwBdKick(BD.st, d))); if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`)); return; }
   const tail = BD.st === "load" ? ["Loading"] : BD.st === "off" ? [] : [`${d.n} ${d.n === 1 ? "player" : "players"}`];
   k.appendChild(document.createTextNode([t.kick, BD_SEASON].concat(tail).join(" · ")));
   if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`));
@@ -149,6 +153,7 @@ function bdStateDraw() {
     const b = bdMk("button", "mini bd-again", "Try again"); b.type = "button"; bdTap(b, bdLoad); box.appendChild(b);
   } else {
     box.className = "bd-state";
+    if (t.k === "w") { bwBdEmpty(box); return; }   // ui/bwsheet.js: Nobody has a time yet + FIGHT <boss>
     box.append(bdPod(), bdMk("b", "bd-big", t.gone), bdMk("p", "bd-sub", t.hint));
     if (t.fight) { const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", "Fight a CPU")); bdTap(b, bdFight); box.appendChild(b); }
   }
@@ -167,8 +172,13 @@ function bdGhosts() {
 function bdYouDraw(d) {
   const box = $("bdYou"), gap = $("bdGap"), t = bdCur(), m = d && d.me;
   box.textContent = ""; gap.hidden = true;
-  if (!d || (BD.st === "empty" && !m)) { box.hidden = true; return; }
+  if (!d || (BD.st === "empty" && (!m || t.k === "w"))) { box.hidden = true; return; }
   box.hidden = false;
+  if (t.k === "w" && m && !m.i) {   // an account with no time yet
+    const e = bdMk("div", "bd-r you none");
+    e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", `No time yet. Finish ${bwBossSpec(bwSpec().boss).name} once to get a place`));
+    box.appendChild(e); return;
+  }
   if (!m) {   // no account yet
     const e = bdMk("div", "bd-r you none");
     e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", t.none));
@@ -199,6 +209,8 @@ function bdToMe() {   // scroll the list to your row and flash it
 function bdDraw() {
   const d = BD.data, list = $("bdList"), st = BD.st;
   bdKickDraw();
+  screens.boards.classList.toggle("bw-tab", BD.k === "w");   // css/97-bossweek.css: the time column is wider
+  $("bdHd").querySelector(".bd-hr").textContent = BD.k === "w" ? "Time" : "Rating";
   $("bdHd").hidden = !(st === "ok" || st === "load");
   list.hidden = !(st === "ok" || st === "load");
   $("bdState").hidden = !(st === "off" || st === "empty");

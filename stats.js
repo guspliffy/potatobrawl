@@ -7,10 +7,12 @@
  * answers 404 like any other unknown page (the game then stops sending for the visit).
  *
  *   POST /api/stats/hit   {e: ["key", ...]}   -> 204          the game adds 1 to each key (sendBeacon posts it as text/plain)
- *   POST /api/stats/data  {key, from?}        -> {today, tz, online, days: {"YYYY-MM-DD": {key: n}}, board?}   or 404 after a pause
+ *   POST /api/stats/data  {key, from?}        -> {today, tz, online, days: {"YYYY-MM-DD": {key: n}}, board?, bw?, acct?}   or 404 after a pause
  *                                                (board: [{id, nm, nb, c, o}], the names on both boards and their places, cpurank.js;
+ *                                                 bw: [{id, nm, t, f, pl}], this week's Boss Week runs, bossweek.js;
  *                                                acct: {files, maxFiles, bytes, maxBytes, warn}, how full the accounts folder is, accounts.js)
  *   POST /api/stats/blank {key, id, on}       -> {board}       a name on the Ranked vs CPU boards shown as "Potato" (on false: back)
+ *   POST /api/stats/bwrm  {key, id}           -> {bw}          a Boss Week run taken off this week's board (the player's id, as in bw)
  *   GET  /stats                               -> the stats page (public/stats.html); it reads the key after the # of its link
  *
  * Nothing about a player is stored: no ID, no IP address, no cookie. A day file holds only totals ({key: count}), one file per
@@ -88,7 +90,7 @@ function clientIp(req) {
   return peer;
 }
 
-// dir: STATS_DIR. o.online: () => players connected now (server.js); o.board: () => cpurank.js or null (the board names); o.accounts: () => accounts.js or null;
+// dir: STATS_DIR. o.online: () => players connected now (server.js); o.board: () => cpurank.js or null (the board names); o.bw: () => bossweek.js or null; o.accounts: () => accounts.js or null;
 // o.page: the stats page file. Returns null while off.
 function init(dir, opts) {
   if (!dir) return null;
@@ -214,6 +216,7 @@ function init(dir, opts) {
       if (cur.n) days[t] = Object.assign({}, cur.c);
       const out = { today: t, tz: o.tz, online: typeof o.online === "function" ? o.online() | 0 : 0, days };
       if (o.board && o.board()) out.board = o.board().names();   // the names on the Ranked vs CPU boards (cpurank.js)
+      if (o.bw && o.bw()) out.bw = o.bw().runs();   // this week's Boss Week runs (bossweek.js)
       if (o.accounts && o.accounts()) out.acct = o.accounts().fill();   // how full the accounts folder is (accounts.js); the page warns past 80%
       send(res, 200, out);
     });
@@ -231,6 +234,19 @@ function init(dir, opts) {
     });
   }
 
+  // a Boss Week run off this week's board (the player keeps playing; their next best counts again); the page key is needed as for data
+  function bwrm(req, res) {
+    if (!take(clientIp(req), "data", o.dataPerMin)) return send(res, 429, { error: "slow" }, { "retry-after": "60" });
+    readBody(req, res, (m) => {
+      const k = m && typeof m.key === "string" ? crypto.createHash("sha256").update(m.key.trim()).digest() : null;
+      if (!k || !crypto.timingSafeEqual(k, keyHash)) return setTimeout(() => send(res, 404, { error: "unknown" }), o.badKeyDelayMs);
+      const b = o.bw && o.bw();
+      if (!b || typeof m.id !== "string" || !/^[0-9A-Z]{10}$/.test(m.id)) return send(res, 400, { error: "bad" });
+      if (!b.remove(m.id)) return send(res, 404, { error: "gone" });
+      send(res, 200, { bw: b.runs() });
+    });
+  }
+
   // true when the request was ours; never throws
   function handle(req, res, url) {
     if (url !== "/stats" && url.slice(0, 11) !== "/api/stats/") return false;
@@ -245,10 +261,10 @@ function init(dir, opts) {
         return true;
       }
       const sub = url.slice(11);
-      if (sub !== "hit" && sub !== "data" && sub !== "blank") { send(res, 404, "Not found"); return true; }
+      if (sub !== "hit" && sub !== "data" && sub !== "blank" && sub !== "bwrm") { send(res, 404, "Not found"); return true; }
       if (req.method !== "POST") { send(res, 405, { error: "post" }, { allow: "POST" }); return true; }
       if (!jsonish(req)) { send(res, 415, { error: "json" }); return true; }
-      if (sub === "hit") hit(req, res); else if (sub === "blank") blank(req, res); else data(req, res);
+      if (sub === "hit") hit(req, res); else if (sub === "blank") blank(req, res); else if (sub === "bwrm") bwrm(req, res); else data(req, res);
     } catch (e) { console.warn("stats:", e && e.message); send(res, 500, { error: "server" }); }
     return true;
   }

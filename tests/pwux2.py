@@ -18,7 +18,7 @@ async def shoot(b, tag, vp, mob, errs):
     await pg.screenshot(path=f'{OUT}/{tag}_1_menu.png')
     await clk('#bSettings'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_1b_settings.png'); await clk('#setClose'); await pg.wait_for_timeout(200)
     await clk('#mRank'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_1c_account.png'); await clk('#acClose'); await pg.wait_for_timeout(200)
-    await clk('#bHelp'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_2_help.png'); await clk('#hClose'); await pg.wait_for_timeout(200)
+    await clk('#bSettings'); await pg.wait_for_timeout(250); await clk('#bHelp'); await pg.wait_for_timeout(300); await pg.screenshot(path=f'{OUT}/{tag}_2_help.png'); await clk('#hClose'); await pg.wait_for_timeout(200)
     await clk('#bRanked'); await pg.wait_for_timeout(700); await pg.screenshot(path=f'{OUT}/{tag}_3_select.png')
     await pg.evaluate("document.querySelectorAll('#tiles .tile')[5].click()"); await pg.wait_for_timeout(200)
     await clk('#dSkins'); await pg.wait_for_timeout(500)   # the Skins bar opens the Skin Rack

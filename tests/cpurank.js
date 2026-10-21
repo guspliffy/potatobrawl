@@ -232,6 +232,8 @@ const backdate = (dir, code) => edit(dir, code, (rec) => { rec.cpu.tk.t -= 10 * 
     const sd = await call("POST", "/api/stats/data", { key });
     const nB = sd.json && Array.isArray(sd.json.board) && sd.json.board.find((x) => x.id === idB);
     check(sd.json.board.length === 3 && nB && nB.nm === "Bea" && nB.c === 2 && nB.o === 1 && !nB.nb, "stats page: the names on the boards with their places");
+    const rmBad = await call("POST", "/api/stats/bwrm", { key: "0".repeat(32), id: idB }), rmGone = await call("POST", "/api/stats/bwrm", { key, id: idB });
+    check(!sd.json.bw || (Array.isArray(sd.json.bw) && rmBad.status === 404 && rmGone.status === 404), "stats page: Boss Week runs (when on); taking one off needs the key and a run on the board");
     const bad = await call("POST", "/api/stats/blank", { key: "0".repeat(32), id: idB });
     const hid = await call("POST", "/api/stats/blank", { key, id: idB, on: true });
     await sleep(100);

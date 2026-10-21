@@ -53,7 +53,7 @@ async def start(b, tag, vp, up, errs, level='Dummy', reduced=False, tut=False, m
     pg.on('console', lambda m: errs.append(f'{tag} console: {m.text}') if m.type == 'error' else None)
     await pg.goto(TEST_URL); await pg.evaluate("window.__blastline.r3.lockQ = true"); await pg.wait_for_timeout(900)
     if tut:
-        await pg.tap('#bHelp'); await pg.wait_for_timeout(200); await pg.tap('#hTry')
+        await pg.tap('#bSettings'); await pg.wait_for_timeout(250); await pg.tap('#bHelp'); await pg.wait_for_timeout(200); await pg.tap('#hTry')
     else:
         await pg.tap('#bPractice'); await pg.wait_for_timeout(500)
         await pg.tap('#lvlPick'); await pg.wait_for_timeout(200)

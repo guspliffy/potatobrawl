@@ -63,6 +63,7 @@ function bossHud() {
   }
   const quote = G.phase === "countdown";   // his line while the countdown runs
   if (BB.quote !== quote) { BB.quote = quote; el.classList.toggle("talk", quote); }
+  bwHud();   // ui/bossweek.js: a Boss Week try's clock under the bar
 }
 
 /* ----- the end of a boss fight: the results (the Road adds its stars in road.js) ----- */
@@ -72,6 +73,7 @@ function bossMatchEnd(forfeit) {
   const R = { res, forfeit, ranked: false, me, op: b, lines: [], total: 0,
     boss: { lv: G.lv, mate, hp: b.hpMax ? b.hp / b.hpMax : 0, secs: Math.round(G.t / 60), name: b.spec.name } };
   if (match.road) roadBossEnd(R);   // ui/road.js: the level's star, the first win's title and chips
+  if (match.bw) bwEnd(R);   // ui/bossweek.js: a Boss Week try's time to the server
   showResults(R);
 }
 function bossVs() {

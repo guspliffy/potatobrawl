@@ -60,7 +60,7 @@ with sync_playwright() as p:
     for fid, rid in SHOW:
         if fid != cur:
             if cur: pg.click("#tutSkip"); step(pg, FRAME)
-            pg.click("#bHelp"); step(pg, FRAME)
+            pg.click("#bSettings"); step(pg, FRAME); pg.click("#bHelp"); step(pg, FRAME)
             pg.click(f'#helpCombos .rc-figs .chip[data-f="{fid}"]'); step(pg, FRAME)
             pg.click("#hTrial")
             pg.evaluate(DRIVER)

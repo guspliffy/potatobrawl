@@ -58,6 +58,7 @@ function vcBoot() {   // qmBoot (ui/quick.js), once
   if (!qmOn()) return;
   window.__blQuick.on(vcMsg);
   window.__blVc = VC;   // tests read it
+  bwBoot();   // ui/bossweek.js: Boss Week's messages
 }
 function vcMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -167,7 +168,7 @@ function vcStart(tk) {
 // simTick (loop.js): your input this frame, in the online encoding (what the server will replay), logged until the match ends
 function vcIn(pi) {
   const m = match;
-  if (!m || !m.vc || !G || G.phase === "end" || G.phase === "over") return pi;
+  if (!m || !(m.vc || m.bw) || !G || G.phase === "end" || G.phase === "over") return pi;   // m.bw: a Boss Week try (ui/bossweek.js)
   const v = encIn(pi);   // ui/online.js
   m.log.push(v);
   return decIn(v);
@@ -424,6 +425,7 @@ function vcStripText() {   // the HUD strip: this match counts, and for which ra
   return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
 }
 function vcTick() {
+  bwTick();   // ui/bossweek.js: a Boss Week result still on its way, the Monday card
   if (!qmOn()) return;
   if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
   if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");

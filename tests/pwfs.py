@@ -129,7 +129,7 @@ async def tight(b, errs):
 # the Add to Home Screen tip never covers the Road card (or its arrow) or a menu button
 TIP = """(() => {
   const t = document.getElementById('a2hsHint').getBoundingClientRect(), bad = [];
-  for (const s of ['#bRoad', '#bRoad .mm-rdgo', '#bRanked', '#bDaily', '#bCup', '#bOnline', '#bPractice', '#bBoards', '#bHelp', '#mRank', '#bSettings', '#bFull']) {
+  for (const s of ['#bRoad', '#bRoad .mm-rdgo', '#bRanked', '#bDaily', '#bBw', '#bCup', '#bOnline', '#bPractice', '#bBoards', '#bHelp', '#mRank', '#bSettings', '#bFull']) {
     const e = document.querySelector(s); if (!e || e.hidden || !e.getClientRects().length) continue;
     const r = e.getBoundingClientRect();
     if (t.left < r.right && r.left < t.right && t.top < r.bottom && r.top < t.bottom) bad.push(s);

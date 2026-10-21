@@ -793,7 +793,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   </section>
 
   <!-- main menu (Fable's "sunset ink" design, menu-redesign/fable-menu-design.md): the top bar (logo, the profile plate + coins, the
-       gear), the gold Ranked hero with your fighter, the Daily Potato and Tournament tiles, three mini pills; the attract match plays
+       gear), the gold Ranked hero with your fighter, the Daily Potato and Boss Week tiles, the mini pills (Tournament is one); the attract match plays
        behind on the right (upright: in the middle). Styles: game/css/20-menu.css; texts: renderMenu (ui/screens.js), renderPill (ui/acct.js). -->
   <section id="scrMenu" class="screen mm scroll">
     <header class="mm-bar">
@@ -810,13 +810,14 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <button class="card gold tone mm-hero" id="bRanked" data-sfx="go" style="--i:0"><span class="mm-art"><img id="mHeroArt" alt=""></span><span class="mm-edge" aria-hidden="true"></span><span class="mm-body"><span class="kick" id="mRankKick">Ranked match</span><span class="mm-ttl">Ranked</span><span class="mm-sub" id="mRec">0W · 0L</span><span class="mm-cta"><span>Play</span><i aria-hidden="true"></i></span></span></button>
       <div class="mm-row2">
         <button class="card mm-tile mm-daily" id="bDaily" data-sfx="flip" style="--i:1"><span class="mm-vs" aria-hidden="true"><img id="mDailyA" alt=""><img id="mDailyB" alt=""><i>VS</i></span><span class="mm-tb"><b>Daily Potato</b><span class="mm-l" id="mDaily">today's match</span><span class="mm-l mm-l2" id="mDailyR"></span></span><span class="tag ember mm-today" id="mDailyTag">Today</span></button>
-        <button class="card mm-tile mm-cup" id="bCup" data-sfx="flip" style="--i:2"><span class="mm-medal" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v4.5a6 6 0 0 1-12 0z" fill="#f4c95d" stroke="#0e1022" stroke-width="1.8" stroke-linejoin="round"/><path d="M6 5H3v2.2A4 4 0 0 0 7 11M18 5h3v2.2A4 4 0 0 1 17 11" fill="none" stroke="#0e1022" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13.5V17M8.5 21h7M9.5 17h5" fill="none" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M9 5c0 2 .5 4 2 5" fill="none" stroke="#fff3c4" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></svg></span><span class="mm-tb"><b>Tournament</b><span class="mm-l">8 players · bracket</span><span class="mm-l mm-l2" id="mCup"></span></span></button>
+        <!-- Boss Week (ui/bwsheet.js bwTile, css/97-bossweek.css): this week's boss in a disc ringed in his colour, the time left, your best and place; the tag is #6 (gold) or NEW (ember) -->
+        <button class="card mm-tile mm-bw" id="bBw" data-sfx="flip" style="--i:2"><span class="mm-bwd rd-bossph rd-scratch" id="mBwD" aria-hidden="true"><img id="mBwArt" alt=""><i>&#9760;</i></span><span class="mm-tb"><b>Boss Week</b><span class="mm-l" id="mBw"></span><span class="mm-l mm-l2" id="mBwR"></span></span><span class="tag gold mm-bwt" id="mBwTag" hidden></span></button>
       </div>
       <div class="mm-row3">
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
-        <button class="mini" id="bHelp" style="--i:6">How to play</button>
+        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small>8 players<span id="mCup" hidden></span></small></span></button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -1105,6 +1106,45 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- Boss Week (ui/bwsheet.js, css/97-bossweek.css; Fable's design step6/fable-step6.md): this week's boss, your best time and fighter, the top 3, FIGHT; -->
+  <section id="scrBw" class="screen modal" hidden>
+    <div class="sheet bw-sheet" role="dialog" aria-label="Boss Week">
+      <header class="sh-head"><h3>Boss Week</h3><span class="kick bw-hk"><span class="bw-hk1" id="bwWeek"></span><b id="bwLeft"></b></span><button class="round x" id="bwClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="bw-body" id="bwBody">
+        <div class="card bw-boss" id="bwBoss"><span class="tag ink bw-this">This week</span><div class="bw-pic"><img id="bwArt" alt=""><i aria-hidden="true">&#9760;</i></div>
+          <div class="bw-bt"><b class="bw-bn ink" id="bwBn"></b><span class="bw-bs" id="bwBs"></span><span class="bw-sts" id="bwSts"></span></div></div>
+        <div class="bw-you">
+          <div class="card bw-best" id="bwBest"><span class="kick" id="bwBk">Your best</span><b class="bw-time" id="bwTime"></b><span class="bw-sub" id="bwSub"></span></div>
+          <div class="bw-fs"><button class="dly-f rd-me bw-me" id="bwMe" aria-label="Change fighter"></button><i class="bw-plus" aria-hidden="true">+</i><div class="bw-pf" id="bwPf"></div></div>
+          <button class="btn primary lg bw-go" id="bwGo"><span><b id="bwGoT">Fight</b><small id="bwGoS">unlimited tries</small></span></button>
+          <p class="bw-note" id="bwNote" role="status"></p>
+        </div>
+        <div class="bw-top" id="bwTop">
+          <div class="bw-th"><span class="kick">Top 3</span><button class="bw-full" id="bwFull">Full board &rsaquo;</button></div>
+          <div class="bw-rows" id="bwRows" aria-live="polite"></div>
+          <div class="bw-pay"><span class="kick">Paid Monday &middot; chips</span><span class="bw-sts" id="bwPay"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the Monday card: last week's place and the chips it paid (ui/bwsheet.js bwWeekCard), once, over the menu -->
+  <section id="scrBwWk" class="screen modal" hidden>
+    <div class="sheet bw-wk" role="dialog" aria-label="Boss Week, last week">
+      <header class="sh-head"><h3>Boss Week</h3><span class="kick">Last week</span><button class="round x" id="bwwClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="bw-wkb" id="bwwBody">
+        <div class="bw-wkp"><i class="bw-wkc" id="bwwCrown" hidden></i><span class="bw-wkd rd-bossph rd-scratch" id="bwwD"><img id="bwwArt" alt=""><i>&#9760;</i></span></div>
+        <div class="bw-wkt">
+          <span class="kick" id="bwwK"></span>
+          <b class="bw-wkh" id="bwwH"></b>
+          <b class="bw-wkf" id="bwwF"></b>
+          <span class="bw-wkm" id="bwwM"><span class="coin chips plus" id="bwwC"></span><small>paid into your account</small></span>
+          <div class="bw-wka"><button class="btn primary" id="bwwGo"><span id="bwwGoT"></span></button><button class="btn" id="bwwOk"><span>OK</span></button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -1219,6 +1259,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="sheet set-sheet scroll">
       <header class="sh-head"><h3>Settings</h3><button class="round x" id="setClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="sh-body">
+        <button class="set-row set-help" id="bHelp" data-sfx="flip"><span>How to play</span><span class="set-hl">Controls, moves and combos</span><i aria-hidden="true"></i></button>
         <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
         <div class="set-row" id="setFullRow"><span id="setFullL">Fullscreen in fights</span><span class="chips" id="setFull"></span><small id="setFullNow"></small></div>
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
