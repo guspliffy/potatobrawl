@@ -33,7 +33,8 @@ def has(hay, *subs):   # innerText follows text-transform, so compare without ca
     return all(x.lower() in h for x in subs)
 
 def start_server(d):
-    env = dict(os.environ, PORT=str(PORT), KEEPALIVE_MINUTES='0', ACCOUNTS_DIR=d)
+    env = dict(os.environ, PORT=str(PORT), KEEPALIVE_MINUTES='0', ACCOUNTS_DIR=d,
+               QM_T='{"rematch": 600000}')   # FOR CHIPS stays open 10 min, not 2: under a full check's load the screenshots before the second challenge took longer than 2 min
     env.pop('STATS_DIR', None)
     p = subprocess.Popen(['node', 'server.js'], cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for _ in range(60):

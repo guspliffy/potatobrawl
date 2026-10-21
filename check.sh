@@ -242,7 +242,7 @@ else fail "Quick match in the browser" "$LOGS/quick-ui.log"; fi
 #     accounts and on both phones after the sync, the challenge card on the results and on the menu, a Play friends game refereed,
 #     Settings > Chip stakes Off. Shots in build/shots/stakes.
 s_stakesui() {
-(cd "$SHOTS" && PWSTAKES_PORT=$((PB + 11)) timeout 900 python3 "$ROOT/tests/pwstakes.py" stakes) > "$LOGS/stakes-ui.log" 2>&1
+(cd "$SHOTS" && PWSTAKES_PORT=$((PB + 11)) timeout 1200 python3 "$ROOT/tests/pwstakes.py" stakes) > "$LOGS/stakes-ui.log" 2>&1
 if grep -q "^no errors" "$LOGS/stakes-ui.log"; then pass "chip stakes in the browser (FOR CHIPS, stake sheet, challenge card, pot card, chips synced, Play friends; shots in build/shots/stakes)"
 else fail "chip stakes in the browser" "$LOGS/stakes-ui.log"; fi
 }
