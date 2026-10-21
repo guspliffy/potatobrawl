@@ -22,6 +22,7 @@ BOT = """window.__blInput = (g) => { const me = g.fighters[window.__blastline.ne
 # his Road HP (ui/road.js ROAD_REG) and the two-player K (ui/online.js DUO_HP), as the game reads them
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'game', 'ui')
 ROAD_HP = {m[0]: float(m[1]) for m in re.findall(r'boss: "(\w+)", bk: "\w+", pk: "\w+", title: "[^"]+", hp: ([0-9.]+)', open(os.path.join(SRC, 'road.js')).read())}
+ROAD_MATE = {m[0]: float(m[1]) for m in re.findall(r'boss: "(\w+)", bk: "\w+", pk: "\w+", title: "[^"]+", hp: [0-9.]+, mate: ([0-9.]+)', open(os.path.join(SRC, 'road.js')).read())}
 DUO_HP = json.loads(re.sub(r'(\w+):', r'"\1":', re.search(r'const DUO_HP = (\{[^\n]*\});', open(os.path.join(SRC, 'online.js')).read()).group(1)))
 errs = []
 
@@ -168,6 +169,10 @@ async def main():
         await A.wait_for_timeout(500)
         ban = await txt(A, '#banner')
         need('dropped' in ban.lower(), f'drop banner {ban!r}')
+        # from the drop on it is the Road's fight: his Road HP (the same share left: all of it here) and the Road's partner strength for Hard
+        hb = await A.evaluate(f"(() => {{ const b = {G}.fighters[2]; return {{ hp: b.hp, hpMax: b.hpMax, base: b.spec.boss.hp * b.spec.boss.lvHp[1], d: {N}.cpuMate.d }}; }})()")
+        need(hb['hp'] == hb['hpMax'] == round(hb['base'] * ROAD_HP['scratch']), f"after the drop: boss HP {hb['hp']}/{hb['hpMax']}, want his Road HP {round(hb['base'] * ROAD_HP['scratch'])}")
+        need(abs(hb['d'] - (ROAD_MATE['scratch'] + 0.1)) < 1e-9, f"after the drop: the CPU partner plays at {hb['d']}, want the Road's {ROAD_MATE['scratch'] + 0.1} on Hard")
         await A.screenshot(path=f'{OUT}/dropped_A.png')
         t0 = await A.evaluate(f"{G}.t")
         try: await A.wait_for_function(f"{G}.t > {t0 + 30}", timeout=20000)   # the test browser runs at a few frames a second

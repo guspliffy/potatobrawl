@@ -117,6 +117,7 @@
 #app.tiny #resSheet .mx-xp { min-width: 54px; padding: 5px 7px 4px; }
 #app.tiny #resSheet .mx-xp b { font-size: 18px; }
 #app.tiny #resSheet .mx-xp small { font-size: 10px; }
+@container (min-width: 1000px) {   /* narrower desktop windows keep the phones' sizes above (css/40-results.css) */
 #app:not(.short):not(.portrait) #resSheet .res-mx { gap: 14px; padding: 10px 18px 10px 12px; }
 #app:not(.short):not(.portrait) #resSheet .res-mx .av { --d: 52px; border-width: 3px; }
 #app:not(.short):not(.portrait) #resSheet .mx-head { height: 24px; gap: 8px; }
@@ -128,6 +129,7 @@
 #app:not(.short):not(.portrait) #resSheet .mx-xp { min-width: 92px; padding: 10px 12px 8px; border-radius: 10px; gap: 4px; }
 #app:not(.short):not(.portrait) #resSheet .mx-xp b { font-size: 30px; }
 #app:not(.short):not(.portrait) #resSheet .mx-xp small { font-size: 14px; }
+}
 #app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-mx { margin-top: 0; }   /* the column is centred here */
 @media (prefers-reduced-motion: reduce) { #resSheet .mx-line { transition: none; } }
 

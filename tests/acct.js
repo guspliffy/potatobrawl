@@ -479,6 +479,8 @@ async function serverTests() {
 async function limitTests() {
   const dir = tmpDir();
   const acc = ACC.init(dir, { maxFiles: 3, maxBytes: 3000, perMin: 14, newPerHour: 50, unknownDelayMs: 10, bodyMs: 400 });
+  const warns = [], cw = console.warn;
+  console.warn = (...a) => { const t = a.join(" "); if (/^accounts: nearly full/.test(t)) warns.push(t); else cw(...a); };   // the server log's line past 80% of a cap
   const srv = http.createServer((rq, rs) => { if (!acc.handle(rq, rs, (rq.url || "").split("?")[0])) { rs.writeHead(404); rs.end(); } });
   await new Promise((r) => srv.listen(PORT, "127.0.0.1", r));
   try {
@@ -486,8 +488,10 @@ async function limitTests() {
     const code = r.json && r.json.code;
     check(r.status === 200, "caps: first account");
     await post("new", { prof: { n: 2 } });
+    check(!acc.fill().warn && !warns.length && acc.fill().files === 2 && acc.fill().maxFiles === 3, "caps: 2 of 3 accounts (67%): no warning yet");
     r = await post("new", { prof: { n: 3 } });
     check(r.status === 200 && acc.count() === 3, "caps: third account (the cap)");
+    check(acc.fill().warn && warns.length === 1 && /3 of 3 accounts \(100%\)/.test(warns[0]), `caps: past 80% the fill warns and the log says so once (${warns[0]})`);
     r = await post("new", { prof: { n: 4 } });
     check(r.status === 503 && acc.count() === 3, "caps: one more than the file cap -> 503");
     r = await post("save", { code, rev: 1, prof: { pad: "y".repeat(2900) } });
@@ -511,7 +515,8 @@ async function limitTests() {
     let got429 = false;
     for (let i = 0; i < 20 && !got429; i++) { const q = await call("GET", "/api/acct/ping"); if (q.status === 429) got429 = true; }
     check(got429, "caps: the per-minute limit applies");
-  } finally { await new Promise((r) => srv.close(r)); }
+    check(warns.length === 1, "caps: the nearly-full line is logged only once");
+  } finally { console.warn = cw; await new Promise((r) => srv.close(r)); }
   rmDir(dir);
 }
 

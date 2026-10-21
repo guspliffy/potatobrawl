@@ -86,6 +86,16 @@
 #app.narrow .rd-sheet.boss .rd-acts { flex-wrap: wrap; }
 #app.narrow .rd-sheet.boss .rd-acts #rsGo { flex-basis: 100%; }
 #app.short .rd-sheet.boss .rd-line { display: none; }   /* on a short screen his line is said in the countdown instead */
+/* upright: both cards are columns (as the narrow phones' already are, 430px wide too); his name wraps inside his card, and "role · you + a CPU partner"
+   is two lines (the dot goes) that wrap too */
+#app.portrait .rd-sheet.boss .dly-f, #app.portrait .rd-sheet.boss .dly-f.r { flex-direction: column; text-align: center; }
+#app.portrait .rd-sheet.boss .rd-me .rd-chg { margin: 0; }
+#app.portrait .rd-sheet.boss #rsOp .dly-t b, #app.portrait .rd-sheet.boss #rsOp .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
+#app.portrait .rd-sheet.boss #rsOp .rd-sep { display: none; }
+#app.portrait .rd-sheet.boss #rsOp .rd-cp { display: block; }
+/* upright: the kicker ("The Deep · past the fence") goes under the name, so a long name like Kraken Spud is never cut */
+#app.portrait .rd-sheet .sh-head { flex-wrap: wrap; height: auto; min-height: 36px; padding-top: 4px; padding-bottom: 6px; row-gap: 2px; }
+#app.portrait .rd-sheet .sh-head .kick { order: 3; flex-basis: 100%; }
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
 .rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }
 .rd-bossph.rd-kraken { background: radial-gradient(circle at 50% 35%, #8a5aa8, #3a1f55); }

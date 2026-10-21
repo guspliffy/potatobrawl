@@ -418,7 +418,7 @@ function roadSheet(i) {
   if (boss) {
     const b = bspec, bb = roadBossBits(r, k), rs = roadSkinOf(me, b.id);
     const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
-    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
+    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role}<span class="rd-sep"> · </span><span class="rd-cp">you + a CPU partner</span></small></span>`;
     $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. ${BOSS_RULE[b.id] || "Break him (0 HP), then land a heavy, special or ulti."}`;
     $("rsLine").textContent = BOSS_LINE[b.id] || "";
     // the level stars are the picker: it starts on the first level not won yet; Fight plays the picked one

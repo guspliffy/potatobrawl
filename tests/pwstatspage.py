@@ -193,6 +193,7 @@ async def messages(b, empty):
         expect(await pg.evaluate("document.querySelectorAll('main section').length") == 7, f'empty_{r}: sections missing')
         await sane(pg, f'empty_{r}'); await fit(pg, f'empty_{r}')
     await pg.click('.pill[data-range=week]'); await pg.wait_for_timeout(150)
+    expect(await text(pg, '.warn') is None, 'empty: an accounts warning without accounts')
     await shot(pg, 'phone_empty'); await csp(pg, 'empty')
     # a wrong key: one calm line (the server answers 404 after a pause)
     pg2 = await ctx.new_page(); watch(pg2, 'wrong key', allow=['/api/stats/data'])
@@ -211,6 +212,17 @@ async def messages(b, empty):
     await pg4.goto(f'{BASE}/stats#{KEY}'); await state(pg4, 'net')
     expect("Couldn't reach the server" in await text(pg4, '#main'), f'offline: message is {await text(pg4, "#main")!r}')
     await fit(pg4, 'offline'); await shot(pg4, 'phone_offline'); await csp(pg4, 'offline')
+    # the accounts folder past 80% of a cap (the server's acct, accounts.js fill): one warning line above the sections
+    pg5 = await ctx.new_page(); watch(pg5, 'accounts full')
+    async def nearly_full(route):
+        resp = await route.fetch(); j = await resp.json()
+        j['acct'] = {'files': 16412, 'maxFiles': 20000, 'bytes': 43000000, 'maxBytes': 209715200, 'warn': True}
+        await route.fulfill(response=resp, json=j)
+    await pg5.route('**/api/stats/data', nearly_full)
+    await pg5.goto(f'{BASE}/stats#{KEY}'); await state(pg5, 'ok')
+    w = await text(pg5, '.warn')
+    expect(w is not None and 'Accounts nearly full' in w and '16,412 of 20,000 accounts (82%)' in w and '41.0 MB of 200.0 MB (21%)' in w, f'accounts nearly full: the warning is {w!r}')
+    await fit(pg5, 'accounts full'); await shot(pg5, 'phone_acctfull'); await csp(pg5, 'accounts full')
     await ctx.close()
 
 async def main():
