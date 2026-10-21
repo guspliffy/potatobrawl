@@ -36477,7 +36477,7 @@ stickZone.addEventListener("pointerdown", () => stickKnob.classList.remove("drag
    2. Welcome: a brand-new player (no saved profile, no account, no invite link) picks the 1-minute tutorial or goes straight to the first fight (tutorial.js).
       The menu is hidden and the attract fight shows through a 50% dim, with one fighter at 110% so a launch happens soon. */
 function turnOpen(next) {
-  if (!rotMode || TURN.shown) { next(); return; }
+  if (!rotMode || TURN.shown || window.__blNoTurn) { next(); return; }   // __blNoTurn: browser tests that are about something else
   TURN.on = TURN.shown = true; TURN.next = next;
   const el = $("turn");
   el.style.setProperty("--tr", rotMode === 1 ? "-90deg" : "90deg");   // the phone is turned the other way round from the game's own turn

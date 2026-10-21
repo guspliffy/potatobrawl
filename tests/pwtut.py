@@ -81,7 +81,7 @@ async def run(b, tag, vp, touch, up, errs, mode):
         if 'YOU marker' in r['bad']: await pg.wait_for_timeout(300); r = await pg.evaluate(CHECK_JS, ['tut', touch])   # the ghosting follows within 4 ticks
         if r['bad']: errs.append(f'{tag}: the card overlaps {r["bad"]} ({label})')
         if r['clip']: errs.append(f'{tag}: the card is cut off: {r["clip"]} ({label})')
-        if not up and not 40 <= r['h'] <= 58: errs.append(f'{tag}: the card is {r["h"]:.0f} px tall ({label}), want about 52')
+        if not up and not 40 <= r['h'] <= (72 if tag.startswith('desk') else 58): errs.append(f'{tag}: the card is {r["h"]:.0f} px tall ({label}), want about 52 (64 on a computer-sized window)')
         if not up and r['top'] > 12: errs.append(f'{tag}: the card is at y={r["top"]:.0f} ({label}), want 8')
         if name: await shot(name)
     async def ready():   # the player is on the ground and free to act
