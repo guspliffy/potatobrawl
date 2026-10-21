@@ -39,8 +39,8 @@ function call(port, method, p, body, headers) {
 // ---------------------------------------------------------------- in this process: the module with small limits and a test clock
 async function inProcess() {
   const dir = tmpDir();
-  let clock = Date.parse("2026-10-15T10:00:00Z"), online = 0;
-  const S = STATS.init(dir, { now: () => clock, online: () => online, hitsPerMin: 6, dataPerMin: 50, maxErrs: 3, flushMs: 60, sampleMs: 40, badKeyDelayMs: 300 });
+  let clock = Date.parse("2026-10-15T10:00:00Z"), online = 0, acc = null;
+  const S = STATS.init(dir, { now: () => clock, online: () => online, accounts: () => acc, hitsPerMin: 6, dataPerMin: 50, maxErrs: 3, flushMs: 60, sampleMs: 40, badKeyDelayMs: 300 });
   check(!!S, "on with a writable folder");
   const key = fs.readFileSync(path.join(dir, "key"), "utf8").trim();
   check(/^[0-9a-f]{32}$/.test(key) && (fs.statSync(path.join(dir, "key")).mode & 0o777) === 0o600, "a 32-hex page key, mode 600");
@@ -57,6 +57,14 @@ async function inProcess() {
   r = await data({ key });
   const c = r.json && r.json.days && r.json.days["2026-10-15"];
   check(r.status === 200 && r.json.today === "2026-10-15" && r.json.tz === "Europe/Berlin", "the page data names today in Europe/Berlin");
+  check(!("acct" in r.json), "accounts off: the page data has no accounts fill");
+  { // accounts on: how full their folder is (accounts.js fill), for the page's warning past 80%
+    const f = { files: 16001, maxFiles: 20000, bytes: 1048576, maxBytes: 209715200, warn: true };
+    acc = { fill: () => f };
+    const ra = await data({ key });
+    check(ra.status === 200 && JSON.stringify(ra.json.acct) === JSON.stringify(f), "accounts on: the page data carries how full the accounts folder is");
+    acc = null;
+  }
   check(!!c && c.day === 1 && c["ret:2026-10-14:1"] === 1 && c["fx:tut:charge"] === 1 && c["fx:match:online-boss"] === 1 && c["bs:scratch:2"] === 1 && c["rw:23"] === 1 && c["chl:make"] === 1 && c["chl:new"] === 1, "known keys are counted");
   check(!!c && !("bogus" in c) && !("chl:x" in c) && !("ms:Ranked" in c) && !("me:x:won" in c) && !("ret:2026-10-17:1" in c) && !("ret:2026-02-30:3" in c) && !("ret:2026-10-14:2" in c) && Object.keys(c).length === 20,
     `unknown keys, bad dates, dates after tomorrow and non-strings are ignored (${c ? Object.keys(c).length : 0} keys)`);

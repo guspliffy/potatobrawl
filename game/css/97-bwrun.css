@@ -43,7 +43,10 @@
 #app.tiny #resSheet .res-bw { gap: 10px; padding: 7px 10px; }
 #app.tiny #resSheet .res-bw .bw-t { font-size: 28px; }
 #app.tiny #resSheet .res-bw .bw-l { font-size: 11.5px; }
-#app:not(.short):not(.portrait) #resSheet .res-bw { gap: 18px; padding: 16px 20px; }
-#app:not(.short):not(.portrait) #resSheet .res-bw .bw-t { font-size: 44px; }
-#app:not(.short):not(.portrait) #resSheet .res-bw .bw-l { font-size: 14px; }
+/* desktop sizes only in windows 1000px and wider, like 40-results.css (760-999px windows keep the phones' sizes) */
+@container (min-width: 1000px) {
+  #app:not(.short):not(.portrait) #resSheet .res-bw { gap: 18px; padding: 16px 20px; }
+  #app:not(.short):not(.portrait) #resSheet .res-bw .bw-t { font-size: 44px; }
+  #app:not(.short):not(.portrait) #resSheet .res-bw .bw-l { font-size: 14px; }
+}
 @media (prefers-reduced-motion: reduce) { #bwPill .bp-s, #bwPill.ember .bp-b, #resSheet .res-bw.wait .bw-l::before { animation: none; } }

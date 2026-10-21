@@ -1651,7 +1651,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny #resSheet .res-actions .btn.primary { min-height: 44px; font-size: 20px; }
 #app.tiny #resSheet .res-actions .btn small { font-size: 11px; }
 
-/* ---- desktop and tablets (taller than 520px, landscape): a bigger panel, the column centred ---- */
+/* ---- desktop and tablets (taller than 520px, landscape, 1000px wide and more): a bigger panel, the column centred ---- */
+@container (min-width: 1000px) {
 #app:not(.short):not(.portrait) #resSheet { --pw: clamp(400px, 44cqw, 600px); --hs: min(124px, calc((var(--pw) * 0.79 - 40px) / 2.9)); --padl: max(48px, calc(env(safe-area-inset-left, 0px) + 16px)); --artH: 60%; }
 #app:not(.short):not(.portrait) #resSheet .res-txt { bottom: 44px; gap: 10px; }
 #app:not(.short):not(.portrait) #resSheet .res-kick { font-size: 14px; }
@@ -1681,6 +1682,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #resSheet .res-actions .btn { min-height: 52px; font-size: 21px; }
 #app:not(.short):not(.portrait) #resSheet .res-actions .btn.primary { min-height: 64px; font-size: 28px; }
 #app:not(.short):not(.portrait) #resSheet .res-actions .btn small { font-size: 13px; }
+}
+
+/* ---- desktop windows under 1000px wide (760 to 960): the desktop sizes above need a column of 400px and more, so here the phones' sizes
+   (the rules without a class) sit in a column of about 400px beside a slimmer panel, and the column is centred like the desktop's ---- */
+@container (max-width: 999px) {
+  #app:not(.short):not(.portrait) #resSheet { --pw: clamp(300px, 40cqw, 400px); --hs: min(100px, calc((var(--pw) * 0.72 - 36px) / 2.9)); --padl: max(32px, calc(env(safe-area-inset-left, 0px) + 12px)); --artH: 62%; }
+  #app:not(.short):not(.portrait) #resSheet .res-txt { right: calc(var(--cut) + 10px); bottom: 36px; gap: 8px; }
+  #app:not(.short):not(.portrait) #resSheet .res-sub { font-size: 14px; max-width: 320px; }
+  #app:not(.short):not(.portrait) #resSheet .res-side { left: calc(var(--pw) + 28px); right: max(24px, env(safe-area-inset-right, 0px)); max-width: 520px; justify-content: center; gap: 12px; padding: 24px 6px; }
+  #app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-stats, #app:not(.short):not(.portrait) #resSheet.solo .res-rank { margin-top: 0; }
+  #app:not(.short):not(.portrait) #resSheet .res-stats:not(.nochips) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }   /* the chips tile takes what its number needs (+160) */
+  #app:not(.short):not(.portrait) #resSheet .stat { min-height: 64px; }
+  #app:not(.short):not(.portrait) #resSheet .res-actions { margin-top: 12px; gap: 10px; }
+  #app:not(.short):not(.portrait) #resSheet .res-actions .btn { min-height: 48px; }
+  #app:not(.short):not(.portrait) #resSheet .res-actions .btn.primary { min-height: 58px; }
+}
 
 /* ---- upright phones: the panel is a 180px banner on top (VICTORY left, the portrait right), the cards stack under it ---- */
 #app.portrait #resSheet { --pw: 100cqw; --hs: 54px; --padl: 16px; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
@@ -2058,6 +2075,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .rd-head .coin { display: none; }
 #app.narrow .rd-sum { font-size: 13px; }
 #app.tiny .rd-head h2 { font-size: 24px; }
+/* upright, the stars line gets its own row under the region's name, so neither is cut */
+#app.portrait .rd-sum { order: 3; flex-basis: 100%; text-align: center; }
 
 /* a stop's sheet: the stars, the reward line; past the fence, three level buttons instead of Fight */
 .rd-line { font-style: italic; }
@@ -2092,6 +2111,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .rd-me .rd-chg { margin-left: auto; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
   background: #ffd23f; color: var(--ink); font: 900 17px/1 var(--body); box-shadow: 0 2px 0 var(--ink); }
 #app.narrow .rd-me .rd-chg { margin: 0; }
+.rd-me .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; }   /* "You · tap to change" wraps beside the ⇄ badge, never cut */
 /* a boss's card: the three level stars are the level picker; Fight plays the picked one */
 .rd-lvb { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; min-height: 48px; padding: 5px 4px; border-radius: 10px; }
 .rd-lvb.sel { background: rgba(255, 210, 63, 0.13); box-shadow: inset 0 0 0 2px #ffd23f; }
@@ -2109,6 +2129,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .rd-sheet.boss .rd-acts { flex-wrap: wrap; }
 #app.narrow .rd-sheet.boss .rd-acts #rsGo { flex-basis: 100%; }
 #app.short .rd-sheet.boss .rd-line { display: none; }   /* on a short screen his line is said in the countdown instead */
+/* upright, on every Road sheet: both cards are columns (as the narrow phones' already are, 430px wide too) and their names and lines wrap
+   inside them; on a boss's card "role · you + a CPU partner" is two lines (the dot goes) */
+#app.portrait .rd-sheet .dly-f, #app.portrait .rd-sheet .dly-f.r { flex-direction: column; text-align: center; }
+#app.portrait .rd-sheet .rd-me .rd-chg { margin: 0; }
+#app.portrait .rd-sheet .dly-t b, #app.portrait .rd-sheet .dly-t small { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; }
+#app.portrait .rd-sheet.boss #rsOp .rd-sep { display: none; }
+#app.portrait .rd-sheet.boss #rsOp .rd-cp { display: block; }
+/* sideways his card has room for his role only: "you + a CPU partner" is the rule line's first words right under it */
+#app:not(.portrait) .rd-sheet.boss #rsOp .rd-sep, #app:not(.portrait) .rd-sheet.boss #rsOp .rd-cp { display: none; }
+/* upright: the kicker ("The Deep · past the fence") goes under the name, so a long name like Kraken Spud is never cut */
+#app.portrait .rd-sheet .sh-head { flex-wrap: wrap; height: auto; min-height: 36px; padding-top: 4px; padding-bottom: 6px; row-gap: 2px; }
+#app.portrait .rd-sheet .sh-head .kick { order: 3; flex-basis: 100%; }
 .rd-bossph { display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #b8402e, #6e1f18); }
 .rd-bossph.rd-zorp { background: radial-gradient(circle at 50% 35%, #4f8a3a, #1f3a2c); }
 .rd-bossph.rd-kraken { background: radial-gradient(circle at 50% 35%, #8a5aa8, #3a1f55); }
@@ -2264,6 +2296,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny #resSheet .mx-xp { min-width: 54px; padding: 5px 7px 4px; }
 #app.tiny #resSheet .mx-xp b { font-size: 18px; }
 #app.tiny #resSheet .mx-xp small { font-size: 10px; }
+@container (min-width: 1000px) {   /* narrower desktop windows keep the phones' sizes above (css/40-results.css) */
 #app:not(.short):not(.portrait) #resSheet .res-mx { gap: 14px; padding: 10px 18px 10px 12px; }
 #app:not(.short):not(.portrait) #resSheet .res-mx .av { --d: 52px; border-width: 3px; }
 #app:not(.short):not(.portrait) #resSheet .mx-head { height: 24px; gap: 8px; }
@@ -2275,6 +2308,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app:not(.short):not(.portrait) #resSheet .mx-xp { min-width: 92px; padding: 10px 12px 8px; border-radius: 10px; gap: 4px; }
 #app:not(.short):not(.portrait) #resSheet .mx-xp b { font-size: 30px; }
 #app:not(.short):not(.portrait) #resSheet .mx-xp small { font-size: 14px; }
+}
 #app:not(.short):not(.portrait) #resSheet .res-side:has(> #rRank[hidden]) > .res-mx { margin-top: 0; }   /* the column is centred here */
 @media (prefers-reduced-motion: reduce) { #resSheet .mx-line { transition: none; } }
 
@@ -3397,6 +3431,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 /* computers and tablets */
 #app:not(.short):not(.portrait) #resSheet .res-chl { height: 38px; margin-top: 8px; gap: 8px; padding: 0 16px 0 12px; font-size: 16px; }
 #app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 20px; height: 20px; }
+/* desktop windows under 1000 px wide take the phones' sizes on the results (40-results.css), this too; under 800 px "a friend" goes */
+@container (max-width: 999px) {
+  #app:not(.short):not(.portrait) #resSheet .res-chl { height: 34px; margin-top: 6px; gap: 7px; padding: 0 13px 0 10px; font-size: 14px; }
+  #app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 17px; height: 17px; }
+}
+@container (max-width: 799px) { #app:not(.short):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
 
 /* upright phones: in the banner */
 #app.portrait #resSheet .res-chl { height: 32px; margin-top: 4px; font-size: 13px; }
@@ -4551,9 +4591,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny #resSheet .res-bw { gap: 10px; padding: 7px 10px; }
 #app.tiny #resSheet .res-bw .bw-t { font-size: 28px; }
 #app.tiny #resSheet .res-bw .bw-l { font-size: 11.5px; }
-#app:not(.short):not(.portrait) #resSheet .res-bw { gap: 18px; padding: 16px 20px; }
-#app:not(.short):not(.portrait) #resSheet .res-bw .bw-t { font-size: 44px; }
-#app:not(.short):not(.portrait) #resSheet .res-bw .bw-l { font-size: 14px; }
+/* desktop sizes only in windows 1000px and wider, like 40-results.css (760-999px windows keep the phones' sizes) */
+@container (min-width: 1000px) {
+  #app:not(.short):not(.portrait) #resSheet .res-bw { gap: 18px; padding: 16px 20px; }
+  #app:not(.short):not(.portrait) #resSheet .res-bw .bw-t { font-size: 44px; }
+  #app:not(.short):not(.portrait) #resSheet .res-bw .bw-l { font-size: 14px; }
+}
 @media (prefers-reduced-motion: reduce) { #bwPill .bp-s, #bwPill.ember .bp-b, #resSheet .res-bw.wait .bw-l::before { animation: none; } }
 
 /* ===== Rival record and streak bounty (ui/rivals.js; Fable's design: rival-stakes/fable-design.md) =====
@@ -4606,6 +4649,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #resSheet .rv-strip .rec { flex: none; font-size: 15px; color: var(--mute); }
 #resSheet .rv-strip .rec.up { color: var(--mint); }
 #resSheet .rv-strip .rec.down { color: var(--ketchup); }
+#resSheet .rv-strip .rec.bo { color: var(--gold); }   /* a boss beaten with a friend: how many together */
 #resSheet .rv-strip.tight .nm, #resSheet .rv-strip.tight .sep { display: none; }
 #resSheet .rv-strip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 #resSheet .res-side > .rv-strip { flex: none; align-self: stretch; height: 40px; margin: 0; padding-right: 14px; background: linear-gradient(180deg, #2b3058, #1b1f3d);
@@ -4654,6 +4698,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .rv-row .rec { font-size: 24px; }
 .rv-row .who .sub2 { display: none; }
 #app.narrow .rv-row .who .sub2 { display: flex; align-items: center; gap: 8px; font: 700 10.5px/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sand); }
+.rv-row .who > span.rv-bo { font: 700 10.5px/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }   /* bosses beaten together */
 
 @media (prefers-reduced-motion: reduce) {
   #qmVs.in .vs-riv, #qmVs.in .vs-w, #resSheet .stat.chips .rv-bty { animation: none; }
@@ -5433,7 +5478,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <p class="set-fine" id="setCountNote" hidden></p>
         <div class="set-row" id="setStakeRow" hidden><span>Chip stakes</span><span class="chips" id="setStake"></span></div>
         <p class="set-fine" id="setStakeNote" hidden>Rematches for 10, 25 or 50 chips after online matches. Off hides them, and nobody can challenge you.</p>
-        <p class="set-fine">Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.</p>
+        <p class="set-fine" id="setRankNote">Ranked on Quick match is online against real players; VS CPU ranks you against the CPU. Potato chips are in-game only and have no cash value.</p>
       </div>
     </div>
   </section>
@@ -14886,7 +14931,7 @@ function drawTag(c, f, isP1, lift, o) {   // o: a 2v2's { label, col } (duoTags 
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
-  c.fillStyle = o ? o.col : isP1 ? "#f3d9a4" : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
+  c.fillStyle = o ? o.col : isP1 ? "#f3d9a4" : match && match.boss ? TEAM_COL[f.team] : "#a4a9c8"; c.strokeStyle = "rgba(14,16,34,.85)"; c.lineWidth = 3; c.lineJoin = "round";
   c.beginPath(); c.moveTo(-6, -2); c.lineTo(6, -2); c.lineTo(0, 6); c.closePath(); c.stroke(); c.fill();
   c.font = '800 12px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center";
   c.strokeText(label, 0, -6); c.fillText(label, 0, -6);
@@ -29308,7 +29353,7 @@ function roadSheet(i) {
   if (boss) {
     const b = bspec, bb = roadBossBits(r, k), rs = roadSkinOf(me, b.id);
     const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
-    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role} · you + a CPU partner</small></span>`;
+    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role}<span class="rd-sep"> · </span><span class="rd-cp">you + a CPU partner</span></small></span>`;
     $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. ${BOSS_RULE[b.id] || "Break him (0 HP), then land a heavy, special or ulti."}`;
     $("rsLine").textContent = BOSS_LINE[b.id] || "";
     // the level stars are the picker: it starts on the first level not won yet; Fight plays the picked one
@@ -31824,11 +31869,11 @@ function netTick() {
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
 /* A boss fight goes on when the partner drops (they leave, their connection or ours goes, or nothing comes from them for 15 s): a CPU
-   takes over their fighter on this phone at the partner strength of the level, and this phone plays on alone, sending nothing. */
+   takes over their fighter on this phone, and this phone plays on alone, sending nothing. From then on it is the Road's fight (duoSolo). */
 function cpuTakeover() {
   if (NET.cpuMate || !G || !match || !match.boss) return;
   const mate = G.fighters[1 - meSlot], live = G.phase === "countdown" || G.phase === "play";
-  NET.cpuMate = makeBot(BOSS_PARTNER[G.lv], BL.BOT_STYLES[mate.spec.id]);
+  NET.cpuMate = makeBot(live ? duoSolo(NET.boss) : BOSS_PARTNER[G.lv], BL.BOT_STYLES[mate.spec.id]);
   NET.dropLive = live;   // it dropped during the fight (not after the boss was already down): the results say so
   NET.oppLeft = true; NET.rtt = NET.rttLive = 0;
   leaveMatchRoom();
@@ -31838,6 +31883,17 @@ function cpuTakeover() {
   showBanner(`${NET.oppName || "Your partner"} dropped`, `CPU has ${mate.spec.name} now`, "fin", 2200, "#f3d9a4");
   $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = "CPU";
   tagShow();   // hud.js: the markers come back for 3 s, the partner's now reads CPU
+}
+// the fight a friend dropped out of, made the Road's: the boss keeps the share of HP he has left, but of his Road HP (his HP with a friend
+// is that x DUO_HP), and the CPU plays at the Road's partner strength for him and this level. Only this phone plays on, so changing its
+// game here can't put it out of step with another. Returns the CPU's strength.
+function duoSolo(bo) {
+  const rg = bo && ROAD_REG.find((r) => r.boss === bo.b), b = bossOf(G);
+  if (!rg || !b) return BOSS_PARTNER[G.lv];
+  const B = b.spec.boss, max = Math.round(B.hp * B.lvHp[G.lv] * rg.hp);   // core.js newGame's HP with the Road's hpMul
+  if (b.hp > 0) b.hp = Math.max(1, Math.round((b.hp * max) / b.hpMax));
+  b.hpMax = max;
+  return rg.mate + 0.1 * G.lv;   // ui/road.js roadBossFight
 }
 function soloTick() {
   const ins = [];
@@ -31942,6 +31998,7 @@ function finishBossOnline() {
   NET.again = NET.cpuMate ? "Retry vs CPU" : won ? (lv < 2 ? `Next: ${BOSS_LV[lv + 1]}` : "Again") : "Retry";
   $("netBadge").hidden = true;
   showResults(R);
+  if (won && !NET.cpuMate) rvBossRes(R);   // ui/rivals.js: bosses beaten together, once the server has counted this one
   lobbyPresence();
 }
 
@@ -32942,6 +32999,7 @@ function renderSettings() {
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
   cntSettings();   // ui/counter.js: Play counts On / Off
   stkSettings();   // ui/stakes.js: Chip stakes On / Off
+  $("setRankNote").textContent = qmOn() ? "Ranked on Quick match is online against real players; VS CPU ranks you against the CPU. Potato chips are in-game only and have no cash value." : "Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.";   // off our server: the old Ranked vs CPU
 }
 function openSettings() { renderSettings(); modal("settings", true); }
 tap("bSettings", openSettings);
@@ -34671,6 +34729,7 @@ function qmMsg(m) {
   else if (m.t === "qm-res") { qmRes(m); stkGot(m, 1); }   // ui/stakes.js: who can play a rematch for chips now
   else if (m.t === "qm-cs") { rvCasual(m); stkGot(m, m.g); }   // ui/rivals.js: a Casual game (or a Play friends one) the server played to its end
   else if (m.t === "qm-sk") stkRes(m);   // ui/stakes.js: a staked match decided
+  else if (m.t === "qm-bo") rvBoss(m);   // ui/rivals.js: a boss beaten with a friend, counted by the server
   else if (m.t === "acct") qmAcctAnswer(m);
   else if (m.t === "stk-out" || m.t === "stk-in" || m.t === "stk-off" || m.t === "stk-no") stkMsg(m);
 }
@@ -35352,19 +35411,22 @@ tap("ssClose", qmSeasonDone);
    hunter's account file, so this page never adds it to P.tokens (the next sync brings it; adding it here would pay it twice).
    Shown on PLAYER FOUND!, the VS screen (the record under VS, a RIVAL / NEMESIS / WANTED tag, the wanted plate), the results (the
    story line, the rival strip, the BOUNTY sticker on the chips), the Quick match rank plate and Account > Stats (the Rivals list).
+   A boss beaten with a friend in Play friends (co-op, refereed the same way) is one more on their entry's b, bosses beaten together
+   (qm-bo), never their W/L: on the boss win's results and on their row in the Rivals list.
    Fable's design: rival-stakes/fable-design.md. Styles: css/97-rivals.css. */
 const RV_TAGS = { rival: ["gold", "Rival"], nemesis: ["red", "Nemesis"], wanted: ["ember", "Wanted"] };
-const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0, pf: null, fr: null };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to; pf: a Play friends game's record (qm-cs pf), fr: its results
+const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0, pf: null, fr: null, bo: null, bf: null };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to; pf: a Play friends game's record (qm-cs pf), fr: its results; bo / bf: the same for a boss beaten together (qm-bo)
 const rvN = (e) => e.w + e.l + e.d;
 function rvBounty(ws) { return ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10); }   // quick.js bounty(); a declaration: qmLoad (ui/quick.js) runs before this part
 // one opponent from the server, cleaned (qmClean keeps the list)
 function rvClean(x) {
   if (!x || typeof x !== "object" || typeof x.id !== "string" || !/^[0-9A-Z]{10}$/.test(x.id)) return null;
   const n = (v) => (Number.isInteger(v) && v >= 0 && v < 1e6 ? v : 0);
-  return { id: x.id, nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm.slice(0, 40) : "") || "Potato", f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), d: n(x.d),
+  return { id: x.id, nm: SYNC.cleanName(typeof x.nm === "string" ? x.nm.slice(0, 40) : "") || "Potato", f: FIG[x.f] ? x.f : "", r: n(x.r), w: n(x.w), l: n(x.l), d: n(x.d), b: n(x.b),
     t: Number.isFinite(x.t) ? x.t : 0, k: typeof x.k === "string" ? x.k.replace(/[^WLD]/g, "").slice(0, 5) : "" };
 }
 const rvList = () => { const me = qmMe(); return me && Array.isArray(me.rv) ? me.rv : []; };
+const rvBos = (n) => `${n} ${n === 1 ? "boss" : "bosses"}`;
 // "You lead 3–1", "Mash Master leads 3–1", "Tied 2–2" (draws after a dot), and its colour
 function rvWords(e, name) {
   if (!e || !rvN(e)) return { t: "First meeting", c: "" };
@@ -35432,6 +35494,13 @@ function rvCasual(m) {
   if (m.pf) { RV.pf = { id: m.id, g: m.g, e: rvClean(m.rv) }; rvFriend(); return; }   // a Play friends game
   if (mode === "result" && QM.shown && QM.shown.qm && QM.shown.qm.id === m.id && NET.matchId === m.g) rvStrip(QM.shown);
 }
+// qm-bo: a boss fight with a friend the server played to their win: one more boss beaten together on their entry
+function rvBoss(m) {
+  if (!m || typeof m.id !== "string" || !Number.isInteger(m.g)) return;
+  rvGot(m.rv, m.id, m.g);
+  RV.bo = { id: m.id, g: m.g, e: rvClean(m.rv) };
+  rvBossShow();
+}
 // qm-res, before qmRes applies it: the record, the streak, the bounty (the chips come with the next sync)
 function rvRanked(m) {
   if (m.rv) rvGot(m.rv, m.id, 1);
@@ -35470,19 +35539,27 @@ function rvFriend() {
   const p = RV.pf, R = RV.fr;
   if (mode === "result" && R && p && p.e && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || "Your friend", R.op.spec.id);
 }
-function rvShow(e, name, fid) {
+// a boss beaten together (ui/online.js finishBossOnline): the server's count once it has counted the fight on screen
+function rvBossRes(R) { RV.bf = R; rvBossShow(); }
+function rvBossShow() {
+  const p = RV.bo, R = RV.bf;
+  if (mode === "result" && R && p && p.e && p.e.b && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || "Your friend", R.boss.mate.spec.id, true);
+}
+// bo: a boss beaten together, where the count of them stands in for the record
+function rvShow(e, name, fid, bo) {
   const el = $("rRiv"), sub = $("rSub");
   const old = sub.querySelector(".rv-now"); if (old) old.remove();
   el.hidden = !e;
   if (!e) return;
-  const w = rvWords(e, name);
-  const ln = acMk("span", "rv-now"), part = w.t.split(/(\d+–\d+)/);   // the score never breaks at its dash
+  const w = bo ? { t: `${rvBos(e.b)} beaten together`, c: "bo" } : rvWords(e, name);
+  const ln = acMk("span", "rv-now"), part = bo ? ["", rvBos(e.b), " beaten together"] : w.t.split(/(\d+–\d+)/);   // the score never breaks at its dash
   ln.append(` ${part[0]}`, acMk("span", "rv-nw", part[1] || ""), `${part[2] || ""} now.`);
   sub.appendChild(ln);
   el.textContent = "";
   const av = acMk("span", "av"); acSetAvatar(av, fid, 0);
-  const rec = e.w > e.l ? `You lead ${e.w}–${e.l}` : e.w < e.l ? `Leads ${e.l}–${e.w}` : `Tied ${e.w}–${e.l}`;   // next to their name and face
-  el.append(av, acMk("span", "nm", name), acMk("i", "sep"), acMk("span", "rec " + w.c, rec), rvDots(e.k));
+  const rec = bo ? `${rvBos(e.b)} together` : e.w > e.l ? `You lead ${e.w}–${e.l}` : e.w < e.l ? `Leads ${e.l}–${e.w}` : `Tied ${e.w}–${e.l}`;   // next to their name and face
+  el.append(av, acMk("span", "nm", name), acMk("i", "sep"), acMk("span", "rec " + w.c, rec));
+  if (!bo) el.appendChild(rvDots(e.k));
   el.setAttribute("aria-label", `${name}: ${w.t}. Open your rivals`);
   rvPlace();
 }
@@ -35521,7 +35598,7 @@ function rvVerdict(late) {
 // resOpen (screens.js): every results screen starts without them
 function rvClear() {
   const el = $("rRiv"); if (el) el.hidden = true;
-  RV.fr = null;
+  RV.fr = null; RV.bf = null;
   const b = document.querySelector("#rChipT .rv-bty"); if (b) b.remove();
 }
 tap("rRiv", () => { openAccount(); acSetTab("s"); });
@@ -35554,10 +35631,13 @@ function rvStats(pan) {
     if (tag) nb.appendChild(rvTagEl(tag));
     const sub = acMk("span"); sub.append(`${FIG[e.f] ? FIG[e.f].name : "Potato"} · `, acMk("i", "", `${ti.t.name} ${e.r || 1000}`));
     li.style.setProperty("--tc", ti.t.col);
-    const s2 = acMk("span", "sub2"); s2.append(rvDots(e.k), `${rvN(e)} ${rvN(e) === 1 ? "game" : "games"}`);
+    // a friend you only beat bosses with: Co-op where the games would be, no record
+    const n = rvN(e), games = n ? `${n} ${n === 1 ? "game" : "games"}` : "Co-op";
+    const s2 = acMk("span", "sub2"); s2.append(...(n ? [rvDots(e.k)] : []), games);
     who.append(nb, sub, s2);
-    const last = acMk("span", "last", `${rvN(e)} ${rvN(e) === 1 ? "game" : "games"}`); last.appendChild(acMk("small", "", e.t ? acAgo(e.t) : ""));
-    li.append(av, who, rvDots(e.k), acMk("span", "rec " + (e.w > e.l ? "up" : e.w < e.l ? "down" : ""), `${e.w}–${e.l}`), last);
+    if (e.b) who.appendChild(acMk("span", "rv-bo", `${rvBos(e.b)} beaten together`));
+    const last = acMk("span", "last", games); last.appendChild(acMk("small", "", e.t ? acAgo(e.t) : ""));
+    li.append(av, who, rvDots(e.k), acMk("span", "rec " + (e.w > e.l ? "up" : e.w < e.l ? "down" : ""), n ? `${e.w}–${e.l}` : ""), last);
     ul.appendChild(li);
   }
   pan.appendChild(ul);

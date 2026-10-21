@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-21: Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -21,6 +21,26 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     with Remove (POST /api/stats/bwrm), and Boss Week tries count as their own mode (boss-week).
   - Tests: tests/bossweek.js (node, check.sh 5d3, alone), tests/pwbw.py (a counted run in the browser, port PORT_BASE+12, 5d4: the boss has a
     tenth of his HP there via BW_T), tests/pwbwsheet.py (the tile, sheet, tab and Monday card at five sizes with window.__blBwMock, 6d2).
+- Leftover fixes (2026-10-21, branch claude/project-thread-kaw5j3, no PROTO change: nothing in the simulation or the start message changed;
+  wrap-up /mnt/project-files/leftovers/wrap-up.md). The small items left open by earlier PRs, in one PR:
+  - Bosses beaten together: quick.js referees a Play friends boss fight between two signed-in players like a 1v1 (its own ROAD_HP x DUO_HP,
+    tests/quick.js checks they are the page's); a win adds one to both rival entries' `b`, never W/L, k or the refereed-match count, and
+    goes to both as qm-bo {id, g, rv}. A loss or a fight a friend dropped out of counts nothing; no chip challenge after it. The page
+    (ui/rivals.js rvBoss / rvBossRes) shows "n bosses together" on the results strip and "n bosses beaten together" on the friend's
+    row in Account > Stats; a friend with only boss fights reads Co-op instead of a record.
+  - A friend drops from an online boss fight: duoSolo (ui/online.js) makes the rest the Road's fight: his HP keeps its share but of his
+    Road HP (the two-player HP / DUO_HP), and the CPU plays at the Road's partner strength (mate + 0.1 a level), not BOSS_PARTNER. Only
+    the phone left plays on, so changing its game can't drift from another.
+  - accounts.js fill() {files, maxFiles, bytes, maxBytes, warn}: past warnAt (80%) of either cap the server logs one "accounts: nearly
+    full" line, and /api/stats/data carries `acct` so the private stats page shows a warning above its sections.
+  - Results in desktop windows under 1000 px wide: the desktop sizes moved into @container (min-width: 1000px) (css/40-results.css,
+    80-mastery.css); 760-960 px windows get the phones' sizes in a ~400 px column beside a slimmer panel.
+  - Settings' fine print (#setRankNote, menus.js): on our server Ranked is online against players and VS CPU is the CPU rank; off it the
+    old "Ranked vs CPU" line. The partner's marker in boss fights takes the team colour (TEAM_COL[0]); YOU stays gold.
+  - Road boss sheet: upright the cards stack, the boss card wraps "The Devil" over "you + a CPU partner" and the sheet's kicker goes
+    under the name; sideways the boss card shows his role only (the rule line says the rest); "You · tap to change" wraps, never cut. Every upright
+    Road sheet stacks its cards the same way and lets names wrap; upright the map header's stars line (#roadSum) gets its own row.
+  - Kraken Spud keeps HP 600 (x lvHp [1, 1, 1.2]; Road x1.3 = 780 on Normal and Hard); Fable's 950 was never used.
 - Challenge a friend (2026-10-21, branch claude/project-thread-fuj54z, no PROTO change; wrap-up /mnt/project-files/challenge-link/wrap-up.md).
   ui/challenge.js + css/96-challenge.css. After a finished 1v1 vs a CPU (practice, the first fight, the old local Ranked), a Quick match
   (not a warm-up while the search runs) or Ranked vs CPU, the results' winner's panel has "Challenge a friend" (#rChl), on our own server
@@ -107,7 +127,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     counts (Team up or the room list), also when a CPU took over a dropped friend. Loss lines and Next: Hard / Retry are unchanged.
   - Tests: pwonboss.py now starts from Team up on the Road sheet, checks the HP x K, the open fence's star / title / chips / skin, the
     closed fence's line, and a win after the drop with Hard already won (nothing paid twice; the drop's loss line is no longer checked);
-    onsnap.js plays the online HP. Left as before: no team colour on name markers, boss fights not in the friend W/L.
+    onsnap.js plays the online HP. (The team colour on the markers and boss fights on the friend card came with the leftover fixes.)
 - Road and fullscreen fixes (2026-10-16, branch claude/road-fullscreen-fixes-ucjbgm, UI only, no PROTO; plan "Before step 6",
   thread 1; brief /mnt/project-files/pre-step6/briefs/thread-1.md):
   - Road results: after a win with a star missing, Retry (#rRetry, dark, 1fr) sits beside Next stop (1.6fr; .res-actions.retry) and
@@ -263,7 +283,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     Nightmare / Again, after a loss Retry, through the rematch handshake (both tap). The partner's KO page says "<FIGHTER> WINS IT"
     (finWinWord, also offline when the CPU partner finishes). Mastery x1; the partner's page gives you no page XP.
   - A partner who leaves, loses the connection or sends nothing for 15 s: cpuTakeover puts a CPU on their fighter on this phone
-    (BOSS_PARTNER strength of the level), leaves the room and plays on alone (soloTick); banner "<name> dropped", the marker reads
+    (since the leftover fixes the Road's partner strength and HP, duoSolo), leaves the room and plays on alone (soloTick); banner "<name> dropped", the marker reads
     CPU; results "Boss fight · <name> dropped", chips as normal, the big button Retry vs CPU (a Practice boss fight).
   - NICE!: in an online boss fight a tap on your own card (.pcard.nice) or N sends `em` (a counter) in the presence; both phones pop
     a comic NICE! over that fighter (drawNice, 1.5 s cooldown). Never in the simulation.
@@ -930,9 +950,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   reloads; a reset (forced save) at the moment a pot lands overwrites it; a lawyer's look before the store apps.
 - Quick match leftovers: a phone whose own connection drops for more than 15 s in a Ranked match loses ("quiet"); an online-rank
   leaderboard is step 6; Casual games count only in the rival record (no Casual history list).
-- 2v2 is done offline and online (see State). Online boss fight leftovers: the team colour
-  for both players' markers (Fable's idea) is not done; a guest picks no boss or level (the host's pick); a phone whose own
-  connection drops plays on with a CPU too (it can't tell who dropped); P.friendW/L do not count boss fights.
+- 2v2 is done offline and online (see State). Online boss fight leftovers: a guest picks no boss or level (the host's pick); a phone
+  whose own connection drops plays on with a CPU too (it can't tell who dropped); P.friendW/L do not count boss fights (the rival
+  record's b does, refereed).
   Boss leftovers: The Field, The Kitchen and The Deep stay out of the ranked draw until each gets its own balance pass; a
   solo boss mode (BOSS_SOLO is there, no menu); Fable's crack on the HP bar when a boss breaks is not drawn yet; bosses have no
   portrait on the results screen or in the VS list.

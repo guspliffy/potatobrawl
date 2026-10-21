@@ -108,6 +108,7 @@ function qmMsg(m) {
   else if (m.t === "qm-res") { qmRes(m); stkGot(m, 1); }   // ui/stakes.js: who can play a rematch for chips now
   else if (m.t === "qm-cs") { rvCasual(m); stkGot(m, m.g); }   // ui/rivals.js: a Casual game (or a Play friends one) the server played to its end
   else if (m.t === "qm-sk") stkRes(m);   // ui/stakes.js: a staked match decided
+  else if (m.t === "qm-bo") rvBoss(m);   // ui/rivals.js: a boss beaten with a friend, counted by the server
   else if (m.t === "acct") qmAcctAnswer(m);
   else if (m.t === "stk-out" || m.t === "stk-in" || m.t === "stk-off" || m.t === "stk-no") stkMsg(m);
 }
