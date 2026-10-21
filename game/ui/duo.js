@@ -28,7 +28,7 @@ function startDuo(o) {
   const pick = o.map === undefined || o.map === "random" ? -1 : o.map | 0;
   const map = BL.MAPS[pick] && BL.MAPS[pick].pool !== false ? pick : randMap();
   const players = [{ spec: me, pal: me.palettes[mine] || me.palettes[0] }, { spec: mate, pal: skin(mate) }, { spec: a, pal: skin(a) }, { spec: b, pal: skin(b) }];
-  G = newGame({ players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
+  G = newGame({ seed: newSeed(), players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
   const names = ["You"];
   for (let i = 0; i < 3; i++) names.push(cpuNameNot(names));   // three different potato names
   match = { duo: true, level: LEVELS[lv].name, lv, d, cpu: names[1], names, team: duoTeamName(), caught: 0,

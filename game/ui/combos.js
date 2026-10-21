@@ -70,7 +70,7 @@ function startTrial(fid, o) {
   // the dummy is always Odin (the heaviest fighter, the one every route is tested on: tests/combos.js); against Odin himself in another skin
   const me = FIG[fid] || FIGHTERS[0], opp = FIG.odin, mi = P.pal[me.id] || 0;
   const myPal = me.palettes[mi] || me.palettes[0], opPal = opp.palettes[me.id === "odin" ? (mi + 1) % chipN(opp) : 0];
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: opp, pal: opPal }], stocks: 9, time: 0, countdown: 90 });
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: opPal }], stocks: 9, time: 0, countdown: 90 });
   match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
   meSlot = 0;
   const list = ROUTES.forFighter(me.id), done = new Set(routesDone());

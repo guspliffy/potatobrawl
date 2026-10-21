@@ -9,7 +9,10 @@
 #   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+11 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
+# macOS: bash 3.2 works (it polls instead of `wait -n`), and without `timeout` the steps run with no time limit unless coreutils' gtimeout is installed.
 set -u
+# macOS has no `timeout`: use coreutils' gtimeout when there, else run the command without a limit
+command -v timeout > /dev/null || timeout() { if command -v gtimeout > /dev/null; then gtimeout "$@"; else shift; "$@"; fi; }
 cd "$(dirname "$0")"
 ROOT=$PWD
 LOGS=$ROOT/build/check-logs
@@ -274,10 +277,11 @@ if grep -q "^no errors" "$LOGS/ult-ui.log"; then pass "ulti bar + ULTI button (t
 else fail "ulti bar + ULTI button" "$LOGS/ult-ui.log"; fi
 }
 
-# 6e. The guided first round: nine steps (Move ... Dodge, Ultimate, Knock them off) on desktop and four touch sizes. Shots in build/shots/tut.
+# 6e. The first minute: the turn-sideways screen, the welcome sheet, the 4-step tutorial (Move & jump, Land 3 hits, Dodge then recover,
+#     Knock them out) on desktop and four touch sizes, YOU'RE READY and the first fight's hints. Shots in build/shots/tut.
 s_tut() {
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwtut.py" tut) > "$LOGS/tutorial.log" 2>&1
-if grep -q "^no errors" "$LOGS/tutorial.log"; then pass "tutorial (nine steps incl. Dodge and Ultimate; shots in build/shots/tut)"
+if grep -q "^no errors" "$LOGS/tutorial.log"; then pass "first minute (turn screen, welcome, the 4-step tutorial, the first fight's hints; shots in build/shots/tut)"
 else fail "tutorial" "$LOGS/tutorial.log"; fi
 }
 
@@ -408,7 +412,9 @@ if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOL
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)
 run() { STEP=$1; local t0=$SECONDS; "s_$1"; echo $((SECONDS - t0)) > "$RES/$1.t"; }
 # a lane: its steps in the listed order, at most $1 at a time
-lane() { local n=$1 s; shift; for s in "$@"; do while [ "$(jobs -rp | wc -l)" -ge "$n" ]; do wait -n; done; run "$s" & done; wait; }
+# wait for any one job: `wait -n` is bash 4.3+ (macOS ships 3.2), so older bashes poll
+if [ "${BASH_VERSINFO[0]}" -gt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${BASH_VERSINFO[1]}" -ge 3 ]; }; then waitany() { wait -n; }; else waitany() { sleep 1; }; fi
+lane() { local n=$1 s; shift; for s in "$@"; do while [ "$(jobs -rp | wc -l)" -ge "$n" ]; do waitany; done; run "$s" & done; wait; }
 # print the finished steps in ORDER, up to the first that is still running
 NEXT=0; FAILS=0
 flush() {
@@ -428,9 +434,9 @@ trap 'killtree $$; exit 130' INT TERM
 
 T0=$SECONDS
 run build; run proto; flush            # everything else reads the build
-for s in "${SOLO[@]}"; do run "$s"; done   # nothing beside them: even the simulations made their short timers miss
-( renice -n 19 -p $BASHPID > /dev/null; lane $((QUICK ? 4 : 2)) "${SIMS[@]}" ) &
-[ ${#REAL[@]} -gt 0 ] && lane "$JOBS" "${REAL[@]}" &
+for s in ${SOLO[@]+"${SOLO[@]}"}; do run "$s"; done   # nothing beside them: even the simulations made their short timers miss
+( renice -n 19 -p "${BASHPID:-$(exec sh -c 'echo $PPID')}" > /dev/null; lane $((QUICK ? 4 : 2)) "${SIMS[@]}" ) &
+[ ${#REAL[@]} -gt 0 ] && lane "$JOBS" ${REAL[@]+"${REAL[@]}"} &
 while [ "$(jobs -rp | wc -l)" -gt 0 ]; do flush; sleep 2; done
 wait; flush
 T=$((SECONDS - T0))

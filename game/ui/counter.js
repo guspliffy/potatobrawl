@@ -115,8 +115,8 @@ function cntEnd(forfeit, R) {   // screens.js finishMatch and showResults (onlin
   if (d === 5 || d === 10 || d === 25) cntOnce("fn:d" + d);
 }
 // a match left without an end (the pause menu's Quit, the tutorial's Skip, Back to the Road): counted as quit
-function cntDrop() {
-  if (!CNT.live || mode === "match") return;
+function cntDrop(force) {   // force: the tutorial's Skip goes straight into the first fight, so the mode is still "match" (ui/tutorial.js)
+  if (!CNT.live || (mode === "match" && !force)) return;
   const md = CNT.live.md;
   CNT.live = null;
   cnt(`me:${md}:quit`);

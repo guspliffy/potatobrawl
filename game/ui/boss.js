@@ -21,7 +21,7 @@ function startBoss(o) {
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   const mate = FIG[o.partner] || cpuFoe(me), matePal = mate.palettes[mate.id === me.id ? ((P.pal[me.id] || 0) + 1) % chipN(mate) : 0];
   const boss = BL.BOSSES.find((b) => b.id === o.boss) || BL.BOSSES[0], lv = clamp(o.level | 0, 0, 2);
-  G = newGame({ players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: mate, pal: matePal }, { spec: boss, pal: boss.palettes[0] }],
     stocks: 3, time: 0, countdown: 150, map: bossMap(boss), level: lv, hpMul: o.hpMul ?? BOSS_SOLO });
   const md = o.mate ?? BOSS_PARTNER[lv];
   match = { boss: true, level: lv, d: md, bot: makeBot(md, BL.BOT_STYLES[mate.id]), cpu: cpuName(), road: o.road || null };

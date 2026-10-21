@@ -2,9 +2,11 @@
 Three players (A on a phone, B on a desktop, C on a phone) as separate devices:
   1. A: the menu's gold hero is Quick match, the Season 1 sheet once, Find match (Ranked) makes the account, nobody else searches,
      so the CPU warm-up is offered and taken; the searching strip runs on its HUD.
-  2. B searches Ranked: PLAYER FOUND! over A's warm-up (no result for it), the VS screen on both, the fight; B walks off the stage
-     three times, the server decides: both results show the server's rating, which the account files hold too.
-  3. A and B again: they just played each other, so no Ranked rematch: after 20 s they meet as Casual (no rank change), B leaves.
+  2. B (a fresh profile: no Season 1 sheet until it has played) searches Ranked: PLAYER FOUND! over A's warm-up (no result for it),
+     the VS screen on both, the fight; B walks off the stage three times, the server decides: both results show the server's rating,
+     which the account files hold too.
+  3. A and B again: B now gets its Season 1 sheet (its first match is done); they just played each other, so no Ranked rematch: after
+     20 s they meet as Casual (no rank change), B leaves.
   4. C and A in Ranked: A forfeits from the pause menu (a loss on the server, C's win "Opponent left"). A carries a 3-win streak
      (written into its account file), so C's VS screen shows A's wanted plate and C takes the 30-chip bounty, paid into C's account.
   5. The rival record all along: the results' story line and rival strip, the VS pill, Account > Stats's Rivals list (A at 844,
@@ -29,7 +31,8 @@ ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster 
 PHONE, DESK, TINY, UP = {'width': 844, 'height': 390}, {'width': 1280, 'height': 760}, {'width': 667, 'height': 320}, {'width': 390, 'height': 844}
 PA = {'tokens': 85, 'rating': 1180, 'peak': 1180, 'wins': 6, 'losses': 2, 'matches': 8, 'last': 'phoenix', 'gfx': '2d', 'name': 'Peel Appeal'}
 PB = {'tokens': 10, 'last': 'samurai', 'gfx': '2d', 'name': 'Mash Master'}
-PC = {'tokens': 10, 'last': 'odin', 'gfx': '2d', 'name': 'Tuber Tom', 'screen': 'up'}
+# A played before (matches), C has the first-match flag (fin1), B is fresh: no Season 1 sheet until B's first finished match
+PC = {'tokens': 10, 'last': 'odin', 'gfx': '2d', 'name': 'Tuber Tom', 'screen': 'up', 'fin1': True}
 errs = []
 def expect(ok, msg):
     if not ok: errs.append(msg)
@@ -125,7 +128,7 @@ async def plates(pg, tag, sizes, back, quick=True, check=None):   # the plate at
             if check: check(w, h, r)
     await pg.set_viewport_size(back); await pg.wait_for_timeout(300)
 
-async def open_quick(pg, tag, season):
+async def open_quick(pg, tag, season, played=True):
     await pg.goto(URL)
     await wait(pg, "window.__blastline && window.__blastline.mode === 'menu' && window.__blastline.qm.conn", f'{tag}: connected on the menu')
     await pg.wait_for_timeout(400)
@@ -135,6 +138,9 @@ async def open_quick(pg, tag, season):
     await tap(pg, '#bRanked')
     await wait(pg, "window.__blastline.mode === 'quick'", f'{tag}: Quick match opens')
     await pg.wait_for_timeout(500)
+    if not played:   # the sheet waits for the first finished match (ui/base.js playedOnce); the sticker stays on the card
+        expect(not await shown(pg, '#scrSeason .ss-sheet'), f'{tag}: a fresh profile should not get the Season 1 sheet')
+        return
     expect(await shown(pg, '#scrSeason .ss-sheet'), f'{tag}: the Season 1 sheet should open the first time')
     if season: await season()
     await tap(pg, '#ssGo')
@@ -188,7 +194,7 @@ async def main():
             await shot(A, 'warmup-844')
 
             # ---- 2. B searches Ranked: found, A's warm-up ends with no result, VS, the fight, the server's verdict
-            await open_quick(B, 'B', None)
+            await open_quick(B, 'B', None, played=False)
             await tap(B, '#qmFind')
             # A's found banner and B's VS screen come at once: both watched together (a screenshot of one page is slow here)
             async def a_found():
@@ -241,6 +247,9 @@ async def main():
             await wait(A, "window.__blastline.mode === 'quick' && window.__blastline.qm.st === 'search'", 'A: Next match searches again')
             await tap(B, '#rChange')
             await wait(B, "window.__blastline.mode === 'quick'", 'B: back on the Quick match screen')
+            await B.wait_for_timeout(500)
+            expect(await shown(B, '#scrSeason .ss-sheet'), 'B: after its first finished match the Season 1 sheet should open, once')
+            await tap(B, '#ssGo')
             await tap(B, '#qmFind')
             if await wait(A, "window.__blastline.qm.vsN >= 2", 'A: found again (Casual, after the fallback)', 40):
                 st = await text(A, '#vsStamp')

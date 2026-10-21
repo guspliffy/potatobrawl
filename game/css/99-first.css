@@ -1,0 +1,92 @@
+/* ---------- First minute (Fable's first-minute pass): the turn-sideways screen, the welcome sheet, the 4-step tutorial card,
+   the first fight's hint strip. Scripts: ui/welcome.js (turn screen, welcome), ui/tutorial.js (steps, first fight, hints). ---------- */
+
+/* ---- the turn-sideways screen: a sibling of #app (never rotated), plain ink, READY drawn in the game's turn (--ga) ---- */
+#turn { --tr: -90deg; --ga: 90deg; position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px 24px 290px; background: var(--ink); color: var(--text); text-align: center; touch-action: none; transition: opacity 0.2s; }
+#turn.out { opacity: 0; }
+.tn-art { position: relative; width: 132px; height: 132px; display: grid; place-items: center; }
+.tn-phone { position: relative; width: 56px; height: 112px; overflow: hidden; border: 4px solid var(--text); border-radius: 12px; background: #231a48; animation: tnTurn 3s ease-in-out infinite; }
+.tn-phone i { position: absolute; display: block; }
+.tn-sky { inset: 0; background: linear-gradient(180deg, #2a2150 0%, #7a3f6b 55%, #ef7a52 82%, #f3d9a4 100%); }
+.tn-sun { left: 50%; bottom: 22px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #ffd23f; }
+.tn-gnd { left: 5px; right: 5px; bottom: 14px; height: 9px; border-radius: 2px; background: linear-gradient(180deg, #7bc96a 0 38%, #2a2745 38%); }
+.tn-cam { left: 50%; top: 5px; width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: var(--ink); }
+.tn-arrow { position: absolute; left: 0; top: 0; width: 132px; height: 132px; display: none; color: var(--ember); }
+#turn.ccw .tn-arrow { transform: scaleX(-1); }
+@keyframes tnTurn {   /* 3 s: appears upright, turns in 0.4 s, holds 1.4 s, fades */
+  0% { transform: rotate(0deg); opacity: 0; } 10% { transform: rotate(0deg); opacity: 1; } 27% { transform: rotate(0deg); opacity: 1; }
+  40% { transform: rotate(var(--tr)); opacity: 1; } 87% { transform: rotate(var(--tr)); opacity: 1; } 100% { transform: rotate(var(--tr)); opacity: 0; }
+}
+.tn-t { margin: 22px 0 0; font: italic 900 clamp(34px, 11vw, 46px)/0.95 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: var(--text); }
+.tn-l { margin: 12px 0 0; max-width: 270px; font: 500 16px/1.4 var(--body); color: var(--mute); }
+.tn-go { position: absolute; left: 50%; bottom: calc(160px + env(safe-area-inset-bottom, 0px)); width: 104px; height: 104px; margin-left: -52px; padding: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; color: var(--text); border: 3px solid var(--ember); -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.16), rgba(14, 16, 34, 0.55) 62%), rgba(14, 16, 34, 0.5);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 5px rgba(239, 122, 82, 0.2), 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); animation: tnRing 1.6s ease-in-out infinite; }
+.tn-go span { display: block; font: italic 900 27px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; transform: rotate(var(--ga)); }
+.tn-go:active { transform: scale(0.96); }
+.tn-go:focus-visible, .tn-up:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+@keyframes tnRing { 0%, 100% { box-shadow: 0 0 0 5px rgba(239, 122, 82, 0.2), 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); }
+  50% { box-shadow: 0 0 0 12px rgba(239, 122, 82, 0), 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); } }
+.tn-up { position: absolute; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 12px 18px; font-size: 13px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .tn-phone { animation: none; transform: rotate(var(--tr)); }
+  .tn-arrow { display: block; }
+  .tn-go { animation: none; }
+  #turn { transition: none; }
+}
+
+/* ---- the welcome sheet: the attract fight shows through a 50% dim; no close X ---- */
+.wl { display: grid; place-items: center; padding: 16px; background: rgba(8, 9, 20, 0.5); }
+.wl-sheet { width: min(360px, 100%); padding: 20px 20px 22px; gap: 12px; text-align: center; animation: shDrop 0.26s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.wl-k { font: 800 14px/1 var(--display); letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+.wl-k::after { content: ""; display: block; width: 44px; height: 5px; margin: 8px auto 0; background: linear-gradient(90deg, var(--ember), var(--gold)); transform: skewX(-35deg); }
+.wl-sheet .wl-p { margin: 2px 0 6px; font: 600 21px/1.22 var(--display); letter-spacing: 0.01em; color: var(--text); }
+.wl-sheet .btn { width: 100%; }
+.wl-sheet .btn.lg { padding-inline: 10px; font-size: 21px; letter-spacing: 0.02em; white-space: nowrap; }   /* "Play the tutorial · 1 min" on one line in the 360 px sheet */
+.wl-sheet .wl-skip { --bg: transparent; --bev: inset 0 0 0 transparent; border-color: rgba(206, 210, 255, 0.4); box-shadow: none; }
+.wl-sheet .wl-skip:active:not(:disabled) { box-shadow: none; }
+#app.short .wl-sheet { padding: 14px 18px 16px; gap: 9px; }
+#app.short .wl-sheet .wl-p { font-size: 19px; margin: 0 0 2px; }
+#app.tiny .wl-sheet .btn.lg { min-height: 46px; font-size: 21px; }
+@media (prefers-reduced-motion: reduce) { .wl-sheet { animation: none; } }
+
+/* ---- the tutorial card (4 steps): two lines, about 52 px tall, in the top band between the two name cards ---- */
+#tut .tut-l1 { display: contents; }   /* the Combo trial keeps its own layout: the wrapper is not there for it */
+#tut.t4 { top: 8px; left: var(--tl, 50%); width: var(--tw, min(400px, 62%)); max-width: none; transform: none; min-height: 52px; padding: 5px 8px 5px 12px; gap: 0 10px; align-content: center; }
+#tut.t4 .tut-l1 { display: flex; align-items: baseline; gap: 9px; min-width: 0; white-space: nowrap; overflow: hidden; }
+#tut.t4 .tut-n { flex: none; font-size: 11px; letter-spacing: 0.16em; color: var(--sand); }
+#tut.t4 .tut-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; line-height: 1.15; }
+#tut.t4 .tut-h { font-size: 13px; line-height: 1.25; color: #dfe2f5; white-space: nowrap; }
+#tut.t4 .tut-btns { grid-column: 2; grid-row: 1 / span 2; align-self: center; flex-direction: row; }
+#tut.t4 .chip { position: relative; min-height: 28px; padding: 2px 12px; font-size: 13px; }
+#tut.t4 .chip::after { content: ""; position: absolute; inset: -9px -6px; }
+#tut.t4 { transition: opacity 0.15s; }
+/* a computer-sized window (not .short): the same card, bigger type, so it reads at arm's length (topPlace makes it up to 480 px wide) */
+#app:not(.short):not(.portrait) #tut.t4 { min-height: 64px; padding: 7px 10px 7px 14px; }
+#app:not(.short):not(.portrait) #tut.t4 .tut-n { font-size: 12px; }
+#app:not(.short):not(.portrait) #tut.t4 .tut-t { font-size: 20px; }
+#app:not(.short):not(.portrait) #tut.t4 .tut-h { font-size: 15px; }
+#tut.t4.peek { opacity: 0.25; }   /* your YOU marker is under it (tutPeek, ui/tutorial.js) */
+#app.portrait #tut.t4 { top: auto; bottom: calc(var(--panelH) + 12px); left: 50%; transform: translateX(-50%); width: min(400px, calc(100% - 24px)); }
+#app.tut .pc-stocks { display: none; }   /* the tutorial's cards are name + % (nine lives would only widen them) */
+
+/* ---- the first fight's hints: one 26 px strip under the timer, 300 ms fade ---- */
+#fhint { position: absolute; z-index: 3; top: var(--fy, 40px); left: var(--fl, 50%); width: var(--fw, auto); height: 26px; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+#fhint.on { opacity: 1; }
+#fhint.on.peek { opacity: 0.25; }
+#fhint span { max-width: 100%; padding: 0 13px; border-radius: 13px; background: rgba(14, 16, 34, 0.62); font: 700 16px/26px var(--display); letter-spacing: 0.03em; color: var(--sand); white-space: nowrap; text-shadow: 0 1px 0 var(--ink); }
+#app.portrait #fhint { top: auto; bottom: calc(var(--panelH) + 12px); left: 50%; width: calc(100% - 24px); transform: translateX(-50%); }
+@media (prefers-reduced-motion: reduce) { #fhint { transition: none; } }
+/* DRAG in the stick's knob for the first seconds of the first fight (touch) */
+#stickKnob.drag::after { content: "DRAG"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--display); letter-spacing: 0.06em; color: var(--ink); animation: dragPulse 1s ease-in-out infinite; }
+@keyframes dragPulse { 0%, 100% { opacity: 0.45; transform: scale(0.92); } 50% { opacity: 1; transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { #stickKnob.drag::after { animation: none; } }
+
+/* ---- YOU'RE READY: the tutorial's results are one card and one button, and Menu ---- */
+#resSheet.solo #rChange { display: none; }
+#resSheet.solo .res-actions { margin-block: auto; }
+#resSheet.solo .res-actions #rMenu { grid-column: 1 / -1; }

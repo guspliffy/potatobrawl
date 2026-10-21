@@ -2,7 +2,7 @@ const { BL } = require("../game/core.js");
 const { FIGHTERS, newGame, step } = BL;
 const [attId, defId, R, pct] = [process.argv[2] || "phoenix", process.argv[3] || "odin", +(process.argv[4] || 8), +(process.argv[5] || 0)];
 const A = FIGHTERS.find((f) => f.id === attId), D = FIGHTERS.find((f) => f.id === defId);
-const g = newGame({ players: [{ spec: A, pal: A.palettes[0] }, { spec: D, pal: D.palettes[0] }], countdown: 0 });
+const g = newGame({ seed: 1, players: [{ spec: A, pal: A.palettes[0] }, { spec: D, pal: D.palettes[0] }], countdown: 0 });
 const a = g.fighters[0], d = g.fighters[1];
 a.x = -40; d.x = 10; a.facing = 1; d.facing = -1; d.percent = pct;
 let free = 0, acted = false, first = -1, line = [], prevSt = "";

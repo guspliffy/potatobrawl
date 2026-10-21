@@ -4,7 +4,8 @@
  * Used by server.js and nothing else. Node's own http/fs/crypto only, no dependency.
  *
  * Off unless ACCOUNTS_DIR names a folder that exists and can be written. While off, nothing here runs and every
- * /api/acct/* address answers 404 like any other unknown page.
+ * /api/acct/* address answers 404 like any other unknown page, except /api/acct/ping: server.js answers that one 202 with no
+ * body, so the page learns "off" without a console error.
  *
  *   GET  /api/acct/ping   200 when accounts are on
  *   POST /api/acct/new    {prof}             -> {code, rev}           a new account, rev 1
@@ -68,6 +69,7 @@ function clientIp(req) {
   const peer = String(req.socket.remoteAddress || "");
   if (peer === "127.0.0.1" || peer === "::1" || peer === "::ffff:127.0.0.1") {
     // behind our own reverse proxy: it adds the real address last, so take the last one
+    // (that is safe because the server sits behind our own Caddy on localhost; if the port were ever exposed directly, a client could spoof this header)
     const xff = String(req.headers["x-forwarded-for"] || "");
     const last = xff.split(",").pop().trim();
     if (last) return last.slice(0, 64);
