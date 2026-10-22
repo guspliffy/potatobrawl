@@ -12,7 +12,8 @@
    round in the air 3110-3250); 3250 panel 5: him big with his hand open, 48 ravens dive and drag the night down until the page is black, 3400-3700 Gungnir flies
    back to his fist with the statue's shards in its wake, the catch, the shards fly on and land as RAGNARÖK in gold at 3900, the flock wheels off, his eye glints;
    4700 panel 4 as on Judgement (its moments are MT.AFTER + offset).
-   Script fields: col, name, flight, panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). */
+   Script fields: col, name, flight, panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt().
+   POTATALITY: "Frozen Fries" = MANGA.odin.alt (S_.alt, at the end; its helpers are prefixed fzf), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.odin = (function () {
   const COL = "#8fd8ff", DEEP = "#3f8fc8", SNOW = "#fbfaf6", RAV = "#15131c", FIST = "#9b9796";
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
@@ -23,6 +24,7 @@ MANGA.odin = (function () {
   const LUNGE0 = -44, LUNGE1 = -14;     // Odin's x in the strike panel from FIN.wx, towards the loser: the ready stance, the end of the thrust
   let snow = [], flock = [], shards = [], rubble = [], dust = [], cracks = [], LY = { xc: 0.66, tx: 0, port: false };
   let ult = false, cutA = 1, rgB = [], rgT = null;   // ult: this play is the Ultimate page (set by start()); cutA: the strike's over-layer things fade under the splash
+  let pota = false;   // pota: this play is the Potatality, Frozen Fries (set by its start): the strike's flock, shards and speed lines leave under its splash too
   // the Ultimate: the throw (wind-up, swing, release), the spear stuck in the statue (A_STUCK, TIP_IN units deep) and its turn; the splash's beats
   const T_WIND = 2500, T_SWING = 2560, T_THROW = 2640, T_TURN0 = 3110, T_TURN1 = 3250, A_STUCK = 0.08, TIP_IN = 34;
   const UT = { IN: 3250, BLACK: 3520, RET: 3400, CATCH: 3700, OFF: 3820, NAME: 3900, GLINT: 4200, OUT: 4300 };
@@ -443,7 +445,7 @@ MANGA.odin = (function () {
   /* ---------- the script ---------- */
   const S_ = {
     col: COL, name: "Judgement", flight: "strike",
-    start() { ult = false; cutA = 1; },
+    start() { ult = false; pota = false; cutA = 1; },
     panels,
     words(lay) {
       const ev = FIN.ev, heavy = ev && /^h/.test(ev.mv || ""), txt = ev && ev.fin ? "KAAAW" : heavy ? "DOOM" : "KRAK", D = FIN.dir;
@@ -587,8 +589,8 @@ MANGA.odin = (function () {
     snowFx(o, t);
     const F = funnel(), pn3 = strikePn();
     cutA = 1;
-    if (ult && t >= MT.SPLASH + 40) { if (t >= MT.AFTER) flockFx(o, t, F, 2); return; }   // the splash covers the page: the snow over it, then the two heroes coming back to the spear
-    if (ult) cutA = 1 - fe(MT.SPLASH - 80, MT.SPLASH + 40, t);   // the strike's flock, shards and speed lines leave as the splash comes down
+    if ((ult || pota) && t >= MT.SPLASH + 40) { if (ult && t >= MT.AFTER) flockFx(o, t, F, 2); return; }   // the splash covers the page: the snow over it, then (Ragnarök) the two heroes coming back to the spear
+    if (ult || pota) cutA = 1 - fe(MT.SPLASH - 80, MT.SPLASH + 40, t);   // the strike's flock, shards and speed lines leave as the splash comes down
     if (t >= T_COL && t < 3200) {   // the column over the first page (above the strike panel once that has slid in)
       const k = easeIn(fe(T_COL, T_COL + 220, t)), a = 1 - fe(2900, 3050, t);
       o.save();
@@ -981,6 +983,334 @@ MANGA.odin = (function () {
       cueOnce("uOff", 4100, () => Cin.go(() => { Cin.whoosh(0.4, 0.3, -0.3, 0.3); Cin.drone(false); }));
       cueOnce("uCaw4", 4120, () => odnCaw(0.6, 600)); cueOnce("uCaw5", 4260, () => odnCaw(0.5, 520));
       cueOnce("uGlint", UT.GLINT, () => Cin.go(() => Cin.pluck(1760)));
+    },
+  });
+  /* ===================== the Potatality, "Frozen Fries" (MANGA.odin.alt; design: Project files step8/fable-design.md) =====================
+     Judgement to the shatter (the statue flies, the flock chases it). 3250 the splash (panel 5) slides up on icy paper: the statue hangs at the top of its
+     flight and Gungnir's blade slides in at the edge; 3420-3470 an ice beam crosses the page (KRISSH), the cracks run, 3530 it bursts and the shards are
+     frosted fries: they spray out and rain down one by one into a paper bag standing in the snow (3720-4060) while the camera pushes in on the bag; 4100 the
+     loser's face stamps onto the bag as its logo; 4130-4360 the two ravens swoop in and perch on the rim; 4380 brrr: frost climbs the bag, icicles grow, bag,
+     ravens and logo shiver. 4700 in panel 4's place:
+     Odin with the spear on his shoulder beside the frosty bag, the ravens on its rim, one fry waving, the logo's teeth chattering (brr...), a cold mist; the
+     engine's POP bursts the bag at 5250 (food()): the empty bag lies tipped over, two fries spilled, the ravens flap up.
+     The splash's world (fzfLay): the bag's bottom on the ground at fzfBX(), the statue up and to the loser's side. A bag is drawn in its own units, scaled
+     (fzfBag*: the bottom's middle at 0, 42 wide, the front's rim at -46). Every helper here is prefixed fzf. */
+  const FZF_GOLD = "#f2cf6b", FZF_GOLD_D = "#d49a3c", FZF_FROST = "#eaf7ff", FZF_BAG = "#d8b17b", FZF_BAG_IN = "#8a6238", FZF_CREAM = "#fff6e2", FZF_PAPER = "#eef5f7";
+  const FZ = { BEAM: 3420, HIT: 3470, SHAT: 3530, LAND0: 3720, LAND1: 4060, LOGO: 4100, RAV: 4130, PERCH: 4290, BRRR: 4380 };
+  const FZF_ICE = [[-15, 5], [-8, 3.4], [1, 6], [8, 4], [15, 3.2]];   // the icicles under the front rim: x, length
+  let fzfFries = [], fzfWave = 0;
+  // the splash: its height in world units (vh) and the camera's offset from FIN.wx (cx), both pushed in on the bag while the fries land (vh2, cx2); the bag
+  // (bx from FIN.wx, its scale bs), the statue's feet (sx, sy) and scale (sc), the fries' spray (spr)
+  const fzfLay = () => (LY.port ? { vh: 215, vh2: 160, cx: 0, cx2: 0, bx: 0, bs: 1, sx: 8, sy: -102, sc: 0.62, spr: 0.45 }
+    : { vh: 150, vh2: 118, cx: 22, cx2: -18, bx: -34, bs: 1.1, sx: 84, sy: -42, sc: 0.7, spr: 1 });
+  const fzfBX = () => FIN.wx + FIN.dir * fzfLay().bx;
+  const fzfLw = (pn) => Math.max(1.1, 3 / pn.z);   // an ink line, in world units
+  const fzfAX = () => FIN.wx + FIN.dir * (LY.port ? 78 : 84), fzfAS = () => (LY.port ? 0.85 : 1);   // the bag in the aftermath, its scale
+  const fzfStatue = (t) => { const Y = fzfLay(); return [FIN.wx + FIN.dir * Y.sx, Y.sy - 6 * easeOut(fe(MT.SPLASH, FZ.HIT, t))]; };   // the statue's feet: the top of its flight
+  const fzfLandT = (f) => FZ.LAND0 + (f.ord / (fzfFries.length - 1)) * (FZ.LAND1 - FZ.LAND0);
+  const fzfShake = (t, a) => Math.sin(t * 0.11) * a;
+  // the fries: a slot in the bag (x, how far it sticks out, its lean), where it sits in the statue (u, v: statue units from his feet), the spray (sx, sy), the spin
+  function fzfBuild() {
+    const r = rnd(2718), n = 22;
+    fzfFries = [];
+    for (let i = 0; i < n; i++) {
+      const x = -16 + (32 * ((i * 9) % n)) / (n - 1);   // (9 and 22 share no factor: the slots fill in a scattered order)
+      fzfFries.push({ x, len: 17 + r() * 6, out: 4 + r() * 9, a: (x / 16) * 0.3 + (r() - 0.5) * 0.16, u: (r() - 0.5) * 44, v: -8 - r() * 80,
+        sx: (r() - 0.62) * 150, sy: -30 - r() * 45, spin: (r() < 0.5 ? -1 : 1) * (4 + r() * 6), ord: i, fr: r() });   // (sx: towards the loser's side; most fly back over the bag)
+    }
+    let best = -1;   // the waving fry: a middle one, made to stand tall
+    fzfFries.forEach((f, i) => { if (Math.abs(f.x) < 7 && f.out > best) { best = f.out; fzfWave = i; } });
+    fzfFries[fzfWave].out = 17; fzfFries[fzfWave].a = 0.05;
+  }
+  // a frosted fry centred on (x, y), turned by a (0 = pointing up), in the current units (sc: drawn that much bigger)
+  function fzfFry(c, x, y, a, len, lw, fr, sc) {
+    const w = 4.4, h = len / 2;
+    c.save(); c.translate(x, y); c.rotate(a);
+    if (sc) { c.scale(sc, sc); lw /= sc; }
+    c.fillStyle = FZF_GOLD; c.beginPath(); c.roundRect(-w / 2, -h, w, len, 0.9); c.fill();
+    c.fillStyle = FZF_GOLD_D; c.fillRect(w * 0.12, -h + 0.6, w * 0.36, len - 1.2);
+    c.fillStyle = FZF_FROST;   // the frost cap, a ragged lower edge
+    c.beginPath(); c.moveTo(-w / 2, -h + 0.5); c.lineTo(w / 2, -h + 0.5); c.lineTo(w / 2, -h + len * (0.22 + 0.1 * fr)); c.lineTo(w * 0.1, -h + len * 0.15); c.lineTo(-w * 0.18, -h + len * (0.27 + 0.08 * fr)); c.lineTo(-w / 2, -h + len * 0.18); c.closePath(); c.fill();
+    c.fillStyle = "#ffffff"; c.beginPath(); c.arc(-w * 0.12, h * 0.25 * (fr - 0.5) + 1, 0.55, 0, 7); c.fill();
+    c.strokeStyle = ink; c.lineWidth = lw; c.beginPath(); c.roundRect(-w / 2, -h, w, len, 0.9); c.stroke();
+    c.restore();
+  }
+  // where a fry sits in the bag (bag units): its middle and lean, with the wave for the waving one
+  function fzfSlot(f, wave) {
+    const a = f.a + (wave || 0), cy = -46 - f.out + f.len / 2;
+    if (!wave) return [f.x, cy, a];
+    const bx = f.x - (f.len / 2) * Math.sin(f.a), by = cy + (f.len / 2) * Math.cos(f.a);   // turned about its foot
+    return [bx + (f.len / 2) * Math.sin(a), by - (f.len / 2) * Math.cos(a), a];
+  }
+  // the back wall's cut top (higher than the front: the bag is seen a little from above) and its inside in shade
+  function fzfBagBack(c, lw) {
+    c.fillStyle = FZF_BAG_IN; c.strokeStyle = ink; c.lineWidth = lw; c.lineJoin = "round";
+    c.beginPath(); c.moveTo(-21, -44); c.lineTo(-21, -50); for (let i = 1; i <= 14; i++) c.lineTo(-21 + 3 * i, i % 2 ? -52.5 : -50); c.lineTo(21, -44); c.closePath(); c.fill(); c.stroke();
+  }
+  // the loser's face as a logo: a badge, his colour on a potato head, wide eyes, chattering teeth, cold cheeks; k: the stamp (0..1), blink, chat (the teeth go)
+  function fzfLogo(c, lw, t, k, o) {
+    c.fillStyle = FZF_CREAM; c.strokeStyle = ink; c.lineWidth = lw;
+    c.beginPath(); c.arc(0, -25, 10.5, 0, 7); c.fill(); c.stroke();
+    if (k <= 0) return;
+    const sc = 1 + 0.7 * (1 - easeOut(k)), j = o.chat ? Math.sin(t * 0.09) * 0.45 : 0;
+    c.save(); c.translate(0, -25); c.scale(sc, sc); c.globalAlpha = Math.min(1, k * 3);
+    c.fillStyle = col(L_().pal); c.beginPath(); c.ellipse(0, 0.4, 8, 8.4, 0, 0, 7); c.fill(); c.lineWidth = lw * 0.9; c.stroke();
+    c.lineWidth = lw * 0.75;
+    for (const sd of [-1, 1]) {
+      const ex = sd * 3.2, ey = -1.6;
+      if (o.blink) { c.beginPath(); c.moveTo(ex - 2, ey); c.lineTo(ex + 2, ey); c.stroke(); }
+      else {
+        c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, 2.3, 2.8, 0, 0, 7); c.fill(); c.stroke();
+        c.fillStyle = ink; c.beginPath(); c.arc(ex - sd * 0.3 + j * 0.4, ey - 0.6, 0.95, 0, 7); c.fill();
+      }
+      c.beginPath(); c.moveTo(sd * 1.2, -6.2); c.lineTo(sd * 5, -5); c.stroke();   // worried brows, the inner ends up
+      c.fillStyle = COL; c.beginPath(); c.ellipse(sd * 5.4, 1.9, 1.6, 1, 0, 0, 7); c.fill();
+    }
+    c.fillStyle = "#ffffff"; c.beginPath(); c.rect(-3.6, 2.6 + j, 7.2, 2.8); c.fill(); c.stroke();   // the chattering teeth
+    c.beginPath(); c.moveTo(-3.6, 4 + j); c.lineTo(3.6, 4 + j); for (const x of [-1.8, 0, 1.8]) { c.moveTo(x, 2.6 + j); c.lineTo(x, 5.4 + j); } c.lineWidth = lw * 0.5; c.stroke();
+    c.restore();
+  }
+  // the front: kraft paper with a cut rim, the gusset's crease and tone on the far side, the logo, the frost from the ground up, icicles under the rim.
+  // o: { logo, frost, chat, blink, px (bag units -> screen css px, for the tone; null: no tone) }
+  function fzfBagFront(c, lw, t, o) {
+    const D = FIN.dir;
+    c.lineJoin = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    const front = () => { c.beginPath(); c.moveTo(-19, 0); c.lineTo(-21, -44); for (let i = 1; i <= 14; i++) c.lineTo(-21 + 3 * i, i % 2 ? -46.5 : -44); c.lineTo(19, 0); c.closePath(); };
+    c.fillStyle = FZF_BAG; front(); c.fill();
+    if (o.px) { c.save(); front(); c.clip(); mgToneFill(c, [o.px(D * 12, -48), o.px(D * 23, -48), o.px(D * 21, 2), o.px(D * 11, 2)], 6, 0.38); c.restore(); }
+    c.lineWidth = lw * 0.7; c.beginPath(); c.moveTo(D * 12, -44.5); c.lineTo(D * 11, -0.5); c.moveTo(-18.6, -4.5); c.lineTo(18.6, -4.5); c.stroke();   // the crease, the folded bottom
+    const f = o.frost;
+    if (f > 0) {   // the paper goes cold; a crust of ice climbs from the ground with a jagged crystal edge, the cut rim frosts over
+      c.save(); front(); c.clip();
+      c.fillStyle = rgba(COL, 0.3 * f); c.fillRect(-24, -50, 48, 52);
+      c.fillStyle = FZF_FROST; c.strokeStyle = COL; c.lineWidth = lw * 1.3;
+      c.beginPath(); c.moveTo(-24, 2); for (let i = 0; i <= 12; i++) c.lineTo(-24 + 4 * i, -12 * f - (i % 2 ? 5 : i % 3) * f); c.lineTo(24, 2); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(-24, -50); c.lineTo(24, -50); for (let i = 12; i >= 0; i--) c.lineTo(-24 + 4 * i, -43.5 + (i % 2 ? 3.6 : 0.8) * f); c.closePath(); c.fill(); c.stroke();
+      c.restore();
+    }
+    c.lineWidth = lw; c.strokeStyle = ink; front(); c.stroke();
+    fzfLogo(c, lw, t, o.logo, o);
+    if (f > 0) {
+      star4(c, -12, -8, 2.6 * f, "#ffffff"); star4(c, 11 * D, -6, 2 * f, "#ffffff"); star4(c, -14 * D, -36, 1.8 * f, "#ffffff");
+      c.strokeStyle = ink; c.lineWidth = lw * 0.8; c.fillStyle = "#ffffff";
+      for (const [x, L] of FZF_ICE) { c.beginPath(); c.moveTo(x - 1.7, -44.6); c.lineTo(x, -44.6 + L * f); c.lineTo(x + 1.7, -44.6); c.closePath(); c.fill(); c.stroke(); }
+    }
+  }
+  // the whole bag at bag-units scale s with its bottom at (bx, 0) in the world (pn.world set): the back, the fries in it, the front.
+  // o.fry(f) -> [x, y, lean] in bag units, or null (not in the bag yet); without it every fry sits in its slot (the waving one turned by o.wave)
+  function fzfBag(c, pn, bx, s, t, o) {
+    const lw = fzfLw(pn) / s;
+    c.save(); c.translate(bx, 0); c.scale(s, s);
+    fzfBagBack(c, lw);
+    for (let i = 0; i <= fzfFries.length; i++) {
+      const j = i === fzfFries.length ? fzfWave : i;   // the waving one last, in front of the others
+      if (j === fzfWave && i !== fzfFries.length) continue;
+      const f = fzfFries[j], q = o.fry ? o.fry(f) : fzfSlot(f, j === fzfWave ? o.wave : 0);
+      if (q) fzfFry(c, q[0], q[1], q[2], f.len, lw, f.fr);
+    }
+    fzfBagFront(c, lw, t, Object.assign({ px: (u, v) => pn.sp(bx + u * s, v * s) }, o));
+    c.restore();
+  }
+  // a fry in the air (world units, the splash): from its place in the statue, out along its spray, down into its slot of the bag; k 0..1
+  function fzfFlight(f, k) {
+    const Y = fzfLay(), P0 = fzfStatue(FZ.SHAT), p0x = P0[0] + f.u * Y.sc, p0y = P0[1] + f.v * Y.sc, p1x = p0x + FIN.dir * f.sx * Y.spr, p1y = p0y + f.sy, q = fzfSlot(f), p2x = fzfBX() + q[0] * Y.bs, p2y = q[1] * Y.bs, m = 1 - k;
+    return [m * m * p0x + 2 * m * k * p1x + k * k * p2x, m * m * p0y + 2 * m * k * p1y + k * k * p2y, f.a + (1 - ease(k)) * f.spin];
+  }
+  // shiver marks either side of a bag (world units, pn.world set)
+  function fzfShiverMarks(c, bx, s, lw, t, a) {
+    if (a <= 0.01) return;
+    c.save(); c.strokeStyle = ink; c.lineWidth = lw * 0.9; c.globalAlpha = a; c.lineCap = "round";
+    for (const sd of [-1, 1]) for (let j = 0; j < 2; j++) { const xx = bx + sd * (27 + j * 5) * s, w2 = Math.sin(t * 0.06 + j) * 1.5 * s; c.beginPath(); c.moveTo(xx + w2, -34 * s); c.quadraticCurveTo(xx + sd * 3 * s - w2, -26 * s, xx + w2, -18 * s); c.stroke(); }
+    c.restore();
+  }
+  // the splash's ravens: in from above the far corners, along a dip, onto the rim (bag units), facing in; null before they come
+  function fzfRavenAt(i, t) {
+    const sd = i ? 1 : -1, t0 = FZ.RAV + i * 80, t1 = FZ.PERCH + i * 70, X0 = fzfBX(), bs = fzfLay().bs;
+    if (t < t0) return null;
+    const to = [X0 + sd * 17 * bs, -57 * bs], from = [X0 + sd * 130, -260], cp = [X0 + sd * 75, -40], k = ease(fe(t0, t1, t)), m = 1 - k;
+    return { x: m * m * from[0] + 2 * m * k * cp[0] + k * k * to[0], y: m * m * from[1] + 2 * m * k * cp[1] + k * k * to[1], perched: t >= t1, face: -sd };
+  }
+  function fzfStatueDraw(c, pn, t) {
+    const Lp = L_(), Y = fzfLay(), [fx, fy] = fzfStatue(t), z = pn.z * Y.sc, hit = t >= FZ.HIT;
+    const ox = Lp.x, oy = Lp.y, os = Lp.state;
+    Lp.x = fx; Lp.y = fy; Lp.state = "fin"; Lp.flash = 0;
+    try {
+      mgPuppet(c, pn, Lp, FROZE, { sc: Y.sc, light: dirAng(-0.5), tint: 0.18, flash: hit && t < FZ.HIT + 40, post: (lc) => { lc.fillStyle = rgba(COL, 0.22); lc.fillRect(0, 0, MG.cw, MG.ch); } });
+    } finally { Lp.x = ox; Lp.y = oy; Lp.state = os; }
+    pn.screen(c);
+    const feet = pn.p(fx, fy);
+    crystal(c, (u, v) => [feet[0] + u * z, feet[1] + v * z], t, z);
+    if (hit) { const q = pn.p(fx - FIN.dir * 30 * Y.sc, fy - 52 * Y.sc); crackLines(c, q[0], q[1], z * 1.3, easeOut(fe(FZ.HIT, FZ.SHAT - 10, t)), FIN.dir); }
+  }
+  // Gungnir's blade at the edge on the winner's side and the ice beam from its tip to the statue (screen px of the panel)
+  function fzfBeam(c, pn, t, S) {
+    const D = FIN.dir, z = pn.z, a = 1 - fe(FZ.SHAT + 20, FZ.SHAT + 160, t);
+    if (a <= 0) return;
+    const O = [(D > 0 ? pn.x0 : pn.x1) + D * 30 * z, S[1] - 0.1 * pn.h], ang = Math.atan2(S[1] - O[1], S[0] - O[0]), u = [Math.cos(ang), Math.sin(ang)], g = [O[0] - u[0] * (SP_TIP + 9) * z, O[1] - u[1] * (SP_TIP + 9) * z];
+    const ins = easeOut(fe(MT.SPLASH + 60, FZ.BEAM, t));   // the blade slides in, then holds
+    spear(c, g[0] - u[0] * 26 * z * (1 - ins), g[1] - u[1] * 26 * z * (1 - ins), ang, z, Math.min(1, a * 1.5));
+    const k = easeOut(fe(FZ.BEAM, FZ.HIT, t));
+    if (k <= 0) return;
+    const len = Math.hypot(S[0] - O[0], S[1] - O[1]) * k, hw = 0.05 * Math.min(pn.w, pn.h) * (0.35 + 0.65 * a), n = Math.max(4, Math.round(len / (hw * 1.1)));
+    c.save(); c.translate(O[0], O[1]); c.rotate(ang); c.globalAlpha = Math.min(1, a * 1.4); c.lineJoin = "miter";
+    const spike = (i) => hw * (0.75 + 0.35 * (i / n) + (i % 2 ? 0.45 : 0));   // the ink edge with ice spikes along both sides
+    c.fillStyle = ink; c.beginPath(); c.moveTo(0, -hw * 0.5);
+    for (let i = 0; i <= n; i++) c.lineTo((len * i) / n, -spike(i));
+    c.lineTo(len + hw * 0.9, 0);
+    for (let i = n; i >= 0; i--) c.lineTo((len * i) / n, spike(i));
+    c.closePath(); c.fill();
+    c.fillStyle = COL; c.beginPath(); c.moveTo(0, -hw * 0.6); c.lineTo(len, -hw * 0.95); c.lineTo(len + hw * 0.5, 0); c.lineTo(len, hw * 0.95); c.lineTo(0, hw * 0.6); c.closePath(); c.fill();
+    c.fillStyle = "#ffffff"; c.beginPath(); c.moveTo(0, -hw * 0.22); c.lineTo(len, -hw * 0.38); c.lineTo(len + hw * 0.2, 0); c.lineTo(len, hw * 0.38); c.lineTo(0, hw * 0.22); c.closePath(); c.fill();
+    for (let i = 0; i < 4; i++) { const q = ((t * 0.003 + i / 4) % 1) * len; star4(c, q, (i % 2 ? 1 : -1) * hw * 0.55, hw * 0.45, "#ffffff"); }
+    c.restore();
+    const kh = fe(FZ.HIT, FZ.HIT + 120, t);   // the hit: a white burst on the statue
+    if (kh > 0 && kh < 1) mgStarburst(c, S[0], S[1], 0.16 * Math.min(pn.w, pn.h) * easeOut(kh) * (1 - 0.5 * kh), 0.3);
+  }
+  // the shatter: a white burst and ice chips (the rest of the statue are fries)
+  function fzfBurst(c, pn, t, S) {
+    const u = t - FZ.SHAT, m = Math.min(pn.w, pn.h);
+    if (u < 0 || u > 500) return;
+    const R = 0.26 * m * easeOut(Math.min(1, u / 90)) * (1 - fe(130, 240, u));
+    if (R > 2) mgStarburst(c, S[0], S[1], R, 0.2);
+    const a = 1 - fe(250, 500, u), tau = u / 1000, z = pn.z * 0.6;
+    c.save(); c.lineJoin = "miter"; c.lineWidth = 1.6; c.strokeStyle = ink; c.globalAlpha = a;
+    for (let i = 0; i < 14; i++) {
+      const s = shards[i], x = S[0] + (s.sx * 0.5 + FIN.dir * s.vx * tau) * z, y = S[1] + (s.sy * 0.4 + 30 + s.vy * tau + 280 * tau * tau) * z;
+      c.fillStyle = s.w; shardTri(c, x, y, s.sz * z * 0.55, s.rot + s.vr * tau, s); c.fill(); c.stroke();
+    }
+    c.restore();
+  }
+  function fzfDrawSplash(c, pn, t) {
+    const D = FIN.dir, z = pn.z, lw = fzfLw(pn), X0 = fzfBX(), Y = fzfLay(), bs = Y.bs;
+    const tone = (poly, size, cover, drift) => mgToneFill(c, poly.map(([x, y]) => [x + pn.ox, y + pn.oy]), size, cover, drift);
+    pn.screen(c);
+    for (let i = 0; i < 3; i++) { const h = pn.h * (0.09 + 0.07 * i); tone([[pn.x0 - 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 + h], [pn.x0 - 4, pn.y0 + h]], 8, 0.42 - 0.13 * i, [t * 0.0006, 0]); }
+    const [fx, fy] = fzfStatue(Math.min(t, FZ.SHAT)), S = pn.p(fx, fy - 52 * Y.sc), B = pn.p(X0, -40), R = Math.hypot(pn.w, pn.h), sw = ease(fe(FZ.SHAT, FZ.LAND1, t));
+    if (sw < 1) mgFocus(c, S[0], S[1], R, t * 0.0004, 0.3 * (1 - sw));   // the focus lines move from the statue to the bag
+    if (sw > 0) mgFocus(c, B[0], B[1], R, -t * 0.0003, 0.3 * sw);
+    ground(c, pn);
+    tone([pn.p(X0 - 27 * bs, 0.5), pn.p(X0 + 27 * bs, 0.5), pn.p(X0 + 23 * bs, 5.5), pn.p(X0 - 23 * bs, 5.5)], 6, 0.45);   // the bag's shadow on the snow
+    fzfBeam(c, pn, t, S);
+    if (t < FZ.SHAT) fzfStatueDraw(c, pn, t);
+    // the bag, the fries in it (and the ones about to drop in), the fries in the air in front
+    const shk = fzfShake(t, 0.9 * fe(FZ.BRRR, FZ.BRRR + 60, t)), bx = X0 + shk, brr = t >= FZ.BRRR;
+    pn.world(c);
+    const fry = (f) => {   // a fry about to drop in or landed (with a little bounce) is drawn by the bag, behind its front
+      const tl = fzfLandT(f), k = fe(FZ.SHAT, tl, t);
+      if (t < FZ.SHAT || k <= 0.84) return null;
+      if (k < 1) { const p = fzfFlight(f, k); return [(p[0] - bx) / bs, p[1] / bs, p[2]]; }
+      const q = fzfSlot(f); q[1] -= 3 * Math.sin(Math.PI * fe(tl, tl + 110, t)); return q;
+    };
+    fzfBag(c, pn, bx, bs, t, { fry, logo: fe(FZ.LOGO, FZ.LOGO + 140, t), frost: easeOut(fe(FZ.BRRR, FZ.BRRR + 320, t)), chat: brr });
+    pn.world(c);
+    if (t >= FZ.SHAT) for (const f of fzfFries) {
+      const k = fe(FZ.SHAT, fzfLandT(f), t);
+      if (k <= 0.84) { const p = fzfFlight(f, k); fzfFry(c, p[0], p[1], p[2], f.len, lw, f.fr, bs); }
+    }
+    for (let i = 0; i < 2; i++) {
+      const r = fzfRavenAt(i, t);
+      if (!r) continue;
+      const fl = r.perched ? 0 : Math.sin(t * 0.03 + i * 2), sh = brr && r.perched ? Math.sin(t * 0.13 + i) * 0.5 : 0;
+      raven(c, r.x + shk + sh, r.y, 7 * bs * (brr ? 1 + 0.07 * Math.abs(Math.sin(t * 0.05 + i)) : 1), fl, r.face, r.perched);
+    }
+    fzfShiverMarks(c, bx, bs, lw, t, fe(FZ.BRRR, FZ.BRRR + 120, t));
+    pn.screen(c);
+    fzfBurst(c, pn, t, S);
+  }
+  // the aftermath: Judgement's panel 4 (him, the spear on his shoulder) with the frosty bag beside him and the ravens on its rim; popped: the bag tipped over, empty
+  function fzfDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir, x = FIN.wx + D * 4, ax = fzfAX(), s = fzfAS(), lw = fzfLw(pn), popped = mgPopped(t), WAVE = MT.AFTER + 150;
+    const tone = (poly, size, cover, drift) => mgToneFill(c, poly.map(([px, py]) => [px + pn.ox, py + pn.oy]), size, cover, drift);
+    pn.screen(c);
+    tone([[pn.x0, pn.y0], [pn.x1, pn.y0], [pn.x1, pn.y0 + pn.h * 0.3], [pn.x0, pn.y0 + pn.h * 0.3]], 8, 0.38, [t * 0.0006, 0]);
+    const q = pn.p(ax, -30);
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.4);
+    peaks(c, pn, pn.p(0, 0)[1], pn.h * 0.18, 5);
+    ground(c, pn);
+    tone([pn.p(ax - 27 * s, 0.5), pn.p(ax + 27 * s, 0.5), pn.p(ax + 23 * s, 5.5), pn.p(ax - 23 * s, 5.5)], 6, 0.45);
+    const ox = W.x; W.x = x; mgPuppet(c, pn, W, t, { light: dirAng(-0.5) }); W.x = ox;
+    pn.screen(c);
+    const sp = spearAt(t, x);   // the spear over his shoulder, in front of him; the fist is drawn again over it
+    if (sp) {
+      const g = pn.p(sp.gx, sp.gy); spear(c, g[0], g[1], sp.a, pn.z, 1);
+      c.fillStyle = FIST; c.strokeStyle = ink; c.lineWidth = Math.max(2.4, 1.1 * pn.z); c.beginPath(); c.arc(g[0], g[1], 5 * pn.z, 0, 7); c.fill(); c.stroke();
+    }
+    pn.world(c);
+    if (!popped) {
+      const bx = ax + fzfShake(t, 0.5);
+      if (!MG.slow) {   // a cold mist curling up off the fries
+        c.save(); c.strokeStyle = COL; c.lineWidth = lw * 1.2; c.lineCap = "round";
+        for (let i = 0; i < 3; i++) {
+          const sx = bx + (i - 1) * 10 * s, ph = ((t - MT.AFTER) * 0.018 + i * 7) % 24;
+          c.globalAlpha = 0.75 * (1 - ph / 24);
+          c.beginPath(); for (let j = 0; j <= 8; j++) { const yy = (-58 - ph - j * 2) * s, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.4 * s; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+        }
+        c.restore();
+      }
+      const wave = 0.55 * Math.sin((t - WAVE) * 0.019) * fe(WAVE, WAVE + 120, t);
+      fzfBag(c, pn, bx, s, t, { logo: 1, frost: 1, chat: true, blink: Math.abs(t - 5020) < 60, wave });
+      pn.world(c);
+      fzfShiverMarks(c, bx, s, lw, t, 0.8);
+    } else {   // the empty bag on its side, the mouth towards where he landed, two fries spilled; the face has left the logo with him
+      const lwb = lw / s;
+      c.save(); c.translate(ax - D * 22 * s, -20.6 * s); c.rotate(D * Math.PI / 2); c.scale(s, s);
+      fzfBagBack(c, lwb); fzfBagFront(c, lwb, t, { logo: 0, frost: 0, px: null });
+      c.restore();
+      fzfFry(c, ax + D * 33 * s, -2.4, D * 1.42, 19, lw, 0.3);
+      fzfFry(c, ax + D * 44 * s, -2.4, -D * 1.5, 17, lw, 0.7);
+    }
+    for (let i = 0; i < 2; i++) {   // the ravens on the rim, looking at him; at the pop they flap up and away to both sides
+      const sd = i ? D : -D, up = popped ? easeOut(fe(MT.POP, MT.POP + 260, t)) : 0, fl = popped ? Math.sin(t * 0.035 + i * 2) : 0;
+      const rx = ax + sd * (17 + (i ? 42 : 24) * up) * s + (popped ? 0 : fzfShake(t, 0.5)), ry = (-57 - (popped ? (i ? 48 : 30) * up + 2 * Math.sin(t * 0.02 + i) : 0)) * s;
+      raven(c, rx, ry, 7 * s * (1 + 0.05 * Math.abs(Math.sin(t * 0.05 + i))), fl, -D, !popped);
+    }
+    pn.screen(c);
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Frozen Fries",
+    start(g) { S_.start(g); pota = true; FIN.cue.back = FIN.cue.cawC = true; },   // (Judgement's ravens flying back to the spear belong to its own panel 4)
+    end() { pota = false; },
+    build(lay) { S_.build(lay); fzfBuild(); },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = fzfDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 130 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 48 : 44), wy: -0.46 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: FZF_PAPER, slide: MG.reduced ? 1 : 180,
+        cam: (t) => { const Y = fzfLay(), k = MG.reduced ? 0 : ease(fe(FZ.LAND0, FZ.LOGO, t)), v = lerp(Y.vh, Y.vh2, k); return { wx: FIN.wx + FIN.dir * lerp(Y.cx, Y.cx2, k), wy: -0.42 * v, vh: v * (1 - 0.03 * fe(MT.SPLASH, MT.AFTER, t)) }; },
+        draw: fzfDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, m = lay.port ? 0.4 : 1, kr = ws.find((w) => w.text === "KRASSHH"), Y = fzfLay();
+      if (kr) kr.t1 = MT.SPLASH + 150;   // gone as the splash comes up
+      const at = (id, tt, wx, wy) => () => { const pn = MG.byId[id]; mgPlace(pn, tt); const q = pn.sp(wx(), wy); return [q[0], q[1]]; };
+      ws.push(
+        { text: "KRISSH", t0: FZ.HIT + 10, t1: 4080, size: 0.2, mul: lay.port ? 0.42 : 1, arc: 8, jit: 0.12, rot: -0.1 * D,
+          at: lay.port ? at("splash", 3700, () => fzfStatue(FZ.SHAT)[0], Y.sy - 86) : at("splash", 3700, () => fzfStatue(FZ.SHAT)[0] + D * 14, -16) },
+        { text: "brrr", t0: FZ.BRRR, t1: MT.AFTER + 60, size: 0.14, mul: lay.port ? 0.5 : 1, jit: 0.22, jag: 0.12, rot: 0.08 * D,
+          at: lay.port ? at("splash", 4400, () => fzfBX(), -100) : at("splash", 4400, () => fzfBX() + D * 62, -48) },
+        { text: "brr...", t0: MT.AFTER + 220, t1: MT.POP, size: 0.055, mul: lay.port ? 0.7 : 1, jit: 0.2, rot: 0.06 * D,
+          at: at("after", MT.AFTER + 300, () => fzfAX() + D * 30, -66) },
+      );
+      return ws;
+    },
+    food() { const x = fzfAX(), s = fzfAS(); return { x, y: 0, r: 22 * s, y0: -40 * s, lx: x + FIN.dir * (LY.port ? 24 : 38) }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("fzfBlade", MT.SPLASH + 60, () => Cin.go(() => Cin.chime(1760)));
+      cueOnce("fzfBeam", FZ.BEAM, () => Cin.go(() => { Cin.whoosh(0.22, -0.7 * D, 0.6 * D, 0.45); Cin.shimmer(1320, 0.4); }));
+      cueOnce("fzfHit", FZ.HIT, () => Cin.go(() => { Cin.tick(4200); Cin.impact(0.4); }));
+      cueOnce("fzfShatter", FZ.SHAT, () => Cin.go(() => { Cin.glass(); Cin.boom(0.35); }));
+      for (let i = 0; i < 6; i++) { const tl = FZ.LAND0 + (i / 5) * (FZ.LAND1 - FZ.LAND0); cueOnce("fzfLand" + i, tl, () => Cin.go(() => { Cin._noise(0.05, 0.12, 1800, 3800, "bandpass", 1.5); Cin._osc("triangle", 1200 + i * 140, 900 + i * 100, 0.06, 0.04, 0.002); })); }
+      cueOnce("fzfLogo", FZ.LOGO, () => Cin.go(() => Cin.stamp(0.6)));
+      cueOnce("fzfCaw", FZ.PERCH, () => odnCaw(0.6, 700));
+      cueOnce("fzfCaw2", FZ.PERCH + 90, () => odnCaw(0.45, 620));
+      cueOnce("fzfBrrr", FZ.BRRR, () => Cin.go(() => { for (let i = 0; i < 8; i++) Cin._osc("triangle", 700 + (i % 2) * 60, 680, 0.05, 0.03, 0.002, i * 0.06); }));
+      cueOnce("fzfChat", MT.AFTER + 220, () => Cin.go(() => { for (let i = 0; i < 5; i++) Cin.tick(3000 + (i % 2) * 400); }));
+      cueOnce("fzfFlap", MT.POP + 30, () => odnCaw(0.7, 760));
     },
   });
   return S_;
