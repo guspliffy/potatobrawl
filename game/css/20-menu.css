@@ -37,6 +37,7 @@
 #scrMenu #bFull .fs-out, #scrMenu #bFull.on .fs-go { display: none; }
 #scrMenu #bFull.on .fs-out { display: inline; }
 #scrMenu .mm-bar.nofs #bFull { display: none; }
+#scrMenu .mm-bar.nowm .mm-wmw { display: none; }   /* menuFit's last step: the wordmark goes, the potato stays */
 #scrMenu #bSettings svg { width: 22px; height: 22px; display: block; }
 #scrMenu .plate { --tc: #c9d0e4; position: relative; flex: none; gap: 9px; padding: 0 14px 0 3px; }
 #scrMenu .mm-avw { position: relative; width: calc(var(--mm-ctl) + 6px); height: calc(var(--mm-ctl) + 6px); flex: none; margin-top: -9px; }

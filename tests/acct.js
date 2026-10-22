@@ -73,7 +73,7 @@ function pureTests() {
   check(seen.size === 2000, "code: 2000 new codes, all well formed and different");
 
   // sanitize
-  const dirty = SYNC.sanitize({ tokens: -5, wins: 1e12, rating: "x", name: "  A\u0000B\u202e C  ".padEnd(40, "z"), last: "nobody", owned: { phoenix: [2, 2, 9, -1, "a"], gunslinger: [0, 1, 3], "__proto__": [1], "Bad Id": [1] }, pal: { phoenix: 99, gunslinger: 2 },
+  const dirty = SYNC.sanitize({ tokens: -5, wins: 1e12, rating: "x", name: "  A\u0000B\u202e C  ".padEnd(40, "z"), last: "nobody", owned: { phoenix: [2, 2, 99, -1, "a"], gunslinger: [0, 1, 3], "__proto__": [1], "Bad Id": [1] }, pal: { phoenix: 99, gunslinger: 2 },
     history: [{ r: 1, d: 12, me: "phoenix", op: "odin", opr: 1000, t: 5 }, "junk", { r: 7, d: 1e9 }], extra: 1 }, FIGHTERS);
   check(dirty.tokens === 0 && dirty.wins === 1e9 && dirty.rating === 1000 && dirty.peak === 1000, "sanitize: numbers are clamped, junk gets the default");
   check(dirty.name.length <= 16 && !/[\u0000\u202e]/.test(dirty.name), "sanitize: the name is plain text of at most 16 characters");
@@ -313,7 +313,7 @@ function pureTests() {
   check(SYNC.hasProgress({ mxp: { odin: 30 } }) && !SYNC.hasProgress({ mxp: { odin: 0 } }), "mastery: XP from Practice counts as progress worth asking about");
   // the Shop (ui/shop.js): skins glazed per fighter, nameplates owned, the plate worn. Added later: a missing field means "not known", never empty.
   const FG = FIGHTERS.find((f) => f.id === "phoenix"), nFG = FG.palettes.length;
-  const gz = SYNC.sanitize({ glazed: { phoenix: [3, 1, 3, 9, -1, 1.5, "a", nFG], odin: [], samurai: [0], "Bad Id": [1], "__proto__": [1], mystery: [2, 15, 16] }, plates: ["sunset", "mint", "sunset", "Bad!", 7, "x".repeat(20), "gold_leaf"], plate: "mint" }, FIGHTERS);
+  const gz = SYNC.sanitize({ glazed: { phoenix: [3, 1, 3, 99, -1, 1.5, "a", nFG], odin: [], samurai: [0], "Bad Id": [1], "__proto__": [1], mystery: [2, 15, 16] }, plates: ["sunset", "mint", "sunset", "Bad!", 7, "x".repeat(20), "gold_leaf"], plate: "mint" }, FIGHTERS);
   check(eq(gz.glazed, { mystery: [2, 15], phoenix: [1, 3], samurai: [0] }), "glazed: whole skin numbers in range (this copy's skin count; 16 for a fighter it does not know), sorted, unique; an empty fighter and odd ids are left out");
   check(!Object.prototype.hasOwnProperty.call(gz.glazed, "__proto__") && Object.getPrototypeOf(gz.glazed) === Object.prototype, "glazed: no __proto__ key");
   check(eq(gz.plates, ["gold_leaf", "mint", "sunset"]) && gz.plate === "mint", "plates: a sorted set of well formed ids; the plate worn is kept");

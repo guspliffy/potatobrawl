@@ -76,8 +76,9 @@ function menuFit() {
   const me = $("mRank"), bar = me.closest(".mm-bar"), top = me.parentNode;
   if (screens.menu.hidden) return;
   const crowded = () => bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1;
-  me.classList.remove("fit1", "fit2"); bar.classList.remove("nofs");
-  for (const k of ["nofs", "fit1", "fit2"]) { if (!crowded()) break; (k === "nofs" ? bar : me).classList.add(k); }   // nofs: the fullscreen button goes first
+  me.classList.remove("fit1", "fit2"); bar.classList.remove("nofs", "nowm");
+  // nofs: the fullscreen button goes first; nowm last: the wordmark (only the potato stays), for the narrowest phones with every coin showing
+  for (const k of ["nofs", "fit1", "fit2", "nowm"]) { if (!crowded()) break; (k === "nofs" || k === "nowm" ? bar : me).classList.add(k); }
 }
 if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe(screens.menu);
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => menuFit());   // the web fonts change the widths

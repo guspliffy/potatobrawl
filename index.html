@@ -927,6 +927,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrMenu #bFull .fs-out, #scrMenu #bFull.on .fs-go { display: none; }
 #scrMenu #bFull.on .fs-out { display: inline; }
 #scrMenu .mm-bar.nofs #bFull { display: none; }
+#scrMenu .mm-bar.nowm .mm-wmw { display: none; }   /* menuFit's last step: the wordmark goes, the potato stays */
 #scrMenu #bSettings svg { width: 22px; height: 22px; display: block; }
 #scrMenu .plate { --tc: #c9d0e4; position: relative; flex: none; gap: 9px; padding: 0 14px 0 3px; }
 #scrMenu .mm-avw { position: relative; width: calc(var(--mm-ctl) + 6px); height: calc(var(--mm-ctl) + 6px); flex: none; margin-top: -9px; }
@@ -35551,8 +35552,9 @@ function menuFit() {
   const me = $("mRank"), bar = me.closest(".mm-bar"), top = me.parentNode;
   if (screens.menu.hidden) return;
   const crowded = () => bar.scrollWidth > bar.clientWidth + 1 || top.scrollWidth > top.clientWidth + 1;
-  me.classList.remove("fit1", "fit2"); bar.classList.remove("nofs");
-  for (const k of ["nofs", "fit1", "fit2"]) { if (!crowded()) break; (k === "nofs" ? bar : me).classList.add(k); }   // nofs: the fullscreen button goes first
+  me.classList.remove("fit1", "fit2"); bar.classList.remove("nofs", "nowm");
+  // nofs: the fullscreen button goes first; nowm last: the wordmark (only the potato stays), for the narrowest phones with every coin showing
+  for (const k of ["nofs", "fit1", "fit2", "nowm"]) { if (!crowded()) break; (k === "nofs" || k === "nowm" ? bar : me).classList.add(k); }
 }
 if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe(screens.menu);
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => menuFit());   // the web fonts change the widths
