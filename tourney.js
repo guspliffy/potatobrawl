@@ -180,7 +180,7 @@ function init(opts) {
     for (const c of C.values()) if (c.k === "d" && c.st === "done" && c.ch >= 0 && /^d\d{8}$/.test(c.id) && (!best || c.id > best.id)) best = c;
     if (!best) return null;
     const s = best.slots[best.ch];
-    return { n: s.nm, f: s.f, pal: s.pi, day: best.day };
+    return s.h ? { n: s.nm, f: s.f, pal: s.pi, day: best.day } : { n: "", c: 1, ni: s.ni, f: s.f, pal: s.pi, day: best.day };   // a CPU champion: its name on the page (CPU_NAMES[ni])
   }
 
   /* ----- what a page sees ----- */
@@ -204,6 +204,8 @@ function init(opts) {
     v.m = {};
     for (const [key, m] of Object.entries(c.m)) v.m[key] = [m.s, m.why || "", m.s === "c" ? Math.max(0, m.u - t) : 0, m.rdy ? m.rdy.slice() : [0, 0], m.tk ? 1 : 0];
     v.out = mi >= 0 && c.out[mi] !== undefined ? c.out[mi] : -1;
+    // your CPU match on its way (a page that comes back without it forfeits it at once instead of waiting for "gone")
+    if (mi >= 0) for (const [key, m] of Object.entries(c.m)) if (m.s === "l" && m.tk) { const [r, i] = key.split(":").map(Number); if (c.p[r][2 * i + m.tk.hs] === mi) v.mytk = m.tk.id; }
     if (c.st === "done") { v.ch = c.ch; v.pl = mi >= 0 && c.res ? c.res[mi] || null : null; }
     return v;
   }

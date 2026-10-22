@@ -5256,7 +5256,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
-        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small>8 players<span id="mCup" hidden></span></small></span></button>
+        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small><span id="mCupT">8 players</span><span id="mTc" hidden><i class="dot tcv-live" hidden></i><span id="mTcT"></span></span><span id="mCup" hidden></span></small></span></button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -5584,6 +5584,52 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the Tournament sheet (ui/tcview.js, css/97-tourney.css; the page logic is ui/tourney.js): your fighter, the Daily Cup, Friends Cups, the Practice cup, and the lobby once you are in one -->
+  <section id="scrTc" class="screen modal" hidden>
+    <div class="sheet tcv-sheet" role="dialog" aria-label="Tournament">
+      <header class="sh-head"><h3>Tournament</h3><span class="kick tcv-hk" id="tcvHk"></span><button class="round x" id="tcClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="tcv-body" id="tcvBody">
+        <div class="tcv-top">
+          <button class="dly-f rd-me tcv-me" id="tcvMe" aria-label="Change fighter"></button>
+          <p class="tcv-note" id="tcvNote" role="status"></p>
+          <div class="tcv-yc" id="tcvYc" hidden><span class="tcv-yt"><span class="kick" id="tcvYk">Your cup</span><b id="tcvYb"></b></span><button class="btn sm" id="tcvYGo"><span>Bracket</span></button></div>
+        </div>
+        <div class="tcv-home" id="tcvHome">
+          <div class="card gold tone tcv-daily" id="tcvDaily">
+            <div class="tcv-dh"><span class="tcv-medal" id="tcvMedal" aria-hidden="true"></span><div class="tcv-dt"><span class="kick" id="tcvDk">Daily Cup</span><b class="tcv-cd" id="tcvCd">--:--</b></div></div>
+            <p class="tcv-dl" id="tcvDl"></p>
+            <div class="tcv-prz" id="tcvPrz"></div>
+            <div class="tcv-da"><button class="btn tcv-ink" id="tcvDGo"><span id="tcvDGoT">I'm in</span></button><p class="tcv-dn" id="tcvDn"></p></div>
+          </div>
+          <div class="tcv-side">
+            <div class="card tcv-fr" id="tcvFr">
+              <div class="tcv-ct"><b>Friends Cup</b><span class="kick">2&ndash;8 players</span></div>
+              <div class="tcv-fa">
+                <button class="btn primary" id="tcvHost"><span>Host</span></button>
+                <form class="tcv-cf" id="tcvCf" autocomplete="off"><input class="ac-in tcv-in" id="tcvCode" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Friends Cup code"><button class="btn" id="tcvJoinC" type="submit"><span>Join</span></button></form>
+              </div>
+              <p class="tcv-sm">2&ndash;8 players &middot; CPUs fill the bracket &middot; no chips, just glory</p>
+            </div>
+            <div class="card tcv-pr" id="tcvPr"><span class="tcv-pt"><span class="kick">Practice cup</span><b>You vs 7 CPUs</b></span><button class="btn" id="tcvPGo"><span id="tcvPGoT">Play</span></button></div>
+          </div>
+        </div>
+        <div class="tcv-lobby" id="tcvLobby" hidden>
+          <div class="card gold tone tcv-lh" id="tcvLh">
+            <span class="kick" id="tcvLk">Daily Cup</span>
+            <b class="tcv-cd" id="tcvLCd">--:--</b>
+            <p class="tcv-dl" id="tcvLl"></p>
+            <div class="tcv-da"><div class="tcv-lb"><button class="btn tcv-ink" id="tcvShare"><span>Share link</span></button><button class="btn tcv-ink go" id="tcvStart"><span>Start</span></button></div><p class="tcv-dn" id="tcvLn"></p></div>
+          </div>
+          <div class="card tcv-lin" id="tcvLin">
+            <div class="tcv-lt"><span class="kick">In the cup</span><b id="tcvLInN"></b></div>
+            <div class="tcv-seats" id="tcvSeats"></div>
+            <div class="tcv-la"><button class="btn" id="tcvWarm"><span>Warm up vs CPU</span></button><button class="btn" id="tcvLeave"><span>Leave</span></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -5616,6 +5662,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="card res-pot" id="rPot" hidden>
           <div class="pt-body"><b class="pt-head" id="rPotH"></b><span class="pt-sub" id="rPotS"></span><span class="pt-bar" aria-hidden="true"><i></i><i></i></span></div>
           <div class="delta" id="rPotD"><b id="rPotN">…</b><small>Chips</small></div>
+        </div>
+        <!-- a cup match (ui/tcview.js tcvResult): where it leaves you in the cup, in the rank card's place -->
+        <div class="card res-tc" id="rTc" hidden aria-live="polite">
+          <div class="tc-body"><b class="tc-head" id="rTcH"></b><span class="tc-sub" id="rTcS"></span><span class="tc-bar" aria-hidden="true"><i></i></span></div>
+          <div class="delta" id="rTcD"><b id="rTcN">…</b><small id="rTcL">Cup</small></div>
         </div>
         <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
         <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
@@ -5773,6 +5824,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <!-- Quick match (ui/quick.js, css/96-quick.css): PLAYER FOUND! over a CPU warm-up (3 s), then the VS screen until the fight's countdown -->
   <div id="qmFound" hidden><b class="qf-t">Player found!</b><span class="qf-vs" id="qfVs"></span><span class="qf-n" id="qfN">3</span><span class="qf-l">The CPU fight ends · no result</span></div>
+  <!-- the cup call-up (ui/tcview.js tcvCall, css/97-tourney.css): your match is ready, tap FIGHT within 60 s; over every screen but the bracket (its foot card does it there) -->
+  <div id="tcCall" role="alert" hidden>
+    <span class="tcc-ph cs-ph" id="tccPh"></span>
+    <div class="tcc-t"><span class="kick" id="tccK"></span><b id="tccN"></b><small id="tccS"></small></div>
+    <span class="tcv-ring tcc-ring" id="tccRing"><button class="btn primary" id="tccGo"><span>Fight</span><small id="tccT"></small></button></span>
+    <p class="tcc-busy" id="tccBusy"></p>
+  </div>
   <div id="qmVs" hidden aria-live="polite">
     <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
     <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>
@@ -8930,8 +8988,8 @@ function cntMode(m) {
   if (!m) return "none";
   if (m.trial) return "trial";
   if (m.tutorial) return "tutorial";
-  if (m.vc) return "ranked";   // Ranked vs CPU (ui/vscpu.js): the old Ranked vs a CPU, now with the server's check
-  if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
+  if (m.vc) return m.vc.tc ? "online-cup" : "ranked";   // m.vc.tc: a cup match against a CPU (ui/tourney.js)   // Ranked vs CPU (ui/vscpu.js): the old Ranked vs a CPU, now with the server's check
+  if (m.qm) return m.qm.tm ? "online-cup" : m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
   if (m.warm) return "warmup";
   if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
   if (m.bw) return "boss-week";   // a Boss Week try (ui/bossweek.js)
@@ -28128,6 +28186,7 @@ function renderMenu() {
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
   bwTile();   // ui/bwsheet.js: the Boss Week tile (boss, time left, your best and place)
   qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
+  if (typeof tcvPill === "function") tcvPill();   // ui/tcview.js: the Tournament mini's line (cups online)
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
 function menuDaily() {
@@ -28267,7 +28326,7 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = fmtChips(P.tokens);
-  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
+  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw" || sel.mode === "tc") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
@@ -28333,10 +28392,10 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "tc" ? "Cup · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" || m === "tc" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -28586,7 +28645,7 @@ function resOpen(look, spec, solo) {
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   { const c = $("rBw"); if (c) c.hidden = true; }   // ui/bossweek.js: Boss Week's card
-  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
+  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rTc").hidden = true; $("rStats").hidden = false; masteryHide();   // rTc: ui/tcview.js
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
@@ -28645,7 +28704,7 @@ function showResults(R) {
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
   const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
-  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
+  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc || R.tc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
     R.forfeit ? ["You left the match. It counts as a loss."] :
@@ -28676,7 +28735,7 @@ function showResults(R) {
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
-  const chipsOn = R.ranked || R.warm || R.vc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
+  const chipsOn = R.ranked || R.warm || R.vc || R.tc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
@@ -28689,9 +28748,10 @@ function showResults(R) {
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
+  $("rChange").hidden = false;   // a cup match's results hide it (ui/tourney.js tcResults)
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.bw) bwResults(R);   // ui/bossweek.js: the time, the place and the server's verdict in the rank card's place
-  if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
+  if (R.qm || R.warm || R.vc || R.tc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own (R.tc: a cup match vs a CPU, ui/tourney.js)
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   chlRes(R);   // ui/challenge.js: Challenge a friend
   rpKeep(R);   // ui/replay.js: this run, to watch again (a Boss Week try, a Ranked vs CPU match)
@@ -30709,13 +30769,16 @@ function cupJingle() {
 
 $("cupBack").addEventListener("click", () => {
   Sfx.init(); Sfx.uiBack();
+  if (mode === "tcup") { tcBack(); return; }   // ui/tourney.js: an online cup's bracket (its Menu never touches P.cup)
   const c = P.cup;
   if (!cupOk(c) || cupOver(c)) { cupLeave(); return; }
   CU.confirm = !CU.confirm; cupFootRender(); cupFootIn();   // "Menu" in the middle of a cup asks first: leaving ends the cup
 });
 // the lines follow the slots whenever the bracket area changes size (turning the phone, the strip under it changing height)
-if (window.ResizeObserver) new ResizeObserver(() => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); }).observe($("cupGrid"));
-else window.addEventListener("resize", () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); });
+// (an online cup's bracket on the same screen, mode "tcup": ui/tcview.js tcvLines)
+const cupRelines = () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); else if (mode === "tcup") tcvLines(); };
+if (window.ResizeObserver) new ResizeObserver(cupRelines).observe($("cupGrid"));
+else window.addEventListener("resize", cupRelines);
 // a reload during a cup comes back to its bracket (menus and the tutorial have run by then; an invite link or a first-time tutorial win)
 setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true }); }, 0);
 /* ===================== Daily Potato: one fixed matchup a day =====================
@@ -31875,7 +31938,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
-  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk)) { NET.oppLeft = true; return; }   // Next match never waits for them
+  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm)) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -32097,7 +32160,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -33116,21 +33179,21 @@ const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => 
 app.addEventListener("pointerdown", (e) => { const d = e.target.closest && e.target.closest("button:disabled, [aria-disabled='true']"); if (d && !d.closest("#ctl")) { Sfx.init(); Sfx.uiNo(); } }, true);
 tap("bRanked", quickOpen);   // ui/quick.js: Quick match on our own server, else Ranked vs a CPU
 tap("bPractice", () => openSelect("practice"));
-tap("bCup", cupOpen);
+tap("bCup", tcOpen);   // ui/tourney.js: the Tournament sheet on our server, else the offline cup (cupOpen)
 tap("bDaily", dailyOpen);
 tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 // from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
-tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
-tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else if (sel.mode === "tc") tcPickBack(); else goMenu(); });   // tc: ui/tourney.js
+tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "tc") tcPicked(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
 tap("pQuit", () => {
   if (match && match.warm) { qmWarmQuit(); return; }   // ui/quick.js: the warm-up's Back to search
   if (match && match.qm) {   // ui/quick.js: a Ranked forfeit counts as a loss, a Casual match is just left
-    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk ? "Tap again to forfeit" : "Tap again to leave"; return; }
+    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk || match.qm.tm ? "Tap again to forfeit" : "Tap again to leave"; return; }
     qmForfeit(); return;
   }
   if (match && match.online) {
@@ -35019,6 +35082,7 @@ async function qmFind() {
   if (!qmOn() || QM.st !== "idle") return;
   if (QM.no === "old") { location.reload(); return; }
   if (!QM.conn || !NET.room) { QM.note = "Connecting to the server…"; qmRender(); return; }
+  if (tcPlaying()) { QM.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
   QM.st = "search"; QM.t0 = Date.now(); QM.wait = null; QM.note = ""; QM.sentF = "";
   lobbyPresence(); qmRender();
   // the silent account, for Casual too (the referee keeps your rival record); Casual searches on without one
@@ -35078,7 +35142,9 @@ function qmFoundOk(m) {
 }
 function qmFound(m) {
   const sk = stkFoundOk(m);   // ui/stakes.js: the rematch for chips this phone challenged for or accepted
-  if (!(qmSearching() || sk) || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  const tm = !!m.tm && tcFoundOk(m);   // ui/tourney.js: a cup match the server assigned (called, FIGHT tapped)
+  if (!(qmSearching() || sk || tm) || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  if (!tm) m.tm = null;
   const opp = m.opp;
   opp.name = SYNC.cleanName(opp.name) || "Potato";
   QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
@@ -35089,15 +35155,15 @@ function qmFound(m) {
   Sfx.init(); qmChime();
   try { if (navigator.vibrate) navigator.vibrate([60, 90, 60]); } catch (e) { /* no vibration */ }
   qmJoin(m);
-  if (mode === "match" && match && match.warm && G && G.phase !== "over") qmFoundBanner(m);
-  else { qmEndWarm(); qmVs(m); }
+  if (!tm && mode === "match" && match && match.warm && G && G.phase !== "over") qmFoundBanner(m);
+  else { qmEndWarm(); qmVs(m); if (tm) tcVsWords(m); }
   lobbyPresence();
 }
 async function qmJoin(m) {
   if (NET.mr) leaveMatchRoom();
   resetNet();
   const me = m.role === "host" ? 0 : 1;
-  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, sk: m.sk | 0, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
+  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, sk: m.sk | 0, tm: m.tm || null, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
   NET.role = m.role; NET.phase = m.role === "host" ? "hosting" : "joining"; NET.joinT = performance.now(); NET.note = "";
   NET.oppName = m.opp.name; NET.mrCode = m.room;
   try { await openMatchRoom(m.room); }
@@ -35178,7 +35244,7 @@ function qmStartMsg(D, rtt) {
 // ...and the guest plays only that match (a Casual rematch is the friend-match one; Ranked and staked matches have none)
 function qmStartOk(st) {
   const q = NET.qm;
-  if (st.id !== 1) return !q.ranked && !q.sk;
+  if (st.id !== 1) return !q.ranked && !q.sk && !q.tm;
   return st.seed === q.seed && st.f[0] === q.f[0] && st.f[1] === q.f[1] && st.p[0] === q.p[0] && st.p[1] === q.p[1] &&
     st.r.l === q.r.l && st.r.t === q.r.t && st.r.b === q.r.b && st.set.n === 1 && st.bo == null;
 }
@@ -35216,7 +35282,7 @@ function qmFinish(left, lost) {
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
   if (q.ranked) rvFinishLines(R, q);   // ui/rivals.js: a bounty the verdict already brought, shown only (the server pays it)
-  if (lost || left || q.ranked || q.sk) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked and staked matches have no rematch in the room: it goes
+  if (lost || left || q.ranked || q.sk || q.tm) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked, staked and cup matches have no rematch in the room: it goes
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   QM.st = "idle";
   $("netBadge").hidden = true;
@@ -35227,7 +35293,7 @@ function qmFinish(left, lost) {
 function qmForfeit() {
   const q = match.qm;
   leaveMatchRoom(); NET.phase = "idle"; QM.st = "idle";
-  if (!q.ranked && !q.sk) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
+  if (!q.ranked && !q.sk && !q.tm) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }   // tm: a cup match counts as a loss
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   showResults({ res: 0, online: true, qm: q, forfeit: true, me: G.fighters[meSlot], op: G.fighters[1 - meSlot], lines: [], total: 0 });
   lobbyPresence();
@@ -35235,9 +35301,11 @@ function qmForfeit() {
 // screens.js showResults, at its end: what a Quick match's results (and a warm-up's) say and do
 function qmResults(R) {
   QM.shown = R;
+  if (R.tc) { tcResults(R); return; }   // ui/tourney.js: a cup match against a CPU
   if (R.vc) { vcResults(R); return; }   // ui/vscpu.js: Ranked vs CPU
   { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); }
   const mn = $("rMenuSub");
+  if (R.warm && R.tcw) { tcWarmResults(); return; }   // ui/tourney.js: the cup lobby's warm-up
   if (R.warm) {
     const k = $("rMode"); k.textContent = "";
     const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
@@ -35249,6 +35317,7 @@ function qmResults(R) {
     return;
   }
   const q = R.qm;
+  if (q.tm) { rvResults(R); tcResults(R); return; }   // ui/tourney.js: a cup match (ui/rivals.js: the record against them)
   $("rMode").textContent = q.sk ? `Rematch for chips · ${q.sk} each` : `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
   rvResults(R);   // ui/rivals.js: the record now, the rival strip
   if (q.ranked || q.sk) {
@@ -35374,7 +35443,7 @@ function qmWarmStart() {
 // screens.js finishMatch: a warm-up pays like a friend match (15 / 8 / 5 + 2 per KO) and never touches the rank
 function qmWarmEnd(forfeit) {
   const me = G.fighters[0], op = G.fighters[1], res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
-  const R = { res, forfeit, warm: true, me, op, lines: [], total: 0 };
+  const R = { res, forfeit, warm: true, tcw: !!match.tcw, me, op, lines: [], total: 0 };   // tcw: the cup lobby's warm-up (ui/tourney.js)
   if (!forfeit) {
     R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
     if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
@@ -35385,15 +35454,17 @@ function qmWarmEnd(forfeit) {
   qmStripShow(false);
   showResults(R);
 }
-function qmWarmQuit() { quickOpen(); }   // Pause > Back to search
+function qmWarmQuit() { if (match && match.tcw) { goMenu(); tcOpen(); return; } quickOpen(); }   // Pause > Back to search (the cup lobby's warm-up: back to the lobby)
 // menus.js, the results' buttons: true when Quick match took the tap
 function qmAgain() {
+  if (tcAgain()) return true;   // ui/tourney.js: a cup match's Bracket, the cup lobby's Another CPU fight
   if (match.vc) { vcFight(); return true; }   // ui/vscpu.js: Another CPU fight
   if (match.warm) { qmWarmStart(); return true; }
   if (match.qm && (match.qm.ranked || match.qm.sk || NET.phase !== "result")) { qmNext(); return true; }
   return false;   // Casual: the friend match's Rematch (both tap)
 }
 function qmChange() {
+  if (tcChange()) return;   // ui/tourney.js
   if (match.warm || match.vc) { quickOpen(); return; }
   if (match.qm.ranked || match.qm.sk) { qmLeave(); quickOpen(); return; }
   qmNext();   // Casual: Next match
@@ -35404,6 +35475,7 @@ function qmNext() { qmLeave(); quickOpen(); qmFind(); }
 function qmPauseText() {
   const quit = $("pQuit").querySelector("span"), note = $("pNote");
   if (match.vc) { vcPauseText(); return; }   // ui/vscpu.js
+  if (match.tcw || (match.qm && match.qm.tm)) { tcPauseText(); return; }   // ui/tourney.js
   if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
   if (match.qm && match.qm.sk) {   // a staked match: no result in its first 30 s, then leaving costs the stake
     quit.textContent = "Forfeit";
@@ -35936,6 +36008,7 @@ function vcBoot() {   // qmBoot (ui/quick.js), once
   window.__blQuick.on(vcMsg);
   window.__blVc = VC;   // tests read it
   bwBoot();   // ui/bossweek.js: Boss Week's messages
+  tcBoot();   // ui/tourney.js: the cups' messages
 }
 function vcMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -35970,6 +36043,7 @@ function vcFight() {
   VC.note = "";
   if (!QM.conn) { VC.note = "Connecting to the server…"; qmRender(); return; }
   if (qmAcctOff()) { VC.note = "Ranked vs CPU opens once accounts are on."; qmRender(); return; }
+  if (tcPlaying()) { VC.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
   Sfx.init(); goFull();   // fullscreen needs the tap itself
   VC.asking = true; VC.askT = Date.now();
   qmRender();
@@ -36064,6 +36138,7 @@ function vcPack(codes) {
 
 /* ----- the end: chips on this phone, the log to the server, the rank card waits for its verdict ----- */
 function vcMatchEnd(forfeit) {   // screens.js finishMatch
+  if (match.vc.tc) { tcCpuEnd(forfeit); return; }   // ui/tourney.js: a cup match against a CPU
   const tk = match.vc, me = G.fighters[0], op = G.fighters[1], rec = vcMine() || VC_FRESH;
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, vc: tk, me, op, lines: [], total: 0 };
@@ -36193,6 +36268,7 @@ function vcVerdictView(late) {
 }
 // Pause: what leaving costs (ui/quick.js qmPauseText)
 function vcPauseText() {
+  if (match.vc.tc) { tcPauseText(); return; }   // ui/tourney.js
   const tk = match.vc, me = vcMine() || VC_FRESH, dr = qmElo(me.r, tk.pm ? VC_PLACE_R : tk.cr, 0, me.n);
   $("pQuit").querySelector("span").textContent = "Forfeit";
   $("pNote").textContent = `Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
@@ -36298,11 +36374,13 @@ function vcBdDone(k, d) {
 
 /* ----- every frame (loop.js) ----- */
 function vcStripText() {   // the HUD strip: this match counts, and for which rank
+  if (match.vc.tc) return tcStripText();   // ui/tourney.js: a cup match against a CPU
   const me = vcMine() || VC_FRESH;
   return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
 }
 function vcTick() {
   bwTick();   // ui/bossweek.js: a Boss Week result still on its way, the Monday card
+  tcTick();   // ui/tourney.js: the call-up's clock, a cup match's log still on its way
   if (!qmOn()) return;
   if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
   if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");
@@ -36987,7 +37065,7 @@ const chlPhone = () => !!navigator.share && !!(window.matchMedia && matchMedia("
 // screens.js showResults: after a finished 1v1 against a CPU (the Road, the Daily, bosses, 2v2, the Tournament and the tutorial have their
 // own ends), a Quick match and Ranked vs CPU (not a warm-up while the search runs: the tap would stop it); not after Play friends
 function chlRes(R) {
-  const solo = R.qm || R.vc || (R.warm ? !qmSearching() : !R.online && !R.daily && !R.road && !R.boss && !R.duo);
+  const solo = R.qm ? !R.qm.tm : R.vc || (R.warm ? !R.tcw && !qmSearching() : !R.tc && !R.online && !R.daily && !R.road && !R.boss && !R.duo);   // not after a cup match (ui/tourney.js) or in the cup lobby
   $("rChl").hidden = !(solo && !R.forfeit && !R.left && !R.lost && chlCan());
 }
 tap("rChl", () => {
@@ -37787,6 +37865,423 @@ window.addEventListener("keydown", (e) => {
 });
 $("bHelp").addEventListener("click", () => modal("settings", false));   // How to play is Settings' first row: the sheet gives way to it
 window.__blBwSheet = { open: bwSheetOpen, close: bwSheetClose, render: bwSheetRender, tile: bwTile, card: bwWeekCard, art: bwArt };   // tests
+/* ===================== Cups online: the Daily Cup at 20:00 Berlin and Friends Cups (the server side is tourney.js) =====================
+   The server runs every bracket: it seeds, calls each match, deals the CPU matches and pays the Daily Cup's prizes into the account
+   (they come to this phone with the next sync). This page joins, taps FIGHT when called and plays: a match against a player is a
+   Quick match the server assigned (qm-found {tm}: ui/quick.js plays it, the referee decides it), a match against a CPU is a ticket
+   played here like Ranked vs CPU (ui/vscpu.js vcVs / vcStart / vcIn; the log goes to the server as tcr and the server's replay decides).
+   The views (the Tournament sheet, the online bracket on #scrCup in mode "tcup", the call-up banner, the pill, the results card) are
+   ui/tcview.js (tcv*). UI only: the sim, the bot and the lockstep are not touched. Only on our own server (window.__blQuick). */
+const TC_KEY = "potatobrawl.tc.v1";
+const TC = {
+  day: null,        // the server's day: { day, at, st (pre | open | run | done | off), why, n (in tonight), me, ent, in, miss, ch, t }
+  cup: null,        // your cup as the server sees it (tourney.js view): lobby (ent) or bracket (size, slots, p, m, mi, out, ch, pl)
+  off: 0,           // the server's clock minus this one's
+  call: null,       // you are called: { id, key, r, cpu, opp, until, ready }
+  tk: null,         // the CPU match dealt to you (its VS screen, then the fight)
+  pend: null,       // a CPU match's log on its way: { id, key, cup, s, ff, code, sentT }
+  res: {},          // the results of your matches in this cup, by key (tc-res)
+  end: null,        // the cup is over (tc-end): your place, the chips, the champion
+  want: null,       // the message to send once signed in (a join or a host needs the account first); last: the one sent
+  last: null, again: false, note: "", busy: false, sheet: false, link: "", seen: "", boot: true, alertT: 0, pickFrom: "", shown: null, mode0: "", vs0: false,
+};
+(function tcLoad() { try { const s = JSON.parse(localStorage.getItem(TC_KEY) || "null"); if (s && s.pend && typeof s.pend.s === "string") TC.pend = s.pend; } catch (e) { /* storage blocked */ } })();
+function tcSave() { try { localStorage.setItem(TC_KEY, JSON.stringify({ pend: TC.pend })); } catch (e) { /* ignore */ } }
+const tcOn = () => qmOn();
+const tcNow = () => Date.now() + TC.off;
+const TC_ROUNDS = { 4: ["Semi-final", "Final"], 8: ["Quarter-final", "Semi-final", "Final"] };
+const tcRoundName = (size, r) => (TC_ROUNDS[size] || TC_ROUNDS[8])[r] || "Final";
+const tcKind = (c) => (c && c.k === "f" ? "Friends Cup" : "Daily Cup");
+// your seat in a running cup and the match you play next (or now): { key, r, i, side, s (w | c | l | d), opp (its slot or -1), rdy }
+function tcMine() {
+  const c = TC.cup;
+  if (!c || !c.slots || c.mi < 0) return null;
+  const R = c.size === 8 ? 3 : 2;
+  for (let r = 0; r < R; r++) {
+    const at = c.p[r].indexOf(c.mi);
+    if (at < 0) continue;
+    const i = at >> 1, key = r + ":" + i, m = c.m[key];
+    if (!m || m[0] === "d") continue;
+    return { key, r, i, side: at & 1, s: m[0], opp: c.p[r][at ^ 1], rdy: m[3] ? m[3][at & 1] : 0, ms: m[2] };
+  }
+  return null;
+}
+// still playing in a cup (not out, not over): the Quick match search and the call-ups care
+const tcPlaying = () => !!(TC.cup && TC.cup.st === "run" && TC.cup.mi >= 0 && TC.cup.out < 0);
+const tcInLobby = () => !!(TC.cup && (TC.cup.st === "open" || TC.cup.st === "pre") && TC.cup.ent && TC.cup.ent.some((e) => e.me));
+const tcFighter = () => (FIG[P.last] ? P.last : FIG[sel.fighter] ? sel.fighter : FIGHTERS[0].id);
+
+/* ----- the connection ----- */
+function tcBoot() {   // vcBoot (ui/vscpu.js), once
+  if (!tcOn()) return;
+  const api = window.__blQuick;
+  api.on(tcMsg);
+  api.onConnection((on) => { if (on) { if (!ACCT.code) tcAsk(); if (TC.want) tcGoOn(); } else { TC.busy = false; tcRender(); } });   // with an account: asked after "me"
+  if (api.connected() && !ACCT.code) tcAsk();
+}
+// tests: the state, and a hand on the page's steps (a server without accounts sends no cup messages, so a test's own state stays)
+window.__blTc = TC;
+window.__blTcT = { open: tcOpen, bracket: tcBracket, render: tcRender, called: tcCalled, res: tcRes, end: tcEnd, mine: tcMine, busy: tcBusy, fight: tcFight };
+// the day and your cup; with an account only once signed in (asked unsigned, the server answers without your cup)
+function tcAsk(force) { if (tcOn() && QM.conn && (force || !ACCT.code || QM.authed)) window.__blQuick.send({ t: "tc?" }); }
+function tcMsg(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.t === "me") { tcAsk(true); if (!m.err) { tcFlush(); tcDo(); } else if (TC.want) tcFail(m.err === "off" ? "Cups open soon." : "This phone's account isn't on the server. Check Account."); }
+  else if (m.t === "tc") tcGot(m);
+  else if (m.t === "tc-no") tcNo(m.why);
+  else if (m.t === "tc-call") tcCalled(m);
+  else if (m.t === "tc-tk") tcTicket(m);
+  else if (m.t === "tc-res") tcRes(m);
+  else if (m.t === "tc-end") tcEnd(m);
+}
+function tcGot(m) {
+  if (!m.day || typeof m.day !== "object") return;
+  TC.day = m.day;
+  if (Number.isFinite(m.day.t)) TC.off = m.day.t - Date.now();
+  const old = TC.cup, c = m.cup && typeof m.cup === "object" && typeof m.cup.id === "string" ? m.cup : null;
+  if (!c || !old || c.id !== old.id) { TC.res = {}; TC.end = null; }
+  TC.cup = c;
+  TC.busy = false;
+  // a CPU match's log the server no longer waits for (decided without it, or another cup): dropped
+  const p = TC.pend;
+  if (p && QM.authed && p.sentT && (!c || c.id !== p.cup || !c.m || !c.m[p.key] || c.m[p.key][0] !== "l")) { TC.pend = null; tcSave(); }
+  if (!c && mode === "tcup") { goMenu(); return; }   // the cup is gone (over and cleared, or closed by its host)
+  if (c && !c.slots && mode === "tcup") { goMenu(); tcOpen(); return; }   // a new lobby (HOST ANOTHER on a finished cup's bracket)
+  // a call-up the server still holds for you (a page that came back sees it here; tc-call only goes to a page that was there)
+  const me = tcMine();
+  if (me && me.s === "c") {
+    const o = c.slots[me.opp], keep = TC.call && TC.call.key === me.key && TC.call.id === c.id;
+    TC.call = { id: c.id, key: me.key, r: me.r, cpu: o && o.c ? 1 : 0, opp: o || null, until: keep ? TC.call.until : Date.now() + (me.ms | 0), ready: !!me.rdy };
+  } else if (!me || me.s !== "c") TC.call = null;
+  // your CPU match is running on the server and not on this page (a reload in the middle of it): it is lost, say so at once
+  if (c && c.mytk && !(TC.tk && TC.tk.id === c.mytk) && !(match && match.vc && match.vc.id === c.mytk) && !(TC.pend && TC.pend.id === c.mytk)) {
+    TC.pend = { id: c.mytk, key: me ? me.key : "", cup: c.id, s: "", ff: 1, code: ACCT.code, sentT: 0 };
+    tcSave(); tcFlush();
+  }
+  // the cup starts (or a reload in the middle of it): its bracket, from the menu or the sheet (over an offline cup's bracket too)
+  const started = !!c && c.st === "run" && !(old && old.id === c.id && old.st === "run");
+  if ((TC.boot || started) && c && c.st === "run" && c.mi >= 0 && c.out < 0 && (mode === "menu" || mode === "cup")) tcBracket({ start: started && !TC.boot });
+  if (c && c.st === "run") TC.boot = false;
+  if (c && c.st === "done" && TC.seen !== c.id && mode === "tcup") TC.seen = c.id;
+  tcRender();
+}
+function tcRender() {
+  if (typeof tcvPill === "function") tcvPill();
+  if (TC.sheet && typeof tcvSheet === "function") tcvSheet();
+  if (mode === "tcup" && typeof tcvBracketRender === "function") tcvBracketRender();
+  if (typeof tcvCall === "function") tcvCall();
+}
+function tcNo(why) {
+  TC.busy = false;
+  if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then the wanted message goes
+  if (why === "old") { QM.no = "old"; tcFail("A new version is out. Reload the page."); return; }
+  if (why === "slow" && TC.last && !TC.again) { const w = TC.last; TC.again = true; TC.busy = true; setTimeout(() => { if (!TC.want) tcSend(w); }, 1500); return; }   // once
+  tcFail({ closed: "That cup isn't open.", full: "That cup is full.", busy: "You're already in a cup.", nocup: "No cup with that code.", few: "A cup needs 2 players.",
+    host: "Only the host can start it.", bad: "Couldn't join. Try again.", slow: "One moment, then try again." }[why] || "Couldn't join. Try again.");
+}
+function tcFail(note) { TC.want = null; TC.busy = false; TC.note = note || ""; tcRender(); }
+// a message that needs the account: made silently first (as Ranked vs CPU), then signed in, then sent (tcMsg "me")
+function tcSend(msg) {
+  if (!tcOn()) return;
+  if (QM.no === "old") { location.reload(); return; }
+  TC.want = msg; TC.note = ""; TC.again = false;
+  tcGoOn();
+}
+async function tcGoOn() {
+  if (!TC.want) return;
+  if (!QM.conn) { TC.busy = false; TC.note = "Connecting to the server…"; tcRender(); return; }   // goes on when connected (tcBoot)
+  if (qmAcctOff()) { tcFail("Cups open once accounts are on."); return; }
+  if (QM.acct === "unknown") { tcFail("This phone's account isn't on the server. Check Account."); return; }
+  TC.busy = true; TC.note = ""; tcRender();
+  const w0 = TC.want;
+  setTimeout(() => { if (TC.want === w0 && TC.busy) tcFail("Couldn't reach the server. Try again."); }, 10000);
+  if (!ACCT.code) {
+    const ok = await qmMakeAcct();
+    if (!ok) { tcFail(qmAcctOff() ? "Cups open soon." : "Couldn't reach the server. Try again."); return; }
+  }
+  if (!QM.authed) { qmAuth(); return; }
+  tcDo();
+}
+function tcDo() {
+  const w = TC.want;
+  if (!w || !QM.authed) return;
+  TC.want = null; TC.last = w;
+  window.__blQuick.send(Object.assign({ v: PROTO }, w));
+  setTimeout(() => { if (TC.busy) { TC.busy = false; tcRender(); } }, 6000);
+}
+
+/* ----- what you can do (the views call these) ----- */
+function tcIn(on) { cnt("tc:in"); tcSend({ t: "tci", on: on ? 1 : 0 }); }
+function tcJoin() { const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: "d", f, pi: palIdx(f) }); }
+function tcJoinCode(code) {
+  code = String(code || "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+  if (!/^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/.test(code)) { tcFail("A cup code has 5 letters and digits."); return; }
+  const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: code, f, pi: palIdx(f) });
+}
+function tcHost() { const f = tcFighter(); cnt("tc:host"); tcSend({ t: "tcn", f, pi: palIdx(f) }); }
+function tcStart() { if (!TC.cup || !TC.cup.host) return; Sfx.init(); goFull(); cnt("tc:start"); window.__blQuick.send({ t: "tcs" }); TC.busy = true; tcRender(); }
+function tcLeave() {
+  if (!TC.cup) return;
+  window.__blQuick.send({ t: "tcl" });
+  TC.call = null;
+  if (TC.cup.st !== "run") TC.cup = null;
+  tcRender();
+}
+// your fighter: the select screen, back to where you were; the server takes it for your next match (not once it is called)
+function tcPick() {
+  const c = TC.cup, me = c && c.slots && c.mi >= 0 ? c.slots[c.mi] : c && c.ent ? c.ent.find((e) => e.me) : null;
+  sel.fighter = me && FIG[me.f] ? me.f : tcFighter();
+  TC.pickFrom = mode === "tcup" ? "tcup" : "sheet";
+  if (TC.sheet) tcClose();
+  openSelect("tc");
+}
+function tcPickBack() { if (TC.pickFrom === "tcup" && tcPlaying()) tcBracket(); else { goMenu(); tcOpen(); } }
+function tcPicked() {
+  P.last = sel.fighter; saveProfile();
+  if (tcOn() && TC.cup && TC.cup.st !== "done" && TC.cup.st !== "off") window.__blQuick.send({ t: "tcp", f: sel.fighter, pi: palIdx(sel.fighter) });
+  if (TC.pickFrom === "tcup" && TC.cup && TC.cup.st === "run") tcBracket(); else { goMenu(); tcOpen(); }
+}
+function tcOpen() {
+  if (!tcOn()) { cupOpen(); return; }   // not on our server: the offline cup, as before
+  if (tcPlaying() && mode !== "tcup") { tcBracket(); return; }
+  TC.sheet = true; TC.note = "";
+  tcAsk();
+  if (typeof tcvSheetOpen === "function") tcvSheetOpen();
+  tcRender();
+}
+function tcClose() { if (!TC.sheet) return; TC.sheet = false; if (typeof tcvSheetClose === "function") tcvSheetClose(); if (mode === "menu") tcRender(); }
+function tcBracket(o) {
+  if (TC.sheet) tcClose();
+  finStop(); hideBanner(); modal("pause", false); modal("help", false); modal("settings", false);
+  mode = "tcup"; paused = false; G = null; match = null; meSlot = 0;
+  $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
+  show("cup"); resize();
+  if (typeof tcvBracket === "function") tcvBracket(o || {});
+  tcRender();
+}
+function tcBack() { goMenu(); if (!tcPlaying()) { const c = TC.cup; if (c && (c.st === "done" || c.st === "off")) TC.seen = c.id; } }
+// the link of your Friends Cup: the share sheet on a phone, else copied
+function tcLink() { return TC.cup && TC.cup.code ? `${location.origin}${location.pathname}#cup=${TC.cup.code}` : ""; }
+function tcShare() {
+  const link = tcLink();
+  if (!link) return;
+  cnt("tc:share");
+  const text = `Join my PotatoBrawl cup! Code ${TC.cup.code}`;
+  if (chlPhone()) { try { navigator.share({ title: "PotatoBrawl", text, url: link }).catch(() => {}); return; } catch (e) { /* no share sheet: copy */ } }
+  try { navigator.clipboard.writeText(link).then(() => { TC.note = "Link copied."; tcRender(); }, () => {}); } catch (e) { /* no clipboard */ }
+}
+// loop.js, after the turn-sideways screen: a Friends Cup's link opens the sheet and joins it
+function tcHashCode() { const m = /^#cup=([0-9A-Za-z]{5})$/.exec(location.hash || ""); return m ? m[1].toUpperCase() : ""; }
+function tcLanding() {
+  const code = tcHashCode();
+  if (!code || !tcOn()) return false;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* the hash stays: harmless */ }
+  TC.link = code;
+  cnt("tc:link");
+  tcOpen();
+  tcJoinCode(code);
+  return true;
+}
+window.addEventListener("hashchange", () => { if (tcHashCode() && mode !== "match") tcLanding(); });
+
+/* ----- the call-up: tap FIGHT within 60 s ----- */
+function tcCalled(m) {
+  if (!TC.cup || m.id !== TC.cup.id || typeof m.key !== "string") return;
+  TC.call = { id: m.id, key: m.key, r: m.r | 0, cpu: m.cpu ? 1 : 0, opp: m.opp || null, until: Date.now() + (m.ms | 0), ready: false };
+  tcAbortFound(m.key);   // (the server called it again: a room that never started is gone)
+  if (qmSearching()) qmCancel("");   // a cup match comes first
+  Sfx.init(); qmChime();
+  try { if (navigator.vibrate) navigator.vibrate([80, 60, 80, 60, 160]); } catch (e) { /* no vibration */ }
+  // a fight on this phone (a warm-up, Practice): it pauses under the call-up (its pause menu stays if the call goes)
+  if (mode === "match" && match && !match.online && !match.qm && !match.rp && !paused) togglePause(true);
+  tcRender();
+}
+function tcFight() {
+  const k = TC.call;
+  if (!k || k.ready || Date.now() > k.until + 1500) return;
+  Sfx.init(); goFull();
+  tcDrop();
+  k.ready = true;
+  cnt("tc:play");
+  window.__blQuick.send({ t: "tcgo" });
+  if (mode !== "tcup") tcBracket(); else tcRender();
+}
+// the call-up's FIGHT: whatever this phone is in ends without a result (a warm-up, Practice, a friend match; tcBusy says so first)
+function tcDrop() {
+  if (mode === "match" && match && !match.rp) cntEnd(true);
+  if (qmSearching()) qmCancel("");
+  if (NET.mr) leaveMatchRoom();
+  if (NET.phase !== "idle") { resetNet(); NET.phase = "idle"; }
+  if (QM.st === "found" && !(QM.found && QM.found.tm)) { QM.st = "idle"; QM.found = null; }
+  if (VC.tk && !VC.tk.tc) VC.tk = null;
+  $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = VC.vsT = 0; QM.fdT = 0;
+  if (mode === "match" || mode === "result") { finStop(); G = null; match = null; meSlot = 0; }
+  lobbyPresence();
+}
+// what the call-up's FIGHT leaves (the banner's small line), "" when nothing
+function tcBusy() {
+  if (mode === "match" && match) {
+    if (match.tcw || match.warm) return "Your warm-up ends.";
+    if (match.qm) return match.qm.ranked || match.qm.sk ? "You leave your Quick match: it counts as a loss." : "You leave your Quick match.";
+    if (match.online) return "You leave the friend match.";
+    if (match.vc && !match.vc.tc) return "Your Ranked vs CPU match ends without a result.";
+    if (match.bw) return "Your Boss Week try ends.";
+    return "This fight ends.";
+  }
+  return qmSearching() ? "Your Quick match search stops." : "";
+}
+// the match against a player was assigned (ui/quick.js qmFound asks): only the one you were called to and said FIGHT for
+function tcFoundOk(m) {
+  const tm = m && m.tm;
+  return !!tm && !!TC.cup && tm.id === TC.cup.id && typeof tm.key === "string" && ((TC.call && TC.call.key === tm.key) || (tcMine() || {}).key === tm.key);
+}
+// qmFound (ui/quick.js), after the VS screen is up: its words say which cup and round
+function tcVsWords(m) {
+  const c = TC.cup;
+  TC.call = null;
+  $("vsMode").textContent = `${tcKind(c)} · ${tcRoundName(c ? c.size : 8, m.tm.r | 0)}`;
+  $("vsStamp").className = "vs-st rk";
+  $("vsFb").hidden = true; $("vsWhy").hidden = true;
+  tcRender();
+}
+// the room of a cup match never started (the server called it again or decided it): back to the bracket
+function tcAbortFound(key) {
+  if (!QM.found || !QM.found.tm || QM.found.tm.key !== key || NET.phase === "match" || NET.phase === "result") return;
+  $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
+  if (NET.mr) leaveMatchRoom();
+  resetNet(); NET.phase = "idle"; QM.found = null; QM.st = "idle";
+  if (mode === "quick") tcBracket();
+}
+
+/* ----- a match against a CPU: its ticket, the VS screen, the fight (ui/vscpu.js), the log to the server ----- */
+function tcTicket(m) {
+  if (!TC.cup || m.id !== TC.cup.id || !m.tk || !vcTicketOk(m.tk)) return;
+  const tk = Object.assign({}, m.tk, { tc: { id: m.id, key: m.key, r: parseInt(m.key, 10) || 0, size: TC.cup.size, k: TC.cup.k } });
+  TC.tk = tk; TC.call = null;
+  VC.asking = false; VC.tk = tk;   // vcTick starts it after the VS screen
+  qmEndWarm();
+  vcVs(tk);
+  $("vsMode").textContent = `${tcKind(TC.cup)} · ${tcRoundName(tk.tc.size, tk.tc.r)}`;
+  const me = TC.cup.mi >= 0 ? TC.cup.slots[TC.cup.mi] : null, t = $("vsTL"), w = t && t.querySelector("span");
+  if (w && me) w.textContent = `Seed ${me.sd}`;
+  tcRender();
+}
+// screens.js finishMatch -> vcMatchEnd: the chips of a friend match on this phone, the log to the server, the results
+function tcCpuEnd(forfeit) {
+  const tk = match.vc, me = G.fighters[0], op = G.fighters[1];
+  const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
+  const R = { res, forfeit, tc: tk.tc, tk, me, op, lines: [], total: 0 };
+  if (!forfeit) {
+    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
+    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    R.total = R.lines.reduce((a, l) => a + l[1], 0);
+    P.tokens += R.total; saveProfile();
+  }
+  TC.tk = null;
+  TC.pend = { id: tk.id, key: tk.tc.key, cup: tk.tc.id, s: vcPack(match.log), ff: forfeit ? 1 : 0, code: ACCT.code, sentT: 0 };
+  tcSave(); tcFlush();
+  showResults(R);
+}
+function tcFlush() {
+  const p = TC.pend;
+  if (!p || !tcOn() || !QM.conn || !QM.authed || p.code !== ACCT.code) return;
+  const n = Math.max(1, Math.ceil(p.s.length / 6000));
+  for (let k = 0; k < n; k++) window.__blQuick.send({ t: "tcr", id: p.id, k, n, s: p.s.slice(k * 6000, (k + 1) * 6000), ff: p.ff });
+  p.sentT = Date.now(); tcSave();
+}
+
+/* ----- results ----- */
+function tcRes(m) {
+  if (!TC.cup || m.id !== TC.cup.id || typeof m.key !== "string") return;
+  TC.res[m.key] = m;
+  if (TC.pend && TC.pend.cup === m.id && TC.pend.key === m.key) { TC.pend = null; tcSave(); }
+  if (TC.call && TC.call.key === m.key) TC.call = null;
+  tcAbortFound(m.key);
+  if (m.rv && typeof rvCasual === "function" && QM.found && QM.found.tm && QM.found.tm.key === m.key) rvCasual({ t: "qm-cs", id: QM.found.id, g: 1, res: m.res, rv: m.rv });   // ui/rivals.js: the record against them
+  if (mode === "result" && TC.shown && TC.shown.key === m.key && typeof tcvResult === "function") tcvResult(TC.shown.R, m);
+  if (m.res === 0 && m.why !== "game" && mode === "tcup" && typeof tcvBracketRender === "function") tcvBracketRender();
+  tcRender();
+}
+function tcEnd(m) {
+  if (!TC.cup || m.id !== TC.cup.id) return;
+  TC.end = m;
+  if (m.c > 0) acctSoon(800);   // the prize is in the account: the next sync brings it to this phone
+  if (m.pl === 1) cnt("tc:champ");
+  if (mode === "tcup" && typeof tcvBracket === "function") tcvBracket({ cheer: m.pl === 1 && m.ch !== null });
+  tcRender();
+}
+// ui/quick.js qmResults: a cup match's results (against a player: R.qm.tm; against a CPU: R.tc)
+function tcResults(R) {
+  const tm = R.tc || (R.qm && R.qm.tm), c = TC.cup;
+  const key = tm.key, size = c ? c.size : tm.size || 8, r = tm.r | 0;
+  TC.shown = { key, R };
+  $("rMode").textContent = `${tcKind(c)} · ${tcRoundName(size, r)}`;
+  $("rAgain").querySelector("span").textContent = "Bracket"; $("rAgain").disabled = false;
+  $("rChange").hidden = true; $("rMenuSub").textContent = "";
+  { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); $("rRank").hidden = true; }
+  if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "You left the match: you're out of the cup." : "No chips for an unfinished match.");
+  if (typeof tcvResult === "function") tcvResult(R, TC.res[key] || null);
+}
+// the results' buttons and Pause (ui/quick.js asks first): a cup match's BRACKET; the lobby warm-up's ANOTHER CPU FIGHT and BACK TO THE LOBBY
+const tcCupMatch = () => !!match && ((match.qm && !!match.qm.tm) || (match.vc && !!match.vc.tc));
+function tcAgain() {
+  if (match && match.tcw) { tcWarm(); return true; }
+  if (tcCupMatch()) { tcAfterMatch(); return true; }
+  return false;
+}
+function tcChange() {
+  if (match && match.tcw) { goMenu(); tcOpen(); return true; }
+  if (tcCupMatch()) { tcAfterMatch(); return true; }
+  return false;
+}
+function tcAfterMatch() {
+  const key = TC.shown ? TC.shown.key : "";
+  if (match && match.qm) qmLeave();
+  QM.st = "idle"; QM.found = null;
+  tcBracket({ after: key });
+}
+function tcWarmResults() {   // ui/quick.js qmResults
+  const k = $("rMode"); k.textContent = "";
+  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
+  k.append(t, "Warm-up");
+  $("rAgain").querySelector("span").textContent = "Another CPU fight";
+  $("rChange").querySelector("span").textContent = "Back to the lobby";
+  $("rMenuSub").textContent = "";
+  { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); }
+}
+function tcPauseText() {
+  if (match && match.tcw) { $("pQuit").querySelector("span").textContent = "Back to the lobby"; $("pNote").textContent = "A call-up stops this fight."; return; }
+  $("pQuit").querySelector("span").textContent = "Forfeit";
+  $("pNote").textContent = match && match.qm ? "Online matches keep running while this is open. Leaving knocks you out of the cup." : "Leaving knocks you out of the cup.";
+}
+function tcStripText() { const tk = match.vc; return `${tcKind(tk.tc)} · ${tcRoundName(tk.tc.size, tk.tc.r)} · vs CPU`; }   // ui/vscpu.js: the HUD strip
+
+/* ----- a warm-up in the lobby: a CPU fight while you wait (a call-up stops it) ----- */
+function tcWarm() {
+  Sfx.init(); goFull();
+  if (TC.sheet) tcClose();
+  const me = FIG[tcFighter()], myPal = me.palettes[palIdx(me.id)] || me.palettes[0], opp = cpuFoe(me);
+  const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
+  const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
+  match = { warm: true, tcw: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
+  meSlot = 0;
+  enterMatchUI();
+}
+
+/* ----- every frame (vcTick): the call-up's clock, a log with no answer ----- */
+function tcTick() {
+  if (!tcOn()) return;
+  const k = TC.call;
+  if (k && !k.ready && Date.now() > k.until + 1500) { TC.call = null; tcRender(); }
+  const p = TC.pend;
+  if (p && p.sentT && Date.now() - p.sentT > 15000 && QM.authed) { tcFlush(); tcAsk(); }
+  const now = performance.now();
+  if (mode !== TC.mode0 || (QM.vsT > 0) !== TC.vs0) { TC.mode0 = mode; TC.vs0 = QM.vsT > 0; if (typeof tcvCall === "function") tcvCall(); }   // the banner follows the screen
+  if (now - TC.alertT > 250) { TC.alertT = now; if (typeof tcvTick === "function") tcvTick(); }
+}
+/* ===================== Cups online: the views (stub, replaced by the builder) ===================== */
+function tcvLines() {}
 /* ===================== Replays: a run played again from its inputs (UI only; Boss Week runs, Ranked vs CPU matches) =====================
    A run is its seed, its fighters and your logged inputs (vcIn, ui/vscpu.js). It plays again through the same engine and match screen:
    simTick takes the log's input in place of the pad (rpLive) and the CPU partner or foe thinks again from the same random numbers, so
@@ -38780,6 +39275,7 @@ goMenu();
 turnOpen(() => {
   if (NET.invite) openOnline();
   else if (rpLanding()) { /* ui/replay.js: a share link's run (its title card), the welcome sheet after it */ }
+  else if (tcLanding()) { /* ui/tourney.js: a Friends Cup's link: the Tournament sheet joins it */ }
   else if (firstRun && !ACCT.hash) welcomeOpen();
 });
 camStep(attract.g, true);

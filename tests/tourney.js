@@ -385,6 +385,7 @@ async function playRoom(a, b) {
     H = await authed("Hu", cs.Hu); J = await authed("Ju", cs.Ju); L = await authed("Lu", cs.Lu);
     v = H.first;
     check(!!v && v.cup && v.cup.st === "run" && v.cup.m["0:0"][0] === "l" && v.cup.m["0:0"][4] === 1, "after a restart the cup goes on: the CPU match's ticket is still open");
+    check(!!v && v.cup && v.cup.mytk === tk.tk.id && !(J.first && J.first.cup && J.first.cup.mytk), "...its player's view names the open ticket (a page that lost it forfeits it), nobody else's");
     const calledAgain = (m) => !!m && !!m.cup && !!m.cup.m && m.cup.m["0:1"][0] === "c" && m.cup.m["0:1"][3][0] === 0;
     v = calledAgain(J.first) ? J.first : await J.tc(calledAgain);
     check(!!v, "...the match between two players is called again (FIGHT again)");

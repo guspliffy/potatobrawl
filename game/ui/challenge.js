@@ -15,7 +15,7 @@ const chlPhone = () => !!navigator.share && !!(window.matchMedia && matchMedia("
 // screens.js showResults: after a finished 1v1 against a CPU (the Road, the Daily, bosses, 2v2, the Tournament and the tutorial have their
 // own ends), a Quick match and Ranked vs CPU (not a warm-up while the search runs: the tap would stop it); not after Play friends
 function chlRes(R) {
-  const solo = R.qm || R.vc || (R.warm ? !qmSearching() : !R.online && !R.daily && !R.road && !R.boss && !R.duo);
+  const solo = R.qm ? !R.qm.tm : R.vc || (R.warm ? !R.tcw && !qmSearching() : !R.tc && !R.online && !R.daily && !R.road && !R.boss && !R.duo);   // not after a cup match (ui/tourney.js) or in the cup lobby
   $("rChl").hidden = !(solo && !R.forfeit && !R.left && !R.lost && chlCan());
 }
 tap("rChl", () => {
