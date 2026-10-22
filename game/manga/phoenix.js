@@ -8,12 +8,14 @@
    comet with a gold core and a tail to the top of the page, three impact frames (the gold one holds the star at 2x), the NOVA word, 3050 the loser leaves as ash (a black
    silhouette erased from the feet up, flakes along the launch direction), 3250 panel 5: the white page (a huge sun disc with 12 gold wedges, she stands wings full as a white
    silhouette with a gold edge, the ink bleeds back 3400-3800, a heap of ash with two eyes, ash falling), SUPERNOVA at 3600, 4700 panel 4 (the same aftermath, MT.AFTER + offset).
-   Script fields: see game/manga/dragon.js. Everything here is prefixed phx / kept inside this closure. */
+   Script fields: see game/manga/dragon.js. Everything here is prefixed phx / kept inside this closure.
+   POTATALITY: "Well Done" = MANGA.phoenix.alt (S_.alt, at the end; its helpers are prefixed wd), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.phoenix = (function () {
   const COL = "#ff7a3d", MIDC = "#ffb45e", CORE = "#fff3c4", ASH = "#2c2933", ASH2 = "#57525f";
   const T = { LAUNCH: 2180, DIVE: 2650, LAND: 3000 };
   let spr = null, fth = [], spk = [], torn = false, topWY = -220, hitY = -64, cmt = null;
   let ult = false, ashF = [], inSplash = false;   // ult: this play is the Ultimate page (set by start())
+  let pota = false;   // this play is the Potatality, "Well Done" (set by its start)
   const SPL = () => MT.SPLASH || 3250;
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
@@ -561,7 +563,7 @@ MANGA.phoenix = (function () {
       ];
     },
     // the loser's stand-in is a copy of a doomed fighter, which draws it half see-through and blinking: here it is solid
-    start() { ult = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    start() { ult = false; pota = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
     end() { spr = null; fth = []; spk = []; ashF = []; },
     build(lay) {
       const r = mgRng(31415), g = L.gw, h = L.gh, port = lay.port;
@@ -683,7 +685,7 @@ MANGA.phoenix = (function () {
           } else {
             x = f.x0 + Math.sin(s * f.w + f.ph) * f.sw; y = (((f.y0 + f.vy * s) % (gh + 60)) + gh + 60) % (gh + 60) - 30; a = fe(700, 1100, t) * 0.8;
           }
-          a *= 1 - fe(MT.AFTER + 500, MT.AFTER + 900, t);
+          a *= (1 - fe(MT.AFTER + 500, MT.AFTER + 900, t)) * (pota ? 1 - fe(SPL(), SPL() + 250, t) : 1);   // (the Potatality's oven stays clear of them)
           if (a < 0.02 || y < -30 || y > gh + 30 || x < -30 || x > gw + 30) continue;
           const sp_ = spr[f.kind], flip = 0.35 + 0.65 * Math.abs(Math.cos(s * f.w * 1.6 + f.ph));
           o.globalAlpha = a; o.save(); o.translate(x, y); o.rotate(f.tilt + Math.sin(s * f.w + f.ph) * 0.9); o.scale(f.sc, f.sc * flip);
@@ -693,7 +695,7 @@ MANGA.phoenix = (function () {
       }
       phxAshFlakes(o, t);
       if (t > FIN.launch && t < FIN.launch + 420) {
-        const Lp = L_(), pn = MG.byId.strike, a = 1 - fe(FIN.launch + 200, FIN.launch + 420, t);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (pota ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         mgSpeed(o, q[0] - Math.cos(ang) * len * 0.45, q[1] - Math.sin(ang) * len * 0.45, len, Math.min(L.gw, L.gh) * 0.34, ang, -(t - FIN.launch) * 1.4, 0.8 * a, false, 1);
@@ -764,6 +766,497 @@ MANGA.phoenix = (function () {
         const g = phxSunGeo(p, t); return [clamp(g.cx, hw + 4, L.gw - hw - 4), g.cy - g.R * 0.94 + p.oy];
       } });
       return ws;
+    },
+  });
+  /* ===================== the Potatality, "Well Done" (MANGA.phoenix.alt; design: Project files step8/fable-design.md) =====================
+     Rebirth up to the dive and the hit (the flight's speed lines are gone as the page turns). 3250 panel 5, the splash, slides up: an oven, open; inside, the
+     loser as a roast potato with a rosemary sprig on an enamel tray in his colour, panicking; her flame wings spread on the oven's front either side of it.
+     3400 the wings sweep in and shut: they are the oven's doors (3570 clunk), with a window between them. The oven heats (the element glows, heat waves, he
+     browns, the timer ticks down); 3930 DING. 4040 the doors fly open in a burst of steam, two oven mitts on feathered sleeves reach in and pull the tray
+     out at us: done, eyes shut; 4500 one eye opens. 4700 panel 4 as on Rebirth, in oven mitts, the tray on the ground in front of her: one eye open, a
+     curl of steam, "well done"; the engine's POP at 5250 leaves the empty tray. The splash is drawn in the panel's px; every helper here is prefixed wd. */
+  const WD = { SHUT0: 3400, SHUT: 3570, DING: 3930, OPEN0: 4040, OPEN: 4190, REACH: 4070, PULL0: 4140, PULL: 4370, EYE: 4500 };
+  const WD_TAU = Math.PI * 2, WD_TICKS = ["wdTick1", "wdTick2", "wdTick3"];
+  let wdGc = null, wdC = null;   // the splash's layout (made per page size) and the colours (once per page)
+  const wdHex = (v) => {
+    if (!v) return "#e6b26a";
+    if (v[0] === "#") return v.length === 4 ? "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3] : v.slice(0, 7);
+    const m = v.match(/\d+/g); return m ? "#" + m.slice(0, 3).map((n) => (+n).toString(16).padStart(2, "0")).join("") : "#e6b26a";
+  };
+  function wdCols() {
+    if (wdC) return wdC;
+    const pal = L_().pal || {}, body = wdHex(pal.body), ui = wdHex(col(pal)), ac = wdHex(wcol());
+    wdC = { raw: phxMix(body, "#fff2d6", 0.4), done: phxMix(body, "#a5531a", 0.5), rawTop: phxMix(body, "#fffaf0", 0.65), doneTop: phxMix(body, "#ffcf4d", 0.45), speck: "#5a2c0e",
+      tray: phxMix(ui, "#f1ece2", 0.12), trayIn: phxMix(ui, "#1d1418", 0.5),
+      wing: ac, wingDk: phxMix(ac, "#000000", 0.2), wingMid: phxMix(ac, "#ffd27a", 0.55), wingCore: phxMix(ac, "#fff6d8", 0.8), plate: phxMix(ac, "#2a1208", 0.55),
+      mitt: phxMix(ac, "#c8281f", 0.55), cuff: "#fff4d8", steel: "#ece6da", frame: "#3d3a42", frameHi: "#9a96a2", timer: "#e8452c", bell: "#f4cf55", wedge: "#ff9a8a",
+      back: "#5b3a2b", side: "#46291e", ceil: "#341d15", floor: "#3d2419", cold: "#6e3424", rack: "#d9d0c2", sprig: "#4f8046", sprigDone: "#2f4d2a", stem: "#6b5a2e" };
+    return wdC;
+  }
+  // the splash's layout in the panel's px: the oven's mouth (o..), the window between the shut doors (w..), the timer, the tray inside and pulled out, the mitts;
+  // and the doors' feathers (the left door; the right one is its mirror): per row the shut y, length and bulge, and the open (wing) angle, length and bulge
+  function wdGeo(pn) {
+    const key = pn.x0 + pn.y0 * 7 + pn.w * 131 + pn.h * 1709;
+    if (wdGc && wdGc.key === key) return wdGc;
+    const port = !!(MG.lay && MG.lay.port), w = pn.w, h = pn.h, ow = port ? w * 0.94 : Math.min(w * 0.56, h * 1.3), oh = port ? h * 0.5 : h * 0.7;
+    const cx = pn.x0 + w / 2, cy = pn.y0 + h * (port ? 0.57 : 0.6), ww = ow * (port ? 0.6 : 0.56), wh = oh * (port ? 0.56 : 0.6), tr = port ? w * 0.12 : h * 0.095;
+    const G = { key, port, cx, cy, ow, oh, ww, wh, ox0: cx - ow / 2, ox1: cx + ow / 2, oy0: cy - oh / 2, oy1: cy + oh / 2, wx0: cx - ww / 2, wx1: cx + ww / 2, wy0: cy - wh / 2, wy1: cy + wh / 2,
+      fw: wh * 0.075, lw: Math.max(1.6, Math.min(w, h) * 0.0068), tr, tx: cx, ty: port ? cy - oh / 2 - tr - h * 0.045 : (pn.y0 + cy - oh / 2) / 2 + tr * 0.08,
+      rx: ow * (port ? 0.155 : 0.13), tY: cy + oh * 0.21, tw: ow * (port ? 0.22 : 0.25), td: oh * 0.07, th: oh * 0.04, pY: port ? cy + oh / 2 + h * 0.1 : pn.y0 + h * 0.93, pS: port ? 1.85 : 1.9,
+      ms: port ? w * 0.24 : h * 0.2, hxo: port ? ow * 0.06 : 0, rows: null, n: 0 };
+    const band = (oh - wh) / 2, ns = port ? 6 : 5, sp = wh / ns, nb = band > sp * 1.5 ? 2 : 1, n = ns + 2 * nb, R = new Float32Array(n * 6);
+    const A0 = port ? 1.5 : 1.0, A1 = port ? 1.45 : 0.85, Lo0 = port ? h * 0.3 : (G.ox0 - pn.x0) * 1.02;
+    let j = 0;
+    const row = (v, L, bw) => {
+      const u = j / (n - 1), ao = u < 0.6 ? -Math.PI + A0 * (1 - u / 0.6) : Math.PI - A1 * (u - 0.6) / 0.4, Lo = Lo0 * (0.78 + 0.3 * Math.sin(Math.PI * u));
+      R[j * 6] = v; R[j * 6 + 1] = L; R[j * 6 + 2] = bw; R[j * 6 + 3] = ao; R[j * 6 + 4] = Lo; R[j * 6 + 5] = Lo * 0.2; j++;
+    };
+    for (let b = 0; b < nb; b++) row(G.oy0 + band * (b + 0.5) / nb, ow / 2 * 1.08, band / nb * 1.3);
+    for (let k = 0; k < ns; k++) row(G.wy0 + sp * (k + 0.5), G.wx0 - G.ox0 + G.fw * 0.8, sp * 1.3);
+    for (let b = 0; b < nb; b++) row(G.wy1 + band * (b + 0.5) / nb, ow / 2 * 1.08, band / nb * 1.3);
+    G.rows = R; G.n = n;
+    return (wdGc = G);
+  }
+  // dot tone through a path made by fn(c) in the current transform (the dots stay in device space)
+  function wdTone(c, size, cover, fn, rule) { c.save(); c.beginPath(); fn(c); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(size, cover); c.fill(rule || "nonzero"); c.restore(); }
+  // the doors: 0 open (spread on the oven's front like wings), 1 shut; quick in, a slam, and flung open after the DING
+  function wdShut(t) {
+    const J = WD;
+    if (t < J.SHUT0) return 0;
+    if (t < J.SHUT) return easeIn(fe(J.SHUT0, J.SHUT, t));
+    if (t < J.OPEN0) return 1;
+    return 1 - easeOut(fe(J.OPEN0, J.OPEN, t));
+  }
+  // a flame feather as on her wings: from (ax, ay) along (ca, sa), length L, bulge bw; k and w2 make the inner layers
+  function wdLeaf(c, ax, ay, ca, sa, L, bw, k, w2) {
+    const l = L * k, nx = -sa, ny = ca, mx = ax + ca * l * 0.5, my = ay + sa * l * 0.5;
+    c.moveTo(ax, ay); c.quadraticCurveTo(mx + nx * bw * w2, my + ny * bw * w2, ax + ca * l, ay + sa * l); c.quadraticCurveTo(mx - nx * bw * w2 * 0.85, my - ny * bw * w2 * 0.85, ax, ay);
+  }
+  function wdFeather(c, ax, ay, ang, L, bw, C, lw, dk) {
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    c.beginPath(); wdLeaf(c, ax, ay, ca, sa, L, bw, 1, 1); c.fillStyle = dk ? C.wingDk : C.wing; c.fill(); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); wdLeaf(c, ax, ay, ca, sa, L, bw, 0.84, 0.58); c.fillStyle = C.wingMid; c.fill();
+    c.beginPath(); wdLeaf(c, ax, ay, ca, sa, L, bw, 0.6, 0.28); c.fillStyle = C.wingCore; c.fill();
+  }
+  // a door: the left one (sg -1; the right one through a mirror). Open, its feathers fan out from the shoulder like a wing, aflame at the tips; shutting, they sweep
+  // in to lie side by side across the oven's mouth (a dark plate behind them as they land), short where the window is
+  const WD_TIP = new Float32Array(32);
+  function wdDoor(c, G, t, k, sg) {
+    const C = wdCols(), R = G.rows, n = G.n, lw = G.lw, hx = G.ox0, cx = G.cx, fl = 1 - k;
+    c.save();
+    if (sg > 0) { c.translate(2 * cx, 0); c.scale(-1, 1); }
+    c.lineJoin = "round";
+    const pa = fe(0.7, 1, k);
+    if (pa > 0.01) {
+      const ov = G.ow * 0.03;
+      c.globalAlpha = pa; c.beginPath(); c.moveTo(hx, G.oy0); c.lineTo(cx + ov, G.oy0); c.lineTo(cx + ov, G.wy0); c.lineTo(G.wx0, G.wy0); c.lineTo(G.wx0, G.wy1); c.lineTo(cx + ov, G.wy1); c.lineTo(cx + ov, G.oy1); c.lineTo(hx, G.oy1); c.closePath();
+      c.fillStyle = C.plate; c.fill(); c.globalAlpha = 1;
+    }
+    for (let j = 0; j < n; j++) {
+      const o = j * 6, v = R[o], ang = lerp(R[o + 3] + Math.sin(t * 0.005 + j * 1.3) * 0.06 * fl, 0, k), L = lerp(R[o + 4], R[o + 1], k), bw = lerp(R[o + 5], R[o + 2], k), ay = lerp(G.cy + (v - G.cy) * 0.22, v, k);
+      const ax = lerp(hx + G.hxo, hx, k);
+      wdFeather(c, ax, ay, ang, L, bw, C, lw, j % 2);
+      WD_TIP[j * 2] = ax + Math.cos(ang) * L; WD_TIP[j * 2 + 1] = ay + Math.sin(ang) * L;
+    }
+    if (fl > 0.05 && !MG.slow) for (let j = 0; j < n; j++) {
+      const h = G.oh * (0.045 + 0.018 * (j % 3)) * fl * (0.75 + 0.25 * Math.sin(t * 0.03 + j * 2.1));
+      phxTongue(c, WD_TIP[j * 2], WD_TIP[j * 2 + 1] + 1, h, h * 0.24, Math.sin(t * 0.021 + j * 1.3) * h * 0.2, C.wing, C.wingCore, lw * 0.8);
+    }
+    c.restore();
+  }
+  // the window between the shut doors: warm glass with two glare streaks, a dark steel frame
+  function wdWindow(c, G, t, heat) {
+    const C = wdCols(), x0 = G.wx0, y0 = G.wy0, w = G.ww, h = G.wh, f = G.fw, r = h * 0.09, lw = G.lw;
+    c.save(); c.beginPath(); c.roundRect(x0, y0, w, h, r); c.clip();
+    c.globalAlpha = 0.08 + 0.14 * heat; c.fillStyle = "#ffb070"; c.fillRect(x0, y0, w, h);
+    c.globalAlpha = 0.42; c.fillStyle = "#ffffff"; c.beginPath();
+    c.moveTo(x0, y0 + h * 0.4); c.lineTo(x0 + w * 0.22, y0); c.lineTo(x0 + w * 0.29, y0); c.lineTo(x0, y0 + h * 0.53); c.closePath();
+    c.moveTo(x0, y0 + h * 0.64); c.lineTo(x0 + w * 0.35, y0); c.lineTo(x0 + w * 0.38, y0); c.lineTo(x0, y0 + h * 0.7); c.closePath(); c.fill();
+    c.restore();
+    c.beginPath(); c.roundRect(x0 - f, y0 - f, w + 2 * f, h + 2 * f, r + f); c.roundRect(x0, y0, w, h, r);
+    c.fillStyle = C.frame; c.fill("evenodd"); c.lineWidth = lw * 1.3; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.roundRect(x0 - f * 0.5, y0 - f * 0.5, w + f, h + f, r + f * 0.5); c.lineWidth = lw * 0.6; c.strokeStyle = C.frameHi; c.stroke();
+  }
+  // inside the oven: walls in perspective round a back wall, the heat's orange wash, the element (a coil across the top of the back wall), the rack
+  function wdCavity(c, G, t, heat) {
+    const C = wdCols(), lw = G.lw, cx = G.cx, cy = G.cy, s = 0.58, bw = G.ow * s / 2, bh = G.oh * s / 2, bx0 = cx - bw, bx1 = cx + bw, by0 = cy - bh, by1 = cy + bh;
+    c.fillStyle = C.ceil; c.fillRect(G.ox0, G.oy0, G.ow, G.oh);
+    c.beginPath(); c.moveTo(G.ox0, G.oy0); c.lineTo(bx0, by0); c.lineTo(bx0, by1); c.lineTo(G.ox0, G.oy1); c.closePath(); c.moveTo(G.ox1, G.oy0); c.lineTo(bx1, by0); c.lineTo(bx1, by1); c.lineTo(G.ox1, G.oy1); c.closePath();
+    c.fillStyle = C.side; c.fill();
+    c.beginPath(); c.moveTo(G.ox0, G.oy1); c.lineTo(bx0, by1); c.lineTo(bx1, by1); c.lineTo(G.ox1, G.oy1); c.closePath(); c.fillStyle = C.floor; c.fill();
+    c.fillStyle = C.back; c.fillRect(bx0, by0, bw * 2, bh * 2);
+    wdTone(c, 6, 0.3, (g) => { g.rect(G.ox0, G.oy0, G.ow, G.oh); g.rect(bx0, by0, bw * 2, bh * 2); }, "evenodd");
+    c.lineWidth = lw; c.strokeStyle = MG_INK; c.beginPath();
+    c.moveTo(G.ox0, G.oy0); c.lineTo(bx0, by0); c.moveTo(G.ox1, G.oy0); c.lineTo(bx1, by0); c.moveTo(G.ox0, G.oy1); c.lineTo(bx0, by1); c.moveTo(G.ox1, G.oy1); c.lineTo(bx1, by1); c.rect(bx0, by0, bw * 2, bh * 2);
+    c.stroke();
+    if (heat > 0.01) {
+      c.globalAlpha = 0.5 * heat; c.fillStyle = COL; c.fillRect(G.ox0, G.oy0, G.ow, G.oh);
+      c.globalAlpha = 0.35 * heat; c.fillStyle = MIDC; c.beginPath(); c.ellipse(cx, cy, bw * 1.05, bh, 0, 0, WD_TAU); c.fill();
+      c.globalAlpha = 0.3 * heat; c.fillStyle = CORE; c.beginPath(); c.ellipse(cx, cy, bw * 0.6, bh * 0.55, 0, 0, WD_TAU); c.fill(); c.globalAlpha = 1;
+    }
+    const ex0 = bx0 + bw * 0.12, ex1 = bx1 - bw * 0.12, eyA = by0 + bh * 0.1, eyB = by0 + bh * 0.24, N = 9;
+    c.beginPath(); for (let i = 0; i <= N; i++) { const x = lerp(ex0, ex1, i / N), y = i % 2 ? eyB : eyA; i ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.lineJoin = "round"; c.lineCap = "round";
+    if (heat > 0.02) { c.globalAlpha = 0.4 * heat; c.lineWidth = lw * 6; c.strokeStyle = MIDC; c.stroke(); c.globalAlpha = 1; }
+    c.lineWidth = lw * 2.8; c.strokeStyle = MG_INK; c.stroke();
+    c.lineWidth = lw * 1.5; c.strokeStyle = heat > 0.02 ? phxMix(C.cold, "#ff6a2a", heat) : C.cold; c.stroke();
+    if (heat > 0.3) { c.globalAlpha = (heat - 0.3) / 0.7; c.lineWidth = lw * 0.6; c.strokeStyle = CORE; c.stroke(); c.globalAlpha = 1; }
+    const ry0 = cy + G.oh * 0.25, ry1 = cy + G.oh * 0.25 * s;
+    c.beginPath(); c.moveTo(G.ox0, ry0); c.lineTo(G.ox1, ry0); c.moveTo(bx0, ry1); c.lineTo(bx1, ry1);
+    for (let i = 0; i <= 8; i++) { const u = i / 8 - 0.5; c.moveTo(cx + u * G.ow, ry0); c.lineTo(cx + u * bw * 2, ry1); }
+    c.lineWidth = lw * 1.9; c.strokeStyle = MG_INK; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = C.rack; c.stroke();
+  }
+  // heat waves rising over him
+  function wdWaves(c, G, t, a, x, y, rx) {
+    if (a <= 0.02) return;
+    c.save(); c.globalAlpha = a; c.lineWidth = G.lw * 1.1; c.strokeStyle = "#ffe7b8"; c.lineCap = "round"; c.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const bx = x + (i - 1) * rx * 0.62;
+      for (let j = 0; j <= 8; j++) { const q = j / 8, yy = y - q * G.oh * 0.2, xx = bx + Math.sin(q * 9 - t * 0.012 + i * 2) * rx * 0.08; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); }
+    }
+    c.stroke(); c.restore();
+  }
+  // the oven's dials either side of the timer (the first pair turns up as the doors slam) and its light, on while it heats
+  function wdKnobs(c, G, t, heat) {
+    const lw = G.lw, kr = G.tr * 0.4, n = G.port ? 1 : 2, turn = ease(fe(WD.SHUT, WD.SHUT + 140, t)), y = G.ty + G.tr * 0.12;
+    c.strokeStyle = MG_INK; c.lineCap = "round";
+    for (let i = 1; i <= n; i++) for (let sd = -1; sd <= 1; sd += 2) {
+      const x = G.tx + sd * G.tr * (1.35 + 1.3 * i), a = -Math.PI / 2 + sd * (i === 1 ? 0.4 + 1.9 * turn : 0.7);
+      c.beginPath(); c.arc(x, y, kr, 0, WD_TAU); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw * 1.1; c.stroke();
+      wdTone(c, 5, 0.4, (g) => g.arc(x, y, kr, 0.2, Math.PI - 0.2));
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * kr * 0.85, y + Math.sin(a) * kr * 0.85); c.lineWidth = lw * 1.4; c.stroke();
+    }
+    c.beginPath(); c.arc(G.tx - G.tr * 1.32, G.ty + G.tr * 0.95, kr * 0.32, 0, WD_TAU); c.fillStyle = heat > 0.1 ? "#ff3b2a" : "#8a6a62"; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+  }
+  // the upright page has room under the oven for its drawer
+  function wdDrawer(c, G, pn) {
+    const lw = G.lw, x0 = G.ox0 + G.ow * 0.03, x1 = G.ox1 - G.ow * 0.03, y0 = G.oy1 + pn.h * 0.035, y1 = pn.y1 - pn.h * 0.03;
+    if (y1 - y0 < 20) return;
+    c.beginPath(); c.roundRect(x0, y0, x1 - x0, y1 - y0, 6); c.lineWidth = lw * 1.6; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.roundRect(G.cx - G.ow * 0.22, y0 + (y1 - y0) * 0.2, G.ow * 0.44, Math.max(6, (y1 - y0) * 0.1), 4); c.fillStyle = "#cfc8bc"; c.fill(); c.stroke();
+  }
+  // the kitchen timer on top of the oven: a bell, a red body, a white face; the red wedge of time left ticks away (3 ticks) to the DING, where it rings and hops
+  function wdTimer(c, G, t, ring) {
+    const C = wdCols(), J = WD, r = G.tr, lw = G.lw, u = t - J.DING, wob = ring * 0.2 * Math.sin(u * 0.11), hop = ring * Math.abs(Math.sin(u * 0.055)) * r * 0.16;
+    const k = fe(J.SHUT, J.DING, t) * 4, kk = t >= J.DING ? 1 : Math.min(4, Math.floor(k) + easeOut(fe(0, 0.3, k % 1))) / 4, a = 2.4 * (1 - kk);
+    c.save(); c.translate(G.tx, G.ty - hop); c.rotate(wob); c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK;
+    c.beginPath(); c.moveTo(-r * 0.42, -r * 0.86); c.quadraticCurveTo(-r * 0.4, -r * 1.36, 0, -r * 1.38); c.quadraticCurveTo(r * 0.4, -r * 1.36, r * 0.42, -r * 0.86); c.closePath();
+    c.fillStyle = C.bell; c.fill(); c.lineWidth = lw * 1.2; c.stroke();
+    c.beginPath(); c.arc(0, -r * 1.46, r * 0.09, 0, WD_TAU); c.fill(); c.stroke();
+    c.lineWidth = lw * 2; c.beginPath(); c.moveTo(-r * 0.5, r * 0.82); c.lineTo(-r * 0.66, r * 1.08); c.moveTo(r * 0.5, r * 0.82); c.lineTo(r * 0.66, r * 1.08); c.stroke();
+    c.beginPath(); c.arc(0, 0, r, 0, WD_TAU); c.fillStyle = C.timer; c.fill(); c.lineWidth = lw * 1.5; c.stroke();
+    wdTone(c, 5, 0.35, (g) => { g.arc(0, 0, r, 0.6, 2.6); g.arc(0, 0, r * 0.8, 2.6, 0.6, true); });
+    c.beginPath(); c.arc(0, 0, r * 0.76, 0, WD_TAU); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw; c.stroke();
+    if (a > 0.02) { c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r * 0.5, -Math.PI / 2, -Math.PI / 2 + a); c.closePath(); c.fillStyle = C.wedge; c.fill(); }
+    c.beginPath();
+    for (let i = 0; i < 12; i++) { const b = i * Math.PI / 6, r0 = r * (i % 3 ? 0.62 : 0.54); c.moveTo(Math.cos(b) * r0, Math.sin(b) * r0); c.lineTo(Math.cos(b) * r * 0.7, Math.sin(b) * r * 0.7); }
+    c.lineWidth = lw * 0.8; c.stroke();
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a - Math.PI / 2) * r * 0.6, Math.sin(a - Math.PI / 2) * r * 0.6); c.lineWidth = lw * 1.6; c.stroke();
+    c.beginPath(); c.arc(0, 0, r * 0.09, 0, WD_TAU); c.fillStyle = MG_INK; c.fill();
+    c.restore();
+    if (ring > 0.02) {   // ringing: arcs either side of the bell
+      c.save(); c.globalAlpha = ring; c.lineWidth = lw * 1.4; c.strokeStyle = MG_INK; c.lineCap = "round"; c.beginPath();
+      const bx = G.tx, by = G.ty - hop - r * 0.7;
+      for (let i = 0; i < 3; i++) {
+        const rr = r * (0.9 + 0.3 * i + 0.08 * Math.sin(u * 0.05 + i));
+        for (let sd = -1; sd <= 1; sd += 2) { const m = -Math.PI / 2 + sd * 1.0; c.moveTo(bx + Math.cos(m - 0.32) * rr, by + Math.sin(m - 0.32) * rr); c.arc(bx, by, rr, m - 0.32, m + 0.32); }
+      }
+      c.stroke(); c.restore();
+    }
+  }
+  // the burst of steam as the doors fly open: one cloud of puffs (one ink outline round all of them) billowing out of the top of the oven, rising off the page
+  const WD_PUFF = [-0.55, 0.1, 0.8, -0.3, -0.15, 1.0, 0, 0.05, 1.1, 0.3, -0.12, 0.95, 0.56, 0.08, 0.8, -0.15, -0.45, 0.85, 0.18, -0.48, 0.9, 0.45, -0.38, 0.7, -0.45, -0.32, 0.7, 0, -0.72, 0.75];
+  function wdBurst(c, G, t) {
+    const u = fe(WD.OPEN0, WD.OPEN0 + 300, t), up = easeIn(fe(WD.OPEN0 + 220, WD.OPEN0 + 620, t));
+    if (u <= 0 || up >= 1) return;
+    const e = easeOut(u), R = G.oh * (0.1 + 0.13 * e) * (1 - 0.3 * up), lw = G.lw, sx = G.ow * 0.5 * (0.6 + 0.5 * e), sy = G.oh * 0.5 * (0.6 + 0.5 * e), y0 = G.oy0 + G.oh * (0.35 - 0.38 * e) - (G.oy0 + G.oh * 0.6) * up;
+    for (let pass = 0; pass < 2; pass++) {
+      c.beginPath();
+      for (let i = 0; i < WD_PUFF.length; i += 3) {
+        const x = G.cx + WD_PUFF[i] * sx, y = y0 + WD_PUFF[i + 1] * sy, r = R * WD_PUFF[i + 2] + (pass ? 0 : lw * 1.3);
+        c.moveTo(x + r, y); c.arc(x, y, r, 0, WD_TAU);
+      }
+      c.fillStyle = pass ? "#ffffff" : MG_INK; c.fill();
+    }
+  }
+  // a curl of steam: a white ribbon with ink edges, waving up from (x, y)
+  function wdCurl(c, x, y, len, t, a, lw, ph) {
+    if (a <= 0.02) return;
+    const s = (t * 0.0012 + ph) % 1;
+    c.save(); c.globalAlpha = a; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath();
+    for (let j = 0; j <= 10; j++) { const q = j / 10, yy = y - len * q - len * 0.12 * s, xx = x + Math.sin(q * 5.2 + ph + t * 0.004) * len * 0.12 * (0.4 + q); j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); }
+    c.lineWidth = lw * 2.8; c.strokeStyle = MG_INK; c.stroke(); c.lineWidth = lw * 1.5; c.strokeStyle = "#ffffff"; c.stroke();
+    c.restore();
+  }
+  // the enamel roasting tray in the loser's colour, a little from above: front-bottom centre (x, y), half-width w at the front, top face d high, front face h high
+  // (any units; lw an ink line in them). part 0: the floor and the back wall (empty: crumbs and a shine of oil), part 1: the front face and the handles
+  const WD_TSPK = [-0.7, 0.4, -0.35, 0.7, 0.1, 0.35, 0.45, 0.65, 0.8, 0.45, -0.9, 0.75, 0.62, 0.25];
+  const WD_CRUMB = [-0.3, 0.5, 0.05, 0.12, 0.35, 0.04, 0.3, 0.6, 0.035, -0.05, 0.7, 0.03];
+  function wdTray(c, x, y, w, d, h, lw, part, empty) {
+    const C = wdCols(), yb = y - h, yt = yb - d, wb = w * 0.9;
+    c.lineJoin = "round"; c.strokeStyle = MG_INK;
+    if (part === 0) {
+      c.beginPath(); c.moveTo(x - w, yb); c.lineTo(x - wb, yt); c.lineTo(x + wb, yt); c.lineTo(x + w, yb); c.closePath();
+      c.fillStyle = C.trayIn; c.fill(); c.lineWidth = lw; c.stroke();
+      c.beginPath(); c.moveTo(x - wb, yt); c.lineTo(x + wb, yt); c.lineTo(x + wb * 0.95, yt + d * 0.3); c.lineTo(x - wb * 0.95, yt + d * 0.3); c.closePath(); c.fillStyle = C.tray; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+      if (empty) {
+        c.globalAlpha = 0.6; c.fillStyle = "#fff6d8"; c.beginPath(); c.ellipse(x, yb - d * 0.42, w * 0.32, d * 0.18, 0, 0, WD_TAU); c.fill(); c.globalAlpha = 1;
+        c.fillStyle = C.doneTop; c.lineWidth = lw * 0.5;
+        for (let i = 0; i < WD_CRUMB.length; i += 3) { c.beginPath(); c.arc(x + WD_CRUMB[i] * w, yb - d * WD_CRUMB[i + 1], WD_CRUMB[i + 2] * w, 0, WD_TAU); c.fill(); c.stroke(); }
+      }
+      return;
+    }
+    c.beginPath(); c.moveTo(x - w, yb); c.lineTo(x + w, yb); c.lineTo(x + w * 0.96, y); c.lineTo(x - w * 0.96, y); c.closePath();
+    c.fillStyle = C.tray; c.fill(); c.lineWidth = lw * 1.2; c.stroke();
+    const D = FIN.dir;
+    wdTone(c, 5, 0.35, (g) => { g.moveTo(x + D * w * 0.3, yb); g.lineTo(x + D * w, yb); g.lineTo(x + D * w * 0.96, y); g.lineTo(x + D * w * 0.25, y); g.closePath(); });
+    c.fillStyle = MG_INK;
+    for (let i = 0; i < WD_TSPK.length; i += 2) { c.beginPath(); c.arc(x + WD_TSPK[i] * w, yb + WD_TSPK[i + 1] * h, Math.max(lw * 0.3, h * 0.07), 0, WD_TAU); c.fill(); }
+    c.strokeStyle = "rgba(255,255,255,0.8)"; c.lineWidth = Math.max(lw * 0.5, h * 0.12); c.beginPath(); c.moveTo(x - D * w * 0.85, yb + h * 0.25); c.lineTo(x - D * w * 0.4, yb + h * 0.25); c.stroke();
+    const hr = w * 0.1;
+    for (let sd = -1; sd <= 1; sd += 2) {
+      c.beginPath(); c.ellipse(x + sd * w * 0.98, yb + h * 0.3, hr, hr * 0.62, 0, -Math.PI / 2, Math.PI / 2, sd < 0);
+      c.lineWidth = lw * 2.8; c.strokeStyle = MG_INK; c.stroke(); c.lineWidth = lw * 1.3; c.strokeStyle = C.tray; c.stroke();
+    }
+    c.strokeStyle = MG_INK;
+  }
+  // a rosemary sprig along a curve (x0, y0) -> (x1, y1) (control qx, qy), needles nl long; darker as it roasts
+  function wdSprig(c, x0, y0, x1, y1, qx, qy, nl, lw, k) {
+    const C = wdCols(), green = k > 0.01 ? phxMix(C.sprig, C.sprigDone, k) : C.sprig;
+    c.lineCap = "round"; c.strokeStyle = MG_INK;
+    c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(qx, qy, x1, y1); c.lineWidth = lw * 2.2; c.stroke(); c.lineWidth = lw * 0.9; c.strokeStyle = C.stem; c.stroke(); c.strokeStyle = MG_INK;
+    c.fillStyle = green; c.lineWidth = lw * 0.55;
+    for (let i = 0; i < 6; i++) {
+      const s = 0.12 + i * 0.15, u = 1 - s, px = u * u * x0 + 2 * u * s * qx + s * s * x1, py = u * u * y0 + 2 * u * s * qy + s * s * y1;
+      const a = Math.atan2(2 * u * (qy - y0) + 2 * s * (y1 - qy), 2 * u * (qx - x0) + 2 * s * (x1 - qx)), L = nl * (1 - 0.35 * s);
+      for (let sd = -1; sd <= 1; sd += 2) { const b = a + sd * 0.8; c.beginPath(); c.ellipse(px + Math.cos(b) * L * 0.5, py + Math.sin(b) * L * 0.5, L * 0.5, L * 0.14, b, 0, WD_TAU); c.fill(); c.stroke(); }
+    }
+  }
+  // a rounded polygon through the points P (a flat list, in rx and ry from the bottom centre (x, y)), mirrored by D
+  function wdPoly(c, P, x, y, rx, ry, D, r) {
+    const n = P.length / 2;
+    c.moveTo(x + D * (P[2 * n - 2] + P[0]) / 2 * rx, y + (P[2 * n - 1] + P[1]) / 2 * ry);
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; c.arcTo(x + D * P[2 * i] * rx, y + P[2 * i + 1] * ry, x + D * P[2 * j] * rx, y + P[2 * j + 1] * ry, r); }
+    c.closePath();
+  }
+  const WD_RO = [-1, -0.04, -0.97, -0.5, -0.78, -0.98, -0.32, -1.24, 0.22, -1.27, 0.68, -1.1, 0.97, -0.68, 1.02, -0.26, 0.92, -0.02];
+  const WD_RT = [-0.7, -0.95, -0.3, -1.16, 0.2, -1.19, 0.6, -1.04, 0.4, -0.8, -0.46, -0.74];
+  const WD_SPK = [-0.7, -0.35, 0.03, -0.42, -0.62, 0.025, 0.3, -0.5, 0.03, 0.72, -0.4, 0.028, 0.55, -0.85, 0.022, -0.82, -0.75, 0.024, 0.1, -0.2, 0.02, -0.25, -0.15, 0.022, 0.85, -0.2, 0.02];
+  const WD_GL = [-0.5, -0.9, 0.08, 0.3, -1.12, 0.06, 0.82, -0.75, 0.05];
+  // the roast: the loser as a chunky roast potato with a cut face on top, bottom centre (x, y), half-width rx (any units). o: { roast 0..1 (pale .. golden
+  // brown), eyes "panic" | "shut" | "one" (the near eye shut, the other open by o.open), shake, sweat 0..1 }
+  function wdRoast(c, x, y, rx, lw, o, t) {
+    const C = wdCols(), D = FIN.dir, ry = rx * 0.66, k = o.roast, sh = o.shake || 0;
+    x += Math.sin(t * 0.07) * sh * 0.5;
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK;
+    c.beginPath(); wdPoly(c, WD_RO, x, y, rx, ry, D, rx * 0.22); c.fillStyle = k > 0.01 ? phxMix(C.raw, C.done, k) : C.raw; c.fill();
+    c.save(); c.clip();
+    wdTone(c, 6, 0.4, (g) => { g.rect(x - rx * 2, y - ry * 2.2, rx * 4, ry * 2.4); g.ellipse(x - D * rx * 0.28, y - ry * 0.98, rx * 1.02, ry * 0.86, 0, 0, WD_TAU); }, "evenodd");
+    if (k > 0.05) {
+      c.globalAlpha = k; c.fillStyle = C.speck;
+      for (let i = 0; i < WD_SPK.length; i += 3) { c.beginPath(); c.arc(x + D * WD_SPK[i] * rx, y + WD_SPK[i + 1] * ry, WD_SPK[i + 2] * rx, 0, WD_TAU); c.fill(); }
+      c.globalAlpha = 1;
+    }
+    c.restore();
+    c.beginPath(); wdPoly(c, WD_RO, x, y, rx, ry, D, rx * 0.22); c.lineWidth = lw * 1.4; c.stroke();
+    c.beginPath(); wdPoly(c, WD_RT, x, y, rx, ry, D, rx * 0.12); c.fillStyle = k > 0.01 ? phxMix(C.rawTop, C.doneTop, k) : C.rawTop; c.fill(); c.lineWidth = lw * 0.9; c.stroke();
+    c.fillStyle = "#ffffff"; c.globalAlpha = 0.55 + 0.4 * k;
+    for (let i = 0; i < WD_GL.length; i += 3) { c.beginPath(); c.ellipse(x + D * WD_GL[i] * rx, y + WD_GL[i + 1] * ry, WD_GL[i + 2] * rx * 1.5, WD_GL[i + 2] * rx * 0.6, -0.5 * D, 0, WD_TAU); c.fill(); }
+    c.globalAlpha = 1;
+    wdSprig(c, x - D * rx * 0.3, y - ry * 1.17, x + D * rx * 0.66, y - ry * 1.42, x + D * rx * 0.16, y - ry * 1.55, rx * 0.17, lw, k);
+    wdFace(c, x, y, rx, ry, lw, o, t, D);
+  }
+  // his face on the front of the roast (Odin keeps his eyepatch)
+  function wdFace(c, x, y, rx, ry, lw, o, t, D) {
+    const er = rx * 0.13, sh = o.shake || 0, jx = Math.sin(t * 0.09) * sh, jy = Math.cos(t * 0.13) * sh * 0.5, fx = x - D * rx * 0.08 + jx, ey = y - ry * 0.52 + jy;
+    const patch = L_().spec.look.costume === "odin";
+    c.strokeStyle = MG_INK; c.lineCap = "round";
+    for (let sd = -1; sd <= 1; sd += 2) {
+      const ex = fx + sd * rx * 0.26, near = sd === D;
+      if (patch && near) {
+        c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(ex - er * 1.6, ey - er * 1.6); c.lineTo(ex + er * 1.8, ey + er * 0.2); c.stroke();
+        c.beginPath(); c.ellipse(ex, ey, er * 0.95, er * 0.85, 0, 0, WD_TAU); c.fillStyle = MG_INK; c.fill(); continue;
+      }
+      if (o.eyes === "shut" || (o.eyes === "one" && (near || o.open < 0.2))) {
+        c.lineWidth = lw * 1.1; c.beginPath(); c.moveTo(ex - er * 0.9, ey + er * 0.15); c.quadraticCurveTo(ex, ey - er * 0.55, ex + er * 0.9, ey + er * 0.15); c.stroke(); continue;
+      }
+      if (o.eyes === "one") {   // the one open eye, half-lidded, looking at us: done
+        const h2 = er * 1.05 * o.open;
+        c.beginPath(); c.ellipse(ex, ey, er * 0.88, h2, 0, 0, Math.PI); c.closePath(); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw * 0.9; c.stroke();
+        c.beginPath(); c.arc(ex - D * er * 0.12, ey + h2 * 0.42, Math.min(er * 0.3, h2 * 0.45), 0, WD_TAU); c.fillStyle = MG_INK; c.fill();
+        c.lineWidth = lw * 1.5; c.beginPath(); c.moveTo(ex - er * 1.05, ey - er * 0.05 * sd); c.lineTo(ex + er * 1.05, ey + er * 0.05 * sd); c.stroke();
+        continue;
+      }
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, er * 0.85, er * 1.15, 0, 0, WD_TAU); c.fill(); c.lineWidth = lw * 0.9; c.stroke();
+      c.fillStyle = MG_INK; c.beginPath(); c.arc(ex, ey + er * 0.12, er * 0.26, 0, WD_TAU); c.fill();
+      c.lineWidth = lw; c.beginPath(); c.moveTo(ex + sd * er * 1.0, ey - er * 1.45); c.lineTo(ex - sd * er * 0.55, ey - er * 2.0); c.stroke();
+    }
+    const mx = fx, my = y - ry * 0.2 + jy;
+    if (o.eyes === "panic") { c.beginPath(); c.ellipse(mx, my, er * 0.42, er * 0.58, 0, 0, WD_TAU); c.fillStyle = "#5a2418"; c.fill(); c.lineWidth = lw * 0.8; c.stroke(); }
+    else { c.beginPath(); c.moveTo(mx - er * 0.7, my); c.quadraticCurveTo(mx - er * 0.35, my - er * 0.3, mx, my); c.quadraticCurveTo(mx + er * 0.35, my + er * 0.3, mx + er * 0.7, my); c.lineWidth = lw; c.stroke(); }
+    if (o.sweat > 0.02) for (let i = 0; i < 2; i++) {
+      const q = (t * 0.0022 + i * 0.5) % 1, sd = i ? 1 : -1, sx = x + sd * rx * (0.78 + 0.35 * q), sy = y - ry * (1.25 + 0.3 * Math.sin(Math.PI * q)) + q * ry * 0.4, s2 = er * 0.75 * (1 - 0.4 * q);
+      c.globalAlpha = o.sweat * (1 - q); c.beginPath(); c.moveTo(sx, sy - s2 * 1.3); c.quadraticCurveTo(sx + s2, sy + s2 * 0.3, sx, sy + s2 * 0.8); c.quadraticCurveTo(sx - s2, sy + s2 * 0.3, sx, sy - s2 * 1.3);
+      c.fillStyle = "#dff0ff"; c.fill(); c.lineWidth = lw * 0.8; c.stroke(); c.globalAlpha = 1;
+    }
+  }
+  // the tray and the roast, in the oven (p 0) or pulled out at us (p 1): panicking in the cold oven and as it heats, eyes shut from the DING, one eye open at 4500
+  function wdTrayRoast(c, G, t, roast, p) {
+    const J = WD, D = FIN.dir, S = lerp(1, G.pS, p), x = G.cx, y = lerp(G.tY, G.pY, p), w = G.tw * S, d = G.td * S * (1 + 0.6 * p), h = G.th * S, rx = G.rx * S, lw = G.lw * (1 + 0.3 * p), yr = y - h - d * 0.45;
+    wdTray(c, x, y, w, d, h, lw, 0, false);
+    const eyes = t < J.DING ? "panic" : t < J.EYE ? "shut" : "one", shake = t < J.DING ? (t < J.SHUT ? 0.8 : 1.2 + 1.8 * roast) * lw * 0.5 : 0;
+    wdRoast(c, x, yr, rx, lw, { roast, eyes, open: easeOut(fe(J.EYE, J.EYE + 90, t)), shake, sweat: t < J.DING ? (t < J.SHUT ? 0.6 : 1) : 0 }, t);
+    wdTray(c, x, y, w, d, h, lw, 1, false);
+    if (p <= 0) wdWaves(c, G, t, 0.85 * fe(J.SHUT + 60, J.SHUT + 200, t) * (1 - fe(J.DING + 60, J.OPEN0, t)), x, yr - rx * 0.9, rx);
+    else { const a = fe(J.PULL - 120, J.PULL + 60, t); wdCurl(c, x - D * rx * 0.3, yr - rx * 0.86, rx * 0.95, t, a, lw, 0); wdCurl(c, x + D * rx * 0.35, yr - rx * 0.8, rx * 0.75, t, a, lw, 2.3); }
+  }
+  // her arm (a fighter's ink limb, seen close) from (x0, y0) to the cuff (x1, y1), a pale shine along it
+  function wdArm(c, x0, y0, x1, y1, wd, lw) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, px = -dy / L * wd, py = dx / L * wd;
+    c.beginPath(); c.moveTo(x0 + px * 1.3, y0 + py * 1.3); c.lineTo(x1 + px, y1 + py); c.lineTo(x1 - px, y1 - py); c.lineTo(x0 - px * 1.3, y0 - py * 1.3); c.closePath();
+    c.fillStyle = MG_INK; c.fill();
+    c.beginPath(); c.moveTo(x0 - px * 0.55, y0 - py * 0.55); c.lineTo(x1 - px * 0.45, y1 - py * 0.45); c.lineWidth = lw * 0.9; c.lineCap = "round"; c.strokeStyle = "rgba(255,255,255,0.35)"; c.stroke();
+  }
+  // an oven mitt, quilted, its cuff at (x, y), the fingers along ang, s long (the thumb stays on top)
+  function wdMittPath(c, w, s) { c.beginPath(); c.moveTo(-w * 0.52, 0); c.lineTo(-w * 0.58, -s * 0.62); c.quadraticCurveTo(-w * 0.56, -s * 1.04, 0, -s * 1.04); c.quadraticCurveTo(w * 0.56, -s * 1.04, w * 0.55, -s * 0.62); c.lineTo(w * 0.5, 0); c.closePath(); }
+  function wdMitt(c, x, y, s, ang, lw, C) {
+    const w = s * 0.5;
+    c.save(); c.translate(x, y); c.rotate(ang + Math.PI / 2); if (Math.cos(ang) > 0) c.scale(-1, 1);
+    c.lineJoin = "round"; c.strokeStyle = MG_INK;
+    c.beginPath(); c.ellipse(w * 0.6, -s * 0.48, w * 0.3, s * 0.21, 0.4, 0, WD_TAU); c.fillStyle = C.mitt; c.fill(); c.lineWidth = lw; c.stroke();
+    wdMittPath(c, w, s); c.fillStyle = C.mitt; c.fill();
+    c.save(); c.clip();
+    c.globalAlpha = 0.4; c.lineWidth = lw * 0.6; c.beginPath();
+    for (let i = -3; i <= 3; i++) { const o = i * w * 0.45; c.moveTo(-w + o, 0); c.lineTo(w + o, -s * 1.1); c.moveTo(w + o, 0); c.lineTo(-w + o, -s * 1.1); }
+    c.stroke(); c.globalAlpha = 1;
+    wdTone(c, 5, 0.42, (g) => g.rect(w * 0.12, -s * 1.1, w, s * 1.2));
+    c.restore();
+    wdMittPath(c, w, s); c.lineWidth = lw * 1.2; c.stroke();
+    c.beginPath(); c.roundRect(-w * 0.66, -s * 0.06, w * 1.32, s * 0.25, s * 0.06); c.fillStyle = C.cuff; c.fill(); c.lineWidth = lw; c.stroke();
+    c.restore();
+  }
+  // her arms come in from the bottom corners, the mitts take the tray's handles and pull it out with them
+  function wdMitts(c, pn, G, t) {
+    const J = WD, m = easeOut(fe(J.REACH, J.PULL0, t));
+    if (m <= 0.001) return;
+    const C = wdCols(), p = ease(fe(J.PULL0, J.PULL, t)), S = lerp(1, G.pS, p), x = G.cx, y = lerp(G.tY, G.pY, p), w = G.tw * S, h = G.th * S, lw = G.lw * (1 + 0.3 * p), s = G.ms * lerp(1, 1.25, p);
+    for (let sd = -1; sd <= 1; sd += 2) {
+      const hx = x + sd * w * 1.06, hy = y - h * 0.7, sx = sd < 0 ? pn.x0 - pn.w * 0.06 : pn.x1 + pn.w * 0.06, sy = pn.y1 + pn.h * 0.08;
+      const ang = Math.atan2(hy - sy, hx - sx), ca = Math.cos(ang), sa = Math.sin(ang), gx = lerp(sx, hx, m), gy = lerp(sy, hy, m), mx = gx - ca * s * 0.5, my = gy - sa * s * 0.5;
+      wdArm(c, sx - ca * s * 2, sy - sa * s * 2, mx, my, s * 0.17, lw);
+      wdMitt(c, mx, my, s, ang, lw, C);
+    }
+  }
+  function wdDrawSplash(c, pn, t) {
+    const G = wdGeo(pn), C = wdCols(), J = WD, lw = G.lw;
+    const shut = wdShut(t), heat = fe(J.SHUT, J.SHUT + 220, t) * (1 - 0.75 * fe(J.OPEN0, J.OPEN0 + 450, t)), roast = ease(fe(J.SHUT + 40, J.DING - 40, t)), ring = t >= J.DING ? 1 - fe(J.DING + 380, J.DING + 700, t) : 0;
+    pn.screen(c);
+    // the oven's front: warm white steel in light dots
+    c.fillStyle = C.steel; c.fillRect(pn.x0 - 4, pn.y0 - 4, pn.w + 8, pn.h + 8);
+    wdTone(c, 8, 0.16, (g) => g.rect(pn.x0 - 4, pn.y0 - 4, pn.w + 8, pn.h + 8));
+    if (G.port) wdDrawer(c, G, pn);
+    // DING: focus lines and a burst round the timer, over the top of the oven
+    if (ring > 0.02) {
+      c.save(); c.beginPath(); c.rect(pn.x0 - 4, pn.y0 - 4, pn.w + 8, G.oy0 - pn.y0 + 2); c.clip();
+      mgFocus(c, G.tx, G.ty, Math.hypot(pn.w, G.oy0 - pn.y0) * 0.9, t * 0.0004, 0.75 * ring);
+      c.restore();
+      const b = easeOut(fe(J.DING, J.DING + 70, t)) * (1 - fe(J.DING + 120, J.DING + 260, t));
+      if (b > 0.02) mgStarburst(c, G.tx, G.ty, G.tr * (1.2 + 1.3 * b), 0.3);
+    }
+    wdKnobs(c, G, t, heat);
+    // inside the oven (the tray stays in there until the doors are open)
+    const inside = t < J.OPEN0 + 80;
+    c.save(); c.beginPath(); c.rect(G.ox0, G.oy0, G.ow, G.oh); c.clip();
+    wdCavity(c, G, t, heat);
+    if (inside) wdTrayRoast(c, G, t, roast, 0);
+    c.restore();
+    c.lineWidth = lw * 2.6; c.strokeStyle = MG_INK; c.strokeRect(G.ox0, G.oy0, G.ow, G.oh);
+    // her wings: the oven's doors
+    wdDoor(c, G, t, shut, -1); wdDoor(c, G, t, shut, 1);
+    if (t >= J.SHUT && t < J.OPEN0) wdWindow(c, G, t, heat);
+    wdTimer(c, G, t, ring);
+    wdBurst(c, G, t);
+    if (!inside) wdTrayRoast(c, G, t, roast, ease(fe(J.PULL0, J.PULL, t)));
+    wdMitts(c, pn, G, t);
+    const fl = 0.55 * (1 - fe(J.SHUT, J.SHUT + 90, t)) * (t >= J.SHUT ? 1 : 0);
+    if (fl > 0.01) { c.fillStyle = `rgba(255,252,244,${fl.toFixed(3)})`; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4); }
+  }
+  const wdShake = (t) => {
+    const J = WD, a = 7 * fe(J.SHUT, J.SHUT + 15, t) * (1 - fe(J.SHUT + 40, J.SHUT + 240, t)) + 3.5 * fe(J.DING, J.DING + 15, t) * (1 - fe(J.DING + 60, J.DING + 300, t));
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0];
+  };
+  const wdCam = () => ({ wx: FIN.lx, wy: -60, vh: 200 });   // (the splash draws in the panel's px)
+  // panel 4: Rebirth's aftermath in oven mitts, the tray on the ground in front of her: the roast with one eye open (a blink at 5000), a curl of steam; once
+  // he has popped out, the empty tray with the sprig left on it
+  const WD_AL = { ax: 62, tw: 32, rx: 24, land: 48 }, WD_AP = { ax: 48, tw: 25, rx: 18.5, land: 34 }, WD_HANDS = ["hB", "shB", "hF", "sh"];
+  const wdAGeo = () => (MG.lay && MG.lay.port ? WD_AP : WD_AL);
+  const wdAX = () => FIN.lx - FIN.dir * 10 + FIN.dir * wdAGeo().ax;
+  function wdDrawAfter(c, pn, t) {
+    drawAfter(c, pn, t);
+    const A = wdAGeo(), D = FIN.dir, W = W_(), C = wdCols(), x = wdAX(), popped = mgPopped(t), lw = Math.max(1.1, 3 / pn.z), d = A.tw * 0.16, h = A.tw * 0.1, yr = -h - d * 0.45, s = W.s.w * 0.36;
+    for (let i = 0; i < 4; i += 2) {
+      const hp = pt(W, t, WD_HANDS[i]), sp = pt(W, t, WD_HANDS[i + 1]), ang = Math.atan2(hp[1] - sp[1], hp[0] - sp[0]);
+      pn.world(c); wdMitt(c, hp[0] - Math.cos(ang) * s * 0.4, hp[1] - Math.sin(ang) * s * 0.4, s, ang, lw, C);
+    }
+    pn.world(c);
+    wdTray(c, x, 0, A.tw, d, h, lw, 0, popped);
+    if (popped) wdSprig(c, x - D * A.tw * 0.4, yr + d * 0.1, x + D * A.tw * 0.3, yr - d * 0.05, x - D * A.tw * 0.05, yr - d * 0.5, A.tw * 0.1, lw, 1);
+    else wdRoast(c, x, yr, A.rx, lw, { roast: 1, eyes: "one", open: t >= 5000 && t < 5070 ? 0 : 1, shake: 0, sweat: 0 }, t);
+    wdTray(c, x, 0, A.tw, d, h, lw, 1, popped);
+    wdCurl(c, x + D * A.rx * 0.15, yr - A.rx * 0.88, A.rx * 1.4, t, fe(MT.AFTER + 80, MT.AFTER + 280, t) * (popped ? 0.6 : 1), lw, 0.7);
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Well Done",
+    start(g) { S_.start(g); pota = true; wdGc = null; wdC = null; },
+    end() { S_.end(); pota = false; wdGc = null; wdC = null; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), inset = by("inset"), strike = by("strike"), after = by("after"), D = FIN.dir;
+      inset.freeze = MT.STRIKE + 130;              // the strike panel has slid over it by then: drawn once, then a bitmap
+      strike.freeze = strike.cover = MT.SPLASH;   // the splash covers the whole page from here: the strike is drawn once more, then a bitmap
+      after.draw = wdDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 112 : 84) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.lx - D * 10 + D * vh * (lay.port ? 0.27 : 0.62), wy: -0.38 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: MG_PAPER, slide: MG.reduced ? 1 : 180, cam: wdCam, shake: wdShake, draw: wdDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, ms = lay.port ? Math.min(0.5, 0.86 * L.gw / (5 * 0.22 * L.gh * 0.72)) : 1;
+      ws[3].t1 = MT.SPLASH + 150;   // DOOOM is gone as the splash comes up
+      const spl = (t) => { const pn = MG.byId.splash; mgPlace(pn, t); return pn; };
+      ws.push(
+        { text: "clunk", t0: WD.SHUT, t1: WD.SHUT + 420, size: 0.075, mul: lay.port ? 0.62 : 1, jit: 0.12, rot: 0.1 * D,
+          at: (t) => { const pn = spl(t), G = wdGeo(pn); return [G.cx - D * G.ow * 0.2, (G.oy0 + G.wy0) / 2 + pn.oy]; } },
+        { text: "DING!", t0: WD.DING, t1: WD.OPEN + 280, size: 0.22, mul: ms, arc: 8, jag: 0.1, fill: "#ffe066", rot: -0.08 * D,
+          at: (t) => {
+            const pn = spl(t), G = wdGeo(pn), hw = phxHalf("DING!", 0.22, ms);
+            return lay.port ? [G.tx, G.ty - G.tr * 1.55 - L.gh * 0.22 * ms * 0.42 + pn.oy] : [clamp(G.tx + D * (G.tr * 1.7 + hw), hw + 4, L.gw - hw - 4), G.ty + G.tr * 0.15 + pn.oy];
+          } },
+        { text: "well done", t0: MT.AFTER + 260, t1: MT.POP + 20, size: 0.06, mul: lay.port ? 0.62 : 1, jit: 0.1, rot: -0.07 * D,
+          at: () => { const pn = MG.byId.after, A = wdAGeo(); mgPlace(pn, MT.AFTER + 400); return pn.sp(wdAX() + D * A.rx * 1.2, -A.rx * 2.5); } },
+      );
+      return ws;
+    },
+    // panel 4: she presents the tray with one mitt, the other on her hip
+    pose(P, sk, t, role, p) {
+      const r = S_.pose(P, sk, t, role, p);
+      if (role !== "w" || t < MT.AFTER) return r;
+      const w = sk.w, leg = sk.leg, tor = sk.tor, up = ease(fe(MT.AFTER + 60, MT.AFTER + 450, t));
+      return { hF: [w * (0.62 + 0.3 * up), -leg - tor * (0.12 + 0.24 * up)], hB: [-w * 0.6, -leg - tor * (0.1 + 0.16 * up)], fF: r.fF, fB: r.fB };
+    },
+    food() { const A = wdAGeo(), x = wdAX(), h = A.tw * 0.1, d = A.tw * 0.16; return { x, y: 0, r: A.rx, y0: -(h + d * 0.45 + A.rx * 0.6), lx: x + FIN.dir * A.land }; },
+    cues(t) {
+      S_.cues(t);
+      cueOnce("wdUp", MT.SPLASH + 40, () => Cin.go(() => Cin.page()));
+      cueOnce("wdSweep", WD.SHUT0 + 40, () => Cin.go(() => Cin.whoosh(0.2, -0.6, 0.6, 0.45)));
+      cueOnce("wdClunk", WD.SHUT, () => Cin.go(() => { Cin.clack(); Cin.sub(90, 40, 0.22, 0.6); }));
+      cueOnce("wdHeat", WD.SHUT + 60, () => Cin.go(() => Cin._noise(0.85, 0.08, 220, 700, "lowpass")));
+      for (let i = 0; i < 3; i++) cueOnce(WD_TICKS[i], WD.SHUT + (WD.DING - WD.SHUT) * (i + 1) / 4, () => Cin.go(() => Cin.tick(2300)));
+      cueOnce("wdDing", WD.DING, () => Cin.go(() => { Cin.chime(2093); Cin.chime(2637); Cin._osc("triangle", 4186, 4186, 0.5, 0.03, 0.002); }));
+      cueOnce("wdOpen", WD.OPEN0, () => Cin.go(() => { Cin.whoosh(0.3, 0.6, -0.6, 0.5); Cin._noise(0.7, 0.18, 2600, 900, "bandpass", 0.8); }));
+      cueOnce("wdPull", WD.PULL0, () => Cin.go(() => { Cin.clack(); Cin._noise(0.22, 0.12, 1400, 600, "bandpass", 1.2); }));
+      cueOnce("wdEye", WD.EYE, () => Cin.go(() => Cin.tick(2900)));
+      cueOnce("wdSizzle", MT.AFTER + 140, () => Cin.go(() => Cin._noise(0.7, 0.05, 3000, 5200, "highpass", 0.8)));
+      cueOnce("wdBlink", 5000, () => Cin.go(() => Cin.tick(2900)));
     },
   });
   return S_;
