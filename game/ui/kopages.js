@@ -60,7 +60,6 @@ function koRefresh() { if (typeof shopKoRender === "function") shopKoRender(); }
 function koBoot() {   // qmBoot (ui/quick.js), once
   if (!qmOn()) return;
   window.__blQuick.on(koMsg);
-  window.__blKo = KO;   // tests read it
 }
 // ask for the balance and the pages (the Shop opening, signing in); at most every 5 s unless forced
 function koAsk(force) {
@@ -156,3 +155,4 @@ function koDemoEnd() {
   openAccount("h");
   if (id && typeof shopKoFocus === "function") shopKoFocus(id);   // ui/shop.js: back on that fighter's card
 }
+window.__blKo = { st: KO, refresh: koRefresh, demo: koDemo, tease: koTease, on: koOn };   // tests (a test page has no server: it sets st and window.__blAcct.st.code itself)
