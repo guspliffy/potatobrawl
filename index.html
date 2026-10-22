@@ -19783,7 +19783,7 @@ function finStart(g) {
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
-  FIN.alt = !FIN.ulti && koAltFor(W, Lf);   // ui/kopages.js: the winner's Potatality (yours, a friend's, a CPU's teaser); manga.js plays MANGA[id].alt
+  FIN.alt = !FIN.ulti && koAltFor(W, Lf);   // ui/kopages.js: the winner's Potatality (yours, a friend's, a CPU's teaser); 1 or 2: manga.js plays MANGA[id].alt / .alt2
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = wi; FIN.l = li;
   if (FIN.w === meSlot && !match.demo) masteryPage(W.spec.id, FIN.ulti);   // ui/mastery.js: the Collection counts the KO pages you land (never the Shop's WATCH)
   FIN.wx = clamp(Math.round(W.x), -190, 190);
@@ -19796,7 +19796,7 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : FIN.alt ? MANGA[W.spec.id].alt.name : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
+  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : FIN.alt && mgAltOf(MANGA[W.spec.id], FIN.alt) ? mgAltOf(MANGA[W.spec.id], FIN.alt).name : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
@@ -20593,7 +20593,7 @@ function finCard(o, t) {
    slid in, so the panels below it are no longer drawn) and before(c, t, pn) (called once, on the first frame the panel is drawn, just before it is: c holds the
    page so far, which the Samurai copies to cut it into slabs). A script may also define end() (called when the page ends or is skipped, to free its own canvases).
    The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL.
-   POTATALITIES (step 8; design: Project files step8/fable-design.md). A fighter's second KO page, bought with Pommes (ui/kopages.js), is MANGA[id].alt: a full script
+   POTATALITIES (step 8; design: Project files step8/fable-design.md). A fighter's Potatalities, bought with Pommes (ui/kopages.js), are MANGA[id].alt and .alt2: each a full script
    like an Ultimate cut (usually Object.assign({}, S_, {...})) that keeps the page up to the strike and ends in a food gag. finisher.js sets FIN.alt (koAltFor: your own
    choice, a friend's from his presence, a CPU's teaser) and the engine plays .alt on the long timeline MT_U, unless the KO is an Ultimate (that keeps its own page).
    MG.alt = true; the card's sub-line reads "POTATALITY: <name>" in MG_POTA. What the engine adds to every Potatality, so the scripts don't:
@@ -21146,12 +21146,14 @@ function mgWork(t) {
 }
 
 /* ---------- start, tick, draw, end ---------- */
+// a fighter's Potatality n (FIN.alt: 1 = MANGA[id].alt, 2 = MANGA[id].alt2; true counts as 1), or null
+const mgAltOf = (base, n) => (!base || !n ? null : (n === 2 ? base.alt2 : base.alt) || null);
 function mangaStart(g, plain) {
   const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
   // a Potatality (FIN.alt, finisher.js) plays MANGA[id].alt on the long timeline; an Ultimate KO keeps the Ultimate's page. plain: the alt failed to start, play the normal page
-  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, alt = !ulti && !plain && !!FIN.alt && !!base.alt, S = cut ? base.ulti : alt ? base.alt : base;
+  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, altS = mgAltOf(base, FIN.alt), alt = !ulti && !plain && !!altS, S = cut ? base.ulti : alt ? altS : base;
   try {
     Object.assign(MT, cut || alt ? MT_U : MT_N);
     MG.ulti = ulti; MG.ultiCut = cut; MG.alt = alt; MG.popFit = null; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
@@ -34683,7 +34685,7 @@ function koAltFor(W, Lf) {
   if (!match || !W || !Lf || W.spec.boss || Lf.spec.boss || !koHas(W.spec.id)) return false;
   if (match.demo) return KO.demo === W.spec.id;
   if (match.rp || match.tutorial || match.trial || match.first) return false;
-  if (W.slot === meSlot) return koOn(W.spec.id) || window.__blKoAlt === true;   // __blKoAlt: the tests (pwmanga.py --alt) play your page without owning it
+  if (W.slot === meSlot) return window.__blKoAlt === 2 ? 2 : koOn(W.spec.id) || window.__blKoAlt === true;   // __blKoAlt: the tests (pwmanga.py --alt / --alt=2) play your page without owning it
   if (match.online) return !match.tb && Array.isArray(match.koOpp) && match.koOpp.includes(W.spec.id);   // a 2v2 shows only your own
   if (G && G.fighters.length === 2 && Lf.slot === meSlot && koTease(G)) { match.koTease = W.spec.id; return true; }   // a CPU beat you: its page, and the results say where it is
   return false;

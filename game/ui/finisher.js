@@ -29,7 +29,7 @@ function finStart(g) {
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
-  FIN.alt = !FIN.ulti && koAltFor(W, Lf);   // ui/kopages.js: the winner's Potatality (yours, a friend's, a CPU's teaser); manga.js plays MANGA[id].alt
+  FIN.alt = !FIN.ulti && koAltFor(W, Lf);   // ui/kopages.js: the winner's Potatality (yours, a friend's, a CPU's teaser); 1 or 2: manga.js plays MANGA[id].alt / .alt2
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = wi; FIN.l = li;
   if (FIN.w === meSlot && !match.demo) masteryPage(W.spec.id, FIN.ulti);   // ui/mastery.js: the Collection counts the KO pages you land (never the Shop's WATCH)
   FIN.wx = clamp(Math.round(W.x), -190, 190);
@@ -42,7 +42,7 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : FIN.alt ? MANGA[W.spec.id].alt.name : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
+  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : FIN.alt && mgAltOf(MANGA[W.spec.id], FIN.alt) ? mgAltOf(MANGA[W.spec.id], FIN.alt).name : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());

@@ -118,7 +118,7 @@ function koAltFor(W, Lf) {
   if (!match || !W || !Lf || W.spec.boss || Lf.spec.boss || !koHas(W.spec.id)) return false;
   if (match.demo) return KO.demo === W.spec.id;
   if (match.rp || match.tutorial || match.trial || match.first) return false;
-  if (W.slot === meSlot) return koOn(W.spec.id) || window.__blKoAlt === true;   // __blKoAlt: the tests (pwmanga.py --alt) play your page without owning it
+  if (W.slot === meSlot) return window.__blKoAlt === 2 ? 2 : koOn(W.spec.id) || window.__blKoAlt === true;   // __blKoAlt: the tests (pwmanga.py --alt / --alt=2) play your page without owning it
   if (match.online) return !match.tb && Array.isArray(match.koOpp) && match.koOpp.includes(W.spec.id);   // a 2v2 shows only your own
   if (G && G.fighters.length === 2 && Lf.slot === meSlot && koTease(G)) { match.koTease = W.spec.id; return true; }   // a CPU beat you: its page, and the results say where it is
   return false;
