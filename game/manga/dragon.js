@@ -1060,7 +1060,7 @@ MANGA.dragon = (function () {
   S_.alt = Object.assign({}, S_, {
     name: "Jacket Potato",
     start(g) { S_.start(g); pota = true; jpGc = null; jpC = null; jpIn = false; },
-    end() { S_.end(); pota = false; jpGc = null; jpC = null; jpIn = false; },
+    end() { pota = false; jpGc = null; jpC = null; jpIn = false; },   // (the Dragon's S_ has no end of its own)
     panels(lay) {
       const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after"), D = FIN.dir;
       strike.freeze = strike.cover = MT.SPLASH;   // the splash covers the whole page from here: the strike is drawn once more, then a bitmap
