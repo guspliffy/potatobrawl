@@ -6893,6 +6893,16 @@ ROAD_SKINS.push({ name: "Harvest Gold", road: "harvest", body: "#d9a957", trim: 
   accent: { phoenix: "#ff9a1f", alchemist: "#7a4a1e", odin: "#c08a2e", wizard: "#8a3f1a", samurai: "#c4561e", dragon: "#d98a1f", gunslinger: "#6e4a24", reaper: "#3a2614" }, lining: "#ffd66b" });
 for (const f of FIGHTERS) for (const r of ROAD_SKINS)
   f.palettes.push({ name: r.name, road: r.road, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
+// the Pommes skins (Fable, Project files step8/fable-design-2.md section 2): bought with Pommes on the server (pommes.js items "sk1:<id>" /
+// "sk2:<id>"), never with chips; after the won skins. pal.pommes = the line (1 Ink Noir, 2 Starfall) gives the line's overlay (skinfx.js).
+const POMMES_SKINS = [
+  { name: "Ink Noir", pommes: 1, body: "#ece2cc", trim: "#1b1a22", ui: "#ff4f4f", lining: "#d8cfb8",
+    accent: { phoenix: "#ff6a2b", alchemist: "#8dff3a", odin: "#ff3d57", wizard: "#a86bff", samurai: "#2fd39a", dragon: "#ffc21f", gunslinger: "#3ef2c0", reaper: "#ffb444" } },
+  { name: "Starfall", pommes: 2, body: "#2b1f52", trim: "#0e0a1f", ui: "#c9a6ff", lining: "#ff6ad5",
+    accent: { phoenix: "#ff6a9a", alchemist: "#5effc3", odin: "#cfa9ff", wizard: "#ffd36b", samurai: "#ff3fa4", dragon: "#ff8c42", gunslinger: "#c7ff5a", reaper: "#9b5cff" } },
+];
+for (const f of FIGHTERS) for (const r of POMMES_SKINS)
+  f.palettes.push({ name: r.name, pommes: r.pommes, price: 0, body: r.body, trim: r.trim, accent: r.accent[f.id], ui: r.ui, lining: r.lining });
 for (const f of FIGHTERS) for (const k of AIR_MOVES) { f.moves[k].air = true; if (f.moves[k].landLag == null) f.moves[k].landLag = 6; }
 for (const f of FIGHTERS) for (const k of ["hSide", "hUp", "hDown"]) f.moves[k].charge = true;
 
