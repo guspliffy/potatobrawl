@@ -26294,7 +26294,8 @@ MANGA.gunslinger = (function () {
    back to his fist with the statue's shards in its wake, the catch, the shards fly on and land as RAGNARÖK in gold at 3900, the flock wheels off, his eye glints;
    4700 panel 4 as on Judgement (its moments are MT.AFTER + offset).
    Script fields: col, name, flight, panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt().
-   POTATALITY: "Frozen Fries" = MANGA.odin.alt (S_.alt, at the end; its helpers are prefixed fzf), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Frozen Fries" = MANGA.odin.alt (S_.alt, at the end; its helpers are prefixed fzf), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Smash Landing" = MANGA.odin.alt2 (S_.alt2, after it; its helpers are prefixed sml, `pota2` says it is playing), played when it is the one picked. */
 MANGA.odin = (function () {
   const COL = "#8fd8ff", DEEP = "#3f8fc8", SNOW = "#fbfaf6", RAV = "#15131c", FIST = "#9b9796";
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
@@ -26306,6 +26307,7 @@ MANGA.odin = (function () {
   let snow = [], flock = [], shards = [], rubble = [], dust = [], cracks = [], LY = { xc: 0.66, tx: 0, port: false };
   let ult = false, cutA = 1, rgB = [], rgT = null;   // ult: this play is the Ultimate page (set by start()); cutA: the strike's over-layer things fade under the splash
   let pota = false;   // pota: this play is the Potatality, Frozen Fries (set by its start): the strike's flock, shards and speed lines leave under its splash too
+  let pota2 = false;  // pota2: this play is the second Potatality, Smash Landing (set by its start, which also sets pota for the same exit of the strike)
   // the Ultimate: the throw (wind-up, swing, release), the spear stuck in the statue (A_STUCK, TIP_IN units deep) and its turn; the splash's beats
   const T_WIND = 2500, T_SWING = 2560, T_THROW = 2640, T_TURN0 = 3110, T_TURN1 = 3250, A_STUCK = 0.08, TIP_IN = 34;
   const UT = { IN: 3250, BLACK: 3520, RET: 3400, CATCH: 3700, OFF: 3820, NAME: 3900, GLINT: 4200, OUT: 4300 };
@@ -26726,7 +26728,7 @@ MANGA.odin = (function () {
   /* ---------- the script ---------- */
   const S_ = {
     col: COL, name: "Judgement", flight: "strike",
-    start() { ult = false; pota = false; cutA = 1; },
+    start() { ult = false; pota = false; pota2 = false; cutA = 1; },
     panels,
     words(lay) {
       const ev = FIN.ev, heavy = ev && /^h/.test(ev.mv || ""), txt = ev && ev.fin ? "KAAAW" : heavy ? "DOOM" : "KRAK", D = FIN.dir;
@@ -27592,6 +27594,386 @@ MANGA.odin = (function () {
       cueOnce("fzfBrrr", FZ.BRRR, () => Cin.go(() => { for (let i = 0; i < 8; i++) Cin._osc("triangle", 700 + (i % 2) * 60, 680, 0.05, 0.03, 0.002, i * 0.06); }));
       cueOnce("fzfChat", MT.AFTER + 220, () => Cin.go(() => { for (let i = 0; i < 5; i++) Cin.tick(3000 + (i % 2) * 400); }));
       cueOnce("fzfFlap", MT.POP + 30, () => odnCaw(0.7, 760));
+    },
+  });
+  /* ===================== the second Potatality, "Smash Landing" (MANGA.odin.alt2; design: Project files step8/fable-design-2.md §1.5) =====================
+     Judgement to the shatter (the statue flies, the flock chases it). 3250 the splash (panel 5) slides up on pale sky: high up, big and near, the Raven carries the
+     loser by the top of his head; far below, small, Odin holds a tin plate up. 3330 it lets go (caw): the loser falls with three after-images, shrinking into the
+     distance, onto the plate; 3500 SPLAT: the camera cuts close, he is a flat smashed potato on the plate, his skin split all round the edge, his eyes wide apart; a
+     salt flake (3650) and a rosemary sprig (3750) land on him. 3790 the Raven swoops back onto the plate's rim and pecks him three times (peck), he winces each
+     time; 4220 Odin shoos it with two fingers and it hops onto his shoulder (caw), the potato sighs. 4700 in panel 4's place, in colour: Odin, the spear on his
+     shoulder and the Raven beside his head, a tin plate on a stump with the smashed potato blinking; the engine's POP bursts it at 5250 (food()): a greasy ring,
+     three peck marks and the sprig are left on the plate.
+     The splash's world: Odin's feet at (FIN.wx, 0), the plate held up in front of him at (SML_PX, SML_PY). A plate and the potato on it are drawn in their own units,
+     scaled (smlPlate / smlSmash: the plate's middle at 0, 40 each side; the potato 35). Every helper here is prefixed sml. */
+  const SML = { DROP: 3330, LAND: 3500, SALT0: 3575, SALT: 3650, SPRIG0: 3610, SPRIG: 3750, RAV0: 3790, RAV1: 3900, PECK: [3960, 4060, 4160], HAND: 4220, SHOO: 4290, HOP1: 4430, CAW: 4440 };
+  const SML_PX = 46, SML_PY = -74, SML_TAU = Math.PI * 2, SML_SKY = "#edf3f6", SML_PLATE = "#c9ced6", SML_PLATE_D = "#959ca7", SML_PLATE_IN = "#e2e6eb";
+  const SML_FLESH = "#fbe7b4", SML_FLESH_D = "#e2bd78", SML_LEAF = "#5d8a4a", SML_STEM = "#6f5a33", SML_BARK = "#8a6238", SML_WOOD = "#e8cf9c", SML_GREASE = "rgba(196,140,58,";
+  let smlFlecks = [];
+  // the splash's camera: wide (vw: its height in world units, cxw: its middle from FIN.wx) until the landing, then close (vc, cxc, wyc); the near Raven's size (rs)
+  // and how big the loser hangs under it (lsc: he is near the camera, and shrinks to his own size as he falls away onto the plate)
+  const smlLay = () => (LY.port ? { vw: 640, cxw: 24, vc: 290, cxc: 22, wyc: -100, rs: 27, lsc: 1.35 } : { vw: 380, cxw: 24, vc: 126, cxc: 24, wyc: -62, rs: 30, lsc: 1.35 });
+  const smlAX = () => FIN.wx + FIN.dir * (LY.port ? 78 : 84), smlAS = () => (LY.port ? 0.85 : 1);   // the stump in the aftermath, its scale
+  const smlDip = (t) => { const k = fe(SML.LAND, SML.LAND + 240, t); return 7 * Math.sin(Math.PI * k) * (1 - 0.5 * k); };   // the plate gives under the landing
+  const smlPlateAt = (t) => [FIN.wx + FIN.dir * SML_PX, SML_PY + smlDip(t)];
+  function smlCam(t) {
+    const Y = smlLay(), D = FIN.dir;
+    if (t < SML.LAND) { const v = Y.vw * (1 - 0.04 * fe(MT.SPLASH, SML.LAND, t)); return { wx: FIN.wx + D * Y.cxw, wy: -0.4 * v, vh: v }; }
+    const k = MG.reduced ? 1 : easeOut(fe(SML.LAND, SML.LAND + 260, t)), v = Y.vc * (0.88 + 0.12 * k) * (1 - 0.03 * fe(SML.LAND, MT.AFTER, t));   // the cut lands a hair too close and settles
+    return { wx: FIN.wx + D * Y.cxc, wy: Y.wyc, vh: v };
+  }
+  function smlBuild() {
+    const r = rnd(5150);
+    smlFlecks = Array.from({ length: 12 }, (_, i) => { const sd = i % 2 ? 1 : -1, a = -Math.PI / 2 + sd * (0.5 + r() * 1.15); return { a, v: 70 + r() * 90, r: 1.4 + r() * 1.8, skin: r() < 0.35, x0: sd * (18 + r() * 14) }; });
+  }
+  // the near Raven (wide shot): hovering high above the plate, then (from DROP) up and away out of the top of the page
+  function smlRavenNear(t) {
+    const Y = smlLay(), D = FIN.dir, k = easeIn(fe(SML.DROP, SML.DROP + 260, t));
+    return { x: FIN.wx + D * SML_PX - D * 0.35 * Y.vw * k, y: -0.73 * Y.vw + Math.sin(t * 0.012) * 4 - 0.45 * Y.vw * k, s: Y.rs };
+  }
+  // the loser's feet (world) and size while he hangs under the near Raven, then as he falls onto the plate (k: 0..1 of the fall)
+  function smlLoserAt(t) {
+    const Y = smlLay(), R = smlRavenNear(Math.min(t, SML.DROP)), h = (L_().s.h || 64) - 2, yA = R.y + 0.95 * R.s + h * Y.lsc, P = smlPlateAt(SML.LAND), k = fe(SML.DROP, SML.LAND, t), kk = k * k;
+    return { x: R.x + (P[0] - R.x) * kk, y: yA + (P[1] - 4 - yA) * kk, sc: Y.lsc + (1 - Y.lsc) * kk, k };
+  }
+  // Odin under the plate: both hands up under its rim in the wide shot; once it has landed one hand holds it up from below, the other rests, then comes up to shoo
+  function smlPoseW(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, py = SML_PY + 5 + smlDip(t);
+    P.mouth = 0; P.exK = 1; P.expr = t >= SML.HOP1 + 60 ? "calm" : undefined;
+    if (t < SML.LAND) { P.lean = -0.05; return { hF: [SML_PX + 2, py], hB: [SML_PX - 24, py + 4] }; }
+    P.lean = -0.02;
+    const rest = [-w * 0.62, -leg - tor * 0.42], up = [SML_PX - 66, SML_PY + 2], k = ease(fe(SML.HAND, SML.SHOO, t)) * (1 - ease(fe(SML.HOP1 + 20, SML.HOP1 + 180, t)));
+    const fl = Math.sin(Math.PI * fe(SML.SHOO, SML.SHOO + 90, t)) * 4;   // the flick
+    return { hF: [SML_PX + 1, py], hB: [rest[0] + (up[0] - rest[0]) * k + fl, rest[1] + (up[1] - rest[1]) * k - fl * 0.5] };
+  }
+  // the loser: hanging by his head (limp arms, dangling feet, a slow swing), then falling (arms flailing up)
+  function smlPoseL(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.expr = "terror"; P.exK = 1; P.mouth = 1;
+    if (t < SML.DROP) {
+      const s = Math.sin(t * 0.03);
+      P.lean = 0.1 * Math.sin(t * 0.011);
+      return { hF: [w * 0.72, -leg - tor * 0.3 + 3 * s], hB: [-w * 0.66, -leg - tor * 0.26 - 3 * s], fF: [w * 0.16, 7 + 2 * s], fB: [-w * 0.14, 9 - 2 * s] };
+    }
+    const s = Math.sin(t * 0.07);
+    P.lean = 0;
+    return { hF: [w * 0.7, -leg - tor * 1.2 + 5 * s], hB: [-w * 0.62, -leg - tor * 1.15 - 5 * s], fF: [w * 0.3, -5], fB: [-w * 0.24, -1] };
+  }
+  // where the Raven sits on Odin's back shoulder (its middle, world) with Odin standing at x
+  function smlShoulder(t, x, s) {
+    const W = W_(); MG.pt = t;
+    const P = pose(W, mgTk(t)), u = -P.w * 0.38, q = Math.max(0, 1 - (u / P.rx) * (u / P.rx));
+    return [x + W.facing * u, P.cy - P.ry * Math.sqrt(q) - 0.62 * s + 1];
+  }
+  // the Raven in the close shot (world): in from above behind him onto the plate's back rim (facing the potato), the pecks, the hop onto his shoulder; null before
+  function smlRavenClose(t) {
+    if (t < SML.RAV0) return null;
+    const D = FIN.dir, s = 7.5, Pl = smlPlateAt(t), rim = [Pl[0] - D * 41, Pl[1] - 0.62 * s];
+    if (t < SML.RAV1) {
+      const k = ease(fe(SML.RAV0, SML.RAV1, t)), m = 1 - k, a = [rim[0] - D * 120, rim[1] - 110], cp = [rim[0] - D * 55, rim[1] - 24];
+      return { x: m * m * a[0] + 2 * m * k * cp[0] + k * k * rim[0], y: m * m * a[1] + 2 * m * k * cp[1] + k * k * rim[1], s, fl: Math.sin(t * 0.04) * (1 - 0.7 * k), perched: false };
+    }
+    if (t < SML.SHOO + 20) { let pk = 0; for (const p of SML.PECK) pk = Math.max(pk, Math.sin(Math.PI * fe(p, p + 100, t))); return { x: rim[0], y: rim[1], s, fl: 0, perched: true, peck: pk }; }
+    const sh = smlShoulder(t, FIN.wx, s), k = fe(SML.SHOO + 20, SML.HOP1, t);
+    if (k < 1) return { x: lerp(rim[0], sh[0], k), y: lerp(rim[1], sh[1], k) - Math.sin(Math.PI * k) * 20, s, fl: Math.sin(t * 0.06), perched: false };
+    return { x: sh[0], y: sh[1] - Math.sin(Math.PI * fe(SML.HOP1, SML.HOP1 + 120, t)) * 2, s, fl: 0, perched: true, caw: fe(SML.CAW, SML.CAW + 80, t) * (1 - fe(SML.CAW + 160, SML.CAW + 260, t)) };
+  }
+  // a Raven of smlRavenClose, tipped about its feet: forward to peck, back to caw
+  function smlRaven(c, r) {
+    const D = FIN.dir, fy = r.y + 0.6 * r.s, a = (r.peck || 0) * 0.75 - (r.caw || 0) * 0.35;
+    c.save(); c.translate(r.x, fy); c.rotate(a * D); c.translate(-r.x, -fy);
+    raven(c, r.x, r.y, r.s, r.fl, D, r.perched);
+    c.restore();
+  }
+  // a ragged ellipse (the flesh, the split skin): j how deep the notches are
+  function smlRag(c, rx, ry, cy, j, ph) {
+    c.beginPath();
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * SML_TAU, r = 1 + (i % 2 ? j : -j * 0.5) * (0.7 + 0.3 * Math.sin(i * 2.3 + ph)), px = Math.cos(a) * rx * r, py = cy + Math.sin(a) * ry * r;
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
+    }
+    c.closePath();
+  }
+  // the tin plate, its middle at (x, y) (world, pn.world set), s its scale: the underside, the rim, the well, a shine
+  function smlPlate(c, x, y, s, lw) {
+    c.save(); c.translate(x, y); c.scale(s, s); lw /= s;
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    c.fillStyle = SML_PLATE_D; c.beginPath(); c.ellipse(0, 2.6, 40, 8, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.fillStyle = SML_PLATE; c.beginPath(); c.ellipse(0, 0, 40, 8, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.fillStyle = SML_PLATE_IN; c.lineWidth = lw * 0.7; c.beginPath(); c.ellipse(0, 0.6, 31, 5.6, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw * 1.2; c.beginPath(); c.ellipse(0, 0, 36, 6.4, 0, Math.PI * 1.1, Math.PI * 1.42); c.stroke();
+    c.restore();
+  }
+  // a salt flake: a little white cube standing on (x, y) (its lowest corner), a its size
+  function smlSalt(c, x, y, a, lw) {
+    const h = a * 0.87;
+    c.lineJoin = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    for (const [f, pts] of [["#ffffff", [[x, y - 2 * a], [x + h, y - 1.5 * a], [x, y - a], [x - h, y - 1.5 * a]]], ["#dfe5ec", [[x - h, y - 1.5 * a], [x, y - a], [x, y], [x - h, y - 0.5 * a]]], ["#b9c2cd", [[x, y - a], [x + h, y - 1.5 * a], [x + h, y - 0.5 * a], [x, y]]]]) {
+      c.fillStyle = f; mgPoly(c, pts); c.fill(); c.stroke();
+    }
+  }
+  // a rosemary sprig centred on (x, y), turned by a: a stem and eight needles
+  function smlSprig(c, x, y, a, lw) {
+    c.save(); c.translate(x, y); c.rotate(a); c.lineCap = "round";
+    c.strokeStyle = ink; c.lineWidth = 1.3 + lw * 2; c.beginPath(); c.moveTo(-11, 0); c.lineTo(11, 0); c.stroke();
+    c.strokeStyle = SML_STEM; c.lineWidth = 1.3; c.stroke();
+    c.fillStyle = SML_LEAF; c.strokeStyle = ink; c.lineWidth = lw * 0.6;
+    for (let i = 0; i < 8; i++) { c.save(); c.translate(-8.5 + i * 2.6, 0); c.rotate((i % 2 ? 1 : -1) * 0.8 - 0.35); c.beginPath(); c.ellipse(2.7, 0, 3, 1, 0, 0, SML_TAU); c.fill(); c.stroke(); c.restore(); }
+    c.restore();
+  }
+  // the loser as a smashed potato sitting on (x, y) (the plate's middle, world), s its scale: the flesh squashed out flat all round, his skin a low dome split along
+  // its foot, his face on its front, the eyes far apart. o: { wince, blink, relief, look [dx, dy], salt (k 0..1.6: falling, landed, settled; null none), sprig (k; null none) }
+  function smlSmash(c, pn, x, y, s, lw, t, o) {
+    const D = FIN.dir, sp = (u, v) => pn.sp(x + u * s, y + v * s);
+    c.save(); c.translate(x, y); c.scale(s, s); lw /= s;
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    c.fillStyle = SML_FLESH; smlRag(c, 37, 5.2, -2.2, 0.08, 1); c.fill(); c.stroke();   // the flesh, squashed out under him
+    if (!MG.slow) { c.save(); c.clip(); mgToneFill(c, [sp(D * 14, -9), sp(D * 42, -9), sp(D * 42, 5), sp(D * 14, 5)], 6, 0.38); c.restore(); }
+    const dome = () => {
+      c.beginPath(); c.moveTo(-31, -3);
+      c.bezierCurveTo(-29, -13, -13, -16.5, 0, -16.5); c.bezierCurveTo(13, -16.5, 29, -13, 31, -3);
+      for (let i = 1; i < 16; i++) c.lineTo(31 - (62 * i) / 16, -3 + (i % 2 ? -2.4 : 0.8) + 0.8 * Math.sin(i * 1.7));   // the split foot of the skin
+      c.closePath();
+    };
+    c.fillStyle = col(L_().pal); dome(); c.fill();
+    if (!MG.slow) { c.save(); dome(); c.clip(); mgToneFill(c, [sp(D * 19, -22), sp(D * 34, -22), sp(D * 34, 0), sp(D * 19, 0)], 6, 0.4); c.restore(); }
+    dome(); c.stroke();
+    c.lineWidth = lw * 0.75; c.beginPath();   // cracks running up from the split
+    for (const u of [-24, -7, 6, 24]) { c.moveTo(u, -4.2); c.lineTo(u + 1.6, -7.2); c.lineTo(u - 0.8, -9.6); }
+    c.stroke();
+    // the face: open (looking about), blinking, squeezed shut (> <), or shut in relief
+    const ey = -9.6, lk = o.look || [0, 0], wince = o.wince > 0;
+    for (const sd of [-1, 1]) {
+      const ex = sd * 15.5;
+      c.lineWidth = lw * 1.15;
+      if (wince) { c.beginPath(); c.moveTo(ex - sd * 4, ey - 2.8); c.lineTo(ex + sd * 2.2, ey); c.lineTo(ex - sd * 4, ey + 2.8); c.stroke(); }
+      else if (o.relief) { c.beginPath(); c.arc(ex, ey + 2, 3.8, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }
+      else {
+        c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, 5.4, o.blink ? 0.7 : 4.4, 0, 0, SML_TAU); c.fill(); c.stroke();
+        if (!o.blink) { c.fillStyle = ink; c.beginPath(); c.arc(ex + lk[0] * 2.6, ey + lk[1] * 2, 2.1, 0, SML_TAU); c.fill(); }
+      }
+    }
+    c.lineWidth = lw; c.beginPath();
+    if (wince) { c.moveTo(-3.6, -5.4); for (let i = 1; i <= 4; i++) c.lineTo(-3.6 + i * 1.8, -5.4 + (i % 2 ? -1.3 : 0)); }
+    else if (o.relief) { c.moveTo(-3, -6); c.quadraticCurveTo(0, -3.9, 3, -6); }
+    else { c.moveTo(-3.2, -5.4); c.quadraticCurveTo(-1.6, -6.8, 0, -5.4); c.quadraticCurveTo(1.6, -4, 3.2, -5.4); }
+    c.stroke();
+    if (wince) {   // a sweat drop flies off
+      const dx = D * 27, dy = -22;
+      c.fillStyle = COL; c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(dx, dy - 4); c.quadraticCurveTo(dx + 2.8, dy, dx, dy + 1.9); c.quadraticCurveTo(dx - 2.8, dy, dx, dy - 4); c.fill(); c.stroke();
+    }
+    if (o.sprig !== null && o.sprig !== undefined) { const k = Math.min(1, o.sprig), m = 1 - k; smlSprig(c, -7 * D + 8 * Math.sin(k * 9) * m, -17 - 120 * m, 0.16 * D + 0.8 * Math.sin(k * 7) * m, lw); }
+    if (o.salt !== null && o.salt !== undefined) { const k = Math.min(1, o.salt); smlSalt(c, 9 * D, -15.6 - 120 * (1 - k * k) - 4 * Math.sin(Math.PI * fe(1, 1.6, o.salt)), 3.4, lw); }
+    c.restore();
+  }
+  // the fist with two fingers out along ang (world units, pn.world set)
+  function smlFingers(c, h, ang, lw, fl) {
+    c.save(); c.translate(h[0], h[1]); c.rotate(ang); c.lineJoin = "round"; c.strokeStyle = ink; c.lineWidth = lw; c.fillStyle = FIST;
+    for (const oy of [-1.45, 1.45]) { c.beginPath(); c.roundRect(2, oy - 1.4, 8.5, 2.8, 1.4); c.fill(); c.stroke(); }
+    c.beginPath(); c.arc(0, 0, 4.6, 0, SML_TAU); c.fill(); c.stroke();
+    if (fl > 0.05) {   // the flick's marks, on the side it flicks to (up)
+      const a0 = FIN.dir > 0 ? -0.9 : 0.2, a1 = FIN.dir > 0 ? -0.2 : 0.9;
+      c.lineWidth = lw * 0.8; c.globalAlpha = Math.min(1, fl * 2); c.beginPath(); c.arc(0, 0, 14, a0, a1); c.moveTo(16.5 * Math.cos(a0 + 0.15), 16.5 * Math.sin(a0 + 0.15)); c.arc(0, 0, 16.5, a0 + 0.15, a1 - 0.1); c.stroke();
+    }
+    c.restore();
+  }
+  // the splash's ground: a field of snow (Judgement's slab is too heavy under a tall close shot), a little tone further down
+  function smlGround(c, pn) {
+    pn.world(c);
+    const x0 = FIN.wx - 420, x1 = FIN.wx + 420;
+    c.beginPath(); c.moveTo(x0, 6);
+    for (let x = x0; x < x1; x += 11) { const h = 3 + ((Math.round(x) * 7919) % 5) * 1.1, q = (Math.round(x) * 31 % 7) / 7; c.quadraticCurveTo(x + 5.5, -h - 3 - q * 2, x + 11, 2 + q); }
+    c.lineTo(x1, 6); c.lineTo(x1, 400); c.lineTo(x0, 400); c.closePath(); c.fillStyle = SNOW; c.fill(); c.lineWidth = 2.4 / pn.z; c.strokeStyle = ink; c.stroke();
+    pn.screen(c);
+    const g = pn.p(0, 14)[1];
+    if (g < pn.y1) mgToneFill(c, [[pn.x0 - 4 + pn.ox, g + pn.oy], [pn.x1 + 4 + pn.ox, g + pn.oy], [pn.x1 + 4 + pn.ox, pn.y1 + 4 + pn.oy], [pn.x0 - 4 + pn.ox, pn.y1 + 4 + pn.oy]], 7, 0.22, [0, 0]);
+  }
+  // the splash: the wide shot (Raven, loser, Odin far below with the plate) to the landing, then the close shot of the plate over his head
+  function smlDrawSplash(c, pn, t) {
+    const D = FIN.dir, W = W_(), Lp = L_(), lw = fzfLw(pn), OX = FIN.wx, close = t >= SML.LAND, Pl = smlPlateAt(t);
+    const tone = (poly, size, cover, drift) => mgToneFill(c, poly.map(([x, y]) => [x + pn.ox, y + pn.oy]), size, cover, drift);
+    pn.screen(c);
+    for (let i = 0; i < 3; i++) { const h = pn.h * (0.09 + 0.07 * i); tone([[pn.x0 - 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 + h], [pn.x0 - 4, pn.y0 + h]], 8, 0.42 - 0.13 * i, [t * 0.0006, 0]); }
+    const Q = pn.p(Pl[0], Pl[1] - 6), R = Math.hypot(pn.w, pn.h);
+    mgFocus(c, Q[0], Q[1], R, t * 0.0004, close ? 0.32 : 0.22);
+    smlGround(c, pn);
+    tone([pn.p(OX - 30, 0.5), pn.p(OX + 30, 0.5), pn.p(OX + 26, 6), pn.p(OX - 26, 6)], 6, 0.45);   // his shadow
+    const fallK = fe(SML.DROP, SML.LAND, t), Lq = !close ? smlLoserAt(t) : null;
+    if (Lq && fallK > 0) {   // speed lines up the fall
+      const a = pn.p(Lq.x, Lq.y - 40 * Lq.sc), b = pn.p(Lq.x, smlRavenNear(SML.DROP).y);
+      mgSpeed(c, a[0], (a[1] + b[1]) / 2 - 20, Math.abs(a[1] - b[1]) + 60, 80 * pn.z, Math.PI / 2, -t * 1.4, 0.45 * fe(SML.DROP, SML.DROP + 60, t), false, 1);
+    }
+    if (close) {   // the landing: a white burst behind the plate
+      const kb = fe(SML.LAND, SML.LAND + 110, t);
+      if (kb < 1 && !MG.reduced) mgStarburst(c, Q[0], Q[1], 0.36 * Math.min(pn.w, pn.h) * easeOut(Math.min(1, kb * 2.2)) * (1 - 0.4 * kb), 0.25);
+    }
+    const ox = W.x; W.x = OX; mgPuppet(c, pn, W, t, { light: dirAng(-0.5) }); W.x = ox;
+    pn.world(c);
+    smlPlate(c, Pl[0], Pl[1], 1, lw);
+    if (!close) {
+      // the loser: hanging, then falling with three after-images (copies of the same picture, where he was 24, 48, 72 ms ago)
+      const q = Lq, ghosts = [];
+      if (q.k > 0 && !MG.slow) for (const [dt, al] of [[24, 0.42], [48, 0.27], [72, 0.15]]) { if (t - dt < SML.DROP) break; const g = smlLoserAt(t - dt); ghosts.push([(g.x - q.x) * pn.z, (g.y - q.y) * pn.z, al]); }
+      const lx = Lp.x, ly = Lp.y, ls = Lp.state, lf = Lp.facing;
+      Lp.x = q.x; Lp.y = q.y; Lp.state = "fin"; Lp.flash = 0; Lp.facing = -D;
+      try { mgPuppet(c, pn, Lp, t, { sc: q.sc, light: dirAng(-0.5), ghosts }); } finally { Lp.x = lx; Lp.y = ly; Lp.state = ls; Lp.facing = lf; }
+      pn.world(c);
+      const Rn = smlRavenNear(t), s = Rn.s, open = fe(SML.DROP, SML.DROP + 60, t);
+      if (open < 1) {   // the talons on the top of his head, opening as it lets go
+        c.strokeStyle = ink; c.lineWidth = Math.max(lw * 1.2, 0.08 * s); c.lineCap = "round";
+        for (const sd of [-1, 1]) {
+          const bx = Rn.x + sd * 0.14 * s, tx = Rn.x + sd * (0.1 + 0.25 * open) * s, ty = Rn.y + (0.93 - 0.15 * open) * s;
+          c.beginPath(); c.moveTo(bx, Rn.y + 0.4 * s); c.lineTo(tx, ty); c.quadraticCurveTo(tx + sd * 0.12 * s, ty + 0.1 * s, tx - sd * 0.04 * s, ty + 0.12 * s); c.stroke();
+        }
+      }
+      raven(c, Rn.x, Rn.y, s, Math.sin(t * 0.045), D, false);
+      pn.screen(c);
+      return;
+    }
+    // the close shot: the smashed potato, the garnish, the flecks of the landing, the crumbs of the pecks, the Raven, the shooing fingers
+    let wince = t < SML.LAND + 110 ? 1 : 0;
+    for (const p of SML.PECK) if (t >= p + 20 && t < p + 150) wince = 1;
+    const look = t < SML.SALT0 + 20 ? [0, 0] : t < SML.SALT + 40 ? [0.2 * D, -1] : t < SML.RAV0 ? [0, 0] : t < SML.CAW ? [-D, -0.6] : [-0.6 * D, 0.2];
+    smlSmash(c, pn, Pl[0], Pl[1] - 0.5, 1, lw, t, { wince, look, blink: Math.abs(t - 3735) < 45, relief: t >= SML.CAW + 80,
+      salt: t >= SML.SALT0 ? fe(SML.SALT0, SML.SALT, t) + 0.6 * fe(SML.SALT, SML.SALT + 100, t) : null, sprig: t >= SML.SPRIG0 ? fe(SML.SPRIG0, SML.SPRIG, t) : null });
+    pn.world(c);
+    const u = (t - SML.LAND) / 1000;
+    if (u < 0.42) {   // the landing: impact ticks round the plate, chunks of potato flying out and falling
+      const ka = 1 - fe(SML.LAND + 60, SML.LAND + 180, t);
+      if (ka > 0) {
+        c.strokeStyle = ink; c.lineWidth = lw * 1.3; c.lineCap = "round"; c.beginPath();
+        for (let i = 0; i < 10; i++) { const a = Math.PI + (i / 9) * Math.PI, r0 = 1 + 0.12 * ka; c.moveTo(Pl[0] + Math.cos(a) * 44 * r0, Pl[1] - 6 + Math.sin(a) * 18 * r0); c.lineTo(Pl[0] + Math.cos(a) * (52 + 10 * ka), Pl[1] - 6 + Math.sin(a) * (24 + 8 * ka)); }
+        c.stroke();
+      }
+      c.lineWidth = lw * 0.8; c.globalAlpha = 1 - fe(0.28, 0.42, u);
+      for (const f of smlFlecks) {
+        const x = Pl[0] + f.x0 + Math.cos(f.a) * f.v * u, y = Pl[1] - 8 + Math.sin(f.a) * f.v * u + 300 * u * u;
+        c.fillStyle = f.skin ? col(Lp.pal) : SML_FLESH; c.beginPath(); c.ellipse(x, y, f.r * 1.4, f.r * 0.9, f.a + u * 9, 0, SML_TAU); c.fill(); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+    for (const p of SML.PECK) {   // two crumbs off each peck
+      const v = (t - p - 40) / 1000;
+      if (v < 0 || v > 0.32) continue;
+      c.fillStyle = SML_FLESH; c.lineWidth = lw * 0.7;
+      for (let j = 0; j < 2; j++) { const x = Pl[0] - D * (29 - (14 + 10 * j) * v * 3), y = Pl[1] - 9 - (50 + 24 * j) * v + 300 * v * v; c.beginPath(); c.arc(x, y, 1.3, 0, SML_TAU); c.fill(); c.stroke(); }
+    }
+    const r = smlRavenClose(t);
+    if (r) smlRaven(c, r);
+    const kh = fe(SML.HAND, SML.SHOO, t) * (1 - fe(SML.HOP1 + 20, SML.HOP1 + 140, t));
+    if (kh > 0.3) {   // two fingers poke its tail feathers: the flick
+      const h = handPt(W, t, "hB", OX), to = r ? [r.x - D * 1.6 * r.s, r.y] : [h[0] + D * 10, h[1] - 6];
+      pn.world(c);
+      const fk = Math.sin(Math.PI * fe(SML.SHOO, SML.SHOO + 110, t));
+      smlFingers(c, h, Math.atan2(to[1] - h[1], to[0] - h[0]) - D * 0.6 * fk, lw, fk);
+    }
+    pn.screen(c);
+  }
+  // the stump in the aftermath: its foot on the ground at x, s its scale (its top at -20 s)
+  function smlStump(c, x, s, lw) {
+    c.save(); c.translate(x, 0); c.scale(s, s); lw /= s;
+    c.strokeStyle = ink; c.lineWidth = lw; c.lineJoin = "round"; c.lineCap = "round";
+    c.fillStyle = SML_BARK; c.beginPath(); c.moveTo(-15, -20); c.lineTo(-16, -3); c.quadraticCurveTo(-18, 0.5, -21, 1.5); c.lineTo(21, 1.5); c.quadraticCurveTo(18, 0.5, 16, -3); c.lineTo(15, -20); c.closePath(); c.fill(); c.stroke();
+    c.lineWidth = lw * 0.7; c.beginPath(); for (const bx of [-10, -3, 5, 11]) { c.moveTo(bx, -16); c.lineTo(bx + 0.8, -3); } c.stroke();
+    c.fillStyle = SML_WOOD; c.lineWidth = lw; c.beginPath(); c.ellipse(0, -20, 15, 3.6, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.restore();
+  }
+  // what the pop leaves on the plate: a greasy ring, three peck marks, the sprig (plate units like smlSmash)
+  function smlLeft(c, x, y, s, lw) {
+    const D = FIN.dir;
+    c.save(); c.translate(x, y); c.scale(s, s); lw /= s; c.lineCap = "round";
+    c.strokeStyle = SML_GREASE + "0.3)"; c.lineWidth = 7; c.beginPath(); c.ellipse(0, -0.4, 23, 4.4, 0, 0, SML_TAU); c.stroke();
+    c.strokeStyle = SML_GREASE + "0.6)"; c.lineWidth = 2.6; c.stroke();
+    c.strokeStyle = ink; c.lineWidth = lw * 0.9; c.beginPath();
+    for (const [u, v] of [[-14, -1.6], [-8.5, 1.2], [-18, 1.6]]) { c.moveTo((u - 2) * D, v - 1.4); c.lineTo(u * D, v); c.lineTo((u + 2) * D, v - 1.4); }
+    c.stroke();
+    smlSprig(c, 7 * D, -1.2, 0.18 * D, lw);
+    c.restore();
+  }
+  // the aftermath: Judgement's panel 4 (him, the spear on his shoulder) with the Raven beside his head and the plate on a stump beside him; popped: what is left
+  function smlDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir, x = FIN.wx + D * 4, ax = smlAX(), s = smlAS(), lw = fzfLw(pn), popped = mgPopped(t), ps = 0.7 * s, py = -20 * s;
+    const tone = (poly, size, cover, drift) => mgToneFill(c, poly.map(([px, qy]) => [px + pn.ox, qy + pn.oy]), size, cover, drift);
+    pn.screen(c);
+    tone([[pn.x0, pn.y0], [pn.x1, pn.y0], [pn.x1, pn.y0 + pn.h * 0.3], [pn.x0, pn.y0 + pn.h * 0.3]], 8, 0.38, [t * 0.0006, 0]);
+    const q = pn.p(ax, -30);
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.4);
+    peaks(c, pn, pn.p(0, 0)[1], pn.h * 0.18, 5);
+    ground(c, pn);
+    tone([pn.p(ax - 24 * s, 0.5), pn.p(ax + 24 * s, 0.5), pn.p(ax + 20 * s, 5.5), pn.p(ax - 20 * s, 5.5)], 6, 0.45);
+    const ox = W.x; W.x = x; mgPuppet(c, pn, W, t, { light: dirAng(-0.5) }); W.x = ox;
+    pn.screen(c);
+    const sp = spearAt(t, x);   // the spear over his shoulder, in front of him; the fist is drawn again over it
+    if (sp) {
+      const g = pn.p(sp.gx, sp.gy); spear(c, g[0], g[1], sp.a, pn.z, 1);
+      c.fillStyle = FIST; c.strokeStyle = ink; c.lineWidth = Math.max(2.4, 1.1 * pn.z); c.beginPath(); c.arc(g[0], g[1], 5 * pn.z, 0, 7); c.fill(); c.stroke();
+    }
+    pn.world(c);
+    smlStump(c, ax, s, lw);
+    smlPlate(c, ax, py, ps, lw);
+    if (!popped) smlSmash(c, pn, ax, py - 0.5 * ps, ps, lw, t, { look: [-D * 0.8, -0.7], blink: Math.abs(t - 4990) < 55 || Math.abs(t - 5170) < 55, salt: 1.6, sprig: 1 });
+    else smlLeft(c, ax, py, ps, lw);
+    // the Raven on his back shoulder: a bob, a look at the plate now and then; the pop makes it flap up
+    const rs = 7 * s, sh = smlShoulder(t, x, rs), up = popped ? Math.sin(Math.PI * fe(MT.POP, MT.POP + 380, t)) : 0, look = Math.sin(Math.PI * fe(MT.AFTER + 300, MT.AFTER + 520, t));
+    smlRaven(c, { x: sh[0], y: sh[1] - 1.2 * Math.abs(Math.sin(t * 0.006)) - 9 * up, s: rs, fl: up > 0.02 ? Math.sin(t * 0.05) : 0, perched: up < 0.02, peck: 0.35 * look });
+    pn.screen(c);
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Smash Landing",
+    start(g) { S_.start(g); pota = true; pota2 = true; FIN.cue.back = FIN.cue.cawC = true; },   // (pota: the strike's flock and shards leave under the splash, as on Frozen Fries)
+    end() { pota = false; pota2 = false; },
+    build(lay) { S_.build(lay); smlBuild(); },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = smlDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 130 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 48 : 44), wy: -0.46 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: SML_SKY, slide: MG.reduced ? 1 : 180, cam: smlCam, draw: smlDrawSplash,
+        shake: (t) => { const a = t >= SML.LAND ? 4 * (1 - fe(SML.LAND, SML.LAND + 160, t)) : 0; return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; } }));
+      return ps;
+    },
+    pose(P, sk, t, role, p) {
+      if (pota2 && t >= MT.SPLASH && (role === "w" ? t < MT.AFTER : t < SML.LAND)) return role === "w" ? smlPoseW(P, sk, t) : smlPoseL(P, sk, t);
+      return S_.pose(P, sk, t, role, p);
+    },
+    // the snow and the leaving flock stay only on what the splash has not covered yet (no snow on the plate)
+    over(o, t) {
+      if (t < MT.SPLASH) { odnOver(o, t); return; }
+      const sp = MG.byId.splash;
+      if (!sp || t >= sp.t0 + sp.slide) return;
+      mgPlace(sp, t);
+      o.save(); o.beginPath(); o.rect(0, 0, L.gw, Math.max(0, sp.y0 + sp.oy)); o.clip(); odnOver(o, t); o.restore();
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, kr = ws.find((w) => w.text === "KRASSHH");
+      if (kr) kr.t1 = MT.SPLASH + 150;   // gone as the splash comes up
+      const at = (tt, wx, wy) => () => { const pn = MG.byId.splash; mgPlace(pn, tt); const q = pn.sp(wx(), wy); return [q[0], q[1]]; };
+      ws.push(
+        { text: "SPLAT", t0: SML.LAND, t1: SML.RAV0 + 60, size: 0.15, mul: lay.port ? 0.55 : 1, arc: 7, jit: 0.16, jag: 0.08, rot: -0.08 * D,
+          at: lay.port ? at(SML.LAND + 300, () => FIN.wx + D * (SML_PX - 6), -228) : at(SML.LAND + 300, () => FIN.wx + D * (SML_PX + 96), -86) },
+        { text: "peck", t0: SML.PECK[0], t1: SML.HAND, size: 0.07, mul: lay.port ? 0.6 : 1, jit: 0.2, rot: 0.1 * D,
+          at: at(4000, () => FIN.wx + D * (SML_PX - 44), -104) },
+        { text: "caw", t0: SML.CAW, t1: MT.AFTER + 40, size: 0.07, mul: lay.port ? 0.6 : 1, jit: 0.2, rot: -0.1 * D,
+          at: at(4500, () => FIN.wx - D * 46, -76) },
+      );
+      return ws;
+    },
+    food() { const x = smlAX(), s = smlAS(); return { x, y: 0, r: 24 * s, y0: -20 * s, lx: x + FIN.dir * (LY.port ? 24 : 38) }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("smlFlap", MT.SPLASH + 40, () => Cin.go(() => Cin.whoosh(0.3, -0.3 * D, 0.3 * D, 0.25)));
+      cueOnce("smlDrop", SML.DROP, () => odnCaw(0.9, 720));
+      cueOnce("smlFall", SML.DROP + 30, () => Cin.go(() => Cin._osc("sine", 1500, 420, 0.17, 0.05, 0.01)));
+      cueOnce("smlSplat", SML.LAND, () => Cin.go(() => { Cin._noise(0.22, 0.55, 1400, 160, "lowpass", 0.9); Cin.sub(110, 40, 0.3, 0.6); Cin.clack(); }));
+      cueOnce("smlSalt", SML.SALT, () => Cin.go(() => Cin.tick(5200)));
+      cueOnce("smlSprig", SML.SPRIG, () => Cin.go(() => Cin._noise(0.08, 0.1, 2400, 5200, "bandpass", 1.6)));
+      cueOnce("smlRav", SML.RAV0, () => Cin.go(() => Cin.whoosh(0.25, -0.6 * D, 0.1 * D, 0.3)));
+      SML.PECK.forEach((p, i) => cueOnce("smlPeck" + i, p, () => Cin.go(() => { Cin.tick(2600 + i * 200); Cin._osc("triangle", 900, 1400, 0.09, 0.03, 0.004, 0.03); })));
+      cueOnce("smlShoo", SML.SHOO, () => Cin.go(() => Cin.whoosh(0.14, 0, 0, 0.22)));
+      cueOnce("smlCaw", SML.CAW, () => odnCaw(0.7, 620));
+      cueOnce("smlPhew", SML.CAW + 160, () => Cin.go(() => Cin._noise(0.3, 0.05, 900, 500, "bandpass", 1.2)));
     },
   });
   return S_;
@@ -30503,7 +30885,8 @@ MANGA.reaper = (function () {
    him full page in colour, sheathed, half turned; 3700 HUNDRED PETALS; 4700 the aftermath panel as in One Cut (shifted by 1200 ms: its moments are MT.AFTER + offset).
    Both pages share their code: `ult` says which one is playing and setTimes() moves the few moments that differ.
    POTATALITY: "Hasselback" = MANGA.samurai.alt (S_.alt, at the end; its helpers are prefixed hb; `pota` says it is playing), played on a normal KO when it is on
-   (ui/kopages.js). */
+   (ui/kopages.js).
+   POTATALITY 2: "Snake Eyes" = MANGA.samurai.alt2 (S_.alt2, after it; its helpers are prefixed snk; `pota2` says it is playing), played when it is the one picked. */
 MANGA.samurai = (function () {
   const COL = "#3fe0a8", EDGE = "#effff8", PINK = "#ffbdd3", PINK_D = "#b84a73", PAPER_G = "#dedad3";
   const TILT = 0.15;
@@ -30518,6 +30901,7 @@ MANGA.samurai = (function () {
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   let petals = [], snapC = null, half = null, flick = 0, floodAt = null;
   let pota = false;   // pota: this play is the Potatality, Hasselback (set by its start): the cut is not seen at the hit, he never comes apart, the relief before SHING
+  let pota2 = false;   // pota2: this play is the second Potatality, Snake Eyes (set by its start): he never comes apart, the blade flicks him up into the splash
   const scratch = new WeakMap();   // the grey pass's scratch canvas lives and dies with the page's layer canvas (freed by the engine at the end of the page)
   const D_ = () => FIN.dir;
   const wx_ = (t) => (t >= CUT_T ? FIN.lx + FIN.dir * far() : FIN.wx);   // where he stands: before the cut, and one frame later behind the loser
@@ -31055,7 +31439,7 @@ MANGA.samurai = (function () {
         at: (t) => { const sz = port ? 0.048 : 0.16, W = W_(), top = MG.byId.splash.sp(W.x, W.y - 82), h = MG.byId.splash.sp(...bodyPt(W, t, "head")); return [h[0] + D * L.gw * (port ? 0 : 0.05), top[1] - L.gh * (sz * 0.5 + 0.02)]; } });   // centred just above the sprout
       return ws;
     },
-    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; setTimes(false); pota = false; petals = []; snapC = null; half = null; flick = 0; floodAt = null; lines = slab = petalSpr = null; burst = []; },   // no drone (wind and petals only), no taiko (SHING is the hit)
+    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; setTimes(false); pota = false; pota2 = false; petals = []; snapC = null; half = null; flick = 0; floodAt = null; lines = slab = petalSpr = null; burst = []; },   // no drone (wind and petals only), no taiko (SHING is the hit)
     build(lay) {
       const r = mgRng(2026), g = L.gw, h = L.gh;
       petals = Array.from({ length: MG.slow ? 20 : 34 }, () => ({ x: r() * (g + 60), y: r() * (h + 60), vx: 24 + r() * 34, vy: 7 + r() * 15, a: 0.5 + r() * 1.5, f: 1.1 + r() * 1.6, ph: r() * 6.28, s: 3.6 + r() * 3.2, sp: (r() - 0.5) * 2.4 }));
@@ -31445,6 +31829,448 @@ MANGA.samurai = (function () {
       }));
       cueOnce("hbFan", HB.FAN0, () => Cin.go(() => { for (let i = 0; i < HB_N; i++) Cin._osc("triangle", 1800 + i * 90, 1500 + i * 80, 0.05, 0.035, 0.002, i * 0.025); Cin.whoosh(0.2, -0.3 * D, 0.3 * D, 0.2); }));
       cueOnce("hbSteam", MT.AFTER + 300, () => Cin.go(() => Cin._noise(0.9, 0.03, 3000, 5200, "highpass", 0.8)));
+    },
+  });
+  /* ===================== the second Potatality, "Snake Eyes" (MANGA.samurai.alt2; design: Project files step8/fable-design-2.md §1.6) =====================
+     One Cut to SHING (the hairline shows), but he does not come apart (no launch: pop 1e9): 3120 the blade flicks him up out of the strike panel.
+     3250 the splash comes up from the foot: the loser high in the middle, flailing, under a lattice of sixteen brush cuts (3270-3390, SHA SHA SHA), the
+     samurai below as a blur, two after-images of the blade sweeping up to him; 3460 the loser falls apart into nine cubes, each with black potato eyes for
+     the pips of a die, and they land as a 3 x 3 stack, row by row (3540-3630, clack) while the samurai sheathes (click 3660). 3720 he sweeps them into his
+     hand, shakes them four times (3800-4040, rattle) and throws them low: they roll along the ground, the two in front stop last (4245) on one and one, and
+     the two pips are the loser's eyes: they blink (snake eyes; upright the pair is also shown big in a panel of its own across the top of the page). 4370 the
+     smallest fist pump; a petal settles on a die (4630). 4700 in panel 4's place, One Cut's aftermath (the enso, the colour flooding from his hand): he kneels
+     beside a wooden dice cup on its side, the cubes in and around its mouth, the two eyes in front, blinking. The engine's POP lifts the loser out of the
+     cup's mouth (food()): the cup is left, two cubes still rolling to a stop.
+     Helpers: snk. */
+  const SNK = { LIFT: 3120, CUT0: 3270, CUT1: 3390, DICE: 3460, LAND: [3540, 3585, 3630], SH0: 3470, CLICK: 3660, SW0: 3720, SK0: 3800, SK1: 4040, STOP: 4245,
+    BLINK: [4310, 4550], PUMP0: 4370, PUMP1: 4480, PET0: 4280, PET1: 4630 };
+  // the pips of a die, 1-6 (face units: the corners at +-1)
+  const SNK_PIP = [null, [[0, 0]], [[-1, -1], [1, 1]], [[-1, -1], [0, 0], [1, 1]], [[-1, -1], [1, -1], [-1, 1], [1, 1]], [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
+    [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]]];
+  const SNK_STACK = [5, 2, 6, 3, 4, 2, 6, 1, 3];   // the faces on the stack, top row first (die m: row m / 3, column m % 3 counted along FIN.dir)
+  // where each die stops after the throw: [along FIN.dir from the loser's spot, the ground under it (+ nearer), its size (x the die), its face, when it stops];
+  // the last two are the pair in front, the snake eyes
+  const SNK_END_W = [[66, -4, 0.85, 3, 4170], [104, -5, 0.8, 5, 4185], [50, -7, 0.8, 6, 4165], [128, -4, 0.8, 2, 4200], [84, -3, 0.85, 4, 4190], [150, -6, 0.75, 2, 4210],
+    [-2, -5, 0.8, 6, 4180], [13, 6, 1.6, 1, 4245], [38, 6, 1.6, 1, 4235]];
+  const SNK_END_U = [[31, -6, 0.75, 3, 4170], [37, -2, 0.75, 5, 4185], [17, -7, 0.75, 6, 4165], [-3, -4, 0.75, 2, 4200], [42, -9, 0.7, 4, 4190], [24, -10, 0.7, 2, 4210],
+    [8, -8, 0.7, 6, 4180], [4, 8, 1.35, 1, 4245], [24, 8, 1.35, 1, 4235]];
+  // the aftermath: the dice about the cup [out from its mouth, the ground under it (+ nearer), size, turn, face, an eye], in food units; and the two left after POP
+  const SNK_AFT = [[9, -3, 7.5, 0, 3], [9, -10.5, 7.5, 0.12, 2], [21, -4, 7.5, -0.1, 6], [32, -3, 7, 0.2, 4], [40, -5, 6.5, 0, 2], [1.5, -1, 8, 0.45, 5], [38, 3, 7, -0.25, 3],
+    [12.5, 4, 11, 0, 1, 1], [26.5, 4, 11, 0, 1, 1]];
+  const SNK_LEFT = [[4, 17, 2, 0], [7, 31, 6, -2]];
+  const SNK_F = [[0, 0], [0, 0], [0, 0], [0, 0]], SNK_O = { x: 0, y: 0, s: 0, a: 0, f: 1 }, SNK_EYE = { b: 0, lx: 0, ly: 0 }, SNK_ARC = Array.from({ length: 13 }, () => [0, 0]);
+  // the boxes the splash's puppets are drawn and greyed in (their own units about the feet; the samurai's reaches further in front, FIN.dir > 0 and < 0)
+  const SNK_WBOX = [-64, -120, 72, 12], SNK_WBOXL = [-72, -120, 64, 12], SNK_LBOX = [-76, -132, 76, 14];
+  let snkPal = null, snkCut = null, snkOrd = null, snkRel = null, snkHT = null;
+  // the splash: the camera at the cut (vh0, wy0, cx0) and on the ground (vh1, wy1, cx1); the loser in the air (lx, ly: his feet, lsc); the samurai (wx, wy, wsc);
+  // the dice (ds: their size, sx: the stack's middle); x along FIN.dir from the loser's spot
+  const SNK_LAY_U = { vh0: 300, wy0: -100, vh1: 190, wy1: -72, cx0: -2, cx1: -6, lx: 6, ly: -78, lsc: 1.5, wx: -34, wy: 0, wsc: 1.15, ds: 13, sx: 14 };
+  const SNK_LAY_W = { vh0: 210, wy0: -90, vh1: 128, wy1: -38, cx0: -10, cx1: 20, lx: 4, ly: -44, lsc: 1.4, wx: -66, wy: 0, wsc: 1, ds: 14, sx: 0 };
+  const snkLay = () => (L.portrait ? SNK_LAY_U : SNK_LAY_W);
+  const snkEnd = () => (L.portrait ? SNK_END_U : SNK_END_W);
+  const snkLc = (Y, t) => [FIN.lx + FIN.dir * Y.lx, Y.ly - 10 * easeOut(fe(MT.SPLASH, SNK.DICE, t)) - L_().s.h * Y.lsc * 0.5];   // the middle of the loser in the air
+  function snkPalettes() {
+    const c = { flesh: HB_FLESH, side: "#d6ae58", skin: L_().pal.accent || col(L_().pal), wood: "#a9733f", band: "#5a3519", hole: "#2b1a0e" };
+    const g = {};
+    for (const k in c) g[k] = hbGrey(c[k]);
+    snkPal = { c, g };
+  }
+  function snkCam(t) {
+    const Y = snkLay(), k = MG.reduced ? (t >= SNK.DICE ? 1 : 0) : ease(fe(SNK.DICE + 20, SNK.LAND[0] + 40, t));
+    return { wx: FIN.lx + FIN.dir * lerp(Y.cx0, Y.cx1, k), wy: lerp(Y.wy0, Y.wy1, k), vh: lerp(Y.vh0, Y.vh1, k) };
+  }
+  // his poses from the splash on (his own units; the splash draws him at Y.wsc), and the loser's in the air
+  function snkPoseW(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, rest = [w * 0.62, -leg - tor * 0.36], restB = [-w * 0.2, -leg - tor * 0.34], up = [w * 0.6, -leg - tor * 1.0], upB = [w * 0.3, -leg - tor * 0.92];
+    P.exK = 1;
+    if (t >= MT.AFTER) {   // the aftermath: kneeling by the cup, hands on his thighs, breathing
+      const b = MG.reduced ? 0 : Math.sin((t - MT.AFTER) * 0.004);
+      P.expr = "calm"; P.sheath = 1; P.holdAng = Math.PI - 0.14; P.crouch = 0.9; P.lean = 0.06 + 0.02 * b;
+      return { hF: [w * 0.62, -leg * 0.62 + b * 0.6], hB: [w * 0.3, -leg * 0.6], fF: [w * 0.5, 0], fB: [-w * 0.55, 0] };
+    }
+    if (t < SNK.SH0) {   // the follow-through of sixteen cuts: the blade high, both hands on it
+      P.sheath = 0; P.holdAng = -1.25; P.crouch = 0.3; P.lean = -0.06;
+      return { hF: up, hB: upB, fF: [w * 0.6, 0], fB: [-w * 0.6, 0] };
+    }
+    if (t < SNK.CLICK + 60) {   // he sheathes it: the blade swings up and back over, home
+      const q = ease(fe(SNK.SH0, SNK.CLICK, t));
+      P.sheath = Math.max(0.001, q); P.holdAng = lerp(-1.25, -Math.PI - 0.14, q); P.crouch = lerp(0.3, 0.1, q); P.lean = -0.06 * (1 - q); P.expr = q > 0.9 ? "calm" : undefined;
+      return { hF: lerp2(up, rest, q), hB: lerp2(upB, restB, q), fF: [w * lerp(0.6, 0.5, q), 0], fB: [-w * lerp(0.6, 0.42, q), 0] };
+    }
+    P.expr = "calm"; P.sheath = 1; P.holdAng = Math.PI - 0.14;
+    const fF = [w * 0.5, 0], fB = [-w * 0.42, 0];
+    if (t < SNK.SK0) {   // the sweep: he leans in, one hand out to the stack, and back
+      const r = ease(fe(SNK.SW0 - 30, SNK.SW0 + 30, t)) * (1 - ease(fe(SNK.SW0 + 60, SNK.SK0, t)));
+      P.crouch = 0.1 + 0.35 * r; P.lean = 0.3 * r;
+      return { hF: lerp2(rest, [w * 1.15, -leg * 0.7], r), hB: restB, fF, fB };
+    }
+    const fist = [w * 1.0, -leg - tor * 0.95];
+    if (t < SNK.SK1) {   // shaken four times in his fist, in front of his chest
+      const y = -5 * Math.sin(TAU_ * 4 * fe(SNK.SK0, SNK.SK1, t)), r = ease(fe(SNK.SK0 - 40, SNK.SK0 + 30, t));
+      P.crouch = 0.12; P.lean = 0.04;
+      return { hF: [lerp(rest[0], fist[0], r), lerp(rest[1], fist[1], r) + y], hB: restB, fF, fB };
+    }
+    // the throw, low and forward, held while they roll, then back; the smallest fist pump
+    const k1 = easeOut(fe(SNK.SK1, SNK.SK1 + 50, t)), k2 = ease(fe(SNK.STOP + 20, SNK.PUMP0 - 40, t)), th = k1 * (1 - k2);
+    P.crouch = 0.12 + 0.22 * th; P.lean = 0.04 + 0.22 * th;
+    const hF = lerp2(lerp2(fist, [w * 1.15, -leg * 0.8], k1), rest, k2);
+    const kp = ease(fe(SNK.PUMP0 - 50, SNK.PUMP0, t)) * (1 - ease(fe(SNK.PUMP1, SNK.PUMP1 + 120, t)));
+    if (kp > 0) return { hF: lerp2(hF, [w * 0.86, -leg - tor * 0.42 + 4 * Math.sin(Math.PI * fe(SNK.PUMP0, SNK.PUMP1, t))], kp), hB: restB, fF, fB };
+    return { hF, hB: restB, fF, fB };
+  }
+  function snkPoseL(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, a = MG.reduced ? 0 : t * 0.045;
+    P.expr = "terror"; P.exK = 1; P.mouth = 1; P.lean = 0.12 * Math.sin(a * 0.5);
+    return { hF: [w * 0.8, -leg - tor * 1.2 + 3 * Math.sin(a)], hB: [-w * 0.78, -leg - tor * 1.15 + 3 * Math.cos(a * 1.3)], fF: [w * 0.35, -leg * 0.25 + 2 * Math.sin(a * 1.1)], fB: [-w * 0.3, -leg * 0.1] };
+  }
+  // his front hand in the splash (world), at time t
+  function snkHand(t, Y) {
+    const W = W_(), s = Y.wsc, ox = W.x, oy = W.y, X = FIN.lx + FIN.dir * Y.wx;
+    W.x = X; W.y = Y.wy;
+    try { const a = bodyPt(W, t, "hF"); return [X + (a[0] - X) * s, Y.wy + (a[1] - Y.wy) * s]; }
+    finally { W.x = ox; W.y = oy; }
+  }
+  // one die (world units; the panel's world transform is on): its middle, side s, turned a, face f, colours P; e: the pip is an eye ({ b: shut 0-1, lx, ly: its look })
+  function snkDie(c, x, y, s, a, f, P, lw, e) {
+    const h = s / 2, cs = Math.cos(a), sn = Math.sin(a), ex = s * 0.2, ey = -s * 0.17, F = SNK_F;
+    for (let i = 0; i < 4; i++) { const u = i === 0 || i === 3 ? -h : h, v = i < 2 ? -h : h; F[i][0] = x + u * cs - v * sn; F[i][1] = y + u * sn + v * cs; }
+    c.lineWidth = lw; c.lineJoin = "round"; c.strokeStyle = MG_INK;
+    for (let i = 0; i < 4; i++) {   // the sides towards the depth (up and right): the skin on top
+      const A = F[i], B = F[(i + 1) % 4], nx = B[1] - A[1], ny = A[0] - B[0];
+      if (nx * ex + ny * ey <= 0) continue;
+      c.fillStyle = ny < -0.5 * s ? P.skin : P.side;
+      c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.lineTo(B[0] + ex, B[1] + ey); c.lineTo(A[0] + ex, A[1] + ey); c.closePath(); c.fill(); c.stroke();
+    }
+    c.fillStyle = P.flesh; c.beginPath(); c.moveTo(F[0][0], F[0][1]); for (let i = 1; i < 4; i++) c.lineTo(F[i][0], F[i][1]); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = MG_INK;
+    if (e) {   // the eye: a big pip with a light in it and a lid line over it, shut to a curve
+      const r = s * 0.19;
+      c.lineWidth = lw * 0.9; c.lineCap = "round";
+      if (e.b > 0.8) { c.beginPath(); c.arc(x, y - r * 0.9, r * 1.3, 0.22 * Math.PI, 0.78 * Math.PI); c.stroke(); return; }
+      const ry = r * (1 - e.b);
+      c.beginPath(); c.ellipse(x, y, r, Math.max(0.3, ry), 0, 0, TAU_); c.fill();
+      c.beginPath(); c.arc(x, y + r * 1.2, r * 2.6, 1.3 * Math.PI, 1.7 * Math.PI); c.stroke();
+      c.fillStyle = "#ffffff"; c.beginPath(); c.arc(x + e.lx * r * 0.38, y + (e.ly - 0.3) * ry * 0.7, r * 0.34, 0, TAU_); c.fill();
+      return;
+    }
+    const pp = SNK_PIP[f], m = s * 0.27, r = s * 0.085;
+    c.beginPath();
+    for (let i = 0; i < pp.length; i++) { const u = pp[i][0], v = pp[i][1], px = x + (u * cs - v * sn) * m, py = y + (u * sn + v * cs) * m; c.moveTo(px + r * 1.12, py); c.ellipse(px, py, r * 1.12, r * 0.86, 0, 0, TAU_); }
+    c.fill();
+  }
+  // the order the dice are drawn in: the stack from the bottom row, left to right on the screen; after the throw, the far ones first
+  function snkOrders() {
+    const D = FIN.dir, E = snkEnd(), s = [], r = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    for (const j of [2, 1, 0]) for (const i of D > 0 ? [0, 1, 2] : [2, 1, 0]) s.push(j * 3 + i);
+    r.sort((a, b) => E[a][1] - E[b][1] || D * (E[a][0] - E[b][0]));
+    snkOrd = { s, r };
+  }
+  // where die m is at t (into o, world); false while it is not drawn (before the cut, in his hands)
+  function snkDieAt(m, t, Y, o) {
+    const D = FIN.dir, X0 = FIN.lx, ds = Y.ds, i = m % 3, j = (m / 3) | 0, sw0 = SNK.SW0 + 10 + m * 7, sw1 = sw0 + 55, tl = SNK.SK1 + m * 5;
+    if (t < SNK.DICE) return false;
+    const sx = X0 + D * (Y.sx + (i - 1) * ds), sy = -(2 - j) * ds - ds / 2;
+    if (t < sw0) {   // the grid where he was, opening, falling into the stack row by row
+      const lc = snkLc(Y, SNK.DICE), gap = 4 * easeOut(fe(SNK.DICE, SNK.DICE + 40, t)), lt = SNK.LAND[2 - j], k = fe(SNK.DICE + 40, lt, t);
+      o.x = lerp(lc[0] + D * (i - 1) * (ds + gap), sx, ease(k)); o.y = lerp(lc[1] + (j - 1) * (ds + gap), sy, easeIn(k)) - 2.5 * Math.sin(Math.PI * fe(lt, lt + 80, t));
+      o.s = ds; o.a = (m % 2 ? 0.22 : -0.18) * D * (1 - k); o.f = SNK_STACK[m];
+      return true;
+    }
+    if (t < sw1) {   // swept into his hands
+      const H = snkHT || snkHand(t, Y), k = easeIn(fe(sw0, sw1, t));
+      o.x = lerp(sx, H[0], k); o.y = lerp(sy, H[1], k) - 14 * Math.sin(Math.PI * k); o.s = ds * (1 - 0.45 * k); o.a = D * 1.4 * k; o.f = SNK_STACK[m];
+      return true;
+    }
+    if (t < tl) return false;
+    if (!snkRel) snkRel = snkHand(SNK.SK1 + 10, Y);
+    const E = snkEnd()[m], H = snkRel, ex = X0 + D * E[0], gx = lerp(H[0], ex, 0.3), tg = tl + 50, s = ds * E[2];
+    if (t < tg) {   // out of his hands, a low arc to the ground
+      const k = fe(tl, tg, t), sk = ds * lerp(0.55, E[2], k);
+      o.x = lerp(H[0], gx, k); o.y = lerp(H[1], E[1] - sk / 2, k) - 12 * Math.sin(Math.PI * k); o.s = sk; o.a = D * k * Math.PI * 0.5; o.f = ((m * 5 + 1) % 6) + 1;
+      return true;
+    }
+    // rolling along the ground, edge over edge, to a stop square on its face
+    const n = Math.max(1, Math.round(Math.abs(ex - gx) / s)), v = fe(tg, E[4], t), q = easeOut(v), a = Math.PI * 0.5 * (1 + n * q);
+    o.x = lerp(gx, ex, q); o.y = E[1] - (s / 2) * (Math.abs(Math.cos(a)) + Math.abs(Math.sin(a))); o.s = s; o.a = D * a;
+    o.f = v >= 1 ? E[3] : ((m * 5 + Math.floor(a / (Math.PI * 0.5)) * 3) % 6) + 1;
+    if (o.f === 1 && v < 1) o.f = 4;   // (no one shows before they stop)
+    return true;
+  }
+  // the two pips in front are his eyes: they blink, look at the samurai, then at us
+  function snkEye(t) {
+    let b = 0;
+    for (const bt of SNK.BLINK) { const k = fe(bt, bt + 120, t); if (k > 0 && k < 1) b = Math.sin(Math.PI * k); }
+    const lk = t < SNK.PUMP0 + 60;
+    SNK_EYE.b = b; SNK_EYE.lx = lk ? -FIN.dir : 0; SNK_EYE.ly = lk ? 0 : 0.3;
+    return SNK_EYE;
+  }
+  // the lattice: sixteen brush cuts over him, crossing (nearly level / nearly upright in turn), drawn one after another in 120 ms
+  function snkCuts(Y) {
+    const r = mgRng(616), D = FIN.dir, C = snkLc(Y, SNK.CUT0 + 60), bw = L_().s.w * Y.lsc, bh = L_().s.h * Y.lsc, out = [], ord = [3, 6, 1, 4, 0, 7, 2, 5];
+    for (let s = 0; s < 16; s++) {
+      const v = s % 2, m = ord[s >> 1], an = v ? Math.PI / 2 + 0.24 * D + (r() - 0.5) * 0.14 : -0.16 * D + (r() - 0.5) * 0.14, o = ((m - 3.5) / 3.5) * (v ? bw * 0.62 : bh * 0.52) + (r() - 0.5) * 3;
+      const ux = Math.cos(an), uy = Math.sin(an), len = (v ? bh : bw) * (1.1 + r() * 0.35) + 34, sg = r() < 0.5 ? 1 : -1, pts = [];
+      for (let i = 0; i <= 10; i++) { const q = (i / 10 - 0.5) * len * sg; pts.push([C[0] - uy * o + ux * q, C[1] + ux * o + uy * q]); }
+      out.push({ pts, t0: SNK.CUT0 + s * 7.5, w: L.portrait ? 3.2 : 4 });
+    }
+    return out;
+  }
+  function snkDrawCuts(c, pn, t) {
+    const a = 1 - fe(SNK.DICE, SNK.DICE + 60, t);
+    if (t < SNK.CUT0 || a <= 0) return;
+    pn.world(c); c.globalAlpha = a;
+    for (const st of snkCut) {
+      const k = easeOut(fe(st.t0, st.t0 + 30, t));
+      if (k <= 0) continue;
+      const n = Math.max(1, Math.round(10 * k));
+      c.fillStyle = MG_INK; brush(c, st.pts, st.w, n);
+      c.fillStyle = "#ffffff"; brush(c, st.pts, st.w * 0.24, n);
+    }
+    c.globalAlpha = 1;
+  }
+  // the two after-images of the blade: wide arcs from his shoulder up to where the loser hangs (ink, the jade edge)
+  function snkArcs(c, pn, t, Y) {
+    const a = 0.7 * (1 - fe(SNK.CUT1 - 40, SNK.SH0 + 20, t));
+    if (a <= 0.01) return;
+    const D = FIN.dir, s = Y.wsc, cx = FIN.lx + D * (Y.wx + 8 * s), cy = Y.wy - 34 * s, pts = SNK_ARC;
+    pn.world(c); c.globalAlpha = a;
+    for (let g = 0; g < 2; g++) {
+      const R = (g ? 60 : 82) * s, a0 = g ? 0.45 : 0.2, a1 = g ? -1.75 : -1.4;
+      for (let i = 0; i <= 12; i++) { const th = a0 + (a1 - a0) * (i / 12); pts[i][0] = cx + D * Math.cos(th) * R; pts[i][1] = cy + Math.sin(th) * R; }
+      c.globalAlpha = a * (g ? 0.55 : 1);
+      c.fillStyle = MG_INK; brush(c, pts, 6.5 * s, 12);
+      c.fillStyle = COL; brush(c, pts, 2.2 * s, 12);
+    }
+    c.globalAlpha = 1;
+  }
+  // the samurai in the splash (grey, jade), at his own spot and scale; a blur (two copies behind him) while the cuts are fresh; the click at his hand
+  function snkSam(c, pn, t, Y) {
+    const W = W_(), D = FIN.dir, s = Y.wsc, ox = W.x, oy = W.y, X = FIN.lx + D * Y.wx, ga = 1 - fe(SNK.CUT1, SNK.SH0, t);
+    const pz = Object.assign(Object.create(pn), { world: (cc) => { pn.world(cc); cc.translate(X, Y.wy); cc.scale(s, s); cc.translate(-X, -Y.wy); } });   // jade() draws at his scale
+    let hand = null, fist = null;
+    W.x = X; W.y = Y.wy;
+    try {
+      mgPuppet(c, pn, W, t, { sc: s, light: topLight(), post: hbGreyBox, box: D > 0 ? SNK_WBOX : SNK_WBOXL, ghosts: ga > 0.01 && !MG.reduced ? [[-D * 9 * pn.z, 0, 0.45 * ga], [-D * 18 * pn.z, 0, 0.22 * ga]] : undefined });
+      jade(c, pz, W, t, 1);
+      const b = bladeTip(W, t); hand = pn.p(X + (b[0] - X) * s, Y.wy + (b[1] - Y.wy) * s);
+      if (t >= SNK.PUMP0 && t < SNK.PUMP1 + 90) { const f = bodyPt(W, t, "hF"); fist = pn.p(X + (f[0] - X) * s, Y.wy + (f[1] - Y.wy) * s); }
+    } finally { W.x = ox; W.y = oy; }
+    pn.screen(c);
+    if (fist) {   // the smallest fist pump: three short marks over the fist as it tugs down
+      const m = Math.max(1, s * 0.85) * (L.portrait ? 1.2 : 1), k = fe(SNK.PUMP0 + 20, SNK.PUMP1 + 90, t);
+      c.save(); c.globalAlpha = 1 - k * k; c.lineCap = "round"; c.beginPath();
+      for (let i = 0; i < 3; i++) { const an = -0.5 * Math.PI + D * 0.35 + (i - 1) * 0.55, r0 = (16 + 4 * k) * m, r1 = (27 + 5 * k) * m; c.moveTo(fist[0] + Math.cos(an) * r0, fist[1] + Math.sin(an) * r0); c.lineTo(fist[0] + Math.cos(an) * r1, fist[1] + Math.sin(an) * r1); }
+      c.strokeStyle = "#ffffff"; c.lineWidth = 5.6 * m; c.stroke(); c.strokeStyle = MG_INK; c.lineWidth = 2.6 * m; c.stroke();
+      c.restore();
+    }
+    const ck = fe(SNK.CLICK, SNK.CLICK + 160, t);   // the click: short lines at his hand as the blade goes home
+    if (ck > 0 && ck < 1) {
+      const m = Math.max(1, s * 0.85);
+      c.save(); c.globalAlpha = 1 - ck; c.lineCap = "round"; c.strokeStyle = MG_INK; c.lineWidth = 3.2 * m;
+      for (let i = 0; i < 5; i++) { const an = -0.5 * Math.PI + (i - 2) * 0.55, r0 = (8 + 9 * ck) * m, r1 = (16 + 26 * ck) * m; c.beginPath(); c.moveTo(hand[0] + Math.cos(an) * r0, hand[1] + Math.sin(an) * r0); c.lineTo(hand[0] + Math.cos(an) * r1, hand[1] + Math.sin(an) * r1); c.stroke(); }
+      c.restore();
+    }
+  }
+  // the dice held in his cupped hands, rattling (short marks above and below while he shakes)
+  function snkHeld(c, pn, t, Y, P, lw) {
+    if (t < SNK.SW0 + 70 || t >= SNK.SK1 + 20) return;
+    const H = snkHT, ds = Y.ds * 0.55, D = FIN.dir, sh = t >= SNK.SK0 && t < SNK.SK1;
+    pn.world(c);
+    for (let i = 0; i < 3; i++) snkDie(c, H[0] + D * (i - 1) * ds * 0.72, H[1] - ds * (0.45 + 0.35 * (i % 2)), ds, (sh ? Math.sin(t * 0.09 + i * 2) * 0.5 : 0.2) + i * 0.5, ((i * 2 + 2) % 6) + 1, P, lw * 0.8, null);
+    if (!sh) return;
+    pn.screen(c);
+    const q = pn.p(H[0], H[1] - ds * 0.5), z = pn.z, u = ((t - SNK.SK0) % 60) / 60;
+    c.save(); c.strokeStyle = MG_INK; c.lineWidth = Math.max(1.6, 0.7 * z); c.lineCap = "round"; c.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(u * Math.PI)); c.beginPath();
+    for (const sg of [-1, 1]) for (let i = -1; i <= 1; i++) { const x = q[0] + i * ds * 0.75 * z, y0 = q[1] + sg * ds * 1.3 * z, y1 = y0 + sg * ds * (0.7 + 0.25 * (i & 1)) * z; c.moveTo(x, y0); c.lineTo(x + sg * i * 2, y1); }
+    c.stroke(); c.restore();
+  }
+  // upright, the snake eyes again in a panel of their own across the empty top of the page: the two dice big, blinking, the petal settling on one
+  const snkBox = (pn) => [pn.x0 + pn.w * 0.07, pn.y0 + pn.h * 0.13, pn.w * 0.86, pn.h * 0.28];
+  function snkInset(c, pn, t) {
+    const k = MG.reduced ? (t >= SNK.STOP + 10 ? 1 : 0) : easeOut(fe(SNK.STOP + 10, SNK.STOP + 130, t));
+    if (k <= 0) return;
+    const D = FIN.dir, B = snkBox(pn), x0 = B[0] + D * (1 - k) * (pn.w + 30), y0 = B[1], w = B[2], h = B[3], gy = y0 + h * 0.8, s = w * 0.29, P = snkPal.g;
+    pn.screen(c);
+    c.save(); c.beginPath(); c.rect(x0, y0, w, h); c.fillStyle = MG_PAPER; c.fill(); c.clip();
+    mgFocus(c, x0 + w / 2, gy - s * 0.6, Math.hypot(w, h) * 0.75, t * 0.0003, 0.4);
+    samTone(c, pn, [[x0 - 2, gy], [x0 + w + 2, gy], [x0 + w + 2, y0 + h + 2], [x0 - 2, y0 + h + 2]], 6, 0.3, [t * 0.001, 0]);
+    c.fillStyle = MG_INK; c.fillRect(x0 - 2, gy - 1.5, w + 4, 3);
+    const e = snkEye(t), cx = x0 + w / 2 - s * 0.1, g = s * 0.12;
+    for (const sg of [-1, 1]) snkDie(c, cx + sg * (s + g) / 2, gy - s / 2, s, 0, 1, P, 3, e);
+    const pk = fe(SNK.PET0 + 40, SNK.PET1, t), m = 1 - pk;   // the petal, onto the die further from the samurai
+    if (pk > 0) drawPetal(c, cx + D * (s + g) / 2 + D * (w * 0.32 * m + 10 * Math.sin(pk * 9) * m), gy - s - 4 - h * 0.75 * m, Math.max(6, s * 0.14), 0.25 * D + Math.sin(pk * 7) * 0.9 * m, pk >= 1 ? 0.45 : 0.35 + 0.65 * Math.abs(Math.cos(pk * 6)), false);
+    c.restore();
+    c.lineWidth = Math.max(3, MG.bw); c.strokeStyle = MG_INK; c.lineJoin = "round"; c.strokeRect(x0, y0, w, h);
+  }
+  // a petal drifting down onto the right-hand snake eye
+  function snkPetal(c, pn, t, Y) {
+    if (t < SNK.PET0 || L.portrait) return;
+    const E = snkEnd()[8], D = FIN.dir, s = Y.ds * E[2], x1 = FIN.lx + D * (E[0] + s * 0.1), y1 = E[1] - s - 1.2, k = fe(SNK.PET0, SNK.PET1, t), m = 1 - k;
+    const x = x1 + D * (34 * m + 7 * Math.sin(k * 9) * m), y = y1 - 82 * m * (L.portrait ? 1.3 : 1), q = pn.p(x, y);
+    pn.screen(c);
+    drawPetal(c, q[0], q[1], Math.max(4, s * 0.3 * pn.z), 0.25 * D + Math.sin(k * 7) * 0.9 * m, k >= 1 ? 0.45 : 0.35 + 0.65 * Math.abs(Math.cos(k * 6)), false);
+  }
+  // the strike as on One Cut, but from 3120 the loser rises out of the panel, flicked up by the blade (the hairline with him), speed lines under him
+  function snkDrawStrike(c, pn, t) {
+    const Lp = L_(), oy = Lp.y, k = easeOut(fe(SNK.LIFT, MT.SPLASH, t));
+    Lp.y = oy - 110 * k;
+    try { drawStrike(c, pn, t); } finally { Lp.y = oy; }
+    if (k > 0.05 && !MG.reduced) { pn.screen(c); const q = pn.p(FIN.lx, -110 * k), g = pn.p(FIN.lx, 0)[1]; mgSpeed(c, q[0], (g + q[1]) / 2, g - q[1], Lp.s.w * pn.z * 1.5, -Math.PI / 2, -(t - SNK.LIFT) * 0.8, 0.6, false, 0.8); }
+  }
+  // the splash: plain paper, focus lines, the top band, the mist and the ground; the samurai below (a blur, the after-images of the blade), the loser in the
+  // air under the lattice; then the nine dice: the stack, the sweep, the rattle, the roll, the snake eyes
+  function snkDrawSplash(c, pn, t) {
+    const Y = snkLay(), D = FIN.dir, P = snkPal.g, lw = Math.max(1.1, 2.4 / pn.z), lc = snkLc(Y, t), air = t < SNK.DICE;
+    if (!snkCut) snkCut = snkCuts(Y);
+    if (!snkOrd) snkOrders();
+    snkHT = t >= SNK.SW0 - 40 && t < SNK.SK1 + 40 ? snkHand(t, Y) : null;
+    pn.screen(c);
+    const fc = air ? pn.p(lc[0], lc[1]) : pn.p(FIN.lx + D * (t < SNK.SK1 ? Y.sx : snkEnd()[7][0] + Y.ds * 0.7), -Y.ds), gy = pn.p(FIN.lx, 0)[1];
+    mgFocus(c, fc[0], fc[1], Math.hypot(pn.w, pn.h) * 0.85, t * 0.0002, air ? 0.5 : 0.24);
+    samTone(c, pn, [[pn.x0 - 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 + pn.h * 0.07], [pn.x0 - 4, pn.y0 + pn.h * 0.11]], 6, 0.7, [t * 0.001, 0]);
+    samTone(c, pn, [[pn.x0 - 4, gy - pn.h * 0.12], [pn.x1 + 4, gy - pn.h * 0.15], [pn.x1 + 4, gy], [pn.x0 - 4, gy]], 7, 0.22, [t * 0.0007, 0]);
+    ground(c, pn);
+    if (air) {   // flicked up: speed lines under him, his grey puppet flailing
+      const sa = 0.55 * (1 - fe(MT.SPLASH + 60, SNK.DICE - 40, t)), q = pn.p(lc[0], lc[1] + L_().s.h * Y.lsc * 0.3), g = pn.p(lc[0], 0)[1];
+      if (sa > 0.01 && g > q[1] + 4) mgSpeed(c, q[0], (q[1] + g) / 2, g - q[1], L_().s.w * Y.lsc * pn.z * 1.7, -Math.PI / 2, -(t - MT.SPLASH) * 0.6, sa, false, 0.8);
+      const Lp = L_(), ox = Lp.x, oy = Lp.y;
+      Lp.x = lc[0]; Lp.y = lc[1] + L_().s.h * Y.lsc * 0.5;
+      try { mgPuppet(c, pn, Lp, t, { sc: Y.lsc, light: loserLight(), post: hbGreyBox, box: Lp.spec.boss ? MG_BOSS_BOX : SNK_LBOX }); } finally { Lp.x = ox; Lp.y = oy; }
+    }
+    snkSam(c, pn, t, Y);
+    snkArcs(c, pn, t, Y);
+    if (air) snkDrawCuts(c, pn, t);
+    else {
+      // bits of the cut flying off as he falls apart
+      const u = t - SNK.DICE;
+      if (u < 200) {
+        const k = easeOut(u / 200), lc0 = snkLc(Y, SNK.DICE);
+        pn.world(c); c.fillStyle = MG_INK;
+        for (let i = 0; i < 12; i++) { const an = i * 0.5236 + 0.3, d = (34 + (i % 3) * 16) * k, r = (1.8 + (i % 2)) * (1 - 0.7 * k); c.beginPath(); c.arc(lc0[0] + Math.cos(an) * d, lc0[1] + Math.sin(an) * d * 0.8, r, 0, TAU_); c.fill(); }
+      }
+      pn.world(c);
+      const o = SNK_O;
+      for (const m of t >= SNK.SK1 ? snkOrd.r : snkOrd.s) if (snkDieAt(m, t, Y, o)) snkDie(c, o.x, o.y, o.s, o.a, o.f, P, lw, m >= 7 && t >= snkEnd()[m][4] ? snkEye(t) : null);
+      // a puff of dust as the bottom row lands
+      const dk = fe(SNK.LAND[0], SNK.LAND[0] + 160, t);
+      if (dk > 0 && dk < 1) {
+        pn.screen(c); c.save(); c.strokeStyle = MG_INK; c.lineCap = "round"; c.lineWidth = Math.max(1.6, 0.8 * pn.z); c.globalAlpha = 1 - dk; c.beginPath();
+        for (const sg of [-1, 1]) for (let i = 0; i < 3; i++) { const b = pn.p(FIN.lx + D * (Y.sx + sg * (Y.ds * 1.6 + 3 + 6 * dk + i * 3)), -1 - i * 2.5); c.moveTo(b[0], b[1]); c.lineTo(b[0] + sg * D * (5 + 5 * dk) * pn.z * 0.5, b[1] - (2 + 3 * dk) * pn.z * 0.5); }
+        c.stroke(); c.restore();
+      }
+      if (snkHT) snkHeld(c, pn, t, Y, P, lw);
+      snkPetal(c, pn, t, Y);
+      if (L.portrait) snkInset(c, pn, t);
+    }
+    pn.screen(c);
+  }
+
+  // the aftermath: the cup on its side (its bottom towards him, kneeling), its mouth away from him; the dice in and around it (food units: the cup's middle at 0)
+  const snkFS = () => (L.portrait ? 1.1 : 1.6), snkSp = () => (L.portrait ? 0.75 : 1);   // the food's scale; how far the dice spread from the mouth
+  const snkCX = () => FIN.lx + FIN.dir * (far() - (L.portrait ? 26 : 30) - 13 * snkFS());
+  const snkMX = () => snkCX() - FIN.dir * 13 * snkFS();   // its mouth
+  const SNK_EYEA = { b: 0, lx: 0, ly: 0 };
+  function snkCup(c, pn, t, P, popped) {
+    const D = FIN.dir, s = snkFS(), XC = snkCX(), XM = snkMX(), lw = Math.max(1.1, 2.6 / pn.z);
+    pn.world(c);
+    c.save(); c.translate(XC, 0); c.scale(D * s, s); c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK; c.lineWidth = lw / s;
+    c.fillStyle = P.wood; c.beginPath(); c.moveTo(-13, -22); c.lineTo(13, -22); c.ellipse(13, -11, 4.5, 11, 0, -Math.PI / 2, Math.PI / 2); c.lineTo(-13, 0); c.closePath(); c.fill(); c.stroke();
+    c.lineWidth = (lw / s) * 0.6; c.beginPath(); c.moveTo(-9, -17); c.lineTo(10, -17.6); c.moveTo(-7, -6); c.lineTo(11, -5.4); c.stroke();   // the grain
+    c.strokeStyle = P.band; c.lineWidth = 2.2;
+    for (const bx of [-6, 6]) { c.beginPath(); c.ellipse(bx, -11, 4.5, 10.6, 0, -Math.PI / 2, Math.PI / 2); c.stroke(); }
+    c.strokeStyle = MG_INK; c.lineWidth = lw / s;
+    c.fillStyle = P.hole; c.beginPath(); c.ellipse(-13, -11, 4.8, 11, 0, 0, TAU_); c.fill(); c.stroke();
+    c.lineWidth = (lw / s) * 0.6; c.beginPath(); c.ellipse(-13, -11, 3.3, 9.2, 0, 0, TAU_); c.stroke();
+    c.restore();
+    if (popped) {   // the two left, still rolling to a stop
+      const k = easeOut(fe(MT.POP + 40, MT.POP + 160, t)), sz = 8 * s;
+      for (const [u0, u1, f, v] of SNK_LEFT) {
+        const dist = (u1 - u0) * s * snkSp(), n = Math.max(1, Math.round(dist / sz)), a = Math.PI * 0.5 * n * k;
+        snkDie(c, XM - D * (u0 * s + dist * k), v * s - (sz / 2) * (Math.abs(Math.cos(a)) + Math.abs(Math.sin(a))), sz, -D * a, k >= 1 ? f : ((f + Math.floor(a / (Math.PI * 0.5))) % 6) + 1, P, lw, null);
+      }
+      return;
+    }
+    const cyc = (t - MT.AFTER - 300) % 1500, bl = t > MT.AFTER + 300 && cyc < 120 ? Math.sin(Math.PI * cyc / 120) : 0, lk = t < MT.AFTER + 900;
+    SNK_EYEA.b = bl; SNK_EYEA.lx = lk ? D : 0; SNK_EYEA.ly = lk ? 0 : 0.3;
+    const sp = snkSp(), ue = (d) => (d[5] ? d[0] - 12.5 * (1 - sp) : d[0] * sp);   // (upright they lie closer; the two eyes keep their spacing)
+    for (const d of SNK_AFT) snkDie(c, XM - D * ue(d) * s, (d[1] - d[2] / 2) * s, d[2] * s, d[3] * D, d[4], P, lw, d[5] ? SNK_EYEA : null);
+    const e = SNK_AFT[8], q = pn.p(XM - D * (ue(e) + 1) * s, (e[1] - e[2]) * s - 1.2);   // the petal, still on it
+    c.save(); pn.screen(c); drawPetal(c, q[0], q[1], Math.max(3.5, e[2] * s * 0.3 * pn.z), 0.25 * D, 0.45, P === snkPal.c); c.restore();
+  }
+  // panel 4 of One Cut (the enso, him, the colour flooding from his hand) with the cup, grey until the flood reaches it
+  function snkDrawAfter(c, pn, t) {
+    drawAfter(c, pn, t);
+    const fl = flood(t), popped = mgPopped(t);
+    if (!fl.full) snkCup(c, pn, t, snkPal.g, popped);
+    if (fl.r > 2) {
+      c.save(); pn.screen(c); if (fl.r < 1e4) { c.beginPath(); c.arc(fl.x - pn.ox, fl.y - pn.oy, fl.r, 0, TAU_); c.clip(); }
+      snkCup(c, pn, t, snkPal.c, popped);
+      c.restore();
+    }
+    pn.screen(c);
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Snake Eyes", pop: 1e9,   // (he never flies: the engine's POP takes him out of the cup)
+    start(g) {
+      S_.start(g); pota2 = true; snkPal = null; snkCut = null; snkOrd = null; snkRel = null; snkHT = null;
+      POP = 1e9; SHEATH0 = SNK.SH0; CLICK = SNK.CLICK; FLOOD = MT.AFTER + 100;   // the click is in the splash; the colour floods back as the aftermath comes in
+      snkPalettes();
+    },
+    end() { pota2 = false; snkPal = null; snkCut = null; snkOrd = null; snkRel = null; snkHT = null; },
+    step(t, k) { S_.step(t, k); if (t >= MT.AFTER) W_().facing = -FIN.dir; },   // (kneeling, he faces the cup)
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      strike.draw = snkDrawStrike;
+      after.draw = snkDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 112 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: wx_(t) - FIN.dir * (lay.port ? 36 : 58), wy: -0.4 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", slide: MG.reduced ? 1 : 100, cam: snkCam, draw: snkDrawSplash,
+        shake: (t) => { const a = t >= SNK.LAND[0] ? 2.5 * (1 - fe(SNK.LAND[0], SNK.LAND[0] + 120, t)) : 0; return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; } }));
+      return ps;
+    },
+    pose(P, sk, t, role, p) {
+      if (pota2 && role === "w" && t >= MT.SPLASH) return snkPoseW(P, sk, t);
+      if (pota2 && role !== "w" && t >= SNK.LIFT) return snkPoseL(P, sk, t);
+      return S_.pose(P, sk, t, role, p);
+    },
+    words(lay) {
+      const D = FIN.dir, port = lay.port, Y = snkLay(), ws = S_.words(lay), sh = ws.find((w) => w.text === "SHING");
+      if (sh) sh.t1 = MT.SPLASH + 100;   // (gone as the splash comes up)
+      const at = (tt, wx, wy) => () => { const pn = MG.byId.splash; mgPlace(pn, tt); const q = pn.sp(wx(), wy()); return [q[0], q[1]]; };
+      const SH = port ? [[-30, -66, 0.16], [30, -14, -0.12], [-24, 46, 0.1]] : [[-82, -40, 0.14], [80, -10, -0.12], [-60, 40, 0.08]];
+      SH.forEach(([dx, dy, r], i) => ws.push({ text: "SHA", t0: SNK.CUT0 + 5 + i * 40, t1: SNK.DICE + 60 + i * 15, size: 0.15, mul: port ? 0.42 : 1, arc: 6, jag: 0.1, jit: 0.12, rot: r * D,
+        at: at(SNK.DICE, () => snkLc(Y, SNK.CUT0)[0] + D * dx, () => snkLc(Y, SNK.CUT0)[1] + dy) }));
+      ws.push(
+        { text: "clack", t0: SNK.LAND[0], t1: SNK.SW0, size: 0.07, mul: port ? 0.6 : 1, jit: 0.15, rot: -0.08 * D,
+          at: at(SNK.LAND[0] + 100, () => FIN.lx + D * (Y.sx + Y.ds * (port ? 1.2 : 2.6)), () => -Y.ds * (port ? 4.4 : 3.6)) },
+        { text: "rattle", t0: SNK.SK0 + 20, t1: SNK.SK1 + 80, size: 0.065, mul: port ? 0.6 : 1, jit: 0.2, rot: 0.1 * D,
+          at: at(SNK.SK0 + 100, () => FIN.lx + D * (Y.wx + (port ? 30 : 46)), () => port ? -100 : -78) },
+        { text: "snake eyes", t0: SNK.STOP + 30, t1: MT.AFTER + 40, size: 0.08, mul: port ? 0.62 : 1, jit: 0.1, rot: -0.06 * D,
+          at: port ? () => { const pn = MG.byId.splash; mgPlace(pn, SNK.STOP + 200); const B = snkBox(pn); return [B[0] + B[2] / 2 + pn.ox, B[1] + pn.oy + 4]; }
+            : at(SNK.STOP + 100, () => FIN.lx + D * (snkEnd()[7][0] + snkEnd()[8][0]) / 2, () => -42) },
+      );
+      return ws;
+    },
+    food() {   // the cup's mouth
+      const x = snkMX(), s = snkFS();
+      return { x, y: 0, r: 20 * s, y0: -22 * s, lx: x - FIN.dir * (L.portrait ? 22 : 28) * s };
+    },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("snkFlick", SNK.LIFT, () => Cin.go(() => Cin.whoosh(0.22, 0, 0, 0.25)));
+      for (let i = 0; i < 4; i++) cueOnce("snkCut" + i, SNK.CUT0 + i * 30, () => Cin.go(() => Cin._noise(0.07, 0.3, 8600 - i * 700, 2600, "highpass", 0.7)));
+      cueOnce("snkDice", SNK.DICE, () => Cin.go(() => { for (let i = 0; i < 5; i++) Cin._osc("triangle", 1900 + i * 140, 1200 + i * 120, 0.04, 0.03, 0.002, i * 0.012); }));
+      SNK.LAND.forEach((lt, i) => cueOnce("snkLand" + i, lt, () => Cin.go(() => Cin.clack())));
+      cueOnce("snkSweep", SNK.SW0, () => Cin.go(() => Cin.whoosh(0.16, 0.3 * D, -0.3 * D, 0.2)));
+      for (let i = 0; i < 4; i++) cueOnce("snkShake" + i, SNK.SK0 + i * 60, () => Cin.go(() => { Cin.tick(2200 + (i % 2) * 500); Cin._noise(0.05, 0.12, 3800, 1800, "bandpass", 1.4); }));
+      cueOnce("snkThrow", SNK.SK1, () => Cin.go(() => Cin.whoosh(0.14, -0.2 * D, 0.3 * D, 0.2)));
+      for (let i = 0; i < 5; i++) cueOnce("snkRoll" + i, SNK.SK1 + 80 + i * 30, () => Cin.go(() => Cin.tick(1500 + i * 170)));
+      cueOnce("snkStop", SNK.STOP, () => Cin.go(() => Cin.clack()));
+      cueOnce("snkEyes", SNK.STOP + 60, () => Cin.go(() => Cin.pluck(1480)));
+      cueOnce("snkPump", SNK.PUMP0 + 40, () => Cin.go(() => Cin.tick(900)));
+      cueOnce("snkPetal", SNK.PET1, () => Cin.go(() => Cin._osc("sine", 2349, 2349, 0.5, 0.03, 0.01)));
     },
   });
   return S_;
