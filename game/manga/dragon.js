@@ -8,12 +8,14 @@
    (his potato head with the sprout, horns, gold eye, wings, neck, tail) and the loser is a dot at the far end of the slab; the inhale, the drop, one stream of fire,
    the dot pops off the page, DRAGON'S AGE, the jaw shuts; 4700 panel 4 as on Inferno (its moments are MT.AFTER + offset).
    Script fields: col, name, hit, pop, flight (id of the panel the loser flies out of), panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p),
-   after(t), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(). */
+   after(t), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt().
+   POTATALITY: "Jacket Potato" = MANGA.dragon.alt (S_.alt, at the end; its helpers are prefixed jp), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.dragon = (function () {
   const WBOX = [-84, -130, 82, 12];   // what the Dragon with his wings can cover (measured over the whole page), a little tighter than the engine's default box
   const COL = "#ff8a3d", CORE = "#fff4d6", FLAME_DARK = "#d93a24";
   let ash = [], embers = [], smoke = [], rnd = Math.random;
   let ult = false;   // this play is the Ultimate page, "Dragon's Age" (set by start())
+  let pota = false;  // this play is the Potatality, "Jacket Potato" (set by its start)
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   // the Dragon's size: a potato (1) who grows to 1.6 over 600 ms in panel 2, and shrinks back over 400 ms in panel 4
   const grow = (t) => 1 + 0.6 * ease(fe(1250, 1850, t)) - 0.6 * ease(fe(MT.AFTER, MT.AFTER + 400, t));
@@ -313,7 +315,7 @@ MANGA.dragon = (function () {
   const S_ = {
     col: COL, name: "Inferno", hit: 2900, pop: 3080, flight: "strike",
     panels,
-    start() { ult = false; },
+    start() { ult = false; pota = false; },
     words(lay) {
       const ev = FIN.ev, heavy = ev && /^h/.test(ev.mv || ""), txt = ev && ev.fin ? "FWOOSH" : heavy ? "DOOM" : "KRAK", D = FIN.dir;
       const P2 = () => MG.byId.look, P3 = () => MG.byId.strike;
@@ -397,13 +399,13 @@ MANGA.dragon = (function () {
         }
       }
       if (t > 800 && t < MT.FADE) {
-        const a = fe(800, 1100, t) * (1 - fe(MT.AFTER + 100, MT.AFTER + 700, t)) * (ult ? 1 - fe(MT.SPLASH - 150, MT.SPLASH, t) : 1), u = (t - 800) / 1000;
+        const a = fe(800, 1100, t) * (1 - fe(MT.AFTER + 100, MT.AFTER + 700, t)) * (ult || pota ? 1 - fe(MT.SPLASH - 150, MT.SPLASH, t) : 1), u = (t - 800) / 1000;
         o.fillStyle = "rgba(40,36,50,0.5)"; o.globalAlpha = a;
         for (const d of ash) { const y = ((d.y - d.v * u) % L.gh + L.gh) % L.gh, x = d.x + Math.sin(u * 1.3 + d.ph) * 10; o.beginPath(); o.arc(x, y, d.s, 0, 7); o.fill(); }
         o.globalAlpha = 1;
       }
       if (t > FIN.launch && t < FIN.launch + 420) {
-        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult || pota ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         const sx_ = q[0] - Math.cos(ang) * len * 0.45, sy_ = q[1] - Math.sin(ang) * len * 0.45, hh_ = Math.min(L.gw, L.gh) * 0.34;
@@ -757,6 +759,346 @@ MANGA.dragon = (function () {
       cueOnce("uBurn", 4000, () => Cin.go(() => Cin._noise(0.6, 0.1, 1400, 500, "bandpass")));
       cueOnce("uSlit", UT.SLIT, () => Cin.go(() => Cin.pluck(1760)));
       cueOnce("uShut", UT.SHUT + 170, () => Cin.go(() => Cin.clack()));
+    },
+  });
+  /* ===================== the Potatality, "Jacket Potato" (MANGA.dragon.alt; design: Project files step8/fable-design.md) =====================
+     Inferno to the roar and the pop (the comet is gone as the page turns). 3250 panel 5, the splash, slides up: one huge jacket potato in a crumpled foil boat in
+     the loser's colour, split on top, a pat of butter melting into the fluff and two tiny panicked eyes in the split; its steam rises and bends over to the Dragon,
+     who hovers beside it on beating wings. 3400 he sniffs it in (eyes shut), 3600 his head goes back and his belly lights (ah...), 3720 ACHOO: a fireball from his
+     mouth, 3790 it lands in the split: FWOOM, the potato goes up in flames, the skin puffs up crisp and cracks; 4000 the fire dies to smoke, the eyes blink, he
+     rubs his nose and grins. 4700 panel 4 as on Inferno (he shrinks back, the smoke ring) with the potato on its foil beside him: steam, the butter sliding off,
+     the eyes blinking out of the jacket (sizzle); the engine's POP at 5250 leaves the empty jacket. Splash world: the potato's middle at FIN.wx + dir * dx on the
+     ground (y 0), the Dragon at FIN.wx hovering lift above it (jpAsSplash). Every helper here is prefixed jp. */
+  const JP = { SNIFF: 3400, BACK: 3600, ACHOO: 3720, HIT: 3790, CALM: 4000 };
+  const JP_TAU = Math.PI * 2;
+  let jpIn = false, jpGc = null, jpC = null;   // jpIn: the Dragon is being drawn into the splash (his pose there); jpGc / jpC: the layout and the colours, made once per page
+  const jpLw = (pn) => Math.max(1.1, 3 / pn.z);   // an ink line, in world units
+  // the splash: the potato's half-width R, the Dragon dx behind it (toward his side) hovering lift above the ground at scale sc, the camera's x off the potato;
+  // panel 4: the potato ax in front of him, half-width ar, the loser lands land past it
+  function jpGeo() {
+    if (jpGc) return jpGc;
+    const port = !!(MG.lay && MG.lay.port);
+    jpGc = port ? { R: 62, dx: 46, sc: 1.25, lift: 138, cx: -12, ax: 44, ar: 25, land: 36 } : { R: 100, dx: 152, sc: 1.25, lift: 76, cx: -40, ax: 62, ar: 27, land: 52 };
+    return jpGc;
+  }
+  function jpCols() {
+    if (jpC) return jpC;
+    const pal = L_().pal, skin = mixH(pal.body, "#9c5b2a", 0.55), ui = col(pal);
+    jpC = { skin: mgTintCss(skin, 0.3), crisp: mgTintCss(mixH(skin, "#3a1f0e", 0.55), 0.15), speck: mixH(skin, "#2a160a", 0.6), blister: mgTintCss(mixH(skin, "#e8b070", 0.45), 0.3),
+      foil: mgTintCss(mixH(ui, "#e4e7ee", 0.4), 0.25), fluff: "#fff4d8", fluffDk: "#efd9a6", hollow: "#3b2312", butter: "#ffd84a", butterHi: "#fff4a8" };
+    return jpC;
+  }
+  // the Dragon as he hovers in the splash: a callback runs with him there (lifted, bobbing on his wing beats) and with the splash pose on
+  function jpAsSplash(t, fn) {
+    const W = W_(), oy = W.y; W.y = -jpGeo().lift + Math.sin(t * 0.018) * 2.5; jpIn = true;
+    try { return fn(W); } finally { W.y = oy; jpIn = false; }
+  }
+  const jpPt = (t, key) => jpAsSplash(t, (W) => bodyPt(W, t, jpGeo().sc, key));
+  const jpNose = (t) => { const m = jpPt(t, "mouthPt"), s = jpGeo().sc; return [m[0] + FIN.dir * 5 * s, m[1] - 4 * s]; };
+  // his pose in the splash: admiring, the sniff (eyes shut, leaning in), head back (ah...), the sneeze (snapped forward, mouth wide), oops, rubbing his nose
+  function jpPose(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, J = JP;
+    const sn = ease(fe(J.SNIFF - 100, J.SNIFF + 60, t)), bk = ease(fe(J.BACK, J.ACHOO - 30, t)), ch = easeOut(fe(J.ACHOO - 30, J.ACHOO + 30, t)), rec = ease(fe(J.HIT + 80, J.CALM + 160, t));
+    P.wingUp = 1; P.flap = 0.3 + Math.sin(t * 0.018) * 0.32 + 0.4 * ch * (1 - rec);   // beating to hover
+    P.lean = (0.08 + 0.12 * sn - 0.42 * bk + 0.75 * ch) * (1 - rec) + 0.06 * rec;
+    const sneeze = t >= J.ACHOO - 30 && t < J.HIT + 180, oops = t >= J.HIT + 180 && t < J.CALM + 160;
+    P.mouth = sneeze ? 1 : 0;
+    P.expr = sneeze ? "rage" : oops ? "terror" : t >= J.SNIFF - 100 && t < J.ACHOO - 30 ? "calm" : "grin"; P.exK = oops ? 0.7 : 1;
+    if (t >= J.CALM + 160) return { hF: [w * 0.5 + Math.sin((t - J.CALM) * 0.03) * 2.5, -leg - tor * 0.55], hB: [-w * 0.8, -leg - tor * 0.72] };
+    if (sneeze || oops) return { hF: [w * 0.5, -leg - tor * 1.1], hB: [-w * 0.95, -leg - tor * 0.95] };
+    if (t >= J.BACK) return { hF: [w * 0.72, -leg - tor * 0.98], hB: [-w * 0.78, -leg - tor * 0.98] };
+    return { hF: [w * 0.86, -leg - tor * 0.12], hB: [-w * 0.86, -leg - tor * 0.14] };
+  }
+  // the belly lights as the sneeze builds (Inferno's rings, on their own clock)
+  function jpGlow(p, t, k) {
+    if (k <= 0.02) return null;
+    MG.pt = t;
+    const P = pose(p, mgTk(t)), q = rot([P.rx * 0.18, P.cy + P.ry * 0.55], P.hip, P.lean);
+    return (lc, X) => {
+      const cx = X.sx + p.facing * q[0] * X.z, cy = X.sy + q[1] * X.z, ry = P.ry * X.z;
+      for (const [r, a, cl] of [[0.95, 0.3, COL], [0.68, 0.5, COL], [0.44, 0.78, COL], [0.2, 0.95, CORE]]) { lc.fillStyle = rgba(cl, a * k); lc.beginPath(); lc.ellipse(cx, cy, ry * r * 1.15, ry * r * 0.9, 0, 0, JP_TAU); lc.fill(); }
+    };
+  }
+  // the potato's lumpy outline (a smooth closed curve through 20 points, flat where it sits on the ground)
+  function jpBody(c, x, rx, ry) {
+    c.beginPath();
+    const n = 20, at = (i) => { const a = (i / n) * JP_TAU, k = 1 + 0.035 * Math.sin(a * 3 + 1) + 0.02 * Math.sin(a * 5 + 2); return [x + Math.cos(a) * rx * k, Math.min(0, -ry + Math.sin(a) * ry * k)]; };
+    let p = at(0), q = at(1);
+    c.moveTo((p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+    for (let i = 1; i <= n; i++) { p = at(i); q = at(i + 1); c.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2); }
+    c.closePath();
+  }
+  // dot tone over a world path (fn builds it), the dots in device space like the engine's
+  function jpTone(c, pn, size, cover, fn, rule) {
+    c.save(); pn.world(c); c.beginPath(); fn(c); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(size, cover); c.fill(rule || "nonzero"); c.restore();
+  }
+  const JP_SPECK = [[-0.62, 0.55, 0.05], [-0.3, 0.3, 0.035], [0.18, 0.62, 0.04], [0.55, 0.42, 0.035], [0.78, 0.8, 0.03], [-0.05, 0.35, 0.03]];
+  const JP_CRACK = [[-0.72, 0.62, 0.4], [-0.42, 0.38, -0.3], [-0.08, 0.7, 0.2], [0.3, 0.45, -0.5], [0.62, 0.68, 0.3], [0.45, 0.95, -0.2], [-0.55, 1.0, 0.1]];
+  const JP_BLIST = [[-0.5, 0.82, 0.07], [0.12, 0.5, 0.06], [0.72, 0.55, 0.055], [-0.22, 1.05, 0.05]];
+  // the jacket potato, bottom centre (x, 0), half-width rx, half-height ry (world units, c in the panel's world). o: { crisp 0..1, eyes 0..1 (open; 0 = blink),
+  // look -1..1 (the pupils, toward the winner = -1), wide 0..1, shake (tremble, world units), melt 0..1, slide null | 0..1 (the butter sliding off), empty }
+  function jpSpud(c, pn, x, rx, ry, o, t) {
+    const Cc = jpCols(), lw = jpLw(pn), D = FIN.dir, Lx = x - 0.62 * rx, Rx = x + 0.58 * rx, Ly = -1.78 * ry, Ry = -1.8 * ry, cr = o.crisp, nearY = (o.empty ? -1.15 : -1.45) * ry;
+    const skinFill = () => { c.fillStyle = Cc.skin; c.fill(); if (cr > 0.01) { c.globalAlpha = cr; c.fillStyle = Cc.crisp; c.fill(); c.globalAlpha = 1; } };
+    pn.world(c);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK;
+    jpBody(c, x, rx, ry); skinFill(); c.lineWidth = lw * 1.4; c.stroke();
+    // the far lip of the cut, standing up behind the fluff (peeled right back once he has popped out)
+    c.beginPath(); c.moveTo(Lx, Ly); c.quadraticCurveTo(x - D * 0.08 * rx, (o.empty ? -3.1 : -2.5) * ry, Rx, Ry); c.quadraticCurveTo(x, -2.0 * ry, Lx, Ly); c.closePath();
+    skinFill(); c.lineWidth = lw * 1.2; c.stroke();
+    c.beginPath(); c.moveTo(Lx + rx * 0.06, Ly - ry * 0.05); c.quadraticCurveTo(x, -2.05 * ry, Rx - rx * 0.06, Ry - ry * 0.05); c.lineWidth = lw * 1.6; c.strokeStyle = Cc.fluffDk; c.stroke(); c.strokeStyle = MG_INK;
+    if (o.empty) {   // the open jacket: a dark hollow with a floury lining, a few crumbs of fluff on the rim
+      c.beginPath(); c.moveTo(Lx, Ly); c.quadraticCurveTo(x, -2.1 * ry, Rx, Ry); c.quadraticCurveTo(x, nearY, Lx, Ly); c.closePath();
+      c.fillStyle = Cc.fluffDk; c.fill(); c.lineWidth = lw; c.stroke();
+      c.beginPath(); c.moveTo(Lx + rx * 0.1, Ly - ry * 0.02); c.quadraticCurveTo(x, -1.98 * ry, Rx - rx * 0.1, Ry - ry * 0.02); c.quadraticCurveTo(x, nearY - ry * 0.12, Lx + rx * 0.1, Ly - ry * 0.02); c.closePath();
+      c.fillStyle = Cc.hollow; c.fill();
+      c.fillStyle = Cc.fluff; c.lineWidth = lw * 0.8;
+      for (const [fx, fr] of [[-0.42, 0.07], [0.3, 0.06], [0.05, 0.05]]) { c.beginPath(); c.arc(x + fx * rx, -1.84 * ry + Math.abs(fx) * 0.1 * ry, fr * rx, 0, JP_TAU); c.fill(); c.stroke(); }
+    } else {   // the fluff: floury puffs bulging out of the split (all the ink first, then all the cream, so it reads as one cloud), dots on its lower side
+      const puffs = (g, grow, dy) => { for (let i = 0; i < 5; i++) { const k = i / 4, b = Math.sin(Math.PI * k), px = lerp(Lx + 0.1 * rx, Rx - 0.1 * rx, k) + (i % 2 ? 0.02 : -0.02) * rx, py = lerp(Ly, Ry, k) - 0.12 * ry - 0.36 * ry * b + dy, r = rx * (0.15 + 0.08 * b) * (i === 1 || i === 3 ? 1.05 : 0.95) + grow; g.moveTo(px + r, py); g.arc(px, py, r, 0, JP_TAU); } };
+      c.beginPath(); puffs(c, lw * 0.75, 0); c.fillStyle = MG_INK; c.fill();
+      c.beginPath(); puffs(c, 0, 0); c.fillStyle = Cc.fluff; c.fill();
+      jpTone(c, pn, 6, 0.3, (g) => puffs(g, -rx * 0.06, ry * 0.12));
+      pn.world(c);
+      c.lineWidth = lw * 0.8; c.beginPath();   // a few floury ticks
+      for (const [fx, fy] of [[-0.34, -2.25], [0.04, -2.5], [0.36, -2.22]]) { const px = x + fx * rx, py = fy * ry; c.moveTo(px - rx * 0.04, py); c.quadraticCurveTo(px, py - rx * 0.03, px + rx * 0.04, py); }
+      c.stroke();
+    }
+    // the near face of the skin, over the bottom of the fluff: skin, the crisp, a band of dots away from the light, specks, cracks and blisters
+    c.save(); jpBody(c, x, rx, ry); c.clip();
+    c.beginPath(); c.moveTo(Lx - rx, Ly + 2); c.lineTo(Lx, Ly); c.quadraticCurveTo(x, nearY, Rx, Ry); c.lineTo(Rx + rx, Ry + 2); c.lineTo(Rx + rx, 4); c.lineTo(Lx - rx, 4); c.closePath();
+    skinFill();
+    c.beginPath(); c.rect(x - 2 * rx, -3 * ry, 4 * rx, 4 * ry); c.ellipse(x - D * rx * 0.24, -ry * 1.18, rx * 1.02, ry * 1.0, 0, 0, JP_TAU);
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(7, 0.42); c.fill("evenodd"); c.restore();
+    c.fillStyle = Cc.speck;
+    for (const [sx, sy, sr] of JP_SPECK) { c.beginPath(); c.ellipse(x + sx * rx, -sy * ry, sr * rx, sr * rx * 0.6, 0.5, 0, JP_TAU); c.fill(); }
+    if (cr > 0.02) {
+      c.globalAlpha = cr; c.lineWidth = lw * 0.9; c.beginPath();
+      for (const [cx, cy, a] of JP_CRACK) { const L2 = rx * 0.1, ca = Math.cos(a), sa = Math.sin(a); let px = x + cx * rx, py = -cy * ry; c.moveTo(px, py); for (let j = 1; j <= 3; j++) { px += ca * L2 + (j % 2 ? -sa : sa) * L2 * 0.35; py += sa * L2 + (j % 2 ? ca : -ca) * L2 * 0.35; c.lineTo(px, py); } }
+      c.stroke();
+      c.fillStyle = Cc.blister; c.lineWidth = lw * 0.7;
+      for (const [bx, by, br] of JP_BLIST) { const r = br * rx * (0.45 + 0.3 * cr); c.beginPath(); c.arc(x + bx * rx, -by * ry, r, 0, JP_TAU); c.fill(); c.beginPath(); c.arc(x + bx * rx, -by * ry, r, 0.2, Math.PI - 0.2); c.stroke(); }
+      c.globalAlpha = 1;
+    }
+    // a sheen on the shoulder toward the light
+    c.strokeStyle = "rgba(255,255,255,0.75)"; c.lineWidth = rx * 0.05; c.beginPath(); c.ellipse(x, -ry, rx * 0.84, ry * 0.8, 0, D > 0 ? 3.55 : -1.05, D > 0 ? 4.2 : -0.41); c.stroke();
+    c.restore();
+    // the near lip: the cut edge of the skin (a pale line just under the ink)
+    c.beginPath(); c.moveTo(Lx, Ly); c.quadraticCurveTo(x, nearY, Rx, Ry); c.lineWidth = lw * 1.3; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.moveTo(Lx + rx * 0.05, Ly + ry * 0.07); c.quadraticCurveTo(x, nearY + ry * 0.07, Rx - rx * 0.05, Ry + ry * 0.07); c.lineWidth = lw * 1.2; c.strokeStyle = Cc.fluffDk; c.stroke(); c.strokeStyle = MG_INK;
+    c.save(); c.beginPath(); c.rect(x - 2 * rx, Math.min(Ly, Ry) + lw, 4 * rx, 3 * ry); c.clip(); jpBody(c, x, rx, ry); c.lineWidth = lw * 1.4; c.stroke(); c.restore();
+    // the foil, a crumpled boat round his bottom in his colour
+    c.beginPath();
+    for (let i = 0; i <= 12; i++) { const k = i / 12, u = 2 * k - 1, px = x + u * rx * 1.07, py = -ry * (0.62 - 0.22 * (1 - u * u) + (i % 2 ? 0.1 : 0)); i ? c.lineTo(px, py) : c.moveTo(px, py); }
+    c.lineTo(x + rx * 0.93, ry * 0.05); c.lineTo(x - rx * 0.93, ry * 0.05); c.closePath();
+    c.fillStyle = Cc.foil; c.fill(); c.lineWidth = lw * 1.2; c.stroke();
+    jpTone(c, pn, 6, 0.45, (g) => { g.moveTo(x + D * rx * 0.45, -ry * 0.42); g.lineTo(x + D * rx * 1.05, -ry * 0.55); g.lineTo(x + D * rx * 0.93, ry * 0.05); g.lineTo(x + D * rx * 0.4, ry * 0.05); g.closePath(); });
+    pn.world(c);
+    c.strokeStyle = MG_INK; c.lineWidth = lw * 0.7; c.beginPath();
+    for (const [fx, fy, a] of [[-0.75, 0.3, 0.6], [-0.35, 0.2, -0.4], [0.15, 0.32, 0.5], [0.6, 0.22, -0.6]]) { c.moveTo(x + fx * rx, -fy * ry); c.lineTo(x + fx * rx + Math.cos(a) * rx * 0.1, -fy * ry + Math.sin(a) * rx * 0.08); }
+    c.stroke();
+    c.strokeStyle = "rgba(255,255,255,0.9)"; c.lineWidth = lw * 1.1; c.beginPath(); c.moveTo(x - D * rx * 0.7, -ry * 0.36); c.lineTo(x - D * rx * 0.45, -ry * 0.3); c.stroke();
+    c.strokeStyle = MG_INK;
+    if (o.empty) return;
+    // the eyes in the fluff: tiny, white, pinpoint pupils, worried brows; they tremble; a sweat drop while he panics
+    const er = rx * (0.06 + 0.025 * (o.wide || 0)), sh = o.shake || 0, ex0 = x - D * rx * 0.06 + Math.sin(t * 0.09) * sh, ey = -2.12 * ry + Math.cos(t * 0.13) * sh * 0.5;
+    for (const sd of [-1, 1]) {
+      const ex = ex0 + sd * rx * 0.105;
+      if (o.eyes < 0.25) { c.lineWidth = lw; c.beginPath(); c.moveTo(ex - er, ey); c.quadraticCurveTo(ex, ey + er * 0.6, ex + er, ey); c.stroke(); continue; }
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, er * 0.85, er * 1.15 * o.eyes, 0, 0, JP_TAU); c.fill(); c.lineWidth = lw * 0.9; c.stroke();
+      c.fillStyle = MG_INK; c.beginPath(); c.arc(ex + (o.look || 0) * D * er * 0.4, ey + er * 0.1, er * 0.3, 0, JP_TAU); c.fill();
+      c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(ex + sd * er * 1.05, ey - er * 1.45); c.lineTo(ex - sd * er * 0.55, ey - er * 2.0); c.stroke();
+    }
+    if (o.sweat > 0.02) {
+      const sx = ex0 - D * rx * 0.24, sy = ey - er * (1.6 + 0.6 * Math.abs(Math.sin(t * 0.012))), s2 = er * 0.9;
+      c.globalAlpha = o.sweat; c.beginPath(); c.moveTo(sx, sy - s2 * 1.3); c.quadraticCurveTo(sx + s2, sy + s2 * 0.3, sx, sy + s2 * 0.8); c.quadraticCurveTo(sx - s2, sy + s2 * 0.3, sx, sy - s2 * 1.3);
+      c.fillStyle = "#dff0ff"; c.fill(); c.lineWidth = lw * 0.8; c.stroke(); c.globalAlpha = 1;
+    }
+    // the butter: a thick pat on the fluff's shoulder (front and top face), sagging, pooling and running as it melts; sliding off down his side (slide 0..1) in panel 4
+    const m = o.melt || 0, bw = rx * 0.3, bh = rx * 0.11 * (1 - 0.5 * m), bd = rx * 0.07 * (1 - 0.3 * m);
+    let bx = x + D * rx * 0.3, by = -2.32 * ry, ba = 0.18 * D;
+    if (o.slide) { const s = ease(o.slide); bx = lerp(bx, x + D * rx * 1.12, s); by = lerp(by, -bh * 0.5, s * s); ba = lerp(ba, 0.9 * D, Math.min(1, s * 1.6)) * (1 - fe(0.85, 1, o.slide) * 0.9); }
+    else if (m > 0.05) {   // a pool round its foot and drips down the fluff
+      c.beginPath(); c.ellipse(bx, by + bh * 0.4, bw * (0.55 + 0.35 * m), bw * (0.14 + 0.08 * m), ba, 0, JP_TAU); c.fillStyle = Cc.butter; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+      c.lineWidth = rx * 0.04 + lw * 1.6; c.beginPath();
+      for (const [dx, len] of [[-0.45, 0.5], [0.1, 0.95], [0.55, 0.35]]) { const px = bx + dx * bw; c.moveTo(px, by + bh * 0.5); c.lineTo(px + D * len * rx * 0.03, by + bh * 0.5 + ry * 0.45 * len * m); }
+      c.stroke(); c.lineWidth = rx * 0.04; c.strokeStyle = Cc.butter; c.stroke(); c.strokeStyle = MG_INK;
+    }
+    c.save(); c.translate(bx, by); c.rotate(ba);
+    const rr = Math.min(bh * 0.45, rx * 0.012 + m * bh * 0.4);
+    c.beginPath(); c.moveTo(-bw / 2, -bh / 2); c.lineTo(-bw / 2 + bd * 0.7, -bh / 2 - bd); c.lineTo(bw / 2 + bd * 0.7, -bh / 2 - bd); c.lineTo(bw / 2, -bh / 2); c.closePath();
+    c.fillStyle = Cc.butterHi; c.fill(); c.lineWidth = lw; c.stroke();
+    c.beginPath(); c.roundRect(-bw / 2, -bh / 2, bw, bh, [0, 0, rr, rr]); c.fillStyle = Cc.butter; c.fill(); c.stroke();
+    c.restore();
+  }
+  // the steam: a stream of overlapping puffs from the split (one ink outline round all of them, then the white), rising and bending over to his nose, big at
+  // the root and small at the nose, flowing along; sniffed in, it flows faster. smoke: the same, rising, in dot tone
+  const JP_PUFF = new Float32Array(16 * 3);
+  function jpSteam(c, pn, t, S, E, k, a, smoke) {
+    if (a <= 0.02) return;
+    const lw = jpLw(pn), dx = E[0] - S[0], dy = E[1] - S[1], L = Math.hypot(dx, dy) || 1, C = [S[0] + dx * 0.05, Math.min(S[1], E[1]) - L * 0.32], n = smoke ? 6 : 16;
+    const ph = (t * (smoke ? 0.0009 : 0.0016) * (1 + 1.5 * k)) % 1, R0 = L * 0.12 * a;
+    for (let i = 0; i < n; i++) {
+      const s = Math.min(1, (i + ph) / (n - 0.5)), u = 1 - s, px = u * u * S[0] + 2 * u * s * C[0] + s * s * E[0], py = u * u * S[1] + 2 * u * s * C[1] + s * s * E[1];
+      const r = R0 * (smoke ? (0.4 + 0.9 * s) * Math.min(1, (1 - s) * 3, s * 8) : (1 - 0.4 * s) * Math.min(1, (1 - s) * 7)) * (0.85 + 0.15 * Math.sin(i * 2.7 + t * 0.006)), wob = Math.sin(s * 9 - t * 0.008) * L * 0.025 * (1 - k * 0.6);
+      JP_PUFF[i * 3] = px + wob; JP_PUFF[i * 3 + 1] = py - wob * 0.4; JP_PUFF[i * 3 + 2] = r;
+    }
+    pn.world(c);
+    for (let pass = 0; pass < 2; pass++) {
+      c.beginPath();
+      for (let i = 0; i < n; i++) { const r = JP_PUFF[i * 3 + 2] + (pass ? 0 : lw * 1.1); if (r > lw * 0.5) { c.moveTo(JP_PUFF[i * 3] + r, JP_PUFF[i * 3 + 1]); c.arc(JP_PUFF[i * 3], JP_PUFF[i * 3 + 1], r, 0, JP_TAU); } }
+      c.fillStyle = pass ? (smoke ? MG_PAPER : "#ffffff") : MG_INK; c.fill();
+      if (pass && smoke) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(5, 0.45); c.fill(); c.restore(); }
+    }
+  }
+  // the fireball: from his snout (at the sneeze) into the split, a little arc, a comet's tail
+  function jpFireball(c, pn, t, M, T, R) {
+    const k0 = fe(JP.ACHOO, JP.HIT, t);
+    if (k0 <= 0 || k0 >= 1) return;
+    const at = (k) => { const e = easeIn(k) * 0.6 + k * 0.4; return [lerp(M[0], T[0], e), lerp(M[1], T[1], e) - Math.sin(Math.PI * e) * R * 0.18]; };
+    const pts = [at(Math.max(0, k0 - 0.5)), at(Math.max(0, k0 - 0.36)), at(Math.max(0, k0 - 0.22)), at(Math.max(0, k0 - 0.1)), at(k0)], rb = R * 0.12;
+    pn.world(c);
+    c.fillStyle = MG_INK; cometStroke(c, pts, rb * 2.5); c.fillStyle = COL; cometStroke(c, pts, rb * 1.8); c.fillStyle = CORE; cometStroke(c, pts, rb * 0.8);
+    const h = pts[4];
+    c.beginPath(); c.arc(h[0], h[1], rb, 0, JP_TAU); c.fillStyle = COL; c.fill(); c.lineWidth = jpLw(pn) * 1.2; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.arc(h[0], h[1], rb * 0.55, 0, JP_TAU); c.fillStyle = CORE; c.fill();
+  }
+  // FWOOM: he goes up in flames: one mass of fire behind him, standing on his top edge, its tongues curling up (tallest out of the split; the fluff and the
+  // eyes stay in front of it), three nested layers (ink-edged accent, light, core). It roars for 200 ms and dies down by 4260.
+  function jpFlames(c, pn, t, x, rx, ry) {
+    const f = easeOut(fe(JP.HIT, JP.HIT + 70, t)) * (1 - ease(fe(JP.HIT + 220, JP.CALM + 260, t)));
+    if (f <= 0.02) return;
+    const lw = jpLw(pn), M = MG.slow ? 5 : 7, a0 = Math.PI + 0.08, da = (Math.PI - 0.16) / M;
+    const rim = (a) => [x + Math.cos(a) * rx * 0.98, -ry + Math.sin(a) * ry * 0.98];
+    pn.world(c); c.lineJoin = "round";
+    for (const [k, fill] of [[1, COL], [0.62, "#ffc27a"], [0.3, CORE]]) {
+      c.beginPath();
+      let v = rim(a0); c.moveTo(v[0], v[1] + ry * 0.3); c.lineTo(v[0], v[1]);
+      for (let i = 0; i < M; i++) {
+        const am = a0 + da * (i + 0.5), b = rim(am), mid = Math.sin(Math.PI * (i + 0.5) / M), fl = 0.82 + 0.18 * Math.sin(t * 0.032 + i * 2.1);
+        const h = rx * (0.32 + 0.62 * mid * mid) * f * fl * k, lean = Math.cos(am) * 0.35 + Math.sin(t * 0.02 + i * 1.3) * 0.18, P = [b[0] + lean * h, b[1] - h];
+        const w = rim(a0 + da * (i + 1)), cw = rx * 0.1 * k;
+        c.quadraticCurveTo(v[0] + (P[0] - v[0]) * 0.25 - cw, v[1] + (P[1] - v[1]) * 0.75, P[0], P[1]);
+        c.quadraticCurveTo(w[0] + (P[0] - w[0]) * 0.2 + cw, w[1] + (P[1] - w[1]) * 0.55, w[0], w[1]);
+        v = w;
+      }
+      c.lineTo(v[0], v[1] + ry * 0.3); c.closePath();
+      if (k === 1) { c.lineWidth = lw * 2.4; c.strokeStyle = MG_INK; c.stroke(); }
+      c.fillStyle = fill; c.fill();
+    }
+  }
+  // sniff marks: three little strokes pointing into his nose
+  function jpSniffMarks(c, pn, t, N, s) {
+    const a = fe(JP.SNIFF - 60, JP.SNIFF + 40, t) * (1 - fe(JP.BACK - 60, JP.BACK + 40, t));
+    if (a <= 0.02) return;
+    const D = FIN.dir, lw = jpLw(pn), pulse = 1 + 0.25 * Math.sin((t - JP.SNIFF) * 0.035);
+    pn.world(c); c.globalAlpha = a; c.lineWidth = lw * 1.1; c.strokeStyle = MG_INK; c.beginPath();
+    for (let i = -1; i <= 1; i++) { const ang = (D > 0 ? -0.5 : Math.PI + 0.5) + i * 0.45, r0 = 6 * s * pulse, r1 = 11 * s * pulse; c.moveTo(N[0] + Math.cos(ang) * r0, N[1] + Math.sin(ang) * r0); c.lineTo(N[0] + Math.cos(ang) * r1, N[1] + Math.sin(ang) * r1); }
+    c.stroke(); c.globalAlpha = 1;
+  }
+  function jpDrawSplash(c, pn, t) {
+    const G = jpGeo(), D = FIN.dir, J = JP, X = FIN.wx + D * G.dx, R = G.R, hit = fe(J.HIT, J.HIT + 90, t);
+    const puff = 1 + 0.12 * Math.sin(Math.PI * fe(J.HIT, J.HIT + 240, t)) + 0.04 * ease(fe(J.HIT, J.HIT + 300, t)), rx = R * puff, ry = R * 0.55 * puff;
+    pn.screen(c);
+    // behind: the Dragon's dot disc and focus lines round the potato; at FWOOM the lines catch fire
+    const q = pn.p(X, -ry * 1.6);
+    mgToneFill(c, discPoly(q[0], q[1], Math.min(pn.w, pn.h) * 0.62, 40), 10, 0.22, [t * 0.001, -t * 0.001]);
+    c.beginPath(); c.arc(q[0], q[1], Math.min(pn.w, pn.h) * 0.45, 0, JP_TAU); c.fillStyle = MG_PAPER; c.fill();
+    const fire = hit * (1 - 0.65 * fe(J.CALM, MT.AFTER, t));
+    if (hit < 1) mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.5 * (1 - hit));
+    if (fire > 0.02) mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0005, 0.85 * fire, COL);
+    ground(c, pn, t);
+    // the burst where the fireball lands, behind him and the potato
+    const sb = easeOut(fe(J.HIT, J.HIT + 60, t)) * (1 - fe(J.HIT + 140, J.HIT + 260, t));
+    if (sb > 0.02) { pn.screen(c); const b = pn.p(X, -2.2 * ry); mgStarburst(c, b[0], b[1], R * pn.z * (0.6 + 1.1 * sb), 0.3); }
+    // the Dragon hovering beside it, wings beating, the belly lit as the sneeze builds
+    const glow = fe(J.BACK - 80, J.ACHOO, t) * (1 - fe(J.ACHOO, J.HIT, t));
+    jpAsSplash(t, (W) => mgPuppet(c, pn, W, t, { sc: G.sc, light: dirAng(-0.6), post: jpGlow(W, t, glow), under: wingsUnder(W, t), box: WBOX }));
+    // the steam: rises, bends to his nose (3250-3400), is sniffed in faster (3400-3600), thins while his head is back, is blown away by the sneeze
+    const N = jpNose(Math.min(t, J.BACK)), S = [X - D * 0.08 * rx, -2.6 * ry], E0 = [S[0] - D * R * 0.25, S[1] - R * 1.35], bend = ease(fe(MT.SPLASH + 60, J.SNIFF, t));
+    const E = [lerp(E0[0], N[0], bend), lerp(E0[1], N[1], bend)], sniff = fe(J.SNIFF - 80, J.SNIFF + 80, t) * (1 - fe(J.BACK, J.BACK + 120, t));
+    jpSteam(c, pn, t, S, E, sniff, (1 - 0.45 * fe(J.BACK, J.ACHOO, t)) * (1 - fe(J.ACHOO, J.ACHOO + 60, t)));
+    jpSniffMarks(c, pn, t, N, G.sc);
+    // after the fire, smoke rises from the split
+    const sm = fe(J.CALM - 120, J.CALM + 120, t) * (1 - 0.3 * fe(4400, MT.AFTER, t));
+    if (sm > 0.02) jpSteam(c, pn, t, [X, -2.2 * ry], [X + D * R * 0.2, -2.2 * ry - R * (0.6 + 0.9 * easeOut(fe(J.CALM - 120, J.CALM + 400, t)))], 0, 1.1 * sm, true);
+    jpFlames(c, pn, t, X, rx, ry);
+    // the potato: panicked until the hit, then wide-eyed and blinking
+    const blink = (t >= 4230 && t < 4300) || (t >= 4470 && t < 4540) ? 0 : 1, look = t < J.HIT ? -1 : t < J.CALM + 200 ? 0 : -0.6;
+    jpSpud(c, pn, X, rx, ry, { crisp: ease(fe(J.HIT + 30, J.HIT + 260, t)), eyes: blink, look, wide: fe(J.ACHOO, J.ACHOO + 60, t), shake: t < J.HIT + 300 ? Math.max(1.2, 3 * fe(J.BACK, J.ACHOO, t)) * jpLw(pn) * 0.6 : 0,
+      sweat: 1 - fe(J.ACHOO, J.HIT, t), melt: 0.25 + 0.35 * fe(MT.SPLASH, J.HIT, t) + 0.4 * ease(fe(J.HIT, J.HIT + 400, t)), slide: null, empty: false }, t);
+    jpFireball(c, pn, t, jpPt(J.ACHOO, "mouthPt"), [X, -2.3 * ry], R);
+    // the flash as it lands
+    const fl = 0.7 * (1 - fe(J.HIT, J.HIT + 110, t)) * (t >= J.HIT ? 1 : 0);
+    if (fl > 0.01) { pn.screen(c); c.fillStyle = `rgba(255,252,244,${fl.toFixed(3)})`; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4); }
+  }
+  const jpCam = (t, pn) => {
+    const G = jpGeo(), port = MG.lay.port, push = 1 + (MG.reduced ? 0 : 0.05 * fe(MT.SPLASH, MT.AFTER, t)), vh = (port ? 150 * pn.h / pn.w : 232) / push;
+    return { wx: FIN.wx + FIN.dir * (G.dx + G.cx), wy: -vh * (port ? 0.385 : 0.38), vh };
+  };
+  const jpShake = (t) => { const a = 3 * fe(JP.ACHOO, JP.ACHOO + 20, t) * (1 - fe(JP.ACHOO + 50, JP.HIT, t)) + 6 * fe(JP.HIT, JP.HIT + 20, t) * (1 - fe(JP.HIT + 60, JP.HIT + 320, t)); return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; };
+  // panel 4: Inferno's aftermath with the potato on its foil beside him: steam, the butter sliding off, the eyes blinking out of the jacket; once popped, the empty jacket
+  function jpDrawAfter(c, pn, t) {
+    drawAfter(c, pn, t);
+    const G = jpGeo(), D = FIN.dir, x = FIN.wx + D * G.ax, rx = G.ar, ry = G.ar * 0.55, popped = mgPopped(t);
+    const blink = (t >= 4950 && t < 5020) || (t >= 5130 && t < 5200) ? 0 : 1;
+    jpSpud(c, pn, x, rx, ry, { crisp: 1, eyes: blink, look: t < 5050 ? -1 : 0.2, wide: 0.4, shake: 0, melt: 0.5, slide: fe(MT.AFTER + 80, MT.AFTER + 480, t), empty: popped }, t);
+    // a curl of steam
+    const lw = jpLw(pn), a = fe(MT.AFTER + 60, MT.AFTER + 260, t) * (popped ? 0.6 : 1);
+    if (a > 0.02) {
+      pn.world(c); c.globalAlpha = a; c.strokeStyle = MG_INK; c.lineWidth = lw * 0.9; c.lineCap = "round";
+      for (let i = 0; i < 2; i++) {
+        const sx = x + (i ? 0.25 : -0.2) * rx, ph = ((t - MT.AFTER) * 0.02 + i * 9) % 18;
+        c.beginPath(); for (let j = 0; j <= 9; j++) { const yy = -2.4 * ry - ph * 0.6 - j * 2.2, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Jacket Potato",
+    start(g) { S_.start(g); pota = true; jpGc = null; jpC = null; jpIn = false; },
+    end() { S_.end(); pota = false; jpGc = null; jpC = null; jpIn = false; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after"), D = FIN.dir;
+      strike.freeze = strike.cover = MT.SPLASH;   // the splash covers the whole page from here: the strike is drawn once more, then a bitmap
+      after.draw = jpDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 112 : 96) * (1 - 0.07 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + D * (lay.port ? 30 : 34), wy: -0.45 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: MG_PAPER, slide: MG.reduced ? 1 : 180, cam: jpCam, shake: jpShake, draw: jpDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir;
+      ws[3].t1 = ws[4].t1 = MT.SPLASH + 150;   // BWOOOM and FWOOOSH are gone as the splash comes up
+      const sp = (t, w) => { const pn = MG.byId.splash; mgPlace(pn, t); return pn.sp(w[0], w[1]); };
+      const head = (t) => jpPt(Math.min(t, JP.CALM), "head");
+      ws.push(
+        { text: "ah...", t0: JP.BACK - 40, t1: JP.ACHOO + 150, size: 0.08, jit: 0.12, rot: -0.12 * D,
+          at: (t) => { const h = head(JP.BACK + 60), s = jpGeo().sc; return sp(t, [h[0] + D * 16 * s, h[1] - 36 * s]); } },
+        { text: "ACHOO!", t0: JP.ACHOO, t1: JP.CALM + 260, size: 0.13, jag: 0.14, rot: -0.16 * D,
+          at: (t) => { const h = head(JP.ACHOO), s = jpGeo().sc; return sp(t, [h[0] + D * 30 * s, h[1] - 30 * s]); } },
+        { text: "FWOOM", t0: JP.HIT, t1: MT.AFTER + 120, size: 0.22, arc: 8, fill: "#ffd27a", rot: -0.06 * D,
+          at: (t) => { const G = jpGeo(), X = FIN.wx + D * G.dx; return lay.port ? sp(t, [X, -0.28 * G.R]) : sp(t, [X + D * G.R * 0.6, -G.R * 1.6]); } },
+        { text: "sizzle", t0: MT.AFTER + 140, t1: MT.POP + 20, size: 0.06, jit: 0.12, rot: 0.1 * D,
+          at: () => { const pn = MG.byId.after, G = jpGeo(); mgPlace(pn, MT.AFTER + 300); return pn.sp(FIN.wx + D * (G.ax + G.ar * 0.9), -G.ar * 1.9); } },
+      );
+      return ws;
+    },
+    step(t, k) { S_.step(t, k); if (t >= 1100 && !MG.discC[COL]) mgNeedDisc(COL); },   // the fire-coloured focus lines of FWOOM, made while panel 1 holds
+    pose(P, sk, t, role, p) { return role === "w" && jpIn ? jpPose(P, sk, t) : S_.pose(P, sk, t, role, p); },
+    food() { const G = jpGeo(), x = FIN.wx + FIN.dir * G.ax; return { x, y: 0, r: G.ar, y0: -G.ar * 1.1, lx: x + FIN.dir * G.land }; },
+    cues(t) {
+      S_.cues(t);
+      cueOnce("jpUp", MT.SPLASH + 40, () => Cin.go(() => Cin._noise(0.8, 0.05, 2600, 4200, "highpass", 0.8)));
+      cueOnce("jpSniff", JP.SNIFF, () => Cin.go(() => { Cin._noise(0.1, 0.16, 1400, 3400, "bandpass", 1.6); Cin._noise(0.12, 0.18, 1400, 3600, "bandpass", 1.6, 0.17); }));
+      cueOnce("jpAh", JP.BACK, () => Cin.go(() => { Cin._osc("triangle", 300, 520, 0.12, 0.05, 0.03); Cin._osc("triangle", 340, 620, 0.14, 0.06, 0.03, 0.03); }));
+      cueOnce("jpAchoo", JP.ACHOO, () => Cin.go(() => { Cin._noise(0.28, 0.45, 3000, 700, "bandpass", 0.9); Cin._osc("square", 520, 160, 0.16, 0.08, 0.004); }));
+      cueOnce("jpFwoom", JP.HIT, () => Cin.go(() => { Cin.roar(0.5); Cin.boom(0.6); }));
+      cueOnce("jpCrisp", JP.HIT + 160, () => Cin.go(() => Cin._noise(0.5, 0.08, 4200, 7000, "highpass", 1.2)));
+      cueOnce("jpBlink1", 4230, () => Cin.go(() => Cin.tick(2600)));
+      cueOnce("jpBlink2", 4470, () => Cin.go(() => Cin.tick(2600)));
+      cueOnce("jpSizzle", MT.AFTER + 140, () => Cin.go(() => Cin._noise(0.7, 0.05, 3000, 5200, "highpass", 0.8)));
+      cueOnce("jpBlink3", 4950, () => Cin.go(() => Cin.tick(2900)));
     },
   });
   return S_;
