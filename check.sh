@@ -333,6 +333,38 @@ if [ "$(grep -c "^[a-z]*: potatality, card 'Potatality: " "$LOGS/pota.log")" = 8
 else fail "Potatalities" "$LOGS/pota.log"; fi
 }
 
+# 6c3. The second Potatalities (MANGA[id].alt2, FIN.alt 2): the same checks as 6c2 for all eight. Pictures in build/shots/pota2.
+s_pota2() {
+mkdir -p "$SHOTS/pota2"
+(cd "$SHOTS/pota2" && timeout 900 python3 "$ROOT/tests/pwmanga.py" --alt=2 --fighter=all --vs=wizard,odin --at=3700,5300) > "$LOGS/pota2.log" 2>&1
+if [ "$(grep -c "^[a-z]*: potatality, card 'Potatality: " "$LOGS/pota2.log")" = 8 ] && grep -q "^no errors" "$LOGS/pota2.log"; then pass "second Potatalities (all eight play through, card line, results at 5.9 s; pictures in build/shots/pota2)"
+else fail "second Potatalities" "$LOGS/pota2.log"; fi
+}
+
+# 6c4. The Pommes Shop (UI only, no server): the start page's Pommes pill, the sheet never scrolls at four sizes, finisher cards (USE / PLAYS /
+#      Shuffle / two-tap buy / short), skin cards (buy, WEAR, WORN), Get Pommes (no code, ads off, ads on, back tomorrow). Shots in build/shots/pshop.
+s_pshop() {
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwpshop.py" pshop) > "$LOGS/pshop.log" 2>&1
+if grep -q "^pshop ok" "$LOGS/pshop.log"; then pass "Pommes Shop (pill, no scrolling at four sizes, finisher and skin cards, Get Pommes; shots in build/shots/pshop)"
+else fail "Pommes Shop" "$LOGS/pshop.log"; fi
+}
+
+# 6c5. Rewarded ads (ui/ads.js) and the Harvest's x2 button: SOON without ads, a fake ad viewed / skipped / none, the adapter against a stand-in
+#      for Google's adsbygoogle.js (no network). Shots in build/shots/ads.
+s_ads() {
+(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwads.py" ads) > "$LOGS/ads.log" 2>&1
+if grep -q "^ads ok" "$LOGS/ads.log"; then pass "rewarded ads + Harvest x2 (SOON, viewed / skipped / none, the Google adapter; shots in build/shots/ads)"
+else fail "rewarded ads + Harvest x2" "$LOGS/ads.log"; fi
+}
+
+# 6c6. The Pommes skins in the fight (skinfx.js: Ink Noir, Starfall): every fighter x line runs, sprints, lands hits and KOs wearing it, no page
+#      errors, the overlay costs <= 0.5 ms a frame per fighter. Contact sheets in build/shots/pmskin.
+s_pmskin() {
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwpmskin.py" pmskin) > "$LOGS/pmskin.log" 2>&1
+if grep -q "^pommes skins ok" "$LOGS/pmskin.log"; then pass "Pommes skins in the fight (Ink Noir, Starfall: all eight, overlay cost; sheets in build/shots/pmskin)"
+else fail "Pommes skins in the fight" "$LOGS/pmskin.log"; fi
+}
+
 # 6d. Ultimates on the HUD: the bar under both cards (empty, half, full, spent), the ULTI button only while full and clear of the
 #     other buttons, a press by tap / U key / gamepad Y starts the ulti, reduced motion. Shots in build/shots/ult.
 s_ultui() {
@@ -482,13 +514,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui pota bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui pota pota2 pshop ads pmskin bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, bw, pm, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
 SOLO=(quick cpu bw pm tc acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)
