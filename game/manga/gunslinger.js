@@ -16,7 +16,8 @@
    frames, BLAMM in gold); 3550 the loser is launched and the hat shot off; 3750 panel 5, a full-page splash from the top: the WANTED poster (aged paper, the
    loser's mono portrait, DEAD OR FRIED, REWARD: 1,000,000 FRIES, two nails, a torn bottom under a 70% screen); five bullet holes in the poster (3950-4350, the fan
    order) and a sixth gold-rimmed one through the portrait's forehead at 4450 (his eyes turn to X); 4700 panel 4 as on the normal page (MT.AFTER + offsets).
-   POTATALITY: "Tater Tots" = MANGA.gunslinger.alt (S_.alt, at the end; its helpers are prefixed tts), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Tater Tots" = MANGA.gunslinger.alt (S_.alt, at the end; its helpers are prefixed tts), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Loaded" = MANGA.gunslinger.alt2 (S_.alt2, after it; its helpers are prefixed lod; `pota2` says it is playing), played when it is the one picked. */
 MANGA.gunslinger = (function () {
   const COL = "#ff4636", HOT = "#fff3d6", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2, GOLD = MG_GOLD, GOLD_D = MG_GOLD_D;
   const TICK = 1480, DONG = 1750;
@@ -34,6 +35,7 @@ MANGA.gunslinger = (function () {
   let dust = [], weed = null, hat = null, hatKind = "sprout", shotX0 = 0, shotY = -42;
   let fan = [], poster = null, posterStage = 0, gnsPort = 0, loserCopy = null;   // the Ultimate: the five shots' muzzles and holes, the poster (layout, lettering, portraits), the portrait pose switch
   let pota = false;   // pota: this play is the Potatality, Tater Tots (set by its start, cleared by S_.start and its end)
+  let pota2 = false;  // pota2: this play is the second Potatality, Loaded (set by its start, cleared by S_.start and its end)
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function gnsPt(p, t, key, dx, dy) {   // a point of the body (turned with the lean about the hip)
@@ -719,7 +721,7 @@ MANGA.gunslinger = (function () {
         at: () => { const p = MG.byId.strike, m = fan[i].m, an = a * 3.4, r = 30; const q = p.sp(m[0] + D * (r * Math.cos(an) + 6), m[1] + r * Math.sin(an) * 1.6 - 4); return [q[0], q[1]]; } }));
       return [hitWord, dong].concat(bams, [bang, fuu]);
     },
-    start(g) { pota = false; gnsMode(false); dust = []; weed = null; hat = null; hatKind = "sprout"; fan = []; poster = null; posterStage = 0; gnsPort = 0; loserCopy = null; },
+    start(g) { pota = false; pota2 = false; gnsMode(false); dust = []; weed = null; hat = null; hatKind = "sprout"; fan = []; poster = null; posterStage = 0; gnsPort = 0; loserCopy = null; },
     build(lay) {
       gnsMode(ULT);
       const r = mgRng(1873);
@@ -1246,6 +1248,494 @@ MANGA.gunslinger = (function () {
       cueOnce("ttsClick", TTS_CLICK, () => Cin.go(() => Cin.tick(1800)));
       cueOnce("ttsPhew", TTS_PHEW, () => Cin.go(() => { Cin._noise(0.4, 0.05, 1200, 500, "bandpass", 1); Cin._osc("triangle", 640, 400, 0.35, 0.03, 0.03); }));
       cueOnce("ttsDrip", MT.AFTER + 260, () => Cin.go(() => Cin._osc("sine", 1100, 500, 0.09, 0.05, 0.003)));
+    },
+  });
+  /* ===================== the second Potatality, "Loaded" (MANGA.gunslinger.alt2; design: Project files step8/fable-design-2.md §1.7) =====================
+     High Noon up to the shot (as in Tater Tots, the loser's hat and the speed lines stop at the splash). 3250 panel 5, the splash, drops in from the top:
+     his revolver's cylinder swung open, end-on, over a red disc: five chambers hold the toppings (cheese, bacon, chives, sour cream, butter), the sixth, at
+     the top, holds the loser, squeezed in (CH-CHK); 3300-3680 it spins two turns and stops with him on top again; 3700 it snaps shut (click), flying into
+     the gun: the street, the Gunslinger aiming down at a tin plate on the ground; 3800 the hammer back; 3850 one shot (BANG): the loser comes down the line
+     and lands in the plate as a potato-skin boat, split open (3890); 3970-4290 the toppings rain into it, one every 80 ms, the sour cream last, on his head;
+     4300 he raises the barrel, 4390 blows the smoke off it (fuu), 4520 tips his hat with it; the loser blinks under the dollop. 4700 in panel 4's place:
+     a barrel beside him as a table, the plate on it with the loaded boat; he twirls the revolver (4780-5080) and drops it in the holster (5170);
+     the engine's POP bursts the boat at 5250 (food()) and leaves it split in two on the plate, a chive and the dollop beside it.
+     The splash's world is the street's (he stands at FIN.wx, the ground is y = 0, the plate lies in front of him, nearer to us: lodGeo()); the cylinder is drawn in px of the panel.
+     Every helper here is prefixed lod. */
+  const LOD = { SPIN0: 3300, SPIN1: 3680, SHUT: 3700, COCK: 3800, SHOT: 3850, LAND: 3890, RAISE: 4300, BLOW: 4390, TIP0: 4520, TIP1: 4610, TWIRL0: 4780, TWIRL1: 5080, HOLSTER: 5170 };
+  const LOD_TOPS = ["cheese", "bacon", "chive", "cream", "butter"];   // the chambers after his, clockwise
+  const LOD_RAIN = ["cheese", "bacon", "chive", "butter", "cream"];   // the order they rain in (the sour cream last: it lands on his head)
+  const lodRainT = (k) => 3970 + k * 80;                               // when the k-th lands (3970 .. 4290), after a fall of LOD_FALL ms
+  const LOD_FALL = 170, LOD_BL = 24, LOD_BH = 13, LOD_BT = 27;          // the boat's half length and depth (world units); the barrel table's height
+  const LOD_SPECK = [[-17, 4, 0.3], [-9, 8, -0.5], [-2, 3, 1.1], [6, 9, 0.2], [13, 4, -0.4], [18, 1, 0.8], [-13, 1, 1.4], [9, 2, -1]];   // the skin's specks (boat units)
+  const LOD_BLINK = [4430, 4600, 5010, 5190];                           // the loser blinks under the dollop
+  const lodPort = () => !!(MG.lay && MG.lay.port);
+  // the plate in the splash: its middle, its foot (y below the street's line: it lies nearer to us) and its scale (drawn big, in front)
+  const lodGeo = () => (lodPort() ? [FIN.wx + FIN.dir * 50, 104, 2] : [FIN.wx + FIN.dir * 125, 24, 1.6]);
+  const lodTX = () => FIN.wx + FIN.dir * 76;                            // the barrel table in panel 4
+  let lodC = null, lodMz = null;   // the loser's colours on the boat (made in build); the muzzle (world units) at the shot and as the smoke is born
+  function lodPrep() {
+    const body = L_().pal.body || "#e9c070";
+    lodC = { skin: body, crust: mix(body, "#5a2c0c", 0.5), flesh: mix(body, "#fff6dc", 0.62) };
+    return lodC;
+  }
+  // the smoke's puffs are born at these moments, off the muzzle as it is then (cached: the pose is not cheap)
+  const LOD_PUFF = [3860, 3940, 4020, 4100, 4180, 4320, 4350, 4380];
+  function lodMuzzles() { if (!lodMz) lodMz = { shot: gnsMuzzle(LOD.SHOT), puff: LOD_PUFF.map((b) => gnsMuzzle(b)) }; return lodMz; }
+  function lodHand(t) { MG.pt = t; const W = W_(), P = pose(W, mgTk(t)); return [W.x + W.facing * P.hF[0], W.y + P.hF[1], P.holdAng || 0]; }
+
+  /* ---- the cylinder, end-on: (cx, cy) its middle and R its radius (px of the panel), turned by a; spin 0..1: how fast it turns (the blur) ---- */
+  function lodCyl(c, cx, cy, R, a, spin, t) {
+    const lw = Math.max(2, R * 0.022), rr = R * 0.56, cr = R * 0.25, D = FIN.dir;
+    const dF = R * 1.07, rF = R * 0.15, th = Math.acos((R * R + dF * dF - rF * rF) / (2 * R * dF));
+    const outline = (ox, oy) => {   // the rim, with the six flutes cut into it between the chambers
+      c.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const f0 = a + (i + 0.5) * TAU / 6 - Math.PI / 2, f1 = f0 + TAU / 6, fx = ox + Math.cos(f1) * dF, fy = oy + Math.sin(f1) * dF;
+        c.arc(ox, oy, R, f0 + th, f1 - th);
+        const ax = ox + Math.cos(f1 - th) * R - fx, ay = oy + Math.sin(f1 - th) * R - fy, bx = ox + Math.cos(f1 + th) * R - fx, by = oy + Math.sin(f1 + th) * R - fy;
+        c.arc(fx, fy, rF, Math.atan2(ay, ax), Math.atan2(by, bx), true);
+      }
+      c.closePath();
+    };
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    // its side, seen past the face (the same outline, down and away, in dark steel), then the face
+    outline(cx - D * R * 0.05, cy + R * 0.075); c.fillStyle = "#6f7580"; c.fill(); c.lineWidth = lw; c.stroke();
+    outline(cx, cy); c.fillStyle = "#c3c8d0"; c.fill();
+    if (!MG.slow) { c.save(); c.clip(); c.beginPath(); c.moveTo(cx - R * 1.2, cy + R * 0.3); c.lineTo(cx + R * 1.2, cy - R * 0.25); c.lineTo(cx + R * 1.2, cy + R * 1.2); c.lineTo(cx - R * 1.2, cy + R * 1.2); c.closePath(); ttsToneHere(c, 7, 0.32); c.restore(); }
+    outline(cx, cy); c.lineWidth = lw; c.stroke();
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw * 1.5; c.beginPath(); c.arc(cx, cy, R * 0.9, -2.75, -2.0); c.stroke(); c.strokeStyle = INK;   // a glint on the rim
+    // the ratchet in the middle: a six-point star round the pin hole
+    c.beginPath();
+    for (let i = 0; i < 12; i++) { const an = a + (i / 12) * TAU - Math.PI / 2, r = i % 2 ? R * 0.1 : R * 0.18; i ? c.lineTo(cx + Math.cos(an) * r, cy + Math.sin(an) * r) : c.moveTo(cx + Math.cos(an) * r, cy + Math.sin(an) * r); }
+    c.closePath(); c.fillStyle = "#9aa0aa"; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+    c.fillStyle = INK; c.beginPath(); c.arc(cx, cy, R * 0.055, 0, TAU); c.fill();
+    // the chambers: a bevelled mouth, what is loaded in it, an ink ring
+    for (let i = 0; i < 6; i++) {
+      const an = a + i * TAU / 6 - Math.PI / 2, x = cx + Math.cos(an) * rr, y = cy + Math.sin(an) * rr;
+      c.beginPath(); c.arc(x, y, cr * 1.15, 0, TAU); c.fillStyle = "#9aa0aa"; c.fill(); c.lineWidth = lw * 0.7; c.stroke();
+      c.save(); c.beginPath(); c.arc(x, y, cr, 0, TAU); c.clip();
+      if (i === 0) lodChamberL(c, x, y, cr, t, lw); else lodChamberTop(c, LOD_TOPS[i - 1], x, y, cr, lw);
+      c.restore();
+      c.beginPath(); c.arc(x, y, cr, 0, TAU); c.lineWidth = lw * 1.1; c.strokeStyle = INK; c.stroke();
+      if (spin > 0.12) {   // turning: ink arcs trail behind each chamber
+        c.save(); c.globalAlpha = Math.min(1, spin * 1.4); c.lineWidth = lw * 0.8;
+        for (const o of [-0.62, 0, 0.62]) { c.beginPath(); c.arc(cx, cy, rr + o * cr, an - 0.34 - 0.95 * spin, an - 0.34); c.stroke(); }
+        c.restore();
+      }
+    }
+  }
+  // the loser, squeezed into his chamber: he fills it to the brim, eyes wide, sweating
+  function lodChamberL(c, x, y, r, t, lw) {
+    const C = lodC || lodPrep();
+    c.fillStyle = C.skin; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+    c.fillStyle = C.crust;
+    for (let i = 0; i < 4; i++) { const an = i * 1.7 + 0.4; c.beginPath(); c.ellipse(x + Math.cos(an) * r * 0.72, y + Math.sin(an) * r * 0.72, r * 0.07, r * 0.035, an, 0, TAU); c.fill(); }
+    ttsFace(c, x, y - r * 0.08, r * 1.9, 1, "terror", 1, false);
+    // pressed in: short ink marks round the rim
+    c.strokeStyle = INK; c.lineWidth = lw * 0.7;
+    for (const an of [0.3, 1.2, 2.2, 3.1, 4.3, 5.4]) { c.beginPath(); c.moveTo(x + Math.cos(an) * r * 0.86, y + Math.sin(an) * r * 0.86); c.lineTo(x + Math.cos(an + 0.22) * r * 0.86, y + Math.sin(an + 0.22) * r * 0.86); c.stroke(); }
+    ttsDrop(c, x + r * 0.58, y - r * 0.3 + (t % 600) * r * 0.0004, r * 0.09, lw * 0.6);
+  }
+  // a chamber's topping, filling it (x, y, r: px of the panel)
+  function lodChamberTop(c, kind, x, y, r, lw) {
+    c.lineCap = "round"; c.lineJoin = "round";
+    if (kind === "cheese") {
+      c.fillStyle = "#ffc22e"; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+      c.strokeStyle = "#d9840e"; c.lineWidth = r * 0.11;
+      for (let j = 0; j < 8; j++) { const an = j * 2.3, px = x + Math.cos(an) * r * (0.2 + 0.09 * (j % 4)) * 2, py = y + Math.sin(an * 1.3) * r * 0.55; c.beginPath(); c.moveTo(px - r * 0.22, py); c.quadraticCurveTo(px, py - r * 0.18 * (j % 2 ? 1 : -1), px + r * 0.22, py); c.stroke(); }
+    } else if (kind === "bacon") {
+      c.fillStyle = "#c9473b"; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+      c.strokeStyle = "#f6c2b4"; c.lineWidth = r * 0.17;
+      for (const o of [-0.5, 0, 0.5]) { c.beginPath(); c.moveTo(x - r, y + o * r); c.bezierCurveTo(x - r * 0.4, y + (o - 0.25) * r, x + r * 0.2, y + (o + 0.25) * r, x + r, y + o * r - r * 0.1); c.stroke(); }
+    } else if (kind === "chive") {
+      c.fillStyle = "#e4f2d6"; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+      for (const [u, v] of [[-0.45, -0.4], [0.15, -0.55], [0.5, -0.1], [-0.1, 0.05], [-0.55, 0.25], [0.3, 0.45], [-0.15, 0.6]]) {
+        c.beginPath(); c.arc(x + u * r, y + v * r, r * 0.16, 0, TAU); c.strokeStyle = INK; c.lineWidth = r * 0.15; c.stroke(); c.strokeStyle = "#4f9d3c"; c.lineWidth = r * 0.09; c.stroke();
+      }
+    } else if (kind === "cream") {
+      c.fillStyle = "#ffffff"; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+      c.strokeStyle = INK; c.lineWidth = lw * 0.7; c.beginPath();
+      for (let s = 0; s <= 24; s++) { const an = s * 0.42, rr = r * 0.08 + s * r * 0.028; s ? c.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr) : c.moveTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); }
+      c.stroke();
+    } else {   // butter: a pat of it
+      c.fillStyle = "#fff0b3"; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+      c.save(); c.translate(x, y); c.rotate(0.3);
+      c.beginPath(); c.rect(-r * 0.5, -r * 0.42, r, r * 0.84); c.fillStyle = "#ffd84a"; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke();
+      c.strokeStyle = "#ffffff"; c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(-r * 0.36, -r * 0.28); c.lineTo(r * 0.2, -r * 0.28); c.stroke();
+      c.restore();
+    }
+  }
+
+  /* ---- the boat: the loser as half a potato skin, hollowed, lying in the plate (world units) ---- */
+  // one topping where it sits on the boat (its frame: the cut at y = 0); spread 0 (a clump, falling) .. 1 (landed: the cheese melts over the rim, the butter runs)
+  function lodTopping(c, kind, spread, lw, faceX) {
+    c.lineCap = "round"; c.lineJoin = "round";
+    if (kind === "cheese") {
+      for (let j = 0; j < 7; j++) {
+        const x = (-16 + j * 5.4 + (j % 2) * 1.2) * (0.35 + 0.65 * spread), y = -1.4 - (j % 3) * 1.1, a = (j % 2 ? 0.5 : -0.4);
+        c.beginPath(); c.moveTo(x - Math.cos(a) * 3, y - Math.sin(a) * 3); c.quadraticCurveTo(x, y - 1.6, x + Math.cos(a) * 3, y + Math.sin(a) * 3);
+        c.strokeStyle = INK; c.lineWidth = 2.8 + lw; c.stroke(); c.strokeStyle = "#ffc22e"; c.lineWidth = 2.8; c.stroke();
+      }
+      const sg = (faceX || 0) > 0 ? -1 : 1;
+      if (spread >= 1) for (const [o, len] of [[-15, 4.5], [10.5, 6.5], [19.5, 3.8]]) {   // melting down the skin (clear of his face)
+        const x = (faceX || 0) + sg * o;
+        c.beginPath(); c.moveTo(x, -0.5); c.lineTo(x + 0.3, len);
+        c.strokeStyle = INK; c.lineWidth = 2.6 + lw; c.stroke(); c.strokeStyle = "#ffc22e"; c.lineWidth = 2.6; c.stroke();
+      }
+    } else if (kind === "bacon") {
+      for (const [x, y, a] of [[-12, -2.6, 0.3], [-4.5, -3.6, -0.5], [5.5, -3, 0.8], [13.5, -2.2, -0.2], [0.5, -1.4, 1.2]]) {
+        c.save(); c.translate(x * (0.4 + 0.6 * spread), y); c.rotate(a);
+        c.beginPath(); c.rect(-2.6, -1.3, 5.2, 2.6); c.fillStyle = "#c9473b"; c.fill(); c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.stroke();
+        c.strokeStyle = "#f6c2b4"; c.lineWidth = 0.7; c.beginPath(); c.moveTo(-2, 0.1); c.lineTo(2, -0.2); c.stroke();
+        c.restore();
+      }
+    } else if (kind === "chive") {
+      for (const [x, y] of [[-15, -2.2], [-8, -4.4], [-1, -2.6], [4, -5], [9.5, -3], [16, -1.8], [-4, -5.6]]) {
+        c.beginPath(); c.arc(x * (0.4 + 0.6 * spread), y, 1.15, 0, TAU); c.strokeStyle = INK; c.lineWidth = 1.5 + lw * 0.6; c.stroke(); c.strokeStyle = "#5fae4a"; c.lineWidth = 1.1; c.stroke();
+      }
+    } else if (kind === "butter") {
+      if (spread >= 1) { c.beginPath(); c.ellipse(10.5, -1.2, 6.5, 1.6, 0, 0, TAU); c.fillStyle = "#ffe98a"; c.fill(); }   // running
+      c.save(); c.translate(10.5, -3.6); c.rotate(0.14);
+      c.beginPath(); c.rect(-3.4, -2.4, 6.8, 4.8); c.fillStyle = "#ffd84a"; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke();
+      c.beginPath(); c.moveTo(-3.4, -2.4); c.lineTo(-1.8, -3.6); c.lineTo(5, -3.6); c.lineTo(3.4, -2.4); c.closePath(); c.fillStyle = "#fff0b3"; c.fill(); c.stroke();
+      c.restore();
+    } else {   // the sour cream: a dollop, three lobes and a curl, over his face ("on his head")
+      const x = faceX || 0;
+      c.fillStyle = "#ffffff"; c.strokeStyle = INK; c.lineWidth = lw * 0.9;
+      for (const [dy, rx, ry] of [[-2.4, 7.2, 3.3], [-5.6, 5.2, 2.8], [-8.4, 3.2, 2.2]]) { c.beginPath(); c.ellipse(x, dy, rx, ry, 0, 0, TAU); c.fill(); c.stroke(); }
+      c.beginPath(); c.moveTo(x - 1.6, -10); c.quadraticCurveTo(x + 0.6, -14.4, x + 2.8, -12.2); c.lineWidth = 2.2 + lw; c.stroke(); c.strokeStyle = "#ffffff"; c.lineWidth = 2.2; c.stroke();
+      c.beginPath(); c.ellipse(x + 2.4, -6, 1.4, 0.8, 0.3, 0, TAU); c.fillStyle = "#e4e6ea"; c.fill();
+    }
+  }
+  // the boat at (x, y) (the middle of its bottom), s its scale, sq the landing squash; n toppings in (in LOD_RAIN order); his face: ex / exK / hurt, looking toward dx
+  function lodBoat(c, x, y, s, sq, n, ex, exK, hurt, lw, dx) {
+    const C = lodC || lodPrep(), bl = LOD_BL, bh = LOD_BH, fx = dx * 3;
+    c.save(); c.translate(x, y); c.scale(s * (1 + (1 - sq) * 0.6), s * sq);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    const shell = () => { c.beginPath(); c.moveTo(-bl, -bh); c.ellipse(0, -bh, bl, bh, 0, Math.PI, 0, true); c.closePath(); };
+    shell(); c.fillStyle = C.skin; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = C.crust;
+    for (const [sx, sy, a] of LOD_SPECK) { c.beginPath(); c.ellipse(sx, sy - bh, 1.7, 0.8, a, 0, TAU); c.fill(); }
+    if (!MG.slow) { c.beginPath(); c.ellipse(0, -bh * 0.35, bl * 1.1, bh * 0.9, 0, 0.15, Math.PI - 0.15); c.lineTo(-bl * 1.2, bh); c.lineTo(bl * 1.2, bh); c.closePath(); ttsToneHere(c, 6, 0.35); }   // the shade under the belly
+    c.restore();
+    shell(); c.lineWidth = lw * 1.1; c.stroke();
+    // the cut: the hollowed flesh inside, its far wall in shade
+    c.beginPath(); c.ellipse(0, -bh, bl - 1, 3.6, 0, 0, TAU); c.fillStyle = C.flesh; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+    if (!MG.slow) { c.beginPath(); c.ellipse(0, -bh + 0.4, bl - 4.5, 2.2, 0, Math.PI, TAU); c.closePath(); ttsToneHere(c, 6, 0.45); }
+    ttsFace(c, fx, -bh * 0.5, 19, dx, ex, exK, hurt);
+    c.translate(0, -bh);
+    for (let k = 0; k < n; k++) lodTopping(c, LOD_RAIN[k], 1, lw, fx);
+    c.restore();
+  }
+  // after the pop: the skin split in two, rocked apart, a chive and the dollop beside it
+  function lodEmpty(c, x, y, lw, D) {
+    const C = lodC || lodPrep(), bl = LOD_BL, bh = LOD_BH;
+    c.lineJoin = "round"; c.lineCap = "round";
+    for (const sd of [-1, 1]) {
+      c.save(); c.translate(x + sd * 6, y); c.rotate(sd * 0.2);
+      c.beginPath(); c.moveTo(0, -bh); for (let i = 1; i <= 4; i++) c.lineTo(sd * (i % 2 ? 1.6 : -0.6), -bh + i * bh / 4); c.lineTo(sd * bl * 1.3, bh); c.lineTo(sd * bl * 1.3, -bh * 2.5); c.closePath(); c.clip();
+      c.translate(-sd * 1.5, 0);
+      c.beginPath(); c.moveTo(-bl, -bh); c.ellipse(0, -bh, bl, bh, 0, Math.PI, 0, true); c.closePath(); c.fillStyle = C.skin; c.fill();
+      c.fillStyle = C.crust; for (const [sx, sy, a] of LOD_SPECK) { c.beginPath(); c.ellipse(sx, sy - bh, 1.7, 0.8, a, 0, TAU); c.fill(); }
+      c.lineWidth = lw * 1.1; c.strokeStyle = INK; c.stroke();
+      c.beginPath(); c.ellipse(0, -bh, bl - 1, 3.6, 0, 0, TAU); c.fillStyle = C.flesh; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+      c.translate(0, -bh); lodTopping(c, "cheese", 1, lw);
+      c.restore();
+      // the split edge, inked
+      c.save(); c.translate(x + sd * 6, y); c.rotate(sd * 0.2); c.translate(-sd * 1.5, 0);
+      c.beginPath(); c.moveTo(0, -bh); for (let i = 1; i <= 4; i++) c.lineTo(sd * (i % 2 ? 1.6 : -0.6), -bh + i * bh / 4); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+      c.restore();
+    }
+    c.save(); c.translate(x + D * 30, y - 2); lodTopping(c, "cream", 1, lw, 0); c.restore();       // the dollop, beside it
+    c.save(); c.translate(x - D * 27, y - 0.5); c.beginPath(); c.arc(0, -1.3, 1.3, 0, TAU); c.strokeStyle = INK; c.lineWidth = 1.7 + lw * 0.6; c.stroke(); c.strokeStyle = "#5fae4a"; c.lineWidth = 1.2; c.stroke(); c.restore();   // a chive
+  }
+  // a tin plate seen from low down, (x, y) the middle of its foot, rx its radius; front: only its front lip (drawn over what lies in it)
+  function lodPlate(c, x, y, rx, lw, front) {
+    const ry = rx * 0.2, cy = y - ry * 0.8;
+    c.lineJoin = "round"; c.strokeStyle = INK;
+    if (!front) {
+      c.beginPath(); c.ellipse(x, cy, rx, ry, 0, 0, TAU); c.fillStyle = "#c6cad1"; c.fill(); c.lineWidth = lw; c.stroke();
+      c.beginPath(); c.ellipse(x, cy + ry * 0.12, rx * 0.74, ry * 0.6, 0, 0, TAU); c.fillStyle = "#a9afb8"; c.fill(); c.lineWidth = lw * 0.6; c.stroke();
+      c.strokeStyle = "#ffffff"; c.lineWidth = lw; c.beginPath(); c.ellipse(x, cy, rx * 0.87, ry * 0.68, 0, 3.5, 4.3); c.stroke();
+      return;
+    }
+    c.beginPath(); c.ellipse(x, cy, rx, ry, 0, 0, Math.PI); c.ellipse(x, cy + ry * 0.12, rx * 0.74, ry * 0.6, 0, Math.PI, 0, true); c.closePath();
+    c.fillStyle = "#c6cad1"; c.fill(); c.lineWidth = lw; c.stroke();
+    if (!MG.slow) { c.beginPath(); c.ellipse(x, cy, rx, ry, 0, 0.2, 1.3); c.ellipse(x, cy + ry * 0.12, rx * 0.74, ry * 0.6, 0, 1.3, 0.2, true); c.closePath(); ttsToneHere(c, 6, 0.4); }
+  }
+  // his face in the boat at t: [expr, exK, hurt]: spiral-eyed as he lands, eyes squeezed shut at each topping, then wide under the dollop, blinking
+  function lodFace(t) {
+    if (t < LOD.LAND + 100) return ["dazed", 1, false];
+    for (let k = 0; k < 5; k++) { const lt = lodRainT(k); if (t >= lt - 15 && t < lt + 70) return ["", 1, true]; }
+    for (const b of LOD_BLINK) if (Math.abs(t - b) < 45) return ["calm", 1, false];
+    return ["terror", t < lodRainT(4) ? 0.7 : 0.35, false];
+  }
+  const lodRainN = (t) => { let n = 0; for (let k = 0; k < 5; k++) if (t >= lodRainT(k)) n = k + 1; return n; };
+  // the boat's squash: landing in the plate, and a little at each topping
+  const lodSquash = (t) => { let s = 0.3 * Math.sin(Math.PI * fe(LOD.LAND, LOD.LAND + 150, t)); for (let k = 0; k < 5; k++) s = Math.max(s, (k === 4 ? 0.14 : 0.07) * Math.sin(Math.PI * fe(lodRainT(k), lodRainT(k) + 110, t))); return 1 - s; };
+
+  /* ---- the splash ---- */
+  function lodCam(t, pn) {
+    const D = FIN.dir, k = fe(LOD.SHUT, MT.AFTER, t);
+    if (lodPort()) { const vh = (pn.h * 162 / pn.w) * (1 - 0.04 * k); return { wx: FIN.wx + D * 43, wy: 4, vh }; }
+    const vh = 142 * (1 - 0.05 * k); return { wx: FIN.wx + D * 62, wy: -26, vh };
+  }
+  const lodShake = (t) => {
+    const a = 2.5 * fe(LOD.SHOT, LOD.SHOT + 8, t) * (1 - fe(LOD.SHOT + 8, LOD.SHOT + 90, t)) + 3 * fe(LOD.LAND, LOD.LAND + 8, t) * (1 - fe(LOD.LAND + 8, LOD.LAND + 150, t));
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a * 0.6] : [0, 0];
+  };
+  // the cylinder's middle and radius on the splash (px of the panel), and how far it has turned
+  function lodCylAt(pn) { const m = Math.min(pn.w, pn.h); return [pn.x0 + pn.w * 0.5, pn.y0 + pn.h * (lodPort() ? 0.47 : 0.53), m * 0.35]; }
+  const lodTurn = (t) => TAU * 2 * easeOut(fe(LOD.SPIN0, LOD.SPIN1, t)) + 0.07 * Math.sin(Math.PI * fe(LOD.SPIN1, LOD.SPIN1 + 70, t));
+  // 3250-3700: the cylinder swung open over a red disc cut by paper stripes, focus lines all round
+  function lodOpen(c, pn, t) {
+    const [cx, cy, R] = lodCylAt(pn), u = fe(LOD.SPIN0, LOD.SPIN1, t);
+    if (!MG.slow) gnsTone(c, pn, [[pn.x0 - 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 - 6], [pn.x1 + 6, pn.y1 + 6], [pn.x0 - 6, pn.y1 + 6]], 8, 0.14, [t * 0.0006, 0]);
+    mgFocus(c, cx, cy, Math.hypot(pn.w, pn.h) * 0.62, t * 0.0004, 0.75);
+    const RD = R * 1.32;
+    c.fillStyle = COL; c.beginPath(); c.arc(cx, cy, RD, 0, TAU); c.fill();
+    c.save(); c.beginPath(); c.arc(cx, cy, RD, 0, TAU); c.clip(); c.fillStyle = PAPER;
+    for (let i = 0; i < 4; i++) c.fillRect(cx - RD - 4, cy + RD * (0.32 + i * 0.17), 2 * RD + 8, RD * (0.025 + 0.025 * i));
+    c.restore();
+    c.lineWidth = Math.max(2, R * 0.02); c.strokeStyle = INK; c.beginPath(); c.arc(cx, cy, RD, 0, TAU); c.stroke();
+    lodCyl(c, cx, cy, R, lodTurn(t), u > 0 && u < 1 ? 1 - u : 0, t);
+  }
+  // 3700: it snaps shut, flying into the gun in his hand (over the street), speed lines behind it
+  function lodSnap(c, pn, t) {
+    const u = easeIn(fe(LOD.SHUT, LOD.SHUT + 90, t));
+    if (t < LOD.SHUT || u >= 1) return;
+    const [cx, cy, R] = lodCylAt(pn), h = lodHand(LOD.SHUT + 90), q = pn.p(h[0] + FIN.dir * 4, h[1] - 6), x = lerp(cx, q[0], u), y = lerp(cy, q[1], u), r = lerp(R, 3 * pn.z, u);
+    const ang = Math.atan2(q[1] - cy, q[0] - cx), len = Math.hypot(q[0] - cx, q[1] - cy);
+    c.save(); c.beginPath(); c.rect(pn.x0, pn.y0, pn.w, pn.h); c.clip();
+    mgSpeed(c, x - Math.cos(ang) * len * 0.5, y - Math.sin(ang) * len * 0.5, len, r * 2.2, ang, -t * 1.5, 0.8 * (1 - u), false, 0.8);
+    c.restore();
+    lodCyl(c, x, y, r, lodTurn(t) + u * 1.2, 0.6, t);
+  }
+  // the hammer back: three short marks over his hand
+  function lodCock(c, pn, t) {
+    const k = Math.sin(Math.PI * fe(LOD.COCK, LOD.COCK + 160, t));
+    if (k < 0.05) return;
+    const h = lodHand(t), p = pn.p(h[0] - FIN.dir * 2, h[1] - 6), z = pn.z, D = FIN.dir;
+    c.save(); c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = Math.max(1.6, 0.55 * z);
+    for (const a of [-2.3, -1.6, -0.9]) { const ca = Math.cos(a) * D, sa = Math.sin(a), r0 = 5 * z, r1 = r0 + 5 * z * k; c.beginPath(); c.moveTo(p[0] + ca * r0, p[1] + sa * r0); c.lineTo(p[0] + ca * r1, p[1] + sa * r1); c.stroke(); }
+    c.restore();
+  }
+  // the shot: a smoking line from the muzzle to the plate, the loser down it (a potato, spiral-eyed, squashed along the line), the white hit on the plate
+  function lodShot(c, pn, t, lw) {
+    const dt = t - LOD.SHOT;
+    if (dt < 0 || dt > 420) return;
+    const z = pn.z, [gx, gy, gs] = lodGeo(), m = pn.p(...lodMuzzles().shot), q = pn.p(gx, gy - (lodPlateY() + LOD_BH * 0.6) * gs), ang = Math.atan2(q[1] - m[1], q[0] - m[0]);
+    if (dt < 320) {
+      const s = lerp2(m, q, ease(fe(80, 320, dt))), e = lerp2(m, q, easeOut(fe(0, 40, dt)));
+      c.lineCap = "butt"; c.strokeStyle = INK; c.lineWidth = Math.max(2.6, 1.2 * z); c.beginPath(); c.moveTo(s[0], s[1]); c.lineTo(e[0], e[1]); c.stroke();
+      c.strokeStyle = COL; c.lineWidth = Math.max(1.2, 0.5 * z); c.stroke();
+    }
+    if (t < LOD.LAND) {
+      const C = lodC || lodPrep(), p = lerp2(m, q, easeIn(fe(LOD.SHOT, LOD.LAND, t)));
+      c.save(); c.translate(p[0], p[1]); c.rotate(ang); c.scale(z, z);
+      c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = 1.2;
+      for (const o of [-4, 0, 4]) { c.beginPath(); c.moveTo(-12, o); c.lineTo(-30 - Math.abs(o) * 1.5, o); c.stroke(); }
+      c.beginPath(); c.ellipse(0, 0, 11, 7, 0, 0, TAU); c.fillStyle = C.skin; c.fill(); c.lineWidth = Math.max(1, lw); c.stroke();
+      c.rotate(-ang); ttsFace(c, 0, -1, 13, FIN.dir, "dazed", 1, false);
+      c.restore();
+    }
+    const hb = fe(LOD.LAND, LOD.LAND + 170, t);
+    if (hb > 0 && hb < 1) {
+      mgStarburst(c, q[0], q[1] - 2 * z, (26 - 14 * hb) * z * gs * 0.7, 0.3);
+      c.save(); c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = Math.max(1.4, 0.5 * z); c.globalAlpha = 1 - hb;   // the plate rings
+      const g = pn.p(gx, gy - 3 * gs), zs = z * gs;
+      for (const sd of [-1, 1]) for (let j = 0; j < 3; j++) { const x = g[0] + sd * (34 + 6 * j + 8 * hb) * zs, y = g[1] - (2 + j * 5) * zs; c.beginPath(); c.moveTo(x, y); c.lineTo(x + sd * 5 * zs, y - 2 * zs); c.stroke(); }
+      c.restore();
+    }
+  }
+  // the toppings in the air: each falls from over the top of the page into the boat, turning a little, with two streaks over it
+  function lodRain(c, pn, t, lw) {
+    const [x, y, s] = lodGeo(), top = (pn.wy - pn.h / (2 * pn.z) - 24 - y) / s, land = -lodPlateY() - LOD_BH, ls = lw / s * 1.1;
+    for (let k = 0; k < 5; k++) {
+      const t1 = lodRainT(k), t0 = t1 - LOD_FALL;
+      if (t < t0 || t >= t1) continue;
+      const u = fe(t0, t1, t), D = FIN.dir;
+      pn.world(c);
+      c.save(); c.translate(x, y); c.scale(s, s); c.translate(0, lerp(top, land, u * u)); c.rotate(D * (1 - u) * 0.5);
+      c.strokeStyle = INK; c.lineWidth = lw * 0.7; c.lineCap = "round";
+      c.lineWidth = ls * 0.7; for (const o of [-6, 5]) { c.beginPath(); c.moveTo(o, -10); c.lineTo(o, -26); c.stroke(); }
+      lodTopping(c, LOD_RAIN[k], 0.25, ls, -D * 3);
+      c.restore();
+    }
+    pn.screen(c);
+  }
+  const lodPlateY = () => 1.6;   // how far the boat's bottom sits above the ground, in the plate's well
+  // the smoke off the muzzle: puffs born at the shot and as he raises the barrel; at the blow they are torn off along his breath
+  function lodSmoke(c, pn, t) {
+    if (t < LOD.SHOT) return;
+    const z = pn.z, M = lodMuzzles(), mo = pn.p(...gnsPt(W_(), LOD.BLOW, "mouthPt")), bl = t - LOD.BLOW;
+    for (let i = 0; i < LOD_PUFF.length; i++) {
+      const age = t - LOD_PUFF[i];
+      if (age <= 0) continue;
+      const b = pn.p(...M.puff[i]), k = clamp(age / 700, 0, 1);
+      let x = b[0] + Math.sin(age * 0.005 + i * 2) * 3 * z, y = b[1] - age * 0.024 * z, a = 1 - fe(0.55, 1, k);
+      if (bl > 0) {
+        let ux = x - mo[0], uy = y - mo[1]; const d = Math.hypot(ux, uy) || 1; ux /= d; uy /= d;
+        x += ux * bl * 0.1 * z; y += uy * bl * 0.1 * z - bl * 0.015 * z; a *= 1 - fe(60, 300, bl);
+      }
+      if (a > 0.03) gnsPuff(c, pn, x, y, (2 + 4 * easeOut(k)) * z * 0.8, a, 150 + i);
+    }
+  }
+  function lodDrawSplash(c, pn, t) {
+    pn.screen(c);
+    if (t < LOD.SHUT) { lodOpen(c, pn, t); return; }
+    const D = FIN.dir, lw = Math.max(1.1, 3 / pn.z), [x, y, s] = lodGeo(), f = lodFace(t), W = W_(), ls = lw / s * 1.1;
+    gnsStreet(c, pn, t, x + D * 10, 76, 0.12 + 0.1 * fe(LOD.SHUT, MT.AFTER, t));
+    mgPuppet(c, pn, W, t, { light: dirAng(-0.45), post: gnsBrim(W, t, 0.8) });
+    pn.world(c);   // the plate lies in front of him, nearer to us: drawn big, over the street
+    c.save(); c.translate(x, y); c.scale(s, s);
+    c.fillStyle = INK; c.beginPath(); c.ellipse(0, 0.6, 30, 2.6, 0, 0, TAU); c.fill();   // its shadow
+    lodPlate(c, 0, 0, 32, ls, false);
+    if (t >= LOD.LAND) lodBoat(c, 0, -lodPlateY(), 1, lodSquash(t), lodRainN(t), f[0], f[1], f[2], ls, -D);
+    lodPlate(c, 0, 0, 32, ls, true);
+    c.restore();
+    pn.screen(c);
+    lodCock(c, pn, t);
+    lodSmoke(c, pn, t);
+    lodShot(c, pn, t, lw);
+    lodRain(c, pn, t, lw);
+    lodSnap(c, pn, t);
+  }
+
+  /* ---- panel 4: the barrel as a table, the plate on it with the loaded boat (split once the engine has popped it); the twirl ---- */
+  function lodTable(c, pn, t) {
+    const D = FIN.dir, x = lodTX(), lw = Math.max(1.1, 3 / pn.z), bt = LOD_BT;
+    pn.world(c);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    const body = () => { c.beginPath(); c.moveTo(x - 12, -bt); c.quadraticCurveTo(x - 15.5, -bt / 2, x - 12, 0); c.lineTo(x + 12, 0); c.quadraticCurveTo(x + 15.5, -bt / 2, x + 12, -bt); c.closePath(); };
+    body(); c.fillStyle = "#c99a68"; c.fill();
+    c.save(); c.clip();
+    if (!MG.slow) { c.beginPath(); c.rect(D > 0 ? x + 4 : x - 20, -bt - 4, 16, bt + 8); ttsToneHere(c, 6, 0.45); }
+    c.lineWidth = lw * 0.6; c.beginPath(); for (const s of [-6, 0, 6]) { c.moveTo(x + s, -bt); c.quadraticCurveTo(x + s * 1.25, -bt / 2, x + s, 0); } c.stroke();
+    c.fillStyle = "#4b4f57"; for (const y of [-bt * 0.78, -bt * 0.22]) c.fillRect(x - 17, y - 1.5, 34, 3);
+    c.restore();
+    body(); c.lineWidth = lw; c.stroke();
+    c.beginPath(); c.ellipse(x, -bt, 12, 2.8, 0, 0, TAU); c.fillStyle = "#dcb784"; c.fill(); c.stroke();
+    c.fillStyle = INK; c.beginPath(); c.ellipse(x, 0.8, 15, 2, 0, 0, TAU); c.fill();   // its shadow
+    lodPlate(c, x, -bt, 30, lw, false);
+    if (!mgPopped(t)) {
+      const f = lodFace(t);
+      lodBoat(c, x, -bt - lodPlateY(), 1, 1 - 0.03 * Math.sin(t * 0.012), 5, f[0], f[1], f[2], lw, -D);
+      // steam: two curls off the hot potato
+      c.save(); c.globalAlpha = 0.75 * fe(MT.AFTER, MT.AFTER + 200, t); c.lineWidth = lw * 0.7;
+      for (let i = 0; i < 2; i++) {
+        const sx = x + (i ? 13 : -14), ph = ((t - MT.AFTER) * 0.018 + i * 9) % 18;
+        c.beginPath(); for (let j = 0; j <= 8; j++) { const yy = -bt - 24 - ph - j * 1.9, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i * 2) * 2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      }
+      c.restore();
+    } else lodEmpty(c, x, -bt - lodPlateY(), lw, D);
+    lodPlate(c, x, -bt, 30, lw, true);
+    pn.screen(c);
+  }
+  // the twirl: ink arcs round his hand while the revolver spins on his finger
+  function lodTwirl(c, pn, t) {
+    const u = fe(LOD.TWIRL0, LOD.TWIRL1, t);
+    if (u <= 0 || u >= 1) return;
+    const h = lodHand(t), p = pn.p(h[0], h[1]), z = pn.z, a = h[2], sp = 1 - u;
+    c.save(); c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = Math.max(2, 0.8 * z); c.globalAlpha = 0.5 + 0.5 * sp;
+    for (const r of [14, 18, 22]) { c.beginPath(); c.arc(p[0], p[1], r * z, a + (FIN.dir > 0 ? 0.6 : Math.PI + 0.6), a + (FIN.dir > 0 ? 0.6 : Math.PI + 0.6) + 2.2 * sp + 0.4); c.stroke(); }
+    c.restore();
+  }
+  function lodDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir;
+    pn.screen(c);
+    gnsStreet(c, pn, t, FIN.wx + D * 52, 50, 0.2 + 0.12 * fe(MT.AFTER, MT.END, t));
+    lodTable(c, pn, t);
+    mgPuppet(c, pn, W, t, { light: dirAng(-0.45), post: gnsBrim(W, t, 0.8) });
+    pn.screen(c);
+    lodTwirl(c, pn, t);
+  }
+  /* ---- his poses from the splash on: aiming down at the plate, the hammer, the shot's kick; the barrel to his mouth, then to his brim;
+     in panel 4 the barrel comes down, the revolver twirls on his finger and goes in the holster ---- */
+  function lodPoseW(P, sk, t, p) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    const aim = [w * 1.0, -leg - tor * 0.55], up = [w * 0.7, -leg - tor * 0.35], brim = [w * 0.98, -leg - tor * 0.6], lowB = [-w * 0.72, -leg - tor * 0.06];
+    P.gunB = Math.PI - 1.15; P.exK = 1; P.expr = "grin";
+    if (t < MT.AFTER) {
+      const [gx, gy, gs] = lodGeo(), dx = Math.abs(gx - p.x) - aim[0], dy = gy - (lodPlateY() + LOD_BH * 0.6) * gs - aim[1], A = Math.atan2(dy, dx) + Math.asin(clamp(2.7 / Math.hypot(dx, dy), -1, 1));
+      const ck = Math.sin(Math.PI * fe(LOD.COCK, LOD.COCK + 90, t));
+      const k = easeOut(fe(LOD.SHOT + 10, LOD.SHOT + 60, t)) * (1 - ease(fe(LOD.SHOT + 110, LOD.SHOT + 420, t)));
+      if (t >= LOD.SHOT && t < LOD.SHOT + 50) P.shotF = Math.floor((t - LOD.SHOT) / FMS);
+      const r = ease(fe(LOD.RAISE, LOD.RAISE + 80, t)), tp = ease(fe(LOD.TIP0, LOD.TIP1, t));
+      let hF = [aim[0] - k * 2, aim[1] - k * 6], ang = A - 0.1 * ck - 0.6 * k;
+      if (r > 0) { hF = lerp2(hF, up, r); ang = lerp(ang, -1.42, r); }
+      if (tp > 0) { hF = lerp2(hF, brim, tp); ang = lerp(ang, -1.7, tp); }
+      P.crouch = 0.12 * (1 - r); P.lean = -0.04 * (1 - r) - 0.12 * k + 0.08 * Math.sin(Math.PI * fe(LOD.TIP0 + 40, LOD.TIP1 + 80, t));   // (the nod of the hat tip)
+      if (t >= LOD.BLOW - 20 && t < LOD.BLOW + 220) { P.expr = undefined; P.mouth = 0.75; }
+      P.holdAng = ang;
+      return { hF, hB: lowB };
+    }
+    const mid = [w * 0.85, -leg - tor * 0.32], low = [w * 0.9, -leg];
+    const dn = ease(fe(MT.AFTER, MT.AFTER + 70, t)), tw = fe(LOD.TWIRL0, LOD.TWIRL1, t), hs = ease(fe(LOD.TWIRL1, LOD.HOLSTER, t));
+    let hF = lerp2(brim, mid, dn), ang = lerp(-1.7, 0, dn);
+    if (tw > 0 && tw < 1) ang = -TAU * 2 * easeOut(tw);
+    if (hs > 0) { hF = lerp2(mid, low, hs); ang = lerp(0, 0.95, hs); }
+    P.holdAng = ang; P.lean = -0.03;
+    return { hF, hB: [-w * 0.55, -leg - tor * 0.08] };
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Loaded",
+    start(g) {
+      S_.start(g); pota2 = true; lodC = null; lodMz = null;
+      FIN.cue.blow = FIN.cue.land = FIN.cue.holster = FIN.cue.ching = true;   // (High Noon's panel 4: here he blows in the splash and holsters to his own cues; the hat is gone with the loser)
+    },
+    build(lay) { S_.build(lay); lodPrep(); lodMz = null; },
+    end() { pota2 = false; lodC = null; lodMz = null; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = lodDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 124 : 84) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 52 : 50), wy: lay.port ? -0.48 * vh : -46, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "t", paper: PAPER, slide: MG.reduced ? 1 : 120, cam: lodCam, draw: lodDrawSplash, shake: lodShake }));
+      return ps;
+    },
+    pose(P, sk, t, role, p) {
+      if (pota2 && role === "w" && t > MT.SPLASH) return lodPoseW(P, sk, t, p);   // (strictly after: the strike panel is frozen at the splash with High Noon's pose)
+      return S_.pose(P, sk, t, role, p);
+    },
+    ownWords: true,   // the upright sizes are set here
+    words(lay) {
+      const ws = S_.words(lay).filter((w) => w.text !== "fuu"), D = FIN.dir, pg = MG.page, port = lay.port, k = port ? Math.min(1, L.gw * 0.9 / L.gh) : 1, kb = port ? 0.6 : 1;
+      for (const w of ws) w.mul = (w.mul || 1) * k;   // High Noon's words, as the engine would scale them upright
+      Object.assign(ws.find((w) => w.text === "BANG"), { t1: MT.SPLASH + 150 });   // gone as the splash comes in
+      const at = (tt, f) => () => { const pn = MG.byId.splash; mgPlace(pn, tt); const q = pn.sp(...f()); return [q[0], q[1]]; };
+      ws.push(
+        { text: "CH-CHK", t0: MT.SPLASH + 30, t1: LOD.SHUT, size: 0.15, mul: k, arc: 8, jit: 0.12, rot: -0.1 * D, seed: 610,
+          at: () => (port ? [pg.x + pg.w * 0.5, pg.y + pg.h * 0.12] : [pg.x + pg.w * (D > 0 ? 0.17 : 0.83), pg.y + pg.h * 0.27]) },
+        { text: "click", t0: LOD.SHUT, t1: LOD.SHOT - 10, size: 0.07, mul: kb, jit: 0.14, rot: -0.1 * D, seed: 620,
+          at: at(LOD.SHUT + 100, () => { const h = lodHand(LOD.SHUT + 100); return [h[0] - D * 8, h[1] - 22]; }) },
+        { text: "BANG", t0: LOD.SHOT, t1: LOD.SHOT + 520, size: 0.1, mul: kb, arc: 8, jit: 0.12, rot: -0.08 * D, fill: COL, seed: 630,
+          at: at(LOD.SHOT, () => { const m = lodMuzzles().shot; return [m[0] + D * 30, m[1] - 26]; }) },
+        { text: "fuu", t0: LOD.BLOW + 20, t1: MT.AFTER, size: 0.065, mul: kb, jit: 0.12, rot: -0.14 * D, space: 0.1, fill: "#ffffff", seed: 640,
+          at: at(LOD.BLOW, () => { const m = gnsPt(W_(), LOD.BLOW, "mouthPt"); return [m[0] + D * 50, m[1] - 12]; }) },
+      );
+      return ws;
+    },
+    over(o, t) { if (t < MT.SPLASH) S_.over(o, t); else gnsDust(o, t); },   // from the splash on: no hat, no speed lines (the loser is the food); the dust blows on
+    food() { const x = lodTX(); return { x, y: 0, r: 22, y0: -34, lx: x + FIN.dir * 40 }; },   // the plate on the barrel
+    cues(t) {
+      S_.cues(t);
+      cueOnce("lodChk", MT.SPLASH + 20, () => Cin.go(() => { Cin.clack(); Cin._osc("square", 260, 80, 0.07, 0.1, 0.002, 0.11); Cin._noise(0.05, 0.4, 5200, 1400, "highpass", 0.7, 0.11); }));
+      cueOnce("lodSpin", LOD.SPIN0, () => Cin.go(() => {   // the ratchet: a tick at every chamber that passes, slowing down
+        for (let j = 1; j <= 12; j++) Cin._osc("triangle", 3000 - j * 60, 1500, 0.03, 0.05, 0.002, (LOD.SPIN1 - LOD.SPIN0) * 0.001 * (1 - Math.sqrt(1 - j / 12)));
+      }));
+      cueOnce("lodShut", LOD.SHUT, () => Cin.go(() => { Cin.clack(); Cin.tick(1800); }));
+      cueOnce("lodCock", LOD.COCK, () => Cin.go(() => { Cin.clack(); Cin.tick(2200); }));
+      cueOnce("lodShot", LOD.SHOT, () => Cin.go(() => gnsBang(0.8, false)));
+      cueOnce("lodLand", LOD.LAND, () => Cin.go(() => { Cin._osc("sine", 1400, 1380, 0.6, 0.06, 0.002); Cin._osc("sine", 2210, 2200, 0.4, 0.03, 0.002); Cin._noise(0.06, 0.2, 3000, 1200, "bandpass", 1); }));
+      for (let k = 0; k < 5; k++) cueOnce("lodTop" + k, lodRainT(k), () => Cin.go(() => (k === 4 ? Cin._noise(0.12, 0.12, 900, 300, "lowpass", 0.8) : Cin._osc("sine", 640 - k * 50, 320, 0.08, 0.05, 0.003))));
+      cueOnce("lodBlow", LOD.BLOW, () => Cin.go(() => Cin._noise(0.5, 0.14, 1300, 700, "bandpass", 0.8)));
+      cueOnce("lodTip", LOD.TIP0 + 60, () => Cin.go(() => Cin.tick(3200)));
+      cueOnce("lodTwirl", LOD.TWIRL0, () => Cin.go(() => Cin._noise(0.3, 0.06, 1500, 2600, "bandpass", 2)));
+      cueOnce("lodHolster", LOD.HOLSTER, () => Cin.go(() => Cin.clack()));
+      cueOnce("lodChing", LOD.HOLSTER + 80, () => Cin.go(() => Cin.chime(2093)));
     },
   });
   return S_;
