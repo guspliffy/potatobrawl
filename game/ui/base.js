@@ -2,8 +2,8 @@
 "use strict";
 const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, lerp, sign, serialize, restore, checksum } = BL;
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
-// the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road)
-const chipN = (spec) => spec.palettes.filter((p) => !p.road).length;
+// the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road), the Pommes skins after those bought with Pommes (pal.pommes)
+const chipN = (spec) => spec.palettes.filter((p) => !p.road && !p.pommes).length;
 // a chip balance as shown everywhere: exact, with commas (1,350 and 12,480), never shortened
 const fmtChips = (n) => Math.max(0, Math.round(+n || 0)).toLocaleString("en-US");
 const $ = (id) => document.getElementById(id);
