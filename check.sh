@@ -152,8 +152,8 @@ s_online() {
 serve $PB "$LOGS/server.log"
 (cd "$SHOTS" && PWON_URL=http://localhost:$PB/ timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 stop
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^challenge ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, a challenge link played, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^potatality ok" "$LOGS/online.log" && grep -q "^challenge ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, the friend sees your glaze and nameplate and your Potatality, rematch after the KO finisher, a challenge link played, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 }
 
@@ -305,6 +305,15 @@ if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, 
 else fail "match HUD" "$LOGS/hud.log"; fi
 }
 
+# 6c2. Potatalities (game/manga/<id>.js MANGA[id].alt): every fighter's alternate KO page plays through on the long timeline with the
+#      "Potatality: <name>" card line, nothing of the fight left after the splash, the results at 5.9 s. Pictures in build/shots/pota.
+s_pota() {
+mkdir -p "$SHOTS/pota"
+(cd "$SHOTS/pota" && timeout 900 python3 "$ROOT/tests/pwmanga.py" --alt --fighter=all --vs=wizard,odin --at=3700,5300) > "$LOGS/pota.log" 2>&1
+if [ "$(grep -c "^[a-z]*: potatality, card 'Potatality: " "$LOGS/pota.log")" = 8 ] && grep -q "^no errors" "$LOGS/pota.log"; then pass "Potatalities (all eight play through, card line, results at 5.9 s; pictures in build/shots/pota)"
+else fail "Potatalities" "$LOGS/pota.log"; fi
+}
+
 # 6d. Ultimates on the HUD: the bar under both cards (empty, half, full, spent), the ULTI button only while full and clear of the
 #     other buttons, a press by tap / U key / gamepad Y starts the ulti, reduced motion. Shots in build/shots/ult.
 s_ultui() {
@@ -454,13 +463,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm bwui replay quickui stakesui screens skins shop acctui hud ultui bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm bwui replay quickui stakesui screens skins shop acctui hud ultui pota bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, bw, pm, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
 SOLO=(quick cpu bw pm acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui replay tut skins bossui ultui bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui replay tut skins bossui ultui pota bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

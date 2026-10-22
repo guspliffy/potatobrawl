@@ -12,7 +12,9 @@ async def main():
         b = await p.chromium.launch(args=ARGS)
         ca = await b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
         cb = await b.new_context(viewport={'width': 1280, 'height': 760})
-        await ca.add_init_script(INIT % GLAZE_ALL); await cb.add_init_script(INIT % '')
+        # A also has every Potatality on (window.__blKoAlt: the tests' stand-in for owning them): A's KO plays it, and B, told by A's presence, plays the same page
+        FINSEEN = "window.__finSeen = null; setInterval(() => { const f = window.__blastline && window.__blastline.fin; if (f && f.on && f.t > 600 && !window.__finSeen) window.__finSeen = { alt: f.alt, sub: f.cardSub, manga: f.manga }; }, 40);"
+        await ca.add_init_script(INIT % GLAZE_ALL + "; window.__blKoAlt = true; " + FINSEEN); await cb.add_init_script(INIT % '' + "; " + FINSEEN)
         A = await ca.new_page(); B = await cb.new_page()
         for t, pg in (('A', A), ('B', B)):
             pg.on('pageerror', lambda e, t=t: errs.append(f'{t}: {e}'))
@@ -38,6 +40,10 @@ async def main():
         await B.wait_for_function("window.__blastline.mode === 'result'", timeout=60000)
         await B.screenshot(path=f'{OUT}/on_B_result.png')
         print('desyncs', await A.evaluate("window.__blastline.net.desyncs"), await B.evaluate("window.__blastline.net.desyncs"))
+        fa, fb = await A.evaluate("window.__finSeen"), await B.evaluate("window.__finSeen")
+        if not (fa and fb and fa['alt'] and fb['alt'] and fa['sub'] == fb['sub'] and (fa['sub'] or '').startswith('Potatality: ')):
+            errs.append(f"Potatality: the host's KO should play his Potatality on both phones, got A {fa} B {fb}")
+        else: print('potatality ok', fa['sub'])
         # both ask for a rematch (the KO finisher must hand over to the results screen cleanly on both sides)
         await A.tap('#rAgain'); await B.click('#rAgain')
         await A.wait_for_function("window.__blastline.mode === 'match'", timeout=30000)

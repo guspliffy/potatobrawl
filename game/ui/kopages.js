@@ -107,7 +107,10 @@ function koBuy(id) {
 
 /* ----- which page a KO plays (finisher.js finStart) ----- */
 // online: the pages you have on, for a friend's phone (ko: [fighter ids]); a friend's list from his presence
-function koPres() { return koMine() ? KO.own.filter((id) => koOn(id)) : []; }
+function koPres() {
+  if (window.__blKoAlt === true) return Object.keys(KO_PAGES).filter(koHas);   // the tests (pwon.py): every page this copy has, without owning them
+  return koMine() ? KO.own.filter((id) => koOn(id)) : [];
+}
 function koFrom(pr) { return koClean(pr && pr.ko).filter((id) => koHas(id)); }
 // the teaser: one offline match in four, from the match's seed (the same match always says the same)
 function koTease(g) { const h = Math.imul(((g && g.br) >>> 0) ^ 0x9e3779b9, 2654435761) >>> 0; return (h >>> 9) % 4 === 0; }
