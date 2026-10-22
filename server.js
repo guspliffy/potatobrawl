@@ -20,6 +20,8 @@
  * moves; it also keeps the Boards (the CPU rank and the online rank) in memory.
  * Cups (tourney.js): the Daily Cup at 20:00 Berlin and Friends Cups; a match between two players is a Quick match room the cup assigns,
  * a match against a CPU is checked like Ranked vs CPU. Needs the sign-in and the accounts; each cup is saved in <accounts>/cups/.
+ * Pommes (pommes.js): the premium currency's wallet in the account files, what it buys (an alternate KO page per fighter) and the
+ * requests of tools/pommes.js (grant, move); needs the sign-in and the accounts. Money can't buy Pommes yet (the payment step comes later).
  * SIGUSR2 = drain before an update: no new Quick matches (or cup matches) are made, the running ones play on; /health counts them.
  */
 const http = require("http");
@@ -110,6 +112,18 @@ try {
     console.log("Boss Week: on");
   } else if (quick) console.log("Boss Week: off: needs accounts");
 } catch (e) { console.warn("Boss Week: off,", e.message); }
+// Pommes (pommes.js): the wallet, the KO pages it buys, tools/pommes.js's requests; needs the sign-in and the accounts.
+let pommes = null;
+try {
+  if (quick && accounts) {
+    pommes = require("./pommes.js").init({
+      accounts, seatOf: quick.seatOf,
+      send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+      spoolMs: process.env.PM_SPOOL_MS ? +process.env.PM_SPOOL_MS : undefined,   // tests only: read the requests folder more often
+    });
+    console.log("Pommes: on (buying with money: off)");
+  } else if (quick) console.log("Pommes: off: needs accounts");
+} catch (e) { console.warn("Pommes: off,", e.message); }
 // Cups (tourney.js): the Daily Cup and Friends Cups; needs Quick match (its rooms, referee and sign-in) and the accounts.
 let tourney = null;
 try {
@@ -202,6 +216,7 @@ function drop(peer) {
   if (cpurank) cpurank.gone(peer);
   if (bossweek) bossweek.gone(peer);
   if (tourney) tourney.gone(peer);
+  if (pommes) pommes.gone(peer);
 }
 
 wss.on("connection", (ws) => {
@@ -245,6 +260,7 @@ wss.on("connection", (ws) => {
     if (bossweek && bossweek.handle(peer, m)) return;   // bwme, bwt, bwr, bd {k: "w"}
     if (cpurank && cpurank.handle(peer, m)) return;   // cme, ct, cr, bd
     if (tourney && tourney.handle(peer, m)) return;   // tc?, tci, tcj, tcn, tcs, tcl, tcp, tcgo, tcr
+    if (pommes && pommes.handle(peer, m)) return;   // pm, pmb
     if (m.t === "join") {
       const name = m.room;
       if (typeof name !== "string" || !ROOM_RE.test(name)) return;

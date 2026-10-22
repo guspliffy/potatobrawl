@@ -1,9 +1,27 @@
-# PotatoBrawl handoff (updated 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-22: Potatalities, a second KO page per fighter with a food gag, and the Pommes wallet on the server, buying with money still off (no PROTO bump); 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Potatalities and Pommes (2026-10-22, branch claude/project-thread-jodp8u, build order step 8 PR 1 of 3; no PROTO bump; no new server
+  setup: the wallet lives in the account files and the accounts folder).
+  - Pommes are the premium currency, for euros later (PR 2: the payment step once Jonny has a provider's test keys; Stripe recommended,
+    Paddle bans virtual currency). Chips are never sold for Pommes or money, Pommes are never paid out, traded or staked. Every Pommes
+    price shows its euro value (EU consumer authorities' 2025 principles). 1 page = 300 Pommes = EUR 2.99, one 300 pack at launch.
+  - A Potatality is MANGA[id].alt (game/manga/<id>.js, S_.alt): the fighter's page up to the strike, then a full-page food splash at
+    3.25 s, an aftermath panel with the food at 4.7 s, the card "POTATALITY: <NAME>" (MG_POTA orange), and the engine's shared exit at
+    5.25 s: the food bursts (POP!) and the loser hops out as a plain potato (mgPop, from the script's food()). Long timeline MT_U (5.9 s).
+    Names: Dragon Jacket Potato, Phoenix Well Done, Wizard Crisp-tal Ball, Alchemist Mashed, Odin Frozen Fries, Samurai Hasselback,
+    Gunslinger Tater Tots, Reaper Rest in Peel (design: Project files step8/fable-design.md). An Ultimate KO keeps the Ultimate page.
+  - Which page plays (ui/kopages.js koAltFor, called by finStart): your own fighter's if you own it and it is on; online the winner's,
+    from his presence (`ko`: the fighter ids he has on, beside `gz`; an older page sends none); a CPU that beats you in an offline 1v1
+    plays its own 1 match in 4 (from the match's seed, g.br) and the results offer it ("Potatality · in the Shop"); never with a boss,
+    in replays (they play the normal page), the tutorial, the first fight, a Combo trial, or for anybody else's seat in a 2v2.
+  - The Shop's KO PAGES section (ui/shop.js): a Pommes pill (a red fries cone, never a coin), the 300 pack row (SOON while buying is
+    off), one card per fighter with WATCH (koDemo: the page on a dummy with the simulation stopped, nothing counts, back to the card).
+  - Server: pommes.js (see "Pommes" below); tools/pommes.js for support; tests/pommes.js (node, check.sh 5d3b, alone), pwmanga.py
+    --alt (check.sh 6c2 "pota": all eight at 844x390), pwon.py (both phones play the host's Potatality), pwshop.py (the section).
 - Boss Week replays (2026-10-21, branch claude/weekly-boss-boards-xe7hm4, build order step 6 PR 2 of 2; no PROTO bump, no new server setup).
   - A run plays again from its logged inputs through the normal match screen (ui/replay.js): the CPU partner or foe thinks again from
     the same random numbers, so the HUD, camera, sounds and KO page come back as they were. Nothing a replay does counts (finishMatch hands
@@ -882,6 +900,17 @@ index.html is committed with every source change (check.sh flags a stale one).
   spec (boss, HP, partner, map) so the page can deal the same fight. Week files are cached in memory (WC) once read.
 - Test knobs (env, never on the VPS): BW_T {gap, minSpeed, hp}, BW_NOW (a stand-in clock).
 
+## Pommes (pommes.js on the server): what it does and stores
+- pommes.js is called from server.js only (pm, pmb; see its header comment) and needs Quick match's sign-in and the accounts.
+- Stored in the account file's `pm` part {bal, own (item ids "ko:<fighter>"), log (the last 20 changes)}; only the server writes it
+  (accounts.writePm) and a phone's save keeps it (like on, cpu, bw); load never sends it (the page asks over the WebSocket). Every change
+  is also one JSON line in <accounts>/pommes.log (time, the account file's hash, never the code, change, balance after, item, why): the
+  ledger for support; the nightly backup covers it.
+- tools/pommes.js (as the game's user: `sudo -u potatobrawl node /opt/potatobrawl/tools/pommes.js show|grant|move ...`): show reads
+  the files; grant (n < 0 takes Pommes back, the balance may go below 0 and then buys nothing) and move (all of an old code's Pommes and
+  items to a new one, for a player who lost the code and is found by the payment) go through <accounts>/pommes-in/, which the running
+  server applies every 2 s, so the tool never races a phone's save. 6 asks per 2 s per connection. Test knob: PM_SPOOL_MS.
+
 ## Rules that keep online play working
 - A core.js change that can change simulation results must stay deterministic, add new fighter fields to
   the newFighter defaults, FKEYS and checksum, reset them where needed (ko, startSudden), bump `PROTO` in
@@ -910,7 +939,7 @@ in that KO; check.sh step 3c) · pwfin.py (KO finisher per fighter from a real l
 --self = self-destruct plays no finisher, --aim=left/up, WxH; steps requestAnimationFrame and
 performance.now itself for screenshots) · pwfinish.py (FINISH! state, finishing special, KO zoom, charge
 ring) · pwheavy.py (contact sheets of lights vs heavies) · pwmanga.py (the manga KO pages: --fighter --vs --at
-WxH --up --aim --skip --reduced --sheet --throttle --video; prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
+WxH --up --aim --skip --reduced --sheet --throttle --video --ult --alt (a Potatality, with window.__blKoAlt); prints the page's draw ms; also fails if three.js is requested or loaded) · lockhuman.js /
 locktrace.js (light-attack lock vs human-speed defender) · lockcheck2/3.js (older) · rules7*.js (DI,
 breakfall, sudden death) · topsim.js / topko.js (top-line deaths) · acct.js (accounts: server endpoints, limits, accounts off, and the merge; own server on port 8094; check.sh step 5b) · quick.js (Quick match on the server: queue, referee, Elo, Casual referee and rematches, rival record, bounty, Play friends referee, chip stakes (eligibility, offer, decline, timeout, accept, verdict, early leave, daily limit), accounts off; two fake phones play whole bot matches; port 8092; check.sh 5d) · cpurank.js (Ranked vs CPU on the server: tickets, the replay, fast / left / forfeit / gone / late / void, the ±70 curve and the 1730 cap, boards built from files, the stats page's board names; check.sh 5d2) · bossweek.js (Boss Week on the server: the Berlin week, the rotation, the Road's numbers, tickets, the replay of a won try, claim / nowin / late, the board, the week paid once also after a restart; check.sh 5d3) · pwbw.py (Boss Week in the browser on port PORT_BASE+12 with the boss at a tenth of his HP: a try checked by the server frame for frame, Board, leaving costs nothing, a slower win not sent, the 4:00 cap, the Monday card and the chips by sync; check.sh 5d4) · pwbwsheet.py (the Boss Week tile, sheet, Boards tab and Monday card from window.__blBwMock at five sizes; check.sh 6d2) · pwreplay.py (replays against a real server on port PORT_BASE+13: a won try played again from the phone and from GET /api/run to the server's time, seek back and on to the same checksum, ⏭ KO, nothing counts, a #watch= link on a fresh phone, a Ranked vs CPU match to the same end, WATCH ▶ on the results at five sizes; check.sh 5d5) · pwrpview.py (the replay viewer's strip, end card, title card states and the board's ▶ rows at five sizes, from window.__blRp.botRun and window.__blBwMock; check.sh 6d3) · pwquick.py (Quick match in three browsers on port 8099: Season sheet, warm-up, PLAYER FOUND!, VS, Ranked decided by the server, Casual fallback and leave, forfeit, rival strip + VS pill, wanted plate + bounty paid, Rivals list, VS CPU + the Boards sheet, the rank plate and profile plate at 16 sizes (the narrow plate below 820 px); shots at 4 sizes; PWQUICK_LOG=1 prints the server's quick lines; check.sh 5e) · pwstakes.py (chip stakes in two browsers, check.sh port PORT_BASE+11: FOR CHIPS dimmed with its reasons, the Casual rematch refereed, the stake sheet, decline and accept, VS with the pot, the pot card and the chips through the sync, the challenge card on the results and the menu, a Play friends game, Stats line, Settings Off; shots at 4 sizes; check.sh 5g) · pwacct.py (accounts in the browser against a real server on port 8093: pill, sheet, two devices, conflict merge, reset, #sync= link, accounts off; screenshots of every sync state at 4 sizes; check.sh step 6b) · pwcup.py (the tournament: flow checks at 844x390, then a won cup and a lost quarter-final with
 screenshots at 667x320, 844x390, 1280x760 and upright 390x844; tags flow s667 p844 d1280 up390) ·
@@ -972,7 +1001,10 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- NEXT: Jonny picks from the later list (build order step 6 is done with the replays).
+- NEXT: step 8 PR 2, the payment step (Pommes for euros, behind a switch until the provider's keys are in the server's settings;
+  Stripe Checkout + webhook crediting once per session, refunds take Pommes back), then PR 3, the rewarded ad (Harvest x2 and the
+  Shop's Free chips, once AdSense with H5 games ads is approved). Before PR 2: Jonny's provider account, terms + withdrawal text.
+- Before step 8: Jonny picked from the later list (build order step 6 is done with the replays).
   Replay leftovers: a run is kept only for its game version (a PROTO bump makes every older run "older version"); seeking far into a
   long run takes a moment on a slow phone (it plays from the start; snapshots would make it instant); your own last run lives only
   in memory until the next results. Boss Week leftovers: if a Zorp week ends with fewer than 10 times, think about his week on Normal (Fable); the tile's second line

@@ -91,6 +91,7 @@ function qmBoot() {   // loop.js, before the first menu
   netInit().then(() => { if (NET.room) NET.room.onPeers(qmPeers); qmRefresh(); });   // whether accounts are on is asked when Quick match opens (quickOpen)
   document.addEventListener("visibilitychange", qmVis);
   vcBoot();   // ui/vscpu.js: Ranked vs CPU's messages
+  koBoot();   // ui/kopages.js: Pommes and the Potatalities you own
 }
 function qmAuth() {
   if (!qmOn() || !ACCT.code || !QM.conn || QM.authing || QM.authed || QM.acct === "off" || QM.acct === "unknown") return;
@@ -252,7 +253,7 @@ async function qmJoin(m) {
   try { await openMatchRoom(m.room); }
   catch (e) { return; }   // the server calls the match off (qm-off) and the search goes on
   if (NET.mrCode !== m.room) return;
-  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js)
+  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres(), ko: koPres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js); ko: your Potatalities (ui/kopages.js)
 }
 function qmChime() { Sfx.tone(784, 784, 0.12, "triangle", 0.08); Sfx.at(0.13, 1175, 1175, 0.22, "triangle", 0.08); Sfx.at(0.06, 110, 40, 0.4, "sine", 0.45); }
 // over a running CPU warm-up: the fight freezes under PLAYER FOUND! and a 3·2·1 (qmTick), then ends with no result

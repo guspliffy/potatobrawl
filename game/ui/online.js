@@ -390,7 +390,7 @@ async function netHost() {
     NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return;
   }
   if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
-  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
+  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres(), ko: koPres() });   // gz: your glazed skins (ui/glaze.js); ko: your Potatalities (ui/kopages.js)
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -405,7 +405,7 @@ async function netJoin(code) {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
-  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres() });
+  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres(), ko: koPres() });
   if (NET.invite === code) NET.invite = null;
   lobbyPresence(); renderOnline();
 }
@@ -531,6 +531,7 @@ function startOnlineMatch(st) {
   { // your friend's glaze, read from his presence (ui/glaze.js); yours comes from enterMatchUI
     const o = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null, f = G.fighters[1 - meSlot];
     if (f) glazeMark(f, glazeFrom(o && o.presence, f));
+    match.koOpp = koFrom(o && o.presence);   // his Potatalities (ui/kopages.js)
   }
   resolveOppName();
 }

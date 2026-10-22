@@ -14,8 +14,9 @@
  *
  * An account file can also hold `on`, the online record of Quick match (quick.js: public id, rank, record, last results), `cpu`,
  * the CPU rank of Ranked vs CPU (cpurank.js), `bw`, the Boss Week record (bossweek.js: this week's best run, open tickets, last
- * week's prize), and `tc`, the cup record (tourney.js: cups won, the last cup, the cups paid). Only the server writes them (writeOn,
- * writeCpu, writeBw, writeTc); a save from a phone replaces `prof` and keeps them as they are.
+ * week's prize), `pm`, the Pommes wallet (pommes.js: the balance, the items owned, the last changes), and `tc`, the cup record
+ * (tourney.js: cups won, the last cup, the cups paid). Only the server writes them (writeOn, writeCpu, writeBw, writePm, writeTc); a save
+ * from a phone replaces `prof` and keeps them as they are.
  * The server can also pay chips into `prof` (addChips: a streak bounty, a Boss Week prize, a Daily Cup prize). That is a new rev like a phone's save, so a phone that
  * saves an older copy gets 409 and merges (chips merge as server + this device - the last synced copy: nothing is lost or paid twice).
  *
@@ -202,7 +203,7 @@ function init(dir, opts) {
         const rec = read(code);
         if (!rec) return unknown(res);
         if (rec.rev !== m.rev) return send(res, 409, { prof: rec.prof, rev: rec.rev, t: rec.t });
-        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}, rec.cpu ? { cpu: rec.cpu } : {}, rec.bw ? { bw: rec.bw } : {}, rec.tc ? { tc: rec.tc } : {}), file = fileOf(code);   // the online, CPU, Boss Week and cup records stay the server's
+        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}, rec.cpu ? { cpu: rec.cpu } : {}, rec.bw ? { bw: rec.bw } : {}, rec.pm ? { pm: rec.pm } : {}, rec.tc ? { tc: rec.tc } : {}), file = fileOf(code);   // the online, CPU, Boss Week and cup records and the Pommes stay the server's
         if (total - (sizes.get(file) || 0) + Buffer.byteLength(JSON.stringify(next)) > o.maxBytes) return send(res, 503, { error: "full" });
         write(file, next);
         return send(res, 200, { rev: next.rev, t: next.t });
@@ -273,6 +274,14 @@ function init(dir, opts) {
     write(file, rec);
     return true;
   }
+  // the same for the Pommes (pommes.js)
+  function writePm(file, pm) {
+    const rec = readFile(file);
+    if (!rec || !isObj(pm)) return false;
+    rec.pm = pm;
+    write(file, rec);
+    return true;
+  }
   // the same for the cups (tourney.js)
   function writeTc(file, tc) {
     const rec = readFile(file);
@@ -294,7 +303,7 @@ function init(dir, opts) {
     write(file, rec);
     return true;
   }
-  return { handle, count: () => sizes.size, bytes: () => total, fill, dir, fileOfCode, readFile, writeOn, writeCpu, writeBw, writeTc, addChips,
+  return { handle, count: () => sizes.size, bytes: () => total, fill, dir, fileOfCode, readFile, writeOn, writeCpu, writeBw, writePm, writeTc, addChips,
     files: () => [...sizes.keys()], watch: (fn) => { watchers.push(fn); } };
 }
 

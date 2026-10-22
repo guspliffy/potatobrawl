@@ -152,8 +152,8 @@ s_online() {
 serve $PB "$LOGS/server.log"
 (cd "$SHOTS" && PWON_URL=http://localhost:$PB/ timeout 300 python3 "$ROOT/tests/pwon.py") > "$LOGS/online.log" 2>&1
 stop
-if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^challenge ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
-  pass "online match (0 desyncs, the friend sees your glaze and nameplate, rematch after the KO finisher, a challenge link played, no page errors)"
+if grep -q "^desyncs 0 0" "$LOGS/online.log" && grep -q "^glaze ok" "$LOGS/online.log" && grep -q "^rematch ok" "$LOGS/online.log" && grep -q "^potatality ok" "$LOGS/online.log" && grep -q "^challenge ok" "$LOGS/online.log" && grep -q "^no errors" "$LOGS/online.log"; then
+  pass "online match (0 desyncs, the friend sees your glaze and nameplate and your Potatality, rematch after the KO finisher, a challenge link played, no page errors)"
 else fail "online match" "$LOGS/online.log"; fi
 }
 
@@ -219,7 +219,15 @@ if grep -q "^bossweek ok" "$LOGS/bw.log"; then pass "Boss Week server ($(grep -c
 else fail "Boss Week server" "$LOGS/bw.log"; fi
 }
 
-# 5d3b. Cups on the server (tourney.js): the Berlin 20:00 Daily Cup (summer and winter time), "I'm in tonight", the lobby and its roll call,
+# 5d3b. Pommes on the server (pommes.js) and tools/pommes.js: the state, a buy and every refusal, the ledger, a phone's save keeping the
+#       wallet, grant / take back / move through the requests folder, a request made while the game is down, the rate limit, accounts off.
+s_pm() {
+PM_PORT=$((PB + 1)) timeout 200 node tests/pommes.js > "$LOGS/pm.log" 2>&1
+if grep -q "^pommes ok" "$LOGS/pm.log"; then pass "Pommes server + support tool ($(grep -c '^PASS' "$LOGS/pm.log") checks)"
+else fail "Pommes server + support tool" "$LOGS/pm.log"; fi
+}
+
+# 5d3c. Cups on the server (tourney.js): the Berlin 20:00 Daily Cup (summer and winter time), "I'm in tonight", the lobby and its roll call,
 #       seeding with CPUs, call-ups, walkovers, a match between two players refereed as a Quick match, a CPU match replayed from its log,
 #       the places and prizes paid once (also after a restart), Friends Cups (host, code, start, host leaving), a restart in the middle of a
 #       cup, the update's drain, a stuck cup ended. Node only.
@@ -314,6 +322,15 @@ s_hud() {
 (cd "$SHOTS" && timeout 1200 python3 "$ROOT/tests/pwhud.py" hud) > "$LOGS/hud.log" 2>&1
 if grep -q "^no errors" "$LOGS/hud.log"; then pass "match HUD (layout, markers, percent tint, danger glow, touch buttons' areas and states, the sprint's flick and double tap; shots in build/shots/hud)"
 else fail "match HUD" "$LOGS/hud.log"; fi
+}
+
+# 6c2. Potatalities (game/manga/<id>.js MANGA[id].alt): every fighter's alternate KO page plays through on the long timeline with the
+#      "Potatality: <name>" card line, nothing of the fight left after the splash, the results at 5.9 s. Pictures in build/shots/pota.
+s_pota() {
+mkdir -p "$SHOTS/pota"
+(cd "$SHOTS/pota" && timeout 900 python3 "$ROOT/tests/pwmanga.py" --alt --fighter=all --vs=wizard,odin --at=3700,5300) > "$LOGS/pota.log" 2>&1
+if [ "$(grep -c "^[a-z]*: potatality, card 'Potatality: " "$LOGS/pota.log")" = 8 ] && grep -q "^no errors" "$LOGS/pota.log"; then pass "Potatalities (all eight play through, card line, results at 5.9 s; pictures in build/shots/pota)"
+else fail "Potatalities" "$LOGS/pota.log"; fi
 }
 
 # 6d. Ultimates on the HUD: the bar under both cards (empty, half, full, spent), the ULTI button only while full and clear of the
@@ -465,13 +482,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui pota bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
-# priority next to the rest; the server tests (quick, cpu, bw, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
+# priority next to the rest; the server tests (quick, cpu, bw, pm, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
-SOLO=(quick cpu bw tc acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+SOLO=(quick cpu bw pm tc acct stats)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)
