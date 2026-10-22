@@ -14,7 +14,8 @@
    MUTATION at 3600 . 4700 the spoon aftermath (its moments are MT.AFTER + offset, so it serves both pages), the puddle has an eye . then the results get splattered:
    one canvas over #app for 6 s (the results screen's markup and CSS are not touched). Both pages share their code: `ult` (set by start) says which one plays.
    Script fields: col, name, hit, flight, panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p), after(t), over(o, t), cues(t),
-   drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(), end(). Everything here is private to this file. */
+   drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(), end(). Everything here is private to this file.
+   POTATALITY: "Mashed" = MANGA.alchemist.alt (S_.alt, at the end; its helpers are prefixed msh), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.alchemist = (function () {
   const COL = "#7dff62", COL_D = "#2f9a2a", PAPER = MG_PAPER, INK = MG_INK, GLASS = "#fffdf4", TAU = Math.PI * 2, PALE_G = "#eaffdc";
   const T_WIND = 2350, T_COCK = 2440, T_REL = 2480, T_SMASH = 2650, T_INF = 2850, T_DROP = 2780;   // the throw: wind-up, cocked, released, the smash, the balloon is full, the drop
@@ -25,6 +26,7 @@ MANGA.alchemist = (function () {
   const mxu = (x) => (FIN.dir > 0 ? x : 1 - x);   // a share of the page measured from the winner's side
   const A = () => MT.AFTER;   // the aftermath: 3500 on The Experiment, 4700 on Mutation
   let ult = false;   // this play is the Ultimate page (set by start)
+  let pota = false;  // this play is the Potatality, Mashed (set by its start)
   let rainT = null, bolts = [], shards = [], drips = [], blots = [], bub = [];
   let lobes = [], cbub = [], eyesB = [], eyesS = [], outB = [];
 
@@ -862,9 +864,10 @@ MANGA.alchemist = (function () {
       outB = Array.from({ length: 6 }, () => ({ a: -Math.PI * (0.1 + 0.8 * q()), ph: q(), per: 1100 + 600 * q(), r: 0.012 + 0.018 * q() }));
       eyesS = [];
     },
-    start() { ult = false; stainStop(); FIN.P[FIN.w].specCd = 99; },   // the puppet is a copy: no toxic orb in the hand, the flask is the prop
+    start() { ult = false; pota = false; stainStop(); FIN.P[FIN.w].specCd = 99; },   // the puppet is a copy: no toxic orb in the hand, the flask is the prop
     step(t, k) { MG.pt = t; },
     pose(P, sk, t, role, p) {
+      if (pota && t >= MT.SPLASH) return mshPose(P, sk, t, role, p);
       const w = sk.w, leg = sk.leg, tor = sk.tor, H0 = FIN.hit, a = A();
       if (role === "w") {
         const hold = [w * 0.98, -leg - tor * 1.02], cock = [-w * 0.5, -leg - tor * 1.3], rel = [w * 1.25, -leg - tor * 1.15], fol = [w * 1.05, -leg - tor * 0.85], rest = [w * 0.85, -leg - tor * 0.6];
@@ -910,7 +913,7 @@ MANGA.alchemist = (function () {
       if (ult) afterglow(o, t);
       rainDraw(o, t);
       // the page-wide shock ring of the pop: a thick ink ring and a ring of dots behind it
-      const H0 = FIN.hit, k = fe(H0, H0 + 480, t), pn = MG.byId.strike, cut = ult ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1;
+      const H0 = FIN.hit, k = fe(H0, H0 + 480, t), pn = MG.byId.strike, cut = ult || pota ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1;
       if (cut <= 0) return;
       if (t > H0 && k < 1 && pn) {
         const q = pn.sp(FIN.lx, -34), R = Math.hypot(L.gw, L.gh) * 0.75 * easeOut(k);
@@ -1042,6 +1045,361 @@ MANGA.alchemist = (function () {
     drawLoser(c, pn, t) { if (t < MT.SPLASH) drawLoserFn(c, pn, t); },
     // the splatter goes onto the results only when the page got as far as the pop (a skip before it leaves them clean); on the next frame the results are up
     end() { const go = FIN.t >= FIN.hit; eyesS = []; if (go) requestAnimationFrame(stainStart); },
+  });
+
+  /* ===================== the Potatality, "Mashed" (MANGA.alchemist.alt; design: Project files step8/fable-design.md) =====================
+     The Experiment to the pop (SPLORT; the loser flies out). 3250 panel 5, the splash, slides up: the Alchemist holds up a flask far too big by its neck,
+     uncorked, an empty plate waits on the slab; the loser falls out of the sky feet first, 3540 lands in its mouth and is sucked in: GLUG (a crown of brew,
+     drops, the level jumps), his colours swirl in it, it thickens to mash and his two eyes float up to the top (blink 3740); 3800 the flask tips and pours
+     him out (3930) onto the plate: a mound of green mash, the eyes slide down onto it, a parsley sprig drops on top (4110); the flask goes over his
+     shoulder; 4250 a spoon: a dip in the mound (its eyes go wide), 4470 the taste, "mmm", sparkles; the eyes sweat and blink. 4700 in panel 4's place, in
+     colour: a scoop of the mash on a plate by him, eyes blinking (blink, 4880), one pea on top, steam; the engine's POP bursts it at 5250 (food()): the
+     empty plate, a smear, the pea rolling. Every helper here is prefixed msh. */
+  const MSH_IN = 3540, MSH_GONE = 3640, MSH_BLINK0 = 3740, MSH_TIP0 = 3800, MSH_TIP1 = 3880, MSH_POUR0 = 3870, MSH_HIT = 3930, MSH_EYE0 = 3960, MSH_EYE1 = 4040,
+    MSH_POUR1 = 4000, MSH_FULL = 4060, MSH_PARS = 4040, MSH_PLAND = 4110, MSH_TOSS = 4100, MSH_REL = 4170, MSH_SPOON = 4250, MSH_DIP0 = 4290, MSH_DIP1 = 4360,
+    MSH_UP = 4390, MSH_TASTE = 4470, MSH_SWEAT = 4490, MSH_BLINK1 = 4600, MSH_ABLINK = 4880, MSH_ABLINK2 = 5110;
+  const MSH_FS = 2.6, MSH_PX = 62, MSH_R = 26, MSH_H = 31, MSH_AX = 32, MSH_PXA = 58, MSH_SR = 21;   // the flask's size; the splash's plate, mound half width and height, middle; panel 4's plate and scoop (world units toward the loser)
+  const MSH_MASH = "#b6e07a", MSH_MASH_D = "#7fb64c", MSH_LEAF = "#3d9a3a", MSH_PEA = "#79c84a", MSH_PLATE = "#fffdf6";
+  let mshDrops = [], mshFlecks = [], mshLc = COL;
+  function mshBuild() {
+    const r = mgRng(5150);
+    mshLc = col(L_().pal);
+    mshDrops = Array.from({ length: 11 }, (_, i) => ({ a: -Math.PI / 2 + (i / 10 - 0.5) * 2.1 + (r() - 0.5) * 0.25, v: 0.07 + r() * 0.07, r: 1.6 + r() * 1.6 }));
+    mshFlecks = Array.from({ length: 7 }, () => ({ u: (r() - 0.5) * 1.3, v: 0.15 + r() * 0.55, r: 0.05 + r() * 0.04, a: r() * 3 }));
+  }
+  const mshBlink = (t, t0) => { const b = t - t0; return b < 0 || b > 130 ? 1 : b < 30 ? 1 - b / 30 : b < 100 ? 0 : (b - 100) / 30; };
+  const mshLw = (pn) => Math.max(1.1, 3 / pn.z);   // an ink line, in world units
+  // the flask in the splash: held by the neck (its local (0, -11)), rocked by the gulp, tipped to pour, swung up and let go over his shoulder; null once gone
+  const mshRot = (t) => FIN.dir * (seg(t, [[MSH_TIP0, 0], [MSH_TIP1, 2.3], [MSH_TOSS, 2.3], [MSH_REL, 3.4]]) + 0.1 * Math.sin((t - MSH_IN) * 0.03) * fe(MSH_IN, MSH_IN + 40, t) * (1 - fe(MSH_IN + 40, MSH_IN + 360, t)));
+  function mshFlaskAt(t) {
+    const s = MSH_FS, D = FIN.dir;
+    if (t < MSH_REL) { const h = handW(t), a = mshRot(t), v = 11 * s; return { x: h[0] - v * Math.sin(a), y: h[1] + v * Math.cos(a), rot: a, s }; }
+    const o = mshFlaskAt(MSH_REL - 1), u = t - MSH_REL;
+    return u > 360 ? null : { x: o.x - D * 0.32 * u, y: o.y - 1.1 * u + 0.0006 * u * u, rot: o.rot + D * 0.016 * u, s };
+  }
+  // the brew (0..1 of the flask), its colour going from the toxin to mash once he is in it
+  const mshLevel = (t) => (t < MSH_IN ? 0.4 : t < MSH_POUR0 ? 0.4 + 0.24 * easeOut(fe(MSH_IN, MSH_IN + 90, t)) + 0.04 * Math.sin((t - MSH_IN) * 0.04) * (1 - fe(MSH_IN, MSH_IN + 300, t)) : 0.64 * (1 - Math.pow(fe(MSH_POUR0, MSH_POUR1, t), 2)));
+  const mshBrew = (t) => hexMix(COL, MSH_MASH, ease(fe(3600, 3780, t)));
+  // the splash's flask: the normal one's glass, crescent, highlights and label, uncorked, the brew's surface level with the ground whatever the turn;
+  // inside(c, lw, d, g) draws in the flask's own units inside the glass, over the brew
+  function mshFlask(c, pn, F, t, inside) {
+    const s = F.s, lw = 4.6 / (pn.z * s), k = mshLevel(t), g = [Math.sin(F.rot), Math.cos(F.rot)], ag = Math.abs(g[0]);
+    c.save(); pn.world(c); c.translate(F.x, F.y); c.rotate(F.rot); c.scale(s, s);
+    c.lineJoin = "round"; c.lineCap = "round";
+    flaskPath(c); c.fillStyle = GLASS; c.fill();
+    c.save(); flaskPath(c); c.clip();
+    if (k > 0.005) {
+      const lo = Math.min(-9, -15.6 * g[1] - 2.8 * ag), hi = Math.max(9, -15.6 * g[1] + 2.8 * ag), d = hi - k * (hi - lo), amp = 0.35 + 0.9 * fe(MSH_IN, MSH_IN + 30, t) * (1 - fe(MSH_IN + 30, MSH_IN + 420, t));
+      const surf = () => { for (let i = 0; i <= 12; i++) { const sv = -14 + (28 * i) / 12, w = d + Math.sin(sv * 0.7 + t * 0.012) * amp, x = sv * g[1] + w * g[0], y = -sv * g[0] + w * g[1]; i ? c.lineTo(x, y) : c.moveTo(x, y); } };
+      c.beginPath(); surf(); c.lineTo(14 * g[1] + (d + 30) * g[0], -14 * g[0] + (d + 30) * g[1]); c.lineTo(-14 * g[1] + (d + 30) * g[0], 14 * g[0] + (d + 30) * g[1]); c.closePath();
+      c.fillStyle = mshBrew(t); c.fill();
+      if (ag < 0.3) for (const b of bub) {   // bubbles rise to the top (a boil once he is in)
+        const f = (t * 0.00042 * b.sp * (t > MSH_IN ? 2.2 : 1) + b.ph) % 1, y = lerp(8, d + 1, f), x = b.x + Math.sin(t * 0.004 + b.ph * 9) * 0.9, r = b.r * (0.55 + 0.7 * f);
+        if (y < d + 0.4) continue;
+        c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = "#f4ffee"; c.fill(); c.lineWidth = lw * 0.5; c.strokeStyle = INK; c.stroke();
+      }
+      if (inside) inside(c, lw, d, g);
+      c.beginPath(); surf(); c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.stroke();
+    }
+    dots(c, pn, () => { c.arc(0, 0, 10.5, 0, TAU); c.arc(-3.6, -3.6, 8.2, 0, TAU, true); }, 6, 0.34, INK);
+    c.restore();
+    flaskPath(c); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.arc(0, 0, 6.6, 2.5, 3.5); c.lineWidth = lw * 0.9; c.strokeStyle = "#ffffff"; c.stroke();
+    c.beginPath(); c.arc(0, 0, 6.6, 3.72, 3.9); c.stroke();
+    c.fillStyle = GLASS; c.strokeStyle = INK; c.beginPath(); c.rect(-3.8, -15.6, 7.6, 1.7); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(0, -15.6, 2.6, 0.7, 0, 0, TAU); c.fillStyle = INK; c.fill();   // the open mouth
+    c.save(); c.translate(0.6, 3.2); c.beginPath(); c.roundRect(-4.2, -3.2, 8.4, 6.6, 1.3); c.fillStyle = GLASS; c.fill(); c.lineWidth = lw * 0.75; c.stroke();
+    c.beginPath(); c.arc(0, -0.7, 1.7, 0, TAU); c.fillStyle = INK; c.fill();
+    c.beginPath(); c.moveTo(-2.6, 1.6); c.lineTo(2.6, 3); c.moveTo(2.6, 1.6); c.lineTo(-2.6, 3); c.lineWidth = lw * 1.1; c.stroke();
+    c.restore();
+    c.restore();
+  }
+  // inside the flask once he is in: his colours swirl through the brew, then his two eyes float up to the top, look about and blink
+  const mshInside = (t) => (c, lw, d, g) => {
+    const sw = fe(MSH_IN + 10, MSH_IN + 80, t) * (1 - fe(3700, 3820, t));
+    if (sw > 0.02) {
+      c.save(); c.globalAlpha = sw; c.lineCap = "round"; c.beginPath();
+      for (let i = 0; i <= 24; i++) { const a = i * 0.45 + t * 0.012, r = 0.5 + i * 0.28; i ? c.lineTo(Math.cos(a) * r, 2 + Math.sin(a) * r * 0.75) : c.moveTo(Math.cos(a) * r, 2 + Math.sin(a) * r * 0.75); }
+      c.lineWidth = lw * 2.4; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.3; c.strokeStyle = mshLc; c.stroke(); c.restore();
+    }
+    if (t < 3620 || Math.abs(g[0]) > 0.3) return;
+    const y = lerp(6, d + 0.2, easeOut(fe(3620, 3700, t))) + Math.sin(t * 0.012) * 0.3, op = mshBlink(t, MSH_BLINK0), px = Math.sin(t * 0.021) * 0.85;
+    for (const sx of [-1, 1]) eye(c, sx * 2.7, y, 2, { open: op, px, py: -0.2, pk: 0.75, lw: lw * 0.8, socket: MSH_MASH_D });
+  };
+  // the GLUG: a crown of brew out of the mouth, drops flying off it; strain ticks round the rim while he squeezes in
+  function mshGulp(c, pn, M, t, lw) {
+    const u = t - MSH_IN;
+    if (u < 0 || u > 420) return;
+    c.save(); pn.world(c); c.lineJoin = "round"; c.lineCap = "round";
+    if (u < 110) {
+      c.lineWidth = lw; c.strokeStyle = INK; c.beginPath();
+      for (const a of [-2.7, -2.25, -0.9, -0.45]) { const ca = Math.cos(a), sa = Math.sin(a); c.moveTo(M[0] + ca * 11, M[1] + 2 + sa * 7); c.lineTo(M[0] + ca * 18, M[1] + 2 + sa * 11); }
+      c.stroke();
+    }
+    const k = fe(40, 90, u) * (1 - fe(170, 260, u));
+    if (k > 0.02) {   // the crown
+      c.beginPath(); c.moveTo(M[0] - 8, M[1]);
+      for (let i = 0; i <= 8; i++) { const f = i / 8, x = M[0] + lerp(-11, 11, f), y = M[1] - (i % 2 ? 4 : 13 + 3 * Math.sin(i * 2.1)) * k; c.lineTo(x, y); }
+      c.lineTo(M[0] + 8, M[1]); c.closePath(); c.fillStyle = mshBrew(t); c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    }
+    const dt = u - 50;
+    if (dt > 0) for (const q of mshDrops) {
+      const x = M[0] + Math.cos(q.a) * q.v * dt, y = M[1] - 6 + Math.sin(q.a) * q.v * dt + 0.0006 * dt * dt, r = q.r * (1 - fe(250, 370, dt));
+      if (r > 0.2) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = mshBrew(t); c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke(); }
+    }
+    c.restore();
+  }
+  // the loser falling feet first into the mouth M, then sucked in (smaller as he goes, cut at the rim)
+  function mshFaller(c, pn, M, t) {
+    if (t >= MSH_GONE) return;
+    const Lp = L_(), u = fe(MT.SPLASH, MSH_IN, t), e = easeIn(fe(MSH_IN, MSH_GONE, t)), keep = [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash];
+    Lp.x = M[0] + FIN.dir * 40 * (1 - u) * (1 - u); Lp.y = M[1] - 150 * (1 - u) * (1 - u) + 44 * e; Lp.state = "fin"; Lp.facing = -FIN.dir; Lp.flash = 0;
+    c.save(); pn.world(c); c.beginPath(); c.rect(M[0] - 400, M[1] - 900, 800, 900 - 0.6); c.clip();
+    try { mgPuppet(c, pn, Lp, t, { sc: lerp(0.62, 0.38, e), light: dirAng(-0.6) }); } finally { [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash] = keep; c.restore(); }
+  }
+  // the plate: a white ellipse on a short foot, its well, a dot screen under the rim; (x, 0) is where it stands
+  function mshPlate(c, pn, x, rx, lw) {
+    const ry = rx * 0.22;
+    c.beginPath(); c.moveTo(x - rx * 0.5, 0); c.lineTo(x + rx * 0.5, 0); c.lineTo(x + rx * 0.62, -ry * 0.9); c.lineTo(x - rx * 0.62, -ry * 0.9); c.closePath();
+    c.fillStyle = MSH_PLATE; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.ellipse(x, -ry * 1.3, rx, ry, 0, 0, TAU); c.fill(); c.stroke();
+    dots(c, pn, () => { c.ellipse(x, -ry * 1.3, rx, ry, 0, 0, TAU); c.ellipse(x, -ry * 1.65, rx * 0.97, ry * 0.9, 0, 0, TAU, true); }, 6, 0.3, INK);
+    c.beginPath(); c.ellipse(x, -ry * 1.4, rx * 0.66, ry * 0.58, 0, 0, TAU); c.lineWidth = lw * 0.6; c.stroke();
+    return -ry * 1.35;   // the top of the well, where food sits
+  }
+  // a mound of mash: a lumpy dome on a flat ellipse base, a dot screen on the side away from the light, his colour in two streaks and a few flecks
+  const mshDome = (u, H) => H * Math.pow(Math.max(0, 1 - u * u), 0.55) * (1 + 0.07 * Math.sin(u * 11 + 1.3));
+  function mshMound(c, pn, x, y, R, H, lw) {
+    const D = FIN.dir, path = () => { c.moveTo(x - R, y); for (let i = 1; i <= 20; i++) { const u = -1 + i / 10; c.lineTo(x + u * R, y - mshDome(u, H)); } c.ellipse(x, y, R, R * 0.16, 0, 0, Math.PI); };
+    c.beginPath(); path(); c.fillStyle = MSH_MASH; c.fill();
+    c.save(); c.beginPath(); path(); c.clip();
+    dots(c, pn, () => c.ellipse(x - D * R * 0.62, y - H * 0.2, R * 0.72, H * 1.1, 0, 0, TAU), 7, 0.32, INK);
+    c.lineCap = "round";
+    for (const [f, u0, u1] of [[0.42, -0.85, 0.35], [0.72, -0.4, 0.62]]) {
+      c.beginPath(); for (let i = 0; i <= 10; i++) { const u = lerp(u0, u1, i / 10), px = x + u * R * 0.92, py = y - mshDome(u, H) * f; i ? c.lineTo(px, py) : c.moveTo(px, py); }
+      c.lineWidth = lw * 2.6; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.4; c.strokeStyle = mshLc; c.stroke();
+    }
+    for (const q of mshFlecks) { const px = x + q.u * R * 0.8, py = y - mshDome(q.u * 0.8, H) * q.v, r = q.r * R; c.beginPath(); c.ellipse(px, py, r, r * 0.7, q.a, 0, TAU); c.fillStyle = mshLc; c.fill(); c.lineWidth = lw * 0.6; c.strokeStyle = INK; c.stroke(); }
+    c.restore();
+    c.beginPath(); path(); c.lineWidth = lw * 1.3; c.lineJoin = "round"; c.strokeStyle = INK; c.stroke();
+  }
+  // a parsley sprig: a stem and a frilly head (the leaves are one union: a doubled ink rim, the fill over its inner half); (x, y) the stem's foot
+  function mshParsley(c, x, y, s, a, lw) {
+    c.save(); c.translate(x, y); c.rotate(a); c.scale(s, s);
+    const l = lw / s;
+    c.lineCap = "round"; c.lineJoin = "round"; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-1, -5, 0.5, -8.5);
+    c.strokeStyle = INK; c.lineWidth = l * 2.8; c.stroke(); c.strokeStyle = MSH_LEAF; c.lineWidth = l * 1.1; c.stroke();
+    c.beginPath();
+    for (const [lx, ly, r] of [[-3.4, -9, 2.3], [-1.6, -11.4, 2.1], [1.4, -11.8, 2.2], [3.6, -9.4, 2.0], [0, -9.2, 2.2], [-4.8, -11, 1.6], [4.8, -11.8, 1.6], [0.2, -13.8, 1.7]]) { c.moveTo(lx + r, ly); c.arc(lx, ly, r, 0, TAU); }
+    c.lineWidth = l * 2.4; c.strokeStyle = INK; c.stroke(); c.fillStyle = MSH_LEAF; c.fill();
+    c.beginPath(); c.moveTo(-2.4, -10.2); c.lineTo(-0.6, -11.6); c.moveTo(1.2, -12.6); c.lineTo(2.6, -10.8); c.lineWidth = l * 0.7; c.strokeStyle = "#a9e08f"; c.stroke();
+    c.restore();
+  }
+  function mshPea(c, x, y, r, lw) {
+    c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = MSH_PEA; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.arc(x - r * 0.35, y - r * 0.35, r * 0.28, 0, TAU); c.fillStyle = "#ffffff"; c.fill();
+  }
+  // the pour: a thick ribbon of mash from the mouth M down to yStop (the top of the mound), the head falling first, the tail last
+  function mshStream(c, M, t, yStop, lw) {
+    if (t < MSH_POUR0 || t > MSH_FULL) return;
+    const D = FIN.dir, span = yStop - M[1], yh = M[1] + span * easeIn(fe(MSH_POUR0, MSH_HIT, t)), yt = t < MSH_POUR1 ? M[1] : M[1] + span * easeIn(fe(MSH_POUR1, MSH_FULL, t));
+    if (yh - yt < 0.5) return;
+    const xs = (y) => M[0] + D * 3 * Math.sqrt(clamp((y - M[1]) / span, 0, 1)) + Math.sin(y * 0.25 + t * 0.02) * 0.6, ws = (y) => 4.4 + 0.7 * Math.sin(y * 0.3 - t * 0.03), n = 10, L_e = [], R_e = [];
+    for (let i = 0; i <= n; i++) { const y = lerp(yt, yh, i / n), x = xs(y), w = ws(y); L_e.push([x - w, y]); R_e.push([x + w, y]); }
+    c.beginPath(); L_e.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); for (let i = R_e.length - 1; i >= 0; i--) c.lineTo(R_e[i][0], R_e[i][1]); c.closePath();
+    if (yh < yStop - 0.5) { const x = xs(yh); c.moveTo(x + ws(yh) * 1.2, yh); c.arc(x, yh, ws(yh) * 1.2, 0, TAU); }
+    c.fillStyle = mshBrew(t); c.lineJoin = "round"; c.lineWidth = lw * 2; c.strokeStyle = INK; c.stroke(); c.fill();
+    c.beginPath(); for (let i = 1; i < n; i++) { const y = lerp(yt, yh, i / n); i > 1 ? c.lineTo(xs(y) - ws(y) * 0.45, y) : c.moveTo(xs(y) - ws(y) * 0.45, y); }
+    c.lineWidth = lw * 0.7; c.lineCap = "round"; c.strokeStyle = "#ffffff"; c.stroke();
+  }
+  // the mound's eyes: where they sit (world), how they look; they ride down the pour (3960-4040) and bob in, look up at him, go wide at the spoon and
+  // follow it to his mouth, sweat, blink, then look at the reader
+  function mshMoundEyes(c, pn, t, x0, base, M, bowl, lw) {
+    const D = FIN.dir, er = 6, k = easeIn(fe(MSH_EYE0, MSH_EYE1, t)), bob = t > MSH_EYE1 ? -Math.sin((t - MSH_EYE1) * 0.035) * 2.4 * (1 - fe(MSH_EYE1, MSH_EYE1 + 260, t)) : 0;
+    for (const sx of [-1, 1]) {
+      const ex0 = x0 + sx * MSH_R * 0.3, ey0 = base - MSH_H * 0.5, ex = lerp(M[0] + sx * 5, ex0, k), ey = lerp(M[1] + 4, ey0, k) + bob;
+      const s = { open: mshBlink(t, MSH_BLINK1), px: -D * 0.55, py: -0.65, pk: 1, sx: 1 };
+      if (bowl && t < MSH_TASTE + 60) { const dx = bowl[0] - ex, dy = bowl[1] - ey, dl = Math.hypot(dx, dy) || 1; s.px = dx / dl; s.py = dy / dl; s.pk = 0.55; }
+      if (t > MSH_BLINK1 + 140) { s.px = 0; s.py = 0; s.pk = 1; }
+      if (t > MSH_DIP0 && t < MSH_UP && sx === -D) s.open = Math.min(s.open, 0.35);   // the near one squints as the spoon goes in
+      eye(c, ex, ey, er, Object.assign(s, { lw, socket: MSH_MASH_D }));
+    }
+    if (t > MSH_SWEAT && t < MSH_BLINK1 + 300) { const q = fe(MSH_SWEAT, MSH_SWEAT + 400, t); sweatDrop(c, x0 + D * MSH_R * 0.62, base - MSH_H * 0.72 + q * 5, 2.2, D * 0.5, lw); }
+  }
+  // the spoon's turn in the splash (local to his facing), and where its bowl is (world)
+  const mshSpoonAng = (t) => seg(t, [[MSH_SPOON, -1.0], [MSH_DIP0, -1.0], [MSH_DIP1, 0.95], [MSH_UP, 0.95], [MSH_UP + 40, 0.5], [MSH_TASTE, Math.PI - 0.12]]);
+  function mshBowl(t) { const D = FIN.dir, h = handW(t), ang = mshSpoonAng(t), a = D > 0 ? ang : Math.PI - ang; return [h[0] + Math.cos(a) * 15.8, h[1] + Math.sin(a) * 15.8]; }
+  // the poses on the long half: the loser falling into the flask; the Alchemist holding it up, pouring, the toss, the spoon, the taste; panel 4
+  function mshPose(P, sk, t, role, p) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    if (role !== "w") {
+      const f = Math.sin(t * 0.06);
+      P.expr = "terror"; P.exK = 1; P.mouth = 1; P.spin = 0; P.lean = 0.1 * Math.sin(t * 0.021);
+      return { hF: [w * (0.62 + 0.1 * f), -leg - tor * (1.42 + 0.1 * f)], hB: [-w * (0.58 - 0.1 * f), -leg - tor * (1.38 - 0.1 * f)] };
+    }
+    const hip = [-w * 0.5, -leg - tor * 0.35];
+    if (t >= MT.AFTER) {   // the spoon up, pleased with himself; the potato popping out of his dinner startles him
+      const pop = fe(MT.POP + 40, MT.POP + 120, t);
+      P.expr = pop > 0 ? "terror" : "grin"; P.exK = pop > 0 ? 0.6 * pop : 1; P.mouth = 0.5;
+      P.lean = 0.03 + 0.02 * Math.sin(t * 0.006) - 0.12 * pop;
+      return { hF: [w * 0.95, -leg - tor * 1.15], hB: hip };
+    }
+    const HOLD = [w * 1.1, -leg - tor * 1.4], SAG = [w * 1.12, -leg - tor * 1.27], POUR = [w * 1.3, -leg - tor * 1.25], TOSS = [w * 0.2, -leg - tor * 1.85];
+    const SPN = [w * 0.95, -leg - tor * 1.05], DIP = [w * 1.0, -leg - tor * 0.9], MOUTH = [w * 0.16 + 14.5, (-leg - p.s.h + 7) / 2 - ((p.s.h - leg + 3) / 2) * 0.28 + w * 0.23 - 1.5];
+    const hF = seg(t, [[MSH_IN, HOLD], [MSH_IN + 60, SAG], [MSH_IN + 220, HOLD], [MSH_TIP0, HOLD], [MSH_TIP1, POUR], [MSH_TOSS, POUR], [MSH_REL, TOSS], [MSH_SPOON, SPN], [MSH_DIP0, SPN], [MSH_DIP1, DIP], [MSH_UP, DIP], [MSH_TASTE, MOUTH]]);
+    P.lean = seg(t, [[MSH_IN, -0.06], [MSH_IN + 60, 0.04], [MSH_IN + 220, -0.04], [MSH_TIP0, -0.04], [MSH_TIP1, 0.1], [MSH_TOSS, 0.1], [MSH_REL, -0.12], [MSH_SPOON, 0], [MSH_DIP1, 0.14], [MSH_UP, 0.14], [MSH_TASTE, -0.06]]);
+    const yum = t >= MSH_TASTE;
+    P.expr = yum ? "calm" : "grin"; P.exK = 1; P.mouth = yum ? 0.3 : 0.6;
+    return { hF: yum ? [hF[0], hF[1] + Math.sin((t - MSH_TASTE) * 0.03) * 0.8] : hF, hB: hip };
+  }
+  // the splash's camera: the plate and the flask in the middle, the slab low (upright: room above for the fall), a slow push
+  const mshCam = (port) => (t, pn) => {
+    const vh = (port ? 330 : 150) * (1 - (MG.reduced ? 0 : 0.05) * fe(MT.SPLASH, MT.AFTER, t)), z = pn.h / vh;
+    return { wx: FIN.wx + FIN.dir * MSH_AX, wy: -(pn.y0 + pn.h * (port ? 0.86 : 0.93) - pn.cy) / z, vh };
+  };
+  function mshShake(t) {
+    const a = t >= MSH_HIT ? 2.5 * (1 - fe(MSH_HIT, MSH_HIT + 160, t)) : t >= MSH_IN ? 5 * (1 - fe(MSH_IN, MSH_IN + 260, t)) : 0;
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0];
+  }
+  function mshDrawSplash(c, pn, t) {
+    const W = W_(), D = FIN.dir, lw = mshLw(pn), x0 = FIN.wx + D * MSH_PX, F = mshFlaskAt(t), M = F ? flaskTip(F, MSH_FS) : null;
+    const k = easeOut(fe(MSH_HIT, MSH_FULL, t)), R = MSH_R * (0.45 + 0.55 * k), H = MSH_H * k;
+    // the focus lines and the brew's glow: on the flask until the pour, then on the plate
+    pn.screen(c);
+    const f0 = M && t < MSH_TIP1 ? pn.p(M[0], M[1] + 20) : pn.p(x0, -40), f1 = pn.p(x0, -24), fk = ease(fe(MSH_TIP0, 3960, t)), fx = lerp(f0[0], f1[0], fk), fy = lerp(f0[1], f1[1], fk), G = Math.hypot(pn.w, pn.h);
+    const gr = Math.min(pn.w, pn.h) * 0.3, ga = 1 - 0.6 * fk;
+    c.save(); c.globalAlpha = 0.26 * ga; c.fillStyle = COL; c.beginPath(); c.arc(fx, fy, gr, 0, TAU); c.fill(); c.restore();
+    dots(c, pn, () => { c.arc(fx, fy, gr * 1.45, 0, TAU); c.arc(fx, fy, gr, 0, TAU, true); }, 7, 0.3, COL_D);
+    mgFocus(c, fx, fy, G * 0.95, t * 0.0003, 0.55);
+    // the fall: speed lines above him
+    if (t < MSH_IN + 80 && M) {
+      const q = pn.p(M[0] + FIN.dir * 40 * Math.pow(1 - fe(MT.SPLASH, MSH_IN, t), 2), M[1] - 150 * Math.pow(1 - fe(MT.SPLASH, MSH_IN, t), 2) - 30), top = pn.y0 - 10, len = Math.max(20, q[1] - top);
+      mgSpeed(c, q[0], top + len / 2, len, L_().s.w * 1.1 * pn.z, Math.PI / 2, -t * 0.9, 0.5 * (1 - fe(MSH_IN, MSH_IN + 80, t)), false, 1);
+    }
+    ground(c, pn);
+    mgPuppet(c, pn, W, t, { sc: 1, light: dirAng(-0.6) });
+    pn.world(c);
+    const top = mshPlate(c, pn, x0, MSH_R * 1.35, lw), base = top - 0.5;
+    if (k > 0.01) {
+      mshMound(c, pn, x0, base, R, H, lw);
+      if (t >= MSH_DIP1 - 20) {   // the spoon's dent
+        const dx = x0 - D * MSH_R * 0.42, dy = base - mshDome(-0.42 * D, MSH_H) + 1.5;
+        c.beginPath(); c.ellipse(dx, dy, 4.2, 2.2, D * 0.35, 0, TAU); c.fillStyle = MSH_MASH_D; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.beginPath(); c.ellipse(dx, dy, 4.2, 2.2, D * 0.35, 0.2, Math.PI - 0.2); c.stroke();
+      }
+    }
+    if (F) mshFlask(c, pn, F, t, t >= MSH_IN && t < MSH_TIP0 + 40 ? mshInside(t) : null);
+    pn.world(c);
+    if (M) mshStream(c, M, t, base - H, lw);
+    const bowl = t >= MSH_SPOON && t < MT.AFTER ? mshBowl(t) : null;
+    if (t >= MSH_EYE0) mshMoundEyes(c, pn, t, x0, base, M || flaskTip(mshFlaskAt(MSH_EYE0), MSH_FS), bowl, lw);
+    // the parsley: out of the mouth (4040), tumbling down onto the top (4110)
+    if (t >= MSH_PARS) {
+      const q = fe(MSH_PARS, MSH_PLAND, t), P0 = flaskTip(mshFlaskAt(MSH_PARS), MSH_FS), P1 = [x0 + D * 3, base - MSH_H + 1.5], px = lerp(P0[0], P1[0], q), py = lerp(P0[1], P1[1], q * q) - 10 * Math.sin(Math.PI * q);
+      mshParsley(c, px, py, 1.05, q < 1 ? D * (1 - q) * 5 : -D * 0.25 + 0.05 * Math.sin((t - MSH_PLAND) * 0.03) * (1 - fe(MSH_PLAND, MSH_PLAND + 300, t)), lw);
+    }
+    if (M) { mshFaller(c, pn, M, t); mshGulp(c, pn, M, t, lw); }
+    if (bowl) {
+      spoon(c, pn, t, mshSpoonAng(t), t >= MSH_DIP1);
+      if (t < MSH_SPOON + 120) { const q = pn.p(...handW(MSH_SPOON)); pn.screen(c); star(c, q[0] + D * 14 * pn.z, q[1] - 10 * pn.z, Math.min(pn.w, pn.h) * 0.03 * (1 - fe(MSH_SPOON, MSH_SPOON + 120, t))); }
+    }
+    // the taste is good: sparkles round his face
+    const sp = fe(MSH_TASTE, MSH_TASTE + 70, t);
+    if (sp > 0.02) { const h = pn.p(...bodyPt(W, t, 1, "head")), u = Math.min(pn.w, pn.h); pn.screen(c); for (let i = 0; i < 3; i++) star(c, h[0] + (i - 1) * u * 0.11 * (i === 1 ? 0.4 : 1.2), h[1] - u * (0.13 + 0.06 * ((i + 1) % 2)), u * (0.028 + 0.01 * i) * sp * (0.9 + 0.1 * Math.sin(t * 0.02 + i))); }
+  }
+
+  /* ---------- panel 4 of Mashed: the scoop on a plate, in colour ---------- */
+  function mshScoop(c, pn, t, x, top, lw) {
+    const D = FIN.dir, r = MSH_SR, cy = top - r * 0.62, path = () => {
+      c.moveTo(x + r * Math.cos(0.62), cy + r * Math.sin(0.62)); c.arc(x, cy, r, 0.62, Math.PI - 0.62, true);
+      for (let i = 0; i <= 8; i++) { const u = i / 8, px = x - r * 0.92 + u * r * 1.84, py = top + 0.5 + (i % 2 ? -1.6 : 0.4); c.lineTo(px, py); }
+      c.closePath();
+    };
+    c.beginPath(); path(); c.fillStyle = MSH_MASH; c.fill();
+    c.save(); c.beginPath(); path(); c.clip();
+    dots(c, pn, () => c.arc(x - D * r * 0.75, cy + r * 0.25, r * 0.95, 0, TAU), 7, 0.32, INK);
+    c.beginPath(); c.arc(x - D * r * 0.1, cy + r * 0.2, r * 0.72, D > 0 ? 3.6 : -0.46, D > 0 ? 5.6 : 1.54); c.lineCap = "round";
+    c.lineWidth = lw * 2.6; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.4; c.strokeStyle = mshLc; c.stroke();
+    for (const q of mshFlecks.slice(0, 4)) { const px = x + q.u * r * 0.7, py = cy + (q.v - 0.3) * r; c.beginPath(); c.ellipse(px, py, r * 0.08, r * 0.055, q.a, 0, TAU); c.fillStyle = mshLc; c.fill(); c.lineWidth = lw * 0.5; c.strokeStyle = INK; c.stroke(); }
+    c.restore();
+    c.beginPath(); path(); c.lineWidth = lw * 1.2; c.lineJoin = "round"; c.strokeStyle = INK; c.stroke();
+    // the eyes: on him, then on the reader; two blinks
+    const look = fe(4980, 5040, t), s = { open: mshBlink(t, MSH_ABLINK) * mshBlink(t, MSH_ABLINK2), px: -D * 0.6 * (1 - look), py: -0.3 * (1 - look), pk: 1 };
+    for (const sx of [-1, 1]) eye(c, x + sx * r * 0.36, cy + r * 0.12, r * 0.27, Object.assign({}, s, { lw: lw * 0.9, socket: MSH_MASH_D }));
+    mshPea(c, x + D * r * 0.12, cy - r - 2.4, 2.9, lw * 0.9);
+    // steam: three wisps rising off it
+    c.lineWidth = lw * 0.9; c.lineCap = "round"; c.strokeStyle = INK;
+    for (let i = 0; i < 3; i++) {
+      const ph = ((t - MT.AFTER) * 0.0011 + i / 3) % 1, sx = x + (i - 1) * r * 0.55, sy = cy - r - 6 - ph * 20;
+      c.globalAlpha = Math.sin(ph * Math.PI) * 0.8; c.beginPath(); c.moveTo(sx, sy + 4); c.bezierCurveTo(sx + 2.5, sy + 1.5, sx - 2.5, sy - 1.5, sx, sy - 4); c.stroke();
+    }
+    c.globalAlpha = 1;
+  }
+  // after the pop: a green smear on the empty plate, the pea dropping onto it and rolling to the rim
+  function mshEmpty(c, t, x, top, lw) {
+    const D = FIN.dir;
+    c.beginPath(); c.ellipse(x - D * 2, top + 0.4, MSH_SR * 0.75, 2.2, 0, 0, TAU); c.fillStyle = MSH_MASH; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke();
+    const q = fe(MT.POP + 40, MT.POP + 160, t), roll = easeOut(fe(MT.POP + 160, MT.POP + 520, t)), y0 = top - MSH_SR * 1.62 - 2.4, py = q < 1 ? lerp(y0, top - 2.4, q * q) : top - 2.4 - Math.sin(Math.PI * fe(MT.POP + 160, MT.POP + 240, t)) * 2;
+    mshPea(c, x + D * MSH_SR * 0.12 + D * 13 * roll, py, 2.9, lw * 0.9);
+  }
+  function mshDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir, x = FIN.wx + D * MSH_PXA, lw = mshLw(pn);
+    pn.screen(c);
+    const fp = pn.p(x, -16), gr = pn.h * 0.36;
+    c.save(); c.globalAlpha = 0.24; c.fillStyle = COL; c.beginPath(); c.arc(fp[0], fp[1], gr, 0, TAU); c.fill(); c.restore();
+    dots(c, pn, () => { c.arc(fp[0], fp[1], gr * 1.4, 0, TAU); c.arc(fp[0], fp[1], gr, 0, TAU, true); }, 7, 0.3, COL_D);
+    mgFocus(c, fp[0], fp[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.45);
+    ground(c, pn);
+    mgPuppet(c, pn, W, t, { sc: 1, light: dirAng(-0.6), tint: 0.3 });
+    spoon(c, pn, t, -1.15 + 0.22 * Math.sin((t - MT.AFTER) * 0.008), false);
+    pn.world(c);
+    const top = mshPlate(c, pn, x, MSH_SR * 1.6, lw);
+    if (mgPopped(t)) mshEmpty(c, t, x, top, lw); else mshScoop(c, pn, t, x, top, lw);
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Mashed",
+    // (the normal page's spoon, mmm and chime belong to its own panel 4)
+    start(g) { S_.start(g); pota = true; FIN.cue.dip = FIN.cue.mm1 = FIN.cue.mm2 = FIN.cue.chime = true; },
+    end() { pota = false; mshDrops = []; mshFlecks = []; },
+    build(lay) { S_.build(lay); mshBuild(); },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = mshDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 100 : 82) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 38 : 40), wy: -0.42 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: PAPER, slide: MG.reduced ? 1 : 180, cam: mshCam(lay.port), shake: mshShake, draw: mshDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay).filter((w) => w.text !== "mmm"), D = FIN.dir, mul = lay.port ? 0.5 : 1, SP = () => MG.byId.splash;
+      for (const w of ws) { if (w.text === "SPLORT") w.t1 = MT.SPLASH + 150; else if (w.text === "blup blup") w.t1 = MT.SPLASH + 100; }   // the pop's words go as the splash comes in
+      ws.push(
+        { text: "GLUG", t0: MSH_IN + 5, t1: 4280, size: 0.2, mul, arc: 8, jag: 0.12, rot: -0.1 * D, fill: COL,
+          at: () => { const p = SP(); return lay.port ? [p.x0 + p.w * 0.5 + p.ox, p.y0 + p.h * 0.17 + p.oy] : [p.x0 + p.w * mxu(0.8) + p.ox, p.y0 + p.h * 0.3 + p.oy]; } },
+        { text: "mmm", t0: MSH_TASTE + 10, t1: 4820, size: 0.1, mul, jit: 0.1, rot: -0.1 * D,
+          at: () => { const p = SP(); mgPlace(p, MSH_TASTE); const h = bodyPt(W_(), MSH_TASTE, 1, "head"), q = p.sp(h[0] - D * 8, h[1] - 40); return [clamp(q[0], L.gw * 0.16, L.gw * 0.84), q[1]]; } },
+        { text: "blink", t0: MSH_ABLINK - 5, t1: 5180, size: 0.05, mul, jit: 0.12, rot: 0.1 * D,
+          at: () => { const p = MG.byId.after; mgPlace(p, MSH_ABLINK); const q = p.sp(FIN.wx + D * (MSH_PXA + 24), -44); return [q[0], q[1]]; } },
+      );
+      return ws;
+    },
+    food() { const x = FIN.wx + FIN.dir * MSH_PXA; return { x, y: 0, r: 24, y0: -20, lx: x + FIN.dir * 36 }; },
+    cues(t) {
+      S_.cues(t);
+      cueOnce("mshFall", MT.SPLASH + 60, () => Cin.go(() => Cin._osc("sine", 1500, 420, 0.42, 0.06, 0.02)));
+      cueOnce("mshGlug", MSH_IN, () => Cin.go(() => { Cin._osc("sine", 180, 70, 0.22, 0.4, 0.005); Cin._noise(0.25, 0.25, 500, 220, "lowpass", 2); Cin._osc("sine", 240, 120, 0.14, 0.2, 0.01, 0.16); }));
+      cueOnce("mshBoil", MSH_IN + 200, () => Cin.go(() => { for (let i = 0; i < 4; i++) Cin._osc("sine", 300 + i * 90, 700 + i * 120, 0.06, 0.06, 0.005, i * 0.07); }));
+      cueOnce("mshBlink", MSH_BLINK0, () => Cin.go(() => Cin.tick(2400)));
+      cueOnce("mshPour", MSH_POUR0, () => Cin.go(() => { Cin._noise(0.35, 0.22, 700, 260, "lowpass", 1.5); Cin._osc("sine", 140, 90, 0.3, 0.2, 0.02); }));
+      cueOnce("mshPlop", MSH_HIT, () => Cin.go(() => { Cin._osc("sine", 160, 60, 0.18, 0.35, 0.004); Cin._noise(0.15, 0.2, 900, 300, "lowpass", 1.2); }));
+      cueOnce("mshParsley", MSH_PLAND, () => Cin.go(() => Cin.tick(3200)));
+      cueOnce("mshToss", MSH_REL, () => Cin.go(() => Cin.whoosh(0.22, 0.5, -0.5, 0.3)));
+      cueOnce("mshSpoon", MSH_SPOON, () => Cin.go(() => Cin.chime(2637)));
+      cueOnce("mshDip", MSH_DIP1, () => Cin.go(() => { Cin._osc("sine", 520, 300, 0.08, 0.1, 0.004); Cin._noise(0.1, 0.07, 900, 400, "bandpass", 3); }));
+      cueOnce("mshMm1", MSH_TASTE + 10, () => Cin.go(() => Cin._osc("sine", 262, 262, 0.3, 0.09, 0.06)));
+      cueOnce("mshMm2", MSH_TASTE + 170, () => Cin.go(() => Cin._osc("sine", 349, 349, 0.4, 0.09, 0.06)));
+      cueOnce("mshBlinkA", MSH_ABLINK, () => Cin.go(() => Cin.tick(2400)));
+    },
   });
   return S_;
 })();
