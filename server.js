@@ -119,9 +119,10 @@ try {
     pommes = require("./pommes.js").init({
       accounts, seatOf: quick.seatOf,
       send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+      ads: process.env.PM_ADS === "1",   // watched ads pay Pommes (on once AdSense approves)
       spoolMs: process.env.PM_SPOOL_MS ? +process.env.PM_SPOOL_MS : undefined,   // tests only: read the requests folder more often
     });
-    console.log("Pommes: on (buying with money: off)");
+    console.log(`Pommes: on (buying with money: off, ads: ${process.env.PM_ADS === "1" ? "on" : "off"})`);
   } else if (quick) console.log("Pommes: off: needs accounts");
 } catch (e) { console.warn("Pommes: off,", e.message); }
 // Cups (tourney.js): the Daily Cup and Friends Cups; needs Quick match (its rooms, referee and sign-in) and the accounts.
