@@ -1,4 +1,4 @@
-# PotatoBrawl handoff (updated 2026-10-22: online cups, the Daily Cup at 20:00 Berlin and Friends Cups by link, every match checked by the server, prizes paid by the game (no PROTO bump); Potatalities, a second KO page per fighter with a food gag, and the Pommes wallet on the server, buying with money still off (no PROTO bump); 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-22: the Pommes Shop on its own page with the Pommes pill on the start page, a second Potatality per fighter and the finisher choice (Classic, 1, 2, Shuffle), the two Pommes skin lines Ink Noir and Starfall, rewarded ads behind a switch, PROTO 20; online cups, the Daily Cup at 20:00 Berlin and Friends Cups by link, every match checked by the server, prizes paid by the game (no PROTO bump); Potatalities, a second KO page per fighter with a food gag, and the Pommes wallet on the server, buying with money still off (no PROTO bump); 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
@@ -23,6 +23,35 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     opens the offline 8-player cup (ui/cup.js). Play counts tc:* (mode online-cup); stats page "Cup joins".
   - Tests: tests/tourney.js (node, 64 checks, check.sh 5d3c, alone), tests/pwtourney.py (a Friends Cup on three phones against a real
     server with short timers, port PORT_BASE+14, check.sh 5d6).
+- The Pommes Shop, more Potatalities, Pommes skins, rewarded ads (2026-10-22, branch claude/project-thread-jodp8u, step 8 PR 2; PROTO 20:
+  two new palettes and the presence `ko` now names pages; no new server setup; ads stay off until two switches, see below). Jonny's ask:
+  the Pommes on the start page, the Pommes Shop on its own page with no scrolling, Pommes for ads (10 an ad), a choice of finisher, more
+  than one extra finisher, special skins for Pommes. Built the studio way (Opus plans and reviews, Sonnet builds specified UI, Opus the art,
+  the server and online; Fable designed the pages, the skins and the shop: Project files step8/fable-design-2.md).
+  - The Pommes pill (#mPommes, the red fries cone beside the chips on the start page's plate button; acct.js renderPill via psPill) opens the
+    Pommes Shop, #scrPshop (ui/pshop.js, css/93-pshop.css): the eight fighters in a strip, then the chosen one's six cards in one row
+    (upright: three finishers, the Shuffle as a bar, two skins): Classic, Potatality 1, Potatality 2, SHUFFLE, Ink Noir, Starfall, and Get
+    Pommes (an ad for +10, the euro pack, SOON while each is off). It never scrolls at 667x320, 844x390, 1280x760 or 390x844 upright.
+    pshopOpen(id) opens it from the Account Shop's Pommes row, the Skin Rack's Pommes cards and the results band.
+  - Every item is 300 Pommes (EUR 2.99): "ko:<f>" Potatality 1, "ko2:<f>" Potatality 2, "sk1:<f>" Ink Noir, "sk2:<f>" Starfall (32 items).
+    Pages already owned stay owned. Chips are still never sold for Pommes or money.
+  - The finisher choice (ui/kopages.js KO.pick, this device only, per fighter): 0 Classic, 1 or 2 that page, "s" Shuffle (one of your two owned
+    pages each KO, chosen by koSeedPick from the match's g.br and frame, so every phone plays the same page). FIN.alt is 0, 1 or 2;
+    manga.js mgAltOf(base, n) gives MANGA[id].alt or .alt2. Presence `ko` is {fighterId: [page numbers]} (an older page's [ids] = page 1).
+  - The second Potatalities (MANGA[id].alt2 in game/manga/<id>.js, flag pota2 or own flags): Dragon Air Fryer, Phoenix New Potatoes, Wizard
+    Hocus Croquettes, Alchemist Philosopher's Spud, Odin Smash Landing, Samurai Snake Eyes, Gunslinger Loaded, Reaper Gravy Digger. Same
+    long timeline as the first (splash 3.25 s, aftermath 4.7 s, POP 5.25 s, end 5.9 s).
+  - Pommes skins (core.js POMMES_SKINS: palettes 8 Ink Noir and 9 Starfall per fighter, `pommes: 1 | 2`, price 0 in chips): skinfx.js draws
+    them (skinPm(f), PMFX lines, Ink Noir's halftone and ink strokes, Starfall's night sky and rim light, their KO effects; no chip effects,
+    skinLvl 0). Owned when the server says so: kopages.js koSkins() adds them to P.owned and wears a just-bought one. The Skin Rack shows them
+    in a third row (SPECIAL SKINS, the POMMES tag); a tap opens the Pommes Shop; chips can never buy one. Glaze works on them.
+  - Rewarded ads (ui/ads.js, Google's H5 Games Ad Placement API, the one adapter): +10 Pommes (the server pays: `pma`, at most 5 a UTC day,
+    30 s apart, pm.ad {d, n} in the account file), the Harvest's x2 (today's gift twice over, once a day) and the Account Shop's Free chips
+    (+25, 3 a day; adsDay / adsMark on this device). OFF until both switches: ADS_CLIENT in ui/ads.js (the ca-pub id, with web/ads.txt) on
+    the page, and PM_ADS=1 in the server's settings (pommes.js init `ads`); until then every ad button reads SOON. The server can't see the ad,
+    so the daily cap is the guard (50 Pommes a day at most). Test fake: window.__blAdFake = "view" | "skip" | "none" (localhost and files only).
+  - Tests: pwpshop.py (check.sh "pshop"), pwads.py ("ads"), pwpmskin.py ("pmskin": the overlay costs 0.3-0.4 ms per fighter), pwmanga.py
+    --alt=2 ("pota2", all eight), tests/pommes.js (items, ads), pwon.py (Shuffle on two phones), pwshop.py, pwskins.py (10 skins).
 - Potatalities and Pommes (2026-10-22, branch claude/project-thread-jodp8u, build order step 8 PR 1 of 3; no PROTO bump; no new server
   setup: the wallet lives in the account files and the accounts folder).
   - Pommes are the premium currency, for euros later (PR 2: the payment step once Jonny has a provider's test keys; Stripe recommended,
@@ -827,6 +856,9 @@ index.html is committed with every source change (check.sh flags a stale one).
 - ui/boards.js (after vscpu.js): bdOpen(k) the Boards sheet, bdPreview (the top three on the Quick match screen), bdPlates (Account > Profile).
 - ui/challenge.js (after stakes.js): Challenge a friend (CHL; chlRoom(code) tells a challenge room, chlRes(R) from showResults, the #rChl tap,
   chlCopied for the lobby's link card). CSS in game/css/96-challenge.css.
+- ui/pshop.js (after shop.js): the Pommes Shop page #scrPshop (pshopOpen(id) / pshopClose / pshopFocus, psPill for the start page's
+  #mPommes; css/93-pshop.css); all state from kopages.js. ui/ads.js (before harvest.js): the rewarded-ad adapter (adsOn, adsPrime, adsState,
+  adsShow, adsDay / adsMark; ADS_CLIENT is the switch), used by pshop.js, harvest.js and shop.js.
 - skinfx.js skin effects · shell.html markup + CSS · net-ws.js WebSocket
   shim (server build only; `window.__blQuick` = {send, on, connected, onConnection} for ui/quick.js) · mock-room.js two-tab test room · portraits/ (portraits.json is what's inlined).
 - make-icons.py writes the home-screen icons into web/ (repo root) from portraits/phoenix.jpg.
@@ -929,7 +961,8 @@ index.html is committed with every source change (check.sh flags a stale one).
 
 ## Pommes (pommes.js on the server): what it does and stores
 - pommes.js is called from server.js only (pm, pmb; see its header comment) and needs Quick match's sign-in and the accounts.
-- Stored in the account file's `pm` part {bal, own (item ids "ko:<fighter>"), log (the last 20 changes)}; only the server writes it
+- Stored in the account file's `pm` part {bal, own (item ids "ko:" / "ko2:" Potatality 1 / 2, "sk1:" / "sk2:" Ink Noir / Starfall, each + the
+  fighter id), ad {d: the UTC day, n: ads paid that day}, log (the last 20 changes)}; only the server writes it
   (accounts.writePm) and a phone's save keeps it (like on, cpu, bw); load never sends it (the page asks over the WebSocket). Every change
   is also one JSON line in <accounts>/pommes.log (time, the account file's hash, never the code, change, balance after, item, why): the
   ledger for support; the nightly backup covers it.
@@ -937,6 +970,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   the files; grant (n < 0 takes Pommes back, the balance may go below 0 and then buys nothing) and move (all of an old code's Pommes and
   items to a new one, for a player who lost the code and is found by the payment) go through <accounts>/pommes-in/, which the running
   server applies every 2 s, so the tool never races a phone's save. 6 asks per 2 s per connection. Test knob: PM_SPOOL_MS.
+- Ads: `pma` (a watched ad) pays 10 Pommes, at most 5 a UTC day, 30 s apart (in memory only), when the server's settings have PM_ADS=1;
+  otherwise pm-no "ads" and the page shows SOON. The server can't see the ad: the daily cap is the guard.
 
 ## Cups (tourney.js on the server): what it does and stores
 - tourney.js is called from server.js only (tc?, tci, tcj, tcn, tcs, tcl, tcp, tcgo, tcr; see its header comment) and needs Quick
@@ -1011,6 +1046,9 @@ Switch side, host + friend vs two CPUs, a Focus ping, a forced desync repaired, 
 full, START glows, a fifth sees "full"), a repair on four phones, a friend's page and then the host's page closing (CPU from the same
 frame everywhere, the next friend leads), a CPU partner's Focus on every phone, the rematch of the two left; the board at four sizes;
 about 7 minutes; check.sh 5f) ·
+pwpshop.py (the Pommes Shop at four sizes, no server; check.sh 6c4) · pwads.py (rewarded ads + Harvest x2 with the fake and a stand-in
+for Google's script; 6c5) · pwpmskin.py (the Pommes skins in the fight, the overlay's cost, contact sheets; 6c6) · pwmanga.py --alt=2 (the
+second Potatalities; 6c3 "pota2") ·
 pwskins.py (the Skins bar, the Skin Rack states / lines / two-tap Buy / Wear / closing, a Road boss beaten with another fighter, the
 lobby's Fight Card + "Use <fighter>" + Back + the public name input; tags se phone desk upright; check.sh 6a) ·
 pwsel.py · pwline.py · pwmatch.py · pw2d.py · pwon.py (two-browser online match, needs
@@ -1041,9 +1079,9 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 ## Next work, in order
 - Cups leftovers (online tournaments, PR #62): 2v2 cups, watching a cup match live, a replay of the final; Ranked vs CPU's own
   MAX_FRAMES (16000, cpurank.js) can't hold a whole 45 s sudden death (the cups use 17500).
-- NEXT: step 8 PR 2, the payment step (Pommes for euros, behind a switch until the provider's keys are in the server's settings;
-  Stripe Checkout + webhook crediting once per session, refunds take Pommes back), then PR 3, the rewarded ad (Harvest x2 and the
-  Shop's Free chips, once AdSense with H5 games ads is approved). Before PR 2: Jonny's provider account, terms + withdrawal text.
+- NEXT: step 8's payment step (Pommes for euros, behind a switch until the provider's keys are in the server's settings; Stripe
+  Checkout + webhook crediting once per session, refunds take Pommes back). Before it: Jonny's provider account, terms + withdrawal
+  text. The rewarded ads are built (PR 2): they go live with ADS_CLIENT + web/ads.txt + PM_ADS=1 once AdSense (H5 games ads) is approved.
 - Before step 8: Jonny picked from the later list (build order step 6 is done with the replays).
   Replay leftovers: a run is kept only for its game version (a PROTO bump makes every older run "older version"); seeking far into a
   long run takes a moment on a slow phone (it plays from the start; snapshots would make it instant); your own last run lives only
