@@ -15,7 +15,8 @@
    in the paper beside the loser, a flinch, a 2 px shake, BAM); 3280-3400 the drop (the hammer back, the barrel levels); 3400 the sixth, golden shot (three impact
    frames, BLAMM in gold); 3550 the loser is launched and the hat shot off; 3750 panel 5, a full-page splash from the top: the WANTED poster (aged paper, the
    loser's mono portrait, DEAD OR FRIED, REWARD: 1,000,000 FRIES, two nails, a torn bottom under a 70% screen); five bullet holes in the poster (3950-4350, the fan
-   order) and a sixth gold-rimmed one through the portrait's forehead at 4450 (his eyes turn to X); 4700 panel 4 as on the normal page (MT.AFTER + offsets). */
+   order) and a sixth gold-rimmed one through the portrait's forehead at 4450 (his eyes turn to X); 4700 panel 4 as on the normal page (MT.AFTER + offsets).
+   POTATALITY: "Tater Tots" = MANGA.gunslinger.alt (S_.alt, at the end; its helpers are prefixed tts), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.gunslinger = (function () {
   const COL = "#ff4636", HOT = "#fff3d6", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2, GOLD = MG_GOLD, GOLD_D = MG_GOLD_D;
   const TICK = 1480, DONG = 1750;
@@ -26,11 +27,13 @@ MANGA.gunslinger = (function () {
   function gnsMode(ult) {
     ULT = ult; HIT = ult ? 3400 : MT.HIT; PH = HIT + (ult ? 150 : 100);
     RAISE = MT.AFTER + 40; BLOW = MT.AFTER + 300; LOWER = MT.AFTER + 730; LAND = MT.AFTER + (ult ? 110 : 750);
+    if (pota) { RAISE = MT.AFTER; BLOW = MT.AFTER + 160; }   // Tater Tots: he blows the smoke off before the engine's POP (5250), not under it
   }
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
   let dust = [], weed = null, hat = null, hatKind = "sprout", shotX0 = 0, shotY = -42;
   let fan = [], poster = null, posterStage = 0, gnsPort = 0, loserCopy = null;   // the Ultimate: the five shots' muzzles and holes, the poster (layout, lettering, portraits), the portrait pose switch
+  let pota = false;   // pota: this play is the Potatality, Tater Tots (set by its start, cleared by S_.start and its end)
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function gnsPt(p, t, key, dx, dy) {   // a point of the body (turned with the lean about the hip)
@@ -716,7 +719,7 @@ MANGA.gunslinger = (function () {
         at: () => { const p = MG.byId.strike, m = fan[i].m, an = a * 3.4, r = 30; const q = p.sp(m[0] + D * (r * Math.cos(an) + 6), m[1] + r * Math.sin(an) * 1.6 - 4); return [q[0], q[1]]; } }));
       return [hitWord, dong].concat(bams, [bang, fuu]);
     },
-    start(g) { gnsMode(false); dust = []; weed = null; hat = null; hatKind = "sprout"; fan = []; poster = null; posterStage = 0; gnsPort = 0; loserCopy = null; },
+    start(g) { pota = false; gnsMode(false); dust = []; weed = null; hat = null; hatKind = "sprout"; fan = []; poster = null; posterStage = 0; gnsPort = 0; loserCopy = null; },
     build(lay) {
       gnsMode(ULT);
       const r = mgRng(1873);
@@ -835,6 +838,414 @@ MANGA.gunslinger = (function () {
       cueOnce("nail0", SPLASH0 + 40, () => Cin.go(() => Cin.clack())); cueOnce("nail1", SPLASH0 + 80, () => Cin.go(() => Cin.clack()));   // nailed
       HOLE_T.forEach((h, i) => cueOnce("hole" + i, h, () => Cin.go(() => { Cin.clack(); Cin.tick(900); })));
       cueOnce("gold", GOLD_T, () => Cin.go(() => { gnsBang(0.5, false); Cin.chime(1568); Cin.tick(2600); }));
+    },
+  });
+
+  /* ===================== the Potatality, "Tater Tots" (MANGA.gunslinger.alt; design: Project files step8/fable-design.md) =====================
+     High Noon up to the shot (the loser's hat and the speed lines stop at the splash: he is the food now). 3250 panel 5, the splash, drops in from the top:
+     one fence rail right across the page in front of the sunset; 3270 a puff in the sky and the loser comes down as six tater tots (his potato, a neckerchief
+     in his costume's colour, his own face) that plink onto the rail in a row like tin cans (3390-3540); his revolver comes up into the near corner (3560) and
+     3600 they see it: terror, sweat. He fans the hammer: 3860-4260 five shots, BLAM BLAM BLAM, a ping star on each tot as it is knocked off and tumbles away
+     behind the rail (the ones still standing squeeze their eyes shut at every shot); 4360 the sixth fan only clicks (the first of the six rounds was the lethal
+     shot); 4440 the last tot opens his eyes, 4540 phew. 4700 in panel 4's place: he blows the smoke off his barrel at once (4860, fuu: gnsMode), and on a barrel
+     beside him the last tot sits in a paper cone with a drop of ketchup on his head, sweating; the engine's POP bursts the cone at 5250 (food()) and leaves it
+     empty, ketchup and all.
+     The splash's world: the rail's top at y = 0, the tots stand on it 31 apart (28 upright), tot 0 nearest the gun. Every helper here is prefixed tts. */
+  const TTS_N = 6, TTS_W = 21, TTS_H = 28, TTS_HZ = 18, TTS_GR = 50;   // the tots' size (world units); the horizon; where a knocked-off tot comes to rest
+  const TTS_PUFF = 3270, TTS_GUN = 3560, TTS_LOOK = 3600, TTS_COCK = 3720, TTS_CLICK = 4360, TTS_OPEN = 4440, TTS_PHEW = 4540;
+  const ttsLand = (i) => 3390 + i * 30;     // tot i lands on the rail (3390 .. 3540)
+  const ttsShot = (i) => 3860 + i * 100;    // the five fanned shots (3860 .. 4260)
+  const ttsHit = (i) => ttsShot(i) + 25;    // ... each hits its tot 25 ms later
+  const ttsPort = () => !!(MG.lay && MG.lay.port);
+  const ttsX = (i) => FIN.dir * (i - 2.5) * (ttsPort() ? 28 : 31);   // where tot i stands on the rail (the last one clear of the K.O. seal)
+  const ttsBY = () => (ttsPort() ? -150 : -64);                       // the puff in the sky they come down from
+  const TTS_V = 150, TTS_G = 1100, TTS_UL = (TTS_V + Math.sqrt(TTS_V * TTS_V + 2 * TTS_G * TTS_GR)) / TTS_G;   // knocked off: up at 150 units/s, falling at 1100/s², at rest after TTS_UL s
+  const TTS_SPECK = [[-6, -7, 0.4], [4, -4, -0.6], [-3, 2, 1.2], [6, 4, 0.2], [-7, 8, -0.3], [2, 11, 0.9], [7, -10, 1.4], [-1, -11, 0.1]];   // the crust's grated bits (tot units)
+  const ttsConeX = () => FIN.wx + FIN.dir * 58, TTS_CS = 1.2;   // the barrel with the cone in panel 4, drawn TTS_CS times its size about its foot
+  let ttsC = null;   // the loser's colours on his tots (made in build)
+  const ttsS = { x: 0, y: 0, k: 1, rot: 0, sq: 1, ex: "", exK: 1, hurt: false, back: false, sweat: 0 };   // one tot's state (reused: nothing allocated per tot per frame)
+  const ttsF = { state: "fin", pal: null }, ttsP = { w: 44, head: [0, 0], expr: "", exK: 1, mouth: 0 };   // stand-ins for potatoFace (it reads only these fields)
+  function ttsPrep() {
+    const pal = L_().pal, body = pal.body || "#e9c070";
+    ttsC = { body, crust: mix(body, "#6b3410", 0.45), top: mix(body, "#fff3d6", 0.45), kerch: pal.accent || col(pal) };   // the neckerchief in his costume's colour
+    return ttsC;
+  }
+  // the path just built (under any transform) filled with a dot screen; the dots stay in screen space like all the page's tone
+  function ttsToneHere(c, size, cover) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(size, cover); c.fill(); c.restore(); }
+  // a sweat drop: round at the bottom, pointed at the top, pale blue with an ink edge
+  function ttsDrop(c, x, y, s, lw) {
+    c.beginPath(); c.moveTo(x, y - s * 1.9); c.bezierCurveTo(x + s * 0.4, y - s * 1.2, x + s, y - s * 0.5, x + s, y); c.arc(x, y, s, 0, Math.PI);
+    c.bezierCurveTo(x - s, y - s * 0.5, x - s * 0.4, y - s * 1.2, x, y - s * 1.9); c.closePath();
+    c.fillStyle = "#d6eeff"; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+  }
+  // the loser's own face (potatoFace, in his style: the Wizard's rims, Odin's patch...), its eye line at (x, y), s units across, looking toward dx (+1 / -1)
+  function ttsFace(c, x, y, s, dx, ex, exK, hurt) {
+    const Lp = L_(), w = Lp.s.w;
+    ttsF.pal = Lp.pal; ttsF.state = hurt ? "hitstun" : "fin"; ttsP.w = w; ttsP.expr = ex; ttsP.exK = exK; ttsP.mouth = 0;
+    c.save(); c.translate(x, y); c.scale(dx * s / w, s / w);
+    potatoFace(c, ttsF, ttsP, Lp.spec.look);
+    c.restore();
+  }
+  // one tot, its feet at (x, y) (world units, under pn.world): k its scale, rot its turn about its middle, sq the landing squash; his face looks toward dx;
+  // ex / exK / hurt: the face (hurt: eyes squeezed shut); sweat 0..1: a drop running down beside his face
+  function ttsTot(c, x, y, k, rot, sq, dx, ex, exK, hurt, sweat, lw) {
+    const w = TTS_W, h = TTS_H, C = ttsC || ttsPrep();
+    c.save(); c.translate(x, y); c.scale(k, k); c.translate(0, -h / 2 * sq); c.rotate(rot); c.scale(1 + (1 - sq) * 0.7, sq);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, 7); c.fillStyle = C.body; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = C.crust;
+    for (const [sx, sy, a] of TTS_SPECK) { c.beginPath(); c.ellipse(sx, sy, 1.6, 0.75, a, 0, TAU); c.fill(); }
+    if (!MG.slow) { c.beginPath(); c.rect(dx > 0 ? -w : w * 0.18, -h, w * 0.82, 2 * h); ttsToneHere(c, 6, 0.4); }   // the shade, on the side away from the gun
+    // his neckerchief: a band round him in his colour
+    c.beginPath(); c.moveTo(-w, h * 0.16); c.quadraticCurveTo(0, h * 0.3, w, h * 0.16); c.lineTo(w, h * 0.3); c.quadraticCurveTo(0, h * 0.44, -w, h * 0.3); c.closePath();
+    c.fillStyle = C.kerch; c.fill(); c.lineWidth = lw * 0.7; c.stroke();
+    c.restore();
+    c.beginPath(); c.moveTo(-w * 0.2, h * 0.29); c.lineTo(w * 0.18, h * 0.3); c.lineTo(-w * 0.03, h * 0.48); c.closePath();   // ... and its point hanging in front
+    c.fillStyle = C.kerch; c.fill(); c.lineWidth = lw * 0.7; c.stroke();
+    c.beginPath(); c.ellipse(0, -h / 2 + 3, w / 2 - 1.8, 2.2, 0, 0, TAU); c.fillStyle = C.top; c.fill(); c.lineWidth = lw * 0.6; c.stroke();   // the cut top
+    c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, 7); c.lineWidth = lw; c.stroke();
+    ttsFace(c, 0, -h * 0.1, 27, dx, ex, exK, hurt);
+    if (sweat > 0) ttsDrop(c, -dx * w * 0.62, -h * 0.26 + sweat * 6, 2.3, lw * 0.6);
+    c.restore();
+  }
+  // where tot i is and how he looks at t (fills ttsS); false while he is still inside the puff
+  function ttsAt(i, t) {
+    const S = ttsS, D = FIN.dir, x0 = ttsX(i), L0 = ttsLand(i), f0 = TTS_PUFF + 20 + i * 10, last = i === TTS_N - 1;
+    S.x = x0; S.y = 0; S.k = 1; S.rot = 0; S.sq = 1; S.ex = ""; S.exK = 1; S.hurt = false; S.back = false; S.sweat = 0;
+    if (t < f0) return false;
+    if (t < L0) {   // out of the puff and down onto the rail in an arc, turning over, spiral-eyed
+      const u = fe(f0, L0, t);
+      S.x = lerp(D * (i - 2.5) * 5, x0, u); S.y = lerp(ttsBY(), 0, u) - 88 * u * (1 - u);
+      S.k = 0.45 + 0.55 * easeOut(Math.min(1, u * 2.5)); S.rot = D * (1 - u) * (2.6 + i * 0.5); S.ex = "dazed";
+      return true;
+    }
+    if (!last && t >= ttsHit(i)) {   // knocked off: up, away and back (smaller), tumbling, X eyes; at rest on the ground behind the fence, on his side
+      const u = (t - ttsHit(i)) / 1000, ul = Math.min(u, TTS_UL), spin = 12 + i;
+      S.back = true; S.ex = "ko"; S.k = 1 - 0.38 * Math.min(1, u / 0.3);
+      S.x = x0 + D * (9 + 5 * (i % 2)) * ul; S.y = -TTS_V * ul + 0.5 * TTS_G * ul * ul;
+      if (u < TTS_UL) S.rot = D * u * spin;
+      else {
+        const r0 = D * TTS_UL * spin, q = Math.round(r0 / (Math.PI / 2)), r1 = (q % 2 ? q : q + D) * (Math.PI / 2);
+        S.rot = lerp(r0, r1, easeOut(fe(TTS_UL, TTS_UL + 0.1, u))); S.y = TTS_GR + 3.5 * S.k - 4 * Math.sin(Math.PI * fe(TTS_UL, TTS_UL + 0.14, u));
+      }
+      return true;
+    }
+    // on the rail: the landing squash, then nerves (a shiver, terror; every other one sweats)
+    S.sq = 1 - 0.24 * Math.sin(Math.PI * fe(L0, L0 + 120, t));
+    const nerv = fe(TTS_LOOK, TTS_LOOK + 160, t), calm = last ? fe(TTS_PHEW, TTS_PHEW + 60, t) : 0;
+    S.x += Math.sin(t * 0.12 + i * 1.7) * 0.5 * nerv * (1 - calm);
+    if (nerv > 0) { S.ex = "terror"; S.exK = nerv; S.sweat = i % 2 ? fe(TTS_LOOK + 80, TTS_LOOK + 900, t) : 0; }
+    // every shot: the ones still standing duck a little and squeeze their eyes shut
+    let fl = 0;
+    for (let j = 0; j < Math.min(i, 5); j++) fl = Math.max(fl, Math.sin(Math.PI * fe(ttsHit(j) - 10, ttsHit(j) + 110, t)));
+    S.sq -= 0.1 * fl;
+    if (fl > 0.25) S.hurt = true;
+    if (last) {
+      if (t >= ttsHit(4) - 10 && t < TTS_OPEN) S.hurt = true;                       // the fifth shot: eyes shut, waiting for his... click
+      else if (t >= TTS_OPEN && t < TTS_PHEW) { S.ex = "terror"; S.exK = 0.25; }    // one look: nothing came
+      else if (t >= TTS_PHEW) { S.ex = "calm"; S.sweat = 0; }                       // phew
+    }
+    return true;
+  }
+  const ttsTotS = (c, lw) => { const S = ttsS; ttsTot(c, S.x, S.y, S.k, S.rot, S.sq, -FIN.dir, S.ex, S.exK, S.hurt, S.sweat, lw); };
+  function ttsCam(t, pn) {
+    const port = ttsPort(), vh = (port ? pn.h * 178 / pn.w : 135) * (1 - 0.04 * fe(MT.SPLASH, MT.AFTER, t));   // upright: as wide as the row of tots needs
+    return { wx: 0, wy: -vh * (port ? 0.1 : 0.09), vh };
+  }
+  const ttsShake = (t) => {
+    let a = 0;
+    for (let i = 0; i < 5; i++) a += 2.2 * fe(ttsShot(i), ttsShot(i) + 8, t) * (1 - fe(ttsShot(i) + 8, ttsShot(i) + 70, t));
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a * 0.6] : [0, 0];
+  };
+  // the sunset behind the fence: sky tone, the sun cut by paper stripes, mesas, the ground (as the street of panels 3 and 4)
+  function ttsBack(c, pn, t) {
+    const D = FIN.dir, hz = pn.p(0, TTS_HZ)[1], X0 = pn.x0 - 6, X1 = pn.x1 + 6;
+    if (!MG.slow) {
+      gnsTone(c, pn, [[X0, pn.y0 - 6], [X1, pn.y0 - 6], [X1, pn.y0 + pn.h * 0.12], [X0, pn.y0 + pn.h * 0.16]], 7, 0.42, [t * 0.0008, 0]);
+      gnsTone(c, pn, [[X0, pn.y0 + pn.h * 0.16], [X1, pn.y0 + pn.h * 0.12], [X1, pn.y0 + pn.h * 0.25], [X0, pn.y0 + pn.h * 0.29]], 7, 0.18, [t * 0.0008, 0]);
+    }
+    const [sx] = pn.p(-D * 18, 0), R = (ttsPort() ? 84 : 76) * pn.z, sy = hz + R * (0.1 + 0.08 * fe(MT.SPLASH, MT.AFTER, t));
+    c.save(); c.beginPath(); c.rect(X0, pn.y0 - 6, X1 - X0, hz - pn.y0 + 6); c.clip();
+    c.fillStyle = COL; c.beginPath(); c.arc(sx, sy, R, 0, TAU); c.fill();
+    c.lineWidth = Math.max(2, R * 0.025); c.strokeStyle = INK; c.stroke();
+    c.save(); c.beginPath(); c.arc(sx, sy, R + 3, 0, TAU); c.clip(); c.fillStyle = PAPER;
+    for (let i = 0; i < 4; i++) { const yy = sy - R * 0.5 + i * R * 0.17, th = R * (0.022 + 0.022 * i); c.fillRect(sx - R - 4, yy, 2 * R + 8, th); }
+    c.restore();
+    c.restore();
+    for (const [a, b, h] of [[-250, -150, 24], [-128, -96, 11], [120, 175, 16], [190, 300, 30]]) {
+      const x0 = -D * 18 + D * a, x1 = -D * 18 + D * b, top = TTS_HZ - h, pts = [[x0, TTS_HZ], [x0 + D * h * 0.5, top + 3], [x0 + D * h * 0.62, top], [x1 - D * h * 0.5, top], [x1 - D * h * 0.3, top + 4], [x1, TTS_HZ]].map(([x, y]) => pn.p(x, y));
+      gnsTone(c, pn, pts, 6, 0.45);
+      c.lineWidth = 2; c.strokeStyle = INK; c.lineJoin = "round"; c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    }
+    c.fillStyle = PAPER; c.fillRect(X0, hz, X1 - X0, pn.y1 - hz + 6);
+    c.fillStyle = INK; c.fillRect(X0, hz - 1, X1 - X0, 2.2);
+    pn.world(c);
+    c.lineCap = "round"; c.strokeStyle = INK;
+    const rs = gnsRng(615);
+    for (let i = 0; i < 12; i++) { const x = D * (-200 + rs() * 400), y = TTS_HZ + 4 + rs() * 50, len = 12 + rs() * 40; c.lineWidth = (0.6 + rs() * 0.6) / pn.z; c.beginPath(); c.moveTo(x, y); c.lineTo(x + D * len, y + (rs() - 0.5) * 0.8); c.stroke(); }
+    pn.screen(c);
+  }
+  // the fence: posts every 96 units (their tops hidden behind the top rail), two rails right across the page; wood in flat tan with tone and grain
+  function ttsFenceX(pn) { return [pn.wx + (pn.x0 - 8 - pn.cx - pn.px) / pn.z, pn.wx + (pn.x1 + 8 - pn.cx - pn.px) / pn.z]; }
+  function ttsPosts(c, pn, lw) {
+    const [xa, xb] = ttsFenceX(pn);
+    c.lineJoin = "round"; c.strokeStyle = INK; c.lineWidth = lw;
+    for (let k = Math.ceil((xa - 8) / 96); k * 96 < xb + 8; k++) {
+      const x = k * 96;
+      c.beginPath(); c.rect(x - 5.5, 2, 11, 66); c.fillStyle = "#d1b07f"; c.fill();
+      c.beginPath(); c.rect(x + FIN.dir * 1.5, 2, FIN.dir * 4, 66); ttsToneHere(c, 6, 0.6);
+      c.beginPath(); c.rect(x - 5.5, 2, 11, 66); c.stroke();
+    }
+  }
+  function ttsRails(c, pn, lw) {
+    const [xa, xb] = ttsFenceX(pn);
+    for (const [y0, hh] of [[0, 9], [31, 8]]) {
+      c.beginPath(); c.rect(xa, y0, xb - xa, hh); c.fillStyle = "#e0c597"; c.fill();
+      c.beginPath(); c.rect(xa, y0 + hh * 0.55, xb - xa, hh * 0.45); ttsToneHere(c, 6, 0.4);
+      c.strokeStyle = INK; c.lineWidth = lw * 0.45; c.beginPath();   // the grain
+      for (let k = Math.floor(xa / 40); k * 40 < xb; k++) { const gx = k * 40 + (k % 3) * 7; c.moveTo(gx, y0 + hh * 0.35); c.quadraticCurveTo(gx + 9, y0 + hh * 0.2, gx + 22, y0 + hh * 0.38); }
+      c.stroke();
+      c.lineWidth = lw; c.beginPath(); c.rect(xa, y0, xb - xa, hh); c.stroke();
+      c.fillStyle = INK;   // the nails into the posts
+      for (let k = Math.ceil((xa - 8) / 96); k * 96 < xb + 8; k++) for (const s of [-2.6, 2.6]) { c.beginPath(); c.arc(k * 96 + s, y0 + hh * 0.5, 0.9, 0, TAU); c.fill(); }
+    }
+  }
+  // the puff in the sky the tots come out of: a white burst, then three puffs of smoke spreading and fading
+  function ttsPuff(c, pn, t) {
+    const u = t - TTS_PUFF;
+    if (u < 0 || u > 760) return;
+    const q = pn.p(0, ttsBY()), z = pn.z, b = easeOut(fe(0, 80, u)) * (1 - fe(130, 250, u));
+    if (u < 240) mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.7, t * 0.0004, 0.35 * (1 - fe(120, 240, u)));
+    if (b > 0.02) mgStarburst(c, q[0], q[1], (14 + 22 * b) * z, 0.2);
+    const k = easeOut(fe(60, 560, u)), a = 1 - fe(300, 760, u);
+    for (let i = 0; i < 3; i++) gnsPuff(c, pn, q[0] + (i - 1) * 10 * z * (0.6 + k), q[1] - k * 7 * z - (i === 1 ? 3 * z : 0), (5 + 4 * k) * z, a, 170 + i);
+  }
+  // the revolver in the near corner, in px of the panel: [x, y of the hand on the grip, px per gun unit]; it comes up from below the corner at TTS_GUN
+  function ttsGunAt(pn, t) {
+    const port = ttsPort(), D = FIN.dir, gs = Math.min(pn.w, pn.h) * (port ? 0.0105 : 0.0098), up = 1 - easeOut(fe(TTS_GUN, TTS_GUN + 170, t));
+    const ux = port ? 0.13 : 0.07, uy = port ? 0.9 : 0.93;
+    return [pn.x0 + (D > 0 ? ux : 1 - ux) * pn.w - D * up * 26 * gs, pn.y0 + uy * pn.h + up * 46 * gs, gs];
+  }
+  // its aim (in its own frame, mirrored for a winner on the right): [barrel angle, recoil 0..1, ms since the latest shot (-1: none yet)]. The barrel's line
+  // (9.75 units over the hand) goes through the tot it aims at; after each shot it steps on to the next tot
+  function ttsAim(pn, t, gx, gy, gs) {
+    const D = FIN.dir, at = (k) => { const q = pn.p(ttsX(k), -TTS_H * 0.5), dx = (q[0] - gx) * D, dy = q[1] - gy; return Math.atan2(dy, dx) + Math.asin(clamp(9.75 * gs / Math.hypot(dx, dy), -1, 1)); };
+    let j = -1;
+    for (let i = 0; i < 5; i++) if (t >= ttsShot(i)) j = i;
+    if (j < 0) return [at(0), 0, -1];
+    const dt = t - ttsShot(j);
+    return [lerp(at(j), at(j + 1), ease(fe(45, 95, dt))), easeOut(fe(4, 22, dt)) * (1 - ease(fe(34, 90, dt))), dt];
+  }
+  function ttsMuzzle(pn, t) {
+    const D = FIN.dir, [gx, gy, gs] = ttsGunAt(pn, t), [ang, kick] = ttsAim(pn, t, gx, gy, gs), a = ang - kick * 0.32;
+    return [gx + D * gs * (Math.cos(a) * 41 + Math.sin(a) * 9.75), gy + gs * (Math.sin(a) * 41 - Math.cos(a) * 9.75)];
+  }
+  // the fanning hand: before each shot (and the sixth, the click) its palm sweeps back over the hammer, then swings forward again (0 forward .. 1 on the hammer)
+  function ttsFan(t) {
+    let s = 0;
+    for (let i = 0; i < 6; i++) {
+      const dt = t - (i < 5 ? ttsShot(i) : TTS_CLICK);
+      if (dt > -50 && dt < 0) s = Math.max(s, (dt + 50) / 50); else if (dt >= 0 && dt < 70) s = Math.max(s, 1 - dt / 70);
+    }
+    return ease(s);
+  }
+  function ttsGun(c, pn, t) {
+    if (t < TTS_GUN) return;
+    const D = FIN.dir, [gx, gy, gs] = ttsGunAt(pn, t), [ang, kick, dt] = ttsAim(pn, t, gx, gy, gs), lw = 2.6 / gs, fan = ttsFan(t), a = ang - kick * 0.32;
+    const fx = lerp(12, -9, fan), fy = -24 + 4 * Math.sin(Math.PI * fan);   // the fanning palm (gun units)
+    // the two arms run off the page toward the near corner whatever the aim (so they are drawn in px of the panel): the fanning one behind the gun
+    const ca = Math.cos(a), sa = Math.sin(a), sp = (x, y) => [gx + D * gs * (x * ca - y * sa), gy + gs * (x * sa + y * ca)];
+    const hand = sp(-6, 3), palm = sp(fx, fy), off = [gx - D * gs * 34, gy + gs * 64];
+    c.lineCap = "round"; c.strokeStyle = INK;
+    c.lineWidth = 10 * gs; c.beginPath(); c.moveTo(palm[0], palm[1]); c.quadraticCurveTo(palm[0] - D * gs * 22, palm[1] + gs * 6, off[0] - D * gs * 14, off[1] - gs * 10); c.stroke();
+    c.lineWidth = 11 * gs; c.beginPath(); c.moveTo(hand[0], hand[1]); c.lineTo(off[0], off[1]); c.stroke();
+    c.save(); c.translate(gx, gy); c.scale(D * gs, gs); c.rotate(a);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    c.lineWidth = lw;
+    c.beginPath(); c.moveTo(-7, -3); c.lineTo(-1, -2); c.lineTo(-2.5, 11); c.lineTo(-6, 14); c.lineTo(-12, 12); c.lineTo(-11, 6); c.closePath();   // the grip
+    c.fillStyle = "#b07c52"; c.fill(); c.stroke();
+    c.beginPath(); c.roundRect(9, -12.5, 32, 5.5, 1.5); c.fillStyle = "#c6cad1"; c.fill(); c.stroke();   // the barrel
+    c.beginPath(); c.roundRect(9, -7.5, 21, 3, 1); c.fill(); c.stroke();                                  // the ejector rod under it
+    c.beginPath(); c.moveTo(37.5, -12.5); c.lineTo(39.5, -12.5); c.lineTo(39, -15); c.closePath(); c.fillStyle = INK; c.fill();   // the front sight
+    c.beginPath(); c.moveTo(-6, -13); c.lineTo(-12, -18.5); c.lineTo(-13.4, -16.8); c.lineTo(-8, -11); c.closePath(); c.fillStyle = "#5c616b"; c.fill(); c.stroke();   // the hammer
+    c.beginPath(); c.roundRect(-7, -14.5, 17, 13, 2); c.fillStyle = "#8f959f"; c.fill(); c.stroke();     // the frame
+    c.beginPath(); c.arc(3, -1.5, 4, 0, Math.PI); c.stroke();                                              // the trigger guard
+    c.beginPath(); c.roundRect(-2, -14, 11, 11, 2.5); c.fillStyle = "#c6cad1"; c.fill();                  // the cylinder: flutes, tone below
+    c.save(); c.clip(); c.beginPath(); c.rect(-3, -8, 13, 6); ttsToneHere(c, 6, 0.45); c.restore();
+    c.stroke();
+    c.lineWidth = lw * 0.6; c.beginPath(); for (const y of [-11, -8, -5.5]) { c.moveTo(-0.5, y); c.lineTo(7.5, y); } c.stroke();
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw * 0.7; c.beginPath(); c.moveTo(11, -11); c.lineTo(38, -11); c.stroke(); c.strokeStyle = INK;   // a glint along the barrel
+    c.fillStyle = INK; c.beginPath(); c.arc(-6, 3, 7, 0, TAU); c.fill();                                   // the hand on the grip
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw * 0.8; c.beginPath(); c.arc(-6, 3, 4.6, -2.4, -1.3); c.stroke();
+    if (dt >= 0 && dt < 70) { const f = 1 - dt / 70; c.save(); c.translate(41.5, -9.75); gnsFlash(c, 8 + 6 * f, f); c.restore(); }   // the muzzle flash
+    if (fan > 0.08 && fan < 0.92) {   // the palm's swing: three arcs behind it
+      c.strokeStyle = INK; c.lineWidth = lw * 0.7;
+      for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(fx + 6 + i * 3.5, fy + 14, 15 + i * 3, -2.1, -1.2); c.stroke(); }
+    }
+    c.fillStyle = INK; c.beginPath(); c.arc(fx, fy, 6.5, 0, TAU); c.fill();                               // the fanning palm
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw * 0.8; c.beginPath(); c.arc(fx, fy, 4.2, -2.4, -1.3); c.stroke();
+    c.restore();
+    // smoke off the muzzle after each shot
+    for (let j = 0; j < 5; j++) {
+      const age0 = t - ttsShot(j);
+      if (age0 <= 0 || age0 > 560) continue;
+      const m = ttsMuzzle(pn, ttsShot(j) + 20);
+      for (let i = 0; i < (MG.slow ? 1 : 2); i++) {
+        const age = age0 - 15 - i * 40, k = clamp(age / 520, 0, 1), a = 1 - fe(0.5, 1, k);
+        if (age > 0 && a > 0) gnsPuff(c, pn, m[0] + Math.sin(age * 0.006 + j + i) * 2.5 * gs + D * (3 + 5 * i) * gs * 0.6, m[1] - age * 0.03 * gs, (1.8 + 3.6 * easeOut(k)) * gs, a, 190 + j * 2 + i);
+      }
+    }
+  }
+  // each shot: a smoking line from the muzzle to the tot (there in 25 ms, rubbed out from the muzzle end); a ping star where it hits him
+  function ttsShots(c, pn, t) {
+    const D = FIN.dir;
+    for (let j = 0; j < 5; j++) {
+      const dt = t - ttsShot(j);
+      if (dt < 0 || dt > 280) continue;
+      const m = ttsMuzzle(pn, ttsShot(j)), q = pn.p(ttsX(j), -TTS_H * 0.5);
+      if (dt < 260) {
+        const e = lerp2(m, q, easeOut(fe(0, 25, dt))), s = lerp2(m, q, ease(fe(60, 260, dt)));
+        c.lineCap = "butt"; c.strokeStyle = INK; c.lineWidth = 3.4; c.beginPath(); c.moveTo(s[0], s[1]); c.lineTo(e[0], e[1]); c.stroke();
+        c.strokeStyle = COL; c.lineWidth = 1.5; c.stroke();
+      }
+      const u = dt - 25;
+      if (u < 0 || u > 240) continue;
+      const p = pn.p(ttsX(j) - D * TTS_W * 0.18, -TTS_H * 0.55), s = pn.z * 9 * easeOut(fe(0, 45, u)) * (1 - fe(120, 240, u));
+      if (s > 0.5) {
+        gnsStar(c, p[0], p[1], s, "#ffffff");
+        c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = Math.max(1.4, pn.z * 0.6); c.beginPath();
+        for (const a of [-2.4, -1.2, 0.4, 1.9]) { const r0 = s * 1.15, r1 = s * (1.15 + 0.7 * easeOut(fe(0, 90, u))); c.moveTo(p[0] + Math.cos(a) * r0, p[1] + Math.sin(a) * r0); c.lineTo(p[0] + Math.cos(a) * r1, p[1] + Math.sin(a) * r1); }
+        c.stroke();
+      }
+    }
+  }
+  // phew: the last tot's sweat drop flies off his head
+  function ttsPhew(c, pn, t, lw) {
+    const u = fe(TTS_PHEW, TTS_PHEW + 380, t);
+    if (u <= 0 || u >= 1) return;
+    const D = FIN.dir, x = ttsX(TTS_N - 1) + D * (8 + 24 * u), y = -TTS_H * 0.8 - 20 * Math.sin(Math.PI * Math.min(1, u * 1.2)) + 26 * u * u;
+    pn.world(c); c.globalAlpha = 1 - fe(0.7, 1, u); ttsDrop(c, x, y, 2.8, lw * 0.7); c.globalAlpha = 1; pn.screen(c);
+  }
+  function ttsDrawSplash(c, pn, t) {
+    const lw = Math.max(1.1, 3 / pn.z);
+    pn.screen(c);
+    ttsBack(c, pn, t);
+    ttsPuff(c, pn, t);
+    pn.world(c);
+    for (let i = 0; i < TTS_N; i++) if (ttsAt(i, t) && ttsS.back) ttsTotS(c, lw);   // the knocked-off ones, behind the fence
+    ttsPosts(c, pn, lw);
+    for (let i = 0; i < TTS_N; i++) if (ttsAt(i, t) && !ttsS.back) ttsTotS(c, lw);
+    ttsRails(c, pn, lw);
+    pn.screen(c);
+    ttsShots(c, pn, t);
+    ttsPhew(c, pn, t, lw);
+    ttsGun(c, pn, t);
+  }
+  /* ---- panel 4: the barrel, the paper cone, the last tot in it with the ketchup drop (the cone empty once the engine has popped it) ---- */
+  function ttsCone(c, pn, t) {
+    const D = FIN.dir, xb = ttsConeX(), x0 = 0, lw = Math.max(1.1, 3 / pn.z) / TTS_CS, popped = mgPopped(t), mx = x0 + D * 1.2, my = -40, rx = 10, ry = 2.6;
+    pn.world(c); c.translate(xb, 0); c.scale(TTS_CS, TTS_CS);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    // the barrel: bulging staves, two hoops, the lid; tone on the side away from the light
+    const body = () => { c.beginPath(); c.moveTo(x0 - 8.5, -21); c.quadraticCurveTo(x0 - 11, -10.5, x0 - 8.5, 0); c.lineTo(x0 + 8.5, 0); c.quadraticCurveTo(x0 + 11, -10.5, x0 + 8.5, -21); c.closePath(); };
+    body(); c.fillStyle = "#c99a68"; c.fill();
+    c.save(); c.clip();
+    c.beginPath(); c.rect(D > 0 ? x0 + 3 : x0 - 15, -30, 12, 40); ttsToneHere(c, 6, 0.45);
+    c.lineWidth = lw * 0.6; c.beginPath(); for (const s of [-4.5, 0, 4.5]) { c.moveTo(x0 + s, -21); c.quadraticCurveTo(x0 + s * 1.25, -10.5, x0 + s, 0); } c.stroke();
+    c.fillStyle = "#4b4f57"; for (const y of [-16.5, -4.5]) c.fillRect(x0 - 12, y - 1.3, 24, 2.6);
+    c.restore();
+    body(); c.lineWidth = lw; c.stroke();
+    c.beginPath(); c.ellipse(x0, -21, 8.5, 2.3, 0, 0, TAU); c.fillStyle = "#dcb784"; c.fill(); c.stroke();
+    // the cone, stuck in the lid: the inside at the back, the tot, the front with two stripes of the accent
+    c.save(); c.beginPath(); c.rect(x0 - 40, -90, 80, 69); c.clip();
+    c.beginPath(); c.ellipse(mx, my, rx, ry, 0, 0, TAU); c.fillStyle = "#b9ad98"; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+    if (popped) {   // empty: a smear of ketchup left inside
+      c.beginPath(); c.ellipse(mx - D * 2.5, my - 0.6, 4.2, 1.2, 0, 0, TAU); c.fillStyle = "#d4261b"; c.fill();
+    } else {
+      const blink = Math.abs(t - 5120) < 50, sw = fe(MT.AFTER + 150, MT.AFTER + 1100, t);
+      ttsTot(c, mx - D * 0.5, -32, 0.8, D * 0.06, 1, -D, blink ? "calm" : "terror", 0.7, false, sw, lw);
+      // the ketchup drop on his head, a drip running down his side
+      const kx = mx - D * 1.5, ky = -55.5, dr = 2 + 4 * easeOut(fe(MT.AFTER + 150, MT.AFTER + 700, t));
+      c.fillStyle = "#d4261b"; c.lineWidth = lw * 0.7;
+      c.beginPath(); c.ellipse(kx, ky, 5.2, 2.4, 0, 0, TAU); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(kx + D * 3.4, ky + 1); c.lineTo(kx + D * 3.8, ky + 1 + dr); c.lineWidth = 2.2; c.strokeStyle = INK; c.stroke(); c.lineWidth = 1.2; c.strokeStyle = "#d4261b"; c.stroke();
+      c.beginPath(); c.arc(kx + D * 3.8, ky + 1.6 + dr, 1.3, 0, TAU); c.fill(); c.lineWidth = lw * 0.5; c.strokeStyle = INK; c.stroke();
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(kx - D * 1.6, ky - 0.7, 1.4, 0.6, 0, 0, TAU); c.fill();
+      // steam: two curls off the hot tot
+      c.save(); c.globalAlpha = 0.75; c.lineWidth = lw * 0.7;
+      for (let i = 0; i < 2; i++) {
+        const sx = mx + (i ? 5 : -6), ph = ((t - MT.AFTER) * 0.018 + i * 9) % 18;
+        c.beginPath(); for (let j = 0; j <= 8; j++) { const yy = -60 - ph - j * 1.9, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i * 2) * 2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      }
+      c.restore();
+    }
+    const front = () => { c.beginPath(); c.moveTo(mx - rx, my); c.lineTo(x0, -15); c.lineTo(mx + rx, my); c.ellipse(mx, my, rx, ry, 0, 0, Math.PI); c.closePath(); };
+    front(); c.fillStyle = "#f3e9d2"; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = COL; for (const o of [-5, 6]) { c.beginPath(); c.moveTo(mx + o - 4, my - 4); c.lineTo(mx + o + 1, my - 4); c.lineTo(mx + o - 7, -14); c.lineTo(mx + o - 12, -14); c.closePath(); c.fill(); }
+    c.beginPath(); c.rect(D > 0 ? mx + 2 : mx - 14, -60, 12, 50); ttsToneHere(c, 6, 0.4);
+    c.restore();
+    c.strokeStyle = INK; c.lineWidth = lw; front(); c.stroke();
+    if (popped) {   // a drop of ketchup on the rim, running down the cone
+      c.fillStyle = "#d4261b"; c.lineWidth = lw * 0.6;
+      c.beginPath(); c.moveTo(mx + D * 2, my + 2.2); c.quadraticCurveTo(mx + D * 6.5, my + 1.4, mx + D * 6, my + 3.5); c.lineTo(mx + D * 5.6, my + 8); c.arc(mx + D * 5.1, my + 8.3, 1.4, 0, Math.PI); c.lineTo(mx + D * 3.6, my + 3.4); c.closePath(); c.fill(); c.stroke();
+    }
+    c.restore();
+    c.beginPath(); c.ellipse(x0, -21, 2.6, 0.9, 0, 0, TAU); c.fillStyle = INK; c.fill();   // where the tip goes into the lid
+    pn.screen(c);
+  }
+  function ttsDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir;
+    pn.screen(c);
+    gnsStreet(c, pn, t, FIN.wx + D * 52, 50, 0.2 + 0.12 * fe(MT.AFTER, MT.END, t));
+    ttsCone(c, pn, t);
+    mgPuppet(c, pn, W, t, { light: dirAng(-0.45), post: gnsBrim(W, t, 0.8) });
+    pn.screen(c);
+    gnsWisp(c, pn, t);
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Tater Tots",
+    start(g) { S_.start(g); pota = true; ttsC = null; FIN.cue.land = true; },   // (High Noon's hat lands in its own panel 4: here it is gone at the splash, with the loser)
+    build(lay) { S_.build(lay); ttsPrep(); },
+    end() { pota = false; ttsC = null; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = ttsDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 124 : 80) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 46 : 42), wy: lay.port ? -0.48 * vh : -44, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "t", paper: PAPER, slide: MG.reduced ? 1 : 180, cam: ttsCam, draw: ttsDrawSplash, shake: ttsShake }));
+      return ps;
+    },
+    ownWords: true,   // the upright sizes are set in words(): the BLAMs larger than the engine's width rule would make them
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, pg = MG.page, fx = (u) => pg.x + (D > 0 ? u : 1 - u) * pg.w, k = lay.port ? Math.min(1, L.gw * 0.9 / L.gh) : 1, kb = lay.port ? 0.6 : 1;
+      for (const w of ws) w.mul = (w.mul || 1) * k;   // High Noon's words, as the engine would scale them upright
+      Object.assign(ws.find((w) => w.text === "BANG"), { t1: MT.SPLASH + 150 });   // gone as the splash comes in
+      Object.assign(ws.find((w) => w.text === "fuu"), { t1: MT.POP + 20,           // (he blows earlier here, gnsMode): gone as the cone pops; up in the smoke, clear of the cone
+        at: (t) => { const p = MG.byId.after, m = p.sp(...gnsMuzzle(Math.min(t, BLOW + 60))); return [m[0] + D * p.z * 4, m[1] - p.z * 26]; } });
+      // BLAM BLAM BLAM: one stack, a word with every other shot, stepping down toward the far end of the rail
+      const at = lay.port ? [[0.31, 0.27], [0.5, 0.34], [0.69, 0.41]] : [[0.3, 0.12], [0.47, 0.2], [0.64, 0.28]];
+      at.forEach(([u, v], j) => ws.push({ text: "BLAM", t0: ttsShot(2 * j), t1: 4520, size: 0.12, mul: kb, arc: 9, rot: (-0.14 + 0.07 * j) * D, jit: 0.12, seed: 300 + j, at: () => [fx(u), pg.y + v * pg.h] }));
+      ws.push({ text: "click", t0: TTS_CLICK, t1: MT.AFTER, size: 0.06, mul: kb, jit: 0.14, rot: -0.1 * D,
+        at: () => { const pn = MG.byId.splash; mgPlace(pn, TTS_CLICK); const [gx, gy, gs] = ttsGunAt(pn, TTS_CLICK); return [gx + pn.ox + D * gs * 6, gy + pn.oy - gs * 34]; } });
+      return ws;
+    },
+    over(o, t) { if (t < MT.SPLASH) S_.over(o, t); else gnsDust(o, t); },   // from the splash on: no hat, no speed lines (the loser is the food); the dust blows on
+    food() { const x = ttsConeX(); return { x, y: 0, r: 13 * TTS_CS, y0: -42 * TTS_CS, lx: x + FIN.dir * 46 }; },   // (he lands clear of the empty cone)
+    cues(t) {
+      S_.cues(t);
+      cueOnce("ttsPuff", TTS_PUFF, () => Cin.go(() => { Cin._noise(0.2, 0.3, 900, 3000, "bandpass", 1); Cin._osc("sine", 300, 700, 0.12, 0.08, 0.004); }));
+      for (let i = 0; i < TTS_N; i++) cueOnce("ttsPlink" + i, ttsLand(i), () => Cin.go(() => Cin._osc("triangle", 1500 + i * 120, 1300 + i * 100, 0.07, 0.05, 0.002)));
+      cueOnce("ttsCock", TTS_COCK, () => Cin.go(() => { Cin.clack(); Cin.tick(2200); }));
+      for (let i = 0; i < 5; i++) {
+        cueOnce("ttsShot" + i, ttsShot(i), () => Cin.go(() => gnsBang(0.55, false)));
+        cueOnce("ttsPing" + i, ttsHit(i), () => Cin.go(() => Cin._osc("sine", 2900 - i * 90, 2000, 0.3, 0.05, 0.002)));
+      }
+      cueOnce("ttsClick", TTS_CLICK, () => Cin.go(() => Cin.tick(1800)));
+      cueOnce("ttsPhew", TTS_PHEW, () => Cin.go(() => { Cin._noise(0.4, 0.05, 1200, 500, "bandpass", 1); Cin._osc("triangle", 640, 400, 0.35, 0.03, 0.03); }));
+      cueOnce("ttsDrip", MT.AFTER + 260, () => Cin.go(() => Cin._osc("sine", 1100, 500, 0.09, 0.05, 0.003)));
     },
   });
   return S_;
