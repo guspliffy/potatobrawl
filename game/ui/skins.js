@@ -5,21 +5,30 @@
    with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
    looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css.
    The Account sheet's Locker (ui/acct.js) draws its skin cards with the same builder (skMakeCard, skStyle) and opens this sheet on a locked
-   skin with openSkins(id, i): the sheet then shows above the Account sheet, and closing it re-renders the Locker (css/92-locker.css). */
+   skin with openSkins(id, i): the sheet then shows above the Account sheet, and closing it re-renders the Locker (css/92-locker.css).
+   The Pommes skins (spec.palettes[i].pommes: 1 Ink Noir, 2 Starfall; core.js, their effects PMFX in skinfx.js) are a third row, "Special skins · bought with
+   Pommes" (built here; shell.html has the other two): a red-and-white candy-stripe POMMES tag, a red border, the model drawn live every frame, and for one you
+   do not own the price in Pommes (the fries cone, "300 · €2.99", never the chip's coin). They are never bought here: state "pm" (not owned) sends a tap on
+   the card, or on the big button, to the Pommes Shop on that fighter (pshopOpen). An owned one (in P.owned, put there by ui/kopages.js koSkins) is worn like any skin. */
 const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0, live: 0 };
 const SK_CHIPS_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 screens.skins = $("scrSkins");
 const skOwns = (id, i) => (P.owned[id] || [0]).includes(i);
 const skCount = (spec) => spec.palettes.reduce((n, p, i) => n + (skOwns(spec.id, i) ? 1 : 0), 0);
-// the effect line: the chip skins' FXTEXT, a Road skin's ROADFX (skinfx.js)
-const skFx = (spec, i) => `${(spec.palettes[i].road ? ROADFX[spec.palettes[i].road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`;
+// the effect line: the chip skins' FXTEXT, a Road skin's ROADFX, a Pommes skin's PMFX (skinfx.js)
+const skFx = (spec, i) => { const p = spec.palettes[i]; return `${(p.pommes ? PMFX[p.pommes] : p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`; };
 const skRegOf = (p) => ROAD_REG.findIndex((g) => g.boss === p.road);
 const skHv = (p) => p.road === "harvest";   // the Harvest skin: day 30 of the daily gifts, never bought
-const skWonTag = (p) => (skHv(p) ? "Harvest" : "Road");
-// worn, own (tap to wear), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
+const skTagged = (p) => !!(p.road || p.pommes);   // a skin with a sticker: won (ROAD, HARVEST) or bought with Pommes (POMMES)
+const skWonTag = (p) => (p.pommes ? "Pommes" : skHv(p) ? "Harvest" : "Road");
+const skPmPrice = () => `<i class="pmglyph" aria-hidden="true"></i><span>${KO_PRICE} · ${KO_EUR}</span>`;   // the fries cone and "300 · €2.99" (ui/kopages.js)
+// a sticker on an element (the bar, the preview): shown for a won or Pommes skin, the Pommes one in candy stripes
+function skTagSet(el, p) { el.hidden = !skTagged(p); el.textContent = skWonTag(p); el.classList.toggle("pm", !!p.pommes); }
+// worn, own (tap to wear), pm (a Pommes skin you do not own: the Pommes Shop), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
 function skState(spec, i) {
   const p = spec.palettes[i];
   if (skOwns(spec.id, i)) return palIdx(spec.id) === i ? "worn" : "own";
+  if (p.pommes) return "pm";   // never "buy" or "short": a Pommes skin is not sold for chips (its price here is 0)
   if (skHv(p)) return "shut";
   if (p.road) return roadRegOpen(roadGet(), skRegOf(p)) ? "road" : "shut";
   return P.tokens >= p.price ? "buy" : "short";
@@ -47,7 +56,7 @@ function skinsBar(spec, pi) {
   const p = spec.palettes[pi] || spec.palettes[0], n = skCount(spec), bar = $("dSkins");
   bar.style.setProperty("--c", col(p));
   $("dSkName").textContent = p.name;
-  $("dSkRoad").hidden = !p.road; $("dSkRoad").textContent = skWonTag(p);
+  skTagSet($("dSkRoad"), p);
   $("dSkFx").textContent = skFx(spec, pi);
   $("dSkN").textContent = `${n}/${spec.palettes.length}`;
   bar.setAttribute("aria-label", `Skins. ${spec.name} wears ${p.name}. ${n} of ${spec.palettes.length} owned`);
@@ -55,6 +64,13 @@ function skinsBar(spec, pi) {
 $("dSkins").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); openSkins(sel.fighter); });
 
 /* ----- the sheet ----- */
+// the third row, the Pommes skins, with its kicker: built once here (shell.html has the chip and the won rows); skRender fills it
+{
+  const k = document.createElement("div"), row = document.createElement("div");
+  k.className = "sk-k"; k.innerHTML = "<b>Special skins</b><span>bought with Pommes</span>";
+  row.className = "sk-row"; row.id = "skPm"; row.setAttribute("role", "group"); row.setAttribute("aria-label", "Special skins");
+  $("skSheet").querySelector(".sk-rack").append(k, row);
+}
 function openSkins(id, i) {   // i (optional): the skin to look at first; else the one worn
   if (!FIG[id]) return;
   Object.assign(SK, { id, i: Number.isInteger(i) && FIG[id].palettes[i] ? i : palIdx(id), art: null, cards: [] });
@@ -74,12 +90,12 @@ function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
 function skMakeCard(spec, i, list, tap) {
   const p = spec.palettes[i], b = document.createElement("button");
   b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
-  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
+  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${skTagged(p) ? `<em class="sk-rt${p.pommes ? " pm" : ""}">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
   const f = glazeMark(BL.newGame({ seed: 1, players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
   f.x = 0; f.y = 0; f.facing = -1;
-  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94, pm: !!p.pommes });   // pm: drawn every frame (skPmDraw), its overlay moves
   return b;
 }
 const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
@@ -87,16 +103,17 @@ const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
 // tight (the Locker's small cards): a shut Road skin's foot says "Kitchen · locked", not "The Kitchen · locked", so it fits
 function skStyle(b, spec, i, sel, tight) {
   const p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small"), nm = b.querySelector(".sk-f b"), gz = glazeHas(spec.id, i);
-  b.className = `sk ${st}${sel ? " sel" : ""}`;
+  b.className = `sk ${st}${p.pommes ? " pms" : ""}${sel ? " sel" : ""}`;
   if (nm._gz !== gz) {
     nm._gz = gz; nm.className = gz ? "gz" : "";
     if (gz) { nm.innerHTML = '<span></span><i aria-hidden="true">\u2726</i>'; nm.firstChild.textContent = p.name; } else nm.textContent = p.name;
   }
   if (st === "worn") small.textContent = "Worn";
   else if (st === "own") small.textContent = "Tap to wear";
+  else if (st === "pm") small.innerHTML = skPmPrice();
   else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${fmtChips(p.price)}`;
   else small.textContent = tight && st === "shut" ? skRoad(spec, i).foot.replace(/^The /, "") : skRoad(spec, i).foot;
-  b.setAttribute("aria-label", `${p.name}${gz ? ", glazed" : ""}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${fmtChips(p.price)} chips` : skRoad(spec, i).how}`);
+  b.setAttribute("aria-label", `${p.name}${gz ? ", glazed" : ""}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "pm" ? `bought with Pommes, ${KO_PRICE} Pommes, ${KO_EUR}: in the Pommes Shop` : st === "buy" || st === "short" ? `${fmtChips(p.price)} chips` : skRoad(spec, i).how}`);
   return st;
 }
 function skDrawCards() { for (const a of SK.cards) paintModel(a, 0); }
@@ -108,8 +125,9 @@ function skRender(full) {
     $("skFig").textContent = spec.name;
     $("skRoadSub").textContent = `from the bosses and the Harvest, with ${spec.name}`;
     const chip = $("skChip"), road = $("skRoad");
-    chip.innerHTML = ""; road.innerHTML = ""; SK.cards = [];
-    spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skCard(spec, i)));
+    const pm = $("skPm");
+    chip.innerHTML = ""; road.innerHTML = ""; pm.innerHTML = ""; SK.cards = [];
+    spec.palettes.forEach((p, i) => (p.pommes ? pm : p.road ? road : chip).appendChild(skCard(spec, i)));
     skDrawCards();
   }
   $("skOwned").textContent = `${own} / ${n} owned`;
@@ -126,12 +144,13 @@ function skPreview(spec) {
   $("skPrev").style.setProperty("--c", col(p)); $("skPrev").style.setProperty("--cg", rgba(col(p), 0.42));
   $("skPrev").className = `sk-prev ${st}`;
   $("skName").textContent = p.name;
-  $("skRoadTag").hidden = !p.road; $("skRoadTag").textContent = skWonTag(p);
+  skTagSet($("skRoadTag"), p);
   $("skFx").textContent = skFx(spec, i);
   const act = $("skAct");
   if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;
   else if (st === "own") act.innerHTML = `<button class="btn primary sk-go" id="skGo"><span>Wear</span></button>`;
   else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${fmtChips(p.price)}</span></button><p class="sk-l2">You have ${fmtChips(P.tokens)} · ${fmtChips(P.tokens - p.price)} left after</p>`;
+  else if (st === "pm") act.innerHTML = `<button class="btn sk-go sk-pmgo" id="skGo" aria-label="In the Pommes Shop, ${KO_PRICE} Pommes, ${KO_EUR}"><span><b>In the Pommes Shop</b> <small>${skPmPrice()}</small></span></button>`;
   else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${fmtChips(p.price)}</span><p class="sk-l1">${fmtChips(p.price - P.tokens)} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
   else { const rd = skRoad(spec, i); act.innerHTML = `<p class="sk-l1 sk-lock">${rd.how}</p><p class="sk-l2">${rd.why}</p>`; }
   const go = $("skGo");
@@ -144,13 +163,18 @@ function skPreview(spec) {
   glazeMark(SK.art.f, glazeHas(spec.id, i));   // ui/glaze.js: the preview shines when the skin is glazed
 }
 // the loop draws the preview while the sheet is open (loop.js)
-function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
+function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); skPmDraw(tk); }
+// the Pommes cards are live too: the overlay moves (a nebula breathes, stars twinkle, ink boils), so they are drawn with the tick, not once
+function skPmDraw(tk) { for (const a of SK.cards) if (a.pm) paintModel(a, tk); }
 // opened from the Account sheet (the menu, not the select) the loop is not drawing the preview: this does, while the sheet is open
-function skLive() { if (!SK.id) return; if (SK.art) paintModel(SK.art, tick); SK.live = requestAnimationFrame(skLive); }
+function skLive() { if (!SK.id) return; if (SK.art) paintModel(SK.art, tick); skPmDraw(tick); SK.live = requestAnimationFrame(skLive); }
+// a Pommes skin you do not own is never bought here: the Rack closes and the Pommes Shop opens on that fighter (ui/pshop.js)
+function skPommes(id) { Sfx.ui(); closeSkins(); pshopOpen(id); }
 function skTap(i) {
   Sfx.init();
   const spec = FIG[SK.id], st = skState(spec, i);
   skDisarm();
+  if (st === "pm") { skPommes(spec.id); return; }
   SK.i = i;
   if (st === "own") { equipSkin(spec.id, i); Sfx.uiFlip(); skChanged(); return; }   // owned: worn at once
   if (st === "short" || st === "road" || st === "shut") Sfx.uiNo(); else Sfx.ui();   // looking is free; the thud says it is locked
@@ -160,7 +184,8 @@ function skGo() {
   Sfx.init();
   const spec = FIG[SK.id], i = SK.i, p = spec.palettes[i], st = skState(spec, i);
   if (st === "own") { equipSkin(spec.id, i); Sfx.uiFlip(); skChanged(); return; }
-  if (st !== "buy") return;
+  if (st === "pm") { skPommes(spec.id); return; }
+  if (st !== "buy" || p.pommes) return;   // (a Pommes skin never gets here: no chip purchase of one is possible)
   if (!SK.arm) {   // the first tap arms the button (ember, "Sure?") for 3 s
     SK.arm = true; Sfx.ui();
     SK.armT = setTimeout(() => { SK.arm = false; if (SK.id) skRender(); }, 3000);

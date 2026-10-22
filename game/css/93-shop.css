@@ -188,108 +188,55 @@
 .sh-c.gift .sh-f small { font-size: 11px; color: var(--mint); }
 .sh-gz.tk .sh-f small { color: var(--mint); }
 
-/* ---- KO pages and Pommes (ui/shop.js shopKoCard, shopKoPack; state from ui/kopages.js) ----
+/* ---- Pommes and the Free chips row's states (ui/shop.js shopPommesRow, shopPmUpdate, shopAdUpdate; the Pommes' state is ui/kopages.js, the ad's ui/ads.js) ----
    Pommes are the premium money: a striped fries cone with three fries, red where the chip is gold, and never the chip's round shape (the glyph is taller than wide).
-   The pill beside the chips, the pack row (the Free chips row's twin: dashed and SOON until the server says buy), one card per fighter: halftone art with the sound word big and
-   faint behind his portrait, the page's name in manga lettering, WATCH (round, top left), the ON tag (top right, the nameplates' gold look), the state line in the foot.
-   Four cards across on a landscape sheet (the portraits are wide), two across upright; the card's art height is --ka. */
+   They are not spent here: the Pommes Shop (ui/pshop.js, css/93-pshop.css) sells the Potatalities and the Pommes skins. The pill beside the chips and the row at the
+   end of the tab ("Pommes Shop", the Free chips row's twin: solid and red-edged, the balance, a chevron) both open it. The Free chips row stays the dashed, dim row
+   while it waits (SOON, getting an ad ready, none, back tomorrow) and is gold-edged and bright when an ad is ready to play. */
 .pmglyph { display: inline-block; flex: none; width: 0.8em; height: 1em; vertical-align: -0.12em;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 30'%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M6.4 13 4.3 3.4 7.4 2.7 9.5 13z'/%3E%3Cpath d='M10.4 13V1.4h3.4V13z'/%3E%3Cpath d='M14.5 13 16.6 2.7 19.7 3.4 17.6 13z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='%23fff6e4'/%3E%3Cg fill='%23e8453c'%3E%3Cpath d='M3.2 10.6h3.5L12 28.8z'/%3E%3Cpath d='M10.25 10.6h3.5L12 28.8z'/%3E%3Cpath d='M17.3 10.6h3.5L12 28.8z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='none' stroke='%230e1022' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
-/* the pill: red outline, the balance in white, the word small */
-#acPanH .sh-pm { flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--coin); padding: 0 14px 0 10px; border: 2px solid var(--ketchup); border-radius: 999px;
+/* the pill (a button): red outline, the balance in white, the word small */
+#acPanH .sh-pm { appearance: none; cursor: pointer; margin: 0; -webkit-tap-highlight-color: transparent; flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--coin); padding: 0 14px 0 10px; border: 2px solid var(--ketchup); border-radius: 999px;
   background: linear-gradient(180deg, #3b2238, #261830); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: #fff; font: 800 21px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #acPanH .sh-pm .pmglyph { width: 15px; height: 19px; margin: -1px 1px 0 0; }
 #acPanH .sh-pm b { font-weight: 800; }
 #acPanH .sh-pm span { padding-top: 2px; font: 800 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
-/* the pack row: the ad row's twin (dashed, dim, a SOON sticker) until the server says buy; then a button */
-.sh-pk .sh-pmi { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); opacity: 0.8; }
-.sh-pk .sh-pmi .pmglyph { width: 15px; height: 19px; vertical-align: 0; }
-.sh-pk .sh-adv { opacity: 0.85; }
-.sh-pk.go { cursor: pointer; border-style: solid; border-color: rgba(232, 69, 60, 0.7); background: rgba(232, 69, 60, 0.1); -webkit-tap-highlight-color: transparent; }
-.sh-pk.go .sh-pmi, .sh-pk.go .sh-adt, .sh-pk.go .sh-adv { opacity: 1; }
-.sh-pk.go:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
-@media (hover: hover) { .sh-pk.go:hover { background: rgba(232, 69, 60, 0.18); } }
-/* the grid and a card (a div with two buttons in it: the card itself, .ko-main, and WATCH, .ko-go) */
-#acPanH .sh-grid.sh-kogrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; }
-.sh-ko { cursor: default; }
-.sh-ko:active { transform: none; }
-.sh-ko:has(.ko-main:active) { transform: translateY(2px); }
-@media (hover: hover) { .sh-ko:hover { transform: none; } .sh-ko:has(.ko-main:hover):not(:has(.ko-main:active)) { transform: translateY(-1px); } }
-.ko-main { appearance: none; display: flex; flex-direction: column; flex: 1 1 auto; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 7px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.ko-main:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
-.ko-art { position: relative; flex: none; display: block; height: var(--ka); overflow: hidden; border-radius: 7px 7px 0 0; container-type: inline-size;
-  background: radial-gradient(ellipse 80% 90% at 50% 120%, rgba(239, 122, 82, 0.6), transparent 72%), linear-gradient(180deg, #52295a, #2b1f4c 62%, #20244a); }
-/* the halftone: screentone dots, strongest in the corners and thinning towards the middle */
-.ko-art::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(circle, rgba(255, 201, 120, 0.42) 1.15px, transparent 1.65px) 0 0 / 6px 6px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); }
-/* the sound word: big, faint, behind the portrait; the card's width (container units) keeps a long one whole */
-.ko-word { position: absolute; z-index: 0; left: 50%; top: 47%; transform: translate(-50%, -50%) rotate(-8deg) skewX(-8deg); font: italic 900 min(calc(var(--ka) * 0.98), calc(190cqw / var(--wn, 5))) / 0.8 var(--display);
-  letter-spacing: -0.01em; text-transform: uppercase; white-space: nowrap; color: var(--sand); opacity: 0.3; pointer-events: none; }
-/* the portrait fades into the halftone at its edges, so the word shows round it */
-.ko-pic { position: absolute; z-index: 1; left: 9%; right: 9%; top: 0; bottom: 0; background: center 24% / cover no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); }
-/* the page's name, in manga lettering (italic, ink-stroked), tilted up from the lower left */
-.ko-nm { position: absolute; z-index: 2; left: 7px; bottom: 5px; max-width: 72%; font: italic 900 var(--kn, 16px) / 0.9 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: #fff;
-  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); transform: rotate(-3deg); transform-origin: left bottom; text-wrap: balance; pointer-events: none; }
-.sh-ko.on .ko-nm { color: var(--gold); }
-/* WATCH: a round cream button, the play triangle over the word */
-.ko-go { appearance: none; position: absolute; z-index: 3; left: 6px; top: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: var(--kg, 36px); height: var(--kg, 36px);
-  margin: 0; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: linear-gradient(180deg, #fff6e4, #f3d9a4); color: var(--ink); box-shadow: 0 2px 0 var(--ink), inset 0 -2px 0 rgba(120, 60, 0, 0.18);
-  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s; }
-.ko-go::after { content: ""; position: absolute; inset: -5px; }   /* a bigger target than it looks */
-.ko-go svg { flex: none; width: 52%; height: 52%; margin-top: -2px; }
-.ko-go span { margin-top: -3px; font: 800 7.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; }
-.ko-go:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
-.ko-go:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-.ko-go:disabled { opacity: 0.45; filter: grayscale(0.7); cursor: default; }
-@media (hover: hover) { .ko-go:hover:not(:disabled) { filter: brightness(1.08); } }
-/* ON: the nameplates' worn look, in gold */
-.sh-ko.on { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
-.sh-ko.on .sh-f b { color: var(--gold); }
-.ko-on { display: none; position: absolute; right: -2px; top: -2px; z-index: 4; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 8px 0 7px;
-  font: 900 10px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; }
-.sh-ko.on .ko-on { display: block; }
-.sh-ko .sh-soon { top: 7px; right: 6px; padding: 3px 6px 2px; font-size: 9px; }   /* inside the art's corner, so the sticker never pokes into the row above */
-/* the state line: "In use" / "Tap to use" / the price; short of Pommes the price is dimmed */
-.sh-ko .sh-f small { font-size: 11.5px; }
-.sh-ko.on .sh-f small { color: var(--gold); }
-.sh-ko.short .sh-f small { opacity: 0.62; }
-.sh-ko.busy .sh-f small { color: var(--sand); letter-spacing: 0.2em; }
-.sh-f small .pmglyph { width: 11px; height: 14px; margin: 0 5px 0 0; vertical-align: 0; }
-.sh-f small > span + .pmglyph { margin-left: 6px; }
-.sh-ko.arm .sh-f small .pmglyph { filter: none; }
-/* back from WATCH or the results' band: a short pulse on the card (.hi, 1.6 s) */
-.sh-ko.hi { position: relative; z-index: 2; animation: koHi 1.6s ease-out; }
-@keyframes koHi { 0%, 32% { box-shadow: 0 0 0 3px var(--sand), 0 0 26px 7px rgba(243, 217, 164, 0.8), 0 3px 0 var(--ink); transform: translateY(-3px) scale(1.025); } }
-/* sizes */
+#acPanH .sh-pm:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#acPanH .sh-pm:focus-visible, .sh-pms:focus-visible, .sh-ad.ready:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+@media (hover: hover) { #acPanH .sh-pm:hover { filter: brightness(1.12); } }
+#acPanH .sh-pm.zero b { color: var(--mute); }
+#acPanH .sh-pm.zero .pmglyph, .sh-pms.zero .pmglyph, .sh-pms.zero .sh-pmv { filter: grayscale(0.7) brightness(0.85); }
+/* the Free chips row with an ad ready: gold-edged and bright, a button; it keeps the dashed, dim look while it only waits */
+.sh-ad.ready { cursor: pointer; border-style: solid; border-color: rgba(244, 201, 93, 0.75); background: rgba(244, 201, 93, 0.1); -webkit-tap-highlight-color: transparent; }
+.sh-ad.ready .sh-adi, .sh-ad.ready .sh-adt, .sh-ad.ready .sh-adv { opacity: 1; }
+.sh-ad.ready .sh-adt b { color: var(--gold); }
+@media (hover: hover) { .sh-ad.ready:hover { background: rgba(244, 201, 93, 0.18); } }
+.sh-ad.done .sh-adv, .sh-ad.none .sh-adv { opacity: 0.35; }
+/* the Pommes Shop row: the cone in the icon's place, the words, the balance (white, dim at 0), a chevron; a button, never dim */
+.sh-pms { appearance: none; width: 100%; margin: 0; text-align: left; font: inherit; color: var(--text); cursor: pointer; border-style: solid; border-color: rgba(232, 69, 60, 0.7); background: rgba(232, 69, 60, 0.1);
+  -webkit-tap-highlight-color: transparent; }
+.sh-pms .sh-adt { opacity: 1; }
+.sh-pms .sh-adt b { color: var(--text); }
+.sh-pms .sh-pmi { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); }
+.sh-pms .sh-pmi .pmglyph { width: 15px; height: 19px; vertical-align: 0; }
+.sh-pms .sh-pmv { flex: none; font: 800 18px/1 var(--display); font-variant-numeric: tabular-nums; color: #fff; }
+.sh-pms .sh-pmg { flex: none; margin: -2px 0 0 -2px; font: 800 24px/1 var(--display); color: var(--sand); }
+.sh-pms:active { transform: translateY(2px); }
+@media (hover: hover) { .sh-pms:hover { background: rgba(232, 69, 60, 0.18); } }
+#app.short .sh-pms .sh-pmi { width: 24px; height: 24px; }
+#app.short .sh-pms .sh-pmi .pmglyph { width: 12px; height: 16px; }
+#app.short .sh-pms .sh-pmv { font-size: 16px; }
+#app.short .sh-pms .sh-pmg { font-size: 22px; }
 #app.short #acPanH .sh-pm { font-size: 19px; padding: 0 12px 0 8px; }
 #app.short #acPanH .sh-pm .pmglyph { width: 13px; height: 17px; }
-#app.short .ko-go { --kg: 32px; }
-#app.short .ko-nm { --kn: 14px; }
-#app.short .sh-ko .sh-f small, #app.short .sh-ko.short .sh-f small { font-size: 11px; }
-#app.short .sh-pk .sh-pmi { width: 24px; height: 24px; }
-#app.short .sh-pk .sh-pmi .pmglyph { width: 12px; height: 16px; }
 #app.tiny #acPanH .sh-pm { font-size: 18px; padding: 0 11px 0 8px; }
 #app.tiny #acPanH .sh-pm span { font-size: 10px; }
-#app.tiny .ko-go { --kg: 30px; }
-#app.tiny .ko-go span { font-size: 6.5px; }
-#app.tiny .ko-nm { --kn: 13px; -webkit-text-stroke-width: 2.6px; }
-#app.tiny #acPanH .sh-grid.sh-kogrid { gap: 8px 6px; }
-#app.tiny .sh-ko .sh-f small, #app.tiny .sh-ko.short .sh-f small { font-size: 10.5px; letter-spacing: 0.02em; }
-#app.tiny .ko-on { padding: 3px 5px 2px; font-size: 9px; }
-#app.portrait #acPanH .sh-grid.sh-kogrid, #app.narrow #acPanH .sh-grid.sh-kogrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
 #app.portrait .sh-top, #app.narrow .sh-top { flex-wrap: wrap; row-gap: 6px; }
 #app.portrait #acPanH .sh-from, #app.narrow #acPanH .sh-from { order: 5; flex: 1 1 100%; }
 #app.narrow #acPanH .sh-pm { font-size: 18px; padding: 0 11px 0 8px; }
-#app.narrow .ko-nm { --kn: 15px; }
-#app:not(.short):not(.portrait) .ko-go { --kg: 40px; }
-#app:not(.short):not(.portrait) .ko-go span { font-size: 8.5px; }
-#app:not(.short):not(.portrait) .ko-nm { --kn: 19px; left: 9px; bottom: 6px; }
-#app:not(.short):not(.portrait) .sh-ko .sh-f small, #app:not(.short):not(.portrait) .sh-ko.short .sh-f small { font-size: 12.5px; }
-@media (prefers-reduced-motion: reduce) { .sh-ko.hi { animation: none; outline: 3px solid var(--sand); outline-offset: 2px; } .ko-go { transition: none; } }
 
-/* ---- the results' band (ui/shop.js shopResKo, markup in shell.html #rKo): "POTATALITY · in the Shop ›" under the story, a thin dark band like the finisher plate ---- */
-#resSheet .res-ko { appearance: none; display: inline-flex; align-items: center; gap: 6px; flex: none; align-self: flex-start; max-width: 100%; height: 26px; margin: 4px 0 0 3px; padding: 0 9px 0 10px;
+/* ---- the results' band (ui/shop.js shopResKo, markup in shell.html #rKo): "POTATALITY · in the Pommes Shop ›" under the story, a thin dark band like the finisher plate ---- */
+#resSheet .res-ko { appearance: none; display: inline-flex; align-items: center; gap: 6px; flex: none; align-self: flex-start; max-width: calc(100% - 10px); height: 26px; margin: 4px 0 0 3px; padding: 0 9px 0 10px;
   border: 2px solid var(--ketchup); border-radius: 7px; background: rgba(14, 16, 34, 0.9); color: var(--sand); box-shadow: 0 3px 0 var(--ink); transform: skewX(-8deg); white-space: nowrap; cursor: pointer;
   font: 800 12px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
 #resSheet .res-ko[hidden] { display: none; }
@@ -304,7 +251,8 @@
 #resSheet.in:not(.still) .res-ko { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.46s backwards; }
 #app.tiny #resSheet .res-ko { height: 22px; margin-top: 2px; gap: 5px; padding: 0 7px 0 8px; font-size: 11px; }
 #app.tiny #resSheet .res-ko em { font-size: 12px; }
-#app.tiny #resSheet .res-ko .pmglyph { width: 9px; height: 12px; }
+#app.short #resSheet .res-ko .rk-in, #app.portrait #resSheet .res-ko .rk-in { display: none; }   /* "in the" gives way where the text column is narrow */
+#app.tiny #resSheet .res-ko .pmglyph { display: none; }   /* the band is 175px wide here; the words need the room */
 #app.portrait #resSheet .res-ko { height: 24px; margin-top: 2px; font-size: 11px; }
 #app:not(.short):not(.portrait) #resSheet .res-ko { height: 32px; margin-top: 6px; gap: 8px; padding: 0 12px 0 14px; font-size: 15px; }
 #app:not(.short):not(.portrait) #resSheet .res-ko em { font-size: 17px; }

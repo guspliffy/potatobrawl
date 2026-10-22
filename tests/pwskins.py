@@ -1,9 +1,13 @@
 # The Skins bar and the Skin Rack on the fighter select (ui/skins.js, css/90-skins.css), and the Play friends lobby's Fight Card
 # (ui/online.js, css/95-lobby.css). UI only. At 667x320, 844x390, 1280x760 and 390x844:
-#  - the select shows one Skins bar (the worn skin, SKINS 2/8) as a 44+ px tap target at the foot of the stage, no swatch row;
-#  - the bar opens the sheet, which fits the screen; eight cards, each with its model drawn, in their states (worn, own, buy, short,
+#  - the select shows one Skins bar (the worn skin, SKINS 2/10) as a 44+ px tap target at the foot of the stage, no swatch row;
+#  - the bar opens the sheet, which fits the screen; ten cards, each with its model drawn, in their states (worn, own, buy, short,
 #    Road with its region open, Road with its region shut); nothing in the sheet runs past its edges;
 #  - the preview says what each locked skin needs (the Road lines in both cases, "140 more chips needed.", "You have 160 · 10 left after");
+#  - ten skins per fighter: the Rack has a third row "Special skins · bought with Pommes" with the two Pommes skins (Ink Noir, Starfall): a candy-stripe POMMES tag, a red
+#    border, the figure drawn live, the price row the fries cone and "300 · €2.99" (never the coin); a Pommes skin you do not own is state "pm" however many chips you have,
+#    a tap on its card closes the Rack and opens the Pommes Shop (#scrPshop) on that fighter, its big preview (opened from the Locker) has one button "In the Pommes Shop";
+#    nothing buys one with chips; one you own (in P.owned) reads Worn / Tap to wear like any skin, is worn with one tap, and the select's bar shows POMMES while it is worn;
 #  - Buy is two taps (Sure? for 3 s, a tap elsewhere puts Buy back), the bought skin is worn, chips counted down, YOURS!; an owned skin
 #    is worn with one tap; the sheet stays open and the select behind follows; Esc, the backdrop and the X close it;
 #  - a Road boss beaten with another fighter: the line says so;
@@ -47,7 +51,7 @@ async def ev(pg, js): return await pg.evaluate(js)
 async def settle(pg): await pg.wait_for_function("document.getAnimations().every((a) => a.playState !== 'running' || a.effect.getComputedTiming().endTime === Infinity)", timeout=5000)
 async def txt(pg, sel): return ' '.join(((await pg.evaluate(f"(document.querySelector({json.dumps(sel)}) || {{}}).textContent || ''")) or '').split())
 async def prof(pg): return await pg.evaluate(f"JSON.parse(localStorage.getItem('{KEY}'))")
-STATES = "[...document.querySelectorAll('#skSheet .sk')].map((b) => [...b.classList].filter((c) => c !== 'sk' && c !== 'sel').join(' '))"
+STATES = "[...document.querySelectorAll('#skSheet .sk')].map((b) => [...b.classList].filter((c) => c !== 'sk' && c !== 'sel' && c !== 'pms').join(' '))"
 def card(row, i): return f"document.querySelectorAll('#{row} .sk')[{i}].click()"
 # every box in the sheet (but the sunbursts) stays inside it; the preview's words stay inside the preview
 FIT = """(() => { const S = document.getElementById('skSheet').getBoundingClientRect(), P = document.getElementById('skPrev').getBoundingClientRect(), bad = [];
@@ -56,6 +60,14 @@ FIT = """(() => { const S = document.getElementById('skSheet').getBoundingClient
     if (r.left < S.left - 1 || r.right > S.right + 1 || r.bottom > S.bottom + 1) bad.push((e.id || e.className || e.tagName) + ' runs out of the sheet'); }
   for (const e of document.querySelectorAll('.sk-pt *')) { const r = e.getBoundingClientRect(); if (r.width && (r.right > P.right + 1 || r.top < P.top - 1)) bad.push((e.id || e.className || e.tagName) + ' runs out of the preview'); }
   return bad; })()"""
+# the Rack's rows in order and the Pommes cards' details (ui/skins.js builds the third row; css/90-skins.css styles it)
+PMROW = """(() => { const row = document.getElementById('skPm'), rack = document.querySelector('.sk-rack'), cs = [...row.querySelectorAll('.sk')];
+  const cone = (c) => c.querySelector('.sk-f .pmglyph');
+  return { order: [...rack.children].map((e) => e.id || 'k'), kick: row.previousElementSibling.textContent.replace(/\\s+/g, ' ').trim(), names: cs.map((c) => c.querySelector('.sk-f b').textContent),
+    tags: cs.map((c) => (c.querySelector('.sk-rt') || {}).textContent), price: cs.map((c) => c.querySelector('.sk-f small').textContent.trim()), cones: cs.map((c) => !!cone(c) && cone(c).getClientRects().length > 0),
+    coneH: cs.map((c) => cone(c) ? Math.round(cone(c).getBoundingClientRect().height) : 0), coin: cs.map((c) => !!c.querySelector('.tokglyph')), border: cs.map((c) => getComputedStyle(c).borderTopColor),
+    stripe: cs.map((c) => getComputedStyle(c.querySelector('.sk-rt')).backgroundImage.includes('repeating-linear-gradient')), art: cs.map((c) => Math.round(c.querySelector('.sk-a').getBoundingClientRect().height)),
+    cut: cs.map((c) => [...c.querySelectorAll('.sk-f b, .sk-f small')].some((e) => e.scrollWidth > e.clientWidth + 1)) }; })()"""
 # each card's canvas has the model drawn (some opaque pixels)
 INKED = """[...document.querySelectorAll('#skSheet .sk canvas')].map((c) => { if (!c.width || !c.height) return 0; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 64) if (d[i] > 200) n++; return n; })"""
 
@@ -67,21 +79,34 @@ async def select_part(b, tag, w, h):
       return { h: r.height, inStage: r.left >= s.left - 1 && r.right <= s.right + 1 && r.bottom <= s.bottom + 1, onScreen: r.top >= 0 && r.bottom <= innerHeight + 0.5 }; })()""")
     need(bar['h'] >= 43.5 and bar['inStage'], f'{tag}: the Skins bar {bar}')
     if tag != 'upright': need(bar['onScreen'], f'{tag}: the Skins bar is off the screen {bar}')
-    need(await txt(pg, '#dSkN') == '2/8' and await txt(pg, '#dSkName') == 'Steel', f"{tag}: the bar reads {await txt(pg, '#dSkName')!r} {await txt(pg, '#dSkN')!r}")
+    need(await txt(pg, '#dSkN') == '2/10' and await txt(pg, '#dSkName') == 'Steel', f"{tag}: the bar reads {await txt(pg, '#dSkName')!r} {await txt(pg, '#dSkN')!r}")
     await pg.screenshot(path=f'{OUT}/{tag}_1_select.png')
     # the sheet
     await (pg.tap if w < 1000 else pg.click)('#dSkins'); await pg.wait_for_timeout(600); await settle(pg)
     need(await ev(pg, "!document.getElementById('scrSkins').hidden"), f'{tag}: the Skins bar does not open the sheet')
-    need(await txt(pg, '#skTitle') == 'Samurai Skins' and await txt(pg, '#skOwned') == '2 / 8 owned' and await txt(pg, '#skTokens') == '160', f"{tag}: the band reads {await txt(pg, '#skTitle')!r} {await txt(pg, '#skOwned')!r} {await txt(pg, '#skTokens')!r}")
+    need(await txt(pg, '#skTitle') == 'Samurai Skins' and await txt(pg, '#skOwned') == '2 / 10 owned' and await txt(pg, '#skTokens') == '160', f"{tag}: the band reads {await txt(pg, '#skTitle')!r} {await txt(pg, '#skOwned')!r} {await txt(pg, '#skTokens')!r}")
     st = await ev(pg, STATES)
-    need(st == ['own', 'worn', 'buy', 'short', 'road', 'shut', 'shut', 'shut'], f'{tag}: card states {st}')
+    need(st == ['own', 'worn', 'buy', 'short', 'road', 'shut', 'shut', 'shut', 'pm', 'pm'], f'{tag}: card states {st}')
     inked = await ev(pg, INKED)
-    need(len(inked) == 8 and all(n > 0 for n in inked), f'{tag}: card models not drawn {inked}')
+    need(len(inked) == 10 and all(n > 0 for n in inked), f'{tag}: card models not drawn {inked}')
     fit = await ev(pg, FIT)
     need(not fit, f'{tag}: {fit[:4]}')
     need(await txt(pg, '#skChip .sk:nth-child(3) .sk-f small') == '150' and await txt(pg, '#skRoad .sk:nth-child(1) .sk-f small') == 'Beat Old Scratch'
          and await txt(pg, '#skRoad .sk:nth-child(2) .sk-f small') == 'The Kitchen · locked', f'{tag}: card foot lines')
     await pg.screenshot(path=f'{OUT}/{tag}_2_rack.png')
+    # the third row: "Special skins · bought with Pommes", after the Road row; two cards, each with the candy-stripe POMMES tag, the red border, the figure drawn and the price row
+    # (the fries cone, "300 · €2.99", never the coin), nothing cut off
+    pm = await ev(pg, PMROW)
+    need(pm['order'] == ['k', 'skChip', 'k', 'skRoad', 'k', 'skPm'] and pm['kick'] == 'Special skinsbought with Pommes', f"{tag}: the Rack's rows {pm['order']} {pm['kick']!r}")
+    need(pm['names'] == ['Ink Noir', 'Starfall'] and pm['tags'] == ['Pommes', 'Pommes'] and pm['price'] == ['300 · €2.99', '300 · €2.99'], f"{tag}: the Pommes cards read {pm['names']} {pm['tags']} {pm['price']}")
+    need(all(pm['cones']) and all(13 <= h <= 17 for h in pm['coneH']) and not any(pm['coin']), f"{tag}: the Pommes price row has no fries cone or has the coin {pm['cones']} {pm['coneH']}")
+    need(pm['border'] == ['rgb(255, 79, 79)'] * 2 and all(pm['stripe']) and not any(pm['cut']), f"{tag}: the Pommes cards' border {pm['border']}, candy stripe {pm['stripe']}, text cut {pm['cut']}")
+    need(all(a >= 30 for a in pm['art']), f"{tag}: the Pommes cards' figures are too small {pm['art']}")
+    need(all(c == 0 for c in await ev(pg, "[...document.querySelectorAll('#skChip .sk, #skRoad .sk')].map((c) => c.querySelectorAll('.sk-rt.pm, .pmglyph').length)")), f'{tag}: a Pommes tag or cone on a chip or won skin')
+    # the Pommes figure is drawn live (its overlay moves): the Starfall card's pixels change from one moment to the next
+    a1 = await ev(pg, "document.querySelectorAll('#skPm .sk canvas')[1].toDataURL()"); await pg.wait_for_timeout(700)
+    a2 = await ev(pg, "document.querySelectorAll('#skPm .sk canvas')[1].toDataURL()")
+    need(a1 != a2, f'{tag}: the Starfall card is not drawn live')
     # what each locked skin needs
     await ev(pg, card('skRoad', 0)); await pg.wait_for_timeout(200)
     need(await txt(pg, '#skAct .sk-l1') == 'Beat Old Scratch on the Road with Samurai.' and await txt(pg, '#skAct .sk-l2') == 'The Field · his fence opens at 12 stars · you have 9.',
@@ -123,7 +148,7 @@ async def select_part(b, tag, w, h):
     await pg.screenshot(path=f'{OUT}/{tag}_6_yours.png')
     await pg.wait_for_timeout(600)
     st = await ev(pg, STATES)
-    need(st[2] == 'worn' and st[3] == 'short' and await txt(pg, '#skTokens') == '10' and await txt(pg, '#dSkN') == '3/8' and await txt(pg, '#skOwned') == '3 / 8 owned',
+    need(st[2] == 'worn' and st[3] == 'short' and st[8:] == ['pm', 'pm'] and await txt(pg, '#skTokens') == '10' and await txt(pg, '#dSkN') == '3/10' and await txt(pg, '#skOwned') == '3 / 10 owned',
          f"{tag}: after the buy {st} coin {await txt(pg, '#skTokens')!r} bar {await txt(pg, '#dSkN')!r}")
     need(await ev(pg, "!!document.querySelector('#skAct .sk-pill')") and await txt(pg, '#skAct') == '✓Worn', f"{tag}: the preview after the buy {await txt(pg, '#skAct')!r}")
     # closing: Esc, the backdrop, the X
@@ -138,6 +163,64 @@ async def select_part(b, tag, w, h):
     await pg.screenshot(path=f'{OUT}/{tag}_7_select_after.png')
     await ctx.close()
 
+async def pommes_part(b, tag, w, h):
+    # not owned: a card is "pm" however many chips you have; a tap closes the Rack and opens the Pommes Shop on that fighter; no chip buys a Pommes skin
+    ctx, pg = await page(b, w, h, dict(BASE, tokens=5000), T, f'{tag} pommes')
+    clk = pg.tap if w < 1000 else pg.click
+    await ev(pg, "document.getElementById('bRanked').click()"); await pg.wait_for_timeout(700); await settle(pg)
+    await ev(pg, "document.getElementById('dSkins').click()"); await pg.wait_for_timeout(600); await settle(pg)
+    st = await ev(pg, STATES)
+    need(st[8:] == ['pm', 'pm'] and st[:4] == ['own', 'worn', 'buy', 'buy'], f'{tag}: with 5000 chips the card states are {st}')
+    for i in (0, 1):
+        await (clk(f'#skPm .sk:nth-child({i + 1})') if i == 0 else ev(pg, card('skPm', i))); await pg.wait_for_timeout(600)
+        need(await ev(pg, "document.getElementById('scrSkins').hidden") and await ev(pg, "!document.getElementById('scrPshop').hidden && window.__blPshop.st.on") and await ev(pg, "window.__blPshop.fighter") == 'samurai',
+             f"{tag}: a tap on Pommes card {i} does not close the Rack and open the Pommes Shop on Samurai")
+        need(await ev(pg, "window.__blastline.mode") == 'select', f'{tag}: the Pommes Shop took the game off the select')
+        if i == 0: await pg.screenshot(path=f'{OUT}/{tag}_11_pommes_shop.png')
+        await ev(pg, "document.getElementById('psClose').click()"); await pg.wait_for_timeout(400)
+        need(await ev(pg, "document.getElementById('scrPshop').hidden && document.getElementById('scrSkins').hidden"), f'{tag}: closing the Pommes Shop leaves a sheet open')
+        await ev(pg, "document.getElementById('dSkins').click()"); await pg.wait_for_timeout(500)
+    p = await prof(pg)
+    need(p['tokens'] == 5000 and p['owned']['samurai'] == [0, 1] and p['pal']['samurai'] == 1, f"{tag}: a Pommes skin was bought with chips: {p['tokens']} {p['owned']} {p['pal']}")
+    # the big preview of a Pommes skin you do not own (opened from the Locker, which opens the Rack on a skin that is not yours): one button to the Pommes Shop
+    await ev(pg, "document.getElementById('skClose').click()"); await pg.wait_for_timeout(300)
+    await ev(pg, "document.getElementById('selBack').click()"); await pg.wait_for_timeout(500)
+    await ev(pg, "document.querySelector('#mRank .plate').click()"); await pg.wait_for_timeout(600)
+    await ev(pg, "document.getElementById('acTabL').click()"); await pg.wait_for_timeout(700)
+    await ev(pg, "document.querySelector('#lkRack .sk[data-i=\"8\"]').click()"); await pg.wait_for_timeout(700); await settle(pg)
+    need(await ev(pg, "!document.getElementById('scrSkins').hidden") and await txt(pg, '#skName') == 'Ink Noir' and await txt(pg, '#skRoadTag') == 'Pommes' and await ev(pg, "document.getElementById('skRoadTag').classList.contains('pm')"),
+         f"{tag}: the Rack opened from the Locker shows {await txt(pg, '#skName')!r} {await txt(pg, '#skRoadTag')!r}")
+    need(await txt(pg, '#skGo') == 'In the Pommes Shop 300 · €2.99' and await ev(pg, "document.getElementById('skPrev').classList.contains('pm') && !document.querySelector('#skAct .tokglyph') && !!document.querySelector('#skGo .pmglyph')"), f"{tag}: the Pommes preview action reads {await txt(pg, '#skGo')!r}")
+    need(await txt(pg, '#skFx') == 'Inked like a manga page: halftone shading, a boiling outline, ink strokes on dashes and hits and an inked KO.', f"{tag}: the Pommes effect line {await txt(pg, '#skFx')!r}")
+    need(not await ev(pg, FIT), f'{tag}: the Pommes preview runs out: {(await ev(pg, FIT))[:3]}')
+    need(await ev(pg, "(() => { const b = document.getElementById('skGo').getBoundingClientRect(); return b.height >= 40; })()"), f'{tag}: the Pommes button is too small')
+    await pg.screenshot(path=f'{OUT}/{tag}_12_pommes_preview.png')
+    await ev(pg, "document.getElementById('skGo').click()"); await pg.wait_for_timeout(600)
+    need(await ev(pg, "document.getElementById('scrSkins').hidden && !document.getElementById('scrPshop').hidden") and await ev(pg, "window.__blPshop.fighter") == 'samurai', f'{tag}: the preview button does not open the Pommes Shop on Samurai')
+    await ev(pg, "document.getElementById('psClose').click()"); await pg.wait_for_timeout(400)
+    p = await prof(pg)
+    need(p['tokens'] == 5000 and p['owned']['samurai'] == [0, 1], f'{tag}: the preview button bought something')
+    await ctx.close()
+    # owned (the server's items are in P.owned): worn and worn-for-good like any skin, no price, the bar says POMMES
+    ctx, pg = await page(b, w, h, dict(BASE, owned={'samurai': [0, 1, 8, 9]}, pal={'samurai': 8}), T, f'{tag} pommes owned')
+    await ev(pg, "document.getElementById('bRanked').click()"); await pg.wait_for_timeout(700); await settle(pg)
+    need(await txt(pg, '#dSkName') == 'Ink Noir' and await txt(pg, '#dSkN') == '4/10' and await ev(pg, "!document.getElementById('dSkRoad').hidden && document.getElementById('dSkRoad').classList.contains('pm')") and await txt(pg, '#dSkRoad') == 'Pommes',
+         f"{tag}: the bar reads {await txt(pg, '#dSkName')!r} {await txt(pg, '#dSkN')!r} tag {await txt(pg, '#dSkRoad')!r}")
+    await pg.screenshot(path=f'{OUT}/{tag}_13_pommes_worn_select.png')
+    await ev(pg, "document.getElementById('dSkins').click()"); await pg.wait_for_timeout(600); await settle(pg)
+    st = await ev(pg, STATES)
+    need(st == ['own', 'own', 'buy', 'short', 'road', 'shut', 'shut', 'shut', 'worn', 'own'] and await txt(pg, '#skOwned') == '4 / 10 owned', f"{tag}: owned states {st} {await txt(pg, '#skOwned')!r}")
+    need(await ev(pg, "[...document.querySelectorAll('#skPm .sk .sk-f small')].map((e) => e.textContent.trim())") == ['Worn', 'Tap to wear'] and not await ev(pg, "!!document.querySelector('#skPm .pmglyph, #skPm .tokglyph')"), f"{tag}: the owned Pommes foot lines")
+    need(await ev(pg, "document.querySelectorAll('#skPm .sk .sk-rt.pm').length") == 2 and await ev(pg, "document.querySelectorAll('#skPm .sk.pms').length") == 2, f'{tag}: the owned Pommes cards lose their tag or border')
+    need(await txt(pg, '#skName') == 'Ink Noir' and await txt(pg, '#skAct') == '✓Worn' and await txt(pg, '#skRoadTag') == 'Pommes', f"{tag}: the worn Pommes preview {await txt(pg, '#skName')!r} {await txt(pg, '#skAct')!r}")
+    need(not await ev(pg, FIT), f'{tag}: the owned Pommes sheet runs out: {(await ev(pg, FIT))[:3]}')
+    await pg.screenshot(path=f'{OUT}/{tag}_14_pommes_owned_rack.png')
+    await ev(pg, card('skPm', 1)); await pg.wait_for_timeout(300)   # an owned Pommes skin is worn with one tap, like any skin
+    st = await ev(pg, STATES)
+    need(st[8:] == ['own', 'worn'] and (await prof(pg))['pal']['samurai'] == 9 and await txt(pg, '#dSkName') == 'Starfall' and await ev(pg, "document.getElementById('scrPshop').hidden && !document.getElementById('scrSkins').hidden"),
+         f"{tag}: wearing Starfall: {st[8:]}, worn {(await prof(pg))['pal']['samurai']}, bar {await txt(pg, '#dSkName')!r}")
+    await ctx.close()
+
 async def beaten_part(b):
     # Old Scratch beaten with Phoenix (her Devil's Roast won): Samurai's Devil's Roast says so; The Kitchen is open, its fence closed
     pr = dict(BASE, owned={'samurai': [0, 1], 'phoenix': [0, 4]}, road={'s': [7, 7, 7, 7, 7, 7, 7, 7], 'b': 1, 'paid': False})
@@ -145,7 +228,7 @@ async def beaten_part(b):
     await ev(pg, "document.getElementById('bRanked').click()"); await pg.wait_for_timeout(500)
     await ev(pg, "document.getElementById('dSkins').click()"); await pg.wait_for_timeout(400)
     st = await ev(pg, STATES)
-    need(st[4:] == ['road', 'road', 'shut', 'shut'], f'beaten: Road card states {st[4:]}')
+    need(st[4:] == ['road', 'road', 'shut', 'shut', 'pm', 'pm'], f'beaten: Road card states {st[4:]}')
     await ev(pg, card('skRoad', 0)); await pg.wait_for_timeout(200)
     need(await txt(pg, '#skAct .sk-l2') == 'You beat him with Phoenix · every fighter wins his own.', f"beaten: {await txt(pg, '#skAct .sk-l2')!r}")
     await ev(pg, card('skRoad', 1)); await pg.wait_for_timeout(200)
@@ -216,6 +299,7 @@ async def run():
         b = await p.chromium.launch(args=ARGS)
         for tag, w, h in SIZES:
             await select_part(b, tag, w, h)
+            await pommes_part(b, tag, w, h)
             await lobby_part(b, tag, w, h)
             print(tag, 'done', len(errs), 'problems so far', flush=True)
         await beaten_part(b)
