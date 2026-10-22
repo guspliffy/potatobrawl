@@ -219,6 +219,14 @@ if grep -q "^bossweek ok" "$LOGS/bw.log"; then pass "Boss Week server ($(grep -c
 else fail "Boss Week server" "$LOGS/bw.log"; fi
 }
 
+# 5d3b. Pommes on the server (pommes.js) and tools/pommes.js: the state, a buy and every refusal, the ledger, a phone's save keeping the
+#       wallet, grant / take back / move through the requests folder, a request made while the game is down, the rate limit, accounts off.
+s_pm() {
+PM_PORT=$((PB + 1)) timeout 200 node tests/pommes.js > "$LOGS/pm.log" 2>&1
+if grep -q "^pommes ok" "$LOGS/pm.log"; then pass "Pommes server + support tool ($(grep -c '^PASS' "$LOGS/pm.log") checks)"
+else fail "Pommes server + support tool" "$LOGS/pm.log"; fi
+}
+
 # 5d4. Boss Week in the browser against a real server (the boss with a tenth of his HP): FIGHT makes the account, the ticket, the clock
 #      pill, a win the server plays again (CHECKING… then NEW BEST, the same time frame for frame), Board, leaving costs nothing, a slower
 #      win isn't sent, the 4:00 cap, Monday's payout card and the chips by sync. Shots in build/shots/bw.
@@ -446,12 +454,12 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw bwui replay quickui stakesui screens skins shop acctui hud ultui bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm bwui replay quickui stakesui screens skins shop acctui hud ultui bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
-# priority next to the rest; the server tests (quick, cpu, bw, acct, stats) have short timers, so they run alone first (about 20 seconds).
+# priority next to the rest; the server tests (quick, cpu, bw, pm, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
-SOLO=(quick cpu bw acct stats)
+SOLO=(quick cpu bw pm acct stats)
 REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui replay tut skins bossui ultui bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
