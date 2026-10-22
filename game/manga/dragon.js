@@ -9,13 +9,15 @@
    the dot pops off the page, DRAGON'S AGE, the jaw shuts; 4700 panel 4 as on Inferno (its moments are MT.AFTER + offset).
    Script fields: col, name, hit, pop, flight (id of the panel the loser flies out of), panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p),
    after(t), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt().
-   POTATALITY: "Jacket Potato" = MANGA.dragon.alt (S_.alt, at the end; its helpers are prefixed jp), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Jacket Potato" = MANGA.dragon.alt (S_.alt, at the end; its helpers are prefixed jp), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Air Fryer" = MANGA.dragon.alt2 (S_.alt2, after it; its helpers are prefixed af), played when the second one is chosen (FIN.alt 2). */
 MANGA.dragon = (function () {
   const WBOX = [-84, -130, 82, 12];   // what the Dragon with his wings can cover (measured over the whole page), a little tighter than the engine's default box
   const COL = "#ff8a3d", CORE = "#fff4d6", FLAME_DARK = "#d93a24";
   let ash = [], embers = [], smoke = [], rnd = Math.random;
   let ult = false;   // this play is the Ultimate page, "Dragon's Age" (set by start())
   let pota = false;  // this play is the Potatality, "Jacket Potato" (set by its start)
+  let pota2 = false; // this play is the second Potatality, "Air Fryer" (set by its start)
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   // the Dragon's size: a potato (1) who grows to 1.6 over 600 ms in panel 2, and shrinks back over 400 ms in panel 4
   const grow = (t) => 1 + 0.6 * ease(fe(1250, 1850, t)) - 0.6 * ease(fe(MT.AFTER, MT.AFTER + 400, t));
@@ -315,7 +317,7 @@ MANGA.dragon = (function () {
   const S_ = {
     col: COL, name: "Inferno", hit: 2900, pop: 3080, flight: "strike",
     panels,
-    start() { ult = false; pota = false; },
+    start() { ult = false; pota = false; pota2 = false; },
     words(lay) {
       const ev = FIN.ev, heavy = ev && /^h/.test(ev.mv || ""), txt = ev && ev.fin ? "FWOOSH" : heavy ? "DOOM" : "KRAK", D = FIN.dir;
       const P2 = () => MG.byId.look, P3 = () => MG.byId.strike;
@@ -399,13 +401,13 @@ MANGA.dragon = (function () {
         }
       }
       if (t > 800 && t < MT.FADE) {
-        const a = fe(800, 1100, t) * (1 - fe(MT.AFTER + 100, MT.AFTER + 700, t)) * (ult || pota ? 1 - fe(MT.SPLASH - 150, MT.SPLASH, t) : 1), u = (t - 800) / 1000;
+        const a = fe(800, 1100, t) * (1 - fe(MT.AFTER + 100, MT.AFTER + 700, t)) * (ult || pota || pota2 ? 1 - fe(MT.SPLASH - 150, MT.SPLASH, t) : 1), u = (t - 800) / 1000;
         o.fillStyle = "rgba(40,36,50,0.5)"; o.globalAlpha = a;
         for (const d of ash) { const y = ((d.y - d.v * u) % L.gh + L.gh) % L.gh, x = d.x + Math.sin(u * 1.3 + d.ph) * 10; o.beginPath(); o.arc(x, y, d.s, 0, 7); o.fill(); }
         o.globalAlpha = 1;
       }
       if (t > FIN.launch && t < FIN.launch + 420) {
-        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult || pota ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult || pota || pota2 ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         const sx_ = q[0] - Math.cos(ang) * len * 0.45, sy_ = q[1] - Math.sin(ang) * len * 0.45, hh_ = Math.min(L.gw, L.gh) * 0.34;
@@ -1058,7 +1060,7 @@ MANGA.dragon = (function () {
   S_.alt = Object.assign({}, S_, {
     name: "Jacket Potato",
     start(g) { S_.start(g); pota = true; jpGc = null; jpC = null; jpIn = false; },
-    end() { S_.end(); pota = false; jpGc = null; jpC = null; jpIn = false; },
+    end() { pota = false; jpGc = null; jpC = null; jpIn = false; },   // (the Dragon's S_ has no end of its own)
     panels(lay) {
       const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after"), D = FIN.dir;
       strike.freeze = strike.cover = MT.SPLASH;   // the splash covers the whole page from here: the strike is drawn once more, then a bitmap
@@ -1099,6 +1101,429 @@ MANGA.dragon = (function () {
       cueOnce("jpBlink2", 4470, () => Cin.go(() => Cin.tick(2600)));
       cueOnce("jpSizzle", MT.AFTER + 140, () => Cin.go(() => Cin._noise(0.7, 0.05, 3000, 5200, "highpass", 0.8)));
       cueOnce("jpBlink3", 4950, () => Cin.go(() => Cin.tick(2900)));
+    },
+  });
+  /* ===================== the second Potatality, "Air Fryer" (MANGA.dragon.alt2; design: Project files step8/fable-design-2.md §1.1) =====================
+     Inferno to the roar and the pop (the comet is gone as the page turns). 3250 panel 5, the splash, slides up: a round wire air-fryer drum on its stand with
+     the loser inside, gripping the mesh; the Dragon hovers behind it, only his head over the rim, his wings either side as the fan's blades (WHIRRR over the drum).
+     3300-3900 the wings beat (every 180 ms a gust ring blows into the drum), the drum spins up to 2 turns a second (8 speed arcs), the loser tumbles three turns,
+     cheeks puffed; 3900 ding: it stops in a puff of steam; 3945 it tips over its foot toward a red-and-white paper basket and 7 golden wedges tumble in (the top
+     one has the loser's eyes and a wisp of steam); 4165 the Dragon swoops over behind the basket, 4320 pokes the top wedge (ow!), it wobbles twice. 4700 panel 4
+     as on Inferno with the basket beside him, the top wedge rocking and waving; the engine's POP at 5250 leaves the basket torn open, two wedges on the ground.
+     Splash world: the drum's axle at (FIN.wx, -G.ay) (it lurches as it tips), the basket's foot at (G.bx, 0); the camera pushes in on the basket from 4140.
+     Shapes are drawn as for a winner on the left and mirrored by FIN.dir. Every helper here is prefixed af. */
+  const AF = { WHIRR: 3300, FULL: 3700, COAST: 3880, STOP: 3920, DING: 3900, SWAP: 3945, TIP: 3945, POUR: 3990, FLY: 95, BACK: 4140, SWOOP: 4165, LAND: 4290, POKE: 4320, WOB: 4330, WOB1: 4650 };
+  const AF_TAU = Math.PI * 2, AF_OM = (4 * Math.PI) / 1000, AF_TH = 1.6 * Math.PI, AF_BEATS = ["afBeat0", "afBeat1", "afBeat2", "afBeat3"];
+  // the 7 wedges: their place in the basket (dx from its middle, foot y, lean, length), the order they are drawn in it (the top one, 6, last), the order they tumble
+  // out (6 last, so it lands on top), and where they lie in the drum before it tips (x, y in drum radii from the axle, rotation)
+  const AF_SLOT = [[-19, -15, -0.62, 31], [-13, -19, -0.36, 35], [-5, -22, -0.15, 38], [8, -21, 0.2, 37], [15, -19, 0.4, 35], [20, -15, 0.64, 31], [1, -25, 0.03, 46]];
+  const AF_DRAW = [0, 5, 1, 4, 2, 3, 6], AF_OUT = [0, 3, 1, 4, 2, 5, 6];
+  const AF_PILE = [[-0.45, 0.6, 1.3], [-0.22, 0.7, 1.75], [0.02, 0.74, 1.45], [0.26, 0.68, 1.9], [0.46, 0.54, 1.15], [-0.12, 0.5, 1.6], [0.16, 0.48, 1.5]];
+  const AF_PUFF = [[-0.4, 0.3, 0.32], [0.05, 0.45, 0.36], [0.42, 0.2, 0.3], [-0.2, -0.15, 0.34], [0.3, -0.3, 0.3], [-0.45, -0.4, 0.26], [0.02, -0.55, 0.3]];
+  let afGc = null, afC = null, afIn = 0;   // afIn: 1 the Dragon, 2 the loser is being drawn into the splash (their poses there); afGc / afC: the layout and the colours, once per page
+  // the layout: the drum's radius R and axle height ay, the basket's foot bx, the Dragon's feet as he hovers behind the drum (h) and behind the basket (p),
+  // the loser's scale in the drum (a boss is drawn smaller by the engine), the camera before (c) and after (k) the push
+  function afGeo() {
+    if (afGc) return afGc;
+    const port = !!(MG.lay && MG.lay.port), D = FIN.dir, R = 70, x = FIN.wx, W = W_(), Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1, sc = 1.1;
+    const ay = port ? R + 112 : R + 12, bx = port ? x : x + D * (R + 82), rim = -ay - R, bk = 1.25;
+    afGc = { port, R, x, ay, bx, bk, sc, lsc: Math.min(1.2, (R * 1.02) / (Lp.s.h * lb)), lb, vh: (2 * R) / 0.6,
+      hx: x - D * R * 0.1, hy: rim + 0.62 * W.s.h * sc - 9, px: bx + D * (port ? 64 : 76), rim,
+      cx: port ? x + D * 6 : x + D * 46, kx: port ? x + D * 30 : bx + D * 30, kz: port ? 1.2 : 1.3 };
+    return afGc;
+  }
+  function afCols() {
+    if (afC) return afC;
+    const body = dgHex(L_().pal.body);
+    afC = { skin: mgTintCss(mixH(body, "#b8692c", 0.5), 0.2), skinHi: mixH(mixH(body, "#b8692c", 0.5), "#fff4d6", 0.35), flesh: "#f7c45a", fleshDk: "#dc9532", fleshHi: "#fff2bf",
+      red: "#e0412e", paper: "#fff8ee", inside: "#5a1d14", steel: "#cfd4dc", steelDk: "#8d95a2", hot: "#ffcf96", gap: "#2a1712" };
+    return afC;
+  }
+  // the drum's turn (rad, as for a winner on the left) and its speed 0..1: it spins up to 2 turns a second, coasts, stops at the ding
+  function afSpin(t) {
+    if (t < AF.WHIRR) return [0, 0];
+    const up = AF.FULL - AF.WHIRR, th1 = (AF_OM * up) / 2;
+    if (t < AF.FULL) { const u = t - AF.WHIRR; return [(AF_OM * u * u) / (2 * up), u / up]; }
+    if (t < AF.COAST) return [th1 + AF_OM * (t - AF.FULL), 1];
+    const d = AF.STOP - AF.COAST, u = Math.min(t - AF.COAST, d);
+    return [th1 + AF_OM * (AF.COAST - AF.FULL) + AF_OM * (u - (u * u) / (2 * d)), 1 - u / d];
+  }
+  const afTip = (t) => 0.42 * ease(fe(AF.TIP, AF.POUR, t)) * (1 - ease(fe(AF.BACK, AF.BACK + 130, t)));
+  // the drum's axle (world) and its tilt: tipping, it rolls over its foot on the basket's side (so the far side lifts)
+  function afDrumC(t) {
+    const G = afGeo(), R = G.R, ph = afTip(t), qx = R * 0.62, qy = R * 0.8;
+    return [G.x + FIN.dir * (qx - qx * Math.cos(ph) + qy * Math.sin(ph)), -G.ay + qy - qx * Math.sin(ph) - qy * Math.cos(ph), ph];
+  }
+  // where the hatch stops (rad from the axle, for a winner on the left): facing the basket once the drum has tipped
+  const afHatch0 = () => (afGeo().port ? Math.PI / 2 - 0.42 : 0.3) - AF_TH;
+  // a wedge, its middle at (x, y), leaning ang (clockwise, as for a winner on the left), len long; o: { eyes, look, ow, smile, wave } for the one with the loser's face
+  function afWedge(c, x, y, ang, len, lw, o) {
+    const C = afCols(), h = len / 2, bw = len * (o ? 0.5 : 0.44);
+    c.save(); c.translate(x, y); c.scale(FIN.dir, 1); c.rotate(ang);
+    c.lineJoin = "round"; c.lineCap = "round";
+    c.beginPath(); c.moveTo(-bw * 0.5, h); c.quadraticCurveTo(-bw * 1.05, 0, -bw * 0.1, -h); c.quadraticCurveTo(bw * 0.25, -h * 1.04, bw * 0.38, -h * 0.86);
+    c.quadraticCurveTo(bw * 0.64, 0, bw * 0.5, h); c.quadraticCurveTo(0, h + bw * 0.18, -bw * 0.5, h); c.closePath();
+    c.fillStyle = C.flesh; c.fill();
+    c.save(); c.clip();
+    c.beginPath(); c.moveTo(-bw * 0.6, h + 2); c.quadraticCurveTo(-bw * 1.15, 0, -bw * 0.16, -h - 2); c.quadraticCurveTo(-bw * 0.5, 0, -bw * 0.12, h + 2); c.closePath(); c.fillStyle = C.skin; c.fill();
+    c.fillStyle = C.fleshDk; c.beginPath(); c.moveTo(bw * 0.62, h + 2); c.quadraticCurveTo(bw * 0.72, 0, bw * 0.42, -h * 0.9); c.quadraticCurveTo(bw * 0.5, 0, bw * 0.3, h + 2); c.closePath(); c.fill();
+    c.restore();
+    c.strokeStyle = MG_INK; c.lineWidth = lw * 1.1; c.stroke();
+    c.strokeStyle = C.fleshHi; c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(bw * 0.05, -h * 0.55); c.quadraticCurveTo(bw * 0.2, -h * 0.1, bw * 0.12, h * 0.35); c.stroke();
+    c.fillStyle = C.fleshDk; for (const [fx, fy] of [[0.2, 0.45], [-0.05, 0.62], [0.28, -0.2]]) { c.beginPath(); c.arc(bw * fx, h * fy, lw * 0.55, 0, AF_TAU); c.fill(); }
+    if (o) {   // the loser's eyes on the cut face, looking back at the Dragon, worried brows; squeezed shut and a little round mouth while it says ow
+      const er = bw * 0.16, ey = -h * 0.3, patch = L_().spec.look.costume === "odin";
+      c.strokeStyle = MG_INK;
+      for (const sd of [-1, 1]) {
+        const ex = -bw * 0.04 + sd * bw * 0.22;
+        if (o.ow) { c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(ex - sd * er, ey - er * 0.8); c.lineTo(ex + sd * er * 0.8, ey); c.lineTo(ex - sd * er, ey + er * 0.8); c.stroke(); continue; }
+        if (patch && sd < 0) { c.fillStyle = MG_INK; c.beginPath(); c.ellipse(ex, ey, er * 1.05, er, 0, 0, AF_TAU); c.fill(); continue; }
+        c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, er * 0.9, er * 1.15, 0, 0, AF_TAU); c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+        c.fillStyle = MG_INK; c.beginPath(); c.arc(ex + (o.look || 0) * er * 0.35, ey + er * 0.15, er * 0.42, 0, AF_TAU); c.fill();
+        c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(ex + sd * er * 1.1, ey - er * 1.5); c.lineTo(ex - sd * er * 0.5, ey - er * 2.0); c.stroke();
+      }
+      const my = ey + er * 2.1, mx = -bw * 0.04;
+      if (o.ow) { c.fillStyle = "#5a2418"; c.beginPath(); c.ellipse(mx, my, er * 0.5, er * 0.6, 0, 0, AF_TAU); c.fill(); c.lineWidth = lw * 0.7; c.stroke(); }
+      else { c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(mx - er * 0.7, my); c.quadraticCurveTo(mx, my + (o.smile ? er * 0.7 : -er * 0.25), mx + er * 0.7, my); c.stroke(); }
+      if (o.wave !== undefined) {   // a tiny stick arm, waving
+        const ax = -bw * 0.62, ay = -h * 0.05, a = -2.2 + 0.55 * Math.sin(o.wave), hx = ax + Math.cos(a) * len * 0.3, hy = ay + Math.sin(a) * len * 0.3;
+        c.lineWidth = lw * 1.2; c.beginPath(); c.moveTo(ax, ay); c.lineTo(hx, hy); c.stroke();
+        c.fillStyle = MG_INK; c.beginPath(); c.arc(hx, hy, lw * 1.5, 0, AF_TAU); c.fill();
+      }
+    }
+    c.restore();
+  }
+  // a wedge's middle and lean in the basket (bottom middle at (x, 0), scaled k)
+  function afSlot(i, x, k) {
+    const s = AF_SLOT[i], D = FIN.dir, h = (s[3] * k) / 2;
+    return [x + D * (s[0] * k + Math.sin(s[2]) * h), s[1] * k - Math.cos(s[2]) * h, s[2], s[3] * k];
+  }
+  // the red-and-white paper basket, its foot's middle at (x, 0): part 0 the inside (behind the wedges), 1 the front; torn: the front ripped open (after the pop)
+  function afBasket(c, x, k, lw, part, torn) {
+    const C = afCols(), w0 = 28 * k, w1 = 40 * k, h = 42 * k, e = w1 * 0.2;
+    c.save(); c.translate(x, 0); c.scale(FIN.dir, 1);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK;
+    if (!part) { c.beginPath(); c.ellipse(0, -h, w1, e, 0, 0, AF_TAU); c.fillStyle = C.inside; c.fill(); c.lineWidth = lw * 1.1; c.stroke(); c.restore(); return; }
+    const front = () => { c.beginPath(); c.moveTo(-w1, -h); c.ellipse(0, -h, w1, e, 0, Math.PI, 0, true); c.lineTo(w0, 0); c.lineTo(-w0, 0); c.closePath(); };
+    front(); c.fillStyle = C.paper; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = C.red; c.beginPath();
+    for (let i = -3; i <= 3; i++) { const a = i * 0.29, b = 0.075; c.moveTo((a - b) * w1, -h - e); c.lineTo((a + b) * w1, -h - e); c.lineTo((a + b) * w0, 1); c.lineTo((a - b) * w0, 1); c.closePath(); }
+    c.fill();
+    c.restore();
+    afTone(c, [[w1 * 0.35, -h + e], [w1 * 1.05, -h], [w0 * 1.05, 0.5], [w0 * 0.4, 0.5]]);
+    if (torn) {   // a ripped hole in the front, its paper flap hanging down
+      c.beginPath(); c.moveTo(-w1 * 0.55, -h + e * 0.9);
+      for (let i = 1; i <= 8; i++) { const u = i / 8, xx = lerp(-w1 * 0.55, w1 * 0.5, u), yy = -h + e * 0.9 + (i % 2 ? h * 0.12 : 0) + Math.sin(u * Math.PI) * e * 0.3; c.lineTo(xx, yy); }
+      c.lineTo(w0 * 0.42, -h * 0.28); c.lineTo(w0 * 0.1, -h * 0.4); c.lineTo(-w0 * 0.2, -h * 0.22); c.lineTo(-w0 * 0.5, -h * 0.36); c.closePath();
+      c.fillStyle = C.inside; c.fill(); c.lineWidth = lw; c.stroke();
+      c.beginPath(); c.moveTo(-w0 * 0.2, -h * 0.22); c.lineTo(w0 * 0.25, -h * 0.3); c.lineTo(w0 * 0.05, h * 0.02 - 1); c.closePath(); c.fillStyle = C.paper; c.fill(); c.stroke();
+    }
+    front(); c.lineWidth = lw * 1.3; c.stroke();
+    c.beginPath(); c.ellipse(0, -h, w1, e, 0, Math.PI, 0, true); c.lineWidth = lw * 3.6; c.stroke(); c.strokeStyle = C.paper; c.lineWidth = lw * 1.8; c.stroke();
+    c.restore();
+  }
+  // dot tone over a polygon given in the current (world) transform
+  function afTone(c, poly) { c.save(); c.beginPath(); poly.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(6, 0.4); c.fill(); c.restore(); }
+  // the wedges in the basket (the ones that have landed), the top one with his face; the basket's inside before them, its front after
+  function afBasketFull(c, pn, t, x, k, lw, o) {
+    afBasket(c, x, k, lw, 0, false);
+    for (const i of AF_DRAW) {
+      if (o.land && t < AF.POUR + AF_OUT[i] * 16 + AF.FLY) continue;
+      const s = afSlot(i, x, k);
+      let a = s[2];
+      if (i === 6 && o.rock) a += o.rock;
+      afWedge(c, s[0], s[1], a, s[3], lw, i === 6 ? o.face : null);
+    }
+    afBasket(c, x, k, lw, 1, false);
+  }
+  // a wisp of steam rising off the top wedge
+  function afWisp(c, x, y, len, t, a, lw) {
+    if (a <= 0.02) return;
+    c.save(); c.globalAlpha = a; c.strokeStyle = MG_INK; c.lineWidth = lw * 0.9; c.lineCap = "round";
+    for (let i = 0; i < 2; i++) {
+      const ph = ((t * 0.02 + i * 9) % 14) * len * 0.02;
+      c.beginPath(); for (let j = 0; j <= 9; j++) { const yy = y - ph - j * len * 0.07, xx = x + i * len * 0.18 + Math.sin(j * 0.8 + t * 0.007 + i) * len * 0.06; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+    }
+    c.restore();
+  }
+  // the Dragon's feet in the splash: hovering behind the drum (bobbing on his wing beats), the swoop up over the rim and down beside the basket
+  function afDragonAt(t) {
+    const G = afGeo(), bob = Math.sin(t * 0.012) * 2.2;
+    if (t < AF.SWOOP) return [G.hx, G.hy + bob];
+    if (t >= AF.LAND) return [G.px, 0];   // (landed on the basket's far side, turned back to it)
+    const u = ease(fe(AF.SWOOP, AF.LAND, t)), v = 1 - u, cx = (G.hx + G.px) / 2, cy = G.rim - (G.port ? 200 : 120);
+    return [v * v * G.hx + 2 * v * u * cx + u * u * G.px, v * v * (G.hy + bob) + 2 * v * u * cy];
+  }
+  // his grown wings: behind the drum they are the fan's blades, spread out flat either side of it and beating (P.flap); they fold away once he has landed
+  function afWings(p, t, spread) {
+    if (spread < 0.05) return null;
+    return (lc) => {
+      const P = pose(p, mgTk(t)), len = P.w * (0.95 + 1.45 * spread), fan = spread * (1 - fe(AF.SWOOP, AF.SWOOP + 60, t)), fl = P.flap - P.wingUp * 0.9;
+      const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean), b = P.flap - 0.18;
+      batWing(lc, a1[0], a1[1], lerp(Math.PI + 0.18 - fl, Math.PI + 0.3 - b, fan) + P.lean, len, p.pal, true, true);
+      batWing(lc, a2[0], a2[1], lerp(-0.25 + fl * 0.7, -0.3 + b, fan) + P.lean, len * 0.95, p.pal, false, false);
+    };
+  }
+  function afAsDragon(t, fn) {
+    const W = W_(), ox = W.x, oy = W.y, of = W.facing, q = afDragonAt(t); W.x = q[0]; W.y = q[1]; afIn = 1;
+    if (t >= (AF.SWOOP + AF.LAND) / 2) W.facing = -FIN.dir;   // he turns round over the basket
+    try { return fn(W); } finally { W.x = ox; W.y = oy; W.facing = of; afIn = 0; }
+  }
+  // the top wedge in the basket: its middle (the Dragon's claw goes there)
+  const afTop = () => { const G = afGeo(); return afSlot(6, G.bx, G.bk); };
+  // his pose in the splash: fanning behind the drum (the wings beat every 180 ms while it spins), the swoop, then hovering behind the basket: the poke, a snicker
+  function afPose(P, sk, t, p) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, G = afGeo(), beat = t >= AF.WHIRR && t < AF.STOP, sw = t >= AF.SWOOP && t < AF.LAND;
+    P.wingUp = 1;
+    P.flap = sw ? 0.45 + 0.4 * Math.sin(t * 0.05) : beat ? 0.18 + 0.244 * Math.sin(((t - AF.WHIRR) / 180) * AF_TAU) : 0.2 + 0.08 * Math.sin(t * 0.016);
+    P.expr = beat ? "rage" : "grin"; P.exK = 1; P.mouth = beat ? 0.2 : t >= AF.WOB && t < AF.WOB1 ? 0.45 : 0;
+    if (t < AF.SWOOP) { P.lean = 0.05; return { hF: [w * 0.7, -leg - tor * 0.3], hB: [-w * 0.7, -leg - tor * 0.3] }; }
+    if (sw) { P.lean = 0.35; return { hF: [-w * 0.2, -leg - tor * 0.4], hB: [-w * 0.75, -leg - tor * 0.5], fF: [-w * 0.1, -leg * 0.4], fB: [-w * 0.4, -leg * 0.3] }; }
+    const T = afTop(), sc = G.sc, f = p.facing || FIN.dir, tx = ((T[0] + FIN.dir * T[3] * 0.24 - p.x) * f) / sc, ty = (T[1] + T[3] * 0.08 - p.y) / sc;
+    const k = easeOut(fe(AF.LAND, AF.POKE, t)) * (1 - ease(fe(AF.POKE + 50, AF.POKE + 170, t))), rest = [w * 0.72, -leg - tor * 0.55], mouthH = [w * 0.38, -leg - tor * 0.95];
+    const back = ease(fe(AF.POKE + 120, AF.POKE + 260, t));
+    P.lean = 0.1 + 0.18 * k;
+    return { hF: k > 0.001 ? [lerp(rest[0], tx, k), lerp(rest[1], ty, k)] : [lerp(rest[0], mouthH[0], back), lerp(rest[1], mouthH[1], back)], hB: [-w * 0.7, -leg - tor * 0.5] };
+  }
+  // the loser in the drum: arms and legs out against the mesh, cheeks puffed, tumbling three turns while it spins
+  function afLPose(P, sk, t, p) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.expr = "terror"; P.exK = 1; P.mouth = 0; P.lean = 0;
+    P.spin = FIN.dir * (p.facing || -FIN.dir) * 3 * AF_TAU * ease(fe(AF.WHIRR + 60, AF.STOP - 20, t));   // (turning the same way as the drum, whichever way he faces)
+    return { hF: [w * 1.0, -leg - tor * 0.95], hB: [-w * 1.0, -leg - tor * 0.9], fF: [w * 0.5, -leg * 0.05], fB: [-w * 0.5, -leg * 0.05] };
+  }
+  // his puffed cheeks, on his face wherever the tumble has turned it (the puppet's own frame: feet, facing, spin, lean)
+  function afCheeks(c, pn, p, t, s) {
+    if (p.spec.look.build !== "potato" || p.spec.boss) return;
+    MG.pt = t;
+    const P = pose(p, mgTk(t)), w = P.w, er = w * 0.1, hx = P.head[0], hy = P.head[1];
+    c.save(); pn.world(c); c.translate(p.x, p.y); c.scale(p.facing * s, s);
+    if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
+    c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    c.fillStyle = "#ffb3a0"; c.strokeStyle = MG_INK; c.lineWidth = Math.max(0.8, 2.4 / (pn.z * s)); c.lineCap = "round";
+    for (const dx of [-0.3, 0.29]) { c.beginPath(); c.arc(hx + dx * w, hy + er * 2.0, er * 1.4, 0, AF_TAU); c.fill(); c.stroke(); }
+    c.beginPath(); c.moveTo(hx - er * 0.55, hy + er * 2.5); c.quadraticCurveTo(hx, hy + er * 2.1, hx + er * 0.55, hy + er * 2.5); c.stroke();
+    c.restore();
+  }
+  function afLoser(c, pn, t, C) {
+    const Lp = L_(), G = afGeo(), sv = [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash], sp = afSpin(t), a = FIN.dir * (sp[0] + 0.7), ro = G.R * 0.1 * sp[1];
+    Lp.x = C[0] + Math.cos(a) * ro; Lp.y = C[1] + Math.sin(a) * ro + Lp.s.h * 0.5 * G.lsc * G.lb; Lp.state = "fin"; Lp.facing = -FIN.dir; Lp.flash = 0; afIn = 2;
+    try { mgPuppet(c, pn, Lp, t, { sc: G.lsc, light: dirAng(-1.2), tint: 0.4 }); afCheeks(c, pn, Lp, t, G.lsc * G.lb); }
+    finally { Lp.x = sv[0]; Lp.y = sv[1]; Lp.state = sv[2]; Lp.facing = sv[3]; Lp.flash = sv[4]; afIn = 0; }
+  }
+  // the stand: two steel legs from the axle (where the drum rests) to the ground, a foot bar
+  function afStand(c, G, lw) {
+    const C = afCols(), y0 = -G.ay, sp = G.R * 0.72;
+    c.save(); c.translate(G.x, 0); c.lineJoin = "round"; c.strokeStyle = MG_INK;
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 6, y0); c.lineTo(sd * 13, y0); c.lineTo(sd * (sp + 4), 0); c.lineTo(sd * (sp - 5), 0); c.closePath(); c.fillStyle = C.steelDk; c.fill(); c.lineWidth = lw * 1.1; c.stroke(); }
+    if (G.port) { c.beginPath(); c.rect(-sp * 0.62, y0 * 0.45 - 3, sp * 1.24, 6); c.fillStyle = C.steel; c.fill(); c.lineWidth = lw; c.stroke(); }
+    c.beginPath(); c.rect(-sp - 10, -5, (sp + 10) * 2, 5); c.fillStyle = C.steel; c.fill(); c.lineWidth = lw * 1.1; c.stroke();
+    c.restore();
+  }
+  // the drum, its axle at C (world), seen end-on: the warm inside, then (front) the mesh, the steam of the ding, the rim with its bolts and the hatch
+  function afDrumBack(c, C, R, t) {
+    const K = afCols(), heat = fe(AF.WHIRR, AF.FULL, t) * (1 - 0.6 * fe(AF.DING, 4300, t));
+    c.save(); c.translate(C[0], C[1]);
+    c.beginPath(); c.arc(0, 0, R * 0.92, 0, AF_TAU); c.fillStyle = heat > 0.01 ? mixH(MG_PAPER, K.hot, heat) : MG_PAPER; c.fill();
+    c.beginPath(); c.arc(0, 0, R * 0.92, 0, AF_TAU); c.arc(0, 0, R * 0.62, 0, AF_TAU, true);
+    c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(7, 0.22 + 0.12 * heat); c.fill("evenodd");
+    c.restore();
+  }
+  function afDrumFront(c, C, R, t, lw) {
+    const K = afCols(), D = FIN.dir, ang = afSpin(t)[0] + C[2], open = fe(AF.TIP + 15, AF.POUR, t) * (1 - fe(AF.BACK, AF.BACK + 110, t)), h0 = afHatch0() + ang;
+    c.save(); c.translate(C[0], C[1]); c.scale(D, 1); c.lineJoin = "round"; c.lineCap = "round";
+    // the mesh: a diamond grid of wire turning with the drum, over what is inside
+    c.save(); c.beginPath(); c.arc(0, 0, R * 0.92, 0, AF_TAU); c.clip();
+    // the ding's steam: puffs fill the drum and clear (the loser has become wedges under it)
+    const sg = easeOut(fe(AF.DING - 5, AF.SWAP - 5, t)), st = 1 - fe(AF.SWAP + 10, AF.POUR + 40, t);
+    if (sg > 0.02 && st > 0.02) {
+      c.globalAlpha = st;
+      for (let pass = 0; pass < 2; pass++) {
+        c.beginPath();
+        for (const [px, py, pr] of AF_PUFF) { const r = R * pr * (0.55 + 0.45 * sg) * (1 + 0.25 * (1 - st)) + (pass ? 0 : lw * 1.1); c.moveTo(px * R + r, py * R - (1 - st) * R * 0.2); c.arc(px * R, py * R - (1 - st) * R * 0.2, r, 0, AF_TAU); }
+        c.fillStyle = pass ? "#ffffff" : MG_INK; c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+    c.rotate(ang + Math.PI / 4); c.strokeStyle = MG_INK; c.globalAlpha = 0.6; c.lineWidth = lw * 0.6; c.beginPath();
+    for (let i = -4; i <= 4; i++) { const q = i * R * 0.22; c.moveTo(q, -R); c.lineTo(q, R); c.moveTo(-R, q); c.lineTo(R, q); }
+    c.stroke(); c.globalAlpha = 1;
+    c.restore();
+    // the rim: a steel band, its bolts and the hatch turning with it
+    c.beginPath(); c.arc(0, 0, R, 0, AF_TAU); c.arc(0, 0, R * 0.9, 0, AF_TAU, true); c.fillStyle = K.steel; c.fill("evenodd");
+    c.save(); c.beginPath(); c.arc(0, 0, R, -0.2, 2.6); c.arc(0, 0, R * 0.9, 2.6, -0.2, true); c.closePath(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(5, 0.4); c.fill(); c.restore();
+    c.strokeStyle = MG_INK; c.lineWidth = lw * 1.6; c.beginPath(); c.arc(0, 0, R, 0, AF_TAU); c.stroke();
+    c.lineWidth = lw; c.beginPath(); c.arc(0, 0, R * 0.9, 0, AF_TAU); c.stroke();
+    c.fillStyle = MG_INK; for (let i = 0; i < 8; i++) { const a = ang + (i + 0.5) * (AF_TAU / 8); if (Math.abs(((a - h0) % AF_TAU + AF_TAU + Math.PI) % AF_TAU - Math.PI) < 0.45) continue; c.beginPath(); c.arc(Math.cos(a) * R * 0.95, Math.sin(a) * R * 0.95, R * 0.026, 0, AF_TAU); c.fill(); }
+    const ha = 0.3;
+    if (open > 0.02) {   // open: a dark gap in the rim, the hatch swung out on its hinge
+      c.beginPath(); c.arc(0, 0, R * 1.005, h0 - ha, h0 + ha); c.arc(0, 0, R * 0.88, h0 + ha, h0 - ha, true); c.closePath(); c.fillStyle = K.gap; c.fill(); c.lineWidth = lw; c.stroke();
+      c.save(); c.translate(Math.cos(h0 + ha) * R * 0.95, Math.sin(h0 + ha) * R * 0.95); c.rotate(open * 1.3);   // the hatch, on its hinge at the far end of the gap
+      c.translate(-Math.cos(h0 + ha) * R * 0.95, -Math.sin(h0 + ha) * R * 0.95);
+      c.beginPath(); c.arc(0, 0, R * 1.005, h0 - ha, h0 + ha); c.arc(0, 0, R * 0.88, h0 + ha, h0 - ha, true); c.closePath(); c.fillStyle = K.steelDk; c.fill(); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+      c.restore();
+    } else {   // shut: a darker plate on the rim with a latch
+      c.beginPath(); c.arc(0, 0, R * 1.005, h0 - ha, h0 + ha); c.arc(0, 0, R * 0.88, h0 + ha, h0 - ha, true); c.closePath(); c.fillStyle = K.steelDk; c.fill(); c.lineWidth = lw; c.stroke();
+      c.save(); c.rotate(h0); c.fillStyle = K.steel; c.beginPath(); c.rect(R * 0.96, -R * 0.06, R * 0.1, R * 0.12); c.fill(); c.stroke(); c.restore();
+    }
+    // the axle's cap
+    c.beginPath(); c.arc(0, 0, R * 0.07, 0, AF_TAU); c.fillStyle = K.steel; c.fill(); c.lineWidth = lw; c.stroke();
+    c.restore();
+  }
+  // 8 speed arcs round the drum while it spins, and the gust rings the wings blow into it (one per beat from each side)
+  function afWhoosh(c, C, R, t, lw) {
+    const sp = afSpin(t), D = FIN.dir;
+    c.save(); c.translate(C[0], C[1]); c.scale(D, 1); c.strokeStyle = MG_INK; c.lineCap = "round";
+    if (sp[1] > 0.03 && t < AF.STOP) {
+      c.globalAlpha = Math.min(1, sp[1] * 1.3);
+      for (let i = 0; i < 8; i++) { const a = sp[0] * 0.8 + (i * AF_TAU) / 8, r = R * (1.1 + 0.06 * (i % 3)); c.lineWidth = lw * (1.7 - 0.5 * (i % 2)); c.beginPath(); c.arc(0, 0, r, a, a + 0.32 + 0.3 * sp[1]); c.stroke(); }
+    }
+    for (let n = 0; n < 4; n++) {
+      const u = (t - (AF.WHIRR + n * 180)) / 320;
+      if (u <= 0 || u >= 1) continue;
+      for (const sd of [-1, 1]) {
+        const k = easeOut(u), x = lerp(sd * R * 1.28, sd * R * 0.62, k), y = lerp(-R * 0.82, -R * 0.3, k), r = R * (0.07 + 0.17 * u), rot = Math.atan2(R * 0.52, -sd * R * 0.66) + Math.PI / 2;
+        c.globalAlpha = 1 - u; c.save(); c.translate(x, y); c.rotate(rot);
+        c.beginPath(); c.ellipse(0, 0, r, r * 0.36, 0, 0, AF_TAU); c.lineWidth = lw * 1.8; c.strokeStyle = MG_INK; c.stroke(); c.lineWidth = lw * 0.7; c.strokeStyle = "#ffffff"; c.stroke();
+        c.restore();
+      }
+    }
+    c.restore();
+  }
+  // a wedge on its way: from where it lay in the drum (as the drum tips) along a little arc to its place in the basket, turning as it goes
+  function afPileAt(i, t, C) {
+    const G = afGeo(), R = G.R, s = AF_PILE[i], tip = afTip(t) / 0.42;
+    return [C[0] + FIN.dir * (s[0] + 0.22 * tip) * R, C[1] + s[1] * R * 0.9 - 0.06 * tip * R, s[2] + 0.4 * tip];
+  }
+  function afDrawSplash(c, pn, t) {
+    const G = afGeo(), D = FIN.dir, R = G.R, lw = jpLw(pn), C = afDrumC(t);
+    pn.screen(c);
+    // behind: the Dragon's dot disc and focus lines round the drum
+    const q = pn.p(G.x, -G.ay);
+    mgToneFill(c, discPoly(q[0], q[1], Math.min(pn.w, pn.h) * 0.64, 40), 10, 0.22, [t * 0.001, -t * 0.001]);
+    c.beginPath(); c.arc(q[0], q[1], Math.min(pn.w, pn.h) * 0.47, 0, AF_TAU); c.fillStyle = MG_PAPER; c.fill();
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.45);
+    ground(c, pn, t);
+    pn.world(c);
+    afStand(c, G, lw);
+    // the Dragon behind the drum (his wings either side are the fan), in front of it once he has swooped up over the rim
+    const fd = afDragonAt(t), front = t >= AF.SWOOP && (fd[1] < G.rim || t >= (AF.SWOOP + AF.LAND) / 2);
+    const drawW = () => afAsDragon(t, (W) => mgPuppet(c, pn, W, t, { sc: G.sc, light: dirAng(-0.6), under: afWings(W, t, 1 - ease(fe(AF.LAND - 70, AF.LAND + 30, t))), box: WBOX }));
+    if (!front) drawW();
+    pn.world(c);
+    afDrumBack(c, C, R, t);
+    // inside: the loser until the steam of the ding hides him, then the wedges that haven't tumbled out yet
+    if (t < AF.SWAP) afLoser(c, pn, t, C);
+    else {
+      pn.world(c); c.save(); c.beginPath(); c.arc(C[0], C[1], R * 0.92, 0, AF_TAU); c.clip();
+      for (let i = 0; i < 7; i++) { if (t >= AF.POUR + AF_OUT[i] * 16) continue; const p = afPileAt(i, t, C); afWedge(c, p[0], p[1], p[2], AF_SLOT[i][3], lw, i === 6 ? { look: -1 } : null); }
+      c.restore();
+    }
+    pn.world(c);
+    afDrumFront(c, C, R, t, lw);
+    afWhoosh(c, C, R, t, lw);
+    // steam escaping over the rim at the ding
+    const se = easeOut(fe(AF.DING, AF.DING + 70, t)), sa = 1 - fe(AF.DING + 90, AF.POUR + 60, t);
+    if (se > 0.02 && sa > 0.02) {
+      const u = fe(AF.DING, AF.POUR + 60, t);
+      c.globalAlpha = sa;
+      for (let pass = 0; pass < 2; pass++) {
+        c.beginPath();
+        for (let i = 0; i < 6; i++) { const px = C[0] + D * (i - 2.5) * R * 0.2, py = C[1] - R * (0.92 + 0.3 * u + 0.1 * (i % 2)), r = R * (0.13 + 0.05 * (i % 3)) * se * (1 + 0.4 * u) + (pass ? 0 : lw * 1.1); c.moveTo(px + r, py); c.arc(px, py, r, 0, AF_TAU); }
+        c.fillStyle = pass ? "#ffffff" : MG_INK; c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+    // the basket and the wedges that have landed in it, the top one rocking from the poke; then the ones in the air
+    const rock = t >= AF.WOB && t < AF.WOB1 ? 0.052 * Math.sin(((t - AF.WOB) / 160) * AF_TAU) * (1 - 0.4 * fe(AF.WOB, AF.WOB1, t)) : 0;
+    const ow = t >= AF.WOB && t < AF.WOB + 240, T6 = afSlot(6, G.bx, G.bk);
+    afBasketFull(c, pn, t, G.bx, G.bk, lw, { land: true, rock, face: { look: t < AF.SWOOP ? -0.6 : 1, ow, smile: false } });
+    for (let i = 0; i < 7; i++) {
+      const t0 = AF.POUR + AF_OUT[i] * 16, u = (t - t0) / AF.FLY;
+      if (u < 0 || u >= 1) continue;
+      const a = afPileAt(i, t0, afDrumC(t0)), b = afSlot(i, G.bx, G.bk), k = ease(u), hop = (G.port ? 10 : 22) * 4 * u * (1 - u);
+      afWedge(c, lerp(a[0], b[0], k), lerp(a[1], b[1], k) - hop, lerp(a[2], b[2], k), AF_SLOT[i][3] * lerp(1, G.bk, k), lw, i === 6 ? { look: 0 } : null);
+    }
+    if (front) drawW();
+    pn.world(c);
+    if (t >= AF.POUR + 6 * 16 + AF.FLY) afWisp(c, T6[0] + D * 3, T6[1] - T6[3] * 0.55, 34, t, fe(AF.POUR + 6 * 16 + AF.FLY, 4250, t) * 0.85, lw);
+  }
+  function afCam(t, pn) {
+    const G = afGeo(), push = MG.reduced ? 0 : ease(fe(AF.BACK, AF.LAND + 90, t)), z = 1 + (G.kz - 1) * push, v = (G.port ? (G.vh * 0.84 * pn.h) / pn.w : G.vh) / z;
+    return { wx: lerp(G.cx, G.kx, push), wy: (G.port ? 26 : 12) - v / 2, vh: v };
+  }
+  const afShake = (t) => { const a = 2.5 * fe(AF.COAST, AF.STOP, t) * (1 - fe(AF.STOP + 20, AF.STOP + 160, t)) + 3 * fe(AF.TIP, AF.TIP + 20, t) * (1 - fe(AF.TIP + 40, AF.TIP + 200, t)); return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; };
+  // panel 4: Inferno's aftermath with the basket beside him: the top wedge rocking (0.5 Hz) and waving; once he has popped out, the basket torn open,
+  // two wedges on the ground, a curl of steam
+  const afFx = () => FIN.wx + FIN.dir * 60;
+  function afDrawAfter(c, pn, t) {
+    drawAfter(c, pn, t);
+    const D = FIN.dir, x = afFx(), lw = jpLw(pn), k = 0.7, popped = mgPopped(t);
+    pn.world(c);
+    if (!popped) {
+      const u = (t - MT.AFTER) / 1000;
+      afBasketFull(c, pn, t, x, k, lw, { land: false, rock: 0.13 * Math.sin(u * Math.PI), face: { look: -0.6, ow: false, smile: true, wave: u * 15 } });
+      const T6 = afSlot(6, x, k) ; afWisp(c, T6[0] + D * 2, T6[1] - T6[3] * 0.55, 22, t, 0.75, lw);
+      return;
+    }
+    afBasket(c, x, k, lw, 0, true);
+    for (const i of [0, 5]) { const s = afSlot(i, x, k); afWedge(c, s[0], s[1], s[2], s[3], lw, null); }
+    afBasket(c, x, k, lw, 1, true);
+    afWedge(c, x - D * 30, -3.5, -1.45, 18, lw, null);
+    afWedge(c, x + D * 13, -3.5, 1.5, 17, lw, null);
+    afWisp(c, x - D * 2, -30, 20, t, 0.6, lw);
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Air Fryer",
+    start(g) { S_.start(g); pota2 = true; afGc = null; afC = null; afIn = 0; },
+    end() { pota2 = false; afGc = null; afC = null; afIn = 0; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after"), D = FIN.dir;
+      strike.freeze = strike.cover = MT.SPLASH;   // the splash covers the whole page from here: the strike is drawn once more, then a bitmap
+      after.draw = afDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 124 : 100) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + D * (lay.port ? 40 : 44), wy: -0.43 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: MG_PAPER, slide: MG.reduced ? 1 : 180, cam: afCam, shake: afShake, draw: afDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const D = FIN.dir, k0 = lay.port ? Math.min(1, (L.gw * 0.9) / L.gh) : 1, small = lay.port ? 0.62 : 1;
+      // the engine's own upright scaling of Inferno's words, done here because the new words set their own
+      const ws = S_.words(lay).map((w) => Object.assign({}, w, { mul: (w.mul || 1) * k0 }));
+      ws[3].t1 = ws[4].t1 = MT.SPLASH + 150;   // BWOOOM and FWOOOSH are gone as the splash comes up
+      const big = lay.port ? Math.min(0.5, (0.86 * L.gw) / (6 * 0.15 * L.gh * 0.62)) : 1;
+      const sp = (t, w) => { const pn = MG.byId.splash; mgPlace(pn, t); return pn.sp(w[0], w[1]); };
+      ws.push(
+        { text: "WHIRRR", t0: AF.WHIRR, t1: AF.DING + 40, size: 0.15, mul: big, arc: 1.6, jag: 0.06, rot: 0.55 * D,
+          at: (t) => { const G = afGeo(); return sp(t, [G.x + D * G.R * 0.92, -G.ay - G.R * 0.8]); } },
+        { text: "ding!", t0: AF.DING, t1: AF.TIP + 260, size: 0.07, mul: small, jit: 0.12, rot: 0.12 * D,
+          at: (t) => { const G = afGeo(); return sp(t, [G.x + D * G.R * 0.95, -G.ay - G.R * 0.95]); } },
+        { text: "ow!", t0: AF.WOB, t1: AF.WOB1 + 40, size: 0.07, mul: small, jag: 0.12, rot: -0.14 * D,
+          at: (t) => { const T = afTop(); return sp(t, [T[0] - D * T[3] * 0.75, T[1] - T[3] * 0.55]); } },
+      );
+      return ws;
+    },
+    pose(P, sk, t, role, p) {
+      if (afIn === 1 && role === "w") return afPose(P, sk, t, p);
+      if (afIn === 2 && role === "l") return afLPose(P, sk, t, p);
+      return S_.pose(P, sk, t, role, p);
+    },
+    food() { const x = afFx(); return { x, y: 0, r: 22, y0: -26, lx: x + FIN.dir * 40 }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("afUp", MT.SPLASH + 40, () => Cin.go(() => Cin.page()));
+      cueOnce("afWhirr", AF.WHIRR, () => Cin.go(() => { Cin._osc("sawtooth", 70, 260, 0.6, 0.05, 0.25); Cin._noise(0.62, 0.12, 500, 2400, "bandpass", 1.4); }));
+      for (let i = 0; i < 4; i++) cueOnce(AF_BEATS[i], AF.WHIRR + i * 180, () => Cin.go(() => Cin.whoosh(0.12, -0.5 * D, 0.5 * D, 0.16)));
+      cueOnce("afDing", AF.DING, () => Cin.go(() => { Cin.chime(2093); Cin._osc("triangle", 4186, 4186, 0.4, 0.03, 0.002); }));
+      cueOnce("afSteam", AF.DING + 20, () => Cin.go(() => Cin._noise(0.4, 0.12, 2600, 5200, "highpass", 0.8)));
+      cueOnce("afTip", AF.TIP, () => Cin.go(() => Cin.clack()));
+      cueOnce("afPour", AF.POUR + AF.FLY - 10, () => Cin.go(() => { for (let i = 0; i < 7; i++) Cin._osc("triangle", 520 - i * 25, 260, 0.06, 0.07, 0.002, i * 0.016); }));
+      cueOnce("afSwoop", AF.SWOOP, () => Cin.go(() => Cin.whoosh(0.22, -0.7 * D, 0.7 * D, 0.4)));
+      cueOnce("afPoke", AF.POKE, () => Cin.go(() => Cin.tick(1800)));
+      cueOnce("afOw", AF.WOB, () => Cin.go(() => { Cin._osc("triangle", 880, 520, 0.16, 0.06, 0.004); Cin._osc("sine", 300, 420, 0.3, 0.04, 0.01, 0.02); }));
+      cueOnce("afSizzle", MT.AFTER + 140, () => Cin.go(() => Cin._noise(0.6, 0.05, 3000, 5200, "highpass", 0.8)));
     },
   });
   return S_;

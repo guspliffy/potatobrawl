@@ -119,10 +119,11 @@ function renderPill() {
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("mTokens").textContent = fmtChips(P.tokens);
+  psPill();   // ui/pshop.js: the Pommes pill beside the chips
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), gift = hvWaiting();   // the Daily Potato streak (ui/daily.js), today's Harvest gift (ui/harvest.js)
   $("mStreakN").textContent = ds; $("mStreak").classList.toggle("zero", !(ds > 0)); $("mGift").hidden = !gift;
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${koBal() > 0 ? `, ${fmtChips(koBal())} Pommes` : ""}${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -287,7 +288,7 @@ function renderStats() {
   pan.appendChild(ul);
 }
 
-/* ----- Locker tab: the eight fighters on a strip (each in his worn skin), then the picked fighter's seven skins as the Skin Rack's cards -----
+/* ----- Locker tab: the eight fighters on a strip (each in his worn skin), then the picked fighter's ten skins as the Skin Rack's cards: chip skins, won skins, special (Pommes) skins -----
    One fighter at a time: a tap on a tile (or the Left / Right keys) picks him; the Locker opens on the fighter played last (P.last). A card is the
    Rack's card (skMakeCard, skStyle in ui/skins.js): a skin you own is worn with one tap, any other opens the Rack on it (openSkins(id, i)), where it
    is bought or explained. The DOM is built once and only restyled after that; a model is drawn again only when it changes (a tile when its
@@ -299,7 +300,8 @@ function lkBuild() {
     '<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="Fighters"></div>' +
     '<div class="lk-rack" id="lkRack">' +
     '<div class="lk-grp"><div class="lk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="Chip skins"></div></div>' +
-    '<div class="lk-grp"><div class="lk-k"><b>Won skins</b><span id="lkRoadSub"></span></div><div class="lk-row r4" id="lkRoad" role="group" aria-label="Won skins"></div></div></div>';
+    '<div class="lk-grp"><div class="lk-k"><b>Won skins</b><span id="lkRoadSub"></span></div><div class="lk-row r4" id="lkRoad" role="group" aria-label="Won skins"></div></div>' +
+    '<div class="lk-grp lk-pmg"><div class="lk-k"><b>Special skins</b><span>bought with Pommes</span></div><div class="lk-row r4" id="lkPm" role="group" aria-label="Special skins"></div></div></div>';
   const strip = $("lkStrip");
   LKR.tiles = FIGHTERS.map((f) => {
     const b = acMk("button", "lk-tile");
@@ -330,7 +332,7 @@ function lkTap(i) {
   const spec = FIG[LKR.id], st = skState(spec, i);
   if (st === "worn") { Sfx.ui(); return; }
   if (st === "own") { Sfx.uiFlip(); if (equipSkin(spec.id, i)) { renderPill(); if (mode === "menu") renderMenu(); renderAccount(); } return; }
-  if (st === "buy") Sfx.ui(); else Sfx.uiNo();   // looking is free; the thud says it is locked
+  if (st === "buy" || st === "pm") Sfx.ui(); else Sfx.uiNo();   // looking is free; the thud says it is locked (a Pommes skin is for sale, in the Pommes Shop)
   openSkins(spec.id, i);
 }
 // draws what is new (a tile with another worn skin, the cards of a newly picked fighter) and, when the size it is drawn at changed (a turned phone, a resized window), everything
@@ -362,9 +364,9 @@ function renderLocker() {
   }
   // the picked fighter's cards: built when he is picked (their models drawn once), restyled on every render
   if (LKR.cardsFor !== spec.id) {
-    const chip = $("lkChip"), road = $("lkRoad");
-    chip.innerHTML = ""; road.innerHTML = ""; LKR.cards = [];
-    spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skMakeCard(spec, i, LKR.cards, lkTap)));   // ui/skins.js
+    const chip = $("lkChip"), road = $("lkRoad"), pm = $("lkPm");
+    chip.innerHTML = ""; road.innerHTML = ""; pm.innerHTML = ""; LKR.cards = [];
+    spec.palettes.forEach((p, i) => (p.pommes ? pm : p.road ? road : chip).appendChild(skMakeCard(spec, i, LKR.cards, lkTap)));   // ui/skins.js
     for (const a of LKR.cards) a.dirty = true;
     LKR.cardsFor = spec.id;
   }
@@ -657,8 +659,8 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-// the chip coin opens the Shop, the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
-tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
+// the chip coin opens the Shop, the Pommes pill the Pommes Shop (ui/pshop.js), the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
+tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else if (at("#mPommes")) pshopOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
 tap("acClose", () => {
   modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"

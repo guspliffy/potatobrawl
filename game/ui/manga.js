@@ -20,7 +20,7 @@
    slid in, so the panels below it are no longer drawn) and before(c, t, pn) (called once, on the first frame the panel is drawn, just before it is: c holds the
    page so far, which the Samurai copies to cut it into slabs). A script may also define end() (called when the page ends or is skipped, to free its own canvases).
    The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL.
-   POTATALITIES (step 8; design: Project files step8/fable-design.md). A fighter's second KO page, bought with Pommes (ui/kopages.js), is MANGA[id].alt: a full script
+   POTATALITIES (step 8; design: Project files step8/fable-design.md). A fighter's Potatalities, bought with Pommes (ui/kopages.js), are MANGA[id].alt and .alt2: each a full script
    like an Ultimate cut (usually Object.assign({}, S_, {...})) that keeps the page up to the strike and ends in a food gag. finisher.js sets FIN.alt (koAltFor: your own
    choice, a friend's from his presence, a CPU's teaser) and the engine plays .alt on the long timeline MT_U, unless the KO is an Ultimate (that keeps its own page).
    MG.alt = true; the card's sub-line reads "POTATALITY: <name>" in MG_POTA. What the engine adds to every Potatality, so the scripts don't:
@@ -573,12 +573,14 @@ function mgWork(t) {
 }
 
 /* ---------- start, tick, draw, end ---------- */
+// a fighter's Potatality n (FIN.alt: 1 = MANGA[id].alt, 2 = MANGA[id].alt2; true counts as 1), or null
+const mgAltOf = (base, n) => (!base || !n ? null : (n === 2 ? base.alt2 : base.alt) || null);
 function mangaStart(g, plain) {
   const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
   // a Potatality (FIN.alt, finisher.js) plays MANGA[id].alt on the long timeline; an Ultimate KO keeps the Ultimate's page. plain: the alt failed to start, play the normal page
-  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, alt = !ulti && !plain && !!FIN.alt && !!base.alt, S = cut ? base.ulti : alt ? base.alt : base;
+  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, altS = mgAltOf(base, FIN.alt), alt = !ulti && !plain && !!altS, S = cut ? base.ulti : alt ? altS : base;
   try {
     Object.assign(MT, cut || alt ? MT_U : MT_N);
     MG.ulti = ulti; MG.ultiCut = cut; MG.alt = alt; MG.popFit = null; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";

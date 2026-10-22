@@ -15,7 +15,8 @@
    one canvas over #app for 6 s (the results screen's markup and CSS are not touched). Both pages share their code: `ult` (set by start) says which one plays.
    Script fields: col, name, hit, flight, panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p), after(t), over(o, t), cues(t),
    drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt(), end(). Everything here is private to this file.
-   POTATALITY: "Mashed" = MANGA.alchemist.alt (S_.alt, at the end; its helpers are prefixed msh), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Mashed" = MANGA.alchemist.alt (S_.alt, at the end; its helpers are prefixed msh), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Philosopher's Spud" = MANGA.alchemist.alt2 (S_.alt2, after it; its helpers are prefixed phs), played when the second one is chosen (FIN.alt 2). */
 MANGA.alchemist = (function () {
   const COL = "#7dff62", COL_D = "#2f9a2a", PAPER = MG_PAPER, INK = MG_INK, GLASS = "#fffdf4", TAU = Math.PI * 2, PALE_G = "#eaffdc";
   const T_WIND = 2350, T_COCK = 2440, T_REL = 2480, T_SMASH = 2650, T_INF = 2850, T_DROP = 2780;   // the throw: wind-up, cocked, released, the smash, the balloon is full, the drop
@@ -27,6 +28,7 @@ MANGA.alchemist = (function () {
   const A = () => MT.AFTER;   // the aftermath: 3500 on The Experiment, 4700 on Mutation
   let ult = false;   // this play is the Ultimate page (set by start)
   let pota = false;  // this play is the Potatality, Mashed (set by its start)
+  let pota2 = false; // this play is the second Potatality, Philosopher's Spud (set by its start)
   let rainT = null, bolts = [], shards = [], drips = [], blots = [], bub = [];
   let lobes = [], cbub = [], eyesB = [], eyesS = [], outB = [];
 
@@ -864,7 +866,7 @@ MANGA.alchemist = (function () {
       outB = Array.from({ length: 6 }, () => ({ a: -Math.PI * (0.1 + 0.8 * q()), ph: q(), per: 1100 + 600 * q(), r: 0.012 + 0.018 * q() }));
       eyesS = [];
     },
-    start() { ult = false; pota = false; stainStop(); FIN.P[FIN.w].specCd = 99; },   // the puppet is a copy: no toxic orb in the hand, the flask is the prop
+    start() { ult = false; pota = false; pota2 = false; stainStop(); FIN.P[FIN.w].specCd = 99; },   // the puppet is a copy: no toxic orb in the hand, the flask is the prop
     step(t, k) { MG.pt = t; },
     pose(P, sk, t, role, p) {
       if (pota && t >= MT.SPLASH) return mshPose(P, sk, t, role, p);
@@ -913,7 +915,7 @@ MANGA.alchemist = (function () {
       if (ult) afterglow(o, t);
       rainDraw(o, t);
       // the page-wide shock ring of the pop: a thick ink ring and a ring of dots behind it
-      const H0 = FIN.hit, k = fe(H0, H0 + 480, t), pn = MG.byId.strike, cut = ult || pota ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1;
+      const H0 = FIN.hit, k = fe(H0, H0 + 480, t), pn = MG.byId.strike, cut = ult || pota || pota2 ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1;
       if (cut <= 0) return;
       if (t > H0 && k < 1 && pn) {
         const q = pn.sp(FIN.lx, -34), R = Math.hypot(L.gw, L.gh) * 0.75 * easeOut(k);
@@ -1399,6 +1401,531 @@ MANGA.alchemist = (function () {
       cueOnce("mshMm1", MSH_TASTE + 10, () => Cin.go(() => Cin._osc("sine", 262, 262, 0.3, 0.09, 0.06)));
       cueOnce("mshMm2", MSH_TASTE + 170, () => Cin.go(() => Cin._osc("sine", 349, 349, 0.4, 0.09, 0.06)));
       cueOnce("mshBlinkA", MSH_ABLINK, () => Cin.go(() => Cin.tick(2400)));
+    },
+  });
+
+  /* ===================== the second Potatality, "Philosopher's Spud" (MANGA.alchemist.alt2; design: Project files step8/fable-design-2.md §1.4) =====================
+     The Experiment to the pop (SPLORT; the loser flies out). 3250 the splash slides up: the Mutagen Cloud's rune circle glows on the floor, the loser stands in its
+     middle and green zig-zag lightning hits him: BZZZT; 3330 he comes apart in bands, 3390 the bands curl into strands that whirl up and in round the circle's
+     axis and pack into a brick (3580), a hash brown with his two eyes; two green orb-hands press it three times (3590, 3710, 3830); 3940 it flips once and lands
+     gold (4070), stamped "999 ✓" (4095), one sparkle; 4170 it hops into the Alchemist's hand and he bites it like a prospector: "clonk" (4300), three stars circle
+     his head, 4610 a grin, the bar held up. 4700 in panel 4's place, in colour: a brass balance beside him, the bar on the near pan (down), a weight on the far
+     pan; he looks at it through a loupe; the bar blinks. The engine's POP bursts the bar at 5250 (food()): the near pan springs up, the far pan drops, the weight
+     bounces once. Every helper here is prefixed phs. */
+  const PHS = { ZAP1: 3440, SH0: 3330, SH1: 3450, BORN: 3390, OUT: 3490, IN: 3580, HAND0: 3530, PRESS: [3590, 3710, 3830], HAND1: 3920, FLIP0: 3940, FLIP1: 4070,
+    STAMP: 4095, SPARK: 4110, HOP0: 4170, HOP1: 4250, BITE: 4300, STARS: 4310, GRIN: 4610, BLINK: 5010, BLINK2: 5190 };
+  const PHS_BX = 64, PHS_BL = 15, PHS_PIV = -50, PHS_HANG = 25, PHS_PW = 10, PHS_BAR = 19, PHS_TILT = 0.3;   // panel 4's balance (world units toward the loser from him): the post, half the beam, the pivot's height, the strings, a pan's half width; the bar on it; the beam's tilt under it
+  const PHS_BR = "#c8963e", PHS_BR_D = "#7d5a1c", PHS_BR_L = "#f4d98c", PHS_GOLD_L = "#ffe9a0", PHS_GLASS = "#e3f4ff", PHS_IRON = "#5b5866", PHS_CREAM = "#f6e7b0";
+  // the hash brown's shred lines: [u across, v down (0..1 of the face), tilt]; on the front face, then on the top face
+  const PHS_SHR = [[-0.34, 0.22, 0.3], [-0.1, 0.7, -0.25], [0.15, 0.25, 0.2], [0.34, 0.62, -0.3], [-0.3, 0.8, 0.1], [0.06, 0.88, 0.25]];
+  const PHS_SHT = [[-0.25, 0.35, -0.2], [0.02, 0.6, 0.25], [0.24, 0.3, -0.1]];
+  let phsG = null, phsIn = 0, phsS = [], phsBolts = [], phsLc = COL, phsHb = "#d39a3e", phsHbT = "#f0c46a", phsHbD = "#8a5418";
+  const phsE = { open: 1, px: 0, py: 0, pk: 1, lw: 1, socket: null };   // the bar's eyes (one object, filled each frame)
+  const phsB = { x: 0, y: 0, sx: 1, sy: 1, rot: 0, gold: false, on: false };   // where the bar is (one object, filled each frame)
+  const phsLw = (pn) => Math.max(1.1, 3 / pn.z);
+  const phsBlink = (t, t0) => { const b = t - t0; return b < 0 || b > 130 ? 1 : b < 30 ? 1 - b / 30 : b < 100 ? 0 : (b - 100) / 30; };
+  // the three presses of the orb-hands: in over 50 ms, out over 110
+  const phsPress = (t) => { let m = 0; for (const p of PHS.PRESS) if (t >= p && t < p + 160) m = Math.max(m, t < p + 50 ? ease((t - p) / 50) : 1 - ease((t - p - 50) / 110)); return m; };
+  function phsBuild() {
+    const r = mgRng(5150), n = MG.slow ? 16 : 26;
+    phsLc = col(L_().pal); phsHb = hexMix(phsLc, "#d39a3e", 0.62); phsHbT = hexMix(phsLc, "#f2cc78", 0.55); phsHbD = hexMix(phsLc, "#6e3f10", 0.72);
+    phsS = Array.from({ length: n }, (_, i) => ({ v: (i + 0.5) / n, side: i % 2 ? 1 : -1, om: 0.011 + r() * 0.006, rO: 0.5 + r() * 0.45, hO: 0.45 + r() * 0.55, len: 7 + r() * 5, wv: 1.4 + r() * 1.1, ph: r() * TAU, tb: PHS.BORN + r() * 50, u: r() - 0.5, w: r() - 0.5 }));
+    phsBolts = [[3250, 0], [3272, 1], [3296, 2], [3334, 0]].map(([t0, k]) => ({ t0, k, off: Array.from({ length: 7 }, () => r() - 0.5) }));
+    phsG = null;
+  }
+  // the splash's geometry (world units), worked out once per layout: the circle (0.8 x 0.35 of the page's short side), the brick, where he stands, the camera
+  function phsGeo() {
+    const D = FIN.dir;
+    if (phsG && phsG.gw === L.gw && phsG.gh === L.gh && phsG.x0 === FIN.wx && phsG.D === D) return phsG;
+    const pg = MG.page, port = !!MG.lay.port, S = Math.min(L.gw, L.gh), z = port ? pg.w / 118 : pg.h / 112, vh = pg.h / z;
+    const rx = (0.4 * S) / z, ry = (0.175 * S) / z, bw = (0.3 * S) / z, cx = port ? FIN.wx + D * 40 : FIN.wx + D * (rx + 28);
+    // upright he stands in the foreground, below the circle and bigger (nearer); on a wide page beside it
+    return (phsG = { gw: L.gw, gh: L.gh, x0: FIN.wx, D, port, z, vh, rx, ry, cx, bw, fh: bw * 0.36, td: bw * 0.3, by: port ? -32 - bw * 0.3 : -18 - bw * 0.3,
+      wx: port ? cx - D * 34 : FIN.wx, wy: port ? 118 : 0, wsc: port ? 1.1 : 1, camx: port ? cx - D * 2 : cx - D * rx * 0.22, camy: port ? 0.05 * vh : -0.2 * vh });
+  }
+  function phsCam(t, pn) { const G = phsGeo(), k = 1 + (MG.reduced ? 0 : 0.04) * ease(fe(MT.SPLASH, MT.AFTER, t)); return { wx: G.camx, wy: G.camy, vh: pn.h / G.z / k }; }
+  function phsShake(t) {
+    let a = t < PHS.ZAP1 ? 2.2 * fe(MT.SPLASH, MT.SPLASH + 30, t) * (1 - fe(PHS.ZAP1 - 80, PHS.ZAP1, t)) : 0;
+    for (const p of PHS.PRESS) if (t >= p && t < p + 140) a = Math.max(a, 2 * (1 - (t - p) / 140));
+    if (t >= PHS.FLIP1 && t < PHS.FLIP1 + 180) a = Math.max(a, 3 * (1 - (t - PHS.FLIP1) / 180));
+    if (t >= PHS.BITE && t < PHS.BITE + 160) a = Math.max(a, 2.4 * (1 - (t - PHS.BITE) / 160));
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0];
+  }
+  // the Alchemist where the splash has him (beside the circle; upright: in front of it, a little bigger), for fn; his hand and body points there
+  function phsAsW(fn) {
+    const G = phsGeo(), W = W_(), ox = W.x, oy = W.y;
+    W.x = G.wx; W.y = G.wy;
+    try { return fn(W, G); } finally { W.x = ox; W.y = oy; }
+  }
+  const phsHand = (t) => phsAsW((W, G) => { MG.pt = t; const P = pose(W, mgTk(t)); return [W.x + W.facing * P.hF[0] * G.wsc, W.y + P.hF[1] * G.wsc]; });
+  // both his hands in the splash: [front, back] (world)
+  const phsHands = (t) => phsAsW((W, G) => { MG.pt = t; const P = pose(W, mgTk(t)); return [[W.x + W.facing * P.hF[0] * G.wsc, W.y + P.hF[1] * G.wsc], [W.x + W.facing * P.hB[0] * G.wsc, W.y + P.hB[1] * G.wsc]]; });
+  const phsBody = (t, key) => phsAsW((W, G) => bodyPt(W, t, G.wsc, key));
+  // two fixed points, worked out once per layout: his mouth at the bite, his hand when the bar lands in it
+  const phsMouth = () => { const G = phsGeo(); return G.mo || (G.mo = phsBody(PHS.BITE, "mouthPt")); };
+  const phsCatch = () => { const G = phsGeo(); return G.h1 || (G.h1 = phsHand(PHS.HOP1)); };
+  // the loser standing in the circle's middle, drawn with o (mgPuppet's options)
+  function phsAsL(c, pn, t, o) {
+    const G = phsGeo(), Lp = L_(), sv = [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash];
+    Lp.x = G.cx; Lp.y = 0; Lp.state = "fin"; Lp.facing = -FIN.dir; Lp.flash = 0; phsIn = 2;
+    try { mgPuppet(c, pn, Lp, t, o); }
+    finally { Lp.x = sv[0]; Lp.y = sv[1]; Lp.state = sv[2]; Lp.facing = sv[3]; Lp.flash = sv[4]; phsIn = 0; }
+  }
+  // the loser in the lightning: arms and legs flung out, shaking
+  function phsLPose(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, j = Math.floor(t / 34) & 1 ? 1 : -1;
+    P.expr = "terror"; P.exK = 1; P.mouth = 1; P.spin = 0; P.lean = 0.05 * j; P.jit = [j * 0.9, -j * 0.6]; P.crouch = 0;
+    return { hF: [w * (1.0 + 0.08 * j), -leg - tor * 1.5], hB: [-w * (0.95 - 0.08 * j), -leg - tor * 1.45], fF: [w * 0.6, 0], fB: [-w * 0.55, 0] };
+  }
+  // the Alchemist on the long half: casting (arms up), pushing the orb-hands, watching, the catch, the bite, dazed, the grin; panel 4: the loupe to his eye
+  function phsPose(P, sk, t, p) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, G = phsGeo(), sc = G.wsc, D = FIN.dir;
+    const fy = (-leg - p.s.h + 7) / 2 - ((p.s.h - leg + 3) / 2) * 0.28, mx = w * 0.16, my = fy + w * 0.23, hb = [-w * 0.6, -leg - tor * 0.4];   // his face and mouth (local)
+    P.crouch = 0; P.spin = 0; P.exK = 1;
+    if (t >= MT.AFTER) {   // the loupe to his eye, the bar on the scales; the potato popping out of it startles him
+      const pop = fe(MT.POP + 40, MT.POP + 120, t);
+      P.expr = pop > 0 ? "terror" : undefined; P.exK = pop > 0 ? 0.6 * pop : 1; P.mouth = 0;
+      P.lean = 0.05 + 0.015 * Math.sin((t - MT.AFTER) * 0.005) - 0.14 * pop;
+      return { hF: [mx + 8.5, fy + 9 + 7 * pop], hB: hb };
+    }
+    const UP = [w * 1.05, -leg - tor * 1.6], UPB = [w * 0.35, -leg - tor * 1.75], PUSH = [w * 1.35, -leg - tor * 0.95], PUSHB = [w * 1.0, -leg - tor * 1.1];
+    // the bite: the bar held from below, turned far end up, its near bottom corner between his teeth
+    const hw = G.bw * 0.5, REST = [w * 0.85, -leg - tor * 0.55], CATCH = [w * 1.2, -leg - tor * 0.95], BITE = [mx + (hw * 0.955 + 3) / sc, my + (-hw * 0.3 + 1 + (G.fh + G.td) * 0.5 + 0.5) / sc];
+    const DOWN = [BITE[0] + 2, BITE[1] + 7], HIGH = [w * 1.5, -leg - tor * 1.45], pr = phsPress(t);
+    const hF = seg(t, [[MT.SPLASH, UP], [PHS.ZAP1, UP], [PHS.HAND0, PUSH], [PHS.HAND1, PUSH], [PHS.HAND1 + 80, REST], [PHS.HOP0, REST], [PHS.HOP0 + 60, CATCH], [PHS.HOP1, CATCH],
+      [PHS.BITE - 10, BITE], [PHS.BITE + 60, BITE], [PHS.BITE + 200, DOWN], [PHS.GRIN, DOWN], [PHS.GRIN + 80, HIGH]]);
+    const hB = seg(t, [[MT.SPLASH, UPB], [PHS.ZAP1, UPB], [PHS.HAND0, PUSHB], [PHS.HAND1, PUSHB], [PHS.HAND1 + 80, hb]]);
+    if (pr > 0) { hF[0] += w * 0.12 * pr; hB[0] += w * 0.12 * pr; }
+    P.lean = seg(t, [[MT.SPLASH, -0.08], [PHS.ZAP1, -0.08], [PHS.HAND0, 0.1], [PHS.HAND1, 0.1], [PHS.HAND1 + 80, 0.02], [PHS.BITE - 40, 0], [PHS.BITE, 0], [PHS.BITE + 40, -0.14], [PHS.BITE + 250, -0.05], [PHS.GRIN, -0.05], [PHS.GRIN + 80, -0.08]])
+      + 0.06 * pr + (t < PHS.ZAP1 ? 0.025 * Math.sin(t * 0.9) : 0);
+    if (t >= PHS.GRIN) P.expr = "grin";
+    else if (t >= PHS.STARS) P.expr = "dazed";
+    else if (t >= PHS.HOP1 - 20) { P.expr = undefined; P.mouth = t < PHS.BITE - 10 ? 1 : 0; }
+    else P.expr = "grin";
+    return { hF, hB };
+  }
+
+  /* ---------- the splash ---------- */
+  // the rune circle on the floor: the glow, the band between two rings (pale on a strike or a press), runes turning in it, inner rings and a six-point star
+  function phsCircle(c, pn, t, G, lw) {
+    const k = G.ry / G.rx, R = G.rx, hot = Math.max(phsPress(t), t < PHS.ZAP1 && Math.floor(t / 40) & 1 ? 1 : 0);
+    pn.world(c);
+    c.save(); c.translate(G.cx, 0);
+    c.globalAlpha = 0.22 + 0.08 * Math.sin(t * 0.012); c.fillStyle = COL; c.beginPath(); c.ellipse(0, 0, R * 1.2, G.ry * 1.2, 0, 0, TAU); c.fill(); c.globalAlpha = 1;
+    c.beginPath(); c.ellipse(0, 0, R, G.ry, 0, 0, TAU); c.ellipse(0, 0, R * 0.8, G.ry * 0.8, 0, 0, TAU, true); c.fillStyle = hot > 0.5 ? PALE_G : COL; c.fill();
+    c.beginPath(); c.ellipse(0, 0, R * 0.8, G.ry * 0.8, 0, 0, TAU); c.fillStyle = hot > 0.5 ? "#ffffff" : PALE_G; c.fill();
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    c.lineWidth = lw * 1.7; c.beginPath(); c.ellipse(0, 0, R, G.ry, 0, 0, TAU); c.stroke(); c.beginPath(); c.ellipse(0, 0, R * 0.8, G.ry * 0.8, 0, 0, TAU); c.stroke();
+    c.lineWidth = lw; c.beginPath(); c.ellipse(0, 0, R * 0.62, G.ry * 0.62, 0, 0, TAU); c.stroke(); c.beginPath(); c.ellipse(0, 0, R * 0.2, G.ry * 0.2, 0, 0, TAU); c.stroke();
+    for (const a0 of [-Math.PI / 2, Math.PI / 2]) {
+      c.beginPath();
+      for (let j = 0; j < 3; j++) { const a = a0 + (j * TAU) / 3, x = Math.cos(a) * R * 0.62, y = Math.sin(a) * G.ry * 0.62; j ? c.lineTo(x, y) : c.moveTo(x, y); }
+      c.closePath(); c.stroke();
+    }
+    // the runes in the band, turning slowly (flattened like the floor)
+    const s = R * 0.07, spin = t * 0.0006;
+    c.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = spin + (i * TAU) / 10, ca = Math.cos(a), sa = Math.sin(a), cx = ca * R * 0.9, cy = sa * G.ry * 0.9, ux = -sa, uy = ca;   // the rune's "up" points round the ring
+      for (const ln of RUNES[i % RUNES.length]) {
+        for (let j = 0; j < ln.length; j += 2) {
+          const x = cx + (ln[j] * ca + ln[j + 1] * ux) * s, y = cy + (ln[j] * sa + ln[j + 1] * uy) * s * k;
+          j ? c.lineTo(x, y) : c.moveTo(x, y);
+        }
+      }
+    }
+    c.lineWidth = lw * 1.1; c.stroke();
+    c.restore();
+  }
+  // a green zig-zag bolt into the loser: from the top of the page (k 0) or from the circle's rim (1 far side, 2 near side); it flickers once
+  function phsBolt(c, G, b, t, lw, h) {
+    const a = t - b.t0;
+    if (a < 0 || a > 170 || (a > 60 && a < 85)) return;
+    const D = FIN.dir, x0 = b.k === 0 ? G.cx + D * G.rx * 0.2 : G.cx + (b.k === 1 ? D : -D) * G.rx * 0.9, y0 = b.k === 0 ? G.camy - G.vh * 0.55 : (b.k === 1 ? -0.3 : 0.3) * G.ry;
+    const x1 = G.cx, y1 = b.k === 0 ? -h * 0.7 : -h * 0.4, dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, amp = Math.min(16, l * 0.12);
+    c.beginPath();
+    for (let i = 0; i <= 6; i++) { const u = i / 6, o = i && i < 6 ? b.off[i] * amp : 0; i ? c.lineTo(x0 + dx * u + nx * o, y0 + dy * u + ny * o) : c.moveTo(x0, y0); }
+    c.lineJoin = "miter"; c.miterLimit = 3; c.lineCap = "round";
+    c.lineWidth = lw * 4.2; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 2.6; c.strokeStyle = COL; c.stroke(); c.lineWidth = lw * 1; c.strokeStyle = "#ffffff"; c.stroke();
+  }
+  // little zig-zag sparks crackling out of a shape round (x, y), a new set every 45 ms
+  function phsSparks(c, x, y, R, t, lw, n) {
+    const slot = Math.floor(t / 45);
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = slot * 2.39 + i * (TAU / n), r0 = R * (0.85 + 0.2 * Math.sin(slot * 1.7 + i)), px = x + Math.cos(a) * r0, py = y + Math.sin(a) * r0, l = R * 0.32;
+      c.moveTo(px, py); c.lineTo(px + Math.cos(a + 0.7) * l * 0.5, py + Math.sin(a + 0.7) * l * 0.5); c.lineTo(px + Math.cos(a - 0.5) * l * 0.85, py + Math.sin(a - 0.5) * l * 0.85); c.lineTo(px + Math.cos(a) * l * 1.35, py + Math.sin(a) * l * 1.35);
+    }
+    c.lineJoin = "miter"; c.lineCap = "round"; c.lineWidth = lw * 2.6; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.2; c.strokeStyle = COL; c.stroke();
+  }
+  // the loser, struck and then coming apart: his picture (MG.layer, from mgPuppet) cut into bands that slide apart left and right
+  function phsBands(c, pn, t, G) {
+    const k = easeIn(fe(PHS.SH0, PHS.SH1, t)), a = 1 - fe(PHS.SH1 - 50, PHS.SH1, t);
+    if (a <= 0) return;
+    let box = null;
+    const zap = t < PHS.ZAP1 && Math.floor(t / 40) & 1;
+    phsAsL(c, pn, t, { sc: 1, tint: 0.4, light: dirAng(-1.2), wash: zap ? [COL, 0.38] : null, a: k > 0 ? 0 : 1, post: (lc, q) => { box = q; } });
+    if (k <= 0 || !box) return;
+    const Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1, h = Lp.s.h * lb, top = box.sy - (h + 8) * box.z, bot = box.sy + 3 * box.z, n = 9, hb = (bot - top) / n, amp = k * Lp.s.w * lb * 0.9 * box.z;
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = a;
+    for (let i = 0; i < n; i++) {
+      const y = top + i * hb, dx = (i % 2 ? 1 : -1) * amp * (0.7 + 0.15 * ((i * 5) % 3)), dy = (i - n / 2) * hb * 0.3 * k;
+      c.drawImage(MG.layer, box.bx, y, box.bw, hb + 1, box.bx + dx, y + dy, box.bw, hb + 1);
+    }
+    c.restore();
+  }
+  // the strands: born at the bands' ends, they whirl out and up round the circle's axis, then in and down into the brick; drawn in three passes (ink, his colour,
+  // a pale potato line) so the whole tangle reads as one mass
+  function phsStrands(c, pn, t, G, lw) {
+    if (t < PHS.BORN || t >= PHS.IN) return;
+    const Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1, h = Lp.s.h * lb, w0 = Lp.s.w * lb, th = Math.max(1.5, G.bw * 0.055), ki = easeIn(fe(PHS.OUT, PHS.IN, t));
+    pn.world(c); c.lineCap = "round"; c.lineJoin = "round";
+    for (let pass = 0; pass < 3; pass++) {
+      c.beginPath();
+      for (const s of phsS) {
+        if (t < s.tb) continue;
+        const ko = easeOut(fe(s.tb, PHS.OUT, t)), ys = -h * (1 - s.v), yO = -h * (0.22 + s.hO * 0.6), rO = G.rx * s.rO * 0.8;
+        const r = ki > 0 ? lerp(rO, 1.5 + Math.abs(s.u) * G.bw * 0.3, ki) : lerp(w0 * 0.95, rO, ko), y = ki > 0 ? lerp(yO, G.by + s.w * G.fh * 0.6, ki) : lerp(ys, yO, ko);
+        const ph = (s.side > 0 ? 0 : Math.PI) + s.om * (t - s.tb) * (1 + 1.2 * ki), cp = Math.cos(ph), spn = Math.sin(ph);
+        const x = G.cx + r * cp, yy = y + r * spn * 0.3, ang = Math.atan2(0.3 * cp, -spn), ca = Math.cos(ang), sa = Math.sin(ang), len = s.len * (1 - 0.45 * ki) * Math.min(1, (t - s.tb) / 30 + 0.3);
+        for (let j = 0; j <= 6; j++) {
+          const u = j / 6 - 0.5, al = u * len, pp = Math.sin(u * s.wv * TAU + s.ph + t * 0.03) * 1.3;
+          const px = x + ca * al - sa * pp, py = yy + sa * al + ca * pp;
+          j ? c.lineTo(px, py) : c.moveTo(px, py);
+        }
+      }
+      c.lineWidth = pass === 0 ? th + lw * 2 : pass === 1 ? th : th * 0.35; c.strokeStyle = pass === 0 ? INK : pass === 1 ? phsLc : PHS_CREAM; c.stroke();
+    }
+    // speed arcs round the whirl
+    const a = Math.min(fe(PHS.BORN, PHS.BORN + 60, t), 1 - fe(PHS.IN - 40, PHS.IN, t));
+    if (a > 0.02) {
+      c.save(); c.globalAlpha = a; c.lineWidth = lw * 1.2; c.strokeStyle = INK;
+      for (let i = 0; i < 3; i++) {
+        const rr = G.rx * (0.45 + 0.15 * i) * (1 - 0.6 * ki), yc = lerp(-h * (0.55 + 0.2 * i), G.by, ki), a0 = t * 0.012 + i * 2.1;
+        c.beginPath(); c.ellipse(G.cx, yc, rr, rr * 0.3, 0, a0, a0 + 1.6); c.stroke();
+      }
+      c.restore();
+    }
+  }
+  // his eyes, loose: off his face as the bands fade, round each other in the whirl, onto the brick's front face
+  function phsFloatEyes(c, pn, t, G, lw) {
+    if (t < PHS.SH1 - 30 || t >= PHS.IN) return;
+    const Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1, h = Lp.s.h * lb, w0 = Lp.s.w * lb, k1 = ease(fe(PHS.SH1 - 30, PHS.OUT, t)), k2 = ease(fe(PHS.OUT, PHS.IN, t));
+    const ex = lerp(lerp(G.cx - FIN.dir * w0 * 0.16, G.cx, k1), G.cx, k2), ey = lerp(lerp(-h * 0.55, -h * 0.85, k1), G.by + G.td * 0.5 - G.fh * 0.08, k2);
+    const sep = lerp(w0 * 0.2, G.bw * 0.2, k2), th = t * 0.025 * (1 - k2), r = lerp(w0 * 0.11, G.bw * 0.085, k2);
+    pn.world(c);
+    phsE.open = 1; phsE.px = Math.sin(t * 0.05) * 0.7; phsE.py = Math.cos(t * 0.043) * 0.5; phsE.pk = 0.55; phsE.lw = lw * 0.9; phsE.socket = phsHbT;
+    for (const sd of [-1, 1]) eye(c, ex + sd * Math.cos(th) * sep, ey + sd * Math.sin(th) * sep * 0.6, r, phsE);
+  }
+  // where the bar is at t (into phsB): packed and pressed in the air over the middle, the flip and the landing, the hop into his hand, held
+  function phsBarAt(t, G) {
+    const B = phsB, D = FIN.dir, H = G.fh + G.td, yLand = -H / 2;
+    B.on = t >= PHS.IN - 60; B.rot = 0; B.gold = false; B.sx = 1; B.sy = 1;
+    if (!B.on) return B;
+    if (t < PHS.FLIP0) {
+      const k = 0.5 + 0.5 * easeOut(fe(PHS.IN - 60, PHS.IN, t)), p = phsPress(t);
+      B.x = G.cx; B.y = G.by + Math.sin(t * 0.01) * 0.8 * fe(PHS.IN, PHS.IN + 100, t); B.sx = k * (1 - 0.14 * p); B.sy = k * (1 + 0.1 * p);
+      return B;
+    }
+    if (t < PHS.FLIP1) {
+      const f = fe(PHS.FLIP0, PHS.FLIP1, t), th = TAU * ease(f);
+      B.x = G.cx; B.y = lerp(G.by, yLand, f) - Math.sin(Math.PI * f) * G.bw * 0.9; B.sy = Math.cos(th); B.gold = th >= Math.PI / 2;
+      return B;
+    }
+    B.gold = true;
+    if (t < PHS.HOP0) { const q = 1 - fe(PHS.FLIP1, PHS.FLIP1 + 90, t); B.x = G.cx; B.y = yLand + H * 0.08 * q; B.sx = 1 + 0.1 * q; B.sy = 1 - 0.16 * q; return B; }
+    if (t < PHS.HOP1) {
+      const f = fe(PHS.HOP0, PHS.HOP1, t), k = ease(f), e = phsCatch();
+      B.x = lerp(G.cx, e[0], k); B.y = lerp(yLand, e[1] - H / 2 - 0.5, k) - Math.sin(Math.PI * f) * 22; B.rot = D * 0.7 * Math.sin(Math.PI * f);
+      return B;
+    }
+    const v = 1 - fe(PHS.BITE, PHS.BITE + 220, t), hd = phsHand(t);
+    B.x = hd[0] + (t >= PHS.BITE ? Math.sin(t * 1.7) * 1.2 * v : 0); B.y = hd[1] - H / 2 - 0.5;
+    B.rot = t < PHS.GRIN ? -D * 0.3 * fe(PHS.HOP1, PHS.BITE - 20, t) : -D * (0.3 - 0.2 * fe(PHS.GRIN, PHS.GRIN + 80, t));
+    return B;
+  }
+  // the bar's eyes at t: scared while pressed, dazzled when it lands gold, wide at the bite, shut tight under the teeth, then on the reader
+  function phsBarEyes(t, lw) {
+    const E = phsE, D = FIN.dir;
+    E.lw = lw * 0.9; E.socket = null; E.open = 1; E.pk = 1; E.px = 0; E.py = 0;
+    if (t < PHS.FLIP0) { E.pk = 0.55; E.px = Math.sin(t * 0.05) * 0.6; E.py = -0.2; }
+    else if (t < PHS.FLIP1) E.pk = 0.5;
+    else if (t < PHS.HOP0) E.open = phsBlink(t, PHS.FLIP1 + 40);
+    else if (t < PHS.BITE) { E.pk = 0.6; E.px = -D * 0.7; }
+    else if (t < PHS.BITE + 260) E.open = 0;
+    else if (t < PHS.GRIN) { E.pk = 0.5; E.px = -D * 0.5; E.py = 0.2; }
+    else E.py = -0.3;
+    return E;
+  }
+  // the bar: a hash brown (gold false: his colour in a golden brown, shred lines, curls at the ends) or a gold bar (a top face, a dot screen low on the front, the
+  // stamp "999 ✓" on top). (x, y) its middle, w its width (world units), sx, sy squash it (sy < 0: upside down, mid-flip), rot turns it.
+  // o: { eyes (phsE) or null, stamp 0..1, shine 0..1 (a glint across the front) }
+  function phsBar(c, pn, x, y, w, sx, sy, rot, gold, lw, o) {
+    const fh = w * 0.36, td = w * 0.3, sl = w * 0.08, bk = w * 0.05, hw = w / 2, y0 = -(fh + td) / 2, y1 = y0 + td, y2 = -y0;
+    c.save(); c.translate(x, y); c.rotate(rot); c.scale(sx, sy);
+    const l = lw / Math.max(0.3, Math.min(Math.abs(sx), Math.abs(sy)));
+    c.lineJoin = "round"; c.lineCap = "round";
+    if (!gold) {   // a few strand ends curling out of both ends
+      c.beginPath();
+      for (const sd of [-1, 1]) for (const [v, r] of [[0.25, 2.2], [0.7, 1.8]]) { const ex = sd * (hw - sl * (1 - v)) , ey = y1 + fh * v; c.moveTo(ex, ey); c.arc(ex + sd * r, ey, r, sd > 0 ? Math.PI : 0, sd > 0 ? Math.PI * 2.6 : -Math.PI * 1.6, sd < 0); }
+      c.lineWidth = l * 2.6; c.strokeStyle = INK; c.stroke(); c.lineWidth = l * 1.2; c.strokeStyle = phsHb; c.stroke();
+    }
+    // the top face, then the front face
+    c.beginPath(); c.moveTo(-hw + sl, y1); c.lineTo(hw - sl, y1); c.lineTo(hw - sl - bk, y0); c.lineTo(-hw + sl + bk, y0); c.closePath();
+    c.fillStyle = gold ? PHS_GOLD_L : phsHbT; c.fill(); c.lineWidth = l * 1.2; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.moveTo(-hw, y2); c.lineTo(hw, y2); c.lineTo(hw - sl, y1); c.lineTo(-hw + sl, y1); c.closePath();
+    c.fillStyle = gold ? MG_GOLD : phsHb; c.fill();
+    const ym = y1 + fh * 0.58, hm = hw - (sl * (y2 - ym)) / fh;
+    dots(c, pn, () => { c.moveTo(-hw, y2); c.lineTo(hw, y2); c.lineTo(hm, ym); c.lineTo(-hm, ym); c.closePath(); }, 6, 0.35, gold ? MG_GOLD_D : phsHbD);
+    if (gold && o.shine > 0 && o.shine < 1) {   // a glint sweeping across the front
+      c.save(); c.beginPath(); c.moveTo(-hw, y2); c.lineTo(hw, y2); c.lineTo(hw - sl, y1); c.lineTo(-hw + sl, y1); c.closePath(); c.clip();
+      const gx = lerp(-hw - w * 0.3, hw + w * 0.3, o.shine);
+      c.beginPath(); c.moveTo(gx, y2); c.lineTo(gx + w * 0.12, y2); c.lineTo(gx + w * 0.22, y1); c.lineTo(gx + w * 0.1, y1); c.closePath(); c.fillStyle = "rgba(255,255,255,0.75)"; c.fill();
+      c.restore();
+    }
+    c.beginPath(); c.moveTo(-hw, y2); c.lineTo(hw, y2); c.lineTo(hw - sl, y1); c.lineTo(-hw + sl, y1); c.closePath(); c.lineWidth = l * 1.2; c.strokeStyle = INK; c.stroke();
+    if (!gold) {   // shred lines
+      c.beginPath();
+      for (const [u, v, a] of PHS_SHR) { const px = u * w, py = y1 + v * fh, dx = Math.cos(a) * w * 0.08, dy = Math.sin(a) * w * 0.08; c.moveTo(px - dx, py - dy); c.quadraticCurveTo(px - dy * 0.6, py + dx * 0.6, px + dx, py + dy); }
+      for (const [u, v, a] of PHS_SHT) { const px = u * w, py = y0 + v * td, dx = Math.cos(a) * w * 0.07, dy = Math.sin(a) * w * 0.05; c.moveTo(px - dx, py - dy); c.quadraticCurveTo(px - dy * 0.6, py + dx * 0.6, px + dx, py + dy); }
+      c.lineWidth = l * 0.8; c.strokeStyle = phsHbD; c.stroke();
+    } else {   // a bevel line under the top edge and a shine on the top face
+      c.beginPath(); c.moveTo(-hw + sl * 1.6, y1 + fh * 0.12); c.lineTo(hw - sl * 1.6, y1 + fh * 0.12); c.lineWidth = l * 0.7; c.strokeStyle = MG_GOLD_D; c.stroke();
+      c.beginPath(); c.moveTo(-hw * 0.62, y0 + td * 0.35); c.lineTo(-hw * 0.32, y0 + td * 0.35); c.lineWidth = l * 1.1; c.strokeStyle = "#ffffff"; c.stroke();
+    }
+    if (gold && o.stamp > 0) {   // the assay stamp on the top face: a box, 999 and a tick
+      const s = 1 + 0.7 * (1 - easeOut(o.stamp)), cy = (y0 + y1) / 2;
+      c.save(); c.translate(0, cy); c.scale(s, s * 0.85); c.globalAlpha *= Math.min(1, o.stamp * 2.5);
+      c.strokeStyle = MG_GOLD_D; c.fillStyle = MG_GOLD_D; c.lineWidth = l * 0.8;
+      c.beginPath(); c.rect(-w * 0.25, -td * 0.4, w * 0.5, td * 0.8); c.stroke();
+      c.font = `900 ${td * 0.66}px "Barlow Condensed", "Arial Narrow", Arial, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("999", -w * 0.06, td * 0.03);
+      c.beginPath(); c.moveTo(w * 0.1, -td * 0.02); c.lineTo(w * 0.14, td * 0.18); c.lineTo(w * 0.21, -td * 0.24); c.lineWidth = l * 1.1; c.stroke();
+      c.restore();
+    }
+    if (o.eyes) {   // his eyes on the front, a small worried mouth under them
+      const r = w * 0.085, ey = y1 + fh * 0.4;
+      o.eyes.socket = gold ? "#e2ad2e" : phsHbT;
+      for (const sd of [-1, 1]) eye(c, sd * w * 0.2, ey, r, o.eyes);
+      c.beginPath(); c.moveTo(-w * 0.06, y1 + fh * 0.82); c.quadraticCurveTo(0, y1 + fh * 0.72, w * 0.06, y1 + fh * 0.82); c.lineWidth = l * 0.8; c.strokeStyle = INK; c.stroke();
+    }
+    c.restore();
+  }
+  // a green orb-hand pressing the brick: seen from the back, fingers up, the thumb against the brick, an orb of the brew at the wrist with a glow.
+  // (x, y): the middle of the edge against the brick; side -1: the hand left of it; s its height
+  function phsMitt(c, x, y, side, s, lw, a) {
+    c.save(); c.translate(x, y); c.scale(-side, 1); c.globalAlpha = a;
+    c.save(); c.globalAlpha = 0.24 * a; c.fillStyle = COL; c.beginPath(); c.arc(-s * 0.32, s * 0.05, s * 0.66, 0, TAU); c.fill(); c.restore();
+    const x0 = -s * 0.62, y0 = -s * 0.2, x1 = -s * 0.06, y1 = s * 0.32, r = s * 0.14;
+    const parts = () => {   // the palm and four fingers, all drawn clockwise (one shape under the non-zero fill)
+      c.beginPath();
+      c.moveTo(x0 + r, y0); c.arcTo(x1, y0, x1, y1, r); c.arcTo(x1, y1, x0, y1, r); c.arcTo(x0, y1, x0, y0, r); c.arcTo(x0, y0, x1, y0, r); c.closePath();
+      for (const [fx, top] of [[-0.53, -0.54], [-0.4, -0.62], [-0.27, -0.6], [-0.15, -0.5]]) { c.moveTo((fx - 0.065) * s, -s * 0.1); c.arc(fx * s, top * s, s * 0.065, Math.PI, 0, false); c.lineTo((fx + 0.065) * s, -s * 0.1); c.closePath(); }
+    };
+    const thumb = () => { c.beginPath(); c.moveTo(-s * 0.14, s * 0.2); c.lineTo(-s * 0.01, -s * 0.05); };
+    c.lineJoin = "round"; c.lineCap = "round";
+    thumb(); c.lineWidth = s * 0.13 + lw * 3.2; c.strokeStyle = INK; c.stroke();
+    parts(); c.lineWidth = lw * 3.2; c.stroke(); c.fillStyle = COL; c.fill();
+    thumb(); c.lineWidth = s * 0.13; c.strokeStyle = COL; c.stroke(); c.strokeStyle = INK;
+    c.beginPath(); for (const fx of [-0.465, -0.335, -0.21]) { c.moveTo(fx * s, -s * 0.5); c.lineTo(fx * s, -s * 0.24); } c.lineWidth = lw; c.stroke();
+    c.beginPath(); c.ellipse(-s * 0.34, s * 0.04, s * 0.13, s * 0.08, 0, 0, TAU); c.fillStyle = PALE_G; c.fill();
+    bubble(c, -s * 0.34, s * 0.42, s * 0.17, lw * 1.4, COL);
+    c.restore();
+  }
+  function phsMitts(c, pn, t, G, B, lw) {
+    const k = ease(fe(PHS.HAND0, PHS.HAND0 + 60, t)) * (1 - ease(fe(PHS.HAND1, PHS.HAND1 + 60, t))), a = Math.min(1, k * 5);   // they fly in from the sides, solid almost at once
+    if (k <= 0.01 || !B.on) return;
+    const s = G.bw * 0.95, gap = (1 - k) * 34, p = phsPress(t);
+    pn.world(c);
+    // the brew's trail from each orb back to his hands
+    const hs = phsHands(t), D = FIN.dir;
+    c.save(); c.globalAlpha = a * 0.9;
+    for (const sd of [-1, 1]) {
+      const ox = B.x + sd * (G.bw * 0.5 * B.sx + gap + s * 0.34), oy = B.y + s * 0.42, h = sd === D ? hs[0] : hs[1];
+      for (let i = 0; i < 5; i++) { const u = ((i / 5 + t * 0.003) % 1), r = s * 0.05 * (1 - u * 0.5); bubble(c, lerp(ox, h[0], u), lerp(oy, h[1], u) - Math.sin(Math.PI * u) * 10, r, lw, COL); }
+    }
+    c.restore();
+    for (const sd of [-1, 1]) phsMitt(c, B.x + sd * (G.bw * 0.5 * B.sx + 0.4 + gap), B.y + G.td * 0.15, sd, s, lw, a);
+    if (p > 0.3) {   // the press: ticks at the contact and a puff off the top
+      c.beginPath();
+      for (const sd of [-1, 1]) for (const v of [-0.55, 0.55]) { const px = B.x + sd * G.bw * 0.5 * B.sx, py = B.y + v * G.fh * 1.3; c.moveTo(px + sd * 2, py + v * 3); c.lineTo(px + sd * 7, py + v * 9); }
+      c.lineWidth = lw * 1.3; c.strokeStyle = INK; c.stroke();
+    }
+    for (const pp of PHS.PRESS) {
+      const u = (t - pp) / 220;
+      if (u < 0 || u > 1) continue;
+      for (let i = 0; i < 3; i++) { const px = B.x + (i - 1) * G.bw * 0.25, py = B.y - (G.fh + G.td) * 0.5 * B.sy - 3 - u * 14; c.globalAlpha = 1 - u; bubble(c, px, py, 1.6 + u * 2.2, lw * 0.8, "#ffffff"); }
+      c.globalAlpha = 1;
+    }
+  }
+  // three stars round his head after the clonk
+  function phsStars(c, pn, t, lw) {
+    if (t < PHS.STARS || t > PHS.STARS + 300) return;
+    const G = phsGeo(), hd = phsBody(t, "head"), a = Math.min(fe(PHS.STARS, PHS.STARS + 40, t), 1 - fe(PHS.STARS + 260, PHS.STARS + 300, t)), cx = hd[0], cy = hd[1] - 15 * G.wsc;
+    const q = pn.p(cx, cy), z = pn.z;
+    pn.screen(c); c.save(); c.globalAlpha = a;
+    for (let i = 0; i < 3; i++) { const an = (t - PHS.STARS) * 0.021 + (i * TAU) / 3, d = 0.8 + 0.25 * Math.sin(an); star(c, q[0] + Math.cos(an) * 16 * z * G.wsc, q[1] + Math.sin(an) * 5 * z * G.wsc, 4.6 * z * d * G.wsc); }
+    c.restore();
+  }
+  function phsDrawSplash(c, pn, t) {
+    const G = phsGeo(), D = FIN.dir, lw = phsLw(pn), m = Math.min(pn.w, pn.h), Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1, h = Lp.s.h * lb;
+    pn.screen(c);
+    // the room: the floor below the horizon (a light screen), the circle's green light, focus lines on its middle, dark corners
+    const hz = pn.p(G.cx, -G.ry * 1.45)[1], q = pn.p(G.cx, -G.ry * 1.1 - 10);
+    c.fillStyle = "#e7e0d0"; c.fillRect(pn.x0 - 6, hz, pn.w + 12, pn.y0 + pn.h + 6 - hz);
+    dots(c, pn, () => c.rect(pn.x0 - 6, hz, pn.w + 12, pn.y0 + pn.h + 6 - hz), 7, 0.14, INK);
+    c.lineWidth = Math.max(1.5, 0.004 * m); c.strokeStyle = INK; c.beginPath(); c.moveTo(pn.x0 - 6, hz); c.lineTo(pn.x0 + pn.w + 6, hz); c.stroke();
+    c.save(); c.globalAlpha = 0.28; c.fillStyle = COL; c.beginPath(); c.arc(q[0], q[1], m * 0.46, 0, TAU); c.fill(); c.restore();
+    if (!MG.slow) mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0004, 0.5);
+    dots(c, pn, () => { c.rect(pn.x0 - 8, pn.y0 - 8, pn.w + 16, pn.h + 16); c.ellipse(q[0], q[1], pn.w * 0.6, pn.h * 0.62, 0, 0, TAU, true); }, 10, 0.45, INK);
+    phsCircle(c, pn, t, G, lw);
+    if (!G.port) phsAsW((W) => mgPuppet(c, pn, W, t, { sc: G.wsc, light: dirAng(-0.6) }));
+    // the loser: struck, cut into bands; the strands; his eyes; the brick and the hands
+    phsBands(c, pn, t, G);
+    phsStrands(c, pn, t, G, lw);
+    phsFloatEyes(c, pn, t, G, lw);
+    const B = phsBarAt(t, G), held = t >= PHS.HOP1;
+    if (t >= PHS.FLIP1 && t < PHS.FLIP1 + 130) { const p = pn.p(G.cx, -(G.fh + G.td) * 0.5); pn.screen(c); mgStarburst(c, p[0], p[1], G.bw * 0.9 * pn.z * (1 - 0.5 * fe(PHS.FLIP1, PHS.FLIP1 + 130, t)), 0.2); }
+    pn.world(c);
+    if (B.on && !held) phsBar(c, pn, B.x, B.y, G.bw, B.sx, B.sy, B.rot, B.gold, lw, { eyes: t >= PHS.IN ? phsBarEyes(t, lw) : null, stamp: fe(PHS.STAMP, PHS.STAMP + 90, t), shine: 0 });
+    phsMitts(c, pn, t, G, B, lw);
+    pn.world(c);
+    if (t < PHS.ZAP1 + 40) { for (const b of phsBolts) phsBolt(c, G, b, t, lw, h); if (t < PHS.SH1) phsSparks(c, G.cx, -h * 0.5, h * 0.62, t, lw, 7); }
+    else if (B.on && t < PHS.FLIP0 && phsPress(t) > 0.5) phsSparks(c, B.x, B.y, G.bw * 0.6, t, lw, 5);
+    if (G.port) phsAsW((W) => mgPuppet(c, pn, W, t, { sc: G.wsc, light: dirAng(-0.6) }));
+    pn.world(c);
+    if (B.on && held) phsBar(c, pn, B.x, B.y, G.bw, B.sx, B.sy, B.rot, true, lw, { eyes: phsBarEyes(t, lw), stamp: 1, shine: fe(PHS.GRIN + 60, PHS.GRIN + 260, t) });
+    // the sparkle on landing; the clonk's burst at his teeth; the stars
+    const sk = fe(PHS.SPARK, PHS.SPARK + 130, t);
+    if (sk > 0 && sk < 1) { const p = pn.p(B.x + G.bw * 0.36, B.y - (G.fh + G.td) * 0.45); pn.screen(c); star(c, p[0], p[1], Math.sin(Math.PI * sk) * G.bw * 0.16 * pn.z); }
+    if (t >= PHS.BITE && t < PHS.BITE + 90) { const mo = phsMouth(), p = pn.p(mo[0] + D * 2, mo[1]); pn.screen(c); mgStarburst(c, p[0], p[1], 7 * pn.z * (1 - fe(PHS.BITE, PHS.BITE + 90, t) * 0.5), 0.4); }
+    phsStars(c, pn, t, lw);
+    if (t >= PHS.GRIN + 80 && t < PHS.GRIN + 200) { const p = pn.p(B.x - D * G.bw * 0.3, B.y - (G.fh + G.td) * 0.5); pn.screen(c); star(c, p[0], p[1], Math.sin(Math.PI * fe(PHS.GRIN + 80, PHS.GRIN + 200, t)) * G.bw * 0.13 * pn.z); }
+  }
+
+  /* ---------- panel 4 of Philosopher's Spud: the balance, in colour ---------- */
+  // the beam's tilt: the near pan down under the gold, a slow sway; once the bar is gone it springs the other way and settles
+  function phsTilt(t) {
+    if (!mgPopped(t)) return PHS_TILT + 0.02 * Math.sin((t - MT.AFTER) * 0.004);
+    const u = t - MT.POP - 40;
+    return -PHS_TILT + (2 * PHS_TILT + 0.02) * Math.exp(-u / 110) * Math.cos(u * 0.02);
+  }
+  function phsPan(c, x, y, lw) {
+    c.beginPath(); c.moveTo(x - PHS_PW, y); c.quadraticCurveTo(x, y + 8, x + PHS_PW, y); c.closePath(); c.fillStyle = PHS_BR; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.ellipse(x, y, PHS_PW, 2.1, 0, 0, TAU); c.fillStyle = PHS_BR_L; c.fill(); c.stroke();
+  }
+  function phsBalance(c, pn, t, lw) {
+    const D = FIN.dir, bx = FIN.wx + D * PHS_BX, tau = phsTilt(t), cs = Math.cos(tau), sn = Math.sin(tau), popped = mgPopped(t);
+    const nx = bx - D * PHS_BL * cs, ny = PHS_PIV + PHS_BL * sn, fx = bx + D * PHS_BL * cs, fy = PHS_PIV - PHS_BL * sn, npY = ny + PHS_HANG, fpY = fy + PHS_HANG;
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    // the foot, the post with two rings, the scale behind the needle
+    c.beginPath(); c.moveTo(bx - 13, 0); c.lineTo(bx + 13, 0); c.lineTo(bx + 7, -5); c.lineTo(bx - 7, -5); c.closePath(); c.fillStyle = PHS_BR; c.fill(); c.lineWidth = lw; c.stroke();
+    c.beginPath(); c.rect(bx - 1.7, PHS_PIV, 3.4, -5 - PHS_PIV); c.fill(); c.stroke();
+    for (const ry of [-17, -34]) { c.beginPath(); c.ellipse(bx, ry, 3.2, 1.3, 0, 0, TAU); c.fillStyle = PHS_BR_L; c.fill(); c.stroke(); }
+    c.beginPath(); c.arc(bx, PHS_PIV, 9, -Math.PI / 2 - 0.55, -Math.PI / 2 + 0.55); c.lineWidth = lw * 0.8; c.stroke();
+    c.beginPath(); for (let i = -2; i <= 2; i++) { const a = -Math.PI / 2 + i * 0.25; c.moveTo(bx + Math.cos(a) * 9, PHS_PIV + Math.sin(a) * 9); c.lineTo(bx + Math.cos(a) * 7.4, PHS_PIV + Math.sin(a) * 7.4); } c.stroke();
+    c.beginPath(); c.moveTo(bx, PHS_PIV); c.lineTo(bx - D * sn * 10, PHS_PIV - cs * 10); c.lineWidth = lw * 1.1; c.stroke();
+    // the strings and the pans
+    c.beginPath();
+    for (const [ex, ey, py] of [[nx, ny, npY], [fx, fy, fpY]]) { c.moveTo(ex, ey); c.lineTo(ex - PHS_PW + 1, py); c.moveTo(ex, ey); c.lineTo(ex + PHS_PW - 1, py); c.moveTo(ex, ey); c.lineTo(ex, py - 1); }
+    c.lineWidth = lw * 0.6; c.stroke();
+    phsPan(c, nx, npY, lw); phsPan(c, fx, fpY, lw);
+    // the beam and the pivot over the strings' tops
+    c.beginPath(); c.moveTo(nx, ny); c.lineTo(fx, fy); c.lineWidth = lw * 3.6; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.8; c.strokeStyle = PHS_BR; c.stroke();
+    for (const [ex, ey] of [[nx, ny], [fx, fy]]) { c.beginPath(); c.arc(ex, ey, 1.4, 0, TAU); c.fillStyle = PHS_BR_D; c.fill(); c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.stroke(); }
+    c.beginPath(); c.arc(bx, PHS_PIV, 2.4, 0, TAU); c.fillStyle = PHS_BR_L; c.fill(); c.lineWidth = lw; c.stroke();
+    // the weight on the far pan (it bounces once when the pan drops)
+    const wy = fpY - 0.6 - (popped ? 6 * Math.sin(Math.PI * fe(MT.POP + 90, MT.POP + 260, t)) : 0);
+    c.beginPath(); c.moveTo(fx - 5.5, wy); c.lineTo(fx + 5.5, wy); c.lineTo(fx + 4, wy - 6.5); c.lineTo(fx - 4, wy - 6.5); c.closePath(); c.fillStyle = PHS_IRON; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.arc(fx, wy - 8, 1.8, 0, TAU); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(fx - D * 2.6, wy - 5.2); c.lineTo(fx - D * 3.4, wy - 1.2); c.lineWidth = lw * 0.8; c.strokeStyle = "#9c99a8"; c.stroke();
+    // the gold on the near pan: his eyes on the loupe, then on the reader; two blinks; a glint now and then
+    if (!popped) {
+      const H = PHS_BAR * 0.66, look = fe(4980, 5040, t), E = phsE;
+      E.open = phsBlink(t, PHS.BLINK) * phsBlink(t, PHS.BLINK2); E.px = -D * 0.6 * (1 - look); E.py = -0.4 * (1 - look); E.pk = 1; E.lw = lw * 0.9;
+      phsBar(c, pn, nx, npY - H / 2 - 0.3, PHS_BAR, 1, 1, 0, true, lw, { eyes: E, stamp: 1, shine: ((t - MT.AFTER) % 1300) / 260 });
+    }
+  }
+  // the loupe at his eye: the handle down to his hand, pale glass, his eye seen big through it on the bar (wide when the pop startles him), a brass rim
+  function phsLoupe(c, pn, t, lw) {
+    const D = FIN.dir, hd = handW(t), e = bodyPt(W_(), t, 1, "head"), pop = fe(MT.POP + 40, MT.POP + 120, t), R = 5.4;
+    const x = e[0] + D * 6.5, y = e[1] - 1 + 7 * pop + 0.5 * Math.sin((t - MT.AFTER) * 0.006), px = x + D * R * 0.22 * (1 - pop), py = y + 0.5;
+    c.lineCap = "round";
+    c.beginPath(); c.moveTo(x + D * R * 0.55, y + R * 0.8); c.lineTo(hd[0], hd[1]); c.lineWidth = lw * 3.2; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.6; c.strokeStyle = PHS_BR_D; c.stroke();
+    c.beginPath(); c.arc(x, y, R, 0, TAU); c.fillStyle = PHS_GLASS; c.fill();
+    c.beginPath(); c.ellipse(x, y + 0.3, R * 0.64, R * 0.72 * (0.85 + 0.15 * pop), 0, 0, TAU); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke();
+    const pk = 1 - 0.5 * pop;
+    c.beginPath(); c.arc(px, py, R * 0.36 * pk, 0, TAU); c.fillStyle = "#4a1f14"; c.fill();
+    c.beginPath(); c.arc(px, py, R * 0.2 * pk, 0, TAU); c.fillStyle = "#120a08"; c.fill();
+    c.beginPath(); c.arc(px - R * 0.12, py - R * 0.14, R * 0.09, 0, TAU); c.fillStyle = "#ffffff"; c.fill();
+    c.beginPath(); c.arc(x, y, R * 0.78, Math.PI * 1.1, Math.PI * 1.45); c.lineWidth = lw * 0.9; c.strokeStyle = "#ffffff"; c.stroke();
+    c.beginPath(); c.arc(x, y, R, 0, TAU); c.lineWidth = lw * 3; c.strokeStyle = INK; c.stroke(); c.lineWidth = lw * 1.5; c.strokeStyle = PHS_BR; c.stroke();
+  }
+  function phsDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir, lw = phsLw(pn), bx = FIN.wx + D * PHS_BX;
+    pn.screen(c);
+    const fp = pn.p(bx - D * 10, -30), gr = pn.h * 0.4;
+    c.save(); c.globalAlpha = 0.3; c.fillStyle = MG_GOLD; c.beginPath(); c.arc(fp[0], fp[1], gr, 0, TAU); c.fill(); c.restore();
+    dots(c, pn, () => { c.arc(fp[0], fp[1], gr * 1.4, 0, TAU); c.arc(fp[0], fp[1], gr, 0, TAU, true); }, 7, 0.3, MG_GOLD_D);
+    if (!MG.slow) mgFocus(c, fp[0], fp[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.4);
+    ground(c, pn);
+    mgPuppet(c, pn, W, t, { sc: 1, light: dirAng(-0.6), tint: 0.3 });
+    pn.world(c);
+    phsBalance(c, pn, t, lw);
+    phsLoupe(c, pn, t, lw);
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Philosopher's Spud",
+    // (the normal page's spoon, mmm and chime belong to its own panel 4)
+    start(g) { S_.start(g); pota2 = true; phsG = null; phsIn = 0; FIN.cue.dip = FIN.cue.mm1 = FIN.cue.mm2 = FIN.cue.chime = true; },
+    end() { pota2 = false; phsG = null; phsIn = 0; phsS = []; phsBolts = []; },
+    build(lay) { S_.build(lay); phsBuild(); },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = phsDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 112 : 86) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 50 : 54), wy: -0.44 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: PAPER, slide: MG.reduced ? 1 : 180, cam: phsCam, shake: phsShake, draw: phsDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay).filter((w) => w.text !== "mmm"), D = FIN.dir, small = lay.port ? 0.62 : 1;
+      const ms = lay.port ? Math.min(0.6, (0.86 * L.gw) / (5 * 0.15 * L.gh * 0.72)) : 1;
+      for (const w of ws) { if (w.text === "SPLORT") w.t1 = MT.SPLASH + 150; else if (w.text === "blup blup") w.t1 = MT.SPLASH + 100; }   // the pop's words go as the splash comes in
+      const sp = (t, x, y) => { const pn = MG.byId.splash; mgPlace(pn, t); return pn.sp(x, y); };
+      const half = (txt, size, mul) => txt.length * size * L.gh * mul * 0.36;
+      ws.push(
+        { text: "BZZZT", t0: MT.SPLASH + 10, t1: PHS.IN + 60, size: 0.15, mul: ms, jag: 0.22, arc: 7, fill: COL, rot: -0.06 * D,
+          at: (t) => { const G = phsGeo(), pn = MG.byId.splash, hw = half("BZZZT", 0.15, ms), q = sp(t, G.cx + D * G.rx * 0.1, 0); return [clamp(q[0], hw + 6, L.gw - hw - 6), pn.y0 + pn.h * (G.port ? 0.11 : 0.13) + pn.oy]; } },
+        { text: "clonk", t0: PHS.BITE, t1: PHS.BITE + 360, size: 0.07, mul: small, jag: 0.12, rot: 0.12 * D,
+          at: (t) => { const G = phsGeo(), m = phsMouth(), hw = half("clonk", 0.07, small), q = sp(t, m[0] + D * G.bw * 0.9, m[1] - 18); return [clamp(q[0], hw + 6, L.gw - hw - 6), q[1]]; } },
+      );
+      return ws;
+    },
+    pose(P, sk, t, role, p) {
+      if (phsIn === 2 && role === "l") return phsLPose(P, sk, t);
+      if (role === "w" && t > MT.SPLASH) return phsPose(P, sk, t, p);
+      return S_.pose(P, sk, t, role, p);
+    },
+    food() { const x = FIN.wx + FIN.dir * (PHS_BX - PHS_BL * Math.cos(PHS_TILT)); return { x, y: 0, r: 20, y0: -30, lx: x + FIN.dir * (MG.lay && MG.lay.port ? 50 : 64) }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("phsZap", MT.SPLASH + 10, () => Cin.go(() => { Cin._osc("sawtooth", 96, 84, 0.42, 0.14, 0.004); Cin._osc("square", 192, 170, 0.4, 0.05, 0.004, 0, 7); Cin._noise(0.45, 0.32, 6500, 2200, "highpass"); Cin.rumble(0.3); }));
+      phsBolts.forEach((b, i) => { if (i) cueOnce("phsBolt" + i, b.t0, () => Cin.go(() => Cin._noise(0.12, 0.3, 7000, 1600, "highpass"))); });
+      cueOnce("phsShred", PHS.SH0, () => Cin.go(() => { Cin._noise(0.28, 0.3, 2400, 5200, "bandpass", 2.5); for (let i = 0; i < 4; i++) Cin._osc("triangle", 1800 - i * 200, 900, 0.03, 0.06, 0.002, i * 0.05); }));
+      cueOnce("phsWhirl", PHS.BORN, () => Cin.go(() => Cin.whoosh(0.32, -0.6 * D, 0.6 * D, 0.32)));
+      cueOnce("phsPack", PHS.IN - 20, () => Cin.go(() => { Cin._osc("sine", 320, 170, 0.09, 0.18, 0.004); Cin._noise(0.08, 0.15, 1200, 500, "lowpass"); }));
+      PHS.PRESS.forEach((p, i) => cueOnce("phsPress" + i, p, () => Cin.go(() => { Cin._noise(0.14, 0.26, 700, 260, "lowpass", 1.4); Cin._osc("sine", 150 + i * 30, 70, 0.12, 0.26, 0.004); Cin._noise(0.1, 0.07, 3000, 6000, "highpass", 1, 0.04); })));
+      cueOnce("phsFlip", PHS.FLIP0, () => Cin.go(() => Cin.whoosh(0.14, 0.2, -0.2, 0.22)));
+      cueOnce("phsGold", PHS.FLIP1, () => Cin.go(() => { Cin._osc("triangle", 2350, 2330, 0.7, 0.07, 0.002); Cin._osc("sine", 3520, 3500, 0.45, 0.035, 0.002); Cin._osc("sine", 160, 80, 0.12, 0.25, 0.003); }));
+      cueOnce("phsStamp", PHS.STAMP, () => Cin.go(() => Cin.stamp(0.7)));
+      cueOnce("phsSpark", PHS.SPARK, () => Cin.go(() => Cin.shimmer(2093, 0.5)));
+      cueOnce("phsHop", PHS.HOP0, () => Cin.go(() => Cin.whoosh(0.16, 0.3 * D, -0.3 * D, 0.16)));
+      cueOnce("phsClonk", PHS.BITE, () => Cin.go(() => { Cin._osc("square", 540, 500, 0.1, 0.07, 0.002); Cin._osc("triangle", 1080, 1040, 0.28, 0.1, 0.002); Cin._noise(0.05, 0.3, 3200, 1600, "bandpass", 3); }));
+      for (let i = 0; i < 3; i++) cueOnce("phsTweet" + i, PHS.STARS + 20 + i * 95, () => Cin.go(() => Cin._osc("sine", 2300 + i * 260, 2500 + i * 260, 0.06, 0.035, 0.004)));
+      cueOnce("phsGrin", PHS.GRIN, () => Cin.go(() => Cin.chime(1319)));
+      cueOnce("phsBlink", PHS.BLINK, () => Cin.go(() => Cin.tick(2900)));
     },
   });
   return S_;

@@ -10,15 +10,16 @@
 #  - (844x390 only, with the page's clock moved) the rules: Another go is offered after a finished loss or a draw, once a day, not after a win,
 #    a forfeit, a quit or a reload mid-match; it starts the same match again, its win continues the streak as if the first try had been won
 #    (+40, 4 days from 3), a draw pays 15 and a loss 5 instead of today's result; short of chips it says so and takes nothing.
-#  - KO pages (ui/kopages.js has the state; there is no server here, so the test sets it: window.__blAcct.st.code, window.__blKo.st): the Pommes pill ("0 Pommes"
-#    signed out), the pack row (dashed, SOON, not a button), eight cards, nothing runs past the sheet or is cut off; signed in with 300 Pommes and the Reaper's page:
-#    the pill says 300, the Reaper is "In use" with the ON tag, a tap switches it off ("Tap to use", KO.off) and on again, a card you can pay arms on the first tap
-#    ("Sure?" with the euro value) and on the second asks kopages.js (no server: "That didn't go through"), short of Pommes a tap says so (or "Pommes come soon"),
-#    a server's no is said once, a busy card shows "…"; WATCH plays the page (844x390: FIN.alt, then back on the Shop with that card in view and pulsing);
-#    the results' band "Potatality · in the Shop" (hidden after a normal result; set through window.__blShop.resKo because a lost match with a CPU's page is a
-#    one-in-four chance on a fighter that has one) sits inside the results without pushing a button off the screen, and its tap opens the Shop on that card.
+#  - the Pommes (ui/kopages.js has the state; there is no server here, so the test sets it: window.__blAcct.st.code, window.__blKo.st): the KO PAGES section is gone
+#    (no KO cards, no pack row, no kicker); the last row "Pommes Shop" (the cone, the balance, "0" dim signed out, a chevron) and the Pommes pill at the top (a button)
+#    both open #scrPshop (on the fighter of the select) and closing it brings the Shop tab back; the pill and the row follow the balance (300, 12,345, 100);
+#  - Free chips (window.__blAdFake, set before the page loads; ui/ads.js): without it exactly the SOON row; with "view" the row waits, reads "+25 chips · 0 of 3 today", a tap
+#    pays 25 chips once per watch (1 of 3, 2 of 3), the third leaves "back tomorrow" (dim, not a button, a tap pays nothing), the next day starts at 0 of 3; "skip" pays and counts
+#    nothing and asks again; "none" says "No ad right now"; the Pommes Shop's own ad replaces ours and closing it asks for ours again (844x390);
+#  - the results' band "Potatality · in the Pommes Shop" (hidden after a normal result; set through window.__blShop.resKo because a lost match with a CPU's page is a
+#    one-in-four chance on a fighter that has one) sits inside the results without pushing a button off the screen, and its tap opens the Pommes Shop on that fighter.
 # Prints "shop ok" and "no errors" (or the problems). Shots in <outdir> (default shop). The page's clock is moved with a Date stand-in as pwdaily.py does.
-#   (the KO shots: <size>_11_ko (signed out), _12_ko_armed, _13_ko_in, _14_ko_back (844 only), results _10b_results_ko)
+#   (the Pommes and ad shots: <size>_11_pommes, _12_pommes_in, _12_pommes_big, _20_ad_ready, _21_ad_done, ads_none_22_ad_none, results _10b_results_ko, _14_ko_from_results)
 #   python3 pwshop.py [outdir [tag ...]]   tags: s667 p844 d1280 up390 (the Shop and the Daily sheet at that size) rules (844x390, the Daily rules)
 import asyncio, sys, json, pathlib
 TEST_URL = (pathlib.Path(__file__).resolve().parent.parent / 'build' / 'test.html').as_uri()
@@ -51,9 +52,10 @@ async def reload(pg):
     await pg.evaluate("window.name = 'pwkeep:' + JSON.stringify(Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])))")
     await pg.reload()
 
-async def new_page(b, tag, vp, up, prof, when):
+async def new_page(b, tag, vp, up, prof, when, fake=''):
     mob = vp[0] < 1000
     ctx = await b.new_context(viewport={'width': vp[0], 'height': vp[1]}, device_scale_factor=2 if mob else 1, is_mobile=mob, has_touch=mob, timezone_id=TZ, locale='en-US')
+    if fake: await ctx.add_init_script(f"window.__blAdFake = {json.dumps(fake)};")   # ui/ads.js: the test ad ("view", "skip", "none"), before the page loads
     p = dict(prof)
     if up: p['screen'] = 'up'
     await ctx.add_init_script(KEEP + "if (localStorage.getItem('%s') === null) { localStorage.setItem('%s', %s); localStorage.setItem('pwshop.at', %s); }"
@@ -125,39 +127,32 @@ SHOP_FIT = """(() => {
   if (sh.scrollWidth > sh.clientWidth + 1) bad.push('the sheet scrolls sideways');
   if (pan.scrollWidth > pan.clientWidth + 1) bad.push('the Shop scrolls sideways');
   const cards = [...pan.querySelectorAll('.sh-c')];
-  if (cards.length !== 25) bad.push('cards: ' + cards.length);
-  if (pan.querySelectorAll('.sh-ko').length !== 8) bad.push('KO cards: ' + pan.querySelectorAll('.sh-ko').length);
+  if (cards.length !== 17) bad.push('cards: ' + cards.length);
+  if (pan.querySelectorAll('.sh-ko, .sh-pk').length) bad.push('KO page cards or the pack row are back');
   for (const c of cards) {
     const r = c.getBoundingClientRect(), id = c.dataset.id || '?';
     if (r.left < p.left - 1 || r.right > p.right + 1) bad.push('card ' + id + ' runs out of the panel sideways');
     for (const e of c.querySelectorAll('.sh-nm, .sh-f b, .sh-f small')) if (e.scrollWidth > e.clientWidth + 1) bad.push('cut off in ' + id + ': ' + e.textContent);
-    for (const e of c.querySelectorAll('.sh-np, .sh-f, .sh-a, .ko-art, .ko-go, .ko-nm, .ko-on, .sh-soon')) {
+    for (const e of c.querySelectorAll('.sh-np, .sh-f, .sh-a')) {
       if (!e.getClientRects().length) continue;
       const q = e.getBoundingClientRect(); if (q.left < r.left - 1 || q.right > r.right + 1 || q.bottom > r.bottom + 1 || q.top < r.top - 3) bad.push(e.className + ' runs out of its card ' + id);
     }
-    // a KO card: the page's name whole (it wraps, so its height counts) and inside the art, WATCH clear of the sticker, the foot in one piece
-    const nm = c.querySelector('.ko-nm'), art = c.querySelector('.ko-art');
-    if (nm) {
-      const q = nm.getBoundingClientRect(), a = art.getBoundingClientRect();
-      if (nm.scrollWidth > nm.clientWidth + 1) bad.push('page name cut off in ' + id + ': ' + nm.textContent);
-      if (nm.getBoundingClientRect().height > 2.4 * parseFloat(getComputedStyle(nm).fontSize)) bad.push('page name takes three lines in ' + id + ': ' + nm.textContent);
-      if (q.left < a.left - 1 || q.right > a.right + 1 || q.top < a.top - 3 || q.bottom > a.bottom + 1) bad.push('page name runs out of the art in ' + id);
-      const g = c.querySelector('.ko-go').getBoundingClientRect(), s = c.querySelector('.sh-soon');
-      if (s && s.getClientRects().length) { const t = s.getBoundingClientRect(); if (g.left < t.right && t.left < g.right && g.top < t.bottom && t.top < g.bottom) bad.push('WATCH and SOON overlap in ' + id); }
-      if (g.right > a.right || g.bottom > a.bottom) bad.push('WATCH is not inside the art in ' + id);
-    }
   }
-  // the Pommes pill: whole, inside the panel, not on the chips or the line
+  // the Pommes pill (a button): whole, inside the panel, not on the chips or the line
   const pm = pan.querySelector('.sh-pm'), pr = pm.getBoundingClientRect();
   if (pm.scrollWidth > pm.clientWidth + 1) bad.push('the Pommes pill is cut off');
   if (pr.right > p.right + 1 || pr.left < p.left - 1) bad.push('the Pommes pill runs out of the panel');
   if (!/^[\\d,]+ Pommes$/.test(pm.textContent.trim().replace(/\\s+/g, ' '))) bad.push('the Pommes pill says ' + pm.textContent);
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
   if (hit(pr, pan.querySelector('.sh-bal').getBoundingClientRect())) bad.push('the Pommes pill is on the chips');
-  // the pack row: the text, the value and the sticker inside it, the text not cut
-  const row = pan.querySelector('.sh-pk'), rr = row.getBoundingClientRect();
-  for (const e of row.children) { const q = e.getBoundingClientRect(); if (e.getClientRects().length && (q.right > rr.right + 1 || q.left < rr.left - 1 || q.bottom > rr.bottom + 1 || q.top < rr.top - 12)) bad.push('the pack row: ' + e.className + ' runs out of it'); }
-  const rt = row.querySelector('.sh-adt'); if (rt.scrollWidth > rt.clientWidth + 1) bad.push('the pack row text is cut off');
+  // the two rows (Free chips, Pommes Shop): every part inside the row, the text whole and the row inside the panel
+  for (const row of pan.querySelectorAll('.sh-ad')) {
+    const rr = row.getBoundingClientRect(), nm = row.classList.contains('sh-pms') ? 'the Pommes Shop row' : 'the Free chips row';
+    if (rr.left < p.left - 1 || rr.right > p.right + 1) bad.push(nm + ' runs out of the panel');
+    for (const e of row.children) { const q = e.getBoundingClientRect(); if (e.getClientRects().length && (q.right > rr.right + 1 || q.left < rr.left - 1 || q.bottom > rr.bottom + 1 || q.top < rr.top - 12)) bad.push(nm + ': ' + e.className + ' runs out of it'); }
+    const rt = row.querySelector('.sh-adt'); if (rt.scrollWidth > rt.clientWidth + 1) bad.push(nm + ': the text is cut off');
+    for (const e of row.querySelectorAll('.sh-adv, .sh-pmv')) if (e.scrollWidth > e.clientWidth + 1) bad.push(nm + ': ' + e.textContent + ' is cut off');
+  }
   for (const e of pan.querySelectorAll('.sh-k span, .sh-skins, .sh-note')) {
     if (!e.getClientRects().length) continue;
     if (e.scrollWidth > e.clientWidth + 1 && e.className !== 'sh-skins') bad.push('line cut off: ' + e.textContent.slice(0, 30));
@@ -205,7 +200,8 @@ RESKO = """(() => {
   if (k.hidden || !k.getClientRects().length) return ['no Potatality band on the results'];
   const r = k.getBoundingClientRect(), sh = document.getElementById('resSheet').getBoundingClientRect(), tx = document.querySelector('#resSheet .res-txt').getBoundingClientRect();
   if (k.scrollWidth > k.clientWidth + 1) bad.push('the band cuts its words');
-  for (const e of k.children) { const q = e.getBoundingClientRect(); if (q.left < r.left - 2 || q.right > r.right + 2) bad.push('the band: ' + e.tagName + ' runs out of it'); }
+  for (const e of k.querySelectorAll('span')) if (e.scrollWidth > e.clientWidth + 1) bad.push('the band cuts "' + e.textContent + '" short');
+  for (const e of k.children) { if (!e.getClientRects().length) continue; const q = e.getBoundingClientRect(); if (q.left < r.left - 2 || q.right > r.right + 2) bad.push('the band: ' + e.tagName + ' runs out of it'); }
   if (r.left < sh.left - 1 || r.right > sh.right + 1 || r.top < sh.top - 1 || r.bottom > sh.bottom + 1) bad.push('the band runs out of the sheet');
   if (r.right > tx.right + 1) bad.push('the band runs past the panel text column');
   for (const id of ['rTitle', 'rSub', 'rFin', 'rChl', 'rRiv', 'rStars', 'rMode']) {
@@ -254,21 +250,15 @@ async def shop_size(b, tag):
     need('The worn skin of each fighter is glazed here.' in await txt(pg, '#acPanH') and (await shown(pg, '#acPanH .sh-note') or await shown(pg, '#acPanH .sh-k2')), f'{tag}: the glaze line is missing or hidden')
     ink = await pg.evaluate(INKED)
     need(len(ink) == 8 and all(n > 3 for n in ink), f'{tag}: glaze models not drawn {ink}')
-    # KO pages (signed out here: no Pommes, no pages): the pill, the pack row, eight cards, each with its price and euro value
-    need(await txt(pg, '#shPm') == '0 Pommes', f"{tag}: the Pommes pill says {await txt(pg, '#shPm')!r}")
-    need(await pg.evaluate("document.querySelectorAll('#acPanH .sh-ko').length") == 8, f'{tag}: not 8 KO cards')
-    ko = await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-ko')].map((c) => c.dataset.id + ' ' + c.querySelector('.ko-nm').textContent + ' | ' + c.querySelector('.sh-f small').textContent.trim())")
-    need(len(ko) == 8 and all(x.endswith('300 · €2.99') for x in ko) and ko[0] == 'phoenix Well Done | 300 · €2.99' and ko[-1].startswith('reaper Rest in Peel'), f'{tag}: KO cards {ko}')
-    need(await pg.evaluate("document.querySelector('#acPanH .sh-pk').getAttribute('aria-disabled')") == 'true' and not await pg.evaluate("document.querySelector('#acPanH .sh-pk').hasAttribute('role')"), f'{tag}: the pack row is a button')
-    need('300 Pommes' in await txt(pg, '#acPanH .sh-pk') and '€2.99' in await txt(pg, '#acPanH .sh-pk') and 'One KO page. Pommes stay on your account.' in await txt(pg, '#acPanH .sh-pk'), f"{tag}: pack row {await txt(pg, '#acPanH .sh-pk')!r}")
-    need(await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-ko')].every((c) => c.querySelector('.sh-soon').getClientRects().length > 0 && c.classList.contains('short'))") and await shown(pg, '#acPanH .sh-pk .sh-soon'), f'{tag}: the SOON stickers are not all there')
-    need('KO pages' in await txt(pg, '#acPanH') and 'a second KO page per fighter, the Potatality' in await txt(pg, '#acPanH'), f'{tag}: the KO kicker is missing')
-    need(not any(('tokglyph' in h) for h in await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-ko, #acPanH .sh-pk, #acPanH .sh-pm')].map((e) => e.innerHTML)")), f'{tag}: a chip glyph on a Pommes price')
+    # Free chips without ads (no fake on this page): exactly the SOON row: dashed, dim, the sticker, not a button; the Pommes Shop row and pill are in pm_size
+    need(not await pg.evaluate("window.__blAds.on()") and await cls(pg, AD) == ['sh-ad'] and await shown(pg, AD + ' .sh-soon') and await pg.get_attribute(AD, 'aria-disabled') == 'true' and await pg.get_attribute(AD, 'role') is None,
+         f"{tag}: the SOON row: {await cls(pg, AD)} {await ad_txt(pg)!r}")
+    need(await ad_txt(pg) == 'A short ad, +25 chips, 3 a day. Never required.' and await pg.get_attribute(AD, 'aria-label') == 'Free chips: a short ad, 25 chips, 3 a day, never required. Coming soon.', f"{tag}: the SOON row says {await ad_txt(pg)!r}")
     await shot(pg, tag, '1_shop', (SHOP_FIT,))
     await pg.evaluate("(() => { const s = document.querySelector('#scrAccount .sheet'); document.querySelector('#acPanH .sh-glaze').scrollIntoView({ block: 'center' }); })()"); await pg.wait_for_timeout(300)
     await shot(pg, tag, '2_shop_scrolled', (SHOP_FIT,))
     await pg.evaluate("(() => { const s = document.querySelector('#scrAccount .sheet'); s.scrollTop = 99999; })()"); await pg.wait_for_timeout(300)
-    await shot(pg, tag, '11_ko', (SHOP_FIT,))
+    await shot(pg, tag, '2b_shop_end', (SHOP_FIT,))
     await pg.evaluate("(() => { const s = document.querySelector('#scrAccount .sheet'); s.scrollTop = 0; })()"); await pg.wait_for_timeout(200)
     # ----- Sunset: the first tap arms (3 s), a tap elsewhere or the time puts it back, the second pays
     await clk(card('pl', 'sunset')); await pg.wait_for_timeout(200)
@@ -363,112 +353,129 @@ async def shop_size(b, tag):
     await close_sheet()
     await ctx.close()
 
-# ----- KO pages at one size (a fresh page: no chips are spent here) -----
+# ----- the Pommes Shop row and the pill at one size (a fresh page: nothing is bought here) -----
 # the fake signed-in state: kopages.js keeps what the server said in KO; this page has no server, so the test says it (o: what differs)
-SIGN = "(o) => { window.__blAcct.st.code = 'TESTCODE'; const k = window.__blKo.st; Object.assign(k, { code: 'TESTCODE', bal: 300, own: ['reaper'], buy: false, off: {}, busy: '', why: '' }, o || {}); window.__blKo.refresh(); }"
-def kc(id_, sub=''): return f'#acPanH .sh-ko[data-id="{id_}"]' + (' ' + sub if sub else '')
-# the Shop's KO card is on the screen under the sheet's own head, whole
-INVIEW = """((id) => { const s = document.querySelector('#scrAccount .sheet').getBoundingClientRect(), h = document.querySelector('#scrAccount .sh-head').getBoundingClientRect(),
-  c = document.querySelector('#acPanH .sh-ko[data-id="' + id + '"]').getBoundingClientRect(); return c.top >= h.bottom - 1 && c.bottom <= s.bottom + 1 && c.left >= s.left && c.right <= s.right; })"""
-HI = "(id) => document.querySelector('#acPanH .sh-ko[data-id=\"' + id + '\"]').classList.contains('hi')"
-async def ko_size(b, tag):
+SIGN = "(o) => { window.__blAcct.st.code = 'TESTCODE'; const k = window.__blKo.st; Object.assign(k, { code: 'TESTCODE', bal: 300, own: [], buy: false, ads: false, adN: 0, adMax: 0, busy: '', why: '' }, o || {}); window.__blKo.refresh(); }"
+ROW = '#acPanH .sh-pms'
+async def pm_size(b, tag):
     vp = SIZES[tag][:2]; up = SIZES[tag][2]
     ctx, pg, mob = await new_page(b, tag, vp, up, P0, at(14))
     clk = pg.tap if mob else pg.click
-    async def say(): return await txt(pg, '#shFrom')
     async def sign(o=None): await pg.evaluate(SIGN, o); await pg.wait_for_timeout(150)
-    async def ko_st(): return await pg.evaluate("JSON.parse(JSON.stringify(window.__blKo.st))")
-    async def card_txt(id_): return await pg.evaluate("(id) => { const f = document.querySelector('#acPanH .sh-ko[data-id=\"' + id + '\"] .sh-f'); return f.querySelector('b').textContent + ' ' + f.querySelector('small').textContent.trim(); }", id_)
-    async def tokens(): return (await prof(pg))['tokens']
-    async def to_ko(): await pg.evaluate("document.querySelector('#acPanH .sh-kogrid').scrollIntoView({ block: 'center' })"); await pg.wait_for_timeout(300)
+    async def to_row(): await pg.evaluate("document.querySelector('#acPanH .sh-pms').scrollIntoView({ block: 'center' })"); await pg.wait_for_timeout(300)
+    async def pshop_open(): return await pg.evaluate("!document.getElementById('scrPshop').hidden && window.__blPshop.st.on")
+    async def back_to_shop():
+        await clk('#psClose'); await pg.wait_for_timeout(500)
+        need(not await pshop_open() and await shown(pg, '#acPanH') and (await pg.get_attribute('#acTabH', 'aria-selected')) == 'true', f'{tag}: closing the Pommes Shop does not leave the Shop tab')
     await clk('#mTokens'); await pg.wait_for_timeout(700)
-    # ----- signed out: no Pommes; a tap on a card says they come soon; WATCH only where the page exists
-    need(await txt(pg, '#shPm') == '0 Pommes', f"{tag}: pill {await txt(pg, '#shPm')!r}")
-    await clk(kc('reaper', '.ko-main')); await pg.wait_for_timeout(250)
-    need(await say() == 'Pommes come soon: the page is in the Shop the day they do.' and 'arm' not in await cls(pg, kc('reaper')), f'{tag}: signed out, a tap says {await say()!r}')
-    go = await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-ko')].map((c) => [c.dataset.id, c.querySelector('.ko-go').disabled, c.querySelector('.ko-go').getAttribute('aria-label')])")
-    need(len(go) == 8 and all((not d) == ('not available yet' not in a) for _, d, a in go) and any(i == 'reaper' and not d for i, d, _ in go), f'{tag}: WATCH buttons {go}')
-    # ----- signed in: 300 Pommes and the Reaper's page
+    # ----- the KO PAGES section is gone: no KO cards, no pack row, no kicker; the Pommes Shop is one row at the end and a pill at the top
+    need(await pg.evaluate("document.querySelectorAll('#acPanH .sh-ko, #acPanH .sh-kogrid, #acPanH .sh-pk, #acPanH .ko-go').length") == 0, f'{tag}: KO page cards are still in the Shop')
+    kick = await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-k b')].map((e) => e.textContent)")
+    need(kick == ['Nameplates', 'Glaze'], f'{tag}: the Shop kickers {kick}')
+    need(await pg.evaluate("document.querySelectorAll('#acPanH .sh-c').length") == 17, f'{tag}: not 9 + 8 cards')
+    need(await pg.evaluate("document.querySelector('#acPanH .sh-pms') === document.querySelector('#acPanH').lastElementChild"), f'{tag}: the Pommes Shop row is not the last thing in the tab')
+    need(await txt(pg, ROW) == 'Pommes Shop KO pages and special skins 0 ›', f'{tag}: the row says {await txt(pg, ROW)!r}')
+    need('zero' in await cls(pg, ROW) and 'zero' in await cls(pg, '#shPm') and await txt(pg, '#shPm') == '0 Pommes', f"{tag}: signed out the balance is not dim: {await cls(pg, ROW)} {await txt(pg, '#shPm')!r}")
+    need(await pg.evaluate("document.querySelector('#shPm').tagName") == 'BUTTON' and await pg.evaluate("document.querySelector('#acPanH .sh-pms').tagName") == 'BUTTON', f'{tag}: the pill or the row is not a button')
+    need(not any(('tokglyph' in h) for h in await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-pms, #acPanH .sh-pm')].map((e) => e.innerHTML)")), f'{tag}: a chip glyph on the Pommes')
+    need(await pg.evaluate("[...document.querySelectorAll('#acPanH .sh-pms .pmglyph, #acPanH .sh-pm .pmglyph')].every((e) => e.getClientRects().length > 0)"), f'{tag}: no fries cone on the pill or the row')
+    await to_row()
+    await shot(pg, tag, '11_pommes', (SHOP_FIT,))
+    # ----- the row opens the Pommes Shop (on the fighter of the select), closing it brings the tab back
+    await clk(ROW); await pg.wait_for_timeout(500)
+    need(await pshop_open(), f'{tag}: the Pommes Shop row does not open #scrPshop')
+    need(await pg.evaluate("window.__blPshop.fighter") == 'phoenix', f"{tag}: the Pommes Shop opens on {await pg.evaluate('window.__blPshop.fighter')!r}")
+    await back_to_shop()
+    # ----- the pill at the top does the same
+    await pg.evaluate("document.querySelector('#scrAccount .sheet').scrollTop = 0"); await pg.wait_for_timeout(200)
+    await clk('#shPm'); await pg.wait_for_timeout(500)
+    need(await pshop_open(), f'{tag}: the Pommes pill does not open #scrPshop')
+    await back_to_shop()
+    # ----- signed in: the pill and the row follow what the server says (300, then 100), the cone no longer dim
     await sign()
-    need(await txt(pg, '#shPm') == '300 Pommes', f"{tag}: pill signed in {await txt(pg, '#shPm')!r}")
-    need('on' in await cls(pg, kc('reaper')) and await card_txt('reaper') == 'Reaper In use' and await shown(pg, kc('reaper', '.ko-on')) and await txt(pg, kc('reaper', '.ko-on')) == 'ON', f"{tag}: Reaper in use: {await cls(pg, kc('reaper'))} {await card_txt('reaper')!r}")
-    need(await pg.get_attribute(kc('reaper', '.ko-main'), 'aria-pressed') == 'true', f'{tag}: the Reaper card is not pressed')
-    need(all(['buy' in await cls(pg, kc(i)) for i in ('phoenix', 'dragon', 'wizard')]) and 'short' not in await cls(pg, kc('dragon')), f'{tag}: the other cards are not buyable with 300 Pommes')
-    need(not any([await shown(pg, kc(i, '.sh-soon')) for i in ('phoenix', 'dragon')]), f'{tag}: a SOON sticker on a card you can pay')
-    await to_ko()
-    await shot(pg, tag, '12_ko_in', (SHOP_FIT,))
-    # a tap on the owned card: off ("Tap to use", KO.off), the next: on again
-    await clk(kc('reaper', '.ko-main')); await pg.wait_for_timeout(250)
-    k = await ko_st()
-    need(await card_txt('reaper') == 'Reaper Tap to use' and 'on' not in await cls(pg, kc('reaper')) and 'own' in await cls(pg, kc('reaper')) and k['off'].get('reaper') == 1 and not await shown(pg, kc('reaper', '.ko-on')), f"{tag}: Reaper off: {await card_txt('reaper')!r} off={k['off']}")
-    need(await pg.get_attribute(kc('reaper', '.ko-main'), 'aria-pressed') == 'false' and await txt(pg, '#shPm') == '300 Pommes', f'{tag}: Reaper off: pressed / pill')
-    await clk(kc('reaper', '.ko-main')); await pg.wait_for_timeout(250)
-    k = await ko_st()
-    need(await card_txt('reaper') == 'Reaper In use' and 'on' in await cls(pg, kc('reaper')) and not k['off'].get('reaper'), f"{tag}: Reaper on again: {await card_txt('reaper')!r} off={k['off']}")
-    # a card you can pay: the first tap arms it (the euro value stays in sight), a tap on another card moves nothing but the arming, the second asks kopages.js
-    t0 = await tokens()
-    await clk(kc('dragon', '.ko-main')); await armed(pg, kc('dragon'), 'arm')
-    need('Sure?' in await card_txt('dragon') and '300' in await card_txt('dragon') and '€2.99' in await card_txt('dragon'), f"{tag}: armed card says {await card_txt('dragon')!r}")
-    need(await txt(pg, '#shPm') == '300 Pommes' and await tokens() == t0 and (await ko_st())['own'] == ['reaper'], f'{tag}: the first tap already paid')
-    await shot(pg, tag, '13_ko_armed', (SHOP_FIT,))
-    if 'arm' not in await cls(pg, kc('dragon')): await clk(kc('dragon', '.ko-main')); await armed(pg, kc('dragon'), 'arm')
-    await clk(kc('phoenix', '.ko-main')); await armed(pg, kc('phoenix'), 'arm')
-    need('arm' not in await cls(pg, kc('dragon')), f'{tag}: a tap on another card does not move the arming')
-    await clk(kc('dragon', '.ko-main')); await armed(pg, kc('dragon'), 'arm')
-    await fast(pg, kc('dragon', '.ko-main')); await pg.wait_for_timeout(300)
-    k = await ko_st()
-    need(await say() == "That didn't go through: try again." and 'arm' not in await cls(pg, kc('dragon')) and k['own'] == ['reaper'] and k['bal'] == 300 and await tokens() == t0, f"{tag}: the second tap: {await say()!r} {k['own']} {k['bal']}")
-    need(await txt(pg, '#shPm') == '300 Pommes' and 'buy' in await cls(pg, kc('dragon')), f'{tag}: the card is not buyable again')
-    # short of Pommes: nothing arms; no payments yet: "come soon" and a SOON sticker, the price dimmed
+    need(await txt(pg, '#shPm') == '300 Pommes' and await txt(pg, ROW) == 'Pommes Shop KO pages and special skins 300 ›' and 'zero' not in await cls(pg, ROW) and 'zero' not in await cls(pg, '#shPm'), f"{tag}: signed in: {await txt(pg, '#shPm')!r} {await txt(pg, ROW)!r}")
+    await to_row()
+    await shot(pg, tag, '12_pommes_in', (SHOP_FIT,))
+    await sign({'bal': 12345})
+    need(await txt(pg, '#shPm') == '12,345 Pommes' and '12,345' in await txt(pg, ROW), f"{tag}: a big balance: {await txt(pg, '#shPm')!r} {await txt(pg, ROW)!r}")
+    await shot(pg, tag, '12_pommes_big', (SHOP_FIT,))
     await sign({'bal': 100})
-    need(await txt(pg, '#shPm') == '100 Pommes' and 'short' in await cls(pg, kc('dragon')) and await shown(pg, kc('dragon', '.sh-soon')) and await card_txt('dragon') == 'Dragon 300 · €2.99', f"{tag}: short: {await card_txt('dragon')!r}")
-    await clk(kc('dragon', '.ko-main')); await pg.wait_for_timeout(250)
-    need(await say() == 'Pommes come soon: the page is in the Shop the day they do.' and 'arm' not in await cls(pg, kc('dragon')), f'{tag}: short, no payments: {await say()!r}')
-    await shot(pg, tag, '15_ko_short', (SHOP_FIT,))
-    # payments open (the server says buy): the pack row is a button, the stickers go, a tap says what is missing
-    await sign({'bal': 100, 'buy': True})
-    need(not await shown(pg, kc('dragon', '.sh-soon')) and not await shown(pg, '#acPanH .sh-pk .sh-soon') and await pg.get_attribute('#acPanH .sh-pk', 'role') == 'button', f'{tag}: buy: true leaves the stickers or no button')
-    await clk(kc('dragon', '.ko-main')); await pg.wait_for_timeout(250)
-    need(await say() == 'Jacket Potato costs 300 Pommes and you have 100.', f'{tag}: short, payments open: {await say()!r}')
-    await clk('#acPanH .sh-pk'); await pg.wait_for_timeout(250)
-    need(await say() == 'Buying Pommes opens soon.', f'{tag}: the pack row says {await say()!r}')
-    await shot(pg, tag, '16_ko_buy_open', (SHOP_FIT,))
-    # what the server answers: "…" while it thinks, then its no, said once
-    await sign({'busy': 'dragon'})
-    need(await card_txt('dragon') == 'Dragon …', f"{tag}: busy: {await card_txt('dragon')!r}")
-    for why, line in (('acct', 'Signed out for a moment: try again.'), ('own', 'You own it already.'), ('fail', "That didn't go through: try again."), ('short', 'Jacket Potato costs 300 Pommes and you have 100.')):
-        await sign({'bal': 100, 'why': why})
-        need(await say() == line, f'{tag}: the server says {why}: {await say()!r}')
-    await sign({'bal': 300})
-    # ----- WATCH: refused when the game is not at the menu (a page is playing), a disabled one does nothing
-    await pg.evaluate("window.__blastline.fin.on = true")
-    await clk(kc('reaper', '.ko-go')); await pg.wait_for_timeout(250)
-    await pg.evaluate("window.__blastline.fin.on = false")
-    need(await say() == 'Watch works from the menu.' and await shown(pg, '#scrAccount'), f'{tag}: WATCH away from the menu says {await say()!r}')
-    # ----- WATCH (844x390): the page plays on the Reaper, then the Shop on that card
-    if tag == 'p844':
-        await clk(kc('reaper', '.ko-go'))
-        try: await pg.wait_for_function("window.__blastline.fin.on === true", timeout=8000)
-        except Exception:   # (kopages.js koDemo: the page did not start; shop.js then puts the Shop back and says so)
-            errs.append(f'{tag}: WATCH does not play the Potatality; the top line says {await say()!r}')
-        else:
-            need(await pg.evaluate("window.__blastline.fin.alt") is True, f'{tag}: WATCH plays the normal page, not the Potatality')
-            need(not await shown(pg, '#scrAccount'), f'{tag}: the Account sheet stays under the page')
-            await pg.wait_for_function("window.__blastline.fin.t > 1300", timeout=15000)
-            await pg.screenshot(path=f'{OUT}/{tag}_14_ko_watch.png')
-            await pg.touchscreen.tap(vp[0] // 2, vp[1] // 2)   # a tap skips it (once the page is up)
-            try: await pg.wait_for_function("window.__blastline.fin.on === false", timeout=20000)
-            except Exception: errs.append(f'{tag}: the page did not end')
-            try: await pg.wait_for_function(HI, arg='reaper', polling=40, timeout=6000)
-            except Exception: errs.append(f'{tag}: back from WATCH the Reaper card does not pulse')
-            await pg.wait_for_timeout(700)
-            need(await shown(pg, '#acPanH') and (await pg.get_attribute('#acTabH', 'aria-selected')) == 'true' and await pg.evaluate("window.__blastline.mode") == 'menu', f'{tag}: not back on the Shop')
-            need(await pg.evaluate(INVIEW, 'reaper'), f'{tag}: the Reaper card is not in view')
-            await shot(pg, tag, '14_ko_back', (SHOP_FIT,))
-            await pg.wait_for_timeout(1300)
-            need(not await pg.evaluate(HI, 'reaper'), f'{tag}: the pulse does not end')
-            need(await card_txt('reaper') == 'Reaper In use' and await txt(pg, '#shPm') == '300 Pommes', f'{tag}: the Shop after WATCH: {await card_txt("reaper")!r}')
+    need(await txt(pg, '#shPm') == '100 Pommes' and ' 100 ' in await txt(pg, ROW), f"{tag}: the balance changes: {await txt(pg, '#shPm')!r} {await txt(pg, ROW)!r}")
+    # the row reaches the Pommes Shop with the Account sheet still under it, and nothing was bought or spent by looking
+    await clk(ROW); await pg.wait_for_timeout(500)
+    need(await pshop_open() and await pg.evaluate("document.getElementById('psBal').textContent.includes('100')"), f'{tag}: the Pommes Shop does not show the 100 Pommes')
+    await back_to_shop()
+    need((await prof(pg))['tokens'] == 1500, f'{tag}: chips changed by looking at the Pommes')
     await clk('#acClose'); await pg.wait_for_timeout(450)
+    await ctx.close()
+
+# ----- Free chips (ui/ads.js): the page's fake ad ("view" watches to the end, "skip" closes early, "none" brings no ad; set before the page loads) -----
+AD = '#acPanH .sh-ad:not(.sh-pms)'
+async def ad_txt(pg): return await txt(pg, AD + ' .sh-adt span')
+async def ad_ready(pg): await pg.wait_for_function("document.querySelector('#acPanH .sh-ad:not(.sh-pms)').classList.contains('ready')", polling=40, timeout=6000)
+async def ads_day(pg): return await pg.evaluate("window.__blAds.day().ch")
+async def ads_size(b, tag):
+    vp = SIZES[tag][:2]; up = SIZES[tag][2]
+    ctx, pg, mob = await new_page(b, tag, vp, up, P0, at(14), 'view')
+    clk = pg.tap if mob else pg.click
+    async def tokens(): return (await prof(pg))['tokens']
+    await clk('#mTokens'); await pg.wait_for_timeout(500)
+    # ----- ads on: the row waits for an ad (dim, no sticker), then reads "+25 chips · 0 of 3 today" and is a button
+    need(await pg.evaluate("window.__blAds.on()") and not await shown(pg, AD + ' .sh-soon'), f'{tag}: the fake ads are not on or the SOON sticker stays')
+    try: await ad_ready(pg)
+    except Exception: errs.append(f"{tag}: no ad becomes ready ({await cls(pg, AD)}, {await ad_txt(pg)!r})"); await ctx.close(); return
+    need(await ad_txt(pg) == '+25 chips · 0 of 3 today' and await pg.get_attribute(AD, 'role') == 'button' and await pg.get_attribute(AD, 'aria-disabled') is None, f"{tag}: ready row: {await ad_txt(pg)!r}")
+    await shot(pg, tag, '20_ad_ready', (SHOP_FIT,))
+    # ----- a tap plays it: +25 once per watch, the count, the balance, the start page; the next ad is asked for at once
+    for n in (1, 2):
+        await clk(AD); await pg.wait_for_timeout(900)
+        need(await tokens() == 1500 + 25 * n and await ads_day(pg) == n, f'{tag}: watch {n}: chips {await tokens()}, ads today {await ads_day(pg)}')
+        try: await ad_ready(pg)
+        except Exception: errs.append(f'{tag}: no new ad after watch {n}'); break
+        need(await ad_txt(pg) == f'+25 chips · {n} of 3 today' and await txt(pg, '#shBal') == f'{1500 + 25 * n:,}', f"{tag}: after watch {n}: {await ad_txt(pg)!r}, balance {await txt(pg, '#shBal')!r}")
+    # the third and last: "back tomorrow", dim, not a button, a tap does nothing
+    await clk(AD); await pg.wait_for_timeout(900)
+    need(await tokens() == 1575 and await ads_day(pg) == 3, f'{tag}: the third watch: chips {await tokens()}, ads today {await ads_day(pg)}')
+    need(await ad_txt(pg) == 'back tomorrow' and 'done' in await cls(pg, AD) and await pg.get_attribute(AD, 'role') is None and await pg.get_attribute(AD, 'aria-disabled') == 'true', f"{tag}: used up: {await ad_txt(pg)!r} {await cls(pg, AD)}")
+    await shot(pg, tag, '21_ad_done', (SHOP_FIT,))
+    await clk(AD); await pg.wait_for_timeout(900)
+    need(await tokens() == 1575 and await ads_day(pg) == 3 and await ad_txt(pg) == 'back tomorrow', f'{tag}: a tap on the used-up row paid or changed it: chips {await tokens()}')
+    await clk('#acClose'); await pg.wait_for_timeout(450)
+    need('1575' in (await txt(pg, '#mTokens')).replace(',', ''), f"{tag}: the start page counts {await txt(pg, '#mTokens')!r}")
+    # ----- the next day starts empty again (a reload with the clock on the 15th)
+    await reload_at(pg, at(15))
+    await clk('#mTokens'); await pg.wait_for_timeout(500)
+    try: await ad_ready(pg)
+    except Exception: errs.append(f'{tag}: no ad ready the next day')
+    need(await ad_txt(pg) == '+25 chips · 0 of 3 today', f"{tag}: the next day reads {await ad_txt(pg)!r}")
+    if tag == 'p844':
+        # ----- the Pommes Shop asks for its own ad (signed in, the server has ads) and replaces ours; closing it brings ours back
+        await pg.evaluate(SIGN, {'ads': True, 'adN': 0, 'adMax': 5})
+        await pg.evaluate("document.querySelector('#acPanH .sh-pms').click()"); await pg.wait_for_timeout(500)
+        need(await pg.evaluate("window.__blAds.state('pommes')") in ('wait', 'ready'), f"{tag}: the Pommes Shop did not ask for its ad: {await pg.evaluate('window.__blAds.state(\"pommes\")')}")
+        await pg.evaluate("document.getElementById('psClose').click()"); await pg.wait_for_timeout(300)
+        try: await ad_ready(pg)
+        except Exception: errs.append(f"{tag}: back from the Pommes Shop the Free chips ad is not asked for again ({await cls(pg, AD)})")
+    await ctx.close()
+
+async def ads_other(b, kind):
+    tag = 'ads_' + kind
+    ctx, pg, mob = await new_page(b, tag, (844, 390), False, P0, at(14), kind)
+    clk = pg.tap
+    async def tokens(): return (await prof(pg))['tokens']
+    await clk('#mTokens'); await pg.wait_for_timeout(600)
+    if kind == 'skip':   # an ad closed early pays nothing and counts nothing; another one is asked for
+        await ad_ready(pg)
+        await clk(AD); await pg.wait_for_timeout(900)
+        need(await tokens() == 1500 and await ads_day(pg) == 0, f'{tag}: a skipped ad paid or counted: chips {await tokens()}, today {await ads_day(pg)}')
+        try: await ad_ready(pg)
+        except Exception: errs.append(f'{tag}: no new ad after a skipped one')
+        need(await ad_txt(pg) == '+25 chips · 0 of 3 today', f"{tag}: after a skip: {await ad_txt(pg)!r}")
+    else:   # none came: the row says so and is not a button
+        need(await ad_txt(pg) == 'No ad right now' and 'none' in await cls(pg, AD) and await pg.get_attribute(AD, 'role') is None and await pg.get_attribute(AD, 'aria-disabled') == 'true', f"{tag}: the row says {await ad_txt(pg)!r} {await cls(pg, AD)}")
+        await clk(AD); await pg.wait_for_timeout(700)
+        need(await tokens() == 1500 and await ads_day(pg) == 0, f'{tag}: a tap with no ad paid: chips {await tokens()}')
+        await shot(pg, tag, '22_ad_none', (SHOP_FIT,))
     await ctx.close()
 
 # ----- the Daily sheet and the results at one size -----
@@ -501,23 +508,21 @@ async def daily_size(b, tag):
     await shot(pg, tag, '10_results', (RES,))
     bad = await pg.evaluate(f"({SHEET})('#resSheet')")
     if bad: errs.append(f'{tag} results sheet: ' + '; '.join(bad[:4]))
-    # ----- the Potatality band: not after this result; set the way showResults sets it (a CPU's page on you), it fits the results and opens the Shop on that card
+    # ----- the Potatality band: not after this result; set the way showResults sets it (a CPU's page on you), it fits the results and opens the Pommes Shop on that fighter
     need(not await shown(pg, '#rKo'), f'{tag}: the Potatality band shows after a result without a CPU page')
     await pg.evaluate("window.__blShop.resKo('reaper')"); await pg.wait_for_timeout(1000)
-    need(await shown(pg, '#rKo') and await txt(pg, '#rKo') == 'Potatality · in the Shop ›' and await pg.evaluate("document.getElementById('rKo').dataset.id") == 'reaper', f"{tag}: the band says {await txt(pg, '#rKo')!r}")
-    need(await pg.evaluate("document.querySelector('#rKo .pmglyph').getClientRects().length") > 0, f'{tag}: no Pommes glyph on the band')
+    need(await shown(pg, '#rKo') and await txt(pg, '#rKo') == 'Potatality · in the Pommes Shop ›' and await pg.evaluate("document.getElementById('rKo').dataset.id") == 'reaper', f"{tag}: the band says {await txt(pg, '#rKo')!r}")
+    # (on the smallest screen, 667x320, the cone and "in the" give way: the column is 175px wide)
+    need(await pg.evaluate("document.querySelector('#rKo .pmglyph').getClientRects().length") > 0 or tag == 's667', f'{tag}: no Pommes glyph on the band')
     await shot(pg, tag, '10b_results_ko', (RESKO,))
     bad = await pg.evaluate(f"({SHEET})('#resSheet')")
     if bad: errs.append(f'{tag} results sheet with the band: ' + '; '.join(bad[:4]))
-    await clk('#rKo'); await pg.wait_for_timeout(500)
-    need(await shown(pg, '#acPanH') and (await pg.get_attribute('#acTabH', 'aria-selected')) == 'true', f'{tag}: the band does not open the Shop')
-    try: await pg.wait_for_function(HI, arg='reaper', polling=40, timeout=3000)
-    except Exception: need(False, f'{tag}: the band does not pulse the Reaper card')
-    await pg.wait_for_timeout(800)
-    need(await pg.evaluate(INVIEW, 'reaper'), f'{tag}: the Reaper card is not in view after the band')
-    await shot(pg, tag, '14_ko_from_results', (SHOP_FIT,))
-    await clk('#acClose'); await pg.wait_for_timeout(450)
-    need(await shown(pg, '#resSheet') and await pg.evaluate("window.__blastline.mode") == 'result', f'{tag}: the results are not back after the Shop')
+    await clk('#rKo'); await pg.wait_for_timeout(600)
+    need(await pg.evaluate("!document.getElementById('scrPshop').hidden && window.__blPshop.st.on") and await pg.evaluate("window.__blPshop.fighter") == 'reaper', f"{tag}: the band does not open the Pommes Shop on the Reaper: {await pg.evaluate('window.__blPshop.fighter')!r}")
+    need(not await shown(pg, '#acPanH'), f'{tag}: the band opens the Account Shop as well')
+    await shot(pg, tag, '14_ko_from_results')
+    await clk('#psClose'); await pg.wait_for_timeout(500)
+    need(await shown(pg, '#resSheet') and await pg.evaluate("window.__blastline.mode") == 'result' and await pg.evaluate("document.getElementById('scrPshop').hidden"), f'{tag}: the results are not back after the Pommes Shop')
     await pg.evaluate("window.__blShop.resKo('')")
     need(not await shown(pg, '#rKo'), f'{tag}: the band stays')
     await clk('#rAgain'); await pg.wait_for_timeout(500)
@@ -659,7 +664,11 @@ async def main():
                 if t == 'rules': await rules(b)
                 else:
                     await shop_size(b, t)
-                    await ko_size(b, t)
+                    await pm_size(b, t)
+                    await ads_size(b, t)
+                    if t == 'p844':
+                        await ads_other(b, 'skip')
+                        await ads_other(b, 'none')
                     await daily_size(b, t)
             except Exception as e:
                 errs.append(f'{t}: {type(e).__name__}: {str(e)[:400]}')

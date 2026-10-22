@@ -13,7 +13,8 @@
    back to his fist with the statue's shards in its wake, the catch, the shards fly on and land as RAGNARÖK in gold at 3900, the flock wheels off, his eye glints;
    4700 panel 4 as on Judgement (its moments are MT.AFTER + offset).
    Script fields: col, name, flight, panels(lay), words(lay), build(lay), step(t, k), pose(P, sk, t, role, p), over(o, t), cues(t), drawLoser(c, pn, t), impact(o, pn, sil, t), hitPt().
-   POTATALITY: "Frozen Fries" = MANGA.odin.alt (S_.alt, at the end; its helpers are prefixed fzf), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Frozen Fries" = MANGA.odin.alt (S_.alt, at the end; its helpers are prefixed fzf), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Smash Landing" = MANGA.odin.alt2 (S_.alt2, after it; its helpers are prefixed sml, `pota2` says it is playing), played when it is the one picked. */
 MANGA.odin = (function () {
   const COL = "#8fd8ff", DEEP = "#3f8fc8", SNOW = "#fbfaf6", RAV = "#15131c", FIST = "#9b9796";
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
@@ -25,6 +26,7 @@ MANGA.odin = (function () {
   let snow = [], flock = [], shards = [], rubble = [], dust = [], cracks = [], LY = { xc: 0.66, tx: 0, port: false };
   let ult = false, cutA = 1, rgB = [], rgT = null;   // ult: this play is the Ultimate page (set by start()); cutA: the strike's over-layer things fade under the splash
   let pota = false;   // pota: this play is the Potatality, Frozen Fries (set by its start): the strike's flock, shards and speed lines leave under its splash too
+  let pota2 = false;  // pota2: this play is the second Potatality, Smash Landing (set by its start, which also sets pota for the same exit of the strike)
   // the Ultimate: the throw (wind-up, swing, release), the spear stuck in the statue (A_STUCK, TIP_IN units deep) and its turn; the splash's beats
   const T_WIND = 2500, T_SWING = 2560, T_THROW = 2640, T_TURN0 = 3110, T_TURN1 = 3250, A_STUCK = 0.08, TIP_IN = 34;
   const UT = { IN: 3250, BLACK: 3520, RET: 3400, CATCH: 3700, OFF: 3820, NAME: 3900, GLINT: 4200, OUT: 4300 };
@@ -445,7 +447,7 @@ MANGA.odin = (function () {
   /* ---------- the script ---------- */
   const S_ = {
     col: COL, name: "Judgement", flight: "strike",
-    start() { ult = false; pota = false; cutA = 1; },
+    start() { ult = false; pota = false; pota2 = false; cutA = 1; },
     panels,
     words(lay) {
       const ev = FIN.ev, heavy = ev && /^h/.test(ev.mv || ""), txt = ev && ev.fin ? "KAAAW" : heavy ? "DOOM" : "KRAK", D = FIN.dir;
@@ -1311,6 +1313,386 @@ MANGA.odin = (function () {
       cueOnce("fzfBrrr", FZ.BRRR, () => Cin.go(() => { for (let i = 0; i < 8; i++) Cin._osc("triangle", 700 + (i % 2) * 60, 680, 0.05, 0.03, 0.002, i * 0.06); }));
       cueOnce("fzfChat", MT.AFTER + 220, () => Cin.go(() => { for (let i = 0; i < 5; i++) Cin.tick(3000 + (i % 2) * 400); }));
       cueOnce("fzfFlap", MT.POP + 30, () => odnCaw(0.7, 760));
+    },
+  });
+  /* ===================== the second Potatality, "Smash Landing" (MANGA.odin.alt2; design: Project files step8/fable-design-2.md §1.5) =====================
+     Judgement to the shatter (the statue flies, the flock chases it). 3250 the splash (panel 5) slides up on pale sky: high up, big and near, the Raven carries the
+     loser by the top of his head; far below, small, Odin holds a tin plate up. 3330 it lets go (caw): the loser falls with three after-images, shrinking into the
+     distance, onto the plate; 3500 SPLAT: the camera cuts close, he is a flat smashed potato on the plate, his skin split all round the edge, his eyes wide apart; a
+     salt flake (3650) and a rosemary sprig (3750) land on him. 3790 the Raven swoops back onto the plate's rim and pecks him three times (peck), he winces each
+     time; 4220 Odin shoos it with two fingers and it hops onto his shoulder (caw), the potato sighs. 4700 in panel 4's place, in colour: Odin, the spear on his
+     shoulder and the Raven beside his head, a tin plate on a stump with the smashed potato blinking; the engine's POP bursts it at 5250 (food()): a greasy ring,
+     three peck marks and the sprig are left on the plate.
+     The splash's world: Odin's feet at (FIN.wx, 0), the plate held up in front of him at (SML_PX, SML_PY). A plate and the potato on it are drawn in their own units,
+     scaled (smlPlate / smlSmash: the plate's middle at 0, 40 each side; the potato 35). Every helper here is prefixed sml. */
+  const SML = { DROP: 3330, LAND: 3500, SALT0: 3575, SALT: 3650, SPRIG0: 3610, SPRIG: 3750, RAV0: 3790, RAV1: 3900, PECK: [3960, 4060, 4160], HAND: 4220, SHOO: 4290, HOP1: 4430, CAW: 4440 };
+  const SML_PX = 46, SML_PY = -74, SML_TAU = Math.PI * 2, SML_SKY = "#edf3f6", SML_PLATE = "#c9ced6", SML_PLATE_D = "#959ca7", SML_PLATE_IN = "#e2e6eb";
+  const SML_FLESH = "#fbe7b4", SML_FLESH_D = "#e2bd78", SML_LEAF = "#5d8a4a", SML_STEM = "#6f5a33", SML_BARK = "#8a6238", SML_WOOD = "#e8cf9c", SML_GREASE = "rgba(196,140,58,";
+  let smlFlecks = [];
+  // the splash's camera: wide (vw: its height in world units, cxw: its middle from FIN.wx) until the landing, then close (vc, cxc, wyc); the near Raven's size (rs)
+  // and how big the loser hangs under it (lsc: he is near the camera, and shrinks to his own size as he falls away onto the plate)
+  const smlLay = () => (LY.port ? { vw: 640, cxw: 24, vc: 290, cxc: 22, wyc: -100, rs: 27, lsc: 1.35 } : { vw: 380, cxw: 24, vc: 126, cxc: 24, wyc: -62, rs: 30, lsc: 1.35 });
+  const smlAX = () => FIN.wx + FIN.dir * (LY.port ? 78 : 84), smlAS = () => (LY.port ? 0.85 : 1);   // the stump in the aftermath, its scale
+  const smlDip = (t) => { const k = fe(SML.LAND, SML.LAND + 240, t); return 7 * Math.sin(Math.PI * k) * (1 - 0.5 * k); };   // the plate gives under the landing
+  const smlPlateAt = (t) => [FIN.wx + FIN.dir * SML_PX, SML_PY + smlDip(t)];
+  function smlCam(t) {
+    const Y = smlLay(), D = FIN.dir;
+    if (t < SML.LAND) { const v = Y.vw * (1 - 0.04 * fe(MT.SPLASH, SML.LAND, t)); return { wx: FIN.wx + D * Y.cxw, wy: -0.4 * v, vh: v }; }
+    const k = MG.reduced ? 1 : easeOut(fe(SML.LAND, SML.LAND + 260, t)), v = Y.vc * (0.88 + 0.12 * k) * (1 - 0.03 * fe(SML.LAND, MT.AFTER, t));   // the cut lands a hair too close and settles
+    return { wx: FIN.wx + D * Y.cxc, wy: Y.wyc, vh: v };
+  }
+  function smlBuild() {
+    const r = rnd(5150);
+    smlFlecks = Array.from({ length: 12 }, (_, i) => { const sd = i % 2 ? 1 : -1, a = -Math.PI / 2 + sd * (0.5 + r() * 1.15); return { a, v: 70 + r() * 90, r: 1.4 + r() * 1.8, skin: r() < 0.35, x0: sd * (18 + r() * 14) }; });
+  }
+  // the near Raven (wide shot): hovering high above the plate, then (from DROP) up and away out of the top of the page
+  function smlRavenNear(t) {
+    const Y = smlLay(), D = FIN.dir, k = easeIn(fe(SML.DROP, SML.DROP + 260, t));
+    return { x: FIN.wx + D * SML_PX - D * 0.35 * Y.vw * k, y: -0.73 * Y.vw + Math.sin(t * 0.012) * 4 - 0.45 * Y.vw * k, s: Y.rs };
+  }
+  // the loser's feet (world) and size while he hangs under the near Raven, then as he falls onto the plate (k: 0..1 of the fall)
+  function smlLoserAt(t) {
+    const Y = smlLay(), R = smlRavenNear(Math.min(t, SML.DROP)), h = (L_().s.h || 64) - 2, yA = R.y + 0.95 * R.s + h * Y.lsc, P = smlPlateAt(SML.LAND), k = fe(SML.DROP, SML.LAND, t), kk = k * k;
+    return { x: R.x + (P[0] - R.x) * kk, y: yA + (P[1] - 4 - yA) * kk, sc: Y.lsc + (1 - Y.lsc) * kk, k };
+  }
+  // Odin under the plate: both hands up under its rim in the wide shot; once it has landed one hand holds it up from below, the other rests, then comes up to shoo
+  function smlPoseW(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, py = SML_PY + 5 + smlDip(t);
+    P.mouth = 0; P.exK = 1; P.expr = t >= SML.HOP1 + 60 ? "calm" : undefined;
+    if (t < SML.LAND) { P.lean = -0.05; return { hF: [SML_PX + 2, py], hB: [SML_PX - 24, py + 4] }; }
+    P.lean = -0.02;
+    const rest = [-w * 0.62, -leg - tor * 0.42], up = [SML_PX - 66, SML_PY + 2], k = ease(fe(SML.HAND, SML.SHOO, t)) * (1 - ease(fe(SML.HOP1 + 20, SML.HOP1 + 180, t)));
+    const fl = Math.sin(Math.PI * fe(SML.SHOO, SML.SHOO + 90, t)) * 4;   // the flick
+    return { hF: [SML_PX + 1, py], hB: [rest[0] + (up[0] - rest[0]) * k + fl, rest[1] + (up[1] - rest[1]) * k - fl * 0.5] };
+  }
+  // the loser: hanging by his head (limp arms, dangling feet, a slow swing), then falling (arms flailing up)
+  function smlPoseL(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.expr = "terror"; P.exK = 1; P.mouth = 1;
+    if (t < SML.DROP) {
+      const s = Math.sin(t * 0.03);
+      P.lean = 0.1 * Math.sin(t * 0.011);
+      return { hF: [w * 0.72, -leg - tor * 0.3 + 3 * s], hB: [-w * 0.66, -leg - tor * 0.26 - 3 * s], fF: [w * 0.16, 7 + 2 * s], fB: [-w * 0.14, 9 - 2 * s] };
+    }
+    const s = Math.sin(t * 0.07);
+    P.lean = 0;
+    return { hF: [w * 0.7, -leg - tor * 1.2 + 5 * s], hB: [-w * 0.62, -leg - tor * 1.15 - 5 * s], fF: [w * 0.3, -5], fB: [-w * 0.24, -1] };
+  }
+  // where the Raven sits on Odin's back shoulder (its middle, world) with Odin standing at x
+  function smlShoulder(t, x, s) {
+    const W = W_(); MG.pt = t;
+    const P = pose(W, mgTk(t)), u = -P.w * 0.38, q = Math.max(0, 1 - (u / P.rx) * (u / P.rx));
+    return [x + W.facing * u, P.cy - P.ry * Math.sqrt(q) - 0.62 * s + 1];
+  }
+  // the Raven in the close shot (world): in from above behind him onto the plate's back rim (facing the potato), the pecks, the hop onto his shoulder; null before
+  function smlRavenClose(t) {
+    if (t < SML.RAV0) return null;
+    const D = FIN.dir, s = 7.5, Pl = smlPlateAt(t), rim = [Pl[0] - D * 41, Pl[1] - 0.62 * s];
+    if (t < SML.RAV1) {
+      const k = ease(fe(SML.RAV0, SML.RAV1, t)), m = 1 - k, a = [rim[0] - D * 120, rim[1] - 110], cp = [rim[0] - D * 55, rim[1] - 24];
+      return { x: m * m * a[0] + 2 * m * k * cp[0] + k * k * rim[0], y: m * m * a[1] + 2 * m * k * cp[1] + k * k * rim[1], s, fl: Math.sin(t * 0.04) * (1 - 0.7 * k), perched: false };
+    }
+    if (t < SML.SHOO + 20) { let pk = 0; for (const p of SML.PECK) pk = Math.max(pk, Math.sin(Math.PI * fe(p, p + 100, t))); return { x: rim[0], y: rim[1], s, fl: 0, perched: true, peck: pk }; }
+    const sh = smlShoulder(t, FIN.wx, s), k = fe(SML.SHOO + 20, SML.HOP1, t);
+    if (k < 1) return { x: lerp(rim[0], sh[0], k), y: lerp(rim[1], sh[1], k) - Math.sin(Math.PI * k) * 20, s, fl: Math.sin(t * 0.06), perched: false };
+    return { x: sh[0], y: sh[1] - Math.sin(Math.PI * fe(SML.HOP1, SML.HOP1 + 120, t)) * 2, s, fl: 0, perched: true, caw: fe(SML.CAW, SML.CAW + 80, t) * (1 - fe(SML.CAW + 160, SML.CAW + 260, t)) };
+  }
+  // a Raven of smlRavenClose, tipped about its feet: forward to peck, back to caw
+  function smlRaven(c, r) {
+    const D = FIN.dir, fy = r.y + 0.6 * r.s, a = (r.peck || 0) * 0.75 - (r.caw || 0) * 0.35;
+    c.save(); c.translate(r.x, fy); c.rotate(a * D); c.translate(-r.x, -fy);
+    raven(c, r.x, r.y, r.s, r.fl, D, r.perched);
+    c.restore();
+  }
+  // a ragged ellipse (the flesh, the split skin): j how deep the notches are
+  function smlRag(c, rx, ry, cy, j, ph) {
+    c.beginPath();
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * SML_TAU, r = 1 + (i % 2 ? j : -j * 0.5) * (0.7 + 0.3 * Math.sin(i * 2.3 + ph)), px = Math.cos(a) * rx * r, py = cy + Math.sin(a) * ry * r;
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
+    }
+    c.closePath();
+  }
+  // the tin plate, its middle at (x, y) (world, pn.world set), s its scale: the underside, the rim, the well, a shine
+  function smlPlate(c, x, y, s, lw) {
+    c.save(); c.translate(x, y); c.scale(s, s); lw /= s;
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    c.fillStyle = SML_PLATE_D; c.beginPath(); c.ellipse(0, 2.6, 40, 8, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.fillStyle = SML_PLATE; c.beginPath(); c.ellipse(0, 0, 40, 8, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.fillStyle = SML_PLATE_IN; c.lineWidth = lw * 0.7; c.beginPath(); c.ellipse(0, 0.6, 31, 5.6, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw * 1.2; c.beginPath(); c.ellipse(0, 0, 36, 6.4, 0, Math.PI * 1.1, Math.PI * 1.42); c.stroke();
+    c.restore();
+  }
+  // a salt flake: a little white cube standing on (x, y) (its lowest corner), a its size
+  function smlSalt(c, x, y, a, lw) {
+    const h = a * 0.87;
+    c.lineJoin = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    for (const [f, pts] of [["#ffffff", [[x, y - 2 * a], [x + h, y - 1.5 * a], [x, y - a], [x - h, y - 1.5 * a]]], ["#dfe5ec", [[x - h, y - 1.5 * a], [x, y - a], [x, y], [x - h, y - 0.5 * a]]], ["#b9c2cd", [[x, y - a], [x + h, y - 1.5 * a], [x + h, y - 0.5 * a], [x, y]]]]) {
+      c.fillStyle = f; mgPoly(c, pts); c.fill(); c.stroke();
+    }
+  }
+  // a rosemary sprig centred on (x, y), turned by a: a stem and eight needles
+  function smlSprig(c, x, y, a, lw) {
+    c.save(); c.translate(x, y); c.rotate(a); c.lineCap = "round";
+    c.strokeStyle = ink; c.lineWidth = 1.3 + lw * 2; c.beginPath(); c.moveTo(-11, 0); c.lineTo(11, 0); c.stroke();
+    c.strokeStyle = SML_STEM; c.lineWidth = 1.3; c.stroke();
+    c.fillStyle = SML_LEAF; c.strokeStyle = ink; c.lineWidth = lw * 0.6;
+    for (let i = 0; i < 8; i++) { c.save(); c.translate(-8.5 + i * 2.6, 0); c.rotate((i % 2 ? 1 : -1) * 0.8 - 0.35); c.beginPath(); c.ellipse(2.7, 0, 3, 1, 0, 0, SML_TAU); c.fill(); c.stroke(); c.restore(); }
+    c.restore();
+  }
+  // the loser as a smashed potato sitting on (x, y) (the plate's middle, world), s its scale: the flesh squashed out flat all round, his skin a low dome split along
+  // its foot, his face on its front, the eyes far apart. o: { wince, blink, relief, look [dx, dy], salt (k 0..1.6: falling, landed, settled; null none), sprig (k; null none) }
+  function smlSmash(c, pn, x, y, s, lw, t, o) {
+    const D = FIN.dir, sp = (u, v) => pn.sp(x + u * s, y + v * s);
+    c.save(); c.translate(x, y); c.scale(s, s); lw /= s;
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = ink; c.lineWidth = lw;
+    c.fillStyle = SML_FLESH; smlRag(c, 37, 5.2, -2.2, 0.08, 1); c.fill(); c.stroke();   // the flesh, squashed out under him
+    if (!MG.slow) { c.save(); c.clip(); mgToneFill(c, [sp(D * 14, -9), sp(D * 42, -9), sp(D * 42, 5), sp(D * 14, 5)], 6, 0.38); c.restore(); }
+    const dome = () => {
+      c.beginPath(); c.moveTo(-31, -3);
+      c.bezierCurveTo(-29, -13, -13, -16.5, 0, -16.5); c.bezierCurveTo(13, -16.5, 29, -13, 31, -3);
+      for (let i = 1; i < 16; i++) c.lineTo(31 - (62 * i) / 16, -3 + (i % 2 ? -2.4 : 0.8) + 0.8 * Math.sin(i * 1.7));   // the split foot of the skin
+      c.closePath();
+    };
+    c.fillStyle = col(L_().pal); dome(); c.fill();
+    if (!MG.slow) { c.save(); dome(); c.clip(); mgToneFill(c, [sp(D * 19, -22), sp(D * 34, -22), sp(D * 34, 0), sp(D * 19, 0)], 6, 0.4); c.restore(); }
+    dome(); c.stroke();
+    c.lineWidth = lw * 0.75; c.beginPath();   // cracks running up from the split
+    for (const u of [-24, -7, 6, 24]) { c.moveTo(u, -4.2); c.lineTo(u + 1.6, -7.2); c.lineTo(u - 0.8, -9.6); }
+    c.stroke();
+    // the face: open (looking about), blinking, squeezed shut (> <), or shut in relief
+    const ey = -9.6, lk = o.look || [0, 0], wince = o.wince > 0;
+    for (const sd of [-1, 1]) {
+      const ex = sd * 15.5;
+      c.lineWidth = lw * 1.15;
+      if (wince) { c.beginPath(); c.moveTo(ex - sd * 4, ey - 2.8); c.lineTo(ex + sd * 2.2, ey); c.lineTo(ex - sd * 4, ey + 2.8); c.stroke(); }
+      else if (o.relief) { c.beginPath(); c.arc(ex, ey + 2, 3.8, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }
+      else {
+        c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, 5.4, o.blink ? 0.7 : 4.4, 0, 0, SML_TAU); c.fill(); c.stroke();
+        if (!o.blink) { c.fillStyle = ink; c.beginPath(); c.arc(ex + lk[0] * 2.6, ey + lk[1] * 2, 2.1, 0, SML_TAU); c.fill(); }
+      }
+    }
+    c.lineWidth = lw; c.beginPath();
+    if (wince) { c.moveTo(-3.6, -5.4); for (let i = 1; i <= 4; i++) c.lineTo(-3.6 + i * 1.8, -5.4 + (i % 2 ? -1.3 : 0)); }
+    else if (o.relief) { c.moveTo(-3, -6); c.quadraticCurveTo(0, -3.9, 3, -6); }
+    else { c.moveTo(-3.2, -5.4); c.quadraticCurveTo(-1.6, -6.8, 0, -5.4); c.quadraticCurveTo(1.6, -4, 3.2, -5.4); }
+    c.stroke();
+    if (wince) {   // a sweat drop flies off
+      const dx = D * 27, dy = -22;
+      c.fillStyle = COL; c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(dx, dy - 4); c.quadraticCurveTo(dx + 2.8, dy, dx, dy + 1.9); c.quadraticCurveTo(dx - 2.8, dy, dx, dy - 4); c.fill(); c.stroke();
+    }
+    if (o.sprig !== null && o.sprig !== undefined) { const k = Math.min(1, o.sprig), m = 1 - k; smlSprig(c, -7 * D + 8 * Math.sin(k * 9) * m, -17 - 120 * m, 0.16 * D + 0.8 * Math.sin(k * 7) * m, lw); }
+    if (o.salt !== null && o.salt !== undefined) { const k = Math.min(1, o.salt); smlSalt(c, 9 * D, -15.6 - 120 * (1 - k * k) - 4 * Math.sin(Math.PI * fe(1, 1.6, o.salt)), 3.4, lw); }
+    c.restore();
+  }
+  // the fist with two fingers out along ang (world units, pn.world set)
+  function smlFingers(c, h, ang, lw, fl) {
+    c.save(); c.translate(h[0], h[1]); c.rotate(ang); c.lineJoin = "round"; c.strokeStyle = ink; c.lineWidth = lw; c.fillStyle = FIST;
+    for (const oy of [-1.45, 1.45]) { c.beginPath(); c.roundRect(2, oy - 1.4, 8.5, 2.8, 1.4); c.fill(); c.stroke(); }
+    c.beginPath(); c.arc(0, 0, 4.6, 0, SML_TAU); c.fill(); c.stroke();
+    if (fl > 0.05) {   // the flick's marks, on the side it flicks to (up)
+      const a0 = FIN.dir > 0 ? -0.9 : 0.2, a1 = FIN.dir > 0 ? -0.2 : 0.9;
+      c.lineWidth = lw * 0.8; c.globalAlpha = Math.min(1, fl * 2); c.beginPath(); c.arc(0, 0, 14, a0, a1); c.moveTo(16.5 * Math.cos(a0 + 0.15), 16.5 * Math.sin(a0 + 0.15)); c.arc(0, 0, 16.5, a0 + 0.15, a1 - 0.1); c.stroke();
+    }
+    c.restore();
+  }
+  // the splash's ground: a field of snow (Judgement's slab is too heavy under a tall close shot), a little tone further down
+  function smlGround(c, pn) {
+    pn.world(c);
+    const x0 = FIN.wx - 420, x1 = FIN.wx + 420;
+    c.beginPath(); c.moveTo(x0, 6);
+    for (let x = x0; x < x1; x += 11) { const h = 3 + ((Math.round(x) * 7919) % 5) * 1.1, q = (Math.round(x) * 31 % 7) / 7; c.quadraticCurveTo(x + 5.5, -h - 3 - q * 2, x + 11, 2 + q); }
+    c.lineTo(x1, 6); c.lineTo(x1, 400); c.lineTo(x0, 400); c.closePath(); c.fillStyle = SNOW; c.fill(); c.lineWidth = 2.4 / pn.z; c.strokeStyle = ink; c.stroke();
+    pn.screen(c);
+    const g = pn.p(0, 14)[1];
+    if (g < pn.y1) mgToneFill(c, [[pn.x0 - 4 + pn.ox, g + pn.oy], [pn.x1 + 4 + pn.ox, g + pn.oy], [pn.x1 + 4 + pn.ox, pn.y1 + 4 + pn.oy], [pn.x0 - 4 + pn.ox, pn.y1 + 4 + pn.oy]], 7, 0.22, [0, 0]);
+  }
+  // the splash: the wide shot (Raven, loser, Odin far below with the plate) to the landing, then the close shot of the plate over his head
+  function smlDrawSplash(c, pn, t) {
+    const D = FIN.dir, W = W_(), Lp = L_(), lw = fzfLw(pn), OX = FIN.wx, close = t >= SML.LAND, Pl = smlPlateAt(t);
+    const tone = (poly, size, cover, drift) => mgToneFill(c, poly.map(([x, y]) => [x + pn.ox, y + pn.oy]), size, cover, drift);
+    pn.screen(c);
+    for (let i = 0; i < 3; i++) { const h = pn.h * (0.09 + 0.07 * i); tone([[pn.x0 - 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 + h], [pn.x0 - 4, pn.y0 + h]], 8, 0.42 - 0.13 * i, [t * 0.0006, 0]); }
+    const Q = pn.p(Pl[0], Pl[1] - 6), R = Math.hypot(pn.w, pn.h);
+    mgFocus(c, Q[0], Q[1], R, t * 0.0004, close ? 0.32 : 0.22);
+    smlGround(c, pn);
+    tone([pn.p(OX - 30, 0.5), pn.p(OX + 30, 0.5), pn.p(OX + 26, 6), pn.p(OX - 26, 6)], 6, 0.45);   // his shadow
+    const fallK = fe(SML.DROP, SML.LAND, t), Lq = !close ? smlLoserAt(t) : null;
+    if (Lq && fallK > 0) {   // speed lines up the fall
+      const a = pn.p(Lq.x, Lq.y - 40 * Lq.sc), b = pn.p(Lq.x, smlRavenNear(SML.DROP).y);
+      mgSpeed(c, a[0], (a[1] + b[1]) / 2 - 20, Math.abs(a[1] - b[1]) + 60, 80 * pn.z, Math.PI / 2, -t * 1.4, 0.45 * fe(SML.DROP, SML.DROP + 60, t), false, 1);
+    }
+    if (close) {   // the landing: a white burst behind the plate
+      const kb = fe(SML.LAND, SML.LAND + 110, t);
+      if (kb < 1 && !MG.reduced) mgStarburst(c, Q[0], Q[1], 0.36 * Math.min(pn.w, pn.h) * easeOut(Math.min(1, kb * 2.2)) * (1 - 0.4 * kb), 0.25);
+    }
+    const ox = W.x; W.x = OX; mgPuppet(c, pn, W, t, { light: dirAng(-0.5) }); W.x = ox;
+    pn.world(c);
+    smlPlate(c, Pl[0], Pl[1], 1, lw);
+    if (!close) {
+      // the loser: hanging, then falling with three after-images (copies of the same picture, where he was 24, 48, 72 ms ago)
+      const q = Lq, ghosts = [];
+      if (q.k > 0 && !MG.slow) for (const [dt, al] of [[24, 0.42], [48, 0.27], [72, 0.15]]) { if (t - dt < SML.DROP) break; const g = smlLoserAt(t - dt); ghosts.push([(g.x - q.x) * pn.z, (g.y - q.y) * pn.z, al]); }
+      const lx = Lp.x, ly = Lp.y, ls = Lp.state, lf = Lp.facing;
+      Lp.x = q.x; Lp.y = q.y; Lp.state = "fin"; Lp.flash = 0; Lp.facing = -D;
+      try { mgPuppet(c, pn, Lp, t, { sc: q.sc, light: dirAng(-0.5), ghosts }); } finally { Lp.x = lx; Lp.y = ly; Lp.state = ls; Lp.facing = lf; }
+      pn.world(c);
+      const Rn = smlRavenNear(t), s = Rn.s, open = fe(SML.DROP, SML.DROP + 60, t);
+      if (open < 1) {   // the talons on the top of his head, opening as it lets go
+        c.strokeStyle = ink; c.lineWidth = Math.max(lw * 1.2, 0.08 * s); c.lineCap = "round";
+        for (const sd of [-1, 1]) {
+          const bx = Rn.x + sd * 0.14 * s, tx = Rn.x + sd * (0.1 + 0.25 * open) * s, ty = Rn.y + (0.93 - 0.15 * open) * s;
+          c.beginPath(); c.moveTo(bx, Rn.y + 0.4 * s); c.lineTo(tx, ty); c.quadraticCurveTo(tx + sd * 0.12 * s, ty + 0.1 * s, tx - sd * 0.04 * s, ty + 0.12 * s); c.stroke();
+        }
+      }
+      raven(c, Rn.x, Rn.y, s, Math.sin(t * 0.045), D, false);
+      pn.screen(c);
+      return;
+    }
+    // the close shot: the smashed potato, the garnish, the flecks of the landing, the crumbs of the pecks, the Raven, the shooing fingers
+    let wince = t < SML.LAND + 110 ? 1 : 0;
+    for (const p of SML.PECK) if (t >= p + 20 && t < p + 150) wince = 1;
+    const look = t < SML.SALT0 + 20 ? [0, 0] : t < SML.SALT + 40 ? [0.2 * D, -1] : t < SML.RAV0 ? [0, 0] : t < SML.CAW ? [-D, -0.6] : [-0.6 * D, 0.2];
+    smlSmash(c, pn, Pl[0], Pl[1] - 0.5, 1, lw, t, { wince, look, blink: Math.abs(t - 3735) < 45, relief: t >= SML.CAW + 80,
+      salt: t >= SML.SALT0 ? fe(SML.SALT0, SML.SALT, t) + 0.6 * fe(SML.SALT, SML.SALT + 100, t) : null, sprig: t >= SML.SPRIG0 ? fe(SML.SPRIG0, SML.SPRIG, t) : null });
+    pn.world(c);
+    const u = (t - SML.LAND) / 1000;
+    if (u < 0.42) {   // the landing: impact ticks round the plate, chunks of potato flying out and falling
+      const ka = 1 - fe(SML.LAND + 60, SML.LAND + 180, t);
+      if (ka > 0) {
+        c.strokeStyle = ink; c.lineWidth = lw * 1.3; c.lineCap = "round"; c.beginPath();
+        for (let i = 0; i < 10; i++) { const a = Math.PI + (i / 9) * Math.PI, r0 = 1 + 0.12 * ka; c.moveTo(Pl[0] + Math.cos(a) * 44 * r0, Pl[1] - 6 + Math.sin(a) * 18 * r0); c.lineTo(Pl[0] + Math.cos(a) * (52 + 10 * ka), Pl[1] - 6 + Math.sin(a) * (24 + 8 * ka)); }
+        c.stroke();
+      }
+      c.lineWidth = lw * 0.8; c.globalAlpha = 1 - fe(0.28, 0.42, u);
+      for (const f of smlFlecks) {
+        const x = Pl[0] + f.x0 + Math.cos(f.a) * f.v * u, y = Pl[1] - 8 + Math.sin(f.a) * f.v * u + 300 * u * u;
+        c.fillStyle = f.skin ? col(Lp.pal) : SML_FLESH; c.beginPath(); c.ellipse(x, y, f.r * 1.4, f.r * 0.9, f.a + u * 9, 0, SML_TAU); c.fill(); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+    for (const p of SML.PECK) {   // two crumbs off each peck
+      const v = (t - p - 40) / 1000;
+      if (v < 0 || v > 0.32) continue;
+      c.fillStyle = SML_FLESH; c.lineWidth = lw * 0.7;
+      for (let j = 0; j < 2; j++) { const x = Pl[0] - D * (29 - (14 + 10 * j) * v * 3), y = Pl[1] - 9 - (50 + 24 * j) * v + 300 * v * v; c.beginPath(); c.arc(x, y, 1.3, 0, SML_TAU); c.fill(); c.stroke(); }
+    }
+    const r = smlRavenClose(t);
+    if (r) smlRaven(c, r);
+    const kh = fe(SML.HAND, SML.SHOO, t) * (1 - fe(SML.HOP1 + 20, SML.HOP1 + 140, t));
+    if (kh > 0.3) {   // two fingers poke its tail feathers: the flick
+      const h = handPt(W, t, "hB", OX), to = r ? [r.x - D * 1.6 * r.s, r.y] : [h[0] + D * 10, h[1] - 6];
+      pn.world(c);
+      const fk = Math.sin(Math.PI * fe(SML.SHOO, SML.SHOO + 110, t));
+      smlFingers(c, h, Math.atan2(to[1] - h[1], to[0] - h[0]) - D * 0.6 * fk, lw, fk);
+    }
+    pn.screen(c);
+  }
+  // the stump in the aftermath: its foot on the ground at x, s its scale (its top at -20 s)
+  function smlStump(c, x, s, lw) {
+    c.save(); c.translate(x, 0); c.scale(s, s); lw /= s;
+    c.strokeStyle = ink; c.lineWidth = lw; c.lineJoin = "round"; c.lineCap = "round";
+    c.fillStyle = SML_BARK; c.beginPath(); c.moveTo(-15, -20); c.lineTo(-16, -3); c.quadraticCurveTo(-18, 0.5, -21, 1.5); c.lineTo(21, 1.5); c.quadraticCurveTo(18, 0.5, 16, -3); c.lineTo(15, -20); c.closePath(); c.fill(); c.stroke();
+    c.lineWidth = lw * 0.7; c.beginPath(); for (const bx of [-10, -3, 5, 11]) { c.moveTo(bx, -16); c.lineTo(bx + 0.8, -3); } c.stroke();
+    c.fillStyle = SML_WOOD; c.lineWidth = lw; c.beginPath(); c.ellipse(0, -20, 15, 3.6, 0, 0, SML_TAU); c.fill(); c.stroke();
+    c.restore();
+  }
+  // what the pop leaves on the plate: a greasy ring, three peck marks, the sprig (plate units like smlSmash)
+  function smlLeft(c, x, y, s, lw) {
+    const D = FIN.dir;
+    c.save(); c.translate(x, y); c.scale(s, s); lw /= s; c.lineCap = "round";
+    c.strokeStyle = SML_GREASE + "0.3)"; c.lineWidth = 7; c.beginPath(); c.ellipse(0, -0.4, 23, 4.4, 0, 0, SML_TAU); c.stroke();
+    c.strokeStyle = SML_GREASE + "0.6)"; c.lineWidth = 2.6; c.stroke();
+    c.strokeStyle = ink; c.lineWidth = lw * 0.9; c.beginPath();
+    for (const [u, v] of [[-14, -1.6], [-8.5, 1.2], [-18, 1.6]]) { c.moveTo((u - 2) * D, v - 1.4); c.lineTo(u * D, v); c.lineTo((u + 2) * D, v - 1.4); }
+    c.stroke();
+    smlSprig(c, 7 * D, -1.2, 0.18 * D, lw);
+    c.restore();
+  }
+  // the aftermath: Judgement's panel 4 (him, the spear on his shoulder) with the Raven beside his head and the plate on a stump beside him; popped: what is left
+  function smlDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir, x = FIN.wx + D * 4, ax = smlAX(), s = smlAS(), lw = fzfLw(pn), popped = mgPopped(t), ps = 0.7 * s, py = -20 * s;
+    const tone = (poly, size, cover, drift) => mgToneFill(c, poly.map(([px, qy]) => [px + pn.ox, qy + pn.oy]), size, cover, drift);
+    pn.screen(c);
+    tone([[pn.x0, pn.y0], [pn.x1, pn.y0], [pn.x1, pn.y0 + pn.h * 0.3], [pn.x0, pn.y0 + pn.h * 0.3]], 8, 0.38, [t * 0.0006, 0]);
+    const q = pn.p(ax, -30);
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.4);
+    peaks(c, pn, pn.p(0, 0)[1], pn.h * 0.18, 5);
+    ground(c, pn);
+    tone([pn.p(ax - 24 * s, 0.5), pn.p(ax + 24 * s, 0.5), pn.p(ax + 20 * s, 5.5), pn.p(ax - 20 * s, 5.5)], 6, 0.45);
+    const ox = W.x; W.x = x; mgPuppet(c, pn, W, t, { light: dirAng(-0.5) }); W.x = ox;
+    pn.screen(c);
+    const sp = spearAt(t, x);   // the spear over his shoulder, in front of him; the fist is drawn again over it
+    if (sp) {
+      const g = pn.p(sp.gx, sp.gy); spear(c, g[0], g[1], sp.a, pn.z, 1);
+      c.fillStyle = FIST; c.strokeStyle = ink; c.lineWidth = Math.max(2.4, 1.1 * pn.z); c.beginPath(); c.arc(g[0], g[1], 5 * pn.z, 0, 7); c.fill(); c.stroke();
+    }
+    pn.world(c);
+    smlStump(c, ax, s, lw);
+    smlPlate(c, ax, py, ps, lw);
+    if (!popped) smlSmash(c, pn, ax, py - 0.5 * ps, ps, lw, t, { look: [-D * 0.8, -0.7], blink: Math.abs(t - 4990) < 55 || Math.abs(t - 5170) < 55, salt: 1.6, sprig: 1 });
+    else smlLeft(c, ax, py, ps, lw);
+    // the Raven on his back shoulder: a bob, a look at the plate now and then; the pop makes it flap up
+    const rs = 7 * s, sh = smlShoulder(t, x, rs), up = popped ? Math.sin(Math.PI * fe(MT.POP, MT.POP + 380, t)) : 0, look = Math.sin(Math.PI * fe(MT.AFTER + 300, MT.AFTER + 520, t));
+    smlRaven(c, { x: sh[0], y: sh[1] - 1.2 * Math.abs(Math.sin(t * 0.006)) - 9 * up, s: rs, fl: up > 0.02 ? Math.sin(t * 0.05) : 0, perched: up < 0.02, peck: 0.35 * look });
+    pn.screen(c);
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Smash Landing",
+    start(g) { S_.start(g); pota = true; pota2 = true; FIN.cue.back = FIN.cue.cawC = true; },   // (pota: the strike's flock and shards leave under the splash, as on Frozen Fries)
+    end() { pota = false; pota2 = false; },
+    build(lay) { S_.build(lay); smlBuild(); },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = smlDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 130 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 48 : 44), wy: -0.46 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: SML_SKY, slide: MG.reduced ? 1 : 180, cam: smlCam, draw: smlDrawSplash,
+        shake: (t) => { const a = t >= SML.LAND ? 4 * (1 - fe(SML.LAND, SML.LAND + 160, t)) : 0; return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; } }));
+      return ps;
+    },
+    pose(P, sk, t, role, p) {
+      if (pota2 && t >= MT.SPLASH && (role === "w" ? t < MT.AFTER : t < SML.LAND)) return role === "w" ? smlPoseW(P, sk, t) : smlPoseL(P, sk, t);
+      return S_.pose(P, sk, t, role, p);
+    },
+    // the snow and the leaving flock stay only on what the splash has not covered yet (no snow on the plate)
+    over(o, t) {
+      if (t < MT.SPLASH) { odnOver(o, t); return; }
+      const sp = MG.byId.splash;
+      if (!sp || t >= sp.t0 + sp.slide) return;
+      mgPlace(sp, t);
+      o.save(); o.beginPath(); o.rect(0, 0, L.gw, Math.max(0, sp.y0 + sp.oy)); o.clip(); odnOver(o, t); o.restore();
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, kr = ws.find((w) => w.text === "KRASSHH");
+      if (kr) kr.t1 = MT.SPLASH + 150;   // gone as the splash comes up
+      const at = (tt, wx, wy) => () => { const pn = MG.byId.splash; mgPlace(pn, tt); const q = pn.sp(wx(), wy); return [q[0], q[1]]; };
+      ws.push(
+        { text: "SPLAT", t0: SML.LAND, t1: SML.RAV0 + 60, size: 0.15, mul: lay.port ? 0.55 : 1, arc: 7, jit: 0.16, jag: 0.08, rot: -0.08 * D,
+          at: lay.port ? at(SML.LAND + 300, () => FIN.wx + D * (SML_PX - 6), -228) : at(SML.LAND + 300, () => FIN.wx + D * (SML_PX + 96), -86) },
+        { text: "peck", t0: SML.PECK[0], t1: SML.HAND, size: 0.07, mul: lay.port ? 0.6 : 1, jit: 0.2, rot: 0.1 * D,
+          at: at(4000, () => FIN.wx + D * (SML_PX - 44), -104) },
+        { text: "caw", t0: SML.CAW, t1: MT.AFTER + 40, size: 0.07, mul: lay.port ? 0.6 : 1, jit: 0.2, rot: -0.1 * D,
+          at: at(4500, () => FIN.wx - D * 46, -76) },
+      );
+      return ws;
+    },
+    food() { const x = smlAX(), s = smlAS(); return { x, y: 0, r: 24 * s, y0: -20 * s, lx: x + FIN.dir * (LY.port ? 24 : 38) }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("smlFlap", MT.SPLASH + 40, () => Cin.go(() => Cin.whoosh(0.3, -0.3 * D, 0.3 * D, 0.25)));
+      cueOnce("smlDrop", SML.DROP, () => odnCaw(0.9, 720));
+      cueOnce("smlFall", SML.DROP + 30, () => Cin.go(() => Cin._osc("sine", 1500, 420, 0.17, 0.05, 0.01)));
+      cueOnce("smlSplat", SML.LAND, () => Cin.go(() => { Cin._noise(0.22, 0.55, 1400, 160, "lowpass", 0.9); Cin.sub(110, 40, 0.3, 0.6); Cin.clack(); }));
+      cueOnce("smlSalt", SML.SALT, () => Cin.go(() => Cin.tick(5200)));
+      cueOnce("smlSprig", SML.SPRIG, () => Cin.go(() => Cin._noise(0.08, 0.1, 2400, 5200, "bandpass", 1.6)));
+      cueOnce("smlRav", SML.RAV0, () => Cin.go(() => Cin.whoosh(0.25, -0.6 * D, 0.1 * D, 0.3)));
+      SML.PECK.forEach((p, i) => cueOnce("smlPeck" + i, p, () => Cin.go(() => { Cin.tick(2600 + i * 200); Cin._osc("triangle", 900, 1400, 0.09, 0.03, 0.004, 0.03); })));
+      cueOnce("smlShoo", SML.SHOO, () => Cin.go(() => Cin.whoosh(0.14, 0, 0, 0.22)));
+      cueOnce("smlCaw", SML.CAW, () => odnCaw(0.7, 620));
+      cueOnce("smlPhew", SML.CAW + 160, () => Cin.go(() => Cin._noise(0.3, 0.05, 900, 500, "bandpass", 1.2)));
     },
   });
   return S_;

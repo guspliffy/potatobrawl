@@ -23,6 +23,8 @@
 .sk-rt { flex: none; display: inline-block; font: 800 9.5px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--ember);
   border: 1.5px solid var(--ink); border-radius: 4px; padding: 3px 5px 2px; transform: rotate(-6deg); box-shadow: 0 1.5px 0 var(--ink); }
 .sk-rt[hidden] { display: none; }
+/* the POMMES sticker: a red-and-white diagonal candy stripe, the word in white with an ink outline so it reads on both colours */
+.sk-rt.pm { color: #fff; background: repeating-linear-gradient(135deg, #ff4f4f 0 4px, #fff6e4 4px 8px); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
 #scrSelect .sk-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 11px 0 13px; border: 2px solid var(--gold); border-radius: 999px;
   background: rgba(14, 16, 34, 0.9); box-shadow: 0 0 0 1.5px var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: background 0.12s, transform 0.08s; }
 #scrSelect .sk-pill span { font: 800 14px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
@@ -40,6 +42,18 @@
 .sk-head .sk-coin { height: 32px; padding: 0 10px 0 7px; gap: 5px; font-size: 17px; border-color: #070818; box-shadow: 0 2px 0 #05060f, var(--bevel); }
 .sk-head .sk-coin::before { width: 20px; height: 16px; }
 .sk-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--pw) minmax(0, 1fr); gap: 14px; padding: 12px 14px 14px; }
+
+/* three rows of cards (chip, won, Pommes) need the height: on a short landscape screen (844x390 and the like) the sheet takes the screen but for 8 px, the band, the padding,
+   the kickers and the cards' foot are a little slimmer, and a card's art keeps 45 px or more */
+#app.short #scrSkins { --ft: 31px; padding: 8px 22px; }
+#app.short #scrSkins > .sk-sheet { height: min(374px, 100%); }
+#app.short .sk-head { height: 38px; }
+#app.short .sk-body { padding: 10px 14px; }
+#app.short .sk-rack { gap: 4px; }
+#app.short .sk-k { padding: 0 2px; }
+#app.short .sk-k + .sk-row + .sk-k { padding-top: 3px; }
+#app.short .sk-f { gap: 3px; }
+#app.short .sk-f b { font-size: 12px; }
 
 /* the preview: the looked-at skin in big */
 .sk-prev { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
@@ -61,6 +75,12 @@
 .sk-act:empty { display: none; }
 #app .sk-go { width: 100%; min-height: 48px; font-size: 22px; }
 .sk-go .tokglyph { margin: 0 0.12em 0 0.3em; }
+/* the Pommes skin's one action: to the Pommes Shop, two lines (the name of the place, the price with the cone), red where the chip buttons are gold */
+#app .sk-pmgo { --bg: linear-gradient(180deg, #ff8d80, #ff4f4f 55%, #d93a3a); color: var(--ink); min-height: 48px; font-size: 18px; padding-block: 4px; }
+.sk-pmgo > span { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sk-pmgo b { font: inherit; }
+.btn.sk-pmgo small { display: flex; align-items: center; justify-content: center; margin: 0; font: 800 13px/1 var(--display); letter-spacing: 0.06em; color: rgba(14, 16, 34, 0.82); }
+.sk-pmgo small .pmglyph { width: 11px; height: 14px; margin: 0 5px 0 0; vertical-align: 0; }
 .sk-act .sk-pill { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; border: 2px solid var(--ink); border-radius: 9px; transform: skewX(-8deg);
   background: rgba(14, 16, 34, 0.72); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35); font: 800 18px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
 .sk-act .sk-pill > * { transform: skewX(8deg); }
@@ -74,7 +94,7 @@
 #scrSkins { --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'%3E%3Cpath d='M4.6 8.2V5.6a3.4 3.4 0 0 1 6.8 0v2.6' fill='none' stroke='%23f3d9a4' stroke-width='2.2'/%3E%3Crect x='2' y='8' width='12' height='9' rx='2' fill='%23f3d9a4'/%3E%3Ccircle cx='8' cy='12.4' r='1.5' fill='%230e1022'/%3E%3C/svg%3E"); }
 
 /* the rack: two kickers, a row of four chip skins, a row of three Road skins */
-.sk-rack { display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; min-width: 0; min-height: 0; }
+.sk-rack { display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; min-width: 0; min-height: 0; }
 .sk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 2px 2px 0; }
 .sk-k + .sk-row + .sk-k { padding-top: 5px; }
 .sk-k b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
@@ -99,6 +119,10 @@
 .sk.own .sk-f small { color: var(--sand); }
 .sk.buy .sk-f small { color: var(--gold); font-size: 12px; }
 .sk.short .sk-f small { font-size: 12px; }
+/* a Pommes skin: a 2 px red border (any state), and while it is not owned the price in Pommes: the fries cone (16 px, taller than wide, never the coin) and "300 · €2.99" */
+#scrSkins .sk.pms { border-color: #ff4f4f; }
+.sk.pm .sk-f small { font-size: 12px; color: var(--text); }
+.sk-f small .pmglyph { flex: none; width: 13px; height: 16px; margin: 0 5px 0 0; vertical-align: 0; }
 .sk.short canvas, .sk.road canvas { filter: saturate(0.45) brightness(0.6); }
 .sk.shut canvas { filter: saturate(0.4) brightness(0.32); }
 .sk.short .sk-lk, .sk.road .sk-lk, .sk.shut .sk-lk { display: block; }
@@ -115,12 +139,12 @@
 #scrSkins .sk:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 /* ---- small phones (667x320): a tighter sheet, no kicker subtitles, a smaller preview ---- */
-#app.tiny #scrSkins { --pw: 232px; --ft: 32px; padding: 10px 16px; }
-#app.tiny #scrSkins > .sk-sheet { width: min(635px, 100%); height: min(296px, 100%); }
-#app.tiny .sk-head { height: 38px; }
+#app.tiny #scrSkins { --pw: 232px; --ft: 28px; padding: 10px 16px; }
+#app.tiny #scrSkins > .sk-sheet { width: min(635px, 100%); height: min(300px, 100%); }
+#app.tiny .sk-head { height: 34px; }
 #app.tiny .sheet .sk-head h3 { font-size: 20px; }
 #app.tiny .sk-head .sk-coin { height: 30px; font-size: 16px; }
-#app.tiny .sk-body { gap: 10px; padding: 9px 10px 10px; }
+#app.tiny .sk-body { gap: 10px; padding: 6px 10px 8px; }
 #app.tiny .sk-pt { gap: 5px; padding: 0 10px 10px; }
 #app.tiny .sk-pn b { font-size: 26px; -webkit-text-stroke-width: 3.5px; text-shadow: 0 3px 0 var(--ink); }
 #app.tiny #scrSkins .sk-fx { font-size: 12px; }
@@ -134,15 +158,20 @@
 #app.tiny #scrSkins .sk-l1.sk-lock { padding-left: 22px; }
 #app.tiny #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
 #app.tiny #scrSkins .sk-l2 { font-size: 11.5px; }
-#app.tiny .sk-rack { gap: 5px; }
+#app.tiny .sk-rack { gap: 3px; }
+#app.tiny .sk-k { padding: 0 2px; }
+#app.tiny .sk-k + .sk-row + .sk-k { padding-top: 2px; }
 #app.tiny .sk-k span { display: none; }
-#app.tiny .sk-k b { font-size: 11px; }
+#app.tiny .sk-k b { font-size: 10px; line-height: 10px; }
 #app.tiny .sk-row { gap: 6px; }
 #app.tiny .sk-f { padding: 0 6px 1px; gap: 3px; }
-#app.tiny .sk-f b { font-size: 11px; }
+#app.tiny .sk-f b { font-size: 10.5px; }
 #app.tiny .sk-f small { font-size: 10px; }
 #app.tiny .sk-lk { width: 20px; height: 20px; right: 4px; bottom: 4px; background-size: 10px 11px; }
 #app.tiny .sk.worn::after { padding: 3px 5px 2px; font-size: 9px; }
+#app.tiny .sk-f small .pmglyph { width: 10px; height: 13px; margin-right: 4px; }
+#app.tiny .sk-a .sk-rt { left: 3px; top: 3px; font-size: 8px; padding: 2px 4px 1px; }
+#app.tiny .sk-rt.pm { -webkit-text-stroke-width: 2.4px; }
 #app.tiny #scrSelect .sl-skins { height: 44px; gap: 8px; padding: 0 5px 0 10px; }
 #app.tiny #scrSelect .sk-dot { width: 22px; height: 22px; }
 #app.tiny #scrSelect .sk-txt small { display: none; }
@@ -176,6 +205,8 @@
 #app:not(.short):not(.portrait) .sk-f small { font-size: 12.5px; }
 #app:not(.short):not(.portrait) .sk-lk { width: 28px; height: 28px; right: 7px; bottom: 7px; background-size: 14px 15px; }
 #app:not(.short):not(.portrait) .sk.worn::after { padding: 5px 8px 4px; font-size: 11px; }
+/* an upright card is too narrow for both stickers: on a worn Pommes skin the POMMES tag stays, the gold ring, gold name and "Worn" foot say it is worn */
+#app.portrait #scrSkins .sk.worn.pms::after, #app.narrow #scrSkins .sk.worn.pms::after { display: none; }
 #app:not(.short):not(.portrait) #scrSelect .sl-skins { height: 56px; gap: 12px; padding: 0 8px 0 16px; }
 #app:not(.short):not(.portrait) #scrSelect .sk-dot { width: 32px; height: 32px; }
 #app:not(.short):not(.portrait) #scrSelect .sk-nm b { font-size: 16px; }
@@ -209,11 +240,13 @@
 #app.portrait #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
 #app.portrait #scrSkins .sk-l2 { font-size: 11.5px; }
 #app.portrait .sk-yours { top: auto; bottom: 10px; right: auto; left: 70px; }
-#app.portrait .sk-rack { grid-template-rows: auto 106px auto 112px; }
+#app.portrait .sk-rack { grid-template-rows: auto 106px auto 112px auto 112px; }
 #app.portrait .sk-row { gap: 6px; }
 #app.portrait .sk-f { padding: 0 7px 1px; }
 #app.portrait .sk-f b { font-size: 11.5px; }
 #app.portrait .sk-f small { font-size: 10.5px; }
+#app.portrait .sk.pm .sk-f small { letter-spacing: 0.01em; }   /* a card is ~80px wide here: "300 · €2.99" and the cone must fit */
+#app.portrait .sk-f small .pmglyph { width: 11px; height: 14px; margin-right: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   #scrSkins .sk, #scrSkins .sk-a canvas, #scrSelect .sl-skins > *, #scrSelect .sk-pill { transition: none; }

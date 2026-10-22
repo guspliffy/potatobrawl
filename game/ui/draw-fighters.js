@@ -366,6 +366,12 @@ function drawFlame(c, P, S, tk) {
    hood, cape and orb (Alchemist), hair, beard, armor, cape and raven (Odin), hat and
    staff (Wizard), sash and katana (Samurai). */
 const LIMB = "#2b2934", LIMB_BACK = "#1c1b23";
+// Ink Noir (a Pommes skin, pal.pommes 1; its overlay is in skinfx.js): every fixed colour of the costume that is not the accent is drawn in
+// one of two inks, dark NOIR_D or light NOIR_L, the irises (and the sprint lines) in NOIR_INK; the accent stays the one colour. Same shapes.
+// drawPotato sets noirOn for the fighter it draws (the costume helpers it calls read it) and clears it at its end.
+const NOIR_D = "#3a3842", NOIR_L = "#d8cfb8", NOIR_INK = "#1b1a22";
+let noirOn = false;
+const noirC = (colr, ink) => (noirOn ? ink : colr);   // a costume's fixed colour, or its ink on Ink Noir
 const SPECKS = [[-0.55, 0.35, 1.3], [-0.2, 0.62, 1.1], [0.36, 0.5, 1.2], [-0.62, -0.05, 1], [0.05, 0.3, 0.9], [0.58, 0.18, 1]];
 function potatoPath(c, P) {
   const { rx, ry, cy } = P;
@@ -383,20 +389,20 @@ function potatoBody(c, P, pal) {
   const { rx, ry, cy } = P;
   potatoPath(c, P);
   const g = c.createRadialGradient(-rx * 0.35, cy - ry * 0.45, ry * 0.1, 0, cy, ry * 1.3);
-  g.addColorStop(0, mix(pal.body, "#ffffff", 0.35)); g.addColorStop(0.55, pal.body); g.addColorStop(1, mix(pal.body, "#6b3a12", 0.35));
+  g.addColorStop(0, mix(pal.body, "#ffffff", 0.35)); g.addColorStop(0.55, pal.body); g.addColorStop(1, mix(pal.body, noirC("#6b3a12", NOIR_D), 0.35));
   c.fillStyle = g; c.fill(); c.lineWidth = 2.5; c.strokeStyle = OUT; c.stroke();
-  c.fillStyle = mix(pal.body, "#5a3410", 0.45);
+  c.fillStyle = mix(pal.body, noirC("#5a3410", NOIR_D), 0.45);
   for (const [sx, sy, sr] of SPECKS) { c.beginPath(); c.ellipse(sx * rx, cy + sy * ry, sr, sr * 0.7, 0.5, 0, Math.PI * 2); c.fill(); }
 }
 function leaf(c, x, y, s, a) {
   c.save(); c.translate(x, y); c.rotate(a);
   c.beginPath(); c.ellipse(0, 0, 5.5 * s, 2.6 * s, 0, 0, Math.PI * 2);
-  c.fillStyle = "#7cc85a"; c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
-  c.strokeStyle = "#4f9a3c"; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-4 * s, 0); c.lineTo(4 * s, 0); c.stroke();
+  c.fillStyle = noirC("#7cc85a", NOIR_L); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+  c.strokeStyle = noirC("#4f9a3c", NOIR_D); c.lineWidth = 0.8; c.beginPath(); c.moveTo(-4 * s, 0); c.lineTo(4 * s, 0); c.stroke();
   c.restore();
 }
 function sprout(c, x, y, s) {
-  c.strokeStyle = "#3f7d3a"; c.lineWidth = 2.2; c.lineCap = "round";
+  c.strokeStyle = noirC("#3f7d3a", NOIR_D); c.lineWidth = 2.2; c.lineCap = "round";
   c.beginPath(); c.moveTo(x, y + 2); c.quadraticCurveTo(x - 1, y - 4 * s, x + 1, y - 7 * s); c.stroke();
   leaf(c, x - 5 * s, y - 8 * s, s, -0.5); leaf(c, x + 6 * s, y - 9 * s, s, 0.5);
 }
@@ -406,7 +412,7 @@ function potatoFace(c, f, P, look) {
   const hurt = f.state === "hitstun", style = look.face, cos = look.costume;
   // P.expr (manga finisher, ui/manga.js): terror | grin | rage | calm | dazed | ko; P.exK 0..1 is how far into it the face is. Unset: the face is drawn as always.
   const ex = P.expr || "", xk = P.exK === undefined ? 1 : P.exK;
-  c.fillStyle = "rgba(255,105,105,0.5)";
+  c.fillStyle = noirC("rgba(255,105,105,0.5)", NOIR_L);
   c.beginPath(); c.ellipse(e1[0] - er * 0.4, hy + er * 1.75, er * 0.85, er * 0.5, 0, 0, Math.PI * 2); c.fill();
   c.beginPath(); c.ellipse(e2[0] + er * 0.55, hy + er * 1.75, er * 0.85, er * 0.5, 0, 0, Math.PI * 2); c.fill();
   c.lineCap = "round"; c.lineJoin = "round";
@@ -419,8 +425,8 @@ function potatoFace(c, f, P, look) {
     }
     if (cos === "odin" && i === 0) {
       // the Allfather's eyepatch, strap running up over the hair
-      c.fillStyle = "#2a1d18"; c.beginPath(); c.ellipse(e[0], e[1], er * 1.05, er * 1.0, 0, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = "#2a1d18"; c.lineWidth = 1.8; c.beginPath(); c.moveTo(e[0] - er * 0.6, e[1] - er * 0.7); c.lineTo(e[0] - er * 2.2, e[1] - er * 3.2); c.moveTo(e[0] + er * 0.7, e[1] - er * 0.6); c.lineTo(e[0] + er * 2.4, e[1] - er * 2.6); c.stroke();
+      c.fillStyle = noirC("#2a1d18", NOIR_D); c.beginPath(); c.ellipse(e[0], e[1], er * 1.05, er * 1.0, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = noirC("#2a1d18", NOIR_D); c.lineWidth = 1.8; c.beginPath(); c.moveTo(e[0] - er * 0.6, e[1] - er * 0.7); c.lineTo(e[0] - er * 2.2, e[1] - er * 3.2); c.moveTo(e[0] + er * 0.7, e[1] - er * 0.6); c.lineTo(e[0] + er * 2.4, e[1] - er * 2.6); c.stroke();
       return;
     }
     if (ex === "ko") {
@@ -444,7 +450,7 @@ function potatoFace(c, f, P, look) {
       c.stroke();
       return;
     }
-    c.beginPath(); c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.68 * k * hk * (ex === "terror" ? 0.5 + 0.5 * pk : 1), 0, Math.PI * 2); c.fillStyle = cos === "dragon" ? "#e6a52a" : "#4a1f14"; c.fill();
+    c.beginPath(); c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.68 * k * hk * (ex === "terror" ? 0.5 + 0.5 * pk : 1), 0, Math.PI * 2); c.fillStyle = noirOn ? NOIR_INK : cos === "dragon" ? "#e6a52a" : "#4a1f14"; c.fill();
     c.beginPath();
     if (cos === "dragon") c.ellipse(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.13 * pk, er * 0.55 * pk, 0, 0, Math.PI * 2); else c.arc(e[0] + er * 0.15, e[1] + er * 0.1, er * 0.38 * k * hk * pk, 0, Math.PI * 2);
     c.fillStyle = "#120a08"; c.fill();
@@ -457,10 +463,10 @@ function potatoFace(c, f, P, look) {
       c.lineTo(e[0] + er * 1.3, e[1] - er * (0.25 + s * 0.3)); c.lineTo(e[0] - er * 1.3, e[1] - er * (0.25 - s * 0.3)); c.closePath(); c.fill();
       c.restore();
     }
-    if (cos === "wizard") { c.strokeStyle = "#d8b04a"; c.lineWidth = 1.6; c.beginPath(); c.arc(e[0], e[1], er * 1.35, 0, Math.PI * 2); c.stroke(); }
+    if (cos === "wizard") { c.strokeStyle = noirC("#d8b04a", NOIR_D); c.lineWidth = 1.6; c.beginPath(); c.arc(e[0], e[1], er * 1.35, 0, Math.PI * 2); c.stroke(); }
   });
-  if (cos === "wizard" && !hurt) { c.strokeStyle = "#d8b04a"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(e1[0] + er * 1.35, e1[1]); c.lineTo(e2[0] - er * 1.35, e2[1]); c.stroke(); }
-  c.strokeStyle = style === "stern" ? "#f3efe6" : OUT;
+  if (cos === "wizard" && !hurt) { c.strokeStyle = noirC("#d8b04a", NOIR_D); c.lineWidth = 1.4; c.beginPath(); c.moveTo(e1[0] + er * 1.35, e1[1]); c.lineTo(e2[0] - er * 1.35, e2[1]); c.stroke(); }
+  c.strokeStyle = style === "stern" ? noirC("#f3efe6", NOIR_L) : OUT;
   c.lineWidth = style === "stern" ? 3.4 : 2.2;
   [[e1, -1], [e2, 1]].forEach(([e, side]) => {
     c.beginPath();
@@ -484,12 +490,12 @@ function potatoFace(c, f, P, look) {
   if (ex) {
     c.lineWidth = 1.8;
     if (ex === "terror") {
-      c.beginPath(); c.ellipse(mx, my + er * 0.3, er * (0.7 + 0.35 * xk), er * (0.6 + 0.55 * xk), 0, 0, Math.PI * 2); c.fillStyle = "#5a1a14"; c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(mx, my + er * 0.3, er * (0.7 + 0.35 * xk), er * (0.6 + 0.55 * xk), 0, 0, Math.PI * 2); c.fillStyle = noirC("#5a1a14", NOIR_D); c.fill(); c.stroke();
     } else if (ex === "rage") {   // clenched teeth at P.mouth 0, a roaring mouth at 1; fangs on the Dragon
       const pm = clamp(P.mouth, 0, 1), mw = er * (1.5 + 0.9 * pm), mh = er * (0.35 + 1.6 * pm);
       c.beginPath(); c.moveTo(mx - mw, my - er * 0.2); c.quadraticCurveTo(mx, my - er * 0.5, mx + mw, my - er * 0.2); c.quadraticCurveTo(mx + mw * 0.8, my - er * 0.2 + mh, mx, my - er * 0.2 + mh * 1.1);
       c.quadraticCurveTo(mx - mw * 0.8, my - er * 0.2 + mh, mx - mw, my - er * 0.2); c.closePath();
-      c.fillStyle = pm < 0.2 ? "#ffffff" : "#5a1a14"; c.fill(); c.stroke();
+      c.fillStyle = pm < 0.2 ? "#ffffff" : noirC("#5a1a14", NOIR_D); c.fill(); c.stroke();
       c.fillStyle = "#ffffff";
       if (cos === "dragon" && pm >= 0.2) { for (const s of [-1, 1]) { c.beginPath(); c.moveTo(mx + s * mw * 0.55, my - er * 0.3); c.lineTo(mx + s * mw * 0.3, my - er * 0.3); c.lineTo(mx + s * mw * 0.45, my + er * (0.2 + 0.5 * pm)); c.closePath(); c.fill(); c.lineWidth = 0.9; c.stroke(); } }
       else if (pm < 0.2) { c.lineWidth = 1; c.beginPath(); for (let q = -2; q <= 2; q++) { c.moveTo(mx + q * mw * 0.38, my - er * 0.2); c.lineTo(mx + q * mw * 0.38, my - er * 0.2 + mh); } c.stroke(); }
@@ -499,7 +505,7 @@ function potatoFace(c, f, P, look) {
     } else if (ex === "dazed") {
       c.beginPath(); c.moveTo(mx - er * 1.0, my); for (let q = 1; q <= 4; q++) c.lineTo(mx - er * 1.0 + q * er * 0.5, my + (q % 2 ? er * 0.35 : -er * 0.1)); c.stroke();
     } else if (ex === "ko") {
-      c.beginPath(); c.ellipse(mx, my + er * 0.4, er * 0.55, er * 0.7, 0, 0, Math.PI * 2); c.fillStyle = "#5a1a14"; c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(mx, my + er * 0.4, er * 0.55, er * 0.7, 0, 0, Math.PI * 2); c.fillStyle = noirC("#5a1a14", NOIR_D); c.fill(); c.stroke();
     } else {   // calm
       c.beginPath(); c.arc(mx, my - er * 0.7, er * 0.85, 0.4, Math.PI - 0.4); c.stroke();
     }
@@ -507,7 +513,7 @@ function potatoFace(c, f, P, look) {
   }
   if (P.mouth > 0.5 || hurt) {
     c.beginPath(); c.ellipse(mx, my + 1, er * 0.75, er * (hurt ? 0.5 : 0.65), 0, 0, Math.PI * 2);
-    c.fillStyle = "#5a1a14"; c.fill(); c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = noirC("#5a1a14", NOIR_D); c.fill(); c.lineWidth = 1.5; c.stroke();
   } else if (style === "evil") {
     c.beginPath(); c.moveTo(mx - er * 1.3, my - er * 0.3); c.quadraticCurveTo(mx, my + er * 1.3, mx + er * 1.3, my - er * 0.3);
     c.quadraticCurveTo(mx, my + er * 0.2, mx - er * 1.3, my - er * 0.3);
@@ -515,7 +521,7 @@ function potatoFace(c, f, P, look) {
     c.lineWidth = 1; c.beginPath(); c.moveTo(mx - er * 0.3, my + er * 0.05); c.lineTo(mx - er * 0.3, my + er * 0.6); c.moveTo(mx + er * 0.4, my + er * 0.05); c.lineTo(mx + er * 0.4, my + er * 0.55); c.stroke();
   } else if (style === "eager") {
     c.beginPath(); c.moveTo(mx - er * 1.1, my - er * 0.3); c.quadraticCurveTo(mx, my + er * 1.5, mx + er * 1.1, my - er * 0.3); c.closePath();
-    c.fillStyle = "#5a1a14"; c.fill(); c.lineWidth = 1.6; c.stroke();
+    c.fillStyle = noirC("#5a1a14", NOIR_D); c.fill(); c.lineWidth = 1.6; c.stroke();
   } else if (style === "focused") {
     c.beginPath(); c.moveTo(mx - er * 0.7, my + er * 0.1); c.quadraticCurveTo(mx, my - er * 0.15, mx + er * 0.7, my + er * 0.1); c.lineWidth = 1.8; c.stroke();
   } else if (style === "cocky") {
@@ -585,22 +591,22 @@ function capeShape(c, P, f, tk, color, long) {
 function ravenShape(c, x, y, s, flap, rdy) {
   c.save(); c.translate(x, y); c.scale(s, s);
   c.lineWidth = 1.4; c.strokeStyle = OUT;
-  c.fillStyle = "#16151c"; c.beginPath(); c.moveTo(-6, 2); c.lineTo(-17, 8); c.lineTo(-15, 1); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = noirC("#16151c", NOIR_D); c.beginPath(); c.moveTo(-6, 2); c.lineTo(-17, 8); c.lineTo(-15, 1); c.closePath(); c.fill(); c.stroke();
   c.beginPath(); c.ellipse(0, 0, 9, 6.5, -0.15, 0, Math.PI * 2); c.fill(); c.stroke();
   c.beginPath(); c.arc(7, -5, 4.6, 0, Math.PI * 2); c.fill(); c.stroke();
-  c.fillStyle = "#3a3844"; c.beginPath(); c.moveTo(10.5, -6.5); c.lineTo(16.5, -4.5); c.lineTo(10.5, -3); c.closePath(); c.fill();
-  c.fillStyle = rdy ? "#ff2a2a" : "#e33b3b"; c.beginPath(); c.arc(8, -6, rdy ? 2 : 1.2, 0, Math.PI * 2); c.fill();   // rdy: finish-ready, the eyes burn
-  c.fillStyle = "#24232c"; c.beginPath(); c.ellipse(-2, -2 - flap * 4, 8, 4, -0.35 - flap, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = noirC("#3a3844", NOIR_D); c.beginPath(); c.moveTo(10.5, -6.5); c.lineTo(16.5, -4.5); c.lineTo(10.5, -3); c.closePath(); c.fill();
+  c.fillStyle = rdy ? "#ff2a2a" : noirC("#e33b3b", NOIR_L); c.beginPath(); c.arc(8, -6, rdy ? 2 : 1.2, 0, Math.PI * 2); c.fill();   // rdy: finish-ready, the eyes burn
+  c.fillStyle = noirC("#24232c", NOIR_D); c.beginPath(); c.ellipse(-2, -2 - flap * 4, 8, 4, -0.35 - flap, 0, Math.PI * 2); c.fill(); c.stroke();
   c.restore();
 }
 function odinFront(c, P, pal) {
   const { rx, ry, cy } = P, w = P.w, [hx, hy] = P.head, er = w * 0.1;
   c.save(); potatoPath(c, P); c.clip();
-  c.fillStyle = "#26252e"; c.beginPath(); c.moveTo(-rx * 1.2, cy + ry * 0.22); c.quadraticCurveTo(0, cy + ry * 0.05, rx * 1.2, cy + ry * 0.22); c.lineTo(rx * 1.2, cy + ry * 1.3); c.lineTo(-rx * 1.2, cy + ry * 1.3); c.fill();
-  c.strokeStyle = "#4a4958"; c.lineWidth = 1.4;
+  c.fillStyle = noirC("#26252e", NOIR_D); c.beginPath(); c.moveTo(-rx * 1.2, cy + ry * 0.22); c.quadraticCurveTo(0, cy + ry * 0.05, rx * 1.2, cy + ry * 0.22); c.lineTo(rx * 1.2, cy + ry * 1.3); c.lineTo(-rx * 1.2, cy + ry * 1.3); c.fill();
+  c.strokeStyle = noirC("#4a4958", "rgba(216,207,184,0.4)"); c.lineWidth = 1.4;
   for (const sx of [-0.45, 0.35]) { c.beginPath(); c.arc(sx * rx, cy + ry * 0.48, ry * 0.14, 0.4, 5.6); c.stroke(); }
   c.fillStyle = pal.accent; c.fillRect(-rx * 1.2, cy + ry * 0.66, rx * 2.4, ry * 0.14);
-  c.fillStyle = "#f3efe6";
+  c.fillStyle = noirC("#f3efe6", NOIR_L);
   c.beginPath(); c.moveTo(-rx * 1.3, P.top + ry * 1.1); c.lineTo(-rx * 1.3, P.top - 6); c.lineTo(rx * 1.3, P.top - 6); c.lineTo(rx * 1.3, P.top + ry * 0.3);
   c.quadraticCurveTo(rx * 0.1, P.top + ry * 0.5, -rx * 0.55, P.top + ry * 0.62); c.quadraticCurveTo(-rx * 0.8, P.top + ry * 0.9, -rx * 1.3, P.top + ry * 1.1); c.fill();
   c.restore();
@@ -614,12 +620,12 @@ function odinBeard(c, P, pal) {
   c.quadraticCurveTo(hx + w * 0.32, cy + ry * 0.72, hx + w * 0.37, hy + er * 1.2);
   c.quadraticCurveTo(hx + w * 0.2, hy + er * 2.3, hx + w * 0.02, hy + er * 1.95);
   c.quadraticCurveTo(hx - w * 0.17, hy + er * 2.3, hx - w * 0.34, hy + er * 1.2);
-  c.fillStyle = "#f3efe6"; c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
-  c.strokeStyle = "#d6cfbf"; c.lineWidth = 1;
+  c.fillStyle = noirC("#f3efe6", NOIR_L); c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
+  c.strokeStyle = noirC("#d6cfbf", "rgba(58,56,66,0.45)"); c.lineWidth = 1;
   for (const k of [-0.15, 0, 0.15]) { c.beginPath(); c.moveTo(hx + k * w, hy + er * 2.4); c.quadraticCurveTo(hx + k * w * 1.2, cy + ry * 0.55, hx + k * w * 0.4, cy + ry * 0.85); c.stroke(); }
   c.beginPath(); c.ellipse(hx + w * 0.02, hy + er * 1.3, er * 0.75, er * 0.65, 0, 0, Math.PI * 2);
-  c.fillStyle = mix(pal.body, "#d0704a", 0.35); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
-  c.fillStyle = "#f3efe6"; c.strokeStyle = OUT; c.lineWidth = 1;
+  c.fillStyle = noirC(mix(pal.body, "#d0704a", 0.35), NOIR_L); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
+  c.fillStyle = noirC("#f3efe6", NOIR_L); c.strokeStyle = OUT; c.lineWidth = 1;
   for (let i = 0; i < 5; i++) { c.beginPath(); c.ellipse(rx * 0.86 - i * 0.6, P.top + ry * 0.75 + i * ry * 0.2, 3.2, 3.8, 0, 0, Math.PI * 2); c.fill(); c.stroke(); }
 }
 function alchemistHood(c, P, pal) {
@@ -664,14 +670,14 @@ function wizardStaff(c, P, f, shR, tk) {
   const b = [hx - dx * 34, hy - dy * 34], t = [hx + dx * 40, hy + dy * 40];
   c.lineCap = "round";
   c.strokeStyle = OUT; c.lineWidth = 6; c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke();
-  c.strokeStyle = "#7a4a26"; c.lineWidth = 3.5; c.stroke();
+  c.strokeStyle = noirC("#7a4a26", NOIR_D); c.lineWidth = 3.5; c.stroke();
   const fl = 1 + Math.sin(tk * 0.3) * 0.08, gf = fl * P.cryK, cf = fl * (1 + (P.cryK - 1) * 0.5);   // cryK: the crystal flares during heavy wind-ups
   const glow = c.createRadialGradient(t[0], t[1], 1, t[0], t[1], 16 * gf);
-  glow.addColorStop(0, "rgba(255,226,140,0.85)"); glow.addColorStop(1, "rgba(255,200,90,0)");
+  glow.addColorStop(0, noirC("rgba(255,226,140,0.85)", "rgba(216,207,184,0.85)")); glow.addColorStop(1, noirC("rgba(255,200,90,0)", "rgba(216,207,184,0)"));
   c.fillStyle = glow; c.beginPath(); c.arc(t[0], t[1], 16 * gf, 0, Math.PI * 2); c.fill();
   c.save(); c.translate(t[0], t[1]); c.rotate(a + Math.PI / 2);
   c.beginPath(); c.moveTo(0, -11 * cf); c.lineTo(4.5 * cf, -2); c.lineTo(2.5 * cf, 4); c.lineTo(-2.5 * cf, 4); c.lineTo(-4.5 * cf, -2); c.closePath();
-  c.fillStyle = "#ffd27a"; c.fill(); c.lineWidth = 1.4; c.strokeStyle = "#a8701c"; c.stroke();
+  c.fillStyle = noirC("#ffd27a", NOIR_L); c.fill(); c.lineWidth = 1.4; c.strokeStyle = noirC("#a8701c", NOIR_D); c.stroke();
   c.fillStyle = "#fff6d8"; c.beginPath(); c.moveTo(0, -7 * cf); c.lineTo(2 * cf, -1); c.lineTo(-2 * cf, -1); c.closePath(); c.fill();
   c.restore();
   P.staffTip = t;
@@ -681,12 +687,12 @@ function katana(c, P, f, shR, pal) {
   c.save(); c.translate(P.hF[0], P.hF[1]); c.rotate(a);
   c.lineCap = "round";
   c.strokeStyle = OUT; c.lineWidth = 5.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(2, 0); c.stroke();
-  c.strokeStyle = "#3a2a22"; c.lineWidth = 3; c.stroke();
+  c.strokeStyle = noirC("#3a2a22", NOIR_D); c.lineWidth = 3; c.stroke();
   if (sh > 0) {
     // Iaido: the blade rests in its scabbard (lacquer, gold mouth and tip) until the draw
     c.beginPath(); c.moveTo(4, -3.4); c.lineTo(L * 0.96, -2.8); c.lineTo(L * 0.96, 2.8); c.lineTo(4, 3.4); c.closePath();
-    c.fillStyle = "#26232d"; c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
-    c.fillStyle = "#c9a227"; c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = noirC("#26232d", NOIR_D); c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
+    c.fillStyle = noirC("#c9a227", NOIR_L); c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
     c.strokeStyle = "rgba(255,255,255,0.25)"; c.lineWidth = 1; c.beginPath(); c.moveTo(10, -1.6); c.lineTo(L * 0.9, -1.4); c.stroke();
   }
   const Lb = sh > 0 ? 4 + (L - 4) * (1 - sh) : L;
@@ -695,7 +701,7 @@ function katana(c, P, f, shR, pal) {
     c.fillStyle = pal.accent; c.fill(); c.lineWidth = 1.5; c.strokeStyle = OUT; c.stroke();
     c.strokeStyle = "rgba(255,255,255,0.6)"; c.lineWidth = 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(Lb * 0.55, -2.5, Lb - 4, -4.5); c.stroke();
   }
-  c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = "#c9a227"; c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+  c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = noirC("#c9a227", NOIR_L); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
   c.restore();
 }
 /* ---- Gunslinger: hat, neckerchief, vest, belt with holster, two revolvers ---- */
@@ -727,10 +733,10 @@ function gunShotPose(f, P, m, phase, k, w, leg, tor, set) {
 function gunHeld(c, f, P, hand, a, shot, r, limb, flash, back) {
   const [hx, hy] = hand, gold = GUN_GOLD(f), s = back ? 0.92 : 1;
   c.save(); c.translate(hx, hy); c.rotate(a); c.scale(s, s); c.lineJoin = "round"; c.lineCap = "round";
-  const metal = flash ? "#ffffff" : gold ? "#e8b83e" : back ? "#555b66" : "#6f7682", dark = gold ? "#9c6c16" : "#30343c";
+  const metal = flash ? "#ffffff" : gold ? "#e8b83e" : noirOn ? NOIR_D : back ? "#555b66" : "#6f7682", dark = gold ? "#9c6c16" : noirC("#30343c", OUT);
   c.lineWidth = 1.3; c.strokeStyle = OUT;
   c.beginPath(); c.moveTo(-3.5, -1); c.lineTo(1.5, -1); c.lineTo(-1.5, 8.5); c.lineTo(-6.5, 8); c.closePath();   // grip
-  c.fillStyle = flash ? "#ffffff" : gold ? "#f3e4bf" : "#6e4529"; c.fill(); c.stroke();
+  c.fillStyle = flash ? "#ffffff" : gold ? "#f3e4bf" : noirC("#6e4529", NOIR_L); c.fill(); c.stroke();
   c.fillStyle = metal;
   c.beginPath(); c.roundRect(-4.5, -5, 9.5, 6.4, 1.6); c.fill(); c.stroke();                                    // frame and cylinder
   c.beginPath(); c.roundRect(4.2, -4.4, 13, 3.4, 1); c.fill(); c.stroke();                                       // barrel
@@ -758,8 +764,8 @@ function gunFlash(c, x, y, k, s, gold) {
 // neckerchief, leather vest, belt and the holster on the front hip, over the potato (inside the body's lean)
 function gunOutfit(c, f, P, pal, flash) {
   const { rx, ry, cy } = P, hx = P.head[0], lvl = skinLvl(f);
-  const vest = flash ? "#ffffff" : "#5b3a26", vestD = flash ? "#ffffff" : "#40281a", belt = flash ? "#ffffff" : "#3a2418";
-  const kerch = flash ? "#ffffff" : col(pal), buckle = flash ? "#ffffff" : lvl === 2 ? "#dfe5ec" : "#e3b54a";
+  const vest = flash ? "#ffffff" : noirC("#5b3a26", NOIR_D), vestD = flash ? "#ffffff" : noirC("#40281a", OUT), belt = flash ? "#ffffff" : noirC("#3a2418", NOIR_D);
+  const kerch = flash ? "#ffffff" : noirOn ? pal.accent : col(pal), buckle = flash ? "#ffffff" : lvl === 2 ? "#dfe5ec" : noirC("#e3b54a", NOIR_L);
   c.save(); potatoPath(c, P); c.clip();
   // the vest: two leather panels open at the front
   c.fillStyle = vest;
@@ -773,9 +779,9 @@ function gunOutfit(c, f, P, pal, flash) {
   // buckle, holster on the front hip, neckerchief
   c.lineWidth = 1.2; c.strokeStyle = OUT;
   c.fillStyle = buckle; c.beginPath(); c.roundRect(hx - 4, cy + ry * 0.66, 8, ry * 0.19, 1.5); c.fill(); c.stroke();
-  c.fillStyle = flash ? "#ffffff" : "#7a4a2a";
+  c.fillStyle = flash ? "#ffffff" : noirC("#7a4a2a", NOIR_D);
   c.beginPath(); c.moveTo(rx * 0.55, cy + ry * 0.72); c.lineTo(rx * 1.02, cy + ry * 0.72); c.lineTo(rx * 0.96, cy + ry * 1.12); c.quadraticCurveTo(rx * 0.78, cy + ry * 1.2, rx * 0.62, cy + ry * 1.1); c.closePath(); c.fill(); c.stroke();
-  c.strokeStyle = "rgba(255,230,180,0.45)"; c.setLineDash([1.5, 2]); c.beginPath(); c.moveTo(rx * 0.62, cy + ry * 0.8); c.lineTo(rx * 0.68, cy + ry * 1.05); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = noirC("rgba(255,230,180,0.45)", "rgba(216,207,184,0.6)"); c.setLineDash([1.5, 2]); c.beginPath(); c.moveTo(rx * 0.62, cy + ry * 0.8); c.lineTo(rx * 0.68, cy + ry * 1.05); c.stroke(); c.setLineDash([]);
   if (lvl === 2 && !flash) star5(c, -rx * 0.55, cy + ry * 0.48, 4.2, "#dfe5ec");   // the Sheriff's badge
   c.fillStyle = kerch; c.strokeStyle = OUT; c.lineWidth = 1.4;
   c.beginPath(); c.moveTo(hx - rx * 0.62, cy + ry * 0.22); c.quadraticCurveTo(hx, cy + ry * 0.36, hx + rx * 0.58, cy + ry * 0.2); c.lineTo(hx + rx * 0.06, cy + ry * 0.72); c.closePath(); c.fill(); c.stroke();
@@ -828,7 +834,7 @@ function reapCols(f, P, flash) {
   const lvl = skinLvl(f), ac = f.pal.accent;
   const c = {
     hood: ac, hoodD: mix(ac, "#000000", lvl === 3 ? 0.18 : 0.32), lining: f.pal.lining || (lvl === 2 ? "#f08a3c" : lvl === 3 ? "#1f1d26" : mix(ac, "#000000", 0.55)),   // a Road skin brings its own lining colour
-    trim: lvl === 3 ? "#1f1d26" : null, ghost: lvl === 3 && !flash && !P.dim ? 1 : null, handle: lvl === 3 ? "#2a2630" : "#3b3530", band: lvl === 2 ? "#f08a3c" : "#7d7f88", blade: "#a7acb6", spine: "#6d717c",
+    trim: lvl === 3 ? "#1f1d26" : null, ghost: lvl === 3 && !flash && !P.dim ? 1 : null, handle: lvl === 3 ? "#2a2630" : noirC("#3b3530", NOIR_D), band: lvl === 2 ? "#f08a3c" : noirC("#7d7f88", NOIR_L), blade: noirC("#a7acb6", NOIR_L), spine: noirC("#6d717c", NOIR_D),
   };
   if (flash) { for (const k in c) if (c[k]) c[k] = "#ffffff"; }
   else if (P.dim) { for (const k in c) if (c[k]) c[k] = mix(c[k], "#6a6a7a", 0.45); }
@@ -1098,7 +1104,7 @@ function drawMagic(c, from, S, tk) {
 // the sprint burst: speed lines streaming off behind the potato (drawn in its own space, where x < 0 is behind), fading as the burst ends
 function sprintLines(c, f, P, tk, alpha) {
   const k = 1 - f.spr / (BL.TUNE.sprint.burst + 2);
-  c.save(); c.lineCap = "round"; c.strokeStyle = "#fff6e4";
+  c.save(); c.lineCap = "round"; c.strokeStyle = noirC("#fff6e4", NOIR_INK);   // Ink Noir: ink speed lines
   for (let i = 0; i < 4; i++) {
     const ph = (tk * 0.21 + i * 0.29) % 1, y = -P.h * (0.2 + i * 0.19), x0 = -P.w * 0.5 - 6 - ph * 26, len = 22 + ((i * 7) % 3) * 10;
     c.globalAlpha = alpha * k * 0.8 * (1 - ph * 0.7); c.lineWidth = i % 2 ? 2.5 : 3.5;
@@ -1109,6 +1115,7 @@ function sprintLines(c, f, P, tk, alpha) {
 function drawPotato(c, f, tk, at) {
   const ox = at ? at[0] : f.x, oy = at ? at[1] : f.y;
   const look = f.spec.look, pal0 = f.pal, cos = look.costume;
+  noirOn = pal0.pommes === 1;   // Ink Noir: the costume in two inks (cleared at the end)
   const P = pose(f, tk);
   let alpha = 1;
   if (intangible(f) && f.state !== "respawn" && f.state !== "getup") alpha = (tk >> 2) % 2 ? 0.55 : 0.8;
@@ -1157,24 +1164,24 @@ function drawPotato(c, f, tk, at) {
   if (cos === "odin") odinFront(c, P, pal);
   if (cos === "samurai") {
     c.save(); potatoPath(c, P); c.clip();
-    c.fillStyle = "#24222c"; c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.42, P.rx * 2.6, P.ry);
-    c.fillStyle = "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.62, P.rx * 2.6, 1.6); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.82, P.rx * 2.6, 1.6);
-    c.fillStyle = "#2a2833"; c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.3, P.rx * 2.6, P.ry * 0.17);
-    c.fillStyle = "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy - P.ry * 0.62, P.rx * 2.6, P.ry * 0.13);
+    c.fillStyle = noirC("#24222c", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.42, P.rx * 2.6, P.ry);
+    c.fillStyle = noirC("#c8352b", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.62, P.rx * 2.6, 1.6); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.82, P.rx * 2.6, 1.6);
+    c.fillStyle = noirC("#2a2833", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.3, P.rx * 2.6, P.ry * 0.17);
+    c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy - P.ry * 0.62, P.rx * 2.6, P.ry * 0.13);   // the headband (Ink Noir: the accent)
     c.restore();
-    c.fillStyle = "#c8352b"; c.beginPath(); c.ellipse(-P.rx * 0.98, P.cy - P.ry * 0.56, 2.6, 2.4, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.beginPath(); c.ellipse(-P.rx * 0.98, P.cy - P.ry * 0.56, 2.6, 2.4, 0, 0, Math.PI * 2); c.fill();
     c.beginPath(); c.ellipse(-P.rx * 1.12, P.cy - P.ry * 0.42, 1.5, 4.5, 0.7, 0, Math.PI * 2); c.fill();
   }
   if (cos === "wizard") {
     c.save(); potatoPath(c, P); c.clip();
     c.fillStyle = mix(pal.accent, "#000000", 0.25); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, P.ry);
-    c.fillStyle = "#d8b04a"; c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
+    c.fillStyle = noirC("#d8b04a", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
     c.restore();
   }
   if (cos === "gunslinger") gunOutfit(c, f, P, pal, flash);
   if (cos === "dragon") {
-    c.fillStyle = mix(pal.body, "#fff0c6", 0.45); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = mix(pal.body, "#7a4a22", 0.4); c.lineWidth = 1.2;
+    c.fillStyle = noirC(mix(pal.body, "#fff0c6", 0.45), NOIR_L); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = noirC(mix(pal.body, "#7a4a22", 0.4), NOIR_D); c.lineWidth = 1.2;
     for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
   }
   roadSkinBody(c, f, P, tk, flash);
@@ -1184,17 +1191,17 @@ function drawPotato(c, f, tk, at) {
   if (cos === "alchemist") {
     alchemistHood(c, P, pal);
     const [gx, gy] = P.head, er = P.w * 0.1;
-    for (const dx of [-1.25, 1.2]) { c.fillStyle = "#b8863b"; c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = "#8fe8d2"; c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
+    for (const dx of [-1.25, 1.2]) { c.fillStyle = noirC("#b8863b", NOIR_D); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = noirC("#8fe8d2", NOIR_L); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
   }
   if (cos === "wizard") wizardHat(c, P, pal, tk);
   if (cos === "gunslinger") cowboyHat(c, P, pal);
   if (cos === "reaper") reaperHood(c, f, P, RC, tk);
   if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
   if (cos === "dragon") {
-    c.fillStyle = "#efe3c8"; c.strokeStyle = OUT; c.lineWidth = 1.2;
+    c.fillStyle = noirC("#efe3c8", NOIR_L); c.strokeStyle = OUT; c.lineWidth = 1.2;
     for (const x0 of [-P.w * 0.2, P.w * 0.12]) { c.beginPath(); c.moveTo(x0 - 3.5, P.top + 5); c.quadraticCurveTo(x0 - 3, P.top - 8, x0 - 9, P.top - 15); c.quadraticCurveTo(x0 + 1, P.top - 6, x0 + 3.5, P.top + 4); c.closePath(); c.fill(); c.stroke(); }
   }
-  if (cos === "samurai") { c.fillStyle = "#1c1714"; c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
+  if (cos === "samurai") { c.fillStyle = noirC("#1c1714", NOIR_D); c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
   if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
   if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
   roadSkinTop(c, f, P, tk, flash);
@@ -1220,6 +1227,7 @@ function drawPotato(c, f, tk, at) {
   drawHeavyFx(c, f, P, tk);
   drawFinishFx(c, f, P, tk);
   c.restore();
+  noirOn = false;
   if (!at) drawHx(c, f.slot);
 }
 // The classic slash / flame / zap / magic swoosh for the move being played

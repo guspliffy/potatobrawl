@@ -12,9 +12,10 @@ async def main():
         b = await p.chromium.launch(args=ARGS)
         ca = await b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
         cb = await b.new_context(viewport={'width': 1280, 'height': 760})
-        # A also has every Potatality on (window.__blKoAlt: the tests' stand-in for owning them): A's KO plays it, and B, told by A's presence, plays the same page
+        # A has every Potatality on Shuffle (window.__blKoAlt = "s": the tests' stand-in for owning them): A's presence carries his list of pages,
+        # A's KO picks one of them from the match state (koSeedPick), and B, told by A's presence, picks the same page
         FINSEEN = "window.__finSeen = null; setInterval(() => { const f = window.__blastline && window.__blastline.fin; if (f && f.on && f.t > 600 && !window.__finSeen) window.__finSeen = { alt: f.alt, sub: f.cardSub, manga: f.manga }; }, 40);"
-        await ca.add_init_script(INIT % GLAZE_ALL + "; window.__blKoAlt = true; " + FINSEEN); await cb.add_init_script(INIT % '' + "; " + FINSEEN)
+        await ca.add_init_script(INIT % GLAZE_ALL + "; window.__blKoAlt = 's'; " + FINSEEN); await cb.add_init_script(INIT % '' + "; " + FINSEEN)
         A = await ca.new_page(); B = await cb.new_page()
         for t, pg in (('A', A), ('B', B)):
             pg.on('pageerror', lambda e, t=t: errs.append(f'{t}: {e}'))
@@ -31,6 +32,16 @@ async def main():
         gz = [await A.evaluate("[window.__blastline.glazed(0), window.__blastline.glazed(1)]"), await B.evaluate("[window.__blastline.glazed(0), window.__blastline.glazed(1)]")]
         if gz != [[True, False], [True, False]]: errs.append(f"glaze: the host's fighter should shine on both phones and the guest's on neither, got A {gz[0]} B {gz[1]}")
         else: print('glaze ok')
+        # the presence: B holds A's pages for A's fighter exactly as A lists them ({fighterId: [page numbers]})
+        fa_id = await A.evaluate("window.__blastline.game.fighters[0].spec.id")
+        la, lb = await A.evaluate("(id) => window.__blKo.list(id)", fa_id), await B.evaluate("(id) => { const o = window.__blKo.opp; return o && !Array.isArray(o) ? o[id] || [] : null; }", fa_id)
+        pa = await A.evaluate("window.__blKo.pres()")
+        if not (la and la == lb and pa.get(fa_id) == la): errs.append(f"Potatality presence: A lists {la} for {fa_id} (presence {pa}), B got {lb}")
+        else: print('potatality presence ok', fa_id, la)
+        # koSeedPick: the same match state gives the same page every time, and over 40 matches both pages come out
+        sp = await A.evaluate("(() => { const p = window.__blKo.seedPick, g = { br: 12345, t: 678 }, same = p([1, 2], g) === p([1, 2], { br: 12345, t: 678 }); const seen = new Set(); for (let i = 0; i < 40; i++) seen.add(p([1, 2], { br: (i * 2654435761) | 0, t: 600 + i * 37 })); return { same, seen: [...seen].sort(), none: p([], g) }; })()")
+        if not (sp['same'] and sp['seen'] == [1, 2] and sp['none'] == 0): errs.append(f"koSeedPick: {sp}")
+        else: print('seed pick ok')
         print('desyncs before hook', await A.evaluate("window.__blastline.net.desyncs"), await B.evaluate("window.__blastline.net.desyncs"))
         # the host lands a real lethal heavy (a KO page needs a hit; a fall plays none): both games put the guest at 400% on his last life in
         # front of the host at the same frame, then the host's phone presses heavy for a moment (window.__blInput), which reaches both games
@@ -50,8 +61,8 @@ async def main():
         await B.screenshot(path=f'{OUT}/on_B_result.png')
         print('desyncs', await A.evaluate("window.__blastline.net.desyncs"), await B.evaluate("window.__blastline.net.desyncs"))
         fa, fb = await A.evaluate("window.__finSeen"), await B.evaluate("window.__finSeen")
-        if not (fa and fb and fa['alt'] and fb['alt'] and fa['sub'] == fb['sub'] and (fa['sub'] or '').startswith('Potatality: ')):
-            errs.append(f"Potatality: the host's KO should play his Potatality on both phones, got A {fa} B {fb}")
+        if not (fa and fb and type(fa['alt']) is int and fa['alt'] in (la or []) and fa['alt'] == fb['alt'] and fa['sub'] == fb['sub'] and (fa['sub'] or '').startswith('Potatality: ')):
+            errs.append(f"Potatality: the host's KO should play the same one of his Potatalities {la} on both phones, got A {fa} B {fb}")
         else: print('potatality ok', fa['sub'])
         # both ask for a rematch (the KO finisher must hand over to the results screen cleanly on both sides)
         await A.tap('#rAgain'); await B.click('#rAgain')

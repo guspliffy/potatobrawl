@@ -799,7 +799,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <header class="mm-bar">
       <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
       <div class="mm-topr">
-        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
+        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin pm zero" id="mPommes">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
         <button class="round mm-fs" id="bFull" aria-label="Fullscreen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="fs-go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fs-out" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g></svg></button>
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
@@ -887,6 +887,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="sk-row" id="skRoad" role="group" aria-label="Won skins"></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- the Pommes Shop (ui/pshop.js, css/93-pshop.css; Fable's design step8/fable-design-2.md section 3): the eight fighters in a strip, the chosen one's finishers and Pommes skins as cards, Get Pommes; one sheet that never scrolls -->
+  <section id="scrPshop" class="screen modal" hidden>
+    <div class="sheet ps-sheet" id="psSheet" role="dialog" aria-modal="true" aria-labelledby="psTitle">
+      <header class="sh-head ps-head"><h3 id="psTitle">Pommes Shop</h3><span class="ps-bal" id="psBal" aria-live="polite"></span><button class="round x" id="psClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="ps-body">
+        <div class="ps-strip" id="psStrip" role="group" aria-label="Fighter"></div>
+        <div class="ps-goods" id="psGoods">
+          <div class="ps-grp ps-gfin" role="group" aria-label="Finishers"><p class="ps-cap"><b>Finishers</b><span>&middot; what plays on your KO</span></p><div class="ps-row" id="psFin"></div></div>
+          <div class="ps-grp ps-gsk" role="group" aria-label="Skins"><p class="ps-cap"><b>Skins</b></p><div class="ps-row" id="psSk"></div></div>
+        </div>
+        <div class="ps-get" id="psGet"></div>
+      </div>
+      <div class="ps-toast" id="psToast" role="status" aria-live="polite" hidden></div>
     </div>
   </section>
 

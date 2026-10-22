@@ -13,7 +13,8 @@
    (landing 2470-2740), the big one falls last (gold, 1.3x); the loser fills with night sky instead of crystal (KRAKOOM); 3250 panel 5: a black page, stars draw the
    loser's face over its dark silhouette, the face cracks (3950), 4100 the bang (a white frame, the page turns pale gold, the stars fly out as a galaxy, he stands in
    colour, BIG BANG); 4700 panel 4 as on Starfall (its moments are MT.AFTER + offset).
-   POTATALITY: "Crisp-tal Ball" = MANGA.wizard.alt (S_.alt, at the end; its helpers are prefixed crb), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Crisp-tal Ball" = MANGA.wizard.alt (S_.alt, at the end; its helpers are prefixed crb), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Hocus Croquettes" = MANGA.wizard.alt2 (S_.alt2, after it; its helpers are prefixed hc), played when the second one is chosen (FIN.alt 2). */
 MANGA.wizard = (function () {
   const COL = "#f2c14e", GOLD = "#ffd978", PALE = "#fff6d8", NIGHT = "#0b0c1c", WHT = "#fffdf4", FACET_INK = "#2a1d12", NIGHT_U = "#06071a";
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
@@ -29,6 +30,7 @@ MANGA.wizard = (function () {
   // the Ultimate ("Big Bang"): ult is set by start(); the shower's four small stars, the loser's face as stars (geo), its dark silhouette (neb), the cracks
   let ult = false, shower = [], geo = null, neb = null, cracks = [], nDots = [];
   let pota = false;   // pota: this play is the Potatality, Crisp-tal Ball (set by its start)
+  let pota2 = false;  // this play is the second Potatality, Hocus Croquettes (set by its start)
   const night = () => (ult ? NIGHT_U : NIGHT);
   const DET_U = [2340, 2250, 2250, 2280, 2310, -1, -1];   // the Ultimate: when each star of the constellation lets go (-1: it stays)
   // a star that has left the constellation (Starfall: only the brightest, at T_DET)
@@ -53,6 +55,8 @@ MANGA.wizard = (function () {
       cry = t < U_BANG ? mixN(2.2, 4, e) + ease(fe(3740, 3950, t)) : mixN(5, 3, ease(fe(U_BANG, MT.AFTER, t)));
     } else if (pota && t >= MT.SPLASH) {   // the Potatality: the tap on the crystal ball (splash), the crisp lifted out of the bowl (panel 4)
       const q = crbCast(t, w, leg, tor); ang = q.ang; hF = q.hF; hB = q.hB; lean = q.lean; cry = q.cry;
+    } else if (pota2 && t >= MT.SPLASH && t < MT.AFTER) {   // the second Potatality: the tap on the hat's brim, the pull, the bow
+      const q = hcCast(t, w, leg, tor); ang = q.ang; hF = q.hF; hB = q.hB; lean = q.lean; cry = q.cry;
     } else if (t < MT.AFTER) {
       const e = easeOut(fe(2900, 3060, t));
       ang = mixN(0.2, -0.55, e); hF = lerp2(back, thrust, e); lean = mixN(-0.12, 0.22, e); hB = [-w * 0.5, -leg - tor * 0.85];
@@ -526,7 +530,7 @@ MANGA.wizard = (function () {
       const p1 = MG.panels[0], orig = p1.d.draw;
       p1.d.draw = function (c, pn, t) { orig(c, pn, t); wizNight(c, t); };
     },
-    start() { ult = false; pota = false; shower = []; geo = null; neb = null; cracks = []; },
+    start() { ult = false; pota = false; pota2 = false; shower = []; geo = null; neb = null; cracks = []; },
     end() { neb = null; geo = null; },
     step(t) { if (t > MT.END - 50 && facets) { facets = null; } if (ult && !neb && t >= 1600) nebBuild(); },   // the loser's dark silhouette for the splash, built while the look panel plays
     // gold snow across the whole page after the strike; the gem's speed lines run along its path
@@ -541,7 +545,7 @@ MANGA.wizard = (function () {
         o.restore();
       }
       if (ult && t >= 2250 && t < 2760) showerOver(o, t);
-      if (t > this.hit + 80 && t < this.hit + 600 + 400 && !(pota && t >= MT.SPLASH)) {   // (a Potatality: the loser is in the ball from the splash on)
+      if (t > this.hit + 80 && t < this.hit + 600 + 400 && !((pota || pota2) && t >= MT.SPLASH)) {   // (a Potatality: the loser is in the ball (the hat) from the splash on)
         const Lp = L_(), pn = MG.byId.strike, u = t - FIN.launch, a = (1 - fe(FIN.launch + 150, FIN.launch + 420, t)) * fe(FIN.launch - 40, FIN.launch + 40, t);
         if (a > 0.01) {
           const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
@@ -551,7 +555,7 @@ MANGA.wizard = (function () {
         }
       }
       const A = MT.AFTER;
-      if (t > A && t < MT.FADE + 100 && !pota) {
+      if (t > A && t < MT.FADE + 100 && !pota && !pota2) {
         const a = fe(A, A + 300, t) * (1 - fe(A + 700, A + 1000, t)), u = (t - A) / 1000;
         o.save(); o.globalAlpha = a;
         for (const d of flakes) {
@@ -1272,6 +1276,346 @@ MANGA.wizard = (function () {
       cueOnce("crbLand", CRB_LAND, () => Cin.go(() => Cin.tick(1800)));
       cueOnce("crbLift", CRB_LIFT, () => Cin.go(() => Cin.shimmer(1760, 0.5)));
       cueOnce("crbCrunch", CRB_EAT, () => Cin.go(() => { for (let i = 0; i < 3; i++) Cin._noise(0.07, 0.35, 3000, 1400, "bandpass", 1.2, i * 0.09); }));
+    },
+  });
+  /* ===================== the second Potatality, "Hocus Croquettes" (MANGA.wizard.alt2; design: Project files step8/fable-design-2.md §1.3) =====================
+     Starfall to the hit (KRISSH is gone as the splash comes in). 3250 panel 5, the splash, slides up on paper: his hat, magic-big and upside down, floats on its
+     point with the loser dropped into it head first, his feet kicking over the brim; the Wizard (upright: floating beside the brim) taps the brim with the staff's
+     crystal, a star burst (ALAKAZAM). 3310-3800 the hat wobbles (220 ms, 6 degrees), twelve sparkles orbit it, the feet sink into it (gone at 3600: poof).
+     3740 he reaches into the hat; 3850-4270 he pulls out a ribbon-tied chain of six croquettes like a magician's scarves, one every 70 ms, arcing over the
+     hat, the first with the loser's face. 4290-4650 a small bow (ta-daa); 4450 the last croquette slips off the ribbon and drops to the ground (oops).
+     4700 panel 4 as on Crisp-tal Ball, in colour: the hat beside him, resting on its floppy point like a basket, croquettes piled in it like eggs and the face
+     croquette on the brim (it blinks); the engine's POP leaves the hat on its side and three stars drifting out of it.
+     Splash world: the hat's point at (FIN.lx, -3). Every helper here is prefixed hc. */
+  const HC = { TAP: 3300, WOB0: 3310, WOB1: 3800, SINK0: 3340, POOF: 3600, REACH: 3740, PULL0: 3850, STEP: 70, PULL1: 4270, BOW0: 4290, TADA: 4320, SLIP: 4450, OOPS: 4470, DOWN: 4600, BOW1: 4650 };
+  const HC_TAU = Math.PI * 2, HC_CROQ = "#d68a34", HC_CROQ_D = "#9a5a1e", HC_CROQ_HI = "#f5c27a", HC_RIB = "#d8344a", HC_CL = 15.5, HC_CR = 5, HC_NS = 16;
+  const HC_PUFF = [[0, -4, 9], [-11, -1, 7], [11, -2, 7.5], [-6, -11, 7], [7, -12, 6.5], [-17, -7, 5], [17, -8, 5]];
+  const HC_SIDE = { H: 30, rxB: 26, ryB: 6, rxO: 19, ryO: 4.4 };
+  const HC_PILE = [[-9, -25, 0.12], [9, -25.5, -0.1], [-1, -31, 0.06], [10, -32, 0.5], [-11, -32, -0.45]];   // the croquettes heaped in the hat (panel 4): x, y about the foot, turn
+  const hcLx = new Float32Array(HC_NS + 1), hcLy = new Float32Array(HC_NS + 1), hcLs = new Float32Array(HC_NS + 1), hcQ = [0, 0, 0];
+  let hcGc = null, hcIn = 0, hcWob = 0, hcFall = null;   // hcIn: 1 the Wizard, 2 the loser in the hat (their poses in the splash); hcWob: the hat's tilt now; hcFall: where the slipping croquette starts
+  // the splash's layout: the hat (height, brim and mouth radii, its point), the Wizard's feet, the camera, the tap (front hand, staff angle)
+  function hcGeo() {
+    if (hcGc) return hcGc;
+    const port = !!(MG.lay && MG.lay.port), D = FIN.dir, x = FIN.lx, w = W_().s.w;
+    const G = port
+      ? { port, x, H: 116, rxB: 48, ryB: 10, rxO: 35, ryO: 7.5, tipY: -3, wx0: x - D * 60, wx1: x - D * 60, cx: x - D * 14, cy: -146, vw: 150, reach: [0.6, -0.2], pull: [0.2, 2.0], sp: 23 }
+      : { port, x, H: 104, rxB: 50, ryB: 10, rxO: 36, ryO: 7.5, tipY: -3, wx0: x - D * 92, wx1: x - D * 70, wy: -8, cx: x - D * 36, cy: -76, vh: 152, reach: [0.75, 1.5], pull: [-0.5, 1.75], sp: 19 };
+    G.brimY = G.tipY - G.H;
+    if (port) G.wy = G.brimY - 6;   // upright: he floats beside the brim, his feet level with it
+    // the tap: the crystal (40 from the hand) lands on the brim's near edge; the hand's height follows from that
+    const tx = D * (x - D * (G.rxB - 6) - G.wx0), ty = G.brimY - 2 - G.wy, hx = w * 0.62, dx = tx - hx, dy = Math.sqrt(Math.max(0, 1600 - dx * dx)) * (port ? -1 : 1);
+    G.tapH = [hx, ty + dy]; G.tapA = Math.atan2(-dy, dx);
+    return (hcGc = G);
+  }
+  // the hat's wobble about its point (radians, screen turn)
+  const hcTilt = (t) => (MG.reduced ? 0 : 0.105 * Math.sin(((t - HC.WOB0) / 220) * Math.PI * 2) * fe(HC.WOB0, HC.WOB0 + 60, t) * (1 - fe(HC.WOB1 - 120, HC.WOB1, t)));
+  // the staff and hands on the splash (local units about his feet, as cast() returns them)
+  function hcCast(t, w, leg, tor) {
+    const G = hcGeo(), tapH = G.tapH, up = [w * 0.5, -leg - tor * 1.0], hold = [w * 0.55, -leg - tor * 0.75];
+    const rest = [-w * 0.5, -leg - tor * 0.7], R0 = [w * G.reach[0], -leg - tor * G.reach[1]], R1 = [w * G.pull[0], -leg - tor * G.pull[1]];
+    let ang, hF, cry = 1.4, lean = 0;
+    if (t < HC.TAP) { const e = easeIn(fe(MT.SPLASH, HC.TAP, t)); ang = mixN(G.port ? 2.4 : -1.95, G.tapA, e); hF = lerp2(up, tapH, e); cry = 1.6; }
+    else if (t < HC.TAP + 120) { const b = Math.sin(Math.PI * fe(HC.TAP, HC.TAP + 120, t)); ang = G.tapA - (G.port ? -0.12 : 0.12) * b; hF = tapH; cry = 2.8 - 0.8 * fe(HC.TAP, HC.TAP + 120, t); }
+    else if (t < HC.POOF) { const e = ease(fe(HC.TAP + 120, HC.TAP + 260, t)), sw = Math.sin(t * 0.025) * 0.1; ang = mixN(G.tapA, G.port ? 0.9 + sw : -1.05 + sw, e); hF = lerp2(tapH, hold, e); cry = 2 + 0.2 * Math.sin(t * 0.03); }
+    else { const e = ease(fe(HC.POOF, HC.POOF + 200, t)); ang = mixN(G.port ? 0.9 : -1.05, -1.5, e); hF = hold; cry = mixN(2, 1.3, e); }
+    let hB = rest;
+    if (t >= HC.REACH && t < HC.PULL0) hB = lerp2(rest, R0, ease(fe(HC.REACH, HC.PULL0 - 20, t)));
+    else if (t >= HC.PULL0) {
+      const k = fe(HC.PULL0, HC.PULL1, t), tug = t < HC.PULL1 ? 0.06 * Math.sin(Math.PI * (((t - HC.PULL0) / HC.STEP) % 1)) : 0;
+      hB = lerp2(R0, R1, easeOut(k)); hB = [hB[0] - w * tug, hB[1] - tor * tug];
+    }
+    if (t >= HC.BOW0) {   // the bow: he leans in, the staff hand to his chest, the chain held up
+      const b = ease(fe(HC.BOW0, HC.BOW0 + 110, t)) * (1 - ease(fe(HC.BOW1 - 90, HC.BOW1, t)));
+      lean = 0.22 * b; hF = lerp2(hold, [w * 0.3, -leg - tor * 0.7], b);
+    }
+    return { ang, hF, hB, lean, cry };
+  }
+  // the Wizard (or the loser in the hat) drawn at the splash's place for him, then put back
+  const hcWX = (t) => { const G = hcGeo(); return lerp(G.wx0, G.wx1, ease(fe(HC.POOF + 40, HC.REACH + 40, t))); };
+  function hcAsW(t, fn) {
+    const G = hcGeo(), W = W_(), ox = W.x, oy = W.y, bob = Math.sin(t * 0.007) * 2;
+    W.x = hcWX(t); W.y = G.wy + bob; hcIn = 1;
+    try { return fn(W); } finally { W.x = ox; W.y = oy; hcIn = 0; }
+  }
+  // the loser upside down in the hat: his middle on the hat's axis, turned with it; s: how far his feet have sunk (0..1)
+  function hcLoser(c, pn, t, G, wob) {
+    const Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1, h = Lp.s.h * lb, sink = easeIn(fe(HC.SINK0, HC.POOF, t)), D = FIN.dir;
+    if (sink >= 1) return;
+    const yf = G.brimY - G.ryB - 30 + (h * 0.6 + 30) * sink, cx = G.x, cy = yf + h * 0.5, dx = cx - G.x, dy = cy - G.tipY, ca = Math.cos(wob), sa = Math.sin(wob);
+    const mx = G.x + dx * ca - dy * sa, my = G.tipY + dx * sa + dy * ca, sv = [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash];
+    Lp.x = mx; Lp.y = my + h * 0.5; Lp.state = "fin"; Lp.facing = -D; Lp.flash = 0; hcIn = 2; hcWob = wob;
+    c.save(); pn.world(c); c.translate(G.x, G.tipY); c.rotate(wob);
+    c.beginPath(); c.moveTo(-G.rxO, G.brimY - G.tipY); c.ellipse(0, G.brimY - G.tipY, G.rxO, G.ryO, 0, Math.PI, 0, true); c.lineTo(G.rxO, -400); c.lineTo(-G.rxO, -400); c.closePath(); c.clip();
+    try { mgPuppet(c, pn, Lp, t, { sc: 1, tint: 0.36, light: dirAng(-1.2) }); }
+    finally { c.restore(); Lp.x = sv[0]; Lp.y = sv[1]; Lp.state = sv[2]; Lp.facing = sv[3]; Lp.flash = sv[4]; hcIn = 0; }
+  }
+  function hcLPose(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, k = t * 0.055;
+    P.spin = Math.PI + L_().facing * hcWob; P.lean = 0; P.expr = "terror"; P.exK = 1; P.mouth = 1;
+    return { hF: [w * 0.45, -leg - tor * 0.9], hB: [-w * 0.45, -leg - tor * 0.9], fF: [w * (0.55 + 0.12 * Math.sin(k)), leg * 0.25 - leg * 0.6 * (0.5 + 0.5 * Math.sin(k))], fB: [-w * (0.5 + 0.12 * Math.cos(k)), leg * 0.25 - leg * 0.6 * (0.5 + 0.5 * Math.cos(k))] };
+  }
+  // the hat, upside down: in its own frame (the point at 0, 0; the brim's middle at y = -H); glow: the light inside it
+  function hcHat(c, G, lw, glow) {
+    const W = W_(), ac = W.pal.accent, D = FIN.dir, H = G.H, yB = -H, rO = G.rxO;
+    const cone = () => { c.beginPath(); c.moveTo(-rO * 1.02, yB); c.quadraticCurveTo(-rO * 0.6, yB * 0.42, -D * 3, -6); c.quadraticCurveTo(D * 4, 3, D * 11, -2); c.quadraticCurveTo(D * 6, -4, D * 3, -9); c.quadraticCurveTo(rO * 0.6, yB * 0.42, rO * 1.02, yB); c.closePath(); };
+    c.lineJoin = "round"; c.lineCap = "round";
+    cone(); c.fillStyle = ac; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = mix(ac, "#000000", 0.38); c.fillRect(-rO * 1.2, yB, rO * 2.4, H * 0.13);
+    c.beginPath(); c.moveTo(D * rO * 0.1, yB); c.quadraticCurveTo(D * rO * 0.5, yB * 0.45, D * 6, 0); c.lineTo(D * rO * 1.3, 0); c.lineTo(D * rO * 1.3, yB); c.closePath();
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(6, 0.4); c.fill(); c.restore();
+    c.restore();
+    cone(); c.lineWidth = lw * 1.3; c.strokeStyle = MG_INK; c.stroke();
+    leaf(c, -D * rO * 0.32, yB * 0.62, 1.1, 0.5 * D); leaf(c, D * rO * 0.22, yB * 0.4, 1.1, -0.7 * D); leaf(c, -D * rO * 0.08, yB * 0.22, 0.9, 0.2 * D);
+    c.beginPath(); c.ellipse(0, yB, G.rxB, G.ryB, 0, 0, HC_TAU); c.fillStyle = mix(ac, "#000000", 0.12); c.fill(); c.lineWidth = lw * 1.3; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.ellipse(0, yB - G.ryB * 0.12, rO, G.ryO, 0, 0, HC_TAU); c.fillStyle = mix(ac, "#000000", 0.72); c.fill();
+    if (glow > 0.02) { c.globalAlpha = glow; c.beginPath(); c.ellipse(0, yB - G.ryB * 0.12, rO * 0.8, G.ryO * 0.7, 0, 0, HC_TAU); c.fillStyle = GOLD; c.fill(); c.globalAlpha = 1; }
+    c.beginPath(); c.ellipse(0, yB - G.ryB * 0.12, rO, G.ryO, 0, 0, HC_TAU); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+  }
+  // a croquette: a breaded log (gold-brown, crumbs, a light along its top) at (x, y) turned by ang, s its scale; face: the loser's face on it ({ look, shut })
+  function hcCroq(c, x, y, ang, s, lw, face) {
+    const L0 = HC_CL * s, R = HC_CR * s;
+    c.save(); c.translate(x, y); c.rotate(ang);
+    c.beginPath(); c.roundRect(-L0 / 2, -R, L0, R * 2, R); c.fillStyle = face ? hcFaceFill() : HC_CROQ; c.fill();
+    c.fillStyle = HC_CROQ_D; for (const [a, b] of [[-0.3, 0.45], [0.05, 0.6], [0.32, 0.35], [-0.12, 0.15], [0.2, -0.1]]) { c.beginPath(); c.arc(a * L0, b * R, R * 0.13, 0, HC_TAU); c.fill(); }
+    c.strokeStyle = HC_CROQ_HI; c.lineWidth = R * 0.3; c.beginPath(); c.moveTo(-L0 * 0.3, -R * 0.52); c.lineTo(L0 * 0.28, -R * 0.52); c.stroke();
+    c.beginPath(); c.roundRect(-L0 / 2, -R, L0, R * 2, R); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+    if (face) {
+      const er = R * 0.36, lk = face.look || 0;
+      for (const sd of [-1, 1]) {
+        const ex = sd * L0 * 0.17, ey = -R * 0.12;
+        if (face.shut) { c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(ex - er, ey); c.quadraticCurveTo(ex, ey + er * 0.7, ex + er, ey); c.stroke(); continue; }
+        c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, er, er * 1.25, 0, 0, HC_TAU); c.fill(); c.lineWidth = lw * 0.7; c.stroke();
+        c.fillStyle = MG_INK; c.beginPath(); c.arc(ex + lk * er * 0.4, ey + er * 0.15, er * 0.52, 0, HC_TAU); c.fill();
+      }
+      c.fillStyle = "rgba(255,120,120,0.55)"; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * L0 * 0.34, R * 0.32, R * 0.2, R * 0.12, 0, 0, HC_TAU); c.fill(); }
+      c.fillStyle = "#5a1f14"; c.beginPath(); c.ellipse(0, R * 0.48, R * 0.15, R * (face.open ? 0.2 : 0.09), 0, 0, HC_TAU); c.fill(); c.lineWidth = lw * 0.6; c.stroke();
+    }
+    c.restore();
+  }
+  let hcFF = null;
+  const hcFaceFill = () => hcFF || (hcFF = mix(HC_CROQ, col(L_().pal), 0.35));
+  // the ribbon's curve from the hand (h) to the hat's mouth (m), bowed up so its length is about len: sampled into hcLx/hcLy, lengths in hcLs. Returns its length.
+  function hcCurve(hx, hy, mx, my, len) {
+    const dx = mx - hx, dy = my - hy, d = Math.hypot(dx, dy) || 1, s = Math.sqrt(Math.max(0, (len * len - d * d) * 0.1875)) * 2;
+    let nx = -dy / d, ny = dx / d; if (ny > 0) { nx = -nx; ny = -ny; }
+    const qx = (hx + mx) / 2 + nx * s, qy = (hy + my) / 2 + ny * s;
+    for (let i = 0; i <= HC_NS; i++) {
+      const u = i / HC_NS, a = (1 - u) * (1 - u), b = 2 * u * (1 - u), e = u * u;
+      hcLx[i] = a * hx + b * qx + e * mx; hcLy[i] = a * hy + b * qy + e * my;
+      hcLs[i] = i ? hcLs[i - 1] + Math.hypot(hcLx[i] - hcLx[i - 1], hcLy[i] - hcLy[i - 1]) : 0;
+    }
+    return hcLs[HC_NS];
+  }
+  // the point at arc length s along the sampled curve, into hcQ: x, y, the angle of the curve there
+  function hcAt(s) {
+    let i = 1; while (i < HC_NS && hcLs[i] < s) i++;
+    const seg = hcLs[i] - hcLs[i - 1] || 1, k = clamp((s - hcLs[i - 1]) / seg, 0, 1);
+    hcQ[0] = hcLx[i - 1] + (hcLx[i] - hcLx[i - 1]) * k; hcQ[1] = hcLy[i - 1] + (hcLy[i] - hcLy[i - 1]) * k; hcQ[2] = Math.atan2(hcLy[i] - hcLy[i - 1], hcLx[i] - hcLx[i - 1]);
+    return hcQ;
+  }
+  // the chain at t: the hand, the mouth, its length; the croquettes along it from the hand (i < 6; the last one is gone after it slipped)
+  function hcChain(c, pn, t, G, lw) {
+    if (t < HC.PULL0) return;
+    const hand = hcAsW(t, (W) => bodyPt(W, t, "hB")), mx = G.x + FIN.dir * 3, my = G.brimY - 2, out = clamp((t - HC.PULL0) / HC.STEP + 0.6, 0, 6.5);
+    const len = hcCurve(hand[0], hand[1], mx, my, G.sp * out);
+    // the ribbon: ink under red, a bow between two croquettes
+    c.lineCap = "round"; c.lineJoin = "round";
+    c.beginPath(); c.moveTo(hcLx[0], hcLy[0]); for (let i = 1; i <= HC_NS; i++) c.lineTo(hcLx[i], hcLy[i]);
+    c.strokeStyle = MG_INK; c.lineWidth = lw * 2.4; c.stroke(); c.strokeStyle = HC_RIB; c.lineWidth = lw * 1.1; c.stroke();
+    for (let i = 5; i >= 0; i--) {
+      const s = G.sp * (i + 0.5);
+      if (s > len + 1 || (i === 5 && t >= HC.SLIP)) continue;
+      const q = hcAt(s), x = q[0], y = q[1], a = q[2];
+      if (i < 5 && s + G.sp * 0.5 < len) {   // the bow after it
+        const b = hcAt(s + G.sp * 0.5), bx = b[0], by = b[1], ba = b[2];
+        c.save(); c.translate(bx, by); c.rotate(ba + Math.PI / 2); c.beginPath(); c.moveTo(0, 0); c.lineTo(-3.4, -2.4); c.lineTo(-3.4, 2.4); c.closePath(); c.moveTo(0, 0); c.lineTo(3.4, -2.4); c.lineTo(3.4, 2.4); c.closePath();
+        c.fillStyle = HC_RIB; c.fill(); c.lineWidth = lw * 0.7; c.strokeStyle = MG_INK; c.stroke(); c.restore();
+      }
+      hcCroq(c, x, y, a, i ? 1 : 1.4, lw, i ? null : { look: -FIN.dir * (t < HC.BOW0 ? 0.6 : 1), shut: t >= 4120 && t < 4180, open: t < HC.BOW0 });
+    }
+  }
+  // the croquette that slipped off: a hop out over the brim, down to the ground, one bounce
+  function hcDrop(c, t, G, lw) {
+    if (t < HC.SLIP) return;
+    if (!hcFall) {   // where the last croquette was on the ribbon as it slipped
+      const hd = hcAsW(HC.SLIP - 1, (W) => bodyPt(W, HC.SLIP - 1, "hB"));
+      hcCurve(hd[0], hd[1], G.x + FIN.dir * 3, G.brimY - 2, G.sp * 6.5); const q = hcAt(G.sp * 5.5); hcFall = [q[0], q[1], q[2]];
+    }
+    const D = FIN.dir, [x0, y0, a0] = hcFall, gx = G.x + D * (G.rxB + 16), k = fe(HC.SLIP, HC.DOWN, t), b = fe(HC.DOWN, HC.DOWN + 120, t), r = HC_CR;
+    const x = lerp(x0, gx, k) + D * 6 * b, y = k < 1 ? lerp(y0, -r, k * k) - 26 * k * (1 - k) * 4 : -r - 6 * Math.sin(Math.PI * b), a = a0 + D * (k * 7 + b * 1.4);
+    hcCroq(c, x, y, k >= 1 && b >= 1 ? 0 : a, 1, lw);
+  }
+  // a puff of smoke at the hat's mouth (poof): ink rings under, paper over
+  function hcPoof(c, x, y, k, a, lw) {
+    if (k <= 0 || a <= 0.02) return;
+    const e = 0.5 + 0.5 * easeOut(k);
+    c.save(); c.globalAlpha = a; c.lineWidth = lw * 2; c.strokeStyle = MG_INK; c.fillStyle = MG_PAPER;
+    for (const [dx, dy, r] of HC_PUFF) { c.beginPath(); c.arc(x + dx * e * 1.2, y + dy * e - 10 * k, r * e, 0, HC_TAU); c.stroke(); }
+    for (const [dx, dy, r] of HC_PUFF) { c.beginPath(); c.arc(x + dx * e * 1.2, y + dy * e - 10 * k, r * e - 0.4, 0, HC_TAU); c.fill(); }
+    c.restore();
+  }
+  // twelve sparkles round the hat at mid height (back ones first, under the hat; front ones over it)
+  function hcSparks(c, G, t, front, lw) {
+    const a = fe(HC.WOB0, HC.WOB0 + 80, t) * (1 - fe(HC.WOB1 - 120, HC.WOB1, t));
+    if (a <= 0.02) return;
+    const cy = G.tipY - G.H * 0.55, rx = G.rxB + 16, ry = 15;
+    c.globalAlpha = a;
+    for (let i = 0; i < 12; i++) {
+      const an = (i / 12) * HC_TAU + (t - HC.WOB0) * 0.006, s = Math.sin(an);
+      if (front !== s > 0) continue;
+      wizInkStar(c, G.x + Math.cos(an) * rx, cy + s * ry + Math.sin(an * 3 + t * 0.01) * 3, (i % 3 ? 3.2 : 4.6) * (0.85 + 0.15 * s), an, i % 2 ? GOLD : PALE, lw * 0.7);
+    }
+    c.globalAlpha = 1;
+  }
+  function hcDrawSplash(c, pn, t) {
+    const G = hcGeo(), D = FIN.dir, lw = Math.max(1.1, 3 / pn.z), wob = hcTilt(t);
+    pn.screen(c);
+    // the stage: dots round the edges, a pale spotlight disc on the hat, focus lines
+    const q = pn.p(G.x, G.tipY - G.H * 0.62), m = Math.min(pn.w, pn.h);
+    wizTone(c, ringPoly(q[0], q[1], m * 0.78, 40), 10, 0.2, MG_INK, [t * 0.001, 0], pn);
+    c.beginPath(); c.arc(q[0], q[1], m * 0.56, 0, HC_TAU); c.fillStyle = MG_PAPER; c.fill();
+    wizTone(c, ringPoly(q[0], q[1], m * 0.5, 36), 8, 0.22, "#e8c46a", [-t * 0.0008, 0], pn);
+    c.beginPath(); c.arc(q[0], q[1], m * 0.38, 0, HC_TAU); c.fillStyle = "#fffaf0"; c.fill();
+    if (!MG.slow) mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.85, t * 0.0004, 0.55);
+    wizGround(c, pn, false);
+    pn.world(c);
+    c.save(); c.globalAlpha = 0.35; c.fillStyle = MG_INK; c.beginPath(); c.ellipse(G.x, 0, G.rxO * 0.7, 3, 0, 0, HC_TAU); c.fill();   // the shadows under the hat's point and under him, floating
+    if (!G.port) { c.beginPath(); c.ellipse(hcWX(t), 0, 18, 3, 0, 0, HC_TAU); c.fill(); }
+    c.restore();
+    hcSparks(c, G, t, false, lw);
+    const glow = 0.85 * (1 - fe(HC.POOF, HC.POOF + 200, t)) + 0.7 * fe(HC.REACH, HC.PULL0, t) * (1 - fe(HC.PULL1, HC.PULL1 + 200, t));
+    c.save(); c.translate(G.x, G.tipY); c.rotate(wob); hcHat(c, G, lw, glow); c.restore();
+    hcLoser(c, pn, t, G, wob);
+    pn.world(c);
+    hcSparks(c, G, t, true, lw);
+    // poof: the feet are gone
+    const pk = fe(HC.POOF, HC.POOF + 320, t);
+    if (pk > 0 && pk < 1) hcPoof(c, G.x, G.brimY - 4, pk, 1 - fe(HC.POOF + 160, HC.POOF + 320, t), lw);
+    // the Wizard (in front of the hat's near edge), his crystal; the tap's star burst on the brim
+    hcAsW(t, () => { mgPuppet(c, pn, W_(), t, { sc: 1, tint: 0.34, tone: false, post: wizShade(dirAng(-0.8)) }); crystalOver(c, pn, t); });
+    const bu = t - HC.TAP;
+    if (bu >= 0 && bu < 260) { const tp = pn.p(G.x - D * (G.rxB - 6), G.brimY - 2); pn.screen(c); mgStarburst(c, tp[0], tp[1], m * (0.07 + 0.09 * easeOut(bu / 260)) * (1 - 0.3 * fe(150, 260, bu)), 0.3); }
+    pn.world(c);
+    hcChain(c, pn, t, G, lw);
+    hcDrop(c, t, G, lw);
+  }
+  function hcCam(t, pn) {
+    const G = hcGeo(), z = 1 + 0.04 * ease(fe(MT.SPLASH, MT.AFTER, t)), vh = (G.port ? (G.vw * pn.h) / pn.w : G.vh) / z;
+    return { wx: G.cx, wy: G.cy, vh };
+  }
+  const hcShake = (t) => { const a = 3 * fe(HC.TAP, HC.TAP + 15, t) * (1 - fe(HC.TAP + 30, HC.TAP + 200, t)); return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; };
+  // panel 4: the hat as a basket (resting on its floppy point, the mouth up), croquettes piled in it, the face croquette on the near brim;
+  // once he has popped out of it, the hat on its side and three stars drifting out
+  const hcHatX = () => FIN.wx + FIN.dir * 60;
+  function hcBasket(c, pn, t, x, lw) {
+    const W = W_(), ac = W.pal.accent, D = FIN.dir, popped = mgPopped(t), yB = -22, rB = 27, rO = 19;
+    pn.world(c); c.save(); c.translate(x, 0); c.lineJoin = "round"; c.lineCap = "round";
+    if (popped) {   // on its side, its mouth away from him: three stars drift out of it
+      c.save(); c.translate(-D * 14, -rB + 2); c.rotate(D * (Math.PI / 2 - 0.22)); hcHat(c, HC_SIDE, lw, 0.5); c.restore();
+      c.restore();
+      const u = (t - MT.POP) / 700, mx = x + D * 15, my = -30;
+      for (let i = 0; i < 3; i++) {
+        const k = clamp(u - i * 0.2, 0, 1); if (k <= 0) continue;
+        const sx = mx + D * (8 + 30 * k) * (1 - 0.25 * i), sy = my - (10 + 26 * k) * (0.5 + 0.35 * i) + Math.sin(k * 6 + i) * 2;
+        c.globalAlpha = 1 - fe(0.65, 1, k); wizInkStar(c, sx, sy, 3.8 - i * 0.5, k * 3 + i, i === 1 ? PALE : GOLD, lw * 0.8); c.globalAlpha = 1;
+      }
+      return;
+    }
+    // the bowl of the hat (its cone, squashed on the ground) and the point flopped out to the side, curling up
+    const body = () => { c.beginPath(); c.moveTo(-rO * 1.04, yB); c.quadraticCurveTo(-rO * 1.02, -3, -rO * 0.3, 0); c.lineTo(D * rO * 0.5, 0); c.quadraticCurveTo(D * (rO + 12), 1, D * (rO + 18), -10); c.quadraticCurveTo(D * (rO + 21), -16, D * (rO + 15), -15); c.quadraticCurveTo(D * (rO + 12), -6, D * rO * 0.85, -9); c.quadraticCurveTo(D * rO * 1.04, -14, D * rO * 1.04, yB); c.closePath(); };
+    body(); c.fillStyle = ac; c.fill();
+    c.save(); c.clip(); c.fillStyle = mix(ac, "#000000", 0.38); c.fillRect(-rO * 1.3, yB, rO * 2.6, 4.5);
+    c.beginPath(); c.rect(D > 0 ? 3 : -40, -24, 37, 25); c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(6, 0.4); c.fill(); c.restore(); c.restore();
+    body(); c.lineWidth = lw * 1.2; c.strokeStyle = MG_INK; c.stroke();
+    leaf(c, -D * 6, -11, 0.8, 0.4 * D);
+    c.beginPath(); c.ellipse(0, yB, rB, 6, 0, 0, HC_TAU); c.fillStyle = mix(ac, "#000000", 0.12); c.fill(); c.lineWidth = lw * 1.2; c.stroke();
+    c.beginPath(); c.ellipse(0, yB - 0.6, rO, 4.4, 0, 0, HC_TAU); c.fillStyle = mix(ac, "#000000", 0.72); c.fill(); c.lineWidth = lw; c.stroke();
+    c.restore();
+    // the croquettes standing in it like eggs, the face croquette on the near brim
+    pn.world(c);
+    const wob = Math.sin((t - MT.AFTER) * 0.012) * 0.04;
+    for (const [px, py, a] of HC_PILE) hcCroq(c, x + D * px, py, D * a + wob, 0.88, lw);
+    const fx = x - D * 19, fy = -27.5 + Math.sin(t * 0.01) * 0.4;
+    hcCroq(c, fx, fy, -0.18 * D, 1.05, lw, { look: -D, shut: Math.abs(t - 5000) < 40 || Math.abs(t - 5180) < 35 });
+    // a sparkle on the brim now and then
+    const sp = ((t - MT.AFTER) / 520) % 1;
+    if (t > MT.AFTER + 200) { c.globalAlpha = Math.sin(Math.PI * sp); wizInkStar(c, x + D * 22, -30 - 6 * sp, 3.4, sp * 2, PALE, lw * 0.7); c.globalAlpha = 1; }
+  }
+  function hcDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir;
+    pn.screen(c);
+    // the night window in the upper corner, as on Starfall's panel 4
+    const win = [[0.5, 0], [1.02, 0], [1.02, 0.78], [0.66, 0.56]].map(([a, b]) => [pn.x0 + mxu(a) * pn.w, pn.y0 + b * pn.h]);
+    c.fillStyle = NIGHT; mgPoly(c, win); c.fill();
+    c.save(); mgPoly(c, win); c.clip();
+    c.fillStyle = WHT;
+    for (const s of bgDots) { const x = pn.x0 + mxu(0.5 + s.u * 0.52) * pn.w, y = pn.y0 + s.v * 0.78 * pn.h; c.globalAlpha = 0.5 + 0.5 * Math.sin(t * 0.004 + s.ph); c.fillRect(x, y, s.r, s.r); }
+    c.globalAlpha = 1; c.restore();
+    c.save(); mgPoly(c, win); c.lineWidth = 3; c.strokeStyle = MG_INK; c.stroke(); c.restore();
+    wizGround(c, pn, false);
+    mgPuppet(c, pn, W, t, { sc: 1, tint: 0.3, tone: false, post: wizShade(dirAng(-0.8)) });   // in colour now
+    crystalOver(c, pn, t);
+    hcBasket(c, pn, t, hcHatX(), Math.max(1.1, 3 / pn.z));
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Hocus Croquettes",
+    start(g) { S_.start(g); pota2 = true; hcGc = null; hcIn = 0; hcWob = 0; hcFall = null; hcFF = null; },
+    end() { S_.end(); pota2 = false; hcGc = null; hcIn = 0; hcFall = null; hcFF = null; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = hcDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 118 : 100) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 50 : 52), wy: -0.43 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: MG_PAPER, slide: MG.reduced ? 1 : 180, cam: hcCam, shake: hcShake, draw: hcDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, hit = ws.find((w) => w.text === "KRISSH"), small = lay.port ? 0.62 : 1;
+      const ms = lay.port ? Math.min(0.5, (0.86 * L.gw) / (8 * 0.15 * L.gh * 0.72)) : 1;
+      if (hit) hit.t1 = MT.SPLASH + 150;   // the hit's word is gone as the splash comes in
+      const sp = (t, x, y) => { const pn = MG.byId.splash; mgPlace(pn, t); return pn.sp(x, y); };
+      const half = (txt, size, mul) => txt.length * size * L.gh * mul * 0.36;
+      ws.push(
+        { text: "ALAKAZAM", t0: MT.SPLASH + 10, t1: HC.POOF + 60, size: 0.15, mul: ms, arc: 6, jag: 0.06, fill: GOLD, rot: -0.05 * D,
+          at: (t) => { const G = hcGeo(), pn = MG.byId.splash, hw = half("ALAKAZAM", 0.15, ms), q = sp(t, G.port ? G.x - D * 14 : G.wx0 - D * 24, 0); return [clamp(q[0], hw + 6, L.gw - hw - 6), pn.y0 + pn.h * (G.port ? 0.13 : 0.15) + pn.oy]; } },
+        { text: "poof", t0: HC.POOF, t1: HC.POOF + 380, size: 0.07, mul: small, jit: 0.12, rot: 0.1 * D,
+          at: (t) => { const G = hcGeo(); return sp(t, G.x + D * (G.rxB + 6), G.brimY - 24); } },
+        { text: "ta-daa", t0: HC.TADA, t1: HC.BOW1 + 60, size: 0.07, mul: small, jag: 0.1, rot: -0.1 * D,
+          at: (t) => { const G = hcGeo(), hw = half("ta-daa", 0.07, small), q = sp(t, G.wx1 - D * 6, G.wy - 104); return [clamp(q[0], hw + 6, L.gw - hw - 6), q[1]]; } },
+        { text: "oops", t0: HC.OOPS, t1: HC.BOW1 + 60, size: 0.07, mul: small, jit: 0.14, rot: 0.12 * D,
+          at: (t) => { const G = hcGeo(), hw = half("oops", 0.07, small), q = sp(t, G.x + D * (G.rxB + 18), G.port ? -46 : -40); return [clamp(q[0], hw + 6, L.gw - hw - 6), q[1]]; } },
+      );
+      return ws;
+    },
+    pose(P, sk, t, role, p) {
+      if (hcIn === 2 && role === "l") return hcLPose(P, sk, t);
+      const r = S_.pose(P, sk, t, role, p);
+      if (role !== "w" || t < MT.SPLASH || t >= MT.AFTER) return r;
+      // his face on the splash: a grin at the tap and the pull, eyes shut while the feet sink and for the bow, open-mouthed at the slip
+      P.crouch = 0; P.exK = 1;
+      if (t >= HC.OOPS && t < HC.BOW1) { P.expr = undefined; P.mouth = 0.55; }
+      else if ((t >= HC.TAP + 200 && t < HC.POOF) || (t >= HC.BOW0 + 60 && t < HC.OOPS)) { P.expr = "calm"; P.mouth = t >= HC.BOW0 ? 0.3 : 0; }
+      else { P.expr = "grin"; P.mouth = t >= HC.PULL0 && t < HC.PULL1 ? 0.35 : 0; }
+      return r;
+    },
+    food() { const x = hcHatX(); return { x, y: 0, r: 24, y0: -28, lx: x + FIN.dir * 40 }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("hcUp", MT.SPLASH + 40, () => Cin.go(() => Cin.page()));
+      cueOnce("hcTap", HC.TAP, () => Cin.go(() => { Cin.chime(2093); Cin.tick(3600); Cin.shimmer(1320, 0.9); }));
+      cueOnce("hcWob", HC.WOB0 + 40, () => Cin.go(() => { for (let i = 0; i < 4; i++) Cin._osc("sine", 660 + (i % 2) * 120, 640 + (i % 2) * 120, 0.12, 0.05, 0.01, i * 0.11); }));
+      cueOnce("hcSink", HC.SINK0 + 60, () => Cin.go(() => Cin._osc("sine", 1100, 260, 0.26, 0.08, 0.01)));
+      cueOnce("hcPoof", HC.POOF, () => Cin.go(() => { Cin._noise(0.28, 0.32, 1200, 300, "lowpass"); Cin.chime(1568); }));
+      cueOnce("hcReach", HC.REACH, () => Cin.go(() => Cin.whoosh(0.2, -0.3 * D, 0.3 * D, 0.16)));
+      for (let i = 0; i < 6; i++) cueOnce("hcPull" + i, HC.PULL0 + i * HC.STEP, () => Cin.go(() => Cin.pluck(784 * Math.pow(1.122, i))));
+      cueOnce("hcTada", HC.TADA, () => Cin.go(() => { Cin.chime(1047); Cin._osc("triangle", 1568, 1568, 0.45, 0.05, 0.01, 0.12); }));
+      cueOnce("hcSlip", HC.SLIP, () => Cin.go(() => Cin._osc("sine", 700, 300, 0.2, 0.08, 0.005)));
+      cueOnce("hcThud", HC.DOWN, () => Cin.go(() => { Cin._osc("sine", 180, 90, 0.12, 0.16, 0.003); Cin.tick(1400); }));
+      cueOnce("hcBlink", 5000, () => Cin.go(() => Cin.tick(2900)));
     },
   });
   return S_;

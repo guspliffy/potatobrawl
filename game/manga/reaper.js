@@ -16,7 +16,8 @@
    shoulder, eyes closed for a moment (shhh...), a tombstone pops out of the paper with the loser's name and R.I.P.; the cheeky smirk comes back.
    Script fields: col, name, flight, panels(lay), words(lay), start(g), build(lay), step(t, k), pose(P, sk, t, role, p), page(c, t), hint(t), over(o, t),
    cues(t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed rpr.
-   POTATALITY: "Rest in Peel" = MANGA.reaper.alt (S_.alt, at the end; its helpers are prefixed rip), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Rest in Peel" = MANGA.reaper.alt (S_.alt, at the end; its helpers are prefixed rip), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "Gravy Digger" = MANGA.reaper.alt2 (S_.alt2, after it; its helpers are prefixed grv; `pota2` says it is playing; `pota` is set too), played when it is the one picked. */
 MANGA.reaper = (function () {
   const COL = "#ffb444", HOT = "#ffe2a8", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2;
   // a colour drawn inside a panel comes out as its complement once the page is turned: so amber is painted as its complement
@@ -34,6 +35,7 @@ MANGA.reaper = (function () {
   let dust = [], motes = [], soul = null, cornerT = TURNED, stoneName = "", stoneFont = 5, tear2 = null;
   let ult = false, boat = false;   // ult: this play is the Ultimate page, The Ferryman (set by its start); boat: he is being posed standing in the ferry (the splash)
   let pota = false;                // pota: this play is the Potatality, Rest in Peel (set by its start)
+  let pota2 = false;               // pota2: this play is the second Potatality, Gravy Digger (set by its start, with pota)
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function rprPt(p, t, key, dx, dy) {
@@ -492,7 +494,7 @@ MANGA.reaper = (function () {
           at: () => { const p = MG.byId.after, m = p.sp(...rprPt(W_(), HUSH + 60, "head")); return [m[0] - D * p.z * 34, m[1] - p.z * 22]; } },
       ];
     },
-    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; pota = false; setTimes(); },
+    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; pota = false; pota2 = false; setTimes(); },
     build(lay) {
       const B = box(), gw = L.gw, gh = L.gh;
       MG.panels[0].d.draw = drawHit;
@@ -1241,6 +1243,520 @@ MANGA.reaper = (function () {
       cueOnce("ripBye", R_WAVE + 40, () => Cin.go(() => Cin.chime(2093)));
       cueOnce("ripLid", R_PLOP, () => Cin.go(() => { Cin.clack(); Cin._osc("sine", 520, 260, 0.12, 0.08, 0.003); }));
       cueOnce("ripSteam", R_PLOP + 120, () => Cin.go(() => Cin._noise(0.9, 0.04, 3000, 5000, "highpass", 0.8)));
+    },
+  });
+  /* ===================== the second Potatality, "Gravy Digger" (MANGA.reaper.alt2; design: Project files step8/fable-design-2.md §1.8) =====================
+     Last Rites to the hook, as in Rest in Peel (no soul: `pota` is set too). 3250 the lights come on: panel 5, the splash, slides up over the night
+     (Rest in Peel's page()): a dug grave across three quarters of the page, the loser standing in it up to his chest holding up a tiny "help" sign;
+     the Reaper at its head, his scythe planted beside him (THUD). 3300-3780 he shovels with the scythe's blade, three scoops from a heap of chips behind
+     him, each flung over his head into the grave: the chips fill it to the loser's eyes (3515, 3675, 3835); 3830 the scythe goes onto his shoulder.
+     3790 a little tombstone of a gravy boat (R.I.P.) floats in over the far end of the grave at his beckoning, 3870 tilts and pours onto the loser
+     (GLOOP): the gravy rises over the chips and over his eyes, one bubble (blub, 4170), 4170 his eyes bob up again. 4290 he plants a single chip
+     at the head of the grave as a headstone (4360, RIP down it) and bows his head; the chip leans over and flops (4590). The camera holds still, so
+     the loser (who only shivers) is drawn once (grvLoser). 4700 in panel 4's place, in colour: beside him a bowl heaped like a grave mound,
+     chips 'n' gravy, a fork stuck in it with a chip across it as a cross, the loser's eyes in the gravy; the engine's POP bursts it at 5250 (food():
+     brown spray) and leaves a smear of gravy, one chip and the fork fallen over.
+     The splash's world: the grave's middle at x = 0, its back edge at y = GRV_B and its front edge at y = GRV_F (seen from above, its opening is a
+     band across the page); he stands behind its head end (grvLay). Every helper here is prefixed grv. */
+  const GRV = { SC: [3300, 3460, 3620], SHOULDER: 3830, BOAT0: 3790, TILT0: 3870, POUR0: 3910, POUR1: 4200, BOAT1: 4240, BLUB: 4060, BOB: 4170,
+    CHIP0: 4290, PLANT: 4360, BOW0: 4410, FLOP: 4590 };
+  // the grave's width, its back and front edges (world units); how long the chips of a scoop are in the air; where the headstone chip stands and how far below his hand its foot is
+  const GRV_GW = 120, GRV_B = -22, GRV_F = 14, GRV_FLY = 130, GRV_STONE_Y = GRV_B - 1, GRV_STONE_H = 22;
+  const GRV_GRAVY = "#7b4a24", GRV_GRAVY_L = "#c88d55", GRV_CHIP = "#f7d46a", GRV_CHIP_D = "#d39a36", GRV_EARTH = "#a27a54", GRV_WALL = "#5e4838", GRV_PIT = "#2f2a36";
+  const grvRel = (k) => GRV.SC[k] + 85;          // scoop k lets go of its chips ...
+  const grvLand = (k) => grvRel(k) + GRV_FLY;    // ... and they land in the grave (3515, 3675, 3835)
+  const grvPort = () => !!(MG.lay && MG.lay.port);
+  // the stage: where he stands (wx, wy), the heap of chips behind him (px, py, at ps times its size), the headstone chip (hx), the loser (lx), the
+  // gravy boat (bx, by), the horizon (hz), whether he is drawn behind the loser (wb: upright, where they are close, the grave being nearer), chips
+  // spilled in front of the grave (sp: upright, below the grave's front edge, one more with each scoop that lands),
+  // the camera's middle (cx; upright also cy) and where the grave's rim lies on the page (gy, a share of its height); upright the grave is gw of the page's width
+  const grvLay = () => (grvPort()
+    ? { wx: -30, wy: -32, px: -62, py: -42, ps: 0.85, hx: -18, lx: 18, wb: true, sp: [[-46, 17, 0.4], [32, 21, 1.2], [-6, 44, 0.9], [-38, 21, -0.7], [54, 15, -0.3], [40, 50, 0.2]], bx: 36, by: -92, hz: -122, cx: 0, cy: -62, gw: 0.9, st: [[-58, 9, 0.9], [56, 5, 1], [26, -1, 0.65], [-34, -2, 0.6]] }
+    : { wx: -58, wy: -32, px: -106, py: -30, ps: 1, hx: -46, lx: 14, bx: 40, by: -68, hz: -74, cx: -22, gy: 0.76, st: [[92, 9, 1], [140, 3, 0.8], [-168, 6, 0.9], [-126, 15, 0.7]] });
+  // the loser in the grave: his feet (so that his eyes are a little above the middle of the opening), his eye line, and the chips' levels after each scoop
+  function grvFit() {
+    const Lp = L_(), h = Lp.s.h, leg = h * Lp.spec.look.leg, top = -h + 2, hip = -leg, cy = (hip + 5 + top) / 2, ry = (hip + 5 - top) / 2, eye = -5, feet = eye - (cy - ry * 0.28);
+    const l0 = GRV_F + 3, l3 = eye + 2;
+    return { feet, eye, lv: [l0, lerp(l0, l3, 0.36), lerp(l0, l3, 0.7), l3] };
+  }
+  // the stage, set for the time it is drawn or measured: he stands at the head of the grave, the loser in it facing him
+  function grvHome(fn) {
+    const W = W_(), Lp = L_(), Y = grvLay(), D = FIN.dir, s = [W.x, W.y, Lp.x, Lp.y, Lp.facing, Lp.state];
+    W.x = D * Y.wx; W.y = Y.wy; Lp.x = D * Y.lx; Lp.y = grvFit().feet; Lp.facing = -D; Lp.state = "fin";
+    try { return fn(); } finally { W.x = s[0]; W.y = s[1]; Lp.x = s[2]; Lp.y = s[3]; Lp.facing = s[4]; Lp.state = s[5]; }
+  }
+  // the loser standing in the grave: he doesn't move but to shiver, so his puppet is drawn once into a canvas of its own (when the splash is first
+  // drawn, or again if the page is resized) and copied from there, shaking a little; cut at the grave's front edge (the rest is under the earth)
+  let grvLC = null;
+  function grvLoser(c, pn, t) {
+    const Lp = L_(), DP = DPR, key = [MG.cw, MG.ch, pn.w, pn.h, pn.z, pn.wx, pn.wy].join("/");
+    if (!grvLC || grvLC.key !== key) {
+      const cv = grvLC && grvLC.cv.width === MG.cw && grvLC.cv.height === MG.ch ? grvLC.cv : mgCanvas(MG.cw, MG.ch), x = cv.getContext("2d"), bq = [-56, -108, 56, GRV_F + 3 - Lp.y], ox = pn.ox, oy = pn.oy;
+      x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cv.width, cv.height);
+      pn.ox = 0; pn.oy = 0;
+      try { mgPuppet(x, pn, Lp, MT.SPLASH + 1, { light: Math.PI - dirAng(-0.55), box: bq }); } finally { pn.ox = ox; pn.oy = oy; }
+      const [sx, sy] = pn.p(Lp.x, Lp.y), bx = Math.max(0, Math.floor((sx + bq[0] * pn.z) * DP)), by = Math.max(0, Math.floor((sy + bq[1] * pn.z) * DP));
+      grvLC = { cv, key, bx, by, bw: Math.min(MG.cw - bx, Math.ceil((bq[2] - bq[0]) * pn.z * DP) + 2), bh: Math.min(MG.ch - by, Math.ceil((bq[3] - bq[1]) * pn.z * DP) + 2) };
+    }
+    const G = grvLC, sh = MG.reduced ? 0 : Math.sin(t * 0.09) * 0.5 * DP;
+    if (G.bw <= 0 || G.bh <= 0) return;
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(G.cv, G.bx, G.by, G.bw, G.bh, G.bx + Math.round(pn.ox * DP + sh), G.by + Math.round(pn.oy * DP), G.bw, G.bh);
+    c.restore();
+  }
+  // the chips' level in the grave at t (each scoop's chips land with a little settle) and the gravy's (from GRV.POUR0 it rises over his eyes)
+  function grvLevel(t) {
+    const F = grvFit(); let lv = F.lv[0];
+    for (let k = 0; k < 3; k++) { const u = fe(grvLand(k), grvLand(k) + 90, t); if (u > 0) lv = lerp(F.lv[k], F.lv[k + 1], easeOut(u)) - 1.2 * Math.sin(Math.PI * u); }
+    return lv;
+  }
+  const grvGravy = (t) => { const F = grvFit(); return t < GRV.POUR0 + 20 ? null : lerp(F.lv[3] + 3, F.eye - 7, ease(fe(GRV.POUR0 + 20, GRV.POUR1 - 70, t))); };
+  // one chip: a stick of fried potato, (x, y) its middle, len long, turned by a, a browner tip at one end
+  function grvFry(c, x, y, len, a, lw) {
+    c.save(); c.translate(x, y); c.rotate(a);
+    c.beginPath(); c.rect(-len / 2, -1.35, len, 2.7); c.fillStyle = GRV_CHIP; c.fill(); c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.stroke();
+    c.fillStyle = GRV_CHIP_D; c.fillRect(len / 2 - 1.8, -1.35, 1.8, 2.7);
+    c.restore();
+  }
+  const GRV_HEAP = Array.from({ length: 17 }, (_, i) => { const u = (i + 0.5) / 17, top = -21 * Math.pow(Math.sin(Math.PI * u), 0.7); return [(u - 0.5) * 50 + ((i * 3.7) % 3) - 1.5, top + 1.2 + ((i * 1.9) % 3.2), ((i * 1.37) % 2.4) - 1.2]; });
+  const GRV_SURF = Array.from({ length: 15 }, (_, i) => [-54 + i * 7.7, ((i * 2.3) % 2.4) - 1.6, ((i * 0.83) % 1.6) - 0.8]);
+  const GRV_BOX = [-90, -128, 102, 22];   // what he and his scythe cover in the splash's poses (world units about his feet)
+  const GRV_CLUMP = [[0, 0, 0.3], [-4, -2.5, -0.6], [4, -2, 0.9], [-1.5, -4.5, 1.4], [2.5, 2, -0.2], [-4.5, 2, 0.5], [5, -5, -1]];
+
+  /* ---- the splash ---- */
+  function grvCam(t, pn) {
+    const Y = grvLay(), z = (Y.gw ? Y.gw * pn.w : 0.75 * Math.min(pn.w, pn.h)) / GRV_GW, vh = pn.h / z;   // (it holds still: the loser in the grave is drawn once, grvLoser)
+    return { wx: FIN.dir * Y.cx, wy: Y.cy !== undefined ? Y.cy : -(Y.gy - 0.5) * vh, vh };
+  }
+  // the graveyard behind: a light screen of sky, the horizon with grass, a few small stones, strokes on the ground
+  function grvBack(c, pn, t, Y) {
+    const D = FIN.dir, hz = pn.p(0, Y.hz)[1];
+    rprTone(c, pn, [[pn.x0 - 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 - 6], [pn.x1 + 6, hz], [pn.x0 - 6, hz]], 10, 0.08, [t * 0.0005, 0]);
+    c.fillStyle = INK; c.fillRect(pn.x0 - 6, hz - 1, pn.w + 12, Math.max(2, pn.z * 0.8));
+    pn.world(c);
+    const lw = Math.max(1.1, 3 / pn.z);
+    c.beginPath(); for (let x = -260; x < 260; x += 9) { const h = 1.6 + ((x * 7919) % 3); c.moveTo(x, Y.hz + 0.4); c.lineTo(x + 1.8, Y.hz - h); c.lineTo(x + 3.8, Y.hz + 0.4); } c.fillStyle = INK; c.fill();
+    const r = rprRng(91);
+    c.strokeStyle = INK; c.lineCap = "round";
+    for (let i = 0; i < 18; i++) { const x = -230 + r() * 460, y = Y.hz + 6 + r() * (GRV_F + 110 - Y.hz), len = 6 + r() * 18; c.lineWidth = lw * (0.4 + r() * 0.3); c.beginPath(); c.moveTo(x, y); c.lineTo(x + len, y); c.stroke(); }
+    c.beginPath();   // tufts of grass in front of the grave
+    for (const [x, y] of [[-70, GRV_F + 30], [-18, GRV_F + 46], [38, GRV_F + 26], [74, GRV_F + 58], [-48, GRV_F + 84], [12, GRV_F + 96]]) for (let j = -1; j <= 1; j++) { c.moveTo(D * x + j * 2.6 - 1, y); c.lineTo(D * x + j * 3.6, y - 4.5 + Math.abs(j) * 1.3); c.lineTo(D * x + j * 2.6 + 1, y); }
+    c.fill();
+    for (const [x, dy, s] of Y.st) {
+      const sx = D * x, sy = Y.hz + dy;
+      c.beginPath(); c.moveTo(sx - 6 * s, sy); c.lineTo(sx - 6 * s, sy - 10 * s); c.arc(sx, sy - 10 * s, 6 * s, Math.PI, 0); c.lineTo(sx + 6 * s, sy); c.closePath();
+      c.fillStyle = "#d9d6cf"; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+      c.lineWidth = lw * 0.7; c.beginPath(); c.moveTo(sx - 2.5 * s, sy - 10 * s); c.lineTo(sx + 2.5 * s, sy - 10 * s); c.moveTo(sx, sy - 12.5 * s); c.lineTo(sx, sy - 6 * s); c.stroke();
+    }
+    pn.screen(c);
+  }
+  // the dot screen over the path just built (in screen space, like all the page's tone)
+  function grvToneHere(c, size, cover) { if (MG.slow) return; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(size || 6, cover || 0.5); c.fill(); c.restore(); }
+  // the heap he digs from: a mound of chips (where the earth of a grave would be), fries all over it, its far side in tone
+  function grvHeap(c, x, y, s, lw) {   // (drawn at s times its size)
+    c.save(); c.translate(x, y); c.scale(s, s);
+    try { grvHeapAt(c, 0, 0, lw / s); } finally { c.restore(); }
+  }
+  function grvHeapAt(c, x, y, lw) {
+    const D = FIN.dir, mound = () => { c.beginPath(); c.moveTo(x - 28, y + 2); c.bezierCurveTo(x - 21, y - 14, x - 10, y - 22, x, y - 22); c.bezierCurveTo(x + 10, y - 22, x + 21, y - 14, x + 28, y + 2); c.closePath(); };
+    mound(); c.fillStyle = GRV_CHIP; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.save(); mound(); c.clip();
+    c.strokeStyle = GRV_CHIP_D; c.lineWidth = lw * 0.8; c.lineCap = "round";
+    for (let i = 0; i < 12; i++) { const px = x - 20 + ((i * 7.3) % 40), py = y - 3 - ((i * 5.1) % 14), a = ((i * 1.7) % 2.4) - 1.2; c.beginPath(); c.moveTo(px - 4 * Math.cos(a), py - 4 * Math.sin(a)); c.lineTo(px + 4 * Math.cos(a), py + 4 * Math.sin(a)); c.stroke(); }
+    c.beginPath(); c.rect(D > 0 ? x + 9 : x - 30, y - 24, 21, 28); grvToneHere(c, 6, 0.35);
+    c.restore();
+    for (const [dx, dy, a] of GRV_HEAP) grvFry(c, x + dx, y + dy, 10, a, lw);
+  }
+  // the grave: turned earth round its opening, the far wall in shade, the dark pit
+  const grvPit = (c) => { const hw = GRV_GW / 2; c.beginPath(); c.moveTo(-hw, GRV_B); c.lineTo(hw, GRV_B); c.lineTo(hw + 3, GRV_F); c.lineTo(-hw - 3, GRV_F); c.closePath(); };
+  function grvHole(c, lw) {
+    const hw = GRV_GW / 2;
+    c.strokeStyle = INK;
+    for (const sd of [-1, 1]) {   // loose earth heaped at both ends
+      c.beginPath(); c.moveTo(sd * (hw - 4), GRV_B - 1); c.quadraticCurveTo(sd * (hw + 6), GRV_B - 7, sd * (hw + 13), GRV_B + 6); c.quadraticCurveTo(sd * (hw + 17), GRV_F - 2, sd * (hw + 12), GRV_F + 3); c.lineTo(sd * (hw + 3), GRV_F); c.closePath();
+      c.fillStyle = GRV_EARTH; c.fill(); c.lineWidth = lw; c.stroke();
+      c.save(); c.clip(); c.beginPath(); c.rect(sd > 0 ? hw : -hw - 20, GRV_B - 8, 20, 30); grvToneHere(c, 6, 0.3); c.restore();
+    }
+    grvPit(c); c.fillStyle = GRV_PIT; c.fill(); c.lineWidth = lw * 1.2; c.stroke();
+    c.beginPath(); c.moveTo(-hw, GRV_B); c.lineTo(hw, GRV_B); c.lineTo(hw - 2, GRV_B + 13); c.lineTo(-hw + 2, GRV_B + 13); c.closePath();
+    c.fillStyle = GRV_WALL; c.fill(); grvToneHere(c, 6, 0.4);
+    c.lineWidth = lw * 0.7; c.beginPath(); c.moveTo(-hw + 2, GRV_B + 13); c.lineTo(hw - 2, GRV_B + 13); c.stroke();
+    c.fillStyle = "#8a6646";   // clods along the back edge
+    for (let i = 0; i < 9; i++) { const x = -hw + 4 + i * 14; c.beginPath(); c.ellipse(x, GRV_B - 2.2, 4.4, 1.9, 0, 0, TAU); c.fill(); c.lineWidth = lw * 0.6; c.stroke(); }
+  }
+  // the chips in the grave up to lv (inside the pit), fries sticking out of the top
+  function grvFill(c, lv, lw) {
+    if (lv > GRV_F + 1) return;
+    const hw = GRV_GW / 2 + 3;
+    c.save(); grvPit(c); c.clip();
+    c.beginPath(); c.moveTo(-hw, GRV_F + 4);
+    for (let i = 0; i <= 14; i++) c.lineTo(-hw + (i / 14) * 2 * hw, lv + (i % 2 ? -1.2 : 0.8));
+    c.lineTo(hw, GRV_F + 4); c.closePath();
+    c.fillStyle = GRV_CHIP; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.strokeStyle = GRV_CHIP_D; c.lineWidth = lw * 0.8; c.lineCap = "round";
+    for (let i = 0; i < 14; i++) { const x = -hw + 6 + i * 8.6, y = lv + 4 + ((i * 3.3) % 9), a = ((i * 1.3) % 2) - 1; c.beginPath(); c.moveTo(x - 4 * Math.cos(a), y - 4 * Math.sin(a)); c.lineTo(x + 4 * Math.cos(a), y + 4 * Math.sin(a)); c.stroke(); }
+    c.restore();
+    for (const [x, dy, a] of GRV_SURF) grvFry(c, x, lv + dy, 10, a, lw);
+  }
+  // the gravy over the chips up to gv (inside the pit), a shine on it
+  function grvGravyFill(c, gv, t, lw) {
+    const hw = GRV_GW / 2 + 3;
+    c.save(); grvPit(c); c.clip();
+    c.beginPath(); c.moveTo(-hw, GRV_F + 4);
+    for (let i = 0; i <= 16; i++) c.lineTo(-hw + (i / 16) * 2 * hw, gv + 0.7 * Math.sin(t * 0.012 + i * 1.3));
+    c.lineTo(hw, GRV_F + 4); c.closePath();
+    c.fillStyle = GRV_GRAVY; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.strokeStyle = GRV_GRAVY_L; c.lineWidth = lw * 1.3; c.lineCap = "round";
+    for (const [x0, x1, dy] of [[-44, -22, 3], [-12, 2, 7], [30, 46, 4]]) { c.beginPath(); c.moveTo(x0, gv + dy); c.quadraticCurveTo((x0 + x1) / 2, gv + dy - 1.4, x1, gv + dy); c.stroke(); }
+    c.restore();
+  }
+  // the near edge of the grave: the earth in front, which hides his legs; gravy runs over it once it has risen
+  function grvLip(c, t, lw, gv) {
+    const hw = GRV_GW / 2;
+    c.fillStyle = PAPER; c.fillRect(-hw - 3, GRV_F, GRV_GW + 6, 90);
+    // a low ridge of turned earth along the front edge, its lower edge lumpy
+    c.beginPath(); c.moveTo(-hw - 12, GRV_F + 3); c.quadraticCurveTo(-hw - 8, GRV_F - 1, -hw - 3, GRV_F); c.lineTo(hw + 3, GRV_F); c.quadraticCurveTo(hw + 8, GRV_F - 1, hw + 12, GRV_F + 3);
+    for (let i = 12; i >= 0; i--) { const x = -hw - 8 + (i / 12) * (GRV_GW + 16); c.quadraticCurveTo(x + (GRV_GW + 16) / 24, GRV_F + 7.5, x, GRV_F + 5 + (i % 3 === 1 ? 1 : 0)); }
+    c.closePath(); c.fillStyle = GRV_EARTH; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.lineWidth = lw * 1.4; c.beginPath(); c.moveTo(-hw - 3, GRV_F); c.lineTo(hw + 3, GRV_F); c.stroke();
+    if (gv === null) return;
+    const k = fe(GRV.POUR0 + 160, GRV.POUR1, t);
+    if (k <= 0) return;
+    for (const [x, len] of [[-36, 7], [-8, 10], [25, 5.5], [44, 8.5]]) {   // gravy running over the edge
+      const l = len * easeOut(k);
+      c.beginPath(); c.moveTo(x - 2.4, GRV_F - 0.5); c.lineTo(x - 1.9, GRV_F + l); c.arc(x, GRV_F + l, 1.9, Math.PI, 0, true); c.lineTo(x + 2.4, GRV_F - 0.5); c.closePath();
+      c.fillStyle = GRV_GRAVY; c.fill(); c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.stroke();
+    }
+  }
+  // his tiny sign on a stick: "help"
+  function grvSign(c, pn, t, lw) {
+    const Lp = L_(); MG.pt = t;
+    const P = pose(Lp, mgTk(t)), hx = Lp.x + Lp.facing * P.hF[0], hy = Lp.y + P.hF[1], a = 0.12 * Math.sin(t * 0.021) - 0.08 * FIN.dir;
+    c.save(); c.translate(hx, hy); c.rotate(a);
+    c.strokeStyle = INK; c.lineCap = "round"; c.lineWidth = 2.2 + lw; c.beginPath(); c.moveTo(0, 2); c.lineTo(0, -11); c.stroke(); c.strokeStyle = "#b07c52"; c.lineWidth = 2.2; c.stroke();
+    c.beginPath(); c.rect(-9, -20, 18, 10); c.fillStyle = "#fbf6e8"; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.fillStyle = INK; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `800 italic 8px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`; c.fillText("help", 0, -14.8);
+    c.restore();
+  }
+  // where the head of his scythe is (world units), from his pose at t
+  function grvHead(t) {
+    const W = W_(); MG.pt = t;
+    const P = pose(W, mgTk(t)), a = P.holdAng || 0, L = P.w * SCY.head * (P.scyK == null ? 1 : P.scyK);
+    return [W.x + W.facing * (P.hF[0] + Math.cos(a) * L), W.y + P.hF[1] + Math.sin(a) * L];
+  }
+  // the chips: a clump on the blade from the dig to the fling, then flying in an arc into the grave
+  function grvScoops(c, t, lw) {
+    const D = FIN.dir, F = grvFit();
+    for (let k = 0; k < 3; k++) {
+      const s = GRV.SC[k];
+      if (t >= s + 40 && t < grvRel(k)) { const h = grvHead(t); for (const [dx, dy, a] of GRV_CLUMP) grvFry(c, h[0] + dx * 1.3, h[1] + dy * 1.3 - 4, 10, a, lw); continue; }
+      if (t < grvRel(k) || t >= grvLand(k)) continue;
+      const u = fe(grvRel(k), grvLand(k), t), R = grvHead(grvRel(k)), T = [D * (-6 + (k - 1) * 20), F.lv[k + 1] - 2], top = Math.min(R[1], T[1]) - 12;
+      const x = lerp(R[0], T[0], u), y = (1 - u) * (1 - u) * R[1] + 2 * u * (1 - u) * top + u * u * T[1];
+      GRV_CLUMP.forEach(([dx, dy, a], i) => grvFry(c, x + dx * (1.3 + u * 1.6), y + dy * (1.3 + u), 10, a + D * u * (3 + i), lw));
+    }
+  }
+  // the gravy boat: a little tombstone with a spout at its top corner and a handle at its back, R.I.P. cut in it; (x, y) its middle, tilted by a
+  function grvBoat(c, x, y, a, lw) {
+    const D = -FIN.dir;   // (its spout faces back toward him, over the grave)
+    c.save(); c.translate(x, y); c.rotate(D * a); c.scale(D, 1);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    c.beginPath(); c.moveTo(-12, -6); c.bezierCurveTo(-21, -6, -21, 8, -12, 8); c.lineWidth = 3 + lw * 2; c.stroke(); c.strokeStyle = "#9da1aa"; c.lineWidth = 3; c.stroke(); c.strokeStyle = INK;   // the handle
+    const body = () => { c.beginPath(); c.moveTo(-12, 15); c.lineTo(-12, -3); c.arc(0, -3, 12, Math.PI, 0); c.lineTo(12, 15); c.closePath(); };
+    body(); c.fillStyle = "#c4c7ce"; c.fill();
+    if (!MG.slow) { c.save(); c.clip(); c.beginPath(); c.rect(6, -16, 8, 32); grvToneHere(c); c.restore(); }
+    body(); c.lineWidth = lw * 1.2; c.stroke();
+    c.beginPath(); c.moveTo(9, -10); c.lineTo(20, -15); c.lineTo(17, -8); c.lineTo(11, -3); c.closePath(); c.fillStyle = "#c4c7ce"; c.fill(); c.lineWidth = lw; c.stroke();   // the spout
+    c.beginPath(); c.moveTo(11, -9.5); c.lineTo(18, -13.4); c.lineWidth = 2; c.strokeStyle = GRV_GRAVY; c.stroke();                 // gravy at its lip
+    c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.beginPath(); c.moveTo(-7, 12); c.lineTo(-4, 9); c.lineTo(-6, 6); c.stroke();     // a crack
+    c.scale(D, 1);   // (the lettering reads the right way round)
+    c.fillStyle = INK; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `900 italic 7.5px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`; c.fillText("R.I.P.", 0, 2);
+    c.restore();
+  }
+  const grvTilt = (t) => 1.05 * ease(fe(GRV.TILT0, GRV.TILT0 + 90, t)) * (1 - ease(fe(GRV.POUR1, GRV.BOAT1, t)));
+  function grvBoatAt(t) {   // [x, y, tilt, alpha]: it floats down in, tilts and pours, tilts back and floats up away
+    const Y = grvLay(), D = FIN.dir, inn = easeOut(fe(GRV.BOAT0, GRV.BOAT0 + 90, t)), out = easeIn(fe(GRV.BOAT1 + 20, GRV.BOAT1 + 160, t));
+    return [D * Y.bx, Y.by - 40 * (1 - inn) - 50 * out + 1.5 * Math.sin(t * 0.009), grvTilt(t), inn * (1 - out)];
+  }
+  const grvSpout = (B) => { const D = -FIN.dir, a = D * B[2], x = 20 * D, y = -15; return [B[0] + x * Math.cos(a) - y * Math.sin(a), B[1] + x * Math.sin(a) + y * Math.cos(a)]; };
+  // the boat, the gravy pouring from its spout onto the grave, the splash at its foot
+  function grvPour(c, t, lw) {
+    if (t < GRV.BOAT0 || t > GRV.BOAT1 + 180) return;
+    const B = grvBoatAt(t);
+    if (B[3] <= 0.02) return;
+    c.save(); c.globalAlpha = B[3];   // (it fades in as it floats down, and out as it floats away)
+    grvBoat(c, B[0], B[1], B[2], lw);
+    c.restore();
+    const gv = grvGravy(t), on = fe(GRV.POUR0, GRV.POUR0 + 50, t), off = fe(GRV.POUR1, GRV.POUR1 + 60, t);
+    if (on <= 0 || off >= 1) return;
+    const S = grvSpout(B), D = FIN.dir, foot = gv === null ? grvLevel(t) - 2 : gv - 1, y0 = lerp(S[1], foot, off), y1 = lerp(S[1], foot, on);
+    // the stream: a ribbon of gravy that leaves the spout, curls down and widens as it falls, its edges wavering
+    const span = Math.max(1, foot - S[1]), vAt = (y) => clamp((y - S[1]) / span, 0, 1);
+    const xs = (y) => { const v = vAt(y); return S[0] - D * 5 * Math.sqrt(v) + Math.sin(t * 0.035 + v * 7) * 0.8 * v; }, ws = (y) => 2.1 + 2 * vAt(y);
+    const n = 14, Lf = [], Rt = [];
+    for (let i = 0; i <= n; i++) { const y = lerp(y0, y1, i / n), x = xs(y), w = ws(y) + 0.3 * Math.sin(t * 0.05 + i * 1.7); Lf.push([x - w, y]); Rt.push([x + w, y]); }
+    c.beginPath(); Lf.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); for (let i = n; i >= 0; i--) c.lineTo(Rt[i][0], Rt[i][1]); c.closePath();
+    c.fillStyle = GRV_GRAVY; c.fill(); c.lineWidth = lw * 0.9; c.strokeStyle = INK; c.lineJoin = "round"; c.stroke();
+    c.beginPath(); for (let i = 1; i < n; i++) { const y = lerp(y0, y1, i / n), x = xs(y) - D * ws(y) * 0.35; i > 1 ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.strokeStyle = GRV_GRAVY_L; c.lineWidth = lw * 0.9; c.lineCap = "round"; c.stroke();
+    const x1 = xs(y1);
+    if (on >= 1 && off <= 0) {   // where it lands: a ring on the gravy
+      c.beginPath(); c.ellipse(x1, y1 + 0.5, 6 + Math.sin(t * 0.03), 1.6, 0, 0, TAU); c.fillStyle = GRV_GRAVY; c.fill(); c.lineWidth = lw * 0.7; c.strokeStyle = INK; c.stroke();
+    }
+    if (on >= 1 && off <= 0) {   // drops thrown up where it lands
+      c.fillStyle = GRV_GRAVY; c.strokeStyle = INK; c.lineWidth = lw * 0.6;
+      for (let i = 0; i < 4; i++) { const ph = ((t * 0.012 + i * 0.27) % 1), dx = (i % 2 ? 1 : -1) * (3 + i * 2) * ph, dy = -7 * Math.sin(Math.PI * ph); c.beginPath(); c.arc(x1 + dx, y1 + dy, 1.2, 0, TAU); c.fill(); c.stroke(); }
+    }
+  }
+  // blub: one bubble swells on the gravy beside him and pops
+  function grvBlub(c, t, lw) {
+    const u = fe(GRV.BLUB, GRV.BLUB + 110, t), gv = grvGravy(t);
+    if (gv === null || u <= 0 || t > GRV.BLUB + 220) return;
+    const x = -FIN.dir * 22, y = gv - 1;
+    c.strokeStyle = INK; c.lineWidth = lw * 0.8;
+    if (u < 1) { const r = 1 + 3.2 * easeOut(u); c.beginPath(); c.arc(x, y - r * 0.6, r, Math.PI, 0); c.fillStyle = GRV_GRAVY; c.fill(); c.stroke(); c.strokeStyle = GRV_GRAVY_L; c.beginPath(); c.arc(x - r * 0.3, y - r * 0.9, r * 0.35, 3.6, 4.6); c.stroke(); return; }
+    const k = fe(GRV.BLUB + 110, GRV.BLUB + 220, t);   // popped: four flecks
+    for (let i = 0; i < 4; i++) { const an = -Math.PI * (0.15 + i * 0.23), r = 3 + 6 * k; c.beginPath(); c.moveTo(x + Math.cos(an) * r, y + Math.sin(an) * r); c.lineTo(x + Math.cos(an) * (r + 2.2), y + Math.sin(an) * (r + 2.2)); c.stroke(); }
+  }
+  // his eyes, bobbing up out of the gravy (blinking now and then)
+  function grvEyes(c, t, lw) {
+    const u = fe(GRV.BOB, GRV.BOB + 120, t);
+    if (u <= 0) return;
+    const Lp = L_(), w = Lp.s.w, gv = grvGravy(t), D = FIN.dir, x = Lp.x - D * w * 0.16, y = gv - 1.5 - 3 * easeOut(u) + 1.2 * Math.sin(Math.PI * fe(GRV.BOB + 120, GRV.BOB + 300, t)) + 0.6 * Math.sin(t * 0.01);
+    const blink = Math.abs(t - 4480) < 45 || Math.abs(t - 4660) < 45, er = w * 0.1;
+    for (const sd of [-1, 1]) {
+      const ex = x + sd * w * 0.14;
+      if (blink) { c.strokeStyle = INK; c.lineWidth = lw * 1.2; c.beginPath(); c.moveTo(ex - er, y); c.lineTo(ex + er, y); c.stroke(); continue; }
+      c.beginPath(); c.ellipse(ex, y, er, er * 1.1, 0, 0, TAU); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+      c.beginPath(); c.arc(ex - D * er * 0.25, y - er * 0.15, er * 0.45, 0, TAU); c.fillStyle = INK; c.fill();
+    }
+    c.save(); c.beginPath(); c.rect(x - w * 0.4, y + 0.2, w * 0.8, 6); c.fillStyle = GRV_GRAVY; c.fill(); c.restore();   // (the gravy over their lower half)
+    c.strokeStyle = INK; c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(x - w * 0.36, y + 0.4); c.quadraticCurveTo(x, y + 1.6, x + w * 0.36, y + 0.4); c.stroke();
+  }
+  // the headstone: one chip in his hand from GRV.CHIP0, planted at the head of the grave, leaning over, then flopping
+  function grvStone(c, t, lw) {
+    if (t < GRV.CHIP0) return;
+    const Y = grvLay(), D = FIN.dir;
+    let x, y, a;
+    if (t < GRV.PLANT) { const W = W_(); MG.pt = t; const P = pose(W, mgTk(t)); x = W.x + W.facing * P.hB[0]; y = W.y + P.hB[1] + GRV_STONE_H; a = -D * 0.3 * (1 - fe(GRV.CHIP0, GRV.PLANT, t)); }
+    else { x = D * Y.hx; y = GRV_STONE_Y; a = D * (0.32 * ease(fe(GRV.PLANT + 80, GRV.FLOP, t)) + 0.95 * easeIn(fe(GRV.FLOP, GRV.FLOP + 70, t)) - 0.06 * Math.sin(Math.PI * fe(GRV.FLOP + 70, GRV.FLOP + 180, t))); }
+    c.save(); c.translate(x, y); c.rotate(a);
+    c.beginPath(); c.roundRect(-5, -31, 10, 32, [4, 4, 1, 1]); c.fillStyle = GRV_CHIP; c.fill(); c.lineWidth = lw * 1.1; c.strokeStyle = INK; c.stroke();
+    c.fillStyle = GRV_CHIP_D; c.fillRect(2.4, -26, 1.4, 24);
+    c.fillStyle = INK; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `900 6.5px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
+    ["R", "I", "P"].forEach((ch, i) => c.fillText(ch, -0.6, -24 + i * 6.6));
+    c.restore();
+    const k = fe(GRV.PLANT, GRV.PLANT + 200, t);   // planted: little marks either side
+    if (k > 0 && k < 1) { c.save(); c.globalAlpha = 1 - k; c.strokeStyle = INK; c.lineWidth = lw; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(D * Y.hx + sd * (6 + 5 * k), GRV_STONE_Y - 1); c.lineTo(D * Y.hx + sd * (10 + 5 * k), GRV_STONE_Y - 4); c.stroke(); } c.restore(); }
+  }
+  // THUD: the scythe planted, dust puffs at its foot
+  function grvThud(c, pn, t) {
+    const u = fe(MT.SPLASH, MT.SPLASH + 500, t);
+    if (u <= 0 || u >= 1) return;
+    const W = W_(); MG.pt = t;
+    const P = pose(W, mgTk(t)), a = P.holdAng || 0, b = P.w * SCY.butt, q = pn.p(W.x + W.facing * (P.hF[0] - Math.cos(a) * b), W.y + P.hF[1] - Math.sin(a) * b), z = pn.z;
+    pn.screen(c);
+    for (const sd of [-1, 1]) grvPuff(c, pn, q[0] + sd * (5 + 12 * easeOut(u)) * z, q[1] - 2 * z - 4 * u * z, (2 + 3 * easeOut(u)) * z, 1 - u);
+    pn.world(c);
+  }
+  // a puff of dust: paper with an ink edge and a little tone
+  function grvPuff(c, pn, x, y, r, a) {
+    if (r < 1.2 || a <= 0.02) return;
+    c.save(); c.globalAlpha = a;
+    for (const [dx, dy, k] of [[0, 0, 1], [r * 0.7, -r * 0.3, 0.6], [-r * 0.6, -r * 0.2, 0.55]]) { c.beginPath(); c.arc(x + dx, y + dy, r * k + 1.2, 0, TAU); c.fillStyle = INK; c.fill(); }
+    for (const [dx, dy, k] of [[0, 0, 1], [r * 0.7, -r * 0.3, 0.6], [-r * 0.6, -r * 0.2, 0.55]]) { c.beginPath(); c.arc(x + dx, y + dy, r * k, 0, TAU); c.fillStyle = PAPER; c.fill(); }
+    c.restore();
+  }
+  function grvDrawSplash(c, pn, t) {
+    const Y = grvLay(), D = FIN.dir, lw = Math.max(1.1, 3 / pn.z), lv = grvLevel(t), gv = grvGravy(t);
+    pn.screen(c);
+    grvBack(c, pn, t, Y);
+    rprTone(c, pn, [pn.p(D * Y.wx - 30, Y.wy + 0.5), pn.p(D * Y.wx + 30, Y.wy + 0.5), pn.p(D * Y.wx + 26, Y.wy + 5), pn.p(D * Y.wx - 26, Y.wy + 5)], 6, 0.45);   // his shadow
+    pn.world(c);
+    grvHeap(c, D * Y.px, Y.py, Y.ps, lw);
+    grvHole(c, lw);
+    const drawW = () => { mgPuppet(c, pn, W_(), t, { light: dirAng(-0.55), box: GRV_BOX }); pn.world(c); };
+    grvHome(() => {
+      if (Y.wb) drawW();
+      grvLoser(c, pn, t);
+      pn.world(c);
+      grvFill(c, lv, lw);
+      if (gv !== null) grvGravyFill(c, gv, t, lw);
+      grvLip(c, t, lw, gv);
+      if (Y.sp) Y.sp.forEach(([x, y, a], i) => { if (t >= grvLand(i % 3)) grvFry(c, D * x, GRV_F + y, 10, D * a, lw); });
+      grvSign(c, pn, t, lw);
+      grvBlub(c, t, lw);
+      grvEyes(c, t, lw);
+      if (!Y.wb) drawW();
+      grvStone(c, t, lw);
+      grvScoops(c, t, lw);
+      grvThud(c, pn, t);
+      grvPour(c, t, lw);
+    });
+    pn.screen(c);
+  }
+
+  /* ---- panel 4: the bowl heaped like a grave mound, chips 'n' gravy, the fork with a chip across it; after the pop a smear, a chip, the fork fallen ---- */
+  const grvBowlX = (t) => wX(t) + FIN.dir * 62;
+  function grvBowl(c, pn, t, x) {
+    const D = FIN.dir, lw = ripLw(pn), popped = mgPopped(t);
+    pn.world(c);
+    c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
+    c.fillStyle = "#6f5a49"; c.beginPath(); c.ellipse(x, -17, 22, 4.6, 0, Math.PI, TAU); c.fill(); c.lineWidth = lw; c.stroke();   // the back of the rim, inside
+    if (!popped) {
+      // the mound: chips heaped over the rim, glazed with gravy running down, his eyes in it, the fork with a chip across it
+      c.beginPath(); c.moveTo(x - 21, -17); c.bezierCurveTo(x - 20, -31, x - 9, -36, x, -36); c.bezierCurveTo(x + 9, -36, x + 20, -31, x + 21, -17); c.closePath();
+      c.fillStyle = GRV_CHIP; c.fill(); c.lineWidth = lw; c.stroke();
+      for (const [dx, dy, a] of [[-15, -21, -0.9], [-8, -29, -0.4], [9, -30, 0.5], [16, -22, 1.0], [2, -33, 0.1], [-2, -25, 1.3], [12, -25, -0.3]]) grvFry(c, x + dx, dy, 8.5, a, lw);
+      c.beginPath(); c.moveTo(x - 17, -26); c.bezierCurveTo(x - 11, -37.5, x + 11, -37.5, x + 17, -26);   // the gravy over its top, running down in three drips
+      for (const [dx, len] of [[13, 6], [3, 9], [-9, 7]]) { c.lineTo(x + dx + 2.2, -26 + len * 0.3); c.lineTo(x + dx + 1.4, -26 + len); c.arc(x + dx, -26 + len, 1.4, 0, Math.PI); c.lineTo(x + dx - 2.2, -26 + len * 0.3); }
+      c.closePath(); c.fillStyle = GRV_GRAVY; c.fill(); c.lineWidth = lw; c.stroke();
+      c.strokeStyle = GRV_GRAVY_L; c.lineWidth = lw * 1.2; c.beginPath(); c.moveTo(x - 9, -33); c.quadraticCurveTo(x - 4, -35.4, x + 1, -35); c.stroke();
+      const blink = Math.abs(t - 5020) < 55 || Math.abs(t - 5190) < 45, ex = x - D * 5;
+      for (const sd of [-1, 1]) {
+        const e = ex + sd * 3.6;
+        if (blink) { c.strokeStyle = INK; c.lineWidth = lw * 1.1; c.beginPath(); c.moveTo(e - 2, -29); c.lineTo(e + 2, -29); c.stroke(); continue; }
+        c.beginPath(); c.ellipse(e, -29.3, 2.1, 2.4, 0, 0, TAU); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = INK; c.stroke();
+        c.beginPath(); c.arc(e - D * 0.5, -29.6, 1, 0, TAU); c.fillStyle = INK; c.fill();
+      }
+      // the fork, stuck in upright, a chip tied across it: the cross
+      const fx = x + D * 8;
+      c.strokeStyle = INK; c.lineWidth = 2.4 + lw * 1.6; c.beginPath(); c.moveTo(fx, -33); c.lineTo(fx, -58); c.stroke(); c.strokeStyle = "#c9ccd3"; c.lineWidth = 2.4; c.stroke();
+      grvFry(c, fx, -51, 13, 0, lw);
+      c.strokeStyle = INK; c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(fx - 1.6, -53); c.lineTo(fx + 1.6, -49); c.moveTo(fx + 1.6, -53); c.lineTo(fx - 1.6, -49); c.stroke();   // its string
+      // steam: three curls
+      c.save(); c.globalAlpha = 0.75 * fe(MT.AFTER, MT.AFTER + 200, t); c.lineWidth = lw * 0.8;
+      for (let i = 0; i < 3; i++) {
+        const sx = x - D * 14 + i * 9, ph = ((t - MT.AFTER) * 0.02 + i * 7) % 24;
+        c.beginPath(); for (let j = 0; j <= 9; j++) { const yy = -40 - ph - j * 2, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      }
+      c.restore();
+    } else {
+      // a smear of gravy, one chip left, the fork fallen across the rim
+      c.beginPath(); c.ellipse(x - D * 3, -17.6, 13, 2.4, 0.04 * D, 0, TAU); c.fillStyle = GRV_GRAVY; c.fill();
+      c.beginPath(); c.ellipse(x + D * 9, -17.2, 4.5, 1.2, 0, 0, TAU); c.fill();
+      grvFry(c, x + D * 6, -19.5, 9, D * 0.25, lw);
+    }
+    // the bowl's body: earthenware, a band of tone on the far side, a foot
+    const body = () => { c.beginPath(); c.moveTo(x - 22, -17); c.bezierCurveTo(x - 21, -5, x - 12, -1.5, x - 9, -1.5); c.lineTo(x + 9, -1.5); c.bezierCurveTo(x + 12, -1.5, x + 21, -5, x + 22, -17); c.ellipse(x, -17, 22, 4.6, 0, 0, Math.PI); c.closePath(); };
+    c.fillStyle = "#c98a5a"; body(); c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+    c.beginPath(); c.rect(x - 9, -2, 18, 2.4); c.fillStyle = "#a96f45"; c.fill(); c.stroke();
+    c.strokeStyle = "#f3d9b8"; c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(x - 16, -11); c.quadraticCurveTo(x - 6, -8.5, x + 4, -9); c.stroke();   // a painted band
+    pn.screen(c);
+    rprTone(c, pn, [pn.p(x + D * 10, -16), pn.p(x + D * 21.5, -16), pn.p(x + D * 13, -2), pn.p(x + D * 8, -1.5)], 6, 0.4);
+    pn.world(c);
+    if (popped) {   // the fork, fallen over the rim
+      c.save(); c.translate(x - D * 4, -19); c.rotate(D * 0.32);
+      c.strokeStyle = INK; c.lineWidth = 2.4 + lw * 1.6; c.beginPath(); c.moveTo(-14 * D, 0); c.lineTo(14 * D, 0); c.stroke(); c.strokeStyle = "#c9ccd3"; c.lineWidth = 2.4; c.stroke();
+      c.strokeStyle = INK; c.lineWidth = lw * 0.9; c.beginPath(); for (const o of [-1.6, 0, 1.6]) { c.moveTo(14 * D, o); c.lineTo(19 * D, o); } c.stroke();
+      c.restore();
+    }
+    // the pop sprays gravy: brown drops thrown out and falling
+    const u = t - MT.POP;
+    if (u > 0 && u < 420) {
+      c.fillStyle = GRV_GRAVY; c.strokeStyle = INK; c.lineWidth = lw * 0.6;
+      for (let i = 0; i < 12; i++) {
+        const an = -Math.PI * (0.08 + 0.84 * i / 11), v = 0.14 + (i % 3) * 0.05, s = u * v, x1 = x + Math.cos(an) * s * 1.3, y1 = -30 + Math.sin(an) * s + 0.00028 * u * u;
+        const r = 2.6 - 1.2 * (u / 420);
+        c.beginPath(); c.arc(x1, y1, r, 0, TAU); c.fill(); c.stroke();
+      }
+    }
+    pn.screen(c);
+  }
+  function grvDrawAfter(c, pn, t) {
+    const W = W_();
+    pn.screen(c);
+    rprSky(c, pn, t, 0.4);
+    rprGround(c, pn, t);
+    mgPuppet(c, pn, W, t, { light: dirAng(-0.55), box: BOX });   // in his own colours: the lights are on
+    grvBowl(c, pn, t, grvBowlX(t));
+  }
+  /* ---- the poses in the splash: his scythe planted, the three scoops, onto his shoulder, beckoning the gravy boat, the chip planted, the bow; the loser holding up his sign ---- */
+  // keyframes of the front hand and the scythe: [hand x (w), hand height (tor above the hips' line), angle, crouch, lean]: planted beside him (PL),
+  // dug into the heap behind him (DG), flung over his head (FL), on his shoulder (SH)
+  const GRV_PL = [0.72, 0.12, -Math.PI / 2 - 0.06 + TAU, 0, 0.04], GRV_DG = [-0.2, 0.35, Math.PI - 0.75, 0.32, -0.1], GRV_FL = [0.6, 0.7, TAU - 0.35, 0, 0.05], GRV_SH = [0.62, 0.75, TAU - 2.25, 0, -0.04];
+  const GRV_KEYS = [[3290, GRV_PL]].concat(...GRV.SC.map((s) => [[s + 35, GRV_DG], [s + 50, GRV_DG], [s + 92, GRV_FL], [s + 160, GRV_FL]]), [[GRV.SHOULDER, GRV_SH]]);
+  function grvPoseW(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor, Y = grvLay();
+    let i = 0; while (i < GRV_KEYS.length - 1 && t >= GRV_KEYS[i + 1][0]) i++;
+    const [t0, A] = GRV_KEYS[i], [t1, B] = GRV_KEYS[Math.min(i + 1, GRV_KEYS.length - 1)], k = t1 > t0 ? ease(fe(t0, t1, t)) : 1, m = (j) => lerp(A[j], B[j], k);
+    P.exK = 1; P.scyK = 1; P.bladeS = 1; P.scyBack = false; P.expr = "grin";
+    P.holdAng = m(2); P.crouch = m(3); P.lean = m(4);
+    const hF = [w * m(0), -leg - tor * m(1)], rest = [-w * 0.62, -leg - tor * 0.3];
+    let hB = rest;
+    // the gravy boat: he beckons it over the grave, his back hand up and forward, fingers waving
+    const bk = ease(fe(GRV.BOAT0 - 30, GRV.BOAT0 + 60, t)) * (1 - ease(fe(GRV.BOAT1, GRV.BOAT1 + 60, t)));
+    if (bk > 0) hB = lerp2(hB, [w * 0.78 + Math.sin(t * 0.03) * 2, -leg - tor * 1.02], bk);
+    // the chip: up, then down to the head of the grave (he bends for it), then back to his side
+    const ck = ease(fe(GRV.CHIP0, GRV.CHIP0 + 40, t)), pk = ease(fe(GRV.CHIP0 + 30, GRV.PLANT, t)), rk = ease(fe(GRV.PLANT + 20, GRV.BOW0, t));
+    if (ck > 0 && rk < 1) {
+      const up = [w * 0.5, -leg - tor * 0.8], spot = [Y.hx - Y.wx, GRV_STONE_Y - GRV_STONE_H - Y.wy];
+      hB = lerp2(lerp2(lerp2(rest, up, ck), spot, pk), rest, rk);
+      const bend = Math.sin(Math.PI * fe(GRV.CHIP0 + 20, GRV.BOW0, t));
+      P.crouch = Math.max(P.crouch, 0.45 * bend); P.lean += 0.28 * bend;
+    }
+    // the bow: head down, eyes shut
+    const bw = ease(fe(GRV.BOW0, GRV.BOW0 + 120, t));
+    if (bw > 0) { P.lean += 0.16 * bw; P.expr = "calm"; }
+    return { hF, hB };
+  }
+  function grvPoseL(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.expr = "terror"; P.exK = 1; P.mouth = 0.35; P.lean = 0;
+    return { hF: [w * 0.42, -leg - tor * 1.32], hB: [-w * 0.72, -leg - tor * 0.5] };
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "Gravy Digger",
+    start(g) { S_.start(g); pota = true; pota2 = true; grvLC = null; FIN.cue.stone = FIN.cue.toll2 = FIN.cue.whisper = true; },   // (as Rest in Peel: no soul, nothing of the launch after the splash; Last Rites' stone, second bell and whisper belong to its own panel 4)
+    end() { pota = false; pota2 = false; grvLC = null; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = grvDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 120 : 100) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: wX(t) + FIN.dir * (lay.port ? 58 : 44), wy: -0.43 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: PAPER, slide: MG.reduced ? 1 : 180, cam: grvCam, draw: grvDrawSplash }));
+      return ps;
+    },
+    pose(P, sk, t, role, p) {
+      if (pota2 && t > MT.SPLASH && t < MT.AFTER) return role === "w" ? grvPoseW(P, sk, t) : grvPoseL(P, sk, t);   // (strictly after: the strike panel is frozen at the splash with Last Rites' pose)
+      return S_.pose(P, sk, t, role, p);
+    },
+    ownWords: true,   // the upright sizes are set here
+    words(lay) {
+      const ws = S_.words(lay).filter((w) => w.text !== "shhh..."), D = FIN.dir, pg = MG.page, port = lay.port, k = port ? Math.min(1, L.gw * 0.9 / L.gh) : 1, kb = port ? 0.6 : 1;
+      for (const w of ws) w.mul = (w.mul || 1) * k;   // Last Rites' words, as the engine would scale them upright
+      Object.assign(ws.find((w) => w.text === "SHHK"), { t1: MT.SPLASH + 150 });   // gone as the lights come on
+      const at = (tt, f) => () => { const pn = MG.byId.splash; mgPlace(pn, tt); const q = grvHome(() => pn.sp(...f())); return [q[0], q[1]]; };
+      ws.push(
+        { text: "THUD", t0: MT.SPLASH + 60, t1: 3600, size: 0.15, mul: k, arc: 6, jag: 0.12, jit: 0.12, rot: -0.08 * D, seed: 710,
+          at: () => (port ? [pg.x + pg.w * 0.5, pg.y + pg.h * 0.2] : [pg.x + pg.w * (D > 0 ? 0.8 : 0.2), pg.y + pg.h * 0.34]) },
+        { text: "GLOOP", t0: GRV.POUR0 + 20, t1: 4420, size: 0.075, mul: kb, jit: 0.12, rot: 0.1 * D, seed: 720,
+          at: at(GRV.POUR0 + 100, () => { const B = grvBoatAt(GRV.POUR0 + 100); return port ? [B[0] - D * 6, B[1] - 30] : [B[0] + D * 38, B[1] - 6]; }) },
+        { text: "blub", t0: GRV.BLUB + 40, t1: 4380, size: 0.06, mul: kb, jit: 0.15, rot: -0.12 * D, seed: 730,
+          at: at(GRV.BLUB + 100, () => [-D * 28, grvGravy(GRV.BLUB + 100) + 11]) },
+      );
+      return ws;
+    },
+    page: S_.alt.page,   // the night stays on what the splash hasn't covered yet; once it is in, the lights are on (as Rest in Peel)
+    hint: S_.alt.hint,
+    food() { const x = grvBowlX(MT.POP); return { x, y: 0, r: 24, y0: -26, lx: x + FIN.dir * 40 }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("grvThud", MT.SPLASH + 30, () => Cin.go(() => { Cin.stamp(0.9); Cin.sub(70, 34, 0.3, 0.5); Cin._noise(0.12, 0.15, 700, 300, "lowpass", 0.8); }));
+      GRV.SC.forEach((s, k) => {
+        cueOnce("grvDig" + k, s + 40, () => Cin.go(() => Cin._noise(0.07, 0.12, 2600, 1400, "bandpass", 1.2)));
+        cueOnce("grvFling" + k, grvRel(k) - 20, () => Cin.go(() => Cin.whoosh(0.14, -0.3 * D, 0.3 * D, 0.2)));
+        cueOnce("grvLand" + k, grvLand(k), () => Cin.go(() => { Cin._noise(0.14, 0.14, 2200, 900, "bandpass", 1.1); Cin._osc("triangle", 900, 700, 0.05, 0.02, 0.002); }));
+      });
+      cueOnce("grvBoat", GRV.BOAT0, () => Cin.go(() => { Cin._osc("sine", 520, 440, 0.45, 0.03, 0.08); Cin._osc("sine", 780, 660, 0.4, 0.015, 0.08, 0.05); }));
+      cueOnce("grvGloop", GRV.POUR0, () => Cin.go(() => { Cin._noise(0.55, 0.12, 320, 160, "lowpass", 1.5); Cin._osc("sine", 190, 120, 0.4, 0.06, 0.02); Cin._osc("sine", 150, 100, 0.3, 0.04, 0.02, 0.18); }));
+      cueOnce("grvBlub", GRV.BLUB + 110, () => Cin.go(() => Cin._osc("sine", 280, 900, 0.08, 0.06, 0.004)));
+      cueOnce("grvBob", GRV.BOB, () => Cin.go(() => Cin._osc("sine", 700, 1100, 0.1, 0.035, 0.004)));
+      cueOnce("grvPlant", GRV.PLANT, () => Cin.go(() => { Cin.tick(1400); Cin._noise(0.06, 0.1, 1200, 600, "lowpass", 0.8); }));
+      cueOnce("grvBow", GRV.BOW0 + 40, () => Cin.go(() => { for (const [f, v, d] of [[220, 0.04, 1.6], [262, 0.015, 1.2], [440, 0.012, 0.9]]) Cin._osc("sine", f, f * 0.998, d, v, 0.01); }));
+      cueOnce("grvFlop", GRV.FLOP + 60, () => Cin.go(() => Cin._osc("triangle", 500, 280, 0.12, 0.04, 0.003)));
     },
   });
   return S_;
