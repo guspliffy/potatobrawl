@@ -516,7 +516,7 @@ function resOpen(look, spec, solo) {
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   { const c = $("rBw"); if (c) c.hidden = true; }   // ui/bossweek.js: Boss Week's card
-  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
+  $("rFin").hidden = true; $("rKo").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
@@ -595,6 +595,7 @@ function showResults(R) {
   const fin = $("rFin");
   fin.hidden = !(fb && won);
   if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : alt ? "Potatality" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
+  shopResKo(match && match.koTease);   // ui/shop.js: "Potatality · in the Shop" when a CPU just played its KO page on you
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();

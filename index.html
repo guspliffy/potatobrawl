@@ -2812,7 +2812,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 /* ---- the Shop tab ---- */
 /* sizes as variables: the plate area, the card foot, the model's height, the balance coin; each size below sets its own */
-#acPanH { --pearl: linear-gradient(115deg, #ffb3d9, #8ff0dc 45%, #c9b3ff 70%, #ffd6a8); --pa: 56px; --ft: 36px; --art: 66px; --coin: 38px; --gap: 8px; gap: var(--gap); }
+#acPanH { --pearl: linear-gradient(115deg, #ffb3d9, #8ff0dc 45%, #c9b3ff 70%, #ffd6a8); --pa: 56px; --ft: 36px; --art: 66px; --coin: 38px; --gap: 8px; --ka: 92px; gap: var(--gap); }
 .sh-top { flex: none; display: flex; align-items: center; gap: 12px; min-height: var(--coin); }
 #acPanH .sh-bal { flex: none; height: var(--coin); gap: 6px; padding: 0 13px 0 9px; font-size: 21px; border-radius: 10px; }
 #acPanH .sh-bal::before { width: 24px; height: 19px; }
@@ -2872,13 +2872,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
 /* ---- sizes ---- */
 /* 844x390 (and any short landscape): the whole Shop fits the sheet without scrolling; the glazed-here sentence moves into the kicker */
-#app.short #acPanH { --pa: 46px; --ft: 32px; --art: 46px; --coin: 34px; --gap: 4px; }
+#app.short #acPanH { --pa: 46px; --ft: 32px; --art: 46px; --coin: 34px; --gap: 4px; --ka: 70px; }
 #app.short #acPanH .sh-bal { font-size: 19px; padding: 0 11px 0 8px; }
 #app.short #acPanH .sh-bal::before { width: 22px; height: 17px; }
 #app.short .sh-f b { font-size: 11px; }
 #app.short .sh-k b, #app.short .sh-k span { line-height: 11px; }
 /* 667x320: eight across still, a smaller pill and cards; the kicker lines keep their first part and the note comes back under the cards */
-#app.tiny #acPanH { --pa: 42px; --ft: 30px; --art: 40px; --coin: 32px; --gap: 5px; }
+#app.tiny #acPanH { --pa: 42px; --ft: 30px; --art: 40px; --coin: 32px; --gap: 5px; --ka: 62px; }
 #app.tiny #acPanH .sh-bal { font-size: 18px; padding: 0 10px 0 7px; }
 #app.tiny #acPanH .sh-bal::before { width: 20px; height: 16px; }
 #app.tiny .sh-skins { display: none; }
@@ -2892,7 +2892,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny .sh-f small, #app.tiny .sh-c.buy .sh-f small, #app.tiny .sh-c.short .sh-f small, #app.tiny .sh-gz .sh-f small { font-size: 10px; letter-spacing: 0.02em; }
 #app.tiny .sh-c.worn::after { padding: 3px 4px 2px; font-size: 8.5px; }
 /* upright and narrow: four across, two rows of each, the note under the cards */
-#app.portrait #acPanH, #app.narrow #acPanH { --pa: 52px; --ft: 36px; --art: 60px; --coin: 36px; --gap: 8px; }
+#app.portrait #acPanH, #app.narrow #acPanH { --pa: 52px; --ft: 36px; --art: 60px; --coin: 36px; --gap: 8px; --ka: 84px; }
 #app.portrait .sh-grid, #app.narrow .sh-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 6px; }
 #app.portrait #acPanH .sh-note, #app.narrow #acPanH .sh-note { display: block; }
 #app.portrait .sh-k .sh-k2, #app.narrow .sh-k .sh-k2 { display: none; }
@@ -2908,7 +2908,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.narrow .sh-f small .tokglyph { margin-right: 3px; }
 #app.narrow .sh-f small > span + .tokglyph { margin-left: 3px; }
 /* the desktop: a taller model and a little more air */
-#app:not(.short):not(.portrait) #acPanH { --pa: 58px; --ft: 38px; --art: 80px; --coin: 40px; --gap: 10px; }
+#app:not(.short):not(.portrait) #acPanH { --pa: 58px; --ft: 38px; --art: 80px; --coin: 40px; --gap: 10px; --ka: 104px; }
 #app:not(.short):not(.portrait) .sh-np { font-size: 12px; }
 #app:not(.short):not(.portrait) .sh-f b { font-size: 12px; }
 #app:not(.short):not(.portrait) .sh-f small, #app:not(.short):not(.portrait) .sh-c.buy .sh-f small, #app:not(.short):not(.portrait) .sh-c.short .sh-f small, #app:not(.short):not(.portrait) .sh-gz .sh-f small { font-size: 12px; }
@@ -2962,6 +2962,132 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .sh-grid.sh-plates, #app.narrow .sh-grid.sh-plates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .sh-c.gift .sh-f small { font-size: 11px; color: var(--mint); }
 .sh-gz.tk .sh-f small { color: var(--mint); }
+
+/* ---- KO pages and Pommes (ui/shop.js shopKoCard, shopKoPack; state from ui/kopages.js) ----
+   Pommes are the premium money: a striped fries cone with three fries, red where the chip is gold, and never the chip's round shape (the glyph is taller than wide).
+   The pill beside the chips, the pack row (the Free chips row's twin: dashed and SOON until the server says buy), one card per fighter: halftone art with the sound word big and
+   faint behind his portrait, the page's name in manga lettering, WATCH (round, top left), the ON tag (top right, the nameplates' gold look), the state line in the foot.
+   Four cards across on a landscape sheet (the portraits are wide), two across upright; the card's art height is --ka. */
+.pmglyph { display: inline-block; flex: none; width: 0.8em; height: 1em; vertical-align: -0.12em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 30'%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M6.4 13 4.3 3.4 7.4 2.7 9.5 13z'/%3E%3Cpath d='M10.4 13V1.4h3.4V13z'/%3E%3Cpath d='M14.5 13 16.6 2.7 19.7 3.4 17.6 13z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='%23fff6e4'/%3E%3Cg fill='%23e8453c'%3E%3Cpath d='M3.2 10.6h3.5L12 28.8z'/%3E%3Cpath d='M10.25 10.6h3.5L12 28.8z'/%3E%3Cpath d='M17.3 10.6h3.5L12 28.8z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='none' stroke='%230e1022' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* the pill: red outline, the balance in white, the word small */
+#acPanH .sh-pm { flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--coin); padding: 0 14px 0 10px; border: 2px solid var(--ketchup); border-radius: 999px;
+  background: linear-gradient(180deg, #3b2238, #261830); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: #fff; font: 800 21px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#acPanH .sh-pm .pmglyph { width: 15px; height: 19px; margin: -1px 1px 0 0; }
+#acPanH .sh-pm b { font-weight: 800; }
+#acPanH .sh-pm span { padding-top: 2px; font: 800 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+/* the pack row: the ad row's twin (dashed, dim, a SOON sticker) until the server says buy; then a button */
+.sh-pk .sh-pmi { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); opacity: 0.8; }
+.sh-pk .sh-pmi .pmglyph { width: 15px; height: 19px; vertical-align: 0; }
+.sh-pk .sh-adv { opacity: 0.85; }
+.sh-pk.go { cursor: pointer; border-style: solid; border-color: rgba(232, 69, 60, 0.7); background: rgba(232, 69, 60, 0.1); -webkit-tap-highlight-color: transparent; }
+.sh-pk.go .sh-pmi, .sh-pk.go .sh-adt, .sh-pk.go .sh-adv { opacity: 1; }
+.sh-pk.go:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+@media (hover: hover) { .sh-pk.go:hover { background: rgba(232, 69, 60, 0.18); } }
+/* the grid and a card (a div with two buttons in it: the card itself, .ko-main, and WATCH, .ko-go) */
+#acPanH .sh-grid.sh-kogrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; }
+.sh-ko { cursor: default; }
+.sh-ko:active { transform: none; }
+.sh-ko:has(.ko-main:active) { transform: translateY(2px); }
+@media (hover: hover) { .sh-ko:hover { transform: none; } .sh-ko:has(.ko-main:hover):not(:has(.ko-main:active)) { transform: translateY(-1px); } }
+.ko-main { appearance: none; display: flex; flex-direction: column; flex: 1 1 auto; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 7px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ko-main:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.ko-art { position: relative; flex: none; display: block; height: var(--ka); overflow: hidden; border-radius: 7px 7px 0 0; container-type: inline-size;
+  background: radial-gradient(ellipse 80% 90% at 50% 120%, rgba(239, 122, 82, 0.6), transparent 72%), linear-gradient(180deg, #52295a, #2b1f4c 62%, #20244a); }
+/* the halftone: screentone dots, strongest in the corners and thinning towards the middle */
+.ko-art::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(circle, rgba(255, 201, 120, 0.42) 1.15px, transparent 1.65px) 0 0 / 6px 6px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); }
+/* the sound word: big, faint, behind the portrait; the card's width (container units) keeps a long one whole */
+.ko-word { position: absolute; z-index: 0; left: 50%; top: 47%; transform: translate(-50%, -50%) rotate(-8deg) skewX(-8deg); font: italic 900 min(calc(var(--ka) * 0.98), calc(190cqw / var(--wn, 5))) / 0.8 var(--display);
+  letter-spacing: -0.01em; text-transform: uppercase; white-space: nowrap; color: var(--sand); opacity: 0.3; pointer-events: none; }
+/* the portrait fades into the halftone at its edges, so the word shows round it */
+.ko-pic { position: absolute; z-index: 1; left: 9%; right: 9%; top: 0; bottom: 0; background: center 24% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); }
+/* the page's name, in manga lettering (italic, ink-stroked), tilted up from the lower left */
+.ko-nm { position: absolute; z-index: 2; left: 7px; bottom: 5px; max-width: 72%; font: italic 900 var(--kn, 16px) / 0.9 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: #fff;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); transform: rotate(-3deg); transform-origin: left bottom; text-wrap: balance; pointer-events: none; }
+.sh-ko.on .ko-nm { color: var(--gold); }
+/* WATCH: a round cream button, the play triangle over the word */
+.ko-go { appearance: none; position: absolute; z-index: 3; left: 6px; top: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: var(--kg, 36px); height: var(--kg, 36px);
+  margin: 0; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: linear-gradient(180deg, #fff6e4, #f3d9a4); color: var(--ink); box-shadow: 0 2px 0 var(--ink), inset 0 -2px 0 rgba(120, 60, 0, 0.18);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s; }
+.ko-go::after { content: ""; position: absolute; inset: -5px; }   /* a bigger target than it looks */
+.ko-go svg { flex: none; width: 52%; height: 52%; margin-top: -2px; }
+.ko-go span { margin-top: -3px; font: 800 7.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; }
+.ko-go:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
+.ko-go:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+.ko-go:disabled { opacity: 0.45; filter: grayscale(0.7); cursor: default; }
+@media (hover: hover) { .ko-go:hover:not(:disabled) { filter: brightness(1.08); } }
+/* ON: the nameplates' worn look, in gold */
+.sh-ko.on { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.sh-ko.on .sh-f b { color: var(--gold); }
+.ko-on { display: none; position: absolute; right: -2px; top: -2px; z-index: 4; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 8px 0 7px;
+  font: 900 10px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; }
+.sh-ko.on .ko-on { display: block; }
+.sh-ko .sh-soon { top: 7px; right: 6px; padding: 3px 6px 2px; font-size: 9px; }   /* inside the art's corner, so the sticker never pokes into the row above */
+/* the state line: "In use" / "Tap to use" / the price; short of Pommes the price is dimmed */
+.sh-ko .sh-f small { font-size: 11.5px; }
+.sh-ko.on .sh-f small { color: var(--gold); }
+.sh-ko.short .sh-f small { opacity: 0.62; }
+.sh-ko.busy .sh-f small { color: var(--sand); letter-spacing: 0.2em; }
+.sh-f small .pmglyph { width: 11px; height: 14px; margin: 0 5px 0 0; vertical-align: 0; }
+.sh-f small > span + .pmglyph { margin-left: 6px; }
+.sh-ko.arm .sh-f small .pmglyph { filter: none; }
+/* back from WATCH or the results' band: a short pulse on the card (.hi, 1.6 s) */
+.sh-ko.hi { position: relative; z-index: 2; animation: koHi 1.6s ease-out; }
+@keyframes koHi { 0%, 32% { box-shadow: 0 0 0 3px var(--sand), 0 0 26px 7px rgba(243, 217, 164, 0.8), 0 3px 0 var(--ink); transform: translateY(-3px) scale(1.025); } }
+/* sizes */
+#app.short #acPanH .sh-pm { font-size: 19px; padding: 0 12px 0 8px; }
+#app.short #acPanH .sh-pm .pmglyph { width: 13px; height: 17px; }
+#app.short .ko-go { --kg: 32px; }
+#app.short .ko-nm { --kn: 14px; }
+#app.short .sh-ko .sh-f small, #app.short .sh-ko.short .sh-f small { font-size: 11px; }
+#app.short .sh-pk .sh-pmi { width: 24px; height: 24px; }
+#app.short .sh-pk .sh-pmi .pmglyph { width: 12px; height: 16px; }
+#app.tiny #acPanH .sh-pm { font-size: 18px; padding: 0 11px 0 8px; }
+#app.tiny #acPanH .sh-pm span { font-size: 10px; }
+#app.tiny .ko-go { --kg: 30px; }
+#app.tiny .ko-go span { font-size: 6.5px; }
+#app.tiny .ko-nm { --kn: 13px; -webkit-text-stroke-width: 2.6px; }
+#app.tiny #acPanH .sh-grid.sh-kogrid { gap: 8px 6px; }
+#app.tiny .sh-ko .sh-f small, #app.tiny .sh-ko.short .sh-f small { font-size: 10.5px; letter-spacing: 0.02em; }
+#app.tiny .ko-on { padding: 3px 5px 2px; font-size: 9px; }
+#app.portrait #acPanH .sh-grid.sh-kogrid, #app.narrow #acPanH .sh-grid.sh-kogrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+#app.portrait .sh-top, #app.narrow .sh-top { flex-wrap: wrap; row-gap: 6px; }
+#app.portrait #acPanH .sh-from, #app.narrow #acPanH .sh-from { order: 5; flex: 1 1 100%; }
+#app.narrow #acPanH .sh-pm { font-size: 18px; padding: 0 11px 0 8px; }
+#app.narrow .ko-nm { --kn: 15px; }
+#app:not(.short):not(.portrait) .ko-go { --kg: 40px; }
+#app:not(.short):not(.portrait) .ko-go span { font-size: 8.5px; }
+#app:not(.short):not(.portrait) .ko-nm { --kn: 19px; left: 9px; bottom: 6px; }
+#app:not(.short):not(.portrait) .sh-ko .sh-f small, #app:not(.short):not(.portrait) .sh-ko.short .sh-f small { font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { .sh-ko.hi { animation: none; outline: 3px solid var(--sand); outline-offset: 2px; } .ko-go { transition: none; } }
+
+/* ---- the results' band (ui/shop.js shopResKo, markup in shell.html #rKo): "POTATALITY · in the Shop ›" under the story, a thin dark band like the finisher plate ---- */
+#resSheet .res-ko { appearance: none; display: inline-flex; align-items: center; gap: 6px; flex: none; align-self: flex-start; max-width: 100%; height: 26px; margin: 4px 0 0 3px; padding: 0 9px 0 10px;
+  border: 2px solid var(--ketchup); border-radius: 7px; background: rgba(14, 16, 34, 0.9); color: var(--sand); box-shadow: 0 3px 0 var(--ink); transform: skewX(-8deg); white-space: nowrap; cursor: pointer;
+  font: 800 12px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
+#resSheet .res-ko[hidden] { display: none; }
+#resSheet .res-ko > * { transform: skewX(8deg); }
+#resSheet .res-ko em { font: italic 900 14px/1 var(--display); letter-spacing: 0.04em; color: var(--gold); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+#resSheet .res-ko span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#resSheet .res-ko .pmglyph { width: 11px; height: 14px; margin: -1px 0 0 1px; vertical-align: 0; }
+#resSheet .res-ko b { font-size: 16px; font-weight: 800; color: var(--sand); }
+#resSheet .res-ko:active { transform: skewX(-8deg) translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+#resSheet .res-ko:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) { #resSheet .res-ko:hover { filter: brightness(1.15); } }
+#resSheet.in:not(.still) .res-ko { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.46s backwards; }
+#app.tiny #resSheet .res-ko { height: 22px; margin-top: 2px; gap: 5px; padding: 0 7px 0 8px; font-size: 11px; }
+#app.tiny #resSheet .res-ko em { font-size: 12px; }
+#app.tiny #resSheet .res-ko .pmglyph { width: 9px; height: 12px; }
+#app.portrait #resSheet .res-ko { height: 24px; margin-top: 2px; font-size: 11px; }
+#app:not(.short):not(.portrait) #resSheet .res-ko { height: 32px; margin-top: 6px; gap: 8px; padding: 0 12px 0 14px; font-size: 15px; }
+#app:not(.short):not(.portrait) #resSheet .res-ko em { font-size: 17px; }
+#app:not(.short):not(.portrait) #resSheet .res-ko .pmglyph { width: 13px; height: 17px; }
+@container (max-width: 999px) {
+  #app:not(.short):not(.portrait) #resSheet .res-ko { height: 28px; margin-top: 4px; gap: 6px; padding: 0 10px 0 11px; font-size: 13px; }
+  #app:not(.short):not(.portrait) #resSheet .res-ko em { font-size: 15px; }
+}
 
 /* ---------- the Daily sheet: the Harvest (ui/harvest.js) and the Daily Potato (ui/daily.js); the flame on the start page ----------
    Fable's "Mock B" (/mnt/project-files/pre-step6/fable-mockup.html). Landscape: the track of 30 days (ten across) with the Daily Potato under it
@@ -5597,6 +5723,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <!-- Quick match: the record against this opponent (ui/rivals.js); upright it moves over the side column's cards -->
           <button class="rv-strip" id="rRiv" hidden aria-label="Rivals"></button>
           <p class="res-fin" id="rFin" hidden></p>
+          <!-- a CPU just played its Potatality on you (ui/shop.js shopResKo; styles in css/93-shop.css): a band to that fighter's card in the Shop -->
+          <button class="res-ko" id="rKo" type="button" hidden><em>Potatality</em> <span>&middot; in the Shop</span><i class="pmglyph" aria-hidden="true"></i> <b aria-hidden="true">&rsaquo;</b></button>
           <!-- Challenge a friend (ui/challenge.js): hosts a Play friends match and shares its link -->
           <button class="res-chl" id="rChl" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L3 10.2l7.4 3.4L13.8 21zM21 3L10.4 13.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Challenge <span class="chl-af">a friend</span></span></button>
           <p class="res-stars" id="rStars" hidden></p>
@@ -28888,7 +29016,7 @@ function resOpen(look, spec, solo) {
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   { const c = $("rBw"); if (c) c.hidden = true; }   // ui/bossweek.js: Boss Week's card
-  $("rFin").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
+  $("rFin").hidden = true; $("rKo").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
@@ -28967,6 +29095,7 @@ function showResults(R) {
   const fin = $("rFin");
   fin.hidden = !(fb && won);
   if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : alt ? "Potatality" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
+  shopResKo(match && match.koTease);   // ui/shop.js: "Potatality · in the Shop" when a CPU just played its KO page on you
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
@@ -31705,7 +31834,12 @@ window.__blKo = { st: KO, refresh: koRefresh, demo: koDemo, tease: koTease, on: 
    plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element.
    The Harvest (ui/harvest.js) adds to it: the Sprout plate is never sold (day 7 gives it, `harvest`), a Glaze token (P.gzt, day 30 once every
    fighter has the Harvest skin) glazes one skin instead of the chips, and the first row offers chips for a short ad, waiting with a SOON sticker
-   until ads exist (never required; chips are never bought). */
+   until ads exist (never required; chips are never bought).
+   KO pages (ui/kopages.js has the state, KO): the last section, one card per fighter for his Potatality, the second KO page, paid with Pommes (never
+   chips; the Pommes live on the server only). The pill beside the chips shows the Pommes, the pack row above the cards says what a pack is and waits
+   with a SOON sticker until payments exist (KO.buy), a card is bought like a plate (two taps) and then switched on or off with one tap, WATCH plays
+   the page (koDemo) and brings you back here on that card (shopKoFocus). Every price shows its euro value beside the Pommes. kopages.js calls
+   shopKoRender() on every change of what the server said. The results' "Potatality · in the Shop" band (#rKo) is shopResKo. */
 const PLATES = [
   { id: "", name: "Ink", price: 0 },
   { id: "sunset", name: "Sunset", price: 150 },
@@ -31718,7 +31852,7 @@ const PLATES = [
   { id: "sprout", name: "Sprout", price: 0, harvest: true },   // day 7 of the Harvest only
 ];
 const SH_AD = 25;   // the ad row's chips (3 a day), once ads exist
-const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null };
+const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null, ko: [], pk: null, pmN: null, hiT: 0, why: "", koId: "", koWait: false };
 const SH_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 const plateInfo = (id) => PLATES.find((p) => p.id === id);
 const plateCls = (id) => (id && plateInfo(id) ? "np-" + id : "");
@@ -31760,6 +31894,39 @@ function shopGlazeCard(spec) {
   b.addEventListener("click", () => shopGlazeTap(spec.id));
   return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };
 }
+// a KO page's card: a div (it holds two buttons: the card itself and WATCH): the art (halftone, the sound word faint behind the portrait, the page's name in
+// manga lettering), the fighter and the state line under it, the ON tag, the SOON sticker (a price that cannot be paid yet)
+const KO_NOTE = "Plays on a normal KO; an Ultimate keeps its own page.";
+const shKoPrice = `<span class="pmglyph"></span>${KO_PRICE} · ${KO_EUR}`;
+function shopKoCard(spec) {
+  const id = spec.id, pg = KO_PAGES[id] || { name: spec.name, word: "" };
+  const el = shMk("div", "sh-c sh-ko"), main = shMk("button", "ko-main"), art = shMk("span", "ko-art"), pic = shMk("i", "ko-pic"), word = shMk("i", "ko-word", pg.word),
+    nm = shMk("span", "ko-nm", pg.name), f = shMk("span", "sh-f"), go = shMk("button", "ko-go"), on = shMk("i", "ko-on", "ON"), soon = shMk("i", "sh-soon", "Soon");
+  el.dataset.id = id; main.type = "button"; go.type = "button";
+  const src = PORTRAITS[id];
+  if (src) pic.style.backgroundImage = `url("${src}")`;
+  pic.setAttribute("aria-hidden", "true"); word.setAttribute("aria-hidden", "true"); on.setAttribute("aria-hidden", "true"); soon.setAttribute("aria-hidden", "true");
+  word.style.setProperty("--wn", String(Math.max(3, pg.word.length)));
+  art.append(word, pic, nm);
+  f.append(shMk("b", "", spec.name), shMk("small"));
+  main.append(art, f);
+  go.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.2v15.6L20.5 12z" fill="currentColor"/></svg><span aria-hidden="true">Watch</span>`;
+  el.append(main, go, on, soon);
+  main.addEventListener("click", () => shopKoTap(id));
+  go.addEventListener("click", () => shopKoWatch(id));
+  return { id, el, main, go, small: f.lastChild, soon };
+}
+// the pack row above the cards: the one thing Pommes are sold as (300 for €2.99); not a button until payments exist (the server says buy: true)
+function shopKoPack() {
+  const el = shMk("div", "sh-ad sh-pk"), soon = shMk("i", "sh-soon", "Soon");
+  el.innerHTML = `<span class="sh-pmi" aria-hidden="true"><i class="pmglyph"></i></span><span class="sh-adt"><b>${KO_PRICE} Pommes</b> <span>One KO page. Pommes stay on your account.</span></span><span class="sh-adv">${KO_EUR}</span>`;
+  el.append(soon);
+  const go = () => { if (!KO.buy) return; Sfx.init(); Sfx.ui(); shopSay("Buying Pommes opens soon."); };   // PR 2 wires the payment here
+  el.addEventListener("click", go);
+  el.addEventListener("keydown", (e) => { if (KO.buy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } });
+  return { el, soon };
+}
+const koState = (id) => (koOwn(id) ? (koOn(id) ? "on" : "own") : koBal() >= KO_PRICE ? "buy" : "short");
 function plState(id) { const p = plateInfo(id); return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : p.harvest ? "gift" : P.tokens >= p.price ? "buy" : "short"; }
 function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : (P.gzt | 0) > 0 ? "token" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
 
@@ -31768,12 +31935,13 @@ function renderShop() {
   const pan = $("acPanH");
   shopDisarm();
   pan.innerHTML = "";
-  SH.pl = PLATES.map(shopPlateCard); SH.gz = FIGHTERS.map(shopGlazeCard);
-  const top = shMk("div", "sh-top"), bal = shMk("span", "coin chips sh-bal"), from = shMk("p", "sh-from"), sk = shMk("span", "sh-skins");
-  bal.id = "shBal"; from.id = "shFrom"; from.setAttribute("aria-live", "polite");
+  SH.pl = PLATES.map(shopPlateCard); SH.gz = FIGHTERS.map(shopGlazeCard); SH.ko = FIGHTERS.map(shopKoCard); SH.pk = shopKoPack(); SH.pmN = null;
+  SH.why = KO.why;   // an old no from the server is not said again
+  const top = shMk("div", "sh-top"), bal = shMk("span", "coin chips sh-bal"), pm = shMk("span", "sh-pm"), from = shMk("p", "sh-from"), sk = shMk("span", "sh-skins");
+  bal.id = "shBal"; pm.id = "shPm"; from.id = "shFrom"; from.setAttribute("aria-live", "polite");
   sk.innerHTML = `Skins <b>${acSkinCount(P)} / ${acSkinTotal()}</b> · in the Locker`;
-  top.append(bal, from, sk);
-  SH.top = { bal, from };
+  top.append(bal, pm, from, sk);
+  SH.top = { bal, pm, from };
   const ad = shMk("div", "sh-ad");   // not a button until ads exist
   ad.setAttribute("aria-disabled", "true");
   ad.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>Free chips</b><span>A short ad, +${SH_AD} chips, 3 a day. Never required.</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span><i class="sh-soon">Soon</i>`;
@@ -31784,13 +31952,17 @@ function renderShop() {
     k.appendChild(shMk("b", "", title)); k.appendChild(s); return k;
   };
   const NOTE = "The worn skin of each fighter is glazed here.";
-  const g1 = shMk("div", "sh-grid sh-plates"), g2 = shMk("div", "sh-grid sh-glaze");
-  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze");
+  const g1 = shMk("div", "sh-grid sh-plates"), g2 = shMk("div", "sh-grid sh-glaze"), g3 = shMk("div", "sh-grid sh-kogrid");
+  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze"); g3.setAttribute("role", "group"); g3.setAttribute("aria-label", "KO pages");
   for (const c of SH.pl) g1.appendChild(c.el);
   for (const c of SH.gz) g2.appendChild(c.el);
+  for (const c of SH.ko) g3.appendChild(c.el);
   pan.append(top, ad, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
     kick("Glaze", "a pearl sheen on a skin you own", `, ${GLAZE_PRICE} chips each. ${NOTE}`), g2,
-    shMk("p", "sh-note", NOTE));
+    shMk("p", "sh-note", NOTE),
+    kick("KO pages", "a second KO page per fighter, the Potatality", `. ${KO_NOTE}`), SH.pk.el, g3,
+    shMk("p", "sh-note", KO_NOTE));
+  koAsk();   // ui/kopages.js: the balance and the pages again from the server (not more than every 5 s)
   shopRefresh();
   shopPaint(true);
   shopLoop();
@@ -31818,6 +31990,33 @@ function shopRefresh() {
     c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${say}` : `glaze for ${say}`}`);
     if (glazeOn(c.art.f) !== (st === "glazed")) { glazeMark(c.art.f, st === "glazed"); shopPaint(false); }
   }
+  shopKoUpdate();
+}
+// the Pommes pill, the pack row and every KO card's state (in place, nothing is rebuilt)
+function shopKoUpdate() {
+  const n = koBal(), pm = SH.top.pm, buy = !!KO.buy, pk = SH.pk, eu = `${KO_PRICE} Pommes, ${KO_EUR}`;
+  if (SH.pmN !== n) {
+    pm.innerHTML = `<i class="pmglyph" aria-hidden="true"></i><b>${fmtChips(n)}</b> <span>Pommes</span>`;
+    pm.setAttribute("aria-label", `${fmtChips(n)} Pommes`);
+    if (SH.pmN !== null && !resCalm()) slReplay(pm, "sh-pop");
+    SH.pmN = n;
+  }
+  pk.el.classList.toggle("go", buy); pk.soon.hidden = buy;
+  if (buy) { pk.el.setAttribute("role", "button"); pk.el.tabIndex = 0; pk.el.removeAttribute("aria-disabled"); }
+  else { pk.el.removeAttribute("role"); pk.el.removeAttribute("tabindex"); pk.el.setAttribute("aria-disabled", "true"); }
+  pk.el.setAttribute("aria-label", `${eu}: one KO page. Pommes stay on your account.${buy ? "" : " Coming soon."}`);
+  for (const c of SH.ko) {
+    const pg = KO_PAGES[c.id] || { name: FIG[c.id].name }, st = koState(c.id), arm = SH.arm === "k:" + c.id && st === "buy", busy = KO.busy === c.id, has = koHas(c.id);
+    for (const k of ["on", "own", "buy", "short"]) c.el.classList.toggle(k, st === k);
+    c.el.classList.toggle("arm", arm); c.el.classList.toggle("busy", busy);
+    c.small.innerHTML = busy ? "…" : st === "on" ? "In use" : st === "own" ? "Tap to use" : arm ? `<span>Sure?</span>${shKoPrice}` : shKoPrice;
+    c.main.setAttribute("aria-label", `${pg.name}, ${FIG[c.id].name}'s Potatality: ${busy ? "buying" : st === "on" ? "in use, tap to switch it off" : st === "own" ? "tap to use it" : arm ? `tap again to buy for ${eu}` : st === "buy" ? eu : `${eu}, you have ${fmtChips(n)} Pommes${buy ? "" : ", Pommes come soon"}`}`);
+    if (st === "on" || st === "own") c.main.setAttribute("aria-pressed", String(st === "on")); else c.main.removeAttribute("aria-pressed");
+    c.main.setAttribute("aria-busy", String(busy));
+    c.soon.hidden = !(st === "short" && !buy);
+    c.go.disabled = !has;
+    c.go.setAttribute("aria-label", has ? `Watch ${pg.name}` : `Watch ${pg.name}: not available yet, this page is still being drawn`);
+  }
 }
 function shopSay(text) {
   SH.msg = text; clearTimeout(SH.msgT);
@@ -31831,7 +32030,7 @@ function shopArm(key) {
   shopRefresh();
 }
 // leaving the tab or the sheet: nothing stays armed, the redraw loop stops
-function shopLeave() { shopDisarm(); clearTimeout(SH.msgT); SH.msg = ""; cancelAnimationFrame(SH.raf); SH.raf = 0; }
+function shopLeave() { shopDisarm(); clearTimeout(SH.msgT); SH.msg = ""; clearTimeout(SH.hiT); cancelAnimationFrame(SH.raf); SH.raf = 0; }
 function shopPaid(price) { P.tokens -= price; saveProfile(); Sfx.uiCoin(); renderPill(); if (SH.top && !resCalm()) slReplay(SH.top.bal, "sh-pop"); }
 
 function shopPlateTap(id) {
@@ -31863,6 +32062,70 @@ function shopGlazeTap(id) {
   if (tk) P.gzt = (P.gzt | 0) - 1;
   shopPaid(tk ? 0 : GLAZE_PRICE); shopRefresh();
 }
+/* ----- KO pages: a tap on a card, WATCH, what the server said, back from WATCH, the results' band ----- */
+function shopKoTap(id) {
+  Sfx.init();
+  const st = koState(id), name = KO_PAGES[id].name;
+  if (st === "on" || st === "own") { shopDisarm(); Sfx.uiFlip(); koUse(id, st === "own"); shopRefresh(); return; }   // owned: on or off with one tap
+  if (KO.busy) return;   // the server is still answering a buy
+  if (st === "short") {
+    shopDisarm(); Sfx.uiNo();
+    shopSay(KO.buy ? `${name} costs ${KO_PRICE} Pommes and you have ${fmtChips(koBal())}.` : "Pommes come soon: the page is in the Shop the day they do.");
+    return;
+  }
+  if (SH.arm !== "k:" + id) { shopArm("k:" + id); return; }
+  shopDisarm(); SH.koId = id;
+  if (koBuy(id)) { SH.koWait = true; shopRefresh(); return; }   // asked: "…" until the server answers (pm-ok, pm-no: shopKoRender)
+  shopKoSay(KO.why === "short" ? "short" : "fail");   // it could not even be asked (no connection, signed out)
+}
+function shopKoSay(why) {
+  const name = (KO_PAGES[SH.koId] || { name: "A page" }).name;
+  Sfx.uiNo();
+  shopSay(why === "short" ? `${name} costs ${KO_PRICE} Pommes and you have ${fmtChips(koBal())}.` : why === "own" ? "You own it already." : why === "acct" ? "Signed out for a moment: try again." : "That didn't go through: try again.");
+}
+function shopKoWatch(id) {
+  Sfx.init();
+  if (!koHas(id)) return;
+  if (!koDemoOk(id)) { shopDisarm(); Sfx.uiNo(); shopSay("Watch works from the menu."); return; }
+  shopLeave();   // the sheet closes under the page; renderShop starts everything again when it comes back
+  try { koDemo(id); } catch (e) {   // a page that fails to start must not leave the game on an empty match screen: back to the Shop
+    try { koDemoEnd(); } catch (e2) { /* nothing left to tidy */ }
+    if (typeof console !== "undefined") console.warn("WATCH failed", e);
+    shopSay("That page didn't play: try again.");
+  }
+}
+// ui/kopages.js calls this on every change of the server's copy (a no-op unless the Shop is on the screen)
+function shopKoRender() {
+  if (!SH.top || screens.account.hidden || acUI.tab !== "h") return;
+  if (KO.why) SH.koWait = false;
+  else if (SH.koWait && koOwn(SH.koId)) { SH.koWait = false; Sfx.uiCoin(); }   // the server paid: the page is yours
+  if (KO.why !== SH.why) { SH.why = KO.why; if (KO.why) shopKoSay(KO.why); }   // a no from the server, said once
+  shopRefresh();
+}
+// back from WATCH, or from the results' band: the Shop on that fighter's card, scrolled into view, a short pulse
+function shopKoFocus(id) {
+  if (screens.account.hidden || acUI.tab !== "h") openAccount("h");
+  const c = SH.ko.find((x) => x.id === id);
+  if (!c || !c.el.isConnected) return;
+  const calm = !!window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  clearTimeout(SH.hiT);
+  for (const x of SH.ko) x.el.classList.remove("hi");
+  void c.el.offsetWidth;
+  c.el.classList.add("hi");
+  c.el.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" });
+  SH.hiT = setTimeout(() => c.el.classList.remove("hi"), 1700);
+}
+// the results' band, "Potatality · in the Shop", after a CPU played its page on you (match.koTease: that fighter's id); a tap opens the Shop on that card
+function shopResKo(id) {
+  const el = $("rKo"), ok = typeof id === "string" && !!KO_PAGES[id];
+  el.hidden = !ok; el.dataset.id = ok ? id : "";
+  if (ok) el.setAttribute("aria-label", `${KO_PAGES[id].name}, ${FIG[id].name}'s Potatality: see it in the Shop`);
+}
+$("rKo").addEventListener("click", () => {
+  const id = $("rKo").dataset.id;
+  if (!id) return;
+  Sfx.init(); Sfx.ui(); openAccount("h"); shopKoFocus(id);
+});
 // a tap anywhere in the tab but on the armed card puts it back
 $("acPanH").addEventListener("click", (e) => { if (SH.arm && !e.target.closest(".sh-c.arm")) { shopDisarm(); shopRefresh(); } }, true);
 
@@ -31889,7 +32152,7 @@ function shopResPlate() {
   if (id) { el.textContent = acctName(); plateSet(el, id); }
 }
 // the lobby and the other screens ask for the worn plate's class through this (ui/online.js, later)
-window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn };
+window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn, resKo: shopResKo };   // resKo: the tests set the results' band without a lost match
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in

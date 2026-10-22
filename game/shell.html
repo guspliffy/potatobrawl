@@ -1158,6 +1158,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <!-- Quick match: the record against this opponent (ui/rivals.js); upright it moves over the side column's cards -->
           <button class="rv-strip" id="rRiv" hidden aria-label="Rivals"></button>
           <p class="res-fin" id="rFin" hidden></p>
+          <!-- a CPU just played its Potatality on you (ui/shop.js shopResKo; styles in css/93-shop.css): a band to that fighter's card in the Shop -->
+          <button class="res-ko" id="rKo" type="button" hidden><em>Potatality</em> <span>&middot; in the Shop</span><i class="pmglyph" aria-hidden="true"></i> <b aria-hidden="true">&rsaquo;</b></button>
           <!-- Challenge a friend (ui/challenge.js): hosts a Play friends match and shares its link -->
           <button class="res-chl" id="rChl" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L3 10.2l7.4 3.4L13.8 21zM21 3L10.4 13.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Challenge <span class="chl-af">a friend</span></span></button>
           <p class="res-stars" id="rStars" hidden></p>
