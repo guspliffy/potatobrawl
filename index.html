@@ -2381,6 +2381,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .sk-rt { flex: none; display: inline-block; font: 800 9.5px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--ember);
   border: 1.5px solid var(--ink); border-radius: 4px; padding: 3px 5px 2px; transform: rotate(-6deg); box-shadow: 0 1.5px 0 var(--ink); }
 .sk-rt[hidden] { display: none; }
+/* the POMMES sticker: a red-and-white diagonal candy stripe, the word in white with an ink outline so it reads on both colours */
+.sk-rt.pm { color: #fff; background: repeating-linear-gradient(135deg, #ff4f4f 0 4px, #fff6e4 4px 8px); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
 #scrSelect .sk-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 11px 0 13px; border: 2px solid var(--gold); border-radius: 999px;
   background: rgba(14, 16, 34, 0.9); box-shadow: 0 0 0 1.5px var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: background 0.12s, transform 0.08s; }
 #scrSelect .sk-pill span { font: 800 14px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
@@ -2398,6 +2400,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .sk-head .sk-coin { height: 32px; padding: 0 10px 0 7px; gap: 5px; font-size: 17px; border-color: #070818; box-shadow: 0 2px 0 #05060f, var(--bevel); }
 .sk-head .sk-coin::before { width: 20px; height: 16px; }
 .sk-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--pw) minmax(0, 1fr); gap: 14px; padding: 12px 14px 14px; }
+
+/* three rows of cards (chip, won, Pommes) need the height: on a short landscape screen (844x390 and the like) the sheet takes the screen but for 8 px, the band, the padding,
+   the kickers and the cards' foot are a little slimmer, and a card's art keeps 45 px or more */
+#app.short #scrSkins { --ft: 31px; padding: 8px 22px; }
+#app.short #scrSkins > .sk-sheet { height: min(374px, 100%); }
+#app.short .sk-head { height: 38px; }
+#app.short .sk-body { padding: 10px 14px; }
+#app.short .sk-rack { gap: 4px; }
+#app.short .sk-k { padding: 0 2px; }
+#app.short .sk-k + .sk-row + .sk-k { padding-top: 3px; }
+#app.short .sk-f { gap: 3px; }
+#app.short .sk-f b { font-size: 12px; }
 
 /* the preview: the looked-at skin in big */
 .sk-prev { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink), var(--bevel);
@@ -2419,6 +2433,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .sk-act:empty { display: none; }
 #app .sk-go { width: 100%; min-height: 48px; font-size: 22px; }
 .sk-go .tokglyph { margin: 0 0.12em 0 0.3em; }
+/* the Pommes skin's one action: to the Pommes Shop, two lines (the name of the place, the price with the cone), red where the chip buttons are gold */
+#app .sk-pmgo { --bg: linear-gradient(180deg, #ff8d80, #ff4f4f 55%, #d93a3a); color: var(--ink); min-height: 48px; font-size: 18px; padding-block: 4px; }
+.sk-pmgo > span { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sk-pmgo b { font: inherit; }
+.btn.sk-pmgo small { display: flex; align-items: center; justify-content: center; margin: 0; font: 800 13px/1 var(--display); letter-spacing: 0.06em; color: rgba(14, 16, 34, 0.82); }
+.sk-pmgo small .pmglyph { width: 11px; height: 14px; margin: 0 5px 0 0; vertical-align: 0; }
 .sk-act .sk-pill { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; border: 2px solid var(--ink); border-radius: 9px; transform: skewX(-8deg);
   background: rgba(14, 16, 34, 0.72); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35); font: 800 18px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
 .sk-act .sk-pill > * { transform: skewX(8deg); }
@@ -2432,7 +2452,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrSkins { --lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18'%3E%3Cpath d='M4.6 8.2V5.6a3.4 3.4 0 0 1 6.8 0v2.6' fill='none' stroke='%23f3d9a4' stroke-width='2.2'/%3E%3Crect x='2' y='8' width='12' height='9' rx='2' fill='%23f3d9a4'/%3E%3Ccircle cx='8' cy='12.4' r='1.5' fill='%230e1022'/%3E%3C/svg%3E"); }
 
 /* the rack: two kickers, a row of four chip skins, a row of three Road skins */
-.sk-rack { display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; min-width: 0; min-height: 0; }
+.sk-rack { display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; min-width: 0; min-height: 0; }
 .sk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 2px 2px 0; }
 .sk-k + .sk-row + .sk-k { padding-top: 5px; }
 .sk-k b { flex: none; font: 800 12px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
@@ -2457,6 +2477,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .sk.own .sk-f small { color: var(--sand); }
 .sk.buy .sk-f small { color: var(--gold); font-size: 12px; }
 .sk.short .sk-f small { font-size: 12px; }
+/* a Pommes skin: a 2 px red border (any state), and while it is not owned the price in Pommes: the fries cone (16 px, taller than wide, never the coin) and "300 · €2.99" */
+#scrSkins .sk.pms { border-color: #ff4f4f; }
+.sk.pm .sk-f small { font-size: 12px; color: var(--text); }
+.sk-f small .pmglyph { flex: none; width: 13px; height: 16px; margin: 0 5px 0 0; vertical-align: 0; }
 .sk.short canvas, .sk.road canvas { filter: saturate(0.45) brightness(0.6); }
 .sk.shut canvas { filter: saturate(0.4) brightness(0.32); }
 .sk.short .sk-lk, .sk.road .sk-lk, .sk.shut .sk-lk { display: block; }
@@ -2473,12 +2497,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrSkins .sk:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 /* ---- small phones (667x320): a tighter sheet, no kicker subtitles, a smaller preview ---- */
-#app.tiny #scrSkins { --pw: 232px; --ft: 32px; padding: 10px 16px; }
-#app.tiny #scrSkins > .sk-sheet { width: min(635px, 100%); height: min(296px, 100%); }
-#app.tiny .sk-head { height: 38px; }
+#app.tiny #scrSkins { --pw: 232px; --ft: 28px; padding: 10px 16px; }
+#app.tiny #scrSkins > .sk-sheet { width: min(635px, 100%); height: min(300px, 100%); }
+#app.tiny .sk-head { height: 34px; }
 #app.tiny .sheet .sk-head h3 { font-size: 20px; }
 #app.tiny .sk-head .sk-coin { height: 30px; font-size: 16px; }
-#app.tiny .sk-body { gap: 10px; padding: 9px 10px 10px; }
+#app.tiny .sk-body { gap: 10px; padding: 6px 10px 8px; }
 #app.tiny .sk-pt { gap: 5px; padding: 0 10px 10px; }
 #app.tiny .sk-pn b { font-size: 26px; -webkit-text-stroke-width: 3.5px; text-shadow: 0 3px 0 var(--ink); }
 #app.tiny #scrSkins .sk-fx { font-size: 12px; }
@@ -2492,15 +2516,20 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.tiny #scrSkins .sk-l1.sk-lock { padding-left: 22px; }
 #app.tiny #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
 #app.tiny #scrSkins .sk-l2 { font-size: 11.5px; }
-#app.tiny .sk-rack { gap: 5px; }
+#app.tiny .sk-rack { gap: 3px; }
+#app.tiny .sk-k { padding: 0 2px; }
+#app.tiny .sk-k + .sk-row + .sk-k { padding-top: 2px; }
 #app.tiny .sk-k span { display: none; }
-#app.tiny .sk-k b { font-size: 11px; }
+#app.tiny .sk-k b { font-size: 10px; line-height: 10px; }
 #app.tiny .sk-row { gap: 6px; }
 #app.tiny .sk-f { padding: 0 6px 1px; gap: 3px; }
-#app.tiny .sk-f b { font-size: 11px; }
+#app.tiny .sk-f b { font-size: 10.5px; }
 #app.tiny .sk-f small { font-size: 10px; }
 #app.tiny .sk-lk { width: 20px; height: 20px; right: 4px; bottom: 4px; background-size: 10px 11px; }
 #app.tiny .sk.worn::after { padding: 3px 5px 2px; font-size: 9px; }
+#app.tiny .sk-f small .pmglyph { width: 10px; height: 13px; margin-right: 4px; }
+#app.tiny .sk-a .sk-rt { left: 3px; top: 3px; font-size: 8px; padding: 2px 4px 1px; }
+#app.tiny .sk-rt.pm { -webkit-text-stroke-width: 2.4px; }
 #app.tiny #scrSelect .sl-skins { height: 44px; gap: 8px; padding: 0 5px 0 10px; }
 #app.tiny #scrSelect .sk-dot { width: 22px; height: 22px; }
 #app.tiny #scrSelect .sk-txt small { display: none; }
@@ -2567,11 +2596,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait #scrSkins .sk-l1.sk-lock::before { width: 15px; height: 15px; }
 #app.portrait #scrSkins .sk-l2 { font-size: 11.5px; }
 #app.portrait .sk-yours { top: auto; bottom: 10px; right: auto; left: 70px; }
-#app.portrait .sk-rack { grid-template-rows: auto 106px auto 112px; }
+#app.portrait .sk-rack { grid-template-rows: auto 106px auto 112px auto 112px; }
 #app.portrait .sk-row { gap: 6px; }
 #app.portrait .sk-f { padding: 0 7px 1px; }
 #app.portrait .sk-f b { font-size: 11.5px; }
 #app.portrait .sk-f small { font-size: 10.5px; }
+#app.portrait .sk.pm .sk-f small { letter-spacing: 0.01em; }   /* a card is ~80px wide here: "300 · €2.99" and the cone must fit */
+#app.portrait .sk-f small .pmglyph { width: 11px; height: 14px; margin-right: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   #scrSkins .sk, #scrSkins .sk-a canvas, #scrSelect .sl-skins > *, #scrSelect .sk-pill { transition: none; }
@@ -3245,108 +3276,55 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .sh-c.gift .sh-f small { font-size: 11px; color: var(--mint); }
 .sh-gz.tk .sh-f small { color: var(--mint); }
 
-/* ---- KO pages and Pommes (ui/shop.js shopKoCard, shopKoPack; state from ui/kopages.js) ----
+/* ---- Pommes and the Free chips row's states (ui/shop.js shopPommesRow, shopPmUpdate, shopAdUpdate; the Pommes' state is ui/kopages.js, the ad's ui/ads.js) ----
    Pommes are the premium money: a striped fries cone with three fries, red where the chip is gold, and never the chip's round shape (the glyph is taller than wide).
-   The pill beside the chips, the pack row (the Free chips row's twin: dashed and SOON until the server says buy), one card per fighter: halftone art with the sound word big and
-   faint behind his portrait, the page's name in manga lettering, WATCH (round, top left), the ON tag (top right, the nameplates' gold look), the state line in the foot.
-   Four cards across on a landscape sheet (the portraits are wide), two across upright; the card's art height is --ka. */
+   They are not spent here: the Pommes Shop (ui/pshop.js, css/93-pshop.css) sells the Potatalities and the Pommes skins. The pill beside the chips and the row at the
+   end of the tab ("Pommes Shop", the Free chips row's twin: solid and red-edged, the balance, a chevron) both open it. The Free chips row stays the dashed, dim row
+   while it waits (SOON, getting an ad ready, none, back tomorrow) and is gold-edged and bright when an ad is ready to play. */
 .pmglyph { display: inline-block; flex: none; width: 0.8em; height: 1em; vertical-align: -0.12em;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 30'%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M6.4 13 4.3 3.4 7.4 2.7 9.5 13z'/%3E%3Cpath d='M10.4 13V1.4h3.4V13z'/%3E%3Cpath d='M14.5 13 16.6 2.7 19.7 3.4 17.6 13z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='%23fff6e4'/%3E%3Cg fill='%23e8453c'%3E%3Cpath d='M3.2 10.6h3.5L12 28.8z'/%3E%3Cpath d='M10.25 10.6h3.5L12 28.8z'/%3E%3Cpath d='M17.3 10.6h3.5L12 28.8z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='none' stroke='%230e1022' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
-/* the pill: red outline, the balance in white, the word small */
-#acPanH .sh-pm { flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--coin); padding: 0 14px 0 10px; border: 2px solid var(--ketchup); border-radius: 999px;
+/* the pill (a button): red outline, the balance in white, the word small */
+#acPanH .sh-pm { appearance: none; cursor: pointer; margin: 0; -webkit-tap-highlight-color: transparent; flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--coin); padding: 0 14px 0 10px; border: 2px solid var(--ketchup); border-radius: 999px;
   background: linear-gradient(180deg, #3b2238, #261830); box-shadow: 0 3px 0 var(--ink), var(--bevel); color: #fff; font: 800 21px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #acPanH .sh-pm .pmglyph { width: 15px; height: 19px; margin: -1px 1px 0 0; }
 #acPanH .sh-pm b { font-weight: 800; }
 #acPanH .sh-pm span { padding-top: 2px; font: 800 11px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
-/* the pack row: the ad row's twin (dashed, dim, a SOON sticker) until the server says buy; then a button */
-.sh-pk .sh-pmi { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); opacity: 0.8; }
-.sh-pk .sh-pmi .pmglyph { width: 15px; height: 19px; vertical-align: 0; }
-.sh-pk .sh-adv { opacity: 0.85; }
-.sh-pk.go { cursor: pointer; border-style: solid; border-color: rgba(232, 69, 60, 0.7); background: rgba(232, 69, 60, 0.1); -webkit-tap-highlight-color: transparent; }
-.sh-pk.go .sh-pmi, .sh-pk.go .sh-adt, .sh-pk.go .sh-adv { opacity: 1; }
-.sh-pk.go:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
-@media (hover: hover) { .sh-pk.go:hover { background: rgba(232, 69, 60, 0.18); } }
-/* the grid and a card (a div with two buttons in it: the card itself, .ko-main, and WATCH, .ko-go) */
-#acPanH .sh-grid.sh-kogrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; }
-.sh-ko { cursor: default; }
-.sh-ko:active { transform: none; }
-.sh-ko:has(.ko-main:active) { transform: translateY(2px); }
-@media (hover: hover) { .sh-ko:hover { transform: none; } .sh-ko:has(.ko-main:hover):not(:has(.ko-main:active)) { transform: translateY(-1px); } }
-.ko-main { appearance: none; display: flex; flex-direction: column; flex: 1 1 auto; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 7px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.ko-main:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
-.ko-art { position: relative; flex: none; display: block; height: var(--ka); overflow: hidden; border-radius: 7px 7px 0 0; container-type: inline-size;
-  background: radial-gradient(ellipse 80% 90% at 50% 120%, rgba(239, 122, 82, 0.6), transparent 72%), linear-gradient(180deg, #52295a, #2b1f4c 62%, #20244a); }
-/* the halftone: screentone dots, strongest in the corners and thinning towards the middle */
-.ko-art::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(circle, rgba(255, 201, 120, 0.42) 1.15px, transparent 1.65px) 0 0 / 6px 6px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); }
-/* the sound word: big, faint, behind the portrait; the card's width (container units) keeps a long one whole */
-.ko-word { position: absolute; z-index: 0; left: 50%; top: 47%; transform: translate(-50%, -50%) rotate(-8deg) skewX(-8deg); font: italic 900 min(calc(var(--ka) * 0.98), calc(190cqw / var(--wn, 5))) / 0.8 var(--display);
-  letter-spacing: -0.01em; text-transform: uppercase; white-space: nowrap; color: var(--sand); opacity: 0.3; pointer-events: none; }
-/* the portrait fades into the halftone at its edges, so the word shows round it */
-.ko-pic { position: absolute; z-index: 1; left: 9%; right: 9%; top: 0; bottom: 0; background: center 24% / cover no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); }
-/* the page's name, in manga lettering (italic, ink-stroked), tilted up from the lower left */
-.ko-nm { position: absolute; z-index: 2; left: 7px; bottom: 5px; max-width: 72%; font: italic 900 var(--kn, 16px) / 0.9 var(--display); letter-spacing: 0.01em; text-transform: uppercase; color: #fff;
-  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); transform: rotate(-3deg); transform-origin: left bottom; text-wrap: balance; pointer-events: none; }
-.sh-ko.on .ko-nm { color: var(--gold); }
-/* WATCH: a round cream button, the play triangle over the word */
-.ko-go { appearance: none; position: absolute; z-index: 3; left: 6px; top: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: var(--kg, 36px); height: var(--kg, 36px);
-  margin: 0; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: linear-gradient(180deg, #fff6e4, #f3d9a4); color: var(--ink); box-shadow: 0 2px 0 var(--ink), inset 0 -2px 0 rgba(120, 60, 0, 0.18);
-  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s; }
-.ko-go::after { content: ""; position: absolute; inset: -5px; }   /* a bigger target than it looks */
-.ko-go svg { flex: none; width: 52%; height: 52%; margin-top: -2px; }
-.ko-go span { margin-top: -3px; font: 800 7.5px/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; }
-.ko-go:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
-.ko-go:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
-.ko-go:disabled { opacity: 0.45; filter: grayscale(0.7); cursor: default; }
-@media (hover: hover) { .ko-go:hover:not(:disabled) { filter: brightness(1.08); } }
-/* ON: the nameplates' worn look, in gold */
-.sh-ko.on { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
-.sh-ko.on .sh-f b { color: var(--gold); }
-.ko-on { display: none; position: absolute; right: -2px; top: -2px; z-index: 4; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 8px 0 7px;
-  font: 900 10px/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; }
-.sh-ko.on .ko-on { display: block; }
-.sh-ko .sh-soon { top: 7px; right: 6px; padding: 3px 6px 2px; font-size: 9px; }   /* inside the art's corner, so the sticker never pokes into the row above */
-/* the state line: "In use" / "Tap to use" / the price; short of Pommes the price is dimmed */
-.sh-ko .sh-f small { font-size: 11.5px; }
-.sh-ko.on .sh-f small { color: var(--gold); }
-.sh-ko.short .sh-f small { opacity: 0.62; }
-.sh-ko.busy .sh-f small { color: var(--sand); letter-spacing: 0.2em; }
-.sh-f small .pmglyph { width: 11px; height: 14px; margin: 0 5px 0 0; vertical-align: 0; }
-.sh-f small > span + .pmglyph { margin-left: 6px; }
-.sh-ko.arm .sh-f small .pmglyph { filter: none; }
-/* back from WATCH or the results' band: a short pulse on the card (.hi, 1.6 s) */
-.sh-ko.hi { position: relative; z-index: 2; animation: koHi 1.6s ease-out; }
-@keyframes koHi { 0%, 32% { box-shadow: 0 0 0 3px var(--sand), 0 0 26px 7px rgba(243, 217, 164, 0.8), 0 3px 0 var(--ink); transform: translateY(-3px) scale(1.025); } }
-/* sizes */
+#acPanH .sh-pm:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+#acPanH .sh-pm:focus-visible, .sh-pms:focus-visible, .sh-ad.ready:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+@media (hover: hover) { #acPanH .sh-pm:hover { filter: brightness(1.12); } }
+#acPanH .sh-pm.zero b { color: var(--mute); }
+#acPanH .sh-pm.zero .pmglyph, .sh-pms.zero .pmglyph, .sh-pms.zero .sh-pmv { filter: grayscale(0.7) brightness(0.85); }
+/* the Free chips row with an ad ready: gold-edged and bright, a button; it keeps the dashed, dim look while it only waits */
+.sh-ad.ready { cursor: pointer; border-style: solid; border-color: rgba(244, 201, 93, 0.75); background: rgba(244, 201, 93, 0.1); -webkit-tap-highlight-color: transparent; }
+.sh-ad.ready .sh-adi, .sh-ad.ready .sh-adt, .sh-ad.ready .sh-adv { opacity: 1; }
+.sh-ad.ready .sh-adt b { color: var(--gold); }
+@media (hover: hover) { .sh-ad.ready:hover { background: rgba(244, 201, 93, 0.18); } }
+.sh-ad.done .sh-adv, .sh-ad.none .sh-adv { opacity: 0.35; }
+/* the Pommes Shop row: the cone in the icon's place, the words, the balance (white, dim at 0), a chevron; a button, never dim */
+.sh-pms { appearance: none; width: 100%; margin: 0; text-align: left; font: inherit; color: var(--text); cursor: pointer; border-style: solid; border-color: rgba(232, 69, 60, 0.7); background: rgba(232, 69, 60, 0.1);
+  -webkit-tap-highlight-color: transparent; }
+.sh-pms .sh-adt { opacity: 1; }
+.sh-pms .sh-adt b { color: var(--text); }
+.sh-pms .sh-pmi { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 7px; background: linear-gradient(180deg, #3a4170, #262b50); }
+.sh-pms .sh-pmi .pmglyph { width: 15px; height: 19px; vertical-align: 0; }
+.sh-pms .sh-pmv { flex: none; font: 800 18px/1 var(--display); font-variant-numeric: tabular-nums; color: #fff; }
+.sh-pms .sh-pmg { flex: none; margin: -2px 0 0 -2px; font: 800 24px/1 var(--display); color: var(--sand); }
+.sh-pms:active { transform: translateY(2px); }
+@media (hover: hover) { .sh-pms:hover { background: rgba(232, 69, 60, 0.18); } }
+#app.short .sh-pms .sh-pmi { width: 24px; height: 24px; }
+#app.short .sh-pms .sh-pmi .pmglyph { width: 12px; height: 16px; }
+#app.short .sh-pms .sh-pmv { font-size: 16px; }
+#app.short .sh-pms .sh-pmg { font-size: 22px; }
 #app.short #acPanH .sh-pm { font-size: 19px; padding: 0 12px 0 8px; }
 #app.short #acPanH .sh-pm .pmglyph { width: 13px; height: 17px; }
-#app.short .ko-go { --kg: 32px; }
-#app.short .ko-nm { --kn: 14px; }
-#app.short .sh-ko .sh-f small, #app.short .sh-ko.short .sh-f small { font-size: 11px; }
-#app.short .sh-pk .sh-pmi { width: 24px; height: 24px; }
-#app.short .sh-pk .sh-pmi .pmglyph { width: 12px; height: 16px; }
 #app.tiny #acPanH .sh-pm { font-size: 18px; padding: 0 11px 0 8px; }
 #app.tiny #acPanH .sh-pm span { font-size: 10px; }
-#app.tiny .ko-go { --kg: 30px; }
-#app.tiny .ko-go span { font-size: 6.5px; }
-#app.tiny .ko-nm { --kn: 13px; -webkit-text-stroke-width: 2.6px; }
-#app.tiny #acPanH .sh-grid.sh-kogrid { gap: 8px 6px; }
-#app.tiny .sh-ko .sh-f small, #app.tiny .sh-ko.short .sh-f small { font-size: 10.5px; letter-spacing: 0.02em; }
-#app.tiny .ko-on { padding: 3px 5px 2px; font-size: 9px; }
-#app.portrait #acPanH .sh-grid.sh-kogrid, #app.narrow #acPanH .sh-grid.sh-kogrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
 #app.portrait .sh-top, #app.narrow .sh-top { flex-wrap: wrap; row-gap: 6px; }
 #app.portrait #acPanH .sh-from, #app.narrow #acPanH .sh-from { order: 5; flex: 1 1 100%; }
 #app.narrow #acPanH .sh-pm { font-size: 18px; padding: 0 11px 0 8px; }
-#app.narrow .ko-nm { --kn: 15px; }
-#app:not(.short):not(.portrait) .ko-go { --kg: 40px; }
-#app:not(.short):not(.portrait) .ko-go span { font-size: 8.5px; }
-#app:not(.short):not(.portrait) .ko-nm { --kn: 19px; left: 9px; bottom: 6px; }
-#app:not(.short):not(.portrait) .sh-ko .sh-f small, #app:not(.short):not(.portrait) .sh-ko.short .sh-f small { font-size: 12.5px; }
-@media (prefers-reduced-motion: reduce) { .sh-ko.hi { animation: none; outline: 3px solid var(--sand); outline-offset: 2px; } .ko-go { transition: none; } }
 
-/* ---- the results' band (ui/shop.js shopResKo, markup in shell.html #rKo): "POTATALITY · in the Shop ›" under the story, a thin dark band like the finisher plate ---- */
-#resSheet .res-ko { appearance: none; display: inline-flex; align-items: center; gap: 6px; flex: none; align-self: flex-start; max-width: 100%; height: 26px; margin: 4px 0 0 3px; padding: 0 9px 0 10px;
+/* ---- the results' band (ui/shop.js shopResKo, markup in shell.html #rKo): "POTATALITY · in the Pommes Shop ›" under the story, a thin dark band like the finisher plate ---- */
+#resSheet .res-ko { appearance: none; display: inline-flex; align-items: center; gap: 6px; flex: none; align-self: flex-start; max-width: calc(100% - 10px); height: 26px; margin: 4px 0 0 3px; padding: 0 9px 0 10px;
   border: 2px solid var(--ketchup); border-radius: 7px; background: rgba(14, 16, 34, 0.9); color: var(--sand); box-shadow: 0 3px 0 var(--ink); transform: skewX(-8deg); white-space: nowrap; cursor: pointer;
   font: 800 12px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; transition: transform 0.08s, box-shadow 0.08s, filter 0.15s; }
 #resSheet .res-ko[hidden] { display: none; }
@@ -3361,7 +3339,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #resSheet.in:not(.still) .res-ko { animation: resUpBtn 0.26s cubic-bezier(0.2, 0.9, 0.25, 1) 0.46s backwards; }
 #app.tiny #resSheet .res-ko { height: 22px; margin-top: 2px; gap: 5px; padding: 0 7px 0 8px; font-size: 11px; }
 #app.tiny #resSheet .res-ko em { font-size: 12px; }
-#app.tiny #resSheet .res-ko .pmglyph { width: 9px; height: 12px; }
+#app.short #resSheet .res-ko .rk-in, #app.portrait #resSheet .res-ko .rk-in { display: none; }   /* "in the" gives way where the text column is narrow */
+#app.tiny #resSheet .res-ko .pmglyph { display: none; }   /* the band is 175px wide here; the words need the room */
 #app.portrait #resSheet .res-ko { height: 24px; margin-top: 2px; font-size: 11px; }
 #app:not(.short):not(.portrait) #resSheet .res-ko { height: 32px; margin-top: 6px; gap: 8px; padding: 0 12px 0 14px; font-size: 15px; }
 #app:not(.short):not(.portrait) #resSheet .res-ko em { font-size: 17px; }
@@ -9218,8 +9197,8 @@ root.BL = { teamGame, teamBotInput, botSave, botLoad, rngOf, ultReady, ultNeed, 
 "use strict";
 const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, lerp, sign, serialize, restore, checksum } = BL;
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
-// the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road)
-const chipN = (spec) => spec.palettes.filter((p) => !p.road).length;
+// the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road), the Pommes skins after those bought with Pommes (pal.pommes)
+const chipN = (spec) => spec.palettes.filter((p) => !p.road && !p.pommes).length;
 // a chip balance as shown everywhere: exact, with commas (1,350 and 12,480), never shortened
 const fmtChips = (n) => Math.max(0, Math.round(+n || 0)).toLocaleString("en-US");
 const $ = (id) => document.getElementById(id);
@@ -38652,21 +38631,30 @@ window.__blHarvest = { gift: hvGift, claim: hvClaim, get st() { return hvGet(); 
    with one tap on its card; a chip skin is bought with two taps on the big button (Buy, then Sure? for 3 s); a locked skin can always be
    looked at. Wearing or buying keeps the sheet open, and the select behind it follows. Styles: css/90-skins.css.
    The Account sheet's Locker (ui/acct.js) draws its skin cards with the same builder (skMakeCard, skStyle) and opens this sheet on a locked
-   skin with openSkins(id, i): the sheet then shows above the Account sheet, and closing it re-renders the Locker (css/92-locker.css). */
+   skin with openSkins(id, i): the sheet then shows above the Account sheet, and closing it re-renders the Locker (css/92-locker.css).
+   The Pommes skins (spec.palettes[i].pommes: 1 Ink Noir, 2 Starfall; core.js, their effects PMFX in skinfx.js) are a third row, "Special skins · bought with
+   Pommes" (built here; shell.html has the other two): a red-and-white candy-stripe POMMES tag, a red border, the model drawn live every frame, and for one you
+   do not own the price in Pommes (the fries cone, "300 · €2.99", never the chip's coin). They are never bought here: state "pm" (not owned) sends a tap on
+   the card, or on the big button, to the Pommes Shop on that fighter (pshopOpen). An owned one (in P.owned, put there by ui/kopages.js koSkins) is worn like any skin. */
 const SK = { id: null, i: 0, arm: false, armT: 0, art: null, cards: [], yoursT: 0, coin: 0, live: 0 };
 const SK_CHIPS_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 screens.skins = $("scrSkins");
 const skOwns = (id, i) => (P.owned[id] || [0]).includes(i);
 const skCount = (spec) => spec.palettes.reduce((n, p, i) => n + (skOwns(spec.id, i) ? 1 : 0), 0);
-// the effect line: the chip skins' FXTEXT, a Road skin's ROADFX (skinfx.js)
-const skFx = (spec, i) => `${(spec.palettes[i].road ? ROADFX[spec.palettes[i].road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`;
+// the effect line: the chip skins' FXTEXT, a Road skin's ROADFX, a Pommes skin's PMFX (skinfx.js)
+const skFx = (spec, i) => { const p = spec.palettes[i]; return `${(p.pommes ? PMFX[p.pommes] : p.road ? ROADFX[p.road] : FXTEXT[spec.id] && FXTEXT[spec.id][i]) || "Base look"}.`; };
 const skRegOf = (p) => ROAD_REG.findIndex((g) => g.boss === p.road);
 const skHv = (p) => p.road === "harvest";   // the Harvest skin: day 30 of the daily gifts, never bought
-const skWonTag = (p) => (skHv(p) ? "Harvest" : "Road");
-// worn, own (tap to wear), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
+const skTagged = (p) => !!(p.road || p.pommes);   // a skin with a sticker: won (ROAD, HARVEST) or bought with Pommes (POMMES)
+const skWonTag = (p) => (p.pommes ? "Pommes" : skHv(p) ? "Harvest" : "Road");
+const skPmPrice = () => `<i class="pmglyph" aria-hidden="true"></i><span>${KO_PRICE} · ${KO_EUR}</span>`;   // the fries cone and "300 · €2.99" (ui/kopages.js)
+// a sticker on an element (the bar, the preview): shown for a won or Pommes skin, the Pommes one in candy stripes
+function skTagSet(el, p) { el.hidden = !skTagged(p); el.textContent = skWonTag(p); el.classList.toggle("pm", !!p.pommes); }
+// worn, own (tap to wear), pm (a Pommes skin you do not own: the Pommes Shop), buy (enough chips), short (not enough), road (its boss's region is open), shut (it isn't yet)
 function skState(spec, i) {
   const p = spec.palettes[i];
   if (skOwns(spec.id, i)) return palIdx(spec.id) === i ? "worn" : "own";
+  if (p.pommes) return "pm";   // never "buy" or "short": a Pommes skin is not sold for chips (its price here is 0)
   if (skHv(p)) return "shut";
   if (p.road) return roadRegOpen(roadGet(), skRegOf(p)) ? "road" : "shut";
   return P.tokens >= p.price ? "buy" : "short";
@@ -38694,7 +38682,7 @@ function skinsBar(spec, pi) {
   const p = spec.palettes[pi] || spec.palettes[0], n = skCount(spec), bar = $("dSkins");
   bar.style.setProperty("--c", col(p));
   $("dSkName").textContent = p.name;
-  $("dSkRoad").hidden = !p.road; $("dSkRoad").textContent = skWonTag(p);
+  skTagSet($("dSkRoad"), p);
   $("dSkFx").textContent = skFx(spec, pi);
   $("dSkN").textContent = `${n}/${spec.palettes.length}`;
   bar.setAttribute("aria-label", `Skins. ${spec.name} wears ${p.name}. ${n} of ${spec.palettes.length} owned`);
@@ -38702,6 +38690,13 @@ function skinsBar(spec, pi) {
 $("dSkins").addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); openSkins(sel.fighter); });
 
 /* ----- the sheet ----- */
+// the third row, the Pommes skins, with its kicker: built once here (shell.html has the chip and the won rows); skRender fills it
+{
+  const k = document.createElement("div"), row = document.createElement("div");
+  k.className = "sk-k"; k.innerHTML = "<b>Special skins</b><span>bought with Pommes</span>";
+  row.className = "sk-row"; row.id = "skPm"; row.setAttribute("role", "group"); row.setAttribute("aria-label", "Special skins");
+  $("skSheet").querySelector(".sk-rack").append(k, row);
+}
 function openSkins(id, i) {   // i (optional): the skin to look at first; else the one worn
   if (!FIG[id]) return;
   Object.assign(SK, { id, i: Number.isInteger(i) && FIG[id].palettes[i] ? i : palIdx(id), art: null, cards: [] });
@@ -38721,12 +38716,12 @@ function skDisarm() { clearTimeout(SK.armT); SK.arm = false; }
 function skMakeCard(spec, i, list, tap) {
   const p = spec.palettes[i], b = document.createElement("button");
   b.className = "sk"; b.dataset.i = i; b.style.setProperty("--c", col(p)); b.style.setProperty("--cg", rgba(col(p), 0.42));
-  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${p.road ? `<em class="sk-rt">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
+  b.innerHTML = `<span class="sk-a"><canvas aria-hidden="true"></canvas>${skTagged(p) ? `<em class="sk-rt${p.pommes ? " pm" : ""}">${skWonTag(p)}</em>` : ""}<i class="sk-lk" aria-hidden="true"></i></span><span class="sk-f"><b></b><small></small></span>`;
   b.querySelector(".sk-f b").textContent = p.name;
   b.addEventListener("click", () => tap(i));
   const f = glazeMark(BL.newGame({ seed: 1, players: [{ spec, pal: p }, { spec, pal: p }], countdown: 1 }).fighters[0], glazeHas(spec.id, i));   // ui/glaze.js
   f.x = 0; f.y = 0; f.facing = -1;
-  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94 });
+  list.push({ cv: b.querySelector("canvas"), f, i, fit: 0.84, bottom: 0.94, pm: !!p.pommes });   // pm: drawn every frame (skPmDraw), its overlay moves
   return b;
 }
 const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
@@ -38734,16 +38729,17 @@ const skCard = (spec, i) => skMakeCard(spec, i, SK.cards, skTap);
 // tight (the Locker's small cards): a shut Road skin's foot says "Kitchen · locked", not "The Kitchen · locked", so it fits
 function skStyle(b, spec, i, sel, tight) {
   const p = spec.palettes[i], st = skState(spec, i), small = b.querySelector(".sk-f small"), nm = b.querySelector(".sk-f b"), gz = glazeHas(spec.id, i);
-  b.className = `sk ${st}${sel ? " sel" : ""}`;
+  b.className = `sk ${st}${p.pommes ? " pms" : ""}${sel ? " sel" : ""}`;
   if (nm._gz !== gz) {
     nm._gz = gz; nm.className = gz ? "gz" : "";
     if (gz) { nm.innerHTML = '<span></span><i aria-hidden="true">\u2726</i>'; nm.firstChild.textContent = p.name; } else nm.textContent = p.name;
   }
   if (st === "worn") small.textContent = "Worn";
   else if (st === "own") small.textContent = "Tap to wear";
+  else if (st === "pm") small.innerHTML = skPmPrice();
   else if (st === "buy" || st === "short") small.innerHTML = `<span class="tokglyph"></span>${fmtChips(p.price)}`;
   else small.textContent = tight && st === "shut" ? skRoad(spec, i).foot.replace(/^The /, "") : skRoad(spec, i).foot;
-  b.setAttribute("aria-label", `${p.name}${gz ? ", glazed" : ""}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "buy" || st === "short" ? `${fmtChips(p.price)} chips` : skRoad(spec, i).how}`);
+  b.setAttribute("aria-label", `${p.name}${gz ? ", glazed" : ""}: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "pm" ? `bought with Pommes, ${KO_PRICE} Pommes, ${KO_EUR}: in the Pommes Shop` : st === "buy" || st === "short" ? `${fmtChips(p.price)} chips` : skRoad(spec, i).how}`);
   return st;
 }
 function skDrawCards() { for (const a of SK.cards) paintModel(a, 0); }
@@ -38755,8 +38751,9 @@ function skRender(full) {
     $("skFig").textContent = spec.name;
     $("skRoadSub").textContent = `from the bosses and the Harvest, with ${spec.name}`;
     const chip = $("skChip"), road = $("skRoad");
-    chip.innerHTML = ""; road.innerHTML = ""; SK.cards = [];
-    spec.palettes.forEach((p, i) => (p.road ? road : chip).appendChild(skCard(spec, i)));
+    const pm = $("skPm");
+    chip.innerHTML = ""; road.innerHTML = ""; pm.innerHTML = ""; SK.cards = [];
+    spec.palettes.forEach((p, i) => (p.pommes ? pm : p.road ? road : chip).appendChild(skCard(spec, i)));
     skDrawCards();
   }
   $("skOwned").textContent = `${own} / ${n} owned`;
@@ -38773,12 +38770,13 @@ function skPreview(spec) {
   $("skPrev").style.setProperty("--c", col(p)); $("skPrev").style.setProperty("--cg", rgba(col(p), 0.42));
   $("skPrev").className = `sk-prev ${st}`;
   $("skName").textContent = p.name;
-  $("skRoadTag").hidden = !p.road; $("skRoadTag").textContent = skWonTag(p);
+  skTagSet($("skRoadTag"), p);
   $("skFx").textContent = skFx(spec, i);
   const act = $("skAct");
   if (st === "worn") act.innerHTML = `<span class="sk-pill"><i aria-hidden="true">✓</i>Worn</span>`;
   else if (st === "own") act.innerHTML = `<button class="btn primary sk-go" id="skGo"><span>Wear</span></button>`;
   else if (st === "buy") act.innerHTML = `<button class="btn ${SK.arm ? "ember" : "primary"} sk-go" id="skGo"><span>${SK.arm ? "Sure?" : "Buy"} <span class="tokglyph"></span>${fmtChips(p.price)}</span></button><p class="sk-l2">You have ${fmtChips(P.tokens)} · ${fmtChips(P.tokens - p.price)} left after</p>`;
+  else if (st === "pm") act.innerHTML = `<button class="btn sk-go sk-pmgo" id="skGo" aria-label="In the Pommes Shop, ${KO_PRICE} Pommes, ${KO_EUR}"><span><b>In the Pommes Shop</b> <small>${skPmPrice()}</small></span></button>`;
   else if (st === "short") act.innerHTML = `<span class="sk-pill dim"><span class="tokglyph"></span>${fmtChips(p.price)}</span><p class="sk-l1">${fmtChips(p.price - P.tokens)} more chips needed.</p><p class="sk-l2">${SK_CHIPS_FROM}</p>`;
   else { const rd = skRoad(spec, i); act.innerHTML = `<p class="sk-l1 sk-lock">${rd.how}</p><p class="sk-l2">${rd.why}</p>`; }
   const go = $("skGo");
@@ -38791,13 +38789,18 @@ function skPreview(spec) {
   glazeMark(SK.art.f, glazeHas(spec.id, i));   // ui/glaze.js: the preview shines when the skin is glazed
 }
 // the loop draws the preview while the sheet is open (loop.js)
-function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); }
+function skinsDraw(tk) { if (SK.id && SK.art) paintModel(SK.art, tk); skPmDraw(tk); }
+// the Pommes cards are live too: the overlay moves (a nebula breathes, stars twinkle, ink boils), so they are drawn with the tick, not once
+function skPmDraw(tk) { for (const a of SK.cards) if (a.pm) paintModel(a, tk); }
 // opened from the Account sheet (the menu, not the select) the loop is not drawing the preview: this does, while the sheet is open
-function skLive() { if (!SK.id) return; if (SK.art) paintModel(SK.art, tick); SK.live = requestAnimationFrame(skLive); }
+function skLive() { if (!SK.id) return; if (SK.art) paintModel(SK.art, tick); skPmDraw(tick); SK.live = requestAnimationFrame(skLive); }
+// a Pommes skin you do not own is never bought here: the Rack closes and the Pommes Shop opens on that fighter (ui/pshop.js)
+function skPommes(id) { Sfx.ui(); closeSkins(); pshopOpen(id); }
 function skTap(i) {
   Sfx.init();
   const spec = FIG[SK.id], st = skState(spec, i);
   skDisarm();
+  if (st === "pm") { skPommes(spec.id); return; }
   SK.i = i;
   if (st === "own") { equipSkin(spec.id, i); Sfx.uiFlip(); skChanged(); return; }   // owned: worn at once
   if (st === "short" || st === "road" || st === "shut") Sfx.uiNo(); else Sfx.ui();   // looking is free; the thud says it is locked
@@ -38807,7 +38810,8 @@ function skGo() {
   Sfx.init();
   const spec = FIG[SK.id], i = SK.i, p = spec.palettes[i], st = skState(spec, i);
   if (st === "own") { equipSkin(spec.id, i); Sfx.uiFlip(); skChanged(); return; }
-  if (st !== "buy") return;
+  if (st === "pm") { skPommes(spec.id); return; }
+  if (st !== "buy" || p.pommes) return;   // (a Pommes skin never gets here: no chip purchase of one is possible)
   if (!SK.arm) {   // the first tap arms the button (ember, "Sure?") for 3 s
     SK.arm = true; Sfx.ui();
     SK.armT = setTimeout(() => { SK.arm = false; if (SK.id) skRender(); }, 3000);
@@ -39138,13 +39142,14 @@ window.__blKo = { st: KO, refresh: koRefresh, demo: koDemo, tease: koTease, on: 
    redraws the pill. A card you cannot pay does not buy: the line at the top says how many chips are missing for a few seconds.
    plateCls(id) gives the CSS class of a plate id ("" for Ink or an id this copy does not know), plateSet(el, id) puts it on an element.
    The Harvest (ui/harvest.js) adds to it: the Sprout plate is never sold (day 7 gives it, `harvest`), a Glaze token (P.gzt, day 30 once every
-   fighter has the Harvest skin) glazes one skin instead of the chips, and the first row offers chips for a short ad, waiting with a SOON sticker
-   until ads exist (never required; chips are never bought).
-   KO pages (ui/kopages.js has the state, KO): the last section, one card per fighter for his Potatality, the second KO page, paid with Pommes (never
-   chips; the Pommes live on the server only). The pill beside the chips shows the Pommes, the pack row above the cards says what a pack is and waits
-   with a SOON sticker until payments exist (KO.buy), a card is bought like a plate (two taps) and then switched on or off with one tap, WATCH plays
-   the page (koDemo) and brings you back here on that card (shopKoFocus). Every price shows its euro value beside the Pommes. kopages.js calls
-   shopKoRender() on every change of what the server said. The results' "Potatality · in the Shop" band (#rKo) is shopResKo. */
+   fighter has the Harvest skin) glazes one skin instead of the chips.
+   The first row is Free chips (never required; chips are never bought): SH_AD chips for a short ad, SH_AD_DAY a day (ui/ads.js). While ads are off it
+   waits with a SOON sticker; with ads the tab asks for one when it opens, the row reads "+25 chips · N of 3 today" and is a button once the ad is
+   ready, a tap plays it and the reward pays (adsMark counts it), then it says "No ad right now" (none came) or "back tomorrow" (all used).
+   The Pommes (ui/kopages.js has the state, KO) are not spent here: the last row, "Pommes Shop", shows the balance and opens the Pommes Shop (ui/pshop.js
+   pshopOpen), where the Potatalities and the Pommes skins are bought; so does the Pommes pill beside the chips. kopages.js calls shopKoRender() on every
+   change of what the server said. The results' "Potatality · in the Pommes Shop" band (#rKo) is shopResKo and opens that sheet on the fighter whose page
+   just played on you. */
 const PLATES = [
   { id: "", name: "Ink", price: 0 },
   { id: "sunset", name: "Sunset", price: 150 },
@@ -39156,8 +39161,8 @@ const PLATES = [
   { id: "goldleaf", name: "Gold Leaf", price: 300 },
   { id: "sprout", name: "Sprout", price: 0, harvest: true },   // day 7 of the Harvest only
 ];
-const SH_AD = 25;   // the ad row's chips (3 a day), once ads exist
-const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null, ko: [], pk: null, pmN: null, hiT: 0, why: "", koId: "", koWait: false };
+const SH_AD = 25, SH_AD_DAY = 3;   // the Free chips row: chips per ad, ads a day
+const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null, ad: null, pms: null, pmN: null };
 const SH_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
 const plateInfo = (id) => PLATES.find((p) => p.id === id);
 const plateCls = (id) => (id && plateInfo(id) ? "np-" + id : "");
@@ -39199,39 +39204,6 @@ function shopGlazeCard(spec) {
   b.addEventListener("click", () => shopGlazeTap(spec.id));
   return { id: spec.id, i, el: b, small: f.lastChild, art: { cv, f: fig, fit: 0.84, bottom: 0.94 } };
 }
-// a KO page's card: a div (it holds two buttons: the card itself and WATCH): the art (halftone, the sound word faint behind the portrait, the page's name in
-// manga lettering), the fighter and the state line under it, the ON tag, the SOON sticker (a price that cannot be paid yet)
-const KO_NOTE = "Plays on a normal KO; an Ultimate keeps its own page.";
-const shKoPrice = `<span class="pmglyph"></span>${KO_PRICE} · ${KO_EUR}`;
-function shopKoCard(spec) {
-  const id = spec.id, pg = KO_PAGES[id] || { name: spec.name, word: "" };
-  const el = shMk("div", "sh-c sh-ko"), main = shMk("button", "ko-main"), art = shMk("span", "ko-art"), pic = shMk("i", "ko-pic"), word = shMk("i", "ko-word", pg.word),
-    nm = shMk("span", "ko-nm", pg.name), f = shMk("span", "sh-f"), go = shMk("button", "ko-go"), on = shMk("i", "ko-on", "ON"), soon = shMk("i", "sh-soon", "Soon");
-  el.dataset.id = id; main.type = "button"; go.type = "button";
-  const src = PORTRAITS[id];
-  if (src) pic.style.backgroundImage = `url("${src}")`;
-  pic.setAttribute("aria-hidden", "true"); word.setAttribute("aria-hidden", "true"); on.setAttribute("aria-hidden", "true"); soon.setAttribute("aria-hidden", "true");
-  word.style.setProperty("--wn", String(Math.max(3, pg.word.length)));
-  art.append(word, pic, nm);
-  f.append(shMk("b", "", spec.name), shMk("small"));
-  main.append(art, f);
-  go.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.2v15.6L20.5 12z" fill="currentColor"/></svg><span aria-hidden="true">Watch</span>`;
-  el.append(main, go, on, soon);
-  main.addEventListener("click", () => shopKoTap(id));
-  go.addEventListener("click", () => shopKoWatch(id));
-  return { id, el, main, go, small: f.lastChild, soon };
-}
-// the pack row above the cards: the one thing Pommes are sold as (300 for €2.99); not a button until payments exist (the server says buy: true)
-function shopKoPack() {
-  const el = shMk("div", "sh-ad sh-pk"), soon = shMk("i", "sh-soon", "Soon");
-  el.innerHTML = `<span class="sh-pmi" aria-hidden="true"><i class="pmglyph"></i></span><span class="sh-adt"><b>${KO_PRICE} Pommes</b> <span>One KO page. Pommes stay on your account.</span></span><span class="sh-adv">${KO_EUR}</span>`;
-  el.append(soon);
-  const go = () => { if (!KO.buy) return; Sfx.init(); Sfx.ui(); shopSay("Buying Pommes opens soon."); };   // PR 2 wires the payment here
-  el.addEventListener("click", go);
-  el.addEventListener("keydown", (e) => { if (KO.buy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } });
-  return { el, soon };
-}
-const koState = (id) => (koOwn(id) ? (koOn(id) ? "on" : "own") : koBal() >= KO_PRICE ? "buy" : "short");
 function plState(id) { const p = plateInfo(id); return shopWorn() === id ? "worn" : shopOwns(id) ? "own" : p.harvest ? "gift" : P.tokens >= p.price ? "buy" : "short"; }
 function gzState(c) { return glazeHas(c.id, c.i) ? "glazed" : (P.gzt | 0) > 0 ? "token" : P.tokens >= GLAZE_PRICE ? "buy" : "short"; }
 
@@ -39240,37 +39212,36 @@ function renderShop() {
   const pan = $("acPanH");
   shopDisarm();
   pan.innerHTML = "";
-  SH.pl = PLATES.map(shopPlateCard); SH.gz = FIGHTERS.map(shopGlazeCard); SH.ko = FIGHTERS.map(shopKoCard); SH.pk = shopKoPack(); SH.pmN = null;
-  SH.why = KO.why;   // an old no from the server is not said again
-  const top = shMk("div", "sh-top"), bal = shMk("span", "coin chips sh-bal"), pm = shMk("span", "sh-pm"), from = shMk("p", "sh-from"), sk = shMk("span", "sh-skins");
+  SH.pl = PLATES.map(shopPlateCard); SH.gz = FIGHTERS.map(shopGlazeCard); SH.pmN = null;
+  const top = shMk("div", "sh-top"), bal = shMk("span", "coin chips sh-bal"), pm = shMk("button", "sh-pm"), from = shMk("p", "sh-from"), sk = shMk("span", "sh-skins");
   bal.id = "shBal"; pm.id = "shPm"; from.id = "shFrom"; from.setAttribute("aria-live", "polite");
+  pm.type = "button"; pm.addEventListener("click", shopPommes);   // the pill opens the Pommes Shop, as the row at the end does
   sk.innerHTML = `Skins <b>${acSkinCount(P)} / ${acSkinTotal()}</b> · in the Locker`;
   top.append(bal, pm, from, sk);
   SH.top = { bal, pm, from };
-  const ad = shMk("div", "sh-ad");   // not a button until ads exist
-  ad.setAttribute("aria-disabled", "true");
-  ad.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>Free chips</b><span>A short ad, +${SH_AD} chips, 3 a day. Never required.</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span><i class="sh-soon">Soon</i>`;
-  ad.setAttribute("aria-label", `Free chips: a short ad, ${SH_AD} chips, 3 a day, never required. Coming soon.`);
+  const ad = shMk("div", "sh-ad");   // SOON while ads are off, a button once an ad is ready (shopAdUpdate)
+  ad.addEventListener("click", shopAdTap);
+  ad.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); shopAdTap(); } });
+  SH.ad = ad;
+  const pms = shopPommesRow();
   const kick = (title, text, more) => {   // more: a second sentence, shown here on a landscape sheet (under the cards the rest of the time, .sh-note)
     const k = shMk("div", "sh-k"), s = shMk("span", "", text);
     if (more) s.appendChild(shMk("em", "sh-k2", more));
     k.appendChild(shMk("b", "", title)); k.appendChild(s); return k;
   };
   const NOTE = "The worn skin of each fighter is glazed here.";
-  const g1 = shMk("div", "sh-grid sh-plates"), g2 = shMk("div", "sh-grid sh-glaze"), g3 = shMk("div", "sh-grid sh-kogrid");
-  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze"); g3.setAttribute("role", "group"); g3.setAttribute("aria-label", "KO pages");
+  const g1 = shMk("div", "sh-grid sh-plates"), g2 = shMk("div", "sh-grid sh-glaze");
+  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze");
   for (const c of SH.pl) g1.appendChild(c.el);
   for (const c of SH.gz) g2.appendChild(c.el);
-  for (const c of SH.ko) g3.appendChild(c.el);
   pan.append(top, ad, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
     kick("Glaze", "a pearl sheen on a skin you own", `, ${GLAZE_PRICE} chips each. ${NOTE}`), g2,
-    shMk("p", "sh-note", NOTE),
-    kick("KO pages", "a second KO page per fighter, the Potatality", `. ${KO_NOTE}`), SH.pk.el, g3,
-    shMk("p", "sh-note", KO_NOTE));
-  koAsk();   // ui/kopages.js: the balance and the pages again from the server (not more than every 5 s)
+    shMk("p", "sh-note", NOTE), pms);
+  koAsk();   // ui/kopages.js: the balance again from the server (not more than every 5 s)
   shopRefresh();
   shopPaint(true);
   shopLoop();
+  shopAdAsk();   // ui/ads.js: an ad for the Free chips row, if ads are on and some are left today
 }
 // the balance, the line at the top and every card's state (nothing is rebuilt, so a card keeps its focus)
 function shopRefresh() {
@@ -39295,34 +39266,79 @@ function shopRefresh() {
     c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${say}` : `glaze for ${say}`}`);
     if (glazeOn(c.art.f) !== (st === "glazed")) { glazeMark(c.art.f, st === "glazed"); shopPaint(false); }
   }
-  shopKoUpdate();
+  shopPmUpdate(); shopAdUpdate();
 }
-// the Pommes pill, the pack row and every KO card's state (in place, nothing is rebuilt)
-function shopKoUpdate() {
-  const n = koBal(), pm = SH.top.pm, buy = !!KO.buy, pk = SH.pk, eu = `${KO_PRICE} Pommes, ${KO_EUR}`;
-  if (SH.pmN !== n) {
-    pm.innerHTML = `<i class="pmglyph" aria-hidden="true"></i><b>${fmtChips(n)}</b> <span>Pommes</span>`;
-    pm.setAttribute("aria-label", `${fmtChips(n)} Pommes`);
-    if (SH.pmN !== null && !resCalm()) slReplay(pm, "sh-pop");
-    SH.pmN = n;
-  }
-  pk.el.classList.toggle("go", buy); pk.soon.hidden = buy;
-  if (buy) { pk.el.setAttribute("role", "button"); pk.el.tabIndex = 0; pk.el.removeAttribute("aria-disabled"); }
-  else { pk.el.removeAttribute("role"); pk.el.removeAttribute("tabindex"); pk.el.setAttribute("aria-disabled", "true"); }
-  pk.el.setAttribute("aria-label", `${eu}: one KO page. Pommes stay on your account.${buy ? "" : " Coming soon."}`);
-  for (const c of SH.ko) {
-    const pg = KO_PAGES[c.id] || { name: FIG[c.id].name }, st = koState(c.id), arm = SH.arm === "k:" + c.id && st === "buy", busy = KO.busy === c.id, has = koHas(c.id);
-    for (const k of ["on", "own", "buy", "short"]) c.el.classList.toggle(k, st === k);
-    c.el.classList.toggle("arm", arm); c.el.classList.toggle("busy", busy);
-    c.small.innerHTML = busy ? "…" : st === "on" ? "In use" : st === "own" ? "Tap to use" : arm ? `<span>Sure?</span>${shKoPrice}` : shKoPrice;
-    c.main.setAttribute("aria-label", `${pg.name}, ${FIG[c.id].name}'s Potatality: ${busy ? "buying" : st === "on" ? "in use, tap to switch it off" : st === "own" ? "tap to use it" : arm ? `tap again to buy for ${eu}` : st === "buy" ? eu : `${eu}, you have ${fmtChips(n)} Pommes${buy ? "" : ", Pommes come soon"}`}`);
-    if (st === "on" || st === "own") c.main.setAttribute("aria-pressed", String(st === "on")); else c.main.removeAttribute("aria-pressed");
-    c.main.setAttribute("aria-busy", String(busy));
-    c.soon.hidden = !(st === "short" && !buy);
-    c.go.disabled = !has;
-    c.go.setAttribute("aria-label", has ? `Watch ${pg.name}` : `Watch ${pg.name}: not available yet, this page is still being drawn`);
-  }
+
+/* ----- the Pommes: the pill at the top and the row at the end; both open the Pommes Shop (ui/pshop.js) ----- */
+const shPmCone = '<i class="pmglyph" aria-hidden="true"></i>';
+// the row: the cone, "Pommes Shop" and what it holds, your balance (dim at 0), a chevron; one button
+function shopPommesRow() {
+  const el = shMk("button", "sh-ad sh-pms"), ico = shMk("span", "sh-pmi"), t = shMk("span", "sh-adt"), v = shMk("span", "sh-pmv"), go = shMk("b", "sh-pmg", "›");
+  el.type = "button";
+  ico.setAttribute("aria-hidden", "true"); ico.innerHTML = shPmCone; go.setAttribute("aria-hidden", "true");
+  t.append(shMk("b", "", "Pommes Shop"), " ", shMk("span", "", "KO pages and special skins"));   // (the spaces: the row reads as a sentence to anything that takes its text)
+  el.append(ico, " ", t, " ", v, " ", go);
+  el.addEventListener("click", shopPommes);
+  SH.pms = { el, v };
+  return el;
 }
+function shopPommes() { Sfx.init(); Sfx.ui(); pshopOpen(); }
+// the pill and the row's balance, in place (kopages.js calls shopKoRender on every answer of the server)
+function shopPmUpdate() {
+  const n = koBal(), pm = SH.top.pm, row = SH.pms;
+  if (SH.pmN === n) return;
+  pm.innerHTML = `${shPmCone}<b>${fmtChips(n)}</b> <span>Pommes</span>`;
+  pm.setAttribute("aria-label", `${fmtChips(n)} Pommes: open the Pommes Shop`);
+  pm.classList.toggle("zero", !(n > 0));
+  row.v.textContent = fmtChips(n); row.el.classList.toggle("zero", !(n > 0));
+  row.el.setAttribute("aria-label", `Pommes Shop: ${fmtChips(n)} Pommes. KO pages and special skins`);
+  if (SH.pmN !== null && !resCalm()) slReplay(pm, "sh-pop");
+  SH.pmN = n;
+}
+
+/* ----- Free chips (ui/ads.js): the first row ----- */
+const shopAdLeft = () => Math.max(0, SH_AD_DAY - adsDay().ch);
+// the row as things stand: SOON (ads off), waiting for an ad, ready (a button), none came, an ad playing, back tomorrow; written only when it changes
+function shopAdUpdate() {
+  const el = SH.ad;
+  if (!el) return;
+  const on = adsOn(), used = on ? adsDay().ch : 0, st = on ? adsState("chips") : "off";
+  const k = !on ? "soon" : used >= SH_AD_DAY ? "done" : st === "ready" ? "ready" : st === "none" ? "none" : st === "busy" ? "busy" : "wait";
+  if (el._k === `${k}:${used}`) return;
+  el._k = `${k}:${used}`;
+  const sub = k === "soon" ? `A short ad, +${SH_AD} chips, ${SH_AD_DAY} a day. Never required.` : k === "done" ? "back tomorrow" : k === "none" ? "No ad right now" : `+${SH_AD} chips · ${used} of ${SH_AD_DAY} today`;
+  el.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>Free chips</b><span>${sub}</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span>${k === "soon" ? '<i class="sh-soon">Soon</i>' : ""}`;
+  el.className = k === "soon" ? "sh-ad" : `sh-ad ${k}`;
+  if (k === "ready") { el.setAttribute("role", "button"); el.tabIndex = 0; el.removeAttribute("aria-disabled"); }
+  else { el.removeAttribute("role"); el.removeAttribute("tabindex"); el.setAttribute("aria-disabled", "true"); }
+  const say = { soon: `a short ad, ${SH_AD} chips, ${SH_AD_DAY} a day, never required. Coming soon.`, ready: `watch a short ad for ${SH_AD} chips, ${used} of ${SH_AD_DAY} today`,
+    done: `all ${SH_AD_DAY} ads watched today, back tomorrow`, none: "no ad right now", busy: "an ad is playing", wait: `getting an ad ready, ${used} of ${SH_AD_DAY} today` };
+  el.setAttribute("aria-label", `Free chips: ${say[k]}`);
+}
+// the tab opened, or came back from the Pommes Shop (which asks for its own ad): ask for one if none is on the way and some are left today
+function shopAdAsk() {
+  if (adsOn() && shopAdLeft() > 0 && $("scrPshop").hidden) {
+    const st = adsState("chips");
+    if (st === "off" || st === "none") adsPrime("chips", shopAdUpdate);
+  }
+  shopAdUpdate();
+}
+// a tap with an ad ready: it plays; watched to the end it pays (once per ad) and counts, skipped nothing changes; then another one is asked for
+function shopAdTap() {
+  Sfx.init();
+  if (!adsOn() || adsState("chips") !== "ready" || shopAdLeft() <= 0) return;
+  Sfx.ui();
+  adsShow("chips", () => {
+    if (shopAdLeft() <= 0) return;   // all used meanwhile
+    P.tokens += SH_AD; saveProfile(); adsMark("chips"); Sfx.uiCoin(); renderPill();
+    if (SH.top && !resCalm()) slReplay(SH.top.bal, "sh-pop");
+    shopRefresh();
+  }, () => { if (!screens.account.hidden && acUI.tab === "h") shopAdAsk(); else shopAdUpdate(); });
+  shopAdUpdate();
+}
+// the Pommes Shop closing over the tab: its own ad is spent or replaced, so ask for ours again
+if (window.MutationObserver) new MutationObserver(() => { if ($("scrPshop").hidden && SH.top && !screens.account.hidden && acUI.tab === "h") { shopAdAsk(); shopRefresh(); } }).observe($("scrPshop"), { attributes: true, attributeFilter: ["hidden"] });
+
 function shopSay(text) {
   SH.msg = text; clearTimeout(SH.msgT);
   SH.msgT = setTimeout(() => { SH.msg = ""; shopRefresh(); }, 4200);
@@ -39335,7 +39351,7 @@ function shopArm(key) {
   shopRefresh();
 }
 // leaving the tab or the sheet: nothing stays armed, the redraw loop stops
-function shopLeave() { shopDisarm(); clearTimeout(SH.msgT); SH.msg = ""; clearTimeout(SH.hiT); cancelAnimationFrame(SH.raf); SH.raf = 0; }
+function shopLeave() { shopDisarm(); clearTimeout(SH.msgT); SH.msg = ""; cancelAnimationFrame(SH.raf); SH.raf = 0; }
 function shopPaid(price) { P.tokens -= price; saveProfile(); Sfx.uiCoin(); renderPill(); if (SH.top && !resCalm()) slReplay(SH.top.bal, "sh-pop"); }
 
 function shopPlateTap(id) {
@@ -39367,69 +39383,23 @@ function shopGlazeTap(id) {
   if (tk) P.gzt = (P.gzt | 0) - 1;
   shopPaid(tk ? 0 : GLAZE_PRICE); shopRefresh();
 }
-/* ----- KO pages: a tap on a card, WATCH, what the server said, back from WATCH, the results' band ----- */
-function shopKoTap(id) {
-  Sfx.init();
-  const st = koState(id), name = KO_PAGES[id].name;
-  if (st === "on" || st === "own") { shopDisarm(); Sfx.uiFlip(); koUse(id, st === "own"); shopRefresh(); return; }   // owned: on or off with one tap
-  if (KO.busy) return;   // the server is still answering a buy
-  if (st === "short") {
-    shopDisarm(); Sfx.uiNo();
-    shopSay(KO.buy ? `${name} costs ${KO_PRICE} Pommes and you have ${fmtChips(koBal())}.` : "Pommes come soon: the page is in the Shop the day they do.");
-    return;
-  }
-  if (SH.arm !== "k:" + id) { shopArm("k:" + id); return; }
-  shopDisarm(); SH.koId = id;
-  if (koBuy(id)) { SH.koWait = true; shopRefresh(); return; }   // asked: "…" until the server answers (pm-ok, pm-no: shopKoRender)
-  shopKoSay(KO.why === "short" ? "short" : "fail");   // it could not even be asked (no connection, signed out)
-}
-function shopKoSay(why) {
-  const name = (KO_PAGES[SH.koId] || { name: "A page" }).name;
-  Sfx.uiNo();
-  shopSay(why === "short" ? `${name} costs ${KO_PRICE} Pommes and you have ${fmtChips(koBal())}.` : why === "own" ? "You own it already." : why === "acct" ? "Signed out for a moment: try again." : "That didn't go through: try again.");
-}
-function shopKoWatch(id) {
-  Sfx.init();
-  if (!koHas(id)) return;
-  if (!koDemoOk(id)) { shopDisarm(); Sfx.uiNo(); shopSay("Watch works from the menu."); return; }
-  shopLeave();   // the sheet closes under the page; renderShop starts everything again when it comes back
-  try { koDemo(id); } catch (e) {   // a page that fails to start must not leave the game on an empty match screen: back to the Shop
-    try { koDemoEnd(); } catch (e2) { /* nothing left to tidy */ }
-    if (typeof console !== "undefined") console.warn("WATCH failed", e);
-    shopSay("That page didn't play: try again.");
-  }
-}
-// ui/kopages.js calls this on every change of the server's copy (a no-op unless the Shop is on the screen)
-function shopKoRender() {
-  if (!SH.top || screens.account.hidden || acUI.tab !== "h") return;
-  if (KO.why) SH.koWait = false;
-  else if (SH.koWait && koOwn(SH.koId)) { SH.koWait = false; Sfx.uiCoin(); }   // the server paid: the page is yours
-  if (KO.why !== SH.why) { SH.why = KO.why; if (KO.why) shopKoSay(KO.why); }   // a no from the server, said once
-  shopRefresh();
-}
-// back from WATCH, or from the results' band: the Shop on that fighter's card, scrolled into view, a short pulse
-function shopKoFocus(id) {
-  if (screens.account.hidden || acUI.tab !== "h") openAccount("h");
-  const c = SH.ko.find((x) => x.id === id);
-  if (!c || !c.el.isConnected) return;
-  const calm = !!window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  clearTimeout(SH.hiT);
-  for (const x of SH.ko) x.el.classList.remove("hi");
-  void c.el.offsetWidth;
-  c.el.classList.add("hi");
-  c.el.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" });
-  SH.hiT = setTimeout(() => c.el.classList.remove("hi"), 1700);
-}
-// the results' band, "Potatality · in the Shop", after a CPU played its page on you (match.koTease: that fighter's id); a tap opens the Shop on that card
+/* ----- the Pommes from outside: kopages.js's calls, the results' band ----- */
+// ui/kopages.js calls this on every change of the server's copy (a no-op unless the Shop is on the screen): the balance follows
+function shopKoRender() { if (SH.top && !screens.account.hidden && acUI.tab === "h") shopRefresh(); }
+// kopages.js koDemoEnd calls this after a WATCH that has no caller to go back to; the Pommes Shop has its own WATCH and its own way back, so nothing here
+function shopKoFocus() {}
+// the results' band, "Potatality · in the Pommes Shop", after a CPU played its page on you (match.koTease: that fighter's id); a tap opens the Pommes Shop on him
 function shopResKo(id) {
   const el = $("rKo"), ok = typeof id === "string" && !!KO_PAGES[id];
   el.hidden = !ok; el.dataset.id = ok ? id : "";
-  if (ok) el.setAttribute("aria-label", `${KO_PAGES[id].name}, ${FIG[id].name}'s Potatality: see it in the Shop`);
+  const sp = el.querySelector("span");   // (shell.html still says "in the Shop"); "in the " drops out on the smallest screens
+  if (!sp.firstElementChild) { sp.textContent = "· "; sp.append(shMk("span", "rk-in", "in the "), "Pommes Shop"); }
+  if (ok) el.setAttribute("aria-label", `${KO_PAGES[id].name}, ${FIG[id].name}'s Potatality: see it in the Pommes Shop`);
 }
 $("rKo").addEventListener("click", () => {
   const id = $("rKo").dataset.id;
   if (!id) return;
-  Sfx.init(); Sfx.ui(); openAccount("h"); shopKoFocus(id);
+  Sfx.init(); Sfx.ui(); pshopOpen(id);
 });
 // a tap anywhere in the tab but on the armed card puts it back
 $("acPanH").addEventListener("click", (e) => { if (SH.arm && !e.target.closest(".sh-c.arm")) { shopDisarm(); shopRefresh(); } }, true);
