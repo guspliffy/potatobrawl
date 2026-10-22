@@ -446,7 +446,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
-  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk)) { NET.oppLeft = true; return; }   // Next match never waits for them
+  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm)) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -669,7 +669,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }

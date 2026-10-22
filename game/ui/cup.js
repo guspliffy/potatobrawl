@@ -274,12 +274,15 @@ function cupJingle() {
 
 $("cupBack").addEventListener("click", () => {
   Sfx.init(); Sfx.uiBack();
+  if (mode === "tcup") { tcBack(); return; }   // ui/tourney.js: an online cup's bracket (its Menu never touches P.cup)
   const c = P.cup;
   if (!cupOk(c) || cupOver(c)) { cupLeave(); return; }
   CU.confirm = !CU.confirm; cupFootRender(); cupFootIn();   // "Menu" in the middle of a cup asks first: leaving ends the cup
 });
 // the lines follow the slots whenever the bracket area changes size (turning the phone, the strip under it changing height)
-if (window.ResizeObserver) new ResizeObserver(() => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); }).observe($("cupGrid"));
-else window.addEventListener("resize", () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); });
+// (an online cup's bracket on the same screen, mode "tcup": ui/tcview.js tcvLines)
+const cupRelines = () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); else if (mode === "tcup") tcvLines(); };
+if (window.ResizeObserver) new ResizeObserver(cupRelines).observe($("cupGrid"));
+else window.addEventListener("resize", cupRelines);
 // a reload during a cup comes back to its bracket (menus and the tutorial have run by then; an invite link or a first-time tutorial win)
 setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true }); }, 0);

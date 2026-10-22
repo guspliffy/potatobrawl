@@ -6,7 +6,7 @@
 # browser steps at once, which play in real time, and the simulations next to them at low priority, so they only take the CPU the
 # browsers leave over. More browsers at once don't finish sooner on 4 cores, they only starve each other. The lines keep the order below.
 #   CHECK_JOBS=1 ./check.sh     one browser step at a time (a slow or busy machine)
-#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+13 (default 8091), e.g. for a second checkout
+#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+14 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 # macOS: bash 3.2 works (it polls instead of `wait -n`), and without `timeout` the steps run with no time limit unless coreutils' gtimeout is installed.
@@ -227,6 +227,16 @@ if grep -q "^pommes ok" "$LOGS/pm.log"; then pass "Pommes server + support tool 
 else fail "Pommes server + support tool" "$LOGS/pm.log"; fi
 }
 
+# 5d3c. Cups on the server (tourney.js): the Berlin 20:00 Daily Cup (summer and winter time), "I'm in tonight", the lobby and its roll call,
+#       seeding with CPUs, call-ups, walkovers, a match between two players refereed as a Quick match, a CPU match replayed from its log,
+#       the places and prizes paid once (also after a restart), Friends Cups (host, code, start, host leaving), a restart in the middle of a
+#       cup, the update's drain, a stuck cup ended. Node only.
+s_tc() {
+TC_PORT=$((PB + 1)) timeout 300 node tests/tourney.js > "$LOGS/tc.log" 2>&1
+if grep -q "^tourney ok" "$LOGS/tc.log"; then pass "cups server ($(grep -c '^PASS' "$LOGS/tc.log") checks)"
+else fail "cups server" "$LOGS/tc.log"; fi
+}
+
 # 5d4. Boss Week in the browser against a real server (the boss with a tenth of his HP): FIGHT makes the account, the ticket, the clock
 #      pill, a win the server plays again (CHECKING… then NEW BEST, the same time frame for frame), Board, leaving costs nothing, a slower
 #      win isn't sent, the 4:00 cap, Monday's payout card and the chips by sync. Shots in build/shots/bw.
@@ -244,6 +254,15 @@ s_replay() {
 (cd "$SHOTS" && PWREPLAY_PORT=$((PB + 13)) timeout 1200 python3 "$ROOT/tests/pwreplay.py" replay) > "$LOGS/replay.log" 2>&1
 if grep -q "^no errors" "$LOGS/replay.log"; then pass "replays in the browser (local and server runs, seek, share link, Ranked vs CPU; shots in build/shots/replay)"
 else fail "replays in the browser" "$LOGS/replay.log"; fi
+}
+
+# 5d6. Cups in the browser against a real server (short timers): a Friends Cup by its link on two phones, the lobby, START, the
+#      bracket, call-ups (FIGHT over the menu and on the bracket), a match between the two phones, a CPU match checked by the server,
+#      a walkover, the champion; the sheet, the bracket and the results card at four sizes. Shots in build/shots/tc.
+s_tcui() {
+(cd "$SHOTS" && PWTC_PORT=$((PB + 14)) timeout 1200 python3 "$ROOT/tests/pwtourney.py" tc) > "$LOGS/tc-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/tc-ui.log"; then pass "cups in the browser (Friends Cup by link, call-ups, a player match and a CPU match, champion; shots in build/shots/tc)"
+else fail "cups in the browser" "$LOGS/tc-ui.log"; fi
 }
 
 # 5e. Quick match in the browser: three players through a real server: the Season sheet, Find match, the CPU warm-up while
@@ -463,13 +482,13 @@ else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; f
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm bwui replay quickui stakesui screens skins shop acctui hud ultui pota bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui pota bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
-# priority next to the rest; the server tests (quick, cpu, bw, pm, acct, stats) have short timers, so they run alone first (about 20 seconds).
+# priority next to the rest; the server tests (quick, cpu, bw, pm, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
-SOLO=(quick cpu bw pm acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui bwui replay tut skins bossui ultui pota bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+SOLO=(quick cpu bw pm tc acct stats)
+REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

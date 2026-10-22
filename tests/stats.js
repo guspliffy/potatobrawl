@@ -52,7 +52,7 @@ async function inProcess() {
 
   let r = await hit({ e: ["day", "day:new", "wk", "mo", "dev:phone", "app:web", "lang:de", "ver:12", "ms:practice", "me:practice:win", "fp:reaper",
     "ret:2026-10-14:1", "ret:2026-10-17:1", "ret:2026-02-30:3", "ret:2026-10-14:2", "tut:move", "fx:tut:charge", "fx:match:online-boss",
-    "bs:scratch:2", "rw:23", "scr:road", "chl:make", "chl:new", "chl:x", "bogus", "day:", "ms:Ranked", "me:x:won", 5, null, { a: 1 }, "x".repeat(200)] }, { "content-type": "text/plain;charset=UTF-8" });
+    "bs:scratch:2", "rw:23", "scr:road", "chl:make", "chl:new", "chl:x", "tc:join", "tc:x", "bogus", "day:", "ms:Ranked", "me:x:won", 5, null, { a: 1 }, "x".repeat(200)] }, { "content-type": "text/plain;charset=UTF-8" });
   check(r.status === 204, `a hit sent as text/plain (sendBeacon) answers 204 (got ${r.status})`);
   r = await data({ key });
   const c = r.json && r.json.days && r.json.days["2026-10-15"];
@@ -65,8 +65,8 @@ async function inProcess() {
     check(ra.status === 200 && JSON.stringify(ra.json.acct) === JSON.stringify(f), "accounts on: the page data carries how full the accounts folder is");
     acc = null;
   }
-  check(!!c && c.day === 1 && c["ret:2026-10-14:1"] === 1 && c["fx:tut:charge"] === 1 && c["fx:match:online-boss"] === 1 && c["bs:scratch:2"] === 1 && c["rw:23"] === 1 && c["chl:make"] === 1 && c["chl:new"] === 1, "known keys are counted");
-  check(!!c && !("bogus" in c) && !("chl:x" in c) && !("ms:Ranked" in c) && !("me:x:won" in c) && !("ret:2026-10-17:1" in c) && !("ret:2026-02-30:3" in c) && !("ret:2026-10-14:2" in c) && Object.keys(c).length === 20,
+  check(!!c && c.day === 1 && c["ret:2026-10-14:1"] === 1 && c["fx:tut:charge"] === 1 && c["fx:match:online-boss"] === 1 && c["bs:scratch:2"] === 1 && c["rw:23"] === 1 && c["chl:make"] === 1 && c["chl:new"] === 1 && c["tc:join"] === 1, "known keys are counted");
+  check(!!c && !("bogus" in c) && !("chl:x" in c) && !("tc:x" in c) && !("ms:Ranked" in c) && !("me:x:won" in c) && !("ret:2026-10-17:1" in c) && !("ret:2026-02-30:3" in c) && !("ret:2026-10-14:2" in c) && Object.keys(c).length === 21,
     `unknown keys, bad dates, dates after tomorrow and non-strings are ignored (${c ? Object.keys(c).length : 0} keys)`);
   r = await hit({ e: ["err:TypeError: a is undefined @12", "err:one", "err:two", "err:three", "err:four", "err:<b>\"x\"</b>", "err:" + "y".repeat(81)] });
   r = await data({ key });

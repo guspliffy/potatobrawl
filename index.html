@@ -5059,6 +5059,255 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 }
 #rSub .rv-nw { white-space: nowrap; }
 
+/* ---------- Cups online: the Tournament mini's line, the sheet, the online bracket's states, the call-up banner, the results card ("sunset ink") ----------
+   Markup: shell.html (#bCup's #mTc, #scrTc, #tcCall, #rTc); texts and rows: ui/tcview.js (tcv*); the page logic is ui/tourney.js. The bracket reuses
+   the offline cup's classes (.cs .cc .cf .cup-lines, shell.html + 50-sheets.css) and adds the online states below. Sizes follow the #app classes
+   view.js sets: desktop (default), .short (844x390), .tiny (667x320), .portrait / .narrow (upright). */
+
+/* ===== the menu's Tournament mini: the small line by state; "Called!" pulses ===== */
+#scrMenu #bCup #mTc { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; }
+#scrMenu #bCup #mTc[hidden] { display: none; }
+#scrMenu #bCup #mTcT { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; margin: -0.125em 0; }   /* room for the descenders under the clip */
+#scrMenu #bCup .mm-mt { max-width: 100%; }
+#scrMenu #bCup .mm-mt small { max-width: 100%; min-width: 0; }
+#scrMenu #bCup .tcv-live { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ketchup); box-shadow: 0 0 0 3px rgba(232, 69, 60, 0.3); animation: blink 1.2s ease-in-out infinite; }
+#scrMenu #bCup .tcv-live[hidden] { display: none; }
+#scrMenu #bCup.tcv-called { border-color: var(--ember); animation: tcvPill 1.1s ease-in-out infinite; }
+#scrMenu #bCup.tcv-called small { color: var(--ember); font-weight: 800; }
+@keyframes tcvPill { 50% { box-shadow: 0 3px 0 var(--ink), 0 0 0 3px rgba(239, 122, 82, 0.5), 0 0 18px rgba(239, 122, 82, 0.55), var(--bevel); } }
+
+/* ===== the sheet ===== */
+#app #scrTc > .tcv-sheet { width: min(860px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; --tcv-seat: 54px; }
+#app.short #scrTc > .tcv-sheet { width: min(800px, 100%); --tcv-seat: 40px; }
+#app.tiny #scrTc { padding: 8px 10px; }
+#app.tiny #scrTc > .tcv-sheet { width: min(647px, 100%); --tcv-seat: 32px; }
+#app.portrait #scrTc { padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(14px, env(safe-area-inset-bottom, 0px)); align-items: start; }
+#app.portrait #scrTc > .tcv-sheet { width: 100%; --tcv-seat: 52px; }
+.tcv-sheet .sh-head { flex: none; }
+.tcv-hk { color: var(--sand); max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+.tcv-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; padding: 12px; align-content: start; }
+#app.short .tcv-body { gap: 10px; padding: 10px; }
+#app.tiny .tcv-body { gap: 8px; padding: 8px 10px; }
+#app.portrait .tcv-body { display: flex; flex-direction: column; gap: 10px; }
+.tcv-home, .tcv-lobby { display: contents; }
+.tcv-home[hidden], .tcv-lobby[hidden] { display: none; }
+/* your fighter, the note, your cup */
+.tcv-top { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tcv-me { flex: 0 1 280px; min-width: 0; width: auto; }
+.tcv-me:disabled { opacity: 0.7; cursor: default; }
+.tcv-me:disabled .rd-chg { display: none; }
+#app.portrait .tcv-me { flex: 1 1 auto; }
+#app.portrait .tcv-me, #app.portrait .tcv-me.dly-f { flex-direction: row; text-align: left; }
+#app.portrait .tcv-me .rd-chg { margin-left: auto; }
+.tcv-note { flex: 1 1 0; min-width: 0; margin: 0; font: 600 12.5px/1.3 var(--body); color: #ff9a8f; }
+.modal .sheet .tcv-note { color: #ff9a8f; }
+.tcv-note:empty { display: none; }
+.tcv-yc { flex: none; margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 60%; padding: 4px 4px 4px 12px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel), inset 0 0 0 1.5px rgba(244, 201, 93, 0.4); }
+.tcv-yc[hidden] { display: none; }
+.tcv-yt { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.tcv-yc .btn { flex: none; width: auto; min-width: 0; }
+.tcv-yt b { font: 800 15px/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.portrait .tcv-top { flex-wrap: wrap; }
+#app.portrait .tcv-yc { flex: 1 1 100%; max-width: none; margin-left: 0; }
+#app.portrait .tcv-yt { flex: 1 1 auto; }
+#app.tiny .tcv-yc { padding-left: 8px; }
+#app.tiny .tcv-yt b { font-size: 13px; }
+
+/* the Daily Cup card (gold) and the lobby's hero share the layout */
+.tcv-daily, .tcv-lh { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 12px; min-width: 0; min-height: 0; }
+.tcv-dh { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tcv-medal { flex: none; display: grid; place-items: center; width: 62px; height: 62px; overflow: hidden; border-radius: 50%; border: 2px solid var(--ink);
+  background: radial-gradient(circle at 50% 38%, #3a3f74 0, #1b1f3d 72%); box-shadow: 0 3px 0 var(--ink), inset 0 0 0 3px rgba(244, 201, 93, 0.5); }
+.tcv-medal .trophy { height: 70%; width: auto; margin: 0; filter: drop-shadow(0 0 5px rgba(244, 201, 93, 0.75)); animation: none; }
+.tcv-dt { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; }
+.tcv-daily .kick, .tcv-lh .kick { color: rgba(14, 16, 34, 0.74); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcv-cd { display: block; min-width: 0; font: italic 900 46px/1 var(--display); letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0.06em; }
+.tcv-cd.txt { font-size: 30px; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+.tcv-cd.live { color: var(--ketchup); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+.tcv-cd.code { font-size: 50px; letter-spacing: 0.1em; padding-right: 0; overflow: hidden; text-overflow: ellipsis; }
+.tcv-cd.code.txt { font-size: 50px; }
+#scrTc .tcv-dl { margin: 0; font: 600 13px/1.3 var(--body); color: rgba(14, 16, 34, 0.82); }
+.tcv-prz[hidden] { display: none; }
+.tcv-prz { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.tcv-pt8 { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tcv-sheet .tcv-pz { background: var(--ink); color: var(--gold); }
+#scrTc .tcv-p4 { font: 600 11.5px/1.2 var(--body); color: rgba(14, 16, 34, 0.7); }
+.tcv-da { margin-top: auto; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+#scrTc .tcv-dn { margin: 0; font: 600 12px/1.3 var(--body); color: rgba(14, 16, 34, 0.78); }
+#scrTc .tcv-dn:empty { display: none; }
+#scrTc .tcv-da .btn[hidden] { display: none; }
+.tcv-ink { --bg: linear-gradient(180deg, #2a2f58, #12152b); --bev: var(--bevel); color: var(--gold); }
+.tcv-ink.on { --bg: linear-gradient(180deg, #a9f0c8, #5fc993); color: var(--ink); }
+.tcv-ink:hover, .tcv-ink:disabled:hover { background: var(--bg); }
+.tcv-ink.go { color: var(--ink); --bg: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); --bev: var(--bevelgold); }
+.tcv-lb { display: flex; gap: 8px; }
+.tcv-lb .btn { flex: 1 1 0; min-width: 0; }
+.tcv-lb .btn[hidden] { display: none; }
+
+/* the right column: Friends Cup, Practice cup */
+.tcv-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+#app.short .tcv-side { gap: 10px; }
+#app.tiny .tcv-side { gap: 8px; }
+.tcv-fr { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
+.tcv-ct { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tcv-ct b, .tcv-pt b { font: italic 900 21px/1 var(--display); text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+.tcv-ct .kick { color: var(--gold); white-space: nowrap; }
+.tcv-fa { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.tcv-fa .btn { width: auto; }
+.tcv-cf { display: flex; gap: 6px; min-width: 0; }
+.tcv-in { flex: 1 1 0; min-width: 0; width: 100%; padding: 0 6px; text-align: center; text-transform: uppercase; letter-spacing: 0.22em; font: 800 20px/1 var(--display); color: var(--text); }
+.tcv-in::placeholder { letter-spacing: 0.12em; color: var(--mute); opacity: 0.7; }
+.tcv-cf .btn { flex: none; width: auto; min-width: 0; padding-inline: 14px; }
+#scrTc .tcv-sm { margin: 0; font: 500 12px/1.3 var(--body); color: var(--mute); }
+.tcv-pr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; }
+.tcv-pt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tcv-pt .kick { color: var(--gold); }
+.tcv-pt b { overflow: hidden; text-overflow: ellipsis; }
+.tcv-pr .btn { flex: none; width: auto; min-width: 96px; }
+
+/* the lobby */
+.tcv-lin { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; min-width: 0; min-height: 0; }
+.tcv-lt { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tcv-lt .kick { color: var(--gold); white-space: nowrap; }
+.tcv-lt b { font: 700 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcv-seats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; padding: 4px 2px; }
+.tcv-seat { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; --fc: var(--mute); }
+.tcv-sp { display: block; width: var(--tcv-seat); height: var(--tcv-seat); overflow: hidden; border-radius: 9px; background: var(--ink); box-shadow: 0 0 0 2px var(--fc), 0 0 0 4px var(--ink); }
+.tcv-sp img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.tcv-seat.me .tcv-sp { box-shadow: 0 0 0 2px var(--gold), 0 0 0 4px var(--ink), 0 0 12px rgba(244, 201, 93, 0.5); }
+.tcv-sp.q { display: grid; place-items: center; background: rgba(14, 16, 34, 0.45); box-shadow: none; border: 2px dashed rgba(206, 210, 255, 0.28); font: italic 900 22px/1 var(--display); color: var(--mute); }
+.tcv-seat.more .tcv-sp.q { border-style: solid; color: var(--gold); font-size: 20px; }
+.tcv-seat b { max-width: 100%; font: 800 11px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.tcv-seat.cpu b, .tcv-seat.more b { color: var(--mute); }
+.tcv-seat.me b { color: var(--gold); }
+.tcv-hs { position: absolute; top: -7px; right: calc(50% - var(--tcv-seat) / 2 - 6px); z-index: 2; padding: 2px 4px 1px; font: 800 8px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--gold); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 4px; transform: rotate(6deg); }
+.tcv-la { display: flex; gap: 8px; margin-top: auto; }
+.tcv-la .btn { flex: 1 1 0; min-width: 0; padding-inline: 10px; }
+#app.short .tcv-sheet .btn { min-height: 42px; font-size: 18px; }
+#app.short .tcv-cd { font-size: 40px; }
+#app.short .tcv-cd.code { font-size: 42px; }
+#app.short .tcv-medal { width: 54px; height: 54px; }
+#app.short .tcv-daily, #app.short .tcv-lh { padding: 8px 12px 10px; gap: 5px; }
+#app.short .tcv-fr { gap: 6px; padding: 8px 10px; }
+#app.short .tcv-lin { gap: 6px; padding: 8px 10px; }
+#app.short .tcv-seats { gap: 6px; padding: 2px; }
+#app.tiny .tcv-sheet .btn { min-height: 38px; font-size: 16px; }
+#app.tiny .tcv-cd { font-size: 32px; }
+#app.tiny .tcv-cd.txt { font-size: 24px; }
+#app.tiny .tcv-cd.code { font-size: 34px; }
+#app.tiny .tcv-medal { width: 44px; height: 44px; }
+#app.tiny .tcv-dh { gap: 10px; }
+#app.tiny .tcv-daily, #app.tiny .tcv-lh { padding: 7px 10px 8px; gap: 4px; }
+#app.tiny #scrTc .tcv-dl { font-size: 12px; }
+#app.tiny .tcv-p4 { display: none; }
+#app.tiny .tcv-ct b, #app.tiny .tcv-pt b { font-size: 18px; }
+#app.tiny .tcv-fr { gap: 5px; padding: 6px 10px; }
+#app.tiny #scrTc .tcv-sm { font-size: 11px; line-height: 1.2; }
+#app.tiny .tcv-pr { padding: 6px 10px; }
+#app.tiny .tcv-lin { gap: 5px; padding: 6px 10px; }
+#app.tiny .tcv-seats { gap: 4px; }
+#app.tiny .tcv-seat b { font-size: 10px; }
+#app.tiny .tcv-in { font-size: 17px; }
+#app.tiny .tcv-la .btn { font-size: 14px; padding-inline: 6px; }
+#app.tiny .cs .tcv-tg { top: -6px; padding: 1px 4px; font-size: 7.5px; }
+#app.portrait .tcv-sheet .btn { min-height: 46px; }
+#app.portrait .tcv-cd { font-size: 44px; }
+#app.portrait .tcv-cd.txt { font-size: 30px; }
+#app.portrait .tcv-cd.code { font-size: 46px; }
+#app.portrait .tcv-seats { gap: 12px 8px; }
+#app.portrait .tcv-la .btn { font-size: 16px; padding-inline: 6px; }
+#app.portrait .cf .tcv-mute { font-size: 16px; }
+
+/* ===== the online bracket (mode "tcup" on #scrCup): a cup of 4 is three columns, the states of a pair ===== */
+.cup-grid:has(> .tcv-g4) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); max-width: 780px; margin-inline: auto; }
+.cs .tcv-tg { position: absolute; top: -7px; right: 8px; z-index: 2; padding: 2px 5px 1px; font: 800 8.5px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--ink); color: var(--sand); border: 1.5px solid rgba(206, 210, 255, 0.35); border-radius: 4px; }
+.rt .cs .tcv-tg { right: auto; left: 8px; }
+.cs.me .tcv-tg { color: var(--me); border-color: var(--me); }
+.cs.none { background: transparent; border: 2px dashed rgba(206, 210, 255, 0.16); box-shadow: none; opacity: 0.7; }
+.cs.none .cs-n { color: var(--mute); font-weight: 600; }
+.cs.live { border-color: var(--ketchup); animation: tcvLive 1.3s ease-in-out infinite; }
+@keyframes tcvLive { 50% { box-shadow: 0 3px 0 var(--ink), 0 0 14px rgba(232, 69, 60, 0.65), var(--bevel); } }
+.cs.wait { border-color: rgba(244, 201, 93, 0.7); }
+.cs .tcv-w { font-weight: 700; }
+.cs.wait .tcv-w { color: var(--gold); }
+.cs.wait .tcv-w.rd { color: var(--mint); }
+.cs.wo { opacity: 0.6; }
+.cs.wo .tcv-w { color: var(--sand); font-style: italic; }
+.cs.gone { opacity: 0.55; }
+.cs.gone .cs-ph img { filter: grayscale(1); }
+.cs.gone .cs-n { text-decoration: line-through; text-decoration-color: var(--ketchup); text-decoration-thickness: 2px; }
+.cs.gone .tcv-w { color: #ff9a8f; }
+.cs.fell { opacity: 0.9; }
+.cup-lines .tcv-ld { fill: var(--ketchup); stroke: var(--ink); stroke-width: 2px; animation: blink 1.2s ease-in-out infinite; }
+.cl-m.live::after { content: "LIVE"; background: var(--ketchup); color: #fff; padding: 2px 5px 1px; border-radius: 6px; letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
+/* the foot card */
+.cf-acts.tcv-a .btn { min-width: 0; padding-inline: 14px; }
+.cf.tcv-called { border-color: var(--ember); }
+.tcv-ring { --p: 1; --rc: var(--gold); flex: none; display: inline-grid; padding: 4px; border-radius: 15px; background: conic-gradient(var(--rc) calc(var(--p) * 360deg), rgba(14, 16, 34, 0.85) 0); box-shadow: 0 0 0 2px var(--ink); }
+.tcv-ring.low { --rc: var(--ember); }
+.tcv-ring .btn { margin: 0; width: auto; min-width: 112px; min-height: 52px; padding: 4px 16px; }
+.tcv-ring .btn > span { display: block; line-height: 1; }
+.tcv-ring .btn small { display: block; margin: 3px 0 0; font: 800 12px/1 var(--display); letter-spacing: 0.08em; color: rgba(14, 16, 34, 0.7); font-variant-numeric: tabular-nums; }
+.tcv-sw { flex: none; width: 48px; min-width: 48px; padding: 0; font-size: 24px; --bg: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); --bev: var(--bevelgold); color: var(--ink); }
+#scrCup .cf .tcv-mute { --bg: linear-gradient(180deg, #2b3059, #1a1d3a); color: var(--mute); opacity: 1; filter: none; box-shadow: 0 var(--sh) 0 var(--ink), var(--bevel); }
+#scrCup .cf .tcv-mute:disabled { opacity: 0.8; }
+.cf.tcv-called .cf-t b { color: var(--gold); }
+#app.portrait .cf.tcv-called .tcv-ring { margin: 0 auto; }
+#app.portrait .cf-acts.tcv-a .tcv-sw { flex: none; }
+
+/* ===== the call-up banner ===== */
+#tcCall { position: absolute; z-index: 30; left: 50%; top: max(8px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(560px, calc(100% - 20px));
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 10px; border: 2px solid var(--ember); border-radius: 14px;
+  background: linear-gradient(180deg, #2a2f58, #1b1e3c); box-shadow: 0 0 0 2px var(--ink), 0 6px 0 var(--ink), 0 14px 36px rgba(0, 0, 0, 0.55); }
+#tcCall[hidden] { display: none; }
+#tcCall.in { animation: tcvDrop 0.34s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes tcvDrop { from { transform: translate(-50%, -140%); opacity: 0; } }
+#tcCall .tcc-ph { --fc: var(--mute); width: 54px; height: 54px; flex: none; aspect-ratio: auto; }
+.tcc-t { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tcc-t .kick { color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcc-t b { font: italic 900 22px/1 var(--display); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.06em; }
+.tcc-t small { font: 500 12.5px/1.2 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tcCall .tcc-busy { grid-column: 1 / -1; margin: 0; text-align: center; font: 600 12px/1.3 var(--body); color: var(--sand); }
+#tcCall .tcc-busy[hidden], #tcCall .tcc-busy:empty { display: none; }
+#app.tiny #tcCall { padding: 6px 8px; gap: 3px 10px; }
+#app.tiny #tcCall .tcc-ph { width: 44px; height: 44px; }
+#app.tiny .tcc-t b { font-size: 19px; }
+#app.tiny #tcCall .tcv-ring .btn { min-height: 44px; min-width: 100px; }
+
+/* ===== the results card: where the match leaves you in the cup (in the rank card's place) ===== */
+#resSheet .res-tc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; flex: none;
+  box-shadow: inset 0 0 0 2px rgba(244, 201, 93, 0.5), 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-tc[hidden] { display: none; }
+#resSheet .res-tc .tc-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#resSheet .res-tc .tc-head { display: block; min-width: 0; font: italic 900 22px/1.05 var(--display); text-transform: uppercase; color: var(--gold);
+  -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); overflow-wrap: anywhere; }
+#resSheet .res-tc .tc-sub { font: 500 12.5px/1.3 var(--body); color: var(--mute); font-variant-numeric: tabular-nums; }
+#resSheet .res-tc .tc-sub:empty { display: none; }
+#resSheet .res-tc .tc-bar { position: relative; display: block; height: 10px; margin-top: 3px; overflow: hidden; border-radius: 5px; background: #3a4170; border: 1.5px solid rgba(14, 16, 34, 0.9); }
+#resSheet .res-tc .tc-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%); background: var(--gold); transform-origin: left; }
+#resSheet .res-tc .tc-bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--k, 3) - 2px), var(--ink) calc(100% / var(--k, 3) - 2px) calc(100% / var(--k, 3))); }
+#resSheet .res-tc.up .tc-bar i { background: var(--mint); box-shadow: 0 0 8px var(--mint); animation: resFill 0.5s 0.6s cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+#resSheet .res-tc.down .tc-bar i { background: rgba(232, 69, 60, 0.85); }
+#resSheet .res-tc.down .tc-head { color: #ff9a8f; }
+#resSheet .res-tc.wait .tc-bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent); animation: qmShim 1.4s linear infinite; }
+#resSheet .res-tc.wait .tc-bar i { min-width: 6px; }
+#resSheet .res-tc .delta small { white-space: nowrap; }
+#resSheet .res-side:has(> #rTc:not([hidden])) > .res-stats { margin-top: 0; }
+#app.tiny #resSheet .res-tc { gap: 10px; padding: 7px 10px; }
+#app.tiny #resSheet .res-tc .tc-head { font-size: 18px; }
+#app.tiny #resSheet .res-tc .tc-sub { font-size: 11.5px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc { gap: 18px; padding: 16px 20px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc .tc-head { font-size: 30px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc .tc-sub { font-size: 14px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc .tc-bar { height: 12px; margin-top: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrMenu #bCup.tcv-called, #scrMenu #bCup .tcv-live, .cs.live, .cup-lines .tcv-ld, .cl-m.live::after, #tcCall.in, #resSheet .res-tc.up .tc-bar i, #resSheet .res-tc.wait .tc-bar i::after { animation: none; }
+}
+
 /* ===== Chip stakes: a rematch for 10, 25 or 50 chips (ui/stakes.js; Fable's design: rival-stakes/fable-design.md) =====
    One rule: chips a player put up sit on gold (the POT); chips the game pays wear an ember sticker (97-rivals.css). */
 
@@ -5382,7 +5631,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
-        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small>8 players<span id="mCup" hidden></span></small></span></button>
+        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small><span id="mCupT">8 players</span><span id="mTc" hidden><i class="dot tcv-live" hidden></i><span id="mTcT"></span></span><span id="mCup" hidden></span></small></span></button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -5710,6 +5959,53 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the Tournament sheet (ui/tcview.js, css/97-tourney.css; the page logic is ui/tourney.js): your fighter, the Daily Cup, Friends Cups, the Practice cup, and the lobby once you are in one -->
+  <section id="scrTc" class="screen modal" hidden>
+    <div class="sheet tcv-sheet" role="dialog" aria-label="Tournament">
+      <header class="sh-head"><h3>Tournament</h3><span class="kick tcv-hk" id="tcvHk"></span><button class="round x" id="tcClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="tcv-body" id="tcvBody">
+        <div class="tcv-top">
+          <button class="dly-f rd-me tcv-me" id="tcvMe" aria-label="Change fighter"></button>
+          <p class="tcv-note" id="tcvNote" role="status"></p>
+          <div class="tcv-yc" id="tcvYc" hidden><span class="tcv-yt"><span class="kick" id="tcvYk">Your cup</span><b id="tcvYb"></b></span><button class="btn sm" id="tcvYGo"><span>Bracket</span></button></div>
+        </div>
+        <div class="tcv-home" id="tcvHome">
+          <div class="card gold tone tcv-daily" id="tcvDaily">
+            <div class="tcv-dh"><span class="tcv-medal" id="tcvMedal" aria-hidden="true"></span><div class="tcv-dt"><span class="kick" id="tcvDk">Daily Cup</span><b class="tcv-cd" id="tcvCd">--:--</b></div></div>
+            <p class="tcv-dl" id="tcvDl"></p>
+            <div class="tcv-prz" id="tcvPrz"></div>
+            <div class="tcv-da"><button class="btn tcv-ink" id="tcvDGo"><span id="tcvDGoT">I'm in</span></button><p class="tcv-dn" id="tcvDn"></p></div>
+          </div>
+          <div class="tcv-side">
+            <div class="card tcv-fr" id="tcvFr">
+              <div class="tcv-ct"><b>Friends Cup</b><span class="kick">2&ndash;8 players</span></div>
+              <div class="tcv-fa">
+                <button class="btn primary" id="tcvHost"><span>Host</span></button>
+                <form class="tcv-cf" id="tcvCf" autocomplete="off"><input class="ac-in tcv-in" id="tcvCode" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Friends Cup code"><button class="btn" id="tcvJoinC" type="submit"><span>Join</span></button></form>
+              </div>
+              <p class="tcv-sm">2&ndash;8 players &middot; CPUs fill the bracket &middot; no chips, just glory</p>
+            </div>
+            <div class="card tcv-pr" id="tcvPr"><span class="tcv-pt"><span class="kick">Practice cup</span><b>You vs 7 CPUs</b></span><button class="btn" id="tcvPGo"><span id="tcvPGoT">Play</span></button></div>
+          </div>
+        </div>
+        <div class="tcv-lobby" id="tcvLobby" hidden>
+          <div class="card gold tone tcv-lh" id="tcvLh">
+            <span class="kick" id="tcvLk">Daily Cup</span>
+            <b class="tcv-cd" id="tcvLCd">--:--</b>
+            <p class="tcv-dl" id="tcvLl"></p>
+            <div class="tcv-prz" id="tcvLPrz" hidden></div>
+            <div class="tcv-da"><div class="tcv-lb"><button class="btn tcv-ink" id="tcvShare"><span>Share link</span></button><button class="btn tcv-ink go" id="tcvStart"><span>Start</span></button></div><p class="tcv-dn" id="tcvLn"></p></div>
+          </div>
+          <div class="card tcv-lin" id="tcvLin">
+            <div class="tcv-lt"><span class="kick">In the cup</span><b id="tcvLInN"></b></div>
+            <div class="tcv-seats" id="tcvSeats"></div>
+            <div class="tcv-la"><button class="btn" id="tcvWarm"><span>Warm up vs CPU</span></button><button class="btn" id="tcvLeave"><span>Leave</span></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -5744,6 +6040,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="card res-pot" id="rPot" hidden>
           <div class="pt-body"><b class="pt-head" id="rPotH"></b><span class="pt-sub" id="rPotS"></span><span class="pt-bar" aria-hidden="true"><i></i><i></i></span></div>
           <div class="delta" id="rPotD"><b id="rPotN">…</b><small>Chips</small></div>
+        </div>
+        <!-- a cup match (ui/tcview.js tcvResult): where it leaves you in the cup, in the rank card's place -->
+        <div class="card res-tc" id="rTc" hidden aria-live="polite">
+          <div class="tc-body"><b class="tc-head" id="rTcH"></b><span class="tc-sub" id="rTcS"></span><span class="tc-bar" aria-hidden="true"><i></i></span></div>
+          <div class="delta" id="rTcD"><b id="rTcN">…</b><small id="rTcL">Cup</small></div>
         </div>
         <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
         <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
@@ -5901,6 +6202,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <!-- Quick match (ui/quick.js, css/96-quick.css): PLAYER FOUND! over a CPU warm-up (3 s), then the VS screen until the fight's countdown -->
   <div id="qmFound" hidden><b class="qf-t">Player found!</b><span class="qf-vs" id="qfVs"></span><span class="qf-n" id="qfN">3</span><span class="qf-l">The CPU fight ends · no result</span></div>
+  <!-- the cup call-up (ui/tcview.js tcvCall, css/97-tourney.css): your match is ready, tap FIGHT within 60 s; over every screen but the bracket (its foot card does it there) -->
+  <div id="tcCall" role="alert" hidden>
+    <span class="tcc-ph cs-ph" id="tccPh"></span>
+    <div class="tcc-t"><span class="kick" id="tccK"></span><b id="tccN"></b><small id="tccS"></small></div>
+    <span class="tcv-ring tcc-ring" id="tccRing"><button class="btn primary" id="tccGo"><span>Fight<small id="tccT"></small></span></button></span>
+    <p class="tcc-busy" id="tccBusy"></p>
+  </div>
   <div id="qmVs" hidden aria-live="polite">
     <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
     <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>
@@ -5960,7 +6268,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
   const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* / bw-* messages (stk-*: ui/stakes.js, bw-*: ui/bossweek.js, pm-*: ui/kopages.js), and Ranked vs CPU's (ui/vscpu.js)
-  const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd"]);
+  const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd", "tc"]);   // (and the cups' tc-*: ui/tourney.js)
   const rooms = new Map();
 
   function setConn(v) { if (v === welcomed) return; welcomed = v; for (const fn of [...connL]) fn(v); }
@@ -5981,7 +6289,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
-    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-" || m.t.slice(0, 3) === "pm-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
+    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-" || m.t.slice(0, 3) === "pm-" || m.t.slice(0, 3) === "tc-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -9058,8 +9366,8 @@ function cntMode(m) {
   if (!m) return "none";
   if (m.trial) return "trial";
   if (m.tutorial) return "tutorial";
-  if (m.vc) return "ranked";   // Ranked vs CPU (ui/vscpu.js): the old Ranked vs a CPU, now with the server's check
-  if (m.qm) return m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
+  if (m.vc) return m.vc.tc ? "online-cup" : "ranked";   // m.vc.tc: a cup match against a CPU (ui/tourney.js)   // Ranked vs CPU (ui/vscpu.js): the old Ranked vs a CPU, now with the server's check
+  if (m.qm) return m.qm.tm ? "online-cup" : m.qm.ranked ? "quick-r" : "quick-c";   // Quick match (ui/quick.js) and its CPU warm-up
   if (m.warm) return "warmup";
   if (m.online) return m.boss ? "online-boss" : m.tb ? "online-team" : "online";   // online-team: a Team Brawl with friends (ui/online-team.js)
   if (m.bw) return "boss-week";   // a Boss Week try (ui/bossweek.js)
@@ -31146,6 +31454,7 @@ function renderMenu() {
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
   bwTile();   // ui/bwsheet.js: the Boss Week tile (boss, time left, your best and place)
   qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
+  if (typeof tcvPill === "function") tcvPill();   // ui/tcview.js: the Tournament mini's line (cups online)
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
 function menuDaily() {
@@ -31285,7 +31594,7 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = fmtChips(P.tokens);
-  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
+  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw" || sel.mode === "tc") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
@@ -31351,10 +31660,10 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "tc" ? "Cup · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" || m === "tc" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -31604,7 +31913,7 @@ function resOpen(look, spec, solo) {
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   { const c = $("rBw"); if (c) c.hidden = true; }   // ui/bossweek.js: Boss Week's card
-  $("rFin").hidden = true; $("rKo").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
+  $("rFin").hidden = true; $("rKo").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rTc").hidden = true; $("rStats").hidden = false; masteryHide();   // rTc: ui/tcview.js
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
@@ -31663,7 +31972,7 @@ function showResults(R) {
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
   const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
-  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
+  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc || R.tc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
     R.forfeit ? ["You left the match. It counts as a loss."] :
@@ -31695,7 +32004,7 @@ function showResults(R) {
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
-  const chipsOn = R.ranked || R.warm || R.vc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
+  const chipsOn = R.ranked || R.warm || R.vc || R.tc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
@@ -31708,9 +32017,10 @@ function showResults(R) {
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
+  $("rChange").hidden = false;   // a cup match's results hide it (ui/tourney.js tcResults)
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.bw) bwResults(R);   // ui/bossweek.js: the time, the place and the server's verdict in the rank card's place
-  if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
+  if (R.qm || R.warm || R.vc || R.tc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own (R.tc: a cup match vs a CPU, ui/tourney.js)
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   chlRes(R);   // ui/challenge.js: Challenge a friend
   rpKeep(R);   // ui/replay.js: this run, to watch again (a Boss Week try, a Ranked vs CPU match)
@@ -33728,13 +34038,16 @@ function cupJingle() {
 
 $("cupBack").addEventListener("click", () => {
   Sfx.init(); Sfx.uiBack();
+  if (mode === "tcup") { tcBack(); return; }   // ui/tourney.js: an online cup's bracket (its Menu never touches P.cup)
   const c = P.cup;
   if (!cupOk(c) || cupOver(c)) { cupLeave(); return; }
   CU.confirm = !CU.confirm; cupFootRender(); cupFootIn();   // "Menu" in the middle of a cup asks first: leaving ends the cup
 });
 // the lines follow the slots whenever the bracket area changes size (turning the phone, the strip under it changing height)
-if (window.ResizeObserver) new ResizeObserver(() => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); }).observe($("cupGrid"));
-else window.addEventListener("resize", () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); });
+// (an online cup's bracket on the same screen, mode "tcup": ui/tcview.js tcvLines)
+const cupRelines = () => { if (mode === "cup" && cupOk(P.cup)) cupLines(P.cup); else if (mode === "tcup") tcvLines(); };
+if (window.ResizeObserver) new ResizeObserver(cupRelines).observe($("cupGrid"));
+else window.addEventListener("resize", cupRelines);
 // a reload during a cup comes back to its bracket (menus and the tutorial have run by then; an invite link or a first-time tutorial win)
 setTimeout(() => { if (mode === "menu" && cupOk(P.cup)) cupShow({ quick: true }); }, 0);
 /* ===================== Daily Potato: one fixed matchup a day =====================
@@ -35189,7 +35502,7 @@ function onMatchPeers(ch) {
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
-  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk)) { NET.oppLeft = true; return; }   // Next match never waits for them
+  if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm)) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
@@ -35412,7 +35725,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -36431,21 +36744,21 @@ const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => 
 app.addEventListener("pointerdown", (e) => { const d = e.target.closest && e.target.closest("button:disabled, [aria-disabled='true']"); if (d && !d.closest("#ctl")) { Sfx.init(); Sfx.uiNo(); } }, true);
 tap("bRanked", quickOpen);   // ui/quick.js: Quick match on our own server, else Ranked vs a CPU
 tap("bPractice", () => openSelect("practice"));
-tap("bCup", cupOpen);
+tap("bCup", tcOpen);   // ui/tourney.js: the Tournament sheet on our server, else the offline cup (cupOpen)
 tap("bDaily", dailyOpen);
 tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 // from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
-tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
-tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else if (sel.mode === "tc") tcPickBack(); else goMenu(); });   // tc: ui/tourney.js
+tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "tc") tcPicked(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
 tap("pQuit", () => {
   if (match && match.warm) { qmWarmQuit(); return; }   // ui/quick.js: the warm-up's Back to search
   if (match && match.qm) {   // ui/quick.js: a Ranked forfeit counts as a loss, a Casual match is just left
-    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk ? "Tap again to forfeit" : "Tap again to leave"; return; }
+    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk || match.qm.tm ? "Tap again to forfeit" : "Tap again to leave"; return; }
     qmForfeit(); return;
   }
   if (match && match.online) {
@@ -38335,6 +38648,7 @@ async function qmFind() {
   if (!qmOn() || QM.st !== "idle") return;
   if (QM.no === "old") { location.reload(); return; }
   if (!QM.conn || !NET.room) { QM.note = "Connecting to the server…"; qmRender(); return; }
+  if (tcPlaying()) { QM.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
   QM.st = "search"; QM.t0 = Date.now(); QM.wait = null; QM.note = ""; QM.sentF = "";
   lobbyPresence(); qmRender();
   // the silent account, for Casual too (the referee keeps your rival record); Casual searches on without one
@@ -38394,7 +38708,9 @@ function qmFoundOk(m) {
 }
 function qmFound(m) {
   const sk = stkFoundOk(m);   // ui/stakes.js: the rematch for chips this phone challenged for or accepted
-  if (!(qmSearching() || sk) || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  const tm = !!m.tm && tcFoundOk(m);   // ui/tourney.js: a cup match the server assigned (called, FIGHT tapped)
+  if (!(qmSearching() || sk || tm) || !qmFoundOk(m)) return;   // a late one after a cancel: the server lets its room time out
+  if (!tm) m.tm = null;
   const opp = m.opp;
   opp.name = SYNC.cleanName(opp.name) || "Potato";
   QM.st = "found"; QM.found = m; QM.res = null; QM.wait = null; QM.note = "";
@@ -38405,15 +38721,15 @@ function qmFound(m) {
   Sfx.init(); qmChime();
   try { if (navigator.vibrate) navigator.vibrate([60, 90, 60]); } catch (e) { /* no vibration */ }
   qmJoin(m);
-  if (mode === "match" && match && match.warm && G && G.phase !== "over") qmFoundBanner(m);
-  else { qmEndWarm(); qmVs(m); }
+  if (!tm && mode === "match" && match && match.warm && G && G.phase !== "over") qmFoundBanner(m);
+  else { qmEndWarm(); qmVs(m); if (tm) tcVsWords(m); }
   lobbyPresence();
 }
 async function qmJoin(m) {
   if (NET.mr) leaveMatchRoom();
   resetNet();
   const me = m.role === "host" ? 0 : 1;
-  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, sk: m.sk | 0, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
+  NET.qm = { id: m.id, room: m.room, ranked: !!m.ranked, sk: m.sk | 0, tm: m.tm || null, fb: !!m.fb, seed: m.seed, f: m.f.slice(), p: m.p.slice(), r: Object.assign({}, m.r), opp: m.opp, rd: false };
   NET.role = m.role; NET.phase = m.role === "host" ? "hosting" : "joining"; NET.joinT = performance.now(); NET.note = "";
   NET.oppName = m.opp.name; NET.mrCode = m.room;
   try { await openMatchRoom(m.room); }
@@ -38494,7 +38810,7 @@ function qmStartMsg(D, rtt) {
 // ...and the guest plays only that match (a Casual rematch is the friend-match one; Ranked and staked matches have none)
 function qmStartOk(st) {
   const q = NET.qm;
-  if (st.id !== 1) return !q.ranked && !q.sk;
+  if (st.id !== 1) return !q.ranked && !q.sk && !q.tm;
   return st.seed === q.seed && st.f[0] === q.f[0] && st.f[1] === q.f[1] && st.p[0] === q.p[0] && st.p[1] === q.p[1] &&
     st.r.l === q.r.l && st.r.t === q.r.t && st.r.b === q.r.b && st.set.n === 1 && st.bo == null;
 }
@@ -38532,7 +38848,7 @@ function qmFinish(left, lost) {
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
   if (q.ranked) rvFinishLines(R, q);   // ui/rivals.js: a bounty the verdict already brought, shown only (the server pays it)
-  if (lost || left || q.ranked || q.sk) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked and staked matches have no rematch in the room: it goes
+  if (lost || left || q.ranked || q.sk || q.tm) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";   // Ranked, staked and cup matches have no rematch in the room: it goes
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   QM.st = "idle";
   $("netBadge").hidden = true;
@@ -38543,7 +38859,7 @@ function qmFinish(left, lost) {
 function qmForfeit() {
   const q = match.qm;
   leaveMatchRoom(); NET.phase = "idle"; QM.st = "idle";
-  if (!q.ranked && !q.sk) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }
+  if (!q.ranked && !q.sk && !q.tm) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }   // tm: a cup match counts as a loss
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   showResults({ res: 0, online: true, qm: q, forfeit: true, me: G.fighters[meSlot], op: G.fighters[1 - meSlot], lines: [], total: 0 });
   lobbyPresence();
@@ -38551,9 +38867,11 @@ function qmForfeit() {
 // screens.js showResults, at its end: what a Quick match's results (and a warm-up's) say and do
 function qmResults(R) {
   QM.shown = R;
+  if (R.tc) { tcResults(R); return; }   // ui/tourney.js: a cup match against a CPU
   if (R.vc) { vcResults(R); return; }   // ui/vscpu.js: Ranked vs CPU
   { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); }
   const mn = $("rMenuSub");
+  if (R.warm && R.tcw) { tcWarmResults(); return; }   // ui/tourney.js: the cup lobby's warm-up
   if (R.warm) {
     const k = $("rMode"); k.textContent = "";
     const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
@@ -38565,6 +38883,7 @@ function qmResults(R) {
     return;
   }
   const q = R.qm;
+  if (q.tm) { rvResults(R); tcResults(R); return; }   // ui/tourney.js: a cup match (ui/rivals.js: the record against them)
   $("rMode").textContent = q.sk ? `Rematch for chips · ${q.sk} each` : `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
   rvResults(R);   // ui/rivals.js: the record now, the rival strip
   if (q.ranked || q.sk) {
@@ -38690,7 +39009,7 @@ function qmWarmStart() {
 // screens.js finishMatch: a warm-up pays like a friend match (15 / 8 / 5 + 2 per KO) and never touches the rank
 function qmWarmEnd(forfeit) {
   const me = G.fighters[0], op = G.fighters[1], res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
-  const R = { res, forfeit, warm: true, me, op, lines: [], total: 0 };
+  const R = { res, forfeit, warm: true, tcw: !!match.tcw, me, op, lines: [], total: 0 };   // tcw: the cup lobby's warm-up (ui/tourney.js)
   if (!forfeit) {
     R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
     if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
@@ -38701,15 +39020,17 @@ function qmWarmEnd(forfeit) {
   qmStripShow(false);
   showResults(R);
 }
-function qmWarmQuit() { quickOpen(); }   // Pause > Back to search
+function qmWarmQuit() { if (match && match.tcw) { goMenu(); tcOpen(); return; } quickOpen(); }   // Pause > Back to search (the cup lobby's warm-up: back to the lobby)
 // menus.js, the results' buttons: true when Quick match took the tap
 function qmAgain() {
+  if (tcAgain()) return true;   // ui/tourney.js: a cup match's Bracket, the cup lobby's Another CPU fight
   if (match.vc) { vcFight(); return true; }   // ui/vscpu.js: Another CPU fight
   if (match.warm) { qmWarmStart(); return true; }
   if (match.qm && (match.qm.ranked || match.qm.sk || NET.phase !== "result")) { qmNext(); return true; }
   return false;   // Casual: the friend match's Rematch (both tap)
 }
 function qmChange() {
+  if (tcChange()) return;   // ui/tourney.js
   if (match.warm || match.vc) { quickOpen(); return; }
   if (match.qm.ranked || match.qm.sk) { qmLeave(); quickOpen(); return; }
   qmNext();   // Casual: Next match
@@ -38720,6 +39041,7 @@ function qmNext() { qmLeave(); quickOpen(); qmFind(); }
 function qmPauseText() {
   const quit = $("pQuit").querySelector("span"), note = $("pNote");
   if (match.vc) { vcPauseText(); return; }   // ui/vscpu.js
+  if (match.tcw || (match.qm && match.qm.tm)) { tcPauseText(); return; }   // ui/tourney.js
   if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
   if (match.qm && match.qm.sk) {   // a staked match: no result in its first 30 s, then leaving costs the stake
     quit.textContent = "Forfeit";
@@ -39252,6 +39574,7 @@ function vcBoot() {   // qmBoot (ui/quick.js), once
   window.__blQuick.on(vcMsg);
   window.__blVc = VC;   // tests read it
   bwBoot();   // ui/bossweek.js: Boss Week's messages
+  tcBoot();   // ui/tourney.js: the cups' messages
 }
 function vcMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -39286,6 +39609,7 @@ function vcFight() {
   VC.note = "";
   if (!QM.conn) { VC.note = "Connecting to the server…"; qmRender(); return; }
   if (qmAcctOff()) { VC.note = "Ranked vs CPU opens once accounts are on."; qmRender(); return; }
+  if (tcPlaying()) { VC.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
   Sfx.init(); goFull();   // fullscreen needs the tap itself
   VC.asking = true; VC.askT = Date.now();
   qmRender();
@@ -39380,6 +39704,7 @@ function vcPack(codes) {
 
 /* ----- the end: chips on this phone, the log to the server, the rank card waits for its verdict ----- */
 function vcMatchEnd(forfeit) {   // screens.js finishMatch
+  if (match.vc.tc) { tcCpuEnd(forfeit); return; }   // ui/tourney.js: a cup match against a CPU
   const tk = match.vc, me = G.fighters[0], op = G.fighters[1], rec = vcMine() || VC_FRESH;
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, vc: tk, me, op, lines: [], total: 0 };
@@ -39509,6 +39834,7 @@ function vcVerdictView(late) {
 }
 // Pause: what leaving costs (ui/quick.js qmPauseText)
 function vcPauseText() {
+  if (match.vc.tc) { tcPauseText(); return; }   // ui/tourney.js
   const tk = match.vc, me = vcMine() || VC_FRESH, dr = qmElo(me.r, tk.pm ? VC_PLACE_R : tk.cr, 0, me.n);
   $("pQuit").querySelector("span").textContent = "Forfeit";
   $("pNote").textContent = `Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
@@ -39614,11 +39940,13 @@ function vcBdDone(k, d) {
 
 /* ----- every frame (loop.js) ----- */
 function vcStripText() {   // the HUD strip: this match counts, and for which rank
+  if (match.vc.tc) return tcStripText();   // ui/tourney.js: a cup match against a CPU
   const me = vcMine() || VC_FRESH;
   return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
 }
 function vcTick() {
   bwTick();   // ui/bossweek.js: a Boss Week result still on its way, the Monday card
+  tcTick();   // ui/tourney.js: the call-up's clock, a cup match's log still on its way
   if (!qmOn()) return;
   if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
   if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");
@@ -40303,7 +40631,7 @@ const chlPhone = () => !!navigator.share && !!(window.matchMedia && matchMedia("
 // screens.js showResults: after a finished 1v1 against a CPU (the Road, the Daily, bosses, 2v2, the Tournament and the tutorial have their
 // own ends), a Quick match and Ranked vs CPU (not a warm-up while the search runs: the tap would stop it); not after Play friends
 function chlRes(R) {
-  const solo = R.qm || R.vc || (R.warm ? !qmSearching() : !R.online && !R.daily && !R.road && !R.boss && !R.duo);
+  const solo = R.qm ? !R.qm.tm : R.vc || (R.warm ? !R.tcw && !qmSearching() : !R.tc && !R.online && !R.daily && !R.road && !R.boss && !R.duo);   // not after a cup match (ui/tourney.js) or in the cup lobby
   $("rChl").hidden = !(solo && !R.forfeit && !R.left && !R.lost && chlCan());
 }
 tap("rChl", () => {
@@ -41103,6 +41431,982 @@ window.addEventListener("keydown", (e) => {
 });
 $("bHelp").addEventListener("click", () => modal("settings", false));   // How to play is Settings' first row: the sheet gives way to it
 window.__blBwSheet = { open: bwSheetOpen, close: bwSheetClose, render: bwSheetRender, tile: bwTile, card: bwWeekCard, art: bwArt };   // tests
+/* ===================== Cups online: the Daily Cup at 20:00 Berlin and Friends Cups (the server side is tourney.js) =====================
+   The server runs every bracket: it seeds, calls each match, deals the CPU matches and pays the Daily Cup's prizes into the account
+   (they come to this phone with the next sync). This page joins, taps FIGHT when called and plays: a match against a player is a
+   Quick match the server assigned (qm-found {tm}: ui/quick.js plays it, the referee decides it), a match against a CPU is a ticket
+   played here like Ranked vs CPU (ui/vscpu.js vcVs / vcStart / vcIn; the log goes to the server as tcr and the server's replay decides).
+   The views (the Tournament sheet, the online bracket on #scrCup in mode "tcup", the call-up banner, the pill, the results card) are
+   ui/tcview.js (tcv*). UI only: the sim, the bot and the lockstep are not touched. Only on our own server (window.__blQuick). */
+const TC_KEY = "potatobrawl.tc.v1";
+const TC = {
+  day: null,        // the server's day: { day, at, st (pre | open | run | done | off), why, n (in tonight), me, ent, in, miss, ch, t }
+  cup: null,        // your cup as the server sees it (tourney.js view): lobby (ent) or bracket (size, slots, p, m, mi, out, ch, pl)
+  off: 0,           // the server's clock minus this one's
+  call: null,       // you are called: { id, key, r, cpu, opp, until, ready }
+  tk: null,         // the CPU match dealt to you (its VS screen, then the fight)
+  pend: null,       // a CPU match's log on its way: { id, key, cup, s, ff, code, sentT }
+  res: {},          // the results of your matches in this cup, by key (tc-res)
+  end: null,        // the cup is over (tc-end): your place, the chips, the champion
+  want: null,       // the message to send once signed in (a join or a host needs the account first); last: the one sent
+  last: null, again: false, note: "", busy: false, sheet: false, link: "", seen: "", boot: true, alertT: 0, pickFrom: "", shown: null, mode0: "", vs0: false,
+};
+(function tcLoad() { try { const s = JSON.parse(localStorage.getItem(TC_KEY) || "null"); if (s && s.pend && typeof s.pend.s === "string") TC.pend = s.pend; } catch (e) { /* storage blocked */ } })();
+function tcSave() { try { localStorage.setItem(TC_KEY, JSON.stringify({ pend: TC.pend })); } catch (e) { /* ignore */ } }
+const tcOn = () => qmOn();
+const tcNow = () => Date.now() + TC.off;
+const TC_ROUNDS = { 4: ["Semi-final", "Final"], 8: ["Quarter-final", "Semi-final", "Final"] };
+const tcRoundName = (size, r) => (TC_ROUNDS[size] || TC_ROUNDS[8])[r] || "Final";
+const tcKind = (c) => (c && c.k === "f" ? "Friends Cup" : "Daily Cup");
+// your seat in a running cup and the match you play next (or now): { key, r, i, side, s (w | c | l | d), opp (its slot or -1), rdy }
+function tcMine() {
+  const c = TC.cup;
+  if (!c || !c.slots || c.mi < 0) return null;
+  const R = c.size === 8 ? 3 : 2;
+  for (let r = 0; r < R; r++) {
+    const at = c.p[r].indexOf(c.mi);
+    if (at < 0) continue;
+    const i = at >> 1, key = r + ":" + i, m = c.m[key];
+    if (!m || m[0] === "d") continue;
+    return { key, r, i, side: at & 1, s: m[0], opp: c.p[r][at ^ 1], rdy: m[3] ? m[3][at & 1] : 0, ms: m[2] };
+  }
+  return null;
+}
+// still playing in a cup (not out, not over): the Quick match search and the call-ups care
+const tcPlaying = () => !!(TC.cup && TC.cup.st === "run" && TC.cup.mi >= 0 && TC.cup.out < 0);
+const tcInLobby = () => !!(TC.cup && (TC.cup.st === "open" || TC.cup.st === "pre") && TC.cup.ent && TC.cup.ent.some((e) => e.me));
+const tcFighter = () => (FIG[P.last] ? P.last : FIG[sel.fighter] ? sel.fighter : FIGHTERS[0].id);
+
+/* ----- the connection ----- */
+function tcBoot() {   // vcBoot (ui/vscpu.js), once
+  if (!tcOn()) return;
+  const api = window.__blQuick;
+  api.on(tcMsg);
+  api.onConnection((on) => { if (on) { if (!ACCT.code) tcAsk(); if (TC.want) tcGoOn(); } else { TC.busy = false; tcRender(); } });   // with an account: asked after "me"
+  if (api.connected() && !ACCT.code) tcAsk();
+}
+// tests: the state, and a hand on the page's steps (a server without accounts sends no cup messages, so a test's own state stays)
+window.__blTc = TC;
+window.__blTcT = { open: tcOpen, bracket: tcBracket, render: tcRender, called: tcCalled, res: tcRes, end: tcEnd, mine: tcMine, busy: tcBusy, fight: tcFight };
+// the day and your cup; with an account only once signed in (asked unsigned, the server answers without your cup)
+function tcAsk(force) { if (tcOn() && QM.conn && (force || !ACCT.code || QM.authed)) window.__blQuick.send({ t: "tc?" }); }
+function tcMsg(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.t === "me") { tcAsk(true); if (!m.err) { tcFlush(); tcDo(); } else if (TC.want) tcFail(m.err === "off" ? "Cups open soon." : "This phone's account isn't on the server. Check Account."); }
+  else if (m.t === "tc") tcGot(m);
+  else if (m.t === "tc-no") tcNo(m.why);
+  else if (m.t === "tc-call") tcCalled(m);
+  else if (m.t === "tc-tk") tcTicket(m);
+  else if (m.t === "tc-res") tcRes(m);
+  else if (m.t === "tc-end") tcEnd(m);
+}
+function tcGot(m) {
+  if (!m.day || typeof m.day !== "object") return;
+  TC.day = m.day;
+  if (Number.isFinite(m.day.t)) TC.off = m.day.t - Date.now();
+  const old = TC.cup, c = m.cup && typeof m.cup === "object" && typeof m.cup.id === "string" ? m.cup : null;
+  if (!c || !old || c.id !== old.id) { TC.res = {}; TC.end = null; }
+  TC.cup = c;
+  TC.busy = false;
+  // a CPU match's log the server no longer waits for (decided without it, or another cup): dropped
+  const p = TC.pend;
+  if (p && QM.authed && p.sentT && (!c || c.id !== p.cup || !c.m || !c.m[p.key] || c.m[p.key][0] !== "l")) { TC.pend = null; tcSave(); }
+  if (!c && mode === "tcup") { goMenu(); return; }   // the cup is gone (over and cleared, or closed by its host)
+  if (c && !c.slots && mode === "tcup") { goMenu(); tcOpen(); return; }   // a new lobby (HOST ANOTHER on a finished cup's bracket)
+  // a call-up the server still holds for you (a page that came back sees it here; tc-call only goes to a page that was there)
+  const me = tcMine();
+  if (me && me.s === "c") {
+    const o = c.slots[me.opp], keep = TC.call && TC.call.key === me.key && TC.call.id === c.id;
+    TC.call = { id: c.id, key: me.key, r: me.r, cpu: o && o.c ? 1 : 0, opp: o || null, until: keep ? TC.call.until : Date.now() + (me.ms | 0), ready: !!me.rdy };
+  } else if (!me || me.s !== "c") TC.call = null;
+  // your CPU match is running on the server and not on this page (a reload in the middle of it): it is lost, say so at once
+  if (c && c.mytk && !(TC.tk && TC.tk.id === c.mytk) && !(match && match.vc && match.vc.id === c.mytk) && !(TC.pend && TC.pend.id === c.mytk)) {
+    TC.pend = { id: c.mytk, key: me ? me.key : "", cup: c.id, s: "", ff: 1, code: ACCT.code, sentT: 0 };
+    tcSave(); tcFlush();
+  }
+  // the cup starts (or a reload in the middle of it): its bracket, from the menu or the sheet (over an offline cup's bracket too)
+  const started = !!c && c.st === "run" && !(old && old.id === c.id && old.st === "run");
+  if ((TC.boot || started) && c && c.st === "run" && c.mi >= 0 && c.out < 0 && (mode === "menu" || mode === "cup")) tcBracket({ start: started && !TC.boot });
+  if (c && c.st === "run") TC.boot = false;
+  if (c && c.st === "done" && TC.seen !== c.id && mode === "tcup") TC.seen = c.id;
+  tcRender();
+}
+function tcRender() {
+  if (typeof tcvPill === "function") tcvPill();
+  if (TC.sheet && typeof tcvSheet === "function") tcvSheet();
+  if (mode === "tcup" && typeof tcvBracketRender === "function") tcvBracketRender();
+  if (typeof tcvCall === "function") tcvCall();
+}
+function tcNo(why) {
+  TC.busy = false;
+  if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then the wanted message goes
+  if (why === "old") { QM.no = "old"; tcFail("A new version is out. Reload the page."); return; }
+  if (why === "slow" && TC.last && !TC.again) { const w = TC.last; TC.again = true; TC.busy = true; setTimeout(() => { if (!TC.want) tcSend(w); }, 1500); return; }   // once
+  tcFail({ closed: "That cup isn't open.", full: "That cup is full.", busy: "You're already in a cup.", nocup: "No cup with that code.", few: "A cup needs 2 players.",
+    host: "Only the host can start it.", bad: "Couldn't join. Try again.", slow: "One moment, then try again." }[why] || "Couldn't join. Try again.");
+}
+function tcFail(note) { TC.want = null; TC.busy = false; TC.note = note || ""; tcRender(); }
+// a message that needs the account: made silently first (as Ranked vs CPU), then signed in, then sent (tcMsg "me")
+function tcSend(msg) {
+  if (!tcOn()) return;
+  if (QM.no === "old") { location.reload(); return; }
+  TC.want = msg; TC.note = ""; TC.again = false;
+  tcGoOn();
+}
+async function tcGoOn() {
+  if (!TC.want) return;
+  if (!QM.conn) { TC.busy = false; TC.note = "Connecting to the server…"; tcRender(); return; }   // goes on when connected (tcBoot)
+  if (qmAcctOff()) { tcFail("Cups open once accounts are on."); return; }
+  if (QM.acct === "unknown") { tcFail("This phone's account isn't on the server. Check Account."); return; }
+  TC.busy = true; TC.note = ""; tcRender();
+  const w0 = TC.want;
+  setTimeout(() => { if (TC.want === w0 && TC.busy) tcFail("Couldn't reach the server. Try again."); }, 10000);
+  if (!ACCT.code) {
+    const ok = await qmMakeAcct();
+    if (!ok) { tcFail(qmAcctOff() ? "Cups open soon." : "Couldn't reach the server. Try again."); return; }
+  }
+  if (!QM.authed) { qmAuth(); return; }
+  tcDo();
+}
+function tcDo() {
+  const w = TC.want;
+  if (!w || !QM.authed) return;
+  TC.want = null; TC.last = w;
+  window.__blQuick.send(Object.assign({ v: PROTO }, w));
+  setTimeout(() => { if (TC.busy) { TC.busy = false; tcRender(); } }, 6000);
+}
+
+/* ----- what you can do (the views call these) ----- */
+function tcIn(on) { cnt("tc:in"); tcSend({ t: "tci", on: on ? 1 : 0 }); }
+function tcJoin() { const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: "d", f, pi: palIdx(f) }); }
+function tcJoinCode(code) {
+  code = String(code || "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+  if (!/^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/.test(code)) { tcFail("A cup code has 5 letters and digits."); return; }
+  const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: code, f, pi: palIdx(f) });
+}
+function tcHost() { const f = tcFighter(); cnt("tc:host"); tcSend({ t: "tcn", f, pi: palIdx(f) }); }
+function tcStart() { if (!TC.cup || !TC.cup.host) return; Sfx.init(); goFull(); cnt("tc:start"); window.__blQuick.send({ t: "tcs" }); TC.busy = true; tcRender(); }
+function tcLeave() {
+  if (!TC.cup) return;
+  window.__blQuick.send({ t: "tcl" });
+  TC.call = null;
+  if (TC.cup.st !== "run") TC.cup = null;
+  tcRender();
+}
+// your fighter: the select screen, back to where you were; the server takes it for your next match (not once it is called)
+function tcPick() {
+  const c = TC.cup, me = c && c.slots && c.mi >= 0 ? c.slots[c.mi] : c && c.ent ? c.ent.find((e) => e.me) : null;
+  sel.fighter = me && FIG[me.f] ? me.f : tcFighter();
+  TC.pickFrom = mode === "tcup" ? "tcup" : "sheet";
+  if (TC.sheet) tcClose();
+  openSelect("tc");
+}
+function tcPickBack() { if (TC.pickFrom === "tcup" && tcPlaying()) tcBracket(); else { goMenu(); tcOpen(); } }
+function tcPicked() {
+  P.last = sel.fighter; saveProfile();
+  if (tcOn() && TC.cup && TC.cup.st !== "done" && TC.cup.st !== "off") window.__blQuick.send({ t: "tcp", f: sel.fighter, pi: palIdx(sel.fighter) });
+  if (TC.pickFrom === "tcup" && TC.cup && TC.cup.st === "run") tcBracket(); else { goMenu(); tcOpen(); }
+}
+function tcOpen() {
+  if (!tcOn()) { cupOpen(); return; }   // not on our server: the offline cup, as before
+  if (tcPlaying() && mode !== "tcup") { tcBracket(); return; }
+  TC.sheet = true; TC.note = "";
+  tcAsk();
+  if (typeof tcvSheetOpen === "function") tcvSheetOpen();
+  tcRender();
+}
+function tcClose() { if (!TC.sheet) return; TC.sheet = false; if (typeof tcvSheetClose === "function") tcvSheetClose(); if (mode === "menu") tcRender(); }
+function tcBracket(o) {
+  if (TC.sheet) tcClose();
+  finStop(); hideBanner(); modal("pause", false); modal("help", false); modal("settings", false);
+  mode = "tcup"; paused = false; G = null; match = null; meSlot = 0;
+  $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
+  show("cup"); resize();
+  if (typeof tcvBracket === "function") tcvBracket(o || {});
+  tcRender();
+}
+function tcBack() { goMenu(); if (!tcPlaying()) { const c = TC.cup; if (c && (c.st === "done" || c.st === "off")) TC.seen = c.id; } }
+// the link of your Friends Cup: the share sheet on a phone, else copied
+function tcLink() { return TC.cup && TC.cup.code ? `${location.origin}${location.pathname}#cup=${TC.cup.code}` : ""; }
+function tcShare() {
+  const link = tcLink();
+  if (!link) return;
+  cnt("tc:share");
+  const text = `Join my PotatoBrawl cup! Code ${TC.cup.code}`;
+  if (chlPhone()) { try { navigator.share({ title: "PotatoBrawl", text, url: link }).catch(() => {}); return; } catch (e) { /* no share sheet: copy */ } }
+  try { navigator.clipboard.writeText(link).then(() => { TC.note = "Link copied."; tcRender(); }, () => {}); } catch (e) { /* no clipboard */ }
+}
+// loop.js, after the turn-sideways screen: a Friends Cup's link opens the sheet and joins it
+function tcHashCode() { const m = /^#cup=([0-9A-Za-z]{5})$/.exec(location.hash || ""); return m ? m[1].toUpperCase() : ""; }
+function tcLanding() {
+  const code = tcHashCode();
+  if (!code || !tcOn()) return false;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* the hash stays: harmless */ }
+  TC.link = code;
+  cnt("tc:link");
+  tcOpen();
+  tcJoinCode(code);
+  return true;
+}
+window.addEventListener("hashchange", () => { if (tcHashCode() && mode !== "match") tcLanding(); });
+
+/* ----- the call-up: tap FIGHT within 60 s ----- */
+function tcCalled(m) {
+  if (!TC.cup || m.id !== TC.cup.id || typeof m.key !== "string") return;
+  TC.call = { id: m.id, key: m.key, r: m.r | 0, cpu: m.cpu ? 1 : 0, opp: m.opp || null, until: Date.now() + (m.ms | 0), ready: false };
+  tcAbortFound(m.key);   // (the server called it again: a room that never started is gone)
+  if (qmSearching()) qmCancel("");   // a cup match comes first
+  Sfx.init(); qmChime();
+  try { if (navigator.vibrate) navigator.vibrate([80, 60, 80, 60, 160]); } catch (e) { /* no vibration */ }
+  // a fight on this phone (a warm-up, Practice): it pauses under the call-up (its pause menu stays if the call goes)
+  if (mode === "match" && match && !match.online && !match.qm && !match.rp && !paused) togglePause(true);
+  tcRender();
+}
+function tcFight() {
+  const k = TC.call;
+  if (!k || k.ready || Date.now() > k.until + 1500) return;
+  Sfx.init(); goFull();
+  tcDrop();
+  k.ready = true;
+  cnt("tc:play");
+  window.__blQuick.send({ t: "tcgo" });
+  if (mode !== "tcup") tcBracket(); else tcRender();
+}
+// the call-up's FIGHT: whatever this phone is in ends without a result (a warm-up, Practice, a friend match; tcBusy says so first)
+function tcDrop() {
+  if (mode === "match" && match && !match.rp) cntEnd(true);
+  if (qmSearching()) qmCancel("");
+  if (NET.mr) leaveMatchRoom();
+  if (NET.phase !== "idle") { resetNet(); NET.phase = "idle"; }
+  if (QM.st === "found" && !(QM.found && QM.found.tm)) { QM.st = "idle"; QM.found = null; }
+  if (VC.tk && !VC.tk.tc) VC.tk = null;
+  $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = VC.vsT = 0; QM.fdT = 0;
+  if (mode === "match" || mode === "result") { finStop(); G = null; match = null; meSlot = 0; }
+  lobbyPresence();
+}
+// what the call-up's FIGHT leaves (the banner's small line), "" when nothing
+function tcBusy() {
+  if (mode === "match" && match) {
+    if (match.tcw || match.warm) return "Your warm-up ends.";
+    if (match.qm) return match.qm.ranked || match.qm.sk ? "You leave your Quick match: it counts as a loss." : "You leave your Quick match.";
+    if (match.online) return "You leave the friend match.";
+    if (match.vc && !match.vc.tc) return "Your Ranked vs CPU match ends without a result.";
+    if (match.bw) return "Your Boss Week try ends.";
+    return "This fight ends.";
+  }
+  return qmSearching() ? "Your Quick match search stops." : "";
+}
+// the match against a player was assigned (ui/quick.js qmFound asks): only the one you were called to and said FIGHT for
+function tcFoundOk(m) {
+  const tm = m && m.tm;
+  return !!tm && !!TC.cup && tm.id === TC.cup.id && typeof tm.key === "string" && ((TC.call && TC.call.key === tm.key) || (tcMine() || {}).key === tm.key);
+}
+// qmFound (ui/quick.js), after the VS screen is up: its words say which cup and round
+function tcVsWords(m) {
+  const c = TC.cup;
+  TC.call = null;
+  $("vsMode").textContent = `${tcKind(c)} · ${tcRoundName(c ? c.size : 8, m.tm.r | 0)}`;
+  $("vsStamp").className = "vs-st rk";
+  $("vsFb").hidden = true; $("vsWhy").hidden = true;
+  tcRender();
+}
+// the room of a cup match never started (the server called it again or decided it): back to the bracket
+function tcAbortFound(key) {
+  if (!QM.found || !QM.found.tm || QM.found.tm.key !== key || NET.phase === "match" || NET.phase === "result") return;
+  $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
+  if (NET.mr) leaveMatchRoom();
+  resetNet(); NET.phase = "idle"; QM.found = null; QM.st = "idle";
+  if (mode === "quick") tcBracket();
+}
+
+/* ----- a match against a CPU: its ticket, the VS screen, the fight (ui/vscpu.js), the log to the server ----- */
+function tcTicket(m) {
+  if (!TC.cup || m.id !== TC.cup.id || !m.tk || !vcTicketOk(m.tk)) return;
+  const tk = Object.assign({}, m.tk, { tc: { id: m.id, key: m.key, r: parseInt(m.key, 10) || 0, size: TC.cup.size, k: TC.cup.k } });
+  TC.tk = tk; TC.call = null;
+  VC.asking = false; VC.tk = tk;   // vcTick starts it after the VS screen
+  qmEndWarm();
+  vcVs(tk);
+  $("vsMode").textContent = `${tcKind(TC.cup)} · ${tcRoundName(tk.tc.size, tk.tc.r)}`;
+  const me = TC.cup.mi >= 0 ? TC.cup.slots[TC.cup.mi] : null, t = $("vsTL"), w = t && t.querySelector("span");
+  if (w && me) w.textContent = `Seed ${me.sd}`;
+  tcRender();
+}
+// screens.js finishMatch -> vcMatchEnd: the chips of a friend match on this phone, the log to the server, the results
+function tcCpuEnd(forfeit) {
+  const tk = match.vc, me = G.fighters[0], op = G.fighters[1];
+  const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
+  const R = { res, forfeit, tc: tk.tc, tk, me, op, lines: [], total: 0 };
+  if (!forfeit) {
+    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
+    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    R.total = R.lines.reduce((a, l) => a + l[1], 0);
+    P.tokens += R.total; saveProfile();
+  }
+  TC.tk = null;
+  TC.pend = { id: tk.id, key: tk.tc.key, cup: tk.tc.id, s: vcPack(match.log), ff: forfeit ? 1 : 0, code: ACCT.code, sentT: 0 };
+  tcSave(); tcFlush();
+  showResults(R);
+}
+function tcFlush() {
+  const p = TC.pend;
+  if (!p || !tcOn() || !QM.conn || !QM.authed || p.code !== ACCT.code) return;
+  const n = Math.max(1, Math.ceil(p.s.length / 6000));
+  for (let k = 0; k < n; k++) window.__blQuick.send({ t: "tcr", id: p.id, k, n, s: p.s.slice(k * 6000, (k + 1) * 6000), ff: p.ff });
+  p.sentT = Date.now(); tcSave();
+}
+
+/* ----- results ----- */
+function tcRes(m) {
+  if (!TC.cup || m.id !== TC.cup.id || typeof m.key !== "string") return;
+  TC.res[m.key] = m;
+  if (TC.pend && TC.pend.cup === m.id && TC.pend.key === m.key) { TC.pend = null; tcSave(); }
+  if (TC.call && TC.call.key === m.key) TC.call = null;
+  tcAbortFound(m.key);
+  if (m.rv && typeof rvCasual === "function" && QM.found && QM.found.tm && QM.found.tm.key === m.key) rvCasual({ t: "qm-cs", id: QM.found.id, g: 1, res: m.res, rv: m.rv });   // ui/rivals.js: the record against them
+  if (mode === "result" && TC.shown && TC.shown.key === m.key && typeof tcvResult === "function") tcvResult(TC.shown.R, m);
+  if (m.res === 0 && m.why !== "game" && mode === "tcup" && typeof tcvBracketRender === "function") tcvBracketRender();
+  tcRender();
+}
+function tcEnd(m) {
+  if (!TC.cup || m.id !== TC.cup.id) return;
+  TC.end = m;
+  if (m.c > 0) acctSoon(800);   // the prize is in the account: the next sync brings it to this phone
+  if (m.pl === 1) cnt("tc:champ");
+  if (mode === "tcup" && typeof tcvBracket === "function") tcvBracket({ cheer: m.pl === 1 && m.ch !== null });
+  tcRender();
+}
+// ui/quick.js qmResults: a cup match's results (against a player: R.qm.tm; against a CPU: R.tc)
+function tcResults(R) {
+  const tm = R.tc || (R.qm && R.qm.tm), c = TC.cup;
+  const key = tm.key, size = c ? c.size : tm.size || 8, r = tm.r | 0;
+  TC.shown = { key, R };
+  $("rMode").textContent = `${tcKind(c)} · ${tcRoundName(size, r)}`;
+  $("rAgain").querySelector("span").textContent = "Bracket"; $("rAgain").disabled = false;
+  $("rChange").hidden = true; $("rMenuSub").textContent = "";
+  { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); $("rRank").hidden = true; }
+  if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "You left the match: you're out of the cup." : "No chips for an unfinished match.");
+  if (typeof tcvResult === "function") tcvResult(R, TC.res[key] || null);
+}
+// the results' buttons and Pause (ui/quick.js asks first): a cup match's BRACKET; the lobby warm-up's ANOTHER CPU FIGHT and BACK TO THE LOBBY
+const tcCupMatch = () => !!match && ((match.qm && !!match.qm.tm) || (match.vc && !!match.vc.tc));
+function tcAgain() {
+  if (match && match.tcw) { tcWarm(); return true; }
+  if (tcCupMatch()) { tcAfterMatch(); return true; }
+  return false;
+}
+function tcChange() {
+  if (match && match.tcw) { goMenu(); tcOpen(); return true; }
+  if (tcCupMatch()) { tcAfterMatch(); return true; }
+  return false;
+}
+function tcAfterMatch() {
+  const key = TC.shown ? TC.shown.key : "";
+  if (match && match.qm) qmLeave();
+  QM.st = "idle"; QM.found = null;
+  tcBracket({ after: key });
+}
+function tcWarmResults() {   // ui/quick.js qmResults
+  const k = $("rMode"); k.textContent = "";
+  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
+  k.append(t, "Warm-up");
+  $("rAgain").querySelector("span").textContent = "Another CPU fight";
+  $("rChange").querySelector("span").textContent = "Back to the lobby";
+  $("rMenuSub").textContent = "";
+  { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); }
+}
+function tcPauseText() {
+  if (match && match.tcw) { $("pQuit").querySelector("span").textContent = "Back to the lobby"; $("pNote").textContent = "A call-up stops this fight."; return; }
+  $("pQuit").querySelector("span").textContent = "Forfeit";
+  $("pNote").textContent = match && match.qm ? "Online matches keep running while this is open. Leaving knocks you out of the cup." : "Leaving knocks you out of the cup.";
+}
+function tcStripText() { const tk = match.vc; return `${tcKind(tk.tc)} · ${tcRoundName(tk.tc.size, tk.tc.r)} · vs CPU`; }   // ui/vscpu.js: the HUD strip
+
+/* ----- a warm-up in the lobby: a CPU fight while you wait (a call-up stops it) ----- */
+function tcWarm() {
+  Sfx.init(); goFull();
+  if (TC.sheet) tcClose();
+  const me = FIG[tcFighter()], myPal = me.palettes[palIdx(me.id)] || me.palettes[0], opp = cpuFoe(me);
+  const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
+  const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));
+  G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
+  match = { warm: true, tcw: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
+  meSlot = 0;
+  enterMatchUI();
+}
+
+/* ----- every frame (vcTick): the call-up's clock, a log with no answer ----- */
+function tcTick() {
+  if (!tcOn()) return;
+  const k = TC.call;
+  if (k && !k.ready && Date.now() > k.until + 1500) { TC.call = null; tcRender(); }
+  const p = TC.pend;
+  if (p && p.sentT && Date.now() - p.sentT > 15000 && QM.authed) { tcFlush(); tcAsk(); }
+  const now = performance.now();
+  if (mode !== TC.mode0 || (QM.vsT > 0) !== TC.vs0) { TC.mode0 = mode; TC.vs0 = QM.vsT > 0; if (typeof tcvCall === "function") tcvCall(); }   // the banner follows the screen
+  if (now - TC.alertT > 250) { TC.alertT = now; if (typeof tcvTick === "function") tcvTick(); }
+}
+/* ===================== Cups online: the views (the page logic is ui/tourney.js; styles css/97-tourney.css; markup game/shell.html) =====================
+   UI only: nothing here touches the simulation, the bot or the lockstep. ui/tourney.js keeps all state in TC and calls these functions at any
+   time, in any mode, so each one checks what it needs and does nothing when it is not there.
+   - the menu's Tournament mini (tcvPill): its small line by state, a pulsing "Called!" when a match of yours is ready.
+   - the Tournament sheet #scrTc (tcvSheetOpen / tcvSheetClose / tcvSheet): your fighter, then home (Daily Cup, Friends Cup, Practice cup) or the
+     lobby you are in (the countdown, the "in" row with CPU seats, share, start, warm up, leave).
+   - the online bracket on #scrCup in mode "tcup" (tcvBracket, tcvBracketRender, tcvLines): generalized copies of cup.js's cupSlot / cupGridHTML /
+     cupListHTML / cupLines / cupTrophy / cupFootRender for a cup of 4 (2 rounds) or 8 (3 rounds), the same classes so cup.js's styles apply;
+     the states of a pair (live, called, walkover, out, on seed), the foot card (call-up with its 60 s ring, waiting, next, out, the end).
+   - the call-up banner #tcCall over every other screen (tcvCall) and the results card #rTc (tcvResult).
+   - tcvTick (every 250 ms): the clocks, the pill's rotation, the screen wake lock.
+   Every top-level name here starts tcv / TCV (all ui parts share one function scope). */
+screens.tc = $("scrTc");
+const TCV = {
+  seed: new Set(),   // bracket positions of round 0 not yet drawn (the seeding reveal)
+  pop: "", cheer: false, start: false, timers: [],
+  foot: "", sig: "", grid: "", list: "", head: "",   // what the bracket shows now (a redraw with the same markup is skipped)
+  un: {},            // pair key -> when its call-up runs out (Date.now() ms), estimated from the server's msLeft
+  chips: null,       // the champion's chip count-up { total, t0 }
+  me: "", pill: "", call: "", wl: { s: null, req: false, fail: 0 },
+};
+const TCV_CALL_MS = 60000;
+const TCV_GONE = ["quit", "left", "gone", "ff", "quiet", "start", "nostart", "fast"];   // a pair decided because one side left
+const TCV_PRIZE = { 8: [["1st", 120], ["2nd", 60], ["3rd", 30], ["5th", 10]], 4: [["1st", 60], ["2nd", 30], ["3rd", 10]] };
+const TCV_ORD = { 1: "1st", 2: "2nd", 3: "3rd", 5: "5th" };
+
+/* ----- small helpers ----- */
+const tcvR = (c) => (c && c.size === 8 ? 3 : 2);
+const tcvTime = (ms) => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const tcvMs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+const tcvHms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+const tcvSpec = (id) => FIG[id] || FIGHTERS[0];
+const tcvPalOf = (sl) => { const sp = tcvSpec(sl.f); return sp.palettes[sl.pal | 0] || sp.palettes[0]; };
+const tcvNm = (sl) => (!sl ? "" : sl.c ? vcCpuName(sl.ni) : String(sl.n || "Player"));
+const tcvImg = (id) => (PORTRAITS[id] ? `<img src="${PORTRAITS[id]}" alt="">` : "");
+const tcvPh = (sl, cls) => `<span class="cs-ph${cls ? " " + cls : ""}" style="--fc:${col(tcvPalOf(sl))}">${tcvImg(sl.f)}</span>`;
+const tcvLevel = (sl) => (sl.c ? `CPU · ${vcWord(sl.r | 0)}` : `${tierInfo(sl.r | 0).t.name} ${sl.r | 0}`);
+const tcvSet = (el, t) => { if (el && el.textContent !== t) el.textContent = t; };   // a clock's text: written only when it changed
+const tcvDay = (ms) => new Date(ms).toLocaleDateString([], { day: "numeric", month: "short" });
+// the next Daily Cup is at the same time tomorrow (shown in this device's time zone)
+const tcvTomorrow = () => { const d = TC.day; return d && Number.isFinite(d.at) ? tcvTime(d.at + 864e5) : ""; };
+const tcvChName = (ch) => (ch ? (ch.c ? vcCpuName(ch.ni) : String(ch.n || "Player")) : "");
+// the sentence under a verdict: res 1 you went through, res 0 you are out (why: the server's word for it)
+function tcvSubOf(res, why, nm) {
+  if (why === "cpu") why = "game";
+  if (res === 1) return { game: `You beat ${nm}.`, wo: `${nm} didn't tap FIGHT in time.`, draw: "A draw: the higher seed goes through.", seed: "No result twice: the higher seed goes through." }[why] || (TCV_GONE.includes(why) ? `${nm} left the cup.` : "");
+  return { game: `${nm} beat you.`, draw: `A draw: ${nm} is the higher seed.`, seed: `No result twice: ${nm} is the higher seed.`, ff: "You left the match.", wo: "You didn't tap FIGHT in time.", gone: "Your match had no result in time.",
+    fast: "The server couldn't check your match.", left: "The server couldn't check your match.", quiet: "You stopped playing.", start: "Your match didn't start in time.", nostart: "Your match didn't start in time." }[why] || "";
+}
+// your place in a finished cup (the server's number when it came, else worked out from the round you went out in)
+function tcvPlace(c) {
+  const R = tcvR(c), e = TC.end;
+  if (e && e.pl > 0) return e.pl;
+  if (c.pl && c.pl.pl > 0) return c.pl.pl;
+  if (c.mi >= 0 && c.p[R] && c.p[R][0] === c.mi) return 1;
+  if (c.mi >= 0 && c.out >= 0) return (c.size === 8 ? [5, 3, 2] : [3, 2])[c.out] || 0;
+  return 0;
+}
+const tcvChips = (c) => (TC.end && TC.end.c > 0 ? TC.end.c : c.pl && c.pl.c > 0 ? c.pl.c : 0);
+// the champion's slot, -1 when there is none
+const tcvChamp = (c) => { const R = tcvR(c); return c.p[R] && c.p[R][0] >= 0 ? c.p[R][0] : c.ch >= 0 ? c.ch : -1; };
+const tcvOver = (c) => c.st === "done" || !!TC.end;
+
+/* ======================= the menu's Tournament mini ======================= */
+// the small line by state, as candidates from the full words to the shortest (the mini is narrow on a phone: the first one that fits is shown)
+function tcvPillState() {
+  const d = TC.day, k = TC.call;
+  if (k && !k.ready) return { t: ["Called! Tap to fight", "Called! Fight", "Called!"], call: 1 };
+  if (tcPlaying()) { const me = tcMine(), r = me ? tcRoundName(TC.cup.size, me.r) : "live"; return { t: [`Your cup · ${r}`, r], live: 1 }; }
+  if (!d) return null;
+  const at = Number.isFinite(d.at) ? tcvTime(d.at) : "", cn = d.ch ? tcvChName(d.ch) : "", ch = cn ? [`Champion: ${cn}`, cn] : null;
+  if (d.st === "open") return { t: d.in ? [`You're in · ${at}`, "You're in"] : ["Join now"], live: 1 };
+  if (d.st === "run") return { t: ["Live now"], live: 1 };
+  if (d.st === "pre") {
+    const t = d.n > 0 ? [`Tonight ${at} · ${d.n} in`, `${at} · ${d.n} in`, `Tonight ${at}`, at] : [`Tonight ${at}`, at];
+    return { t: ch && Math.floor(Date.now() / 4000) % 2 ? ch : t };
+  }
+  if (d.st === "done" && ch) return { t: ch };
+  return { t: [`Tomorrow ${tcvTomorrow()}`, tcvTomorrow()] };
+}
+function tcvPill() {
+  const t = $("mTc"), old = $("mCupT"), b = $("bCup"), tt = $("mTcT");
+  if (!t || !old || !b) return;
+  const s = tcOn() ? tcvPillState() : null;
+  if (!s) { old.hidden = false; t.hidden = true; b.classList.remove("tcv-called"); TCV.pill = ""; return; }   // not our server / nothing known yet: the mini as it was
+  old.hidden = true; t.hidden = false;
+  const key = s.t.join("|");
+  if (key !== TCV.pill) { TCV.pill = key; TCV.pillI = 0; }
+  tcvSet(tt, s.t[TCV.pillI | 0]);
+  while (tt.scrollWidth > tt.clientWidth + 1 && (TCV.pillI | 0) < s.t.length - 1) { TCV.pillI = (TCV.pillI | 0) + 1; tt.textContent = s.t[TCV.pillI]; }   // too wide: the next shorter words
+  tt.title = s.t[0];
+  t.querySelector(".dot").hidden = !s.live;
+  b.classList.toggle("tcv-called", !!s.call);
+}
+window.addEventListener("resize", () => { TCV.pill = ""; });
+
+/* ======================= the Tournament sheet ======================= */
+function tcvSheetOpen() { modal("tc", true); tcvSheet(); }
+function tcvSheetClose() { modal("tc", false); }
+function tcvHeadKick(d, c, lobby) {
+  if (lobby) return c.k === "f" ? "Friends Cup · lobby" : "Daily Cup · lobby";
+  if (!d) return "";
+  const at = Number.isFinite(d.at) ? tcvTime(d.at) : "";
+  return d.st === "pre" ? `Tonight ${at}` : d.st === "open" ? "Lobby open" : d.st === "run" ? "Live now" : `Tomorrow ${tcvTomorrow()}`;
+}
+function tcvSheet() {
+  if (!TC.sheet) return;
+  const c = TC.cup, d = TC.day, lobby = tcInLobby(), bracket = !!(c && c.slots && c.mi >= 0), busy = !!TC.busy;
+  $("tcvHk").textContent = tcvHeadKick(d, c, lobby);
+  // your fighter: your seat's, else the one you would join with
+  const src = lobby ? c.ent.find((e) => e.me) : bracket ? c.slots[c.mi] : null;
+  const id = src && FIG[src.f] ? src.f : tcFighter(), pi = src && Number.isInteger(src.pal) && FIG[id].palettes[src.pal] ? src.pal : palIdx(id), sig = id + ":" + pi;
+  const meB = $("tcvMe"), locked = !!TC.call && !TC.call.ready;
+  if (TCV.me !== sig) {
+    TCV.me = sig;
+    dailyCard(meB, id, pi, pi ? FIG[id].palettes[pi].name : "You");
+    meB.insertAdjacentHTML("beforeend", '<span class="rd-chg" aria-hidden="true">⇄</span>');
+    meB.setAttribute("aria-label", `Change fighter. You play ${FIG[id].name}`);
+  }
+  meB.disabled = locked;
+  tcvSet($("tcvNote"), TC.note || "");
+  // your cup, once it has a bracket
+  $("tcvYc").hidden = !bracket;
+  if (bracket) {
+    const over = tcvOver(c), pl = over ? tcvPlace(c) : 0, me = tcMine();
+    $("tcvYb").textContent = `${tcKind(c)} · ${c.st === "off" ? "closed" : over ? (pl === 1 ? "champion" : pl ? `finished ${TCV_ORD[pl] || pl}` : "over") : c.out >= 0 ? "you're out" : me ? tcRoundName(c.size, me.r) : "live"}`;
+  }
+  $("tcvHome").hidden = lobby; $("tcvLobby").hidden = !lobby;
+  if (lobby) tcvLobby(c, busy); else tcvHome(d, busy);
+  tcvSheetClock();
+}
+// the home: the Daily Cup card by the day's state, the Friends Cup card, the Practice cup
+function tcvHome(d, busy) {
+  const md = $("tcvMedal");
+  if (!md.firstChild) md.innerHTML = TROPHY.replace("%C", "won").replace(/%G/g, "tcvGm");
+  const go = $("tcvDGo"), dl = $("tcvDl"), dn = $("tcvDn"), cd = $("tcvCd"), at = d && Number.isFinite(d.at) ? tcvTime(d.at) : "", tom = tcvTomorrow();
+  const set = (kick, line, note, btn, cls) => {
+    $("tcvDk").textContent = kick; dl.textContent = line; dn.textContent = note;
+    go.hidden = !btn; go.className = "btn tcv-ink" + (cls ? " " + cls : "");
+    if (btn) $("tcvDGoT").textContent = btn;
+  };
+  cd.classList.remove("txt", "live");
+  const miss = d && d.miss ? `You weren't here at ${at}.` : "";
+  if (!d) {
+    cd.textContent = "--:--:--"; set("Daily Cup", "Checking tonight's cup…", "", "", "");
+  } else if (d.st === "pre") {
+    const n = d.n | 0, ch = d.ch ? ` · Champion: ${tcvChName(d.ch)}` : "";
+    set(`Daily Cup · ${at}`, `${n > 1 || (n === 1 && !d.me) ? `${n} in tonight` : n === 1 ? "You're in tonight" : "Be the first in tonight"}${ch}`,
+      `Lobby opens ${Number.isFinite(d.at) ? tcvTime(d.at - 30 * 60000) : ""}`, d.me ? "You're in ✓" : "I'm in", d.me ? "on" : "primary");
+  } else if (d.st === "open") {
+    const n = d.ent | 0;
+    set(`Daily Cup · ${at}`, `${n > 0 ? `${n} in the lobby` : "The lobby is open"} · the bracket is drawn at ${at}`, d.in ? "You're in. Join the lobby to stay." : "Join now: a roll call at " + at + ", then the bracket.", "Join", "primary");
+  } else if (d.st === "run") {
+    cd.classList.add("live"); cd.textContent = "LIVE";
+    set("Daily Cup · live", `${d.ent | 0} playing now`, d.in ? "" : `Next cup tomorrow ${tom}`, d.in ? "Bracket" : "", "primary");
+  } else if (d.st === "done") {
+    cd.classList.add("txt"); cd.textContent = d.ch ? tcvChName(d.ch) : "Done";
+    set("Daily Cup · champion", `Next cup tomorrow ${tom}`, "", "", "");
+  } else {
+    cd.classList.add("txt"); cd.textContent = "No cup";
+    set("Daily Cup · not tonight", `Not enough players tonight · tomorrow ${tom}`, "", "", "");
+  }
+  if (d && (d.st === "run" || d.st === "done" || d.st === "off") && miss) dn.textContent = miss;
+  go.disabled = busy;
+  $("tcvHost").disabled = busy; $("tcvJoinC").disabled = busy;
+  $("tcvPGoT").textContent = cupOk(P.cup) ? "Resume" : "Play";
+  $("tcvPrz").innerHTML = tcvPrizes(d);
+  $("tcvPrz").hidden = !d || d.st === "done" || d.st === "off";
+}
+function tcvPrizes(d) {
+  const row = (n) => TCV_PRIZE[n].map(([p, v]) => `<span class="bw-st cg tcv-pz">${p} ${v}</span>`).join("");
+  return `<span class="tcv-pt8">${row(8)}</span><small class="tcv-p4">a cup of 4 pays ${TCV_PRIZE[4].map((x) => x[1]).join(" · ")}</small>`;
+}
+// the lobby you are in
+function tcvLobby(c, busy) {
+  const daily = c.k !== "f", ent = c.ent || [], n = ent.length, host = !!c.host, at = Number.isFinite(c.at) ? c.at : TC.day ? TC.day.at : NaN, hhmm = Number.isFinite(at) ? tcvTime(at) : "";
+  $("tcvLk").textContent = daily ? `Daily Cup · ${hhmm}` : "Friends Cup";
+  const cd = $("tcvLCd"), ll = $("tcvLl"), ln = $("tcvLn");
+  cd.classList.toggle("code", !daily);
+  if (!daily) { cd.textContent = c.code || ""; cd.setAttribute("aria-label", `Code ${c.code || ""}`); } else cd.removeAttribute("aria-label");
+  ll.textContent = daily ? `Keep this screen on. A roll call at ${hhmm}, then the bracket is drawn.`
+    : host ? "Share the link or the code. Start when everyone is in." : "Waiting for the host to start the cup.";
+  ln.textContent = daily ? "CPUs fill the empty seats." : host && n < 2 ? "A cup needs 2 players." : host ? "CPUs fill the empty seats." : "";
+  $("tcvLPrz").innerHTML = daily ? tcvPrizes() : ""; $("tcvLPrz").hidden = !daily;
+  $("tcvShare").hidden = daily;
+  const st = $("tcvStart"); st.hidden = daily || !host; st.disabled = busy || n < 2;
+  // the "in" row: framed faces, CPU seats as "?" up to 4 or 8, "+N" when more than 8 are in
+  const seats = n <= 4 ? 4 : 8, show = n > 8 ? 7 : n;
+  let h = "";
+  for (let i = 0; i < show; i++) {
+    const e = ent[i], sl = { f: e.f, pal: e.pal };
+    h += `<span class="tcv-seat${e.me ? " me" : ""}${e.h ? " host" : ""}" style="--fc:${col(tcvPalOf(sl))}" title="${cupEsc(e.n || "")}"><span class="tcv-sp">${tcvImg(FIG[e.f] ? e.f : tcvSpec(e.f).id)}</span><b>${cupEsc(e.me ? "You" : e.n || "Player")}</b>${e.h ? '<i class="tcv-hs">Host</i>' : ""}</span>`;
+  }
+  if (n > 8) h += `<span class="tcv-seat more"><span class="tcv-sp q">+${n - 7}</span><b>more</b></span>`;
+  else for (let i = n; i < seats; i++) h += '<span class="tcv-seat cpu"><span class="tcv-sp q">?</span><b>CPU</b></span>';
+  $("tcvSeats").innerHTML = h;
+  $("tcvSeats").classList.toggle("s4", seats === 4 && n <= 4);
+  const cpus = n <= 8 ? seats - n : 0;
+  $("tcvLInN").textContent = `${n} ${n === 1 ? "player" : "players"}${cpus ? ` · ${cpus} CPU` : ""}`;
+  $("tcvWarm").disabled = busy; $("tcvLeave").disabled = busy;
+}
+// the countdowns on the sheet (called by tcvSheet and every tick)
+function tcvSheetClock() {
+  if (!TC.sheet) return;
+  const c = TC.cup, d = TC.day, now = tcNow();
+  if (tcInLobby()) {
+    if (c.k !== "f") { const at = Number.isFinite(c.at) ? c.at : d ? d.at : NaN; const cd = $("tcvLCd"); cd.classList.toggle("txt", !(at > now)); tcvSet(cd, at > now ? tcvHms(at - now) : "Starting…"); }
+  } else if (d && (d.st === "pre" || d.st === "open") && Number.isFinite(d.at)) {
+    const cd = $("tcvCd"); cd.classList.toggle("txt", !(d.at > now)); tcvSet(cd, d.at > now ? tcvHms(d.at - now) : "Starting…");
+  }
+}
+
+/* ======================= the online bracket ======================= */
+// one slot of the bracket: (r, pos) is the winner of pair pos of the round before, like cup.js's cupSlot, with the online states of its pair
+function tcvSlot(c, r, pos) {
+  const key = r + ":" + pos, R = tcvR(c), draw = TCV.seed.size > 0 && (r > 0 || TCV.seed.has(pos)), s = draw ? -1 : c.p[r][pos];
+  const tbd = (n, t) => `<div class="cs tbd" data-k="${key}"><span class="cs-ph q">?</span><span class="cs-t"><span class="cs-n">${n}</span><span class="cs-r">${t}</span></span></div>`;
+  if (s === -2) return `<div class="cs none" data-k="${key}"><span class="cs-ph q">&mdash;</span><span class="cs-t"><span class="cs-n">No one</span><span class="cs-r">nobody came through</span></span></div>`;
+  const sl = s >= 0 ? c.slots[s] : null;
+  if (!sl) return r === 0 && draw ? tbd("Seeding", "&hellip;") : tbd("Winner", "to be decided");
+  const me = s === c.mi, cpu = !!sl.c, pk = r + ":" + (pos >> 1), m = c.m && c.m[pk], st = m ? m[0] : "w", why = m ? m[1] : "";
+  const nx = c.p[r + 1], dec = nx ? nx[pos >> 1] : -1, out = dec >= 0 && dec !== s, champ = dec === s && r === R - 1;
+  const w = (t, extra) => `<span class="cs-tn tcv-w${extra || ""}">${t}</span>`;
+  const ti = tierInfo(sl.r | 0);
+  let sub = cpu ? `<span class="cs-tn">CPU &middot; ${vcWord(sl.r | 0)}</span>` : `${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r | 0}</span>`;
+  const cls = ["cs", me ? "me" : "", cpu ? "cpu" : "", me && !out && dec !== -2 ? "path" : "", champ ? "champ" : "", TCV.pop === key ? "pop" : ""];
+  const run = c.st === "run";   // a cup that is over or closed shows no pair as live or called
+  if (run && dec === -1 && st === "l") cls.push("live");
+  else if (run && dec === -1 && st === "c") {
+    cls.push("wait");
+    if (m[3] && m[3][pos & 1]) sub = w("ready", " rd");
+    else {
+      const est = Date.now() + (m[2] | 0), prev = TCV.un[pk], u = prev !== undefined && Math.abs(prev - est) < 2500 ? prev : est;
+      TCV.un[pk] = u;
+      sub = `<span class="cs-tn tcv-w" data-u="${u}" data-p="called · "></span>`;
+    }
+  } else if (dec === -2) { cls.push("gone"); sub = w("out"); }
+  else if (out) {
+    if (me) cls.push("fell"); else if (why !== "wo" && !TCV_GONE.includes(why)) cls.push("out");
+    if (why === "wo") { cls.push("wo"); sub = w("walkover"); }
+    else if (TCV_GONE.includes(why)) { cls.push("gone"); sub = w("out"); }
+    else if (why === "draw" || why === "seed") sub = w("on seed");
+  }
+  const tag = me ? '<i class="tcv-tg">You</i>' : cpu ? '<i class="tcv-tg">CPU</i>' : "";
+  return `<div class="${cls.filter(Boolean).join(" ")}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(tcvPalOf(sl))}"><span class="cs-ph">${tcvImg(sl.f)}</span>` +
+    `<span class="cs-t"><span class="cs-n">${cupEsc(tcvNm(sl))}</span><span class="cs-r">${sub}</span></span>${tag}</div>`;
+}
+function tcvTrophy(c, gid) {
+  const ch = tcvChamp(c), champ = ch >= 0 && TCV.seed.size === 0;
+  let h = TROPHY.replace("%C", champ && ch === c.mi ? "won" : champ ? "" : "live").replace(/%G/g, gid);
+  if (TCV.cheer) {
+    h += '<div class="spark">';
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + 0.2, rr = 50 + (i % 3) * 22; h += `<i style="--x:${Math.round(Math.cos(a) * rr)}px;--y:${Math.round(Math.sin(a) * rr * 0.8)}px;--d:${(i % 4) * 90}"></i>`; }
+    h += "</div>";
+  }
+  return h;
+}
+// the round you are in now (-1 when the cup is over for you)
+function tcvNow(c) { const me = tcMine(); return c.st === "run" && c.out < 0 && me ? me.r : -1; }
+function tcvGridHTML(c) {
+  const R = tcvR(c), n = c.size, now = tcvNow(c);
+  const colm = (cls, r, from, cnt) => `<div class="cc ${cls}">${Array.from({ length: cnt }, (_, k) => tcvSlot(c, r, from + k)).join("")}</div>`;
+  const lab = (r) => `<div class="cc-l${now === r ? " now" : ""}">${tcRoundName(n, r)}</div>`;
+  const fin = `<div class="cc fin">${tcvSlot(c, R - 1, 0)}${tcvTrophy(c, "tcvGg")}${tcvSlot(c, R - 1, 1)}</div>`;
+  if (R === 3) return lab(0) + lab(1) + lab(2) + lab(1) + lab(0) + colm("q", 0, 0, 4) + colm("s", 1, 0, 2) + fin + colm("s rt", 1, 2, 2) + colm("q rt", 0, 4, 4) + '<svg class="cup-lines"></svg>';
+  return lab(0) + lab(1) + lab(0) + colm("s", 0, 0, 2) + fin + colm("s rt", 0, 2, 2) + '<i class="tcv-g4" hidden></i><svg class="cup-lines"></svg>';
+}
+function tcvListHTML(c) {
+  const R = tcvR(c), n = c.size;
+  let h = "";
+  for (let r = 0; r < R; r++) {
+    h += `<div class="kicker cl-h">${tcRoundName(n, r)}${r < R - 1 ? "s" : ""}</div>`;
+    for (let i = 0; i < n >> (r + 1); i++) {
+      const m = c.m && c.m[r + ":" + i], live = c.st === "run" && m && m[0] === "l" && !(c.p[r + 1] && c.p[r + 1][i] !== -1);
+      h += `<div class="cl-m${live ? " live" : ""}">${tcvSlot(c, r, 2 * i)}${tcvSlot(c, r, 2 * i + 1)}</div>`;
+    }
+  }
+  return h + `<div class="cl-cup">${tcvTrophy(c, "tcvGl")}</div>`;
+}
+// bracket lines: each pair joins into the slot its winner goes to; your own path is lit; a live pair has a LIVE dot where it joins
+function tcvLines() {
+  const c = TC.cup, grid = $("cupGrid");
+  if (!c || !c.slots || mode !== "tcup" || !grid) return;
+  const svg = grid.querySelector(".cup-lines"), W = grid.offsetWidth, H = grid.offsetHeight;
+  if (!svg || !W) return;
+  svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const at = (r, pos) => {
+    const el = grid.querySelector(`[data-k="${r}:${pos}"]`);
+    if (!el) return null;
+    let x = 0, y = 0, e = el;   // offset*, not getBoundingClientRect, so a turned (sideways) screen measures right too
+    while (e && e !== grid) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; }
+    return { l: x, r: x + el.offsetWidth, y: y + el.offsetHeight / 2 };
+  };
+  const R = tcvR(c), n = c.size, dim = [], lit = [], dots = [], drawn = TCV.seed.size > 0;
+  for (let r = 0; r < R - 1; r++) for (let i = 0; i < n >> (r + 1); i++) {
+    const left = i < (n >> (r + 2)), dst = at(r + 1, i);
+    for (const pos of [2 * i, 2 * i + 1]) {
+      const src = at(r, pos);
+      if (!src || !dst) continue;
+      const x0 = left ? src.r : src.l, x1 = left ? dst.l : dst.r, xm = Math.round((x0 + x1) / 2);
+      (!drawn && c.p[r][pos] === c.mi && c.p[r + 1][i] === c.mi ? lit : dim).push(`M${x0} ${src.y}H${xm}V${dst.y}H${x1}`);
+      if (pos === 2 * i) { const m = c.m && c.m[r + ":" + i]; if (m && m[0] === "l" && c.st === "run" && !drawn && c.p[r + 1][i] === -1) dots.push(`<circle class="tcv-ld" cx="${xm}" cy="${Math.round(dst.y)}" r="5.5"/>`); }
+    }
+  }
+  svg.innerHTML = [...dim.map((d) => `<path d="${d}"/>`), ...lit.map((d) => `<path class="lit" d="${d}"/>`), ...dots].join("");
+}
+function tcvHeadRender(c) {
+  const R = tcvR(c), ch = tcvChamp(c);
+  const kick = c.k === "f" ? `Friends Cup · ${c.code || ""}` : `Daily Cup · ${tcvDay(Number.isFinite(c.at) ? c.at : TC.day && Number.isFinite(TC.day.at) ? TC.day.at : Date.now())}`;
+  let title;
+  if (c.st === "off") title = "Cup closed";
+  else if (tcvOver(c)) title = ch >= 0 && ch === c.mi ? "Champion" : "Cup over";
+  else if (c.out >= 0) title = "Cup over";
+  else { const me = tcMine(); title = me ? tcRoundName(c.size, me.r) : "Live"; }
+  tcvSet($("cupKick"), kick); tcvSet($("cupTitle"), title); tcvSet($("cupTokens"), fmtChips(P.tokens));
+}
+function tcvGridRender(c) {
+  const g = tcvGridHTML(c), l = tcvListHTML(c), grid = $("cupGrid"), list = $("cupList");
+  let moved = false;
+  if (g !== TCV.grid || !grid.querySelector(".cup-lines")) { TCV.grid = g; grid.innerHTML = g; moved = true; }
+  if (l !== TCV.list) { TCV.list = l; list.innerHTML = l; }
+  if (moved) tcvLines();
+}
+
+/* the strip under the bracket: your call-up (the 60 s ring), the wait, what is next, you are out, the end of the cup, a cup that was closed */
+function tcvFoot(c) {
+  const btn = (id, label, cls) => `<button class="btn${cls ? " " + cls : ""}" id="${id}"><span>${label}</span></button>`;
+  const kind = tcKind(c), R = tcvR(c), me = tcMine(), k = TC.call && TC.call.id === c.id ? TC.call : null, tom = tcvTomorrow();
+  const t = (kick, big, small, extra) => `<div class="cf-t">${kick ? `<span class="kicker">${kick}</span>` : ""}<b>${big}</b>${small ? `<small${extra || ""}>${small}</small>` : ""}</div>`;
+  const menu = btn("tcvFMenu", "Menu");
+  const res = (cls, sig, html) => ({ cls: "cf" + (cls ? " " + cls : ""), sig, html });
+  const over = tcvOver(c);
+  if (c.st === "off" && !TC.end) {
+    const why = c.why, few = why === "few" || why === "none" || why === "late";
+    const words = why === "host" ? "The host closed this cup." : why === "idle" ? "Nobody started this cup." : few ? `Not enough players came.${c.k !== "f" && tom ? ` Tomorrow ${tom}.` : ""}` : "This cup was closed.";
+    return res("lose", "off:" + why, `${t("", "Cup closed", cupEsc(words))}<div class="cf-acts tcv-a">${menu}</div>`);
+  }
+  if (over && c.mi >= 0) {
+    const pl = tcvPlace(c), ch = tcvChamp(c), chips = tcvChips(c), daily = c.k !== "f", e = TC.end;
+    const name = e && e.ch === null ? "" : ch >= 0 ? tcvNm(c.slots[ch]) : e && e.ch ? e.ch : e && e.ch === "" ? vcCpuName(e.chc | 0) : "";
+    const won = pl === 1 || (ch >= 0 && ch === c.mi);
+    if (won) {
+      const now = TCV.chips ? Math.round(TCV.chips.total * clamp((performance.now() - TCV.chips.t0) / 1200, 0, 1)) : chips;
+      const small = daily ? `<span class="cf-chips"><span class="tokglyph"></span>+<span id="tcvChipsN">${Math.min(now, chips)}</span></span> chips from this cup` : e && e.fw > 0 ? `${e.fw} Friends ${e.fw === 1 ? "Cup" : "Cups"} won` : "A Friends Cup won";
+      const acts = daily ? `<button class="btn tcv-mute" disabled><span>Tomorrow ${cupEsc(tom)}</span></button>${menu}` : `${btn("tcvFHost", "Host another", "primary")}${menu}`;
+      return res("win", "won:" + pl, `${t("", "Champion!", small)}<div class="cf-acts tcv-a">${acts}</div>`);
+    }
+    const word = pl ? `You finished ${TCV_ORD[pl] || pl + "th"}` : "The cup is over";
+    const small = e && e.ch === null ? "No champion: the cup timed out." : `${daily && chips > 0 ? `+${chips} chips · ` : ""}${name ? `${cupEsc(name)} won the cup.` : ""}`;
+    return res("", "end:" + pl, `${t("", word, small)}<div class="cf-acts tcv-a">${menu}</div>`);
+  }
+  if (c.out >= 0 && c.mi >= 0) {   // out, the cup goes on without you
+    const at = c.p[c.out].indexOf(c.mi), key = c.out + ":" + (at >> 1), m = c.m && c.m[key], rs = Object.values(TC.res || {}).find((x) => x && x.r === c.out && x.res === 0);
+    const opp = c.slots[c.p[c.out][at ^ 1]], words = tcvSubOf(0, rs ? rs.why : m ? m[1] : "game", opp ? tcvNm(opp) : "They");
+    return res("lose", "out:" + c.out, `${t("", `Out in the ${tcRoundName(c.size, c.out).toLowerCase()}`, cupEsc(`${words} The cup goes on.`.trim()))}<div class="cf-acts tcv-a">${menu}</div>`);
+  }
+  const rn = me ? tcRoundName(c.size, me.r) : "";
+  const o = k && (k.opp || (me && me.opp >= 0 ? c.slots[me.opp] : null));
+  if (k && me && !k.ready) {   // called: FIGHT in its ring
+    return res("tcv-called", "call:" + k.key, `${o ? tcvPh(o) : ""}${t(`${rn} · ${kind}`, o ? `vs ${cupEsc(tcvNm(o))}` : "Your match", o ? cupEsc(tcvLevel(o)) : "")}` +
+      `<div class="cf-acts tcv-a"><span class="tcv-ring" id="tcvFRing"><button class="btn primary" id="tcGo"><span>Fight<small id="tcGoT"></small></span></button></span></div>`);
+  }
+  if (k && me && k.ready) {   // you tapped FIGHT: waiting for them
+    const cpu = o && o.c, name = o ? tcvNm(o) : "your opponent";
+    return res("tcv-called", "rdy:" + k.key, `${o ? tcvPh(o) : ""}${t(`${rn} · ${kind}`, "You're ready", cpu ? "Starting…" : "…", cpu ? "" : ` id="tcvWt" data-u="${k.until}" data-p="${cupEsc(`Waiting for ${name} to tap FIGHT · `)}"`)}`);
+  }
+  if (me && me.s === "l") return res("", "live:" + me.key, t(`${rn} · ${kind}`, "Your match is on", "Waiting for the result…"));
+  if (me) {   // your next match, not called yet
+    const opp = me.opp >= 0 ? c.slots[me.opp] : null;
+    let small;
+    if (opp) small = `vs ${cupEsc(tcvNm(opp))} · ${cupEsc(tcvLevel(opp))}`;
+    else {
+      const at = c.p[me.r].indexOf(c.mi) ^ 1, a = me.r > 0 ? c.slots[c.p[me.r - 1][2 * at]] : null, b = me.r > 0 ? c.slots[c.p[me.r - 1][2 * at + 1]] : null;
+      small = a && b ? `vs the winner of ${cupEsc(tcvNm(a))} / ${cupEsc(tcvNm(b))}` : "vs the winner of the other match";
+    }
+    return res("", "next:" + me.key + ":" + me.opp, `${opp ? tcvPh(opp) : '<span class="cs-ph q">?</span>'}${t(kind, `Next: ${rn}`, small)}` +
+      `<div class="cf-acts tcv-a"><button class="btn tcv-sw" id="tcvFPick" aria-label="Change fighter"><span aria-hidden="true">⇄</span></button>${btn("tcvFWarm", "Warm up vs CPU")}</div>`);
+  }
+  return res("", "wait", t(kind, "Waiting", "The next round starts soon."));
+}
+function tcvFootIn() { const f = $("cupFoot"); f.classList.remove("in"); void f.offsetWidth; f.classList.add("in"); }
+function tcvFootRender() {
+  const c = TC.cup, card = $("cupCard");
+  if (!c || !c.slots) return;
+  const f = tcvFoot(c);
+  if (f.html !== TCV.foot) { TCV.foot = f.html; card.className = f.cls; card.innerHTML = f.html; tcvClocks(); }
+  if (f.sig !== TCV.sig) { TCV.sig = f.sig; if (!TCV.start) tcvFootIn(); }   // a new state slides in (the call-up too)
+}
+function tcvBracketRender() {
+  const c = TC.cup;
+  if (mode !== "tcup" || !c || !c.slots) return;
+  tcvHeadRender(c); tcvGridRender(c); tcvFootRender();
+}
+// Show the bracket (mode "tcup" and show("cup") are done). o.start: the seeding reveal; o.after: key of the match you just played; o.cheer: the champion moment
+function tcvBracket(o) {
+  o = o || {};
+  const c = TC.cup;
+  if (!c || !c.slots) return;
+  TCV.timers.forEach(clearTimeout); TCV.timers = [];
+  const later = (ms, fn) => TCV.timers.push(setTimeout(() => { if (mode === "tcup") fn(); }, ms));
+  const mine = c.mi >= 0 ? c.slots[c.mi] : null, pal = mine ? tcvPalOf(mine) : null;
+  $("scrCup").style.setProperty("--me", pal ? col(pal) : "var(--sand)"); $("scrCup").style.setProperty("--meg", pal ? rgba(col(pal), 0.4) : "rgba(243,217,164,0.4)");
+  TCV.un = {}; TCV.chips = null; TCV.cheer = false; TCV.pop = ""; TCV.seed = new Set(); TCV.start = !!o.start; TCV.foot = ""; TCV.sig = ""; TCV.grid = ""; TCV.list = "";
+  $("cupFoot").classList.remove("in");
+  if (o.after && /^\d+:\d+$/.test(o.after)) {   // you won it: your new slot pops in
+    const [r, i] = o.after.split(":").map(Number);
+    if (c.p[r + 1] && c.p[r + 1][i] === c.mi) { TCV.pop = (r + 1) + ":" + i; Sfx.later(0, () => Sfx.tone(660, 990, 0.12, "triangle", 0.07)); later(900, () => { TCV.pop = ""; const e = document.querySelector(".cs.pop"); if (e) e.classList.remove("pop"); }); }
+  }
+  let ready = 0;
+  if (o.cheer) TCV.chips = { total: tcvChips(c), t0: performance.now() + 1e6 };   // the foot card shows 0 until the count-up starts
+  if (o.start) {   // the draw: every slot of round 0 ticks in, in seed order
+    const order = Array.from({ length: c.size }, (_, p) => p).sort((a, b) => ((c.slots[c.p[0][a]] || {}).sd || a + 1) - ((c.slots[c.p[0][b]] || {}).sd || b + 1));
+    TCV.seed = new Set(order);
+    const gap = clamp(Math.round(1100 / c.size), 90, 260);
+    order.forEach((pos, n) => later(350 + n * gap, () => { TCV.seed.delete(pos); tcvBracketRender(); Sfx.later(0, () => Sfx.tone(520 + n * 40, 520 + n * 40, 0.05, "triangle", 0.05)); }));
+    ready = 350 + order.length * gap + 250;
+  }
+  tcvBracketRender();
+  later(ready, () => { TCV.start = false; TCV.sig = ""; tcvFootRender(); if (!$("cupFoot").classList.contains("in")) tcvFootIn(); });
+  if (o.cheer) {   // the champion: trophy, sparks, the jingle, the chips count up
+    later(ready + 300, () => {
+      TCV.cheer = true; tcvBracketRender(); cupJingle();
+      const total = tcvChips(TC.cup || c), t0 = performance.now();
+      TCV.chips = { total, t0 };
+      tcvFootRender();
+      const count = () => {
+        const n = $("tcvChipsN");
+        if (!n || mode !== "tcup" || !TCV.chips) return;
+        const k = Math.min(1, (performance.now() - t0) / 1200);
+        n.textContent = Math.round(total * k);
+        if (k < 1) requestAnimationFrame(count); else { TCV.chips = null; if (total > 0) Sfx.uiCoin(); }
+      };
+      count();
+    });
+  } else if (c.st === "done" && mine && c.out >= 0) later(ready + 300, () => Sfx.later(0, () => Sfx.tone(300, 110, 0.4, "sawtooth", 0.07)));
+}
+
+/* ======================= the call-up banner ======================= */
+function tcvCall() {
+  const el = $("tcCall"), k = TC.call, c = TC.cup;
+  const show = tcOn() && !!k && !k.ready && !!c && c.id === k.id && mode !== "tcup" && !(QM.vsT > 0) && !(VC.vsT > 0);
+  if (!show) { if (!el.hidden) { el.hidden = true; el.classList.remove("in"); } TCV.call = ""; return; }
+  const sig = k.id + ":" + k.key + ":" + (c.size || 0);   // (a call-up can come before the bracket's first view: the round's name follows it)
+  const o = k.opp || (c.slots && c.slots[tcMine() ? tcMine().opp : -1]) || null;
+  if (TCV.call !== sig) {
+    TCV.call = sig;
+    const ph = $("tccPh"); ph.style.setProperty("--fc", o ? col(tcvPalOf(o)) : "var(--mute)"); ph.innerHTML = o ? tcvImg(o.f) : "";
+    $("tccK").textContent = `${tcKind(c)} · ${tcRoundName(c.size || 8, k.r)}`;
+    $("tccN").textContent = o ? `vs ${tcvNm(o)}` : "Your match is ready";
+    $("tccS").textContent = o ? tcvLevel(o) : "";
+  }
+  const busy = tcBusy();
+  tcvSet($("tccBusy"), busy); $("tccBusy").hidden = !busy;
+  if (el.hidden) { el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in"); }
+  tcvClocks();
+}
+
+/* ======================= the results card ======================= */
+function tcvResult(R, res) {
+  const card = $("rTc"), tm = R && (R.tc || (R.qm && R.qm.tm));
+  if (!card || !tm) return;
+  card.hidden = false;
+  const c = TC.cup, size = c ? c.size : tm.size || 8, Rn = size === 8 ? 3 : 2, r = tm.r | 0, cpu = !!R.tc;
+  const nm = cpu ? vcCpuName(R.tk ? R.tk.ni : 0) : (R.qm.opp && R.qm.opp.name) || NET.oppName || "Your opponent";
+  const head = $("rTcH"), sub = $("rTcS"), st = $("rTcD"), sheet = $("resSheet");
+  const look = (k) => { sheet.classList.remove("win", "loss", "draw"); sheet.classList.add(k); };
+  const sticker = (cls, n, small) => { st.className = "delta " + cls; $("rTcN").textContent = n; $("rTcL").textContent = small; };
+  card.style.setProperty("--k", Rn);
+  if (!res) {
+    card.className = "card res-tc wait"; card.style.setProperty("--p", r / Rn);
+    head.textContent = cpu ? "Checking your match…" : "Waiting for the result…";
+    sub.textContent = `${tcKind(c)} · ${tcRoundName(size, r)}`;
+    sticker("wait", "…", "Confirming");
+    return;
+  }
+  const won = res.res === 1, last = r >= Rn - 1;
+  card.className = "card res-tc " + (won ? "up" : "down"); card.style.setProperty("--p", (r + (won ? 1 : 0)) / Rn);
+  head.textContent = won ? (last ? "Champion!" : `Through to the ${tcRoundName(size, r + 1).toLowerCase()}`) : `Out in the ${tcRoundName(size, r).toLowerCase()}`;
+  sub.textContent = tcvSubOf(won ? 1 : 0, res.why, nm);
+  sticker(won ? "" : "down", won ? (last ? "★︎" : "✓︎") : "✕︎", won ? (last ? "Champion" : "Through") : "Out");
+  // the server's result differs from this phone's, or it was decided by a walkover or a draw: the big word follows it
+  const why = res.why === "cpu" ? "game" : res.why;
+  if (res.res !== R.res || why !== "game") {
+    if (why === "game") { resTitle(won ? "Victory" : "Defeat"); look(won ? "win" : "loss"); resLine($("rSub"), ["The server's result: ", won ? "you won." : "you lost."]); }
+    else if (why === "draw" || why === "seed") { resTitle(won ? "Through" : "Out"); look(won ? "win" : "loss"); resLine($("rSub"), [tcvSubOf(won ? 1 : 0, why, nm)]); }
+    else if (won) { resTitle("Opponent left"); look("win"); resLine($("rSub"), why === "wo" ? [{ b: nm }, " didn't tap FIGHT in time."] : [{ b: nm }, " left the cup. It counts as your win."]); }
+    else { resTitle(why === "ff" ? "Forfeit" : "Out"); look("loss"); resLine($("rSub"), [tcvSubOf(0, why, nm)]); }
+  }
+}
+
+/* ======================= the clocks (every 250 ms) ======================= */
+// the call-up rings and the countdowns on the bracket
+function tcvClocks() {
+  const now = Date.now(), k = TC.call;
+  if (mode === "tcup") {
+    for (const el of document.querySelectorAll("#scrCup [data-u]")) tcvSet(el, (el.dataset.p || "") + tcvMs(+el.dataset.u - now));
+  }
+  if (k && !k.ready) {
+    const left = k.until - now, p = Math.max(0, Math.min(1, left / TCV_CALL_MS));
+    const ring = (id, tid) => { const r = $(id), t = $(tid); if (r) { r.style.setProperty("--p", p.toFixed(3)); r.classList.toggle("low", left < 15000); } tcvSet(t, tcvMs(left)); };
+    if (!$("tcCall").hidden) ring("tccRing", "tccT");
+    if (mode === "tcup") ring("tcvFRing", "tcGoT");
+  }
+}
+function tcvTick() {
+  tcvClocks();
+  if (TC.sheet) tcvSheetClock();
+  if (mode === "menu") tcvPill();
+  if (mode === "tcup") tcvSet($("cupTokens"), fmtChips(P.tokens));   // the prize arrives with the next sync
+  tcvWake();
+}
+
+/* ----- the screen stays on in the lobby, on the bracket and while you are called (a locked phone drops the connection) ----- */
+const tcvWant = () => tcOn() && (mode === "tcup" || (TC.sheet && tcInLobby()) || !!TC.call);
+function tcvWake() {
+  const W = TCV.wl, want = tcvWant();
+  if (!("wakeLock" in navigator)) return;
+  if (!want) { if (W.s) { const s = W.s; W.s = null; try { s.release().catch(() => {}); } catch (e) { /* already released */ } } return; }
+  if (W.s || W.req || document.visibilityState !== "visible" || Date.now() - W.fail < 15000) return;
+  W.req = true;
+  let p;
+  try { p = navigator.wakeLock.request("screen"); } catch (e) { W.req = false; W.fail = Date.now(); return; }
+  p.then((s) => {
+    W.req = false;
+    if (!tcvWant()) { try { s.release().catch(() => {}); } catch (e) { /* ignore */ } return; }
+    W.s = s;
+    s.addEventListener("release", () => { if (W.s === s) W.s = null; });
+  }, () => { W.req = false; W.fail = Date.now(); });
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { TCV.wl.fail = 0; tcvWake(); } });
+
+/* ======================= wiring ======================= */
+tap("tcClose", () => tcClose());
+tap("tcvMe", () => tcPick());
+tap("tcvYGo", () => tcBracket());
+tap("tcvDGo", () => {
+  const d = TC.day;
+  if (!d) return;
+  if (d.st === "pre") tcIn(!d.me); else if (d.st === "open") tcJoin(); else if (d.st === "run" && d.in) tcBracket();
+});
+tap("tcvHost", () => tcHost());
+tap("tcvPGo", () => { tcClose(); cupOpen(); });
+tap("tcvShare", () => tcShare());
+tap("tcvStart", () => tcStart());
+tap("tcvWarm", () => tcWarm());
+tap("tcvLeave", () => tcLeave());
+$("tcvCf").addEventListener("submit", (e) => { e.preventDefault(); Sfx.init(); Sfx.ui(); tcJoinCode($("tcvCode").value); });
+$("tcvCode").addEventListener("input", (e) => { const v = e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""); if (v !== e.target.value) e.target.value = v; });
+screens.tc.addEventListener("click", (e) => { if (e.target === screens.tc) tcClose(); });
+window.addEventListener("keydown", (e) => { if (e.code === "Escape" && TC.sheet) { e.preventDefault(); tcClose(); } });
+// the foot card's buttons are redrawn with it: one listener on the strip
+$("cupCard").addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("button");
+  if (!b || b.disabled || mode !== "tcup") return;
+  const id = b.id, f = { tcGo: tcFight, tcvFPick: tcPick, tcvFWarm: tcWarm, tcvFMenu: tcBack, tcvFHost: tcHost }[id];
+  if (!f) return;
+  Sfx.init(); Sfx.cue(b); f();
+});
+// the call-up banner's FIGHT
+tap("tccGo", () => tcFight());
+window.__blTcV = { result: tcvResult, pill: tcvPill, call: tcvCall, tick: tcvTick, sheet: tcvSheet, foot: tcvFootRender, bracket: tcvBracketRender, lines: tcvLines };   // tests
 /* ===================== Replays: a run played again from its inputs (UI only; Boss Week runs, Ranked vs CPU matches) =====================
    A run is its seed, its fighters and your logged inputs (vcIn, ui/vscpu.js). It plays again through the same engine and match screen:
    simTick takes the log's input in place of the pad (rpLive) and the CPU partner or foe thinks again from the same random numbers, so
@@ -42096,6 +43400,7 @@ goMenu();
 turnOpen(() => {
   if (NET.invite) openOnline();
   else if (rpLanding()) { /* ui/replay.js: a share link's run (its title card), the welcome sheet after it */ }
+  else if (tcLanding()) { /* ui/tourney.js: a Friends Cup's link: the Tournament sheet joins it */ }
   else if (firstRun && !ACCT.hash) welcomeOpen();
 });
 camStep(attract.g, true);

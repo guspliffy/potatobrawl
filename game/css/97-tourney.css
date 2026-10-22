@@ -1,0 +1,248 @@
+/* ---------- Cups online: the Tournament mini's line, the sheet, the online bracket's states, the call-up banner, the results card ("sunset ink") ----------
+   Markup: shell.html (#bCup's #mTc, #scrTc, #tcCall, #rTc); texts and rows: ui/tcview.js (tcv*); the page logic is ui/tourney.js. The bracket reuses
+   the offline cup's classes (.cs .cc .cf .cup-lines, shell.html + 50-sheets.css) and adds the online states below. Sizes follow the #app classes
+   view.js sets: desktop (default), .short (844x390), .tiny (667x320), .portrait / .narrow (upright). */
+
+/* ===== the menu's Tournament mini: the small line by state; "Called!" pulses ===== */
+#scrMenu #bCup #mTc { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; }
+#scrMenu #bCup #mTc[hidden] { display: none; }
+#scrMenu #bCup #mTcT { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; margin: -0.125em 0; }   /* room for the descenders under the clip */
+#scrMenu #bCup .mm-mt { max-width: 100%; }
+#scrMenu #bCup .mm-mt small { max-width: 100%; min-width: 0; }
+#scrMenu #bCup .tcv-live { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ketchup); box-shadow: 0 0 0 3px rgba(232, 69, 60, 0.3); animation: blink 1.2s ease-in-out infinite; }
+#scrMenu #bCup .tcv-live[hidden] { display: none; }
+#scrMenu #bCup.tcv-called { border-color: var(--ember); animation: tcvPill 1.1s ease-in-out infinite; }
+#scrMenu #bCup.tcv-called small { color: var(--ember); font-weight: 800; }
+@keyframes tcvPill { 50% { box-shadow: 0 3px 0 var(--ink), 0 0 0 3px rgba(239, 122, 82, 0.5), 0 0 18px rgba(239, 122, 82, 0.55), var(--bevel); } }
+
+/* ===== the sheet ===== */
+#app #scrTc > .tcv-sheet { width: min(860px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; --tcv-seat: 54px; }
+#app.short #scrTc > .tcv-sheet { width: min(800px, 100%); --tcv-seat: 40px; }
+#app.tiny #scrTc { padding: 8px 10px; }
+#app.tiny #scrTc > .tcv-sheet { width: min(647px, 100%); --tcv-seat: 32px; }
+#app.portrait #scrTc { padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(14px, env(safe-area-inset-bottom, 0px)); align-items: start; }
+#app.portrait #scrTc > .tcv-sheet { width: 100%; --tcv-seat: 52px; }
+.tcv-sheet .sh-head { flex: none; }
+.tcv-hk { color: var(--sand); max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+.tcv-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; padding: 12px; align-content: start; }
+#app.short .tcv-body { gap: 10px; padding: 10px; }
+#app.tiny .tcv-body { gap: 8px; padding: 8px 10px; }
+#app.portrait .tcv-body { display: flex; flex-direction: column; gap: 10px; }
+.tcv-home, .tcv-lobby { display: contents; }
+.tcv-home[hidden], .tcv-lobby[hidden] { display: none; }
+/* your fighter, the note, your cup */
+.tcv-top { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tcv-me { flex: 0 1 280px; min-width: 0; width: auto; }
+.tcv-me:disabled { opacity: 0.7; cursor: default; }
+.tcv-me:disabled .rd-chg { display: none; }
+#app.portrait .tcv-me { flex: 1 1 auto; }
+#app.portrait .tcv-me, #app.portrait .tcv-me.dly-f { flex-direction: row; text-align: left; }
+#app.portrait .tcv-me .rd-chg { margin-left: auto; }
+.tcv-note { flex: 1 1 0; min-width: 0; margin: 0; font: 600 12.5px/1.3 var(--body); color: #ff9a8f; }
+.modal .sheet .tcv-note { color: #ff9a8f; }
+.tcv-note:empty { display: none; }
+.tcv-yc { flex: none; margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 60%; padding: 4px 4px 4px 12px; border: 2px solid var(--ink); border-radius: 10px;
+  background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel), inset 0 0 0 1.5px rgba(244, 201, 93, 0.4); }
+.tcv-yc[hidden] { display: none; }
+.tcv-yt { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.tcv-yc .btn { flex: none; width: auto; min-width: 0; }
+.tcv-yt b { font: 800 15px/1 var(--display); letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.portrait .tcv-top { flex-wrap: wrap; }
+#app.portrait .tcv-yc { flex: 1 1 100%; max-width: none; margin-left: 0; }
+#app.portrait .tcv-yt { flex: 1 1 auto; }
+#app.tiny .tcv-yc { padding-left: 8px; }
+#app.tiny .tcv-yt b { font-size: 13px; }
+
+/* the Daily Cup card (gold) and the lobby's hero share the layout */
+.tcv-daily, .tcv-lh { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 12px; min-width: 0; min-height: 0; }
+.tcv-dh { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tcv-medal { flex: none; display: grid; place-items: center; width: 62px; height: 62px; overflow: hidden; border-radius: 50%; border: 2px solid var(--ink);
+  background: radial-gradient(circle at 50% 38%, #3a3f74 0, #1b1f3d 72%); box-shadow: 0 3px 0 var(--ink), inset 0 0 0 3px rgba(244, 201, 93, 0.5); }
+.tcv-medal .trophy { height: 70%; width: auto; margin: 0; filter: drop-shadow(0 0 5px rgba(244, 201, 93, 0.75)); animation: none; }
+.tcv-dt { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; }
+.tcv-daily .kick, .tcv-lh .kick { color: rgba(14, 16, 34, 0.74); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcv-cd { display: block; min-width: 0; font: italic 900 46px/1 var(--display); letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0.06em; }
+.tcv-cd.txt { font-size: 30px; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+.tcv-cd.live { color: var(--ketchup); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+.tcv-cd.code { font-size: 50px; letter-spacing: 0.1em; padding-right: 0; overflow: hidden; text-overflow: ellipsis; }
+.tcv-cd.code.txt { font-size: 50px; }
+#scrTc .tcv-dl { margin: 0; font: 600 13px/1.3 var(--body); color: rgba(14, 16, 34, 0.82); }
+.tcv-prz[hidden] { display: none; }
+.tcv-prz { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.tcv-pt8 { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tcv-sheet .tcv-pz { background: var(--ink); color: var(--gold); }
+#scrTc .tcv-p4 { font: 600 11.5px/1.2 var(--body); color: rgba(14, 16, 34, 0.7); }
+.tcv-da { margin-top: auto; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+#scrTc .tcv-dn { margin: 0; font: 600 12px/1.3 var(--body); color: rgba(14, 16, 34, 0.78); }
+#scrTc .tcv-dn:empty { display: none; }
+#scrTc .tcv-da .btn[hidden] { display: none; }
+.tcv-ink { --bg: linear-gradient(180deg, #2a2f58, #12152b); --bev: var(--bevel); color: var(--gold); }
+.tcv-ink.on { --bg: linear-gradient(180deg, #a9f0c8, #5fc993); color: var(--ink); }
+.tcv-ink:hover, .tcv-ink:disabled:hover { background: var(--bg); }
+.tcv-ink.go { color: var(--ink); --bg: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); --bev: var(--bevelgold); }
+.tcv-lb { display: flex; gap: 8px; }
+.tcv-lb .btn { flex: 1 1 0; min-width: 0; }
+.tcv-lb .btn[hidden] { display: none; }
+
+/* the right column: Friends Cup, Practice cup */
+.tcv-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+#app.short .tcv-side { gap: 10px; }
+#app.tiny .tcv-side { gap: 8px; }
+.tcv-fr { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
+.tcv-ct { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tcv-ct b, .tcv-pt b { font: italic 900 21px/1 var(--display); text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+.tcv-ct .kick { color: var(--gold); white-space: nowrap; }
+.tcv-fa { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.tcv-fa .btn { width: auto; }
+.tcv-cf { display: flex; gap: 6px; min-width: 0; }
+.tcv-in { flex: 1 1 0; min-width: 0; width: 100%; padding: 0 6px; text-align: center; text-transform: uppercase; letter-spacing: 0.22em; font: 800 20px/1 var(--display); color: var(--text); }
+.tcv-in::placeholder { letter-spacing: 0.12em; color: var(--mute); opacity: 0.7; }
+.tcv-cf .btn { flex: none; width: auto; min-width: 0; padding-inline: 14px; }
+#scrTc .tcv-sm { margin: 0; font: 500 12px/1.3 var(--body); color: var(--mute); }
+.tcv-pr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; }
+.tcv-pt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tcv-pt .kick { color: var(--gold); }
+.tcv-pt b { overflow: hidden; text-overflow: ellipsis; }
+.tcv-pr .btn { flex: none; width: auto; min-width: 96px; }
+
+/* the lobby */
+.tcv-lin { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; min-width: 0; min-height: 0; }
+.tcv-lt { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tcv-lt .kick { color: var(--gold); white-space: nowrap; }
+.tcv-lt b { font: 700 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcv-seats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; padding: 4px 2px; }
+.tcv-seat { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; --fc: var(--mute); }
+.tcv-sp { display: block; width: var(--tcv-seat); height: var(--tcv-seat); overflow: hidden; border-radius: 9px; background: var(--ink); box-shadow: 0 0 0 2px var(--fc), 0 0 0 4px var(--ink); }
+.tcv-sp img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.tcv-seat.me .tcv-sp { box-shadow: 0 0 0 2px var(--gold), 0 0 0 4px var(--ink), 0 0 12px rgba(244, 201, 93, 0.5); }
+.tcv-sp.q { display: grid; place-items: center; background: rgba(14, 16, 34, 0.45); box-shadow: none; border: 2px dashed rgba(206, 210, 255, 0.28); font: italic 900 22px/1 var(--display); color: var(--mute); }
+.tcv-seat.more .tcv-sp.q { border-style: solid; color: var(--gold); font-size: 20px; }
+.tcv-seat b { max-width: 100%; font: 800 11px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.tcv-seat.cpu b, .tcv-seat.more b { color: var(--mute); }
+.tcv-seat.me b { color: var(--gold); }
+.tcv-hs { position: absolute; top: -7px; right: calc(50% - var(--tcv-seat) / 2 - 6px); z-index: 2; padding: 2px 4px 1px; font: 800 8px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--gold); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 4px; transform: rotate(6deg); }
+.tcv-la { display: flex; gap: 8px; margin-top: auto; }
+.tcv-la .btn { flex: 1 1 0; min-width: 0; padding-inline: 10px; }
+#app.short .tcv-sheet .btn { min-height: 42px; font-size: 18px; }
+#app.short .tcv-cd { font-size: 40px; }
+#app.short .tcv-cd.code { font-size: 42px; }
+#app.short .tcv-medal { width: 54px; height: 54px; }
+#app.short .tcv-daily, #app.short .tcv-lh { padding: 8px 12px 10px; gap: 5px; }
+#app.short .tcv-fr { gap: 6px; padding: 8px 10px; }
+#app.short .tcv-lin { gap: 6px; padding: 8px 10px; }
+#app.short .tcv-seats { gap: 6px; padding: 2px; }
+#app.tiny .tcv-sheet .btn { min-height: 38px; font-size: 16px; }
+#app.tiny .tcv-cd { font-size: 32px; }
+#app.tiny .tcv-cd.txt { font-size: 24px; }
+#app.tiny .tcv-cd.code { font-size: 34px; }
+#app.tiny .tcv-medal { width: 44px; height: 44px; }
+#app.tiny .tcv-dh { gap: 10px; }
+#app.tiny .tcv-daily, #app.tiny .tcv-lh { padding: 7px 10px 8px; gap: 4px; }
+#app.tiny #scrTc .tcv-dl { font-size: 12px; }
+#app.tiny .tcv-p4 { display: none; }
+#app.tiny .tcv-ct b, #app.tiny .tcv-pt b { font-size: 18px; }
+#app.tiny .tcv-fr { gap: 5px; padding: 6px 10px; }
+#app.tiny #scrTc .tcv-sm { font-size: 11px; line-height: 1.2; }
+#app.tiny .tcv-pr { padding: 6px 10px; }
+#app.tiny .tcv-lin { gap: 5px; padding: 6px 10px; }
+#app.tiny .tcv-seats { gap: 4px; }
+#app.tiny .tcv-seat b { font-size: 10px; }
+#app.tiny .tcv-in { font-size: 17px; }
+#app.tiny .tcv-la .btn { font-size: 14px; padding-inline: 6px; }
+#app.tiny .cs .tcv-tg { top: -6px; padding: 1px 4px; font-size: 7.5px; }
+#app.portrait .tcv-sheet .btn { min-height: 46px; }
+#app.portrait .tcv-cd { font-size: 44px; }
+#app.portrait .tcv-cd.txt { font-size: 30px; }
+#app.portrait .tcv-cd.code { font-size: 46px; }
+#app.portrait .tcv-seats { gap: 12px 8px; }
+#app.portrait .tcv-la .btn { font-size: 16px; padding-inline: 6px; }
+#app.portrait .cf .tcv-mute { font-size: 16px; }
+
+/* ===== the online bracket (mode "tcup" on #scrCup): a cup of 4 is three columns, the states of a pair ===== */
+.cup-grid:has(> .tcv-g4) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); max-width: 780px; margin-inline: auto; }
+.cs .tcv-tg { position: absolute; top: -7px; right: 8px; z-index: 2; padding: 2px 5px 1px; font: 800 8.5px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--ink); color: var(--sand); border: 1.5px solid rgba(206, 210, 255, 0.35); border-radius: 4px; }
+.rt .cs .tcv-tg { right: auto; left: 8px; }
+.cs.me .tcv-tg { color: var(--me); border-color: var(--me); }
+.cs.none { background: transparent; border: 2px dashed rgba(206, 210, 255, 0.16); box-shadow: none; opacity: 0.7; }
+.cs.none .cs-n { color: var(--mute); font-weight: 600; }
+.cs.live { border-color: var(--ketchup); animation: tcvLive 1.3s ease-in-out infinite; }
+@keyframes tcvLive { 50% { box-shadow: 0 3px 0 var(--ink), 0 0 14px rgba(232, 69, 60, 0.65), var(--bevel); } }
+.cs.wait { border-color: rgba(244, 201, 93, 0.7); }
+.cs .tcv-w { font-weight: 700; }
+.cs.wait .tcv-w { color: var(--gold); }
+.cs.wait .tcv-w.rd { color: var(--mint); }
+.cs.wo { opacity: 0.6; }
+.cs.wo .tcv-w { color: var(--sand); font-style: italic; }
+.cs.gone { opacity: 0.55; }
+.cs.gone .cs-ph img { filter: grayscale(1); }
+.cs.gone .cs-n { text-decoration: line-through; text-decoration-color: var(--ketchup); text-decoration-thickness: 2px; }
+.cs.gone .tcv-w { color: #ff9a8f; }
+.cs.fell { opacity: 0.9; }
+.cup-lines .tcv-ld { fill: var(--ketchup); stroke: var(--ink); stroke-width: 2px; animation: blink 1.2s ease-in-out infinite; }
+.cl-m.live::after { content: "LIVE"; background: var(--ketchup); color: #fff; padding: 2px 5px 1px; border-radius: 6px; letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
+/* the foot card */
+.cf-acts.tcv-a .btn { min-width: 0; padding-inline: 14px; }
+.cf.tcv-called { border-color: var(--ember); }
+.tcv-ring { --p: 1; --rc: var(--gold); flex: none; display: inline-grid; padding: 4px; border-radius: 15px; background: conic-gradient(var(--rc) calc(var(--p) * 360deg), rgba(14, 16, 34, 0.85) 0); box-shadow: 0 0 0 2px var(--ink); }
+.tcv-ring.low { --rc: var(--ember); }
+.tcv-ring .btn { margin: 0; width: auto; min-width: 112px; min-height: 52px; padding: 4px 16px; }
+.tcv-ring .btn > span { display: block; line-height: 1; }
+.tcv-ring .btn small { display: block; margin: 3px 0 0; font: 800 12px/1 var(--display); letter-spacing: 0.08em; color: rgba(14, 16, 34, 0.7); font-variant-numeric: tabular-nums; }
+.tcv-sw { flex: none; width: 48px; min-width: 48px; padding: 0; font-size: 24px; --bg: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); --bev: var(--bevelgold); color: var(--ink); }
+#scrCup .cf .tcv-mute { --bg: linear-gradient(180deg, #2b3059, #1a1d3a); color: var(--mute); opacity: 1; filter: none; box-shadow: 0 var(--sh) 0 var(--ink), var(--bevel); }
+#scrCup .cf .tcv-mute:disabled { opacity: 0.8; }
+.cf.tcv-called .cf-t b { color: var(--gold); }
+#app.portrait .cf.tcv-called .tcv-ring { margin: 0 auto; }
+#app.portrait .cf-acts.tcv-a .tcv-sw { flex: none; }
+
+/* ===== the call-up banner ===== */
+#tcCall { position: absolute; z-index: 30; left: 50%; top: max(8px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(560px, calc(100% - 20px));
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 10px; border: 2px solid var(--ember); border-radius: 14px;
+  background: linear-gradient(180deg, #2a2f58, #1b1e3c); box-shadow: 0 0 0 2px var(--ink), 0 6px 0 var(--ink), 0 14px 36px rgba(0, 0, 0, 0.55); }
+#tcCall[hidden] { display: none; }
+#tcCall.in { animation: tcvDrop 0.34s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes tcvDrop { from { transform: translate(-50%, -140%); opacity: 0; } }
+#tcCall .tcc-ph { --fc: var(--mute); width: 54px; height: 54px; flex: none; aspect-ratio: auto; }
+.tcc-t { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tcc-t .kick { color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcc-t b { font: italic 900 22px/1 var(--display); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.06em; }
+.tcc-t small { font: 500 12.5px/1.2 var(--body); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tcCall .tcc-busy { grid-column: 1 / -1; margin: 0; text-align: center; font: 600 12px/1.3 var(--body); color: var(--sand); }
+#tcCall .tcc-busy[hidden], #tcCall .tcc-busy:empty { display: none; }
+#app.tiny #tcCall { padding: 6px 8px; gap: 3px 10px; }
+#app.tiny #tcCall .tcc-ph { width: 44px; height: 44px; }
+#app.tiny .tcc-t b { font-size: 19px; }
+#app.tiny #tcCall .tcv-ring .btn { min-height: 44px; min-width: 100px; }
+
+/* ===== the results card: where the match leaves you in the cup (in the rank card's place) ===== */
+#resSheet .res-tc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; flex: none;
+  box-shadow: inset 0 0 0 2px rgba(244, 201, 93, 0.5), 0 3px 0 var(--ink), var(--bevel); }
+#resSheet .res-tc[hidden] { display: none; }
+#resSheet .res-tc .tc-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#resSheet .res-tc .tc-head { display: block; min-width: 0; font: italic 900 22px/1.05 var(--display); text-transform: uppercase; color: var(--gold);
+  -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); overflow-wrap: anywhere; }
+#resSheet .res-tc .tc-sub { font: 500 12.5px/1.3 var(--body); color: var(--mute); font-variant-numeric: tabular-nums; }
+#resSheet .res-tc .tc-sub:empty { display: none; }
+#resSheet .res-tc .tc-bar { position: relative; display: block; height: 10px; margin-top: 3px; overflow: hidden; border-radius: 5px; background: #3a4170; border: 1.5px solid rgba(14, 16, 34, 0.9); }
+#resSheet .res-tc .tc-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%); background: var(--gold); transform-origin: left; }
+#resSheet .res-tc .tc-bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--k, 3) - 2px), var(--ink) calc(100% / var(--k, 3) - 2px) calc(100% / var(--k, 3))); }
+#resSheet .res-tc.up .tc-bar i { background: var(--mint); box-shadow: 0 0 8px var(--mint); animation: resFill 0.5s 0.6s cubic-bezier(0.2, 0.9, 0.25, 1) backwards; }
+#resSheet .res-tc.down .tc-bar i { background: rgba(232, 69, 60, 0.85); }
+#resSheet .res-tc.down .tc-head { color: #ff9a8f; }
+#resSheet .res-tc.wait .tc-bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent); animation: qmShim 1.4s linear infinite; }
+#resSheet .res-tc.wait .tc-bar i { min-width: 6px; }
+#resSheet .res-tc .delta small { white-space: nowrap; }
+#resSheet .res-side:has(> #rTc:not([hidden])) > .res-stats { margin-top: 0; }
+#app.tiny #resSheet .res-tc { gap: 10px; padding: 7px 10px; }
+#app.tiny #resSheet .res-tc .tc-head { font-size: 18px; }
+#app.tiny #resSheet .res-tc .tc-sub { font-size: 11.5px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc { gap: 18px; padding: 16px 20px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc .tc-head { font-size: 30px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc .tc-sub { font-size: 14px; }
+#app:not(.short):not(.portrait) #resSheet .res-tc .tc-bar { height: 12px; margin-top: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #scrMenu #bCup.tcv-called, #scrMenu #bCup .tcv-live, .cs.live, .cup-lines .tcv-ld, .cl-m.live::after, #tcCall.in, #resSheet .res-tc.up .tc-bar i, #resSheet .res-tc.wait .tc-bar i::after { animation: none; }
+}

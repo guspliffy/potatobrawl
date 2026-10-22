@@ -59,6 +59,7 @@ function vcBoot() {   // qmBoot (ui/quick.js), once
   window.__blQuick.on(vcMsg);
   window.__blVc = VC;   // tests read it
   bwBoot();   // ui/bossweek.js: Boss Week's messages
+  tcBoot();   // ui/tourney.js: the cups' messages
 }
 function vcMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -93,6 +94,7 @@ function vcFight() {
   VC.note = "";
   if (!QM.conn) { VC.note = "Connecting to the server…"; qmRender(); return; }
   if (qmAcctOff()) { VC.note = "Ranked vs CPU opens once accounts are on."; qmRender(); return; }
+  if (tcPlaying()) { VC.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
   Sfx.init(); goFull();   // fullscreen needs the tap itself
   VC.asking = true; VC.askT = Date.now();
   qmRender();
@@ -187,6 +189,7 @@ function vcPack(codes) {
 
 /* ----- the end: chips on this phone, the log to the server, the rank card waits for its verdict ----- */
 function vcMatchEnd(forfeit) {   // screens.js finishMatch
+  if (match.vc.tc) { tcCpuEnd(forfeit); return; }   // ui/tourney.js: a cup match against a CPU
   const tk = match.vc, me = G.fighters[0], op = G.fighters[1], rec = vcMine() || VC_FRESH;
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, vc: tk, me, op, lines: [], total: 0 };
@@ -316,6 +319,7 @@ function vcVerdictView(late) {
 }
 // Pause: what leaving costs (ui/quick.js qmPauseText)
 function vcPauseText() {
+  if (match.vc.tc) { tcPauseText(); return; }   // ui/tourney.js
   const tk = match.vc, me = vcMine() || VC_FRESH, dr = qmElo(me.r, tk.pm ? VC_PLACE_R : tk.cr, 0, me.n);
   $("pQuit").querySelector("span").textContent = "Forfeit";
   $("pNote").textContent = `Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
@@ -421,11 +425,13 @@ function vcBdDone(k, d) {
 
 /* ----- every frame (loop.js) ----- */
 function vcStripText() {   // the HUD strip: this match counts, and for which rank
+  if (match.vc.tc) return tcStripText();   // ui/tourney.js: a cup match against a CPU
   const me = vcMine() || VC_FRESH;
   return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
 }
 function vcTick() {
   bwTick();   // ui/bossweek.js: a Boss Week result still on its way, the Monday card
+  tcTick();   // ui/tourney.js: the call-up's clock, a cup match's log still on its way
   if (!qmOn()) return;
   if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
   if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");

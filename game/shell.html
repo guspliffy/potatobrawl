@@ -817,7 +817,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <button class="mini" id="bOnline" style="--i:3"><i class="dot" aria-hidden="true"></i><span class="mm-mt">Play friends<small id="mOnline"></small></span></button>
         <button class="mini" id="bPractice" style="--i:4"><span class="mm-mt mm-mc">Practice<small>1v1 · 2v2 · bosses</small></span></button>
         <button class="mini" id="bBoards" style="--i:5" hidden aria-label="Boards: who is on top"><svg class="bd-gl" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#0e1022" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="11.6" width="6.4" height="9.4" rx="1.4" fill="#c9d0e4"/><rect x="8.6" y="3.6" width="6.8" height="17.4" rx="1.4" fill="#f4c95d"/><rect x="15.4" y="14.2" width="6.4" height="6.8" rx="1.4" fill="#cd8f5b"/></g></svg><span>Boards</span></button>
-        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small>8 players<span id="mCup" hidden></span></small></span></button>
+        <button class="mini" id="bCup" data-sfx="flip" style="--i:6"><span class="mm-mt mm-mc">Tournament<small><span id="mCupT">8 players</span><span id="mTc" hidden><i class="dot tcv-live" hidden></i><span id="mTcT"></span></span><span id="mCup" hidden></span></small></span></button>
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
@@ -1145,6 +1145,53 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the Tournament sheet (ui/tcview.js, css/97-tourney.css; the page logic is ui/tourney.js): your fighter, the Daily Cup, Friends Cups, the Practice cup, and the lobby once you are in one -->
+  <section id="scrTc" class="screen modal" hidden>
+    <div class="sheet tcv-sheet" role="dialog" aria-label="Tournament">
+      <header class="sh-head"><h3>Tournament</h3><span class="kick tcv-hk" id="tcvHk"></span><button class="round x" id="tcClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="tcv-body" id="tcvBody">
+        <div class="tcv-top">
+          <button class="dly-f rd-me tcv-me" id="tcvMe" aria-label="Change fighter"></button>
+          <p class="tcv-note" id="tcvNote" role="status"></p>
+          <div class="tcv-yc" id="tcvYc" hidden><span class="tcv-yt"><span class="kick" id="tcvYk">Your cup</span><b id="tcvYb"></b></span><button class="btn sm" id="tcvYGo"><span>Bracket</span></button></div>
+        </div>
+        <div class="tcv-home" id="tcvHome">
+          <div class="card gold tone tcv-daily" id="tcvDaily">
+            <div class="tcv-dh"><span class="tcv-medal" id="tcvMedal" aria-hidden="true"></span><div class="tcv-dt"><span class="kick" id="tcvDk">Daily Cup</span><b class="tcv-cd" id="tcvCd">--:--</b></div></div>
+            <p class="tcv-dl" id="tcvDl"></p>
+            <div class="tcv-prz" id="tcvPrz"></div>
+            <div class="tcv-da"><button class="btn tcv-ink" id="tcvDGo"><span id="tcvDGoT">I'm in</span></button><p class="tcv-dn" id="tcvDn"></p></div>
+          </div>
+          <div class="tcv-side">
+            <div class="card tcv-fr" id="tcvFr">
+              <div class="tcv-ct"><b>Friends Cup</b><span class="kick">2&ndash;8 players</span></div>
+              <div class="tcv-fa">
+                <button class="btn primary" id="tcvHost"><span>Host</span></button>
+                <form class="tcv-cf" id="tcvCf" autocomplete="off"><input class="ac-in tcv-in" id="tcvCode" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Friends Cup code"><button class="btn" id="tcvJoinC" type="submit"><span>Join</span></button></form>
+              </div>
+              <p class="tcv-sm">2&ndash;8 players &middot; CPUs fill the bracket &middot; no chips, just glory</p>
+            </div>
+            <div class="card tcv-pr" id="tcvPr"><span class="tcv-pt"><span class="kick">Practice cup</span><b>You vs 7 CPUs</b></span><button class="btn" id="tcvPGo"><span id="tcvPGoT">Play</span></button></div>
+          </div>
+        </div>
+        <div class="tcv-lobby" id="tcvLobby" hidden>
+          <div class="card gold tone tcv-lh" id="tcvLh">
+            <span class="kick" id="tcvLk">Daily Cup</span>
+            <b class="tcv-cd" id="tcvLCd">--:--</b>
+            <p class="tcv-dl" id="tcvLl"></p>
+            <div class="tcv-prz" id="tcvLPrz" hidden></div>
+            <div class="tcv-da"><div class="tcv-lb"><button class="btn tcv-ink" id="tcvShare"><span>Share link</span></button><button class="btn tcv-ink go" id="tcvStart"><span>Start</span></button></div><p class="tcv-dn" id="tcvLn"></p></div>
+          </div>
+          <div class="card tcv-lin" id="tcvLin">
+            <div class="tcv-lt"><span class="kick">In the cup</span><b id="tcvLInN"></b></div>
+            <div class="tcv-seats" id="tcvSeats"></div>
+            <div class="tcv-la"><button class="btn" id="tcvWarm"><span>Warm up vs CPU</span></button><button class="btn" id="tcvLeave"><span>Leave</span></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="scrResult" class="screen result" hidden>
     <!-- results (40-results.css): the winner's panel left (upright: a banner on top), the rank card, four stat tiles and the buttons right -->
     <div class="res3 scroll" id="resSheet">
@@ -1179,6 +1226,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="card res-pot" id="rPot" hidden>
           <div class="pt-body"><b class="pt-head" id="rPotH"></b><span class="pt-sub" id="rPotS"></span><span class="pt-bar" aria-hidden="true"><i></i><i></i></span></div>
           <div class="delta" id="rPotD"><b id="rPotN">…</b><small>Chips</small></div>
+        </div>
+        <!-- a cup match (ui/tcview.js tcvResult): where it leaves you in the cup, in the rank card's place -->
+        <div class="card res-tc" id="rTc" hidden aria-live="polite">
+          <div class="tc-body"><b class="tc-head" id="rTcH"></b><span class="tc-sub" id="rTcS"></span><span class="tc-bar" aria-hidden="true"><i></i></span></div>
+          <div class="delta" id="rTcD"><b id="rTcN">…</b><small id="rTcL">Cup</small></div>
         </div>
         <!-- Quick match (ui/quick.js): after a CPU warm-up the search goes on here -->
         <div class="card res-qm" id="rQm" hidden><div class="rq-top"><span class="livetag"><i aria-hidden="true"></i><span id="rQmT">Still searching</span></span><button class="mini" id="rQmX">Cancel</button></div><span class="rq-l" id="rQmL"></span></div>
@@ -1336,6 +1388,13 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   <!-- Quick match (ui/quick.js, css/96-quick.css): PLAYER FOUND! over a CPU warm-up (3 s), then the VS screen until the fight's countdown -->
   <div id="qmFound" hidden><b class="qf-t">Player found!</b><span class="qf-vs" id="qfVs"></span><span class="qf-n" id="qfN">3</span><span class="qf-l">The CPU fight ends · no result</span></div>
+  <!-- the cup call-up (ui/tcview.js tcvCall, css/97-tourney.css): your match is ready, tap FIGHT within 60 s; over every screen but the bracket (its foot card does it there) -->
+  <div id="tcCall" role="alert" hidden>
+    <span class="tcc-ph cs-ph" id="tccPh"></span>
+    <div class="tcc-t"><span class="kick" id="tccK"></span><b id="tccN"></b><small id="tccS"></small></div>
+    <span class="tcv-ring tcc-ring" id="tccRing"><button class="btn primary" id="tccGo"><span>Fight<small id="tccT"></small></span></button></span>
+    <p class="tcc-busy" id="tccBusy"></p>
+  </div>
   <div id="qmVs" hidden aria-live="polite">
     <div class="vs-h l"><i class="rays"></i><canvas class="vs-art" id="vsArtL"></canvas></div>
     <div class="vs-h r"><i class="rays"></i><canvas class="vs-art" id="vsArtR"></canvas></div>

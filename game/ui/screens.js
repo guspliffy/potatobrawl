@@ -58,6 +58,7 @@ function renderMenu() {
   dailyMenu(); menuDaily(); roadCard();   // roadCard: the Road's map card (ui/road.js)
   bwTile();   // ui/bwsheet.js: the Boss Week tile (boss, time left, your best and place)
   qmHero();   // ui/quick.js: on our own server the gold hero is Quick match
+  if (typeof tcvPill === "function") tcvPill();   // ui/tcview.js: the Tournament mini's line (cups online)
 }
 // the Daily Potato tile: today's two portraits, the matchup (dailyMenu in daily.js writes #mDaily), the reward or the day's result
 function menuDaily() {
@@ -197,7 +198,7 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = fmtChips(P.tokens);
-  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
+  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw" || sel.mode === "tc") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
 const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
@@ -263,10 +264,10 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "tc" ? "Cup · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" || m === "tc" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -516,7 +517,7 @@ function resOpen(look, spec, solo) {
   const art = $("rArt"), src = (spec && PORTRAITS[spec.id]) || "";
   art.hidden = !src; if (src && art.getAttribute("src") !== src) art.src = src;
   { const c = $("rBw"); if (c) c.hidden = true; }   // ui/bossweek.js: Boss Week's card
-  $("rFin").hidden = true; $("rKo").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rStats").hidden = false; masteryHide();
+  $("rFin").hidden = true; $("rKo").hidden = true; $("rPick").hidden = true; $("rRank").hidden = true; $("rTc").hidden = true; $("rStats").hidden = false; masteryHide();   // rTc: ui/tcview.js
   $("rAgain").disabled = false; $("rAgainSub").textContent = ""; $("rMenuSub").textContent = "";
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
@@ -575,7 +576,7 @@ function showResults(R) {
   resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
   const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
-  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
+  const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc || R.tc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
   const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
   const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
     R.forfeit ? ["You left the match. It counts as a loss."] :
@@ -607,7 +608,7 @@ function showResults(R) {
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
   const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
-  const chipsOn = R.ranked || R.warm || R.vc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
+  const chipsOn = R.ranked || R.warm || R.vc || R.tc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
   $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
@@ -620,9 +621,10 @@ function showResults(R) {
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
   $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
+  $("rChange").hidden = false;   // a cup match's results hide it (ui/tourney.js tcResults)
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
   if (R.bw) bwResults(R);   // ui/bossweek.js: the time, the place and the server's verdict in the rank card's place
-  if (R.qm || R.warm || R.vc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own
+  if (R.qm || R.warm || R.vc || R.tc) qmResults(R);   // ui/quick.js: Quick match and its warm-up say and do their own (R.tc: a cup match vs a CPU, ui/tourney.js)
   else if (R.online && !R.boss && !R.otb && !R.left && !R.lost) stkFriend(R);   // ui/stakes.js: a Play friends 1v1, the referee's record and FOR CHIPS
   chlRes(R);   // ui/challenge.js: Challenge a friend
   rpKeep(R);   // ui/replay.js: this run, to watch again (a Boss Week try, a Ranked vs CPU match)

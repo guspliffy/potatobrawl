@@ -18,9 +18,11 @@
  * itself from the inputs passing through here. Ranked needs the accounts; Casual works without them.
  * Ranked vs CPU (cpurank.js): the server deals each ranked CPU match and plays it again from the player's inputs before the CPU rank
  * moves; it also keeps the Boards (the CPU rank and the online rank) in memory.
+ * Cups (tourney.js): the Daily Cup at 20:00 Berlin and Friends Cups; a match between two players is a Quick match room the cup assigns,
+ * a match against a CPU is checked like Ranked vs CPU. Needs the sign-in and the accounts; each cup is saved in <accounts>/cups/.
  * Pommes (pommes.js): the premium currency's wallet in the account files, what it buys (an alternate KO page per fighter) and the
  * requests of tools/pommes.js (grant, move); needs the sign-in and the accounts. Money can't buy Pommes yet (the payment step comes later).
- * SIGUSR2 = drain before an update: no new Quick matches are made, the running ones play on; /health counts them.
+ * SIGUSR2 = drain before an update: no new Quick matches (or cup matches) are made, the running ones play on; /health counts them.
  */
 const http = require("http");
 const fs = require("fs");
@@ -80,6 +82,7 @@ try {
     nameOf: (peer) => { const c = clients.get(peer); return c ? c.name : ""; },
     byOf: (peer) => { const c = clients.get(peer); return c ? c.by : ""; },
     online: () => clients.size,
+    onCup: (tm, res, why, rv) => { if (tourney) tourney.matchEnd(tm, res, why, rv); },   // a cup match the referee decided
     T: process.env.QM_T ? JSON.parse(process.env.QM_T) : undefined,   // tests only: shorter waits
   });
   console.log(`Quick match: on (game version ${quick.proto}, Ranked ${accounts ? "on" : "off: needs accounts"})`);
@@ -121,6 +124,20 @@ try {
     console.log("Pommes: on (buying with money: off)");
   } else if (quick) console.log("Pommes: off: needs accounts");
 } catch (e) { console.warn("Pommes: off,", e.message); }
+// Cups (tourney.js): the Daily Cup and Friends Cups; needs Quick match (its rooms, referee and sign-in) and the accounts.
+let tourney = null;
+try {
+  if (quick && accounts) {
+    tourney = require("./tourney.js").init({
+      accounts, quick, proto: quick.proto, seatOf: quick.seatOf,
+      send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+      byOf: (peer) => { const c = clients.get(peer); return c ? c.by : ""; },
+      T: process.env.TC_T ? JSON.parse(process.env.TC_T) : undefined,   // tests only: shorter waits, another start time
+      now: process.env.TC_NOW ? (() => { const d = +process.env.TC_NOW - Date.now(); return () => Date.now() + d; })() : undefined,   // tests only: another day
+    });
+    console.log("Cups: on");
+  } else if (quick) console.log("Cups: off: needs accounts");
+} catch (e) { console.warn("Cups: off,", e.message); }
 process.on("SIGUSR2", () => { if (quick) { quick.drain(); console.log(`Quick match: draining for an update, ${quick.running()} ranked matches still running`); } });
 
 const server = http.createServer((req, res) => {
@@ -198,6 +215,7 @@ function drop(peer) {
   if (quick) quick.gone(peer);
   if (cpurank) cpurank.gone(peer);
   if (bossweek) bossweek.gone(peer);
+  if (tourney) tourney.gone(peer);
   if (pommes) pommes.gone(peer);
 }
 
@@ -241,6 +259,7 @@ wss.on("connection", (ws) => {
     if (quick && quick.handle(peer, m)) return;   // auth, qm, qmx
     if (bossweek && bossweek.handle(peer, m)) return;   // bwme, bwt, bwr, bd {k: "w"}
     if (cpurank && cpurank.handle(peer, m)) return;   // cme, ct, cr, bd
+    if (tourney && tourney.handle(peer, m)) return;   // tc?, tci, tcj, tcn, tcs, tcl, tcp, tcgo, tcr
     if (pommes && pommes.handle(peer, m)) return;   // pm, pmb
     if (m.t === "join") {
       const name = m.room;

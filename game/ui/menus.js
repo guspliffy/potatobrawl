@@ -5,21 +5,21 @@ const tap = (id, fn) => { const el = $(id); el.addEventListener("click", (e) => 
 app.addEventListener("pointerdown", (e) => { const d = e.target.closest && e.target.closest("button:disabled, [aria-disabled='true']"); if (d && !d.closest("#ctl")) { Sfx.init(); Sfx.uiNo(); } }, true);
 tap("bRanked", quickOpen);   // ui/quick.js: Quick match on our own server, else Ranked vs a CPU
 tap("bPractice", () => openSelect("practice"));
-tap("bCup", cupOpen);
+tap("bCup", tcOpen);   // ui/tourney.js: the Tournament sheet on our server, else the offline cup (cupOpen)
 tap("bDaily", dailyOpen);
 tap("bRoad", openRoad);
 tap("bHelp", openHelp);
 tap("hClose", () => modal("help", false));
 // from the Play friends lobby, Back and Use <fighter> both go back to it (the pick is saved on the tile tap)
-tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else goMenu(); });
-tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
+tap("selBack", () => { if (sel.mode === "bw") bwSheetBack(); else if (sel.mode === "road") openRoad(); else if (sel.mode === "quick") { quickOpen(); qmCardIn(); } else if (sel.mode === "online") { openOnline(); fightCardIn(); } else if (sel.mode === "tc") tcPickBack(); else goMenu(); });   // tc: ui/tourney.js
+tap("selGo", () => { goFull(); if (sel.mode === "bw") { P.last = sel.fighter; saveProfile(); bwSheetBack(); } else if (sel.mode === "online") { P.last = sel.fighter; saveProfile(); openOnline(); fightCardIn(); } else if (sel.mode === "quick") { P.last = sel.fighter; saveProfile(); quickOpen(); qmCardIn(); } else if (sel.mode === "cup") cupBegin(); else if (sel.mode === "tc") tcPicked(); else if (sel.mode === "road") { if (RD.sel >= ROAD.length) { openRoad(); roadSheet(RD.sel); } else roadFight(RD.sel); } else startMatch(); });
 tap("pauseBtn", () => togglePause(true));
 tap("pResume", () => togglePause(false));
 tap("pHelp", openHelp);
 tap("pQuit", () => {
   if (match && match.warm) { qmWarmQuit(); return; }   // ui/quick.js: the warm-up's Back to search
   if (match && match.qm) {   // ui/quick.js: a Ranked forfeit counts as a loss, a Casual match is just left
-    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk ? "Tap again to forfeit" : "Tap again to leave"; return; }
+    if (!quitArmed) { quitArmed = true; $("pQuit").querySelector("span").textContent = match.qm.ranked || match.qm.sk || match.qm.tm ? "Tap again to forfeit" : "Tap again to leave"; return; }
     qmForfeit(); return;
   }
   if (match && match.online) {

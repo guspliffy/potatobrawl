@@ -62,6 +62,7 @@ goMenu();
 turnOpen(() => {
   if (NET.invite) openOnline();
   else if (rpLanding()) { /* ui/replay.js: a share link's run (its title card), the welcome sheet after it */ }
+  else if (tcLanding()) { /* ui/tourney.js: a Friends Cup's link: the Tournament sheet joins it */ }
   else if (firstRun && !ACCT.hash) welcomeOpen();
 });
 camStep(attract.g, true);

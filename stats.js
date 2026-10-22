@@ -32,6 +32,8 @@
  *   rw:<stop> bs:<boss>:<0-2> bw:<boss>:<0-2> route skin:<fighter> acct scr:<screen> inv err:<message>
  *   chl:<make|open|new|play>              Challenge a friend: a link made, opened (new: on a brand-new device), a match started from one
  *   rp:<watch|link|share>                 replays (game/ui/replay.js): one watched, a #watch= link opened, a run's link shared
+ *   tc:<in|join|host|start|play|champ|share|link>   cups (game/ui/tourney.js): "I'm in tonight", a join, a Friends Cup hosted / started,
+ *                                        a call-up's FIGHT, a cup won, a cup link shared / opened
  *   peak                                  (written here) the most players online at once that day: a maximum, not a sum
  */
 const fs = require("fs");
@@ -65,7 +67,7 @@ const KEY_RES = [
   new RegExp(`^ms:${W}$`), new RegExp(`^me:${W}:(win|loss|draw|quit|drop)$`), /^ml:(0|1|2|3|5)$/,
   new RegExp(`^fp:${W}$`), new RegExp(`^again:${W}$`), /^rw:\d{1,2}$/, new RegExp(`^b[sw]:${W}:[0-2]$`),
   new RegExp(`^skin:${W}$`), new RegExp(`^scr:${W}$`), /^chl:(make|open|new|play)$/,
-  /^rp:(watch|link|share)$/,
+  /^rp:(watch|link|share)$/, /^tc:(in|join|host|start|play|champ|share|link)$/,
 ];
 // an error message: printable ASCII without quotes or backslashes, 1-80 characters (the game trims and cleans it before sending)
 const ERR_RE = /^err:[\x20-\x21\x23-\x26\x28-\x5b\x5d-\x7e]{1,80}$/;

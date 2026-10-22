@@ -92,6 +92,27 @@ function cleanCpu(o) {
 }
 const mostOf = (counts) => { let best = "", n = 0; for (const k of Object.keys(counts)) if (counts[k] > n) { best = k; n = counts[k]; } return best; };
 
+// the same match as the phone's: the same players, seed and map, your logged inputs, and the CPU's brain on the game's own random numbers
+// (tourney.js plays a cup's CPU matches with it too: the same rules)
+function replayCpu(tk, codes, done, log) {
+  const players = tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] }));
+  const g = BL.newGame({ players, stocks: RULES.stocks, time: RULES.time, countdown: RULES.countdown, seed: tk.seed, map: tk.map });
+  const bot = BL.makeBot(tk.d, BL.BOT_STYLES[tk.f[1]]);
+  let fr = 0;
+  const run = () => {
+    try {
+      for (const end = Math.min(codes.length, fr + CHUNK); fr < end; fr++) {
+        const ci = BL.botInput(g, g.fighters[1], g.fighters[0], bot);
+        BL.step(g, [decIn(codes[fr]), ci]);
+        g.events.length = 0;
+        if (g.phase === "end" || g.phase === "over") { fr++; return done(g, fr); }
+      }
+      if (fr < codes.length) setImmediate(run); else done(g, fr);
+    } catch (e) { (log || console).warn("cpurank: replay failed", e.message); done(g, fr); }
+  };
+  run();
+}
+
 /* ----- names on a board: the account name, cleaned, with a small word filter (Jonny's stats page can blank any name) ----- */
 const BAD = ["fuck", "shit", "cunt", "nigg", "fag", "whore", "bitch", "slut", "nazi", "hitler", "retard", "porn", "penis", "vagina",
   "hure", "fotze", "schlampe", "wichser", "arschloch", "spast", "kanake", "neger", "schwuchtel", "missgeburt"];
@@ -274,25 +295,7 @@ function init(opts) {
       settle(seat.file, rec2, cpu2, g.winner === 0 ? 1 : g.winner === 1 ? 0 : 0.5, "game", peer);
     });
   }
-  // the same match as the phone's: the same players, seed and map, your logged inputs, and the CPU's brain on the game's own random numbers
-  function replay(tk, codes, done) {
-    const players = tk.f.map((id, k) => ({ spec: FIG[id], pal: FIG[id].palettes[tk.p[k]] || FIG[id].palettes[0] }));
-    const g = BL.newGame({ players, stocks: RULES.stocks, time: RULES.time, countdown: RULES.countdown, seed: tk.seed, map: tk.map });
-    const bot = BL.makeBot(tk.d, BL.BOT_STYLES[tk.f[1]]);
-    let fr = 0;
-    const run = () => {
-      try {
-        for (const end = Math.min(codes.length, fr + CHUNK); fr < end; fr++) {
-          const ci = BL.botInput(g, g.fighters[1], g.fighters[0], bot);
-          BL.step(g, [decIn(codes[fr]), ci]);
-          g.events.length = 0;
-          if (g.phase === "end" || g.phase === "over") { fr++; return done(g, fr); }
-        }
-        if (fr < codes.length) setImmediate(run); else done(g, fr);
-      } catch (e) { o.log.warn("cpurank: replay failed", e.message); done(g, fr); }
-    };
-    run();
-  }
+  const replay = (tk, codes, done) => replayCpu(tk, codes, done, o.log);
 
   function handle(peer, m) {
     if (m.t === "cme") {
@@ -340,4 +343,4 @@ function init(opts) {
   return { handle, gone, names, blank, stats: () => Object.assign({ boardC: list("c").length, boardO: list("o").length, open: openTk.size }, S), sweep, _B: B, T };
 }
 
-module.exports = { init, pack, unpack, cleanCpu, strength, boardName, CAP, PLACE_R, SPREAD, RULES };
+module.exports = { init, pack, unpack, replayCpu, cleanCpu, strength, boardName, CAP, PLACE_R, SPREAD, RULES };
