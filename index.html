@@ -34716,7 +34716,20 @@ function koGot(m) {
   if ("ads" in m) KO.ads = !!m.ads;
   if (Number.isSafeInteger(m.adN)) KO.adN = m.adN;
   if (Number.isSafeInteger(m.adMax)) KO.adMax = m.adMax;
-  koSave();
+  koSave(); koSkins();
+}
+// the Pommes skins you own join the skins owned (P.owned), so wearing them works like any skin: on another device too, once signed in
+const koSkinIdx = (id, n) => (FIG[id] ? FIG[id].palettes.findIndex((p) => p.pommes === n) : -1);
+function koSkins(wear) {
+  let ch = false;
+  for (const it of KO.items) {
+    const x = KO_ITEM_RE.exec(it), n = x && (x[1] === "sk1" ? 1 : x[1] === "sk2" ? 2 : 0), i = n ? koSkinIdx(x[2], n) : -1;
+    if (i < 0) continue;
+    const l = P.owned[x[2]] || [0];
+    if (!l.includes(i)) { P.owned[x[2]] = [...l, i]; ch = true; }
+    if (wear === it) { P.pal[x[2]] = i; ch = true; }   // a skin you just bought is worn
+  }
+  if (ch) saveProfile();
 }
 function koMsg(m) {
   if (!m || typeof m !== "object") return;
@@ -34728,6 +34741,7 @@ function koMsg(m) {
     if (mine) for (const it of KO.items) if (!had.includes(it)) {   // a page you just bought is your pick
       const x = KO_ITEM_RE.exec(it);
       if (x && (x[1] === "ko" || x[1] === "ko2")) koPickSet(x[2], x[1] === "ko" ? 1 : 2);
+      else if (x) koSkins(it);
     }
     if (m.t === "pm-ad") { KO.adIn = 0; KO.adT = 0; }
     koSave();
