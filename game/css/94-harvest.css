@@ -65,6 +65,10 @@
 #scrDaily .hv-ad { position: relative; min-height: 44px; flex-direction: column; gap: 3px; font-size: 15px; opacity: 1; cursor: default; }
 #scrDaily .hv-ad > span, #scrDaily .hv-ad > small { opacity: 0.55; }
 #scrDaily .hv-ad small { font: 600 12px/1 var(--body); letter-spacing: 0; text-transform: none; }
+/* ads on: tappable once an ad is ready (.on); waiting and "No ad right now" stay dim; "Doubled" (.used) is the day's mark, in mint */
+#scrDaily .hv-ad.on { cursor: pointer; }
+#scrDaily .hv-ad.on > span, #scrDaily .hv-ad.on > small { opacity: 1; }
+#scrDaily .hv-ad.used > span { opacity: 1; color: var(--mint); }
 .hv-soon, .sh-soon { position: absolute; right: -6px; top: -11px; z-index: 2; padding: 4px 7px 3px; border: 2px solid var(--ink); border-radius: 6px; background: var(--ember); color: var(--ink);
   font: 800 10px/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; transform: rotate(6deg); box-shadow: 0 2px 0 var(--ink); }
 #scrDaily .hv-soon { right: 6px; }   /* inside the button's right edge, so the button never grows sideways */
