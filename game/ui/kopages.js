@@ -132,7 +132,7 @@ function koDemo(id) {
   const me = FIG[id], i = FIGHTERS.indexOf(me), opp = FIGHTERS[(i + 3) % FIGHTERS.length], pal = me.palettes[palIdx(id)] || me.palettes[0];
   modal("account", false);
   G = newGame({ seed: 7, players: [{ spec: me, pal }, { spec: opp, pal: opp.palettes[0] }], stocks: 1, time: 0, countdown: 0, map: 0 });
-  G.phase = "over";   // the simulation stands still under the page (core.js step returns at once)
+  G.phase = "over"; G.winner = 0; G.endReason = "stocks";   // the simulation stands still under the page (core.js step returns at once); finStart reads the winner
   const a = G.fighters[0], b = G.fighters[1];
   a.x = -60; a.facing = 1; b.x = 70; b.facing = -1;
   match = { demo: true, ranked: false, d: -1, level: "", bot: makeBot(-1) }; meSlot = 0;
