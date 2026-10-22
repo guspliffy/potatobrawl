@@ -5831,7 +5831,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
-  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* / bw-* messages (stk-*: ui/stakes.js, bw-*: ui/bossweek.js), and Ranked vs CPU's (ui/vscpu.js)
+  const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* / bw-* messages (stk-*: ui/stakes.js, bw-*: ui/bossweek.js, pm-*: ui/kopages.js), and Ranked vs CPU's (ui/vscpu.js)
   const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd"]);
   const rooms = new Map();
 
@@ -5853,7 +5853,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
-    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
+    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-" || m.t.slice(0, 3) === "pm-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
@@ -19327,7 +19327,7 @@ function uvDrawFx(c, e, a) {
    launch direction, spinning. It leaves the screen, the KO beam and a burst of fries and chips mark the
    edge, then the name card. A tap or key skips it; the results screen opens when it ends. */
 const FIN = { on: false, t: 0, last: 0, w: 0, l: 0, wx: 0, lx: 0, dir: 1, kit: null, P: [null, null], parts: [], shake: 0, out: false,
-  cue: {}, finish: null, manga: false, ulti: false, hit: 1520, launch: 1610, cardSub: "", k: 1, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
+  cue: {}, finish: null, manga: false, ulti: false, alt: false, hit: 1520, launch: 1610, cardSub: "", k: 1, rnd: [], rate: 1, pend: null, ev: null, ldx: 1, ldy: -0.5, beam: null, flashes: [], trail: [], lastIn: null, cut: false }; // rate: tests slow or freeze it
 // timeline, in ms after the final hit. The loser stays put FLAUNCH ms after HIT (impact freeze), then flies.
 const FT = { CUT: 520, ACT: 920, HIT: 1520, OUT: 2020, CARD: 2400, END: 3800 };
 const FLAUNCH = 90, FLAUNCH_T = FT.HIT + FLAUNCH, FMS = 1000 / 60;
@@ -19347,8 +19347,9 @@ function finStart(g) {
   const ev = FIN.pend && FIN.pend.slot === Lf.slot ? FIN.pend : null;
   FIN.pend = null; FIN.ev = ev;
   FIN.ulti = !!(ev && ev.mv === "ulti");   // the lethal hit was an Ultimate (core.js: the event's mv): manga.js adds its gold layer, or plays the page's own Ultimate cut
+  FIN.alt = !FIN.ulti && koAltFor(W, Lf);   // ui/kopages.js: the winner's Potatality (yours, a friend's, a CPU's teaser); manga.js plays MANGA[id].alt
   FIN.on = true; FIN.t = 0; FIN.last = performance.now(); FIN.w = wi; FIN.l = li;
-  if (FIN.w === meSlot) masteryPage(W.spec.id, FIN.ulti);   // ui/mastery.js: the Collection counts the KO pages you land
+  if (FIN.w === meSlot && !match.demo) masteryPage(W.spec.id, FIN.ulti);   // ui/mastery.js: the Collection counts the KO pages you land (never the Shop's WATCH)
   FIN.wx = clamp(Math.round(W.x), -190, 190);
   // the real launch direction (unit vector, y up is negative); with no event, away from the winner and a little up
   const rdx = ev ? ev.dirx : (Lf.x >= W.x ? 0.8 : -0.8), rdy = ev ? ev.diry : -0.6;
@@ -19359,7 +19360,7 @@ function finStart(g) {
   const ux = Math.abs(rdx), uy = clamp(rdy, -1, -0.16), ul = Math.hypot(ux, uy) || 1;
   FIN.ldx = FIN.dir * ux / ul; FIN.ldy = uy / ul;
   FIN.kit = FINS[W.spec.id] || FINS.phoenix;
-  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
+  match.finBy = FIN.ulti ? finUltiTitle(W.spec) : FIN.alt ? MANGA[W.spec.id].alt.name : finTitle(W.spec);   // the results screen names it ("Finished with High Noon")
   FIN.parts.length = 0; FIN.shake = 0; FIN.out = false; FIN.cue = {}; FIN.finish = null; FIN.cut = false; FIN.hit = FT.HIT; FIN.launch = FLAUNCH_T; FIN.manga = false;
   FIN.beam = null; FIN.flashes.length = 0; FIN.trail.length = 0; FIN.lastIn = null;
   FIN.rnd = Array.from({ length: 24 }, () => Math.random());
@@ -20155,7 +20156,17 @@ function finCard(o, t) {
    page panel from mgSplashPanel({ from, paper, cam, draw, ... }) at MT.SPLASH. Panel fields added for this: opaque (the panel covers the whole page once it has
    slid in, so the panels below it are no longer drawn) and before(c, t, pn) (called once, on the first frame the panel is drawn, just before it is: c holds the
    page so far, which the Samurai copies to cut it into slabs). A script may also define end() (called when the page ends or is skipped, to free its own canvases).
-   The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL. */
+   The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL.
+   POTATALITIES (step 8; design: Project files step8/fable-design.md). A fighter's second KO page, bought with Pommes (ui/kopages.js), is MANGA[id].alt: a full script
+   like an Ultimate cut (usually Object.assign({}, S_, {...})) that keeps the page up to the strike and ends in a food gag. finisher.js sets FIN.alt (koAltFor: your own
+   choice, a friend's from his presence, a CPU's teaser) and the engine plays .alt on the long timeline MT_U, unless the KO is an Ultimate (that keeps its own page).
+   MG.alt = true; the card's sub-line reads "POTATALITY: <name>" in MG_POTA. What the engine adds to every Potatality, so the scripts don't:
+   - from MT.SPLASH the loser is in the food: nothing of the launch is drawn over the page any more (the loser over the page, the KO beam and its bits);
+   - the shared exit (mgPop): at MT.POP (between the seal and the fade) the food bursts (a white star-burst and POP!) and the loser springs out of it as a
+     plain potato, dazed, hops and lands, drawn over the page in the "after" panel's camera. The script says where its food is: food() -> { x, y, r, y0?, lx? }
+     in world units of its "after" panel (x: the food's middle; y: the ground; r: its size; y0: where the hop starts, default a little above the ground;
+     lx: where the loser lands, default a little in front), and stops drawing the food once mgPopped(t).
+   An alt script that throws while it starts is replaced by the fighter's normal page (mangaStart); one that throws later falls back like any page. */
 
 /* ===================== B13: the cinema sound kit (Web Audio synth, one compressed bus) ===================== */
 const Cin = {
@@ -20256,13 +20267,15 @@ const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced i
 // ms after the final hit. FREEZE: the picture stops (the loser has left the shot by 520, so the picture is taken while it is still in it); INKED: the ink is down.
 // Two tables: MT_N (every normal page, and the generic Ultimate layer on a page without its own Ultimate cut, 4.7 s) and MT_U (a page with its own Ultimate cut,
 // 5.9 s: everything from the aftermath on is shifted by U = 1200 and the splash panel sits at 3250). mangaStart copies the right one into MT before the page is built.
-const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
-const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, FADE: 5600, END: 5900 };
+// POP: a Potatality's shared exit (mgPop), on the long timeline only.
+const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, POP: 1e9, FADE: 4400, END: 4700 };
+const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, POP: 5250, FADE: 5600, END: 5900 };
 const MT = Object.assign({}, MT_N);
 const MG_BOSS_SC = 0.7, MG_BOX = [-100, -125, 100, 14], MG_BOSS_BOX = [-180, -215, 180, 14];   // a boss is much bigger (horns at -157, a long fork): his own box, and he is drawn at MG_BOSS_SC so the panels framed for a fighter hold him
 const MG_GOLD = "#f3c84a", MG_GOLD_D = "#b8860b", MG_GOLD_PALE = "#fff2c2", MG_GOLD_SEAL = "#e0b43a";   // the Ultimate's gold: it joins the page's accent, never replaces it
+const MG_POTA = "#ff8a5c";   // a Potatality's card line (the Pommes cone's sunset red, lighter so it reads on the ink band)
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
-const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
+const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", alt: false, script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
   snapPending: false, tintK: 0.56, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, fixed: false, avg: 0, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
 const mgClock = () => (window.__realNow ? window.__realNow() : performance.now());   // the tests step performance.now themselves; this one stays real
 function mgRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -20376,6 +20389,7 @@ function mgToneFill(c, poly, size, cover, drift) {
   c.save(); c.fillStyle = pat; c.setTransform(1, 0, 0, 1, 0, 0);
   c.beginPath(); poly.forEach(([x, y], i) => (i ? c.lineTo(x * DPR, y * DPR) : c.moveTo(x * DPR, y * DPR))); c.closePath(); c.fill(); c.restore();
 }
+const lay0port = () => !!(MG.lay && MG.lay.port);
 const mgPoly = (c, poly) => { c.beginPath(); poly.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); };
 
 /* ---------- lettering: the sound words, drawn once into their own canvas ---------- */
@@ -20680,6 +20694,7 @@ function mgSnapshot() {
   MG.panels = [mgFirstPanel()].concat(S.panels(MG.lay)).map((dd, i) => mgPanel(dd, i));
   MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
   MG.words = mgWordDefs(S).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+  if (MG.alt && S.food && MG.byId.after) MG.words.push(Object.assign(mgPopWord(), lay0port() ? { mul: Math.min(1, L.gw * 0.9 / L.gh) } : {}));   // a Potatality's exit word
   if (MG.ulti) for (const w of MG.words) if (w.t0 >= FIN.hit && !w.fill) w.fill = MG_GOLD;   // the Ultimate's strike words are gold unless the page colours them itself
   if (S.build) S.build(MG.lay);
   MG.todo = [
@@ -20695,14 +20710,15 @@ function mgWork(t) {
 }
 
 /* ---------- start, tick, draw, end ---------- */
-function mangaStart(g) {
+function mangaStart(g, plain) {
   const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
-  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
+  // a Potatality (FIN.alt, finisher.js) plays MANGA[id].alt on the long timeline; an Ultimate KO keeps the Ultimate's page. plain: the alt failed to start, play the normal page
+  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, alt = !ulti && !plain && !!FIN.alt && !!base.alt, S = cut ? base.ulti : alt ? base.alt : base;
   try {
-    Object.assign(MT, cut ? MT_U : MT_N);
-    MG.ulti = ulti; MG.ultiCut = cut; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
+    Object.assign(MT, cut || alt ? MT_U : MT_N);
+    MG.ulti = ulti; MG.ultiCut = cut; MG.alt = alt; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -20712,15 +20728,19 @@ function mangaStart(g) {
     if (ulti) FIN.launch = Math.max(FIN.launch, FIN.hit + 150);   // the launch waits for the third (gold) impact frame
     FIN.endT = MT.END;   // (read by the tests: the page's length)
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
-    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
+    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : alt ? `Potatality: ${S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
     for (const p of FIN.P) if (p) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
     return true;
-  } catch (e) { MG.on = false; mgWarn(e); return false; }
+  } catch (e) {
+    MG.on = false; mgWarn(e);
+    if (alt) { try { if (S.end) S.end(); } catch (x) { /* a script that cannot tidy up */ } return mangaStart(g, true); }   // a Potatality that can't start: the fighter's normal page
+    return false;
+  }
 }
 // the puppets' skeletons come from the script (MG.pt is the page time of the picture being drawn: smears draw earlier moments)
-function mgPose(p, P, sk) { return MG.script.pose(P, sk, MG.pt, p.finRole, p) || null; }
+function mgPose(p, P, sk) { return MG.alt && p.finRole === "l" && MG.pt >= MT.POP ? mgPopPose(P, sk, MG.pt) : MG.script.pose(P, sk, MG.pt, p.finRole, p) || null; }
 function mangaTick(g, t, k) {
   if (t >= MT.END) { finEnd(); return g; }
   if (t < MT.FREEZE) return g;
@@ -20743,6 +20763,7 @@ function mangaTick(g, t, k) {
     const lf = Math.max(0, (t - FIN.launch) / FMS), trav = finTrav(lf);
     finLoser(Lp, t, lf, trav);
     if (S.after) S.after(t);
+    if (MG.alt && t >= MT.SPLASH) { if (FIN.beam && FIN.beam.t0 > -1e5) FIN.beam.t0 = -1e6; FIN.parts.length = 0; FIN.trail.length = 0; }   // a Potatality: the loser is in the food now
     mgBreak(t);
     W.st++; Lp.st++;
     for (const p of FIN.parts) {
@@ -20817,7 +20838,7 @@ function mangaBail(e) {
   fxHitOff(); try { cam.sx = cam.sy = 0; } catch (x) { /* ok */ }
 }
 function mangaEnd() {
-  FIN.manga = false; MG.on = false;
+  FIN.manga = false; MG.on = false; MG.alt = false;
   try { if (MG.script && MG.script.end) MG.script.end(); } catch (e) { /* a script that cannot tidy up */ }
   for (const pn of MG.panels) pn.cache = null;
   MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
@@ -20843,6 +20864,11 @@ function mgCues(t) {
   if (MG.ulti) cueOnce("gold", H0 + 100, () => Cin.go(() => { Cin.taiko(0.6); Cin.chime(1568); }));   // the third impact frame, the gold one
   if (MG.cards && MG.cards.mate) cueOnce("mate", MT.CARD + 200, () => Cin.go(() => Cin.stamp(0.5)));   // the 2v2 partner sticker lands
   cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); if (MG.ulti) Cin.chime(1568); }));
+  if (MG.alt) {   // the shared exit: a cork pop, the hop's rising boing, the landing
+    cueOnce("pop", MT.POP, () => Cin.go(() => { Cin._osc("sine", 380, 1500, 0.08, 0.22, 0.002); Cin._noise(0.07, 0.3, 2400, 6400, "bandpass", 1.4); }));
+    cueOnce("popUp", MT.POP + 40, () => Cin.go(() => Cin._osc("triangle", 260, 620, 0.2, 0.06, 0.01)));
+    cueOnce("popLand", MT.POP + MG_POP.land, () => Cin.go(() => { Cin._osc("sine", 160, 90, 0.16, 0.18, 0.003); Cin._osc("triangle", 330, 300, 0.22, 0.04, 0.01, 0.04); }));
+  }
   if (S.cues) S.cues(t);
 }
 
@@ -20858,9 +20884,11 @@ function mangaOverlay(o, tk) {
     }
     const S = MG.script, fl = (1 - fe(MT.FREEZE, MT.FREEZE + 130, t)) * (MG.reduced ? 0.25 : 0.9);
     if (S.over) S.over(o, t);
+    const inFood = MG.alt && t >= MT.SPLASH;   // a Potatality: from the splash on nothing of the launch is drawn
+    if (!inFood) mgLoserOver(o, t);
+    if (t >= FIN.launch && !inFood) finScene(o, t);
+    mgPop(o, t);
     for (const w of MG.words) mgWordDraw(o, w, t);
-    mgLoserOver(o, t);
-    if (t >= FIN.launch) finScene(o, t);
     mgBeam(o, t);
     mgImpact(o, t);
     for (const f of MG.flash) { const a = f.a * (1 - fe(f.t0, f.t0 + f.dur, t)); if (t >= f.t0 && a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); } }
@@ -20937,9 +20965,57 @@ function mgImpact(o, t) {
   }
 }
 
+/* ---------- a Potatality's shared exit: the food pops and the loser springs out of it as a plain potato ---------- */
+// ms after MT.POP: the burst, the top of the hop, the landing, the little bounce
+const MG_POP = { burst: 260, top: 170, land: 340, bounce: 420 };
+const mgPopped = (t) => MG.alt && t >= MT.POP + 40;   // a script stops drawing its food from here
+// the hop (world units of the "after" panel): from the food's top (F.y0, default a little above the ground) up, and down onto the ground beside it
+// (F.lx, default a little in front of it), with one small bounce
+function mgPopHop(F) {
+  const x0 = F.x, x1 = F.lx !== undefined ? F.lx : F.x + FIN.dir * F.r * 0.35, y0 = F.y0 !== undefined ? F.y0 : F.y - F.r * 0.35;
+  return { x0, x1, y0, ya: Math.min(y0, F.y) - F.r * 1.15 };
+}
+function mgPopAt(t) {
+  const F = MG.script.food(), H = mgPopHop(F), u = t - MT.POP, xm = H.x0 + (H.x1 - H.x0) * 0.3;
+  if (u < MG_POP.top) { const k = easeOut(u / MG_POP.top); return [lerp(H.x0, xm, k), lerp(H.y0, H.ya, k)]; }
+  if (u < MG_POP.land) { const k = (u - MG_POP.top) / (MG_POP.land - MG_POP.top); return [lerp(xm, H.x1, k), lerp(H.ya, F.y, k * k)]; }
+  return [H.x1, F.y - Math.sin(Math.PI * fe(MG_POP.land, MG_POP.bounce, u)) * F.r * 0.16];
+}
+// arms up and spiral eyes in the air, a wobble once down
+function mgPopPose(P, sk, t) {
+  const w = sk.w, leg = sk.leg, tor = sk.tor, u = t - MT.POP;
+  P.expr = "dazed"; P.mouth = u < MG_POP.land ? 1 : 0.3; P.spin = 0; P.exK = 1;
+  if (u < MG_POP.land) { P.lean = 0.12 * Math.sin(u * 0.03); return { hF: [w * 0.65, -leg - tor * 1.3], hB: [-w * 0.65, -leg - tor * 1.3], fF: [w * 0.4, -leg * 0.3], fB: [-w * 0.35, -leg * 0.2] }; }
+  P.lean = 0.1 * Math.sin((u - MG_POP.land) * 0.018) * (1 - fe(MG_POP.land, MG_POP.land + 360, u) * 0.6);
+  return { hF: [w * 0.78, -leg - tor * 0.45], hB: [-w * 0.78, -leg - tor * 0.45] };
+}
+function mgPop(o, t) {
+  const S = MG.script, pn = MG.byId.after;
+  if (!MG.alt || !pn || !S.food || t < MT.POP) return;
+  mgPlace(pn, t);
+  const F = S.food(), u = t - MT.POP, c0 = pn.sp(F.x, mgPopHop(F).y0 - F.r * 0.15), R = F.r * pn.z;
+  // the burst where the food was
+  const b = easeOut(Math.min(1, u / 90)) * (1 - fe(MG_POP.burst - 120, MG_POP.burst, u));
+  if (b > 0.02 && !MG.reduced) mgStarburst(o, c0[0], c0[1], R * (0.7 + 0.9 * b), 0.3);
+  else if (b > 0.02) { o.save(); o.globalAlpha = b; o.fillStyle = "#ffffff"; o.beginPath(); o.arc(c0[0], c0[1], R * 1.1, 0, Math.PI * 2); o.fill(); o.restore(); }
+  // the loser, plain again
+  const Lp = FIN.P[FIN.l];
+  if (!Lp) return;
+  const [x, y] = mgPopAt(t);
+  Lp.x = x; Lp.y = y; Lp.state = "fin"; Lp.flash = 0; Lp.facing = -FIN.dir;
+  o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
+  mgPuppet(o, pn, Lp, t, { free: true, halo: 2 });
+  o.restore();
+}
+// the POP! word (one of the page's words, so it is stamped and timed like the others)
+function mgPopWord() {
+  return { text: "POP!", t0: MT.POP + 20, t1: MT.FADE + 200, size: 0.13, rot: -0.12 * FIN.dir, jit: 0.14, seed: 4242,
+    at: () => { const pn = MG.byId.after, F = MG.script.food(); mgPlace(pn, MT.POP); const q = pn.sp(F.x - FIN.dir * F.r * 0.9, mgPopHop(F).ya - F.r * 0.6); return [q[0], q[1]]; } };
+}
+
 /* ---------- the title block: a slanted black band, the name in hand lettering, a screened accent strip, the red hanko K.O. seal ---------- */
 function mgCardPrep() {
-  const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold
+  const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : MG.alt ? MG_POTA : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold, a Potatality's sunset red
   if (!MG.cards) {
     const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
     MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(finWinWord(W), { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
@@ -25476,6 +25552,7 @@ MANGA.reaper = (function () {
   const box = () => { let b = own.get(MG.snap); if (!b) { b = {}; own.set(MG.snap, b); } return b; };
   let dust = [], motes = [], soul = null, cornerT = TURNED, stoneName = "", stoneFont = 5, tear2 = null;
   let ult = false, boat = false;   // ult: this play is the Ultimate page, The Ferryman (set by its start); boat: he is being posed standing in the ferry (the splash)
+  let pota = false;                // pota: this play is the Potatality, Rest in Peel (set by its start)
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function rprPt(p, t, key, dx, dy) {
@@ -25813,7 +25890,7 @@ MANGA.reaper = (function () {
     if (!B.stroke) B.stroke = rprStrokePts(40);
     if (ult && !B.stroke2) B.stroke2 = rprStrokePts(40, true);
     // (the Ultimate: two crescents, an X through the loser, gone as the river comes in: over it they would float)
-    const up = easeOut(fe(HIT + 100, HIT + 190, t)), th = Math.min(L.gw, L.gh) * 0.034 * (1 - 0.75 * ease(fe(3250, 3650, t))), a = (1 - fe(3450, 3700, t)) * (ult ? fmTide(t) : 1);
+    const up = easeOut(fe(HIT + 100, HIT + 190, t)), th = Math.min(L.gw, L.gh) * 0.034 * (1 - 0.75 * ease(fe(3250, 3650, t))), a = (1 - fe(3450, 3700, t)) * (ult || pota ? fmTide(t) : 1);
     if (a <= 0) return;
     for (const pts of ult ? [B.stroke, B.stroke2] : [B.stroke]) {
       o.save(); o.globalAlpha = 0.3 * a; rprCrescent(o, pts, up, th * 1.9, "#ffffff"); o.restore();
@@ -25934,7 +26011,7 @@ MANGA.reaper = (function () {
           at: () => { const p = MG.byId.after, m = p.sp(...rprPt(W_(), HUSH + 60, "head")); return [m[0] - D * p.z * 34, m[1] - p.z * 22]; } },
       ];
     },
-    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; setTimes(); },
+    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; pota = false; setTimes(); },
     build(lay) {
       const B = box(), gw = L.gw, gh = L.gh;
       MG.panels[0].d.draw = drawHit;
@@ -25949,13 +26026,13 @@ MANGA.reaper = (function () {
       const Lp = L_(); stoneName = Lp.spec.name.toUpperCase();
       const mc = mgCanvas(4, 4).getContext("2d"); mc.font = `800 10px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
       stoneFont = clamp(10 * 25 / Math.max(1, mc.measureText(stoneName).width), 3.2, 6);
-      if (!MG.ulti) FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate keeps the engine's line
+      if (!MG.ulti && !MG.alt) FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate and a Potatality keep the engine's line
     },
     step(t, k) {
       const W = W_();
       W.x = wX(t);
       W.y = !ult && t > GLIDE0 - 60 && t < GLIDE1 + 120 ? -2.5 * Math.sin(Math.PI * fe(GLIDE0 - 60, GLIDE1 + 120, t)) : 0;   // he lifts off the ground as he glides
-      if (!soul && t >= FIN.launch && MG.byId.strike) { const pn = MG.byId.strike, q = pn.sp(FIN.lx, -34); soul = { t0: FIN.launch, x: q[0], y: q[1], s: L_().s.w * 0.36 * clamp(pn.z, 1.1, 2.4) }; }
+      if (!soul && !pota && t >= FIN.launch && MG.byId.strike) { const pn = MG.byId.strike, q = pn.sp(FIN.lx, -34); soul = { t0: FIN.launch, x: q[0], y: q[1], s: L_().s.w * 0.36 * clamp(pn.z, 1.1, 2.4) }; }
       const B = box();
       if (!B.queued) {   // the one-off canvases join the end of the engine's build queue, so they are made in the hold before the skip (after the inked copy)
         B.queued = true;
@@ -26005,7 +26082,7 @@ MANGA.reaper = (function () {
       const k = fe(TOLL, TURNED, t);
       if (k <= 0) return;
       const pn = MG.byId.strike;
-      if (MG.broke && pn && !FIN.out && L_().state !== "gone" && !(ult && t >= MT.SPLASH)) { c.save(); mgPlace(pn, t); rprLoser(c, pn, t); c.restore(); }   // out of its panel: over the whole page, turned with it
+      if (MG.broke && pn && !FIN.out && L_().state !== "gone" && !((ult || pota) && t >= MT.SPLASH)) { c.save(); mgPlace(pn, t); rprLoser(c, pn, t); c.restore(); }   // out of its panel: over the whole page, turned with it
       c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
       if (k < 1) { rprPool(c, k); c.clip(); }
       c.globalCompositeOperation = "difference"; c.fillStyle = "#ffffff"; c.fillRect(0, 0, MG.cw, MG.ch);
@@ -26014,7 +26091,7 @@ MANGA.reaper = (function () {
     hint(t) { return t >= cornerT ? "rgba(214,216,228,0.62)" : "rgba(30,28,40,0.55)"; },
     over(o, t) {
       if (t > FIN.launch && t < FIN.launch + 420 && MG.byId.strike) {   // white speed lines along the real launch direction (ink ones would vanish in the night)
-        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult ? fmTide(t) : 1);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult || pota ? fmTide(t) : 1);
         const q = pn.sp(...loserAt(Math.min(t, FIN.launch + 200)).map((v, i) => (i ? v - Lp.s.h * 0.5 : v))), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         mgSpeed(o, q[0] - Math.cos(ang) * len * 0.45, q[1] - Math.sin(ang) * len * 0.45, len, Math.min(L.gw, L.gh) * 0.3, ang, -(t - FIN.launch) * 1.3, 0.75 * a, true, 0.85);
@@ -26460,6 +26537,229 @@ MANGA.reaper = (function () {
       cueOnce("fmFlute1", 4360, () => Cin.go(() => fmFlute(440, 0.3)));
       cueOnce("fmFlute2", 4520, () => Cin.go(() => fmFlute(370, 0.4)));
       cueOnce("fmDrone", 4600, () => Cin.go(() => Cin.drone(false)));
+    },
+  });
+  /* ===================== the Potatality, "Rest in Peel" (MANGA.reaper.alt; design: Project files step8/fable-design.md) =====================
+     Last Rites to the hook (no soul here: the peel is the ghost). 3250 the lights come on: panel 5, the splash, slides up over the night, plain ink on paper
+     (page() turns only what is still above it): the loser stands there bare, a peeled potato, in his own skin's stripes for a moment while the scythe's
+     second swing runs across the page (shhhhhk); 3380-3950 the long spiral peel lifts off him and rises like a ghost, his colour outside, cream inside, a
+     little face at its top; 4050 it waves bye; he shivers and blushes. 4700 in panel 4's place, in colour: a pot by the Reaper, the bare potato sitting in
+     it with a bay leaf, the lid drops on (plop), two eyes peek out from under it, steam; the engine's POP lifts the lid at 5250 (food()).
+     The splash's world: the potato's feet at (0, 0), his middle at y = -36. Every helper here is prefixed rip. */
+  const RIP_SKIN = "#f6e7c1", RIP_FLESH = "#efd9a8", RIP_BLUSH = "#ff8f9e", RIP_LEAF = "#8fbf6a";
+  const R_SWING = 3270, R_PEEL0 = 3380, R_PEEL1 = 3950, R_WAVE = 4050, R_WAVE1 = 4560, R_LID = 4780, R_PLOP = 4860;
+  const potX = (t) => wX(t) + FIN.dir * 62;   // the pot stands where the tombstone would
+  const ripLw = (pn) => Math.max(1.1, 3 / pn.z);   // an ink line, in world units
+  function ripCam(t, pn) {
+    const port = MG.lay && MG.lay.port, vh = (port ? 320 : 215) * (1 - 0.05 * fe(MT.SPLASH, MT.AFTER, t));
+    return { wx: 0, wy: -vh * (port ? 0.36 : 0.42), vh };
+  }
+  // the peel: n + 1 points along a helix that starts wrapped round him (k 0) and rises above him, swaying (k 1); f: which face shows (cos of the turn)
+  function ripPeel(t) {
+    const k = ease(fe(R_PEEL0, R_PEEL1, t)), n = 48, out = [], spin = (t - MT.SPLASH) * 0.0022 * k;
+    for (let i = 0; i <= n; i++) {
+      const s = i / n, th = s * 3.4 * TAU + spin, wy = -5 - s * 62, wr = 27.5 * Math.sqrt(Math.max(0.04, 1 - Math.pow((wy + 36) / 37, 2)));
+      const y = lerp(wy, -76 - s * 92, k), R = lerp(wr, 15 - 8 * s, k), sway = Math.sin(t * 0.004 + s * 3.2) * 13 * k * s;
+      out.push({ x: Math.sin(th) * R + sway, y, f: Math.cos(th) });
+    }
+    return out;
+  }
+  // one face of the peel: its runs of consecutive segments (one path each: ink, then colour, so a run has no seams)
+  function ripPeelRuns(c, P, front, w, colr, lw) {
+    c.lineCap = "round"; c.lineJoin = "round";
+    let run = null;
+    const flush = () => {
+      if (!run || run.length < 2) { run = null; return; }
+      for (const [wd, st] of [[w + lw * 2, INK], [w, colr]]) { c.strokeStyle = st; c.lineWidth = wd; c.beginPath(); c.moveTo(run[0].x, run[0].y); for (let i = 1; i < run.length; i++) c.lineTo(run[i].x, run[i].y); c.stroke(); }
+      run = null;
+    };
+    for (let i = 1; i < P.length; i++) {
+      const on = (P[i - 1].f + P[i].f) / 2 >= 0 === front;
+      if (on) { if (!run) run = [P[i - 1]]; run.push(P[i]); } else flush();
+    }
+    flush();
+  }
+  // the bare potato: shivering, arms crossed over himself, eyes away, blushing
+  function ripBare(c, pn, t, x, lw) {
+    const D = FIN.dir, blush = ease(fe(3550, 3900, t)), cx = x, cy = -36;
+    c.fillStyle = RIP_SKIN; c.strokeStyle = INK; c.lineWidth = lw * 1.3;
+    c.beginPath(); c.ellipse(cx, cy, 26, 35, 0.05 * D, 0, TAU); c.fill(); c.stroke();
+    c.fillStyle = INK;   // a few potato eyes
+    for (const [dx, dy, r] of [[-12, -18, 1.1], [14, -2, 0.9], [-6, 20, 1], [10, 22, 0.8]]) { c.beginPath(); c.ellipse(cx + dx * D, cy + dy, r * 1.6, r, 0.4, 0, TAU); c.fill(); }
+    // the face: looking away from the Reaper's side, brows up
+    const look = -D * 3, ey = cy - 12;
+    for (const sd of [-1, 1]) {
+      const ex = cx + sd * 8.5 + look * 0.4;
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, 5, 6.2, 0, 0, TAU); c.fill(); c.lineWidth = lw; c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.arc(ex + look * 0.6, ey + 1.5, 2.4, 0, TAU); c.fill();
+      c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(ex - sd * 4.5, ey - 9.5); c.lineTo(ex + sd * 3.5, ey - 11.5); c.stroke();
+    }
+    if (blush > 0.01) { c.save(); c.globalAlpha = 0.85 * blush; c.fillStyle = RIP_BLUSH; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(cx + sd * 13 + look * 0.3, cy - 2, 5.5, 3.2, 0, 0, TAU); c.fill(); } c.restore(); }
+    c.lineWidth = lw; c.beginPath(); c.moveTo(cx - 3 + look * 0.3, cy + 4); c.quadraticCurveTo(cx + look * 0.3, cy + 2.5, cx + 3 + look * 0.3, cy + 4.5); c.stroke();   // a wobbly little mouth
+    // the arms, crossed in front: two short skin-coloured sausages with an ink edge
+    c.lineCap = "round";
+    for (const sd of [-1, 1]) {
+      const a = [cx + sd * 24, cy - 2], b = [cx - sd * 7, cy + 9];
+      c.strokeStyle = INK; c.lineWidth = 7.4 + lw * 2; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(cx + sd * 8, cy + 13, b[0], b[1]); c.stroke();
+      c.strokeStyle = RIP_SKIN; c.lineWidth = 7.4; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(cx + sd * 8, cy + 13, b[0], b[1]); c.stroke();
+    }
+    // shiver marks either side
+    const sh = fe(3500, 3650, t);
+    if (sh > 0) {
+      c.strokeStyle = INK; c.lineWidth = lw * 0.9; c.globalAlpha = sh;
+      for (const sd of [-1, 1]) for (let j = 0; j < 2; j++) { const xx = cx + sd * (33 + j * 5), w2 = Math.sin(t * 0.06 + j) * 1.5; c.beginPath(); c.moveTo(xx + w2, cy - 10); c.quadraticCurveTo(xx + sd * 3 - w2, cy - 2, xx + w2, cy + 6); c.stroke(); }
+      c.globalAlpha = 1;
+    }
+  }
+  // the ghost's head at the top of the peel: a little face, and from 4050 a flap of peel that waves
+  function ripGhost(c, P, t, colr, lw) {
+    const k = fe(3700, R_PEEL1, t);
+    if (k <= 0) return;
+    const h = P[P.length - 1], D = FIN.dir, r = 10 * easeOut(k);
+    c.save(); c.globalAlpha = Math.min(1, k * 1.5);
+    const wave = t >= R_WAVE ? Math.sin((t - R_WAVE) * 0.024) * 0.75 * (1 - fe(R_WAVE1 - 120, R_WAVE1, t)) : 0;
+    c.lineCap = "round";
+    for (const [wd, st] of [[4.6 + lw * 2, INK], [4.6, colr]]) { c.strokeStyle = st; c.lineWidth = wd; c.beginPath(); c.moveTo(h.x + D * r * 0.7, h.y + 2); c.lineTo(h.x + D * (r + 8 * Math.cos(wave - 0.9)), h.y + 2 - 8 * Math.sin(-wave + 0.9)); c.stroke(); }
+    c.fillStyle = colr; c.strokeStyle = INK; c.lineWidth = lw;
+    c.beginPath(); c.arc(h.x, h.y, r, Math.PI, 0); c.lineTo(h.x + r, h.y + r * 0.9); for (let i = 1; i <= 4; i++) c.lineTo(h.x + r - (i * r * 2) / 4, h.y + r * (i % 2 ? 0.55 : 0.9)); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = INK; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(h.x + sd * r * 0.36, h.y - r * 0.1, r * 0.13, r * 0.2, 0, 0, TAU); c.fill(); }
+    c.beginPath(); c.ellipse(h.x, h.y + r * 0.36, r * 0.14, r * 0.18, 0, 0, TAU); c.fill();
+    c.restore();
+  }
+  function ripDrawSplash(c, pn, t) {
+    const D = FIN.dir, Lp = L_(), colr = col(Lp.pal), lw = ripLw(pn);
+    pn.screen(c);
+    rprTone(c, pn, [[pn.x0 - 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 + pn.h * 0.26], [pn.x0 - 6, pn.y0 + pn.h * 0.32]], 10, 0.1, [t * 0.0005, 0]);
+    const q = pn.p(0, -40);
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.75, t * 0.0003, 0.3);
+    const g = pn.p(0, 0);
+    c.fillStyle = INK; c.fillRect(pn.x0 - 4, g[1] - 1, pn.w + 8, Math.max(2, pn.z * 0.8));
+    rprTone(c, pn, [pn.p(-30, 0.5), pn.p(30, 0.5), pn.p(26, 6), pn.p(-26, 6)], 6, 0.45);   // his shadow
+    pn.world(c);
+    const x = Math.sin(t * 0.11) * 0.9 * fe(3500, 3700, t), P = ripPeel(t);
+    for (const pt of P) pt.x += x;
+    ripPeelRuns(c, P, false, 9, RIP_FLESH, lw);   // the inside of the peel, behind him while it is wrapped
+    ripBare(c, pn, t, x, lw);
+    ripPeelRuns(c, P, true, 9, colr, lw);         // his colour outside
+    ripGhost(c, P, t, colr, lw);
+    pn.screen(c);
+    // the swing: one white crescent across the page, through him
+    const up = easeOut(fe(R_SWING, R_SWING + 90, t)), a = 1 - fe(R_SWING + 200, R_SWING + 420, t);
+    if (up > 0 && a > 0) {
+      const A = [pn.x0 + (D > 0 ? 0.02 : 0.98) * pn.w, pn.y0 + pn.h * 0.78], C = [pn.x0 + (D > 0 ? 0.98 : 0.02) * pn.w, pn.y0 + pn.h * 0.1], B = pn.p(0, -44);
+      const pts = qpts(A, [2 * B[0] - (A[0] + C[0]) / 2, 2 * B[1] - (A[1] + C[1]) / 2], C, 40);
+      c.save(); c.globalAlpha = a; rprCrescent(c, pts, up, Math.min(L.gw, L.gh) * 0.03, "#ffffff", INK); c.restore();
+    }
+  }
+  // the lid: off the top of the panel, dropped on at R_PLOP with a little bounce, a hair askew; gone at the pop
+  function ripLidY(t) {
+    if (t < R_LID) return null;
+    if (t < R_PLOP) return lerp(-120, -24, Math.pow(fe(R_LID, R_PLOP, t), 2));
+    return -24 - Math.sin(Math.PI * fe(R_PLOP, R_PLOP + 110, t)) * 4;
+  }
+  function ripPot(c, pn, t, x0) {
+    const D = FIN.dir, lw = ripLw(pn), popped = mgPopped(t), ly = popped ? null : ripLidY(t), lidOn = ly !== null && t >= R_PLOP;
+    pn.world(c);
+    c.strokeStyle = INK; c.lineWidth = lw; c.lineJoin = "round"; c.lineCap = "round";
+    // the back of the rim and the water
+    c.fillStyle = "#d8d2c6"; c.beginPath(); c.ellipse(x0, -22, 21, 4.5, 0, Math.PI, TAU); c.fill(); c.stroke();
+    if (!popped && !lidOn) {   // the bare potato sitting in it, the bay leaf beside him
+      c.save(); c.translate(x0 + D * 9, -25); c.rotate(-0.5 * D);
+      c.fillStyle = RIP_LEAF; c.beginPath(); c.moveTo(0, 6); c.quadraticCurveTo(5, -2, 0, -12); c.quadraticCurveTo(-5, -2, 0, 6); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(0, 4); c.lineTo(0, -9); c.lineWidth = lw * 0.6; c.stroke(); c.restore();
+      c.lineWidth = lw;
+      c.fillStyle = RIP_SKIN; c.beginPath(); c.ellipse(x0 - D * 3, -27, 12.5, 11.5, 0, 0, TAU); c.fill(); c.stroke();
+      for (const sd of [-1, 1]) { c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(x0 - D * 3 + sd * 4.4, -30, 2.6, 3.2, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(x0 - D * 3 + sd * 4.4 - D, -30.5, 1.2, 0, TAU); c.fill(); }
+      c.save(); c.globalAlpha = 0.85; c.fillStyle = RIP_BLUSH; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(x0 - D * 3 + sd * 7.5, -25.5, 2.8, 1.6, 0, 0, TAU); c.fill(); } c.restore();
+    }
+    // the pot's body (it hides his lower half), its handles, a band of tone on the far side
+    const body = () => { c.beginPath(); c.moveTo(x0 - 20, -22); c.lineTo(x0 - 19, -4); c.quadraticCurveTo(x0 - 18, 0, x0 - 13, 0); c.lineTo(x0 + 13, 0); c.quadraticCurveTo(x0 + 18, 0, x0 + 19, -4); c.lineTo(x0 + 20, -22); c.ellipse(x0, -22, 20, 4.2, 0, 0, Math.PI); c.closePath(); };
+    c.fillStyle = "#bfc4cc"; body(); c.fill(); c.stroke();
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(x0 + sd * 20, -18); c.quadraticCurveTo(x0 + sd * 27, -17, x0 + sd * 26, -12); c.quadraticCurveTo(x0 + sd * 25, -9, x0 + sd * 19.5, -10); c.stroke(); }
+    c.beginPath(); c.ellipse(x0, -22, 21, 4.5, 0, 0, Math.PI); c.stroke();
+    pn.screen(c);
+    rprTone(c, pn, [pn.p(x0 + D * 9, -21), pn.p(x0 + D * 19.5, -21), pn.p(x0 + D * 18.5, -2), pn.p(x0 + D * 9, -0.5)], 6, 0.4);
+    pn.world(c);
+    if (lidOn || (ly !== null && !popped)) {   // the lid (falling, then on, a hair askew), and from under it two eyes and the steam
+      c.save(); c.translate(x0, ly); c.rotate(lidOn ? 0.07 * D : 0);
+      c.fillStyle = "#c9ced6"; c.lineWidth = lw; c.strokeStyle = INK;
+      c.beginPath(); c.ellipse(0, 0, 22, 5, 0, 0, TAU); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(0, -1.5, 18, 3.6, 0, Math.PI, TAU); c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.ellipse(0, -5.5, 4, 2.4, 0, 0, TAU); c.fill();
+      c.restore();
+      if (lidOn) {
+        const peek = fe(R_PLOP + 120, R_PLOP + 220, t), blink = Math.abs(t - 5080) < 60 ? 0.15 : 1;
+        if (peek > 0) {
+          c.fillStyle = INK; c.beginPath(); c.ellipse(x0 - D * 11, -21.2, 7, 1.8 * peek, 0.07 * D, 0, TAU); c.fill();
+          c.fillStyle = "#ffffff"; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(x0 - D * 11 + sd * 2.8, -21.2, 1.4, 1.1 * peek * blink, 0, 0, TAU); c.fill(); }
+        }
+        const st = fe(R_PLOP + 80, R_PLOP + 300, t);   // three curls of steam
+        if (st > 0) {
+          c.save(); c.globalAlpha = st * 0.8; c.strokeStyle = INK; c.lineWidth = lw * 0.8;
+          for (let i = 0; i < 3; i++) {
+            const sx = x0 + (i - 1) * 11, ph = ((t - R_PLOP) * 0.02 + i * 7) % 26;
+            c.beginPath(); for (let j = 0; j <= 10; j++) { const yy = -32 - ph - j * 2.2, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.6; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+          }
+          c.restore();
+        }
+      }
+    }
+    pn.screen(c);
+  }
+  function ripDrawAfter(c, pn, t) {
+    const W = W_();
+    pn.screen(c);
+    rprSky(c, pn, t, 0.4);
+    rprGround(c, pn, t);
+    mgPuppet(c, pn, W, t, { light: dirAng(-0.55), box: BOX });   // in his own colours: the lights are on
+    ripPot(c, pn, t, potX(t));
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Rest in Peel",
+    start(g) { S_.start(g); pota = true; FIN.cue.stone = FIN.cue.toll2 = FIN.cue.whisper = true; },   // (Last Rites' stone, second bell and whisper belong to its own panel 4)
+    end() { pota = false; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = ripDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 120 : 100) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: wX(t) + FIN.dir * (lay.port ? 58 : 44), wy: -0.43 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: PAPER, slide: MG.reduced ? 1 : 180, cam: ripCam, draw: ripDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay).filter((w) => w.text !== "shhh..."), D = FIN.dir;
+      Object.assign(ws.find((w) => w.text === "SHHK"), { t1: MT.SPLASH + 150 });   // gone as the lights come on
+      ws.push(
+        { text: "shhhhhk", t0: R_SWING + 40, t1: 3900, size: 0.15, arc: 8, jit: 0.1, rot: -0.32 * D, stretch: { ang: D > 0 ? -0.4 : Math.PI + 0.4, k: 0.25 },
+          at: () => [L.gw * (D > 0 ? 0.64 : 0.36), L.gh * 0.26] },
+        { text: "bye~", t0: R_WAVE + 40, t1: 4650, size: 0.07, jit: 0.12, rot: 0.1 * D,
+          at: () => { const pn = MG.byId.splash, P = ripPeel(R_WAVE + 200), h = P[P.length - 1]; mgPlace(pn, R_WAVE + 200); const q = pn.sp(h.x + D * 26, h.y - 10); return [q[0], q[1]]; } },
+        { text: "plop", t0: R_PLOP, t1: 5200, size: 0.07, jit: 0.12, rot: -0.08 * D,
+          at: () => { const pn = MG.byId.after; mgPlace(pn, R_PLOP); const q = pn.sp(potX(R_PLOP) - D * 6, -44); return [q[0], q[1]]; } },
+      );
+      return ws;
+    },
+    // the night stays on what the splash hasn't covered yet; once it is in, the lights are on
+    page(c, t) {
+      const sp = MG.byId.splash;
+      if (!sp || t < MT.SPLASH) { S_.page(c, t); return; }
+      if (t >= sp.t0 + sp.slide) return;
+      mgPlace(sp, t);
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.beginPath(); c.rect(0, 0, MG.cw, Math.max(0, (sp.y0 + sp.oy) * DPR)); c.clip(); S_.page(c, t); c.restore();
+    },
+    hint(t) { return t >= MT.SPLASH + 180 ? "rgba(30,28,40,0.55)" : S_.hint(t); },
+    food() { const x = potX(MT.POP); return { x, y: 0, r: 22, y0: -24, lx: x + FIN.dir * 40 }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("ripSwing", R_SWING, () => Cin.go(() => { Cin.whoosh(0.3, -0.5 * D, 0.5 * D, 0.32); Cin._noise(0.2, 0.25, 3000, 8000, "highpass", 0.8); }));
+      cueOnce("ripPeel", R_PEEL0, () => Cin.go(() => { Cin._noise(0.6, 0.06, 600, 2600, "bandpass", 2); Cin._osc("sine", 300, 900, 0.6, 0.03, 0.3); }));
+      cueOnce("ripShiver", 3560, () => Cin.go(() => { for (let i = 0; i < 6; i++) Cin._osc("triangle", 900 + i * 40, 880, 0.05, 0.02, 0.002, i * 0.07); }));
+      cueOnce("ripGhost", 3900, () => Cin.go(() => { Cin._osc("sine", 520, 440, 0.5, 0.04, 0.08); Cin._osc("sine", 780, 660, 0.45, 0.02, 0.08, 0.05); }));
+      cueOnce("ripBye", R_WAVE + 40, () => Cin.go(() => Cin.chime(2093)));
+      cueOnce("ripLid", R_PLOP, () => Cin.go(() => { Cin.clack(); Cin._osc("sine", 520, 260, 0.12, 0.08, 0.003); }));
+      cueOnce("ripSteam", R_PLOP + 120, () => Cin.go(() => Cin._noise(0.9, 0.04, 3000, 5000, "highpass", 0.8)));
     },
   });
   return S_;
@@ -28632,7 +28932,7 @@ function showResults(R) {
     cntEnd(false, R);   // ui/counter.js
     if (!R.forfeit && !R.left && !R.lost) markPlayed();   // base.js: a match that ran to its end
   }
-  const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
+  const ult = !!FIN.ulti, alt = !!FIN.alt;   // the KO hit was an Ultimate / the page a Potatality (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
@@ -28664,7 +28964,7 @@ function showResults(R) {
   masteryResults(R, !!fb && won && !R.mateFin, ult);   // ui/mastery.js: the XP, the level and the row under the rank card (R.mateFin: your partner's KO page)
   const fin = $("rFin");
   fin.hidden = !(fb && won);
-  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
+  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : alt ? "Potatality" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();
@@ -31231,6 +31531,164 @@ $("skSheet").addEventListener("click", (e) => { if (SK.arm && !e.target.closest(
 window.addEventListener("keydown", (e) => { if (e.code === "Escape" && SK.id && !screens.skins.hidden) { e.preventDefault(); closeSkins(); } });
 // the cards' models are redrawn when the sheet changes size (a phone turned)
 if (window.ResizeObserver) new ResizeObserver(() => { if (SK.id) skDrawCards(); }).observe($("skSheet"));
+/* ===================== Potatalities and Pommes on this device: the alternate KO pages you own and use, WATCH, the CPU's teaser (UI only) =====================
+   Pommes are the game's premium currency. They live on the server only (pommes.js: the account file's `pm` part, which no phone save can change):
+   this file keeps a copy of what the server last said (KO_KEY: whose account, the balance, the pages owned, and which of them you switched off),
+   asks again when the Shop opens or you sign in, and sends a buy (`pmb`) that the server checks and pays. Nothing here can add Pommes, and
+   chips are never sold for Pommes. Until payments exist (PR 2) the server says buy: false and the Shop shows the packs as Coming soon.
+   A Potatality is MANGA[id].alt (ui/manga.js plays it, game/manga/<id>.js draws it). Which page a KO plays is koAltFor(winner, loser) (finisher.js):
+   - your own fighter: you own its page and haven't switched it off (a page is on once bought);
+   - a friend's online 1v1 or boss partner: his presence says so (ko: [fighter ids], beside the Glaze's gz; an older page sends none);
+   - a CPU that beats you in an offline 1v1: one match in four, by the match's seed (the teaser), and the results offer its page (match.koTease);
+   - never against a boss or as one, never in a replay, the tutorial, the first fight's hints or a Combo trial, never for anybody else's seat in a 2v2.
+   WATCH (koDemo): the match screen with no match in it: your fighter and a dummy on the stage, the simulation stopped, the page plays at once; no counts,
+   no chips, no mastery (finisher.js skips masteryPage for match.demo), and its end goes back to the Shop on that fighter's card. */
+const KO_KEY = "potatobrawl.pm.v1";
+const KO_PRICE = 300, KO_EUR = "€2.99";   // one page; the server has its own price table (pommes.js) and is the one that counts
+// one Potatality per fighter (Fable's design, Project files step8/fable-design.md): its name and the sound word on its Shop card
+const KO_PAGES = {
+  dragon: { name: "Jacket Potato", word: "FWOOM" },
+  phoenix: { name: "Well Done", word: "DING" },
+  wizard: { name: "Crisp-tal Ball", word: "KRISSH" },
+  alchemist: { name: "Mashed", word: "GLUG" },
+  odin: { name: "Frozen Fries", word: "BRRR" },
+  samurai: { name: "Hasselback", word: "SHING" },
+  gunslinger: { name: "Tater Tots", word: "BLAM" },
+  reaper: { name: "Rest in Peel", word: "SHHHK" },
+};
+// code: the account the copy belongs to (another account on this device sees none of it); off: { fighterId: 1 } pages switched off on this device
+const KO = { code: "", bal: 0, own: [], off: {}, buy: false, t: 0, askT: 0, busy: "", why: "", demo: "", back: null };
+// a page exists in this copy of the game
+const koHas = (id) => !!(KO_PAGES[id] && MANGA[id] && MANGA[id].alt);
+const koMine = () => !!KO.code && KO.code === ACCT.code;
+const koOwn = (id) => koMine() && KO.own.includes(id);
+const koOn = (id) => koOwn(id) && koHas(id) && !KO.off[id];
+const koBal = () => (koMine() ? KO.bal : 0);
+
+(function koLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KO_KEY) || "null");
+    if (s && typeof s === "object") {
+      KO.code = typeof s.code === "string" ? s.code : "";
+      KO.bal = Number.isSafeInteger(s.bal) ? s.bal : 0;
+      KO.own = Array.isArray(s.own) ? s.own.filter((id) => KO_PAGES[id]) : [];
+      if (s.off && typeof s.off === "object") for (const id in s.off) if (KO_PAGES[id] && s.off[id]) KO.off[id] = 1;
+      KO.t = +s.t || 0;
+    }
+  } catch (e) { /* storage unavailable: the server's answer lasts until the page closes */ }
+})();
+function koSave() {
+  try { localStorage.setItem(KO_KEY, JSON.stringify({ code: KO.code, bal: KO.bal, own: KO.own, off: KO.off, t: KO.t })); } catch (e) { /* full or blocked */ }
+}
+// switch a page you own on or off for its fighter (the Shop's USE)
+function koUse(id, on) {
+  if (!koOwn(id)) return;
+  if (on) delete KO.off[id]; else KO.off[id] = 1;
+  koSave(); koRefresh();
+}
+// the Shop and anything else showing Pommes follow every change (ui/shop.js draws the KO PAGES section)
+function koRefresh() { if (typeof shopKoRender === "function") shopKoRender(); }
+
+/* ----- the server (the Quick match connection, signed in with the sync code; net-ws.js passes pm-* to its listeners) ----- */
+function koBoot() {   // qmBoot (ui/quick.js), once
+  if (!qmOn()) return;
+  window.__blQuick.on(koMsg);
+  window.__blKo = KO;   // tests read it
+}
+// ask for the balance and the pages (the Shop opening, signing in); at most every 5 s unless forced
+function koAsk(force) {
+  if (!qmOn() || !QM.conn || !ACCT.code) return;
+  if (!QM.authed) { qmAuth(); return; }   // koMsg asks once signed in
+  const now = Date.now();
+  if (!force && now - KO.askT < 5000) return;
+  KO.askT = now;
+  window.__blQuick.send({ t: "pm" });
+}
+const koClean = (l) => (Array.isArray(l) ? [...new Set(l.filter((id) => typeof id === "string" && KO_PAGES[id]))] : []);
+function koGot(m) {
+  if (!ACCT.code || !QM.authed) return;
+  if (KO.code !== ACCT.code) KO.off = {};   // another account's switches don't carry over
+  KO.code = ACCT.code; KO.bal = Number.isSafeInteger(m.bal) ? m.bal : 0; KO.own = koClean(m.own); KO.buy = !!m.buy; KO.t = Date.now();
+  koSave();
+}
+function koMsg(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.t === "me") { if (!m.err) koAsk(true); }
+  else if (m.t === "pm-st") { koGot(m); koRefresh(); }
+  else if (m.t === "pm-ok") {
+    const had = koMine() ? KO.own.slice() : [];
+    koGot(m);
+    for (const id of KO.own) if (!had.includes(id)) delete KO.off[id];   // a page you just bought is on
+    koSave();
+    KO.busy = ""; KO.why = ""; koRefresh();
+  }
+  else if (m.t === "pm-no") {
+    KO.busy = ""; KO.why = m.why === "short" ? "short" : m.why === "own" ? "own" : m.why === "acct" ? "acct" : "fail";
+    if (m.why === "acct") { QM.authed = false; qmAuth(); }   // signed out (the server restarted): sign in again; the Shop says to try again
+    if (Number.isSafeInteger(m.bal) && koMine()) { KO.bal = m.bal; koSave(); }
+    koRefresh();
+  }
+}
+// spend Pommes on a fighter's page: the server checks the price, the balance and that you don't own it yet. false when it can't even be asked.
+function koBuy(id) {
+  if (!koHas(id) || koOwn(id) || KO.busy || !koMine() || !qmOn() || !QM.conn || !QM.authed) return false;
+  if (KO.bal < KO_PRICE) { KO.why = "short"; koRefresh(); return false; }
+  KO.busy = id; KO.why = "";
+  window.__blQuick.send({ t: "pmb", item: "ko:" + id });
+  koRefresh();
+  return true;
+}
+
+/* ----- which page a KO plays (finisher.js finStart) ----- */
+// online: the pages you have on, for a friend's phone (ko: [fighter ids]); a friend's list from his presence
+function koPres() { return koMine() ? KO.own.filter((id) => koOn(id)) : []; }
+function koFrom(pr) { return koClean(pr && pr.ko).filter((id) => koHas(id)); }
+// the teaser: one offline match in four, from the match's seed (the same match always says the same)
+function koTease(g) { const h = Math.imul(((g && g.br) >>> 0) ^ 0x9e3779b9, 2654435761) >>> 0; return (h >>> 9) % 4 === 0; }
+function koAltFor(W, Lf) {
+  if (!match || !W || !Lf || W.spec.boss || Lf.spec.boss || !koHas(W.spec.id)) return false;
+  if (match.demo) return KO.demo === W.spec.id;
+  if (match.rp || match.tutorial || match.trial || match.first) return false;
+  if (W.slot === meSlot) return koOn(W.spec.id) || window.__blKoAlt === true;   // __blKoAlt: the tests (pwmanga.py --alt) play your page without owning it
+  if (match.online) return !match.tb && Array.isArray(match.koOpp) && match.koOpp.includes(W.spec.id);   // a 2v2 shows only your own
+  if (G && G.fighters.length === 2 && Lf.slot === meSlot && koTease(G)) { match.koTease = W.spec.id; return true; }   // a CPU beat you: its page, and the results say where it is
+  return false;
+}
+
+/* ----- WATCH: the page on a dummy, then back to the Shop ----- */
+function koDemoOk(id) { return koHas(id) && mode === "menu" && !FIN.on && !(qmOn() && qmSearching()) && NET.phase === "idle"; }
+function koDemo(id) {
+  if (!koDemoOk(id)) return false;
+  Sfx.init();
+  const me = FIG[id], i = FIGHTERS.indexOf(me), opp = FIGHTERS[(i + 3) % FIGHTERS.length], pal = me.palettes[palIdx(id)] || me.palettes[0];
+  modal("account", false);
+  G = newGame({ seed: 7, players: [{ spec: me, pal }, { spec: opp, pal: opp.palettes[0] }], stocks: 1, time: 0, countdown: 0, map: 0 });
+  G.phase = "over";   // the simulation stands still under the page (core.js step returns at once)
+  const a = G.fighters[0], b = G.fighters[1];
+  a.x = -60; a.facing = 1; b.x = 70; b.facing = -1;
+  match = { demo: true, ranked: false, d: -1, level: "", bot: makeBot(-1) }; meSlot = 0;
+  KO.demo = id; KO.back = id;
+  mode = "match"; paused = false; lastCount = 0;
+  show(null); hideBanner(); $("hud").hidden = true; $("ctl").hidden = true; releaseTouch();
+  fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
+  resize(); camStep(G, true);
+  FIN.pend = { type: "lethal", final: true, slot: 1, by: 0, mv: "heavy", fin: false, dirx: 0.8, diry: -0.6, x: b.x, y: b.y };
+  finStart(G);
+  if (!FIN.on) { koDemoEnd(); return false; }
+  FIN.finish = koDemoEnd;   // finEnd calls it when the page ends or is skipped
+  return true;
+}
+function koDemoEnd() {
+  finStop();
+  const id = KO.back;
+  KO.demo = ""; KO.back = null;
+  mode = "menu"; paused = false; G = null; match = null; meSlot = 0;
+  $("hud").hidden = true; $("ctl").hidden = true; hideBanner();
+  clearTrails(); fx.length = 0; sfx.length = 0;
+  renderMenu(); show("menu"); resize();
+  openAccount("h");
+  if (id && typeof shopKoFocus === "function") shopKoFocus(id);   // ui/shop.js: back on that fighter's card
+}
 /* ===================== the Shop: the fourth Account tab, where chips are spent on what the game draws itself (UI only, never in the simulation) =====================
    Reached by the Shop tab, or by a tap on the chip coin on the start page (acct.js openAccount("h")). Top: the balance and where chips come from.
    Nameplates: the plate behind your name on the start page, in the Profile and on the results (css/93-shop.css has the eight looks). Ink is free and
@@ -31819,7 +32277,7 @@ async function netHost() {
     NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return;
   }
   if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
-  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres() });   // gz: your glazed skins (ui/glaze.js)
+  else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres(), ko: koPres() });   // gz: your glazed skins (ui/glaze.js); ko: your Potatalities (ui/kopages.js)
   lobbyPresence(); renderOnline();
 }
 async function netJoin(code) {
@@ -31834,7 +32292,7 @@ async function netJoin(code) {
   renderOnline();
   try { await openMatchRoom(code); }
   catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
-  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres() });
+  namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres(), ko: koPres() });
   if (NET.invite === code) NET.invite = null;
   lobbyPresence(); renderOnline();
 }
@@ -31960,6 +32418,7 @@ function startOnlineMatch(st) {
   { // your friend's glaze, read from his presence (ui/glaze.js); yours comes from enterMatchUI
     const o = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null, f = G.fighters[1 - meSlot];
     if (f) glazeMark(f, glazeFrom(o && o.presence, f));
+    match.koOpp = koFrom(o && o.presence);   // his Potatalities (ui/kopages.js)
   }
   resolveOppName();
 }
@@ -34945,6 +35404,7 @@ function qmBoot() {   // loop.js, before the first menu
   netInit().then(() => { if (NET.room) NET.room.onPeers(qmPeers); qmRefresh(); });   // whether accounts are on is asked when Quick match opens (quickOpen)
   document.addEventListener("visibilitychange", qmVis);
   vcBoot();   // ui/vscpu.js: Ranked vs CPU's messages
+  koBoot();   // ui/kopages.js: Pommes and the Potatalities you own
 }
 function qmAuth() {
   if (!qmOn() || !ACCT.code || !QM.conn || QM.authing || QM.authed || QM.acct === "off" || QM.acct === "unknown") return;
@@ -35103,7 +35563,7 @@ async function qmJoin(m) {
   try { await openMatchRoom(m.room); }
   catch (e) { return; }   // the server calls the match off (qm-off) and the search goes on
   if (NET.mrCode !== m.room) return;
-  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js)
+  namedPresence({ role: m.role, f: m.f[me], pi: m.p[me], rd: 0, gz: glazePres(), ko: koPres() });   // gz: your glazed skins, drawn on the other phone (ui/glaze.js); ko: your Potatalities (ui/kopages.js)
 }
 function qmChime() { Sfx.tone(784, 784, 0.12, "triangle", 0.08); Sfx.at(0.13, 1175, 1175, 0.22, "triangle", 0.08); Sfx.at(0.06, 110, 40, 0.4, "sine", 0.45); }
 // over a running CPU warm-up: the fight freezes under PLAYER FOUND! and a 3·2·1 (qmTick), then ends with no result

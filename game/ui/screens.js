@@ -562,7 +562,7 @@ function showResults(R) {
     cntEnd(false, R);   // ui/counter.js
     if (!R.forfeit && !R.left && !R.lost) markPlayed();   // base.js: a match that ran to its end
   }
-  const ult = !!FIN.ulti;   // the KO hit was an Ultimate (finisher.js); read before finStop
+  const ult = !!FIN.ulti, alt = !!FIN.alt;   // the KO hit was an Ultimate / the page a Potatality (finisher.js); read before finStop
   finStop();
   mode = "result"; paused = false;
   modal("pause", false); modal("help", false); hideBanner();
@@ -594,7 +594,7 @@ function showResults(R) {
   masteryResults(R, !!fb && won && !R.mateFin, ult);   // ui/mastery.js: the XP, the level and the row under the rank card (R.mateFin: your partner's KO page)
   const fin = $("rFin");
   fin.hidden = !(fb && won);
-  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
+  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : alt ? "Potatality" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
   if (!pick.hidden) buildNextPick();

@@ -19,7 +19,17 @@
    page panel from mgSplashPanel({ from, paper, cam, draw, ... }) at MT.SPLASH. Panel fields added for this: opaque (the panel covers the whole page once it has
    slid in, so the panels below it are no longer drawn) and before(c, t, pn) (called once, on the first frame the panel is drawn, just before it is: c holds the
    page so far, which the Samurai copies to cut it into slabs). A script may also define end() (called when the page ends or is skipped, to free its own canvases).
-   The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL. */
+   The gold colours are MG_GOLD (lettering, third impact frame, the strike word), MG_GOLD_D (strokes, the misprint ghost), MG_GOLD_PALE (splash paper), MG_GOLD_SEAL.
+   POTATALITIES (step 8; design: Project files step8/fable-design.md). A fighter's second KO page, bought with Pommes (ui/kopages.js), is MANGA[id].alt: a full script
+   like an Ultimate cut (usually Object.assign({}, S_, {...})) that keeps the page up to the strike and ends in a food gag. finisher.js sets FIN.alt (koAltFor: your own
+   choice, a friend's from his presence, a CPU's teaser) and the engine plays .alt on the long timeline MT_U, unless the KO is an Ultimate (that keeps its own page).
+   MG.alt = true; the card's sub-line reads "POTATALITY: <name>" in MG_POTA. What the engine adds to every Potatality, so the scripts don't:
+   - from MT.SPLASH the loser is in the food: nothing of the launch is drawn over the page any more (the loser over the page, the KO beam and its bits);
+   - the shared exit (mgPop): at MT.POP (between the seal and the fade) the food bursts (a white star-burst and POP!) and the loser springs out of it as a
+     plain potato, dazed, hops and lands, drawn over the page in the "after" panel's camera. The script says where its food is: food() -> { x, y, r, y0?, lx? }
+     in world units of its "after" panel (x: the food's middle; y: the ground; r: its size; y0: where the hop starts, default a little above the ground;
+     lx: where the loser lands, default a little in front), and stops drawing the food once mgPopped(t).
+   An alt script that throws while it starts is replaced by the fighter's normal page (mangaStart); one that throws later falls back like any page. */
 
 /* ===================== B13: the cinema sound kit (Web Audio synth, one compressed bus) ===================== */
 const Cin = {
@@ -120,13 +130,15 @@ const MANGA = {};   // MANGA[fighter id] = script (game/manga/<id>.js, spliced i
 // ms after the final hit. FREEZE: the picture stops (the loser has left the shot by 520, so the picture is taken while it is still in it); INKED: the ink is down.
 // Two tables: MT_N (every normal page, and the generic Ultimate layer on a page without its own Ultimate cut, 4.7 s) and MT_U (a page with its own Ultimate cut,
 // 5.9 s: everything from the aftermath on is shifted by U = 1200 and the splash panel sits at 3250). mangaStart copies the right one into MT before the page is built.
-const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, FADE: 4400, END: 4700 };
-const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, FADE: 5600, END: 5900 };
+// POP: a Potatality's shared exit (mgPop), on the long timeline only.
+const MT_N = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 1e9, AFTER: 3500, CARD: 3650, SEAL: 3850, POP: 1e9, FADE: 4400, END: 4700 };
+const MT_U = { FREEZE: 300, INKED: 520, SKIP: 1000, LOOK: 1250, INSET: 2000, STRIKE: 2350, DROP: 2780, HIT: 2900, SPLASH: 3250, AFTER: 4700, CARD: 4850, SEAL: 5050, POP: 5250, FADE: 5600, END: 5900 };
 const MT = Object.assign({}, MT_N);
 const MG_BOSS_SC = 0.7, MG_BOX = [-100, -125, 100, 14], MG_BOSS_BOX = [-180, -215, 180, 14];   // a boss is much bigger (horns at -157, a long fork): his own box, and he is drawn at MG_BOSS_SC so the panels framed for a fighter hold him
 const MG_GOLD = "#f3c84a", MG_GOLD_D = "#b8860b", MG_GOLD_PALE = "#fff2c2", MG_GOLD_SEAL = "#e0b43a";   // the Ultimate's gold: it joins the page's accent, never replaces it
+const MG_POTA = "#ff8a5c";   // a Potatality's card line (the Pommes cone's sunset red, lighter so it reads on the ink band)
 const MG_PAPER = "#f1ece2", MG_INK = "#0b0a12", MG_CTX = CanvasRenderingContext2D.prototype, MG_GRAD = CanvasGradient.prototype;
-const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
+const MG = { on: false, ulti: false, ultiCut: false, ultiName: "", alt: false, script: null, snap: null, ink: null, layer: null, lc: null, panels: [], words: [], tiles: new Map(), disc: null, discW: null, discC: {}, strip: null, stripW: null,
   snapPending: false, tintK: 0.56, ix: 0, iy: 0, broke: false, pt: 0, stat: { n: 0, sum: 0, max: 0, last: 0 }, reduced: false, slow: false, fixed: false, avg: 0, cw: 0, ch: 0, m: 8, bw: 4, page: null, cards: null, flash: [] };
 const mgClock = () => (window.__realNow ? window.__realNow() : performance.now());   // the tests step performance.now themselves; this one stays real
 function mgRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -240,6 +252,7 @@ function mgToneFill(c, poly, size, cover, drift) {
   c.save(); c.fillStyle = pat; c.setTransform(1, 0, 0, 1, 0, 0);
   c.beginPath(); poly.forEach(([x, y], i) => (i ? c.lineTo(x * DPR, y * DPR) : c.moveTo(x * DPR, y * DPR))); c.closePath(); c.fill(); c.restore();
 }
+const lay0port = () => !!(MG.lay && MG.lay.port);
 const mgPoly = (c, poly) => { c.beginPath(); poly.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); };
 
 /* ---------- lettering: the sound words, drawn once into their own canvas ---------- */
@@ -544,6 +557,7 @@ function mgSnapshot() {
   MG.panels = [mgFirstPanel()].concat(S.panels(MG.lay)).map((dd, i) => mgPanel(dd, i));
   MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
   MG.words = mgWordDefs(S).map((w, i) => Object.assign({ seed: 91 + i * 17 }, w));
+  if (MG.alt && S.food && MG.byId.after) MG.words.push(Object.assign(mgPopWord(), lay0port() ? { mul: Math.min(1, L.gw * 0.9 / L.gh) } : {}));   // a Potatality's exit word
   if (MG.ulti) for (const w of MG.words) if (w.t0 >= FIN.hit && !w.fill) w.fill = MG_GOLD;   // the Ultimate's strike words are gold unless the page colours them itself
   if (S.build) S.build(MG.lay);
   MG.todo = [
@@ -559,14 +573,15 @@ function mgWork(t) {
 }
 
 /* ---------- start, tick, draw, end ---------- */
-function mangaStart(g) {
+function mangaStart(g, plain) {
   const W = g.fighters[FIN.w], base = MANGA[W.spec.id];
   if (!base) return false;
   // an Ultimate KO (FIN.ulti, from the lethal event): a page with its own Ultimate cut plays that script on the long timeline, the others play their normal page plus the gold layer
-  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, S = cut ? base.ulti : base;
+  // a Potatality (FIN.alt, finisher.js) plays MANGA[id].alt on the long timeline; an Ultimate KO keeps the Ultimate's page. plain: the alt failed to start, play the normal page
+  const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, alt = !ulti && !plain && !!FIN.alt && !!base.alt, S = cut ? base.ulti : alt ? base.alt : base;
   try {
-    Object.assign(MT, cut ? MT_U : MT_N);
-    MG.ulti = ulti; MG.ultiCut = cut; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
+    Object.assign(MT, cut || alt ? MT_U : MT_N);
+    MG.ulti = ulti; MG.ultiCut = cut; MG.alt = alt; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -576,15 +591,19 @@ function mangaStart(g) {
     if (ulti) FIN.launch = Math.max(FIN.launch, FIN.hit + 150);   // the launch waits for the third (gold) impact frame
     FIN.endT = MT.END;   // (read by the tests: the page's length)
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
-    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
+    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : alt ? `Potatality: ${S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
     FIN.mgStat = MG.stat;
     for (const p of FIN.P) if (p) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
     return true;
-  } catch (e) { MG.on = false; mgWarn(e); return false; }
+  } catch (e) {
+    MG.on = false; mgWarn(e);
+    if (alt) { try { if (S.end) S.end(); } catch (x) { /* a script that cannot tidy up */ } return mangaStart(g, true); }   // a Potatality that can't start: the fighter's normal page
+    return false;
+  }
 }
 // the puppets' skeletons come from the script (MG.pt is the page time of the picture being drawn: smears draw earlier moments)
-function mgPose(p, P, sk) { return MG.script.pose(P, sk, MG.pt, p.finRole, p) || null; }
+function mgPose(p, P, sk) { return MG.alt && p.finRole === "l" && MG.pt >= MT.POP ? mgPopPose(P, sk, MG.pt) : MG.script.pose(P, sk, MG.pt, p.finRole, p) || null; }
 function mangaTick(g, t, k) {
   if (t >= MT.END) { finEnd(); return g; }
   if (t < MT.FREEZE) return g;
@@ -607,6 +626,7 @@ function mangaTick(g, t, k) {
     const lf = Math.max(0, (t - FIN.launch) / FMS), trav = finTrav(lf);
     finLoser(Lp, t, lf, trav);
     if (S.after) S.after(t);
+    if (MG.alt && t >= MT.SPLASH) { if (FIN.beam && FIN.beam.t0 > -1e5) FIN.beam.t0 = -1e6; FIN.parts.length = 0; FIN.trail.length = 0; }   // a Potatality: the loser is in the food now
     mgBreak(t);
     W.st++; Lp.st++;
     for (const p of FIN.parts) {
@@ -681,7 +701,7 @@ function mangaBail(e) {
   fxHitOff(); try { cam.sx = cam.sy = 0; } catch (x) { /* ok */ }
 }
 function mangaEnd() {
-  FIN.manga = false; MG.on = false;
+  FIN.manga = false; MG.on = false; MG.alt = false;
   try { if (MG.script && MG.script.end) MG.script.end(); } catch (e) { /* a script that cannot tidy up */ }
   for (const pn of MG.panels) pn.cache = null;
   MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = MG.l2 = MG.l2c = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = []; MG.todo = []; MG.inkS = null; MG.cards = null;
@@ -707,6 +727,11 @@ function mgCues(t) {
   if (MG.ulti) cueOnce("gold", H0 + 100, () => Cin.go(() => { Cin.taiko(0.6); Cin.chime(1568); }));   // the third impact frame, the gold one
   if (MG.cards && MG.cards.mate) cueOnce("mate", MT.CARD + 200, () => Cin.go(() => Cin.stamp(0.5)));   // the 2v2 partner sticker lands
   cueOnce("seal", MT.SEAL, () => Cin.go(() => { Cin.stamp(1.2); Cin.sub(70, 34, 0.3, 0.4); if (MG.ulti) Cin.chime(1568); }));
+  if (MG.alt) {   // the shared exit: a cork pop, the hop's rising boing, the landing
+    cueOnce("pop", MT.POP, () => Cin.go(() => { Cin._osc("sine", 380, 1500, 0.08, 0.22, 0.002); Cin._noise(0.07, 0.3, 2400, 6400, "bandpass", 1.4); }));
+    cueOnce("popUp", MT.POP + 40, () => Cin.go(() => Cin._osc("triangle", 260, 620, 0.2, 0.06, 0.01)));
+    cueOnce("popLand", MT.POP + MG_POP.land, () => Cin.go(() => { Cin._osc("sine", 160, 90, 0.16, 0.18, 0.003); Cin._osc("triangle", 330, 300, 0.22, 0.04, 0.01, 0.04); }));
+  }
   if (S.cues) S.cues(t);
 }
 
@@ -722,9 +747,11 @@ function mangaOverlay(o, tk) {
     }
     const S = MG.script, fl = (1 - fe(MT.FREEZE, MT.FREEZE + 130, t)) * (MG.reduced ? 0.25 : 0.9);
     if (S.over) S.over(o, t);
+    const inFood = MG.alt && t >= MT.SPLASH;   // a Potatality: from the splash on nothing of the launch is drawn
+    if (!inFood) mgLoserOver(o, t);
+    if (t >= FIN.launch && !inFood) finScene(o, t);
+    mgPop(o, t);
     for (const w of MG.words) mgWordDraw(o, w, t);
-    mgLoserOver(o, t);
-    if (t >= FIN.launch) finScene(o, t);
     mgBeam(o, t);
     mgImpact(o, t);
     for (const f of MG.flash) { const a = f.a * (1 - fe(f.t0, f.t0 + f.dur, t)); if (t >= f.t0 && a > 0.01) { o.fillStyle = `rgba(255,252,244,${a.toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); } }
@@ -801,9 +828,57 @@ function mgImpact(o, t) {
   }
 }
 
+/* ---------- a Potatality's shared exit: the food pops and the loser springs out of it as a plain potato ---------- */
+// ms after MT.POP: the burst, the top of the hop, the landing, the little bounce
+const MG_POP = { burst: 260, top: 170, land: 340, bounce: 420 };
+const mgPopped = (t) => MG.alt && t >= MT.POP + 40;   // a script stops drawing its food from here
+// the hop (world units of the "after" panel): from the food's top (F.y0, default a little above the ground) up, and down onto the ground beside it
+// (F.lx, default a little in front of it), with one small bounce
+function mgPopHop(F) {
+  const x0 = F.x, x1 = F.lx !== undefined ? F.lx : F.x + FIN.dir * F.r * 0.35, y0 = F.y0 !== undefined ? F.y0 : F.y - F.r * 0.35;
+  return { x0, x1, y0, ya: Math.min(y0, F.y) - F.r * 1.15 };
+}
+function mgPopAt(t) {
+  const F = MG.script.food(), H = mgPopHop(F), u = t - MT.POP, xm = H.x0 + (H.x1 - H.x0) * 0.3;
+  if (u < MG_POP.top) { const k = easeOut(u / MG_POP.top); return [lerp(H.x0, xm, k), lerp(H.y0, H.ya, k)]; }
+  if (u < MG_POP.land) { const k = (u - MG_POP.top) / (MG_POP.land - MG_POP.top); return [lerp(xm, H.x1, k), lerp(H.ya, F.y, k * k)]; }
+  return [H.x1, F.y - Math.sin(Math.PI * fe(MG_POP.land, MG_POP.bounce, u)) * F.r * 0.16];
+}
+// arms up and spiral eyes in the air, a wobble once down
+function mgPopPose(P, sk, t) {
+  const w = sk.w, leg = sk.leg, tor = sk.tor, u = t - MT.POP;
+  P.expr = "dazed"; P.mouth = u < MG_POP.land ? 1 : 0.3; P.spin = 0; P.exK = 1;
+  if (u < MG_POP.land) { P.lean = 0.12 * Math.sin(u * 0.03); return { hF: [w * 0.65, -leg - tor * 1.3], hB: [-w * 0.65, -leg - tor * 1.3], fF: [w * 0.4, -leg * 0.3], fB: [-w * 0.35, -leg * 0.2] }; }
+  P.lean = 0.1 * Math.sin((u - MG_POP.land) * 0.018) * (1 - fe(MG_POP.land, MG_POP.land + 360, u) * 0.6);
+  return { hF: [w * 0.78, -leg - tor * 0.45], hB: [-w * 0.78, -leg - tor * 0.45] };
+}
+function mgPop(o, t) {
+  const S = MG.script, pn = MG.byId.after;
+  if (!MG.alt || !pn || !S.food || t < MT.POP) return;
+  mgPlace(pn, t);
+  const F = S.food(), u = t - MT.POP, c0 = pn.sp(F.x, mgPopHop(F).y0 - F.r * 0.15), R = F.r * pn.z;
+  // the burst where the food was
+  const b = easeOut(Math.min(1, u / 90)) * (1 - fe(MG_POP.burst - 120, MG_POP.burst, u));
+  if (b > 0.02 && !MG.reduced) mgStarburst(o, c0[0], c0[1], R * (0.7 + 0.9 * b), 0.3);
+  else if (b > 0.02) { o.save(); o.globalAlpha = b; o.fillStyle = "#ffffff"; o.beginPath(); o.arc(c0[0], c0[1], R * 1.1, 0, Math.PI * 2); o.fill(); o.restore(); }
+  // the loser, plain again
+  const Lp = FIN.P[FIN.l];
+  if (!Lp) return;
+  const [x, y] = mgPopAt(t);
+  Lp.x = x; Lp.y = y; Lp.state = "fin"; Lp.flash = 0; Lp.facing = -FIN.dir;
+  o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
+  mgPuppet(o, pn, Lp, t, { free: true, halo: 2 });
+  o.restore();
+}
+// the POP! word (one of the page's words, so it is stamped and timed like the others)
+function mgPopWord() {
+  return { text: "POP!", t0: MT.POP + 20, t1: MT.FADE + 200, size: 0.13, rot: -0.12 * FIN.dir, jit: 0.14, seed: 4242,
+    at: () => { const pn = MG.byId.after, F = MG.script.food(); mgPlace(pn, MT.POP); const q = pn.sp(F.x - FIN.dir * F.r * 0.9, mgPopHop(F).ya - F.r * 0.6); return [q[0], q[1]]; } };
+}
+
 /* ---------- the title block: a slanted black band, the name in hand lettering, a screened accent strip, the red hanko K.O. seal ---------- */
 function mgCardPrep() {
-  const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold
+  const S = MG.script, W = FIN.P[FIN.w], accent = S.col, subCol = MG.ulti ? MG_GOLD : MG.alt ? MG_POTA : "#f1ece2";   // an Ultimate's sub-line ("ULTIMATE: <name>") is gold, a Potatality's sunset red
   if (!MG.cards) {
     const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), nm = W.spec.name.toUpperCase();
     MG.cards = { hh, name: mgWord(nm, { size: hh * 0.74, seed: 7, arc: 14, jit: 0.1, space: 0.04 }), win: mgWord(finWinWord(W), { size: hh * 0.3, seed: 11, arc: 20, jit: 0.1, fill: accent }),
