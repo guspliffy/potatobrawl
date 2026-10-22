@@ -695,7 +695,10 @@ MANGA.samurai = (function () {
   // the splash: its height in world units (vh), the camera's centre from the loser (cx), the loser's scale (lsc), the ground's height (gy); the samurai: where he
   // stands (wx, wy: upright he is in front, nearer: his feet below the ground line and off the page), his scale, drawn over the loser (front)
   const hbLay = () => (L.portrait ? { vh: 290, cx: 20, wx: 52, lsc: 1.25, gy: 0.31, wy: 64, wsc: 1.4, front: true } : { vh: 140, cx: 34, wx: 78, lsc: 1.15, gy: 0.36, wy: 0, wsc: 1, front: false });
-  const hbPX = () => FIN.lx + FIN.dir * (far() - (L.portrait ? 60 : 72)), hbFS = () => (L.portrait ? 1 : 1.3);   // the plate in the aftermath, the food's scale
+  // the aftermath, wide: a wider still shot with the ground low, the samurai on the right, the hasselback big in the open middle, room on the left for the hop
+  // (the loser springs up from the plate and lands there, under the title band all the way: the band leaves about 145 of these units above the ground)
+  const HB_AW = { vh: 160, wy: -0.435 * 160, sam: 105, plate: 119, land: 101 };
+  const hbPX = () => FIN.lx + FIN.dir * (far() - (L.portrait ? 60 : HB_AW.plate)), hbFS = () => (L.portrait ? 1 : 2.4);   // the plate (the board's middle) in the aftermath, the food's scale
   // the splash's big puppets: grey only inside the box mgPuppet drew (greyPost greys a square 240 of his units wide, a lot of pixels at this size)
   const HB_WBOX = [-100, -112, 100, 14];
   function hbGreyBox(lc, X) {
@@ -880,12 +883,13 @@ MANGA.samurai = (function () {
     c.restore();
     c.strokeStyle = COL; c.lineWidth = lw * 1.3;   // jade chives
     for (const [dx, dy, a] of [[-9, -22.5, 0.6], [-2, -28.5, -0.4], [5, -27, 0.3], [11, -21, -0.7]]) { c.beginPath(); c.moveTo(cx + dx - Math.cos(a) * 1.6, dy - Math.sin(a) * 1.6); c.lineTo(cx + dx + Math.cos(a) * 1.6, dy + Math.sin(a) * 1.6); c.stroke(); }
-    if (!MG.slow) {   // steam
+    if (!MG.slow) {   // steam (wide, where the food is big, it rises less far: the title band is above it)
+      const sr = L.portrait ? 22 : 13, sn = L.portrait ? 8 : 5;
       c.strokeStyle = MG_INK; c.lineWidth = lw * 0.8;
       for (let i = 0; i < 3; i++) {
-        const sx = cx + (i - 1) * 9, ph = ((t - MT.AFTER) * 0.02 + i * 7) % 22;
-        c.globalAlpha = 0.7 * (1 - ph / 22);
-        c.beginPath(); for (let j = 0; j <= 8; j++) { const yy = -31 - ph - j * 1.9, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+        const sx = cx + (i - 1) * 9, ph = ((t - MT.AFTER) * 0.02 + i * 7) % sr;
+        c.globalAlpha = 0.7 * (1 - ph / sr);
+        c.beginPath(); for (let j = 0; j <= sn; j++) { const yy = -31 - ph - j * 1.9, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
       }
       c.globalAlpha = 1;
     }
@@ -917,7 +921,8 @@ MANGA.samurai = (function () {
       const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
       strike.freeze = strike.cover = MT.SPLASH;
       after.draw = hbDrawAfter;
-      after.cam = (t) => { const vh = (lay.port ? 120 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: wx_(t) - FIN.dir * (lay.port ? 34 : 28), wy: -0.4 * vh, vh }; };
+      after.cam = lay.port ? (t) => { const vh = 120 * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: wx_(t) - FIN.dir * 34, wy: -0.4 * vh, vh }; }
+        : (t) => ({ wx: wx_(t) - FIN.dir * HB_AW.sam, wy: HB_AW.wy, vh: HB_AW.vh });
       ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "t", paper: MG_PAPER, slide: MG.reduced ? 1 : 180,
         cam: () => { const Y = hbLay(); return { wx: FIN.lx + FIN.dir * Y.cx, wy: -Y.gy * Y.vh, vh: Y.vh }; },   // (still: the pictures it keeps stay where they were taken)
         draw: hbDrawSplash }));
@@ -938,7 +943,10 @@ MANGA.samurai = (function () {
       );
       return ws;
     },
-    food() { const x = hbPX() - FIN.dir * 4 * hbFS(), s = hbFS(); return { x, y: 0, r: 18 * s, y0: -16 * s, lx: x - FIN.dir * (L.portrait ? 24 : 36) }; },
+    food() {   // (wide: a low hop from the plate, so the loser and his weapon stay under the title band, into the open ground on the left)
+      const x = hbPX() - FIN.dir * 4 * hbFS(), s = hbFS();
+      return L.portrait ? { x, y: 0, r: 18 * s, y0: -16 * s, lx: x - FIN.dir * 24 } : { x, y: 0, r: 18, y0: 0, lx: x - FIN.dir * HB_AW.land };
+    },
     cues(t) {
       S_.cues(t);
       const D = FIN.dir;
