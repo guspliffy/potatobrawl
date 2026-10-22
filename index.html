@@ -20977,6 +20977,7 @@ function mgPopHop(F) {
 }
 function mgPopAt(t) {
   const F = MG.script.food(), H = mgPopHop(F), u = t - MT.POP, xm = H.x0 + (H.x1 - H.x0) * 0.3;
+  if (MG.reduced) return [H.x1, F.y];   // reduced motion: he is simply standing beside it
   if (u < MG_POP.top) { const k = easeOut(u / MG_POP.top); return [lerp(H.x0, xm, k), lerp(H.y0, H.ya, k)]; }
   if (u < MG_POP.land) { const k = (u - MG_POP.top) / (MG_POP.land - MG_POP.top); return [lerp(xm, H.x1, k), lerp(H.ya, F.y, k * k)]; }
   return [H.x1, F.y - Math.sin(Math.PI * fe(MG_POP.land, MG_POP.bounce, u)) * F.r * 0.16];
