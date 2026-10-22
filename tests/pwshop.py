@@ -452,7 +452,7 @@ async def ko_size(b, tag):
         except Exception:   # (kopages.js koDemo: the page did not start; shop.js then puts the Shop back and says so)
             errs.append(f'{tag}: WATCH does not play the Potatality; the top line says {await say()!r}')
         else:
-            need(await pg.evaluate("window.__blastline.fin.alt") is True, f'{tag}: WATCH plays the normal page, not the Potatality')
+            need(await pg.evaluate("window.__blastline.fin.alt") == 1, f'{tag}: WATCH plays the normal page, not the Potatality')
             need(not await shown(pg, '#scrAccount'), f'{tag}: the Account sheet stays under the page')
             await pg.wait_for_function("window.__blastline.fin.t > 1300", timeout=15000)
             await pg.screenshot(path=f'{OUT}/{tag}_14_ko_watch.png')
