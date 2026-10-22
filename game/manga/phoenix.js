@@ -9,13 +9,15 @@
    silhouette erased from the feet up, flakes along the launch direction), 3250 panel 5: the white page (a huge sun disc with 12 gold wedges, she stands wings full as a white
    silhouette with a gold edge, the ink bleeds back 3400-3800, a heap of ash with two eyes, ash falling), SUPERNOVA at 3600, 4700 panel 4 (the same aftermath, MT.AFTER + offset).
    Script fields: see game/manga/dragon.js. Everything here is prefixed phx / kept inside this closure.
-   POTATALITY: "Well Done" = MANGA.phoenix.alt (S_.alt, at the end; its helpers are prefixed wd), played on a normal KO when it is on (ui/kopages.js). */
+   POTATALITY: "Well Done" = MANGA.phoenix.alt (S_.alt, at the end; its helpers are prefixed wd), played on a normal KO when it is on (ui/kopages.js).
+   POTATALITY 2: "New Potatoes" = MANGA.phoenix.alt2 (S_.alt2, after it; its helpers are prefixed np), played when the second one is chosen (FIN.alt 2). */
 MANGA.phoenix = (function () {
   const COL = "#ff7a3d", MIDC = "#ffb45e", CORE = "#fff3c4", ASH = "#2c2933", ASH2 = "#57525f";
   const T = { LAUNCH: 2180, DIVE: 2650, LAND: 3000 };
   let spr = null, fth = [], spk = [], torn = false, topWY = -220, hitY = -64, cmt = null;
   let ult = false, ashF = [], inSplash = false;   // ult: this play is the Ultimate page (set by start())
   let pota = false;   // this play is the Potatality, "Well Done" (set by its start)
+  let pota2 = false;  // this play is the second Potatality, "New Potatoes" (set by its start)
   const SPL = () => MT.SPLASH || 3250;
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   const dirAng = (a) => (FIN.dir > 0 ? a : Math.PI - a);
@@ -563,7 +565,7 @@ MANGA.phoenix = (function () {
       ];
     },
     // the loser's stand-in is a copy of a doomed fighter, which draws it half see-through and blinking: here it is solid
-    start() { ult = false; pota = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
+    start() { ult = false; pota = false; pota2 = false; spr = null; fth = []; spk = []; ashF = []; inSplash = false; const Lp = L_(); if (Lp) Lp.doomed = false; },
     end() { spr = null; fth = []; spk = []; ashF = []; },
     build(lay) {
       const r = mgRng(31415), g = L.gw, h = L.gh, port = lay.port;
@@ -685,7 +687,7 @@ MANGA.phoenix = (function () {
           } else {
             x = f.x0 + Math.sin(s * f.w + f.ph) * f.sw; y = (((f.y0 + f.vy * s) % (gh + 60)) + gh + 60) % (gh + 60) - 30; a = fe(700, 1100, t) * 0.8;
           }
-          a *= (1 - fe(MT.AFTER + 500, MT.AFTER + 900, t)) * (pota ? 1 - fe(SPL(), SPL() + 250, t) : 1);   // (the Potatality's oven stays clear of them)
+          a *= (1 - fe(MT.AFTER + 500, MT.AFTER + 900, t)) * (pota || pota2 ? 1 - fe(SPL(), SPL() + 250, t) : 1);   // (the Potatalities' splashes stay clear of them)
           if (a < 0.02 || y < -30 || y > gh + 30 || x < -30 || x > gw + 30) continue;
           const sp_ = spr[f.kind], flip = 0.35 + 0.65 * Math.abs(Math.cos(s * f.w * 1.6 + f.ph));
           o.globalAlpha = a; o.save(); o.translate(x, y); o.rotate(f.tilt + Math.sin(s * f.w + f.ph) * 0.9); o.scale(f.sc, f.sc * flip);
@@ -695,7 +697,7 @@ MANGA.phoenix = (function () {
       }
       phxAshFlakes(o, t);
       if (t > FIN.launch && t < FIN.launch + 420) {
-        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (pota ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (pota || pota2 ? 1 - fe(MT.SPLASH - 100, MT.SPLASH, t) : 1);
         const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         mgSpeed(o, q[0] - Math.cos(ang) * len * 0.45, q[1] - Math.sin(ang) * len * 0.45, len, Math.min(L.gw, L.gh) * 0.34, ang, -(t - FIN.launch) * 1.4, 0.8 * a, false, 1);
@@ -1257,6 +1259,379 @@ MANGA.phoenix = (function () {
       cueOnce("wdEye", WD.EYE, () => Cin.go(() => Cin.tick(2900)));
       cueOnce("wdSizzle", MT.AFTER + 140, () => Cin.go(() => Cin._noise(0.7, 0.05, 3000, 5200, "highpass", 0.8)));
       cueOnce("wdBlink", 5000, () => Cin.go(() => Cin.tick(2900)));
+    },
+  });
+  /* ===================== the second Potatality, "New Potatoes" (MANGA.phoenix.alt2; design: Project files step8/fable-design-2.md §1.2) =====================
+     Rebirth up to the dive and the hit (the flight's speed lines are gone as the page turns). 3250 panel 5, the splash, slides up: the Solar Dive's flame ring,
+     0.8 of the short side, the loser curled up asleep in its middle, the Phoenix beside it (upright: hovering over it) with her wings of fire (FWOOSH over the ring).
+     3330-3590 the ring closes down to a point on the ground and the loser with it: poof, a grey ash heap with his eyes; two embers on it blink out; the camera
+     pushes in on the heap (upright, she comes down beside it). 3650 a sprout pops up out of the ash (boing), 3800 a second; 3890 a baby potato (the loser at
+     0.45, a dummy in its mouth) climbs out and 4030 sits down in front (plop); 4050 / 4100 two more peek out under the sprouts. 4180 the Phoenix wipes a tear
+     (aww), 4330-4650 she fans them with her wings. 4700 panel 4 as on Rebirth, a tiny watering can in her hand, a terracotta pot beside her with three babies
+     in it, the middle one with the loser's face; the engine's POP at 5250 leaves the pot in two halves, the soil spilled, one sprout.
+     Splash world: the ring's foot and the heap at (FIN.lx, 0). Every helper here is prefixed np. */
+  const NP = { RING: 3260, CLOSE0: 3400, POOF: 3590, PUSH: 3600, DOWN: 3620, SPR1: 3650, SPR2: 3800, CLIMB: 3890, OUT: 3950, PLOP: 4030, PEEK1: 4050, PEEK2: 4100, TEAR: 4180, FAN: 4330, FAN1: 4650 };
+  const NP_TAU = Math.PI * 2;
+  let npGc = null, npC = null, npIn = 0;   // npIn: 1 the Phoenix, 2 the loser curled in the ring, 3 the baby (their poses in the splash and the pot); npGc / npC: layout, colours
+  // the layout: the ring's radius, the loser's scale in it and a baby's, the heap's half-width and height, the Phoenix over / beside the ring and beside the heap,
+  // where the first baby sits, the camera before (c0) and after (c1) the push
+  function npGeo() {
+    if (npGc) return npGc;
+    const port = !!(MG.lay && MG.lay.port), D = FIN.dir, x = FIN.lx, Lp = L_(), lb = Lp.spec.boss ? MG_BOSS_SC : 1;
+    npGc = { port, x, Rr: 80, lb, lsc: Math.min(1.3, 96 / (Lp.s.h * lb)), bsc: 0.45, hw: 44, hh: 36,
+      wx0: port ? x - D * 16 : x - D * 150, wy0: port ? -250 : 0, wx1: port ? x - D * 24 : x - D * 150, wy1: port ? -128 : 0, bx: x - D * (port ? 54 : 50),
+      c0: port ? x - D * 4 : x - D * 40, c1: port ? x - D * 9 : x - D * 72, kz: port ? 1.6 : 1.45 };
+    return npGc;
+  }
+  function npCols() {
+    if (npC) return npC;
+    const pal = L_().pal || {}, body = wdHex(pal.body), ac = wdHex(wcol());
+    npC = { bud: phxMix(body, "#f1ece2", 0.25), budDk: phxMix(body, "#1d1418", 0.35), ring: ac, ringMid: phxMix(ac, "#ffd27a", 0.55), ringCore: phxMix(ac, "#fff6d8", 0.8),
+      glow: phxMix(ac, "#fff6d8", 0.75), leaf: "#7cc85a", leafDk: "#3f7d3a", pot: "#d0703f", potDk: "#9c4a26", potHi: "#e89a68", soil: "#4a2e1e", soilHi: "#6b4630",
+      can: "#7fb8a8", canDk: "#4d8a7a", water: "#9fd8f0", dummy: "#8fd0ea" };
+    return npC;
+  }
+  // the ring: its radius closes to nothing on its foot (it stays standing on the ground) from CLOSE0 to POOF
+  const npR = (t) => npGeo().Rr * (1 - easeIn(fe(NP.CLOSE0, NP.POOF, t)));
+  // the ash heap's top line: u from -1 to 1 across it, k its growth
+  const npHeapY = (u, k) => -npGeo().hh * k * Math.pow(Math.max(0, 1 - u * u), 0.7) * (1 + 0.06 * Math.sin(u * 7.3));
+  // the Phoenix: beside the ring (upright: hovering over it, bobbing), then on the ground beside the heap
+  function npWAt(t) {
+    const G = npGeo(), k = ease(fe(NP.DOWN, NP.DOWN + 200, t)), bob = G.port ? Math.sin(t * 0.008) * 3 : 0;
+    return [lerp(G.wx0, G.wx1, k), lerp(G.wy0, G.wy1, k) + bob];
+  }
+  function npAsW(t, fn) {
+    const W = W_(), ox = W.x, oy = W.y, q = npWAt(t); W.x = q[0]; W.y = q[1]; npIn = 1;
+    try { return fn(W); } finally { W.x = ox; W.y = oy; npIn = 0; }
+  }
+  // the loser drawn as a stand-in at (x, y) (feet) in a pose of this page (mode 2: curled in the ring, 3: a baby), s his scale
+  function npAsL(t, x, y, mode, fn) {
+    const Lp = L_(), sv = [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash];
+    Lp.x = x; Lp.y = y; Lp.state = "fin"; Lp.facing = -FIN.dir; Lp.flash = 0; npIn = mode;
+    try { return fn(Lp); } finally { Lp.x = sv[0]; Lp.y = sv[1]; Lp.state = sv[2]; Lp.facing = sv[3]; Lp.flash = sv[4]; npIn = 0; }
+  }
+  // her pose in the splash: hands out to the ring, then watching the heap, the tear wiped away, fanning them
+  function npPose(P, sk, t) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.wingUp = 0.5; P.flap = 0.1 + Math.sin(t * 0.006) * 0.06; P.mouth = 0; P.exK = 1;
+    if (t < NP.POOF) { P.expr = "rage"; P.lean = -0.08; return { hF: [w * 1.0, -leg - tor * 0.85], hB: [w * 0.55, -leg - tor * 0.95] }; }
+    if (t < NP.TEAR - 60) { P.expr = t < NP.SPR1 ? "terror" : undefined; P.exK = 0.6; P.lean = 0.06; P.mouth = t < NP.SPR1 ? 0.5 : 0; return { hF: [w * 0.8, -leg - tor * 0.4], hB: [-w * 0.7, -leg - tor * 0.4] }; }
+    if (t < NP.FAN) { const k = ease(fe(NP.TEAR - 60, NP.TEAR + 40, t)), sw = Math.sin((t - NP.TEAR) * 0.03) * 0.05 * k; P.expr = "calm"; P.lean = 0.1 * k; P.mouth = 0.2; return { hF: [w * lerp(0.8, 0.66, k), -leg - tor * lerp(0.4, 1.08 + sw, k)], hB: [-w * 0.6, -leg - tor * 0.5] }; }
+    const f = Math.sin((t - NP.FAN) * 0.03);
+    P.expr = "calm"; P.lean = 0.08 + 0.04 * f; P.mouth = 0.3;
+    return { hF: [w * (0.75 + 0.08 * f), -leg - tor * 0.45], hB: [-w * (0.75 + 0.08 * f), -leg - tor * 0.45] };
+  }
+  // the loser curled up asleep in the ring; a baby climbing out of the ash (arms up) and sitting
+  function npLPose(P, sk, t, mode) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.exK = 1; P.mouth = 0; P.spin = 0;
+    if (mode === 2) { P.expr = "calm"; P.lean = 0.32; P.crouch = 0.6; return { hF: [w * 0.5, -leg * 0.75], hB: [w * 0.15, -leg * 0.6], fF: [w * 0.4, -leg * 0.55], fB: [w * 0.1, -leg * 0.45] }; }
+    P.expr = ""; P.lean = t < NP.PLOP ? 0 : 0.05 * Math.sin(t * 0.012);
+    if (t < NP.PLOP) return { hF: [w * 0.75, -leg - tor * 1.25], hB: [-w * 0.7, -leg - tor * 1.2] };
+    P.crouch = 0.5;
+    return { hF: [w * 0.6, -leg - tor * 0.55], hB: [-w * 0.6, -leg - tor * 0.5], fF: [w * 0.55, -leg * 0.15], fB: [w * 0.15, -leg * 0.1] };
+  }
+  // phxLocal at a scale: the frame of a puppet drawn at sc s (feet, facing, spin, lean)
+  function npLocal(c, p, t, s) {
+    MG.pt = t;
+    const P = pose(p, mgTk(t));
+    c.translate(p.x, p.y); c.scale(p.facing * s, s);
+    if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(P.spin); c.translate(0, P.h * 0.5); }
+    c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    return P;
+  }
+  // the baby: the loser at a baby's size, a dummy in its mouth
+  function npBaby(c, pn, t, x, y, s) {
+    npAsL(t, x, y, 3, (Lp) => {
+      mgPuppet(c, pn, Lp, t, { sc: s, light: dirAng(-1.2), tint: 0.36 });
+      if (Lp.spec.look.build !== "potato" || Lp.spec.boss) return;
+      const C = npCols(), ss = s * npGeo().lb;
+      c.save(); pn.world(c);
+      const P = npLocal(c, Lp, t, ss), er = P.w * 0.1, mx = P.head[0], my = P.head[1] + er * 2.4, lw = Math.max(0.5, 1.8 / (pn.z * ss)), suck = 1 + 0.08 * Math.sin(t * 0.03);
+      c.strokeStyle = MG_INK; c.lineCap = "round";
+      c.beginPath(); c.arc(mx, my + er * 1.5, er * 0.95, 0, NP_TAU); c.lineWidth = lw * 2.6; c.stroke(); c.strokeStyle = C.dummy; c.lineWidth = lw * 1.2; c.stroke();
+      c.beginPath(); c.ellipse(mx, my, er * 2.0 * suck, er * 1.3 * suck, 0, 0, NP_TAU); c.fillStyle = C.dummy; c.fill(); c.strokeStyle = MG_INK; c.lineWidth = lw; c.stroke();
+      c.beginPath(); c.arc(mx, my, er * 0.6, 0, NP_TAU); c.fillStyle = "#ffffff"; c.fill(); c.stroke();
+      npSprout(c, P.head[0], -P.h + 3, 1.5, 1, lw, t);   // a new potato: a sprout on top
+      c.restore();
+    });
+  }
+  // a sprout: a stem and two leaves, k its growth (it pops up with a little boing)
+  function npSprout(c, x, y, s, k, lw, t) {
+    if (k <= 0.01) return;
+    const C = npCols(), D = FIN.dir, sw = Math.sin(t * 0.009 + x) * 0.08;
+    c.save(); c.translate(x, y); c.scale(s * D, s * k); c.rotate(sw); c.lineCap = "round"; c.lineJoin = "round";
+    c.strokeStyle = MG_INK; c.lineWidth = 3.4 + lw * 2 / s; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-1.5, -6, 0.5, -11); c.stroke();
+    c.strokeStyle = C.leafDk; c.lineWidth = 3.4; c.stroke();
+    for (const [lx, ly, a] of [[-5, -12, -0.5], [6, -13, 0.5]]) {
+      c.save(); c.translate(lx, ly); c.rotate(a);
+      c.beginPath(); c.ellipse(0, 0, 5.4, 2.6, 0, 0, NP_TAU); c.fillStyle = C.leaf; c.fill(); c.strokeStyle = MG_INK; c.lineWidth = lw / s; c.stroke();
+      c.restore();
+    }
+    c.restore();
+  }
+  // a baby's head peeking out (a little potato in his colour, round eyes, a sprout on top), r its size, o: { look -1..1, blink }
+  function npBud(c, x, y, r, lw, t, o) {
+    const C = npCols(), D = FIN.dir;
+    c.save(); c.translate(x, y); c.scale(D, 1); c.lineJoin = "round";
+    c.beginPath(); c.ellipse(0, 0, r, r * 1.08, 0, 0, NP_TAU); c.fillStyle = C.bud; c.fill(); c.strokeStyle = MG_INK; c.lineWidth = lw * 1.1; c.stroke();
+    c.save(); c.clip(); c.fillStyle = mgTile(5, 0.35); c.beginPath(); c.ellipse(r * 0.35, r * 0.25, r * 0.9, r * 1.0, 0, 0, NP_TAU); c.ellipse(r * 0.05, -r * 0.1, r * 0.95, r * 0.95, 0, 0, NP_TAU, true);
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fill(); c.restore(); c.restore();
+    const er = r * 0.26;
+    for (const sd of [-1, 1]) {
+      const ex = sd * r * 0.36 - r * 0.08, ey = -r * 0.05;
+      if (o.blink) { c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(ex - er, ey); c.quadraticCurveTo(ex, ey + er * 0.6, ex + er, ey); c.stroke(); continue; }
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, er * 0.85, er * 1.1, 0, 0, NP_TAU); c.fill(); c.lineWidth = lw * 0.7; c.stroke();
+      c.fillStyle = MG_INK; c.beginPath(); c.arc(ex + (o.look || 0) * er * 0.35, ey + er * 0.15, er * 0.5, 0, NP_TAU); c.fill();
+    }
+    c.fillStyle = "rgba(255,120,120,0.55)"; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * r * 0.55 - r * 0.08, r * 0.38, r * 0.2, r * 0.12, 0, 0, NP_TAU); c.fill(); }
+    c.restore();
+  }
+  // the ash heap: grey, dot-shaded underneath, his eyes in its front; o: { k growth, look, blink, e1, e2 (the embers, 0..1) }
+  function npHeap(c, pn, x, lw, t, o) {
+    const G = npGeo(), D = FIN.dir, k = o.k, hw = G.hw * (0.4 + 0.6 * k);
+    if (k <= 0.01) return;
+    const n = 18, line = (g) => { g.moveTo(x - hw, 0.5); for (let i = 1; i < n; i++) { const u = -1 + (2 * i) / n; g.lineTo(x + u * hw, npHeapY(u, k)); } g.lineTo(x + hw, 0.5); g.closePath(); };
+    c.beginPath(); line(c); c.fillStyle = ASH2; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = ASH; c.beginPath(); c.moveTo(x - hw * 1.1, 1); c.lineTo(x - hw * 1.1, -G.hh * k * 0.3); c.quadraticCurveTo(x, -G.hh * k * 0.42, x + hw * 1.1, -G.hh * k * 0.25); c.lineTo(x + hw * 1.1, 1); c.fill();
+    c.beginPath(); line(c); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(6, 0.3); c.fill();
+    c.restore();
+    c.beginPath(); line(c); c.strokeStyle = MG_INK; c.lineWidth = lw * 1.3; c.lineJoin = "round"; c.stroke();
+    c.fillStyle = MG_INK; for (const [fx, fy, fr] of [[-0.6, -0.25, 1.2], [0.45, -0.18, 1], [0.15, -0.72, 0.9], [0.7, -0.38, 0.8], [-0.3, -0.6, 0.8]]) { c.beginPath(); c.arc(x + D * fx * hw, fy * G.hh * k, fr, 0, NP_TAU); c.fill(); }
+    // two embers in the ash, glowing, that blink and go out
+    for (const [e, fx, fy] of [[o.e1, -0.38, -0.66], [o.e2, 0.5, -0.45]]) {
+      if (e <= 0.02) continue;
+      const ex = x + D * fx * hw, ey = fy * G.hh * k;
+      c.globalAlpha = e; c.beginPath(); c.arc(ex, ey, 3.4, 0, NP_TAU); c.fillStyle = npCols().ring; c.fill(); c.lineWidth = lw * 0.8; c.stroke();
+      c.beginPath(); c.arc(ex, ey, 1.5, 0, NP_TAU); c.fillStyle = CORE; c.fill(); c.globalAlpha = 1;
+    }
+    // his eyes, in the front of the heap (Odin keeps his patch)
+    const op = o.eyes, er = 5.6, patch = L_().spec.look.costume === "odin";
+    if (op > 0.02) for (const sd of [-1, 1]) {
+      const ex = x + sd * 10.5 - D * 2, ey = -G.hh * k * 0.42;
+      if (patch && sd === -D) { c.fillStyle = MG_INK; c.beginPath(); c.ellipse(ex, ey, er * 1.05, er, 0, 0, NP_TAU); c.fill(); continue; }
+      if (o.blink) { c.beginPath(); c.moveTo(ex - er, ey); c.quadraticCurveTo(ex, ey + er * 0.55, ex + er, ey); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke(); continue; }
+      c.beginPath(); c.ellipse(ex, ey, er, er * 1.2 * op, 0, 0, NP_TAU); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = lw * 0.9; c.strokeStyle = MG_INK; c.stroke();
+      c.beginPath(); c.arc(ex + (o.lx || 0) * er * 0.4, ey + (o.ly || 0) * er * 0.4, er * 0.5, 0, NP_TAU); c.fillStyle = MG_INK; c.fill();
+      c.beginPath(); c.arc(ex + (o.lx || 0) * er * 0.4 - er * 0.18, ey + (o.ly || 0) * er * 0.4 - er * 0.22, er * 0.17, 0, NP_TAU); c.fillStyle = "#ffffff"; c.fill();
+    }
+  }
+  // the Solar Dive ring: a thick band of fire (ink edge, accent, light, a white-hot line), its tongues licking outward, turning
+  function npRing(c, x, y, r, t, lw) {
+    if (r < 1) return;
+    const C = npCols(), th = Math.max(3, r * 0.17), n = MG.slow ? 12 : 18, k = r / npGeo().Rr;
+    c.lineJoin = "round";
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * NP_TAU + t * 0.0014, f = 0.7 + 0.3 * Math.sin(t * 0.03 + i * 2.1), h = (r * 0.24 + 4) * f * (i % 2 ? 1 : 0.75);
+      c.save(); c.translate(x + Math.cos(a) * (r + th * 0.35), y + Math.sin(a) * (r + th * 0.35)); c.rotate(a + Math.PI / 2);
+      phxTongue(c, 0, 0, h, th * 0.5, Math.sin(t * 0.02 + i) * 2 * k, C.ring, C.ringCore, lw * 0.9); c.restore();
+    }
+    c.beginPath(); c.arc(x, y, r + th / 2, 0, NP_TAU); c.arc(x, y, Math.max(0.3, r - th / 2), 0, NP_TAU, true); c.fillStyle = C.ring; c.fill("evenodd"); c.lineWidth = lw * 1.4; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.arc(x, y, r + th * 0.22, 0, NP_TAU); c.arc(x, y, Math.max(0.2, r - th * 0.22), 0, NP_TAU, true); c.fillStyle = C.ringMid; c.fill("evenodd");
+    c.beginPath(); c.arc(x, y, r, 0, NP_TAU); c.lineWidth = th * 0.16; c.strokeStyle = C.ringCore; c.stroke();
+  }
+  // a tear on her cheek, wiped away
+  function npTear(c, pn, t) {
+    const a = fe(NP.TEAR - 40, NP.TEAR, t) * (1 - fe(NP.TEAR + 260, NP.TEAR + 360, t));
+    if (a <= 0.02) return;
+    const W = W_(), D = FIN.dir, h = npAsW(t, (w) => pt(w, t, "head")), s = W.s.w * 0.07, y = h[1] + s * 1.5 + s * 3 * fe(NP.TEAR, NP.TEAR + 300, t), x = h[0] + D * s * 3.2, lw = Math.max(1.1, 3 / pn.z);
+    pn.world(c); c.globalAlpha = a;
+    c.beginPath(); c.moveTo(x, y - s * 1.4); c.quadraticCurveTo(x + s, y + s * 0.3, x, y + s * 0.85); c.quadraticCurveTo(x - s, y + s * 0.3, x, y - s * 1.4);
+    c.fillStyle = "#dff0ff"; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = MG_INK; c.stroke(); c.globalAlpha = 1;
+  }
+  // a breeze from her wings to the babies: three soft curved strokes
+  function npBreeze(c, t, ax, ay, bx, by, lw) {   // from her (a) toward the babies (b)
+    const a = fe(NP.FAN, NP.FAN + 60, t) * (1 - fe(NP.FAN1 - 80, NP.FAN1, t));
+    if (a <= 0.02) return;
+    const L0 = Math.hypot(bx - ax, by - ay) || 1, dx = (bx - ax) / L0, dy = (by - ay) / L0, nx = -dy, ny = dx, bend = FIN.dir * 5;
+    c.save(); c.globalAlpha = a * 0.8; c.strokeStyle = MG_INK; c.lineWidth = lw; c.lineCap = "round";
+    for (let i = 0; i < 3; i++) {
+      const ph = ((t - NP.FAN) * 0.0035 + i / 3) % 1, o = (i - 1) * 10 + Math.sin(ph * 6) * 2, xa = ax + dx * L0 * ph * 0.6 + nx * o, ya = ay + dy * L0 * ph * 0.6 + ny * o, xb = xa + dx * L0 * 0.32, yb = ya + dy * L0 * 0.32;
+      c.beginPath(); c.moveTo(xa, ya); c.quadraticCurveTo((xa + xb) / 2 + nx * bend, (ya + yb) / 2 + ny * bend, xb, yb); c.stroke();
+    }
+    c.restore();
+  }
+  function npDrawSplash(c, pn, t) {
+    const G = npGeo(), D = FIN.dir, x = G.x, lw = Math.max(1.1, 3 / pn.z), r = npR(t), cy = -r - 6 * (r / G.Rr), heat = 1 - fe(NP.POOF - 120, NP.POOF + 80, t);
+    pn.screen(c);
+    // behind: dots, a paper disc and the focus lines round the ring (orange while it burns), then round the heap
+    const q = pn.p(x, lerp(-G.Rr - 6, -14, fe(NP.CLOSE0, NP.PUSH + 120, t))), m = Math.min(pn.w, pn.h);
+    phxTone(c, pn, 10, 0.22, (g) => { g.moveTo(q[0] + m * 0.7, q[1]); g.arc(q[0], q[1], m * 0.7, 0, NP_TAU); }, [t * 0.001, -t * 0.001]);
+    c.beginPath(); c.arc(q[0], q[1], m * 0.52, 0, NP_TAU); c.fillStyle = MG_PAPER; c.fill();
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.5 + 0.3 * heat);
+    ground(c, pn, t, 0);
+    pn.world(c);
+    // the ring and the loser asleep in its middle, closing down to its foot
+    if (r > 0.5) {
+      c.beginPath(); c.arc(x, cy, r, 0, NP_TAU); c.fillStyle = npCols().glow; c.fill();
+      const s = G.lsc * (r / G.Rr);
+      if (s > 0.08) npAsL(t, x, cy + L_().s.h * 0.5 * s * G.lb, 2, (Lp) => mgPuppet(c, pn, Lp, t, { sc: s, light: dirAng(-1.2), tint: 0.36, wash: [COL, 0.22] }));
+      pn.world(c);
+      npRing(c, x, cy, r, t, lw);
+    }
+    // poof: a bank of smoke where the ring closed, a flash
+    const pk = fe(NP.POOF, NP.POOF + 300, t);
+    if (pk > 0 && pk < 1) { pn.world(c); dust(c, pn, x, pk, 1 - fe(NP.POOF + 120, NP.POOF + 330, t)); }
+    // the babies that peek out later are under the ash now: their sprouts pop up out of it (boing); then the first baby climbs out over the top
+    const hk = easeOut(fe(NP.POOF + 10, NP.POOF + 90, t));
+    pn.world(c);
+    for (const [t0, tp, u, look] of [[NP.SPR1, NP.PEEK1, -0.38, -0.6], [NP.SPR2, NP.PEEK2, 0.42, -1]]) {
+      if (t < t0) continue;
+      const bx = x + D * u * G.hw, sy = npHeapY(u, 1), rr = 7.5, up = easeOut(fe(tp, tp + 110, t)), hy = sy + rr * 1.3 - rr * 1.9 * up, b = fe(t0, t0 + 300, t), boing = easeOut(fe(t0, t0 + 90, t)) * (1 + 0.35 * Math.sin(Math.PI * fe(t0 + 60, t0 + 300, t)) * (1 - b));
+      if (up > 0.01) npBud(c, bx, hy, rr, lw, t, { look, blink: (t >= tp + 300 && t < tp + 370) });
+      npSprout(c, bx, hy - rr * 0.95, 0.8, boing, lw, t);
+    }
+    const climb = ease(fe(NP.CLIMB, NP.OUT, t)), bs = G.bsc;
+    if (t >= NP.CLIMB && t < NP.OUT) npBaby(c, pn, t, x + D * 2, npHeapY(0, 1) + 22 * (1 - climb), bs);
+    pn.world(c);
+    const e1 = t < 3700 ? (t > 3620 && ((t / 60) | 0) % 2 ? 0.35 : 1) : 1 - fe(3700, 3740, t), e2 = t < 3780 ? (t > 3700 && ((t / 60) | 0) % 2 ? 0.35 : 1) : 1 - fe(3780, 3820, t);
+    const lookX = t < NP.SPR2 ? -0.5 * D : t < NP.CLIMB ? 0.5 * D : t < NP.TEAR ? -0.9 * D : -0.6 * D, lookY = t >= NP.SPR1 && t < NP.CLIMB + 60 ? -0.8 : 0.2;
+    npHeap(c, pn, x, lw, t, { k: hk, eyes: fe(NP.POOF + 60, NP.POOF + 140, t), blink: (t >= 3720 && t < 3790) || (t >= 4300 && t < 4370), lx: lookX, ly: lookY, e1: hk * e1, e2: hk * e2 });
+    // the first baby: hops down in front and sits (plop)
+    if (t >= NP.OUT) {
+      const u = ease(fe(NP.OUT, NP.PLOP, t)), sx = lerp(x + D * 2, G.bx, u), sy = lerp(npHeapY(0, 1), 0, u) - 18 * 4 * u * (1 - u);
+      npBaby(c, pn, t, sx, sy, bs);
+    }
+    // the Phoenix: wings of fire while the ring burns, cooling as she watches; the tear, the fanning
+    const sp = t < NP.POOF ? 1 : t < NP.FAN ? 0.7 : 0.62 + 0.38 * Math.sin((t - NP.FAN) * 0.03), hot = 1 - 0.55 * fe(NP.POOF, NP.POOF + 400, t);
+    npAsW(t, () => phxWinner(c, pn, t, { light: dirAng(-1.2), spread: sp, heat: hot, flame: hot * (t < NP.POOF ? 1 : 0.4) }));
+    npTear(c, pn, t);
+    pn.world(c);
+    const wq = npWAt(t);
+    if (G.port) npBreeze(c, t, wq[0] + D * 8, wq[1] + 6, G.x - D * 12, -44, lw);
+    else npBreeze(c, t, wq[0] + D * 30, -34, G.bx, -26, lw);
+    const fl = 0.6 * (1 - fe(NP.POOF, NP.POOF + 110, t)) * (t >= NP.POOF ? 1 : 0);
+    if (fl > 0.01) { pn.screen(c); c.fillStyle = `rgba(255,252,244,${fl.toFixed(3)})`; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4); }
+  }
+  function npCam(t, pn) {
+    const G = npGeo(), push = MG.reduced ? 0 : ease(fe(NP.PUSH, NP.PUSH + 240, t)), z = 1 + (G.kz - 1) * push, v = (G.port ? (200 * pn.h) / pn.w : 200) / z;
+    return { wx: lerp(G.c0, G.c1, push), wy: (G.port ? 22 : 10) - v / 2, vh: v };
+  }
+  const npShake = (t) => { const a = 4 * fe(NP.POOF, NP.POOF + 15, t) * (1 - fe(NP.POOF + 40, NP.POOF + 240, t)); return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0]; };
+  // panel 4: Rebirth's aftermath, a tiny watering can in her hand sprinkling the pot beside her: three babies in the soil, the middle one with the loser's face;
+  // once he has popped out, the pot in two halves, the soil spilled, one sprout
+  const npPotX = () => FIN.lx - FIN.dir * 10 + FIN.dir * 60;
+  const NP_POT = { b: 19, t: 26, h: 24, rim: 6 };
+  function npPotHalf(c, sd, lw, C) {   // one half of the pot (sd -1 the near-left half, 1 the right), drawn about its own foot
+    const P = NP_POT;
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(sd * P.b, 0); c.lineTo(sd * P.t, -P.h); c.lineTo(sd * (P.t + 3), -P.h); c.lineTo(sd * (P.t + 3), -P.h - P.rim); c.lineTo(0, -P.h - P.rim);
+    for (let i = 1; i <= 4; i++) c.lineTo(sd * (i % 2 ? 2.5 : -1.5), -P.h - P.rim + (i * (P.h + P.rim)) / 4);
+    c.closePath(); c.fillStyle = C.pot; c.fill(); c.lineWidth = lw * 1.1; c.strokeStyle = MG_INK; c.stroke();
+  }
+  function npPot(c, pn, t, x, lw, popped) {
+    const C = npCols(), D = FIN.dir, P = NP_POT, top = -P.h - P.rim;
+    c.save(); c.translate(x, 0); c.lineJoin = "round"; c.lineCap = "round";
+    if (popped) {   // in two halves, the soil spilled between them, one sprout in it
+      c.beginPath(); c.moveTo(-P.t * 1.3, 0.5); c.quadraticCurveTo(-P.t * 0.6, -9, 0, -10); c.quadraticCurveTo(P.t * 0.7, -9, P.t * 1.35, 0.5); c.closePath(); c.fillStyle = C.soil; c.fill(); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+      for (const sd of [-1, 1]) { c.save(); c.translate(sd * (P.b + 12), 0); c.rotate(sd * 1.05); c.translate(-sd * P.b, 0); npPotHalf(c, sd, lw, C); c.restore(); }
+      c.restore();
+      npSprout(c, x + D * 2, -9, 0.75, 1, lw, t);
+      return;
+    }
+    // the back of the rim and the soil
+    c.beginPath(); c.ellipse(0, top, P.t + 3, 4.5, 0, 0, NP_TAU); c.fillStyle = C.potDk; c.fill(); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+    c.beginPath(); c.ellipse(0, top + 1, P.t + 0.5, 3.4, 0, 0, NP_TAU); c.fillStyle = C.soil; c.fill();
+    c.restore();
+    // the three babies: the side ones are buds in his colour, the middle one is him
+    const wet = t >= MT.AFTER + 260 ? Math.sin((t - MT.AFTER) * 0.02) * 0.6 : 0;
+    pn.world(c);
+    npBud(c, x - D * 15, top - 4, 7, lw, t, { look: -1, blink: t >= 5000 && t < 5060 });
+    npSprout(c, x - D * 15, top - 11, 0.7, 1 + 0.05 * wet, lw, t);
+    npBud(c, x + D * 15, top - 3.5, 6.6, lw, t, { look: -0.5, blink: t >= 5120 && t < 5180 });
+    npSprout(c, x + D * 15, top - 10.2, 0.68, 1 - 0.05 * wet, lw, t);
+    npBaby(c, pn, t, x, top + 6, npGeo().bsc);
+    pn.world(c); c.save(); c.translate(x, 0); c.lineJoin = "round";
+    // the pot's front: terracotta, the rim band, a band of dots on the far side
+    c.beginPath(); c.moveTo(-P.t, -P.h); c.lineTo(-P.b, 0); c.lineTo(P.b, 0); c.lineTo(P.t, -P.h); c.closePath(); c.fillStyle = C.pot; c.fill(); c.lineWidth = lw * 1.2; c.strokeStyle = MG_INK; c.stroke();
+    c.save(); c.clip(); c.scale(D, 1); c.beginPath(); c.rect(P.b * 0.35, -P.h - 2, P.t, P.h + 4); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = mgTile(6, 0.4); c.fill(); c.restore();
+    c.beginPath(); c.rect(-P.t - 3, top, (P.t + 3) * 2, P.rim); c.fillStyle = C.potHi; c.fill(); c.lineWidth = lw * 1.2; c.stroke();
+    c.restore();
+  }
+  // the watering can in her front hand, tipped toward the pot; drops arc from its rose
+  function npCan(c, pn, t, lw) {
+    const W = W_(), C = npCols(), D = FIN.dir, h = pt(W, t, "hF"), tip = ease(fe(MT.AFTER + 200, MT.AFTER + 360, t)) * (1 - ease(fe(MT.POP - 120, MT.POP, t))), s = W.s.w * 0.016;
+    pn.world(c); c.save(); c.translate(h[0], h[1]); c.scale(D * s, s); c.rotate(0.55 * tip); c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK;
+    c.beginPath(); c.arc(-6, -12, 8, Math.PI, 0); c.lineWidth = 4.2; c.stroke(); c.strokeStyle = C.canDk; c.lineWidth = 2; c.stroke(); c.strokeStyle = MG_INK;   // the handle
+    c.beginPath(); c.moveTo(8, -8); c.lineTo(30, -24); c.lineWidth = 6.4; c.stroke(); c.strokeStyle = C.can; c.lineWidth = 3.4; c.stroke(); c.strokeStyle = MG_INK;   // the spout
+    c.beginPath(); c.ellipse(32, -25.5, 4.4, 2.6, -0.65, 0, NP_TAU); c.fillStyle = C.canDk; c.fill(); c.lineWidth = 1.6; c.stroke();
+    c.beginPath(); c.roundRect(-18, -12, 26, 18, 4); c.fillStyle = C.can; c.fill(); c.lineWidth = 2; c.stroke();   // the body
+    c.beginPath(); c.moveTo(-14, -6); c.lineTo(4, -6); c.strokeStyle = "rgba(255,255,255,0.8)"; c.lineWidth = 2; c.stroke();
+    c.restore();
+    if (tip < 0.6) return;
+    const P = npPotX(), a = 0.55 * tip, ca = Math.cos(a), sa = Math.sin(a), rose = [h[0] + D * s * (32 * ca + 25.5 * sa), h[1] + s * (32 * sa - 25.5 * ca)];
+    c.fillStyle = C.water; c.strokeStyle = MG_INK; c.lineWidth = Math.max(0.6, 1.4 / pn.z);
+    for (let i = 0; i < 6; i++) {
+      const u = ((t * 0.0025 + i / 6) % 1), dx = (P - rose[0]) * u + (i % 3 - 1) * 2.5 * u, dy = (-NP_POT.h - NP_POT.rim - 6 - rose[1]) * u * u;
+      c.beginPath(); c.ellipse(rose[0] + dx, rose[1] + dy, 1.3, 1.9, 0, 0, NP_TAU); c.fill(); c.stroke();
+    }
+  }
+  function npDrawAfter(c, pn, t) {
+    drawAfter(c, pn, t);
+    const lw = Math.max(1.1, 3 / pn.z), popped = mgPopped(t);
+    npPot(c, pn, t, npPotX(), lw, popped);
+    npCan(c, pn, t, lw);
+  }
+
+  S_.alt2 = Object.assign({}, S_, {
+    name: "New Potatoes",
+    start(g) { S_.start(g); pota2 = true; npGc = null; npC = null; npIn = 0; },
+    end() { S_.end(); pota2 = false; npGc = null; npC = null; npIn = 0; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), inset = by("inset"), strike = by("strike"), after = by("after"), D = FIN.dir;
+      inset.freeze = MT.STRIKE + 130;              // the strike panel has slid over it by then: drawn once, then a bitmap
+      strike.freeze = strike.cover = MT.SPLASH;   // the splash covers the whole page from here: the strike is drawn once more, then a bitmap
+      after.draw = npDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 118 : 96) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.lx - D * 10 + D * (lay.port ? 40 : 44), wy: -0.42 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: MG_PAPER, slide: MG.reduced ? 1 : 180, cam: npCam, shake: npShake, draw: npDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, ms = lay.port ? Math.min(0.5, (0.86 * L.gw) / (6 * 0.15 * L.gh * 0.72)) : 1, small = lay.port ? 0.62 : 1;
+      ws[3].t1 = MT.SPLASH + 150;   // DOOOM is gone as the splash comes up
+      const sp = (t, w) => { const pn = MG.byId.splash; mgPlace(pn, t); return pn.sp(w[0], w[1]); };
+      ws.push(
+        { text: "FWOOSH", t0: NP.RING, t1: NP.POOF + 40, size: 0.15, mul: ms, arc: 1.4, jag: 0.08, fill: "#ffd27a", rot: -0.05 * D,
+          at: (t) => { const G = npGeo(); return sp(t, [G.x, -2 * G.Rr - 6]); } },
+        { text: "poof", t0: NP.POOF, t1: NP.SPR1 + 200, size: 0.07, mul: small, jit: 0.12, rot: 0.1 * D,
+          at: (t) => { const G = npGeo(), q = sp(t, [G.x + D * G.hw * 1.1, -G.hh * 1.5]), hw = phxHalf("poof", 0.07, small); q[0] = clamp(q[0], hw + 4, L.gw - hw - 4); return q; } },
+        { text: "boing", t0: NP.SPR1, t1: NP.SPR2 + 120, size: 0.07, mul: small, jag: 0.14, rot: -0.12 * D,
+          at: (t) => { const G = npGeo(); return sp(t, [G.x - D * G.hw * 0.6, -G.hh * 2.1]); } },
+        { text: "plop", t0: NP.PLOP, t1: NP.TEAR + 60, size: 0.07, mul: small, jit: 0.12, rot: 0.08 * D,
+          at: (t) => { const G = npGeo(), q = sp(t, [G.bx + D * 10, -50]), hw = phxHalf("plop", 0.07, small); q[0] = clamp(q[0], hw + 4, L.gw - hw - 4); return q; } },
+        { text: "aww", t0: NP.TEAR, t1: NP.FAN1 + 40, size: 0.07, mul: small, jit: 0.1, rot: -0.1 * D,
+          at: (t) => { const q = npWAt(t), W = W_(); return sp(t, [q[0] + D * W.s.w * 1.1, q[1] - W.s.h * 1.15]); } },
+      );
+      return ws;
+    },
+    pose(P, sk, t, role, p) {
+      if (npIn === 1 && role === "w") return npPose(P, sk, t);
+      if (npIn >= 2 && role === "l") return npLPose(P, sk, t, npIn);
+      const r = S_.pose(P, sk, t, role, p);
+      if (role !== "w" || t < MT.AFTER) return r;
+      // panel 4: the watering can held out toward the pot, the other hand on her hip
+      const w = sk.w, leg = sk.leg, tor = sk.tor, up = ease(fe(MT.AFTER + 60, MT.AFTER + 450, t));
+      return { hF: [w * (0.7 + 0.1 * up), -leg - tor * (0.2 + 0.85 * up)], hB: [-w * 0.6, -leg - tor * (0.1 + 0.16 * up)], fF: r.fF, fB: r.fB };
+    },
+    food() { const x = npPotX(); return { x, y: 0, r: 24, y0: -28, lx: x + FIN.dir * 40 }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("npUp", MT.SPLASH + 40, () => Cin.go(() => Cin.page()));
+      cueOnce("npFwoosh", NP.RING, () => Cin.go(() => { Cin.whoosh(0.5, -0.4 * D, 0.4 * D, 0.45); Cin._noise(0.7, 0.2, 1400, 600, "bandpass", 0.9); }));
+      cueOnce("npClose", NP.CLOSE0, () => Cin.go(() => Cin.riser(0.26, 0.18)));
+      cueOnce("npPoof", NP.POOF, () => Cin.go(() => { Cin._noise(0.3, 0.4, 900, 260, "lowpass"); Cin._osc("sine", 220, 90, 0.2, 0.15, 0.003); }));
+      cueOnce("npEmber1", 3700, () => Cin.go(() => Cin.tick(3200)));
+      cueOnce("npEmber2", 3780, () => Cin.go(() => Cin.tick(3400)));
+      cueOnce("npBoing1", NP.SPR1, () => Cin.go(() => { Cin._osc("sine", 300, 900, 0.14, 0.12, 0.004); Cin._osc("sine", 900, 420, 0.2, 0.06, 0.004, 0.12); }));
+      cueOnce("npBoing2", NP.SPR2, () => Cin.go(() => { Cin._osc("sine", 360, 1080, 0.14, 0.11, 0.004); Cin._osc("sine", 1080, 500, 0.2, 0.05, 0.004, 0.12); }));
+      cueOnce("npClimb", NP.CLIMB, () => Cin.go(() => { for (let i = 0; i < 3; i++) Cin._osc("triangle", 700 + i * 90, 640, 0.05, 0.03, 0.002, i * 0.05); }));
+      cueOnce("npPlop", NP.PLOP, () => Cin.go(() => Cin._osc("sine", 420, 160, 0.12, 0.14, 0.003)));
+      cueOnce("npPeek1", NP.PEEK1, () => Cin.go(() => Cin.tick(2900)));
+      cueOnce("npPeek2", NP.PEEK2, () => Cin.go(() => Cin.tick(3300)));
+      cueOnce("npAww", NP.TEAR, () => Cin.go(() => { Cin._osc("triangle", 520, 640, 0.25, 0.05, 0.03); Cin._osc("triangle", 640, 440, 0.35, 0.05, 0.03, 0.22); }));
+      cueOnce("npFan", NP.FAN, () => Cin.go(() => Cin.whoosh(0.3, 0.3 * D, -0.3 * D, 0.2)));
+      cueOnce("npWater", MT.AFTER + 300, () => Cin.go(() => Cin._noise(0.6, 0.05, 2400, 4800, "bandpass", 1.5)));
     },
   });
   return S_;
