@@ -30,8 +30,8 @@ PC = {'tokens': 50, 'last': 'odin', 'gfx': '2d', 'name': 'Tuber Tom', 'screen': 
 # 15:00 in Berlin on a summer day: tonight's Daily Cup is hours away ("pre")
 NOW = 1784120400000   # 2026-07-15 13:00 UTC
 SEL = {   # the views' buttons (ui/tcview.js, game/shell.html)
-  'sheet': '#scrTc', 'host': '#tcHost', 'start': '#tcStart', 'warm': '#tcWarm', 'code': '#tcLobCode',
-  'call': '#tcCall', 'callGo': '#tcCallGo', 'go': '#tcGo', 'card': '#rTc', 'pill': '#mTc',
+  'sheet': '#scrTc', 'host': '#tcvHost', 'start': '#tcvStart', 'warm': '#tcvWarm',
+  'call': '#tcCall', 'callGo': '#tccGo', 'go': '#tcGo', 'card': '#rTc', 'pill': '#bCup small',
 }
 errs = []
 def expect(ok, msg):
@@ -123,7 +123,7 @@ async def main():
             await A.goto(URL)
             await wait(A, "window.__blastline && window.__blastline.mode === 'menu' && window.__blTc.day", 'A: the menu hears the day')
             pill = await text(A, SEL['pill'])
-            expect(has(pill, 'tonight'), f"A: the Tournament mini should say tonight's cup, got {pill!r}")
+            expect(re.search(r'\d:\d\d', pill or '') is not None, f"A: the Tournament mini should say when tonight's cup starts, got {pill!r}")
             expect(await code(A) == '', 'A: no account before a cup needs one')
             await tap(A, '#bCup')
             await wait(A, "window.__blTc.sheet", 'A: the Tournament sheet opens')
