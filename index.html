@@ -2773,6 +2773,288 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   .lk-tile, #acPanL .sk { transition: none; }
 }
 
+/* ---------- the Pommes Shop (ui/pshop.js; Fable 5.1, Project files step8/fable-design-2.md section 3) ----------
+   Its own sheet, one DOM for the PC and the phone, never scrolling: the header (POMMES SHOP, the balance pill, the X), a strip of the eight fighters (the
+   chosen one ringed red, his name under it), the goods (FINISHERS: Classic, Potatality 1, Potatality 2, SHUFFLE; SKINS: Ink Noir, Starfall) as six cards in
+   one row, and Get Pommes (an ad tile and the pack tile, or one make-a-code tile). Sizes per screen, from the design (667 / 844 / 1280 wide):
+   gutter 8 / 10 / 14, margin 12 / 14 / 20, title 20 / 22 / 26, card name 11 / 12 / 14, price 11 / 12 / 13, card 130 / 160 / 220 high. The tokens below are
+   set per size class (#app.tiny = 667x320, #app.short = 844x390, the rest = desktop, #app.portrait = upright); everything flexes inside them, so the
+   sizes in between (800x450, 1024x600, 932x430) fit too. The start page's Pommes pill (#mPommes) is at the end of the file. */
+
+/* ---- the fries cone (the pill's and the price rows' glyph: red-and-white stripes, three fries; taller than wide, never the chip's coin) ---- */
+.ps-cone { display: inline-block; flex: none; width: 0.8em; height: 1em; vertical-align: -0.12em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 30'%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M6.4 13 4.3 3.4 7.4 2.7 9.5 13z'/%3E%3Cpath d='M10.4 13V1.4h3.4V13z'/%3E%3Cpath d='M14.5 13 16.6 2.7 19.7 3.4 17.6 13z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='%23fff6e4'/%3E%3Cg fill='%23e8453c'%3E%3Cpath d='M3.2 10.6h3.5L12 28.8z'/%3E%3Cpath d='M10.25 10.6h3.5L12 28.8z'/%3E%3Cpath d='M17.3 10.6h3.5L12 28.8z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='none' stroke='%230e1022' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+/* ---- the frame and the size tokens ---- */
+#scrPshop { z-index: 7; padding: var(--ps-mp); --ps-red: #ff4f4f;
+  --ps-mp: 16px; --ps-m: 20px; --ps-g: 14px; --ps-gg: 18px; --ps-head: 56px; --ps-ft: 26px; --ps-x: 36px; --ps-strip: 76px; --ps-pf: 56px; --ps-sg: 16px;
+  --ps-cap: 26px; --ps-ch: 220px; --ps-cw: 190px; --ps-sw: 120px; --ps-fn: 14px; --ps-fp: 13px; --ps-fl: 11px; --ps-bh: 34px; --ps-bf: 14px; --ps-kg: 40px; --ps-get: 76px; --ps-tf: 17px; }
+#app.short #scrPshop { --ps-mp: 6px; --ps-m: 14px; --ps-g: 10px; --ps-gg: 14px; --ps-head: 44px; --ps-ft: 22px; --ps-x: 32px; --ps-strip: 50px; --ps-pf: 44px; --ps-sg: 10px;
+  --ps-cap: 16px; --ps-ch: 160px; --ps-cw: 136px; --ps-sw: 88px; --ps-fn: 12px; --ps-fp: 12px; --ps-fl: 10px; --ps-bh: 30px; --ps-bf: 13px; --ps-kg: 32px; --ps-get: 64px; --ps-tf: 15px; }
+#app.tiny #scrPshop { --ps-mp: 4px; --ps-m: 10px; --ps-g: 8px; --ps-gg: 12px; --ps-head: 36px; --ps-ft: 20px; --ps-x: 28px; --ps-strip: 46px; --ps-pf: 38px; --ps-sg: 8px;
+  --ps-cap: 13px; --ps-ch: 132px; --ps-cw: 108px; --ps-sw: 72px; --ps-fn: 11px; --ps-fp: 11px; --ps-fl: 9px; --ps-bh: 26px; --ps-bf: 12px; --ps-kg: 28px; --ps-get: 50px; --ps-tf: 13px; }
+#app.portrait #scrPshop { --ps-mp: 4px; --ps-m: 10px; --ps-g: 8px; --ps-gg: 8px; --ps-head: 48px; --ps-ft: 22px; --ps-x: 32px; --ps-strip: 54px; --ps-pf: 38px; --ps-sg: 6px;
+  --ps-cap: 22px; --ps-ch: 170px; --ps-cw: 400px; --ps-sw: 400px; --ps-fn: 12px; --ps-fp: 12px; --ps-fl: 10px; --ps-bh: 30px; --ps-bf: 13px; --ps-kg: 32px; --ps-get: 60px; --ps-tf: 15px; }
+#app #scrPshop > .ps-sheet { position: relative; width: min(calc(1116px + 2 * var(--ps-m) + 4px), 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; container: pshop / inline-size; }
+#app.short #scrPshop > .ps-sheet, #app.tiny #scrPshop > .ps-sheet { height: 100%; }
+#app.portrait #scrPshop > .ps-sheet { width: min(480px, 100%); }
+.ps-head { height: var(--ps-head); gap: 10px; padding: 0 calc(var(--ps-m) - 6px) 0 var(--ps-m); }
+.ps-head h3 { font-size: var(--ps-ft); }
+.ps-head .round { width: var(--ps-x); height: var(--ps-x); }
+.ps-head .round::after { inset: -6px; }
+.ps-head .round svg { width: 56%; height: 56%; }
+.ps-bal { flex: none; display: inline-flex; align-items: center; gap: 6px; height: calc(var(--ps-x) - 2px); padding: 0 12px 0 9px; border: 2px solid var(--ps-red); border-radius: 999px;
+  background: linear-gradient(180deg, #3b2238, #261830); box-shadow: 0 2px 0 #05060f; color: #fff; font: 800 calc(var(--ps-ft) * 0.82)/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ps-bal .ps-cone { width: 0.74em; height: 0.96em; vertical-align: 0; margin-top: -1px; }
+.ps-bal span { padding-top: 1px; font: 800 calc(var(--ps-fl) + 0px)/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); }
+.ps-bal.zero { color: var(--mute); border-color: rgba(255, 79, 79, 0.45); }
+.ps-bal.zero .ps-cone { filter: grayscale(0.7) brightness(0.85); }
+.ps-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--ps-g); padding: calc(var(--ps-m) * 0.7) var(--ps-m) var(--ps-m); }
+#app.tiny .ps-body { padding-top: 6px; padding-bottom: 7px; }
+#app.short .ps-body { padding-top: 8px; padding-bottom: 10px; }
+
+/* ---- the fighter strip: eight round portraits, the chosen one ringed red with his name under it ---- */
+.ps-strip { flex: none; height: var(--ps-strip); display: flex; justify-content: center; align-items: flex-start; gap: var(--ps-sg); padding-top: 3px; }
+.ps-f { appearance: none; position: relative; flex: 0 1 var(--ps-pf); min-width: 0; margin: 0; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ps-f::after { content: ""; position: absolute; inset: -4px -2px; }   /* a bigger target than it looks */
+.ps-fa { display: block; width: 100%; aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 50%; background: #3a4170 center 22% / cover no-repeat; box-shadow: 0 2px 0 var(--ink); filter: saturate(0.8) brightness(0.8); transition: filter 0.12s, transform 0.1s; }
+.ps-f:active .ps-fa { transform: translateY(2px); box-shadow: none; }
+.ps-f.on .ps-fa { filter: none; box-shadow: 0 0 0 3px var(--ps-red), 0 4px 0 2px var(--ink), 0 0 12px rgba(255, 79, 79, 0.4); }
+.ps-f:focus-visible { outline: 2px solid var(--sand); outline-offset: 4px; border-radius: 50%; }
+.ps-fn { display: none; position: absolute; left: 50%; top: calc(100% - 6px); z-index: 2; transform: translateX(-50%); padding: 3px 7px 2px; border: 2px solid var(--ink); border-radius: 6px; background: var(--ps-red); color: #fff;
+  font: 900 calc(var(--ps-fl) + 0px)/1 var(--display); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 2px 0 var(--ink); pointer-events: none; }
+.ps-f.on .ps-fn { display: block; }
+@media (hover: hover) and (pointer: fine) { .ps-f:not(.on):hover .ps-fa { filter: saturate(1) brightness(1); } }
+
+/* ---- the goods: two groups, each with a caption over its cards ---- */
+.ps-goods { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; gap: var(--ps-gg); }
+.ps-grp { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.ps-gfin { flex: 3.63 1 0; max-width: calc(3 * var(--ps-cw) + var(--ps-sw) + 3 * var(--ps-g)); }
+.ps-gsk { flex: 2 1 0; max-width: calc(2 * var(--ps-cw) + var(--ps-g)); }
+.ps-cap { flex: none; height: var(--ps-cap); display: flex; align-items: center; gap: 6px; margin: 0; padding: 0 2px; font: 700 calc(var(--ps-fl) + 1px)/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); white-space: nowrap; overflow: hidden; }
+.modal .sheet .ps-cap { color: var(--sand); }
+.ps-cap b { font-weight: 800; color: var(--text); }
+.ps-cap span { color: var(--mute); letter-spacing: 0.06em; text-transform: none; font-weight: 600; font-size: 1.08em; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; }
+.ps-row { flex: 1 1 var(--ps-ch); min-height: 0; max-height: calc(var(--ps-ch) + 20px); display: flex; gap: var(--ps-g); }
+.ps-row .ps-c { flex: 1 1 0; max-width: var(--ps-cw); min-width: 0; }
+.ps-row .ps-shuf { flex: 0.63 1 0; max-width: var(--ps-sw); }
+.ps-goods.hi .ps-c { animation: psHi 1.4s ease-out; }
+@keyframes psHi { 0% { box-shadow: 0 0 0 0 rgba(255, 79, 79, 0.9), 0 3px 0 var(--ink); } 30% { box-shadow: 0 0 0 6px rgba(255, 79, 79, 0.55), 0 3px 0 var(--ink); } 100% { box-shadow: 0 0 0 0 rgba(255, 79, 79, 0), 0 3px 0 var(--ink); } }
+
+/* ---- a card: the thumb (or the live figure), the name, the line, the price row, the button ---- */
+.ps-c { position: relative; display: flex; flex-direction: column; border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+.ps-main { appearance: none; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ps-main:disabled { cursor: default; }
+.ps-main:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.ps-c:has(.ps-main:active:not(:disabled)) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+@media (hover: hover) and (pointer: fine) { .ps-c:has(.ps-main:hover:not(:disabled):not(:active)) { transform: translateY(-1px); } }
+.ps-art { position: relative; flex: 1 1 0; min-height: 0; display: block; overflow: hidden; border-radius: 8px 8px 0 0; container-type: size;
+  background: radial-gradient(ellipse 80% 90% at 50% 120%, rgba(239, 122, 82, 0.6), transparent 72%), linear-gradient(180deg, #52295a, #2b1f4c 62%, #20244a); }
+.ps-art::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(circle, rgba(255, 201, 120, 0.42) 1.15px, transparent 1.65px) 0 0 / 6px 6px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); mask-image: radial-gradient(ellipse 70% 90% at 50% 55%, transparent 20%, #000 100%); }
+.ps-word { position: absolute; z-index: 0; left: 50%; top: 47%; transform: translate(-50%, -50%) rotate(-8deg) skewX(-8deg); font: italic 900 min(92cqh, calc(190cqw / var(--wn, 5)))/0.8 var(--display);
+  letter-spacing: -0.01em; text-transform: uppercase; white-space: nowrap; color: var(--sand); opacity: 0.3; pointer-events: none; }
+.ps-pic { position: absolute; z-index: 1; left: 9%; right: 9%; top: 0; bottom: 0; background: center 24% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 70%, transparent 100%); }
+.ps-fig::before { display: none; }
+.ps-fig { background: radial-gradient(ellipse 70% 60% at 50% 100%, rgba(255, 255, 255, 0.1), transparent 70%), linear-gradient(180deg, #3a2f58, #262a52); }
+.ps-fig canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; }
+.ps-dice { background: radial-gradient(ellipse 80% 90% at 50% 120%, rgba(134, 220, 174, 0.35), transparent 72%), linear-gradient(180deg, #34406a, #232a52); }
+.ps-dice svg { position: absolute; z-index: 1; left: 50%; top: 50%; width: min(82%, 150cqh); height: auto; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 0 rgba(14, 16, 34, 0.7)); }
+.ps-info { flex: none; display: flex; flex-direction: column; gap: 2px; padding: 5px 8px 7px; min-width: 0; container-type: inline-size; }
+.ps-nm { display: block; font: 800 min(var(--ps-fn), calc(100cqw / (var(--nl, 10) * 0.56)))/1.1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; }
+.ps-ln { display: block; font: 600 var(--ps-fl)/1.15 var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-pr { display: flex; align-items: center; gap: 5px; min-height: calc(var(--ps-fp) + 3px); font: 800 var(--ps-fp)/1 var(--display); letter-spacing: 0.02em; color: var(--mute); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.ps-pr .ps-cone { width: 0.78em; height: 1em; vertical-align: 0; margin-top: -1px; }
+.ps-pr .s, .ps-ln .s { display: none; }
+@container (max-width: 148px) { .ps-ln .f { display: none; } }   /* a narrow card: "Potatality 1" without the fighter's name */
+.ps-btn { display: grid; place-items: center; height: var(--ps-bh); margin-top: 3px; padding-top: 1px; border: 2px solid var(--ink); border-radius: 8px; background: linear-gradient(180deg, #3a4170, #262b50); box-shadow: 0 2px 0 var(--ink), var(--bevel);
+  font: 800 var(--ps-bf)/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; }
+/* WATCH: a round cream button, the play triangle over the word, top left of the thumb */
+.ps-go { appearance: none; position: absolute; z-index: 3; left: 5px; top: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: var(--ps-kg); height: var(--ps-kg);
+  margin: 0; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: linear-gradient(180deg, #fff6e4, #f3d9a4); color: var(--ink); box-shadow: 0 2px 0 var(--ink), inset 0 -2px 0 rgba(120, 60, 0, 0.18);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s; }
+.ps-go::after { content: ""; position: absolute; inset: -5px; }   /* a bigger target than it looks */
+.ps-go svg { flex: none; width: 52%; height: 52%; margin-top: -2px; }
+.ps-go span { margin-top: -3px; font: 800 calc(var(--ps-kg) * 0.22)/1 var(--display); letter-spacing: 0.05em; text-transform: uppercase; }
+.ps-go:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
+.ps-go:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+.ps-go:disabled { opacity: 0.45; filter: grayscale(0.7); cursor: default; }
+@media (hover: hover) and (pointer: fine) { .ps-go:hover:not(:disabled) { filter: brightness(1.08); } }
+/* the gold corner badge: PLAYS, IN MIX, WORN */
+.ps-badge { display: none; position: absolute; right: -3px; top: -3px; z-index: 4; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 9px 0 7px; box-shadow: 0 2px 0 var(--ink);
+  font: 900 calc(var(--ps-fl) + 0px)/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; pointer-events: none; }
+.ps-badge:not(:empty) { display: block; }
+.ps-c.mix .ps-badge { background: #cfd3f2; }
+
+/* ---- states ---- */
+.ps-c.on { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.ps-c.on .ps-nm { color: var(--gold); }
+.ps-c.on .ps-btn, .ps-c.worn .ps-btn { background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink); box-shadow: 0 2px 0 var(--ink), var(--bevelgold); }
+.ps-c.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
+.ps-c.worn .ps-nm { color: var(--gold); }
+.ps-c.mix .ps-btn { opacity: 0.6; }
+.ps-c.buy .ps-pr, .ps-c.short .ps-pr, .ps-c.nocode .ps-pr { color: #ff7a70; }
+.ps-c.buy .ps-btn, .ps-c.short .ps-btn { background: rgba(255, 79, 79, 0.1); border-color: var(--ps-red); color: #ffb3ab; box-shadow: 0 2px 0 var(--ink); }
+.ps-c.short .ps-btn, .ps-c.short .ps-pr, .ps-c.nocode .ps-btn { opacity: 0.5; }
+.ps-c.arm .ps-btn { background: linear-gradient(180deg, #ff6a5f, #e8453c); border-color: var(--ink); color: #fff; opacity: 1; box-shadow: 0 2px 0 var(--ink), inset 0 1px 0 rgba(255, 255, 255, 0.3); animation: psArm 0.9s ease-in-out infinite; }
+@keyframes psArm { 50% { filter: brightness(1.15); } }
+.ps-c.busy .ps-btn { color: var(--sand); letter-spacing: 0.3em; }
+.ps-c.soon .ps-main { cursor: default; }
+.ps-c.soon .ps-art, .ps-c.soon .ps-info { opacity: 0.5; }
+.ps-c.soon .ps-btn { border-style: dashed; background: none; box-shadow: none; color: var(--mute); }
+.ps-c.off .ps-art, .ps-c.off .ps-nm { opacity: 0.55; }
+.ps-c.off .ps-btn { opacity: 0.45; }
+.ps-c.off .ps-pr { color: var(--mute); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: var(--ps-fl); }
+.ps-hint .l { display: inline; }
+.ps-c.shake { animation: psShake 0.24s linear; }
+@keyframes psShake { 0%, 100% { transform: translateX(0); } 17% { transform: translateX(-2px); } 33% { transform: translateX(2px); } 50% { transform: translateX(-2px); } 67% { transform: translateX(2px); } 83% { transform: translateX(-1px); } }
+/* the skin cards: a red border, the candy-stripe tag (where ROAD sits in the Rack), the figure drawn live */
+.ps-kc { border-color: var(--ps-red); }
+.ps-kc.worn { border-color: var(--ps-red); }
+.ps-tag { position: absolute; left: 0; top: 0; z-index: 3; padding: 4px 9px 3px 6px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); border-radius: 8px 0 8px 0;
+  background: repeating-linear-gradient(135deg, #e8453c 0 5px, #fff6e4 5px 10px); font: 900 calc(var(--ps-fl) + 0px)/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: #fff;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+/* a bought card: a short burst of fries */
+.ps-burst { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.ps-fry { position: absolute; left: 50%; top: 50%; width: 5px; height: 14px; margin: -7px 0 0 -2px; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--gold); animation: psFry 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+@keyframes psFry { 0% { transform: translate(0, 0) rotate(0) scale(0.6); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); opacity: 0; } }
+
+/* ---- Get Pommes: the ad tile, the pack tile; or the make-a-code tile ---- */
+.ps-get { flex: none; height: var(--ps-get); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--ps-g); }
+.ps-get[hidden], .ps-tile[hidden] { display: none; }
+.ps-tile { appearance: none; position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; margin: 0; padding: 0 12px 0 10px; border: 2px solid var(--ink); border-radius: 10px; background: linear-gradient(180deg, #2f3560, #1f2344); box-shadow: 0 3px 0 var(--ink), var(--bevel);
+  color: var(--text); font: inherit; text-align: left; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.ps-ti { flex: none; display: grid; place-items: center; width: calc(var(--ps-get) * 0.56); height: calc(var(--ps-get) * 0.56); border: 2px solid var(--ink); border-radius: 50%; background: linear-gradient(180deg, #fff6e4, #f3d9a4); color: var(--ink); box-shadow: 0 2px 0 var(--ink); }
+.ps-ti svg { width: 52%; height: 52%; margin-left: 2px; }
+.ps-pk .ps-ti, .ps-mk .ps-ti { border-radius: 10px; background: linear-gradient(180deg, #3a4170, #262b50); }
+.ps-ti .ps-cone.big { width: 0.78em; height: 1em; font-size: calc(var(--ps-get) * 0.36); vertical-align: 0; }
+.ps-tx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ps-tx b { display: block; font: 800 var(--ps-tf)/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-tx small { display: block; font: 600 calc(var(--ps-fl) + 2px)/1.1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-tv { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.ps-tn { font: 900 calc(var(--ps-tf) + 7px)/1 var(--display); font-style: italic; color: var(--gold); font-variant-numeric: tabular-nums; }
+.ps-tu { display: inline-flex; align-items: center; gap: 4px; font: 800 calc(var(--ps-fl) + 0px)/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--sand); }
+.ps-tu .ps-cone { width: 0.78em; height: 1em; font-size: calc(var(--ps-fl) + 3px); vertical-align: 0; }
+.ps-pk .ps-tn { color: var(--sand); font-size: calc(var(--ps-tf) + 3px); }
+.ps-tile .ps-soon { position: absolute; right: -2px; top: -2px; z-index: 2; padding: 4px 7px 3px; background: var(--ember); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 8px 0 7px; box-shadow: 0 2px 0 var(--ink);
+  font: 900 calc(var(--ps-fl) + 0px)/1 var(--display); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; transform: none; }
+.ps-tile .ps-soon[hidden] { display: none; }
+.ps-ad { cursor: pointer; border-color: var(--ps-red); background: linear-gradient(180deg, #4a2a45, #2c1d3a); }
+.ps-ad .ps-ti { background: linear-gradient(180deg, #ff6a5f, #e8453c); color: #fff; }
+.ps-ad.ready { animation: psReady 2.4s ease-in-out infinite; }
+@keyframes psReady { 50% { box-shadow: 0 3px 0 var(--ink), var(--bevel), 0 0 14px rgba(255, 79, 79, 0.45); } }
+.ps-ad:active:not([aria-disabled="true"]) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--bevel); }
+.ps-ad:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.ps-ad.soon, .ps-ad.gone, .ps-ad.wait { cursor: default; border-color: var(--ink); background: rgba(35, 39, 70, 0.7); border-style: dashed; border-width: 2px; box-shadow: none; }
+.ps-ad.gone, .ps-ad.wait { border-style: solid; border-color: var(--ink); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+.ps-ad.soon > *, .ps-ad.gone > *, .ps-ad.wait > * { opacity: 0.55; }
+.ps-ad.soon .ps-tv { display: none; }   /* the sticker sits where the +10 is */
+.ps-ad.soon .ps-tx { margin-right: 46px; }
+.ps-ad.soon .ps-soon { opacity: 1; }
+.ps-ad:not(.soon) .ps-soon { display: none; }
+.ps-ad.load .ps-tx small, .ps-ad.busy .ps-tx small { color: var(--sand); }
+.ps-ad.pulse, .ps-mk.pulse { animation: psPulse 0.9s ease-out; }
+@keyframes psPulse { 0% { box-shadow: 0 3px 0 var(--ink), 0 0 0 0 rgba(255, 79, 79, 0.9); transform: scale(1); } 35% { box-shadow: 0 3px 0 var(--ink), 0 0 0 7px rgba(255, 79, 79, 0.5); transform: scale(1.03); } 100% { box-shadow: 0 3px 0 var(--ink), 0 0 0 0 rgba(255, 79, 79, 0); transform: scale(1); } }
+.ps-pk { border-style: dashed; background: rgba(35, 39, 70, 0.7); box-shadow: none; cursor: default; }
+.ps-pk > * { opacity: 0.8; }
+.ps-pk .ps-soon { opacity: 1; }
+.ps-pk.go { cursor: pointer; border-style: solid; border-color: rgba(255, 79, 79, 0.7); background: rgba(232, 69, 60, 0.12); box-shadow: 0 3px 0 var(--ink), var(--bevel); }
+.ps-pk.go > * { opacity: 1; }
+.ps-pk.go:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.ps-mk { grid-column: 1 / -1; border-color: var(--ps-red); background: linear-gradient(180deg, #4a2a45, #2c1d3a); }
+.ps-mk .ps-tx b { font-size: calc(var(--ps-tf) + 2px); }
+.ps-mkb { appearance: none; flex: none; height: var(--ps-bh); margin: 0; padding: 1px 16px 0; border: 2px solid var(--ink); border-radius: 8px; background: linear-gradient(180deg, #ffe08a, #f4c95d 50%, #e8a640); color: var(--ink);
+  font: 800 var(--ps-bf)/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 2px 0 var(--ink), var(--bevelgold); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ps-mkb:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
+.ps-mkb:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+/* ---- the toast: over the fighter strip, never in the way of a card ---- */
+.ps-toast { position: absolute; left: 50%; top: calc(var(--ps-head) + 8px); z-index: 8; max-width: calc(100% - 2 * var(--ps-m)); padding: 8px 14px 7px; border: 2px solid var(--ps-red); border-radius: 999px; background: #1b0f1c; color: #fff;
+  font: 800 calc(var(--ps-fn) + 1px)/1.1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; text-align: center; box-shadow: 0 3px 0 var(--ink), 0 8px 18px rgba(0, 0, 0, 0.45); pointer-events: none; transform: translateX(-50%); }
+.ps-toast.in { animation: psToast 0.2s ease-out; }
+.ps-toast[hidden] { display: none; }
+@keyframes psToast { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translateX(-50%); } }
+
+/* ---- 667x320: no fighter line, the shuffle's short words, the captions in one small line ---- */
+#app.tiny .ps-ln { display: none; }
+#app.tiny .ps-info { gap: 1px; padding: 3px 6px 5px; }
+#app.tiny .ps-btn { margin-top: 2px; letter-spacing: 0.05em; }
+#app.tiny .ps-shuf .ps-info { padding-left: 4px; padding-right: 4px; }
+#app.tiny .ps-shuf .ps-btn { font-size: 11px; letter-spacing: 0.02em; }
+#app.tiny .ps-cap span { display: none; }
+#app.short .ps-cap { padding-bottom: 3px; }
+#app.tiny .ps-cap { height: 16px; padding-bottom: 3px; }
+#app.tiny .ps-pk .ps-tv { margin-top: 8px; }
+#app.tiny .ps-shuf .ps-ln { display: none; }
+#app.tiny .ps-pr .l, #app.tiny .ps-ln .l { display: none; }
+#app.tiny .ps-pr .s, #app.tiny .ps-ln .s { display: inline; }
+#app.tiny .ps-badge { padding: 3px 5px 2px; }
+#app.tiny .ps-tag { padding: 3px 7px 2px 5px; }
+#app.tiny .ps-tile { gap: 7px; padding: 0 8px 0 7px; }
+#app.tiny .ps-ti { width: calc(var(--ps-get) * 0.7); height: calc(var(--ps-get) * 0.7); }
+#app.tiny .ps-ti .ps-cone.big { font-size: calc(var(--ps-get) * 0.46); }
+#app.tiny .ps-tx small { font-size: 10px; }
+/* 844x390 and up: the shuffle's long words fit */
+#app:not(.tiny) .ps-ln .s, #app:not(.tiny) .ps-pr .s { display: none; }
+#app.short:not(.tiny) .ps-shuf .ps-ln { display: none; }
+#app.short:not(.tiny) .ps-shuf .ps-pr .l { display: none; }
+#app.short:not(.tiny) .ps-shuf .ps-pr .s { display: inline; }
+#app:not(.tiny) .ps-shuf .ps-ln .l { display: block; white-space: normal; }
+#app.short .ps-ln { font-size: 9.5px; }
+
+/* ---- upright (390x844): the three finishers in a row, SHUFFLE as a bar with a switch under them, the two skins, the tiles stacked ---- */
+#app.portrait .ps-body { overflow: hidden; }
+#app.portrait .ps-goods { flex-direction: column; flex: 0 0 auto; justify-content: flex-start; gap: var(--ps-g); }
+#app.portrait .ps-grp { flex: none; max-width: none; }
+#app.portrait .ps-gfin .ps-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: var(--ps-ch) 40px; gap: var(--ps-g); flex: none; max-height: none; height: auto; }
+#app.portrait .ps-gfin .ps-row .ps-c { max-width: none; }
+#app.portrait .ps-gsk .ps-row { flex: none; height: 190px; max-height: none; }
+#app.portrait .ps-gsk .ps-row .ps-c { max-width: none; }
+#app.portrait .ps-gfin .ps-shuf { grid-column: 1 / -1; max-width: none; }
+#app.portrait .ps-shuf .ps-main { flex-direction: row; align-items: center; }
+#app.portrait .ps-shuf .ps-art { flex: none; width: 60px; height: 100%; border-radius: 8px 0 0 8px; background: none; }
+#app.portrait .ps-shuf .ps-art::before { display: none; }
+#app.portrait .ps-shuf .ps-art svg { width: 92%; }
+#app.portrait .ps-shuf .ps-info { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 8px; row-gap: 1px; padding: 0 8px; container-type: normal; }
+#app.portrait .ps-shuf .ps-nm { grid-column: 1; grid-row: 1; align-self: end; font-size: var(--ps-fn); }
+#app.portrait .ps-shuf .ps-ln { display: block; grid-column: 1; grid-row: 2; align-self: start; }
+#app.portrait .ps-shuf .ps-ln .l { display: inline; }
+#app.portrait .ps-shuf .ps-ln .s { display: none; }
+#app.portrait .ps-shuf .ps-pr { grid-column: 1; grid-row: 2; align-self: start; min-height: 0; }
+#app.portrait .ps-shuf .ps-pr:empty { display: none; }
+#app.portrait .ps-shuf .ps-pr .l { display: inline; }
+#app.portrait .ps-shuf .ps-pr .s { display: none; }
+#app.portrait .ps-shuf.off .ps-ln { display: none; }
+#app.portrait .ps-shuf .ps-btn { grid-column: 2; grid-row: 1 / 3; position: relative; width: 46px; height: 24px; margin: 0; padding: 0; border-radius: 999px; font-size: 0; letter-spacing: 0; background: #1b1e3a; box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.5); }
+#app.portrait .ps-shuf .ps-btn::after { content: ""; position: absolute; left: 2px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border: 2px solid var(--ink); border-radius: 50%; background: #cfd3f2; transition: transform 0.15s, background 0.15s; }
+#app.portrait .ps-shuf.on .ps-btn { background: linear-gradient(180deg, #ffe08a, #e8a640); }
+#app.portrait .ps-shuf.on .ps-btn::after { transform: translateX(22px); background: #fff6e4; }
+#app.portrait .ps-shuf .ps-badge { top: -3px; }
+#app.portrait .ps-get { height: auto; grid-template-columns: minmax(0, 1fr); grid-auto-rows: var(--ps-get); }
+#app.portrait .ps-get.nocode { grid-auto-rows: 84px; }   /* the make-a-code tile has room for its two wrapped lines */
+#app.portrait .ps-mk .ps-tx b { white-space: normal; line-height: 1.05; font-size: var(--ps-tf); }
+#app.portrait .ps-mk .ps-tx small { white-space: normal; line-height: 1.15; }
+#app.portrait .ps-mkb { padding: 1px 12px 0; }
+#app.portrait .ps-ln { display: block; }
+#app.portrait .ps-art { min-height: 54px; }
+
+/* ---- reduced motion: no shakes, no bursts, no pulses ---- */
+@media (prefers-reduced-motion: reduce) {
+  .ps-c.shake, .ps-goods.hi .ps-c, .ps-ad.ready, .ps-ad.pulse, .ps-mk.pulse, .ps-c.arm .ps-btn, .ps-toast.in { animation: none; }
+  .ps-c, .ps-go, .ps-fa { transition: none; }
+}
+
+/* ---------- the Pommes pill on the start page (#mPommes in #mRank, after the chips; ui/acct.js renderPill) ----------
+   The chips pill's twin: the same height and radius, a dark fill, a 2 px red outline, the cone and the number ("0" dim without a code); a tap opens the sheet. */
+#scrMenu .coin.pm { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 30'%3E%3Cg fill='%23f4c95d' stroke='%230e1022' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M6.4 13 4.3 3.4 7.4 2.7 9.5 13z'/%3E%3Cpath d='M10.4 13V1.4h3.4V13z'/%3E%3Cpath d='M14.5 13 16.6 2.7 19.7 3.4 17.6 13z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='%23fff6e4'/%3E%3Cg fill='%23e8453c'%3E%3Cpath d='M3.2 10.6h3.5L12 28.8z'/%3E%3Cpath d='M10.25 10.6h3.5L12 28.8z'/%3E%3Cpath d='M17.3 10.6h3.5L12 28.8z'/%3E%3C/g%3E%3Cpath d='M3.2 10.6h17.6L12.9 28.2c-.4.9-1.4.9-1.8 0z' fill='none' stroke='%230e1022' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E");
+  min-width: 52px; justify-content: center; gap: 6px; padding: 0 12px 0 9px; border-color: #ff4f4f; background: linear-gradient(180deg, #3b2238, #261830); color: #fff; }
+#scrMenu .mm-me .coin.pm::before { width: 13px; height: 17px; }
+#scrMenu .coin.pm.zero { color: var(--mute); border-color: rgba(255, 79, 79, 0.5); }
+#scrMenu .coin.pm.zero::before { filter: grayscale(0.7) brightness(0.85); }
+#scrMenu .mm-me.fit1 .coin.pm, #scrMenu .mm-me.fit2 .coin.pm { gap: 4px; padding: 0 8px 0 6px; min-width: 44px; }
+#scrMenu .mm-me.fit1 .coin.pm::before, #scrMenu .mm-me.fit2 .coin.pm::before { width: 11px; height: 15px; }
+
 /* ---------- The Shop: nameplates and Glaze (Fable 5.1, locker-chips/fable-design.md section 3; ui/shop.js) ----------
    The Shop is the Account sheet's fourth tab (#acPanH). Top: the balance coin and where chips come from. Then the eight nameplates as cards
    (the plate on a pill, its name, and a line: Worn / Tap to wear / the price), then one Glaze card per fighter (his worn skin drawn on a canvas, the price or
@@ -5617,7 +5899,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <header class="mm-bar">
       <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
       <div class="mm-topr">
-        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
+        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin pm zero" id="mPommes">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
         <button class="round mm-fs" id="bFull" aria-label="Fullscreen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="fs-go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fs-out" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g></svg></button>
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
@@ -5705,6 +5987,22 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="sk-row" id="skRoad" role="group" aria-label="Won skins"></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- the Pommes Shop (ui/pshop.js, css/93-pshop.css; Fable's design step8/fable-design-2.md section 3): the eight fighters in a strip, the chosen one's finishers and Pommes skins as cards, Get Pommes; one sheet that never scrolls -->
+  <section id="scrPshop" class="screen modal" hidden>
+    <div class="sheet ps-sheet" id="psSheet" role="dialog" aria-modal="true" aria-labelledby="psTitle">
+      <header class="sh-head ps-head"><h3 id="psTitle">Pommes Shop</h3><span class="ps-bal" id="psBal" aria-live="polite"></span><button class="round x" id="psClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="ps-body">
+        <div class="ps-strip" id="psStrip" role="group" aria-label="Fighter"></div>
+        <div class="ps-goods" id="psGoods">
+          <div class="ps-grp ps-gfin" role="group" aria-label="Finishers"><p class="ps-cap"><b>Finishers</b><span>&middot; what plays on your KO</span></p><div class="ps-row" id="psFin"></div></div>
+          <div class="ps-grp ps-gsk" role="group" aria-label="Skins"><p class="ps-cap"><b>Skins</b></p><div class="ps-row" id="psSk"></div></div>
+        </div>
+        <div class="ps-get" id="psGet"></div>
+      </div>
+      <div class="ps-toast" id="psToast" role="status" aria-live="polite" hidden></div>
     </div>
   </section>
 
@@ -36402,7 +36700,431 @@ function shopResPlate() {
 }
 // the lobby and the other screens ask for the worn plate's class through this (ui/online.js, later)
 window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn, resKo: shopResKo };   // resKo: the tests set the results' band without a lost match
-/* ===================== the Pommes Shop page (T6 builds it) ===================== */
+/* ===================== the Pommes Shop (UI only; Fable's design: Project files step8/fable-design-2.md section 3) =====================
+   Pommes have their own sheet, #scrPshop (css/93-pshop.css), opened by the Pommes pill on the start page (#mPommes in the plate button, acct.js
+   routes the tap), and by pshopOpen(id) from the Account Shop, the Skin Rack and the results band. It never scrolls: one row of the eight fighters, the
+   chosen one ringed in red with his name under it; under it that fighter's goods, six cards in one row (upright: the three finishers, the Shuffle as a bar
+   and two skin cards): Classic, Potatality 1, Potatality 2, SHUFFLE, and his two Pommes skins (Ink Noir, Starfall); and Get Pommes (an ad for +10, the
+   euro pack). Everything is state from ui/kopages.js (koMine, koBal, koOwn, koPick, koSetPick, koBuy, KO.ads ...); nothing here pays or adds Pommes:
+   the server does (kopages.js, pommes.js) and this sheet draws what it said.
+   - A finisher card: the page's portrait on halftone with its sound word behind, the name, the price row (the fries cone and "300 · €2.99", never a
+     coin; "Free" for Classic, "Owned"), one button. Locked: BUY, a tap arms it (SURE? for 3 s), the second tap asks the server; short of Pommes the card
+     shakes, a toast says how many more and the ad tile pulses once. Owned: USE, or PLAYS ✓ on the one that plays, with the gold PLAYS badge; with Shuffle on the
+     owned pages read IN MIX. Exactly one of Classic, Potatality 1, Potatality 2 and SHUFFLE plays per fighter (koPick). WATCH (the round button on the
+     thumb) plays the page on a dummy (koDemo) and comes back to this sheet on that fighter; it works in every state, nothing counts.
+   - A skin card: the figure drawn live in the skin (paintModel, moving with the game's tick). Owned: WEAR / WORN ✓ (P.pal); buying wears it (kopages.js).
+   - Without a sync code the Pommes cannot live anywhere: Get Pommes is one tile, MAKE A CODE (Account > Profile), BUY is dim; WATCH, USE and WEAR work.
+   - The ad tile: ads off on the page (adsOn) or on the server (KO.ads) -> SOON; else it asks ui/ads.js for an ad when the sheet opens (adsPrime "pommes"), a
+     tap plays it, the reward asks the server (koAdClaim): "3 of 5 today", then "back tomorrow"; KO.why "wait" counts down. The pack tile reads SOON until the
+     server says KO.buy. Every top-level name here starts with ps / PS (all ui parts share one scope). Tests: window.__blPshop. */
+screens.pshop = $("scrPshop");
+const PS = { id: "", on: false, arm: "", armT: 0, wait: "", why: "", claim: false, msgT: 0, raf: 0, tmr: 0, made: false, fin: [], sk: [], strip: [], ad: null, pk: null, mk: null, adN: -1, hiT: 0, pulseT: 0, ret: null };
+const PS_WORD_CLASSIC = "KO";
+const PS_SOON_AD = "Ads come soon: they pay Pommes without paying anything.";
+const psMk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const psCalm = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+const psCone = (cls) => `<i class="ps-cone${cls ? " " + cls : ""}" aria-hidden="true"></i>`;
+const psPrice = () => `${psCone()}<span>${KO_PRICE} · ${KO_EUR}</span>`;
+const psSpec = () => FIG[PS.id];
+const psPageItem = (n) => (n === 2 ? "ko2:" : "ko:") + PS.id;
+const psSkinItem = (n) => "sk" + n + ":" + PS.id;
+
+/* ----- the start page's pill (acct.js renderPill calls psPill; every answer of the server too) ----- */
+// the pill is small: from 100,000 on it says 123k, from a million 1.2M (the sheet and the label say the whole number)
+const psShort = (n) => (n >= 1e6 ? `${(Math.floor(n / 1e5) / 10).toFixed(1)}M` : n >= 1e5 ? `${Math.floor(n / 1000)}k` : fmtChips(n));
+function psPill() {
+  const el = $("mPommes");
+  if (!el) return;
+  const n = koBal();
+  el.textContent = psShort(n);
+  el.classList.toggle("zero", !(n > 0));
+}
+koListen(() => { renderPill(); psKoRender(); });   // renderPill (acct.js) sets the pill, its label and the bar's fit
+
+/* ----- building the sheet once: the strip, the six cards, the Get Pommes tiles ----- */
+const PS_DICE = `<svg viewBox="0 0 64 44" aria-hidden="true"><g stroke="#0e1022" stroke-width="2.6" stroke-linejoin="round"><g transform="rotate(-14 22 24)"><rect x="5" y="9" width="30" height="30" rx="7" fill="#fff6e4"/><g fill="#0e1022" stroke="none"><circle cx="13" cy="17" r="2.6"/><circle cx="27" cy="17" r="2.6"/><circle cx="20" cy="24" r="2.6"/><circle cx="13" cy="31" r="2.6"/><circle cx="27" cy="31" r="2.6"/></g></g><g transform="rotate(12 44 22)"><rect x="31" y="3" width="28" height="28" rx="7" fill="#ff6a5f"/><g fill="#fff6e4" stroke="none"><circle cx="39" cy="11" r="2.6"/><circle cx="51" cy="11" r="2.6"/><circle cx="39" cy="23" r="2.6"/><circle cx="51" cy="23" r="2.6"/></g></g></g></svg>`;
+const PS_PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.2v15.6L20.5 12z" fill="currentColor"/></svg>`;
+// a card: a div with the card itself (.ps-main, one button) and WATCH (.ps-go); the badge and the shake belong to the div
+function psFinCard(k) {
+  const sh = k === "s", el = psMk("div", "ps-c ps-fc" + (sh ? " ps-shuf" : "")), main = psMk("button", "ps-main"), art = psMk("span", "ps-art"), word = psMk("i", "ps-word"), pic = psMk("i", "ps-pic");
+  const info = psMk("span", "ps-info"), nm = psMk("b", "ps-nm"), ln = psMk("span", "ps-ln"), pr = psMk("span", "ps-pr"), btn = psMk("span", "ps-btn"), badge = psMk("i", "ps-badge");
+  main.type = "button";
+  badge.setAttribute("aria-hidden", "true"); word.setAttribute("aria-hidden", "true"); pic.setAttribute("aria-hidden", "true"); btn.setAttribute("aria-hidden", "true");
+  if (sh) { art.innerHTML = PS_DICE; art.classList.add("ps-dice"); nm.textContent = "Shuffle"; }
+  else art.append(word, pic);
+  info.append(nm, ln, pr, btn);
+  main.append(art, info);
+  el.append(main, badge);
+  const c = { kind: "fin", k, key: sh ? "sh" : "p" + k, el, main, art, word, pic, nm, ln, pr, btn, badge, go: null };
+  if (!sh) {
+    const go = psMk("button", "ps-go");
+    go.type = "button"; go.innerHTML = PS_PLAY + `<span aria-hidden="true">Watch</span>`;
+    go.addEventListener("click", () => psWatch(k));
+    el.appendChild(go); c.go = go;
+  }
+  main.addEventListener("click", () => psTap(c));
+  return c;
+}
+function psSkinCard(n) {
+  const el = psMk("div", "ps-c ps-kc"), main = psMk("button", "ps-main"), art = psMk("span", "ps-art ps-fig"), cv = psMk("canvas"), tag = psMk("i", "ps-tag", "Pommes");
+  const info = psMk("span", "ps-info"), nm = psMk("b", "ps-nm"), ln = psMk("span", "ps-ln"), pr = psMk("span", "ps-pr"), btn = psMk("span", "ps-btn"), badge = psMk("i", "ps-badge");
+  main.type = "button";
+  cv.setAttribute("aria-hidden", "true"); tag.setAttribute("aria-hidden", "true"); badge.setAttribute("aria-hidden", "true"); btn.setAttribute("aria-hidden", "true");
+  art.append(cv, tag);
+  info.append(nm, ln, pr, btn);
+  main.append(art, info);
+  el.append(main, badge);
+  const c = { kind: "sk", n, key: "k" + n, el, main, art, cv, nm, ln, pr, btn, badge, af: null };
+  main.addEventListener("click", () => psTap(c));
+  return c;
+}
+function psBuild() {
+  if (PS.made) return;
+  PS.made = true;
+  const strip = $("psStrip"), fin = $("psFin"), sk = $("psSk");
+  for (const spec of FIGHTERS) {
+    const b = psMk("button", "ps-f"), a = psMk("span", "ps-fa"), nm = psMk("i", "ps-fn", spec.name);
+    b.type = "button"; b.dataset.id = spec.id;
+    if (PORTRAITS[spec.id]) a.style.backgroundImage = `url("${PORTRAITS[spec.id]}")`;
+    a.setAttribute("aria-hidden", "true"); nm.setAttribute("aria-hidden", "true");
+    b.setAttribute("aria-label", spec.name);
+    b.append(a, nm);
+    b.addEventListener("click", () => { Sfx.init(); if (PS.id !== spec.id) { Sfx.uiFlip(); psChoose(spec.id); } });
+    strip.appendChild(b);
+    PS.strip.push({ id: spec.id, el: b });
+  }
+  for (const k of [0, 1, 2, "s"]) { const c = psFinCard(k); PS.fin.push(c); fin.appendChild(c.el); }
+  for (const n of [1, 2]) { const c = psSkinCard(n); PS.sk.push(c); sk.appendChild(c.el); }
+  strip.addEventListener("keydown", (e) => {   // the arrow keys walk the strip
+    if (e.code !== "ArrowLeft" && e.code !== "ArrowRight") return;
+    const i = FIGHTERS.findIndex((f) => f.id === PS.id), j = (i + (e.code === "ArrowRight" ? 1 : FIGHTERS.length - 1)) % FIGHTERS.length;
+    e.preventDefault(); Sfx.uiFlip(); psChoose(FIGHTERS[j].id);
+    const b = PS.strip[j] && PS.strip[j].el; if (b) b.focus();
+  });
+  // Get Pommes: the ad tile and the pack tile (one of them, or the make-a-code tile, is drawn by psGet)
+  const get = $("psGet");
+  const ad = psMk("button", "ps-tile ps-ad"), pk = psMk("div", "ps-tile ps-pk"), mk = psMk("div", "ps-tile ps-mk");
+  ad.type = "button";
+  ad.innerHTML = `<span class="ps-ti">${PS_PLAY}</span><span class="ps-tx"><b>Watch an ad</b><small></small></span><span class="ps-tv"><span class="ps-tn">+10</span><span class="ps-tu">${psCone()}Pommes</span></span><i class="ps-soon" aria-hidden="true">Soon</i>`;
+  pk.innerHTML = `<span class="ps-ti">${psCone("big")}</span><span class="ps-tx"><b>${KO_PRICE} Pommes</b><small>one page or skin</small></span><span class="ps-tv"><span class="ps-tn">${KO_EUR}</span></span><i class="ps-soon" aria-hidden="true">Soon</i>`;
+  mk.innerHTML = `<span class="ps-ti">${psCone("big")}</span><span class="ps-tx"><b>Pommes live on your account</b><small>make a sync code to buy, earn and keep them</small></span><button type="button" class="ps-mkb"><span>Make a code</span></button>`;
+  ad.addEventListener("click", psAdTap);
+  pk.addEventListener("click", () => { if (KO.buy) { Sfx.init(); Sfx.ui(); psSay("Buying Pommes opens soon."); } });
+  pk.addEventListener("keydown", (e) => { if (KO.buy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pk.click(); } });
+  mk.querySelector(".ps-mkb").addEventListener("click", () => { Sfx.init(); Sfx.ui(); pshopClose(); openAccount("p"); });
+  PS.ad = ad; PS.pk = pk; PS.mk = mk;
+  get.append(ad, pk, mk);
+}
+
+/* ----- opening, closing, choosing a fighter ----- */
+function psDefault() { return FIG[sel.fighter] ? sel.fighter : FIGHTERS[0].id; }
+// id (optional): the fighter chosen first; default your current fighter
+function pshopOpen(id) {
+  if (!screens.pshop) return;
+  psBuild();
+  PS.id = typeof id === "string" && FIG[id] ? id : psDefault();
+  psDisarm(); PS.wait = ""; PS.why = KO.why; PS.claim = false; PS.adN = KO.adN;
+  clearTimeout(PS.msgT); $("psToast").hidden = true;
+  PS.on = true;
+  modal("pshop", true);
+  psFill(); psStyle();
+  koAsk(true);   // the balance and what you own, again from the server
+  psPrimeAd();
+  clearInterval(PS.tmr); PS.tmr = setInterval(() => { if (PS.on && psAdState() === "wait") psStyle(); }, 1000);
+  psLoop();
+  const b = $("psClose"); if (b && typeof b.focus === "function") try { b.focus({ preventScroll: true }); } catch (e) { /* kept */ }
+}
+// the sheet goes without the page behind knowing (WATCH, close): timers off, nothing armed
+function psLeave() {
+  PS.on = false;
+  psDisarm(); clearTimeout(PS.msgT); clearInterval(PS.tmr); PS.tmr = 0; clearTimeout(PS.hiT); clearTimeout(PS.pulseT);
+  cancelAnimationFrame(PS.raf); PS.raf = 0;
+  $("psToast").hidden = true;
+  modal("pshop", false);
+}
+function pshopClose() {
+  if (!PS.on && screens.pshop.hidden) return;
+  psLeave();
+  if (typeof renderPill === "function") renderPill();   // the pill on the start page and the plate follow what was bought
+}
+// the sheet on that fighter (open already: the fighter changes and his cards pulse once; closed: it opens on him)
+function pshopFocus(id) {
+  if (!PS.on) { pshopOpen(id); return; }
+  if (FIG[id]) { PS.id = id; psDisarm(); psFill(); psStyle(); }
+  const row = $("psGoods");
+  clearTimeout(PS.hiT); row.classList.remove("hi"); void row.offsetWidth;
+  if (!psCalm()) { row.classList.add("hi"); PS.hiT = setTimeout(() => row.classList.remove("hi"), 1500); }
+}
+function psChoose(id) {
+  if (!FIG[id]) return;
+  PS.id = id; psDisarm(); PS.wait = ""; psFill(); psStyle();
+}
+$("psClose").addEventListener("click", () => { Sfx.init(); Sfx.uiBack ? Sfx.uiBack() : Sfx.ui(); pshopClose(); });
+screens.pshop.addEventListener("click", (e) => { if (e.target === screens.pshop) pshopClose(); });
+window.addEventListener("keydown", (e) => {   // before the other sheets' own Escape: only this one closes
+  if (e.code === "Escape" && PS.on && !screens.pshop.hidden) { e.preventDefault(); e.stopImmediatePropagation(); pshopClose(); }
+}, true);
+
+/* ----- what belongs to the chosen fighter: portraits, words, names, the skins' figures ----- */
+function psFill() {
+  const id = PS.id, spec = psSpec();
+  if (!spec) return;
+  const src = PORTRAITS[id] ? `url("${PORTRAITS[id]}")` : "";
+  for (const c of PS.fin) {
+    if (c.k === "s") continue;
+    const pg = c.k === 0 ? { name: "Classic", word: PS_WORD_CLASSIC } : koPage(id, c.k);
+    c.pic.style.backgroundImage = src;
+    c.word.textContent = pg.word; c.word.style.setProperty("--wn", String(Math.max(3, pg.word.length)));
+    c.nm.textContent = pg.name; c.nm.style.setProperty("--nl", String(Math.max(6, pg.name.length)));
+    c.ln.innerHTML = c.k === 0 ? `<span class="f">${spec.name}'s </span>normal KO` : `<span class="f">${spec.name} · </span>Potatality ${c.k}`;   // the fighter's name goes first when the card is narrow
+  }
+  for (const c of PS.sk) {
+    const i = koSkinIdx(id, c.n), pal = i >= 0 ? spec.palettes[i] : null;
+    c.pal = i;
+    c.nm.textContent = pal ? pal.name : c.n === 1 ? "Ink Noir" : "Starfall"; c.nm.style.setProperty("--nl", String(Math.max(6, c.nm.textContent.length)));
+    c.ln.innerHTML = `<span class="f">${spec.name} · </span>${c.n === 1 ? "manga ink" : "night sky"}`;
+    c.el.style.setProperty("--c", pal ? col(pal) : "#ff4f4f");
+    if (pal) {
+      const f = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
+      f.x = 0; f.y = 0; f.facing = -1;
+      c.af = { cv: c.cv, f, fit: 0.74, bottom: 0.93 };   // a little smaller than the Rack's, so a dragon's tail and wings stay in the card
+    } else c.af = null;
+  }
+  for (const s of PS.strip) { const on = s.id === id; s.el.classList.toggle("on", on); s.el.setAttribute("aria-pressed", String(on)); }
+}
+// the skins live: drawn with the game's tick, so the halftone boils and the stars twinkle
+function psPaint(all) { for (const c of PS.sk) if (c.af) paintModel(c.af, tick); }
+function psLoop() {
+  cancelAnimationFrame(PS.raf);
+  let last = -99;
+  const step = (t) => {
+    PS.raf = 0;
+    if (!PS.on) return;
+    if (t - last >= 33) { last = t; psPaint(); }
+    PS.raf = requestAnimationFrame(step);
+  };
+  psPaint();
+  PS.raf = requestAnimationFrame(step);
+}
+if (window.ResizeObserver) new ResizeObserver(() => { if (PS.on) psPaint(); }).observe($("psSheet"));
+
+/* ----- the cards' states ----- */
+const psUsable = () => [1, 2].filter((n) => koOwn(PS.id, n) && koHas(PS.id, n));
+// a finisher card's state: own | buy | short | soon (the page isn't drawn yet), and whether it plays (on) or is in the mix
+function psFinState(c) {
+  if (c.k === "s") return psUsable().length > 1 ? "own" : "off";
+  if (c.k === 0) return "own";
+  if (!koHas(PS.id, c.k)) return "soon";
+  if (koOwn(PS.id, c.k)) return "own";
+  return koBal() >= KO_PRICE && koMine() ? "buy" : "short";
+}
+function psSkinState(c) {
+  if (c.pal < 0) return "soon";
+  if (koItem(psSkinItem(c.n)) || (P.owned[PS.id] || [0]).includes(c.pal)) return palIdx(PS.id) === c.pal ? "worn" : "own";
+  return koBal() >= KO_PRICE && koMine() ? "buy" : "short";
+}
+const PS_STATES = ["own", "buy", "short", "soon", "off", "worn", "on", "mix", "arm", "busy", "nocode"];
+function psSet(c, st, on, mix, arm, busy, label, price, btn) {
+  for (const s of PS_STATES) c.el.classList.toggle(s, s === st || (s === "on" && on) || (s === "mix" && mix) || (s === "arm" && arm) || (s === "busy" && busy) || (s === "nocode" && !ACCT.code && (st === "buy" || st === "short")));
+  c.pr.innerHTML = price; c.btn.textContent = btn;
+  c.main.setAttribute("aria-label", label);
+  c.main.disabled = st === "soon";
+  c.btn.title = "";
+}
+function psStyle() {
+  if (!PS.on) return;
+  const id = PS.id, spec = psSpec(), pick = koPick(id), bal = koBal(), mix = pick === "s";
+  $("psBal").innerHTML = `${psCone()}<b>${fmtChips(bal)}</b> <span>Pommes</span>`;
+  $("psBal").classList.toggle("zero", !(bal > 0));
+  $("psBal").setAttribute("aria-label", `${fmtChips(bal)} Pommes`);
+  for (const c of PS.fin) {
+    const st = psFinState(c), name = c.nm.textContent;
+    if (c.k === "s") {
+      const u = psUsable().length, on = pick === "s";
+      c.nm.textContent = "Shuffle"; c.nm.style.setProperty("--nl", "7");
+      c.ln.innerHTML = `<span class="l">a random owned one each KO</span><span class="s">random owned</span>`;
+      const hint = u === 0 ? `<span class="l">buy a Potatality</span><span class="s">buy a page</span>` : `<span class="l">buy one more page</span><span class="s">buy 1 more</span>`;
+      psSet(c, st, on, false, false, false, st === "off" ? `Shuffle: ${u === 0 ? "buy a Potatality first" : "needs two Potatalities"}` : `Shuffle: a random owned page each KO${on ? ", plays" : ", tap to use"}`, "", on ? "Plays ✓" : "Use");
+      c.pr.innerHTML = st === "off" ? hint : "";
+      c.main.setAttribute("aria-pressed", String(on));
+      c.badge.textContent = on ? "Plays" : "";
+      continue;
+    }
+    const n = c.k, item = n ? psPageItem(n) : "", on = pick === n, inMix = mix && n > 0 && st === "own", arm = PS.arm === item && st === "buy", busy = !!item && KO.busy === item;
+    const btn = st === "soon" ? "Soon" : busy ? "…" : arm ? "Sure?" : st === "own" ? (on ? "Plays ✓" : inMix ? "In the mix" : "Use") : "Buy";
+    const price = n === 0 ? "Free" : st === "own" ? "Owned" : st === "soon" ? "Soon" : psPrice();
+    const label = st === "soon" ? `${name}: not drawn yet, coming soon` : st === "own" ? `${name}, ${spec.name}'s ${n ? "Potatality " + n : "classic KO"}: ${on ? "plays on your KO" : inMix ? "in the mix" : "tap to use"}`
+      : `${name}, ${spec.name}'s Potatality ${n}: ${busy ? "buying" : arm ? "tap again to buy" : `${KO_PRICE} Pommes, ${KO_EUR}`}`;
+    psSet(c, st, on, inMix, arm, busy, label, price, btn);
+    c.badge.textContent = on ? "Plays" : inMix ? "In mix" : "";
+    c.main.setAttribute("aria-pressed", st === "own" ? String(on) : "false");
+    if (c.go) {
+      const can = n === 0 || koHas(id, n);
+      c.go.disabled = !can;
+      c.go.setAttribute("aria-label", can ? `Watch ${name}` : `Watch ${name}: not drawn yet`);
+    }
+  }
+  for (const c of PS.sk) {
+    const st = psSkinState(c), item = psSkinItem(c.n), arm = PS.arm === item && st === "buy", busy = KO.busy === item, worn = st === "worn", name = c.nm.textContent;
+    const btn = st === "soon" ? "Soon" : busy ? "…" : arm ? "Sure?" : worn ? "Worn ✓" : st === "own" ? "Wear" : "Buy";
+    const price = st === "own" || st === "worn" ? "Owned" : st === "soon" ? "Soon" : psPrice();
+    psSet(c, st, false, false, arm, busy, `${name} skin for ${spec.name}: ${worn ? "worn" : st === "own" ? "owned, tap to wear" : busy ? "buying" : arm ? "tap again to buy" : `${KO_PRICE} Pommes, ${KO_EUR}`}`, price, btn);
+    c.badge.textContent = worn ? "Worn" : "";
+    c.main.setAttribute("aria-pressed", st === "own" || worn ? String(worn) : "false");
+  }
+  psGet();
+}
+// the fourth row: no sync code is one tile; else the ad tile and the pack tile
+function psAdWait() { return KO.why === "wait" ? Math.max(0, Math.ceil(KO.adIn - (Date.now() - KO.adT) / 1000)) : 0; }
+// soon | gone | wait | busy | load | ready | none | idle
+function psAdState() {
+  if (!adsOn() || !KO.ads) return "soon";
+  if (koAdLeft() <= 0) return "gone";
+  if (KO.busy === "ad" || adsState("pommes") === "busy") return "busy";
+  if (psAdWait() > 0) return "wait";
+  const s = adsState("pommes");
+  return s === "wait" ? "load" : s === "ready" ? "ready" : s === "none" ? "none" : "idle";
+}
+function psGet() {
+  const has = !!ACCT.code, ad = PS.ad, pk = PS.pk, mk = PS.mk;
+  ad.hidden = pk.hidden = !has; mk.hidden = has;
+  $("psGet").classList.toggle("nocode", !has);
+  if (!has) return;
+  const st = psAdState(), left = koAdLeft(), sub = ad.querySelector("small");
+  const words = { soon: "ads come soon", gone: "back tomorrow", wait: `in ${psAdWait()}s`, busy: "…", load: "looking for one…", none: "no ad now, tap to retry", idle: "tap to look for one", ready: `${KO.adN} of ${KO.adMax} today` };
+  sub.textContent = words[st];
+  for (const s of ["soon", "gone", "wait", "busy", "load", "ready", "none", "idle"]) ad.classList.toggle(s, s === st);
+  ad.setAttribute("aria-disabled", String(st === "soon" || st === "gone" || st === "busy" || st === "load" || st === "wait"));
+  ad.setAttribute("aria-label", `Watch an ad for 10 Pommes: ${words[st]}${st === "soon" ? "" : `, ${left} left today`}`);
+  const buy = !!KO.buy;
+  pk.classList.toggle("go", buy);
+  pk.querySelector(".ps-soon").hidden = buy;
+  if (buy) { pk.setAttribute("role", "button"); pk.tabIndex = 0; pk.removeAttribute("aria-disabled"); } else { pk.removeAttribute("role"); pk.removeAttribute("tabindex"); pk.setAttribute("aria-disabled", "true"); }
+  pk.setAttribute("aria-label", `${KO_PRICE} Pommes for ${KO_EUR}: one page or skin${buy ? "" : ". Coming soon."}`);
+}
+
+/* ----- taps ----- */
+function psDisarm() { clearTimeout(PS.armT); PS.arm = ""; }
+function psArm(item) {
+  PS.arm = item; Sfx.ui(); clearTimeout(PS.armT);
+  PS.armT = setTimeout(() => { PS.arm = ""; psStyle(); }, 3000);
+  psStyle();
+}
+// a card says no: it shakes (3 x 2 px in 240 ms) and a toast tells why
+function psNo(c, text) {
+  Sfx.uiNo();
+  if (c && c.el && !psCalm()) { c.el.classList.remove("shake"); void c.el.offsetWidth; c.el.classList.add("shake"); setTimeout(() => c.el.classList.remove("shake"), 300); }
+  psSay(text);
+}
+function psSay(text) {
+  const t = $("psToast");
+  t.textContent = text; t.hidden = false;
+  t.classList.remove("in"); void t.offsetWidth; t.classList.add("in");
+  clearTimeout(PS.msgT); PS.msgT = setTimeout(() => { t.hidden = true; }, 2600);
+}
+function psPulse(which) {
+  const el = which === "mk" ? PS.mk : PS.ad;
+  if (!el || psCalm()) return;
+  clearTimeout(PS.pulseT); el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+  PS.pulseT = setTimeout(() => el.classList.remove("pulse"), 900);
+}
+function psTap(c) {
+  Sfx.init();
+  const id = PS.id;
+  if (c.kind === "fin" && c.k === "s") {
+    if (psUsable().length < 2) { psNo(c, psUsable().length ? "Shuffle needs two Potatalities." : "Buy a Potatality to shuffle."); return; }
+    if (koPick(id) !== "s") { Sfx.uiFlip(); koSetPick(id, "s"); }
+    return;
+  }
+  const st = c.kind === "fin" ? psFinState(c) : psSkinState(c);
+  if (st === "soon") return;
+  if (c.kind === "fin" && st === "own") { if (koPick(id) !== c.k) { Sfx.uiFlip(); if (!koSetPick(id, c.k)) psNo(c, "That one isn't yours yet."); } return; }
+  if (c.kind === "sk" && (st === "own" || st === "worn")) {
+    if (st === "own") { Sfx.uiFlip(); koSkins(); P.pal[id] = c.pal; saveProfile(); koRefresh(); }   // koSkins: the owned Pommes skins join P.owned, then WEAR; koRefresh: the Rack and the Locker follow
+    return;
+  }
+  psBuyTap(c, c.kind === "fin" ? psPageItem(c.k) : psSkinItem(c.n));
+}
+function psBuyTap(c, item) {
+  if (KO.busy) return;
+  const bal = koBal();
+  if (!ACCT.code) { psDisarm(); psNo(c, "Pommes live on your account: make a sync code."); psPulse("mk"); return; }
+  if (!koMine()) { psDisarm(); psNo(c, "Can't reach your Pommes: try again."); koAsk(true); return; }
+  if (bal < KO_PRICE) { psDisarm(); psNo(c, `${fmtChips(KO_PRICE - bal)} more Pommes`); psPulse("ad"); return; }
+  if (PS.arm !== item) { psArm(item); return; }
+  psDisarm();
+  PS.wait = item;
+  if (koBuy(item)) { psStyle(); return; }   // asked: "…" until the server answers (pm-ok, pm-no: psKoRender)
+  PS.wait = "";
+  psNo(c, KO.why === "short" ? `${fmtChips(KO_PRICE - koBal())} more Pommes` : "That didn't go through: try again.");
+  psStyle();
+}
+// WATCH: the page on a dummy, then back here on this fighter
+function psWatch(n) {
+  Sfx.init();
+  const id = PS.id;
+  if (n && !koHas(id, n)) return;
+  if (!koDemoOk(id, n)) { Sfx.uiNo(); psSay("Watch works from the menu."); return; }
+  const back = () => pshopOpen(id);
+  psLeave();
+  try { koDemo(id, n, back); } catch (e) {   // a page that fails to start must not leave the game on an empty match screen: back to the sheet
+    try { koDemoEnd(); } catch (e2) { /* nothing left to tidy */ }
+    if (typeof console !== "undefined") console.warn("WATCH failed", e);
+  }
+}
+
+/* ----- the ad tile ----- */
+function psPrimeAd(retry) {
+  if (!PS.on || !adsOn() || !ACCT.code || !KO.ads || koAdLeft() <= 0) return;
+  const s = adsState("pommes");
+  if (s === "wait" || s === "ready" || s === "busy" || (s === "none" && !retry)) return;
+  adsPrime("pommes", () => { if (PS.on) psStyle(); });   // never primes again from here: a replaced prime answers false too
+  psStyle();
+}
+function psAdTap() {
+  Sfx.init();
+  const st = psAdState();
+  if (st === "ready") {
+    Sfx.ui(); PS.claim = true;
+    adsShow("pommes", () => { koAdClaim(); }, () => { if (PS.on) { psStyle(); psPrimeAd(); } });
+    psStyle();
+  } else if (st === "none" || st === "idle") { Sfx.ui(); psPrimeAd(true); }
+  else if (st === "soon") { Sfx.uiNo(); psSay(PS_SOON_AD); }
+  else if (st === "gone") { Sfx.uiNo(); psSay("That's all the ads for today: back tomorrow."); }
+  else if (st === "wait") { Sfx.uiNo(); psSay(`The next ad is in ${psAdWait()} s.`); }
+}
+
+/* ----- what the server said (kopages.js calls koListen's functions after every answer) ----- */
+const PS_WHY = { acct: "Signed out for a moment: try again.", own: "You own it already.", ads: "No ads right now.", max: "That's all the ads for today: back tomorrow.", fail: "That didn't go through: try again." };
+function psBurst(c) {
+  if (!c || !c.art || psCalm()) return;
+  const box = psMk("span", "ps-burst");
+  box.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + 0.3, d = 34 + (i % 3) * 14, f = psMk("i", "ps-fry");
+    f.style.setProperty("--dx", `${Math.round(Math.cos(a) * d)}px`); f.style.setProperty("--dy", `${Math.round(Math.sin(a) * d * 0.8 - 8)}px`); f.style.setProperty("--r", `${(i * 67) % 120 - 50}deg`);
+    box.appendChild(f);
+  }
+  c.art.appendChild(box);
+  setTimeout(() => box.remove(), 800);
+}
+function psKoRender() {
+  if (!PS.on) return;
+  if (PS.wait && koItem(PS.wait)) {   // the server paid: the card is yours (a Potatality is the pick, a skin is worn: kopages.js)
+    const w = PS.wait, c = [...PS.fin, ...PS.sk].find((x) => (x.kind === "fin" ? (x.k === 1 || x.k === 2) && psPageItem(x.k) === w : psSkinItem(x.n) === w));
+    PS.wait = ""; Sfx.uiCoin(); psBurst(c);
+  } else if (PS.wait && KO.why) PS.wait = "";
+  if (KO.why !== PS.why) {
+    PS.why = KO.why;
+    if (KO.why === "short") psSay(`${fmtChips(Math.max(0, KO_PRICE - koBal()))} more Pommes`);
+    else if (PS_WHY[KO.why]) { Sfx.uiNo(); psSay(PS_WHY[KO.why]); }
+  }
+  if (KO.adN !== PS.adN) { PS.adN = KO.adN; if (PS.claim) { PS.claim = false; Sfx.uiCoin(); } }
+  if (adsState("pommes") === "off") psPrimeAd();   // the server's answer made an ad possible (or the last one was used)
+  psStyle();
+}
+
+window.__blPshop = { open: pshopOpen, close: pshopClose, focus: pshopFocus, st: PS, get fighter() { return PS.id; }, has: (id, n) => koHas(id, n), skin: (id, n) => koSkinIdx(id, n) };
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in
@@ -39248,10 +39970,11 @@ function renderPill() {
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("mTokens").textContent = fmtChips(P.tokens);
+  psPill();   // ui/pshop.js: the Pommes pill beside the chips
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), gift = hvWaiting();   // the Daily Potato streak (ui/daily.js), today's Harvest gift (ui/harvest.js)
   $("mStreakN").textContent = ds; $("mStreak").classList.toggle("zero", !(ds > 0)); $("mGift").hidden = !gift;
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${koBal() > 0 ? `, ${fmtChips(koBal())} Pommes` : ""}${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -39786,8 +40509,8 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-// the chip coin opens the Shop, the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
-tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
+// the chip coin opens the Shop, the Pommes pill the Pommes Shop (ui/pshop.js), the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
+tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else if (at("#mPommes")) pshopOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
 tap("acClose", () => {
   modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"
