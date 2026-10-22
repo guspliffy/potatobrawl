@@ -23,7 +23,7 @@
   let ws = null, welcomed = false, backoff = 400;
   const connL = new Set();
   const qmL = new Set();   // Quick match (ui/quick.js): the server's me / acct / qm-* / stk-* / bw-* messages (stk-*: ui/stakes.js, bw-*: ui/bossweek.js), and Ranked vs CPU's (ui/vscpu.js)
-  const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd"]);
+  const CPU_MSGS = new Set(["cme", "ct-ok", "ct-no", "cres", "bd", "tc"]);   // (and the cups' tc-*: ui/tourney.js)
   const rooms = new Map();
 
   function setConn(v) { if (v === welcomed) return; welcomed = v; for (const fn of [...connL]) fn(v); }
@@ -44,7 +44,7 @@
       return;
     }
     if (m.t === "name") { if (typeof m.by === "string") names.set(m.by, cleanName(m.name)); for (const R of rooms.values()) R.touch(); return; }
-    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
+    if (m.t === "me" || m.t === "acct" || (typeof m.t === "string" && (m.t.slice(0, 3) === "qm-" || m.t.slice(0, 4) === "stk-" || m.t.slice(0, 3) === "bw-" || m.t.slice(0, 3) === "tc-")) || CPU_MSGS.has(m.t)) { for (const fn of [...qmL]) fn(m); return; }
     const R = rooms.get(m.room);
     if (!R) return;
     if (m.t === "peers" && Array.isArray(m.peers)) {
