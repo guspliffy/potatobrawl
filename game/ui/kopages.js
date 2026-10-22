@@ -28,16 +28,16 @@ const KO_PAGES = {
   gunslinger: { name: "Tater Tots", word: "BLAM" },
   reaper: { name: "Rest in Peel", word: "SHHHK" },
 };
-// the second one (MANGA[id].alt2); an empty name falls back to the page's own (koPage)
+// the second one (MANGA[id].alt2; Fable's design, Project files step8/fable-design-2.md section 1); an empty name falls back to the page's own (koPage)
 const KO_PAGES2 = {
-  dragon: { name: "", word: "" },
-  phoenix: { name: "", word: "" },
-  wizard: { name: "", word: "" },
-  alchemist: { name: "", word: "" },
-  odin: { name: "", word: "" },
-  samurai: { name: "", word: "" },
-  gunslinger: { name: "", word: "" },
-  reaper: { name: "", word: "" },
+  dragon: { name: "Air Fryer", word: "WHIRRR" },
+  phoenix: { name: "New Potatoes", word: "FWOOSH" },
+  wizard: { name: "Hocus Croquettes", word: "ALAKAZAM" },
+  alchemist: { name: "Philosopher's Spud", word: "BZZZT" },
+  odin: { name: "Smash Landing", word: "SPLAT" },
+  samurai: { name: "Snake Eyes", word: "SHA SHA" },
+  gunslinger: { name: "Loaded", word: "CH-CHK" },
+  reaper: { name: "Gravy Digger", word: "THUD" },
 };
 // code: the account the copy belongs to (another account on this device sees none of it); items: every item owned; own: the fighter ids of the "ko:" ones;
 // pick: { fighterId: 0 | 1 | 2 | "s" } on this device (off: the old on/off switch, kept in step with pick 0 for ui/shop.js); ads, adN, adMax, adIn (s, at adT): today's ads
