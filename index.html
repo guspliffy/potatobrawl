@@ -34212,6 +34212,7 @@ $("scrDaily").addEventListener("click", (e) => { if (DLY.arm && !e.target.closes
 // the button line counts down to midnight and turns over to the next matchup while the menu stays open
 setInterval(() => { if (mode === "menu") { dailyMenu(); renderPill(); } }, 30000);
 window.__blDaily = { pick: dailyPick, key: dailyKey, shift: dailyShift, after: dailyAfter, again: dailyAgainOk, price: DAILY.again, get st() { return dailyGet(); }, get match() { return match && match.daily ? match : null; } };
+/* ===================== rewarded ads (T3 builds it) ===================== */
 /* ===================== the Harvest: a gift for every day you come by (UI only; Fable's design, /mnt/project-files/pre-step6/fable-ideas.md) =====================
    Thirty gifts in a row on top of the Daily sheet (ui/daily.js, styles css/94-harvest.css), one claimed per day with one tap. It counts the days
    claimed, not a streak: a missed day costs only that day, the calendar waits (the Daily Potato keeps the game's one streak). A day is the phone's
@@ -35056,6 +35057,7 @@ function shopResPlate() {
 }
 // the lobby and the other screens ask for the worn plate's class through this (ui/online.js, later)
 window.__blShop = { plates: PLATES, cls: plateCls, worn: shopWorn, resKo: shopResKo };   // resKo: the tests set the results' band without a lost match
+/* ===================== the Pommes Shop page (T6 builds it) ===================== */
 /* ===================== online play =====================
    Built on the page's `room` capability: everyone with this page open shares a lobby;
    each match is a named room. Both phones run the same deterministic simulation in
