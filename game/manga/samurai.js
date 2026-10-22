@@ -15,7 +15,9 @@
    3080, 3160 three page-wide brush strokes through the hit point (ink with a white hairline core, SHK) while the loser comes apart (3050) and flies out; 3250 the SPLASH:
    the page so far is cut by the three lines into seven slabs that part and fall away, under them pale gold paper, a hundred pink petals bursting from the sheath and
    him full page in colour, sheathed, half turned; 3700 HUNDRED PETALS; 4700 the aftermath panel as in One Cut (shifted by 1200 ms: its moments are MT.AFTER + offset).
-   Both pages share their code: `ult` says which one is playing and setTimes() moves the few moments that differ. */
+   Both pages share their code: `ult` says which one is playing and setTimes() moves the few moments that differ.
+   POTATALITY: "Hasselback" = MANGA.samurai.alt (S_.alt, at the end; its helpers are prefixed hb; `pota` says it is playing), played on a normal KO when it is on
+   (ui/kopages.js). */
 MANGA.samurai = (function () {
   const COL = "#3fe0a8", EDGE = "#effff8", PINK = "#ffbdd3", PINK_D = "#b84a73", PAPER_G = "#dedad3";
   const TILT = 0.15;
@@ -29,6 +31,7 @@ MANGA.samurai = (function () {
   const far = () => (L.portrait ? 92 : 140);   // how far past the loser he stands
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
   let petals = [], snapC = null, half = null, flick = 0, floodAt = null;
+  let pota = false;   // pota: this play is the Potatality, Hasselback (set by its start): the cut is not seen at the hit, he never comes apart, the relief before SHING
   const scratch = new WeakMap();   // the grey pass's scratch canvas lives and dies with the page's layer canvas (freed by the engine at the end of the page)
   const D_ = () => FIN.dir;
   const wx_ = (t) => (t >= CUT_T ? FIN.lx + FIN.dir * far() : FIN.wx);   // where he stands: before the cut, and one frame later behind the loser
@@ -318,7 +321,7 @@ MANGA.samurai = (function () {
       mgPuppet(c, pn, Lp, t, { sc: 1, light: topLight(), post: grey(120) });
       Lp.x = ox_;
       // the hairline of light opens across him, from the side the blade came from (on the Ultimate it is in the gold impact frame instead)
-      if (!ult && t >= HIT) {
+      if (!ult && !pota && t >= HIT) {
         const k = easeOut(fe(HIT, HIT + 80, t)), u = cutU(), cx = Lp.x, cy = Lp.y - cutH(), len = Lp.s.w * 0.62;
         const a = pn.sp(cx - u[0] * len, cy - u[1] * len), b = pn.sp(cx - u[0] * len + u[0] * 2 * len * k, cy - u[1] * len + u[1] * 2 * len * k);
         c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0); c.lineCap = "round"; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]);
@@ -566,7 +569,7 @@ MANGA.samurai = (function () {
         at: (t) => { const sz = port ? 0.048 : 0.16, W = W_(), top = MG.byId.splash.sp(W.x, W.y - 82), h = MG.byId.splash.sp(...bodyPt(W, t, "head")); return [h[0] + D * L.gw * (port ? 0 : 0.05), top[1] - L.gh * (sz * 0.5 + 0.02)]; } });   // centred just above the sprout
       return ws;
     },
-    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; setTimes(false); petals = []; snapC = null; half = null; flick = 0; floodAt = null; lines = slab = petalSpr = null; burst = []; },   // no drone (wind and petals only), no taiko (SHING is the hit)
+    start(g) { FIN.cue.drone = true; FIN.cue.taiko = true; setTimes(false); pota = false; petals = []; snapC = null; half = null; flick = 0; floodAt = null; lines = slab = petalSpr = null; burst = []; },   // no drone (wind and petals only), no taiko (SHING is the hit)
     build(lay) {
       const r = mgRng(2026), g = L.gw, h = L.gh;
       petals = Array.from({ length: MG.slow ? 20 : 34 }, () => ({ x: r() * (g + 60), y: r() * (h + 60), vx: 24 + r() * 34, vy: 7 + r() * 15, a: 0.5 + r() * 1.5, f: 1.1 + r() * 1.6, ph: r() * 6.28, s: 3.6 + r() * 3.2, sp: (r() - 0.5) * 2.4 }));
@@ -598,11 +601,16 @@ MANGA.samurai = (function () {
           P.sheath = 0; P.holdAng = 0.1; P.crouch = 0.28; P.lean = 0.2;
           return { hF: [w * 0.95, -leg - tor * 0.5], hB: [-w * 0.45, -leg - tor * 0.3], fF: [w * 0.55, 0], fB: [-w * 0.6, 0] };
         }
-        const q = ease(fe(SHEATH0, CLICK, t)), s = ease(fe(CLICK, ult ? MT.SPLASH + 400 : TURN + 300, t));   // sheathes, stands tall, turns away
+        const q = ease(fe(SHEATH0, CLICK, t)), s = ease(fe(CLICK, ult ? MT.SPLASH + 400 : pota ? CLICK + 300 : TURN + 300, t));   // sheathes, stands tall, turns away (Hasselback: tall at once, then he holds still)
         P.sheath = Math.max(0.001, q); P.holdAng = 0.1 + (Math.PI - 0.14 - 0.1) * q; P.crouch = 0.28 * (1 - s); P.lean = 0.2 * (1 - s);
         return { hF: [w * (0.95 - 0.33 * q), -leg - tor * (0.5 - 0.14 * q)], hB: [-w * 0.45 + w * 0.25 * s, -leg - tor * 0.32], fF: [w * (0.55 - 0.1 * s), 0], fB: [-w * (0.6 - 0.2 * s), 0] };
       }
       // the loser
+      if (pota && t >= CLICK + 60) {   // the Potatality: after the click, relief (eyes shut, a smile, the hands come down); at SHING the eyes go wide again
+        const ok = t < HB.SHING;
+        P.expr = ok ? "calm" : "terror"; P.exK = 1; P.lean = 0; P.mouth = ok ? 0 : 1;
+        return ok ? { hF: [w * 0.6, -leg - tor * 0.15], hB: [-w * 0.6, -leg - tor * 0.15] } : { hF: [w * 0.75, -leg - tor * 0.5], hB: [-w * 0.7, -leg - tor * 0.5] };
+      }
       const cut = t >= POP;
       P.expr = cut ? "ko" : "terror"; P.exK = fe(MT.INSET, MT.STRIKE, t);
       if (!cut) {
@@ -667,6 +675,283 @@ MANGA.samurai = (function () {
     start(g) { S_.start(g); setTimes(true); },   // (S_.start resets everything and says One Cut; this one then moves the moments)
     page(c, t) { drawSlabs(c, t); },
     end() { slab = null; lines = null; burst = []; petalSpr = null; },
+  });
+  /* ===================== the Potatality, "Hasselback" (MANGA.samurai.alt; design: Project files step8/fable-design.md) =====================
+     One Cut to the brush stroke, but the cut is not seen: at 2900 no hairline, no SHING, he does not come apart (no launch at all: pop 1e9); he stands there
+     trembling, "?". 3250 the splash comes down from the top: the loser big, the samurai with his back to him (beside him; upright in front, nearer, cut by
+     the page's foot) sliding the blade home; 3420 click; the loser is whole: relief, eyes shut, a smile (phew). 3800 SHING: eight jade hairlines run down him,
+     3880 he fans open into nine slices joined above the legs, the cut flesh in cream between them (a hasselback), a little overshoot, then the silence (...).
+     4700 in panel 4's place: the samurai as on One Cut (the enso, the colour flooding from his hand), the loser as a hasselback on a plate on a low board:
+     the skin in his costume colour, golden cuts, one eye per slice (the blinks ripple along), butter, jade chives, steam; a wooden knife rest with a small
+     knife. The engine's POP lifts him off the plate at 5250 (food()): crumbs and a chive are left.
+     The slices: at 3880 the loser's puppet is drawn once into hbCap (the picture, and his silhouette as cut flesh, cropped to his box, device px); every band
+     of it is then drawn turned about its foot. The splash's camera never moves, so that picture, and the pictures hbPup keeps of a puppet holding still (the
+     loser while relieved, the samurai once tall: he straightens at once on this page), stay where they were taken. Helpers: hb. */
+  const HB = { SHEATH0: 3260, CLICK: 3420, PHEW: 3540, SHING: 3800, FAN0: 3880, FAN1: 4160, HUSH: 4260 };
+  const HB_N = 9, HB_BOX = [-75, -128, 75, 12], HB_BASE = 0.2, HB_FAN = 0.3;   // the slices: how many; the box the picture is taken from; where the cuts stop (share of his height); the outer slices' turn (rad)
+  const hbHW = () => L_().s.w * 0.62, hbBS = () => (L_().spec.boss ? MG_BOSS_SC : 1);   // the half width the slices cover (his own units), a boss's scale
+  const HB_FLESH = "#f6e2a0", TAU_ = Math.PI * 2;
+  let hbCap = null, hbPal = null, hbKeep = {};
+  // the splash: its height in world units (vh), the camera's centre from the loser (cx), the loser's scale (lsc), the ground's height (gy); the samurai: where he
+  // stands (wx, wy: upright he is in front, nearer: his feet below the ground line and off the page), his scale, drawn over the loser (front)
+  const hbLay = () => (L.portrait ? { vh: 290, cx: 20, wx: 52, lsc: 1.25, gy: 0.31, wy: 64, wsc: 1.4, front: true } : { vh: 140, cx: 34, wx: 78, lsc: 1.15, gy: 0.36, wy: 0, wsc: 1, front: false });
+  const hbPX = () => FIN.lx + FIN.dir * (far() - (L.portrait ? 60 : 72)), hbFS = () => (L.portrait ? 1 : 1.3);   // the plate in the aftermath, the food's scale
+  // the splash's big puppets: grey only inside the box mgPuppet drew (greyPost greys a square 240 of his units wide, a lot of pixels at this size)
+  const HB_WBOX = [-100, -112, 100, 14];
+  function hbGreyBox(lc, X) {
+    const w = X.bw, h = X.bh;
+    if (w < 2 || h < 2) return;
+    let sc = scratch.get(MG.layer);
+    if (!sc) { sc = { cv: mgCanvas(w, h) }; sc.x = sc.cv.getContext("2d"); scratch.set(MG.layer, sc); } else if (sc.cv.width < w || sc.cv.height < h) { sc.cv.width = Math.max(sc.cv.width, w); sc.cv.height = Math.max(sc.cv.height, h); sc.x = sc.cv.getContext("2d"); }
+    const tx = sc.x;
+    tx.setTransform(1, 0, 0, 1, 0, 0); tx.globalCompositeOperation = "source-over"; tx.clearRect(0, 0, w, h);
+    tx.drawImage(MG.layer, X.bx, X.by, w, h, 0, 0, w, h);
+    tx.globalCompositeOperation = "saturation"; tx.fillStyle = "#000"; tx.fillRect(0, 0, w, h);
+    tx.globalCompositeOperation = "source-over";
+    lc.drawImage(sc.cv, 0, 0, w, h, X.bx, X.by, w, h);
+  }
+  function hbGrey(hex) { const n = parseInt(hex.slice(1), 16), v = Math.round(((n >> 16) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11)), h = v.toString(16).padStart(2, "0"); return "#" + h + h + h; }
+  function hbPalettes() {
+    const c = { wood: "#a9733f", woodD: "#6e4522", plate: "#fbfaf6", gold: "#e3a944", flesh: HB_FLESH, crisp: "#a8692a", skin: L_().pal.accent || col(L_().pal), blade: "#e9eef0", handle: "#3b2416", crumb: "#d99a3a", butter: "#fff1a6" };
+    const g = {};
+    for (const k in c) g[k] = hbGrey(c[k]);
+    hbPal = { c, g };
+  }
+  // the loser's picture, taken once (the pose of 3880: eyes wide) into two cropped canvases (device px): as drawn, and the cut flesh: his silhouette in cream
+  // with an ink rim, the cut lines inked across it (what shows between the slices as they open)
+  function hbCapture(pn) {
+    const Lp = L_(), Y = hbLay(), boss = !!Lp.spec.boss, ze = pn.z * Y.lsc * (boss ? MG_BOSS_SC : 1), bq = boss ? MG_BOSS_BOX : HB_BOX, D = DPR;
+    const sp = pn.p(Lp.x, Lp.y), X = sp[0] + pn.ox, Yf = sp[1] + pn.oy;   // (as mgPuppet places it, so the crop is the part of the layer it has just drawn)
+    const x0 = X + bq[0] * ze, y0 = Yf + bq[1] * ze, x1 = X + bq[2] * ze, y1 = Yf + bq[3] * ze;
+    const bx = Math.max(0, Math.floor(x0 * D)), by = Math.max(0, Math.floor(y0 * D)), bw = Math.min(MG.cw - bx, Math.ceil((x1 - x0) * D) + 1), bh = Math.min(MG.ch - by, Math.ceil((y1 - y0) * D) + 1);
+    if (bw <= 2 || bh <= 2) { hbCap = { none: true }; return; }
+    mgPuppet(mgCanvas(1, 1).getContext("2d"), pn, Lp, HB.FAN0, { sc: Y.lsc, light: loserLight(), post: hbGreyBox, free: true, box: bq });
+    const cvA = mgCanvas(bw, bh), cvK = mgCanvas(bw, bh), cvS = mgCanvas(bw, bh), xk = cvK.getContext("2d"), xs = cvS.getContext("2d"), ZE = ze * D, FX = X * D - bx;
+    cvA.getContext("2d").drawImage(MG.layer, bx, by, bw, bh, 0, 0, bw, bh);
+    xk.drawImage(cvA, 0, 0); xk.globalCompositeOperation = "source-in"; xk.fillStyle = MG_INK; xk.fillRect(0, 0, bw, bh);   // his silhouette in ink
+    const rim = Math.max(1, Math.round(1.2 * D));
+    for (const [dx, dy] of [[0, 0], [rim, 0], [-rim, 0], [0, rim], [0, -rim]]) xs.drawImage(cvK, dx, dy);   // ... a little fatter: the rim
+    xk.fillStyle = HB_FLESH; xk.fillRect(0, 0, bw, bh); xs.drawImage(cvK, 0, 0);   // the flesh inside it
+    const HW = hbHW(), sw = (2 * HW) / HB_N;
+    xs.globalCompositeOperation = "source-atop"; xs.fillStyle = MG_INK;
+    for (let i = 1; i < HB_N; i++) xs.fillRect(Math.round(FX + (-HW + i * sw) * ZE - 0.8 * D), 0, Math.max(1, Math.round(1.6 * D)), bh);
+    xs.fillStyle = "rgba(168,105,42,0.22)"; xs.fillRect(0, 0, bw, bh * 0.4);   // a little crisp towards the top
+    hbCap = { cvA, cvS, bx, by, bw, bh, fx: X * D, fy: Yf * D, ze: ZE };
+  }
+  // the fan: band i of the picture turned about its foot (the cuts stop above the legs: that part stays whole and joins them), the outer ones most;
+  // each band brings its cut face on its inner side (its own silhouette in cream, one band over), so the gap that opens towards the middle shows cream
+  // (drawn outside in, the middle last)
+  function hbSlices(c, t) {
+    const H = hbCap;
+    if (!H || H.none) return;
+    const HW = hbHW(), k = fe(HB.FAN0, HB.FAN1, t), fan = MG.reduced ? 1 : 1 - Math.exp(-5 * k) * Math.cos(8 * k), mid = (HB_N - 1) / 2, sw = (2 * HW) / HB_N, ze = H.ze;
+    const py = Math.round(H.fy - L_().s.h * HB_BASE * ze), ph = py - H.by, cl = (x) => Math.max(0, Math.min(H.bw, x - H.bx));
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+    if (ph > 1) for (let j = 0; j < HB_N; j++) {
+      const i = j === HB_N - 1 ? mid : j % 2 ? HB_N - 1 - (j >> 1) : j >> 1, sg = Math.sign(i - mid);
+      const xl = cl(i ? H.fx + (-HW + i * sw) * ze : -1e5), xr = cl(i < HB_N - 1 ? H.fx + (-HW + (i + 1) * sw) * ze : 1e5), px = H.fx + (-HW + (i + 0.5) * sw) * ze;
+      if (xr - xl < 1) continue;
+      c.save(); c.translate(px, py); c.rotate(((i - mid) / mid) * HB_FAN * fan); c.translate(-px, -py);
+      if (sg) { const w = Math.min(xr - xl, sw * ze), sx = sg < 0 ? xr - w : xl; c.drawImage(H.cvS, sx, 0, w, ph, H.bx + sx - sg * w, H.by, w, ph); }   // (its own outline, so the flesh never stands above the slice)
+      c.drawImage(H.cvA, xl, 0, xr - xl, ph, H.bx + xl, H.by, xr - xl, ph);
+      c.restore();
+    }
+    const q = Math.max(0, ph);
+    if (H.bh - q > 1) c.drawImage(H.cvA, 0, q, H.bw, H.bh - q, H.bx, H.by + q, H.bw, H.bh - q);   // the legs and the uncut foot, whole
+    c.restore();
+  }
+  // SHING: the eight cuts show as jade hairlines down him, top to the base in a quick run from his back to his front, gone as he opens
+  function hbCuts(c, pn, t) {
+    const a = 1 - fe(HB.FAN0 + 10, HB.FAN0 + 90, t);
+    if (t < HB.SHING || a <= 0) return;
+    const Y = hbLay(), D = FIN.dir, HW = hbHW(), sw = (2 * HW) / HB_N, sc = Y.lsc * hbBS(), h = L_().s.h, y0 = -h * 1.15 * sc, y1 = -h * HB_BASE * sc;
+    c.save(); c.globalAlpha = a; c.lineCap = "round";
+    for (let i = 1; i < HB_N; i++) {
+      const o = (D > 0 ? HB_N - i : i) * 7, k = easeOut(fe(HB.SHING + o, HB.SHING + o + 50, t));
+      if (k <= 0) continue;
+      const x = FIN.lx + (-HW + i * sw) * sc, top = pn.p(x, y0), bot = pn.p(x, y0 + (y1 - y0) * k);
+      for (const [w, colr] of [[4.2, MG_INK], [2.2, COL], [0.8, EDGE]]) { c.strokeStyle = colr; c.lineWidth = w; c.beginPath(); c.moveTo(top[0], top[1]); c.lineTo(bot[0], bot[1]); c.stroke(); }
+    }
+    c.restore();
+  }
+  // the splash: plain paper, a 70% band under the top border, focus lines on him, the mist and the ground; the samurai (grey, jade) sheathing with his back to the
+  // loser, the click; the loser whole (live) until 3880, then the slices
+  function hbDrawSplash(c, pn, t) {
+    const Lp = L_(), Y = hbLay();
+    pn.screen(c);
+    const hd = pn.p(FIN.lx, -46 * Y.lsc), gy = pn.p(FIN.lx, 0)[1];
+    mgFocus(c, hd[0], hd[1], Math.hypot(pn.w, pn.h) * 0.85, t * 0.0002, 0.3);
+    samTone(c, pn, [[pn.x0 - 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 - 4], [pn.x1 + 4, pn.y0 + pn.h * 0.08], [pn.x0 - 4, pn.y0 + pn.h * 0.12]], 6, 0.7, [t * 0.001, 0]);
+    samTone(c, pn, [[pn.x0 - 4, gy - pn.h * 0.14], [pn.x1 + 4, gy - pn.h * 0.17], [pn.x1 + 4, gy], [pn.x0 - 4, gy]], 7, 0.22, [t * 0.0007, 0]);
+    ground(c, pn);
+    if (!Y.front) hbSam(c, pn, t, Y);
+    if (t < HB.FAN0) { hbPup(c, pn, Lp, t, { sc: Y.lsc, light: loserLight(), post: hbGreyBox, box: Lp.spec.boss ? MG_BOSS_BOX : HB_BOX }, "L", t >= CLICK + 60 && t < HB.SHING); pn.screen(c); }
+    else { if (!hbCap) hbCapture(pn); hbSlices(c, t); pn.screen(c); }
+    hbCuts(c, pn, t);
+    if (Y.front) hbSam(c, pn, t, Y);
+  }
+  // a puppet that holds still from here on (still): its picture is kept from the first such frame (once the splash is in) and drawn again, as mgPuppet drew it
+  function hbPup(c, pn, p, t, o, key, still) {
+    const K = still && hbKeep[key];
+    if (K) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(K.cv, K.bx, K.by); c.restore(); return; }
+    mgPuppet(c, pn, p, t, o);
+    if (!still || t < MT.SPLASH + 200) return;
+    const boss = !!p.spec.boss, D = DPR, ze = pn.z * (o.sc || 1) * (boss ? MG_BOSS_SC : 1), sp = pn.p(p.x, p.y), bq = o.box || (boss ? MG_BOSS_BOX : MG_BOX);
+    const x0 = Math.max(sp[0] + pn.ox + bq[0] * ze, pn.x0 + pn.ox - 2), y0 = Math.max(sp[1] + pn.oy + bq[1] * ze, pn.y0 + pn.oy - 2), x1 = Math.min(sp[0] + pn.ox + bq[2] * ze, pn.x1 + pn.ox + 2), y1 = Math.min(sp[1] + pn.oy + bq[3] * ze, pn.y1 + pn.oy + 2);
+    const bx = Math.max(0, Math.floor(x0 * D)), by = Math.max(0, Math.floor(y0 * D)), bw = Math.min(MG.cw - bx, Math.ceil((x1 - x0) * D) + 1), bh = Math.min(MG.ch - by, Math.ceil((y1 - y0) * D) + 1);
+    if (bw <= 2 || bh <= 2) return;
+    const cv = mgCanvas(bw, bh); cv.getContext("2d").drawImage(MG.layer, bx, by, bw, bh, 0, 0, bw, bh);
+    hbKeep[key] = { cv, bx, by };
+  }
+  // the samurai in the splash (grey, jade), sheathing with his back to the loser, and the click at his hand. Upright he stands in front, nearer (bigger, lower)
+  function hbSam(c, pn, t, Y) {
+    const W = W_(), D = FIN.dir, s = Y.wsc, ox = W.x, oy = W.y, X = FIN.lx + D * Y.wx;
+    const pz = Object.assign(Object.create(pn), { world: (cc) => { pn.world(cc); cc.translate(X, Y.wy); cc.scale(s, s); cc.translate(-X, -Y.wy); } });   // jade() draws at his scale
+    let hand = null;
+    W.x = X; W.y = Y.wy;
+    try {
+      hbPup(c, pn, W, t, { sc: s, light: topLight(), post: hbGreyBox, box: HB_WBOX }, "W", t >= CLICK + 320);
+      jade(c, pz, W, t, 1);
+      const b = bladeTip(W, t); hand = pn.p(X + (b[0] - X) * s, Y.wy + (b[1] - Y.wy) * s);
+    } finally { W.x = ox; W.y = oy; }
+    pn.screen(c);
+    const ck = fe(CLICK, CLICK + 160, t);   // the click: short lines at his hand as the blade goes home
+    if (ck > 0 && ck < 1) {
+      const m = Math.max(1, s * 0.85);
+      c.save(); c.globalAlpha = 1 - ck; c.lineCap = "round"; c.strokeStyle = MG_INK; c.lineWidth = 3.2 * m;
+      for (let i = 0; i < 5; i++) { const an = -0.5 * Math.PI + (i - 2) * 0.55, r0 = (8 + 9 * ck) * m, r1 = (16 + 26 * ck) * m; c.beginPath(); c.moveTo(hand[0] + Math.cos(an) * r0, hand[1] + Math.sin(an) * r0); c.lineTo(hand[0] + Math.cos(an) * r1, hand[1] + Math.sin(an) * r1); c.stroke(); }
+      c.restore();
+    }
+  }
+  // the hasselback on its plate on a low board, the knife rest at his end of the board (food units: the plate's middle at 0, on the ground; P: colours or greys)
+  function hbFood(c, pn, t, P, popped) {
+    const D = FIN.dir, s = hbFS(), lw = Math.max(1.1, 2.6 / pn.z) / s, cx = -D * 4;
+    pn.world(c);
+    c.save(); c.translate(hbPX(), 0); c.scale(s, s); c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MG_INK; c.lineWidth = lw;
+    c.fillStyle = P.woodD; for (const sd of [-1, 1]) { c.beginPath(); c.rect(sd * 26 - 3, -3, 6, 3); c.fill(); c.stroke(); }
+    c.fillStyle = P.wood; c.beginPath(); c.rect(-34, -7.2, 68, 4.4); c.fill(); c.stroke();
+    // the knife rest: a little wooden block with a dip, a small knife across it (jade edge), its tip towards the plate
+    const kx = D * 26;
+    c.fillStyle = P.wood; c.beginPath(); c.moveTo(kx - 4.8, -7.2); c.lineTo(kx - 4.8, -10.8); c.quadraticCurveTo(kx, -8.6, kx + 4.8, -10.8); c.lineTo(kx + 4.8, -7.2); c.closePath(); c.fill(); c.stroke();
+    c.save(); c.translate(kx, -10.6); c.rotate(-0.05 * D); c.scale(D, 1);
+    c.fillStyle = P.blade; c.beginPath(); c.moveTo(-9, 0.6); c.quadraticCurveTo(-7.5, -1.9, 1, -1.9); c.lineTo(1, 0.9); c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = COL; c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(-8.2, 0.5); c.lineTo(0.6, 0.7); c.stroke();
+    c.strokeStyle = MG_INK; c.lineWidth = lw; c.fillStyle = P.handle; c.beginPath(); c.roundRect(1, -1.6, 10, 2.6, 1); c.fill(); c.stroke();
+    c.restore();
+    // the plate
+    c.fillStyle = P.plate; c.beginPath(); c.ellipse(cx, -9.2, 22, 4.2, 0, 0, TAU_); c.fill(); c.stroke();
+    c.lineWidth = lw * 0.6; c.beginPath(); c.ellipse(cx, -9.6, 16, 2.8, 0, 0, TAU_); c.stroke(); c.lineWidth = lw;
+    if (popped) {   // what he left: crumbs, a chive, a smear of butter
+      c.fillStyle = P.crumb; for (const [dx, dy, r] of [[-6, -9.4, 0.9], [-2, -10.4, 0.6], [4, -9, 0.8], [7, -10.2, 0.5]]) { c.beginPath(); c.arc(cx + dx, dy, r, 0, TAU_); c.fill(); }
+      c.strokeStyle = COL; c.lineWidth = lw * 1.2; c.beginPath(); c.moveTo(cx + 1, -9.6); c.lineTo(cx + 4, -10.3); c.stroke();
+      c.restore();
+      return;
+    }
+    // the hasselback lying on the plate: a long low dome cut into eight slices that lean apart a little (his colour on the skin, the golden flesh showing
+    // in each cut), joined along the bottom; one eye on each slice (the blinks ripple along)
+    const n = 8, Lh = 36, Hh = 17, base = -10.4, sw = Lh / n, x0 = cx - Lh / 2, b0 = MT.AFTER + 420, cyc = (t - b0) % 1600;
+    const dh = (x) => Hh * Math.sqrt(Math.max(0, 1 - ((x - cx) / (Lh / 2)) ** 2));
+    const dome = () => { c.beginPath(); c.moveTo(x0, base); c.ellipse(cx, base, Lh / 2, Hh, 0, Math.PI, TAU_); c.closePath(); };
+    for (let j = 0; j < n; j++) {
+      const i = j % 2 ? n - 1 - (j >> 1) : j >> 1, q = (i + 0.5) / n * 2 - 1, xa = x0 + i * sw, xm = xa + sw / 2, inn = q < 0 ? 1 : -1;
+      const a = q * 0.3 + (MG.reduced ? 0 : Math.sin(t * 0.004 + i) * 0.012);
+      c.save(); c.translate(xm, base); c.rotate(a); c.translate(-xm, -base);
+      c.save(); c.beginPath(); c.rect(xa - 0.02, base - Hh - 3, sw + 0.04, Hh + 3); c.clip(); dome(); c.clip();
+      c.fillStyle = P.skin; c.fillRect(xa - 1, base - Hh - 3, sw + 2, Hh + 4);
+      c.fillStyle = P.gold; c.fillRect(inn > 0 ? xa + sw * 0.52 : xa, base - Hh - 3, sw * 0.48, Hh + 3);   // the cut face on its inner side
+      c.fillStyle = P.crisp; c.fillRect(inn > 0 ? xa + sw * 0.52 : xa + sw * 0.48 - 0.5, base - Hh - 3, 0.5, Hh + 3);
+      dome(); c.lineWidth = lw * 1.1; c.stroke();
+      c.restore();
+      c.lineWidth = lw * 0.8;
+      for (const ex of [xa, xa + sw]) { const h = dh(ex); if (h > 0.5) { c.beginPath(); c.moveTo(ex, base - 2.6); c.lineTo(ex, base - h); c.stroke(); } }
+      c.lineWidth = lw;
+      const h = dh(xm);
+      if (h > 7) {   // the eye
+        const ex = xm - inn * sw * 0.2, ey = base - h + 5, bl = t >= b0 && cyc >= i * 50 && cyc < i * 50 + 90;
+        if (bl) { c.beginPath(); c.moveTo(ex - 1.7, ey); c.lineTo(ex + 1.7, ey); c.lineWidth = lw * 0.8; c.stroke(); c.lineWidth = lw; }
+        else { c.fillStyle = "#ffffff"; c.beginPath(); c.arc(ex, ey, 1.95, 0, TAU_); c.fill(); c.lineWidth = lw * 0.7; c.stroke(); c.lineWidth = lw; c.fillStyle = MG_INK; c.beginPath(); c.arc(ex - FIN.dir * 0.5, ey + 0.3, 0.95, 0, TAU_); c.fill(); }
+      }
+      c.restore();
+    }
+    c.save(); c.beginPath(); c.rect(x0 - 1, base - 2.6, Lh + 2, 3); c.clip(); dome(); c.fillStyle = P.skin; c.fill(); dome(); c.stroke(); c.restore();   // the uncut bottom joins them
+    c.beginPath(); c.moveTo(x0 + 0.6, base - 2.6); c.lineTo(x0 + Lh - 0.6, base - 2.6); c.lineWidth = lw * 0.7; c.stroke(); c.lineWidth = lw;
+    c.save(); c.translate(cx, base - Hh - 0.6); c.rotate(-0.1);   // a pat of butter, melting down the middle slices
+    c.fillStyle = P.butter; c.beginPath(); c.roundRect(-3.6, -2.2, 7.2, 3, 0.8); c.moveTo(0.7, 0.6); c.quadraticCurveTo(1.3, 3.4, 0.7, 4.9); c.quadraticCurveTo(0.1, 5.7, -0.3, 4.8); c.quadraticCurveTo(-0.5, 2.6, -0.9, 0.8); c.fill(); c.lineWidth = lw * 0.8; c.stroke(); c.lineWidth = lw;
+    c.restore();
+    c.strokeStyle = COL; c.lineWidth = lw * 1.3;   // jade chives
+    for (const [dx, dy, a] of [[-9, -22.5, 0.6], [-2, -28.5, -0.4], [5, -27, 0.3], [11, -21, -0.7]]) { c.beginPath(); c.moveTo(cx + dx - Math.cos(a) * 1.6, dy - Math.sin(a) * 1.6); c.lineTo(cx + dx + Math.cos(a) * 1.6, dy + Math.sin(a) * 1.6); c.stroke(); }
+    if (!MG.slow) {   // steam
+      c.strokeStyle = MG_INK; c.lineWidth = lw * 0.8;
+      for (let i = 0; i < 3; i++) {
+        const sx = cx + (i - 1) * 9, ph = ((t - MT.AFTER) * 0.02 + i * 7) % 22;
+        c.globalAlpha = 0.7 * (1 - ph / 22);
+        c.beginPath(); for (let j = 0; j <= 8; j++) { const yy = -31 - ph - j * 1.9, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.2; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+    c.restore();
+  }
+  // the aftermath: One Cut's panel 4 (the enso, him, the colour flooding from his hand) and the food, grey until the flood reaches it
+  function hbDrawAfter(c, pn, t) {
+    drawAfter(c, pn, t);
+    if (!hbPal) hbPalettes();
+    const fl = flood(t), popped = mgPopped(t);
+    if (!fl.full) hbFood(c, pn, t, hbPal.g, popped);
+    if (fl.r > 2) {
+      c.save(); pn.screen(c); if (fl.r < 1e4) { c.beginPath(); c.arc(fl.x - pn.ox, fl.y - pn.oy, fl.r, 0, TAU_); c.clip(); }
+      hbFood(c, pn, t, hbPal.c, popped);
+      c.restore();
+    }
+    pn.screen(c);
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Hasselback", pop: 1e9,   // (he never flies: the engine's POP takes him off the plate)
+    start(g) {
+      S_.start(g); pota = true; hbCap = null; hbPal = null; hbKeep = {};
+      POP = 1e9; SHEATH0 = HB.SHEATH0; CLICK = HB.CLICK; FLOOD = MT.AFTER + 100;   // the click is in the splash; the colour floods back as the aftermath comes in
+      FIN.cue.shing = true;   // (SHING sounds at the cut in the splash)
+    },
+    end() { pota = false; hbCap = null; hbPal = null; hbKeep = {}; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = hbDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 120 : 112) * (1 - 0.06 * fe(MT.AFTER, MT.END, t)); return { wx: wx_(t) - FIN.dir * (lay.port ? 34 : 28), wy: -0.4 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "t", paper: MG_PAPER, slide: MG.reduced ? 1 : 180,
+        cam: () => { const Y = hbLay(); return { wx: FIN.lx + FIN.dir * Y.cx, wy: -Y.gy * Y.vh, vh: Y.vh }; },   // (still: the pictures it keeps stay where they were taken)
+        draw: hbDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const D = FIN.dir, port = lay.port, Y = hbLay(), ws = S_.words(lay).filter((w) => w.text !== "SHING");
+      const at = (id, tt, wx, wy) => () => { const pn = MG.byId[id]; mgPlace(pn, tt); const q = pn.sp(wx, wy); return [q[0], q[1]]; };
+      ws.push(
+        { text: "?", t0: HIT + 60, t1: MT.SPLASH, size: port ? 0.05 : 0.1, rot: 0.12 * D, at: at("strike", HIT + 60, FIN.lx - D * 14, -L_().s.h - (port ? 30 : 22)) },
+        { text: "click", t0: HB.CLICK, t1: HB.CLICK + 520, size: port ? 0.035 : 0.07, rot: -0.1 * D, jit: 0.1, at: at("splash", HB.CLICK, FIN.lx + D * (Y.wx + (port ? 12 : 22)), port ? -46 : -60) },
+        { text: "phew", t0: HB.PHEW, t1: HB.SHING + 20, size: port ? 0.035 : 0.07, rot: 0.08 * D, jit: 0.12, at: at("splash", HB.PHEW, FIN.lx - D * (port ? 14 : 50), port ? -130 : -62) },
+        { text: "SHING", t0: HB.SHING, t1: HB.HUSH + 40, size: port ? 0.085 : 0.2, arc: 12, rot: -TILT * D, fill: COL, stretch: { ang: -TILT * D, k: 0.4 },
+          at: port ? at("splash", HB.SHING, FIN.lx + D * Y.cx, -168) : at("splash", HB.SHING, FIN.lx + D * 112, -100) },
+        { text: "...", t0: HB.HUSH, t1: MT.AFTER + 60, size: port ? 0.06 : 0.12, space: 0.12, rot: -0.06 * D,
+          at: port ? at("splash", HB.HUSH, FIN.lx + D * Y.cx, -168) : at("splash", HB.HUSH, FIN.lx + D * 112, -100) },
+        { text: "fsss", t0: MT.AFTER + 320, t1: MT.POP, size: port ? 0.03 : 0.055, rot: -0.08 * D, jit: 0.15, at: at("after", MT.AFTER + 320, hbPX() + D * 10 * hbFS(), -44 * hbFS()) },
+      );
+      return ws;
+    },
+    food() { const x = hbPX() - FIN.dir * 4 * hbFS(), s = hbFS(); return { x, y: 0, r: 18 * s, y0: -16 * s, lx: x - FIN.dir * (L.portrait ? 24 : 36) }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("hbQ", HIT + 60, () => Cin.go(() => Cin._osc("sine", 660, 900, 0.14, 0.05, 0.005)));
+      cueOnce("hbSheath", HB.SHEATH0, () => Cin.go(() => Cin._noise(0.16, 0.12, 5200, 2200, "bandpass", 1.4)));
+      cueOnce("hbPhew", HB.PHEW, () => Cin.go(() => Cin._noise(0.45, 0.06, 500, 1300, "bandpass", 1.2)));
+      cueOnce("hbShing", HB.SHING, () => Cin.go(() => {   // the steel of One Cut's SHING, at last
+        for (const [f, v, d] of [[2637, 0.1, 1.1], [3951, 0.07, 0.8], [5274, 0.045, 0.6], [7458, 0.025, 0.4]]) Cin._osc("sine", f, f * 0.997, d, v, 0.002, 0.03);
+        Cin._noise(0.06, 0.4, 9000, 3500, "highpass", 0.7, 0.03);
+      }));
+      cueOnce("hbFan", HB.FAN0, () => Cin.go(() => { for (let i = 0; i < HB_N; i++) Cin._osc("triangle", 1800 + i * 90, 1500 + i * 80, 0.05, 0.035, 0.002, i * 0.025); Cin.whoosh(0.2, -0.3 * D, 0.3 * D, 0.2); }));
+      cueOnce("hbSteam", MT.AFTER + 300, () => Cin.go(() => Cin._noise(0.9, 0.03, 3000, 5200, "highpass", 0.8)));
+    },
   });
   return S_;
 })();
