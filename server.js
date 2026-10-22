@@ -18,6 +18,8 @@
  * itself from the inputs passing through here. Ranked needs the accounts; Casual works without them.
  * Ranked vs CPU (cpurank.js): the server deals each ranked CPU match and plays it again from the player's inputs before the CPU rank
  * moves; it also keeps the Boards (the CPU rank and the online rank) in memory.
+ * Pommes (pommes.js): the premium currency's wallet in the account files, what it buys (an alternate KO page per fighter) and the
+ * requests of tools/pommes.js (grant, move); needs the sign-in and the accounts. Money can't buy Pommes yet (the payment step comes later).
  * SIGUSR2 = drain before an update: no new Quick matches are made, the running ones play on; /health counts them.
  */
 const http = require("http");
@@ -107,6 +109,18 @@ try {
     console.log("Boss Week: on");
   } else if (quick) console.log("Boss Week: off: needs accounts");
 } catch (e) { console.warn("Boss Week: off,", e.message); }
+// Pommes (pommes.js): the wallet, the KO pages it buys, tools/pommes.js's requests; needs the sign-in and the accounts.
+let pommes = null;
+try {
+  if (quick && accounts) {
+    pommes = require("./pommes.js").init({
+      accounts, seatOf: quick.seatOf,
+      send: (peer, msg) => { const c = clients.get(peer); if (c) out(c.ws, msg); },
+      spoolMs: process.env.PM_SPOOL_MS ? +process.env.PM_SPOOL_MS : undefined,   // tests only: read the requests folder more often
+    });
+    console.log("Pommes: on (buying with money: off)");
+  } else if (quick) console.log("Pommes: off: needs accounts");
+} catch (e) { console.warn("Pommes: off,", e.message); }
 process.on("SIGUSR2", () => { if (quick) { quick.drain(); console.log(`Quick match: draining for an update, ${quick.running()} ranked matches still running`); } });
 
 const server = http.createServer((req, res) => {
@@ -184,6 +198,7 @@ function drop(peer) {
   if (quick) quick.gone(peer);
   if (cpurank) cpurank.gone(peer);
   if (bossweek) bossweek.gone(peer);
+  if (pommes) pommes.gone(peer);
 }
 
 wss.on("connection", (ws) => {
@@ -226,6 +241,7 @@ wss.on("connection", (ws) => {
     if (quick && quick.handle(peer, m)) return;   // auth, qm, qmx
     if (bossweek && bossweek.handle(peer, m)) return;   // bwme, bwt, bwr, bd {k: "w"}
     if (cpurank && cpurank.handle(peer, m)) return;   // cme, ct, cr, bd
+    if (pommes && pommes.handle(peer, m)) return;   // pm, pmb
     if (m.t === "join") {
       const name = m.room;
       if (typeof name !== "string" || !ROOM_RE.test(name)) return;

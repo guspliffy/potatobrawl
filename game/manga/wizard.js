@@ -12,7 +12,8 @@
    which one plays). A cooler night (NIGHT_U) and a rune circle over his hat; at 2250 five stars let go: four small gold ones rain onto marked spots round the loser
    (landing 2470-2740), the big one falls last (gold, 1.3x); the loser fills with night sky instead of crystal (KRAKOOM); 3250 panel 5: a black page, stars draw the
    loser's face over its dark silhouette, the face cracks (3950), 4100 the bang (a white frame, the page turns pale gold, the stars fly out as a galaxy, he stands in
-   colour, BIG BANG); 4700 panel 4 as on Starfall (its moments are MT.AFTER + offset). */
+   colour, BIG BANG); 4700 panel 4 as on Starfall (its moments are MT.AFTER + offset).
+   POTATALITY: "Crisp-tal Ball" = MANGA.wizard.alt (S_.alt, at the end; its helpers are prefixed crb), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.wizard = (function () {
   const COL = "#f2c14e", GOLD = "#ffd978", PALE = "#fff6d8", NIGHT = "#0b0c1c", WHT = "#fffdf4", FACET_INK = "#2a1d12", NIGHT_U = "#06071a";
   const W_ = () => FIN.P[FIN.w], L_ = () => FIN.P[FIN.l];
@@ -27,6 +28,7 @@ MANGA.wizard = (function () {
   let stars = STARS_L, sky = [], motes = [], flakes = [], facets = null, facetS = 0, shards = [], bgDots = [], lay_ = null;
   // the Ultimate ("Big Bang"): ult is set by start(); the shower's four small stars, the loser's face as stars (geo), its dark silhouette (neb), the cracks
   let ult = false, shower = [], geo = null, neb = null, cracks = [], nDots = [];
+  let pota = false;   // pota: this play is the Potatality, Crisp-tal Ball (set by its start)
   const night = () => (ult ? NIGHT_U : NIGHT);
   const DET_U = [2340, 2250, 2250, 2280, 2310, -1, -1];   // the Ultimate: when each star of the constellation lets go (-1: it stays)
   // a star that has left the constellation (Starfall: only the brightest, at T_DET)
@@ -49,6 +51,8 @@ MANGA.wizard = (function () {
       ang = mixN(-0.55, -1.42, e); hF = lerp2(thrust, [w * 0.6, -leg - tor * 1.32], e); hB = [-w * 0.5, -leg - tor * mixN(0.85, 1.15, e)];
       lean = mixN(0.22, 0, e) - 0.15 * r;
       cry = t < U_BANG ? mixN(2.2, 4, e) + ease(fe(3740, 3950, t)) : mixN(5, 3, ease(fe(U_BANG, MT.AFTER, t)));
+    } else if (pota && t >= MT.SPLASH) {   // the Potatality: the tap on the crystal ball (splash), the crisp lifted out of the bowl (panel 4)
+      const q = crbCast(t, w, leg, tor); ang = q.ang; hF = q.hF; hB = q.hB; lean = q.lean; cry = q.cry;
     } else if (t < MT.AFTER) {
       const e = easeOut(fe(2900, 3060, t));
       ang = mixN(0.2, -0.55, e); hF = lerp2(back, thrust, e); lean = mixN(-0.12, 0.22, e); hB = [-w * 0.5, -leg - tor * 0.85];
@@ -522,7 +526,7 @@ MANGA.wizard = (function () {
       const p1 = MG.panels[0], orig = p1.d.draw;
       p1.d.draw = function (c, pn, t) { orig(c, pn, t); wizNight(c, t); };
     },
-    start() { ult = false; shower = []; geo = null; neb = null; cracks = []; },
+    start() { ult = false; pota = false; shower = []; geo = null; neb = null; cracks = []; },
     end() { neb = null; geo = null; },
     step(t) { if (t > MT.END - 50 && facets) { facets = null; } if (ult && !neb && t >= 1600) nebBuild(); },   // the loser's dark silhouette for the splash, built while the look panel plays
     // gold snow across the whole page after the strike; the gem's speed lines run along its path
@@ -537,7 +541,7 @@ MANGA.wizard = (function () {
         o.restore();
       }
       if (ult && t >= 2250 && t < 2760) showerOver(o, t);
-      if (t > this.hit + 80 && t < this.hit + 600 + 400) {
+      if (t > this.hit + 80 && t < this.hit + 600 + 400 && !(pota && t >= MT.SPLASH)) {   // (a Potatality: the loser is in the ball from the splash on)
         const Lp = L_(), pn = MG.byId.strike, u = t - FIN.launch, a = (1 - fe(FIN.launch + 150, FIN.launch + 420, t)) * fe(FIN.launch - 40, FIN.launch + 40, t);
         if (a > 0.01) {
           const q = pn.sp(Lp.x, Lp.y - Lp.s.h * 0.5), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
@@ -547,7 +551,7 @@ MANGA.wizard = (function () {
         }
       }
       const A = MT.AFTER;
-      if (t > A && t < MT.FADE + 100) {
+      if (t > A && t < MT.FADE + 100 && !pota) {
         const a = fe(A, A + 300, t) * (1 - fe(A + 700, A + 1000, t)), u = (t - A) / 1000;
         o.save(); o.globalAlpha = a;
         for (const d of flakes) {
@@ -576,6 +580,7 @@ MANGA.wizard = (function () {
     },
     pose(P, sk, t, role, p) {
       const w = sk.w, leg = sk.leg, tor = sk.tor, H0 = FIN.hit;
+      if (pota && t >= MT.SPLASH) return crbPose(P, sk, t, role);   // the Potatality: the ball, the bowl
       if (role === "w") {
         const cs = cast(t);
         P.holdAng = cs.ang; P.cryK = cs.cry; P.lean = cs.lean; P.mouth = t >= 2780 && t < 3300 ? 0.5 : 0;
@@ -923,6 +928,350 @@ MANGA.wizard = (function () {
       cueOnce("uBang", U_BANG, () => Cin.go(() => { Cin.boom(1); Cin.taiko(1); Cin.sub(40, 22, 1.6, 0.6); Cin.glass(); }));
       cueOnce("uShim2", 4150, () => Cin.go(() => Cin.shimmer(1760, 2.2)));
       cueOnce("uWord", 4160, () => Cin.go(() => Cin.chime(1568)));
+    },
+  });
+  /* ===================== the Potatality, "Crisp-tal Ball" (MANGA.wizard.alt; design: Project files step8/fable-design.md) =====================
+     Starfall to the hit (the hit's word is KLINNG here: KRISSH belongs to the ball). 3250 panel 5, the splash, slides up: the night, the Wizard
+     stands behind a crystal ball that sits on his palm in the foreground, the loser small inside it, hands on the glass; 3600 he raises the staff,
+     3800 its crystal taps the glass (tink...), cracks creep over it while the loser looks up; 3990 KRISSH: the ball bursts (a white frame, a star-burst,
+     the star ring, shards) into a shower of potato crisps that tumble and fall like stars; the biggest one has the loser's face, flutters down onto
+     the palm (4430) and blinks. 4700 in panel 4's place, in colour: a bowl of crisps by the Wizard, the face crisp on top; the crystal lifts one crisp
+     out into his mouth (crunch, 4990) and the face crisp sweats; the engine's POP bursts the bowl at 5250 (food()): the empty bowl and a few crumbs.
+     The ball is a foreground object, set in page px where the staff's crystal lands at the tap (his staff is far too long to tap a ball held in his
+     own hand at his own scale); the palm and the sleeve under it come in from the bottom edge. Every helper here is prefixed crb. */
+  const CRB_RAISE = 3600, CRB_TAP = 3800, CRB_K = 3990, CRB_LAND = 4430, CRB_LIFT = 4780, CRB_EAT = 4990;
+  const CRB_GOLD = "#f4c45a", CRB_GOLD_B = "#dfa443", CRB_GOLD_D = "#b9812c", CRB_GLASS = "#e4e9fb", CRB_BOWL = "#323778", CRB_IN = "#181a44", CRB_TRIM = "#d8b04a";
+  const CRB_H = [22, -70], CRB_A = 0.2, CRB_AP = 1.05, CRB_B = 1.1, CRB_BP = 0.3, CRB_BX = 50;   // the front hand and the staff's angle at the tap, how far behind the ball's top the crystal lands (wide, upright); the bowl's place (world units toward the loser)
+  const CRB_FLECK = [[-0.45, -0.25], [0.15, -0.4], [0.5, 0.12], [-0.12, 0.32]];
+  // the heap in the bowl, back to front: [x, y (about the bowl's foot), half width, turn, how much of its face shows, shape]
+  const CRB_HEAP = [[-15, -22, 8, -0.5, 0.55, 1], [14, -22, 8, 0.6, 0.6, 2], [-5, -27, 8.5, 0.3, 0.5, 3], [7, -28, 8, -0.4, 0.55, 0],
+    [-19, -19, 7.5, -0.9, 0.7, 2], [19, -19, 7.5, 0.8, 0.65, 3], [-9, -21, 8.5, 0.15, 0.75, 0], [9, -21, 8.5, -0.2, 0.7, 1], [0, -24, 8, 0.05, 0.6, 2]];
+  let crbShp = [], crbFly = [], crbGlass = [], crbCrack = [], crbBits = [], crbFaceFill = CRB_GOLD;
+  // the Wizard's staff and hands on the long half (local units about his feet, as cast() returns them); his own back hand stays behind him
+  function crbCast(t, w, leg, tor) {
+    const a1 = MG.lay && MG.lay.port ? CRB_AP : CRB_A, hB = [-w * 0.05, -leg - tor * 0.45];
+    if (t >= MT.AFTER) {   // panel 4: the staff upright by him, tipped toward the bowl while its crystal lifts a crisp out
+      const lift = fe(CRB_LIFT - 60, CRB_LIFT, t) * (1 - fe(CRB_EAT, CRB_EAT + 120, t));
+      return { ang: mixN(-1.3, -0.95, lift), hF: lerp2([w * 0.66, -leg - tor * 0.62], [w * 0.74, -leg - tor * 0.72], lift), hB: [-w * 0.5, -leg - tor * 0.7], lean: 0.03 - 0.05 * lift, cry: 1.25 + 0.8 * lift };
+    }
+    const rest = [w * 0.48, -leg - tor * 0.9], up = [w * 0.42, -leg - tor * 1.24];
+    let ang = -1.5 + 0.05 * Math.sin(t * 0.004), hF = rest, cry = 1.2;
+    if (t >= CRB_RAISE && t < CRB_TAP - 60) { const e = ease(fe(CRB_RAISE, CRB_TAP - 60, t)); ang = mixN(-1.5, -2.25, e); hF = lerp2(rest, up, e); cry = 1.2 + 0.1 * e; }
+    else if (t >= CRB_TAP - 60 && t < CRB_K) {   // the chop down onto the glass, a little bounce off it
+      const e = easeIn(fe(CRB_TAP - 60, CRB_TAP, t)), b = Math.sin(Math.PI * fe(CRB_TAP, CRB_TAP + 140, t));
+      ang = mixN(-2.25, a1, e) - 0.07 * b; hF = lerp2(up, CRB_H, e); cry = 1.3;
+    } else if (t >= CRB_K) { const e = easeOut(fe(CRB_K, CRB_K + 260, t)); ang = mixN(a1, -1.3, e); hF = lerp2(CRB_H, up, e); cry = 2.6 - 1.3 * fe(CRB_K, CRB_K + 500, t); }
+    return { ang, hF, hB, lean: 0.02, cry };
+  }
+  function crbPose(P, sk, t, role) {
+    const w = sk.w, leg = sk.leg, tor = sk.tor;
+    P.spin = 0; P.exK = 1;
+    if (role === "w") {
+      const cs = cast(t);
+      P.holdAng = cs.ang; P.cryK = cs.cry; P.lean = cs.lean; P.crouch = 0;
+      if (t < MT.AFTER) { P.expr = t >= CRB_TAP - 60 && t < CRB_K ? "calm" : "grin"; P.mouth = t >= CRB_K && t < CRB_K + 380 ? 0.5 + 0.2 * Math.sin((t - CRB_K) * 0.05) : 0; }   // eyes shut for the tap, a laugh at KRISSH
+      else {   // panel 4: mouth open for the crisp, then chewing with his eyes shut
+        const ch = t >= CRB_EAT && t < CRB_EAT + 260;
+        P.expr = ch ? "calm" : "grin"; P.mouth = t >= CRB_EAT - 60 && t < CRB_EAT ? 0.6 : ch ? 0.12 + 0.2 * Math.abs(Math.sin((t - CRB_EAT) * 0.025)) : 0;
+      }
+      return { hF: cs.hF, hB: cs.hB };
+    }
+    // the loser in the ball: hands on the glass, pounding it; from the tap he freezes and looks up at the crack
+    const k = t >= CRB_TAP, q = k ? 0 : Math.sin(t * 0.034);
+    P.expr = "terror"; P.lean = k ? -0.16 : 0.12 + 0.03 * q; P.mouth = k ? 1 : 0.55 + 0.35 * Math.abs(q);
+    return { hF: [w * 0.8, -leg - tor * (1.02 + 0.1 * q)], hB: [w * 0.62, -leg - tor * (1.2 - 0.1 * q)], fF: [w * 0.3, 0], fB: [-w * 0.25, 0] };
+  }
+  // a crisp's outline: a wobbly oval, unit half width
+  function crbShape(r) {
+    const ph = r() * 6.28, ph2 = r() * 6.28, k1 = 0.06 + r() * 0.06, k2 = 0.03 + r() * 0.04, ry = 0.7 + r() * 0.12;
+    return Array.from({ length: 14 }, (_, i) => { const a = (i / 14) * 6.2832, m = 1 + k1 * Math.sin(3 * a + ph) + k2 * Math.sin(5 * a + ph2); return [Math.cos(a) * m, Math.sin(a) * ry * m]; });
+  }
+  // one crisp at (x, y) in the current units: a wavy gold disc with an ink edge, its fold and a few flecks of the loser's colour (his flavour).
+  // s: its half width, fy: how much of its face shows (it tumbles; the back is a shade darker), lw: the ink line
+  function crbCrisp(c, x, y, s, rotA, fy, shp, lw, fleck, fill) {
+    const f = Math.max(0.16, Math.abs(fy)), n = shp.length, px = (i) => shp[i % n][0] * s, py = (i) => shp[i % n][1] * s * f;
+    c.save(); c.translate(x, y); c.rotate(rotA);
+    c.beginPath(); c.moveTo((px(0) + px(1)) / 2, (py(0) + py(1)) / 2);
+    for (let i = 1; i <= n; i++) c.quadraticCurveTo(px(i), py(i), (px(i) + px(i + 1)) / 2, (py(i) + py(i + 1)) / 2);
+    c.closePath(); c.fillStyle = fill || (fy >= 0 ? CRB_GOLD : CRB_GOLD_B); c.fill(); c.lineWidth = lw; c.lineJoin = "round"; c.strokeStyle = MG_INK; c.stroke();
+    if (f > 0.35) {
+      c.lineWidth = lw * 0.6; c.strokeStyle = CRB_GOLD_D; c.beginPath(); c.moveTo(-s * 0.55, -s * 0.1 * f); c.quadraticCurveTo(0, s * 0.3 * f, s * 0.5, -s * 0.06 * f); c.stroke();
+      if (fleck) { c.fillStyle = fleck; c.beginPath(); for (const [a, b] of CRB_FLECK) { c.moveTo(a * s + s * 0.075, b * s * f); c.arc(a * s, b * s * f, s * 0.075, 0, 6.2832); } c.fill(); }
+    }
+    c.restore();
+  }
+  // the crisp with his face: his colour washed into it and his flecks, two eyes (lk: where they look, -1..1), a small worried mouth; wide: terror, shut: a blink
+  function crbFace(c, x, y, s, rotA, lw, lk, wide, shut) {
+    crbCrisp(c, x, y, s, rotA, 1, crbShp[0], lw, col(L_().pal), crbFaceFill);
+    c.save(); c.translate(x, y); c.rotate(rotA); c.lineWidth = lw * 0.8; c.strokeStyle = MG_INK;
+    const big = wide ? 1.22 : 1;
+    for (const sd of [-1, 1]) {
+      const ex = sd * s * 0.3 + lk[0] * s * 0.04, ey = -s * 0.12, rx = s * 0.17 * big, ry = s * 0.21 * big * (shut ? 0.12 : 1);
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, rx, ry, 0, 0, 6.2832); c.fill(); c.stroke();
+      if (!shut) { c.fillStyle = MG_INK; c.beginPath(); c.arc(ex + lk[0] * rx * 0.42, ey + lk[1] * ry * 0.4, rx * (wide ? 0.36 : 0.55), 0, 6.2832); c.fill(); }
+    }
+    c.fillStyle = "rgba(255,120,120,0.55)"; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * s * 0.54, s * 0.12, s * 0.12, s * 0.07, 0, 0, 6.2832); c.fill(); }
+    c.fillStyle = "#5a1f14"; c.beginPath(); c.ellipse(lk[0] * s * 0.05, s * 0.3, s * 0.08, s * (wide ? 0.11 : 0.06), 0, 0, 6.2832); c.fill(); c.stroke();
+    c.restore();
+  }
+  // a sweat drop flicked off the face crisp (the shape of drawFear's)
+  function crbSweat(c, x, y, r, a, k) {
+    c.save(); c.globalAlpha = k; c.translate(x, y); c.rotate(a);
+    c.beginPath(); c.moveTo(0, -r * 1.9); c.quadraticCurveTo(r * 1.1, -r * 0.2, r, r * 0.4); c.arc(0, r * 0.4, r, 0, Math.PI, false); c.quadraticCurveTo(-r * 1.1, -r * 0.2, 0, -r * 1.9); c.closePath();
+    c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = Math.max(1, r * 0.3); c.strokeStyle = MG_INK; c.stroke(); c.restore();
+  }
+  function crbBuild() {
+    const r = mgRng(4711);
+    crbShp = [0, 1, 2, 3].map(() => crbShape(r));
+    crbFly = Array.from({ length: 32 }, (_, i) => {
+      const up = i < 3 || r() < 0.75;
+      return { a: up ? -Math.PI * (0.06 + 0.88 * r()) : Math.PI * (0.12 + 0.76 * r()), v: i < 3 ? 0.4 + 0.25 * r() : 0.3 + 0.7 * r(), s: i < 3 ? 1.8 + 0.4 * r() : 0.75 + 0.6 * r(),
+        rot: r() * 6.28, spin: (r() - 0.5) * 6, ph: r() * 6.28, sp: 0.6 + 0.8 * r(), sw: r() * 6.28, g: 0.7 + 0.6 * r(), shp: i % 4 };
+    });
+    crbGlass = Array.from({ length: 14 }, (_, i) => ({ a: (i / 14) * 6.2832 + (r() - 0.5) * 0.4, v: 0.5 + r() * 0.6, s: 0.6 + r() * 0.7, rot: r() * 6.28, spin: (r() - 0.5) * 0.03, w: i % 2 }));
+    crbCrack = [0, -0.7, 0.75, -1.25, 1.3].map((a0, i) => {
+      let a = a0 + (r() - 0.5) * 0.2, x = 0, y = 0;
+      const pts = [[0, 0]];
+      for (let j = 0; j < 4; j++) { a += (r() - 0.5) * 0.7; const l = (i ? 0.13 : 0.2) + r() * 0.1; x += Math.cos(a) * l; y += Math.sin(a) * l; pts.push([x, y]); }
+      return pts;
+    });
+    crbBits = Array.from({ length: 6 }, () => ({ vx: (r() - 0.5) * 70, vy: -20 - r() * 40, s: 1.2 + r() * 1.2, rot: r() * 6.28 }));
+    crbFaceFill = mix(CRB_GOLD, col(L_().pal), 0.25);
+  }
+  // the splash's foreground, in the panel's css px: the point the crystal taps (P), the ball (C, R), the palm under it
+  function crbGeo(pn) {
+    const port = MG.lay.port, D = FIN.dir, a = port ? CRB_AP : CRB_A, b = port ? CRB_BP : CRB_B;
+    const P = pn.p(FIN.wx + D * (CRB_H[0] + Math.cos(a) * 55.6), CRB_H[1] + Math.sin(a) * 55.6), R = (port ? 46 : 44) * pn.z;
+    const C = [P[0] + D * Math.sin(b) * R, P[1] + Math.cos(b) * R];
+    return { P, R, C, palm: [C[0] - D * R * 0.06, C[1] + R * 0.97] };
+  }
+  // the camera: the Wizard's feet at a fixed spot of the page (left of the middle, wide; upper left, upright), a slow push in
+  const crbCam = (port) => (t, pn) => {
+    const vh = (port ? 330 : 155) * (1 - 0.04 * ease(fe(MT.SPLASH, MT.AFTER, t))), z = pn.h / vh, pg = MG.page;
+    const tx = pg.x + mxu(port ? 0.25 : 0.28) * pg.w, ty = pg.y + (port ? 0.64 : 0.72) * pg.h;
+    return { wx: FIN.wx - (tx - pn.cx) / z, wy: -(ty - pn.cy) / z, vh };
+  };
+  function crbShake(t) {
+    const a = t >= CRB_K ? 7 * (1 - fe(CRB_K, CRB_K + 300, t)) : t >= CRB_TAP ? 2 * (1 - fe(CRB_TAP, CRB_TAP + 70, t)) : 0;
+    return a > 0.05 ? [Math.sin(t * 0.9) * a, Math.cos(t * 1.31) * a] : [0, 0];
+  }
+  // the palm in the foreground, cupped under the ball, and his sleeve running off the bottom of the page toward him (a white keyline: dark on the night)
+  function crbPalm(c, pn, g) {
+    const D = FIN.dir, [hx, hy] = g.palm, R = g.R, lw = clamp(R * 0.03, 2, 4), y1 = pn.y1 + 14;
+    pn.screen(c); c.lineJoin = "round";
+    const shape = (fill) => { c.lineWidth = lw * 3; c.strokeStyle = MG_PAPER; c.stroke(); c.fillStyle = fill; c.fill(); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke(); };
+    const sl = [[hx - D * R * 0.28, hy - R * 0.1], [hx + D * R * 0.1, hy + R * 0.24], [hx - D * R * 0.25, y1], [hx - D * R * 0.95, y1]];
+    mgPoly(c, sl); shape(W_().pal.accent);
+    mgPoly(c, [lerp2(sl[0], sl[3], 0.12), lerp2(sl[1], sl[2], 0.12), lerp2(sl[1], sl[2], 0.24), lerp2(sl[0], sl[3], 0.24)]); c.fillStyle = CRB_TRIM; c.fill(); c.lineWidth = lw; c.stroke();
+    c.beginPath(); c.ellipse(hx, hy, R * 0.6, R * 0.3, -0.06 * D, 0, 6.2832); shape(LIMB);
+    c.strokeStyle = "rgba(241,236,226,0.45)"; c.lineWidth = lw * 1.3; c.lineCap = "round"; c.beginPath(); c.ellipse(hx, hy + R * 0.02, R * 0.48, R * 0.2, -0.06 * D, 0.35, Math.PI - 0.35); c.stroke();   // a rim of light under the cup: a mitt, not a hole
+    c.beginPath(); c.ellipse(hx - D * R * 0.46, hy - R * 0.17, R * 0.13, R * 0.21, 0.45 * D, 0, 6.2832); c.fillStyle = LIMB; c.fill(); c.lineWidth = lw; c.stroke();   // the thumb over the near edge
+  }
+  // the loser inside the ball: his own puppet, small, through a stand-in panel that maps his feet onto the ball's floor
+  function crbInside(c, pn, g, t) {
+    const Lp = L_(), D = FIN.dir, [cx, cy] = g.C, R = g.R, zf = R * 1.3 / (Lp.s.h + 16), bx = cx - D * R * 0.28, fy = cy + R * 0.7;
+    const keep = [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash];
+    const fake = { z: zf, ox: pn.ox, oy: pn.oy, x0: pn.x0, y0: pn.y0, x1: pn.x1, y1: pn.y1, p: (wx, wy) => [bx + (wx - Lp.x) * zf, fy + (wy - Lp.y) * zf] };
+    Lp.state = "fin"; Lp.facing = -D; Lp.flash = 0;
+    try { mgPuppet(c, fake, Lp, t, { sc: 1, tint: 0.3, light: dirAng(-1.2), free: true }); } finally { [Lp.x, Lp.y, Lp.state, Lp.facing, Lp.flash] = keep; }
+  }
+  // the cracks from the tap (the first at once, the others creeping until KRISSH) and the glint where the crystal touched
+  function crbCracks(c, g, t, lw) {
+    if (t < CRB_TAP) return;
+    const R = g.R, [px, py] = g.P, inA = Math.atan2(g.C[1] - py, g.C[0] - px), ca = Math.cos(inA), sa = Math.sin(inA);
+    c.save(); c.lineJoin = "miter"; c.lineCap = "round";
+    for (const [colr, wd] of [["#ffffff", lw * 1.5], [MG_INK, lw * 0.6]]) {
+      c.strokeStyle = colr; c.lineWidth = wd; c.beginPath();
+      crbCrack.forEach((pts, i) => {
+        const k = i ? easeOut(fe(CRB_TAP + 30 + i * 24, CRB_K - 10, t)) : easeOut(fe(CRB_TAP, CRB_TAP + 70, t)), n = (pts.length - 1) * k;
+        if (k <= 0) return;
+        c.moveTo(px, py);
+        for (let j = 1; j < pts.length; j++) {
+          const q = Math.min(1, n - (j - 1)); if (q <= 0) break;
+          const a = pts[j - 1], b = pts[j], x = a[0] + (b[0] - a[0]) * q, y = a[1] + (b[1] - a[1]) * q;
+          c.lineTo(px + (x * ca - y * sa) * R, py + (x * sa + y * ca) * R);
+        }
+      });
+      c.stroke();
+    }
+    const gl = 1 - fe(CRB_TAP, CRB_TAP + 240, t);
+    if (gl > 0) { wizStar(c, px, py, R * 0.3 * (0.4 + 0.6 * gl), 0.3, 0.22); c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = 1.4; c.strokeStyle = MG_INK; c.stroke(); }
+    c.restore();
+  }
+  function crbBall(c, pn, g, t) {
+    const D = FIN.dir, [cx, cy] = g.C, R = g.R, lw = clamp(R * 0.035, 2.2, 4.5);
+    pn.screen(c);
+    c.save(); c.beginPath(); c.arc(cx, cy, R, 0, 6.2832); c.fillStyle = CRB_GLASS; c.fill(); c.clip();
+    wizTone(c, [[cx - R, cy + R * 0.3], [cx + R, cy + R * 0.1], [cx + R, cy + R], [cx - R, cy + R]], 6, 0.24, "#8e98cf", null, pn);   // its shadow side: a band of blue dots low in it
+    crbInside(c, pn, g, t);
+    c.restore();
+    pn.screen(c);
+    c.save(); c.translate(cx, cy); c.scale(D, 1); c.lineCap = "round"; c.strokeStyle = "#ffffff";   // the shine, away from the tap
+    c.lineWidth = R * 0.075; c.beginPath(); c.arc(0, 0, R * 0.78, -1.25, -0.45); c.stroke();
+    c.fillStyle = "#ffffff"; c.beginPath(); c.arc(Math.cos(-1.5) * R * 0.78, Math.sin(-1.5) * R * 0.78, R * 0.05, 0, 6.2832); c.fill();
+    c.lineWidth = R * 0.035; c.globalAlpha = 0.7; c.beginPath(); c.arc(0, 0, R * 0.84, 2.0, 2.7); c.stroke();
+    c.restore();
+    c.lineWidth = lw; c.strokeStyle = MG_INK; c.beginPath(); c.arc(cx, cy, R, 0, 6.2832); c.stroke();
+    crbCracks(c, g, t, lw);
+  }
+  // the face crisp after KRISSH (page px): up out of the burst, then down like a leaf onto the palm. -> [x, y, turn]
+  function crbFacePt(g, t) {
+    const D = FIN.dir, R = g.R, [cx, cy] = g.C, top = [cx - D * R * 0.2, cy - R * 1.1], land = [g.palm[0] + D * R * 0.05, g.palm[1] - R * 0.34];
+    if (t < CRB_K + 260) { const k = easeOut(fe(CRB_K, CRB_K + 260, t)); return [lerp(cx, top[0], k), lerp(cy, top[1], k), 0.7 * k * D]; }
+    const k = fe(CRB_K + 260, CRB_LAND, t), sw = Math.sin(k * Math.PI * 2.5) * (1 - k);
+    return [lerp(top[0], land[0], ease(k)) + sw * R * 0.6, lerp(top[1], land[1], k), (0.7 * (1 - k) - 0.5 * sw) * D];
+  }
+  function crbBurst(c, pn, g, t) {
+    const [cx, cy] = g.C, R = g.R, u = t - CRB_K, lw = clamp(R * 0.026, 1.6, 3), port = MG.lay.port, D = FIN.dir;
+    pn.screen(c);
+    if (u < 50 && !MG.reduced) { c.fillStyle = "rgba(255,252,244,0.92)"; c.fillRect(pn.x0 - 2, pn.y0 - 2, pn.w + 4, pn.h + 4); }   // one white frame
+    if (u < 150) mgStarburst(c, cx, cy, R * (1.05 + 0.75 * easeOut(u / 150)), 0.3);
+    if (u < 300) wizRing(c, cx, cy, R * (0.9 + 1.1 * easeOut(fe(0, 260, u))), 1 - fe(90, 300, u), 3);
+    const ga = 1 - fe(260, 560, u);   // the glass flies out and is gone
+    if (ga > 0.02) {
+      c.save(); c.globalAlpha = ga; c.lineJoin = "miter";
+      for (const s of crbGlass) {
+        const e = 1 - Math.exp(-u / 110), d = s.v * R * 2.6 * e, r = s.s * R * 0.16;
+        c.save(); c.translate(cx + Math.cos(s.a) * d, cy + Math.sin(s.a) * d + R * 0.8 * Math.pow(u / 600, 2)); c.rotate(s.rot + u * s.spin);
+        c.beginPath(); c.moveTo(r * 1.3, 0); c.lineTo(-r * 0.6, r * 0.75); c.lineTo(-r * 0.35, -r * 0.6); c.closePath(); c.fillStyle = s.w ? "#ffffff" : CRB_GLASS; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = MG_INK; c.stroke();
+        c.restore();
+      }
+      c.restore();
+    }
+    // the crisps: out of the burst, tumbling, then falling like stars
+    const Q = Math.max(pn.w, pn.h) * 0.5, e = 1 - Math.exp(-u / 160), fall = pn.h * (port ? 0.5 : 0.7) * Math.pow(u / 1000, 2), sway = fe(150, 520, u), fleck = col(L_().pal);
+    for (let i = 0; i < crbFly.length; i++) {
+      if (MG.slow && i % 2) continue;
+      const f = crbFly[i], x = cx + Math.cos(f.a) * f.v * Q * e * (port ? 0.6 : 1) + Math.sin(u * 0.006 + f.sw) * R * 0.2 * sway, y = cy + Math.sin(f.a) * f.v * Q * e * (port ? 1 : 0.62) + fall * f.g;
+      if (y < pn.y1 + 40) crbCrisp(c, x, y, f.s * R * 0.15, f.rot + f.spin * u * 0.001, Math.cos(f.ph + u * 0.008 * f.sp), crbShp[f.shp], lw, fleck);
+    }
+    // his crisp: wide eyes on the way, on the palm a squash, a look at the Wizard and a blink
+    const F = crbFacePt(g, t), on = t >= CRB_LAND, sq = on ? 1 - 0.12 * Math.sin(Math.PI * fe(CRB_LAND, CRB_LAND + 140, t)) : 1;
+    c.save(); c.translate(F[0], F[1]); c.scale(1 / sq, sq); crbFace(c, 0, 0, R * 0.4, F[2], lw, on ? [-D, 0.1] : [0, 0.6], !on, Math.abs(t - 4580) < 45); c.restore();
+  }
+  function crbDrawSplash(c, pn, t) {
+    const g = crbGeo(pn), [cx, cy] = g.C, R = g.R, broke = t >= CRB_K;
+    pn.screen(c);
+    skyField(c, pn, t, 0, 1, 0.75);
+    // the ball's light: two discs of pale dots and white focus lines, a flash of them at KRISSH
+    const lit = broke ? 1 - 0.6 * fe(CRB_K, CRB_K + 500, t) : 0.25 + 0.2 * fe(CRB_TAP, CRB_K, t);
+    wizTone(c, ringPoly(cx, cy, R * 1.8, 40), 9, 0.08 + 0.22 * lit, PALE, [t * 0.001, 0], pn);
+    wizTone(c, ringPoly(cx, cy, R * 1.35, 36), 7, 0.16 + 0.3 * lit, PALE, [-t * 0.001, 0], pn);
+    if (!MG.slow) mgFocus(c, cx, cy, Math.hypot(pn.w, pn.h) * 0.8, t * 0.0004, 0.12 + (broke ? 0.45 * lit : 0), true);
+    const [tx, ty] = pn.p(...tipW(t));   // the crystal's own light, round his hat (his dark side reads on the night)
+    wizTone(c, ringPoly(tx, ty, Math.min(pn.w, pn.h) * 0.34, 30), 8, 0.2, PALE, [-t * 0.0008, 0], pn);
+    wizGround(c, pn, true);
+    mgPuppet(c, pn, W_(), t, { sc: 1, tint: 0.4, tone: false, post: wizShade(dirAng(0.4)) });
+    crystalOver(c, pn, t);
+    crbPalm(c, pn, g);
+    if (broke) crbBurst(c, pn, g, t); else crbBall(c, pn, g, t);
+  }
+  // panel 4: the bowl (indigo, a gold band and star), the heap with his crisp on top; once the food has popped, empty with a few crumbs
+  function crbBowl(c, pn, t, x0) {
+    const D = FIN.dir, lw = Math.max(1.1, 3 / pn.z), popped = mgPopped(t), fleck = col(L_().pal);
+    pn.world(c); c.lineJoin = "round"; c.lineCap = "round";
+    c.fillStyle = CRB_IN; c.strokeStyle = MG_INK; c.lineWidth = lw; c.beginPath(); c.ellipse(x0, -18, 26, 5.5, 0, 0, 6.2832); c.fill(); c.stroke();   // the inside, seen over the rim
+    if (!popped) {
+      for (const h of CRB_HEAP) crbCrisp(c, x0 + D * h[0], h[1], h[2], D * h[3], h[4], crbShp[h[5]], lw, fleck);
+      if (t < CRB_LIFT) crbCrisp(c, x0 - D * 6, -31, 7.5, -0.3 * D, 0.6, crbShp[3], lw, fleck);   // the one the crystal will lift
+      const lift = t >= CRB_LIFT && t < CRB_EAT, eat = t >= CRB_EAT, bob = Math.sin(t * 0.01) * 0.4;
+      crbFace(c, x0 + D, -36 + bob, 9.5, 0.08 * D, lw, lift ? [-D * 0.6, -0.8] : [-D, 0.1], eat, Math.abs(t - 4860) < 40);
+      const sw = fe(CRB_EAT + 20, CRB_EAT + 120, t);
+      if (sw > 0) crbSweat(c, x0 + D * 11, -41 + 5 * fe(CRB_EAT + 120, 5240, t), 2, 0.4 * D, sw);
+    } else for (const [dx, dy] of [[-12, -19.5], [7, -20.5]]) crbCrisp(c, x0 + D * dx, dy, 2.6, dx * 0.1, 0.8, crbShp[1], lw * 0.8);   // crumbs on the rim
+    const body = () => { c.beginPath(); c.moveTo(x0 - 26, -18); c.bezierCurveTo(x0 - 25, -6, x0 - 16, -2, x0 - 9, -2); c.lineTo(x0 + 9, -2); c.bezierCurveTo(x0 + 16, -2, x0 + 25, -6, x0 + 26, -18); c.ellipse(x0, -18, 26, 5.5, 0, 0, Math.PI); c.closePath(); };
+    c.fillStyle = MG_INK; c.fillRect(x0 - 10, -3, 20, 3);   // the foot
+    body(); c.fillStyle = CRB_BOWL; c.fill(); c.lineWidth = lw; c.strokeStyle = MG_INK; c.stroke();
+    c.strokeStyle = CRB_TRIM; c.lineWidth = lw * 1.5; c.beginPath(); c.ellipse(x0, -15.5, 24.6, 5, 0, 0.15, Math.PI - 0.15); c.stroke();   // the gold band under the rim
+    pn.screen(c);
+    wizTone(c, [pn.p(x0 + D * 9, -12), pn.p(x0 + D * 25, -16), pn.p(x0 + D * 17, -3), pn.p(x0 + D * 8, -2)], 6, 0.4, MG_INK, null, pn);
+    pn.world(c);
+    wizInkStar(c, x0 - D * 4, -8.5, 4.4, 0.2, GOLD, lw * 0.8);
+  }
+  // the crisp the crystal lifts out of the bowl into his mouth (sparkles round it), then the crumbs falling from his mouth
+  function crbLifted(c, pn, t, x0) {
+    if (t < CRB_LIFT) return;
+    const D = FIN.dir, lw = Math.max(1.1, 3 / pn.z), M = bodyPt(W_(), CRB_EAT, "mouthPt");
+    pn.world(c);
+    if (t < CRB_EAT) {
+      const k = ease(fe(CRB_LIFT, CRB_EAT, t)), S = [x0 - D * 6, -31], E = [M[0] + D * 4, M[1] + 1], Q = [(S[0] + E[0]) / 2, Math.min(S[1], E[1]) - 26];
+      const x = (1 - k) * (1 - k) * S[0] + 2 * k * (1 - k) * Q[0] + k * k * E[0], y = (1 - k) * (1 - k) * S[1] + 2 * k * (1 - k) * Q[1] + k * k * E[1];
+      for (let j = 0; j < 3; j++) { const an = t * 0.012 + j * 2.09; wizStar(c, x + Math.cos(an) * 10, y + Math.sin(an) * 6, 2.6, 0, 0.3); c.fillStyle = PALE; c.fill(); c.lineWidth = lw * 0.6; c.strokeStyle = MG_INK; c.stroke(); }
+      crbCrisp(c, x, y, 7.5 - 1.5 * k, D * (-0.3 + k * 2.2), 0.6 + 0.4 * k, crbShp[3], lw, col(L_().pal));
+      return;
+    }
+    const u = (t - CRB_EAT) / 1000;
+    c.fillStyle = CRB_GOLD; c.strokeStyle = MG_INK; c.lineWidth = lw * 0.6;
+    for (const b of crbBits) {
+      const x = M[0] + D * 4 + b.vx * u * D, y = Math.min(-b.s * 0.6, M[1] + 2 + b.vy * u + 170 * u * u);
+      c.save(); c.translate(x, y); c.rotate(b.rot + u * 6); c.beginPath(); c.moveTo(-b.s, -b.s * 0.4); c.lineTo(b.s * 0.8, -b.s * 0.6); c.lineTo(b.s * 0.6, b.s * 0.5); c.lineTo(-b.s * 0.7, b.s * 0.4); c.closePath(); c.fill(); c.stroke(); c.restore();
+    }
+  }
+  function crbDrawAfter(c, pn, t) {
+    const W = W_(), D = FIN.dir, x0 = FIN.wx + D * CRB_BX;
+    pn.screen(c);
+    // a window of night sky in the upper corner (as on Starfall's panel 4), two crisps falling through it like shooting stars
+    const win = [[0.5, 0], [1.02, 0], [1.02, 0.78], [0.66, 0.56]].map(([a, b]) => [pn.x0 + mxu(a) * pn.w, pn.y0 + b * pn.h]);
+    c.fillStyle = NIGHT; mgPoly(c, win); c.fill();
+    c.save(); mgPoly(c, win); c.clip();
+    c.fillStyle = WHT;
+    for (const s of bgDots) { const x = pn.x0 + mxu(0.5 + s.u * 0.52) * pn.w, y = pn.y0 + s.v * 0.78 * pn.h; c.globalAlpha = 0.5 + 0.5 * Math.sin(t * 0.004 + s.ph); c.fillRect(x, y, s.r, s.r); }
+    c.globalAlpha = 1;
+    const u = (t - MT.AFTER) / 1000, cr = Math.min(pn.h * 0.045, 10);
+    for (let i = 0; i < 2; i++) {
+      const k = (u * 0.5 + i * 0.47) % 1, x = pn.x0 + mxu(0.62 + 0.3 * k + i * 0.08) * pn.w, y = pn.y0 + pn.h * (0.06 + 0.4 * k + i * 0.05);
+      c.strokeStyle = PALE; c.lineWidth = 1.2; c.globalAlpha = 0.6; c.beginPath(); c.moveTo(x, y); c.lineTo(x - D * pn.h * 0.12, y - pn.h * 0.16); c.stroke(); c.globalAlpha = 1;
+      crbCrisp(c, x, y, cr, t * 0.004 + i, Math.cos(t * 0.006 + i * 2), crbShp[i + 1], 1.4);
+    }
+    c.restore();
+    c.save(); mgPoly(c, win); c.lineWidth = 3; c.strokeStyle = MG_INK; c.stroke(); c.restore();
+    wizGround(c, pn, false);
+    mgPuppet(c, pn, W, t, { sc: 1, tint: 0.3, tone: false, post: wizShade(dirAng(-0.8)) });   // in colour now
+    crystalOver(c, pn, t);
+    crbBowl(c, pn, t, x0);
+    crbLifted(c, pn, t, x0);
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Crisp-tal Ball",
+    start(g) { S_.start(g); pota = true; },
+    end() { S_.end(); pota = false; crbFly = []; crbGlass = []; },
+    build(lay) { S_.build(lay); crbBuild(); },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = crbDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 118 : 100) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: FIN.wx + FIN.dir * (lay.port ? 46 : 48), wy: -0.43 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: NIGHT, slide: MG.reduced ? 1 : 180, cam: crbCam(lay.port), shake: crbShake, draw: crbDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay), D = FIN.dir, mul = lay.port ? 0.5 : 1, hit = ws.find((w) => w.text === "KRISSH");
+      if (hit) Object.assign(hit, { text: "KLINNG", t1: MT.SPLASH + 150 });   // the hit's word on this page (KRISSH is the ball's), gone as the splash comes in
+      const sp = (fn) => () => { const pn = MG.byId.splash; mgPlace(pn, 3700); const q = fn(crbGeo(pn), pn); return [q[0] + pn.ox, q[1] + pn.oy]; };
+      ws.push(
+        { text: "tink...", t0: CRB_TAP + 10, t1: CRB_K + 200, size: 0.065, mul, jit: 0.16, rot: -0.12 * D, at: sp((g) => [g.P[0] - D * g.R * 0.1, g.P[1] - g.R * 0.65]) },
+        { text: "KRISSH", t0: CRB_K, t1: 4620, size: 0.2, mul, arc: 8, jag: 0.12, rot: -0.08 * D,
+          at: sp((g, pn) => (lay.port ? [pn.x0 + pn.w * 0.5, pn.y0 + pn.h * 0.17] : [g.C[0] + D * g.R * 1.9, g.C[1] - g.R * 0.75])) },
+        { text: "crunch", t0: CRB_EAT, t1: 5320, size: 0.06, mul, jit: 0.18, rot: 0.1 * D,
+          at: () => { const pn = MG.byId.after, m = bodyPt(W_(), CRB_EAT, "mouthPt"); mgPlace(pn, CRB_EAT); const q = pn.sp(m[0] - D * 30, m[1] - 22); return [q[0], q[1]]; } },
+      );
+      return ws;
+    },
+    // the splash is night: the skip hint goes pale over it (the upright page's panel 4 is paper again)
+    hint(t) { return t >= MT.SPLASH + 180 && !(MG.lay.port && t >= MT.AFTER + 120) ? "rgba(241,236,226,0.6)" : "rgba(30,28,40,0.55)"; },
+    food() { const x = FIN.wx + FIN.dir * CRB_BX; return { x, y: 0, r: 26, y0: -30, lx: x + FIN.dir * 34 }; },
+    cues(t) {
+      S_.cues(t);
+      cueOnce("crbRaise", CRB_RAISE, () => Cin.go(() => Cin.whoosh(0.25, -0.3, 0.3, 0.18)));
+      cueOnce("crbTap", CRB_TAP, () => Cin.go(() => { Cin.chime(3136); Cin.tick(4200); }));
+      for (let i = 0; i < 4; i++) cueOnce("crbCrack" + i, CRB_TAP + 60 + i * 40, () => Cin.go(() => Cin.tick(3000 - i * 300)));
+      cueOnce("crbDrop", CRB_K - 70, () => Cin.go(() => Cin.drop(0.04)));
+      cueOnce("crbKrissh", CRB_K, () => Cin.go(() => { Cin.glass(); Cin.impact(0.45); Cin.shimmer(1320, 1.4); }));
+      cueOnce("crbRain", CRB_K + 120, () => Cin.go(() => Cin._noise(1.1, 0.08, 2600, 5200, "bandpass", 1.4)));
+      cueOnce("crbLand", CRB_LAND, () => Cin.go(() => Cin.tick(1800)));
+      cueOnce("crbLift", CRB_LIFT, () => Cin.go(() => Cin.shimmer(1760, 0.5)));
+      cueOnce("crbCrunch", CRB_EAT, () => Cin.go(() => { for (let i = 0; i < 3; i++) Cin._noise(0.07, 0.35, 3000, 1400, "bandpass", 1.2, i * 0.09); }));
     },
   });
   return S_;

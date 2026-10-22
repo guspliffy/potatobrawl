@@ -15,7 +15,8 @@
    out through the top border) and his soul stays behind, amber, then drifts up and out through the top border . 3500 panel 4: scythe on his
    shoulder, eyes closed for a moment (shhh...), a tombstone pops out of the paper with the loser's name and R.I.P.; the cheeky smirk comes back.
    Script fields: col, name, flight, panels(lay), words(lay), start(g), build(lay), step(t, k), pose(P, sk, t, role, p), page(c, t), hint(t), over(o, t),
-   cues(t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed rpr. */
+   cues(t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed rpr.
+   POTATALITY: "Rest in Peel" = MANGA.reaper.alt (S_.alt, at the end; its helpers are prefixed rip), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.reaper = (function () {
   const COL = "#ffb444", HOT = "#ffe2a8", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2;
   // a colour drawn inside a panel comes out as its complement once the page is turned: so amber is painted as its complement
@@ -32,6 +33,7 @@ MANGA.reaper = (function () {
   const box = () => { let b = own.get(MG.snap); if (!b) { b = {}; own.set(MG.snap, b); } return b; };
   let dust = [], motes = [], soul = null, cornerT = TURNED, stoneName = "", stoneFont = 5, tear2 = null;
   let ult = false, boat = false;   // ult: this play is the Ultimate page, The Ferryman (set by its start); boat: he is being posed standing in the ferry (the splash)
+  let pota = false;                // pota: this play is the Potatality, Rest in Peel (set by its start)
 
   /* ---- where things are (world units), from the puppets' own poses ---- */
   function rprPt(p, t, key, dx, dy) {
@@ -369,7 +371,7 @@ MANGA.reaper = (function () {
     if (!B.stroke) B.stroke = rprStrokePts(40);
     if (ult && !B.stroke2) B.stroke2 = rprStrokePts(40, true);
     // (the Ultimate: two crescents, an X through the loser, gone as the river comes in: over it they would float)
-    const up = easeOut(fe(HIT + 100, HIT + 190, t)), th = Math.min(L.gw, L.gh) * 0.034 * (1 - 0.75 * ease(fe(3250, 3650, t))), a = (1 - fe(3450, 3700, t)) * (ult ? fmTide(t) : 1);
+    const up = easeOut(fe(HIT + 100, HIT + 190, t)), th = Math.min(L.gw, L.gh) * 0.034 * (1 - 0.75 * ease(fe(3250, 3650, t))), a = (1 - fe(3450, 3700, t)) * (ult || pota ? fmTide(t) : 1);
     if (a <= 0) return;
     for (const pts of ult ? [B.stroke, B.stroke2] : [B.stroke]) {
       o.save(); o.globalAlpha = 0.3 * a; rprCrescent(o, pts, up, th * 1.9, "#ffffff"); o.restore();
@@ -490,7 +492,7 @@ MANGA.reaper = (function () {
           at: () => { const p = MG.byId.after, m = p.sp(...rprPt(W_(), HUSH + 60, "head")); return [m[0] - D * p.z * 34, m[1] - p.z * 22]; } },
       ];
     },
-    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; setTimes(); },
+    start(g) { dust = []; motes = []; soul = null; tear2 = null; ult = false; boat = false; pota = false; setTimes(); },
     build(lay) {
       const B = box(), gw = L.gw, gh = L.gh;
       MG.panels[0].d.draw = drawHit;
@@ -505,13 +507,13 @@ MANGA.reaper = (function () {
       const Lp = L_(); stoneName = Lp.spec.name.toUpperCase();
       const mc = mgCanvas(4, 4).getContext("2d"); mc.font = `800 10px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
       stoneFont = clamp(10 * 25 / Math.max(1, mc.measureText(stoneName).width), 3.2, 6);
-      if (!MG.ulti) FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate keeps the engine's line
+      if (!MG.ulti && !MG.alt) FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate and a Potatality keep the engine's line
     },
     step(t, k) {
       const W = W_();
       W.x = wX(t);
       W.y = !ult && t > GLIDE0 - 60 && t < GLIDE1 + 120 ? -2.5 * Math.sin(Math.PI * fe(GLIDE0 - 60, GLIDE1 + 120, t)) : 0;   // he lifts off the ground as he glides
-      if (!soul && t >= FIN.launch && MG.byId.strike) { const pn = MG.byId.strike, q = pn.sp(FIN.lx, -34); soul = { t0: FIN.launch, x: q[0], y: q[1], s: L_().s.w * 0.36 * clamp(pn.z, 1.1, 2.4) }; }
+      if (!soul && !pota && t >= FIN.launch && MG.byId.strike) { const pn = MG.byId.strike, q = pn.sp(FIN.lx, -34); soul = { t0: FIN.launch, x: q[0], y: q[1], s: L_().s.w * 0.36 * clamp(pn.z, 1.1, 2.4) }; }
       const B = box();
       if (!B.queued) {   // the one-off canvases join the end of the engine's build queue, so they are made in the hold before the skip (after the inked copy)
         B.queued = true;
@@ -561,7 +563,7 @@ MANGA.reaper = (function () {
       const k = fe(TOLL, TURNED, t);
       if (k <= 0) return;
       const pn = MG.byId.strike;
-      if (MG.broke && pn && !FIN.out && L_().state !== "gone" && !(ult && t >= MT.SPLASH)) { c.save(); mgPlace(pn, t); rprLoser(c, pn, t); c.restore(); }   // out of its panel: over the whole page, turned with it
+      if (MG.broke && pn && !FIN.out && L_().state !== "gone" && !((ult || pota) && t >= MT.SPLASH)) { c.save(); mgPlace(pn, t); rprLoser(c, pn, t); c.restore(); }   // out of its panel: over the whole page, turned with it
       c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
       if (k < 1) { rprPool(c, k); c.clip(); }
       c.globalCompositeOperation = "difference"; c.fillStyle = "#ffffff"; c.fillRect(0, 0, MG.cw, MG.ch);
@@ -570,7 +572,7 @@ MANGA.reaper = (function () {
     hint(t) { return t >= cornerT ? "rgba(214,216,228,0.62)" : "rgba(30,28,40,0.55)"; },
     over(o, t) {
       if (t > FIN.launch && t < FIN.launch + 420 && MG.byId.strike) {   // white speed lines along the real launch direction (ink ones would vanish in the night)
-        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult ? fmTide(t) : 1);
+        const Lp = L_(), pn = MG.byId.strike, a = (1 - fe(FIN.launch + 200, FIN.launch + 420, t)) * (ult || pota ? fmTide(t) : 1);
         const q = pn.sp(...loserAt(Math.min(t, FIN.launch + 200)).map((v, i) => (i ? v - Lp.s.h * 0.5 : v))), ang = Math.atan2(FIN.ldy, FIN.ldx), len = Math.hypot(L.gw, L.gh) * 0.7;
         o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
         mgSpeed(o, q[0] - Math.cos(ang) * len * 0.45, q[1] - Math.sin(ang) * len * 0.45, len, Math.min(L.gw, L.gh) * 0.3, ang, -(t - FIN.launch) * 1.3, 0.75 * a, true, 0.85);
@@ -1016,6 +1018,229 @@ MANGA.reaper = (function () {
       cueOnce("fmFlute1", 4360, () => Cin.go(() => fmFlute(440, 0.3)));
       cueOnce("fmFlute2", 4520, () => Cin.go(() => fmFlute(370, 0.4)));
       cueOnce("fmDrone", 4600, () => Cin.go(() => Cin.drone(false)));
+    },
+  });
+  /* ===================== the Potatality, "Rest in Peel" (MANGA.reaper.alt; design: Project files step8/fable-design.md) =====================
+     Last Rites to the hook (no soul here: the peel is the ghost). 3250 the lights come on: panel 5, the splash, slides up over the night, plain ink on paper
+     (page() turns only what is still above it): the loser stands there bare, a peeled potato, in his own skin's stripes for a moment while the scythe's
+     second swing runs across the page (shhhhhk); 3380-3950 the long spiral peel lifts off him and rises like a ghost, his colour outside, cream inside, a
+     little face at its top; 4050 it waves bye; he shivers and blushes. 4700 in panel 4's place, in colour: a pot by the Reaper, the bare potato sitting in
+     it with a bay leaf, the lid drops on (plop), two eyes peek out from under it, steam; the engine's POP lifts the lid at 5250 (food()).
+     The splash's world: the potato's feet at (0, 0), his middle at y = -36. Every helper here is prefixed rip. */
+  const RIP_SKIN = "#f6e7c1", RIP_FLESH = "#efd9a8", RIP_BLUSH = "#ff8f9e", RIP_LEAF = "#8fbf6a";
+  const R_SWING = 3270, R_PEEL0 = 3380, R_PEEL1 = 3950, R_WAVE = 4050, R_WAVE1 = 4560, R_LID = 4780, R_PLOP = 4860;
+  const potX = (t) => wX(t) + FIN.dir * 62;   // the pot stands where the tombstone would
+  const ripLw = (pn) => Math.max(1.1, 3 / pn.z);   // an ink line, in world units
+  function ripCam(t, pn) {
+    const port = MG.lay && MG.lay.port, vh = (port ? 320 : 215) * (1 - 0.05 * fe(MT.SPLASH, MT.AFTER, t));
+    return { wx: 0, wy: -vh * (port ? 0.36 : 0.42), vh };
+  }
+  // the peel: n + 1 points along a helix that starts wrapped round him (k 0) and rises above him, swaying (k 1); f: which face shows (cos of the turn)
+  function ripPeel(t) {
+    const k = ease(fe(R_PEEL0, R_PEEL1, t)), n = 48, out = [], spin = (t - MT.SPLASH) * 0.0022 * k;
+    for (let i = 0; i <= n; i++) {
+      const s = i / n, th = s * 3.4 * TAU + spin, wy = -5 - s * 62, wr = 27.5 * Math.sqrt(Math.max(0.04, 1 - Math.pow((wy + 36) / 37, 2)));
+      const y = lerp(wy, -76 - s * 92, k), R = lerp(wr, 15 - 8 * s, k), sway = Math.sin(t * 0.004 + s * 3.2) * 13 * k * s;
+      out.push({ x: Math.sin(th) * R + sway, y, f: Math.cos(th) });
+    }
+    return out;
+  }
+  // one face of the peel: its runs of consecutive segments (one path each: ink, then colour, so a run has no seams)
+  function ripPeelRuns(c, P, front, w, colr, lw) {
+    c.lineCap = "round"; c.lineJoin = "round";
+    let run = null;
+    const flush = () => {
+      if (!run || run.length < 2) { run = null; return; }
+      for (const [wd, st] of [[w + lw * 2, INK], [w, colr]]) { c.strokeStyle = st; c.lineWidth = wd; c.beginPath(); c.moveTo(run[0].x, run[0].y); for (let i = 1; i < run.length; i++) c.lineTo(run[i].x, run[i].y); c.stroke(); }
+      run = null;
+    };
+    for (let i = 1; i < P.length; i++) {
+      const on = (P[i - 1].f + P[i].f) / 2 >= 0 === front;
+      if (on) { if (!run) run = [P[i - 1]]; run.push(P[i]); } else flush();
+    }
+    flush();
+  }
+  // the bare potato: shivering, arms crossed over himself, eyes away, blushing
+  function ripBare(c, pn, t, x, lw) {
+    const D = FIN.dir, blush = ease(fe(3550, 3900, t)), cx = x, cy = -36;
+    c.fillStyle = RIP_SKIN; c.strokeStyle = INK; c.lineWidth = lw * 1.3;
+    c.beginPath(); c.ellipse(cx, cy, 26, 35, 0.05 * D, 0, TAU); c.fill(); c.stroke();
+    c.fillStyle = INK;   // a few potato eyes
+    for (const [dx, dy, r] of [[-12, -18, 1.1], [14, -2, 0.9], [-6, 20, 1], [10, 22, 0.8]]) { c.beginPath(); c.ellipse(cx + dx * D, cy + dy, r * 1.6, r, 0.4, 0, TAU); c.fill(); }
+    // the face: looking away from the Reaper's side, brows up
+    const look = -D * 3, ey = cy - 12;
+    for (const sd of [-1, 1]) {
+      const ex = cx + sd * 8.5 + look * 0.4;
+      c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(ex, ey, 5, 6.2, 0, 0, TAU); c.fill(); c.lineWidth = lw; c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.arc(ex + look * 0.6, ey + 1.5, 2.4, 0, TAU); c.fill();
+      c.lineWidth = lw * 0.9; c.beginPath(); c.moveTo(ex - sd * 4.5, ey - 9.5); c.lineTo(ex + sd * 3.5, ey - 11.5); c.stroke();
+    }
+    if (blush > 0.01) { c.save(); c.globalAlpha = 0.85 * blush; c.fillStyle = RIP_BLUSH; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(cx + sd * 13 + look * 0.3, cy - 2, 5.5, 3.2, 0, 0, TAU); c.fill(); } c.restore(); }
+    c.lineWidth = lw; c.beginPath(); c.moveTo(cx - 3 + look * 0.3, cy + 4); c.quadraticCurveTo(cx + look * 0.3, cy + 2.5, cx + 3 + look * 0.3, cy + 4.5); c.stroke();   // a wobbly little mouth
+    // the arms, crossed in front: two short skin-coloured sausages with an ink edge
+    c.lineCap = "round";
+    for (const sd of [-1, 1]) {
+      const a = [cx + sd * 24, cy - 2], b = [cx - sd * 7, cy + 9];
+      c.strokeStyle = INK; c.lineWidth = 7.4 + lw * 2; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(cx + sd * 8, cy + 13, b[0], b[1]); c.stroke();
+      c.strokeStyle = RIP_SKIN; c.lineWidth = 7.4; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(cx + sd * 8, cy + 13, b[0], b[1]); c.stroke();
+    }
+    // shiver marks either side
+    const sh = fe(3500, 3650, t);
+    if (sh > 0) {
+      c.strokeStyle = INK; c.lineWidth = lw * 0.9; c.globalAlpha = sh;
+      for (const sd of [-1, 1]) for (let j = 0; j < 2; j++) { const xx = cx + sd * (33 + j * 5), w2 = Math.sin(t * 0.06 + j) * 1.5; c.beginPath(); c.moveTo(xx + w2, cy - 10); c.quadraticCurveTo(xx + sd * 3 - w2, cy - 2, xx + w2, cy + 6); c.stroke(); }
+      c.globalAlpha = 1;
+    }
+  }
+  // the ghost's head at the top of the peel: a little face, and from 4050 a flap of peel that waves
+  function ripGhost(c, P, t, colr, lw) {
+    const k = fe(3700, R_PEEL1, t);
+    if (k <= 0) return;
+    const h = P[P.length - 1], D = FIN.dir, r = 10 * easeOut(k);
+    c.save(); c.globalAlpha = Math.min(1, k * 1.5);
+    const wave = t >= R_WAVE ? Math.sin((t - R_WAVE) * 0.024) * 0.75 * (1 - fe(R_WAVE1 - 120, R_WAVE1, t)) : 0;
+    c.lineCap = "round";
+    for (const [wd, st] of [[4.6 + lw * 2, INK], [4.6, colr]]) { c.strokeStyle = st; c.lineWidth = wd; c.beginPath(); c.moveTo(h.x + D * r * 0.7, h.y + 2); c.lineTo(h.x + D * (r + 8 * Math.cos(wave - 0.9)), h.y + 2 - 8 * Math.sin(-wave + 0.9)); c.stroke(); }
+    c.fillStyle = colr; c.strokeStyle = INK; c.lineWidth = lw;
+    c.beginPath(); c.arc(h.x, h.y, r, Math.PI, 0); c.lineTo(h.x + r, h.y + r * 0.9); for (let i = 1; i <= 4; i++) c.lineTo(h.x + r - (i * r * 2) / 4, h.y + r * (i % 2 ? 0.55 : 0.9)); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = INK; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(h.x + sd * r * 0.36, h.y - r * 0.1, r * 0.13, r * 0.2, 0, 0, TAU); c.fill(); }
+    c.beginPath(); c.ellipse(h.x, h.y + r * 0.36, r * 0.14, r * 0.18, 0, 0, TAU); c.fill();
+    c.restore();
+  }
+  function ripDrawSplash(c, pn, t) {
+    const D = FIN.dir, Lp = L_(), colr = col(Lp.pal), lw = ripLw(pn);
+    pn.screen(c);
+    rprTone(c, pn, [[pn.x0 - 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 - 6], [pn.x1 + 6, pn.y0 + pn.h * 0.26], [pn.x0 - 6, pn.y0 + pn.h * 0.32]], 10, 0.1, [t * 0.0005, 0]);
+    const q = pn.p(0, -40);
+    mgFocus(c, q[0], q[1], Math.hypot(pn.w, pn.h) * 0.75, t * 0.0003, 0.3);
+    const g = pn.p(0, 0);
+    c.fillStyle = INK; c.fillRect(pn.x0 - 4, g[1] - 1, pn.w + 8, Math.max(2, pn.z * 0.8));
+    rprTone(c, pn, [pn.p(-30, 0.5), pn.p(30, 0.5), pn.p(26, 6), pn.p(-26, 6)], 6, 0.45);   // his shadow
+    pn.world(c);
+    const x = Math.sin(t * 0.11) * 0.9 * fe(3500, 3700, t), P = ripPeel(t);
+    for (const pt of P) pt.x += x;
+    ripPeelRuns(c, P, false, 9, RIP_FLESH, lw);   // the inside of the peel, behind him while it is wrapped
+    ripBare(c, pn, t, x, lw);
+    ripPeelRuns(c, P, true, 9, colr, lw);         // his colour outside
+    ripGhost(c, P, t, colr, lw);
+    pn.screen(c);
+    // the swing: one white crescent across the page, through him
+    const up = easeOut(fe(R_SWING, R_SWING + 90, t)), a = 1 - fe(R_SWING + 200, R_SWING + 420, t);
+    if (up > 0 && a > 0) {
+      const A = [pn.x0 + (D > 0 ? 0.02 : 0.98) * pn.w, pn.y0 + pn.h * 0.78], C = [pn.x0 + (D > 0 ? 0.98 : 0.02) * pn.w, pn.y0 + pn.h * 0.1], B = pn.p(0, -44);
+      const pts = qpts(A, [2 * B[0] - (A[0] + C[0]) / 2, 2 * B[1] - (A[1] + C[1]) / 2], C, 40);
+      c.save(); c.globalAlpha = a; rprCrescent(c, pts, up, Math.min(L.gw, L.gh) * 0.03, "#ffffff", INK); c.restore();
+    }
+  }
+  // the lid: off the top of the panel, dropped on at R_PLOP with a little bounce, a hair askew; gone at the pop
+  function ripLidY(t) {
+    if (t < R_LID) return null;
+    if (t < R_PLOP) return lerp(-120, -24, Math.pow(fe(R_LID, R_PLOP, t), 2));
+    return -24 - Math.sin(Math.PI * fe(R_PLOP, R_PLOP + 110, t)) * 4;
+  }
+  function ripPot(c, pn, t, x0) {
+    const D = FIN.dir, lw = ripLw(pn), popped = mgPopped(t), ly = popped ? null : ripLidY(t), lidOn = ly !== null && t >= R_PLOP;
+    pn.world(c);
+    c.strokeStyle = INK; c.lineWidth = lw; c.lineJoin = "round"; c.lineCap = "round";
+    // the back of the rim and the water
+    c.fillStyle = "#d8d2c6"; c.beginPath(); c.ellipse(x0, -22, 21, 4.5, 0, Math.PI, TAU); c.fill(); c.stroke();
+    if (!popped && !lidOn) {   // the bare potato sitting in it, the bay leaf beside him
+      c.save(); c.translate(x0 + D * 9, -25); c.rotate(-0.5 * D);
+      c.fillStyle = RIP_LEAF; c.beginPath(); c.moveTo(0, 6); c.quadraticCurveTo(5, -2, 0, -12); c.quadraticCurveTo(-5, -2, 0, 6); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(0, 4); c.lineTo(0, -9); c.lineWidth = lw * 0.6; c.stroke(); c.restore();
+      c.lineWidth = lw;
+      c.fillStyle = RIP_SKIN; c.beginPath(); c.ellipse(x0 - D * 3, -27, 12.5, 11.5, 0, 0, TAU); c.fill(); c.stroke();
+      for (const sd of [-1, 1]) { c.fillStyle = "#ffffff"; c.beginPath(); c.ellipse(x0 - D * 3 + sd * 4.4, -30, 2.6, 3.2, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(x0 - D * 3 + sd * 4.4 - D, -30.5, 1.2, 0, TAU); c.fill(); }
+      c.save(); c.globalAlpha = 0.85; c.fillStyle = RIP_BLUSH; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(x0 - D * 3 + sd * 7.5, -25.5, 2.8, 1.6, 0, 0, TAU); c.fill(); } c.restore();
+    }
+    // the pot's body (it hides his lower half), its handles, a band of tone on the far side
+    const body = () => { c.beginPath(); c.moveTo(x0 - 20, -22); c.lineTo(x0 - 19, -4); c.quadraticCurveTo(x0 - 18, 0, x0 - 13, 0); c.lineTo(x0 + 13, 0); c.quadraticCurveTo(x0 + 18, 0, x0 + 19, -4); c.lineTo(x0 + 20, -22); c.ellipse(x0, -22, 20, 4.2, 0, 0, Math.PI); c.closePath(); };
+    c.fillStyle = "#bfc4cc"; body(); c.fill(); c.stroke();
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(x0 + sd * 20, -18); c.quadraticCurveTo(x0 + sd * 27, -17, x0 + sd * 26, -12); c.quadraticCurveTo(x0 + sd * 25, -9, x0 + sd * 19.5, -10); c.stroke(); }
+    c.beginPath(); c.ellipse(x0, -22, 21, 4.5, 0, 0, Math.PI); c.stroke();
+    pn.screen(c);
+    rprTone(c, pn, [pn.p(x0 + D * 9, -21), pn.p(x0 + D * 19.5, -21), pn.p(x0 + D * 18.5, -2), pn.p(x0 + D * 9, -0.5)], 6, 0.4);
+    pn.world(c);
+    if (lidOn || (ly !== null && !popped)) {   // the lid (falling, then on, a hair askew), and from under it two eyes and the steam
+      c.save(); c.translate(x0, ly); c.rotate(lidOn ? 0.07 * D : 0);
+      c.fillStyle = "#c9ced6"; c.lineWidth = lw; c.strokeStyle = INK;
+      c.beginPath(); c.ellipse(0, 0, 22, 5, 0, 0, TAU); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(0, -1.5, 18, 3.6, 0, Math.PI, TAU); c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.ellipse(0, -5.5, 4, 2.4, 0, 0, TAU); c.fill();
+      c.restore();
+      if (lidOn) {
+        const peek = fe(R_PLOP + 120, R_PLOP + 220, t), blink = Math.abs(t - 5080) < 60 ? 0.15 : 1;
+        if (peek > 0) {
+          c.fillStyle = INK; c.beginPath(); c.ellipse(x0 - D * 11, -21.2, 7, 1.8 * peek, 0.07 * D, 0, TAU); c.fill();
+          c.fillStyle = "#ffffff"; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(x0 - D * 11 + sd * 2.8, -21.2, 1.4, 1.1 * peek * blink, 0, 0, TAU); c.fill(); }
+        }
+        const st = fe(R_PLOP + 80, R_PLOP + 300, t);   // three curls of steam
+        if (st > 0) {
+          c.save(); c.globalAlpha = st * 0.8; c.strokeStyle = INK; c.lineWidth = lw * 0.8;
+          for (let i = 0; i < 3; i++) {
+            const sx = x0 + (i - 1) * 11, ph = ((t - R_PLOP) * 0.02 + i * 7) % 26;
+            c.beginPath(); for (let j = 0; j <= 10; j++) { const yy = -32 - ph - j * 2.2, xx = sx + Math.sin(j * 0.8 + t * 0.006 + i) * 2.6; j ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+          }
+          c.restore();
+        }
+      }
+    }
+    pn.screen(c);
+  }
+  function ripDrawAfter(c, pn, t) {
+    const W = W_();
+    pn.screen(c);
+    rprSky(c, pn, t, 0.4);
+    rprGround(c, pn, t);
+    mgPuppet(c, pn, W, t, { light: dirAng(-0.55), box: BOX });   // in his own colours: the lights are on
+    ripPot(c, pn, t, potX(t));
+  }
+
+  S_.alt = Object.assign({}, S_, {
+    name: "Rest in Peel",
+    start(g) { S_.start(g); pota = true; FIN.cue.stone = FIN.cue.toll2 = FIN.cue.whisper = true; },   // (Last Rites' stone, second bell and whisper belong to its own panel 4)
+    end() { pota = false; },
+    panels(lay) {
+      const ps = panels(lay), by = (id) => ps.find((q) => q.id === id), strike = by("strike"), after = by("after");
+      strike.freeze = strike.cover = MT.SPLASH;
+      after.draw = ripDrawAfter;
+      after.cam = (t) => { const vh = (lay.port ? 120 : 100) * (1 - 0.05 * fe(MT.AFTER, MT.END, t)); return { wx: wX(t) + FIN.dir * (lay.port ? 58 : 44), wy: -0.43 * vh, vh }; };
+      ps.splice(ps.indexOf(after), 0, mgSplashPanel({ from: "b", paper: PAPER, slide: MG.reduced ? 1 : 180, cam: ripCam, draw: ripDrawSplash }));
+      return ps;
+    },
+    words(lay) {
+      const ws = S_.words(lay).filter((w) => w.text !== "shhh..."), D = FIN.dir;
+      Object.assign(ws.find((w) => w.text === "SHHK"), { t1: MT.SPLASH + 150 });   // gone as the lights come on
+      ws.push(
+        { text: "shhhhhk", t0: R_SWING + 40, t1: 3900, size: 0.15, arc: 8, jit: 0.1, rot: -0.32 * D, stretch: { ang: D > 0 ? -0.4 : Math.PI + 0.4, k: 0.25 },
+          at: () => [L.gw * (D > 0 ? 0.64 : 0.36), L.gh * 0.26] },
+        { text: "bye~", t0: R_WAVE + 40, t1: 4650, size: 0.07, jit: 0.12, rot: 0.1 * D,
+          at: () => { const pn = MG.byId.splash, P = ripPeel(R_WAVE + 200), h = P[P.length - 1]; mgPlace(pn, R_WAVE + 200); const q = pn.sp(h.x + D * 26, h.y - 10); return [q[0], q[1]]; } },
+        { text: "plop", t0: R_PLOP, t1: 5200, size: 0.07, jit: 0.12, rot: -0.08 * D,
+          at: () => { const pn = MG.byId.after; mgPlace(pn, R_PLOP); const q = pn.sp(potX(R_PLOP) - D * 6, -44); return [q[0], q[1]]; } },
+      );
+      return ws;
+    },
+    // the night stays on what the splash hasn't covered yet; once it is in, the lights are on
+    page(c, t) {
+      const sp = MG.byId.splash;
+      if (!sp || t < MT.SPLASH) { S_.page(c, t); return; }
+      if (t >= sp.t0 + sp.slide) return;
+      mgPlace(sp, t);
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.beginPath(); c.rect(0, 0, MG.cw, Math.max(0, (sp.y0 + sp.oy) * DPR)); c.clip(); S_.page(c, t); c.restore();
+    },
+    hint(t) { return t >= MT.SPLASH + 180 ? "rgba(30,28,40,0.55)" : S_.hint(t); },
+    food() { const x = potX(MT.POP); return { x, y: 0, r: 22, y0: -24, lx: x + FIN.dir * 40 }; },
+    cues(t) {
+      S_.cues(t);
+      const D = FIN.dir;
+      cueOnce("ripSwing", R_SWING, () => Cin.go(() => { Cin.whoosh(0.3, -0.5 * D, 0.5 * D, 0.32); Cin._noise(0.2, 0.25, 3000, 8000, "highpass", 0.8); }));
+      cueOnce("ripPeel", R_PEEL0, () => Cin.go(() => { Cin._noise(0.6, 0.06, 600, 2600, "bandpass", 2); Cin._osc("sine", 300, 900, 0.6, 0.03, 0.3); }));
+      cueOnce("ripShiver", 3560, () => Cin.go(() => { for (let i = 0; i < 6; i++) Cin._osc("triangle", 900 + i * 40, 880, 0.05, 0.02, 0.002, i * 0.07); }));
+      cueOnce("ripGhost", 3900, () => Cin.go(() => { Cin._osc("sine", 520, 440, 0.5, 0.04, 0.08); Cin._osc("sine", 780, 660, 0.45, 0.02, 0.08, 0.05); }));
+      cueOnce("ripBye", R_WAVE + 40, () => Cin.go(() => Cin.chime(2093)));
+      cueOnce("ripLid", R_PLOP, () => Cin.go(() => { Cin.clack(); Cin._osc("sine", 520, 260, 0.12, 0.08, 0.003); }));
+      cueOnce("ripSteam", R_PLOP + 120, () => Cin.go(() => Cin._noise(0.9, 0.04, 3000, 5000, "highpass", 0.8)));
     },
   });
   return S_;
