@@ -18909,9 +18909,9 @@ const FXTEXT = {
   gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
   reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
 };
-// a Road skin (palettes 4-6, pal.road = the boss that gives it) and the Harvest skin (palette 7, pal.road = "harvest", ui/harvest.js) have none of
-// the chip skins' effects: their own overlay (skinRoad)
-const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road ? 0 : i; };
+// a Road skin (palettes 4-6, pal.road = the boss that gives it), the Harvest skin (palette 7, pal.road = "harvest", ui/harvest.js) and a
+// Pommes skin (palettes 8-9, pal.pommes = the line) have none of the chip skins' effects: their own overlay (skinRoad, skinPm)
+const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road || f.pal.pommes ? 0 : i; };
 const skinRoad = (f) => (f.pal && f.pal.road) || "";
 // what each Road skin does (the select screen's note)
 const ROADFX = { scratch: "Roasted dark at the feet, with ember cracks that glow and spit sparks",
@@ -18939,8 +18939,9 @@ function skinTick(g, tk) {
       for (let i = 0; i < 4; i++) addFx({ k: "feather", x: f.x - fc * w * 0.35 + rnd(-7, 7), y: f.y - h * 0.85, vx: rnd(-0.8, 0.8), vy: rnd(-1.4, -0.5), rot: rnd(0, 6), vr: rnd(-0.12, 0.12), t: 0, life: rnd(50, 70), g: 0.05, damp: 0.95 });
     }
     S.raven = ravenOut;
-    const rs = skinRoad(f);
+    const rs = skinRoad(f), pm = skinPm(f);
     if (rs) { if (alive && fxAmbient()) roadSkinTick(f, rs, tk, slot); return; }
+    if (pm) { if (alive && fxAmbient()) pmskTick(f, pm, tk, slot); return; }
     if (!alive || lvl < 1) return;
     if (fxAmbient()) {
       if (cos === "phoenix" && !f.grounded && f.state !== "ledge" && tk % 3 === 0) {
@@ -19020,6 +19021,7 @@ function skinEvent(g, e) {
     }
     case "projEnd": case "hit": {
       const style = e.type === "hit" ? e.ps : e.style, f = at(e.slot);
+      if (e.type === "hit" && f && skinPm(f) === 1 && fxMoves()) pmskHit(f, e);   // Ink Noir: an ink star on every landed hit
       if (style !== "bolt" || !f || skinLvl(f) < 2 || !fxMoves()) return;
       for (let i = 0; i < 7; i++) addFx({ k: "shard", x: e.x, y: e.y, vx: rnd(-3.5, 3.5), vy: rnd(-3.5, 1), rot: rnd(0, 6), vr: rnd(-0.3, 0.3), r: rnd(2, 3.4), col: i % 2 ? "#ffe08a" : mix(f.pal.accent, "#ffe08a", 0.4), t: 0, life: 20, g: 0.15, damp: 0.93 });
       return;
@@ -19028,6 +19030,7 @@ function skinEvent(g, e) {
       if (e.sd) return;
       const k = at(foeSlot(e.slot, g));
       if (k && skinRoad(k) && k.state !== "dead" && k.state !== "gone") return roadSkinKo(k, skinRoad(k));
+      if (k && skinPm(k) && k.state !== "dead" && k.state !== "gone") return pmskKo(k, skinPm(k));
       if (!k || skinLvl(k) < 3 || k.state === "dead" || k.state === "gone") return;
       const cos = k.spec.look.costume, ac = k.pal.accent;
       if (cos === "phoenix") {
@@ -19127,7 +19130,7 @@ function drawSkinFx(c, e, a) {
       return true;
     }
   }
-  return false;
+  return pmskDrawFx(c, e, a);   // the Pommes skins' kinds (below)
 }
 
 /* ---- Road skins: one overlay per boss, laid on any fighter in two passes (UI only) ----
@@ -19150,6 +19153,7 @@ function rsStar(c, x, y, r, a) {
   c.closePath();
 }
 function roadSkinBody(c, f, P, tk, flash) {
+  if (skinPm(f)) { if (!flash) pmskPass(pmskBody, c, f, P, tk); return; }   // a Pommes skin's body pass (below)
   const rs = skinRoad(f);
   if (!rs || flash) return;
   const { rx, ry, cy } = P, k = rx / 25;
@@ -19201,6 +19205,7 @@ function roadSkinBody(c, f, P, tk, flash) {
   c.restore();
 }
 function roadSkinTop(c, f, P, tk, flash) {
+  if (skinPm(f)) { if (!flash) pmskPass(pmskTop, c, f, P, tk); return; }   // a Pommes skin's top pass (below)
   const rs = skinRoad(f);
   if (!rs || flash) return;
   const { rx, ry, cy } = P, cos = f.spec.look.costume, k = rx / 25;
@@ -19274,6 +19279,222 @@ function roadSkinKo(k, rs) {
     addFx({ k: "ring", x, y: k.y - 4, t: 0, life: 18, r0: 8, r1: 46, col: "#3ef2c0" });
     for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });
   }
+}
+
+/* ---- Pommes skins: two lines laid on any fighter, bought with Pommes (pal.pommes: 1 Ink Noir, 2 Starfall; Fable, step8/fable-design-2.md
+   section 2), UI only ----
+   The Road skins' two passes, dispatched from roadSkinBody / roadSkinTop: pmskBody inside the body's lean clipped to the potato (before the
+   face), pmskTop after the hats. Decoration only: nothing on a hit flash, no white fills, no blue glows (the night sky keeps to pink and
+   violet), no gold rings. Per fighter per frame at most one pattern fill and twelve small shapes; the halftone pattern and the nebula's
+   gradient are made once per canvas. The shapes on the body move with the tick alone (no randomness), so a still of a skin is always the same.
+   Sizes are Fable's at a 100 px fighter, scaled by rx / 25 (k). */
+const skinPm = (f) => (f && f.pal && f.pal.pommes) || 0;
+// what each Pommes line does (the select screen and the Skin Rack)
+const PMFX = { 1: "Inked like a manga page: halftone shading, a boiling outline, ink strokes on dashes and hits and an inked KO",
+  2: "A night sky inside: a breathing nebula, twinkling stars, a comet in orbit, stardust and a starburst on every KO" };
+const PMSK_INK = "#1b1a22", PMSK_PAPER = "#ece2cc", PMSK_TAU = Math.PI * 2;
+// Ink Noir: where the halftone starts, as a share of the potato's height below its top (0.45: the lower 55 %), under each costume's face and hood
+const PMSK_DOTS = { phoenix: 0.45, alchemist: 0.6, odin: 0.5, wizard: 0.4, samurai: 0.5, dragon: 0.45, gunslinger: 0.55, reaper: 0.65 };
+// Ink Noir: the three hatch strokes on the shadow side (the light comes from the upper back): x, y (of the half-sizes), length
+const PMSK_HATCH = [[0.6, 0.12, 8], [0.7, 0.26, 12], [0.62, 0.42, 10]];
+// Starfall: the comet's orbit half-height (x ry) per costume
+const PMSK_ORBIT = { phoenix: 0.75, alchemist: 0.6, odin: 0.55, wizard: 0.9, samurai: 0.6, dragon: 0.7, gunslinger: 0.65, reaper: 0.6 };
+// Starfall: seven stars: x, y (of the half-sizes), size, twinkle period (frames, 900-1500 ms), phase (they light in turn)
+const PMSK_STARS = [[-0.55, -0.5, 1.4, 66, 0], [0.32, -0.62, 1, 80, 0.9], [0.66, -0.12, 1.6, 54, 1.8], [-0.18, 0.06, 0.8, 90, 2.7],
+  [-0.7, 0.28, 1.2, 72, 3.6], [0.18, 0.5, 1.1, 60, 4.5], [0.52, 0.4, 0.9, 84, 5.4]];
+const PMSK_TILE = 8;   // the halftone tile in pixels (one dot, pitch 3.2 at k = 1, scaled by the pattern's transform)
+const pmskCache = new WeakMap();
+let pmskTileCv = null;
+// the cached pattern and gradient, once per canvas context (a CanvasPattern is made by its context)
+function pmskRes(c) {
+  let R = pmskCache.get(c);
+  if (R) return R;
+  if (!pmskTileCv) {
+    pmskTileCv = document.createElement("canvas"); pmskTileCv.width = pmskTileCv.height = PMSK_TILE;
+    const x = pmskTileCv.getContext("2d"), m = PMSK_TILE / 2;
+    x.fillStyle = PMSK_INK; x.beginPath(); x.arc(m, m, PMSK_TILE * (1.2 / 3.2), 0, PMSK_TAU); x.fill();
+  }
+  const neb = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+  neb.addColorStop(0, "#ff4fd8"); neb.addColorStop(0.5, "rgba(122,75,255,0.7)"); neb.addColorStop(1, "rgba(122,75,255,0)");
+  R = { dots: c.createPattern(pmskTileCv, "repeat"), neb };
+  pmskCache.set(c, R);
+  return R;
+}
+// a stable 0..1 from a whole number (the boiling line's jitter, the speed ticks' places)
+function pmskHash(n) {
+  let x = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+// a four-point star (Starfall's stars, comet and sparks), its arms curved in
+function pmskStar4(c, x, y, r) {
+  c.moveTo(x, y - r); c.quadraticCurveTo(x, y, x + r, y); c.quadraticCurveTo(x, y, x, y + r);
+  c.quadraticCurveTo(x, y, x - r, y); c.quadraticCurveTo(x, y, x, y - r); c.closePath();
+}
+// tests/pwpmskin.py times the two passes: it sets window.__pmskProf = { now, flush, add(slot, ms, readMs) } (never set in play). With flush
+// a 1 px read before and after the pass makes the canvas draw what was queued, so the pass's raster is counted; a third read with nothing
+// queued measures the read itself (readMs)
+function pmskPass(fn, c, f, P, tk) {
+  const pr = window.__pmskProf;
+  if (!pr) return fn(c, f, P, tk);
+  const fl = () => { if (pr.flush) try { c.getImageData(0, 0, 1, 1); } catch (e) { pr.flush = false; } };
+  fl(); const t0 = pr.now();
+  fn(c, f, P, tk); fl();
+  const t1 = pr.now();
+  fl();
+  pr.add(f.slot, t1 - t0, pr.flush ? pr.now() - t1 : 0);
+}
+// Starfall's comet: a 3 px star and three fading copies on a tilted ellipse round the potato; the far half in the body pass, the near half on top
+function pmskComet(c, f, P, tk, near) {
+  const { rx, ry, cy } = P, k = rx / 25, a = rx * 0.95, b = ry * (PMSK_ORBIT[f.spec.look.costume] || 0.6), cs = Math.cos(0.35), sn = Math.sin(0.35);
+  const th0 = (tk / 180) * PMSK_TAU + 1.1, col = mix(f.pal.accent, "#ffc2ee", 0.55), a0 = c.globalAlpha;
+  for (let i = 3; i >= 0; i--) {
+    const th = th0 - i * 0.17;
+    if ((Math.sin(th) > 0) !== near) continue;
+    const ex = Math.cos(th) * a, ey = Math.sin(th) * b;
+    c.globalAlpha = a0 * (i ? 0.55 - i * 0.14 : 1); c.fillStyle = i ? "#ff8fe0" : col;
+    c.beginPath(); pmskStar4(c, ex * cs - ey * sn, cy + ex * sn + ey * cs, 3 * k * (1 - i * 0.2)); c.fill();
+  }
+  c.globalAlpha = a0;
+}
+function pmskBody(c, f, P, tk) {
+  const pm = skinPm(f), { rx, ry, cy } = P, k = rx / 25, cos = f.spec.look.costume, R = pmskRes(c);
+  c.save(); potatoPath(c, P); c.clip();
+  if (P.dim) c.globalAlpha = 0.5;
+  const a0 = c.globalAlpha;
+  if (pm === 1) {
+    // the screen tone: one pattern fill under the face, the dots on a 45 degree grid that moves with the body
+    const y0 = cy - ry + (PMSK_DOTS[cos] || 0.45) * ry * 2, q = ((3.2 * k) / PMSK_TILE) * Math.SQRT1_2;
+    if (R.dots && R.dots.setTransform) {
+      R.dots.setTransform(new DOMMatrix([q, q, -q, q, 0, 0]));
+      c.globalAlpha = a0 * 0.35; c.fillStyle = R.dots; c.fillRect(-rx * 1.3, y0, rx * 2.6, cy + ry * 1.2 - y0);
+    }
+    // three hatch strokes on the shadow side, boiling with the outline
+    const bo = (tk / 5) | 0, ox = (pmskHash(bo * 2) - 0.5) * 1.2 * k, oy = (pmskHash(bo * 2 + 1) - 0.5) * 1.2 * k;
+    c.globalAlpha = a0 * 0.8; c.strokeStyle = PMSK_INK; c.lineWidth = k; c.lineCap = "round";
+    c.beginPath();
+    for (const [x, y, len] of PMSK_HATCH) { const hx = x * rx + ox, hy = cy + y * ry + oy, d = len * k * 0.5; c.moveTo(hx - d * 0.57, hy + d * 0.82); c.lineTo(hx + d * 0.57, hy - d * 0.82); }
+    c.stroke();
+    c.restore();
+    // the boiling line: the outline drawn again in ink, a little off, the offset changing every 83 ms (outside the clip, under the face and hats)
+    c.save(); if (P.dim) c.globalAlpha = 0.5;
+    c.translate(ox, oy); potatoPath(c, P); c.translate(-ox, -oy);
+    c.strokeStyle = PMSK_INK; c.lineWidth = 1.2 * k; c.lineJoin = "round"; c.stroke();
+    c.restore();
+    return;
+  }
+  // Starfall: the nebula in the upper back, breathing over 2400 ms (lower under the Alchemist's and the Reaper's hoods)
+  const nr = ry * 0.9, nx = -rx * 0.38, ny = cy - ry * 0.4 + (cos === "alchemist" || cos === "reaper" ? ry * 0.15 : 0);
+  c.globalAlpha = a0 * (0.3 + 0.08 * Math.sin((tk / 144) * PMSK_TAU));
+  c.save(); c.translate(nx, ny); c.scale(nr, nr); c.fillStyle = R.neb; c.fillRect(-1, -1, 2, 2); c.restore();
+  // seven stars twinkling in turn, drifting down 2 px every 4 s and coming back in at the top
+  c.fillStyle = "#ffc8ef";
+  for (const [x, y, sz, per, ph] of PMSK_STARS) {
+    const tw = Math.max(0, Math.sin((tk / per) * PMSK_TAU + ph)), hh = ry * Math.sqrt(Math.max(0.05, 1 - x * x)), dy = (tk * 2 * k) / 240;
+    const yy = cy - hh + ((((y * ry + hh + dy) % (2 * hh)) + 2 * hh) % (2 * hh));
+    c.globalAlpha = a0 * (0.35 + 0.65 * tw * tw);
+    c.beginPath(); pmskStar4(c, x * rx, yy, sz * k * (1 + 0.6 * tw)); c.fill();
+  }
+  c.globalAlpha = a0;
+  pmskComet(c, f, P, tk, false);
+  c.restore();
+}
+function pmskTop(c, f, P, tk) {
+  const pm = skinPm(f), { rx, ry, cy } = P, k = rx / 25;
+  c.save();
+  if (P.dim) c.globalAlpha = 0.5;
+  if (pm === 1) {
+    // four ink speed ticks behind him while he runs, each there for 60 ms
+    if (f.state === "run") {
+      c.globalAlpha *= 0.5; c.strokeStyle = PMSK_INK; c.lineWidth = 1.4 * k; c.lineCap = "round";
+      c.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const n = ((tk + i) >> 2) * 4 + i, age = (tk + i) & 3, len = (10 + 6 * pmskHash(n * 3)) * k;
+        const x0 = -rx * (1.05 + 0.3 * pmskHash(n * 3 + 1)) - age * 1.5 * k, y = cy - ry * 0.75 + ry * 1.5 * pmskHash(n * 3 + 2);
+        c.moveTo(x0, y); c.lineTo(x0 - len, y);
+      }
+      c.stroke();
+    }
+  } else pmskComet(c, f, P, tk, true);
+  c.restore();
+}
+// ambient bits off the figure: Ink Noir's dash strokes, Starfall's stardust (each with its cap of how many are alive)
+function pmskCount(slot, kind) { let n = 0; for (const e of fx) if (e.pmsk === slot && e.pmT === kind) n++; return n; }
+function pmskTick(f, pm, tk, slot) {
+  const w = f.s.w, h = f.s.h, fc = f.facing, k = (w * 0.56) / 25, dash = f.spr > 0 && f.state === "run";
+  if (pm === 1) {
+    // the dash: five ink strokes behind, again every 4 frames of the burst, at most ten alive
+    if (dash && f.spr % 4 === 1) {
+      const n = Math.min(5, 10 - pmskCount(slot, "d"));
+      for (let i = 0; i < n; i++) addFx({ k: "pmsk-ink", x: f.x - fc * (w * 0.42 + rnd(0, 10)), y: f.y - h * (0.1 + 0.18 * i + rnd(0, 0.08)), vx: -fc * rnd(0.6, 1.4), vy: 0,
+        ang: fc > 0 ? 0 : Math.PI, len: rnd(24, 40) * k, w: 2 * k, col: PMSK_INK, al: 0.85, t: 0, life: 7, damp: 0.9, pmsk: slot, pmT: "d" });
+    }
+    return;
+  }
+  // a stardust mote every 12 frames, at most four alive; the dash throws three a frame, at most twelve alive
+  if (tk % 12 === (slot * 5) % 12 && pmskCount(slot, "a") < 4)
+    addFx({ k: "mote", x: f.x + rnd(-0.55, 0.55) * w, y: f.y - h * rnd(0.25, 0.95), vx: rnd(-0.25, 0.25), vy: rnd(-0.5, -0.15), col: Math.random() < 0.5 ? "#ffb3ec" : "#c9a6ff",
+      r: rnd(1, 1.5), t: 0, life: 40, g: 0.004, damp: 0.97, pmsk: slot, pmT: "a" });
+  if (dash) for (let i = 0, n = Math.min(3, 12 - pmskCount(slot, "d")); i < n; i++)
+    addFx({ k: "mote", x: f.x - fc * (w * 0.3 + rnd(0, 12)), y: f.y - h * rnd(0.1, 0.85), vx: -fc * rnd(0.6, 1.8), vy: rnd(-0.5, 0.2), col: i % 2 ? "#ffb3ec" : "#c9a6ff",
+      r: rnd(1, 1.5), t: 0, life: 12, g: 0, damp: 0.95, pmsk: slot, pmT: "d" });
+}
+// Ink Noir: an eight-point ink star where a hit lands (an outline, so the hit's own flash and sparks show through)
+function pmskHit(f, e) {
+  const k = (f.s.w * 0.56) / 25;
+  addFx({ k: "pmsk-star", x: e.x, y: e.y, r0: 14 * k, r1: 24 * k, lw: 2.2 * k, col: PMSK_INK, rot: rnd(0, 0.8), t: 0, life: 6 });
+}
+// a Pommes skin's KO effect, off the fighter who scored it
+function pmskKo(k, pm) {
+  const x = k.x, y = k.y - k.s.h * 0.6, kk = (k.s.w * 0.56) / 25, ac = k.pal.accent;
+  if (pm === 1) {
+    // a ring of ink dots, eight spot-colour strokes bursting out and a drawn KO at his head with a misprint ghost
+    for (let i = 0; i < 24; i++) { const a = (i / 24) * PMSK_TAU, v = rnd(1.5, 2.5); addFx({ k: "pmsk-ink", x: x + Math.cos(a) * 12, y: y + Math.sin(a) * 12, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(2, 4), col: PMSK_INK, t: 0, life: 32, damp: 0.95 }); }
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * PMSK_TAU + 0.2, d = 18 + 40 * kk; addFx({ k: "pmsk-ink", x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, vx: Math.cos(a) * 1.2, vy: Math.sin(a) * 1.2, ang: a, len: 40 * kk, w: 3 * kk, col: ac, t: 0, life: 31, damp: 0.95 }); }
+    addFx({ k: "pmsk-word", x, y: k.y - k.s.h - 8, col: ac, t: 0, life: 30 });
+  } else {
+    // a magenta ring (never gold) and eighteen star sparks
+    addFx({ k: "ring", x, y, t: 0, life: 20, r0: 10, r1: 50, col: "#ff4fd8" });
+    for (let i = 0; i < 18; i++) { const a = (i / 18) * PMSK_TAU + rnd(-0.12, 0.12), v = rnd(1, 2.4); addFx({ k: "pmsk-spark", x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 6, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.3, r: rnd(2.2, 3.4) * kk, col: i % 2 ? "#ffb3ec" : "#c9a6ff", t: 0, life: 36, damp: 0.96, ph: i }); }
+  }
+}
+// draws the Pommes particle kinds (from drawSkinFx); false for the others
+function pmskDrawFx(c, e, a) {
+  switch (e.k) {
+    case "pmsk-ink":   // an ink dot, or a brush flick: round at the head (x, y), thinning to a point behind it along ang
+      c.globalAlpha = a * (e.al || 1); c.fillStyle = e.col; c.beginPath();
+      if (e.len) {
+        const cs = Math.cos(e.ang), sn = Math.sin(e.ang), hw = e.w / 2, ln = e.len * (0.6 + 0.4 * a);
+        c.moveTo(e.x - cs * ln, e.y - sn * ln); c.lineTo(e.x - sn * hw, e.y + cs * hw); c.arc(e.x, e.y, hw, e.ang + Math.PI / 2, e.ang - Math.PI / 2, true); c.closePath();
+      } else c.arc(e.x, e.y, e.r * (0.7 + 0.3 * a), 0, PMSK_TAU);
+      c.fill();
+      return true;
+    case "pmsk-star": {   // Ink Noir's hit: an eight-point star outline growing 14 -> 24 as it fades
+      const r = lerp(e.r0, e.r1, ease(e.t / e.life));
+      c.globalAlpha = a * 0.7; c.strokeStyle = e.col; c.lineWidth = e.lw; c.lineJoin = "miter";
+      c.beginPath();
+      for (let i = 0; i < 16; i++) { const q = e.rot + (i / 16) * PMSK_TAU, rr = i % 2 ? r * 0.5 : r; c.lineTo(e.x + Math.cos(q) * rr, e.y + Math.sin(q) * rr); }
+      c.closePath(); c.stroke(); c.lineJoin = "round";
+      return true;
+    }
+    case "pmsk-word": {   // Ink Noir's KO: the word stamped at 7 % of the screen's height, ink on a paper edge with a spot-colour misprint 2 px off
+      const z = cam.z || 1, s = (L.gh * 0.07) / z, px = 2 / z, q = e.t / e.life, sc = q < 0.12 ? 0.75 + q * 2.1 : 1;
+      c.save(); c.translate(e.x, e.y - q * 8); c.rotate(-0.1); c.scale(sc, sc);
+      c.font = `italic 900 ${s.toFixed(1)}px "Barlow Condensed", "Arial Narrow", sans-serif`; c.textAlign = "center"; c.textBaseline = "alphabetic";
+      c.globalAlpha = Math.min(1, a / 0.3);
+      c.fillStyle = e.col; c.fillText("KO", px, px);
+      c.lineJoin = "round"; c.lineWidth = 2.5 * px; c.strokeStyle = PMSK_PAPER; c.strokeText("KO", 0, 0);
+      c.fillStyle = PMSK_INK; c.fillText("KO", 0, 0);
+      c.restore();
+      return true;
+    }
+    case "pmsk-spark": {   // Starfall's KO: a four-point star spark that twinkles as it flies, on a faint magenta glow
+      const tw = 0.6 + 0.4 * Math.abs(Math.sin(e.t * 0.35 + e.ph)), r = e.r * (0.5 + 0.5 * a) * tw;
+      c.globalAlpha = a * 0.3; c.fillStyle = "#ff4fd8"; c.beginPath(); c.arc(e.x, e.y, r * 0.9, 0, PMSK_TAU); c.fill();   // a magenta glow, so it reads on a pale sky
+      c.globalAlpha = a * tw; c.fillStyle = e.col; c.beginPath(); pmskStar4(c, e.x, e.y, r); c.fill();
+      return true;
+    }
+  }
+  return false;
 }
 
 
