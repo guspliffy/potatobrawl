@@ -15,7 +15,8 @@
    out through the top border) and his soul stays behind, amber, then drifts up and out through the top border . 3500 panel 4: scythe on his
    shoulder, eyes closed for a moment (shhh...), a tombstone pops out of the paper with the loser's name and R.I.P.; the cheeky smirk comes back.
    Script fields: col, name, flight, panels(lay), words(lay), start(g), build(lay), step(t, k), pose(P, sk, t, role, p), page(c, t), hint(t), over(o, t),
-   cues(t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed rpr. */
+   cues(t), impact(o, pn, sil, t), hitPt(). Every helper of this page is prefixed rpr.
+   POTATALITY: "Rest in Peel" = MANGA.reaper.alt (S_.alt, at the end; its helpers are prefixed rip), played on a normal KO when it is on (ui/kopages.js). */
 MANGA.reaper = (function () {
   const COL = "#ffb444", HOT = "#ffe2a8", INK = MG_INK, PAPER = MG_PAPER, TAU = Math.PI * 2;
   // a colour drawn inside a panel comes out as its complement once the page is turned: so amber is painted as its complement
