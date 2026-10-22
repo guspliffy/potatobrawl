@@ -205,6 +205,8 @@
 #app:not(.short):not(.portrait) .sk-f small { font-size: 12.5px; }
 #app:not(.short):not(.portrait) .sk-lk { width: 28px; height: 28px; right: 7px; bottom: 7px; background-size: 14px 15px; }
 #app:not(.short):not(.portrait) .sk.worn::after { padding: 5px 8px 4px; font-size: 11px; }
+/* an upright card is too narrow for both stickers: on a worn Pommes skin the POMMES tag stays, the gold ring, gold name and "Worn" foot say it is worn */
+#app.portrait #scrSkins .sk.worn.pms::after, #app.narrow #scrSkins .sk.worn.pms::after { display: none; }
 #app:not(.short):not(.portrait) #scrSelect .sl-skins { height: 56px; gap: 12px; padding: 0 8px 0 16px; }
 #app:not(.short):not(.portrait) #scrSelect .sk-dot { width: 32px; height: 32px; }
 #app:not(.short):not(.portrait) #scrSelect .sk-nm b { font-size: 16px; }
