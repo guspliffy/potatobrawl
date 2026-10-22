@@ -119,10 +119,11 @@ function renderPill() {
   mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("mTokens").textContent = fmtChips(P.tokens);
+  psPill();   // ui/pshop.js: the Pommes pill beside the chips
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), gift = hvWaiting();   // the Daily Potato streak (ui/daily.js), today's Harvest gift (ui/harvest.js)
   $("mStreakN").textContent = ds; $("mStreak").classList.toggle("zero", !(ds > 0)); $("mGift").hidden = !gift;
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
+  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${koBal() > 0 ? `, ${fmtChips(koBal())} Pommes` : ""}${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -657,8 +658,8 @@ function acctDoReset() {
   saveProfile(); sel.fighter = P.last;
   renderMenu(); renderAccount();
 }
-// the chip coin opens the Shop, the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
-tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
+// the chip coin opens the Shop, the Pommes pill the Pommes Shop (ui/pshop.js), the flame the Daily sheet (the Harvest, ui/daily.js), the rest of the plate the Profile
+tap("mRank", (e) => { const at = (sel) => e && e.target && e.target.closest && e.target.closest(sel); if (at("#mStreak")) dailyOpen(); else if (at("#mPommes")) pshopOpen(); else openAccount(at("#mTokens") ? "h" : "p"); });
 tap("acClose", () => {
   modal("account", false); clearTimeout(acShowT); shopLeave();
   if (acUI.view === "replace") acctStripHash();   // closing the question is a "no"
