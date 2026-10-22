@@ -1,9 +1,9 @@
-/* ---------- Account > Locker: a strip of the eight fighters, then the picked fighter's seven skins (Fable 5.1, locker-chips/fable-design.md section 1) ----------
+/* ---------- Account > Locker: a strip of the eight fighters, then the picked fighter's ten skins (Fable 5.1, locker-chips/fable-design.md section 1) ----------
    The top line is the Collection on one line (.mx-line, ui/mastery.js), the skins owned of all (32 / 56 SKINS) and the chips coin. The strip
    (.lk-strip, ui/acct.js) has one tile per fighter: his model in the worn skin on a glow in that skin's colour, his name and n/7 (gold at 7/7);
    the picked one has a gold ring. Under it the picked fighter's skins are the Skin Rack's cards (.sk, ui/skins.js skMakeCard / skStyle; their look
-   comes from 90-skins.css, the Locker only sizes them and repeats the rules that sheet scopes to #scrSkins): one row of seven in landscape (chip skins,
-   a gap, Road skins), rows of four and three on an upright phone. --ta / --ca / --ft are the tile art, card art and card foot heights per size, --lkg
+   comes from 90-skins.css, the Locker only sizes them and repeats the rules that sheet scopes to #scrSkins): chip skins and Road skins side by side in landscape (four cards each, with a gap between them), the Pommes skins ("Special skins") under the chip skins in the same four-column grid, the three groups one under the other on an upright phone.
+   --ta / --ca / --ft are the tile art, card art and card foot heights per size, --lkg
    the gap between cards, --lkG the gap between the two groups, --lkr how much wider a Road card is than a chip card (its foot lines are longer).
    #app.short is 844x390, #app.tiny 667x320, #app.narrow / #app.portrait an upright screen, the rest the desktop (the sheet is wider there while
    the Locker shows). The sizes that need the sheet to give up some padding use :has(); without it the sheet just scrolls a little. */
@@ -88,8 +88,8 @@
 :is(#app.narrow, #app.portrait) .lk-tile b { font-size: 12px; }
 :is(#app.narrow, #app.portrait) .lk-tile small { font-size: 11px; }
 
-/* ---- the rack: chip skins | Road skins ---- */
-.lk-rack { display: grid; grid-template-columns: calc((100% - var(--lkG) - 5 * var(--lkg)) * 4 / (4 + 3 * var(--lkr)) + 3 * var(--lkg)) minmax(0, 1fr); column-gap: var(--lkG); flex: none; min-width: 0; }
+/* ---- the rack: chip skins | Road skins, and under them the special (Pommes) skins ---- */
+.lk-rack { display: grid; grid-template-columns: calc((100% - var(--lkG) - 5 * var(--lkg)) * 4 / (4 + 3 * var(--lkr)) + 3 * var(--lkg)) minmax(0, 1fr); column-gap: var(--lkG); row-gap: 12px; flex: none; min-width: 0; }
 .lk-grp { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .lk-k { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 0 2px; }
 .lk-k b { flex: none; font: 800 13px/1 var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
@@ -97,9 +97,11 @@
 .lk-k em { display: none; font-style: normal; }
 .lk-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--lkg); min-height: 0; padding: 3px 3px 5px; margin: -3px -3px -5px; }   /* room for the rings */
 .lk-row.r3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#app.short .lk-rack { row-gap: 8px; }
 #app.short .lk-grp { gap: 4px; }
 #app.short .lk-k b { font-size: 11.5px; }
 #app.short .lk-k span { font-size: 12px; }
+#app.tiny .lk-rack { row-gap: 6px; }
 #app.tiny .lk-grp { gap: 3px; }
 #app.tiny .lk-k span { display: none; }
 #app.tiny .lk-k b { font-size: 11px; }
@@ -116,6 +118,9 @@
   border: 2px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, #2b3058, #1b1f3d); color: var(--text); font: inherit;
   box-shadow: 0 3px 0 var(--ink), var(--bevel); transition: transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.12s; }
 #acPanL .sk-a { flex: none; height: var(--ca); }
+#acPanL .sk.pms { border-color: #ff4f4f; }   /* a Pommes skin: the Rack's red border (90-skins.css scopes it to #scrSkins) */
+/* on a narrow card the WORN sticker would sit over the POMMES tag: the gold ring, the gold name and "Worn" under it say it */
+#app.short #acPanL .sk.worn.pms::after, #app.narrow #acPanL .sk.worn.pms::after { display: none; }
 #acPanL .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
 @media (hover: hover) { #acPanL .sk:hover { transform: translateY(-1px); } #acPanL .sk:hover canvas { filter: none; } #acPanL .sk.short:hover canvas, #acPanL .sk.road:hover canvas { filter: saturate(0.6) brightness(0.72); } #acPanL .sk.shut:hover canvas { filter: saturate(0.4) brightness(0.4); } }
 #acPanL .sk:active { transform: translateY(2px); }
