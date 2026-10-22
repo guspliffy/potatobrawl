@@ -552,7 +552,7 @@ function mgSnapshot() {
   MG.cw = cv.width; MG.ch = cv.height;
   MG.m = clamp(Math.min(gw, gh) * 0.026, 6, 16); MG.bw = clamp(Math.min(gw, gh) * 0.0105, 3, 9);
   MG.page = { x: MG.m, y: MG.m, w: gw - 2 * MG.m, h: gh - 2 * MG.m };
-  MG.lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh };
+  MG.lay = { port: L.portrait, dir: FIN.dir, m: MG.m, page: MG.page, gw, gh }; MG.popFit = null;
   // the script's panels, words and build() are made right now, so every hook of the script (step, over, cues...) finds them; the heavy canvas work is queued below
   MG.panels = [mgFirstPanel()].concat(S.panels(MG.lay)).map((dd, i) => mgPanel(dd, i));
   MG.byId = {}; for (const pn of MG.panels) MG.byId[pn.id] = pn;
@@ -581,7 +581,7 @@ function mangaStart(g, plain) {
   const ulti = !!FIN.ulti, cut = ulti && !!base.ulti, alt = !ulti && !plain && !!FIN.alt && !!base.alt, S = cut ? base.ulti : alt ? base.alt : base;
   try {
     Object.assign(MT, cut || alt ? MT_U : MT_N);
-    MG.ulti = ulti; MG.ultiCut = cut; MG.alt = alt; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
+    MG.ulti = ulti; MG.ultiCut = cut; MG.alt = alt; MG.popFit = null; MG.ultiName = ulti && W.spec.ultimate ? W.spec.ultimate.name : "";
     MG.script = S; MG.snap = MG.ink = MG.layer = MG.lc = MG.disc = MG.discW = MG.strip = MG.stripW = null; MG.discC = {}; MG.panels = []; MG.words = []; MG.tiles.clear(); MG.flash = [];
     MG.snapPending = false; MG.broke = false; MG.pt = 0; MG.todo = []; MG.inkS = null; MG.cards = null; MG.stat = { n: 0, sum: 0, max: 0, last: 0 };
     MG.reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -835,8 +835,20 @@ const mgPopped = (t) => MG.alt && t >= MT.POP + 40;   // a script stops drawing 
 // the hop (world units of the "after" panel): from the food's top (F.y0, default a little above the ground) up, and down onto the ground beside it
 // (F.lx, default a little in front of it), with one small bounce
 function mgPopHop(F) {
-  const x0 = F.x, x1 = F.lx !== undefined ? F.lx : F.x + FIN.dir * F.r * 0.35, y0 = F.y0 !== undefined ? F.y0 : F.y - F.r * 0.35;
-  return { x0, x1, y0, ya: Math.min(y0, F.y) - F.r * 1.15 };
+  const x0 = F.x, x1 = F.lx !== undefined ? F.lx : F.x + FIN.dir * F.r * 0.35, y0 = F.y0 !== undefined ? F.y0 : F.y - F.r * 0.35, fit = mgPopFit(F);
+  return { x0, x1, y0, ya: Math.min(y0, F.y) - F.r * 1.15 * fit.hop, sc: fit.sc };
+}
+// the loser stays under the title band (it is drawn over him): seen at the after panel's scale a tall fighter (a hat, a staff) would reach into it,
+// so the hop is lowered and, if he can't even stand under it, he is drawn smaller (not below 0.6). Worked out once, when the panel has landed.
+function mgPopFit(F) {
+  if (MG.popFit) return MG.popFit;
+  const pn = MG.byId.after, Lp = FIN.P[FIN.l];
+  if (!pn || !Lp) return { hop: 1, sc: 1 };
+  mgPlace(pn, MT.POP);
+  const hh = Math.min(L.gh * 0.17, 86, L.gw * 0.2), band = (L.portrait ? L.gh * 0.12 : L.gh * 0.17) + hh + L.gh * 0.03;   // the band's foot (mgCard) and its accent strip
+  const tall = 1.35 * ((Lp.s && Lp.s.h) || 60) * pn.z, land = pn.sp(F.x, F.y)[1];   // his height on the screen with a hat's worth to spare; the ground under the food
+  const sc = clamp((land - band) / tall, 0.6, 1), room = land - band - tall * sc, up = F.r * 1.15 * pn.z;
+  return (MG.popFit = { sc, hop: clamp(room / up, 0, 1) });
 }
 function mgPopAt(t) {
   const F = MG.script.food(), H = mgPopHop(F), u = t - MT.POP, xm = H.x0 + (H.x1 - H.x0) * 0.3;
@@ -868,7 +880,7 @@ function mgPop(o, t) {
   const [x, y] = mgPopAt(t);
   Lp.x = x; Lp.y = y; Lp.state = "fin"; Lp.flash = 0; Lp.facing = -FIN.dir;
   o.save(); o.beginPath(); o.rect(0, 0, L.gw, L.gh); o.clip();
-  mgPuppet(o, pn, Lp, t, { free: true, halo: 2 });
+  mgPuppet(o, pn, Lp, t, { free: true, halo: 2, sc: mgPopHop(F).sc });
   o.restore();
 }
 // the POP! word (one of the page's words, so it is stamped and timed like the others)
