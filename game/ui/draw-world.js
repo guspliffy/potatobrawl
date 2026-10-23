@@ -112,7 +112,9 @@ function moonStage(c, tk) {
    game/maps/<id>.js (spliced in at the MAPS marker below). UI only: nothing here touches the simulation. */
 const MAP_ART = { moon: { name: "Potato Moon", bg: moonBg, stage: moonStage } };
 const mapArt = () => MAP_ART[STAGE.id] || MAP_ART.moon;
-const mapName = (i) => { const m = BL.MAPS[i]; return m && MAP_ART[m.id] ? MAP_ART[m.id].name : "Potato Moon"; };
+// the maps' names as the page shows them (the names inside game/maps/*.js are the English fallback): one table here, wrapped for translation
+const MAP_NAMES = { moon: _t("Potato Moon"), bay: _t("Spudset Bay"), castle: _t("Hashbrown Keep"), deep: _t("The Deep"), field: _t("The Field"), fryer: _t("Deep Fryday"), kitchen: _t("The Kitchen") };
+const mapName = (i) => { const m = BL.MAPS[i]; return m && MAP_ART[m.id] ? MAP_NAMES[m.id] || MAP_ART[m.id].name : MAP_NAMES.moon; };
 function drawBackground(c, tk) { mapArt().bg(c, tk); }
 function drawStage(c, tk) { mapArt().stage(c, tk); }
 /*MAPS*/
@@ -329,7 +331,7 @@ function drawTag(c, f, isP1, lift, o) {   // o: a 2v2's { label, col } (duoTags 
   if (f.state === "dead" || f.state === "gone") return;
   const fade = tagAlpha();   // hud.js: off 3 s after the start, back for 3 s after a respawn
   if (fade < 0.02) return;
-  const label = o ? o.label : isP1 ? (match && match.rpTag) || "YOU" : match && match.online && !NET.cpuMate ? (NET.oppName || "FRIEND").slice(0, 10).toUpperCase() : "CPU";
+  const label = o ? o.label : isP1 ? (match && match.rpTag) || _t("YOU") : match && match.online && !NET.cpuMate ? (NET.oppName || _t("FRIEND")).slice(0, 10).toUpperCase() : _t("CPU");
   const k = 1 / cam.z, y = f.y - f.s.h - (22 + (lift || 0)) * k;
   c.save(); c.globalAlpha = fade; c.translate(f.x, y); c.scale(k, k);
   // an ink outline keeps the tag readable on the daylight maps (Hashbrown Keep's sky, Spudset Bay's sunset)
@@ -346,7 +348,7 @@ function duoTags(c, g) {
   const placed = [], z = cam.z;
   for (const f of [...g.fighters].sort((a, b) => a.x - b.x)) {
     if (f.state === "dead" || f.state === "gone") continue;
-    const nm = match.tb ? tbMark(f.slot) : f.slot === meSlot ? "YOU" : ((match.names && match.names[f.slot]) || "CPU").toUpperCase();   // online: friends' names, CPU (ui/online-team.js)
+    const nm = match.tb ? tbMark(f.slot) : f.slot === meSlot ? _t("YOU") : ((match.names && match.names[f.slot]) || _t("CPU")).toUpperCase();   // online: friends' names, CPU (ui/online-team.js)
     const label = nm.length > 12 ? nm.slice(0, 11) + "…" : nm, w = label.length * 6.4 + 12, x = f.x * z, y = (f.y - f.s.h) * z;
     let lift = 0;
     while (lift < 60 && placed.some((p) => Math.abs(p.x - x) < (p.w + w) / 2 && Math.abs(p.y - (y - lift)) < 20)) lift += 20;

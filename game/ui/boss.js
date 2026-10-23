@@ -1,18 +1,18 @@
 /* ===================== Boss fights (2v1): you and a CPU partner against a boss on his own map =====================
    The simulation is core.js (BOSSES, teams, bossAct). Here: starting the fight, the partner's bot, the boss bar in the HUD (HP, poise,
    FINISH when he is broken), the results. Slots: 0 = you, 1 = your partner, 2 = the boss (team 1). The drawing is draw-boss.js. */
-const BOSS_LV = ["Normal", "Hard", "Nightmare"];
+const BOSS_LV = [_t("Normal"), _t("Hard"), _t("Nightmare")];
 const bossMap = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));   // each boss fights on his own map (spec.map)
 const BOSS_SOLO = 0.75;   // with a CPU partner the boss has 3/4 of his HP (the Road: its own, ui/road.js; with a friend online: more, ui/online.js duoHp)
 const BOSS_PARTNER = [0.55, 0.65, 0.75];   // the partner's strength per difficulty
 const BOSS_IDS = new Set(BL.BOSSES.map((b) => b.id));
-const BOSS_LINE = { scratch: "Fresh spuds! A thousand years roasting out here and nobody ever brought the salt.",
-  zorp: "Take me to your ladle. ...No? Then I'll take you instead.",
-  kraken: "Ahoy, side dishes. The fish sent me. They have questions about the chips." };
+const BOSS_LINE = { scratch: _t("Fresh spuds! A thousand years roasting out here and nobody ever brought the salt."),
+  zorp: _t("Take me to your ladle. ...No? Then I'll take you instead."),
+  kraken: _t("Ahoy, side dishes. The fish sent me. They have questions about the chips.") };
 // how to beat him, in one line (the Road's sheet for him)
-const BOSS_RULE = { scratch: "Break him (0 HP), then land a heavy, special or ulti.",
-  zorp: "Hit the saucer from the counters until it crashes, break him (0 HP), then land a heavy, special or ulti.",
-  kraken: "Hit his tentacles while they lie on the pier and his head when it comes up, break him (0 HP), then land a heavy, special or ulti." };
+const BOSS_RULE = { scratch: _t("Break him (0 HP), then land a heavy, special or ulti."),
+  zorp: _t("Hit the saucer from the counters until it crashes, break him (0 HP), then land a heavy, special or ulti."),
+  kraken: _t("Hit his tentacles while they lie on the pier and his head when it comes up, break him (0 HP), then land a heavy, special or ulti.") };
 const bossOf = (g) => (g ? g.fighters.find((f) => f.spec.boss) : null);
 // o: { level 0-2, partner: fighter id (default: a random other fighter), boss: boss id, hpMul / mate: his HP and the partner's strength
 // (default BOSS_SOLO / BOSS_PARTNER; the Road's are its own, ui/road.js) }; your fighter is the one picked on the select screen
@@ -58,7 +58,7 @@ function bossHud() {
   if (BB.po !== po) { BB.po = po; el.style.setProperty("--po", po); }
   const cls = down ? "down" : stag ? "stag" : rage ? "rage" : "";
   if (BB.cls !== cls) {
-    if (cls === "down" && BB.cls !== "down" && G.phase === "play") showBanner("Finish!", "A heavy, special or ulti ends him", "fin", 1600, "#ffd23f");
+    if (cls === "down" && BB.cls !== "down" && G.phase === "play") showBanner(_t("Finish!"), _t("A heavy, special or ulti ends him"), "fin", 1600, "#ffd23f");
     el.classList.remove("down", "stag", "rage"); if (cls) el.classList.add(cls); BB.cls = cls;
   }
   const quote = G.phase === "countdown";   // his line while the countdown runs
@@ -77,22 +77,26 @@ function bossMatchEnd(forfeit) {
   showResults(R);
 }
 function bossVs() {
-  const b = bossOf(G), vs = ` vs ${b ? b.spec.name : "the boss"} · ${BOSS_LV[G.lv]}`;
-  if (match.online) return `${G.fighters[meSlot].spec.name} and ${NET.oppName || "your friend"} (${G.fighters[1 - meSlot].spec.name})${vs}`;   // ui/online.js: a friend on a second phone
-  return `${G.fighters[0].spec.name} and ${match.cpu || "CPU"} (${G.fighters[1].spec.name})${vs}`;
+  const b = bossOf(G), boss = b ? b.spec.name : _t("the boss"), level = BOSS_LV[G.lv];
+  if (match.online) return _t("{me} and {mate} ({mf}) vs {boss} · {level}", { me: G.fighters[meSlot].spec.name, mate: NET.oppName || _t("your friend"), mf: G.fighters[1 - meSlot].spec.name, boss, level });   // ui/online.js: a friend on a second phone
+  return _t("{me} and {mate} ({mf}) vs {boss} · {level}", { me: G.fighters[0].spec.name, mate: match.cpu || _t("CPU"), mf: G.fighters[1].spec.name, boss, level });
 }
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+// A sentence for resLine (screens.js), which takes parts, a name in bold as { b }: the sentence is ONE _t text with the names as {vars} marked by
+// tlBold, and tlParts cuts the translated text into the parts again (so a translation may put a bold name anywhere).
+const tlBold = (s) => `\u0001${s}\u0001`;
+const tlParts = (s) => s.split("\u0001").map((x, i) => (i % 2 ? { b: x } : x));
 // the results' story line for a boss fight
 function bossResLine(R) {
-  const friend = R.online ? NET.oppName || "your friend" : "";   // online: the friend on the second phone (ui/online.js)
-  const B = R.boss, mate = [{ b: friend || match.cpu || "your partner" }, ` (${B.mate.spec.name})`];
-  if (R.forfeit) return ["You left the fight."];
+  const friend = R.online ? NET.oppName || _t("your friend") : "";   // online: the friend on the second phone (ui/online.js)
+  const B = R.boss, mate = friend || match.cpu || _t("your partner");
+  if (R.forfeit) return [_t("You left the fight.")];
   if (R.res === 1) {
-    const line = ["You and ", ...mate, " beat ", { b: B.name }, ` on ${BOSS_LV[B.lv]} in ${mmss(B.secs)}.`];
+    const line = tlParts(_t("You and {mate} ({mf}) beat {boss} on {level} in {time}.", { mate: tlBold(mate), mf: B.mate.spec.name, boss: tlBold(B.name), level: BOSS_LV[B.lv], time: mmss(B.secs) }));
     // online: who landed the final launch; after a drop the CPU may have finished it
-    if (R.online) line.push(R.mateFin ? (R.dropped ? ` CPU finished what ${friend} started.` : ` ${friend} landed the final launch.`) : B.by === R.me.slot ? " You landed the final launch." : "");
+    if (R.online) line.push(R.mateFin ? ` ${R.dropped ? _t("CPU finished what {friend} started.", { friend }) : _t("{friend} landed the final launch.", { friend })}` : B.by === R.me.slot ? ` ${_t("You landed the final launch.")}` : "");
     return line;
   }
-  return [{ b: B.name }, ` won with ${Math.max(1, Math.round(B.hp * 100))}% of his HP left. ${BOSS_LV[B.lv]}, ${mmss(B.secs)}.`];
+  return tlParts(_t("{boss} won with {pct}% of his HP left. {level}, {time}.", { boss: tlBold(B.name), pct: Math.max(1, Math.round(B.hp * 100)), level: BOSS_LV[B.lv], time: mmss(B.secs) }));
 }
 window.__blBoss = (o) => { startBoss(o || {}); return G; };   // test hook: start a boss fight from a script

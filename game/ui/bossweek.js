@@ -97,7 +97,7 @@ function bwDiff(fr, d) { const s = (Math.abs(fr) / 60).toFixed(d === 1 ? 1 : 2);
 // what is left of the week: "3d 4h", "5h 12m", "12m"
 function bwLeft(ends) {
   const m = Math.max(0, Math.floor((ends - Date.now()) / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
-  return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${Math.max(1, m)}m`;
+  return d ? _t("{d}d {h}h", { d, h }) : h ? _t("{h}h {m}m", { h, m: m % 60 }) : _t("{m}m", { m: Math.max(1, m) });
 }
 const bwBossSpec = (id) => BL.BOSSES.find((b) => b.id === id) || BL.BOSSES[0];
 // the sheet, the tile and the Monday card follow every change (ui/bwsheet.js)
@@ -116,7 +116,7 @@ function bwBoot() {   // vcBoot (ui/vscpu.js), once
 }
 function bwMsg(m) {
   if (!m || typeof m !== "object") return;
-  if (m.t === "me") { if (!m.err) bwAuthed(); else if (BW.asking) bwFail("This phone's account isn't on the server. Check Account."); }
+  if (m.t === "me") { if (!m.err) bwAuthed(); else if (BW.asking) bwFail(_t("This phone's account isn't on the server. Check Account.")); }
   else if (m.t === "bw-me") bwGotMe(m);
   else if (m.t === "bw-tk") bwTicket(m);
   else if (m.t === "bw-no") bwRefused(m.why);
@@ -154,7 +154,7 @@ function bwGotMe(m) {
 /* ----- FIGHT: the account, a try still on its way, then a ticket ----- */
 function bwFight() {
   if (!bwLive()) { bwPractice(); return; }
-  if (mode === "result") $("rAgainSub").textContent = "Starting…";
+  if (mode === "result") $("rAgainSub").textContent = _t("Starting…");
   if (QM.no === "old") { location.reload(); return; }
   if (BW.asking) return;
   Sfx.init(); goFull();   // fullscreen needs the tap itself
@@ -166,7 +166,7 @@ async function bwGo() {
   if (!ACCT.code) {
     const ok = await qmMakeAcct();
     if (!BW.asking) return;
-    if (!ok) { bwFail(qmAcctOff() ? "Boss Week opens soon." : "Couldn't reach the server. Try again."); return; }
+    if (!ok) { bwFail(qmAcctOff() ? _t("Boss Week opens soon.") : _t("Couldn't reach the server. Try again.")); return; }
   }
   if (!QM.authed) { qmAuth(); return; }   // bwAuthed goes on once signed in
   if (bwChecking() && !BW.pend.sentT) { bwFlush(); }   // the last win goes first (its verdict doesn't hold this try up)
@@ -182,8 +182,8 @@ function bwRefused(why) {
   if (!BW.asking) return;
   if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then ask again
   if (why === "slow") { setTimeout(() => { if (BW.asking) bwGo(); }, 1500); return; }
-  if (why === "old") { QM.no = "old"; bwFail("A new version of the game is out. Reload to play."); return; }
-  bwFail("Couldn't start a Boss Week try. Try again.");
+  if (why === "old") { QM.no = "old"; bwFail(_t("A new version of the game is out. Reload to play.")); return; }
+  bwFail(_t("Couldn't start a Boss Week try. Try again."));
 }
 function bwTicketOk(m) {
   const okP = (f, p) => !!FIG[f] && Number.isInteger(p) && p >= 0 && p < FIG[f].palettes.length;
@@ -244,7 +244,7 @@ function bwHud() {
   const run = (r.ko >= 0 ? r.ko : G.t) - r.go, mine = rp ? null : bwMine();   // a replay's pill: its clock only
   if (r.go >= 0 && r.ko < 0 && run >= BW_CAP && G.phase === "play" && !r.cap) { r.cap = true; finishMatch(false); return; }   // 4:00: out of time
   const t = r.ko >= 0 ? bwClock(run, 2) : bwClock(run, 1), left = r.ko < 0 && run >= BW_CAP - BW_LAST;
-  const bt = left ? `${mmss(Math.ceil((BW_CAP - run) / 60))} left` : mine && mine.t ? `Best ${bwClock(mine.t, 2)}` : "";
+  const bt = left ? _t("{time} left", { time: mmss(Math.ceil((BW_CAP - run) / 60)) }) : mine && mine.t ? _t("Best {time}", { time: bwClock(mine.t, 2) }) : "";
   const cls = left ? "ember" : r.ko >= 0 ? (mine && mine.t && run < mine.t ? "best" : "done") : "";
   if (BP.t !== t) { BP.t = t; el.querySelector(".bp-t").textContent = t; }
   if (BP.b !== bt) { BP.b = bt; const s = el.querySelector(".bp-b"); s.textContent = bt; s.hidden = !bt; }
@@ -313,19 +313,19 @@ const bwBossName = (id) => bwBossSpec(id).name;
 function bwResults(R) {   // showResults (ui/screens.js), last
   const B = R.bw, tk = B.tk, name = bwBossName(tk.boss);
   BW.shown = R;
-  $("rMode").textContent = `Boss Week · ${name} · ${BOSS_LV[tk.lv]}`; $("rWho").textContent = "";
-  resTitle(B.won ? "Finished!" : B.cap ? "Out of time" : R.forfeit ? "Left the fight" : "He's still up");
-  if (B.cap) resLine($("rSub"), [{ b: name }, " held on for 4:00. A run has 4 minutes from GO."]);
-  else if (B.won) resLine($("rSub"), ["You and ", { b: match.cpu || "your partner" }, ` (${G.fighters[1].spec.name}) beat `, { b: name }, ` in ${bwClock(B.t, 2)}.`]);
+  $("rMode").textContent = _t("Boss Week · {boss} · {level}", { boss: name, level: BOSS_LV[tk.lv] }); $("rWho").textContent = "";
+  resTitle(B.won ? _t("Finished!") : B.cap ? _t("Out of time") : R.forfeit ? _t("Left the fight") : _t("He's still up"));
+  if (B.cap) resLine($("rSub"), tlParts(_t("{boss} held on for 4:00. A run has 4 minutes from GO.", { boss: tlBold(name) })));   // tlBold, tlParts: ui/boss.js
+  else if (B.won) resLine($("rSub"), tlParts(_t("You and {mate} ({mf}) beat {boss} in {time}.", { mate: tlBold(match.cpu || _t("your partner")), mf: G.fighters[1].spec.name, boss: tlBold(name), time: bwClock(B.t, 2) })));
   // the tiles: hearts lost, the break, damage, the Road's chips (if this win gave some)
-  $("rKOs").textContent = B.fl; $("rKOsL").textContent = B.fl === 1 ? "Heart lost" : "Hearts lost";
-  $("rFalls").textContent = B.brk >= 0 ? bwClock(B.brk, 1) : "—"; $("rFallsL").textContent = "Broken at";
+  $("rKOs").textContent = B.fl; $("rKOsL").textContent = _t("Heart lost|Hearts lost", { n: B.fl });
+  $("rFalls").textContent = B.brk >= 0 ? bwClock(B.brk, 1) : "—"; $("rFallsL").textContent = _t("Broken at");
   const road = B.road, chips = R.total > 0;
   $("rStats").classList.toggle("nochips", !chips); $("rChipT").hidden = !chips;
   if (chips) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => Sfx.uiCoin() }); else $("rChipN").textContent = "0";
-  $("rWhy").textContent = road && road.lines.length ? `The Road: ${road.lines.join(" · ")}` : "Boss Week pays on Monday: #1 300 · #2–3 150 · top 10 80 · a time 25 chips.";
-  $("rAgain").querySelector("span").textContent = "Retry"; $("rAgain").disabled = false; $("rAgainSub").textContent = "";
-  $("rChange").querySelector("span").textContent = "Board";
+  $("rWhy").textContent = road && road.lines.length ? _t("The Road: {lines}", { lines: road.lines.join(" · ") }) : _t("Boss Week pays on Monday: #1 300 · #2–3 150 · top 10 80 · a time 25 chips.");
+  $("rAgain").querySelector("span").textContent = _t("Retry"); $("rAgain").disabled = false; $("rAgainSub").textContent = "";
+  $("rChange").querySelector("span").textContent = _t("Board");
   $("rRank").hidden = true; $("rPot").hidden = true;
   const c = bwCard(); c.hidden = false;
   bwCardView();
@@ -335,22 +335,22 @@ function bwResults(R) {   // showResults (ui/screens.js), last
 function bwCardView() {
   const R = BW.shown, B = R.bw, c = $("rBw"), D = $("rBwD"), L = $("rBwL"), mine = bwMine(), best = mine && mine.t ? mine.t : B.b0;
   c.className = "card res-bw"; D.className = "delta"; D.style.animation = "";
-  $("rBwK").textContent = B.won ? "Your time" : "No time";
+  $("rBwK").textContent = B.won ? _t("Your time") : _t("No time");
   $("rBwT").textContent = B.won ? bwClock(B.t, 2) : "--:--.--";
   const place = mine && mine.pl ? ` · #${mine.pl}` : "";
   if (B.sent && bwChecking()) {   // a new best on its way: the gold dot until the server's copy says so
     c.classList.add("wait"); D.classList.add("wait");
-    $("rBwN").textContent = B.b0 ? bwDiff(B.t - B.b0, 2) : "New"; $("rBwS").textContent = "Checking…";
-    L.className = "bw-l mute"; L.textContent = QM.conn ? "The server is playing your run again" : "Waiting for the server";
+    $("rBwN").textContent = B.b0 ? bwDiff(B.t - B.b0, 2) : _t("New"); $("rBwS").textContent = _t("Checking…");
+    L.className = "bw-l mute"; L.textContent = QM.conn ? _t("The server is playing your run again") : _t("Waiting for the server");
   } else if (B.sent) {   // sent, the answer already in (bwVerdictView shows it)
-    $("rBwN").textContent = "…"; $("rBwS").textContent = "Checking…";
+    $("rBwN").textContent = "…"; $("rBwS").textContent = _t("Checking…");
   } else if (B.won) {   // a win, not faster than your best: nothing to check
-    D.classList.add("zero"); $("rBwN").textContent = bwDiff(B.t - best, 2); $("rBwS").textContent = `Best ${bwClock(best, 2)}`;
-    L.className = "bw-l"; L.textContent = `Your best stays ${bwClock(best, 2)}${place} · Board ›`;
+    D.classList.add("zero"); $("rBwN").textContent = bwDiff(B.t - best, 2); $("rBwS").textContent = _t("Best {time}", { time: bwClock(best, 2) });
+    L.className = "bw-l"; L.textContent = `${_t("Your best stays {time}", { time: bwClock(best, 2) })}${place} · ${_t("Board ›")}`;
   } else {
-    D.classList.add("zero"); $("rBwN").textContent = best ? bwClock(best, 2) : "—"; $("rBwS").textContent = best ? "Your best" : "No time yet";
+    D.classList.add("zero"); $("rBwN").textContent = best ? bwClock(best, 2) : "—"; $("rBwS").textContent = best ? _t("Your best") : _t("No time yet");
     L.className = "bw-l mute";
-    L.textContent = !bwLive() && !mine ? "Boss Week counts with the server on" : best ? `Your best stays ${bwClock(best, 2)}${place} · Board ›` : `Finish ${bwBossName(B.tk.boss)} once and you're on the board`;
+    L.textContent = !bwLive() && !mine ? _t("Boss Week counts with the server on") : best ? `${_t("Your best stays {time}", { time: bwClock(best, 2) })}${place} · ${_t("Board ›")}` : _t("Finish {boss} once and you're on the board", { boss: bwBossName(B.tk.boss) });
   }
 }
 // the server's verdict on the results on screen
@@ -363,27 +363,27 @@ function bwVerdictView(late) {
   if (v.ok && v.why === "best") {
     const a = v.pl0 | 0, b = v.pl1 | 0, n = v.n | 0;
     $("rBwT").textContent = bwClock(v.time, 2);
-    D.classList.add("up"); N.textContent = v.b0 ? bwDiff(v.time - v.b0, 2) : `#${b}`; S.textContent = "New best";
+    D.classList.add("up"); N.textContent = v.b0 ? bwDiff(v.time - v.b0, 2) : `#${b}`; S.textContent = _t("New best");
     L.className = "bw-l up";
-    L.textContent = !a ? `#${b} of ${n} · Board ›` : b < a ? `#${a} → #${b} of ${n} ▲${a - b}` : `#${b} of ${n} · Board ›`;
+    L.textContent = !a ? `${_t("#{b} of {n}", { b, n })} · ${_t("Board ›")}` : b < a ? _t("#{a} → #{b} of {n} ▲{up}", { a, b, n, up: a - b }) : `${_t("#{b} of {n}", { b, n })} · ${_t("Board ›")}`;
     return;
   }
   if (v.ok) {   // the server's copy is a win, not faster than your best after all
     $("rBwT").textContent = bwClock(v.time, 2);
-    D.classList.add("zero"); N.textContent = bwDiff(v.time - v.b0, 2); S.textContent = `Best ${bwClock(v.b0, 2)}`;
-    L.className = "bw-l"; L.textContent = `Your best stays ${bwClock(v.b0, 2)}${v.pl1 ? ` · #${v.pl1}` : ""} · Board ›`;
+    D.classList.add("zero"); N.textContent = bwDiff(v.time - v.b0, 2); S.textContent = _t("Best {time}", { time: bwClock(v.b0, 2) });
+    L.className = "bw-l"; L.textContent = `${_t("Your best stays {time}", { time: bwClock(v.b0, 2) })}${v.pl1 ? ` · #${v.pl1}` : ""} · ${_t("Board ›")}`;
     return;
   }
-  D.classList.add("down"); N.textContent = "✕"; S.textContent = "Not counted";
+  D.classList.add("down"); N.textContent = "✕"; S.textContent = _t("Not counted");
   L.className = "bw-l down";
-  L.textContent = v.why === "void" ? "Not counted · the game was updated during this run"
-    : v.why === "week" ? "Not counted · the week ended during this run"
-    : v.why === "late" ? "Already counted"
-    : v.why === "claim" ? `Your best stays ${bwClock(v.b0, 2)}`
-    : "Not counted · the replay didn't match";
+  L.textContent = v.why === "void" ? _t("Not counted · the game was updated during this run")
+    : v.why === "week" ? _t("Not counted · the week ended during this run")
+    : v.why === "late" ? _t("Already counted")
+    : v.why === "claim" ? _t("Your best stays {time}", { time: bwClock(v.b0, 2) })
+    : _t("Not counted · the replay didn't match");
 }
 // Pause: leaving a try costs nothing
-function bwPauseText() { $("pQuit").querySelector("span").textContent = "Quit to menu"; $("pNote").textContent = "Leaving costs nothing. Only a finished run counts."; }
+function bwPauseText() { $("pQuit").querySelector("span").textContent = _t("Quit to menu"); $("pNote").textContent = _t("Leaving costs nothing. Only a finished run counts."); }
 
 /* ----- the board (the Boards sheet's Boss Week tab, ui/bwsheet.js): { k: "w", wk, no, boss, n, at, fin, top: [{ id, nm, f, t, fl, cr, pl, r, v }],
    me: null | { i, row } | { i: 0 } } or null. r / v: the run's id and game version (the top 10 and your row: ▶ when v is PROTO, ui/replay.js).
@@ -443,7 +443,7 @@ function bwBdDone(d) {
 /* ----- every frame (vcTick, ui/vscpu.js) ----- */
 function bwTick() {
   if (!qmOn()) return;
-  if (BW.asking && Date.now() - BW.askT > 10000) bwFail("Couldn't reach the server. Try again.");
+  if (BW.asking && Date.now() - BW.askT > 10000) bwFail(_t("Couldn't reach the server. Try again."));
   if (mode === "menu") bwAskMe(false);
   // a won try sent with no answer: send it again (the server answers "late" if it already counted it)
   const p = BW.pend;
