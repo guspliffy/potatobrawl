@@ -48,7 +48,7 @@ function readLit(s, i) {
 const lineOf = (s, i) => s.slice(0, i).split("\n").length;
 function scanCode(file) {
   const raw = fs.readFileSync(file, "utf8"), s = noComments(raw), rel = path.relative(ROOT, file), lines = raw.split("\n");
-  const re = /(^|[^\w$.])_t\(/g;
+  const re = /(^|[^\w$.])_tk?\(/g;   // _tk("...") marks a key in a base.js table (shown later with _tv)
   let m;
   while ((m = re.exec(s))) {
     let i = m.index + m[0].length;
