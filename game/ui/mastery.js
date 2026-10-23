@@ -9,8 +9,8 @@ const MX_CURVE = [0, 0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700];   // 
 const MX_MAX = 10;
 const MX_CHIPS = { 2: 20, 4: 40, 6: 60, 8: 80 };                              // 200 per fighter
 const MX_TITLES = {                                                          // [Lv 5, Lv 10]
-  phoenix: ["Hot Potato", "Reborn"], alchemist: ["Lab Rat", "Philosopher"], odin: ["Raven Keeper", "Spearbearer"], wizard: ["Star Pupil", "Starcaller"],
-  samurai: ["Steady Hand", "One Cut"], dragon: ["Hatchling", "Elder Wyrm"], gunslinger: ["Deputy", "Most Wanted"], reaper: ["Gravedigger", "Ferryman"],
+  phoenix: [_t("Hot Potato"), _t("Reborn")], alchemist: [_t("Lab Rat"), _t("Philosopher")], odin: [_t("Raven Keeper"), _t("Spearbearer")], wizard: [_t("Star Pupil"), _t("Starcaller")],
+  samurai: [_t("Steady Hand"), _t("One Cut")], dragon: [_t("Hatchling"), _t("Elder Wyrm")], gunslinger: [_t("Deputy"), _t("Most Wanted")], reaper: [_t("Gravedigger"), _t("Ferryman")],
 };
 const mxFighters = () => FIGHTERS.filter((f) => MX_TITLES[f.id]);
 const mxObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
@@ -25,24 +25,28 @@ function mxInfo(id) {
 const mxFrac = (xp) => { const lv = mxLevel(xp); return lv >= MX_MAX ? 1 : clamp((xp - MX_CURVE[lv]) / (MX_CURVE[lv + 1] - MX_CURVE[lv]), 0, 1); };
 // the badge look by level: none at 1, ink 2, bronze 3-5, silver 6-8, gold 9, gold with laurels 10 (the colours are the tier colours)
 function mxBadge(lv) { return lv < 2 ? { k: "", col: "" } : lv < 3 ? { k: "ink", col: "#3a4170" } : lv < 6 ? { k: "bronze", col: "#cd8f5b" } : lv < 9 ? { k: "silver", col: "#c9d0e4" } : { k: lv >= 10 ? "laurel" : "gold", col: "#f0c35a" }; }
-// what a level gives. next: the words for "Next: ..." (no plus sign, a title by its name); else the words for the results line
-function mxRewards(id, lv, next) {
+// what a level gives. next: the words for "Next: ..." (no plus sign, a title by its name); else the words for the results line. noChips: leave the chips line out
+function mxRewards(id, lv, next, noChips) {
   const out = [], t = MX_TITLES[id] || ["", ""], chips = MX_CHIPS[lv];
-  if (chips) out.push(next ? `${chips} chips` : `+${chips} chips`);
-  if (lv === 3) out.push("Bronze badge");
-  if (lv === 5) out.push(next ? t[0] : `Title: ${t[0]}`);
-  if (lv === 6) out.unshift("Silver badge");
-  if (lv === 7) out.push("Name glint");
-  if (lv === 9) out.push("Gold badge");
-  if (lv === 10) out.push(next ? `${t[1]} and laurels` : `Title: ${t[1]}`, ...(next ? [] : ["Laurels"]));
+  if (chips && !noChips) out.push(next ? _t("{n} chips", { n: chips }) : _t("+{n} chips", { n: chips }));
+  if (lv === 3) out.push(_t("Bronze badge"));
+  if (lv === 5) out.push(next ? t[0] : _t("Title: {name}", { name: t[0] }));
+  if (lv === 6) out.unshift(_t("Silver badge"));
+  if (lv === 7) out.push(_t("Name glint"));
+  if (lv === 9) out.push(_t("Gold badge"));
+  if (lv === 10) out.push(next ? _t("{name} and laurels", { name: t[1] }) : _t("Title: {name}", { name: t[1] }), ...(next ? [] : [_t("Laurels")]));
   return out;
 }
 // the reward line is one short line: after the first two a long list (the catch-up after the head start) ends with "+N more"
 let mxPaid = false;   // this match paid mastery chips
-const mxRewardText = (r) => (r.length > 3 ? [...r.slice(0, 2), `+${r.length - 2} more`] : r).join(" · ");
-// Practice's line under the stat tiles says it earns no chips: when a level up did pay some, it says so
-function masteryWhy(s) { return mxPaid ? s.replace(/ or earn chips\.$/, ". Mastery chips still count.") : s; }
-function mxNextLine(id, lv) { return lv >= MX_MAX ? "Mastered" : `Next: ${mxRewards(id, lv + 1, true).join(" and ")} at Lv ${lv + 1}`; }
+const mxRewardText = (r) => (r.length > 3 ? [...r.slice(0, 2), _t("+{n} more", { n: r.length - 2 })] : r).join(" · ");
+// Practice's line under the stat tiles says it earns no chips: when a level up did pay some, it says so (alt: the line for that case, given by the caller that has one)
+function masteryWhy(s, alt) { return mxPaid && alt ? alt : s; }
+function mxNextLine(id, lv) {
+  if (lv >= MX_MAX) return _t("Mastered");
+  const w = mxRewards(id, lv + 1, true);   // one or two things: "Silver badge and 60 chips"
+  return _t("Next: {what} at Lv {n}", { what: w.length > 1 ? w.reduce((a, x) => _t("{a} and {b}", { a, b: x })) : w[0] || "", n: lv + 1 });
+}
 
 /* ----- the profile: tidy fields, and the one-time head start from the old record (w*45 + l*28 + d*35, at most 650 per fighter) ----- */
 (function mxLoad() {
@@ -68,13 +72,13 @@ function mxNextLine(id, lv) { return lv >= MX_MAX ? "Mastered" : `Next: ${mxRewa
 // added later) counts x1.
 function mxMult() {
   const m = match, lv = m && !m.ranked && !m.online && !m.daily && !m.cup && !m.boss && !m.road ? LEVELS.find((l) => l.name === m.level) : null;
-  return lv ? { Dummy: 0, Easy: 0.5, Normal: 0.75, Hard: 1 }[lv.name] : 1;
+  return lv ? [0, 0.5, 0.75, 1][LEVELS.indexOf(lv)] : 1;   // LEVELS: Dummy, Easy, Normal, Hard (ui/screens.js)
 }
 // R: { res (1 win, 0.5 draw, 0 loss), forfeit, me (the fighter, for its KOs) }; page: your KO page played on the last heart; ult: it was an Ultimate KO
 function mxGain(R, page, ult) {
-  if (R.forfeit) return { xp: 0, why: "No XP for a forfeit" };
+  if (R.forfeit) return { xp: 0, why: _t("No XP for a forfeit") };
   const m = mxMult();
-  if (m <= 0) return { xp: 0, why: "No XP against the Dummy" };
+  if (m <= 0) return { xp: 0, why: _t("No XP against the Dummy") };
   const won = R.res === 1, raw = 20 + (won ? 20 : 0) + ((R.me && R.me.kos) | 0) * 5 + (won && page ? (ult ? 15 : 10) : 0);
   return { xp: Math.round(raw * m) };
 }
@@ -87,7 +91,7 @@ function mxAward(id, add) {
     P.mxp[id] = Math.min(1e9, (P.mxp[id] | 0) + add);
     a.x1 = mxXp(id);
     const l1 = mxLevel(a.x1);
-    for (let n = lo + 1; n <= l1; n++) { a.chips += MX_CHIPS[n] | 0; a.rewards.push(...mxRewards(id, n, false).filter((r) => !/chips$/.test(r))); }
+    for (let n = lo + 1; n <= l1; n++) { a.chips += MX_CHIPS[n] | 0; a.rewards.push(...mxRewards(id, n, false, true)); }
     if (l1 > paid) P.mpaid[id] = l1;
     if (a.chips) P.tokens += a.chips;
     if (lo < l0) { a.from = lo; a.p0 = 0; }   // levels reached before but never paid (the head start, a sync): they pop now, from the last paid one
@@ -95,7 +99,7 @@ function mxAward(id, add) {
   }
   a.l1 = mxLevel(a.x1); a.p1 = mxFrac(a.x1);
   a.up = a.l1 > a.from;
-  if (a.chips) a.rewards.unshift(`+${a.chips} chips`);
+  if (a.chips) a.rewards.unshift(_t("+{n} chips", { n: a.chips }));
   return a;
 }
 // a KO page you landed (finisher.js, when you won the KO): the Collection counts them
@@ -113,8 +117,8 @@ Sfx.fanfare = function () { mxFan++; this.tone(784, 784, 0.16, "triangle", 0.1);
 /* ----- the results row ----- */
 const mxRow = document.createElement("div");
 mxRow.className = "card res-mx"; mxRow.id = "rMx"; mxRow.hidden = true;
-mxRow.innerHTML = '<span class="av" id="rMxAv"></span><div class="mx-body"><div class="mx-head"><b class="mx-nm" id="rMxNm"></b><span class="mx-lvw" id="rMxLvw">Lv <i id="rMxLv">1</i></span><span class="mx-tag" id="rMxTag"></span></div>' +
-  '<div class="mx-bar"><i id="rMxBar"></i></div><div class="mx-line" id="rMxLine"></div></div><div class="mx-xp" id="rMxXp"><b id="rMxXpN">+0</b><small>XP</small></div>';
+mxRow.innerHTML = `<span class="av" id="rMxAv"></span><div class="mx-body"><div class="mx-head"><b class="mx-nm" id="rMxNm"></b><span class="mx-lvw" id="rMxLvw">${_t("Lv {n}", { n: '<i id="rMxLv">1</i>' })}</span><span class="mx-tag" id="rMxTag"></span></div>` +
+  `<div class="mx-bar"><i id="rMxBar"></i></div><div class="mx-line" id="rMxLine"></div></div><div class="mx-xp" id="rMxXp"><b id="rMxXpN">+0</b><small>${_t("XP")}</small></div>`;
 $("rRank").after(mxRow);
 let mxRun = null;   // the level-up sequence in progress: { t: [timers], fin }
 function mxStop() { if (mxRun) { mxRun.t.forEach(clearTimeout); mxRun = null; } }
@@ -133,7 +137,7 @@ function masteryResults(R, page, ult) {
   acSetAvatar($("rMxAv"), id, P.pal[id] || 0);
   $("rMxNm").textContent = spec.name;
   const line = $("rMxLine"), xpN = $("rMxXpN");
-  const label = `${spec.name} mastery, level ${a.l1}. ${g.xp > 0 ? `${g.xp} XP.` : g.why}${a.up ? ` Level up. ${a.rewards.join(", ")}.` : ""}`;
+  const label = [_t("{name} mastery, level {n}.", { name: spec.name, n: a.l1 }), g.xp > 0 ? _t("{n} XP.", { n: g.xp }) : g.why, ...(a.up ? [_t("Level up."), `${a.rewards.join(", ")}.`] : [])].join(" ");
   row.setAttribute("role", "group"); row.setAttribute("aria-label", label);
   const rewardText = mxRewardText(a.rewards);
   mxPaid = a.chips > 0;
@@ -142,7 +146,7 @@ function masteryResults(R, page, ult) {
   const fin = () => {   // the end state: also what a tap on the screen and reduced motion jump to
     mxStop();
     mxLv(a.l1); mxBar(a.p1, 0);
-    mxTag(a.up && mastered ? "Mastered" : a.up ? "Level up" : mastered ? "Mastered" : "", mastered ? "gold" : "ember");
+    mxTag(a.up && mastered ? _t("Mastered") : a.up ? _t("Level up") : mastered ? _t("Mastered") : "", mastered ? "gold" : "ember");
     line.textContent = lineEnd; line.classList.add("on");
     row.classList.remove("flash", "spin"); row.classList.toggle("up", a.up); row.classList.toggle("max", mastered);
     xpN.textContent = g.xp > 0 ? `+${g.xp}` : "0";
@@ -168,7 +172,7 @@ function masteryResults(R, page, ult) {
   at(T0 + 560 + 260, () => mxLv(a.l1));
   at(T0 + 940, () => {
     mxBar(0, 0); void $("rMxBar").offsetWidth; mxBar(a.p1, 460);
-    mxTag(mastered ? "Mastered" : "Level up", mastered ? "gold" : "ember");
+    mxTag(mastered ? _t("Mastered") : _t("Level up"), mastered ? "gold" : "ember");
     if (won) { if (mastered) { fin.sound = true; Sfx.fanfare(); } else Sfx.uiGo(); }
   });
   at(T0 + 1450, () => { line.textContent = lineEnd; line.classList.add("on"); if (a.chips) { fin.coin = true; Sfx.uiCoin(); } });
@@ -189,10 +193,10 @@ function masteryCup(forfeit) {
   const me = G.fighters[0], res = G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5, g = mxGain({ res, forfeit: false, me }, !!match.finBy, !!FIN.ulti);   // finBy: your KO page played (finStart; cup matches have no results screen to clear it)
   if (g.xp <= 0) return;
   const a = mxAward(me.spec.id, g.xp), name = FIG[me.spec.id].name;
-  mxCup.querySelector("b").textContent = `+${g.xp} XP`;
-  mxCup.querySelector("small").textContent = a.up ? `${name} Lv ${a.l1}${a.rewards.length ? " · " + mxRewardText(a.rewards) : ""}` : `${name} Lv ${a.l1}`;
+  mxCup.querySelector("b").textContent = _t("+{n} XP", { n: g.xp });
+  mxCup.querySelector("small").textContent = a.up ? `${_t("{name} Lv {n}", { name, n: a.l1 })}${a.rewards.length ? " · " + mxRewardText(a.rewards) : ""}` : _t("{name} Lv {n}", { name, n: a.l1 });
   mxCup.classList.toggle("up", a.up);
-  mxCup.setAttribute("aria-label", `${name} gains ${g.xp} XP${a.up ? `, level ${a.l1}` : ""}`);
+  mxCup.setAttribute("aria-label", a.up ? _t("{name} gains {n} XP, level {l}", { name, n: g.xp, l: a.l1 }) : _t("{name} gains {n} XP", { name, n: g.xp }));
   mxCupT = setTimeout(() => {
     if (mode !== "cup") return;
     mxCup.hidden = false; mxCup.classList.remove("pop"); void mxCup.offsetWidth; mxCup.classList.add("pop");
@@ -215,34 +219,34 @@ function masteryTile(b, spec) {
   }
   mxShield(b._mx, lv); b._lr.hidden = lv < MX_MAX;
   b.classList.toggle("mx10", lv >= MX_MAX);
-  b.setAttribute("aria-label", `${spec.name}${lv > 1 ? `, mastery level ${lv}` : ""}`);
+  b.setAttribute("aria-label", lv > 1 ? _t("{name}, mastery level {n}", { name: spec.name, n: lv }) : spec.name);
 }
 // the MASTERY row of the stats card: ten segments (the next one fills to the XP fraction), the LV sticker, and what comes next
 function masteryDetail(spec) {
   const m = mxInfo(spec.id), b = mxBadge(m.lv);
   let seg = "";
   for (let n = 1; n <= MX_MAX; n++) seg += n <= m.lv ? '<i class="on"></i>' : n === m.lv + 1 && m.p > 0 ? `<i class="part" style="--f:${m.p.toFixed(3)}"></i>` : "<i></i>";
-  $("dStats").insertAdjacentHTML("beforeend", `<div class="mx-row" data-k="${b.k}"><span>Mastery</span><span class="mx-seg" role="img" aria-label="Mastery level ${m.lv} of ${MX_MAX}">${seg}</span>` +
-    `<b class="mx-lv" style="--mc:${b.col || "#a4a9c8"}">Lv ${m.lv}</b><small class="mx-next">${mxNextLine(spec.id, m.lv)}</small></div>`);
+  $("dStats").insertAdjacentHTML("beforeend", `<div class="mx-row" data-k="${b.k}"><span>${_t("Mastery")}</span><span class="mx-seg" role="img" aria-label="${_t("Mastery level {n} of {m}", { n: m.lv, m: MX_MAX })}">${seg}</span>` +
+    `<b class="mx-lv" style="--mc:${b.col || "#a4a9c8"}">${_t("Lv {n}", { n: m.lv })}</b><small class="mx-next">${mxNextLine(spec.id, m.lv)}</small></div>`);
   $("dName").classList.toggle("mx10", m.lv >= MX_MAX);
 }
 
 /* ----- titles (acct.js lists them in ACT) and the Collection (Account > Locker, the level in Account > Stats) ----- */
 function mxActs(n) {   // the Lv 5 or Lv 10 title of every fighter
   return mxFighters().map((f) => ({ id: `m${n}_${f.id}`, grp: `m${n}`, fighter: true, name: () => MX_TITLES[f.id][n === 5 ? 0 : 1], ok: () => mxInfo(f.id).lv >= n,
-    how: `Reach Lv ${n} with ${f.name}.`, note: () => `${f.name} Lv ${n}`, xp: () => mxXp(f.id) }));
+    how: _t("Reach Lv {n} with {name}.", { n, name: f.name }), note: () => _t("{name} Lv {n}", { name: f.name, n }), xp: () => mxXp(f.id) }));
 }
-const mxJack = { id: "jack", name: () => "Jack of Spuds", ok: () => mxFighters().every((f) => mxInfo(f.id).lv >= 5), how: "Reach Lv 5 with every fighter." };
+const mxJack = { id: "jack", name: () => _t("Jack of Spuds"), ok: () => mxFighters().every((f) => mxInfo(f.id).lv >= 5), how: _t("Reach Lv 5 with every fighter.") };
 function mxShieldHTML(lv, cls) { const b = mxBadge(lv); return `<i class="mx-sh sm ${cls || ""}" data-k="${b.k}"${lv < 2 ? " hidden" : ""}><em>${lv}</em></i>`; }
 // the Collection as one slim line, the top line of Account > Locker: KO pages, Ultimate KOs and combo routes, each as "2/8". Who is in, and the rule, are
 // in the labels (a screen reader reads them; a mouse shows the rule). Styles: css/92-locker.css.
 function masteryCollection(pan) {
   const ko = P.pages.ko.filter((id) => FIG[id]), ult = P.pages.ult.filter((id) => FIG[id]), n = mxFighters().length, rd = routesDone().length;
-  const cell = (id, c, tot, what, list) => `<span class="mx-ct" id="${id}"${list ? ` data-on="${list.join(" ")}"` : ""} role="img" aria-label="${c} of ${tot} ${what}${list && list.length ? ": " + list.map((f) => FIG[f].name).join(", ") : ""}"><b>${c}<small>/${tot}</small></b> ${what}</span>`;
+  const cell = (id, c, tot, what, list) => `<span class="mx-ct" id="${id}"${list ? ` data-on="${list.join(" ")}"` : ""} role="img" aria-label="${_t("{c} of {t} {what}", { c, t: tot, what })}${list && list.length ? ": " + list.map((f) => FIG[f].name).join(", ") : ""}"><b>${c}<small>/${tot}</small></b> ${what}</span>`;
   const box = document.createElement("div");
-  box.className = "mx-line"; box.setAttribute("role", "group"); box.setAttribute("aria-label", "Collection");
-  box.title = "A fighter's page counts once you land it yourself: your KO on the last heart.";
-  box.innerHTML = '<span class="kicker">Collection</span>' + cell("mxColKo", ko.length, n, "KO pages", ko) + cell("mxColUlt", ult.length, n, "Ultimate KOs", ult) + cell("mxColRt", rd, ROUTE_TOTAL, "Combo routes");
+  box.className = "mx-line"; box.setAttribute("role", "group"); box.setAttribute("aria-label", _t("Collection"));
+  box.title = _t("A fighter's page counts once you land it yourself: your KO on the last heart.");
+  box.innerHTML = `<span class="kicker">${_t("Collection")}</span>` + cell("mxColKo", ko.length, n, _t("KO pages"), ko) + cell("mxColUlt", ult.length, n, _t("Ultimate KOs"), ult) + cell("mxColRt", rd, ROUTE_TOTAL, _t("Combo routes"));
   pan.appendChild(box);
 }
 

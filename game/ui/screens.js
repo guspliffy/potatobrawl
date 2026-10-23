@@ -20,7 +20,7 @@ function newAttract() {
   const g = newGame({ seed: newSeed(), players: [{ spec: a, pal: a.palettes[(Math.random() * 4) | 0] }, { spec: b, pal: b.palettes[a === b ? 1 : 0] }], countdown: 30, stocks: 2, map: (Math.random() * BL.POOL) | 0 });
   attract = { g, b0: makeBot(0.75), b1: makeBot(0.75) };
   clearTrails();
-  $("mLive").textContent = `Live · ${a.name} vs ${b.name}`;   // the menu's LIVE tag names the two fighters behind it
+  $("mLive").textContent = _t("Live · {a} vs {b}", { a: a.name, b: b.name });   // the menu's LIVE tag names the two fighters behind it
 }
 
 /* ----- the main menu (Fable's design; markup in shell.html #scrMenu, styles in game/css/20-menu.css) ----- */
@@ -38,19 +38,19 @@ function renderMenu() {
   const ti = tierInfo(P.rating), spec = FIG[P.last] || FIGHTERS[0], pal = spec.palettes[P.pal[spec.id] || 0] || spec.palettes[0], hero = $("bRanked");
   hero.style.setProperty("--fc", col(pal)); hero.dataset.f = spec.id;
   menuImg($("mHeroArt"), spec.id);
-  $("mRankKick").innerHTML = `Ranked<span class="mm-km"> match</span> · ${ti.t.name} ${+P.rating || 0}`;   // small screens drop "match"
+  $("mRankKick").innerHTML = _t('Ranked<span class="mm-km"> match</span> · {tier} {r}', { tier: _tv(ti.t.name), r: +P.rating || 0 });   // small screens drop "match"
   // the line wraps only after a " · " (no-break spaces inside each part and before each dot)
-  const rec = P.matches > 0 ? [`${P.wins}W`, `${P.losses}L`].concat(P.streak > 1 ? [`${P.streak} streak`] : []) : ["First match"];
-  rec.push(ti.next ? `${ti.need} to ${ti.next.name}` : "top tier");
+  const rec = P.matches > 0 ? [_t("{n}W", { n: P.wins }), _t("{n}L", { n: P.losses })].concat(P.streak > 1 ? [_t("{n} streak", { n: P.streak })] : []) : [_t("First match")];
+  rec.push(ti.next ? _t("{n} to {tier}", { n: ti.need, tier: _tv(ti.next.name) }) : _t("top tier"));
   $("mRec").textContent = rec.map((t) => t.replace(/ /g, "\u00a0")).join("\u00a0· ");
   // Tournament: a cup in progress, the cups won, or what a cup pays
   const c = cupOk(P.cup) ? P.cup : null, cups = P.cups | 0;
-  $("mCup").innerHTML = c ? `<em>Resume</em>${c.out < 0 ? ` · ${CUP.names[c.round].toLowerCase()}` : ""}`
-    : cups ? `<em>${cups} ${cups === 1 ? "cup" : "cups"} won</em>` : `<em>Up to ${CUP.chips.reduce((a, n) => a + n, CUP.flawless)} chips</em>`;
+  $("mCup").innerHTML = c ? (c.out < 0 ? _t("<em>Resume</em> · {round}", { round: CUP.names[c.round].toLowerCase() }) : _t("<em>Resume</em>"))
+    : cups ? _t("<em>{n} cup won</em>|<em>{n} cups won</em>", { n: cups }) : _t("<em>Up to {n} chips</em>", { n: CUP.chips.reduce((a, n) => a + n, CUP.flawless) });
   // Play friends: the mint dot when online play is there, greyed out with the reason when not
   const onOk = onlineAvailable();
   $("bOnline").disabled = !onOk;
-  $("mOnline").textContent = onOk ? "" : "needs the web link";
+  $("mOnline").textContent = onOk ? "" : _t("needs the web link");
   // the iPhone tip: only after the first finished match, and on one page load only (P.a2hsSeen is saved when it first shows, so the next load never shows it)
   const a2hsOn = FS.web && FS.ios && !FS.app && !P.a2hs && playedOnce() && (a2hsNow || !P.a2hsSeen);
   if (a2hsOn && !a2hsNow) { a2hsNow = true; P.a2hsSeen = true; saveProfile(); }
@@ -65,9 +65,9 @@ function menuDaily() {
   const key = dailyKey(), st = dailyGet(), done = st.d === key, pk = dailyPick(key), tile = $("bDaily"), tag = $("mDailyTag");
   menuImg($("mDailyA"), pk.me); menuImg($("mDailyB"), pk.opp);
   tile.classList.toggle("done", done);
-  $("mDailyR").innerHTML = done ? "" : `<em>+${DAILY.win} chips</em> · one try`;
+  $("mDailyR").innerHTML = done ? "" : _t("<em>+{n} chips</em> · one try", { n: DAILY.win });
   const won = done && st.r === 1;
-  tag.textContent = done ? (won ? "Won" : "Done") : "Today";
+  tag.textContent = done ? (won ? _t("Won") : _t("Done")) : _t("Today");
   tag.className = `tag ${won ? "mint" : done ? "done" : "ember"} mm-today`;
 }
 // The top bar: when the plate and the coins do not fit beside the logo (or across an upright phone), first the coins get
@@ -104,7 +104,7 @@ function goMenu() {
 }
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
-const LEVELS = [{ name: "Dummy", d: -1 }, { name: "Easy", d: 0.15 }, { name: "Normal", d: 0.5 }, { name: "Hard", d: 0.9 }];
+const LEVELS = [{ name: _t("Dummy"), d: -1 }, { name: _t("Easy"), d: 0.15 }, { name: _t("Normal"), d: 0.5 }, { name: _t("Hard"), d: 0.9 }];
 const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, mate: "random" };   // blv: the boss difficulty (Practice vs a boss); mate: the 2v2 partner (opp "duo")
 const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
@@ -133,7 +133,7 @@ function statBars(spec) {
   const heavy = [mv.hSide, mv.hUp, mv.hDown].reduce((a, m) => a + m.dmg, 0) / 3;
   const airH = (s.jump * s.jump + s.airJumps * s.airJump * s.airJump) / (2 * s.gravity);
   const q = (v, a, b) => clamp(Math.round(1 + ((v - a) / (b - a)) * 4), 1, 5);
-  return [["Power", q(heavy, 11, 18)], ["Speed", q(s.run, 4.6, 7.4)], ["Weight", q(s.weight, 82, 120)], ["Air", q(airH, 260, 560)]];
+  return [[_t("Power"), q(heavy, 11, 18)], [_t("Speed"), q(s.run, 4.6, 7.4)], [_t("Weight"), q(s.weight, 82, 120)], [_t("Air"), q(airH, 260, 560)]];
 }
 // put an owned skin on a fighter (the Skin Rack, ui/skins.js, and the Account locker both do this)
 function equipSkin(id, i) { if (!(P.owned[id] || []).includes(i)) return false; P.pal[id] = i; saveProfile(); return true; }
@@ -182,12 +182,12 @@ function buildDetail() {
     if (now) now.classList.add("on");
   }
   $("dName").textContent = spec.name;
-  $("dRole").textContent = spec.role;
-  $("dBlurb").textContent = spec.blurb;
-  $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="sl-seg" role="img" aria-label="${n} ${v} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
+  $("dRole").textContent = _tv(spec.role);
+  $("dBlurb").textContent = _tv(spec.blurb);
+  $("dStats").innerHTML = statBars(spec).map(([n, v]) => `<span>${n}</span><span class="sl-seg" role="img" aria-label="${_t("{name} {v} of 5", { name: n, v })}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("");
   masteryDetail(spec);   // ui/mastery.js: the MASTERY row of the stats card
-  $("dSig").innerHTML = `<b><em>Special</em>${spec.signature.name}</b><span>${spec.signature.text}</span>`;
-  $("dUlt").innerHTML = `<b><em>Ulti</em>${spec.ultimate.name}</b><span>${spec.ultimate.text}</span>`;
+  $("dSig").innerHTML = `<b><em>${_t("Special")}</em>${_tv(spec.signature.name)}</b><span>${_tv(spec.signature.text)}</span>`;
+  $("dUlt").innerHTML = `<b><em>${_t("Ulti")}</em>${_tv(spec.ultimate.name)}</b><span>${_tv(spec.ultimate.text)}</span>`;
   skinsBar(spec, pi);   // ui/skins.js: the Skins bar under the stage (the worn skin, SKINS n/7); a tap opens the Skin Rack
   // the portrait only has the base look: any other worn skin stands in the stage corner as the model drawn in a match
   const gz = glazeHas(spec.id, pi);   // ui/glaze.js: a glazed skin is drawn too (the portrait has no sheen)
@@ -199,10 +199,10 @@ function buildDetail() {
     cardArt.push({ cv: $("dArt"), f, fit: 0.88, bottom: 0.96 });
   }
   $("selTokens").textContent = fmtChips(P.tokens);
-  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw" || sel.mode === "tc") $("selGo").querySelector("span").textContent = `Use ${spec.name}`;   // from the Play friends lobby (or Quick match): it names the pick
+  if (sel.mode === "online" || sel.mode === "quick" || sel.mode === "bw" || sel.mode === "tc") $("selGo").querySelector("span").textContent = _t("Use {name}", { name: spec.name });   // from the Play friends lobby (or Quick match): it names the pick
 }
 function buildCards() { buildTiles(); buildDetail(); }
-const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: "the boss" }).name;
+const roadBossName = (id) => (BL.BOSSES.find((b) => b.id === id) || { name: _t("the boss") }).name;
 // a tall, narrow stage (desktop) shows the model smaller so wings and tails stay in view
 function artFit(a) { const w = a.cv.clientWidth, h = a.cv.clientHeight || 1; return Math.min(a.fit || 0.7, Math.max(0.42, (a.fit || 0.7) * 1.1 * w / h)); }
 // models much wider than tall (the Reaper's scythe): how wide the drawing is and how far its middle sits off the feet, in world units; the model shrinks to fit that width
@@ -229,13 +229,13 @@ function buildPractice() {
   const mate = FIG[sel.mate], portrait = (spec) => (spec && PORTRAITS[spec.id] ? `<img src="${PORTRAITS[spec.id]}" alt="">` : `<i class="sl-q">?</i>`);
   screens.select.classList.toggle("sl-team", duo);
   $("mateWrap").hidden = !duo;
-  $("oppPick").innerHTML = `<small>VS</small>${duo ? `<i class="sl-glyph">2v2</i>` : portrait(opp)}<span>${duo ? "Team Brawl 2v2" : opp ? opp.name : "Random"}</span>`;
-  $("lvlPick").innerHTML = boss ? `<small>Boss</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>CPU</small><span>${LEVELS[sel.level].name}</span>`;
+  $("oppPick").innerHTML = `<small>${_t("VS")}</small>${duo ? `<i class="sl-glyph">2v2</i>` : portrait(opp)}<span>${duo ? _t("Team Brawl 2v2") : opp ? opp.name : _t("Random")}</span>`;
+  $("lvlPick").innerHTML = boss ? `<small>${_t("Boss")}</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>${_t("CPU")}</small><span>${LEVELS[sel.level].name}</span>`;
   // the arena maps (The Field...) are not in the 2v2 draw: a pick made for a 1v1 shows as Random here (and stays picked for the 1v1)
   const mapOk = (i) => i !== "random" && BL.MAPS[i] && !(duo && BL.MAPS[i].pool === false), mapSel = mapOk(sel.map) ? sel.map : "random";
-  $("mapPick").innerHTML = `<small>Map</small><span>${boss ? mapName(bossMap(boss)) : mapSel === "random" ? "Random" : mapName(mapSel)}</span>`;
+  $("mapPick").innerHTML = `<small>${_t("Map")}</small><span>${boss ? mapName(bossMap(boss)) : mapSel === "random" ? _t("Random") : mapName(mapSel)}</span>`;
   $("mapPick").disabled = !!boss;   // a boss fights on his own map (you and a CPU partner against him)
-  $("matePick").innerHTML = `<small>Partner</small>${portrait(mate)}<span>${mate ? mate.name : "Random"}</span>`;
+  $("matePick").innerHTML = `<small>${_t("Partner")}</small>${portrait(mate)}<span>${mate ? mate.name : _t("Random")}</span>`;
   const fill = (pop, items, isOn, pick) => {
     pop.innerHTML = "";
     items.forEach((it) => {
@@ -249,12 +249,12 @@ function buildPractice() {
     });
   };
   // Team Brawl 2v2 sits first on screen (.top, CSS order) but last in the list: the tests that pick a fighter by its position (Random is 0) keep working
-  fill($("oppPop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] })),
-    ...BL.BOSSES.map((b) => ({ id: b.id, label: `${b.name} · boss, 2 vs 1`, img: PORTRAITS[b.id] })), { id: "duo", label: "Team Brawl 2v2", glyph: true, top: true }], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
+  fill($("oppPop"), [{ id: "random", label: _t("Random") }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] })),
+    ...BL.BOSSES.map((b) => ({ id: b.id, label: _t("{name} · boss, 2 vs 1", { name: b.name }), img: PORTRAITS[b.id] })), { id: "duo", label: _t("Team Brawl 2v2"), glyph: true, top: true }], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   if (boss) fill($("lvlPop"), BOSS_LV.map((name, i) => ({ i, label: name })), (it) => it.i === sel.blv, (it) => { sel.blv = it.i; });
   else fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
-  fill($("mapPop"), [{ i: "random", label: "Random" }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) })).filter((it) => mapOk(it.i))], (it) => it.i === mapSel, (it) => { sel.map = it.i; });
-  fill($("matePop"), [{ id: "random", label: "Random" }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.mate, (it) => { sel.mate = it.id; });
+  fill($("mapPop"), [{ i: "random", label: _t("Random") }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) })).filter((it) => mapOk(it.i))], (it) => it.i === mapSel, (it) => { sel.map = it.i; });
+  fill($("matePop"), [{ id: "random", label: _t("Random") }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.mate, (it) => { sel.mate = it.id; });
 }
 for (const [btn, pop] of SEL_PICKS) {
   $(btn).addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); const open = $(pop).hidden; closePops(); $(pop).hidden = !open; $(btn).setAttribute("aria-expanded", String(open)); });
@@ -265,10 +265,10 @@ function openSelect(m) {
   mode = "select";
   const ti = tierInfo(P.rating);
   // the kicker names the mode (ranked: your tier in its colour and the rating)
-  $("selMode").innerHTML = m === "ranked" ? `Ranked match · ${tierBadge(ti.i, "sl-em")}<b style="color:${ti.t.col}">${ti.t.name}</b> ${P.rating}` : m === "online" ? "Play friends · pick your fighter" : m === "quick" ? "Quick match · pick your fighter" : m === "bw" ? "Boss Week · pick your fighter" : m === "tc" ? "Cup · pick your fighter" : m === "cup" ? "Tournament · you and 7 CPUs" : m === "road" ? `The Road · ${roadSelName(RD.sel)}` : "Practice · vs CPU";
+  $("selMode").innerHTML = m === "ranked" ? _t("Ranked match · {badge}{tier} {r}", { badge: tierBadge(ti.i, "sl-em"), tier: `<b style="color:${ti.t.col}">${_tv(ti.t.name)}</b>`, r: P.rating }) : m === "online" ? _t("Play friends · pick your fighter") : m === "quick" ? _t("Quick match · pick your fighter") : m === "bw" ? _t("Boss Week · pick your fighter") : m === "tc" ? _t("Cup · pick your fighter") : m === "cup" ? _t("Tournament · you and 7 CPUs") : m === "road" ? _t("The Road · {name}", { name: roadSelName(RD.sel) }) : _t("Practice · vs CPU");
   screens.select.classList.toggle("sl-prac", m === "practice");
   $("pracOpts").hidden = m !== "practice"; closePops();
-  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" || m === "tc" ? `Use ${FIG[sel.fighter].name}` : m === "cup" ? "Start cup" : "Fight";
+  $("selGo").querySelector("span").textContent = m === "online" || m === "quick" || m === "bw" || m === "tc" ? _t("Use {name}", { name: FIG[sel.fighter].name }) : m === "cup" ? _t("Start cup") : _t("Fight");
   buildCards(); if (m === "practice") buildPractice();
   show("select"); $("hud").hidden = true; $("ctl").hidden = true; resize();
 }
@@ -318,7 +318,7 @@ function enterMatchUI() {
     const i = cardSlot[c], f = G.fighters[i], el = $("pc" + c);
     el.style.setProperty("--fc", col(f.pal));
     el.querySelector(".pc-name").textContent = f.spec.name;
-    el.querySelector(".pc-tag").textContent = i === meSlot ? "You" : match.tb ? tbTag(i) : match.online ? NET.oppName || "Friend" : match.duo && f.team === G.fighters[meSlot].team ? "Partner" : "CPU";
+    el.querySelector(".pc-tag").textContent = i === meSlot ? _t("You") : match.tb ? tbTag(i) : match.online ? NET.oppName || _t("Friend") : match.duo && f.team === G.fighters[meSlot].team ? _t("Partner") : _t("CPU");
     el.classList.toggle("nice", !!(match.online && match.boss && i === meSlot));   // ui/online.js: a tap on your own card says NICE! to your partner
     hudCache[i] = { pct: -1, stocks: -1, out: null };
   }
@@ -326,12 +326,12 @@ function enterMatchUI() {
     const sub = $("pc1").querySelector(".pc-sub");
     sub.hidden = !(match.cpu && !match.online);
     sub.querySelector(".nm").textContent = match.cpu || "";
-    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : match.boss ? "partner" : "";
+    sub.querySelector(".tr").textContent = match.oppRating ? cpuTier() : match.daily ? match.level : match.boss ? _t("partner") : "";
   }
   if (match.tb) tbTags();   // ui/online-team.js: friends' names, CPU tags and their potato names
   bossHudReset();   // ui/boss.js: the boss bar in the timer's place (hidden when there is no boss)
   btnSpec.style.setProperty("--fc", col(G.fighters[meSlot].pal));
-  hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = "Special";
+  hudX.spFin = null; hudX.ch = -1; hudX.jb = false; btnSpec.classList.remove("fin", "jb"); btnSpec.querySelector("span").textContent = _t("Special");
   btnHeavy.classList.remove("chg", "chgfull"); btnHeavy.style.setProperty("--ch", "0");
   for (const e of document.querySelectorAll(".pcard")) e.classList.remove("finr");
   fx.length = 0; sfx.length = 0; clearTrails(); combos.fill(null);
@@ -347,21 +347,21 @@ function finReady(i) {
   if (!G || G.phase !== "play" || (match && (match.tutorial || match.boss))) return;   // a boss has no finisher (his own FINISH is in the boss bar)
   if (match && match.duo && G.fighters[i].team === G.fighters[meSlot].team) return;   // 2v2: only a FOE crossing the percent is news; the banner is in your colour
   const att = match && match.duo ? G.fighters[meSlot] : G.fighters[1 - i];
-  showBanner("Finish!", `${finName(att.spec)} KOs now`, "fin", 1100, col(att.pal));
+  showBanner(_t("Finish!"), _t("{name} KOs now", { name: finName(att.spec) }), "fin", 1100, col(att.pal));
   Sfx.tone(330, 740, 0.22, "sawtooth", 0.06); Sfx.noise(0.16, 0.22, 3200);
 }
 function vsLine() {
   if (match.boss) return bossVs();
   if (match.duo) return duoVs();
-  if (match.road) return `${ROAD[match.road.i].name} · ${G.fighters[0].spec.name} vs ${G.fighters[1].spec.name} · ${match.cpu}`;
+  if (match.road) return _t("{road} · {a} vs {b} · {cpu}", { road: ROAD[match.road.i].name, a: G.fighters[0].spec.name, b: G.fighters[1].spec.name, cpu: match.cpu });
   const me = G.fighters[meSlot].spec.name, op = G.fighters[1 - meSlot].spec.name;
-  if (match.online) return `${me} vs ${op} · ${NET.oppName || "Friend"}, online`;
-  if (match.cup) return `${CUP.names[match.round]} · ${me} vs ${op} · ${match.cpu}, ${cpuTier()}`;
-  if (match.daily) return `Daily Potato · ${me} vs ${op} · ${match.cpu}, ${match.level}`;
-  if (match.ranked) return `${me} vs ${op} · ${match.cpu || "CPU"}, ${cpuTier()}`;
-  return `${me} vs ${op} · ${match.cpu ? match.cpu + ", " : ""}${match.level}`;
+  if (match.online) return _t("{me} vs {op} · {friend}, online", { me, op, friend: NET.oppName || _t("Friend") });
+  if (match.cup) return _t("{round} · {me} vs {op} · {cpu}, {tier}", { round: CUP.names[match.round], me, op, cpu: match.cpu, tier: cpuTier() });
+  if (match.daily) return _t("Daily Potato · {me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: match.level });
+  if (match.ranked) return _t("{me} vs {op} · {cpu}, {tier}", { me, op, cpu: match.cpu || _t("CPU"), tier: cpuTier() });
+  return match.cpu ? _t("{me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: match.level }) : _t("{me} vs {op} · {level}", { me, op, level: match.level });
 }
-function cpuTier() { return `${tierInfo(match.oppRating).t.name} ${match.oppRating}`; }
+function cpuTier() { return `${_tv(tierInfo(match.oppRating).t.name)} ${match.oppRating}`; }
 // Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
 function setHearts(box, n, prev) {
   if (prev < 0) box.innerHTML = "<i></i>".repeat(n);
@@ -393,16 +393,16 @@ function updateHud() {
   }
   const secs = Math.max(0, Math.ceil(G.timer / 60));
   const clock = $("clock");
-  const txt = !G.timed ? "∞" : `${G.sudden ? "SD " : ""}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  const txt = !G.timed ? "∞" : `${G.sudden ? `${_t("SD")} ` : ""}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   if (clock.textContent !== txt) { clock.textContent = txt; clock.classList.toggle("warn", G.timed && (secs <= 30 || G.sudden)); }
   const pb = $("pingBadge"), ms = match && match.online ? NET.rttLive || NET.rtt || 0 : 0;
-  const ptxt = ms ? `${Math.round(ms)} ms` : "";
+  const ptxt = ms ? _t("{n} ms", { n: Math.round(ms) }) : "";
   if (pb.textContent !== ptxt) { pb.textContent = ptxt; pb.hidden = !ptxt; pb.className = ms < 90 ? "good" : ms < 170 ? "ok" : "bad"; }
   const me = G.fighters[meSlot], cd = me.spec.moves.spec.cooldown || 1;
   btnSpec.style.setProperty("--cd", (me.specCd / cd).toFixed(3));
   // touch: the special glows and names itself while the opponent is at finish percent
   const bo = match.boss && bossOf(G), sf = bo ? bo.state === "broken" : match.duo ? G.fighters.some((o, i) => o.team !== me.team && hudCache[i].fin) : !!hudCache[1 - meSlot].fin;
-  if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? finName(me.spec) : "Special"; }   // finName: finisher.js (High Noon)
+  if (hudX.spFin !== sf) { hudX.spFin = sf; btnSpec.classList.toggle("fin", sf); btnSpec.querySelector("span").textContent = sf ? finName(me.spec) : _t("Special"); }   // finName: finisher.js (High Noon)
   // touch: the Special is 15% bigger while the player is in the air because of a jump. handleEvent sets hudX.jb on the
   // player's own jump (not the recovery moves); anything that is not "in the air after a jump" clears it: landing,
   // being hit (hitstun, tumble), the ledge, a KO or respawn, so a walk-off or a knock-up never boosts it.
@@ -423,9 +423,9 @@ function togglePause(force) {
   paused = match && match.online ? false : open;
   modal("pause", open); modal("help", false);
   quitArmed = false;
-  $("pResume").querySelector("span").textContent = match && match.online ? "Back to match" : "Resume";
-  $("pQuit").querySelector("span").textContent = match && match.online ? "Leave match" : match && (match.ranked || match.cup || match.daily) ? "Forfeit" : match && (match.road || (match.trial && TR.back !== null)) ? "Back to the Road" : "Quit to menu";
-  $("pNote").textContent = match && match.online ? "Online matches keep running while this is open." : match && match.cup ? "Forfeiting ends your cup run." : match && match.daily ? "Forfeiting counts as a loss and uses up today's try." : match && match.ranked ? "Forfeiting counts as a loss." : "";
+  $("pResume").querySelector("span").textContent = match && match.online ? _t("Back to match") : _t("Resume");
+  $("pQuit").querySelector("span").textContent = match && match.online ? _t("Leave match") : match && (match.ranked || match.cup || match.daily) ? _t("Forfeit") : match && (match.road || (match.trial && TR.back !== null)) ? _t("Back to the Road") : _t("Quit to menu");
+  $("pNote").textContent = match && match.online ? _t("Online matches keep running while this is open.") : match && match.cup ? _t("Forfeiting ends your cup run.") : match && match.daily ? _t("Forfeiting counts as a loss and uses up today's try.") : match && match.ranked ? _t("Forfeiting counts as a loss.") : "";
   if (match && (match.qm || match.warm || match.vc)) qmPauseText();   // ui/quick.js: Back to search, or what a Ranked forfeit costs
   if (match && match.bw) bwPauseText();   // ui/bossweek.js: leaving a try costs nothing
   releaseTouch();
@@ -457,11 +457,11 @@ function finishMatch(forfeit) {
     else P.draws++;
     if (!forfeit) {
       if (res === 1) {
-        R.lines.push(["Win", 20]);
-        if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 5]);
-        const sb = Math.min(20, (P.streak - 1) * 5); if (sb > 0) R.lines.push([`${P.streak} win streak`, sb]);
-      } else if (res === 0.5) { R.lines.push(["Draw", 10]); if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 3]); }
-      else { R.lines.push(["Match played", 6]); if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]); }
+        R.lines.push([_t("Win"), 20]);
+        if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 5]);
+        const sb = Math.min(20, (P.streak - 1) * 5); if (sb > 0) R.lines.push([_t("{n} win streak", { n: P.streak }), sb]);
+      } else if (res === 0.5) { R.lines.push([_t("Draw"), 10]); if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 3]); }
+      else { R.lines.push([_t("Match played"), 6]); if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 2]); }
     }
     R.total = R.lines.reduce((a, l) => a + l[1], 0);
     P.tokens += R.total;
@@ -523,7 +523,7 @@ function resOpen(look, spec, solo) {
   $("rRetry").hidden = true; $("rRetry").parentNode.classList.remove("retry");   // ui/road.js roadResRetry: the Road's Retry beside Next stop
   rvClear(); stkClear();   // ui/rivals.js, ui/stakes.js
   $("rChl").hidden = true;   // ui/challenge.js: showResults shows it where it fits
-  $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = "Rating"; $("rStick").style.animation = "";   // ui/quick.js
+  $("rQm").hidden = true; $("rRank").classList.remove("qm-wait", "qm-zero"); $("rStick").querySelector("small").textContent = _t("Rating"); $("rStick").style.animation = "";   // ui/quick.js
   sheet.scrollTop = 0; sheet.querySelector(".res-side").scrollTop = 0;
 }
 // the big word; the long ones (Opponent left, Disconnected) are set smaller so they fit the panel
@@ -536,6 +536,9 @@ function resLine(el, parts) {
     else if (x) el.append(x);
   }
 }
+// a sentence with bold names for resLine: _t(key, resV(v)) leaves each { b: name } (or list of parts) in v as a marker, resT(text, v) puts them back as parts
+const resV = (v) => { const o = {}; for (const k in v) o[k] = typeof v[k] === "object" ? `\u0001${k}\u0001` : v[k]; return o; };
+const resT = (s, v) => s.split(/\u0001(\w+)\u0001/).flatMap((x, i) => (i % 2 ? v[x] : [x]));
 // The rank card: R is a ranked result (before, after, delta, tb, ta), or null for your rank as it stands (the tutorial's results).
 // The bar is the tier's fill up to what you kept, then the part this match won (mint, it fills) or lost (ketchup); the sticker
 // with the rating change pops after the bar.
@@ -544,12 +547,12 @@ function resRank(R) {
   $("rRank").hidden = false;
   $("rRank").style.setProperty("--tc", ti.t.col);
   paintBadge($("rBadge"), ti.i, promo ? R.tb : -1);   // promoted: the old emblem spins out, the new one pops in
-  $("rTier").textContent = ti.t.name;
-  const pr = $("rPromo"); pr.textContent = promo ? "Promoted!" : drop ? "Dropped" : ""; pr.classList.toggle("down", drop);
+  $("rTier").textContent = _tv(ti.t.name);
+  const pr = $("rPromo"); pr.textContent = promo ? _t("Promoted!") : drop ? _t("Dropped") : ""; pr.classList.toggle("down", drop);
   const rt = $("rRating"), b = document.createElement("b");
   if (R) { const rn = document.createElement("span"); b.append(`${R.before} → `, rn); resCount(rn, R.before, R.after, "", { delay: 450 }); }
   else b.textContent = P.rating;
-  rt.textContent = ""; rt.append(b, ti.next ? ` · ${ti.need} to ${ti.next.name}` : "");
+  rt.textContent = ""; rt.append(b, ti.next ? ` · ${_t("{n} to {tier}", { n: ti.need, tier: _tv(ti.next.name) })}` : "");
   const bi = R ? tierInfo(R.before) : ti, pa = ti.p, pb = bi.i === ti.i ? bi.p : bi.i < ti.i ? 0 : 1;
   $("rBar").style.setProperty("--p", Math.min(pa, pb));
   const g = $("rGain"); g.style.setProperty("--g0", Math.min(pa, pb)); g.style.setProperty("--g1", Math.max(pa, pb));
@@ -571,23 +574,23 @@ function showResults(R) {
   $("ctl").hidden = true; $("hud").hidden = true; releaseTouch();
   const won = R.res === 1, lost = R.res === 0;
   resOpen(won ? "win" : lost ? "loss" : "draw", (lost ? R.op : R.me).spec);   // the winner's portrait; on a loss the opponent's, in grey
-  $("rMode").textContent = R.otb ? tbResMode(R) : R.online && R.boss ? `Boss fight · ${R.dropped ? `${NET.oppName || "Your partner"} dropped` : `with ${NET.oppName || "your friend"}`}` : R.online ? (R.set ? `Friendly match · best of 3 · game ${R.set.n}` : "Friendly match · online") : R.daily ? `Daily Potato · ${dailyLabel(R.daily.key)}` : R.road ? roadResMode(R) : R.boss ? `Boss fight · ${BOSS_LV[R.boss.lv]}` : R.duo ? `Team Brawl 2v2 · ${R.duo.lv}` : R.ranked ? "Ranked match" : `Practice · ${match.level}`;
+  $("rMode").textContent = R.otb ? tbResMode(R) : R.online && R.boss ? (R.dropped ? _t("Boss fight · {name} dropped", { name: NET.oppName || _t("Your partner") }) : _t("Boss fight · with {name}", { name: NET.oppName || _t("your friend") })) : R.online ? (R.set ? _t("Friendly match · best of 3 · game {n}", { n: R.set.n }) : _t("Friendly match · online")) : R.daily ? _t("Daily Potato · {day}", { day: dailyLabel(R.daily.key) }) : R.road ? roadResMode(R) : R.boss ? _t("Boss fight · {lv}", { lv: BOSS_LV[R.boss.lv] }) : R.duo ? _t("Team Brawl 2v2 · {lv}", { lv: R.duo.lv }) : R.ranked ? _t("Ranked match") : _t("Practice · {level}", { level: match.level });
   $("rWho").textContent = R.me.spec.name;
   shopResPlate();   // your name on the nameplate you wear, if you wear one (ui/shop.js)
-  resTitle(R.lost ? "Disconnected" : R.left ? "Opponent left" : R.forfeit ? "Forfeit" : won ? "Victory" : lost ? "Defeat" : "Draw");
+  resTitle(R.lost ? _t("Disconnected") : R.left ? _t("Opponent left") : R.forfeit ? _t("Forfeit") : won ? _t("Victory") : lost ? _t("Defeat") : _t("Draw"));
   // the story in one line: who you played (the CPU's potato name, its fighter and, in ranked, its tier), lives left or how it ended
-  const on = R.op.spec.name, who = R.online ? NET.oppName || "Your friend" : on;
+  const on = R.op.spec.name, who = R.online ? NET.oppName || _t("Your friend") : on;
   const foe = match.cpu && !R.online ? [{ b: match.cpu }, ` (${on}${R.ranked || R.vc || R.tc ? ` · ${cpuTier()}` : ""})`] : [{ b: who }];
-  const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
-  const line = R.lost ? ["The connection to ", { b: who }, " dropped."] : R.left ? [{ b: who }, " left the match."] :
-    R.forfeit ? ["You left the match. It counts as a loss."] :
-    won ? ["Beat ", ...foe, `${how || ` with ${R.me.stocks} ${R.me.stocks === 1 ? "life" : "lives"} left`}.`] :
-    lost ? ["Lost to ", ...foe, `${how}.`] : ["Nobody scored a KO in sudden death either."];
+  const sd = G.sudden && G.endReason === "stocks", tm = G.endReason === "time", V = { who: { b: who }, foe, n: R.me.stocks }, rv = resV(V);   // resV, resT: above
+  const line = R.lost ? resT(_t("The connection to {who} dropped.", rv), V) : R.left ? resT(_t("{who} left the match.", rv), V) :
+    R.forfeit ? [_t("You left the match. It counts as a loss.")] :
+    won ? resT(sd ? _t("Beat {foe} in sudden death.", rv) : tm ? _t("Beat {foe} on time.", rv) : _t("Beat {foe} with {n} life left.|Beat {foe} with {n} lives left.", rv), V) :
+    lost ? resT(sd ? _t("Lost to {foe} in sudden death.", rv) : tm ? _t("Lost to {foe} on time.", rv) : _t("Lost to {foe}.", rv), V) : [_t("Nobody scored a KO in sudden death either.")];
   if (R.boss) line.splice(0, line.length, ...bossResLine(R));   // ui/boss.js: you and your partner against him
   if (R.duo) line.splice(0, line.length, ...(R.otb ? tbResLine(R) : duoResLine(R)));     // ui/duo.js, ui/online-team.js: both teams
   if (R.set) {
     const hi = Math.max(R.set.mine, R.set.theirs), lo = Math.min(R.set.mine, R.set.theirs);
-    line.push(!R.set.over ? ` Set ${R.set.mine}–${R.set.theirs}.` : R.set.mine > R.set.theirs ? ` You win the set ${hi}–${lo}.` : R.set.mine < R.set.theirs ? ` ${who} wins the set ${hi}–${lo}.` : ` The set ends ${hi}–${lo}.`);
+    line.push(" " + (!R.set.over ? _t("Set {a}–{b}.", { a: R.set.mine, b: R.set.theirs }) : R.set.mine > R.set.theirs ? _t("You win the set {hi}–{lo}.", { hi, lo }) : R.set.mine < R.set.theirs ? _t("{who} wins the set {hi}–{lo}.", { who, hi, lo }) : _t("The set ends {hi}–{lo}.", { hi, lo })));
   }
   resLine($("rSub"), line);
   // the finisher plate, on a win: "ULTI KO | Solar Dive" or "KO | Inferno"
@@ -596,7 +599,7 @@ function showResults(R) {
   masteryResults(R, !!fb && won && !R.mateFin, ult);   // ui/mastery.js: the XP, the level and the row under the rank card (R.mateFin: your partner's KO page)
   const fin = $("rFin");
   fin.hidden = !(fb && won);
-  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? "Ulti KO" : alt ? "Potatality" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
+  if (!fin.hidden) { const em = document.createElement("em"), sp = document.createElement("span"); em.textContent = ult ? _t("Ulti KO") : alt ? "Potatality" : "KO"; sp.textContent = fb; fin.textContent = ""; fin.append(em, sp); }
   shopResKo(match && match.koTease);   // ui/shop.js: "Potatality · in the Shop" when a CPU just played its KO page on you
   const pick = $("rPick");
   pick.hidden = !(R.set && !R.set.over && R.res !== 1 && !R.left && !R.lost);
@@ -607,20 +610,22 @@ function showResults(R) {
   const k = R.me.kos, fl = R.me.falls;
   $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
-  $("rFalls").textContent = fl; $("rFallsL").textContent = fl === 1 ? "Fall" : "Falls";
-  const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [`New title: ${R.title}`] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
+  $("rFalls").textContent = fl; $("rFallsL").textContent = _t("Fall|Falls", { n: fl });
+  const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [_t("New title: {title}", { title: R.title })] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)
   const chipsOn = R.ranked || R.warm || R.vc || R.tc || (R.online && R.lines.length) || ((R.daily || R.road || R.duo) && R.total > 0);
   $("rStats").classList.toggle("nochips", !chipsOn); $("rChipT").hidden = !chipsOn;
   if (chipsOn) resCount($("rChipN"), 0, R.total, "", { delay: 200, dur: 600, end: () => { if (R.total > 0) Sfx.uiCoin(); } }); else $("rChipN").textContent = "0";   // done by 0.8 s, as before (tests read it at 1.1 s)
-  $("rWhy").textContent = masteryWhy(chipsOn || R.daily || R.road || R.title ? why
-    : R.otb ? R.whyNo
-    : R.online ? "No chips for an unfinished match. Friendly matches don't change your rating."
-    : R.boss ? "Boss fights in Practice don't change your rating or earn chips."
-    : R.duo ? `Team Brawl doesn't change your rating. A win on Hard pays ${DUO_CHIPS} chips.`
-    : "Practice doesn't change your rating or earn chips.");
-  $("rAgain").querySelector("span").textContent = R.daily ? "Menu" : R.ranked ? "Next match" : R.online && R.boss ? NET.again : R.set && !R.set.over ? "Next game" : R.road ? roadAgainLabel() : "Rematch";
+  let why2, mxAlt = "";   // mxAlt: the same line for when a level up paid Mastery chips (masteryWhy, ui/mastery.js)
+  if (chipsOn || R.daily || R.road || R.title) why2 = why;
+  else if (R.otb) why2 = R.whyNo;
+  else if (R.online) why2 = _t("No chips for an unfinished match. Friendly matches don't change your rating.");
+  else if (R.boss) { why2 = _t("Boss fights in Practice don't change your rating or earn chips."); mxAlt = _t("Boss fights in Practice don't change your rating. Mastery chips still count."); }
+  else if (R.duo) why2 = _t("Team Brawl doesn't change your rating. A win on Hard pays {n} chips.", { n: DUO_CHIPS });
+  else { why2 = _t("Practice doesn't change your rating or earn chips."); mxAlt = _t("Practice doesn't change your rating. Mastery chips still count."); }
+  $("rWhy").textContent = masteryWhy(why2, mxAlt);
+  $("rAgain").querySelector("span").textContent = R.daily ? _t("Menu") : R.ranked ? _t("Next match") : R.online && R.boss ? NET.again : R.set && !R.set.over ? _t("Next game") : R.road ? roadAgainLabel() : _t("Rematch");
   $("rAgain").disabled = !!(R.online && (R.left || R.lost));
-  $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? "Board" : "Lobby") : R.online ? "Lobby" : R.road ? "The Road" : "Fighters";
+  $("rChange").querySelector("span").textContent = R.otb ? (TM && !TM.solo ? _t("Board") : _t("Lobby")) : R.online ? _t("Lobby") : R.road ? _t("The Road") : _t("Fighters");
   $("rMenu").hidden = !!R.daily;   // one try a day: no rematch, the again button goes to the menu
   $("rChange").hidden = false;   // a cup match's results hide it (ui/tourney.js tcResults)
   if (R.road) roadResRetry(R);   // ui/road.js: Retry beside Next stop while a star is still missing
