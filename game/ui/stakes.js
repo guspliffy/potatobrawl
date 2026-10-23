@@ -37,9 +37,9 @@ function stkRec(o) {
   return { n: n(o.n, 0), w: n(o.w, 0), l: n(o.l, 0), net: n(o.net, -1e7), day: Number.isInteger(o.day) && o.day > 0 && o.day < 100 ? o.day : 5 };
 }
 function stkWhy(why, k, name) {
-  return why === "new" ? `Stakes unlock after 10 online matches · ${k || 10} to go` : why === "day" ? "Daily limit reached · back tomorrow"
-    : why === "gap" ? "Rank gap too big" : why === "chips" ? "Not enough chips" : why === "them" ? `${name} can't stake right now`
-    : why === "hold" ? "The server is updating · try again in a minute" : why === "late" ? "Too late for this rematch" : why === "off" ? "Chip stakes are off in Settings" : "";
+  return why === "new" ? _t("Stakes unlock after 10 online matches · {n} to go", { n: k || 10 }) : why === "day" ? _t("Daily limit reached · back tomorrow")
+    : why === "gap" ? _t("Rank gap too big") : why === "chips" ? _t("Not enough chips") : why === "them" ? _t("{name} can't stake right now", { name })
+    : why === "hold" ? _t("The server is updating · try again in a minute") : why === "late" ? _t("Too late for this rematch") : why === "off" ? _t("Chip stakes are off in Settings") : "";
 }
 function stkNote(t) { STK.note = t; STK.noteT = performance.now(); }
 const stkMs = (ms) => (Number.isInteger(ms) && ms >= 3000 && ms <= 60000 ? ms : 30000);
@@ -47,7 +47,7 @@ const stkMs = (ms) => (Number.isInteger(ms) && ms >= 3000 && ms <= 60000 ? ms : 
 function stkShown() {
   if (mode !== "result" || !match || !match.online || match.boss || match.tb) return null;
   if (match.qm) { const hard = !!(match.qm.ranked || match.qm.sk); return { id: match.qm.id, g: hard ? 1 : NET.matchId, hard, name: match.qm.opp.name }; }
-  return NET.mrCode ? { id: NET.mrCode, g: NET.matchId, hard: false, pf: true, name: NET.oppName || "Your friend" } : null;
+  return NET.mrCode ? { id: NET.mrCode, g: NET.matchId, hard: false, pf: true, name: NET.oppName || _t("Your friend") } : null;
 }
 const stkElFor = (k) => (k && STK.el && STK.el.id === k.id && STK.el.g === k.g ? STK.el : null);
 
@@ -64,7 +64,7 @@ function stkMsg(m) {
     if (!STK_S.includes(m.s)) return;
     if (STK.busy !== m.s) { stkSend({ t: "stkx" }); return; }   // cancelled while it was on its way
     const k = stkShown();
-    STK.busy = 0; STK.note = ""; STK.out = { s: m.s, t0: performance.now(), ms: stkMs(m.ms), name: k ? k.name : NET.oppName || "your opponent" };
+    STK.busy = 0; STK.note = ""; STK.out = { s: m.s, t0: performance.now(), ms: stkMs(m.ms), name: k ? k.name : NET.oppName || _t("your opponent") };
   } else if (m.t === "stk-in") {
     if (!STK_S.includes(m.s)) return;
     if (!stkOn()) { stkSend({ t: "stkx" }); return; }
@@ -75,12 +75,12 @@ function stkMsg(m) {
     const out = STK.out, mine = STK.acc || STK.busy < 0;
     STK.out = null; STK.inc = null; STK.acc = 0; STK.busy = 0;
     // the challenger hears the same words for a decline, a timeout or the other one leaving; the one who passed hears nothing
-    if (out) stkNote(m.why === "no" || m.why === "x" ? `No answer from ${out.name} · the stake is off` : `The stake is off · ${stkWhy(m.why, 0, out.name) || "try again"}`);
-    else if (mine) stkNote(m.why === "no" || m.why === "x" ? "Too late · the stake is off" : `The stake is off · ${stkWhy(m.why, 0, "They") || "try again"}`);
+    if (out) stkNote(m.why === "no" || m.why === "x" ? _t("No answer from {name} · the stake is off", { name: out.name }) : _t("The stake is off · {why}", { why: stkWhy(m.why, 0, out.name) || _t("try again") }));
+    else if (mine) stkNote(m.why === "no" || m.why === "x" ? _t("Too late · the stake is off") : _t("The stake is off · {why}", { why: stkWhy(m.why, 0, _t("They")) || _t("try again") }));
   } else if (m.t === "stk-no") {
     const k = stkShown(), el = stkElFor(k);
     STK.busy = 0;
-    stkNote(stkWhy(m.why, el ? el.k : 0, k ? k.name : "They") || "Couldn't send the challenge");
+    stkNote(stkWhy(m.why, el ? el.k : 0, k ? k.name : _t("They")) || _t("Couldn't send the challenge"));
   }
   stkRender();
 }
@@ -115,14 +115,14 @@ function stkRes(m) {
     $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
     if (NET.mr) leaveMatchRoom();
     resetNet(); NET.phase = "idle"; QM.st = "idle"; QM.found = null; STK.pend = null;
-    QM.note = m.res === null ? "That match was called off. No chips moved." : d > 0 ? `${p.name}'s game didn't match the server's. You take the pot (+${d}).` : "Your game didn't match the server's. Reload the page.";
+    QM.note = m.res === null ? _t("That match was called off. No chips moved.") : d > 0 ? _t("{name}'s game didn't match the server's. You take the pot (+{d}).", { name: p.name, d }) : _t("Your game didn't match the server's. Reload the page.");
     quickOpen();
   }
 }
 // qmOff: a staked match that never started: no search to go back to
 function stkOff(m) {
   if (!STK.pend || STK.pend.id !== m.id) return false;
-  QM.note = `${STK.pend.name} didn't connect. The stake is off.`;
+  QM.note = _t("{name} didn't connect. The stake is off.", { name: STK.pend.name });
   STK.pend = null;
   return true;
 }
@@ -137,7 +137,7 @@ async function stkChallenge() {
   STK.busy = s; STK.note = ""; stkRender();
   await stkSynced();
   if (STK.busy !== s) return;   // cancelled meanwhile
-  if (!stkSend({ t: "stk", s })) { STK.busy = 0; stkNote("Couldn't reach the server"); }
+  if (!stkSend({ t: "stk", s })) { STK.busy = 0; stkNote(_t("Couldn't reach the server")); }
   stkRender();
 }
 function stkCancel() {
@@ -179,19 +179,19 @@ function stkButtons() {
   const key = wait ? (STK.out ? `o${STK.out.s}` : "s") : k.hard ? "row" : "seg";
   if (b.dataset.k !== key) {
     b.dataset.k = key; b.textContent = "";
-    if (key === "row") { b.append(acMk("span", "", "Rematch")); const sm = acMk("small", "sk-for"); sm.append(rvCg(), "for chips"); b.append(sm); }
-    else { const l = acMk("span", "sk-l"); l.append(rvCg(), key === "seg" ? "For chips" : key === "s" ? "Sending…" : `${STK.out.s} sent · waiting for ${STK.out.name}`); b.append(l, acMk("small", "sk-t", "")); }
+    if (key === "row") { b.append(acMk("span", "", _t("Rematch"))); const sm = acMk("small", "sk-for"); sm.append(rvCg(), _t("for chips")); b.append(sm); }
+    else { const l = acMk("span", "sk-l"); l.append(rvCg(), key === "seg" ? _t("For chips") : key === "s" ? _t("Sending…") : _t("{n} sent · waiting for {name}", { n: STK.out.s, name: STK.out.name })); b.append(l, acMk("small", "sk-t", "")); }
   }
-  b.setAttribute("aria-label", wait ? "Challenge sent. Tap to cancel" : "Rematch for chips");
+  b.setAttribute("aria-label", wait ? _t("Challenge sent. Tap to cancel") : _t("Rematch for chips"));
   stkClock();
 }
 // the pending challenge's clock under its button, the challenge card's clock and bar
 function stkClock() {
   const now = performance.now();
-  if (STK.out && !$("rStake").hidden) { const t = $("rStake").querySelector(".sk-t"); if (t) t.textContent = `${qmClock(Math.max(0, (STK.out.ms - (now - STK.out.t0)) / 1000))} · tap to cancel`; }
+  if (STK.out && !$("rStake").hidden) { const t = $("rStake").querySelector(".sk-t"); if (t) t.textContent = _t("{t} · tap to cancel", { t: qmClock(Math.max(0, (STK.out.ms - (now - STK.out.t0)) / 1000)) }); }
   if (STK.inc && !$("stkCard").hidden) {
     const left = Math.max(0, STK.inc.ms - (now - STK.inc.t0));
-    $("skcTime").textContent = `${qmClock(left / 1000)} to decide`;
+    $("skcTime").textContent = _t("{t} to decide", { t: qmClock(left / 1000) });
     $("skcBar").style.transform = `scaleX(${(left / STK.inc.ms).toFixed(3)})`;
   }
 }
@@ -221,19 +221,19 @@ function stkSheet() {
 function stkSheetFill() {
   const k = stkShown(), el = stkElFor(k);
   if (!el || !el.ok.length || STK.out || STK.inc) { modal("stake", false); return; }
-  $("skWho").textContent = `vs ${k.name}`;
+  $("skWho").textContent = _t("vs {name}", { name: k.name });
   const row = $("skTiles"); row.textContent = "";
   for (const s of STK_S) {
     const on = el.ok.includes(s), b = acMk("button", "sk-tile" + (s === STK.pick ? " on" : ""));
     b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(s === STK.pick)); b.disabled = !on;
     const n = acMk("b"); n.append(rvCg(), String(s));
-    b.append(n, acMk("small", "", on ? `pot ${s * 2}` : "not enough chips"));
+    b.append(n, acMk("small", "", on ? _t("pot {n}", { n: s * 2 }) : _t("not enough chips")));
     b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); STK.pick = s; stkSheetFill(); });
     row.appendChild(b);
   }
   const me = qmMe(), sk = me ? me.sk : stkRec(null);
-  $("skHave").textContent = `You have ${fmtChips(P.tokens)} · ${sk.n} of ${sk.day} today`;
-  $("skSend").querySelector("span").textContent = `Challenge for ${STK.pick}`;
+  $("skHave").textContent = _t("You have {chips} · {n} of {day} today", { chips: fmtChips(P.tokens), n: sk.n, day: sk.day });
+  $("skSend").querySelector("span").textContent = _t("Challenge for {n}", { n: STK.pick });
 }
 tap("skSend", stkChallenge);
 tap("skNo", () => modal("stake", false));
@@ -250,10 +250,10 @@ function stkCard() {
   const key = `${x.s}:${x.name}:${STK.busy}`;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    const h = $("skcT"); h.textContent = ""; const amt = acMk("span", "sk-nw"); amt.append(rvCg(), String(x.s)); h.append(`${x.name} wants a rematch for `, amt);   // the coin stays with its number
-    $("skcL").textContent = `Winner takes ${x.s * 2} · same fighters · 3 lives · 4:00 · not Ranked. Nothing happens if you pass.`;
+    const h = $("skcT"); h.textContent = ""; const amt = acMk("span", "sk-nw"); amt.append(rvCg(), String(x.s)); const wt = _t("{name} wants a rematch for {amt}", { name: x.name, amt: "\u0001" }).split("\u0001"); h.append(wt[0], amt, wt[1] || "");   // the coin stays with its number
+    $("skcL").textContent = _t("Winner takes {n} · same fighters · 3 lives · 4:00 · not Ranked. Nothing happens if you pass.", { n: x.s * 2 });
     const ok = $("skcOk"); ok.textContent = ""; ok.disabled = STK.busy < 0;
-    const sp = acMk("span"); sp.append(STK.busy < 0 ? "Starting…" : "Accept ", ...(STK.busy < 0 ? [] : [rvCg(), String(x.s)])); ok.append(sp);
+    const sp = acMk("span"); sp.append(STK.busy < 0 ? _t("Starting…") : `${_t("Accept")} `, ...(STK.busy < 0 ? [] : [rvCg(), String(x.s)])); ok.append(sp);
   }
   stkClock();
 }
@@ -263,7 +263,7 @@ tap("skcNo", stkDecline);
 // qmTick: the clocks, a challenge the server never answered (gone quiet), the note fading out
 function stkTick() {
   const now = performance.now();
-  if (STK.out && now - STK.out.t0 > STK.out.ms + 4000) { stkNote(`No answer from ${STK.out.name} · the stake is off`); STK.out = null; stkRender(); }
+  if (STK.out && now - STK.out.t0 > STK.out.ms + 4000) { stkNote(_t("No answer from {name} · the stake is off", { name: STK.out.name })); STK.out = null; stkRender(); }
   if (STK.inc && now - STK.inc.t0 > STK.inc.ms + 1000) { STK.inc = null; if (STK.busy < 0) STK.busy = 0; stkRender(); }
   if (STK.note && now - STK.noteT > 9000) { STK.note = ""; stkButtons(); }
   stkCard(); stkClock();
@@ -274,23 +274,23 @@ function stkVs(m) {
   const p = $("vsPot");
   p.hidden = !m.sk;
   if (!m.sk) return;
-  p.textContent = ""; p.append(rvCg(), acMk("b", "", `${m.sk * 2} pot`), acMk("span", "", ` · ${m.sk} each`));
+  p.textContent = ""; p.append(rvCg(), acMk("b", "", _t("{n} pot", { n: m.sk * 2 })), acMk("span", "", ` · ${_t("{n} each", { n: m.sk })}`));
 }
 // qmResults: the pot card while the referee confirms, then its verdict
 function stkResults(R) {
   const q = R.qm, card = $("rPot"), st = $("rPotD");
   if (STK.pend && STK.pend.id === q.id) STK.pend.tr = P.tokens;   // every chip this match gave on the phone, before the pot's sync
   $("rRank").hidden = true; card.hidden = false; card.className = "card res-pot wait";
-  stkPotHead(`${q.sk * 2} pot`);
-  $("rPotS").textContent = "Checking with the referee…";
-  st.className = "delta wait"; $("rPotN").textContent = "…"; st.querySelector("small").textContent = "Confirming";
+  stkPotHead(_t("{n} pot", { n: q.sk * 2 }));
+  $("rPotS").textContent = _t("Checking with the referee…");
+  st.className = "delta wait"; $("rPotN").textContent = "…"; st.querySelector("small").textContent = _t("Confirming");
   if (STK.res && STK.res.id === q.id) stkPotView(false);
 }
 function stkPotHead(t) { const h = $("rPotH"); h.textContent = ""; h.append(rvCg(), t); }
 function stkPotView(late) {
   const v = STK.res, R = QM.shown;
   if (!v || !R || !R.qm || R.qm.id !== v.id || mode !== "result") return;
-  const card = $("rPot"), st = $("rPotD"), sub = $("rPotS"), name = R.qm.opp ? R.qm.opp.name : "They", s = v.s, pot = s * 2;
+  const card = $("rPot"), st = $("rPotD"), sub = $("rPotS"), name = R.qm.opp ? R.qm.opp.name : _t("They"), s = v.s, pot = s * 2;
   const p = STK.pend && STK.pend.id === v.id ? STK.pend : null;
   if (v.b == null) v.b = p ? (p.tr != null ? p.tr : p.t0 + (R.total || 0)) : P.tokens;   // kept: a later redraw comes after the sync
   const before = v.b, after = Math.max(0, before + v.d);
@@ -298,23 +298,24 @@ function stkPotView(late) {
   card.hidden = false; card.className = "card res-pot " + (v.d > 0 ? "up" : v.d < 0 ? "down" : "zero");
   if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }
   const sticker = (cls, n, small) => { st.className = "delta " + cls; $("rPotN").textContent = n; st.querySelector("small").textContent = small; };
-  const moved = (word) => { sub.textContent = ""; sub.append(`${s} ${word} `, acMk("b", "", name), ` · ${fmtChips(before)} → ${fmtChips(after)}`); };
+  const moved = (txt) => { const w = txt.split("\u0001"); sub.textContent = ""; sub.append(w[0], acMk("b", "", name), `${w[1] || ""} · ${fmtChips(before)} → ${fmtChips(after)}`); };   // txt: "10 from \u0001" (the name's place marked)
   if (v.res === null) {
-    stkPotHead("Nothing moves"); sticker("zero", "±0", "No result");
-    sub.textContent = v.why === "early" ? "It ended in the first 30 seconds: no result." : "No result: both keep their stake.";
-    resTitle("No result"); look("draw");
-    resLine($("rSub"), [v.why === "early" ? "The match ended in its first 30 seconds. " : "The server couldn't decide this match. ", "Nobody's chips move."]);
-  } else if (v.d > 0) { stkPotHead(`You take the ${pot} pot`); moved("from"); sticker("up", `+${s}`, v.why === "game" ? "Chips" : "Forfeit"); }
-  else if (v.d < 0) { stkPotHead(`${name} takes the ${pot} pot`); moved("to"); sticker("down", `−${s}`, "Chips"); }
-  else { stkPotHead("Nothing moves"); sub.textContent = `A draw: both keep their ${s}.`; sticker("zero", "±0", "Draw"); }
+    stkPotHead(_t("Nothing moves")); sticker("zero", "±0", _t("No result"));
+    sub.textContent = v.why === "early" ? _t("It ended in the first 30 seconds: no result.") : _t("No result: both keep their stake.");
+    resTitle(_t("No result")); look("draw");
+    resLine($("rSub"), [v.why === "early" ? _t("The match ended in its first 30 seconds.") : _t("The server couldn't decide this match."), " ", _t("Nobody's chips move.")]);
+  } else if (v.d > 0) { stkPotHead(_t("You take the {n} pot", { n: pot })); moved(_t("{s} from {name}", { s, name: "\u0001" })); sticker("up", `+${s}`, v.why === "game" ? _t("Chips") : _t("Forfeit")); }
+  else if (v.d < 0) { stkPotHead(_t("{name} takes the {n} pot", { name, n: pot })); moved(_t("{s} to {name}", { s, name: "\u0001" })); sticker("down", `−${s}`, _t("Chips")); }
+  else { stkPotHead(_t("Nothing moves")); sub.textContent = _t("A draw: both keep their {n}.", { n: s }); sticker("zero", "±0", _t("Draw")); }
   if (v.res !== null && v.why !== "game") {
     if (v.res === 1) {
-      resTitle("Opponent left"); look("win");
-      resLine($("rSub"), [{ b: name }, v.why === "quiet" ? " stopped playing. The pot is yours." : v.why === "start" ? "'s game didn't match the server's. The pot is yours." : " left. The pot is yours."]);
-    } else { resTitle(R.forfeit ? "Forfeit" : "Disconnected"); look("loss"); resLine($("rSub"), [R.forfeit ? "You left the match. " : "Your connection dropped. ", "That costs the stake."]); }
+      resTitle(_t("Opponent left")); look("win");
+      const wv = { who: cupEsc(name) };   // the name goes into the markup escaped, as the text node it was
+      $("rSub").innerHTML = v.why === "quiet" ? _t("<b>{who}</b> stopped playing. The pot is yours.", wv) : v.why === "start" ? _t("<b>{who}</b>'s game didn't match the server's. The pot is yours.", wv) : _t("<b>{who}</b> left. The pot is yours.", wv);
+    } else { resTitle(R.forfeit ? _t("Forfeit") : _t("Disconnected")); look("loss"); resLine($("rSub"), [R.forfeit ? _t("You left the match.") : _t("Your connection dropped."), " ", _t("That costs the stake.")]); }
   } else if (v.res !== null && v.res !== R.res) {   // the server's copy decides (this phone lost the connection near the end)
-    resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
-    resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
+    resTitle(v.res === 1 ? _t("Victory") : v.res === 0 ? _t("Defeat") : _t("Draw")); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
+    resLine($("rSub"), [v.res === 1 ? _t("The server's result: you won.") : v.res === 0 ? _t("The server's result: you lost.") : _t("The server's result: a draw.")]);
   }
   rvStrip(R);   // ui/rivals.js: the record as the server has it (resLine wiped the story's second sentence)
   if (v.d > 0) setTimeout(() => { if (mode === "result") { Sfx.uiCoin(); setTimeout(() => Sfx.uiCoin(), 110); setTimeout(() => Sfx.uiCoin(), 220); } }, late ? 300 : 1300);
@@ -325,11 +326,11 @@ function stkPotView(late) {
 function stkSettings() {
   $("setStakeRow").hidden = !qmOn(); $("setStakeNote").hidden = !qmOn();
   if (!qmOn()) return;
-  chipRow("setStake", [[0, "On"], [1, "Off"]], P.so === 1 ? 1 : 0, (v) => { P.so = v; saveProfile(); if (v) { stkDecline(); stkCancel(); } stkRender(); });
+  chipRow("setStake", [[0, _t("On")], [1, _t("Off")]], P.so === 1 ? 1 : 0, (v) => { P.so = v; saveProfile(); if (v) { stkDecline(); stkCancel(); } stkRender(); });
 }
 function stkStats(pan) {
   const me = qmMe(), k = me && me.sk;
   if (!k || !(k.w + k.l + k.n)) return;
   const net = k.net > 0 ? `+${fmtChips(k.net)}` : k.net < 0 ? `−${fmtChips(-k.net)}` : "±0";
-  pan.appendChild(acMk("p", "ac-line sk-stat", `Chip stakes: ${k.w}–${k.l} · net ${net} chips · ${k.n} of ${k.day} today`));
+  pan.appendChild(acMk("p", "ac-line sk-stat", _t("Chip stakes: {w}–{l} · net {net} chips · {n} of {day} today", { w: k.w, l: k.l, net, n: k.n, day: k.day })));
 }

@@ -21,31 +21,31 @@ const TCV = {
 };
 const TCV_CALL_MS = 60000;
 const TCV_GONE = ["quit", "left", "gone", "ff", "quiet", "start", "nostart", "fast"];   // a pair decided because one side left
-const TCV_PRIZE = { 8: [["1st", 120], ["2nd", 60], ["3rd", 30], ["5th", 10]], 4: [["1st", 60], ["2nd", 30], ["3rd", 10]] };
-const TCV_ORD = { 1: "1st", 2: "2nd", 3: "3rd", 5: "5th" };
+const TCV_PRIZE = { 8: [[_t("1st"), 120], [_t("2nd"), 60], [_t("3rd"), 30], [_t("5th"), 10]], 4: [[_t("1st"), 60], [_t("2nd"), 30], [_t("3rd"), 10]] };
+const TCV_ORD = { 1: _t("1st"), 2: _t("2nd"), 3: _t("3rd"), 5: _t("5th") };
 
 /* ----- small helpers ----- */
 const tcvR = (c) => (c && c.size === 8 ? 3 : 2);
-const tcvTime = (ms) => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const tcvTime = (ms) => new Date(ms).toLocaleTimeString(LOC, { hour: "numeric", minute: "2-digit" });
 const tcvMs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 const tcvHms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
 const tcvSpec = (id) => FIG[id] || FIGHTERS[0];
 const tcvPalOf = (sl) => { const sp = tcvSpec(sl.f); return sp.palettes[sl.pal | 0] || sp.palettes[0]; };
-const tcvNm = (sl) => (!sl ? "" : sl.c ? vcCpuName(sl.ni) : String(sl.n || "Player"));
+const tcvNm = (sl) => (!sl ? "" : sl.c ? vcCpuName(sl.ni) : String(sl.n || _t("Player")));
 const tcvImg = (id) => (PORTRAITS[id] ? `<img src="${PORTRAITS[id]}" alt="">` : "");
 const tcvPh = (sl, cls) => `<span class="cs-ph${cls ? " " + cls : ""}" style="--fc:${col(tcvPalOf(sl))}">${tcvImg(sl.f)}</span>`;
-const tcvLevel = (sl) => (sl.c ? `CPU · ${vcWord(sl.r | 0)}` : `${tierInfo(sl.r | 0).t.name} ${sl.r | 0}`);
+const tcvLevel = (sl) => (sl.c ? _t("CPU · {level}", { level: vcWord(sl.r | 0) }) : _t("{tier} {r}", { tier: qmTier(tierInfo(sl.r | 0).t.name), r: sl.r | 0 }));
 const tcvSet = (el, t) => { if (el && el.textContent !== t) el.textContent = t; };   // a clock's text: written only when it changed
-const tcvDay = (ms) => new Date(ms).toLocaleDateString([], { day: "numeric", month: "short" });
+const tcvDay = (ms) => new Date(ms).toLocaleDateString(LOC, { day: "numeric", month: "short" });
 // the next Daily Cup is at the same time tomorrow (shown in this device's time zone)
 const tcvTomorrow = () => { const d = TC.day; return d && Number.isFinite(d.at) ? tcvTime(d.at + 864e5) : ""; };
-const tcvChName = (ch) => (ch ? (ch.c ? vcCpuName(ch.ni) : String(ch.n || "Player")) : "");
+const tcvChName = (ch) => (ch ? (ch.c ? vcCpuName(ch.ni) : String(ch.n || _t("Player"))) : "");
 // the sentence under a verdict: res 1 you went through, res 0 you are out (why: the server's word for it)
 function tcvSubOf(res, why, nm) {
   if (why === "cpu") why = "game";
-  if (res === 1) return { game: `You beat ${nm}.`, wo: `${nm} didn't tap FIGHT in time.`, draw: "A draw: the higher seed goes through.", seed: "No result twice: the higher seed goes through." }[why] || (TCV_GONE.includes(why) ? `${nm} left the cup.` : "");
-  return { game: `${nm} beat you.`, draw: `A draw: ${nm} is the higher seed.`, seed: `No result twice: ${nm} is the higher seed.`, ff: "You left the match.", wo: "You didn't tap FIGHT in time.", gone: "Your match had no result in time.",
-    fast: "The server couldn't check your match.", left: "The server couldn't check your match.", quiet: "You stopped playing.", start: "Your match didn't start in time.", nostart: "Your match didn't start in time." }[why] || "";
+  if (res === 1) return { game: _t("You beat {name}.", { name: nm }), wo: _t("{name} didn't tap FIGHT in time.", { name: nm }), draw: _t("A draw: the higher seed goes through."), seed: _t("No result twice: the higher seed goes through.") }[why] || (TCV_GONE.includes(why) ? _t("{name} left the cup.", { name: nm }) : "");
+  return { game: _t("{name} beat you.", { name: nm }), draw: _t("A draw: {name} is the higher seed.", { name: nm }), seed: _t("No result twice: {name} is the higher seed.", { name: nm }), ff: _t("You left the match."), wo: _t("You didn't tap FIGHT in time."), gone: _t("Your match had no result in time."),
+    fast: _t("The server couldn't check your match."), left: _t("The server couldn't check your match."), quiet: _t("You stopped playing."), start: _t("Your match didn't start in time."), nostart: _t("Your match didn't start in time.") }[why] || "";
 }
 // your place in a finished cup (the server's number when it came, else worked out from the round you went out in)
 function tcvPlace(c) {
@@ -65,18 +65,18 @@ const tcvOver = (c) => c.st === "done" || !!TC.end;
 // the small line by state, as candidates from the full words to the shortest (the mini is narrow on a phone: the first one that fits is shown)
 function tcvPillState() {
   const d = TC.day, k = TC.call;
-  if (k && !k.ready) return { t: ["Called! Tap to fight", "Called! Fight", "Called!"], call: 1 };
-  if (tcPlaying()) { const me = tcMine(), r = me ? tcRoundName(TC.cup.size, me.r) : "live"; return { t: [`Your cup · ${r}`, r], live: 1 }; }
+  if (k && !k.ready) return { t: [_t("Called! Tap to fight"), _t("Called! Fight"), _t("Called!")], call: 1 };
+  if (tcPlaying()) { const me = tcMine(), r = me ? tcRoundName(TC.cup.size, me.r) : _t("live"); return { t: [_t("Your cup · {round}", { round: r }), r], live: 1 }; }
   if (!d) return null;
-  const at = Number.isFinite(d.at) ? tcvTime(d.at) : "", cn = d.ch ? tcvChName(d.ch) : "", ch = cn ? [`Champion: ${cn}`, cn] : null;
-  if (d.st === "open") return { t: d.in ? [`You're in · ${at}`, "You're in"] : ["Join now"], live: 1 };
-  if (d.st === "run") return { t: ["Live now"], live: 1 };
+  const at = Number.isFinite(d.at) ? tcvTime(d.at) : "", cn = d.ch ? tcvChName(d.ch) : "", ch = cn ? [_t("Champion: {name}", { name: cn }), cn] : null;
+  if (d.st === "open") return { t: d.in ? [_t("You're in · {at}", { at }), _t("You're in")] : [_t("Join now")], live: 1 };
+  if (d.st === "run") return { t: [_t("Live now")], live: 1 };
   if (d.st === "pre") {
-    const t = d.n > 0 ? [`Tonight ${at} · ${d.n} in`, `${at} · ${d.n} in`, `Tonight ${at}`, at] : [`Tonight ${at}`, at];
+    const t = d.n > 0 ? [_t("Tonight {at} · {n} in", { at, n: d.n }), _t("{at} · {n} in", { at, n: d.n }), _t("Tonight {at}", { at }), at] : [_t("Tonight {at}", { at }), at];
     return { t: ch && Math.floor(Date.now() / 4000) % 2 ? ch : t };
   }
   if (d.st === "done" && ch) return { t: ch };
-  return { t: [`Tomorrow ${tcvTomorrow()}`, tcvTomorrow()] };
+  return { t: [_t("Tomorrow {at}", { at: tcvTomorrow() }), tcvTomorrow()] };
 }
 function tcvPill() {
   const t = $("mTc"), old = $("mCupT"), b = $("bCup"), tt = $("mTcT");
@@ -98,10 +98,10 @@ window.addEventListener("resize", () => { TCV.pill = ""; });
 function tcvSheetOpen() { modal("tc", true); tcvSheet(); }
 function tcvSheetClose() { modal("tc", false); }
 function tcvHeadKick(d, c, lobby) {
-  if (lobby) return c.k === "f" ? "Friends Cup · lobby" : "Daily Cup · lobby";
+  if (lobby) return c.k === "f" ? _t("Friends Cup · lobby") : _t("Daily Cup · lobby");
   if (!d) return "";
   const at = Number.isFinite(d.at) ? tcvTime(d.at) : "";
-  return d.st === "pre" ? `Tonight ${at}` : d.st === "open" ? "Lobby open" : d.st === "run" ? "Live now" : `Tomorrow ${tcvTomorrow()}`;
+  return d.st === "pre" ? _t("Tonight {at}", { at }) : d.st === "open" ? _t("Lobby open") : d.st === "run" ? _t("Live now") : _t("Tomorrow {at}", { at: tcvTomorrow() });
 }
 function tcvSheet() {
   if (!TC.sheet) return;
@@ -113,9 +113,9 @@ function tcvSheet() {
   const meB = $("tcvMe"), locked = !!TC.call && !TC.call.ready;
   if (TCV.me !== sig) {
     TCV.me = sig;
-    dailyCard(meB, id, pi, pi ? FIG[id].palettes[pi].name : "You");
+    dailyCard(meB, id, pi, pi ? _tv(FIG[id].palettes[pi].name) : _t("You"));
     meB.insertAdjacentHTML("beforeend", '<span class="rd-chg" aria-hidden="true">⇄</span>');
-    meB.setAttribute("aria-label", `Change fighter. You play ${FIG[id].name}`);
+    meB.setAttribute("aria-label", _t("Change fighter. You play {name}", { name: FIG[id].name }));
   }
   meB.disabled = locked;
   tcvSet($("tcvNote"), TC.note || "");
@@ -123,7 +123,7 @@ function tcvSheet() {
   $("tcvYc").hidden = !bracket;
   if (bracket) {
     const over = tcvOver(c), pl = over ? tcvPlace(c) : 0, me = tcMine();
-    $("tcvYb").textContent = `${tcKind(c)} · ${c.st === "off" ? "closed" : over ? (pl === 1 ? "champion" : pl ? `finished ${TCV_ORD[pl] || pl}` : "over") : c.out >= 0 ? "you're out" : me ? tcRoundName(c.size, me.r) : "live"}`;
+    $("tcvYb").textContent = `${tcKind(c)} · ${c.st === "off" ? _t("closed") : over ? (pl === 1 ? _t("champion") : pl ? _t("finished {place}", { place: TCV_ORD[pl] || pl }) : _t("over")) : c.out >= 0 ? _t("you're out") : me ? tcRoundName(c.size, me.r) : _t("live")}`;
   }
   $("tcvHome").hidden = lobby; $("tcvLobby").hidden = !lobby;
   if (lobby) tcvLobby(c, busy); else tcvHome(d, busy);
@@ -140,47 +140,47 @@ function tcvHome(d, busy) {
     if (btn) $("tcvDGoT").textContent = btn;
   };
   cd.classList.remove("txt", "live");
-  const miss = d && d.miss ? `You weren't here at ${at}.` : "";
+  const miss = d && d.miss ? _t("You weren't here at {at}.", { at }) : "";
   if (!d) {
-    cd.textContent = "--:--:--"; set("Daily Cup", "Checking tonight's cup…", "", "", "");
+    cd.textContent = "--:--:--"; set(_t("Daily Cup"), _t("Checking tonight's cup…"), "", "", "");
   } else if (d.st === "pre") {
-    const n = d.n | 0, ch = d.ch ? ` · Champion: ${tcvChName(d.ch)}` : "";
-    set(`Daily Cup · ${at}`, `${n > 1 || (n === 1 && !d.me) ? `${n} in tonight` : n === 1 ? "You're in tonight" : "Be the first in tonight"}${ch}`,
-      `Lobby opens ${Number.isFinite(d.at) ? tcvTime(d.at - 30 * 60000) : ""}`, d.me ? "You're in ✓" : "I'm in", d.me ? "on" : "primary");
+    const n = d.n | 0, ch = d.ch ? ` · ${_t("Champion: {name}", { name: tcvChName(d.ch) })}` : "";
+    set(_t("Daily Cup · {at}", { at }), `${n > 1 || (n === 1 && !d.me) ? _t("{n} in tonight", { n }) : n === 1 ? _t("You're in tonight") : _t("Be the first in tonight")}${ch}`,
+      _t("Lobby opens {at}", { at: Number.isFinite(d.at) ? tcvTime(d.at - 30 * 60000) : "" }), d.me ? _t("You're in ✓") : _t("I'm in"), d.me ? "on" : "primary");
   } else if (d.st === "open") {
     const n = d.ent | 0;
-    set(`Daily Cup · ${at}`, `${n > 0 ? `${n} in the lobby` : "The lobby is open"} · the bracket is drawn at ${at}`, d.in ? "You're in. Join the lobby to stay." : "Join now: a roll call at " + at + ", then the bracket.", "Join", "primary");
+    set(_t("Daily Cup · {at}", { at }), n > 0 ? _t("{n} in the lobby · the bracket is drawn at {at}", { n, at }) : _t("The lobby is open · the bracket is drawn at {at}", { at }), d.in ? _t("You're in. Join the lobby to stay.") : _t("Join now: a roll call at {at}, then the bracket.", { at }), _t("Join"), "primary");
   } else if (d.st === "run") {
-    cd.classList.add("live"); cd.textContent = "LIVE";
-    set("Daily Cup · live", `${d.ent | 0} playing now`, d.in ? "" : `Next cup tomorrow ${tom}`, d.in ? "Bracket" : "", "primary");
+    cd.classList.add("live"); cd.textContent = _t("LIVE");
+    set(_t("Daily Cup · live"), _t("{n} playing now", { n: d.ent | 0 }), d.in ? "" : _t("Next cup tomorrow {at}", { at: tom }), d.in ? _t("Bracket") : "", "primary");
   } else if (d.st === "done") {
-    cd.classList.add("txt"); cd.textContent = d.ch ? tcvChName(d.ch) : "Done";
-    set("Daily Cup · champion", `Next cup tomorrow ${tom}`, "", "", "");
+    cd.classList.add("txt"); cd.textContent = d.ch ? tcvChName(d.ch) : _t("Done");
+    set(_t("Daily Cup · champion"), _t("Next cup tomorrow {at}", { at: tom }), "", "", "");
   } else {
-    cd.classList.add("txt"); cd.textContent = "No cup";
-    set("Daily Cup · not tonight", `Not enough players tonight · tomorrow ${tom}`, "", "", "");
+    cd.classList.add("txt"); cd.textContent = _t("No cup");
+    set(_t("Daily Cup · not tonight"), _t("Not enough players tonight · tomorrow {at}", { at: tom }), "", "", "");
   }
   if (d && (d.st === "run" || d.st === "done" || d.st === "off") && miss) dn.textContent = miss;
   go.disabled = busy;
   $("tcvHost").disabled = busy; $("tcvJoinC").disabled = busy;
-  $("tcvPGoT").textContent = cupOk(P.cup) ? "Resume" : "Play";
+  $("tcvPGoT").textContent = cupOk(P.cup) ? _t("Resume") : _t("Play");
   $("tcvPrz").innerHTML = tcvPrizes(d);
   $("tcvPrz").hidden = !d || d.st === "done" || d.st === "off";
 }
 function tcvPrizes(d) {
   const row = (n) => TCV_PRIZE[n].map(([p, v]) => `<span class="bw-st cg tcv-pz">${p} ${v}</span>`).join("");
-  return `<span class="tcv-pt8">${row(8)}</span><small class="tcv-p4">a cup of 4 pays ${TCV_PRIZE[4].map((x) => x[1]).join(" · ")}</small>`;
+  return `<span class="tcv-pt8">${row(8)}</span><small class="tcv-p4">${_t("a cup of 4 pays {prizes}", { prizes: TCV_PRIZE[4].map((x) => x[1]).join(" · ") })}</small>`;
 }
 // the lobby you are in
 function tcvLobby(c, busy) {
   const daily = c.k !== "f", ent = c.ent || [], n = ent.length, host = !!c.host, at = Number.isFinite(c.at) ? c.at : TC.day ? TC.day.at : NaN, hhmm = Number.isFinite(at) ? tcvTime(at) : "";
-  $("tcvLk").textContent = daily ? `Daily Cup · ${hhmm}` : "Friends Cup";
+  $("tcvLk").textContent = daily ? _t("Daily Cup · {at}", { at: hhmm }) : _t("Friends Cup");
   const cd = $("tcvLCd"), ll = $("tcvLl"), ln = $("tcvLn");
   cd.classList.toggle("code", !daily);
-  if (!daily) { cd.textContent = c.code || ""; cd.setAttribute("aria-label", `Code ${c.code || ""}`); } else cd.removeAttribute("aria-label");
-  ll.textContent = daily ? `Keep this screen on. A roll call at ${hhmm}, then the bracket is drawn.`
-    : host ? "Share the link or the code. Start when everyone is in." : "Waiting for the host to start the cup.";
-  ln.textContent = daily ? "CPUs fill the empty seats." : host && n < 2 ? "A cup needs 2 players." : host ? "CPUs fill the empty seats." : "";
+  if (!daily) { cd.textContent = c.code || ""; cd.setAttribute("aria-label", _t("Code {code}", { code: c.code || "" })); } else cd.removeAttribute("aria-label");
+  ll.textContent = daily ? _t("Keep this screen on. A roll call at {at}, then the bracket is drawn.", { at: hhmm })
+    : host ? _t("Share the link or the code. Start when everyone is in.") : _t("Waiting for the host to start the cup.");
+  ln.textContent = daily ? _t("CPUs fill the empty seats.") : host && n < 2 ? _t("A cup needs 2 players.") : host ? _t("CPUs fill the empty seats.") : "";
   $("tcvLPrz").innerHTML = daily ? tcvPrizes() : ""; $("tcvLPrz").hidden = !daily;
   $("tcvShare").hidden = daily;
   const st = $("tcvStart"); st.hidden = daily || !host; st.disabled = busy || n < 2;
@@ -189,14 +189,14 @@ function tcvLobby(c, busy) {
   let h = "";
   for (let i = 0; i < show; i++) {
     const e = ent[i], sl = { f: e.f, pal: e.pal };
-    h += `<span class="tcv-seat${e.me ? " me" : ""}${e.h ? " host" : ""}" style="--fc:${col(tcvPalOf(sl))}" title="${cupEsc(e.n || "")}"><span class="tcv-sp">${tcvImg(FIG[e.f] ? e.f : tcvSpec(e.f).id)}</span><b>${cupEsc(e.me ? "You" : e.n || "Player")}</b>${e.h ? '<i class="tcv-hs">Host</i>' : ""}</span>`;
+    h += `<span class="tcv-seat${e.me ? " me" : ""}${e.h ? " host" : ""}" style="--fc:${col(tcvPalOf(sl))}" title="${cupEsc(e.n || "")}"><span class="tcv-sp">${tcvImg(FIG[e.f] ? e.f : tcvSpec(e.f).id)}</span><b>${cupEsc(e.me ? _t("You") : e.n || _t("Player"))}</b>${e.h ? `<i class="tcv-hs">${_t("Host")}</i>` : ""}</span>`;
   }
-  if (n > 8) h += `<span class="tcv-seat more"><span class="tcv-sp q">+${n - 7}</span><b>more</b></span>`;
-  else for (let i = n; i < seats; i++) h += '<span class="tcv-seat cpu"><span class="tcv-sp q">?</span><b>CPU</b></span>';
+  if (n > 8) h += `<span class="tcv-seat more"><span class="tcv-sp q">+${n - 7}</span><b>${_t("more")}</b></span>`;
+  else for (let i = n; i < seats; i++) h += `<span class="tcv-seat cpu"><span class="tcv-sp q">?</span><b>${_t("CPU")}</b></span>`;
   $("tcvSeats").innerHTML = h;
   $("tcvSeats").classList.toggle("s4", seats === 4 && n <= 4);
   const cpus = n <= 8 ? seats - n : 0;
-  $("tcvLInN").textContent = `${n} ${n === 1 ? "player" : "players"}${cpus ? ` · ${cpus} CPU` : ""}`;
+  $("tcvLInN").textContent = `${_t("{n} player|{n} players", { n })}${cpus ? ` · ${_t("{n} CPU", { n: cpus })}` : ""}`;
   $("tcvWarm").disabled = busy; $("tcvLeave").disabled = busy;
 }
 // the countdowns on the sheet (called by tcvSheet and every tick)
@@ -204,9 +204,9 @@ function tcvSheetClock() {
   if (!TC.sheet) return;
   const c = TC.cup, d = TC.day, now = tcNow();
   if (tcInLobby()) {
-    if (c.k !== "f") { const at = Number.isFinite(c.at) ? c.at : d ? d.at : NaN; const cd = $("tcvLCd"); cd.classList.toggle("txt", !(at > now)); tcvSet(cd, at > now ? tcvHms(at - now) : "Starting…"); }
+    if (c.k !== "f") { const at = Number.isFinite(c.at) ? c.at : d ? d.at : NaN; const cd = $("tcvLCd"); cd.classList.toggle("txt", !(at > now)); tcvSet(cd, at > now ? tcvHms(at - now) : _t("Starting…")); }
   } else if (d && (d.st === "pre" || d.st === "open") && Number.isFinite(d.at)) {
-    const cd = $("tcvCd"); cd.classList.toggle("txt", !(d.at > now)); tcvSet(cd, d.at > now ? tcvHms(d.at - now) : "Starting…");
+    const cd = $("tcvCd"); cd.classList.toggle("txt", !(d.at > now)); tcvSet(cd, d.at > now ? tcvHms(d.at - now) : _t("Starting…"));
   }
 }
 
@@ -215,33 +215,34 @@ function tcvSheetClock() {
 function tcvSlot(c, r, pos) {
   const key = r + ":" + pos, R = tcvR(c), draw = TCV.seed.size > 0 && (r > 0 || TCV.seed.has(pos)), s = draw ? -1 : c.p[r][pos];
   const tbd = (n, t) => `<div class="cs tbd" data-k="${key}"><span class="cs-ph q">?</span><span class="cs-t"><span class="cs-n">${n}</span><span class="cs-r">${t}</span></span></div>`;
-  if (s === -2) return `<div class="cs none" data-k="${key}"><span class="cs-ph q">&mdash;</span><span class="cs-t"><span class="cs-n">No one</span><span class="cs-r">nobody came through</span></span></div>`;
+  if (s === -2) return `<div class="cs none" data-k="${key}"><span class="cs-ph q">&mdash;</span><span class="cs-t"><span class="cs-n">${_t("No one")}</span><span class="cs-r">${_t("nobody came through")}</span></span></div>`;
   const sl = s >= 0 ? c.slots[s] : null;
-  if (!sl) return r === 0 && draw ? tbd("Seeding", "&hellip;") : tbd("Winner", "to be decided");
+  if (!sl) return r === 0 && draw ? tbd(_t("Seeding"), "&hellip;") : tbd(_t("Winner"), _t("to be decided"));
   const me = s === c.mi, cpu = !!sl.c, pk = r + ":" + (pos >> 1), m = c.m && c.m[pk], st = m ? m[0] : "w", why = m ? m[1] : "";
   const nx = c.p[r + 1], dec = nx ? nx[pos >> 1] : -1, out = dec >= 0 && dec !== s, champ = dec === s && r === R - 1;
   const w = (t, extra) => `<span class="cs-tn tcv-w${extra || ""}">${t}</span>`;
   const ti = tierInfo(sl.r | 0);
-  let sub = cpu ? `<span class="cs-tn">CPU &middot; ${vcWord(sl.r | 0)}</span>` : `${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r | 0}</span>`;
+  let sub = cpu ? `<span class="cs-tn">${_t("CPU · {level}", { level: vcWord(sl.r | 0) })}</span>` : `${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${qmTier(ti.t.name)}</span><span class="cs-rn">${sl.r | 0}</span>`;
   const cls = ["cs", me ? "me" : "", cpu ? "cpu" : "", me && !out && dec !== -2 ? "path" : "", champ ? "champ" : "", TCV.pop === key ? "pop" : ""];
   const run = c.st === "run";   // a cup that is over or closed shows no pair as live or called
   if (run && dec === -1 && st === "l") cls.push("live");
   else if (run && dec === -1 && st === "c") {
     cls.push("wait");
-    if (m[3] && m[3][pos & 1]) sub = w("ready", " rd");
+    if (m[3] && m[3][pos & 1]) sub = w(_t("ready"), " rd");
     else {
       const est = Date.now() + (m[2] | 0), prev = TCV.un[pk], u = prev !== undefined && Math.abs(prev - est) < 2500 ? prev : est;
       TCV.un[pk] = u;
-      sub = `<span class="cs-tn tcv-w" data-u="${u}" data-p="called · "></span>`;
+      const cl = _t("called · {t}", { t: "\u0001" }).split("\u0001");   // the text around the clock, which tcvClocks puts between data-p and data-s
+      sub = `<span class="cs-tn tcv-w" data-u="${u}" data-p="${cupEsc(cl[0])}" data-s="${cupEsc(cl[1] || "")}"></span>`;
     }
-  } else if (dec === -2) { cls.push("gone"); sub = w("out"); }
+  } else if (dec === -2) { cls.push("gone"); sub = w(_t("out")); }
   else if (out) {
     if (me) cls.push("fell"); else if (why !== "wo" && !TCV_GONE.includes(why)) cls.push("out");
-    if (why === "wo") { cls.push("wo"); sub = w("walkover"); }
-    else if (TCV_GONE.includes(why)) { cls.push("gone"); sub = w("out"); }
-    else if (why === "draw" || why === "seed") sub = w("on seed");
+    if (why === "wo") { cls.push("wo"); sub = w(_t("walkover")); }
+    else if (TCV_GONE.includes(why)) { cls.push("gone"); sub = w(_t("out")); }
+    else if (why === "draw" || why === "seed") sub = w(_t("on seed"));
   }
-  const tag = me ? '<i class="tcv-tg">You</i>' : cpu ? '<i class="tcv-tg">CPU</i>' : "";
+  const tag = me ? `<i class="tcv-tg">${_t("You")}</i>` : cpu ? `<i class="tcv-tg">${_t("CPU")}</i>` : "";
   return `<div class="${cls.filter(Boolean).join(" ")}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(tcvPalOf(sl))}"><span class="cs-ph">${tcvImg(sl.f)}</span>` +
     `<span class="cs-t"><span class="cs-n">${cupEsc(tcvNm(sl))}</span><span class="cs-r">${sub}</span></span>${tag}</div>`;
 }
@@ -269,7 +270,7 @@ function tcvListHTML(c) {
   const R = tcvR(c), n = c.size;
   let h = "";
   for (let r = 0; r < R; r++) {
-    h += `<div class="kicker cl-h">${tcRoundName(n, r)}${r < R - 1 ? "s" : ""}</div>`;
+    h += `<div class="kicker cl-h">${r < R - 1 ? (n === 8 && r === 0 ? _t("Quarter-finals") : _t("Semi-finals")) : tcRoundName(n, r)}</div>`;
     for (let i = 0; i < n >> (r + 1); i++) {
       const m = c.m && c.m[r + ":" + i], live = c.st === "run" && m && m[0] === "l" && !(c.p[r + 1] && c.p[r + 1][i] !== -1);
       h += `<div class="cl-m${live ? " live" : ""}">${tcvSlot(c, r, 2 * i)}${tcvSlot(c, r, 2 * i + 1)}</div>`;
@@ -306,12 +307,12 @@ function tcvLines() {
 }
 function tcvHeadRender(c) {
   const R = tcvR(c), ch = tcvChamp(c);
-  const kick = c.k === "f" ? `Friends Cup · ${c.code || ""}` : `Daily Cup · ${tcvDay(Number.isFinite(c.at) ? c.at : TC.day && Number.isFinite(TC.day.at) ? TC.day.at : Date.now())}`;
+  const kick = c.k === "f" ? _t("Friends Cup · {code}", { code: c.code || "" }) : _t("Daily Cup · {date}", { date: tcvDay(Number.isFinite(c.at) ? c.at : TC.day && Number.isFinite(TC.day.at) ? TC.day.at : Date.now()) });
   let title;
-  if (c.st === "off") title = "Cup closed";
-  else if (tcvOver(c)) title = ch >= 0 && ch === c.mi ? "Champion" : "Cup over";
-  else if (c.out >= 0) title = "Cup over";
-  else { const me = tcMine(); title = me ? tcRoundName(c.size, me.r) : "Live"; }
+  if (c.st === "off") title = _t("Cup closed");
+  else if (tcvOver(c)) title = ch >= 0 && ch === c.mi ? _t("Champion") : _t("Cup over");
+  else if (c.out >= 0) title = _t("Cup over");
+  else { const me = tcMine(); title = me ? tcRoundName(c.size, me.r) : _t("Live"); }
   tcvSet($("cupKick"), kick); tcvSet($("cupTitle"), title); tcvSet($("cupTokens"), fmtChips(P.tokens));
 }
 function tcvGridRender(c) {
@@ -327,13 +328,13 @@ function tcvFoot(c) {
   const btn = (id, label, cls) => `<button class="btn${cls ? " " + cls : ""}" id="${id}"><span>${label}</span></button>`;
   const kind = tcKind(c), R = tcvR(c), me = tcMine(), k = TC.call && TC.call.id === c.id ? TC.call : null, tom = tcvTomorrow();
   const t = (kick, big, small, extra) => `<div class="cf-t">${kick ? `<span class="kicker">${kick}</span>` : ""}<b>${big}</b>${small ? `<small${extra || ""}>${small}</small>` : ""}</div>`;
-  const menu = btn("tcvFMenu", "Menu");
+  const menu = btn("tcvFMenu", _t("Menu"));
   const res = (cls, sig, html) => ({ cls: "cf" + (cls ? " " + cls : ""), sig, html });
   const over = tcvOver(c);
   if (c.st === "off" && !TC.end) {
     const why = c.why, few = why === "few" || why === "none" || why === "late";
-    const words = why === "host" ? "The host closed this cup." : why === "idle" ? "Nobody started this cup." : few ? `Not enough players came.${c.k !== "f" && tom ? ` Tomorrow ${tom}.` : ""}` : "This cup was closed.";
-    return res("lose", "off:" + why, `${t("", "Cup closed", cupEsc(words))}<div class="cf-acts tcv-a">${menu}</div>`);
+    const words = why === "host" ? _t("The host closed this cup.") : why === "idle" ? _t("Nobody started this cup.") : few ? `${_t("Not enough players came.")}${c.k !== "f" && tom ? ` ${_t("Tomorrow {at}.", { at: tom })}` : ""}` : _t("This cup was closed.");
+    return res("lose", "off:" + why, `${t("", _t("Cup closed"), cupEsc(words))}<div class="cf-acts tcv-a">${menu}</div>`);
   }
   if (over && c.mi >= 0) {
     const pl = tcvPlace(c), ch = tcvChamp(c), chips = tcvChips(c), daily = c.k !== "f", e = TC.end;
@@ -341,42 +342,42 @@ function tcvFoot(c) {
     const won = pl === 1 || (ch >= 0 && ch === c.mi);
     if (won) {
       const now = TCV.chips ? Math.round(TCV.chips.total * clamp((performance.now() - TCV.chips.t0) / 1200, 0, 1)) : chips;
-      const small = daily ? `<span class="cf-chips"><span class="tokglyph"></span>+<span id="tcvChipsN">${Math.min(now, chips)}</span></span> chips from this cup` : e && e.fw > 0 ? `${e.fw} Friends ${e.fw === 1 ? "Cup" : "Cups"} won` : "A Friends Cup won";
-      const acts = daily ? `<button class="btn tcv-mute" disabled><span>Tomorrow ${cupEsc(tom)}</span></button>${menu}` : `${btn("tcvFHost", "Host another", "primary")}${menu}`;
-      return res("win", "won:" + pl, `${t("", "Champion!", small)}<div class="cf-acts tcv-a">${acts}</div>`);
+      const small = daily ? _t("{chips} chips from this cup", { chips: `<span class="cf-chips"><span class="tokglyph"></span>+<span id="tcvChipsN">${Math.min(now, chips)}</span></span>` }) : e && e.fw > 0 ? _t("{n} Friends Cup won|{n} Friends Cups won", { n: e.fw }) : _t("A Friends Cup won");
+      const acts = daily ? `<button class="btn tcv-mute" disabled><span>${_t("Tomorrow {at}", { at: cupEsc(tom) })}</span></button>${menu}` : `${btn("tcvFHost", _t("Host another"), "primary")}${menu}`;
+      return res("win", "won:" + pl, `${t("", _t("Champion!"), small)}<div class="cf-acts tcv-a">${acts}</div>`);
     }
-    const word = pl ? `You finished ${TCV_ORD[pl] || pl + "th"}` : "The cup is over";
-    const small = e && e.ch === null ? "No champion: the cup timed out." : `${daily && chips > 0 ? `+${chips} chips · ` : ""}${name ? `${cupEsc(name)} won the cup.` : ""}`;
+    const word = pl ? _t("You finished {place}", { place: TCV_ORD[pl] || _t("{n}th", { n: pl }) }) : _t("The cup is over");
+    const small = e && e.ch === null ? _t("No champion: the cup timed out.") : `${daily && chips > 0 ? `${_t("+{n} chips", { n: chips })} · ` : ""}${name ? _t("{name} won the cup.", { name: cupEsc(name) }) : ""}`;
     return res("", "end:" + pl, `${t("", word, small)}<div class="cf-acts tcv-a">${menu}</div>`);
   }
   if (c.out >= 0 && c.mi >= 0) {   // out, the cup goes on without you
     const at = c.p[c.out].indexOf(c.mi), key = c.out + ":" + (at >> 1), m = c.m && c.m[key], rs = Object.values(TC.res || {}).find((x) => x && x.r === c.out && x.res === 0);
-    const opp = c.slots[c.p[c.out][at ^ 1]], words = tcvSubOf(0, rs ? rs.why : m ? m[1] : "game", opp ? tcvNm(opp) : "They");
-    return res("lose", "out:" + c.out, `${t("", `Out in the ${tcRoundName(c.size, c.out).toLowerCase()}`, cupEsc(`${words} The cup goes on.`.trim()))}<div class="cf-acts tcv-a">${menu}</div>`);
+    const opp = c.slots[c.p[c.out][at ^ 1]], words = tcvSubOf(0, rs ? rs.why : m ? m[1] : "game", opp ? tcvNm(opp) : _t("They"));
+    return res("lose", "out:" + c.out, `${t("", tcOutIn(c.size, c.out), cupEsc(`${words} ${_t("The cup goes on.")}`.trim()))}<div class="cf-acts tcv-a">${menu}</div>`);
   }
   const rn = me ? tcRoundName(c.size, me.r) : "";
   const o = k && (k.opp || (me && me.opp >= 0 ? c.slots[me.opp] : null));
   if (k && me && !k.ready) {   // called: FIGHT in its ring
-    return res("tcv-called", "call:" + k.key, `${o ? tcvPh(o) : ""}${t(`${rn} · ${kind}`, o ? `vs ${cupEsc(tcvNm(o))}` : "Your match", o ? cupEsc(tcvLevel(o)) : "")}` +
-      `<div class="cf-acts tcv-a"><span class="tcv-ring" id="tcvFRing"><button class="btn primary" id="tcGo"><span>Fight<small id="tcGoT"></small></span></button></span></div>`);
+    return res("tcv-called", "call:" + k.key, `${o ? tcvPh(o) : ""}${t(`${rn} · ${kind}`, o ? _t("vs {name}", { name: cupEsc(tcvNm(o)) }) : _t("Your match"), o ? cupEsc(tcvLevel(o)) : "")}` +
+      `<div class="cf-acts tcv-a"><span class="tcv-ring" id="tcvFRing"><button class="btn primary" id="tcGo"><span>${_t("Fight")}<small id="tcGoT"></small></span></button></span></div>`);
   }
   if (k && me && k.ready) {   // you tapped FIGHT: waiting for them
-    const cpu = o && o.c, name = o ? tcvNm(o) : "your opponent";
-    return res("tcv-called", "rdy:" + k.key, `${o ? tcvPh(o) : ""}${t(`${rn} · ${kind}`, "You're ready", cpu ? "Starting…" : "…", cpu ? "" : ` id="tcvWt" data-u="${k.until}" data-p="${cupEsc(`Waiting for ${name} to tap FIGHT · `)}"`)}`);
+    const cpu = o && o.c, name = o ? tcvNm(o) : _t("your opponent"), cl = _t("Waiting for {name} to tap FIGHT · {t}", { name, t: "\u0001" }).split("\u0001");   // the text around the clock (tcvClocks)
+    return res("tcv-called", "rdy:" + k.key, `${o ? tcvPh(o) : ""}${t(`${rn} · ${kind}`, _t("You're ready"), cpu ? _t("Starting…") : "…", cpu ? "" : ` id="tcvWt" data-u="${k.until}" data-p="${cupEsc(cl[0])}" data-s="${cupEsc(cl[1] || "")}"`)}`);
   }
-  if (me && me.s === "l") return res("", "live:" + me.key, t(`${rn} · ${kind}`, "Your match is on", "Waiting for the result…"));
+  if (me && me.s === "l") return res("", "live:" + me.key, t(`${rn} · ${kind}`, _t("Your match is on"), _t("Waiting for the result…")));
   if (me) {   // your next match, not called yet
     const opp = me.opp >= 0 ? c.slots[me.opp] : null;
     let small;
-    if (opp) small = `vs ${cupEsc(tcvNm(opp))} · ${cupEsc(tcvLevel(opp))}`;
+    if (opp) small = `${_t("vs {name}", { name: cupEsc(tcvNm(opp)) })} · ${cupEsc(tcvLevel(opp))}`;
     else {
       const at = c.p[me.r].indexOf(c.mi) ^ 1, a = me.r > 0 ? c.slots[c.p[me.r - 1][2 * at]] : null, b = me.r > 0 ? c.slots[c.p[me.r - 1][2 * at + 1]] : null;
-      small = a && b ? `vs the winner of ${cupEsc(tcvNm(a))} / ${cupEsc(tcvNm(b))}` : "vs the winner of the other match";
+      small = a && b ? _t("vs the winner of {a} / {b}", { a: cupEsc(tcvNm(a)), b: cupEsc(tcvNm(b)) }) : _t("vs the winner of the other match");
     }
-    return res("", "next:" + me.key + ":" + me.opp, `${opp ? tcvPh(opp) : '<span class="cs-ph q">?</span>'}${t(kind, `Next: ${rn}`, small)}` +
-      `<div class="cf-acts tcv-a"><button class="btn tcv-sw" id="tcvFPick" aria-label="Change fighter"><span aria-hidden="true">⇄</span></button>${btn("tcvFWarm", "Warm up vs CPU")}</div>`);
+    return res("", "next:" + me.key + ":" + me.opp, `${opp ? tcvPh(opp) : '<span class="cs-ph q">?</span>'}${t(kind, _t("Next: {round}", { round: rn }), small)}` +
+      `<div class="cf-acts tcv-a"><button class="btn tcv-sw" id="tcvFPick" aria-label="${_t("Change fighter")}"><span aria-hidden="true">⇄</span></button>${btn("tcvFWarm", _t("Warm up vs CPU"))}</div>`);
   }
-  return res("", "wait", t(kind, "Waiting", "The next round starts soon."));
+  return res("", "wait", t(kind, _t("Waiting"), _t("The next round starts soon.")));
 }
 function tcvFootIn() { const f = $("cupFoot"); f.classList.remove("in"); void f.offsetWidth; f.classList.add("in"); }
 function tcvFootRender() {
@@ -446,7 +447,7 @@ function tcvCall() {
     TCV.call = sig;
     const ph = $("tccPh"); ph.style.setProperty("--fc", o ? col(tcvPalOf(o)) : "var(--mute)"); ph.innerHTML = o ? tcvImg(o.f) : "";
     $("tccK").textContent = `${tcKind(c)} · ${tcRoundName(c.size || 8, k.r)}`;
-    $("tccN").textContent = o ? `vs ${tcvNm(o)}` : "Your match is ready";
+    $("tccN").textContent = o ? _t("vs {name}", { name: tcvNm(o) }) : _t("Your match is ready");
     $("tccS").textContent = o ? tcvLevel(o) : "";
   }
   const busy = tcBusy();
@@ -461,30 +462,30 @@ function tcvResult(R, res) {
   if (!card || !tm) return;
   card.hidden = false;
   const c = TC.cup, size = c ? c.size : tm.size || 8, Rn = size === 8 ? 3 : 2, r = tm.r | 0, cpu = !!R.tc;
-  const nm = cpu ? vcCpuName(R.tk ? R.tk.ni : 0) : (R.qm.opp && R.qm.opp.name) || NET.oppName || "Your opponent";
+  const nm = cpu ? vcCpuName(R.tk ? R.tk.ni : 0) : (R.qm.opp && R.qm.opp.name) || NET.oppName || _t("Your opponent");
   const head = $("rTcH"), sub = $("rTcS"), st = $("rTcD"), sheet = $("resSheet");
   const look = (k) => { sheet.classList.remove("win", "loss", "draw"); sheet.classList.add(k); };
   const sticker = (cls, n, small) => { st.className = "delta " + cls; $("rTcN").textContent = n; $("rTcL").textContent = small; };
   card.style.setProperty("--k", Rn);
   if (!res) {
     card.className = "card res-tc wait"; card.style.setProperty("--p", r / Rn);
-    head.textContent = cpu ? "Checking your match…" : "Waiting for the result…";
+    head.textContent = cpu ? _t("Checking your match…") : _t("Waiting for the result…");
     sub.textContent = `${tcKind(c)} · ${tcRoundName(size, r)}`;
-    sticker("wait", "…", "Confirming");
+    sticker("wait", "…", _t("Confirming"));
     return;
   }
   const won = res.res === 1, last = r >= Rn - 1;
   card.className = "card res-tc " + (won ? "up" : "down"); card.style.setProperty("--p", (r + (won ? 1 : 0)) / Rn);
-  head.textContent = won ? (last ? "Champion!" : `Through to the ${tcRoundName(size, r + 1).toLowerCase()}`) : `Out in the ${tcRoundName(size, r).toLowerCase()}`;
+  head.textContent = won ? (last ? _t("Champion!") : tcThrough(size, r)) : tcOutIn(size, r);
   sub.textContent = tcvSubOf(won ? 1 : 0, res.why, nm);
-  sticker(won ? "" : "down", won ? (last ? "★︎" : "✓︎") : "✕︎", won ? (last ? "Champion" : "Through") : "Out");
+  sticker(won ? "" : "down", won ? (last ? "★︎" : "✓︎") : "✕︎", won ? (last ? _t("Champion") : _t("Through")) : _t("Out"));
   // the server's result differs from this phone's, or it was decided by a walkover or a draw: the big word follows it
   const why = res.why === "cpu" ? "game" : res.why;
   if (res.res !== R.res || why !== "game") {
-    if (why === "game") { resTitle(won ? "Victory" : "Defeat"); look(won ? "win" : "loss"); resLine($("rSub"), ["The server's result: ", won ? "you won." : "you lost."]); }
-    else if (why === "draw" || why === "seed") { resTitle(won ? "Through" : "Out"); look(won ? "win" : "loss"); resLine($("rSub"), [tcvSubOf(won ? 1 : 0, why, nm)]); }
-    else if (won) { resTitle("Opponent left"); look("win"); resLine($("rSub"), why === "wo" ? [{ b: nm }, " didn't tap FIGHT in time."] : [{ b: nm }, " left the cup. It counts as your win."]); }
-    else { resTitle(why === "ff" ? "Forfeit" : "Out"); look("loss"); resLine($("rSub"), [tcvSubOf(0, why, nm)]); }
+    if (why === "game") { resTitle(won ? _t("Victory") : _t("Defeat")); look(won ? "win" : "loss"); resLine($("rSub"), [won ? _t("The server's result: you won.") : _t("The server's result: you lost.")]); }
+    else if (why === "draw" || why === "seed") { resTitle(won ? _t("Through") : _t("Out")); look(won ? "win" : "loss"); resLine($("rSub"), [tcvSubOf(won ? 1 : 0, why, nm)]); }
+    else if (won) { resTitle(_t("Opponent left")); look("win"); $("rSub").innerHTML = why === "wo" ? _t("<b>{who}</b> didn't tap FIGHT in time.", { who: cupEsc(nm) }) : _t("<b>{who}</b> left the cup. It counts as your win.", { who: cupEsc(nm) }); }   // the name goes in escaped, as the text node it was
+    else { resTitle(why === "ff" ? _t("Forfeit") : _t("Out")); look("loss"); resLine($("rSub"), [tcvSubOf(0, why, nm)]); }
   }
 }
 
@@ -493,7 +494,7 @@ function tcvResult(R, res) {
 function tcvClocks() {
   const now = Date.now(), k = TC.call;
   if (mode === "tcup") {
-    for (const el of document.querySelectorAll("#scrCup [data-u]")) tcvSet(el, (el.dataset.p || "") + tcvMs(+el.dataset.u - now));
+    for (const el of document.querySelectorAll("#scrCup [data-u]")) tcvSet(el, (el.dataset.p || "") + tcvMs(+el.dataset.u - now) + (el.dataset.s || ""));
   }
   if (k && !k.ready) {
     const left = k.until - now, p = Math.max(0, Math.min(1, left / TCV_CALL_MS));

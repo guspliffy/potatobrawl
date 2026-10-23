@@ -5,7 +5,7 @@
    without losing a life. No rating change. P.cups counts the cups won.
    P.cup = { v, seed, mi (your seat 0-7), fid, pal, slots: [{n, f, pal, r}], p: [8, 4, 2, 1 seats per round, -1 = not decided],
              round (the one you play next), out (round you lost in, -1), by (who beat you), fold (you left), earned (chips), flawless } */
-const CUP = { names: ["Quarter-final", "Semi-final", "Final"], lives: [2, 2, 3], secs: [120, 120, 180], chips: [15, 25, 60], flawless: 30 };
+const CUP = { names: [_t("Quarter-final"), _t("Semi-final"), _t("Final")], lives: [2, 2, 3], secs: [120, 120, 180], chips: [15, 25, 60], flawless: 30 };
 const CU = { hide: new Set(), pop: "", cheer: false, confirm: false, note: "", timers: [] };
 
 /* ----- the draw ----- */
@@ -98,7 +98,7 @@ function cupFight() {
 function cupMatchEnd(forfeit) {
   masteryCup(forfeit);   // ui/mastery.js: the XP sticker on the bracket
   const c = P.cup, r = c.round, g = G, me = g.fighters[0];
-  if (!forfeit && g.winner < 0) { cupShow({ note: "That one was a draw. Fight it again." }); return; }
+  if (!forfeit && g.winner < 0) { cupShow({ note: _t("That one was a draw. Fight it again.") }); return; }
   const won = !forfeit && g.winner === 0;
   if (won) {
     if (me.stocks < g.stocks) c.flawless = false;
@@ -125,13 +125,13 @@ const TROPHY = `<svg class="trophy %C" viewBox="0 0 64 76" aria-hidden="true"><d
 
 function cupSlot(c, r, pos) {
   const key = r + ":" + pos, hid = r > 0 && CU.hide.has((r - 1) + ":" + pos), s = hid ? -1 : c.p[r][pos];   // slot (r, pos) is the winner of pair pos in the round before
-  if (s < 0) return `<div class="cs tbd" data-k="${key}"><span class="cs-ph q">?</span><span class="cs-t"><span class="cs-n">Winner</span><span class="cs-r">to be decided</span></span></div>`;
+  if (s < 0) return `<div class="cs tbd" data-k="${key}"><span class="cs-ph q">?</span><span class="cs-t"><span class="cs-n">${_t("Winner")}</span><span class="cs-r">${_t("to be decided")}</span></span></div>`;
   const sl = c.slots[s], spec = FIG[sl.f], pal = spec.palettes[sl.pal] || spec.palettes[0], ti = tierInfo(sl.r), me = s === c.mi;
   const dec = c.p[r + 1][pos >> 1], shown = !CU.hide.has(r + ":" + (pos >> 1)), done = dec >= 0 && shown;
   const out = done && dec !== s, champ = done && r === 2 && dec === s;
   const cls = ["cs", me ? "me" : "", me && !out ? "path" : "", out && !(me && c.out === r) ? "out" : "", me && out ? "fell" : "", champ ? "champ" : "", CU.pop === key ? "pop" : ""].filter(Boolean).join(" ");
   return `<div class="${cls}" data-k="${key}" style="--fc:${me ? "var(--me)" : col(pal)}"><span class="cs-ph">${PORTRAITS[sl.f] ? `<img src="${PORTRAITS[sl.f]}" alt="">` : ""}</span>` +
-    `<span class="cs-t"><span class="cs-n">${cupEsc(sl.n)}</span><span class="cs-r">${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${ti.t.name}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
+    `<span class="cs-t"><span class="cs-n">${me ? _t("You") : cupEsc(sl.n)}</span><span class="cs-r">${tierBadge(ti.i, "cs-b")}<span class="cs-tn">${qmTier(ti.t.name)}</span><span class="cs-rn">${sl.r}</span></span></span></div>`;
 }
 function cupTrophy(c) {
   const champ = c.p[3][0] >= 0 && !CU.hide.has("2:0");
@@ -146,7 +146,7 @@ function cupTrophy(c) {
 function cupGridHTML(c) {
   const colm = (cls, r, from, n) => `<div class="cc ${cls}">${Array.from({ length: n }, (_, k) => cupSlot(c, r, from + k)).join("")}</div>`;
   const lab = (t, now) => `<div class="cc-l${now ? " now" : ""}">${t}</div>`, r = cupOver(c) ? -1 : c.round;
-  return lab("Quarter-final", r === 0) + lab("Semi-final", r === 1) + lab("Final", r === 2) + lab("Semi-final", r === 1) + lab("Quarter-final", r === 0) +
+  return lab(CUP.names[0], r === 0) + lab(CUP.names[1], r === 1) + lab(CUP.names[2], r === 2) + lab(CUP.names[1], r === 1) + lab(CUP.names[0], r === 0) +
     colm("q", 0, 0, 4) + colm("s", 1, 0, 2) + `<div class="cc fin">${cupSlot(c, 2, 0)}${cupTrophy(c)}${cupSlot(c, 2, 1)}</div>` + colm("s rt", 1, 2, 2) + colm("q rt", 0, 4, 4) +
     '<svg class="cup-lines"></svg>';
 }
@@ -156,7 +156,7 @@ function cupListHTML(c) {
     for (let i = 0; i < 4 >> r; i++) h += `<div class="cl-m">${cupSlot(c, r, 2 * i)}${cupSlot(c, r, 2 * i + 1)}</div>`;
     return h;
   };
-  return sec(0, "Quarter-finals") + sec(1, "Semi-finals") + sec(2, "Final") + `<div class="cl-cup">${cupTrophy(c)}</div>`;
+  return sec(0, _t("Quarter-finals")) + sec(1, _t("Semi-finals")) + sec(2, CUP.names[2]) + `<div class="cl-cup">${cupTrophy(c)}</div>`;
 }
 // bracket lines: each pair joins into the slot its winner goes to; your own path is lit in your palette colour
 function cupLines(c) {
@@ -183,9 +183,9 @@ function cupLines(c) {
   svg.innerHTML = [...dim.map((d) => `<path d="${d}"/>`), ...lit.map((d) => `<path class="lit" d="${d}"/>`)].join("");
 }
 function cupHead(c) {
-  if (c.out >= 0) return ["Tournament · over", "Cup over"];
-  if (c.p[3][0] >= 0) return ["Tournament · over", "Champion"];
-  return [`Tournament · round ${c.round + 1} of 3`, CUP.names[c.round]];
+  if (c.out >= 0) return [_t("Tournament · over"), _t("Cup over")];
+  if (c.p[3][0] >= 0) return [_t("Tournament · over"), _t("Champion")];
+  return [_t("Tournament · round {n} of 3", { n: c.round + 1 }), CUP.names[c.round]];
 }
 function cupRender() {
   const c = P.cup;
@@ -203,7 +203,7 @@ function cupFootRender() {
   const btn = (id, label, cls) => `<button class="btn${cls ? " " + cls : ""}" id="${id}"><span>${label}</span></button>`;   // cls: "primary" (gold) or "ember"
   card.className = "cf";
   if (CU.confirm) {
-    card.innerHTML = `<div class="cf-t"><b>Leave the cup?</b><small>It ends here. Chips you already won stay.</small></div><div class="cf-acts">${btn("cfKeep", "Keep playing")}${btn("cfLeave", "Leave", "ember")}</div>`;
+    card.innerHTML = `<div class="cf-t"><b>${_t("Leave the cup?")}</b><small>${_t("It ends here. Chips you already won stay.")}</small></div><div class="cf-acts">${btn("cfKeep", _t("Keep playing"))}${btn("cfLeave", _t("Leave"), "ember")}</div>`;
     $("cfKeep").addEventListener("click", () => { Sfx.ui(); CU.confirm = false; cupFootRender(); cupFootIn(); });
     $("cfLeave").addEventListener("click", () => { Sfx.uiBack(); cupLeave(); });
     return;
@@ -212,13 +212,14 @@ function cupFootRender() {
     const won = c.p[3][0] === c.mi, champ = c.slots[c.p[3][0]];
     if (won) {
       card.classList.add("win");
-      card.innerHTML = `<div class="cf-t"><b>Champion!</b><small><span class="cf-chips"><span class="tokglyph"></span>+<span id="cupChipsN">0</span></span> chips from this cup${c.flawless ? " · flawless, no life lost" : ""}</small></div>` +
-        `<div class="cf-acts">${btn("cfAgain", "Run it back", "primary")}${btn("cfMenu", "Menu")}</div>`;
+      card.innerHTML = `<div class="cf-t"><b>${_t("Champion!")}</b><small>${_t("{chips} chips from this cup", { chips: '<span class="cf-chips"><span class="tokglyph"></span>+<span id="cupChipsN">0</span></span>' })}${c.flawless ? ` · ${_t("flawless, no life lost")}` : ""}</small></div>` +
+        `<div class="cf-acts">${btn("cfAgain", _t("Run it back"), "primary")}${btn("cfMenu", _t("Menu"))}</div>`;
     } else {
       const by = c.slots[c.by];
       card.classList.add("lose");
-      card.innerHTML = `<div class="cf-t"><b>Out in the ${CUP.names[c.out].toLowerCase()}</b><small>${c.fold ? `You left the match. ${cupEsc(by.n)} goes through.` : `${cupEsc(by.n)} (${FIG[by.f].name}) beat you.`} ${cupEsc(champ.n)} won the cup. ${c.earned ? `+${c.earned} chips from this cup.` : "No chips this time."}</small></div>` +
-        `<div class="cf-acts">${btn("cfAgain", "Run it back", "primary")}${btn("cfMenu", "Menu")}</div>`;
+      const outIn = [_t("Out in the quarter-final"), _t("Out in the semi-final"), _t("Out in the final")][c.out];   // one text per round: a translated name can't be lower-cased into a sentence
+      card.innerHTML = `<div class="cf-t"><b>${outIn}</b><small>${c.fold ? _t("You left the match. {name} goes through.", { name: cupEsc(by.n) }) : _t("{name} ({fighter}) beat you.", { name: cupEsc(by.n), fighter: FIG[by.f].name })} ${_t("{name} won the cup.", { name: cupEsc(champ.n) })} ${c.earned ? _t("+{n} chips from this cup.", { n: c.earned }) : _t("No chips this time.")}</small></div>` +
+        `<div class="cf-acts">${btn("cfAgain", _t("Run it back"), "primary")}${btn("cfMenu", _t("Menu"))}</div>`;
     }
     $("cfAgain").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); cupBegin(c.fid); });
     $("cfMenu").addEventListener("click", () => { Sfx.init(); Sfx.uiBack(); cupLeave(); });
@@ -226,8 +227,8 @@ function cupFootRender() {
   }
   const oi = cupOppOf(c), os = c.slots[oi], spec = FIG[os.f], pal = spec.palettes[os.pal] || spec.palettes[0], ti = tierInfo(os.r);
   card.innerHTML = `<span class="cs-ph" style="--fc:${col(pal)}">${PORTRAITS[os.f] ? `<img src="${PORTRAITS[os.f]}" alt="">` : ""}</span>` +
-    `<div class="cf-t"><span class="kicker">${CUP.names[c.round]} · ${CUP.lives[c.round]} lives</span><b>${spec.name} “${cupEsc(os.n)}”</b><small>${CU.note ? cupEsc(CU.note) : `${ti.t.name} ${os.r}`}</small></div>` +
-    `<div class="cf-acts">${btn("cupGo", "Fight", "primary")}</div>`;
+    `<div class="cf-t"><span class="kicker">${_t("{round} · {n} life|{round} · {n} lives", { round: CUP.names[c.round], n: CUP.lives[c.round] })}</span><b>${spec.name} “${cupEsc(os.n)}”</b><small>${CU.note ? cupEsc(CU.note) : _t("{tier} {r}", { tier: qmTier(ti.t.name), r: os.r })}</small></div>` +
+    `<div class="cf-acts">${btn("cupGo", _t("Fight"), "primary")}</div>`;
   $("cupGo").addEventListener("click", () => { Sfx.init(); Sfx.uiGo(); goFull(); cupFight(); });
 }
 function cupFootIn() { const f = $("cupFoot"); f.classList.remove("in"); void f.offsetWidth; f.classList.add("in"); }

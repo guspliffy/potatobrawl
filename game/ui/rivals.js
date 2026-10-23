@@ -9,7 +9,7 @@
    A boss beaten with a friend in Play friends (co-op, refereed the same way) is one more on their entry's b, bosses beaten together
    (qm-bo), never their W/L: on the boss win's results and on their row in the Rivals list.
    Fable's design: rival-stakes/fable-design.md. Styles: css/97-rivals.css. */
-const RV_TAGS = { rival: ["gold", "Rival"], nemesis: ["red", "Nemesis"], wanted: ["ember", "Wanted"] };
+const RV_TAGS = { rival: ["gold", _t("Rival")], nemesis: ["red", _t("Nemesis")], wanted: ["ember", _t("Wanted")] };
 const RV = { id: "", opp: "", rec: null, g: 0, shownT: 0, pf: null, fr: null, bo: null, bf: null };   // this Quick match, the opponent's id, your record against them (null: not kept) and the game it counts up to; pf: a Play friends game's record (qm-cs pf), fr: its results; bo / bf: the same for a boss beaten together (qm-bo)
 const rvN = (e) => e.w + e.l + e.d;
 function rvBounty(ws) { return ws < 3 ? 0 : Math.min(100, 30 + (ws - 3) * 10); }   // quick.js bounty(); a declaration: qmLoad (ui/quick.js) runs before this part
@@ -21,12 +21,12 @@ function rvClean(x) {
     t: Number.isFinite(x.t) ? x.t : 0, k: typeof x.k === "string" ? x.k.replace(/[^WLD]/g, "").slice(0, 5) : "" };
 }
 const rvList = () => { const me = qmMe(); return me && Array.isArray(me.rv) ? me.rv : []; };
-const rvBos = (n) => `${n} ${n === 1 ? "boss" : "bosses"}`;
+const rvBos = (n) => _t("{n} boss|{n} bosses", { n });
 // "You lead 3–1", "Mash Master leads 3–1", "Tied 2–2" (draws after a dot), and its colour
 function rvWords(e, name) {
-  if (!e || !rvN(e)) return { t: "First meeting", c: "" };
-  const d = e.d ? ` · ${e.d} draw${e.d > 1 ? "s" : ""}` : "";
-  return e.w > e.l ? { t: `You lead ${e.w}–${e.l}${d}`, c: "up" } : e.w < e.l ? { t: `${name} leads ${e.l}–${e.w}${d}`, c: "down" } : { t: `Tied ${e.w}–${e.l}${d}`, c: "" };
+  if (!e || !rvN(e)) return { t: _t("First meeting"), c: "" };
+  const d = e.d ? ` · ${_t("{n} draw|{n} draws", { n: e.d })}` : "";
+  return e.w > e.l ? { t: `${_t("You lead {score}", { score: `${e.w}–${e.l}` })}${d}`, c: "up" } : e.w < e.l ? { t: `${_t("{name} leads {score}", { name, score: `${e.l}–${e.w}` })}${d}`, c: "down" } : { t: `${_t("Tied {score}", { score: `${e.w}–${e.l}` })}${d}`, c: "" };
 }
 // one tag a rival can wear: NEMESIS (leads you by 3 or more after 4+ games), else RIVAL (your most played, 5+ games)
 function rvTag(e, list) {
@@ -53,13 +53,13 @@ const rvOppBty = (m) => (m.ranked && Number.isInteger(m.opp.bty) && m.opp.bty > 
 function rvFoundLine(vs, m) {
   const b = rvOppBty(m);
   if (!b) return;
-  const w = acMk("span", "qf-want"); w.append("Wanted ", rvCg(), String(b)); vs.append(w);
+  const w = acMk("span", "qf-want"); w.append(`${_t("Wanted")} `, rvCg(), String(b)); vs.append(w);
 }
 // the VS screen: the record under the VS sticker, the tag on their nameplate, a wanted plate under each streaker's tier
 function rvVs(m) {
   const o = m.opp, pill = $("vsRiv"), tg = $("vsTagR"), bty = rvOppBty(m), mine = m.ranked && m.you && Number.isInteger(m.you.bty) && m.you.bty > 0 ? m.you.bty : 0;
   pill.hidden = !RV.rec;
-  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = (m.sk ? "Rematch · " : "") + w.t; pill.className = "vs-riv " + w.c; }   // m.sk: a rematch for chips (ui/stakes.js)
+  if (RV.rec) { const w = rvWords(RV.rec, o.name); pill.textContent = (m.sk ? `${_t("Rematch")} · ` : "") + w.t; pill.className = "vs-riv " + w.c; }   // m.sk: a rematch for chips (ui/stakes.js)
   const tag = bty ? "wanted" : RV.rec ? rvTag(rvList().find((x) => x.id === RV.opp) || RV.rec, rvList()) : "";
   tg.hidden = !tag;
   if (tag) { tg.className = `tag st ${RV_TAGS[tag][0]}`; tg.textContent = RV_TAGS[tag][1]; }
@@ -70,7 +70,7 @@ function rvWant(el, n, ws) {
   el.hidden = !n; el.textContent = "";
   if (!n) return;
   const b = acMk("span", "bty"); b.append(rvCg(), String(n));
-  el.append(acMk("i", "tag ember st", "Wanted"), acMk("b", "", `${ws | 0} win streak`), b);
+  el.append(acMk("i", "tag ember st", _t("Wanted")), acMk("b", "", _t("{n} win streak", { n: ws | 0 })), b);
 }
 
 /* ----- the server's results: the record (qm-res, qm-cs), the streak, the bounty ----- */
@@ -111,7 +111,7 @@ const rvBl = (v) => (v && v.bl && Number.isInteger(v.bl.n) && Number.isInteger(v
 // qmFinish: a verdict already here pays its bounty line on the chips tile (shown only: the chips themselves come with the sync)
 function rvFinishLines(R, q) {
   const v = QM.res && QM.res.id === q.id ? QM.res : null, bh = rvBh(v);
-  if (bh && bh.n > 0) { R.lines.push(["Bounty", bh.n]); R.total += bh.n; R.bty = bh.n; }
+  if (bh && bh.n > 0) { R.lines.push([_t("Bounty"), bh.n]); R.total += bh.n; R.bty = bh.n; }
 }
 // qmResults: the story line's second sentence and the rival strip
 function rvResults(R) {
@@ -132,13 +132,13 @@ function rvStrip(R) { rvShow(rvNow(R), R.qm.opp ? R.qm.opp.name : NET.oppName ||
 function rvFriendRes(R) { RV.fr = R; rvFriend(); }
 function rvFriend() {
   const p = RV.pf, R = RV.fr;
-  if (mode === "result" && R && p && p.e && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || "Your friend", R.op.spec.id);
+  if (mode === "result" && R && p && p.e && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || _t("Your friend"), R.op.spec.id);
 }
 // a boss beaten together (ui/online.js finishBossOnline): the server's count once it has counted the fight on screen
 function rvBossRes(R) { RV.bf = R; rvBossShow(); }
 function rvBossShow() {
   const p = RV.bo, R = RV.bf;
-  if (mode === "result" && R && p && p.e && p.e.b && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || "Your friend", R.boss.mate.spec.id, true);
+  if (mode === "result" && R && p && p.e && p.e.b && p.id === NET.mrCode && p.g === NET.matchId) rvShow(p.e, NET.oppName || _t("Your friend"), R.boss.mate.spec.id, true);
 }
 // bo: a boss beaten together, where the count of them stands in for the record
 function rvShow(e, name, fid, bo) {
@@ -146,16 +146,17 @@ function rvShow(e, name, fid, bo) {
   const old = sub.querySelector(".rv-now"); if (old) old.remove();
   el.hidden = !e;
   if (!e) return;
-  const w = bo ? { t: `${rvBos(e.b)} beaten together`, c: "bo" } : rvWords(e, name);
-  const ln = acMk("span", "rv-now"), part = bo ? ["", rvBos(e.b), " beaten together"] : w.t.split(/(\d+–\d+)/);   // the score never breaks at its dash
-  ln.append(` ${part[0]}`, acMk("span", "rv-nw", part[1] || ""), `${part[2] || ""} now.`);
+  const w = bo ? { t: _t("{b} beaten together", { b: rvBos(e.b) }), c: "bo" } : rvWords(e, name);
+  // "<score> now.": the score (the count of bosses) in the span that never breaks at its dash; the name in the line goes in escaped
+  const ln = acMk("span", "rv-now"), mark = bo ? _t('<span class="rv-nw">{b}</span> beaten together', { b: rvBos(e.b) }) : cupEsc(w.t).replace(/(\d+–\d+)/, '<span class="rv-nw">$1</span>');
+  ln.innerHTML = ` ${_t("{rec} now.", { rec: mark })}`;
   sub.appendChild(ln);
   el.textContent = "";
   const av = acMk("span", "av"); acSetAvatar(av, fid, 0);
-  const rec = bo ? `${rvBos(e.b)} together` : e.w > e.l ? `You lead ${e.w}–${e.l}` : e.w < e.l ? `Leads ${e.l}–${e.w}` : `Tied ${e.w}–${e.l}`;   // next to their name and face
+  const rec = bo ? _t("{b} together", { b: rvBos(e.b) }) : e.w > e.l ? _t("You lead {score}", { score: `${e.w}–${e.l}` }) : e.w < e.l ? _t("Leads {score}", { score: `${e.l}–${e.w}` }) : _t("Tied {score}", { score: `${e.w}–${e.l}` });   // next to their name and face
   el.append(av, acMk("span", "nm", name), acMk("i", "sep"), acMk("span", "rec " + w.c, rec));
   if (!bo) el.appendChild(rvDots(e.k));
-  el.setAttribute("aria-label", `${name}: ${w.t}. Open your rivals`);
+  el.setAttribute("aria-label", _t("{name}: {rec}. Open your rivals", { name, rec: w.t }));
   rvPlace();
 }
 // the strip sits under the story line; upright, over the side column's cards (Fable's g)
@@ -175,16 +176,16 @@ function rvVerdict(late) {
   const v = QM.res, R = QM.shown;
   if (!v || !R || !R.qm || R.qm.id !== v.id || mode !== "result") return;
   rvStrip(R);
-  const bh = rvBh(v), bl = rvBl(v), who = R.qm.opp ? R.qm.opp.name : "They", sub = $("rSub");
+  const bh = rvBh(v), bl = rvBl(v), who = R.qm.opp ? R.qm.opp.name : _t("They"), sub = $("rSub");
   for (const x of sub.querySelectorAll(".rv-bt")) x.remove();
-  if (bh) sub.appendChild(acMk("span", "rv-bt", bh.n > 0 ? ` You ended their ${bh.k}-win streak.` : ` You ended their ${bh.k}-win streak (its bounty was taken today).`));
-  if (bl) sub.appendChild(acMk("span", "rv-bt", bl.n > 0 ? ` Your ${bl.k}-win streak ends; ${who} took the ${bl.n} bounty.` : ` Your ${bl.k}-win streak ends.`));
+  if (bh) sub.appendChild(acMk("span", "rv-bt", ` ${bh.n > 0 ? _t("You ended their {k}-win streak.", { k: bh.k }) : _t("You ended their {k}-win streak (its bounty was taken today).", { k: bh.k })}`));
+  if (bl) sub.appendChild(acMk("span", "rv-bt", ` ${bl.n > 0 ? _t("Your {k}-win streak ends; {name} took the {n} bounty.", { k: bl.k, name: who, n: bl.n }) : _t("Your {k}-win streak ends.", { k: bl.k })}`));
   if (!bh || bh.n <= 0) return;
   const t = $("rChipT");
-  if (!t.querySelector(".rv-bty")) t.appendChild(acMk("i", "tag ember st rv-bty", `Bounty +${bh.n}`));
+  if (!t.querySelector(".rv-bty")) t.appendChild(acMk("i", "tag ember st rv-bty", _t("Bounty +{n}", { n: bh.n })));
   if (R.bty) return;   // already on the tile (qmFinish had the verdict)
   R.bty = bh.n;
-  const from = R.total; R.total += bh.n; R.lines.push(["Bounty", bh.n]);
+  const from = R.total; R.total += bh.n; R.lines.push([_t("Bounty"), bh.n]);
   $("rStats").classList.remove("nochips"); t.hidden = false;
   const wait = late ? Math.max(0, RV.shownT + 900 - performance.now()) : 0;   // after the tile's own count
   resCount($("rChipN"), from, R.total, "", { delay: wait, dur: 500, end: () => { Sfx.uiCoin(); setTimeout(() => Sfx.uiCoin(), 110); setTimeout(() => Sfx.uiCoin(), 220); } });
@@ -202,7 +203,7 @@ tap("rRiv", () => { openAccount(); acSetTab("s"); });
 function rvPlate() {
   const me = qmMe(), b = me ? me.bty | 0 : 0;
   $("qmWant").hidden = !b; $("qmRank").classList.toggle("wanted", !!b);
-  if (b) $("qmRec").textContent = `${me.ws} win streak\nBounty ${b}`;
+  if (b) $("qmRec").textContent = `${_t("{n} win streak", { n: me.ws })}\n${_t("Bounty {n}", { n: b })}`;
   return b;
 }
 
@@ -210,27 +211,27 @@ function rvPlate() {
 function rvStats(pan) {
   if (!qmOn()) return;
   const list = rvList().slice().sort((a, b) => rvN(b) - rvN(a) || b.t - a.t), me = qmMe();
-  const head = acMk("div", "rv-head"); head.appendChild(acMk("span", "kicker", "Rivals · last 30 opponents"));
+  const head = acMk("div", "rv-head"); head.appendChild(acMk("span", "kicker", _t("Rivals · last 30 opponents")));
   if (list.length) {
     const lead = list.filter((e) => e.w > e.l).length, n = me && Number.isInteger(me.g) ? me.g : list.reduce((a, e) => a + rvN(e), 0);
-    head.appendChild(acMk("span", "", `${list.length} ${list.length === 1 ? "rival" : "rivals"} · you lead ${lead} · ${n} online ${n === 1 ? "match" : "matches"}`));
+    head.appendChild(acMk("span", "", `${_t("{n} rival|{n} rivals", { n: list.length })} · ${_t("you lead {n}", { n: lead })} · ${_t("{n} online match|{n} online matches", { n })}`));
   }
   pan.appendChild(head);
   stkStats(pan);   // ui/stakes.js: the chip stakes line
-  if (!list.length) { pan.appendChild(acMk("p", "ac-line", "Play Quick match or Play friends: everyone you meet online shows here with your record against them.")); return; }
+  if (!list.length) { pan.appendChild(acMk("p", "ac-line", _t("Play Quick match or Play friends: everyone you meet online shows here with your record against them."))); return; }
   const ul = acMk("ul", "rv-list");
   for (const e of list) {
     const li = acMk("li", "rv-row"), av = acMk("span", "av"), who = acMk("div", "who"), nb = acMk("b"), tag = rvTag(e, list), ti = tierInfo(e.r || 1000);
     acSetAvatar(av, e.f || "samurai", 0);
     nb.appendChild(acMk("span", "nm", e.nm));
     if (tag) nb.appendChild(rvTagEl(tag));
-    const sub = acMk("span"); sub.append(`${FIG[e.f] ? FIG[e.f].name : "Potato"} · `, acMk("i", "", `${ti.t.name} ${e.r || 1000}`));
+    const sub = acMk("span"); sub.append(`${FIG[e.f] ? FIG[e.f].name : "Potato"} · `, acMk("i", "", _t("{tier} {r}", { tier: qmTier(ti.t.name), r: e.r || 1000 })));
     li.style.setProperty("--tc", ti.t.col);
     // a friend you only beat bosses with: Co-op where the games would be, no record
-    const n = rvN(e), games = n ? `${n} ${n === 1 ? "game" : "games"}` : "Co-op";
+    const n = rvN(e), games = n ? _t("{n} game|{n} games", { n }) : _t("Co-op");
     const s2 = acMk("span", "sub2"); s2.append(...(n ? [rvDots(e.k)] : []), games);
     who.append(nb, sub, s2);
-    if (e.b) who.appendChild(acMk("span", "rv-bo", `${rvBos(e.b)} beaten together`));
+    if (e.b) who.appendChild(acMk("span", "rv-bo", _t("{b} beaten together", { b: rvBos(e.b) })));
     const last = acMk("span", "last", games); last.appendChild(acMk("small", "", e.t ? acAgo(e.t) : ""));
     li.append(av, who, rvDots(e.k), acMk("span", "rec " + (e.w > e.l ? "up" : e.w < e.l ? "down" : ""), n ? `${e.w}–${e.l}` : ""), last);
     ul.appendChild(li);

@@ -65,8 +65,11 @@ const qmClock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padSt
 const qmWaited = () => Math.max(0, (Date.now() - QM.t0) / 1000);
 // the server's Elo, for the Forfeit line (K 48 for the first 10, then 32; placement can't drop you below Bronze)
 function qmElo(r, or, res, n) { const K = n < 10 ? 48 : 32, d = Math.round(K * (res - 1 / (1 + Math.pow(10, (or - r) / 400)))); return Math.max(n < QM_PLACING ? QM_FLOOR : 0, r + d) - r; }
+// the tier names as a player reads them (base.js TIERS keeps the English name, which the code compares and sends as it is)
+const QM_TIER_W = { Tin: _t("Tin"), Bronze: _t("Bronze"), Silver: _t("Silver"), Gold: _t("Gold"), Platinum: _t("Platinum"), Diamond: _t("Diamond"), Blastmaster: _t("Blastmaster") };
+const qmTier = (name) => QM_TIER_W[name] || name;
 // a tier plate's words: "Silver 1138", "Placing 2/5", or "Unranked" for a Casual player without an account
-function qmTierWords(r, placing, unranked) { return unranked ? "Unranked" : placing ? `Placing ${placing.n}/${QM_PLACING}` : `${tierInfo(r).t.name} ${r}`; }
+function qmTierWords(r, placing, unranked) { return unranked ? _t("Unranked") : placing ? _t("Placing {n}/{m}", { n: placing.n, m: QM_PLACING }) : _t("{tier} {r}", { tier: qmTier(tierInfo(r).t.name), r }); }
 
 /* ----- the connection: sign in with the sync code, the server's messages ----- */
 function qmBoot() {   // loop.js, before the first menu
@@ -103,7 +106,7 @@ function qmMsg(m) {
   if (m.t === "me") qmGotMe(m);
   else if (m.t === "qm-wait") { if (qmSearching()) { QM.wait = m; qmUi(); } }
   else if (m.t === "qm-no") qmRefused(m.why);
-  else if (m.t === "qm-x") { if (qmSearching()) qmCancel("You're searching on another page or phone."); }
+  else if (m.t === "qm-x") { if (qmSearching()) qmCancel(_t("You're searching on another page or phone.")); }
   else if (m.t === "qm-found") qmFound(m);
   else if (m.t === "qm-off") qmOff(m);
   else if (m.t === "qm-res") { qmRes(m); stkGot(m, 1); }   // ui/stakes.js: who can play a rematch for chips now
@@ -134,7 +137,7 @@ function qmRefused(why) {
     setTimeout(qmSend, 400); return;
   }
   if (why === "old") QM.no = "old";
-  if (qmSearching()) qmCancel(why === "old" ? "" : "Couldn't search. Try again.");
+  if (qmSearching()) qmCancel(why === "old" ? "" : _t("Couldn't search. Try again."));
   qmRefresh();
 }
 // the menu, the plate and this screen follow every change
@@ -165,15 +168,15 @@ async function qmMakeAcct() {   // the silent account: the existing sync-code ac
 async function qmFind() {
   if (!qmOn() || QM.st !== "idle") return;
   if (QM.no === "old") { location.reload(); return; }
-  if (!QM.conn || !NET.room) { QM.note = "Connecting to the server…"; qmRender(); return; }
-  if (tcPlaying()) { QM.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
+  if (!QM.conn || !NET.room) { QM.note = _t("Connecting to the server…"); qmRender(); return; }
+  if (tcPlaying()) { QM.note = _t("You're in a cup: your next match is called soon."); qmRender(); return; }   // ui/tourney.js
   QM.st = "search"; QM.t0 = Date.now(); QM.wait = null; QM.note = ""; QM.sentF = "";
   lobbyPresence(); qmRender();
   // the silent account, for Casual too (the referee keeps your rival record); Casual searches on without one
   if (!ACCT.code && (qmMode() === "r" || !qmAcctOff())) {
     const ok = await qmMakeAcct();
     if (!qmSearching()) return;   // cancelled meanwhile
-    if (!ok && qmMode() === "r") { qmCancel(qmAcctOff() ? "Ranked opens soon. Casual works now." : "Couldn't reach the server. Try again."); return; }
+    if (!ok && qmMode() === "r") { qmCancel(qmAcctOff() ? _t("Ranked opens soon. Casual works now.") : _t("Couldn't reach the server. Try again.")); return; }
   }
   qmSend();
 }
@@ -191,7 +194,7 @@ function qmAcctAnswer(m) {
 function qmSend() {
   if (!qmSearching() || QM.hidden || !QM.conn) return;
   if (ACCT.code && !QM.authed && !QM.acct) { qmAuth(); return; }   // signed in first: the server pairs by your rank (it searches on `me`)
-  if (qmMode() === "r" && !QM.authed) { qmCancel(QM.acct === "unknown" ? "This phone's account isn't on the server. Check Account." : "Ranked opens soon. Casual works now."); return; }
+  if (qmMode() === "r" && !QM.authed) { qmCancel(QM.acct === "unknown" ? _t("This phone's account isn't on the server. Check Account.") : _t("Ranked opens soon. Casual works now.")); return; }
   const w = Math.min(60, Math.round(qmWaited()));
   QM.sentF = sel.fighter;
   window.__blQuick.send({ t: "qm", v: PROTO, mode: qmMode(), f: sel.fighter, pi: palIdx(sel.fighter), w });
@@ -262,10 +265,10 @@ function qmFoundBanner(m) {
   modal("pause", false); modal("help", false); modal("settings", false);
   const o = m.opp, el = $("qmFound"), vs = $("qfVs");
   vs.textContent = "";
-  vs.append(`vs ${o.name} `);
+  vs.append(`${_t("vs {name}", { name: o.name })} `);
   const em = document.createElement("i"); em.className = "qf-em"; em.innerHTML = tierEmblem(tierIdx(o.r)); vs.append(em);
   const t = document.createElement("span"); t.textContent = qmTierWords(o.r, o.pl >= 0 ? { n: o.pl } : null, !o.id); vs.append(t);
-  const st = document.createElement("span"); st.className = "tag st " + (m.ranked ? "gold" : "sky"); st.textContent = m.ranked ? "Ranked" : "Casual"; vs.append(st);
+  const st = document.createElement("span"); st.className = "tag st " + (m.ranked ? "gold" : "sky"); st.textContent = m.ranked ? _t("Ranked") : _t("Casual"); vs.append(st);
   rvFoundLine(vs, m);   // ui/rivals.js: · WANTED 40
   $("qfN").textContent = "3";
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
@@ -304,11 +307,11 @@ function qmVs(m) {
   const my = me || QM_FRESH;
   side("L", NET.myName || acctName(), m.f[mine], m.p[mine], my.r, me && my.n < QM_PLACING ? { n: my.n } : null, !me);
   side("R", o.name, m.f[1 - mine], m.p[1 - mine], Number.isInteger(o.r) ? o.r : 1000, o.pl >= 0 ? { n: o.pl } : null, !o.id);
-  $("vsMode").textContent = m.sk ? "Rematch · for chips" : m.ranked ? "Ranked" : "Casual";
+  $("vsMode").textContent = m.sk ? _t("Rematch · for chips") : m.ranked ? _t("Ranked") : _t("Casual");
   $("vsStamp").className = "vs-st " + (m.sk ? "sk" : m.ranked ? "rk" : "cs");
   $("vsFb").hidden = !m.fb; $("vsWhy").hidden = m.ranked;
   stkVs(m);   // ui/stakes.js: the pot
-  $("vsPing").textContent = `measuring… · ${mapName(m.seed % BL.POOL)}`;
+  $("vsPing").textContent = _t("measuring… · {map}", { map: mapName(m.seed % BL.POOL) });
   rvVs(m);   // ui/rivals.js: the record, the tags, the wanted plates
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   QM.vsT = performance.now(); QM.vsN++;
@@ -342,7 +345,7 @@ function qmOff(m) {
   if (stkOff(m)) { QM.found = null; QM.st = "idle"; quickOpen(); lobbyPresence(); return; }   // ui/stakes.js: a staked match never searched
   QM.found = null; QM.pend = null; QM.st = "search"; QM.wait = null;
   if (banner && mode === "match" && match && match.warm) { paused = false; QM.note = ""; }   // the CPU fight goes on
-  else { if (mode !== "quick") quickOpen(); QM.note = "The other player didn't connect. Searching again."; }
+  else { if (mode !== "quick") quickOpen(); QM.note = _t("The other player didn't connect. Searching again."); }
   qmSend(); lobbyPresence(); qmRender();
 }
 
@@ -352,16 +355,16 @@ function qmFinish(left, lost) {
   const q = match.qm, me = G.fighters[meSlot], op = G.fighters[1 - meSlot], over = !left && !lost;
   const res = left ? 1 : lost ? 0.5 : G.winner === meSlot ? 1 : G.winner === 1 - meSlot ? 0 : 0.5;
   const R = { res, online: true, qm: q, left: !!left, lost: !!lost, me, op, lines: [], total: 0 };
-  const kos = (each) => { if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * each]); };
+  const kos = (each) => { if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * each]); };
   if (q.ranked && (over || left)) {
     if (res === 1) {
-      R.lines.push([left ? "Win · they left" : "Win", 20]); kos(5);
+      R.lines.push([left ? _t("Win · they left") : _t("Win"), 20]); kos(5);
       const k = (QM.pend && QM.pend.id === q.id ? QM.pend.k0 : QM.streak) + 1, sb = over ? Math.min(20, (k - 1) * 5) : 0;
-      if (sb > 0) R.lines.push([`${k} win streak`, sb]);
-    } else if (res === 0.5) { R.lines.push(["Draw", 10]); kos(3); }
-    else { R.lines.push(["Match played", 6]); kos(2); }
+      if (sb > 0) R.lines.push([_t("{k} win streak", { k }), sb]);
+    } else if (res === 0.5) { R.lines.push([_t("Draw"), 10]); kos(3); }
+    else { R.lines.push([_t("Match played"), 6]); kos(2); }
   } else if (!q.ranked && over) {   // Casual, and a staked match too: its pot shows only in the pot card (ui/stakes.js)
-    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]); kos(2);
+    R.lines.push(res === 1 ? [_t("Win"), 15] : res === 0.5 ? [_t("Draw"), 8] : [_t("Match played"), 5]); kos(2);
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
@@ -377,7 +380,7 @@ function qmFinish(left, lost) {
 function qmForfeit() {
   const q = match.qm;
   leaveMatchRoom(); NET.phase = "idle"; QM.st = "idle";
-  if (!q.ranked && !q.sk && !q.tm) { resetNet(); QM.note = "You left the match."; quickOpen(); lobbyPresence(); return; }   // tm: a cup match counts as a loss
+  if (!q.ranked && !q.sk && !q.tm) { resetNet(); QM.note = _t("You left the match."); quickOpen(); lobbyPresence(); return; }   // tm: a cup match counts as a loss
   if (QM.pend && QM.pend.id === q.id) QM.pend.over = true;
   showResults({ res: 0, online: true, qm: q, forfeit: true, me: G.fighters[meSlot], op: G.fighters[1 - meSlot], lines: [], total: 0 });
   lobbyPresence();
@@ -392,28 +395,28 @@ function qmResults(R) {
   if (R.warm && R.tcw) { tcWarmResults(); return; }   // ui/tourney.js: the cup lobby's warm-up
   if (R.warm) {
     const k = $("rMode"); k.textContent = "";
-    const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
-    k.append(t, "Warm-up");
-    $("rAgain").querySelector("span").textContent = "Another CPU fight";
-    $("rChange").querySelector("span").textContent = qmSearching() ? "Back to search" : "Quick match";
-    mn.textContent = qmSearching() ? "stops searching" : "";
+    const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = _t("CPU");
+    k.append(t, _t("Warm-up"));
+    $("rAgain").querySelector("span").textContent = _t("Another CPU fight");
+    $("rChange").querySelector("span").textContent = qmSearching() ? _t("Back to search") : _t("Quick match");
+    mn.textContent = qmSearching() ? _t("stops searching") : "";
     qmResCard();
     return;
   }
   const q = R.qm;
   if (q.tm) { rvResults(R); tcResults(R); return; }   // ui/tourney.js: a cup match (ui/rivals.js: the record against them)
-  $("rMode").textContent = q.sk ? `Rematch for chips · ${q.sk} each` : `Quick match · ${q.ranked ? "Ranked" : "Casual"}${q.fb ? " · no Ranked player found" : ""}`;
+  $("rMode").textContent = q.sk ? _t("Rematch for chips · {n} each", { n: q.sk }) : `${_t("Quick match")} · ${q.ranked ? _t("Ranked") : _t("Casual")}${q.fb ? ` · ${_t("no Ranked player found")}` : ""}`;
   rvResults(R);   // ui/rivals.js: the record now, the rival strip
   if (q.ranked || q.sk) {
-    $("rAgain").querySelector("span").textContent = "Next match"; $("rAgain").disabled = false;
-    $("rChange").querySelector("span").textContent = "Quick match";
-    if (R.lost) { resTitle("Connection lost"); resLine($("rSub"), [`The connection dropped. The server decides this ${q.sk ? "pot" : "match"}.`]); }
-    if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "No chips for a match you left." : "No chips for an unfinished match.");
+    $("rAgain").querySelector("span").textContent = _t("Next match"); $("rAgain").disabled = false;
+    $("rChange").querySelector("span").textContent = _t("Quick match");
+    if (R.lost) { resTitle(_t("Connection lost")); resLine($("rSub"), [q.sk ? _t("The connection dropped. The server decides this pot.") : _t("The connection dropped. The server decides this match.")]); }
+    if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? _t("No chips for a match you left.") : _t("No chips for an unfinished match."));
     if (q.sk) stkResults(R);   // ui/stakes.js: the pot card in the rank card's place
     else { qmRankCard(); if (QM.res && QM.res.id === q.id) qmVerdictView(false); }
   } else {
-    $("rChange").querySelector("span").textContent = "Next match";
-    if (!R.lines.length) $("rWhy").textContent = masteryWhy("No chips for an unfinished match. Casual doesn't change your rank.");
+    $("rChange").querySelector("span").textContent = _t("Next match");
+    if (!R.lines.length) $("rWhy").textContent = masteryWhy(_t("No chips for an unfinished match. Casual doesn't change your rank."));
   }
   stkButtons();   // ui/stakes.js: FOR CHIPS
 }
@@ -423,46 +426,47 @@ function qmRankCard() {
   const r0 = p ? p.r0 : me.r, n0 = p ? p.n0 : me.n, ti = tierInfo(r0), card = $("rRank");
   card.hidden = false; card.classList.add("qm-wait"); card.classList.remove("qm-zero"); card.style.setProperty("--tc", ti.t.col);
   paintBadge($("rBadge"), ti.i);
-  $("rTier").textContent = n0 < QM_PLACING ? "Placing" : ti.t.name;
+  $("rTier").textContent = n0 < QM_PLACING ? _t("Placing") : qmTier(ti.t.name);
   $("rPromo").textContent = ""; $("rPromo").classList.remove("down");
   const rt = $("rRating"), b = document.createElement("b"); b.textContent = `${r0} → …`; rt.textContent = ""; rt.append(b);
   $("rBar").style.setProperty("--p", ti.p);
   const g = $("rGain"); g.style.setProperty("--g0", ti.p); g.style.setProperty("--g1", ti.p);
-  $("rStick").className = "delta wait"; $("rDelta").textContent = "…"; $("rStick").querySelector("small").textContent = "Confirming";
+  $("rStick").className = "delta wait"; $("rDelta").textContent = "…"; $("rStick").querySelector("small").textContent = _t("Confirming");
   QM.cfT = performance.now();
 }
 // the server's verdict on the results on screen: the normal rank sequence, or the forfeit / no-result words
 function qmVerdictView(late) {
   const v = QM.res, R = QM.shown;
   if (!v || !R || !R.qm || R.qm.id !== v.id || mode !== "result") return;
-  const card = $("rRank"), st = $("rStick"), sheet = $("resSheet"), who = R.qm.opp ? R.qm.opp.name : NET.oppName || "Your opponent";
+  const card = $("rRank"), st = $("rStick"), sheet = $("resSheet"), who = R.qm.opp ? R.qm.opp.name : NET.oppName || _t("Your opponent");
   card.classList.remove("qm-wait"); QM.cfT = 0;
   const look = (k) => { sheet.classList.remove("win", "loss", "draw"); sheet.classList.add(k); };
   if (v.res === null) {
-    card.classList.add("qm-zero"); st.className = "delta zero"; $("rDelta").textContent = "±0"; st.querySelector("small").textContent = "No result";
-    const me = qmMe() || QM_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r); rt.textContent = ""; rt.append(b, " · unchanged");
-    $("rPromo").textContent = ""; resTitle("No result"); look("draw");
-    resLine($("rSub"), ["The server lost this match. Nobody's rank changes."]);
+    card.classList.add("qm-zero"); st.className = "delta zero"; $("rDelta").textContent = "±0"; st.querySelector("small").textContent = _t("No result");
+    const me = qmMe() || QM_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r); rt.textContent = ""; rt.append(b, ` · ${_t("unchanged")}`);
+    $("rPromo").textContent = ""; resTitle(_t("No result")); look("draw");
+    resLine($("rSub"), [_t("The server lost this match. Nobody's rank changes.")]);
     rvVerdict(late);
     return;
   }
   if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
   resRank({ before: v.r0, after: v.r1, delta: v.dr, tb: tierIdx(v.r0), ta: tierIdx(v.r1) });
-  st.querySelector("small").textContent = "Rating";   // was "Confirming"
-  if (v.n < QM_PLACING) { $("rTier").textContent = `Placing ${v.n} of ${QM_PLACING}`; $("rPromo").textContent = ""; }
-  else if (v.n === QM_PLACING) { $("rPromo").textContent = "Placed!"; $("rPromo").classList.remove("down"); }
+  st.querySelector("small").textContent = _t("Rating");   // was "Confirming"
+  if (v.n < QM_PLACING) { $("rTier").textContent = _t("Placing {n} of {m}", { n: v.n, m: QM_PLACING }); $("rPromo").textContent = ""; }
+  else if (v.n === QM_PLACING) { $("rPromo").textContent = _t("Placed!"); $("rPromo").classList.remove("down"); }
   if (v.why !== "game") {
-    st.querySelector("small").textContent = "Rating · forfeit";
+    st.querySelector("small").textContent = _t("Rating · forfeit");
     if (v.res === 1) {
-      resTitle("Opponent left"); look("win");
-      resLine($("rSub"), v.why === "start" ? [{ b: who }, "'s game didn't match the server's. It counts as your win."] : [{ b: who }, v.why === "quiet" ? " stopped playing. It counts as your win." : " left. It counts as your win."]);
+      resTitle(_t("Opponent left")); look("win");
+      const wv = { who: cupEsc(who) };   // the name goes into the markup escaped, as the text node it was
+      $("rSub").innerHTML = v.why === "start" ? _t("<b>{who}</b>'s game didn't match the server's. It counts as your win.", wv) : v.why === "quiet" ? _t("<b>{who}</b> stopped playing. It counts as your win.", wv) : _t("<b>{who}</b> left. It counts as your win.", wv);
     } else {
-      resTitle(R.forfeit ? "Forfeit" : "Disconnected"); look("loss");
-      resLine($("rSub"), [R.forfeit ? "You left the match. " : "Your connection dropped. ", "In Ranked that counts as a loss."]);
+      resTitle(R.forfeit ? _t("Forfeit") : _t("Disconnected")); look("loss");
+      resLine($("rSub"), [R.forfeit ? _t("You left the match.") : _t("Your connection dropped."), " ", _t("In Ranked that counts as a loss.")]);
     }
   } else if (v.res !== R.res) {   // the server's copy decides (this phone lost the connection near the end)
-    resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
-    resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
+    resTitle(v.res === 1 ? _t("Victory") : v.res === 0 ? _t("Defeat") : _t("Draw")); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
+    resLine($("rSub"), [v.res === 1 ? _t("The server's result: you won.") : v.res === 0 ? _t("The server's result: you lost.") : _t("The server's result: a draw.")]);
   }
   rvVerdict(late);   // ui/rivals.js, after the story line: the record as the server has it, a bounty taken or lost
 }
@@ -496,7 +500,7 @@ function qmRes(m) {
     $("qmVs").hidden = true; $("qmFound").hidden = true; QM.vsT = 0; QM.fdT = 0;
     if (NET.mr) leaveMatchRoom();
     resetNet(); NET.phase = "idle"; QM.st = "idle";
-    QM.note = m.res === 1 ? `${f.opp.name}'s game didn't match the server's. It counts as your win (+${m.dr}).` : m.res === null ? "That match was called off. Nobody's rank changed." : "Your game didn't match the server's. Reload the page.";
+    QM.note = m.res === 1 ? _t("{name}'s game didn't match the server's. It counts as your win (+{dr}).", { name: f.opp.name, dr: m.dr }) : m.res === null ? _t("That match was called off. Nobody's rank changed.") : _t("Your game didn't match the server's. Reload the page.");
     quickOpen();
   }
 }
@@ -519,7 +523,7 @@ function qmWarmStart() {
   const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
   const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));   // never below Normal (Fable's review)
   G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
-  match = { warm: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
+  match = { warm: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: _t("Warm-up"), cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
   qmStripShow(true);
@@ -529,12 +533,12 @@ function qmWarmEnd(forfeit) {
   const me = G.fighters[0], op = G.fighters[1], res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, warm: true, tcw: !!match.tcw, me, op, lines: [], total: 0 };   // tcw: the cup lobby's warm-up (ui/tourney.js)
   if (!forfeit) {
-    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
-    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    R.lines.push(res === 1 ? [_t("Win"), 15] : res === 0.5 ? [_t("Draw"), 8] : [_t("Match played"), 5]);
+    if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 2]);
     R.total = R.lines.reduce((a, l) => a + l[1], 0);
     P.tokens += R.total; saveProfile();
   }
-  R.why = R.lines.length ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") + " · a warm-up never changes your rank" : "No chips for a fight you left.";
+  R.why = R.lines.length ? R.lines.map(([n, v]) => `${n} +${v}`).join(" · ") + ` · ${_t("a warm-up never changes your rank")}` : _t("No chips for a fight you left.");
   qmStripShow(false);
   showResults(R);
 }
@@ -560,16 +564,16 @@ function qmPauseText() {
   const quit = $("pQuit").querySelector("span"), note = $("pNote");
   if (match.vc) { vcPauseText(); return; }   // ui/vscpu.js
   if (match.tcw || (match.qm && match.qm.tm)) { tcPauseText(); return; }   // ui/tourney.js
-  if (match.warm) { quit.textContent = "Back to search"; note.textContent = qmSearching() ? "The search goes on." : ""; return; }
+  if (match.warm) { quit.textContent = _t("Back to search"); note.textContent = qmSearching() ? _t("The search goes on.") : ""; return; }
   if (match.qm && match.qm.sk) {   // a staked match: no result in its first 30 s, then leaving costs the stake
-    quit.textContent = "Forfeit";
-    note.textContent = NET.frame < STK_EARLY ? "Leaving in the first 30 seconds is no result: nobody's chips move." : `Online matches keep running while this is open. Leaving counts as a loss · −${match.qm.sk} chips`;
+    quit.textContent = _t("Forfeit");
+    note.textContent = NET.frame < STK_EARLY ? _t("Leaving in the first 30 seconds is no result: nobody's chips move.") : _t("Online matches keep running while this is open. Leaving counts as a loss · −{n} chips", { n: match.qm.sk });
     return;
   }
   if (!match.qm || !match.qm.ranked) return;
   const me = qmMe() || QM_FRESH, o = match.qm.opp, dr = qmElo(me.r, o && Number.isInteger(o.r) ? o.r : 1000, 0, me.n);
-  quit.textContent = "Forfeit";
-  note.textContent = `Online matches keep running while this is open. Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
+  quit.textContent = _t("Forfeit");
+  note.textContent = _t("Online matches keep running while this is open. Leaving counts as a loss · {d}", { d: dr === 0 ? "−0" : String(dr).replace("-", "−") });
 }
 
 /* ----- the Quick match screen ----- */
@@ -600,31 +604,31 @@ function qmRender() {
   if (mode !== "quick" || !qmOn()) return;
   const seq = ++QM.seq, lb = qmLobby(), md = qmMode(), searching = qmSearching(), off = qmAcctOff();
   const stt = $("qmStatus");
-  stt.textContent = QM.conn ? `Online · ${lb.n} here` : "Connecting";
+  stt.textContent = QM.conn ? _t("Online · {n} here", { n: lb.n }) : _t("Connecting");
   stt.className = "kicker qm-status" + (QM.conn ? " ok" : "");
   $("qmTokens").textContent = fmtChips(P.tokens);
   // the Fight Card
   const spec = FIG[sel.fighter], pi = palIdx(spec.id), pal = spec.palettes[pi] || spec.palettes[0], fc = $("qmFc");
   fc.style.setProperty("--c", col(pal)); fc.style.setProperty("--cg", rgba(col(pal), 0.42));
-  $("qmFName").textContent = spec.name; $("qmFSkin").textContent = pal.name; $("qmFRole").textContent = spec.role;
-  $("qmChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${pal.name}. Change fighter`);
+  $("qmFName").textContent = spec.name; $("qmFSkin").textContent = _tv(pal.name); $("qmFRole").textContent = _tv(spec.role);
+  $("qmChange").setAttribute("aria-label", _t("Your fighter: {name}, {skin}. Change fighter", { name: spec.name, skin: _tv(pal.name) }));
   $("qmMyName").textContent = NET.myName || acctName();
   plateSet($("qmMyName").parentNode, shopWorn());   // your nameplate (ui/shop.js)
   // the mode: two big segments (Ranked waits for accounts on the server)
   for (const [id, v] of [["qmR", "r"], ["qmC", "c"], ["qmV", "v"]]) { const b = $(id), on = md === v; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.disabled = searching || (v === "r" && off); }
-  $("qmRSub").textContent = off ? "opens soon" : "online rank";
+  $("qmRSub").textContent = off ? _t("opens soon") : _t("online rank");
   qmPlate();
   $("qmIdle").hidden = searching; $("qmSearch").hidden = !searching;
   const find = $("qmFind");
-  find.querySelector("span").textContent = QM.no === "old" ? "Reload" : "Find match";
+  find.querySelector("span").textContent = QM.no === "old" ? _t("Reload") : _t("Find match");
   find.disabled = QM.no !== "old" && (!QM.conn || QM.making || QM.st !== "idle");
   const truth = $("qmTruth");
   truth.className = "qm-truth" + (QM.note || QM.no ? " note" : "");
-  truth.textContent = QM.no === "old" ? "A new version of the game is out. Reload to play Quick match." : QM.note ||
-    (!QM.conn ? "Connecting to the server…" : lb.q ? `${lb.q} searching · ${lb.n} online` : "Nobody searching · you'll warm up vs a CPU");
+  truth.textContent = QM.no === "old" ? _t("A new version of the game is out. Reload to play Quick match.") : QM.note ||
+    (!QM.conn ? _t("Connecting to the server…") : lb.q ? _t("{q} searching · {n} online", { q: lb.q, n: lb.n }) : _t("Nobody searching · you'll warm up vs a CPU"));
   $("qmCpu").hidden = QM.no === "old" || !QM.conn || (searching ? qmWaited() < 5 : lb.q > 0);
   $("qmHelp").hidden = searching;
-  $("qmHelp").textContent = off ? "Ranked opens once accounts are switched on. Casual works now." : "Nobody searching? Find match anyway: you warm up vs a CPU while the queue fills.";
+  $("qmHelp").textContent = off ? _t("Ranked opens once accounts are switched on. Casual works now.") : _t("Nobody searching? Find match anyway: you warm up vs a CPU while the queue fills.");
   qmLast();
   qmUi();
   vcRender(lb);   // ui/vscpu.js: VS CPU mode (the rank, FIGHT A CPU, the CPU board in the warm-up's place)
@@ -638,11 +642,11 @@ function qmRender() {
     if (box.dataset.sig === sig) return;
     box.dataset.sig = sig; box.replaceChildren();
     const pill = (txt, cls) => { const e = document.createElement("span"); e.className = "on-pl" + (cls ? " " + cls : ""); e.textContent = txt; box.appendChild(e); };
-    if (searching) pill("You", "me q");
-    for (const p of list.slice(0, 8)) pill(p.busy ? `${p.n} · in a match` : p.n, p.q ? "q" : p.busy ? "busy" : "");
-    if (list.length > 8) pill(`+${list.length - 8} more`, "busy more");
+    if (searching) pill(_t("You"), "me q");
+    for (const p of list.slice(0, 8)) pill(p.busy ? _t("{name} · in a match", { name: p.n }) : p.n, p.q ? "q" : p.busy ? "busy" : "");
+    if (list.length > 8) pill(_t("+{n} more", { n: list.length - 8 }), "busy more");
     box.classList.toggle("empty", !list.length && !searching);
-    if (!list.length && !searching) box.textContent = "Just you right now. Players show up here when they open the game.";
+    if (!list.length && !searching) box.textContent = _t("Just you right now. Players show up here when they open the game.");
   });
 }
 // the rank plate: emblem, tier word in its colour, rating and what is left to the next tier, the bar, the record and the season
@@ -653,11 +657,11 @@ function qmPlate() {
   $("qmRank").style.setProperty("--tc", ti.t.col);
   $("qmRank").classList.toggle("placing", placing);
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
-  $("qmTier").textContent = placing ? "Placing" : ti.t.name;
-  $("qmRating")._t = placing ? [`${rk.n} of ${QM_PLACING} played · ${rk.r}`] : ti.next ? [`${rk.r} · ${ti.need} to ${ti.next.name}`, `${rk.r} · ${ti.need} to go`] : [`${rk.r} · top tier`];   // qmThin picks
+  $("qmTier").textContent = placing ? _t("Placing") : qmTier(ti.t.name);
+  $("qmRating")._t = placing ? [_t("{n} of {m} played · {r}", { n: rk.n, m: QM_PLACING, r: rk.r })] : ti.next ? [_t("{r} · {need} to {tier}", { r: rk.r, need: ti.need, tier: qmTier(ti.next.name) }), _t("{r} · {need} to go", { r: rk.r, need: ti.need })] : [_t("{r} · top tier", { r: rk.r })];   // qmThin picks
   $("qmBar").style.setProperty("--p", placing ? rk.n / QM_PLACING : ti.p);
-  $("qmRec").textContent = `${rk.w}W · ${rk.l}L\nSeason 1`;
-  const pp = $("qmPips"); pp.setAttribute("aria-label", `${rk.n} of ${QM_PLACING} placing matches played`);
+  $("qmRec").textContent = `${_t("{w}W · {l}L", { w: rk.w, l: rk.l })}\n${_t("Season 1")}`;
+  const pp = $("qmPips"); pp.setAttribute("aria-label", _t("{n} of {m} placing matches played", { n: rk.n, m: QM_PLACING }));
   [...pp.children].forEach((e, k) => e.classList.toggle("on", k < rk.n));
   rvPlate();   // ui/rivals.js: on a streak, WANTED and the bounty
   $("qmKRec").textContent = $("qmRec").textContent.replace("\n", " · ");
@@ -685,10 +689,10 @@ function qmLast() {
   const ul = $("qmLast"), h = vcMode() ? vcLast() : (qmMe() || QM_FRESH).h.slice(0, 5), sig = JSON.stringify(h);   // vcLast: your ranked CPU results
   if (ul.dataset.sig === sig) return;
   ul.dataset.sig = sig; ul.replaceChildren();
-  if (!h.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = vcMode() ? "Your ranked CPU results show here." : "Your Ranked results show here."; ul.appendChild(li); return; }
+  if (!h.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = vcMode() ? _t("Your ranked CPU results show here.") : _t("Your Ranked results show here."); ul.appendChild(li); return; }
   for (const x of h) {
     const li = document.createElement("li"), r = document.createElement("i"), nm = document.createElement("span"), d = document.createElement("b");
-    r.className = "tag st " + (x.res === 1 ? "mint" : x.res === 0 ? "red" : "grey"); r.textContent = x.res === 1 ? "W" : x.res === 0 ? "L" : "D";
+    r.className = "tag st " + (x.res === 1 ? "mint" : x.res === 0 ? "red" : "grey"); r.textContent = x.res === 1 ? _t("W@@win") : x.res === 0 ? _t("L@@loss") : _t("D@@draw");
     nm.textContent = x.o || "Potato";
     if (FIG[x.of]) { const sm = document.createElement("small"); sm.textContent = ` · ${FIG[x.of].name}`; nm.appendChild(sm); }
     d.className = x.dr > 0 ? "up" : x.dr < 0 ? "down" : ""; d.textContent = x.dr > 0 ? `+${x.dr}` : x.dr < 0 ? `−${-x.dr}` : "±0";
@@ -699,31 +703,32 @@ function qmLast() {
 function qmUi() {
   if (!qmOn()) return;
   const searching = qmSearching(), w = qmWaited(), md = qmMode(), wt = QM.wait;
-  const rng = !wt ? "" : wt.hold ? "The server is about to update. Matches start again in a moment." :
-    `${md === "r" ? (qmMe() || QM_FRESH).n < QM_PLACING ? "Placing" : tierInfo((qmMe() || QM_FRESH).r).t.name : "Casual"} ${wt.rng < 0 ? "· anyone" : `±${wt.rng}`} · ${wt.n} searching`;
-  const fb = searching && md === "r" && w >= QM_FB ? "No Ranked player yet · taking Casual too · that match won't count" : "";
+  const head = !wt ? "" : md === "r" ? (qmMe() || QM_FRESH).n < QM_PLACING ? _t("Placing") : qmTier(tierInfo((qmMe() || QM_FRESH).r).t.name) : _t("Casual");
+  const rng = !wt ? "" : wt.hold ? _t("The server is about to update. Matches start again in a moment.") :
+    wt.rng < 0 ? _t("{head} · anyone · {n} searching", { head, n: wt.n }) : _t("{head} ±{rng} · {n} searching", { head, rng: wt.rng, n: wt.n });
+  const fb = searching && md === "r" && w >= QM_FB ? _t("No Ranked player yet · taking Casual too · that match won't count") : "";
   if (mode === "quick" && searching) {
     $("qmTime").textContent = qmClock(w);
-    $("qmSKick").textContent = `Searching · ${md === "r" ? "Ranked" : "Casual"}`;
-    $("qmRange").textContent = rng || "Looking for a player…";
+    $("qmSKick").textContent = _t("Searching · {mode}", { mode: md === "r" ? _t("Ranked") : _t("Casual") });
+    $("qmRange").textContent = rng || _t("Looking for a player…");
     const f = $("qmFb"); f.textContent = fb; f.hidden = !fb;
     if ($("qmCpu").hidden && w >= 5) $("qmCpu").hidden = false;
   }
   const strip = $("qmStrip");
-  if (!strip.hidden) $("qmStripT").textContent = `Searching ${qmClock(w)}`;
+  if (!strip.hidden) $("qmStripT").textContent = _t("Searching {t}", { t: qmClock(w) });
   if (mode === "result" && match && match.warm) qmResCard(rng, fb);
   if (QM.vsT && NET.qm) {
     const ms = NET.pings.length ? [...NET.pings].sort((a, b) => a - b)[NET.pings.length >> 1] : 0;
-    $("vsPing").textContent = `${ms ? `${Math.round(ms)} ms` : NET.phase === "handshake" ? "connected" : "measuring…"} · ${mapName(NET.qm.seed % BL.POOL)}`;
+    $("vsPing").textContent = _t("{ping} · {map}", { ping: ms ? _t("{n} ms", { n: Math.round(ms) }) : NET.phase === "handshake" ? _t("connected") : _t("measuring…"), map: mapName(NET.qm.seed % BL.POOL) });
   }
-  if (QM.cfT && performance.now() - QM.cfT > 5000 && mode === "result") { QM.cfT = 0; $("rPromo").textContent = "Still confirming · your rank updates when it arrives"; }
+  if (QM.cfT && performance.now() - QM.cfT > 5000 && mode === "result") { QM.cfT = 0; $("rPromo").textContent = _t("Still confirming · your rank updates when it arrives"); }
 }
 function qmResCard(rng, fb) {   // the warm-up's results: the search goes on in the rank card's place
   const card = $("rQm"), on = qmSearching();
   card.hidden = !on;
   if (!on) return;
-  $("rQmT").textContent = `Still searching ${qmClock(qmWaited())}`;
-  $("rQmL").textContent = [qmMode() === "r" ? "Ranked" : "Casual", rng || "", fb ? "taking Casual too, that match won't count" : ""].filter(Boolean).join(" · ");
+  $("rQmT").textContent = _t("Still searching {t}", { t: qmClock(qmWaited()) });
+  $("rQmL").textContent = [qmMode() === "r" ? _t("Ranked") : _t("Casual"), rng || "", fb ? _t("taking Casual too, that match won't count") : ""].filter(Boolean).join(" · ");
 }
 function qmStripShow(on) { $("qmStrip").hidden = !on || !qmSearching(); if (on) qmUi(); }
 // the menu's gold hero is Quick match: the live count, the remembered mode, the rank, the season sticker until the sheet was seen
@@ -731,24 +736,24 @@ function qmHero() {
   if (!qmOn()) return;
   const hero = $("bRanked"), rk = rankView(), ti = tierInfo(rk.r), md = qmMode(), lb = qmLobby(), placing = rk.n < QM_PLACING;
   hero.classList.add("qm");
-  hero.querySelector(".mm-ttl").textContent = "Quick match";
+  hero.querySelector(".mm-ttl").textContent = _t("Quick match");
   const vh = QM.mode === "v" ? vcHero() : null;   // ui/vscpu.js: VS CPU and your CPU rank
-  $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? `${lb.n} online` : "Offline"} · ${vh ? vh[0] : md === "r" ? `Ranked · ${placing ? "Placing" : `${ti.t.name} ${rk.r}`}` : "Casual"}`;
-  $("mRec").textContent = vh ? vh[1].replace(/ /g, " ") : (md === "c" ? (qmAcctOff() ? ["Ranked opens soon"] : ["Casual", "no rank change"])
-    : (qmMe() || QM_FRESH).bty ? [`${qmMe().ws} win streak`, `${qmMe().bty} bounty on you`]
-    : placing ? [`Placing`, `${rk.n} of ${QM_PLACING}`] : [`${rk.w}W`, `${rk.l}L`, ti.next ? `${ti.need} to ${ti.next.name}` : "top tier"]).map((t) => t.replace(/ /g, " ")).join(" · ");
+  $("mRankKick").innerHTML = `<i class="qm-dot${QM.conn ? "" : " off"}" aria-hidden="true"></i>${QM.conn ? _t("{n} online", { n: lb.n }) : _t("Offline")} · ${vh ? vh[0] : md === "r" ? `${_t("Ranked")} · ${placing ? _t("Placing") : _t("{tier} {r}", { tier: qmTier(ti.t.name), r: rk.r })}` : _t("Casual")}`;
+  $("mRec").textContent = vh ? vh[1].replace(/ /g, " ") : (md === "c" ? (qmAcctOff() ? [_t("Ranked opens soon")] : [_t("Casual"), _t("no rank change")])
+    : (qmMe() || QM_FRESH).bty ? [_t("{n} win streak", { n: qmMe().ws }), _t("{n} bounty on you", { n: qmMe().bty })]
+    : placing ? [_t("Placing"), _t("{n} of {m}", { n: rk.n, m: QM_PLACING })] : [_t("{w}W", { w: rk.w }), _t("{l}L", { l: rk.l }), ti.next ? _t("{need} to {tier}", { need: ti.need, tier: qmTier(ti.next.name) }) : _t("top tier")]).map((t) => t.replace(/ /g, " ")).join(" · ");
   let s1 = hero.querySelector(".qm-s1");
-  if (!s1) { s1 = document.createElement("span"); s1.className = "tag ember qm-s1"; s1.textContent = "Season 1"; hero.appendChild(s1); }
+  if (!s1) { s1 = document.createElement("span"); s1.className = "tag ember qm-s1"; s1.textContent = _t("Season 1"); hero.appendChild(s1); }
   s1.hidden = QM.s1;
-  hero.setAttribute("aria-label", `Quick match. ${md === "r" ? "Ranked" : "Casual"}. ${QM.conn ? `${lb.n} online` : "Offline"}`);
+  hero.setAttribute("aria-label", _t("Quick match. {mode}. {status}", { mode: md === "r" ? _t("Ranked") : _t("Casual"), status: QM.conn ? _t("{n} online", { n: lb.n }) : _t("Offline") }));
 }
 // the Season 1 sheet, once: your new online rank and the CPU rank that stays in Account > Stats
 function qmSeason() {
   const on = rankView(), ti = tierInfo(on.r), cpu = tierInfo(P.rating | 0);
   paintBadge($("ssBadgeN"), ti.i); $("ssOn").style.setProperty("--tc", ti.t.col);
-  $("ssTierN").textContent = ti.t.name; $("ssRateN").textContent = on.n ? `${on.r} · ${on.w}W ${on.l}L` : `${on.r} · everyone starts here`;
+  $("ssTierN").textContent = qmTier(ti.t.name); $("ssRateN").textContent = on.n ? _t("{r} · {w}W {l}L", { r: on.r, w: on.w, l: on.l }) : _t("{r} · everyone starts here", { r: on.r });
   paintBadge($("ssBadgeO"), cpu.i);
-  $("ssTierO").textContent = cpu.t.name; $("ssRateO").textContent = `${P.rating | 0} · kept in Account › Stats`;
+  $("ssTierO").textContent = qmTier(cpu.t.name); $("ssRateO").textContent = _t("{r} · kept in Account › Stats", { r: P.rating | 0 });
   $("ssOld").hidden = !((P.matches | 0) > 0);
   modal("season", true);
 }
@@ -789,6 +794,6 @@ tap("qmC", () => { QM.mode = "c"; qmSave(); qmRender(); });
 tap("qmFind", () => (vcMode() ? vcFight() : qmFind()));   // ui/vscpu.js: FIGHT A CPU
 tap("qmCancel", () => qmCancel());
 tap("qmWarm", qmWarmStart);
-tap("rQmX", () => { qmCancel(); $("rChange").querySelector("span").textContent = "Quick match"; $("rMenuSub").textContent = ""; });
+tap("rQmX", () => { qmCancel(); $("rChange").querySelector("span").textContent = _t("Quick match"); $("rMenuSub").textContent = ""; });
 tap("ssGo", qmSeasonDone);
 tap("ssClose", qmSeasonDone);
