@@ -105,3 +105,13 @@ function langWel() {
     box.appendChild(b);
   }
 }
+// tests/pwlang.py: opens each screen by its own open function, for the sweep of every language at every size (nothing else uses it)
+window.__blTour = (id) => {
+  const T = { menu: () => goMenu(), select: () => openSelect("practice"), skins: () => openSkins(P.last), pshop: () => pshopOpen(P.last), help: () => openHelp(),
+    settings: () => openSettings(), account: () => openAccount(), shop: () => openAccount("h"), daily: () => dailyOpen(), road: () => openRoad(),
+    stop: () => { openRoad(); roadSheet(0); }, quick: () => quickOpen(), online: () => openOnline(), boards: () => bdOpen(), bw: () => bwSheetOpen(),
+    tc: () => tcOpen(), cup: () => cupOpen(), welcome: () => welcomeOpen(), match: () => { openSelect("practice"); startMatch(); },
+    pause: () => togglePause(true), result: () => { togglePause(false); finishMatch(true); } };
+  T[id]();
+  return mode;
+};
