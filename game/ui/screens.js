@@ -104,7 +104,7 @@ function goMenu() {
 }
 
 /* ----- fighter select: one row of fighter tiles, one detail panel for the picked fighter ----- */
-const LEVELS = [{ name: _t("Dummy"), d: -1 }, { name: _t("Easy"), d: 0.15 }, { name: _t("Normal"), d: 0.5 }, { name: _t("Hard"), d: 0.9 }];
+const LEVELS = [{ name: _tk("Dummy"), d: -1 }, { name: _tk("Easy"), d: 0.15 }, { name: _tk("Normal"), d: 0.5 }, { name: _tk("Hard"), d: 0.9 }];   // names stay English (match.level, tutorial.js and duo.js compare them): shown with _tv
 const sel = { mode: "ranked", fighter: P.last, opp: "random", level: 2, map: "random", blv: 0, mate: "random" };   // blv: the boss difficulty (Practice vs a boss); mate: the 2v2 partner (opp "duo")
 const randMap = () => (Math.random() * BL.POOL) | 0;   // The Field (an arena map) only when picked in Practice
 /* CPU opponents get a potato name (and a fighting style, see BL.BOT_STYLES). Original names, no real people. */
@@ -230,7 +230,7 @@ function buildPractice() {
   screens.select.classList.toggle("sl-team", duo);
   $("mateWrap").hidden = !duo;
   $("oppPick").innerHTML = `<small>${_t("VS")}</small>${duo ? `<i class="sl-glyph">2v2</i>` : portrait(opp)}<span>${duo ? _t("Team Brawl 2v2") : opp ? opp.name : _t("Random")}</span>`;
-  $("lvlPick").innerHTML = boss ? `<small>${_t("Boss")}</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>${_t("CPU")}</small><span>${LEVELS[sel.level].name}</span>`;
+  $("lvlPick").innerHTML = boss ? `<small>${_t("Boss")}</small><span>${BOSS_LV[sel.blv]}</span>` : `<small>${_t("CPU")}</small><span>${_tv(LEVELS[sel.level].name)}</span>`;
   // the arena maps (The Field...) are not in the 2v2 draw: a pick made for a 1v1 shows as Random here (and stays picked for the 1v1)
   const mapOk = (i) => i !== "random" && BL.MAPS[i] && !(duo && BL.MAPS[i].pool === false), mapSel = mapOk(sel.map) ? sel.map : "random";
   $("mapPick").innerHTML = `<small>${_t("Map")}</small><span>${boss ? mapName(bossMap(boss)) : mapSel === "random" ? _t("Random") : mapName(mapSel)}</span>`;
@@ -252,7 +252,7 @@ function buildPractice() {
   fill($("oppPop"), [{ id: "random", label: _t("Random") }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] })),
     ...BL.BOSSES.map((b) => ({ id: b.id, label: _t("{name} · boss, 2 vs 1", { name: b.name }), img: PORTRAITS[b.id] })), { id: "duo", label: _t("Team Brawl 2v2"), glyph: true, top: true }], (it) => it.id === sel.opp, (it) => { sel.opp = it.id; });
   if (boss) fill($("lvlPop"), BOSS_LV.map((name, i) => ({ i, label: name })), (it) => it.i === sel.blv, (it) => { sel.blv = it.i; });
-  else fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: l.name })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
+  else fill($("lvlPop"), LEVELS.map((l, i) => ({ i, label: _tv(l.name) })), (it) => it.i === sel.level, (it) => { sel.level = it.i; });
   fill($("mapPop"), [{ i: "random", label: _t("Random") }, ...BL.MAPS.map((m, i) => ({ i, label: mapName(i) })).filter((it) => mapOk(it.i))], (it) => it.i === mapSel, (it) => { sel.map = it.i; });
   fill($("matePop"), [{ id: "random", label: _t("Random") }, ...FIGHTERS.map((f) => ({ id: f.id, label: f.name, img: PORTRAITS[f.id] }))], (it) => it.id === sel.mate, (it) => { sel.mate = it.id; });
 }
@@ -359,7 +359,7 @@ function vsLine() {
   if (match.cup) return _t("{round} · {me} vs {op} · {cpu}, {tier}", { round: CUP.names[match.round], me, op, cpu: match.cpu, tier: cpuTier() });
   if (match.daily) return _t("Daily Potato · {me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: match.level });
   if (match.ranked) return _t("{me} vs {op} · {cpu}, {tier}", { me, op, cpu: match.cpu || _t("CPU"), tier: cpuTier() });
-  return match.cpu ? _t("{me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: match.level }) : _t("{me} vs {op} · {level}", { me, op, level: match.level });
+  return match.cpu ? _t("{me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: _tv(match.level) }) : _t("{me} vs {op} · {level}", { me, op, level: _tv(match.level) });   // a CPU level's name is English data (LEVELS)
 }
 function cpuTier() { return `${_tv(tierInfo(match.oppRating).t.name)} ${match.oppRating}`; }
 // Lives as hearts (CSS in shell.html). A lost heart stays in place while its halves fall, then goes; a gained one pops in.
