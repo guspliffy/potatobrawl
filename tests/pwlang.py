@@ -47,6 +47,8 @@ CHECK = r"""(xx) => {
   const nm = (el) => { let s = el.tagName.toLowerCase(); if (el.id) s += '#' + el.id; else if (typeof el.className === 'string' && el.className.trim()) s += '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.'); const p = el.parentElement && el.parentElement.closest('[id]'); return (p ? '#' + p.id + ' ' : '') + s; };
   const BOX = 'button, .btn, .chip, .tag, .coin, [class*="pill"], [class*="badge"]';
   const add = (kind, el, t) => { const k = kind + ' ' + nm(el); if (seen.has(k)) return; seen.add(k); out.push({ kind, at: nm(el), text: t.slice(0, 60) }); };
+  // one-line teasers that end in … by design (the whole text is one tap away): the select screen's skin effect, the Skin Rack's group notes
+  const TEASER = '#dSkFx, .sk-k span';
   const texts = [];   // [el, text, rects] for the overlap test below
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n; (n = w.nextNode());) {
@@ -66,7 +68,7 @@ CHECK = r"""(xx) => {
       const ar = a.getBoundingClientRect(), scrollY = oy === 'auto' || oy === 'scroll', scrollX = ox === 'auto' || ox === 'scroll';
       const side = !scrollX && rs.some((r) => r.left < ar.left - 1.5 || r.right > ar.right + 1.5);
       const down = !scrollY && oy !== 'visible' && rs.some((r) => r.bottom > ar.bottom + 1.5 || r.top < ar.top - 1.5);
-      if (side || down) add('cut', el, t);
+      if ((side || down) && !el.closest(TEASER)) add('cut', el, t);
       clip = ar;
       break;
     }
@@ -80,13 +82,13 @@ CHECK = r"""(xx) => {
       if (!sc) add('spill', el, t + ' (off the screen)');
     }
     // the pseudo-language: text _t never touched
-    if (xx && !/[⟦⟧áéíóúñç]/.test(t) && !el.closest('[translate=no]')) {
+    if (xx && !/[⟦⟧áéíóúñçÁÉÍÓÚ]/.test(t) && !el.closest('[translate=no]')) {
       let rest = t.replace(/\d{1,2}:\d{2}\s?(AM|PM)/g, ' '); for (const k of KEEP) rest = rest.split(k).join(' ');
       if (/\p{L}{2}/u.test(rest.replace(/\b(vs|x)\b/g, ''))) add('english', el, t);
     }
   }
   // two texts on top of each other (a longer title running under a button or a tag): texts of different elements, neither inside the other
-  const layer = (el) => { for (let a = el; a && a !== document.body; a = a.parentElement) { const cs = getComputedStyle(a); if (cs.position === 'fixed' || cs.position === 'sticky' || /auto|scroll/.test(cs.overflowX + cs.overflowY)) return a; } return null; };
+  const layer = (el) => { for (let a = el; a && a !== document.body; a = a.parentElement) { const cs = getComputedStyle(a); if (a.id === 'banner' || cs.position === 'fixed' || cs.position === 'sticky' || /auto|scroll/.test(cs.overflowX + cs.overflowY)) return a; } return null; };   // #banner: the fight's intro line runs over the fight on purpose
   const hit = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3;
   for (let i = 0; i < texts.length; i++) for (let j = i + 1; j < texts.length; j++) {
     const [ea, ta, ra] = texts[i], [eb, tb, rb] = texts[j];
@@ -102,7 +104,9 @@ RESET = """() => { for (const s of document.querySelectorAll('.screen.modal')) s
 def serve():
     d = tempfile.mkdtemp(prefix='pwlang-acct-')
     env = dict(os.environ, PORT=str(PORT), KEEPALIVE_MINUTES='0', ACCOUNTS_DIR=d)
-    p = subprocess.Popen(['node', 'server.js'], cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    pathlib.Path(OUT).mkdir(parents=True, exist_ok=True)
+    log = open(f'{OUT}/server.log', 'w')   # what the server said, if it stops halfway
+    p = subprocess.Popen(['node', 'server.js'], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
     for _ in range(50):
         try:
             import urllib.request; urllib.request.urlopen(URL, timeout=1).read(); break

@@ -93,17 +93,19 @@ if (T_CYR && typeof FontFace === "function" && document.fonts) {
   } catch (e) { /* an old browser: Russian shows in the system font */ }
 }
 /* Tight labels (a tile's title, a card's name, a role under a portrait) that a longer language can run out of: the font steps down, at
-   most to 70% of the style sheet's size, until the text stays inside its box (the nearest box that clips, its button, chip, tag or pill,
-   the screen). It runs again when such a text changes or its box is resized or shown, one frame later (never inside the observer). */
+   most to 70% of the style sheet's size (T_FIT_P lines 82%, T_FIT_T tile titles 60%), until the text stays inside its box (the nearest
+   box that clips, its button, chip, tag or pill, the screen). It runs again when such a text changes or its box is resized or shown, one frame later (never inside the observer). */
 // lines of a few words in a box of fixed height: these step down to 82% at most
 const T_FIT_P = "#dSig span, #dUlt span, #dBlurb, #skFx, .sk-k span, .hv-wait";
 const T_FIT = ["#bDaily b", "#bBw b", "#bRanked .mm-ttl", ".mm-mt", "#bPractice small", "#mBwR .bw-p", "#mRankKick", "#mRec", "#mDaily", "#mDailyR",
   "#dSkFx", "#oppPick small", "#mapPick small", "#qmFRole", "#onFRole", "#qmR b", "#qmC b", "#qmC small", "#qmV b", "#qmVSub", "#qmToV b", "#qmRating",
   "#skRoad b", "#skRoad small", "#skPm b", "#skPm small", "#skChip small", ".ps-nm", ".ps-c .s", ".ps-c .l", ".ps-btn", "#acPanH b", "#acPanH small",
-  "#acBds b", "#acBds small", "#acBds .bd-rk", ".bw-tw", "#welGo span", T_FIT_P].join(", ");
+  "#acBds b", "#acBds small", "#acBds .bd-rk", ".bw-tw", "#welGo span", "#hvAd span", T_FIT_P].join(", ");
 const T_BOX = "button, .btn, .chip, .tag, .coin, [class*='pill'], [class*='badge']";
+// the start page's tile titles may go down to 60% (a narrow tile at 667x375 with its NEW tag)
+const T_FIT_T = "#bDaily b, #bBw b";
 // a text that must also keep clear of a tag drawn over its box's corner
-const T_AVOID = { "#bBw b": "#mBwTag" };
+const T_AVOID = { "#bBw b": "#mBwTag", "#hvAd span": "#hvAd .hv-soon" };
 function tOver(el) {
   const rg = document.createRange(); rg.selectNodeContents(el);
   const rs = [...rg.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
@@ -125,7 +127,7 @@ function tFit(el) {
   el.style.fontSize = "";
   if (!el.isConnected || !tOver(el)) return;
   const base = parseFloat(getComputedStyle(el).fontSize);
-  for (let fs = base * 0.93, min = base * (el.matches(T_FIT_P) ? 0.82 : 0.7); fs >= min; fs *= 0.93) { el.style.fontSize = fs.toFixed(1) + "px"; if (!tOver(el)) return; }
+  for (let fs = base * 0.93, min = base * (el.matches(T_FIT_P) ? 0.82 : el.matches(T_FIT_T) ? 0.6 : 0.7); fs >= min; fs *= 0.93) { el.style.fontSize = fs.toFixed(1) + "px"; if (!tOver(el)) return; }
 }
 const tFitQ = new Set();
 let tFitRaf = 0;
@@ -136,7 +138,8 @@ function tFitWatch(el) {
   if (tFitSeen.has(el)) return;
   tFitSeen.add(el);
   const box = el.closest(T_BOX) || el.parentElement || el;   // an inline text has no size of its own to observe
-  (box.__tfit || (box.__tfit = [])).push(el);
+  box.__tfit = (box.__tfit || []).filter((e) => e.isConnected);   // a button whose text is rebuilt drops its old lines
+  box.__tfit.push(el);
   if (tFitRo) tFitRo.observe(box);
   tFitLater(el);
 }
@@ -147,6 +150,7 @@ new MutationObserver((ms) => {
     const t = m.target.nodeType === 1 ? m.target : m.target.parentElement;
     const hit = t && t.closest(T_FIT);
     if (hit) { tFitWatch(hit); tFitLater(hit); }
+    if (t) for (let a = t; a; a = a.parentElement) if (a.__tfit) { for (const e of a.__tfit) tFitLater(e); break; }   // a box's other lines moved
     if (t) for (const k in T_AVOID) if (t.closest(T_AVOID[k])) { const e = document.querySelector(k); if (e) tFitLater(e); }   // the tag got a word
     for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.matches(T_FIT)) tFitWatch(n); for (const e of n.querySelectorAll(T_FIT)) tFitWatch(e); }
   }
