@@ -119,6 +119,7 @@ function renderSettings() {
   else chipRow("setFull", [["how", "How"]], null, () => modal("a2hs", true));
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
+  langRow();   // ui/lang.js: Language (on the start page only: a change reloads)
   cntSettings();   // ui/counter.js: Play counts On / Off
   stkSettings();   // ui/stakes.js: Chip stakes On / Off
   $("setRankNote").textContent = qmOn() ? "Ranked on Quick match is online against real players; VS CPU ranks you against the CPU. Potato chips are in-game only and have no cash value." : "Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.";   // off our server: the old Ranked vs CPU

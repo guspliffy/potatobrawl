@@ -56,6 +56,9 @@ for (const [file, type, cache] of [
   ["icon-192.png", "image/png", "public, max-age=604800"],
   ["icon-512.png", "image/png", "public, max-age=604800"],
   ["apple-touch-icon.png", "image/png", "public, max-age=604800"],
+  // the Cyrillic letters for Russian (Roboto Condensed, SIL OFL: rc-cyr-OFL.txt), fetched by the browser only when Cyrillic shows
+  ["rc-cyr-n.woff2", "font/woff2", "public, max-age=2592000"],
+  ["rc-cyr-i.woff2", "font/woff2", "public, max-age=2592000"],
 ]) {
   try { FILES["/" + file] = asset(file, type, cache); } catch (e) { console.warn(`public/${file} missing: not served`); }
 }

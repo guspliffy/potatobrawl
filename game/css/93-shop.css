@@ -85,7 +85,7 @@
 /* worn: a gold ring, the name in gold, the corner tag */
 .sh-c.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
 .sh-c.worn .sh-f b { color: var(--gold); }
-.sh-c.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+.sh-c.worn::after { content: var(--tw-worn, "Worn"); position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
   border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
 /* armed: the foot turns ember, "Sure?" */
 .sh-c.arm .sh-f { background: var(--ember); border-top-color: transparent; }

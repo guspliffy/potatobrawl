@@ -181,7 +181,7 @@
 .cs.gone .tcv-w { color: #ff9a8f; }
 .cs.fell { opacity: 0.9; }
 .cup-lines .tcv-ld { fill: var(--ketchup); stroke: var(--ink); stroke-width: 2px; animation: blink 1.2s ease-in-out infinite; }
-.cl-m.live::after { content: "LIVE"; background: var(--ketchup); color: #fff; padding: 2px 5px 1px; border-radius: 6px; letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
+.cl-m.live::after { content: var(--tw-live, "LIVE"); background: var(--ketchup); color: #fff; padding: 2px 5px 1px; border-radius: 6px; letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
 /* the foot card */
 .cf-acts.tcv-a .btn { min-width: 0; padding-inline: 14px; }
 .cf.tcv-called { border-color: var(--ember); }

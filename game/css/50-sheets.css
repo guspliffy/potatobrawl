@@ -50,6 +50,10 @@
 .ac-tabs .chip:active:not(:disabled), .ac-tabs .chip.on:active:not(:disabled), .set-row .chips .chip:active:not(:disabled), .set-row .chips .chip.on:active:not(:disabled) { box-shadow: none; }
 .ac-tabs .chip:active:not(:disabled)::before, .set-row .chips .chip:active:not(:disabled)::before { box-shadow: 0 1px 0 var(--ink), var(--bevel); }
 .ac-tabs .chip.on:active::before, .set-row .chips .chip.on:active::before { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+/* Language (ui/lang.js langRow): five separate pills that wrap, not one segmented bar (the names are long) */
+.set-row #setLang { flex-wrap: wrap; gap: 6px; }
+#app .set-row #setLang .chip { padding: 4px 13px; margin-left: 0; }
+.set-row #setLang .chip::before { border-radius: 9px; }
 
 /* ---- Pause: PAUSED stands up out of the band, stroked; Resume is the large gold button, the other two share a row ---- */
 #scrPause .pause-sheet { width: min(440px, 100%); margin-top: 26px; overflow: visible; }

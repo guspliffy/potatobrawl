@@ -34,6 +34,7 @@ function welcomeSeed() {   // the attract fight is new now and then: its first f
   if (attract && WEL.g !== attract.g) { WEL.g = attract.g; attract.g.fighters[0].percent = 110; }
 }
 function welcomeOpen() {
+  langWel();   // ui/lang.js: the five languages under the buttons
   WEL.on = true;
   show(null); modal("welcome", true);   // show(null) hides the menu
   welcomeSeed();

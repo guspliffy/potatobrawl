@@ -129,7 +129,7 @@
 /* worn: gold ring, the name in gold, the roster's corner tag */
 #scrSkins .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
 .sk.worn .sk-f b { color: var(--gold); }
-.sk.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+.sk.worn::after { content: var(--tw-worn, "Worn"); position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
   border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; animation: skTag 0.16s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
 @keyframes skTag { from { transform: scale(0.4); opacity: 0; } }
 /* looked at (not worn): a white ring, 1.03 */

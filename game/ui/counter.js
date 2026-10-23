@@ -62,7 +62,7 @@ function cntDaily() {
   if (N.w !== wk) { N.w = wk; cnt("wk"); }
   if (N.m !== mo) { N.m = mo; cnt("mo"); }
   const lang = String(navigator.language || "").slice(0, 2).toLowerCase();
-  cnt("dev:" + cntDev()); cnt("app:" + cntApp()); cnt("lang:" + (/^[a-z]{2}$/.test(lang) ? lang : "other")); cnt("ver:" + PROTO);
+  cnt("dev:" + cntDev()); cnt("app:" + cntApp()); cnt("lang:" + (/^[a-z]{2}$/.test(lang) ? lang : "other")); cnt("gl:" + (LANG === "xx" ? "en" : LANG)); cnt("ver:" + PROTO);
   if (N.f) {
     const n = cntDayNum(d) - cntDayNum(N.f);
     if (n >= 1) CNT_RET.forEach((T, i) => { if (n <= T && !(N.r & (1 << i))) { N.r |= 1 << i; cnt(`ret:${N.f}:${T}`); } });

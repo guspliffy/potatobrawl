@@ -3,6 +3,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&family=Barlow:wght@400;500;600&display=swap">
 <style>
+/* Russian: Barlow has no Cyrillic letters, so Barlow Condensed's come from Roboto Condensed (web/rc-cyr-n|i.woff2, SIL OFL, one variable
+   file per style), declared under Barlow Condensed's own name with the same weights as its faces above: every font list in the page and the
+   canvas gets them, and the browser fetches a file only when Cyrillic shows. Body text (Barlow) falls back to the system font. */
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600; font-display: swap; src: url(rc-cyr-n.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap; src: url(rc-cyr-n.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 800; font-display: swap; src: url(rc-cyr-n.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 700; font-display: swap; src: url(rc-cyr-i.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 800; font-display: swap; src: url(rc-cyr-i.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 900; font-display: swap; src: url(rc-cyr-i.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
 :root {
   /* Layout: full-bleed arena canvas. HUD across the top, touch controls in the bottom corners
      (landscape) or a bottom panel (portrait). Menus dock left over a live demo match. */
@@ -139,7 +148,7 @@ button { font: inherit; color: inherit; }
 @keyframes fbIn { 0% { transform: translateX(-70%) rotate(-7deg); opacity: 0; } 14% { transform: translateX(2%) rotate(-7deg); opacity: 1; } 22% { transform: translateX(0) rotate(-7deg); } 80% { transform: translateX(1.5%) rotate(-7deg); opacity: 1; } 100% { transform: translateX(55%) rotate(-7deg); opacity: 0; } }
 /* a fighter at finish percent: the percent pulses (gently) between two reds; the colour matches the red the percent tint reaches at 175 */
 .pcard.finr .pc-pct { animation: finPulse 0.9s ease-in-out infinite; }
-.pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
+.pcard.finr .pc-name::after { content: " " var(--tw-finish, "· finish"); color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
 @keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 3px rgba(255, 70, 50, 0.3); } 50% { color: #ff8a7c; text-shadow: 0 0 14px rgba(255, 90, 60, 0.85); } }
 
 /* ---------- ultimate bar (hud.js): a slanted trough on the bottom edge of each name card, as wide as the card. It fills in the fighter's
@@ -536,7 +545,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .ac-t small { font-size: 12px; line-height: 1.25; color: var(--mute); }
 .ac-t.on { border-color: var(--sand); box-shadow: inset 0 0 0 1px var(--sand); }
 .ac-t.lock { cursor: default; opacity: 0.62; }
-.ac-t.lock b::after { content: " (locked)"; font-size: 10px; letter-spacing: 0.1em; color: var(--mute); }
+.ac-t.lock b::after { content: " " var(--tw-locked, "(locked)"); font-size: 10px; letter-spacing: 0.1em; color: var(--mute); }
 .ac-pan { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ac-pan[hidden] { display: none; }
 .ac-pan h4 { margin: 0; }
@@ -679,7 +688,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .cup-list { display: none; position: absolute; inset: 0; padding-bottom: 6px; }
 .cl-h { margin: 6px 0 4px; }
 .cl-m { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
-.cl-m::after { content: "vs"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; color: var(--mute); background: var(--ink); border-radius: 8px; padding: 0 3px; }
+.cl-m::after { content: var(--tw-vs, "vs"); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; color: var(--mute); background: var(--ink); border-radius: 8px; padding: 0 3px; }
 .cl-m .cs { height: 46px; }
 .cl-m .cs-n { font-size: 14px; }
 #app.portrait .cup-grid { display: none; }
@@ -1239,7 +1248,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrSelect .tile.on { z-index: 2; transform: scale(1.06); color: var(--ink); box-shadow: 0 0 0 3px var(--gold), 0 5px 0 2px var(--ink), 0 0 18px rgba(244, 201, 93, 0.45); }
 #scrSelect .tile.on img { filter: none; }
 #scrSelect .tile.on span { background: var(--gold); }
-#scrSelect .tile.on::after { content: "YOU"; position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
+#scrSelect .tile.on::after { content: var(--tw-you, "YOU"); position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
 #scrSelect .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 /* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the Skins bar ---- */
@@ -1775,6 +1784,10 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .ac-tabs .chip:active:not(:disabled), .ac-tabs .chip.on:active:not(:disabled), .set-row .chips .chip:active:not(:disabled), .set-row .chips .chip.on:active:not(:disabled) { box-shadow: none; }
 .ac-tabs .chip:active:not(:disabled)::before, .set-row .chips .chip:active:not(:disabled)::before { box-shadow: 0 1px 0 var(--ink), var(--bevel); }
 .ac-tabs .chip.on:active::before, .set-row .chips .chip.on:active::before { box-shadow: 0 1px 0 var(--ink), var(--bevelgold); }
+/* Language (ui/lang.js langRow): five separate pills that wrap, not one segmented bar (the names are long) */
+.set-row #setLang { flex-wrap: wrap; gap: 6px; }
+#app .set-row #setLang .chip { padding: 4px 13px; margin-left: 0; }
+.set-row #setLang .chip::before { border-radius: 9px; }
 
 /* ---- Pause: PAUSED stands up out of the band, stroked; Resume is the large gold button, the other two share a row ---- */
 #scrPause .pause-sheet { width: min(440px, 100%); margin-top: 26px; overflow: visible; }
@@ -2488,7 +2501,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 /* worn: gold ring, the name in gold, the roster's corner tag */
 #scrSkins .sk.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.35); }
 .sk.worn .sk-f b { color: var(--gold); }
-.sk.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+.sk.worn::after { content: var(--tw-worn, "Worn"); position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
   border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; animation: skTag 0.16s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
 @keyframes skTag { from { transform: scale(0.4); opacity: 0; } }
 /* looked at (not worn): a white ring, 1.03 */
@@ -3181,7 +3194,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 /* worn: a gold ring, the name in gold, the corner tag */
 .sh-c.worn { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 2px var(--ink), 0 0 14px rgba(244, 201, 93, 0.3); }
 .sh-c.worn .sh-f b { color: var(--gold); }
-.sh-c.worn::after { content: "Worn"; position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
+.sh-c.worn::after { content: var(--tw-worn, "Worn"); position: absolute; right: -2px; top: -2px; z-index: 3; padding: 4px 6px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink);
   border-radius: 0 8px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
 /* armed: the foot turns ember, "Sure?" */
 .sh-c.arm .sh-f { background: var(--ember); border-top-color: transparent; }
@@ -4298,7 +4311,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #scrQuick .qm-seg button small { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* the CPU rank: an ember CPU sticker on the emblem's corner, the record line in sand */
 #scrQuick .qm-rk.vc { position: relative; box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.45); }
-#scrQuick .qm-rk.vc::before { content: "CPU"; position: absolute; left: 6px; top: -9px; z-index: 2; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px;
+#scrQuick .qm-rk.vc::before { content: var(--tw-cpu, "CPU"); position: absolute; left: 6px; top: -9px; z-index: 2; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px;
   background: var(--ember, #ef7a52); color: var(--ink); font: 900 9.5px/1 var(--display); letter-spacing: 0.08em; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); }
 #scrQuick .qm-bdl { appearance: none; grid-column: 1 / -1; justify-self: start; max-width: 100%; margin-top: -7px; padding: 0; border: 0; background: none; cursor: pointer;
   font: 700 12px/1.2 var(--body); color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -4332,7 +4345,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #resSheet .rk-bd[hidden] { display: none; }
 
 /* the menu's profile plate on the CPU rank: a small ember CPU sticker on the picture's corner */
-#scrMenu .plate.vc .mm-avw::after { content: "CPU"; position: absolute; left: -7px; top: -6px; z-index: 2; padding: 2px 3px 1px; border: 1.5px solid var(--ink); border-radius: 4px;
+#scrMenu .plate.vc .mm-avw::after { content: var(--tw-cpu, "CPU"); position: absolute; left: -7px; top: -6px; z-index: 2; padding: 2px 3px 1px; border: 1.5px solid var(--ink); border-radius: 4px;
   background: var(--ember); color: var(--ink); font: 900 8px/1 var(--display); letter-spacing: 0.06em; transform: rotate(-8deg); }
 
 /* the Account sheet's board places */
@@ -5515,7 +5528,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .cs.gone .tcv-w { color: #ff9a8f; }
 .cs.fell { opacity: 0.9; }
 .cup-lines .tcv-ld { fill: var(--ketchup); stroke: var(--ink); stroke-width: 2px; animation: blink 1.2s ease-in-out infinite; }
-.cl-m.live::after { content: "LIVE"; background: var(--ketchup); color: #fff; padding: 2px 5px 1px; border-radius: 6px; letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
+.cl-m.live::after { content: var(--tw-live, "LIVE"); background: var(--ketchup); color: #fff; padding: 2px 5px 1px; border-radius: 6px; letter-spacing: 0.1em; animation: blink 1.2s ease-in-out infinite; }
 /* the foot card */
 .cf-acts.tcv-a .btn { min-width: 0; padding-inline: 14px; }
 .cf.tcv-called { border-color: var(--ember); }
@@ -5772,6 +5785,12 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.short .wl-sheet .wl-p { font-size: 19px; margin: 0 0 2px; }
 #app.tiny .wl-sheet .btn.lg { min-height: 46px; font-size: 21px; }
 @media (prefers-reduced-motion: reduce) { .wl-sheet { animation: none; } }
+/* the five languages (ui/lang.js langWel): quiet, under the two buttons; a tap saves and reloads */
+.wl-lang { display: flex; justify-content: center; gap: 4px; margin-top: 2px; }
+.wl-l { appearance: none; cursor: pointer; border: 1px solid transparent; background: none; color: var(--mute); border-radius: 999px; padding: 3px 10px; min-height: 30px; font: 700 13px/1 var(--display); letter-spacing: 0.1em; }
+.wl-l.on { color: var(--text); border-color: rgba(206, 210, 255, 0.4); }
+#app.short .wl-lang { margin-top: -2px; }
+#app.short .wl-l { min-height: 26px; }
 
 /* ---- the tutorial card (4 steps): two lines, about 52 px tall, in the top band between the two name cards ---- */
 #tut .tut-l1 { display: contents; }   /* the Combo trial keeps its own layout: the wrapper is not there for it */
@@ -5802,7 +5821,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait #fhint { top: auto; bottom: calc(var(--panelH) + 12px); left: 50%; width: calc(100% - 24px); transform: translateX(-50%); }
 @media (prefers-reduced-motion: reduce) { #fhint { transition: none; } }
 /* DRAG in the stick's knob for the first seconds of the first fight (touch) */
-#stickKnob.drag::after { content: "DRAG"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--display); letter-spacing: 0.06em; color: var(--ink); animation: dragPulse 1s ease-in-out infinite; }
+#stickKnob.drag::after { content: var(--tw-drag, "DRAG"); position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--display); letter-spacing: 0.06em; color: var(--ink); animation: dragPulse 1s ease-in-out infinite; }
 @keyframes dragPulse { 0%, 100% { opacity: 0.45; transform: scale(0.92); } 50% { opacity: 1; transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { #stickKnob.drag::after { animation: none; } }
 
@@ -5876,6 +5895,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <p class="wl-p">Hits raise their %. The higher it is, the farther they fly — knock them off the screen.</p>
       <button class="btn primary lg" id="welGo"><span>Play the tutorial · 1 min</span></button>
       <button class="btn wl-skip" id="welSkip"><span>Skip, just fight</span></button>
+      <div class="wl-lang" id="welLang" translate="no"></div>
     </div>
   </section>
 
@@ -6421,6 +6441,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
         <div class="set-row" id="setFullRow"><span id="setFullL">Fullscreen in fights</span><span class="chips" id="setFull"></span><small id="setFullNow"></small></div>
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
+        <div class="set-row" id="setLangRow" hidden><span>Language</span><span class="chips" id="setLang" translate="no"></span></div>
         <div class="set-row" id="setCountRow" hidden><span>Play counts</span><span class="chips" id="setCount"></span></div>
         <p class="set-fine" id="setCountNote" hidden></p>
         <div class="set-row" id="setStakeRow" hidden><span>Chip stakes</span><span class="chips" id="setStake"></span></div>
@@ -9207,8 +9228,8 @@ const { STAGE, FIGHTERS, newGame, step, makeBot, botInput, intangible, clamp, le
 const FIG = Object.fromEntries(FIGHTERS.map((f) => [f.id, f]));
 // the skins bought with chips (the first ones); the Road skins after them are won from the bosses (pal.road), the Pommes skins after those bought with Pommes (pal.pommes)
 const chipN = (spec) => spec.palettes.filter((p) => !p.road && !p.pommes).length;
-// a chip balance as shown everywhere: exact, with commas (1,350 and 12,480), never shortened
-const fmtChips = (n) => Math.max(0, Math.round(+n || 0)).toLocaleString("en-US");
+// a chip balance as shown everywhere: exact, grouped the language's way (1,350 / 1.350 / 1 350, LOC in ui/lang.js), never shortened
+const fmtChips = (n) => Math.max(0, Math.round(+n || 0)).toLocaleString(LOC);
 const $ = (id) => document.getElementById(id);
 const app = $("app"), cv = $("cv"), ctx = cv.getContext("2d");
 if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -9629,6 +9650,109 @@ const Sfx = {
   },
 };
 
+/* ===================== languages: English, French, German, Spanish, Russian (UI only) =====================
+   Every string a player can see goes through _t("English text", { vars }). The English text is the key, and it is also the fallback when a
+   table has no line for it, so a missing line shows English, never a blank. The tables are game/lang/<fr|de|es|ru>.json ("English": "theirs"),
+   put in below by build.py; tools/i18n.js (check.sh "lang") checks that every key is in every table with the same {vars} and tags.
+   - {name} in the text is filled from vars. The translation may move it; values are put in as they are (escape a name before it goes into innerHTML,
+     exactly as before).
+   - Plurals: "{n} chip|{n} chips" (one|other); vars.n (a number) picks the form by the language's rules. Russian lines have three forms
+     (one|few|many), the others two.
+   - "Free@@price": the part after @@ is a note for the translators (two meanings of one English word); English shows "Free".
+   - _tv(text) is _t for text that comes from core.js data (roles, blurbs, move and skin names): tools/i18n.js reads those keys from core.js.
+   - The page markup (shell.html) is translated once, here at start, by _tDom: each text and label (aria-label, title, placeholder, alt) is
+     looked up by its English text. translate="no" keeps an element and everything in it as it is (names, the wordmark).
+   - The language: ?lang=xx in the address (tests), else the one picked in Settings or on the welcome sheet (this device only), else the first of
+     the five the browser lists, else English. A change saves and reloads the page, so a screen is never half in one language.
+   - ?lang=xx is the pseudo-language: every string in ⟦ ⟧ with accented letters and a third longer, to find strings not wrapped yet and boxes
+     too tight for German or Russian (tests/pwlang.py). It is never offered in the picker. */
+const LANGS = ["en", "fr", "de", "es", "ru"];
+const LANG_NAMES = { en: "English", fr: "Français", de: "Deutsch", es: "Español", ru: "Русский" };
+const LANG_KEY = "potatobrawl.lang";
+const LANG_T = {"de":{},"es":{},"fr":{},"ru":{}};
+const LANG = (() => {
+  const ok = (l) => (LANGS.includes(l) ? l : null);
+  try { const m = /[?&]lang=([a-z]{2})(?:&|$)/.exec(location.search); if (m && (ok(m[1]) || m[1] === "xx")) return m[1]; } catch (e) { /* no address */ }
+  try { const s = ok(localStorage.getItem(LANG_KEY)); if (s) return s; } catch (e) { /* storage unavailable */ }
+  try { for (const l of navigator.languages || [navigator.language]) { const k = ok(String(l || "").slice(0, 2).toLowerCase()); if (k) return k; } } catch (e) { /* no navigator */ }
+  return "en";
+})();
+// numbers and dates follow the language (1,350 / 1 350 / 1.350); the pseudo-language keeps English formats
+const LOC = { en: "en-US", fr: "fr-FR", de: "de-DE", es: "es-ES", ru: "ru-RU" }[LANG] || "en-US";
+const LANG_PL = LANG === "ru" ? ["one", "few", "many"] : ["one", "other"];   // the order of a plural line's forms
+const langRules = (() => { try { return new Intl.PluralRules(LANG === "xx" ? "en" : LANG); } catch (e) { return null; } })();
+function tPlural(s, n) {
+  const f = s.split("|");
+  if (f.length < 2) return s;
+  const c = typeof n === "number" && langRules ? langRules.select(Math.abs(n)) : "other", i = LANG_PL.indexOf(c);
+  return f[i >= 0 && i < f.length ? i : f.length - 1];
+}
+function tPseudo(s) {
+  const acc = { a: "á", e: "é", i: "í", o: "ó", u: "ú", A: "Á", E: "É", I: "Í", O: "Ó", U: "Ú", c: "ç", n: "ñ" };
+  let len = 0;
+  const out = s.replace(/(<[^>]*>|\{\w+\}|&#?\w+;)|([^<{&]+)/g, (m, keep, txt) => (keep ? keep : (len += txt.length, txt.replace(/[aeiouAEIOUcn]/g, (ch) => acc[ch]))));
+  return "⟦" + out + " ~~~".repeat(Math.ceil(len * 0.35 / 4)) + "⟧";   // the extra third in short words, so a paragraph can still wrap
+}
+function _t(s, v) {
+  const tb = LANG_T[LANG];
+  let r = tb && Object.prototype.hasOwnProperty.call(tb, s) ? tb[s] : null;
+  if (r === null) { const at = s.indexOf("@@"); r = at < 0 ? s : s.slice(0, at); }
+  if (r.indexOf("|") >= 0) r = tPlural(r, v && v.n);
+  if (LANG === "xx") r = tPseudo(r);
+  return v ? r.replace(/\{(\w+)\}/g, (m, k) => (v[k] === undefined ? m : v[k])) : r;
+}
+const _tv = (s, v) => (s ? _t(String(s), v) : s);
+// the page markup, once at start: text and labels by their English text (whitespace runs count as one space)
+const tKey = (s) => { const k = String(s).replace(/\s+/g, " ").trim(); return /[A-Za-z]{2}/.test(k) ? k : null; };
+function _tDom(root) {
+  if (LANG === "en") return;
+  const tw = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.nodeType === 1 && (n.tagName === "SCRIPT" || n.tagName === "STYLE" || n.getAttribute("translate") === "no") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+  const all = [];
+  for (let n = tw.nextNode(); n; n = tw.nextNode()) all.push(n);
+  for (const n of all) {
+    if (n.nodeType === 3) {
+      const k = tKey(n.nodeValue);
+      if (k) n.nodeValue = /^\s*/.exec(n.nodeValue)[0] + _t(k) + /\s*$/.exec(n.nodeValue)[0];
+      continue;
+    }
+    for (const a of ["aria-label", "title", "placeholder", "alt"]) { const k = n.hasAttribute(a) && tKey(n.getAttribute(a)); if (k) n.setAttribute(a, _t(k)); }
+  }
+}
+document.documentElement.lang = LANG === "xx" ? "en" : LANG;
+_tDom(document.body);
+// the words written in the style sheets (content: var(--tw-<id>, "English"))
+if (LANG !== "en") {
+  for (const [id, s] of [["finish", _t("· finish")], ["locked", _t("(locked)")], ["vs", _t("vs")], ["you", _t("YOU")], ["worn", _t("Worn")], ["cpu", _t("CPU")], ["live", _t("LIVE")], ["drag", _t("DRAG")]]) {
+    document.documentElement.style.setProperty("--tw-" + id, JSON.stringify(s));
+  }
+}
+// Russian: the Cyrillic letters of "Barlow Condensed" come from web/rc-cyr-*.woff2 (the @font-face rules in shell.html). The canvas
+// does not wait for a font, so both faces are fetched now, long before the first word is drawn.
+if (LANG === "ru" && document.fonts && document.fonts.load) { for (const f of ['italic 900 20px "Barlow Condensed"', '700 20px "Barlow Condensed"']) document.fonts.load(f, "Жж").catch(() => {}); }
+// a change saves the choice and loads the page again (a ?lang= in the address would win over it, so it goes)
+function langSet(l) {
+  if (!LANGS.includes(l) || l === LANG) return;
+  try { localStorage.setItem(LANG_KEY, l); } catch (e) { /* storage unavailable: the browser's language stays */ }
+  try { const u = new URL(location.href); u.searchParams.delete("lang"); if (u.href !== location.href) { location.replace(u.href); return; } } catch (e) { /* old browser */ }
+  location.reload();
+}
+// Settings: the Language row, each language named in itself. Only on the start page: the change reloads, so never in a match or a lobby.
+function langRow() {
+  const row = $("setLangRow");
+  row.hidden = mode !== "menu";
+  if (!row.hidden) chipRow("setLang", LANGS.map((l) => [l, LANG_NAMES[l]]), LANG, langSet);
+}
+// the welcome sheet (first open): the five as short buttons, the one in use lit
+function langWel() {
+  const box = $("welLang");
+  box.innerHTML = "";
+  for (const l of LANGS) {
+    const b = document.createElement("button");
+    b.className = "wl-l" + (l === LANG ? " on" : ""); b.textContent = l.toUpperCase(); b.title = LANG_NAMES[l]; b.setAttribute("aria-label", LANG_NAMES[l]);
+    b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); langSet(l); });
+    box.appendChild(b);
+  }
+}
 /* ===================== play counts: anonymous totals for the stats page (the server side is stats.js) =====================
    Nothing here touches the fight: it only reads the match after the fact. No player ID and no cookie: the server only adds 1 to a
    key per day. This device keeps one note in localStorage (CNT_KEY): its first day, the last day / week / month it said hello, which
@@ -9693,7 +9817,7 @@ function cntDaily() {
   if (N.w !== wk) { N.w = wk; cnt("wk"); }
   if (N.m !== mo) { N.m = mo; cnt("mo"); }
   const lang = String(navigator.language || "").slice(0, 2).toLowerCase();
-  cnt("dev:" + cntDev()); cnt("app:" + cntApp()); cnt("lang:" + (/^[a-z]{2}$/.test(lang) ? lang : "other")); cnt("ver:" + PROTO);
+  cnt("dev:" + cntDev()); cnt("app:" + cntApp()); cnt("lang:" + (/^[a-z]{2}$/.test(lang) ? lang : "other")); cnt("gl:" + (LANG === "xx" ? "en" : LANG)); cnt("ver:" + PROTO);
   if (N.f) {
     const n = cntDayNum(d) - cntDayNum(N.f);
     if (n >= 1) CNT_RET.forEach((T, i) => { if (n <= T && !(N.r & (1 << i))) { N.r |= 1 << i; cnt(`ret:${N.f}:${T}`); } });
@@ -41667,6 +41791,7 @@ function renderSettings() {
   else chipRow("setFull", [["how", "How"]], null, () => modal("a2hs", true));
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", "Sideways"], ["ccw", "Flipped"], ["up", "Upright"]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
+  langRow();   // ui/lang.js: Language (on the start page only: a change reloads)
   cntSettings();   // ui/counter.js: Play counts On / Off
   stkSettings();   // ui/stakes.js: Chip stakes On / Off
   $("setRankNote").textContent = qmOn() ? "Ranked on Quick match is online against real players; VS CPU ranks you against the CPU. Potato chips are in-game only and have no cash value." : "Ranked matches are against CPU opponents near your rating. Potato chips are in-game only and have no cash value.";   // off our server: the old Ranked vs CPU
@@ -48134,6 +48259,7 @@ function welcomeSeed() {   // the attract fight is new now and then: its first f
   if (attract && WEL.g !== attract.g) { WEL.g = attract.g; attract.g.fighters[0].percent = 110; }
 }
 function welcomeOpen() {
+  langWel();   // ui/lang.js: the five languages under the buttons
   WEL.on = true;
   show(null); modal("welcome", true);   // show(null) hides the menu
   welcomeSeed();
