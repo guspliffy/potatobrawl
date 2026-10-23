@@ -29,7 +29,7 @@ function startDuo(o) {
   const map = BL.MAPS[pick] && BL.MAPS[pick].pool !== false ? pick : randMap();
   const players = [{ spec: me, pal: me.palettes[mine] || me.palettes[0] }, { spec: mate, pal: skin(mate) }, { spec: a, pal: skin(a) }, { spec: b, pal: skin(b) }];
   G = newGame({ seed: newSeed(), players: players.map((p, i) => Object.assign(p, { team: i < 2 ? 0 : 1 })), stocks: 3, time: 240, countdown: 150, map });
-  const names = ["You"];
+  const names = [_t("You")];
   for (let i = 0; i < 3; i++) names.push(cpuNameNot(names));   // three different potato names
   match = { duo: true, level: LEVELS[lv].name, lv, d, cpu: names[1], names, team: duoTeamName(), caught: 0,
     bots: [null, ...[mate, a, b].map((s) => makeBot(d, BL.BOT_STYLES[s.id]))] };
@@ -56,7 +56,7 @@ function duoFocusNext() {
 // the foe the partner is on because you pointed at it (-1 = none): the ember ring on that foe's card
 const duoFocused = () => (G && match && match.tb ? tbFocused() : G && match && match.duo && match.bots[1].focusT > G.t ? match.bots[1].focus : -1);
 // a Catch: the pop over the two (in the catcher's team colour), and your own Catches counted for Account > Stats
-const DUO_TIPS = [["Catch!", "Touch your partner while they fly to stop the launch"], ["Focus", "Tap a foe's card (Tab on a keyboard): your partner goes after them"]];
+const DUO_TIPS = [[_t("Catch!"), _t("Touch your partner while they fly to stop the launch")], [_t("Focus"), _t("Tap a foe's card (Tab on a keyboard): your partner goes after them")]];
 function duoEvent(g, e, live) {
   if (match && match.tb) tbEvent(g, e, live);   // online: TAG TEAM! and who landed the final launch (ui/online-team.js)
   // the first few 2v2s: a tip a moment after GO (the Catch, then Focus, then the Catch again); kept on this device only
@@ -67,7 +67,7 @@ function duoEvent(g, e, live) {
     return;
   }
   if (e.type !== "catch") return;
-  chgPops.push({ x: e.x, y: e.y + 46, t: 0, pop: 1, col: TEAM_COL[g.fighters[e.by].team], txt: "CAUGHT!" });   // team colours are fixed: Ice, Ember
+  chgPops.push({ x: e.x, y: e.y + 46, t: 0, pop: 1, col: TEAM_COL[g.fighters[e.by].team], txt: _t("CAUGHT!") });   // team colours are fixed: Ice, Ember
   Sfx.tone(520, 880, 0.14, "triangle", 0.05);
   if (live && match && match.duo && e.by === meSlot) match.caught++;
 }
@@ -85,20 +85,20 @@ function duoMatchEnd(forfeit) {
   if (!forfeit && match.d >= 0) {
     if (res === 1) P.duoW = (P.duoW | 0) + 1;
     if (match.caught) P.duoC = (P.duoC | 0) + match.caught;
-    if (res === 1 && match.level === "Hard") { R.lines.push(["Win on Hard", DUO_CHIPS]); R.total = DUO_CHIPS; P.tokens += DUO_CHIPS; }
-    if (res === 1 && P.duoW === DUO_TITLE) R.title = "Dynamic Duo";
+    if (res === 1 && match.lv === 3) { R.lines.push([_t("Win on Hard"), DUO_CHIPS]); R.total = DUO_CHIPS; P.tokens += DUO_CHIPS; }
+    if (res === 1 && P.duoW === DUO_TITLE) R.title = _t("Dynamic Duo");
     saveProfile();
   }
   showResults(R);
 }
-function duoVs() { return match.tb ? tbVs() : `You & ${match.cpu} vs ${match.team}`; }
+function duoVs() { return match.tb ? tbVs() : _t("You & {mate} vs {team}", { mate: match.cpu, team: match.team }); }
 // the results' story line for a 2v2
 function duoResLine(R) {
-  const D = R.duo, us = ["You and ", { b: D.names[1] }, ` (${D.mate.spec.name})`], them = [{ b: D.team }, ` (${D.foes[0].spec.name} and ${D.foes[1].spec.name})`];
-  const how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
-  if (R.forfeit) return ["You left the match."];
-  if (R.res === 1) return [...us, " beat ", ...them, `${how}.`];
-  if (R.res === 0) return [...them, " beat you and ", { b: D.names[1] }, `${how}.`];
-  return ["Nobody scored a KO in sudden death either."];
+  const D = R.duo, v = { mate: tlBold(D.names[1]), mf: D.mate.spec.name, team: tlBold(D.team), f1: D.foes[0].spec.name, f2: D.foes[1].spec.name };   // tlBold, tlParts: ui/boss.js
+  const how = G.sudden && G.endReason === "stocks" ? 1 : G.endReason === "time" ? 2 : 0;   // 1 in sudden death, 2 on time
+  if (R.forfeit) return [_t("You left the match.")];
+  if (R.res === 1) return tlParts(how === 1 ? _t("You and {mate} ({mf}) beat {team} ({f1} and {f2}) in sudden death.", v) : how === 2 ? _t("You and {mate} ({mf}) beat {team} ({f1} and {f2}) on time.", v) : _t("You and {mate} ({mf}) beat {team} ({f1} and {f2}).", v));
+  if (R.res === 0) return tlParts(how === 1 ? _t("{team} ({f1} and {f2}) beat you and {mate} in sudden death.", v) : how === 2 ? _t("{team} ({f1} and {f2}) beat you and {mate} on time.", v) : _t("{team} ({f1} and {f2}) beat you and {mate}.", v));
+  return [_t("Nobody scored a KO in sudden death either.")];
 }
 window.__blDuo = (o) => { startDuo(o || {}); return G; };   // test hook: start a 2v2 from a script

@@ -150,10 +150,11 @@ function drawCombos(c, g) {
     c.save(); c.globalAlpha = a; c.translate(x, y); c.scale(sc, sc);
     c.textAlign = "center"; c.lineJoin = "round";
     c.font = 'italic 900 24px "Barlow Condensed", "Arial Narrow", sans-serif';
-    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText(`${cb.n} HIT`, 0, 0);
-    c.fillStyle = cb.col; c.fillText(`${cb.n} HIT`, 0, 0);
+    const cbT = _t("{n} HIT", { n: cb.n });
+    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText(cbT, 0, 0);
+    c.fillStyle = cb.col; c.fillText(cbT, 0, 0);
     c.font = '800 14px "Barlow Condensed", "Arial Narrow", sans-serif';
-    const sub = cb.fin ? `${cb.dmg}% · LAUNCH` : `${cb.dmg}%`;
+    const sub = cb.fin ? _t("{dmg}% · LAUNCH", { dmg: cb.dmg }) : `${cb.dmg}%`;
     c.lineWidth = 4; c.strokeText(sub, 0, 16); c.fillStyle = "#f3efe6"; c.fillText(sub, 0, 16);
     if (cb.route) {   // the route's name above the count, in gold
       c.font = 'italic 900 17px "Barlow Condensed", "Arial Narrow", sans-serif';
@@ -174,8 +175,8 @@ function drawChargedPops(c) {
     c.save(); c.globalAlpha = Math.max(0, a); c.translate(x, y); c.scale(sc, sc);
     c.textAlign = "center"; c.lineJoin = "round";
     c.font = 'italic 900 22px "Barlow Condensed", "Arial Narrow", sans-serif';
-    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText(q.txt || "CHARGED", 0, 0);
-    c.fillStyle = q.col; c.fillText(q.txt || "CHARGED", 0, 0);
+    c.lineWidth = 5; c.strokeStyle = "rgba(14,16,34,0.85)"; c.strokeText(q.txt || _t("CHARGED"), 0, 0);
+    c.fillStyle = q.col; c.fillText(q.txt || _t("CHARGED"), 0, 0);
     c.restore();
   }
 }
@@ -313,7 +314,7 @@ function handleEvent(g, e, live) {
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
       if (rt && rt.fresh && live) roadRoute(e, rt);   // ui/road.js: a stop's combo star
       if (rt && rt.fresh && live) Sfx.route();
-      if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? rt.name : "" };
+      if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? routeName(rt) : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
       if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));
@@ -382,11 +383,11 @@ function handleEvent(g, e, live) {
       else if (e.style === "fire") { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 34, col: "#ff8a3d" }); for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4); }
       else dust(e.x, e.y, 2, 10);
       break;
-    case "go": if (live) { showBanner("Go!", "", "go", 650); Sfx.count(true); roadEvent(g, e); } break;
+    case "go": if (live) { showBanner(_t("Go!"), "", "go", 650); Sfx.count(true); roadEvent(g, e); } break;
     case "tech": dust(e.x, e.y, 6, 30); addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 8, r1: 30, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "sudden":
       combos.fill(null); clearTrails();
-      if (live) { showBanner("Sudden death", "Next KO wins", "game", 1700); Sfx.count(true); }
+      if (live) { showBanner(_t("Sudden death"), _t("Next KO wins"), "game", 1700); Sfx.count(true); }
       camStep(g, true);
       break;
     case "game":
@@ -394,7 +395,7 @@ function handleEvent(g, e, live) {
       roadEvent(g, e);
       // the last life lost to a lethal hit starts the finisher on that hit; a self-destruct, a time-out or the tutorial keep the banner
       if (e.hit && finWanted(g)) finStart(g);
-      else showBanner(g.endReason === "time" ? "Time!" : "Game!", "", "game", 0);
+      else showBanner(g.endReason === "time" ? _t("Time!") : _t("Game!"), "", "game", 0);
       break;
     case "over":
       if (!live) { newAttract(); break; }
@@ -630,7 +631,7 @@ function uvBanner(c, t) {
   const gw = L.gw, gh = L.gh, inK = clamp(t / 8, 0, 1), outK = clamp((t - (UV_BANNER - 12)) / 12, 0, 1);
   if (inK <= 0 || outK >= 1) return;
   const bh = clamp(gh * 0.15, 38, 66), by = gh * (L.portrait ? 0.34 : 0.3);
-  const label1 = "ULTIMATE", label2 = " · " + UV.name.toUpperCase();
+  const label1 = _t("ULTIMATE"), label2 = " · " + UV.name.toUpperCase();
   let fs = bh * 0.62;
   const fnt = (s) => `italic 900 ${s}px "Barlow Condensed", "Arial Narrow", sans-serif`;
   c.font = fnt(fs);

@@ -32,7 +32,7 @@ function rpvTap(el, fn, sfx) {
 const rpvBoss = (id) => bwBossSpec(id).name;   // ui/bossweek.js
 const rpvWeekBoss = () => bwBossSpec(bwSpec().boss).name;   // the boss FIGHT starts a try against: this week's
 const rpvTime = (fr) => bwClock(fr, 2);
-const rpvPlace = (M) => (M.place > 0 ? `#${M.place}${M.n > 0 ? ` of ${M.n}` : ""}` : "");
+const rpvPlace = (M) => (M.place > 0 ? (M.n > 0 ? _t("#{b} of {n}", { b: M.place, n: M.n }) : `#${M.place}`) : "");
 function rpvRange() { return RP.mk ? Math.max(1, RP.mk.end > 0 ? RP.mk.end : RP.mk.n) : 1; }   // ticks the bar spans: to the final launch (the engine's seek stops there)
 function rpvPoke() { RPV.act = performance.now(); if (RPV.c.idle) { RPV.c.idle = false; app.classList.remove("rpidle"); } }
 
@@ -41,21 +41,21 @@ function rpvMake() {
   if (RPV.ready) return;
   RPV.ready = true;
   // the strip
-  const bar = RPV.bar = rpvMk("div", "rpv"); bar.id = "rpv"; bar.hidden = true; bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Replay controls");
-  RPV.play = rpvBtn("round rpv-play", "Pause", RPV_IC.pause);
+  const bar = RPV.bar = rpvMk("div", "rpv"); bar.id = "rpv"; bar.hidden = true; bar.setAttribute("role", "group"); bar.setAttribute("aria-label", _t("Replay controls"));
+  RPV.play = rpvBtn("round rpv-play", _t("Pause"), RPV_IC.pause);
   const seek = RPV.seek = rpvMk("div", "rpv-seek", '<div class="rpv-rail"><i class="rpv-tr"><i class="rpv-fill"></i></i><span class="rpv-mk brk" hidden></span><span class="rpv-mk ko" hidden></span><b class="rpv-knob"></b></div>');
-  seek.setAttribute("role", "slider"); seek.setAttribute("aria-label", "Seek"); seek.setAttribute("aria-valuemin", "0"); seek.setAttribute("aria-valuemax", "100"); seek.setAttribute("aria-valuenow", "0");
+  seek.setAttribute("role", "slider"); seek.setAttribute("aria-label", _t("Seek")); seek.setAttribute("aria-valuemin", "0"); seek.setAttribute("aria-valuemax", "100"); seek.setAttribute("aria-valuenow", "0");
   RPV.rail = seek.firstChild; RPV.fill = seek.querySelector(".rpv-fill"); RPV.knob = seek.querySelector(".rpv-knob");
   RPV.mBrk = seek.querySelector(".rpv-mk.brk"); RPV.mKo = seek.querySelector(".rpv-mk.ko");
   RPV.mBrk.innerHTML = RPV_IC.skull; RPV.mKo.innerHTML = RPV_IC.flag;
   RPV.time = rpvMk("span", "rpv-time", '<b class="rpv-now">0:00.0</b><span> / <span class="rpv-te">0:00.00</span></span>');
   RPV.now = RPV.time.querySelector(".rpv-now"); RPV.endT = RPV.time.querySelector(".rpv-te");
-  RPV.sp = rpvBtn("rpv-sp", "Speed", "1×");
-  RPV.re = rpvBtn("round", "Watch from the start", RPV_IC.again);
-  RPV.ko = rpvBtn("round rpv-kob", "Jump to the knockout", RPV_IC.ko + "<span>KO</span>");
-  RPV.cl = rpvBtn("round", "Clean view", RPV_IC.clean);
-  RPV.sh = rpvBtn("round", "Share this run", RPV_IC.share);
-  RPV.x = rpvBtn("round rpv-x", "Close the replay", RPV_X);
+  RPV.sp = rpvBtn("rpv-sp", _t("Speed"), "1×");
+  RPV.re = rpvBtn("round", _t("Watch from the start"), RPV_IC.again);
+  RPV.ko = rpvBtn("round rpv-kob", _t("Jump to the knockout"), RPV_IC.ko + "<span>KO</span>");
+  RPV.cl = rpvBtn("round", _t("Clean view"), RPV_IC.clean);
+  RPV.sh = rpvBtn("round", _t("Share this run"), RPV_IC.share);
+  RPV.x = rpvBtn("round rpv-x", _t("Close the replay"), RPV_X);
   bar.append(RPV.play, seek, RPV.time, rpvMk("i", "rpv-br"), RPV.sp, RPV.re, RPV.ko, RPV.cl, RPV.sh, RPV.x);
   rpvTap(RPV.play, () => rpToggle(), "flip");
   rpvTap(RPV.sp, () => { rpSpeedNext(); rpvFrame(); }, "flip");
@@ -85,13 +85,13 @@ function rpvMake() {
   (document.querySelector(".hud-l") || app).appendChild(tag);
   // the end card
   const end = RPV.endEl = rpvMk("div", "rpv-end"); end.hidden = true;
-  RPV.ec = rpvMk("div", "card rpv-ec"); RPV.ec.setAttribute("role", "dialog"); RPV.ec.setAttribute("aria-label", "Replay over");
+  RPV.ec = rpvMk("div", "card rpv-ec"); RPV.ec.setAttribute("role", "dialog"); RPV.ec.setAttribute("aria-label", _t("Replay over"));
   end.appendChild(RPV.ec);
   // the title card of a share link
   const ti = RPV.title = rpvMk("section", "rpv-ti"); ti.hidden = true;
   // the toast and the loading pill
   const to = RPV.toast = rpvMk("div", "rpv-toast"); to.hidden = true; to.setAttribute("role", "status");
-  const ld = RPV.load = rpvMk("div", "rpv-toast rpv-load", '<i aria-hidden="true"></i>Loading the run…'); ld.hidden = true; ld.setAttribute("role", "status");
+  const ld = RPV.load = rpvMk("div", "rpv-toast rpv-load", `<i aria-hidden="true"></i>${_t("Loading the run…")}`); ld.hidden = true; ld.setAttribute("role", "status");
   app.append(bar, end, ti, to, ld);
   // any tap, move or key brings the controls back; in clean view a tap or a key leaves it
   const wake = (e) => {
@@ -127,7 +127,7 @@ function rpvTimeAt(t) {
 // the livetag's parts: [text, class]; REPLAY · TUBER TOM · #1 · 1:21.44 (REPLAY · YOU VS HARD CPU)
 const rpvTagParts = () => {
   const M = RP.meta;
-  return M.kind === "vc" ? [["You vs " + (M.cpu || "CPU"), "rpv-tn"]] : [[M.own ? "You" : M.nm, "rpv-tn"], [M.place > 0 ? `#${M.place}` : "", ""], [rpTimeEnd() > 0 ? rpvTime(rpTimeEnd()) : "", "rpv-pt"]].filter((x) => x[0]);
+  return M.kind === "vc" ? [[_t("You vs {cpu}", { cpu: M.cpu || _t("CPU") }), "rpv-tn"]] : [[M.own ? _t("You") : M.nm, "rpv-tn"], [M.place > 0 ? `#${M.place}` : "", ""], [rpTimeEnd() > 0 ? rpvTime(rpTimeEnd()) : "", "rpv-pt"]].filter((x) => x[0]);
 };
 
 /* ----- the hooks of ui/replay.js ----- */
@@ -139,8 +139,8 @@ function rpvOpen() {
   RPV.bar.hidden = false; RPV.tag.hidden = false; RPV.endEl.hidden = true;
   app.classList.remove("rpidle", "rpend");
   const parts = rpvTagParts(), tag = RPV.tag;
-  tag.textContent = ""; tag.setAttribute("aria-label", ["Replay"].concat(parts.map((x) => x[0])).join(", "));
-  tag.append(rpvMk("i"), rpvTx("span", "", "Replay"));
+  tag.textContent = ""; tag.setAttribute("aria-label", [_t("Replay")].concat(parts.map((x) => x[0])).join(", "));
+  tag.append(rpvMk("i"), rpvTx("span", "", _t("Replay")));
   parts.forEach(([t, c], k) => tag.appendChild(rpvTx(k === 0 ? "b" : "span", `rpv-p ${c}`.trim(), t)));
   // the marks: the break (Boss Week) and the final launch
   const D = rpvRange(), at = (n) => `${Math.round(clamp(n / D, 0, 1) * 1000) / 10}%`;
@@ -159,7 +159,7 @@ function rpvFrame() {
   const c = RPV.c, live = !RP.pause && !RP.seeking && !RP.ended && RPV.drag < 0, idle = live && performance.now() - RPV.act > 3000;
   if (c.idle !== idle) { c.idle = idle; app.classList.toggle("rpidle", idle); }
   const paused = RP.pause || RP.ended;
-  if (c.paused !== paused) { c.paused = paused; RPV.play.innerHTML = paused ? RPV_IC.play : RPV_IC.pause; RPV.play.setAttribute("aria-label", RP.ended ? "Watch again" : paused ? "Play" : "Pause"); }
+  if (c.paused !== paused) { c.paused = paused; RPV.play.innerHTML = paused ? RPV_IC.play : RPV_IC.pause; RPV.play.setAttribute("aria-label", RP.ended ? _t("Watch again") : paused ? _t("Play") : _t("Pause")); }
   const tk = RPV.drag >= 0 ? RPV.drag : RP.seeking ? RP.to : RP.i, pct = Math.round(Math.min(1, tk / rpvRange()) * 1000) / 10;
   if (c.pct !== pct) { c.pct = pct; RPV.fill.style.width = `${pct}%`; RPV.knob.style.left = `${pct}%`; RPV.seek.setAttribute("aria-valuenow", String(Math.round(pct))); }
   if (c.seeking !== RP.seeking) { c.seeking = RP.seeking; RPV.seek.classList.toggle("sk", RP.seeking); }
@@ -175,21 +175,21 @@ function rpvEnd() {
   const M = RP.meta, mk = RP.mk, bw = RP.cfg.kind === "bw", mine = bw && M.own && RP.from !== "link", won = bw ? mk.won : G && G.winner === 0, ec = RPV.ec;
   ec.textContent = "";
   // what happened: the time (and the place), or what stopped it
-  const kick = bw ? ["Boss Week" + (M.no ? ` ${M.no}` : ""), rpvBoss(M.boss), BOSS_LV[RP.cfg.lv] || "Hard"] : ["Ranked vs CPU", "Replay"];
-  const big = bw ? (won ? rpvTime(rpTimeEnd()) : mk.t >= BW_CAP ? "Out of time" : "He's still up") : G && G.winner === 0 ? "Victory" : G && G.winner === 1 ? "Defeat" : "Draw";
+  const kick = bw ? [M.no ? _t("Boss Week {no}", { no: M.no }) : _t("Boss Week"), rpvBoss(M.boss), BOSS_LV[RP.cfg.lv] || BOSS_LV[1]] : [_t("Ranked vs CPU"), _t("Replay")];
+  const big = bw ? (won ? rpvTime(rpTimeEnd()) : mk.t >= BW_CAP ? _t("Out of time") : _t("He's still up")) : G && G.winner === 0 ? _t("Victory") : G && G.winner === 1 ? _t("Defeat") : _t("Draw");
   ec.append(rpvTx("span", "kick rpv-ek", kick.join(" · ")), rpvTx("b", "rpv-et" + (bw && won ? " time" : ""), big));
-  const sub = bw && won ? [rpvPlace(M), Number.isInteger(M.fl) ? `${M.fl} ♥ lost` : ""].filter(Boolean) : [];
+  const sub = bw && won ? [rpvPlace(M), Number.isInteger(M.fl) ? _t("{n} ♥ lost", { n: M.fl }) : ""].filter(Boolean) : [];
   if (sub.length) ec.appendChild(rpvTx("span", "rpv-ep", sub.join(" · ")));
   // the buttons
   const mkb = (cls, text, fn) => { const b = rpvBtn("btn " + cls, "", ""); b.appendChild(rpvTx("span", "", text)); rpvTap(b, fn, cls.includes("primary") ? "go" : "flip"); return b; };
   const row = rpvMk("div", "rpv-ea"), sec = rpvMk("div", "rpv-ea2");
   if (bw) {
-    row.appendChild(mkb("primary", mine ? "Retry" : `Your turn: Fight ${rpvWeekBoss()}`, () => rpClose("fight")));
-    sec.append(mkb("sm", "Watch again", () => rpClose("again")), mkb("sm", "Board ›", () => rpClose("board")), mkb("sm", "Menu", () => rpClose("")));
-    if (rpShareId()) sec.appendChild(mkb("sm rpv-esh", "Share ⤴︎", () => rpShare()));
+    row.appendChild(mkb("primary", mine ? _t("Retry") : _t("Your turn: Fight {boss}", { boss: rpvWeekBoss() }), () => rpClose("fight")));
+    sec.append(mkb("sm", _t("Watch again"), () => rpClose("again")), mkb("sm", _t("Board ›"), () => rpClose("board")), mkb("sm", _t("Menu"), () => rpClose("")));
+    if (rpShareId()) sec.appendChild(mkb("sm rpv-esh", `${_t("Share")} ⤴︎`, () => rpShare()));
   } else {
-    row.appendChild(mkb("primary", "Watch again", () => rpClose("again")));
-    sec.appendChild(mkb("sm", "Menu", () => rpClose("")));
+    row.appendChild(mkb("primary", _t("Watch again"), () => rpClose("again")));
+    sec.appendChild(mkb("sm", _t("Menu"), () => rpClose("")));
   }
   ec.append(row, sec);
   RPV.endEl.hidden = false; RPV.bar.hidden = false; RPV.tag.hidden = false;
@@ -221,35 +221,35 @@ function rpvTitle() {
   const M = LD.meta, st = LD.st, here = rpvWeekBoss();
   el.textContent = ""; el.hidden = false;
   const card = rpvMk("div", "card rpv-tc " + st);
-  card.setAttribute("role", "dialog"); card.setAttribute("aria-label", "A run to watch");
-  const x = rpvBtn("round x rpv-tx", "Close", RPV_X); rpvTap(x, () => rpLandClose(), "back");
+  card.setAttribute("role", "dialog"); card.setAttribute("aria-label", _t("A run to watch"));
+  const x = rpvBtn("round x rpv-tx", _t("Close"), RPV_X); rpvTap(x, () => rpLandClose(), "back");
   card.appendChild(x);
   const mkb = (cls, text, fn, sfx) => { const b = rpvBtn("btn " + cls, ""); b.appendChild(rpvTx("span", "", text)); rpvTap(b, fn, sfx); return b; };
   const acts = rpvMk("div", "rpv-ta");
   let focus = null;
   if ((st === "ok" || st === "old") && M) {
-    const spec = rpBossSpec(M.boss) || BL.BOSSES[0], lv = LD.cfg && BOSS_LV[LD.cfg.lv] || "Hard";
-    card.appendChild(rpvTx("span", "kick rpv-tk", ["Boss Week" + (M.no ? ` ${M.no}` : ""), lv].join(" · ")));
+    const spec = rpBossSpec(M.boss) || BL.BOSSES[0], lv = LD.cfg && BOSS_LV[LD.cfg.lv] || BOSS_LV[1];
+    card.appendChild(rpvTx("span", "kick rpv-tk", [M.no ? _t("Boss Week {no}", { no: M.no }) : _t("Boss Week"), lv].join(" · ")));
     const who = rpvMk("div", "rpv-tw"), bd = rpvMk("span", `rpv-bd rd-bossph rd-${spec.id}`), im = document.createElement("img"); im.alt = "";
     bd.style.setProperty("--bc", bwsCol(spec)); bwsImg(im, bwArt(spec.id), bd); bd.appendChild(im);
-    const nm = rpvMk("span", "rpv-tn2"); nm.append(rpvTx("b", "", M.nm), rpvTx("span", "", `vs ${spec.name}`));
+    const nm = rpvMk("span", "rpv-tn2"); nm.append(rpvTx("b", "", M.nm), rpvTx("span", "", _t("vs {boss}", { boss: spec.name })));
     who.append(bwPortrait(M.f), nm, bd);
     card.appendChild(who);
     const res = rpvMk("div", "rpv-tr2"), pl = rpvPlace(M);
     res.appendChild(rpvTx("b", "rpv-tt" + (st === "old" ? " old" : ""), M.t > 0 ? rpvTime(M.t) : "--:--.--"));
     if (pl) res.appendChild(rpvTx("span", "tag gold st", pl));
-    if (M.t > 0) res.appendChild(rpvTx("span", "rpv-th", `${M.fl} ♥ lost`));
+    if (M.t > 0) res.appendChild(rpvTx("span", "rpv-th", _t("{n} ♥ lost", { n: M.fl })));
     card.appendChild(res);
-    if (st === "old") card.appendChild(rpvTx("p", "rpv-tm", "This run is from an older version of the game"));
-    else { focus = mkb("primary lg rpv-go", "▶︎ Watch", () => rpLandGo(), "go"); acts.appendChild(focus); }
-    acts.appendChild(mkb(st === "old" ? "primary" : "sm", `Fight ${here}`, () => rpLandClose("sheet"), "go"));
+    if (st === "old") card.appendChild(rpvTx("p", "rpv-tm", _t("This run is from an older version of the game")));
+    else { focus = mkb("primary lg rpv-go", `▶︎ ${_t("Watch")}`, () => rpLandGo(), "go"); acts.appendChild(focus); }
+    acts.appendChild(mkb(st === "old" ? "primary" : "sm", _t("Fight {boss}", { boss: here }), () => rpLandClose("sheet"), "go"));
   } else if (st === "load") {
-    card.append(rpvMk("i", "rpv-spin"), rpvTx("p", "rpv-tm big", "Loading the run…"));
+    card.append(rpvMk("i", "rpv-spin"), rpvTx("p", "rpv-tm big", _t("Loading the run…")));
   } else {
-    const msg = st === "gone" ? ["This run isn't on the board any more", "The board keeps this week's top 10 and yours."] : st === "net" ? ["Couldn't reach the server", "Check the connection and try again."] : ["Replays need the server", "Open the game at potatobrawl.cloud to watch runs."];
-    card.append(rpvTx("span", "kick rpv-tk", "Boss Week"), rpvTx("b", "rpv-tb", msg[0]), rpvTx("p", "rpv-tm", msg[1]));
-    if (st === "net") { focus = mkb("primary", "Try again", () => { location.hash = "#watch=" + LD.id; }, "flip"); acts.appendChild(focus); acts.appendChild(mkb("sm", "Close", () => rpLandClose(), "back")); }
-    else { focus = mkb("primary", st === "gone" ? `Fight ${here}` : "OK", () => rpLandClose(st === "gone" ? "sheet" : undefined), "go"); acts.appendChild(focus); }
+    const msg = st === "gone" ? [_t("This run isn't on the board any more"), _t("The board keeps this week's top 10 and yours.")] : st === "net" ? [_t("Couldn't reach the server"), _t("Check the connection and try again.")] : [_t("Replays need the server"), _t("Open the game at potatobrawl.cloud to watch runs.")];
+    card.append(rpvTx("span", "kick rpv-tk", _t("Boss Week")), rpvTx("b", "rpv-tb", msg[0]), rpvTx("p", "rpv-tm", msg[1]));
+    if (st === "net") { focus = mkb("primary", _t("Try again"), () => { location.hash = "#watch=" + LD.id; }, "flip"); acts.appendChild(focus); acts.appendChild(mkb("sm", _t("Close"), () => rpLandClose(), "back")); }
+    else { focus = mkb("primary", st === "gone" ? _t("Fight {boss}", { boss: here }) : _t("OK"), () => rpLandClose(st === "gone" ? "sheet" : undefined), "go"); acts.appendChild(focus); }
   }
   if (acts.childNodes.length) card.appendChild(acts);
   el.appendChild(card);

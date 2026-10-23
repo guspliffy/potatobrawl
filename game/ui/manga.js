@@ -593,7 +593,7 @@ function mangaStart(g, plain) {
     if (ulti) FIN.launch = Math.max(FIN.launch, FIN.hit + 150);   // the launch waits for the third (gold) impact frame
     FIN.endT = MT.END;   // (read by the tests: the page's length)
     FIN.kit = { col: S.col, step() {}, pose: () => null, draw() {} };
-    FIN.cardSub = ulti ? `Ultimate: ${cut ? S.name : MG.ultiName || S.name}` : alt ? `Potatality: ${S.name}` : FIN.ev && FIN.ev.fin ? `${W.spec.signature.name} finish` : `Final chapter: ${S.name}`;
+    FIN.cardSub = ulti ? _t("Ultimate: {name}", { name: cut ? S.name : MG.ultiName || S.name }) : alt ? _t("Potatality: {name}", { name: S.name }) : FIN.ev && FIN.ev.fin ? _t("{move} finish", { move: _tv(W.spec.signature.name) }) : _t("Final chapter: {name}", { name: S.name });
     FIN.mgStat = MG.stat;
     for (const p of FIN.P) if (p) { p.mk = {}; p.doomed = false; p.finPose = (P, sk) => mgPose(p, P, sk); }   // the doomed flag (a copy on the stand-in) would make the drawing blink as intangible
     MG.on = true;
@@ -761,7 +761,7 @@ function mangaOverlay(o, tk) {
     if (t >= MT.CARD) mgCard(o, t);
     if (t > MT.SKIP && t < MT.FADE) {
       o.font = `600 ${Math.round(clamp(MG.m * 1.05, 9, 12))}px system-ui, sans-serif`; o.textAlign = "right"; o.textBaseline = "middle";
-      o.fillStyle = S.hint ? S.hint(t) : "rgba(30,28,40,0.55)"; o.fillText(touchUI ? "Tap to skip" : "Click or press a key to skip", L.gw - MG.m - 4, L.gh - MG.m * 0.5);
+      o.fillStyle = S.hint ? S.hint(t) : "rgba(30,28,40,0.55)"; o.fillText(touchUI ? _t("Tap to skip") : _t("Click or press a key to skip"), L.gw - MG.m - 4, L.gh - MG.m * 0.5);
     }
     const fade = fe(MT.FADE, MT.END, t);
     if (fade > 0) { o.fillStyle = `rgba(14,16,34,${(0.9 * fade).toFixed(3)})`; o.fillRect(0, 0, L.gw, L.gh); }
@@ -904,8 +904,8 @@ function mgCardPrep() {
     // a 2v2: the winner's teammate rides along as a round portrait sticker, "WITH <name>" (Fable)
     const W2 = mgMate();
     if (W2) {
-      const nm2 = W2.slot === meSlot ? "YOU" : ((match.names && match.names[W2.slot]) || W2.spec.name).toUpperCase();
-      C.mate = { img: mgPic(W2.spec.id), col: TEAM_COL[W2.team], word: mgWord("WITH " + nm2, { size: hh * 0.26, seed: 19, arc: 24, jit: 0.06, weight: 800, fill: "#f1ece2" }) };
+      const nm2 = W2.slot === meSlot ? _t("YOU") : ((match.names && match.names[W2.slot]) || W2.spec.name).toUpperCase();
+      C.mate = { img: mgPic(W2.spec.id), col: TEAM_COL[W2.team], word: mgWord(_t("WITH {name}", { name: nm2 }), { size: hh * 0.26, seed: 19, arc: 24, jit: 0.06, weight: 800, fill: "#f1ece2" }) };
     }
     if (C.name.w + C.win.w * 0.9 > room) { const q = room / (C.name.w + C.win.w * 0.9); C.name = mgWord(nm, { size: hh * 0.74 * q, seed: 7, arc: 14, jit: 0.1, space: 0.04 }); C.win = mgWord(finWinWord(W), { size: hh * 0.3 * q, seed: 11, arc: 20, jit: 0.1, fill: accent }); }
   }

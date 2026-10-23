@@ -509,7 +509,7 @@ MANGA.reaper = (function () {
       const Lp = L_(); stoneName = Lp.spec.name.toUpperCase();
       const mc = mgCanvas(4, 4).getContext("2d"); mc.font = `800 10px "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
       stoneFont = clamp(10 * 25 / Math.max(1, mc.measureText(stoneName).width), 3.2, 6);
-      if (!MG.ulti && !MG.alt) FIN.cardSub = FIN.ev && FIN.ev.fin ? "Last Rites finish" : "Final chapter: Last Rites";   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate and a Potatality keep the engine's line
+      if (!MG.ulti && !MG.alt) FIN.cardSub = FIN.ev && FIN.ev.fin ? _t("{move} finish", { move: "Last Rites" }) : _t("Final chapter: {name}", { name: "Last Rites" });   // his finishing special is Last Rites (the signature's name, Harvest, is the plain special); an Ultimate and a Potatality keep the engine's line
     },
     step(t, k) {
       const W = W_();

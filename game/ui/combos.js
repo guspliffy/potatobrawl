@@ -1,5 +1,9 @@
 /*ROUTES*/
 /* ===================== combos: routes in the pop-up, route cards in How to play, the Combo trial ===================== */
+// The routes' names are data of routes.js (a node module, no _t there): the page shows them through this table (routeName)
+const ROUTE_NAMES = { three: _t("Three-piece"), lift: _t("Lift & Smash"), trip: _t("Trip & Spike"), rising: _t("Rising"), sig: _t("Signature"), skyburn: _t("Skyburn"), lab: _t("Lab Accident"),
+  hammer: _t("Hammer Fall"), staff: _t("Staff Dance"), blink: _t("Blink Cut"), tail: _t("Tail & Flame"), whip: _t("Pistol Whip"), reap: _t("Reap") };
+const routeName = (r) => ROUTE_NAMES[r.id] || r.name;
 // The pop-up: follows each fighter's combo and names the route its hits make (the best one so far in this combo).
 const comboT = [{}, {}, {}, {}];
 function comboRoute(g, e) {
@@ -17,28 +21,28 @@ const RK = {
   jab: ["", "light"], side: ["→", "light"], up: ["↑", "light"], down: ["↓", "light"], nair: ["", "light"], air: ["", "light"], uair: ["↑", "light"],
   hSide: ["→", "heavy"], hUp: ["↑", "heavy"], hDown: ["↓", "heavy"], hAir: ["", "heavy"], spec: ["", "special"], jump: ["", "jump"],
 };
-const RK_NAME = { light: "Light", heavy: "Heavy", special: "Special", jump: "Jump" };
+const RK_NAME = { light: _t("Light"), heavy: _t("Heavy"), special: _t("Special"), jump: _t("Jump") };
 function routeKeysHTML(r, lit) {   // each key after the first keeps its dash in front of it, so a wrapped line never ends in a dash
   return r.keys.map((k, i) => {
     const [arrow, b] = RK[k.replace("!", "")], hold = k.endsWith("!");
-    const key = `<span class="rk rk-${b}${lit && lit[i] ? " on" : ""}">${arrow ? `<i>${arrow}</i>` : ""}<b>${RK_NAME[b]}</b>${hold ? "<em>hold</em>" : ""}</span>`;
+    const key = `<span class="rk rk-${b}${lit && lit[i] ? " on" : ""}">${arrow ? `<i>${arrow}</i>` : ""}<b>${RK_NAME[b]}</b>${hold ? `<em>${_t("hold")}</em>` : ""}</span>`;
     return i ? `<span class="rk-g"><span class="rk-sep"></span>${key}</span>` : key;
   }).join("");
 }
 const ROUTE_HINT = {
-  three: "Light, Light, then push the stick toward them and Light again. The third hit sends them flying.",
-  lift: "Side light, up light, then up + Heavy the moment the up light lands.",
-  trip: "Down light, side light, then down + Heavy right away. Works at low damage.",
-  rising: "Stick toward them + Light, stick up + Light, Jump when it lands, then Light in the air. Any direction counts; toward them reaches best.",
-  sig: "Two side lights, then Special the moment the second one lands.",
-  skyburn: "Stick up + Light twice, Jump when the second one lands, then let go of up and Heavy in the air for the fiery headbutt.",
-  lab: "Down light, up light, then up + Heavy right away.",
-  hammer: "Two jabs, then side + Heavy and keep holding it a moment before you let go.",
-  staff: "Two side lights, then side + Heavy the moment the second one lands.",
-  blink: "Side light, up light, then Special the moment the up light lands.",
-  tail: "Down light, side light, then Special right away.",
-  whip: "Two jabs, then Special the moment the second one lands.",
-  reap: "Stick down + Light twice, then Special for Harvest the moment the second one lands. The spin is the finisher.",
+  three: _t("Light, Light, then push the stick toward them and Light again. The third hit sends them flying."),
+  lift: _t("Side light, up light, then up + Heavy the moment the up light lands."),
+  trip: _t("Down light, side light, then down + Heavy right away. Works at low damage."),
+  rising: _t("Stick toward them + Light, stick up + Light, Jump when it lands, then Light in the air. Any direction counts; toward them reaches best."),
+  sig: _t("Two side lights, then Special the moment the second one lands."),
+  skyburn: _t("Stick up + Light twice, Jump when the second one lands, then let go of up and Heavy in the air for the fiery headbutt."),
+  lab: _t("Down light, up light, then up + Heavy right away."),
+  hammer: _t("Two jabs, then side + Heavy and keep holding it a moment before you let go."),
+  staff: _t("Two side lights, then side + Heavy the moment the second one lands."),
+  blink: _t("Side light, up light, then Special the moment the up light lands."),
+  tail: _t("Down light, side light, then Special right away."),
+  whip: _t("Two jabs, then Special the moment the second one lands."),
+  reap: _t("Stick down + Light twice, then Special for Harvest the moment the second one lands. The spin is the finisher."),
 };
 const routesDone = () => (Array.isArray(P.routes) ? P.routes : []);
 const ROUTE_TOTAL = ROUTES.ALL.length;
@@ -50,13 +54,13 @@ function renderHelpCombos() {
   const box = $("helpCombos");
   if (!FIG[helpFid]) helpFid = FIG[P.last] ? P.last : FIGHTERS[0].id;
   const done = new Set(routesDone());
-  const figs = FIGHTERS.map((f) => `<button class="chip${f.id === helpFid ? " on" : ""}" data-f="${f.id}">${f.name}${done.has(ROUTES.OWN[f.id].id) ? ' <span class="rk-ok" aria-label="route cleared"></span>' : ""}</button>`).join("");
-  const cards = ROUTES.forFighter(helpFid).map((r) => `<div class="rc${done.has(r.id) ? " ok" : ""}"><div class="rc-n">${r.name}${r.fighter ? `<small>${FIG[r.fighter].name} only</small>` : ""}${done.has(r.id) ? '<span class="rk-ok" aria-label="cleared"></span>' : ""}</div><div class="rc-k">${routeKeysHTML(r)}</div></div>`).join("");
-  box.innerHTML = `<h4>Combos</h4>
-    <p>The second light hit in a row opens <b>the link</b>: a Heavy, Special or Jump pressed the moment it lands comes out faster, and at low damage it can't be escaped. Combos that follow a route show its name.</p>
-    <div class="rc-figs" role="group" aria-label="Routes of">${figs}</div>
+  const figs = FIGHTERS.map((f) => `<button class="chip${f.id === helpFid ? " on" : ""}" data-f="${f.id}">${f.name}${done.has(ROUTES.OWN[f.id].id) ? ` <span class="rk-ok" aria-label="${_t("route cleared")}"></span>` : ""}</button>`).join("");
+  const cards = ROUTES.forFighter(helpFid).map((r) => `<div class="rc${done.has(r.id) ? " ok" : ""}"><div class="rc-n">${routeName(r)}${r.fighter ? `<small>${_t("{name} only", { name: FIG[r.fighter].name })}</small>` : ""}${done.has(r.id) ? `<span class="rk-ok" aria-label="${_t("cleared")}"></span>` : ""}</div><div class="rc-k">${routeKeysHTML(r)}</div></div>`).join("");
+  box.innerHTML = `<h4>${_t("Combos")}</h4>
+    <p>${_t("The second light hit in a row opens <b>the link</b>: a Heavy, Special or Jump pressed the moment it lands comes out faster, and at low damage it can't be escaped. Combos that follow a route show its name.")}</p>
+    <div class="rc-figs" role="group" aria-label="${_t("Routes of")}">${figs}</div>
     <div class="rc-grid">${cards}</div>
-    <div class="rc-foot"><span class="rc-count">${done.size} of ${ROUTE_TOTAL} routes cleared${done.size >= ROUTE_TOTAL ? " · Combo Potato" : ` · all ${ROUTE_TOTAL}: the title Combo Potato and ${COMBO_CHIPS} chips`}</span><span id="helpTrialW"><button class="btn" id="hTrial"><span>Combo trial</span></button></span></div>`;
+    <div class="rc-foot"><span class="rc-count">${_t("{done} of {total} routes cleared", { done: done.size, total: ROUTE_TOTAL })}${done.size >= ROUTE_TOTAL ? ` · ${_t("Combo Potato")}` : ` · ${_t("all {total}: the title Combo Potato and {chips} chips", { total: ROUTE_TOTAL, chips: COMBO_CHIPS })}`}</span><span id="helpTrialW"><button class="btn" id="hTrial"><span>${_t("Combo trial")}</span></button></span></div>`;
   for (const b of box.querySelectorAll(".rc-figs .chip")) b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); helpFid = b.dataset.f; renderHelpCombos(); });
   $("helpTrialW").hidden = mode === "match";
   $("hTrial").addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); startTrial(helpFid); });
@@ -71,14 +75,14 @@ function startTrial(fid, o) {
   const me = FIG[fid] || FIGHTERS[0], opp = FIG.odin, mi = P.pal[me.id] || 0;
   const myPal = me.palettes[mi] || me.palettes[0], opPal = opp.palettes[me.id === "odin" ? (mi + 1) % chipN(opp) : 0];
   G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: opPal }], stocks: 9, time: 0, countdown: 90 });
-  match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: "Combo trial" };
+  match = { ranked: false, tutorial: true, trial: true, d: -1, bot: makeBot(-1), level: _t("Combo trial") };
   meSlot = 0;
   const list = ROUTES.forFighter(me.id), done = new Set(routesDone());
   const want = o && o.route ? list.findIndex((r) => r.id === o.route) : -1;
   Object.assign(TR, { fid: me.id, list, i: want >= 0 ? want : Math.max(0, list.findIndex((r) => !done.has(r.id))), hold: 0, next: null, back: o && o.back !== undefined ? o.back : null });
   enterMatchUI();
   app.classList.toggle("tutpad", touchUI);
-  $("tutNext").hidden = false; $("tutSkip").textContent = TR.back !== null ? "Back" : "Exit";
+  $("tutNext").hidden = false; $("tutSkip").textContent = TR.back !== null ? _t("Back") : _t("Exit");
   trialRoute();
 }
 // a fresh try at the current route: the CPU stands a step in front, at the route's damage
@@ -86,8 +90,8 @@ function trialRoute() {
   const r = TR.list[TR.i];
   Object.assign(TR, { k: 0, t: {}, miss: 0, air: false });
   $("tut").classList.remove("done");
-  $("tutN").textContent = `Combo trial · ${FIG[TR.fid].name} · ${TR.i + 1} of ${TR.list.length}`;
-  $("tutT").textContent = r.name;
+  $("tutN").textContent = _t("Combo trial · {name} · {i} of {total}", { name: FIG[TR.fid].name, i: TR.i + 1, total: TR.list.length });
+  $("tutT").textContent = routeName(r);
   trialKeys();
   TR.place = 1;
 }
@@ -154,14 +158,13 @@ function trialTick(evs) {
 function trialClear(r) {
   const before = routesDone(), first = !before.includes(r.id);
   if (first) P.routes = [...before, r.id];
-  let note = first ? "Cleared!" : "Cleared again!";
   if (first && P.routes.length >= ROUTE_TOTAL && !P.comboPaid) {
     P.comboPaid = true; P.tokens += COMBO_CHIPS;
-    showBanner("Combo Potato", `All ${ROUTE_TOTAL} routes · +${COMBO_CHIPS} chips`, "fin", 2200, "#ffd23f");
+    showBanner(_t("Combo Potato"), _t("All {total} routes · +{chips} chips", { total: ROUTE_TOTAL, chips: COMBO_CHIPS }), "fin", 2200, "#ffd23f");
   }
   if (first) { saveProfile(); cnt("route"); }   // cnt: ui/counter.js
   TR.k = want0(r).length; trialKeys();
-  $("tut").classList.add("done"); $("tutT").textContent = `${r.name}: ${note}`;
+  $("tut").classList.add("done"); $("tutT").textContent = first ? _t("{name}: Cleared!", { name: routeName(r) }) : _t("{name}: Cleared again!", { name: routeName(r) });
   Sfx.route();
   const done = new Set(routesDone()), nx = TR.list.findIndex((q, j) => j > TR.i && !done.has(q.id));
   TR.next = TR.back !== null ? TR.i : nx >= 0 ? nx : (TR.i + 1) % TR.list.length;   // from a Road stop: that stop's combo again until Back (Next moves on)
