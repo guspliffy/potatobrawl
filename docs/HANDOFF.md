@@ -741,6 +741,17 @@ index.html is committed with every source change (check.sh flags a stale one).
   · effects (fx, /*SKINFX*/ placeholder, the frame-time watchdog PERF, render, sim events) · screens (menu, select, match,
   results; CPU_NAMES + the CPU's name under its HUD card) · hud (match HUD extras, below) · online (NET, PROTO, lockstep, presence) · online-team (online Team Brawl: board, four-phone lockstep, CPU seats, drops, repair copy) · menus (button wiring, settings, help) · tutorial
   · loop (simTick, frame).
+- ui/lang.js (right after base.js) + lang/<fr|de|es|ru>.json: the languages. `_t("English text", { vars })` returns the line for LANG
+  (the English text is the key and the fallback; "{n} cup|{n} cups" plurals by Intl.PluralRules, Russian has 3 forms; "@@note" in a key
+  is a translator's note). `_tv(x)` shows core.js data (roles, blurbs, move and skin names) and table names marked `_tk("x")` (a hoisted
+  marker for tables that run before lang.js, e.g. base.js TIERS, and for names the logic compares, e.g. LEVELS). `_tDom(el)` translates
+  the markup's text and aria-label/title/placeholder/alt once at start (`translate="no"` skips a subtree; a cloned `<template>` needs its
+  own `_tDom`). LANG: ?lang= > localStorage potatobrawl.lang > navigator.languages > en; LOC formats numbers. CSS words are
+  `var(--tw-<id>, "English")` set from the table. The picker: Settings (start page only) and the welcome sheet; a change reloads.
+  ?lang=xx is the pseudo-language (accents, ⟦ ⟧, padding) that shows English the helper never touched. Russian: Roboto Condensed
+  Cyrillic, self-hosted (web/rc-cyr-*.woff2, OFL), declared as the "Barlow Condensed" family with the Cyrillic unicode-range, so every
+  font stack (canvas too) picks it up. Stays English: fighter, boss, KO page and CPU names, Pommes, Potatality, the KO sound words.
+  window.__blTour(screen) opens a screen for tests/pwlang.py. build.py inlines the tables at /*LANGS*/.
 - ui/cup.js (after screens): the offline tournament, UI only. You + 7 CPUs (potato names, fighters, ratings seeded around yours:
   quarter-final opponent about -30, semi-final opponent from the other quarter in your half about +40, final opponent from the other
   half about +150), quarter-final 2 lives / 2 min, semi-final 2 lives / 2 min, final 3 lives / 3 min. CPU strength from the opponent's
@@ -1030,6 +1041,10 @@ pwux2.py (all screens, 3 sizes) · ulti.js (every ulti's KO% vs Samurai and Odin
 save/restore mid-ulti; check.sh 3e, also in --quick) · pwult.py (the ulti bar empty/half/full/spent, the ULTI button only while full and
 clear of everything, tap / U / gamepad Y presses, reduced motion; tags se phone desk up kbd pad; check.sh 6d) · pwtut.py (the nine tutorial
 steps, desktop through to the results, touch sizes up to the ulti; tags desk desktouch se phone up; check.sh 6e) · pwultreel.py (above) ·
+tools/i18n.js (the language tables: every _t/_tk text, the markup and core.js data has its fr/de/es/ru line with the same {vars},
+tags and plural forms; --src the source only, --missing xx, --keys, --prune; check.sh 8l, also in --quick) · pwlang.py (every screen in
+de, ru and the pseudo-language at four sizes, fr and es at 844x390: cut text, text out of its button, English left; contact sheets per
+language; port PWLANG_PORT; check.sh 8m) ·
 boss.js (boss win rates per level with two bots, determinism, the final launch, lethal calls; check.sh 3f) · pwboss.py (Practice >
 Old Scratch, the boss bar, FINISH, the KO page, Victory / Defeat, the bar at four sizes; check.sh 8d) · pwroad.py (the Road: card,
 map, locks, a stop's rules, stars paid once, Retry / back to the map, the fence, Old Scratch's first win, Retry beside Next stop, a
@@ -1069,10 +1084,13 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
 - Beta (once set up): deploy/beta-update.txt with BRANCH set to the branch to try.
 
 ## Gotchas
+- New player-facing text: `_t("English", { vars })`, never `${}` or `+` inside it, never `_t` in core.js/sync.js/routes.js; add
+  its fr/de/es/ru lines (`node tools/i18n.js --missing de`). A name the logic compares (`x.name === "Hard"`) must stay English data: mark it
+  `_tk` and show it with `_tv`.
 - `pkill -f <pattern>` kills the tool's own shell. Kill node by pid:
   `for p in $(ps -eo pid,comm,args | awk '$2=="node" && /server.js/ {print $1}'); do kill $p; done`
 - server.js caches files at start: restart it after a rebuild.
-- Google Fonts are blocked in the sandbox; screenshots use fallback fonts.
+- Chromium in the cloud container loads Google Fonts (checked 2026-10-23), so screenshots use Barlow.
 - Jonny's preferences: raw findings, correctness over speed, no silent code changes, flag assumptions,
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
