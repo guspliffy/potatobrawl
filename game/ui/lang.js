@@ -7,7 +7,8 @@
    - Plurals: "{n} chip|{n} chips" (one|other); vars.n (a number) picks the form by the language's rules. Russian lines have three forms
      (one|few|many), the others two.
    - "Free@@price": the part after @@ is a note for the translators (two meanings of one English word); English shows "Free".
-   - _tv(text) is _t for text that comes from core.js data (roles, blurbs, move and skin names): tools/i18n.js reads those keys from core.js.
+   - _tv(text) is _t for text that comes from core.js data (roles, blurbs, move and skin names): tools/i18n.js reads those keys from core.js;
+     and for a base.js table whose texts are marked with _tk (below).
    - The page markup (shell.html) is translated once, here at start, by _tDom: each text and label (aria-label, title, placeholder, alt) is
      looked up by its English text. translate="no" keeps an element and everything in it as it is (names, the wordmark).
    - The language: ?lang=xx in the address (tests), else the one picked in Settings or on the welcome sheet (this device only), else the first of
@@ -50,6 +51,9 @@ function _t(s, v) {
   return v ? r.replace(/\{(\w+)\}/g, (m, k) => (v[k] === undefined ? m : v[k])) : r;
 }
 const _tv = (s, v) => (s ? _t(String(s), v) : s);
+// _tk("Bronze") marks a text as a key and returns it as it is, for a table in base.js, which runs before this part (a hoisted function,
+// so it works there); show it later with _tv(t.name). Anywhere after base.js, use _t at the definition instead.
+function _tk(s) { return s; }
 // the page markup, once at start: text and labels by their English text (whitespace runs count as one space)
 const tKey = (s) => { const k = String(s).replace(/\s+/g, " ").trim(); return /[A-Za-z]{2}/.test(k) ? k : null; };
 function _tDom(root) {
