@@ -78,17 +78,17 @@ if (LANG !== "en") {
     document.documentElement.style.setProperty("--tw-" + id, JSON.stringify(s));
   }
 }
-/* Russian: Barlow has no Cyrillic letters, so Barlow Condensed's come from Roboto Condensed (game/fonts/rc-cyr-n|i.woff2, SIL OFL, one
-   variable file per style, inlined by build.py), added under Barlow Condensed's own name with the same six weights as its Google faces (a
-   face with a weight range would win the match and drop the Latin letters), limited to the Cyrillic letters: every font list in the page
-   and the canvas gets them, in every language (the Settings row says Русский). In the page, so a downloaded copy has them too. */
-const T_CYR = /*RCCYR*/null;
+/* Russian: Barlow has no Cyrillic letters, so Barlow Condensed's come from Fira Sans Extra Condensed (game/fonts/fs-cyr-<style>-<weight>.woff2,
+   SIL OFL, inlined by build.py; static faces: a variable font's overlapping outlines show through the game's stroked titles), added under
+   Barlow Condensed's own name with the same six weights as its Google faces (a face with a weight range would win the match and drop the
+   Latin letters), limited to the Cyrillic letters: every font list in the page and the canvas gets them, in every language (the Settings
+   row says Русский). In the page, so a downloaded copy has them too. */
+const T_CYR = /*CYR*/null;
 if (T_CYR && typeof FontFace === "function" && document.fonts) {
   try {
-    const buf = (b) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0)).buffer, n = buf(T_CYR.n), i = buf(T_CYR.i);
-    for (const [style, weight, b] of [["normal", "600", n], ["normal", "700", n], ["normal", "800", n], ["italic", "700", i], ["italic", "800", i], ["italic", "900", i]]) {
-      const f = new FontFace("Barlow Condensed", b, { style, weight, display: "swap", unicodeRange: "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116" });
-      document.fonts.add(f);
+    for (const k in T_CYR) {   // "italic-900": style and weight
+      const [style, weight] = k.split("-"), b = Uint8Array.from(atob(T_CYR[k]), (c) => c.charCodeAt(0)).buffer;
+      document.fonts.add(new FontFace("Barlow Condensed", b, { style, weight, display: "swap", unicodeRange: "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116" }));
     }
   } catch (e) { /* an old browser: Russian shows in the system font */ }
 }
