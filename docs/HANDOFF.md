@@ -749,7 +749,8 @@ index.html is committed with every source change (check.sh flags a stale one).
   own `_tDom`). LANG: ?lang= > localStorage potatobrawl.lang > navigator.languages > en; LOC formats numbers. CSS words are
   `var(--tw-<id>, "English")` set from the table. The picker: Settings (start page only) and the welcome sheet; a change reloads.
   ?lang=xx is the pseudo-language (accents, ⟦ ⟧, padding) that shows English the helper never touched. Russian: Roboto Condensed
-  Cyrillic, self-hosted (web/rc-cyr-*.woff2, OFL), declared as the "Barlow Condensed" family with the Cyrillic unicode-range, so every
+  Cyrillic (game/fonts/rc-cyr-*.woff2, OFL), inlined by build.py and added with FontFace as the "Barlow Condensed" family (Google's six
+  weights, not a range: a range face wins the match and drops the Latin letters) with the Cyrillic unicode-range, so every
   font stack (canvas too) picks it up. Stays English: fighter, boss, KO page and CPU names, Pommes, Potatality, the KO sound words.
   window.__blTour(screen) opens a screen for tests/pwlang.py. build.py inlines the tables at /*LANGS*/.
 - ui/cup.js (after screens): the offline tournament, UI only. You + 7 CPUs (potato names, fighters, ratings seeded around yours:

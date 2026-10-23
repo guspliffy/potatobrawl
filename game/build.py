@@ -13,6 +13,9 @@ UI_PARTS = ['base', 'lang', 'counter', 'input', 'view', 'draw-fighters', 'glaze'
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
 # the language tables: game/lang/<fr|de|es|ru>.json ("English": "theirs"), into ui/lang.js (tools/i18n.js checks them)
+# the Cyrillic letters for Russian (Roboto Condensed, SIL OFL: fonts/rc-cyr-OFL.txt), into ui/lang.js as base64 (it adds them with FontFace)
+import base64
+ui = ui.replace('/*RCCYR*/null', json.dumps({k: base64.b64encode((d/'fonts'/f'rc-cyr-{k}.woff2').read_bytes()).decode() for k in 'ni'}), 1)
 ui = ui.replace('/*LANGS*/{}', json.dumps({f.stem: json.loads(f.read_text(encoding='utf-8')) for f in sorted((d/'lang').glob('*.json'))}, ensure_ascii=False, separators=(',', ':')), 1)
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
 # the maps: one script per map in game/maps/<id>.js (MAP_ART entries), spliced in after the Potato Moon map in ui/draw-world.js

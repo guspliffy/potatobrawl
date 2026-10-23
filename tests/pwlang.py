@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""The language sweep (check.sh "lang-ui"): every screen in every language at every size, against a local server (the Russian letters come
-from a font file, which a file:// page can't load). English goes first at each size; what is already so in English is not reported again.
+"""The language sweep (check.sh "lang-ui"): every screen in every language at every size, against a local server (with
+accounts, so Quick match, Boss Week and the cups show). English goes first at each size; what is already so in English is not reported again.
 For each screen:
   cut       a text clipped by a box that hides overflow (an ellipsis too), sideways, or downwards where the box doesn't scroll
   spill     a text running out of its button, chip, tag or pill, or off the screen
+  overlap   two texts on top of each other (a longer title running under a button or a tag)
   english   (the pseudo-language xx only) a visible text with letters that _t never touched (no ⟦ ⟧), names and numbers aside
   errors    page errors and console errors
 It saves one screenshot per language, size and screen (<out>/<lang>_<size>_<screen>.png), one contact sheet per language
@@ -46,6 +47,7 @@ CHECK = r"""(xx) => {
   const nm = (el) => { let s = el.tagName.toLowerCase(); if (el.id) s += '#' + el.id; else if (typeof el.className === 'string' && el.className.trim()) s += '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.'); const p = el.parentElement && el.parentElement.closest('[id]'); return (p ? '#' + p.id + ' ' : '') + s; };
   const BOX = 'button, .btn, .chip, .tag, .coin, [class*="pill"], [class*="badge"]';
   const add = (kind, el, t) => { const k = kind + ' ' + nm(el); if (seen.has(k)) return; seen.add(k); out.push({ kind, at: nm(el), text: t.slice(0, 60) }); };
+  const texts = [];   // [el, text, rects] for the overlap test below
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n; (n = w.nextNode());) {
     const t = n.nodeValue.replace(/\s+/g, ' ').trim();
@@ -55,7 +57,9 @@ CHECK = r"""(xx) => {
     const rg = document.createRange(); rg.selectNodeContents(n);
     const rs = [...rg.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
     if (!rs.length) continue;
+    texts.push([el, t, rs]);
     // the nearest box that hides overflow
+    let clip = null;
     for (let a = el; a && a !== document.body; a = a.parentElement) {
       const cs = getComputedStyle(a), ox = cs.overflowX, oy = cs.overflowY;
       if (ox === 'visible' && oy === 'visible') continue;
@@ -63,13 +67,15 @@ CHECK = r"""(xx) => {
       const side = !scrollX && rs.some((r) => r.left < ar.left - 1.5 || r.right > ar.right + 1.5);
       const down = !scrollY && oy !== 'visible' && rs.some((r) => r.bottom > ar.bottom + 1.5 || r.top < ar.top - 1.5);
       if (side || down) add('cut', el, t);
+      clip = ar;
       break;
     }
     // out of its own button / chip / tag
     const box = el.closest(BOX);
     if (box) { const br = box.getBoundingClientRect(); if (rs.some((r) => r.left < br.left - 2 || r.right > br.right + 2 || r.top < br.top - 3 || r.bottom > br.bottom + 3)) add('spill', el, t); }
     // off the screen (a sideways strip that scrolls is fine)
-    if (rs.some((r) => r.left < -1 || r.right > innerWidth + 1 || r.top < -1 || r.bottom > innerHeight + 1)) {
+    const onScr = (r) => r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1;
+    if (!(clip && onScr(clip)) && rs.some((r) => !onScr(r))) {
       let sc = false; for (let a = el; a && a !== document.body; a = a.parentElement) { const cs = getComputedStyle(a); if (/auto|scroll/.test(cs.overflowX + cs.overflowY)) { sc = true; break; } }
       if (!sc) add('spill', el, t + ' (off the screen)');
     }
@@ -78,6 +84,15 @@ CHECK = r"""(xx) => {
       let rest = t.replace(/\d{1,2}:\d{2}\s?(AM|PM)/g, ' '); for (const k of KEEP) rest = rest.split(k).join(' ');
       if (/\p{L}{2}/u.test(rest.replace(/\b(vs|x)\b/g, ''))) add('english', el, t);
     }
+  }
+  // two texts on top of each other (a longer title running under a button or a tag): texts of different elements, neither inside the other
+  const layer = (el) => { for (let a = el; a && a !== document.body; a = a.parentElement) { const cs = getComputedStyle(a); if (cs.position === 'fixed' || cs.position === 'sticky' || /auto|scroll/.test(cs.overflowX + cs.overflowY)) return a; } return null; };
+  const hit = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 3 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 3;
+  for (let i = 0; i < texts.length; i++) for (let j = i + 1; j < texts.length; j++) {
+    const [ea, ta, ra] = texts[i], [eb, tb, rb] = texts[j];
+    if (ea === eb || ea.contains(eb) || eb.contains(ea) || ea.closest('.screen') !== eb.closest('.screen')) continue;   // a sheet over the start page is another layer
+    if (layer(ea) !== layer(eb)) continue;   // a button fixed over a list that scrolls under it
+    if (ra.some((a) => rb.some((b) => hit(a, b)))) add('overlap', ea, ta.slice(0, 28) + ' / ' + tb.slice(0, 28));
   }
   return out;
 }""" % json.dumps(KEEP)

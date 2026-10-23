@@ -3,15 +3,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&family=Barlow:wght@400;500;600&display=swap">
 <style>
-/* Russian: Barlow has no Cyrillic letters, so Barlow Condensed's come from Roboto Condensed (web/rc-cyr-n|i.woff2, SIL OFL, one variable
-   file per style), declared under Barlow Condensed's own name with the same weights as its faces above: every font list in the page and the
-   canvas gets them, and the browser fetches a file only when Cyrillic shows. Body text (Barlow) falls back to the system font. */
-@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600; font-display: swap; src: url(rc-cyr-n.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
-@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap; src: url(rc-cyr-n.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
-@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 800; font-display: swap; src: url(rc-cyr-n.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
-@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 700; font-display: swap; src: url(rc-cyr-i.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
-@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 800; font-display: swap; src: url(rc-cyr-i.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
-@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 900; font-display: swap; src: url(rc-cyr-i.woff2) format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
 :root {
   /* Layout: full-bleed arena canvas. HUD across the top, touch controls in the bottom corners
      (landscape) or a bottom panel (portrait). Menus dock left over a live demo match. */

@@ -78,9 +78,80 @@ if (LANG !== "en") {
     document.documentElement.style.setProperty("--tw-" + id, JSON.stringify(s));
   }
 }
-// Russian: the Cyrillic letters of "Barlow Condensed" come from web/rc-cyr-*.woff2 (the @font-face rules in shell.html). The canvas
-// does not wait for a font, so both faces are fetched now, long before the first word is drawn.
-if (LANG === "ru" && document.fonts && document.fonts.load) { for (const f of ['italic 900 20px "Barlow Condensed"', '700 20px "Barlow Condensed"']) document.fonts.load(f, "Жж").catch(() => {}); }
+/* Russian: Barlow has no Cyrillic letters, so Barlow Condensed's come from Roboto Condensed (game/fonts/rc-cyr-n|i.woff2, SIL OFL, one
+   variable file per style, inlined by build.py), added under Barlow Condensed's own name with the same six weights as its Google faces (a
+   face with a weight range would win the match and drop the Latin letters), limited to the Cyrillic letters: every font list in the page
+   and the canvas gets them, in every language (the Settings row says Русский). In the page, so a downloaded copy has them too. */
+const T_CYR = /*RCCYR*/null;
+if (T_CYR && typeof FontFace === "function" && document.fonts) {
+  try {
+    const buf = (b) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0)).buffer, n = buf(T_CYR.n), i = buf(T_CYR.i);
+    for (const [style, weight, b] of [["normal", "600", n], ["normal", "700", n], ["normal", "800", n], ["italic", "700", i], ["italic", "800", i], ["italic", "900", i]]) {
+      const f = new FontFace("Barlow Condensed", b, { style, weight, display: "swap", unicodeRange: "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116" });
+      document.fonts.add(f);
+    }
+  } catch (e) { /* an old browser: Russian shows in the system font */ }
+}
+/* Tight labels (a tile's title, a card's name, a role under a portrait) that a longer language can run out of: the font steps down, at
+   most to 70% of the style sheet's size, until the text stays inside its box (the nearest box that clips, its button, chip, tag or pill,
+   the screen). It runs again when such a text changes or its box is resized or shown, one frame later (never inside the observer). */
+// lines of a few words in a box of fixed height: these step down to 82% at most
+const T_FIT_P = "#dSig span, #dUlt span, #dBlurb, #skFx, .sk-k span, .hv-wait";
+const T_FIT = ["#bDaily b", "#bBw b", "#bRanked .mm-ttl", ".mm-mt", "#bPractice small", "#mBwR .bw-p", "#mRankKick", "#mRec", "#mDaily", "#mDailyR",
+  "#dSkFx", "#oppPick small", "#mapPick small", "#qmFRole", "#onFRole", "#qmR b", "#qmC b", "#qmC small", "#qmV b", "#qmVSub", "#qmToV b", "#qmRating",
+  "#skRoad b", "#skRoad small", "#skPm b", "#skPm small", "#skChip small", ".ps-nm", ".ps-c .s", ".ps-c .l", ".ps-btn", "#acPanH b", "#acPanH small",
+  "#acBds b", "#acBds small", "#acBds .bd-rk", ".bw-tw", "#welGo span", T_FIT_P].join(", ");
+const T_BOX = "button, .btn, .chip, .tag, .coin, [class*='pill'], [class*='badge']";
+// a text that must also keep clear of a tag drawn over its box's corner
+const T_AVOID = { "#bBw b": "#mBwTag" };
+function tOver(el) {
+  const rg = document.createRange(); rg.selectNodeContents(el);
+  const rs = [...rg.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
+  if (!rs.length) return false;
+  const out = (b, m) => { const r = b.getBoundingClientRect(); return rs.some((q) => q.left < r.left - m || q.right > r.right + m || q.top < r.top - m || q.bottom > r.bottom + m); };
+  for (let a = el; a && a !== document.body; a = a.parentElement) {
+    const cs = getComputedStyle(a);
+    if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+    if (/auto|scroll/.test(cs.overflowX + cs.overflowY)) break;   // a strip that scrolls is fine
+    if (out(a, 1)) return true;
+    break;
+  }
+  const box = el.closest(T_BOX);
+  if ((box && out(box, 1.5)) || rs.some((q) => q.left < 0 || q.right > innerWidth)) return true;
+  for (const k in T_AVOID) if (el.matches(k)) { const o = document.querySelector(T_AVOID[k]); if (o && !o.hidden && o.offsetWidth) { const r = o.getBoundingClientRect(); if (rs.some((q) => q.right > r.left + 1 && q.left < r.right - 1 && q.bottom > r.top + 1 && q.top < r.bottom - 1)) return true; } }
+  return false;
+}
+function tFit(el) {
+  el.style.fontSize = "";
+  if (!el.isConnected || !tOver(el)) return;
+  const base = parseFloat(getComputedStyle(el).fontSize);
+  for (let fs = base * 0.93, min = base * (el.matches(T_FIT_P) ? 0.82 : 0.7); fs >= min; fs *= 0.93) { el.style.fontSize = fs.toFixed(1) + "px"; if (!tOver(el)) return; }
+}
+const tFitQ = new Set();
+let tFitRaf = 0;
+const tFitLater = (el) => { tFitQ.add(el); if (!tFitRaf) tFitRaf = requestAnimationFrame(() => { tFitRaf = 0; const q = [...tFitQ]; tFitQ.clear(); for (const e of q) tFit(e); }); };
+const tFitSeen = new WeakSet();
+const tFitRo = typeof ResizeObserver === "function" ? new ResizeObserver((es) => { for (const e of es) for (const t of e.target.__tfit || []) tFitLater(t); }) : null;
+function tFitWatch(el) {
+  if (tFitSeen.has(el)) return;
+  tFitSeen.add(el);
+  const box = el.closest(T_BOX) || el.parentElement || el;   // an inline text has no size of its own to observe
+  (box.__tfit || (box.__tfit = [])).push(el);
+  if (tFitRo) tFitRo.observe(box);
+  tFitLater(el);
+}
+for (const el of document.querySelectorAll(T_FIT)) tFitWatch(el);
+new MutationObserver((ms) => {
+  if (mode === "match") return;   // the fight's HUD changes every frame and has none of these
+  for (const m of ms) {
+    const t = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+    const hit = t && t.closest(T_FIT);
+    if (hit) { tFitWatch(hit); tFitLater(hit); }
+    if (t) for (const k in T_AVOID) if (t.closest(T_AVOID[k])) { const e = document.querySelector(k); if (e) tFitLater(e); }   // the tag got a word
+    for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.matches(T_FIT)) tFitWatch(n); for (const e of n.querySelectorAll(T_FIT)) tFitWatch(e); }
+  }
+}).observe(document.body, { childList: true, characterData: true, subtree: true });
+addEventListener("resize", () => { for (const el of document.querySelectorAll(T_FIT)) tFitLater(el); });
 // a change saves the choice and loads the page again (a ?lang= in the address would win over it, so it goes)
 function langSet(l) {
   if (!LANGS.includes(l) || l === LANG) return;
