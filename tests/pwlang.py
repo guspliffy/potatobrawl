@@ -11,7 +11,7 @@ It saves one screenshot per language, size and screen (<out>/<lang>_<size>_<scre
    python3 pwlang.py [outdir] [langs=en,de,ru,fr,es,xx] [sizes=s667,p844,d1280,up390] [screens=menu,select,...] [one=fr,es]
    (one=: these languages at 844x390 only)
 Port: PWLANG_PORT (default 8107); accounts in a temporary folder, so Quick match, Boss Week and the cups are on."""
-import asyncio, json, os, pathlib, shutil, subprocess, sys, tempfile, time
+import re, asyncio, json, os, pathlib, shutil, subprocess, sys, tempfile, time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ARGV = dict(a.split('=', 1) for a in sys.argv[1:] if '=' in a)
@@ -31,6 +31,13 @@ KEEP = ['Phoenix', 'Alchemist', 'Odin', 'Wizard', 'Samurai', 'Dragon', 'Gunsling
         'PotatoBrawl', 'Potato Brawl', 'Potato', 'Brawl', 'Pommes', 'Potatality', 'Potatalities', 'K.O.', 'KO', 'Potato 74',
         'Jacket Potato', 'Air Fryer', 'Well Done', 'New Potatoes', 'Crisp-tal Ball', 'Hocus Croquettes', 'Mashed', "Philosopher's Spud", 'Frozen Fries',
         'Smash Landing', 'Hasselback', 'Snake Eyes', 'Tater Tots', 'Loaded', 'Rest in Peel', 'Gravy Digger', 'EUR', 'SOON']
+# names read from the game: the CPU potato names (ui/screens.js CPU_NAMES), the Road's CPU names (ui/road.js cpu: "..."), the KO pages' sound
+# words (ui/kopages.js word: "...")
+_src = lambda p: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'game', 'ui', p), encoding='utf-8').read()
+_cpu = re.search(r'const CPU_NAMES = \[(.*?)\];', _src('screens.js'), re.S)
+KEEP += re.findall(r'"([^"]+)"', _cpu.group(1)) if _cpu else []
+KEEP += re.findall(r'\bcpu: "([^"]+)"', _src('road.js')) + re.findall(r'\bword: "([^"]+)"', _src('kopages.js'))
+KEEP = sorted(set(KEEP), key=len, reverse=True)   # longest first, so "Kraken Spud" goes before "Kraken"
 errs, report = [], {}
 
 CHECK = r"""(xx) => {
@@ -67,8 +74,8 @@ CHECK = r"""(xx) => {
       if (!sc) add('spill', el, t + ' (off the screen)');
     }
     // the pseudo-language: text _t never touched
-    if (xx && !t.includes('⟦') && !el.closest('[translate=no]')) {
-      let rest = t; for (const k of KEEP) rest = rest.split(k).join(' ');
+    if (xx && !/[⟦⟧áéíóúñç]/.test(t) && !el.closest('[translate=no]')) {
+      let rest = t.replace(/\d{1,2}:\d{2}\s?(AM|PM)/g, ' '); for (const k of KEEP) rest = rest.split(k).join(' ');
       if (/\p{L}{2}/u.test(rest.replace(/\b(vs|x)\b/g, ''))) add('english', el, t);
     }
   }
@@ -154,7 +161,9 @@ async def main():
         srv.terminate(); shutil.rmtree(acct, ignore_errors=True)
     # what is already so in English (same size and screen) is not a finding
     # a text seen on several screens (the start page under a sheet) is listed once, at the first screen
-    found, once = [], set()
+    # the pseudo-language pads every text by a third and more (a 2-letter word grows to 8), so its cut and spill lines are only a hint
+    # (info, not counted); it counts for English left in the page. The real languages count for everything.
+    found, info, once = [], [], set()
     for lang, by in report.items():
         if lang == 'en': continue
         for size, scr in by.items():
@@ -162,10 +171,12 @@ async def main():
                 base = {(i['kind'], i['at']) for i in report.get('en', {}).get(size, {}).get(s, [])}
                 for i in items:
                     k = (lang, size, i['kind'], i['at'])
-                    if (i['kind'], i['at']) not in base and k not in once: once.add(k); found.append(f"{lang} {size} {s}: {i['kind']} {i['at']}: {i['text']!r}")
+                    if (i['kind'], i['at']) not in base and k not in once:
+                        once.add(k); (info if lang == 'xx' and i['kind'] != 'english' else found).append(f"{lang} {size} {s}: {i['kind']} {i['at']}: {i['text']!r}")
     json.dump(report, open(f'{OUT}/report.json', 'w'), ensure_ascii=False, indent=1)
     for lang in ['en'] + LANGS + ONE: contact(lang)
     print(f'screens looked at: {sum(len(scr) for by in report.values() for scr in by.values())}; findings in English (not counted): {sum(len(x) for scr in report.get("en", {}).values() for x in scr.values())}')
+    for f in info[:80]: print('info', f)
     for f in found[:150]: print(f)
     if len(found) > 150: print(f'... and {len(found) - 150} more (report.json)')
     for e in errs[:30]: print('ERROR', e)

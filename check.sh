@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # One command for all checks. Prints one PASS/FAIL line per check, with its time; details go to build/check-logs/.
 #   ./check.sh          everything: the build, then the other steps side by side (about 20 minutes; it was 2 hours one by one)
-#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights + 2v2 only (seconds)
+#   ./check.sh --quick  build + PROTO + replay + lock + finish + combo routes + ultimates + boss fights + 2v2 + languages only (seconds)
 # After the build, the three server tests run on their own (their timers are short), then two lanes: up to CHECK_JOBS (default 2)
 # browser steps at once, which play in real time, and the simulations next to them at low priority, so they only take the CPU the
 # browsers leave over. More browsers at once don't finish sooner on 4 cores, they only starve each other. The lines keep the order below.
 #   CHECK_JOBS=1 ./check.sh     one browser step at a time (a slow or busy machine)
-#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+14 (default 8091), e.g. for a second checkout
+#   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+15 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
 # (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
 # macOS: bash 3.2 works (it polls instead of `wait -n`), and without `timeout` the steps run with no time limit unless coreutils' gtimeout is installed.
@@ -512,16 +512,32 @@ if grep -q "^no errors" "$LOGS/fs-ui.log"; then pass "fullscreen button, Setting
 else fail "fullscreen button / Settings row / iPhone sheet" "$LOGS/fs-ui.log"; fi
 }
 
+# 8l. Languages, the tables (tools/i18n.js): every _t/_tk text in game/ui, game/manga and skinfx.js, the page's markup and core.js's
+#     fighter texts has a line in game/lang/{fr,de,es,ru}.json with the same {variables} and tags and the right plural forms; no _t in
+#     core.js, sync.js or routes.js, no built strings in _t. A new text without its four lines fails here.
+s_lang() {
+timeout 60 node tools/i18n.js > "$LOGS/lang.log" 2>&1
+if grep -q "^no errors" "$LOGS/lang.log"; then pass "languages: every text has its French, German, Spanish and Russian line ($(head -1 "$LOGS/lang.log" | cut -d' ' -f2) texts)"
+else fail "languages: texts without a translation or with broken variables" "$LOGS/lang.log"; fi
+}
+# 8m. Languages on screen (tests/pwlang.py): every screen in German, Russian and the long pseudo-language at four sizes, French and
+#     Spanish at 844x390: no cut or spilling text in a real language, no English left (the pseudo-language's cut lines are only info). Shots and contact sheets in build/shots/lang.
+s_langui() {
+(cd "$SHOTS" && PWLANG_PORT=$((PB + 15)) timeout 2400 python3 "$ROOT/tests/pwlang.py" lang) > "$LOGS/lang-ui.log" 2>&1
+if grep -q "^no errors" "$LOGS/lang-ui.log"; then pass "languages on screen (de, ru, pseudo at 4 sizes, fr, es at 844x390; shots in build/shots/lang)"
+else fail "languages on screen" "$LOGS/lang-ui.log"; fi
+}
+
 # The order the lines come in (the numbering above).
-QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo)
+QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo lang)
 ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui pota pota2 pshop ads pmskin bwsheet rpview tut maps
-  finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui)
+  finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui langui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, bw, pm, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
-SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti)
+SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti lang)
 SOLO=(quick cpu bw pm tc acct stats)
-REAL=(mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
-if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti); SOLO=(); REAL=(); fi
+REAL=(langui mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti lang); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)
 run() { STEP=$1; local t0=$SECONDS; "s_$1"; echo $((SECONDS - t0)) > "$RES/$1.t"; }

@@ -116,8 +116,10 @@ for (const b of BL.BOSSES || []) { const at = `game/core.js BOSSES ${b.id}`; for
 
 /* ---------- the tables ---------- */
 const mode = process.argv[2] || "";
-const vars = (s) => (s.match(/\{\w+\}/g) || []).sort().join(" ");
-const tags = (s) => (s.match(/<\/?[a-zA-Z][\w-]*/g) || []).map((t) => t.toLowerCase()).sort().join(" ");
+// a plural line repeats its vars and tags in every form (2 forms in English, 3 in Russian): there each one counts once
+const uniq = (a, pl) => (pl ? [...new Set(a)] : a).sort().join(" ");
+const vars = (s, pl) => uniq(s.match(/\{\w+\}/g) || [], pl);
+const tags = (s, pl) => uniq((s.match(/<\/?[a-zA-Z][\w-]*/g) || []).map((t) => t.toLowerCase()), pl);
 const eng = (k) => { const i = k.indexOf("@@"); return i < 0 ? k : k.slice(0, i); };
 if (mode === "--keys" || mode === "--missing") {
   const lang = process.argv[3];
@@ -137,8 +139,9 @@ if (mode !== "--src") {
       if (!(k in tb)) { miss++; continue; }
       const t = tb[k], e = eng(k);
       if (typeof t !== "string" || !t.trim()) { errors.push(`${l}: empty line for ${JSON.stringify(k)}`); continue; }
-      if (vars(t) !== vars(e)) errors.push(`${l}: {vars} differ for ${JSON.stringify(k)}: ${JSON.stringify(t)}`);
-      if (tags(t) !== tags(e)) errors.push(`${l}: tags differ for ${JSON.stringify(k)}: ${JSON.stringify(t)}`);
+      const pl = e.indexOf("|") >= 0;
+      if (vars(t, pl) !== vars(e, pl)) errors.push(`${l}: {vars} differ for ${JSON.stringify(k)}: ${JSON.stringify(t)}`);
+      if (tags(t, pl) !== tags(e, pl)) errors.push(`${l}: tags differ for ${JSON.stringify(k)}: ${JSON.stringify(t)}`);
       const pe = e.split("|").length, pt = t.split("|").length;
       if (pe > 1 && pe !== 2) errors.push(`English plural needs exactly 2 forms (one|other): ${JSON.stringify(k)}`);
       if (pe > 1 && pt !== FORMS[l]) errors.push(`${l}: ${FORMS[l]} plural forms wanted for ${JSON.stringify(k)}: ${JSON.stringify(t)}`);
