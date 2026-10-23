@@ -45,7 +45,7 @@ function renderMenu() {
   $("mRec").textContent = rec.map((t) => t.replace(/ /g, "\u00a0")).join("\u00a0· ");
   // Tournament: a cup in progress, the cups won, or what a cup pays
   const c = cupOk(P.cup) ? P.cup : null, cups = P.cups | 0;
-  $("mCup").innerHTML = c ? (c.out < 0 ? _t("<em>Resume</em> · {round}", { round: CUP.names[c.round].toLowerCase() }) : _t("<em>Resume</em>"))
+  $("mCup").innerHTML = c ? (c.out < 0 ? (c.round === 0 ? _t("<em>Resume</em> · quarter-final") : c.round === 1 ? _t("<em>Resume</em> · semi-final") : _t("<em>Resume</em> · final")) : _t("<em>Resume</em>"))
     : cups ? _t("<em>{n} cup won</em>|<em>{n} cups won</em>", { n: cups }) : _t("<em>Up to {n} chips</em>", { n: CUP.chips.reduce((a, n) => a + n, CUP.flawless) });
   // Play friends: the mint dot when online play is there, greyed out with the reason when not
   const onOk = onlineAvailable();

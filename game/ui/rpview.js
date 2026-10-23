@@ -159,7 +159,7 @@ function rpvFrame() {
   const c = RPV.c, live = !RP.pause && !RP.seeking && !RP.ended && RPV.drag < 0, idle = live && performance.now() - RPV.act > 3000;
   if (c.idle !== idle) { c.idle = idle; app.classList.toggle("rpidle", idle); }
   const paused = RP.pause || RP.ended;
-  if (c.paused !== paused) { c.paused = paused; RPV.play.innerHTML = paused ? RPV_IC.play : RPV_IC.pause; RPV.play.setAttribute("aria-label", RP.ended ? _t("Watch again") : paused ? _t("Play") : _t("Pause")); }
+  if (c.paused !== paused) { c.paused = paused; RPV.play.innerHTML = paused ? RPV_IC.play : RPV_IC.pause; RPV.play.setAttribute("aria-label", RP.ended ? _t("Watch again") : paused ? _t("Play@@the replay's play button, next to Pause") : _t("Pause")); }
   const tk = RPV.drag >= 0 ? RPV.drag : RP.seeking ? RP.to : RP.i, pct = Math.round(Math.min(1, tk / rpvRange()) * 1000) / 10;
   if (c.pct !== pct) { c.pct = pct; RPV.fill.style.width = `${pct}%`; RPV.knob.style.left = `${pct}%`; RPV.seek.setAttribute("aria-valuenow", String(Math.round(pct))); }
   if (c.seeking !== RP.seeking) { c.seeking = RP.seeking; RPV.seek.classList.toggle("sk", RP.seeking); }
