@@ -382,6 +382,11 @@ p { margin: 8px 0 0; }
     }
     var ph = S(R.days, "dev:phone"), tb = S(R.days, "dev:tablet"), dk = S(R.days, "dev:desktop"), ap = S(R.days, "app:app");
     if (ph + tb + dk + ap > 0) s.appendChild(h("p", { class: "small mut" }, "phone " + fmt(ph) + " · tablet " + fmt(tb) + " · desktop " + fmt(dk) + " · home-screen app " + fmt(ap) + (R.id === "today" ? "" : " · counted once per day")));
+    // languages: the one the game shows (gl:, game/ui/lang.js: picked, else the browser's if it is one of the five) and the browser's own (lang:)
+    var gl = P(R.days, "gl:"), bl = P(R.days, "lang:"), LN = { en: "English", fr: "French", de: "German", es: "Spanish", ru: "Russian" };
+    var row = function (o, name) { return Object.keys(o).sort(function (a, b) { return o[b] - o[a]; }).map(function (k) { return name(k) + " " + fmt(o[k]); }).join(" · "); };
+    if (Object.keys(gl).length) s.appendChild(h("p", { class: "small mut" }, "game language: " + row(gl, function (k) { return LN[k] || k; })));
+    if (Object.keys(bl).length) s.appendChild(h("p", { class: "small mut" }, "browser language: " + row(bl, function (k) { return k; })));
     return s;
   }
   function cameBack() {

@@ -229,7 +229,7 @@ for (let i = 0; i < N; i++) {
     add(i, "day");
     add(i, first ? "day:new" : "day:back");
     add(i, "dev:" + p.dev); if (p.app) add(i, "app:app"); else add(i, "app:web");
-    add(i, "lang:" + p.lang); add(i, "ver:" + verFor(i));
+    add(i, "lang:" + p.lang); add(i, "gl:" + (["en", "fr", "de", "es", "ru"].includes(p.lang) ? p.lang : "en")); add(i, "ver:" + verFor(i));
     if (p.wk !== weekOf(i)) { p.wk = weekOf(i); add(i, "wk"); }
     if (p.mo !== monthOf(i)) { p.mo = monthOf(i); add(i, "mo"); }
     if (!first && !p.ret) {                                   // the first time a device comes back: every window it fits in
