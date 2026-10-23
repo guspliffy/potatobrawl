@@ -17,7 +17,7 @@ const TB_PART = 1600;      // repair copy pieces: smaller than a 1v1's, so a pie
 const TB_RELAY = 60;       // frames of a dropped friend's last inputs passed on with the claim
 const TB_HOLD = 3000;      // the lead waits at most this long for every phone's copy of a dropped friend's last inputs
 const tbTeam = (s) => (s < 2 ? 0 : 1), tbMate = (s) => s ^ 1, tbFoes = (s) => (s < 2 ? [2, 3] : [0, 1]);
-const tbLvName = (lv) => LEVELS[TB_LV[lv]].name;
+const tbLvName = (lv) => _tv(LEVELS[TB_LV[lv]].name);   // shown text only (LEVELS names are English data)
 const tbAnd = (l) => l.reduce((a, b) => _t("{a} and {b}", { a, b }));   // "Jonny", "Jonny and Mia", "Jonny and Mia and Tom": a list of names, never empty
 // The lobby's third mode. P.onTeam = { on, lv (0-2) }: this device's last pick (not synced), Normal at first
 function onTeam() {

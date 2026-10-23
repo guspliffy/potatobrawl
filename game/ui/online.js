@@ -135,7 +135,7 @@ function buildRules() {
     pick(id, RULES[k].map((v) => ({ v, label: label(v) })), (it) => P.rules[k] === it.v, (it) => { P.rules = Object.assign({}, P.rules, { [k]: it.v }); });
   pick("ruleBo", BL.BOSSES.map((b) => ({ v: b.id, label: b.name, short: BOSS_SHORT[b.id] })), (it) => it.v === ob.b, (it) => setBoss({ b: it.v }));
   pick("ruleLv", BOSS_LV.map((name, i) => ({ v: i, label: name })), (it) => it.v === ob.lv, (it) => setBoss({ lv: it.v }));
-  pick("ruleCpu", TB_LV.map((k, i) => ({ v: i, label: LEVELS[k].name })), (it) => it.v === ot.lv, (it) => setTeam({ lv: it.v }));
+  pick("ruleCpu", TB_LV.map((k, i) => ({ v: i, label: _tv(LEVELS[k].name) })), (it) => it.v === ot.lv, (it) => setTeam({ lv: it.v }));
   // a boss fight swaps lives, time and format for the boss (his map comes with him) and his level; a team brawl for the CPUs' level
   for (const id of ["rowL", "rowT", "rowB"]) $(id).hidden = md !== "1v1";
   for (const id of ["rowBo", "rowLv"]) $(id).hidden = md !== "boss";

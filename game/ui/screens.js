@@ -359,6 +359,7 @@ function vsLine() {
   if (match.cup) return _t("{round} · {me} vs {op} · {cpu}, {tier}", { round: CUP.names[match.round], me, op, cpu: match.cpu, tier: cpuTier() });
   if (match.daily) return _t("Daily Potato · {me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: match.level });
   if (match.ranked) return _t("{me} vs {op} · {cpu}, {tier}", { me, op, cpu: match.cpu || _t("CPU"), tier: cpuTier() });
+  if (!match.level) return _t("{me} vs {op} · {cpu}", { me, op, cpu: match.cpu || _t("CPU") });   // a Ranked vs CPU replay
   return match.cpu ? _t("{me} vs {op} · {cpu}, {level}", { me, op, cpu: match.cpu, level: _tv(match.level) }) : _t("{me} vs {op} · {level}", { me, op, level: _tv(match.level) });   // a CPU level's name is English data (LEVELS)
 }
 function cpuTier() { return `${_tv(tierInfo(match.oppRating).t.name)} ${match.oppRating}`; }
