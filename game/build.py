@@ -1,3 +1,4 @@
+import json
 import pathlib
 d = pathlib.Path(__file__).resolve().parent
 root = d.parent
@@ -7,10 +8,16 @@ shell = (d/'shell.html').read_text()
 core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
-UI_PARTS = ['base', 'counter', 'input', 'view', 'draw-fighters', 'glaze', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'finisher', 'manga',
+UI_PARTS = ['base', 'lang', 'counter', 'input', 'view', 'draw-fighters', 'glaze', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'finisher', 'manga',
             'screens', 'hud', 'boss', 'duo', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'ads', 'harvest', 'skins', 'kopages', 'shop', 'pshop', 'online', 'online-team', 'menus', 'combos', 'mastery', 'acct', 'quick', 'rivals', 'vscpu', 'boards', 'stakes', 'challenge', 'bossweek', 'bwsheet', 'tourney', 'tcview', 'replay', 'rpview', 'tutorial', 'welcome', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
+# the language tables: game/lang/<fr|de|es|ru>.json ("English": "theirs"), into ui/lang.js (tools/i18n.js checks them)
+# the Cyrillic letters for Russian (Fira Sans Extra Condensed, SIL OFL: fonts/fs-cyr-OFL.txt), one file per style and weight, into
+# ui/lang.js as base64 (it adds them with FontFace)
+import base64
+ui = ui.replace('/*CYR*/null', json.dumps({f.stem[7:]: base64.b64encode(f.read_bytes()).decode() for f in sorted((d/'fonts').glob('fs-cyr-*.woff2'))}), 1)
+ui = ui.replace('/*LANGS*/{}', json.dumps({f.stem: json.loads(f.read_text(encoding='utf-8')) for f in sorted((d/'lang').glob('*.json'))}, ensure_ascii=False, separators=(',', ':')), 1)
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
 # the maps: one script per map in game/maps/<id>.js (MAP_ART entries), spliced in after the Potato Moon map in ui/draw-world.js
 ui = ui.replace('/*MAPS*/', '\n'.join(f.read_text() for f in sorted((d/'maps').glob('*.js'))) if (d/'maps').is_dir() else '')

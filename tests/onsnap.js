@@ -15,7 +15,7 @@ if (!PART) fail("SYNC_PART not found in ui/online.js");
 const mapOf = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));
 // his HP online: ui/road.js ROAD_REG hp x ui/online.js DUO_HP[boss][level], as duoHp builds it
 const road = fs.readFileSync(__dirname + "/../game/ui/road.js", "utf8");
-const REG = new Function(road.slice(road.indexOf("const ROAD_REG = ["), road.indexOf("];", road.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
+const REG = new Function("const _t = (s) => s, _tk = (s) => s, _tv = (s) => s;\n" + road.slice(road.indexOf("const ROAD_REG = ["), road.indexOf("];", road.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
 const DUO = new Function(`return ${(/const DUO_HP = (\{[^\n]*\});/.exec(src) || [, "{}"])[1]};`)();
 const duoHp = (boss, lv) => (REG.find((g) => g.boss === boss.id) || { hp: 1 }).hp * DUO[boss.id][lv];
 const game = (boss, s) => {

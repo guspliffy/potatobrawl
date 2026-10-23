@@ -52,6 +52,12 @@
 #app.short .wl-sheet .wl-p { font-size: 19px; margin: 0 0 2px; }
 #app.tiny .wl-sheet .btn.lg { min-height: 46px; font-size: 21px; }
 @media (prefers-reduced-motion: reduce) { .wl-sheet { animation: none; } }
+/* the five languages (ui/lang.js langWel): quiet, under the two buttons; a tap saves and reloads */
+.wl-lang { display: flex; justify-content: center; gap: 4px; margin-top: 2px; }
+.wl-l { appearance: none; cursor: pointer; border: 1px solid transparent; background: none; color: var(--mute); border-radius: 999px; padding: 3px 10px; min-height: 30px; font: 700 13px/1 var(--display); letter-spacing: 0.1em; }
+.wl-l.on { color: var(--text); border-color: rgba(206, 210, 255, 0.4); }
+#app.short .wl-lang { margin-top: -2px; }
+#app.short .wl-l { min-height: 26px; }
 
 /* ---- the tutorial card (4 steps): two lines, about 52 px tall, in the top band between the two name cards ---- */
 #tut .tut-l1 { display: contents; }   /* the Combo trial keeps its own layout: the wrapper is not there for it */
@@ -82,7 +88,7 @@
 #app.portrait #fhint { top: auto; bottom: calc(var(--panelH) + 12px); left: 50%; width: calc(100% - 24px); transform: translateX(-50%); }
 @media (prefers-reduced-motion: reduce) { #fhint { transition: none; } }
 /* DRAG in the stick's knob for the first seconds of the first fight (touch) */
-#stickKnob.drag::after { content: "DRAG"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--display); letter-spacing: 0.06em; color: var(--ink); animation: dragPulse 1s ease-in-out infinite; }
+#stickKnob.drag::after { content: var(--tw-drag, "DRAG"); position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--display); letter-spacing: 0.06em; color: var(--ink); animation: dragPulse 1s ease-in-out infinite; }
 @keyframes dragPulse { 0%, 100% { opacity: 0.45; transform: scale(0.92); } 50% { opacity: 1; transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { #stickKnob.drag::after { animation: none; } }
 

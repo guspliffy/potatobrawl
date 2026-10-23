@@ -117,7 +117,7 @@ function rpWatchRun(id, from, own) {
     RP.loading = false;
     if (typeof rpvLoad === "function") rpvLoad(false);
     if (x.st === "ok") { rpOpen(x.cfg, x.codes, x.meta, from); return; }
-    RP.err = x.st === "old" ? "This run is from an older version of the game" : x.st === "gone" ? "This run isn't on the board any more" : x.st === "off" ? "Replays need the server" : "Couldn't reach the server. Try again.";
+    RP.err = x.st === "old" ? _t("This run is from an older version of the game") : x.st === "gone" ? _t("This run isn't on the board any more") : x.st === "off" ? _t("Replays need the server") : _t("Couldn't reach the server. Try again.");
     if (typeof rpvToast === "function") rpvToast(RP.err);
   });
 }
@@ -161,12 +161,12 @@ function rpBegin() {
   G = g; meSlot = 0; RP.i = 0; RP.on = true; RP.ended = false;
   match = k === "bw" ? { boss: true, rp: true, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0 }, level: RP.cfg.lv, d: RP.cfg.d, bot, cpu: M.cpu || cpuName(), road: null }
     : { rp: true, ranked: false, d: RP.cfg.d, bot, level: null, cpu: M.cpu || cpuName() };
-  match.rpTag = M.own ? "YOU" : M.nm.slice(0, 10).toUpperCase();   // the marker over your fighter (draw-world.js drawTag)
+  match.rpTag = M.own ? _t("YOU") : M.nm.slice(0, 10).toUpperCase();   // the marker over your fighter (draw-world.js drawTag)
   if (typeof bdClose === "function" && screens.boards && !screens.boards.hidden) bdClose();
   if (typeof bwSheetClose === "function") bwSheetClose();
   enterMatchUI();
   if (!M.own) GLAZED.delete(G.fighters[0]);   // your glaze is yours (ui/glaze.js), not on someone else's run
-  $("pc0").querySelector(".pc-tag").textContent = M.own ? "You" : M.nm;
+  $("pc0").querySelector(".pc-tag").textContent = M.own ? _t("You") : M.nm;
   $("ctl").hidden = true;
   app.classList.add("replay"); app.classList.remove("rpclean");
   if (typeof rpvOpen === "function") rpvOpen();
@@ -257,7 +257,8 @@ function rpShareId() {
 function rpLink(id) { return `${location.origin}${location.pathname}#watch=${id}`; }
 function rpShareText() {
   const M = RP.meta, b = rpBossSpec(M.boss);
-  return `${M.own ? "My" : `${M.nm}'s`} Boss Week run vs ${b ? b.name : "the boss"}: ${bwClock(rpTimeEnd(), 2)}${M.place ? ` · #${M.place}` : ""}. Think you can beat it?`;
+  const v = { boss: b ? b.name : _t("the boss"), time: bwClock(rpTimeEnd(), 2), place: M.place ? ` · #${M.place}` : "", name: M.nm };
+  return M.own ? _t("My Boss Week run vs {boss}: {time}{place}. Think you can beat it?", v) : _t("{name}'s Boss Week run vs {boss}: {time}{place}. Think you can beat it?", v);
 }
 function rpShare() {
   const id = rpShareId();
@@ -265,7 +266,7 @@ function rpShare() {
   const link = rpLink(id);
   cnt("rp:share");
   if (chlPhone()) { try { navigator.share({ title: "PotatoBrawl", text: rpShareText(), url: link }).catch(() => {}); } catch (e) { /* no share sheet */ } return true; }   // ui/challenge.js chlPhone
-  try { navigator.clipboard.writeText(`${rpShareText()} ${link}`).then(() => { if (typeof rpvToast === "function") rpvToast("Link copied"); }, () => {}); } catch (e) { /* no clipboard */ }
+  try { navigator.clipboard.writeText(`${rpShareText()} ${link}`).then(() => { if (typeof rpvToast === "function") rpvToast(_t("Link copied")); }, () => {}); } catch (e) { /* no clipboard */ }
   return true;
 }
 // leave the replay: the menu, then where the end card's button points ("sheet": the Boss Week sheet, "board": the Boards tab,

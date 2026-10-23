@@ -41,7 +41,6 @@ function bwsImg(img, src, box) {
 }
 const bwsPart = (t) => `<span class="bw-p">${cupEsc(t)}</span>`;
 const bwsNb = (t) => t.replace(/ /g, " ");
-const bwsHave = (n) => `${n} ${n === 1 ? "has" : "have"}`;
 
 /* ----- the start tile ----- */
 function bwTile() {
@@ -49,14 +48,14 @@ function bwTile() {
   const s = bwSpec(), m = bwMine(), sp = bwBossSpec(s.boss), live = bwLive(), has = !!(m && m.t > 0), n = s.n;
   b.style.setProperty("--bc", bwsCol(sp));
   const d = $("mBwD"); d.className = `mm-bwd rd-bossph rd-${s.boss}`; bwsImg($("mBwArt"), bwArt(s.boss), d);
-  $("mBw").innerHTML = [bwsPart(sp.name), `<span class="bw-p bw-lv">${cupEsc(BOSS_LV[s.lv])}</span>`, bwsPart(`${bwLeft(s.ends)} left`)].join(" · ");
-  const place = has && m.pl > 0 ? `#${m.pl}${n > 0 ? ` of ${n}` : ""}` : "";
-  const l2 = has ? [`Best ${bwClock(m.t, 2)}`].concat(place ? [place] : []) : !live ? ["needs the server"] : ["No time yet"].concat(n > 0 ? [`${bwsHave(n)} one`] : []);
+  $("mBw").innerHTML = [bwsPart(sp.name), `<span class="bw-p bw-lv">${cupEsc(BOSS_LV[s.lv])}</span>`, bwsPart(_t("{time} left", { time: bwLeft(s.ends) }))].join(" · ");
+  const place = has && m.pl > 0 ? (n > 0 ? _t("#{b} of {n}", { b: m.pl, n }) : `#${m.pl}`) : "";
+  const l2 = has ? [_t("Best {time}", { time: bwClock(m.t, 2) })].concat(place ? [place] : []) : !live ? [_t("needs the server")] : [_t("No time yet")].concat(n > 0 ? [_t("{n} has one|{n} have one", { n })] : []);
   $("mBwR").innerHTML = l2.map((t, i) => `<span class="bw-p${i < l2.length - 1 ? " bw-pb" : ""}${i ? " bw-pn" : ""}">${cupEsc(bwsNb(t))}</span>`).join(" ");
   const tag = $("mBwTag"), fresh = bwNew();
   tag.hidden = !(fresh || place);
-  if (!tag.hidden) { tag.textContent = fresh ? "New" : `#${m.pl}`; tag.className = `tag ${fresh ? "ember" : "gold"} mm-bwt`; }
-  b.setAttribute("aria-label", `Boss Week: ${sp.name}, ${BOSS_LV[s.lv]}, ${bwLeft(s.ends)} left. ${l2.join(", ")}${fresh ? ". New" : ""}`);
+  if (!tag.hidden) { tag.textContent = fresh ? _t("New") : `#${m.pl}`; tag.className = `tag ${fresh ? "ember" : "gold"} mm-bwt`; }
+  b.setAttribute("aria-label", _t("Boss Week: {boss}, {level}, {time} left. {info}", { boss: sp.name, level: BOSS_LV[s.lv], time: bwLeft(s.ends), info: `${l2.join(", ")}${fresh ? `. ${_t("New")}` : ""}` }));
 }
 setInterval(() => { if (mode === "menu") bwTile(); }, 30000);   // the time left
 
@@ -96,48 +95,48 @@ function bwSheetRender() {
   if (!BWS.open) return;
   const s = bwSpec(), sp = bwBossSpec(s.boss), m = bwMine(), live = bwLive(), chk = bwsChecking(), has = !!(m && m.t > 0), name = sp.name, asking = !!BW.asking;
   if (BW.res && BW.res.id !== BWS.resId) { BWS.resId = BW.res.id; bwsLoad(); }   // a verdict came in: the board may have moved
-  $("bwWeek").textContent = `Week ${s.no} · ends Mon 00:00 · `; $("bwLeft").textContent = bwLeft(s.ends);
+  $("bwWeek").textContent = `${_t("Week {no} · ends Mon 00:00", { no: s.no })} · `; $("bwLeft").textContent = bwLeft(s.ends);
   // the boss
   const bc = $("bwBoss"); bc.dataset.b = s.boss; bc.style.setProperty("--bc", bwsCol(sp));
   bwsImg($("bwArt"), bwArt(s.boss), bc.querySelector(".bw-pic"));
   $("bwBn").textContent = name; $("bwBn").classList.toggle("long", name.length > 7);
-  $("bwBs").textContent = `${sp.role} · ${mapName(bossMap(sp))}`;
-  $("bwSts").innerHTML = `<span class="bw-st hot">${cupEsc(BOSS_LV[s.lv])}</span><span class="bw-st">Road HP</span><span class="bw-st">${Math.floor(BW_CAP / 3600)}:00 cap</span>`;
+  $("bwBs").textContent = `${_tv(sp.role)} · ${mapName(bossMap(sp))}`;
+  $("bwSts").innerHTML = `<span class="bw-st hot">${cupEsc(BOSS_LV[s.lv])}</span><span class="bw-st">${_t("Road HP")}</span><span class="bw-st">${_t("{time} cap", { time: `${Math.floor(BW_CAP / 3600)}:00` })}</span>`;
   // your best
   const best = $("bwBest"), sub = $("bwSub"), tm = $("bwTime"), pend = BW.pend && BW.pend.fr > 0 ? BW.pend.fr : 0;
   sub.textContent = "";
   best.className = "card bw-best";
   if (!live) {   // no server: nothing counts, the button practises him
     best.classList.add("off");
-    $("bwBk").innerHTML = '<i class="dot r"></i>Offline';
-    tm.textContent = "Boss Week needs the server"; sub.textContent = "Practise him here. Only the server counts times.";
+    $("bwBk").innerHTML = `<i class="dot r"></i>${_t("Offline")}`;
+    tm.textContent = _t("Boss Week needs the server"); sub.textContent = _t("Practise him here. Only the server counts times.");
   } else {
-    $("bwBk").textContent = "Your best";
+    $("bwBk").textContent = _t("Your best");
     tm.textContent = has ? bwClock(m.t, 2) : chk && pend ? bwClock(pend, 2) : "--:--.--";
     best.classList.toggle("none", !has);
-    const n = s.n, place = has && m.pl > 0 ? `#${m.pl}${n > 0 ? ` of ${n}` : ""}` : "", hl = has ? `${m.fl} ♥ lost` : "";
-    if (chk) { sub.append(bdMk("i", "dot q"), "Checking…"); if (place) sub.append(` · ${place}`); }
+    const n = s.n, place = has && m.pl > 0 ? (n > 0 ? _t("#{b} of {n}", { b: m.pl, n }) : `#${m.pl}`) : "", hl = has ? _t("{n} ♥ lost", { n: m.fl }) : "";
+    if (chk) { sub.append(bdMk("i", "dot q"), _t("Checking…")); if (place) sub.append(` · ${place}`); }
     else if (has) {
       sub.textContent = [place, hl].filter(Boolean).join(" · ");
       if (m.r && m.v === PROTO) {   // your best run, to watch (ui/replay.js)
-        const w = bdMk("button", "rpv-wl", "Watch \u25B6\uFE0E"); w.type = "button"; w.setAttribute("aria-label", "Watch your best run");
+        const w = bdMk("button", "rpv-wl", `${_t("Watch")} \u25B6\uFE0E`); w.type = "button"; w.setAttribute("aria-label", _t("Watch your best run"));
         w.addEventListener("click", () => { Sfx.init(); Sfx.ui(); rpWatchRun(m.r, "sheet", true); });
         sub.append(" · ", w);
       }
     }
-    else sub.textContent = "Finish him once and you're on the board";
+    else sub.textContent = _t("Finish him once and you're on the board");
   }
   // your fighter (the picker) and the partner this week
   const me = FIG[P.last] || FIGHTERS[0], mi = palIdx(me.id), pf = FIG[s.pf] || FIGHTERS[1];
-  dailyCard($("bwMe"), me.id, mi, mi ? me.palettes[mi].name : "You");
+  dailyCard($("bwMe"), me.id, mi, mi ? _tv(me.palettes[mi].name) : _t("You"));
   $("bwMe").insertAdjacentHTML("beforeend", '<span class="rd-chg" aria-hidden="true">⇄</span>');
-  $("bwMe").setAttribute("aria-label", `Change fighter. You play ${me.name}`);
+  $("bwMe").setAttribute("aria-label", _t("Change fighter. You play {name}", { name: me.name }));
   const pp = $("bwPf"); pp.style.setProperty("--fc", col(pf.palettes[0]));
-  pp.innerHTML = `<span class="dly-ph">${PORTRAITS[pf.id] ? `<img src="${PORTRAITS[pf.id]}" alt="">` : ""}<i class="cpu">CPU</i></span><span class="dly-t"><b>${cupEsc(pf.name)}</b><small>partner<span class="bw-tw"> this week</span></small></span>`;
+  pp.innerHTML = `<span class="dly-ph">${PORTRAITS[pf.id] ? `<img src="${PORTRAITS[pf.id]}" alt="">` : ""}<i class="cpu">${_t("CPU")}</i></span><span class="dly-t"><b>${cupEsc(pf.name)}</b><small>${_t("partner")}<span class="bw-tw"> ${_t("this week")}</span></small></span>`;
   // FIGHT
   const go = $("bwGo");
-  $("bwGoT").textContent = asking ? "Starting…" : `${live ? "Fight" : "Practice"} ${name}`;
-  $("bwGoS").textContent = asking ? "" : live ? "unlimited tries" : "not counted";
+  $("bwGoT").textContent = asking ? _t("Starting…") : live ? _t("Fight {boss}", { boss: name }) : _t("Practice {boss}", { boss: name });
+  $("bwGoS").textContent = asking ? "" : live ? _t("unlimited tries") : _t("not counted");
   go.disabled = asking;
   $("bwNote").textContent = BW.note || "";
   bwsPay(m);
@@ -148,7 +147,7 @@ function bwsPay(m) {
   const mine = m && m.pl > 0 ? BW_PRIZE.findIndex(([to]) => m.pl <= to) : 0;
   let from = 1;
   $("bwPay").innerHTML = BW_PRIZE.map(([to, c], k) => {
-    const l = to === 1 ? "#1" : to < 10 ? `${from}–${to}` : to < 1e9 ? `Top ${to}` : "A time";
+    const l = to === 1 ? "#1" : to < 10 ? `${from}–${to}` : to < 1e9 ? _t("Top {n}", { n: to }) : _t("A time");
     from = to + 1;
     return `<span class="bw-st cg${k === mine ? " g" : ""}">${l} ${c}</span>`;
   }).join("");
@@ -156,11 +155,11 @@ function bwsPay(m) {
 // a row's run to watch: the top 10 and your row. ▶ when it is from this game version, the tag "older version" under the time when not (bwRunOf: ok / old / "")
 const bwRunOf = (row, i, own) => (row.r && (i <= 10 || own) ? (row.v === PROTO ? "ok" : "old") : "");
 function bwWatchEl(row, from, own) {
-  const b = bdMk("button", "rpv-pl"); b.type = "button"; b.title = "Watch"; b.setAttribute("aria-label", `Watch ${row.nm}'s run`);
+  const b = bdMk("button", "rpv-pl"); b.type = "button"; b.title = _t("Watch"); b.setAttribute("aria-label", _t("Watch {name}'s run", { name: row.nm }));
   b.addEventListener("click", (e) => { e.stopPropagation(); Sfx.init(); Sfx.ui(); rpWatchRun(row.r, from, own); });
   return b;
 }
-const bwOldEl = () => bdMk("small", "rpv-old", "older version");
+const bwOldEl = () => bdMk("small", "rpv-old", _t("older version"));
 // the top 3 (a verdict or the board arriving redraws only this)
 function bwsRows() {
   if (!BWS.open) return;
@@ -170,7 +169,7 @@ function bwsRows() {
   if (!b) {   // on its way, no server, no answer: ghost rows
     box.classList.add("ghost");
     for (let k = 0; k < 3; k++) { const r = bdMk("div", "bw-r sk"); r.append(bdMk("i", "bw-gp"), bdMk("i", "bw-ge"), bdMk("i", "bw-gn"), bdMk("i", "bw-gt")); box.appendChild(r); }
-    if (b === null) box.appendChild(bdMk("p", "bw-cap", bwLive() ? "The board didn't load." : "Offline"));
+    if (b === null) box.appendChild(bdMk("p", "bw-cap", bwLive() ? _t("The board didn't load.") : _t("Offline")));
     return;
   }
   if (!b.top.length) { box.append(bwBdEmptyEl(false)); return; }
@@ -186,14 +185,14 @@ function bwsRow(row, i, o) {
   const p = bdMk("span", "bw-pl");
   if (i <= 3) p.appendChild(bdMk("i", "bw-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
   const nm = bdMk("span", "bw-nm");
-  if (o.me) nm.appendChild(bdMk("em", "", "You"));
+  if (o.me) nm.appendChild(bdMk("em", "", _t("You")));
   nm.appendChild(bdMk("b", "", row.nm));
   if (row.cr > 0) nm.appendChild(bwCrown(row.cr));
   const tm = bdMk("b", "bw-tm", bwClock(row.t, 2)), run = bwRunOf(row, i, !!(o.me || o.you));
   if (run === "old") { tm.classList.add("old"); tm.appendChild(bwOldEl()); }
   el.append(p, bwPortrait(row.f), nm, tm);
   if (run === "ok") el.appendChild(bwWatchEl(row, "sheet", !!(o.me || o.you)));
-  el.title = `${row.nm}${row.f ? `, ${FIG[row.f].name}` : ""}, ${row.fl} hearts lost`;
+  el.title = `${row.nm}${row.f ? `, ${FIG[row.f].name}` : ""}, ${_t("{n} heart lost|{n} hearts lost", { n: row.fl })}`;
   return el;
 }
 // a fighter's portrait in a small rounded square (the board's rows); a gap where the fighter is not known
@@ -202,7 +201,7 @@ function bwPortrait(f) {
   if (FIG[f]) { e.style.setProperty("--fc", col(FIG[f].palettes[0])); if (PORTRAITS[f]) { const i = document.createElement("img"); i.alt = ""; i.src = PORTRAITS[f]; e.appendChild(i); } }
   return e;
 }
-const bwCrown = (n) => { const e = bdMk("span", "bw-crown", String(n)); e.title = `${n} Boss Week ${n === 1 ? "win" : "wins"}`; return e; };
+const bwCrown = (n) => { const e = bdMk("span", "bw-crown", String(n)); e.title = _t("{n} Boss Week win|{n} Boss Week wins", { n }); return e; };
 
 /* ----- the Boards sheet's tab (ui/boards.js): a board made safe to draw, the rows, the kicker, the empty state ----- */
 function bwBdPrep(d) {
@@ -219,12 +218,12 @@ function bwBdRow(row, i, o) {
   const p = bdMk("span", "bd-p");
   if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
   const n = bdMk("span", "bd-n"), t = bdMk("span", "bd-t");
-  if (o.me || o.sticky) t.appendChild(bdMk("em", "bd-yt", "You"));
+  if (o.me || o.sticky) t.appendChild(bdMk("em", "bd-yt", _t("You")));
   const nm = bdMk("b", "bd-nm", row.nm); plateSet(nm, row.pl); nm.title = row.nm;
   t.appendChild(nm);
   if (row.cr > 0) t.appendChild(bwCrown(row.cr));
   n.appendChild(t);
-  const fig = row.f ? FIG[row.f].name : "", hl = `${row.fl} ♥ lost`;
+  const fig = row.f ? FIG[row.f].name : "", hl = _t("{n} ♥ lost", { n: row.fl }).replace(/ /g, "\u00a0");   // the hearts label stays on one line
   const f1 = [fig, o.of].filter(Boolean).join(" · "), f2 = [fig, o.of ? "" : hl, o.of].filter(Boolean).join(" · ");   // wide: the hearts have their column; upright: they join this line
   const f = bdMk("small", "bd-f");
   if (f1) f.appendChild(bdMk("span", "bd-f1", f1));
@@ -234,29 +233,29 @@ function bwBdRow(row, i, o) {
   if (run === "old") { tm.classList.add("old"); tm.appendChild(bwOldEl()); }
   el.append(p, bwPortrait(row.f), n, bdMk("small", "bd-w", hl), tm);
   if (run === "ok") el.appendChild(bwWatchEl(row, "board", !!(o.me || o.sticky)));
-  el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${bwClock(row.t, 2)}, ${row.fl} ${row.fl === 1 ? "heart" : "hearts"} lost`);
+  el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${bwClock(row.t, 2)}, ${_t("{n} heart lost|{n} hearts lost", { n: row.fl })}`);
   return el;
 }
 // "KRAKEN SPUD · HARD · 23 HAVE A TIME · ENDS 3D 4H" (st: the sheet's state)
 function bwBdKick(st, d) {
   const s = bwSpec(), name = bwBossSpec(d && d.boss ? d.boss : s.boss).name, past = !!(d && d.fin), lw = $("bdLast");
   lw.hidden = !((st === "ok" || st === "empty") && d && d.wk > 0);   // LAST WEEK › / ‹ THIS WEEK once the board is in
-  lw.textContent = past ? "\u2039 This week" : "Last week \u203A";
+  lw.textContent = past ? `\u2039 ${_t("This week")}` : `${_t("Last week")} \u203A`;
   screens.boards.classList.toggle("bw-past", past);
-  if (past) return `Last week · ${name} · Final`;
-  return [name, BOSS_LV[s.lv]].concat(st === "load" ? ["Loading"] : st === "off" ? [] : [`${d.n} ${d.n === 1 ? "has a time" : "have a time"}`, `Ends ${bwLeft(s.ends)}`]).join(" · ");
+  if (past) return _t("Last week · {boss} · Final", { boss: name });
+  return [name, BOSS_LV[s.lv]].concat(st === "load" ? [_t("Loading")] : st === "off" ? [] : [_t("{n} has a time|{n} have a time", { n: d.n }), _t("Ends {time}", { time: bwLeft(s.ends) })]).join(" · ");
 }
 // "Nobody has a time yet. Finish Zorp once and you're #1." with FIGHT ZORP (the sheet's top 3 gets the short one)
 function bwBdEmptyEl(full) {
   const boss = bwBossSpec(bwSpec().boss).name, e = bdMk("div", "bw-empty");
-  e.append(bdMk("b", "bd-big", "Nobody has a time yet."), bdMk("p", "bd-sub", full ? `Finish ${boss} once and you're #1.` : "First to finish him is #1."));
+  e.append(bdMk("b", "bd-big", _t("Nobody has a time yet.")), bdMk("p", "bd-sub", full ? _t("Finish {boss} once and you're #1.", { boss }) : _t("First to finish him is #1.")));
   return e;
 }
 function bwBdEmpty(box) {
-  if (BD.data && BD.data.fin) { box.append(bdPod(), bdMk("b", "bd-big", "No times last week.")); return; }   // a finished week nobody finished
+  if (BD.data && BD.data.fin) { box.append(bdPod(), bdMk("b", "bd-big", _t("No times last week."))); return; }   // a finished week nobody finished
   const boss = bwBossSpec(bwSpec().boss).name;
-  box.append(bdPod(), bdMk("b", "bd-big", "Nobody has a time yet."), bdMk("p", "bd-sub", `Finish ${boss} once and you're #1.`));
-  const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", `Fight ${boss}`));
+  box.append(bdPod(), bdMk("b", "bd-big", _t("Nobody has a time yet.")), bdMk("p", "bd-sub", _t("Finish {boss} once and you're #1.", { boss })));
+  const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", _t("Fight {boss}", { boss })));
   bdTap(b, () => { bdClose(); bwFight(); });
   box.appendChild(b);
 }
@@ -282,12 +281,12 @@ function bwWeekCard(lr) {
   const sp = bwBossSpec(lr.boss), nx = bwBossSpec(bwSpec().boss), champ = lr.pl === 1, d = $("bwwD");
   d.className = `bw-wkd rd-bossph rd-${lr.boss}`; bwsImg($("bwwArt"), bwArt(lr.boss), d);
   d.style.setProperty("--bc", bwsCol(sp));
-  $("bwwK").textContent = `${sp.name}${lr.no ? ` · week ${lr.no}` : ""}`;
+  $("bwwK").textContent = lr.no ? _t("{boss} · week {no}", { boss: sp.name, no: lr.no }) : sp.name;
   $("bwwCrown").hidden = !champ;
-  $("bwwH").hidden = !champ; $("bwwH").textContent = "Champion";
-  $("bwwF").textContent = lr.pl > 0 ? `You finished #${lr.pl}${lr.of > 0 ? ` of ${lr.of}` : ""}` : "You were on the board";
-  $("bwwM").hidden = !(lr.c > 0); $("bwwC").textContent = `+${lr.c} chips`;
-  $("bwwGoT").textContent = `This week: ${nx.name} ›`;
+  $("bwwH").hidden = !champ; $("bwwH").textContent = _t("Champion");
+  $("bwwF").textContent = lr.pl > 0 ? (lr.of > 0 ? _t("You finished #{pl} of {of}", { pl: lr.pl, of: lr.of }) : _t("You finished #{pl}", { pl: lr.pl })) : _t("You were on the board");
+  $("bwwM").hidden = !(lr.c > 0); $("bwwC").textContent = _t("+{n} chips", { n: lr.c });
+  $("bwwGoT").textContent = _t("This week: {boss} ›", { boss: nx.name });
   $("bwwBody").classList.toggle("champ", champ);
   modal("bwwk", true);
 }

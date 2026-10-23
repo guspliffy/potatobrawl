@@ -9,25 +9,25 @@ const TUT_CALM = 240;   // sim ticks the CPU waits (4 s) once the player is next
 const TUT_LAUNCH = { pct: 0, inside: 60, gap: 60, fall: 4.5 };
 function tutSteps() {
   return [
-    { id: "move", t: "Move & jump", b: null },
-    { id: "hits", t: "Land 3 hits", b: "light" },
-    { id: "dodge", t: "Dodge, then recover", b: "dodge" },
-    { id: "ko", t: "Knock them out", b: "heavy" },
+    { id: "move", t: _t("Move & jump"), b: null },
+    { id: "hits", t: _t("Land 3 hits"), b: "light" },
+    { id: "dodge", t: _t("Dodge, then recover"), b: "dodge" },
+    { id: "ko", t: _t("Knock them out"), b: "heavy" },
   ];
 }
 // the card's second line (touch / keyboard copy)
 function tutHint() {
   const t = touchUI;
   switch (TUT.id) {
-    case "move": return TUT.moved ? (t ? "Tap JUMP twice" : "SPACE, twice") : (t ? "Drag left to move" : "A or D to move");
-    case "hits": return `${t ? "LIGHT is fast, HEAVY hurts" : "J light, K heavy"} · ${TUT.hits}/3`;
+    case "move": return TUT.moved ? (t ? _t("Tap JUMP twice") : _t("SPACE, twice")) : (t ? _t("Drag left to move") : _t("A or D to move"));
+    case "hits": return `${t ? _t("LIGHT is fast, HEAVY hurts") : _t("J light, K heavy")} · ${TUT.hits}/3`;
     case "dodge":
-      if (TUT.ph === "dodge") return t ? "Tap DODGE as they swing" : "SHIFT as they swing";
-      if (TUT.falls > 1 || TUT.tries > 2) return "No worries, a real fight teaches it";   // the "On we go!" after two falls (or a launch that never came)
-      if (TUT.ph !== "recover") return "Here comes a big hit…";
-      if (TUT.falls) return `${t ? "Jump" : "SPACE"} twice, then push toward the stage`;
-      return `Off you go! ${t ? "JUMP" : "SPACE"} twice, back to the stage`;
-    default: return t ? "They're at 120%. HEAVY sends them flying" : "They're at 120%. K sends them flying";
+      if (TUT.ph === "dodge") return t ? _t("Tap DODGE as they swing") : _t("SHIFT as they swing");
+      if (TUT.falls > 1 || TUT.tries > 2) return _t("No worries, a real fight teaches it");   // the "On we go!" after two falls (or a launch that never came)
+      if (TUT.ph !== "recover") return _t("Here comes a big hit…");
+      if (TUT.falls) return t ? _t("Jump twice, then push toward the stage") : _t("SPACE twice, then push toward the stage");
+      return t ? _t("Off you go! JUMP twice, back to the stage") : _t("Off you go! SPACE twice, back to the stage");
+    default: return t ? _t("They're at 120%. HEAVY sends them flying") : _t("They're at 120%. K sends them flying");
   }
 }
 function tutPulse() {   // the button the step is about glows (not while the "Nice!" shows)
@@ -65,8 +65,8 @@ function startTutorial() {
   const me = FIG[sel.fighter] || FIGHTERS[0], opp = me.id === "odin" ? FIG.wizard : FIG.odin;
   const myPal = me.palettes[P.pal[me.id]] || me.palettes[0];
   G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: opp.palettes[0] }], stocks: 9, time: 0, countdown: 120 });
-  const easy = LEVELS.find((l) => l.name === "Easy").d;   // the same CPU as Practice > Easy
-  match = { ranked: false, tutorial: true, d: easy, bot: makeBot(easy), level: "Tutorial" };
+  const easy = LEVELS[1].d;   // the same CPU as Practice > Easy (LEVELS, screens.js: 1 is Easy)
+  match = { ranked: false, tutorial: true, d: easy, bot: makeBot(easy), level: _t("Tutorial") };
   meSlot = 0;
   Object.assign(TUT, { on: true, i: 0, x0: G.fighters[0].x, hold: 0, scr: null });
   enterMatchUI();
@@ -78,15 +78,15 @@ function tutShow() {
   el.classList.remove("done");
   Object.assign(TUT, { id: s.id, calm: TUT_CALM, dodges: 0, hits: 0, moved: false, ph: s.id === "dodge" ? "dodge" : "", t: 0, tries: 0, falls: 0, scr: null });
   cntOnce("tut:" + s.id);   // ui/counter.js: the furthest step new players reach
-  $("tutN").textContent = `Tutorial ${TUT.i + 1}/${st.length}`;
+  $("tutN").textContent = _t("Tutorial {i}/{total}", { i: TUT.i + 1, total: st.length });
   $("tutT").textContent = s.t;
-  $("pc1").querySelector(".pc-tag").textContent = s.id === "ko" ? "CPU" : "Dummy";   // it only fights back in the last step
+  $("pc1").querySelector(".pc-tag").textContent = s.id === "ko" ? _t("CPU") : _t("Dummy");   // it only fights back in the last step
   if (s.id === "ko") { const op = G.fighters[1]; op.percent = Math.max(op.percent, 120); op.stocks = 1; }   // one hit away from flying
   topPlace(); tutRefresh();
 }
 function tutEnd() {
   TUT.on = false; TUT.scr = null; $("tut").hidden = true; $("tut").classList.remove("t4", "done", "peek"); app.classList.remove("tut", "tutpad");
-  $("tutNext").hidden = true; $("tutSkip").textContent = "Skip";   // the Combo trial's buttons (ui/combos.js)
+  $("tutNext").hidden = true; $("tutSkip").textContent = _t("Skip");   // the Combo trial's buttons (ui/combos.js)
   for (const b of padBtns) b.classList.remove("tutpulse");
 }
 // The tutorial's CPU is told what to do now and then (step 3's launch): loop.js asks here before it asks the CPU's own brain.
@@ -130,15 +130,15 @@ function tutLaunch(me, op) {
   } else if (ph === "swing") {   // the heavy lands about 30 ticks in; the player is off the stage a few ticks later
     if (off) { Object.assign(TUT, { ph: "recover", t: 0 }); tutRefresh(); }
     else if (TUT.t > 150) {   // it never got them off (a dodge, a step away): once more, and after the third time on
-      if (++TUT.tries >= 3) return "On we go!";
+      if (++TUT.tries >= 3) return _t("On we go!");
       Object.assign(TUT, { ph: "set", t: 0 });
     }
   } else if (ph === "recover") {
     if (me.state === "air" && me.vy > K.fall) me.vy = K.fall;
     if (me.state === "dead" || me.state === "respawn") {
-      if (++TUT.falls >= 2) return "On we go!";
+      if (++TUT.falls >= 2) return _t("On we go!");
       Object.assign(TUT, { ph: "set", t: 0 }); tutRefresh();
-    } else if (me.grounded && me.x >= S.x1 && me.x <= S.x2 && me.state !== "hitstun" && TUT.t > 10) return "Nice!";
+    } else if (me.grounded && me.x >= S.x1 && me.x <= S.x2 && me.state !== "hitstun" && TUT.t > 10) return _t("Nice!");
   }
   return "";
 }
@@ -164,18 +164,18 @@ function tutTick(evs) {
   switch (id) {
     case "move":   // far enough along the floor, then a jump in the air
       if (!TUT.moved && Math.abs(me.x - TUT.x0) > 110) { TUT.moved = true; tutRefresh(); }
-      if (TUT.moved && evs.some((e) => e.type === "jump" && e.slot === 0 && !e.ground)) done = "Nice!";
+      if (TUT.moved && evs.some((e) => e.type === "jump" && e.slot === 0 && !e.ground)) done = _t("Nice!");
       break;
     case "hits": {   // any hit of yours counts
       const n = evs.filter((e) => e.type === "hit" && e.slot === 0 && e.def !== undefined).length;
-      if (n) { TUT.hits = Math.min(3, TUT.hits + n); if (TUT.hits < 3) tutRefresh(); else done = "Nice!"; }
+      if (n) { TUT.hits = Math.min(3, TUT.hits + n); if (TUT.hits < 3) tutRefresh(); else done = _t("Nice!"); }
       break;
     }
     case "dodge":
       if (TUT.ph !== "dodge") { done = tutLaunch(me, op); break; }
       // a dodge while the CPU is attacking close by (the dodge is what saves the player), or simply two dodges
       TUT.dodges += evs.filter((e) => e.type === "dodge" && e.slot === 0).length;
-      if ((me.state === "dodge" && op.state === "attack" && Math.abs(me.x - op.x) < 260 && Math.abs(me.y - op.y) < 160) || TUT.dodges >= 2) done = "Nice!";
+      if ((me.state === "dodge" && op.state === "attack" && Math.abs(me.x - op.x) < 260 && Math.abs(me.y - op.y) < 160) || TUT.dodges >= 2) done = _t("Nice!");
       break;
   }
   if (done) tutDoneStep(done);   // the last step ends with the KO (finishMatch -> tutDone)
@@ -189,11 +189,11 @@ function tutDone() {
   const me = G.fighters[0].spec;
   resOpen("win", me, true);   // solo: css/99-first.css keeps only FIGHT and Menu
   if (match) match.finBy = "";
-  $("rMode").textContent = "Tutorial"; $("rWho").textContent = me.name;
-  resTitle("You're ready");
-  $("rSub").textContent = "Now a real fight: the Easy CPU, three lives.";
+  $("rMode").textContent = _t("Tutorial"); $("rWho").textContent = me.name;
+  resTitle(_t("You're ready"));
+  $("rSub").textContent = _t("Now a real fight: the Easy CPU, three lives.");
   $("rStats").hidden = true;
-  $("rAgain").querySelector("span").textContent = "Fight";
+  $("rAgain").querySelector("span").textContent = _t("Fight");
   show("result");
 }
 tap("tutSkip", () => {
@@ -209,7 +209,7 @@ function startFirstFight() {
   Sfx.init(); hideOnline(); modal("help", false); modal("settings", false);
   const me = FIG[sel.fighter] || FIGHTERS[0], myPal = me.palettes[P.pal[me.id]] || me.palettes[0], opp = cpuFoe(me);
   const oppPal = opp.id === me.id ? opp.palettes[(P.pal[me.id] + 1) % opp.palettes.length] : opp.palettes[0];
-  const li = LEVELS.findIndex((l) => l.name === "Easy"), easy = LEVELS[li].d;
+  const li = 1, easy = LEVELS[li].d;   // 1 is Easy (LEVELS, screens.js)
   Object.assign(sel, { mode: "practice", opp: "random", level: li });   // Rematch plays another Practice fight, not a Ranked one
   G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
   // Fable: the first fight's CPU does not edge-guard (the Dragon's style would follow the player out past the ledge)
@@ -222,11 +222,11 @@ const FH = { on: false, t: 0, cur: "", end: 0, gap: 0, seen: new Set(), q: [] };
 function fhLines() {
   const t = touchUI;
   return {
-    go: t ? "Drag left to move · tap JUMP twice" : "A D move · SPACE jump, twice",
-    mix: t ? "LIGHT and HEAVY hit · DODGE through attacks" : "J light · K heavy · SHIFT dodge",
-    edge: t ? "Off the edge? JUMP twice to get back" : "Off the edge? SPACE twice to get back",
-    pct: t ? "They're over 100%. HEAVY launches them" : "They're over 100%. K launches them",
-    ult: t ? "ULTI is ready. Tap it" : "ULTI ready — press U",
+    go: t ? _t("Drag left to move · tap JUMP twice") : _t("A D move · SPACE jump, twice"),
+    mix: t ? _t("LIGHT and HEAVY hit · DODGE through attacks") : _t("J light · K heavy · SHIFT dodge"),
+    edge: t ? _t("Off the edge? JUMP twice to get back") : _t("Off the edge? SPACE twice to get back"),
+    pct: t ? _t("They're over 100%. HEAVY launches them") : _t("They're over 100%. K launches them"),
+    ult: t ? _t("ULTI is ready. Tap it") : _t("ULTI ready — press U"),
   };
 }
 function fhStart() {

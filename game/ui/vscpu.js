@@ -47,11 +47,11 @@ function vcRanks() { const on = qmMe() || QM_FRESH, c = vcMine() || VC_FRESH; re
 // the next CPU in words: "about Hard · Gold 1150–1300" (placement: "a Hard CPU")
 function vcNext() {
   const me = vcMine() || VC_FRESH;
-  if (me.n < QM_PLACING) return { pm: true, word: "Hard", lo: VC_PLACE_R, hi: VC_PLACE_R };
+  if (me.n < QM_PLACING) return { pm: true, word: _t("Hard"), lo: VC_PLACE_R, hi: VC_PLACE_R };
   const lo = clamp(me.r - VC_SPREAD, 600, VC_CAP), hi = clamp(me.r + VC_SPREAD, 600, VC_CAP);
   return { pm: false, word: vcWord((lo + hi) / 2), lo, hi };
 }
-function vcWord(r) { const d = clamp((r - 750) / 1000, 0.08, 0.98); return d >= 0.98 ? "Max" : d >= 0.85 ? "Hard" : d >= 0.45 ? "Normal" : "Easy+"; }
+function vcWord(r) { const d = clamp((r - 750) / 1000, 0.08, 0.98); return d >= 0.98 ? _t("Max") : d >= 0.85 ? _t("Hard") : d >= 0.45 ? _t("Normal") : _t("Easy+"); }
 
 /* ----- the server's messages (net-ws.js passes cme / ct-ok / ct-no / cres / bd to every Quick match listener) ----- */
 function vcBoot() {   // qmBoot (ui/quick.js), once
@@ -63,7 +63,7 @@ function vcBoot() {   // qmBoot (ui/quick.js), once
 }
 function vcMsg(m) {
   if (!m || typeof m !== "object") return;
-  if (m.t === "me") { if (!m.err) vcAuthed(); else if (VC.asking) vcFail(m.err === "off" ? "Ranked vs CPU opens soon." : "This phone's account isn't on the server. Check Account."); }
+  if (m.t === "me") { if (!m.err) vcAuthed(); else if (VC.asking) vcFail(m.err === "off" ? _t("Ranked vs CPU opens soon.") : _t("This phone's account isn't on the server. Check Account.")); }
   else if (m.t === "cme") vcGotMe(m);
   else if (m.t === "ct-ok") vcTicket(m);
   else if (m.t === "ct-no") vcRefused(m.why);
@@ -92,9 +92,9 @@ function vcFight() {
   if (QM.no === "old") { location.reload(); return; }
   if (VC.asking) return;
   VC.note = "";
-  if (!QM.conn) { VC.note = "Connecting to the server…"; qmRender(); return; }
-  if (qmAcctOff()) { VC.note = "Ranked vs CPU opens once accounts are on."; qmRender(); return; }
-  if (tcPlaying()) { VC.note = "You're in a cup: your next match is called soon."; qmRender(); return; }   // ui/tourney.js
+  if (!QM.conn) { VC.note = _t("Connecting to the server…"); qmRender(); return; }
+  if (qmAcctOff()) { VC.note = _t("Ranked vs CPU opens once accounts are on."); qmRender(); return; }
+  if (tcPlaying()) { VC.note = _t("You're in a cup: your next match is called soon."); qmRender(); return; }   // ui/tourney.js
   Sfx.init(); goFull();   // fullscreen needs the tap itself
   VC.asking = true; VC.askT = Date.now();
   qmRender();
@@ -104,7 +104,7 @@ async function vcGo() {
   if (!ACCT.code) {
     const ok = await qmMakeAcct();
     if (!VC.asking) return;
-    if (!ok) { vcFail(qmAcctOff() ? "Ranked vs CPU opens soon." : "Couldn't reach the server. Try again."); return; }
+    if (!ok) { vcFail(qmAcctOff() ? _t("Ranked vs CPU opens soon.") : _t("Couldn't reach the server. Try again.")); return; }
   }
   if (!QM.authed) { qmAuth(); return; }   // vcAuthed goes on once signed in
   if (VC.pend) { vcFlush(); return; }      // vcRes goes on once the last match is counted
@@ -115,7 +115,7 @@ function vcRefused(why) {
   if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then ask again
   if (why === "slow") { setTimeout(() => { if (VC.asking) vcGo(); }, 1500); return; }
   if (why === "old") { QM.no = "old"; vcFail(""); return; }
-  vcFail("Couldn't start a ranked CPU match. Try again.");
+  vcFail(_t("Couldn't start a ranked CPU match. Try again."));
 }
 function vcTicketOk(m) {
   return typeof m.id === "string" && /^[0-9a-f]{12}$/.test(m.id) && Number.isInteger(m.seed) && Number.isInteger(m.map) && m.map >= 0 && m.map < BL.POOL &&
@@ -144,15 +144,15 @@ function vcVs(tk) {
     const w = document.createElement("span"); w.textContent = words; t.append(w);
   };
   side("L", NET.myName || acctName(), tk.f[0], tk.p[0], me.r, qmTierWords(me.r, me.n < QM_PLACING ? { n: me.n } : null, false));
-  side("R", vcCpuName(tk.ni), tk.f[1], tk.p[1], tk.cr, `${tierInfo(tk.cr).t.name} ${tk.cr} · ${tk.pm ? "Hard" : vcWord(tk.cr)} CPU`);
+  side("R", vcCpuName(tk.ni), tk.f[1], tk.p[1], tk.cr, _t("{tier} {r} · {level} CPU", { tier: qmTier(tierInfo(tk.cr).t.name), r: tk.cr, level: tk.pm ? _t("Hard") : vcWord(tk.cr) }));
   let st = $("vsCpu");
-  if (!st) { st = document.createElement("i"); st.id = "vsCpu"; st.className = "tag ember st vc-cpu"; st.textContent = "CPU"; $("vsNameR").parentNode.appendChild(st); }
+  if (!st) { st = document.createElement("i"); st.id = "vsCpu"; st.className = "tag ember st vc-cpu"; st.textContent = _t("CPU"); $("vsNameR").parentNode.appendChild(st); }
   st.hidden = false;
   for (const id of ["vsRiv", "vsWL", "vsWR", "vsTagR"]) { const e = $(id); if (e) e.hidden = true; }   // the rival record's (ui/rivals.js): not for a CPU
-  $("vsMode").textContent = "Ranked · CPU";
+  $("vsMode").textContent = _t("Ranked · CPU");
   $("vsStamp").className = "vs-st rk";
   $("vsFb").hidden = true; $("vsWhy").hidden = true;
-  $("vsPing").textContent = tk.pm ? `Placement ${me.n + 1} of ${QM_PLACING} · ${mapName(tk.map)}` : mapName(tk.map);
+  $("vsPing").textContent = tk.pm ? _t("Placement {n} of {m} · {map}", { n: me.n + 1, m: QM_PLACING, map: mapName(tk.map) }) : mapName(tk.map);
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   QM.vsT = VC.vsT = performance.now(); QM.vsN++;
   Sfx.tone(120, 40, 0.35, "sine", 0.5); Sfx.noise(0.2, 0.3, 900);
@@ -193,14 +193,14 @@ function vcMatchEnd(forfeit) {   // screens.js finishMatch
   const tk = match.vc, me = G.fighters[0], op = G.fighters[1], rec = vcMine() || VC_FRESH;
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, vc: tk, me, op, lines: [], total: 0 };
-  const kos = (each) => { if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * each]); };
+  const kos = (each) => { if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * each]); };
   if (!forfeit) {   // the old Ranked's chips: win 20, draw 10, a match played 6, KOs, a win streak
     if (res === 1) {
-      R.lines.push(["Win", 20]); kos(5);
+      R.lines.push([_t("Win"), 20]); kos(5);
       const k = VC.streak + 1, sb = Math.min(20, (k - 1) * 5);
-      if (sb > 0) R.lines.push([`${k} win streak`, sb]);
-    } else if (res === 0.5) { R.lines.push(["Draw", 10]); kos(3); }
-    else { R.lines.push(["Match played", 6]); kos(2); }
+      if (sb > 0) R.lines.push([_t("{k} win streak", { k }), sb]);
+    } else if (res === 0.5) { R.lines.push([_t("Draw"), 10]); kos(3); }
+    else { R.lines.push([_t("Match played"), 6]); kos(2); }
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   if (R.total) { P.tokens += R.total; saveProfile(); }
@@ -246,12 +246,12 @@ function vcRes(m) {
 function vcResults(R) {   // ui/quick.js qmResults
   VC.shown = R;
   const tk = R.vc, k = $("rMode"); k.textContent = "";
-  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
-  k.append(t, `Ranked vs CPU · ${tierInfo(tk.cr).t.name} ${tk.cr} · ${tk.pm ? "placement" : vcWord(tk.cr)}`);
-  $("rAgain").querySelector("span").textContent = "Another CPU fight"; $("rAgain").disabled = false;
-  $("rChange").querySelector("span").textContent = "Quick match";
+  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = _t("CPU");
+  k.append(t, _t("Ranked vs CPU · {tier} {r} · {level}", { tier: qmTier(tierInfo(tk.cr).t.name), r: tk.cr, level: tk.pm ? _t("placement") : vcWord(tk.cr) }));
+  $("rAgain").querySelector("span").textContent = _t("Another CPU fight"); $("rAgain").disabled = false;
+  $("rChange").querySelector("span").textContent = _t("Quick match");
   $("rMenuSub").textContent = "";
-  if (!R.lines.length) $("rWhy").textContent = masteryWhy("No chips for a match you left.");
+  if (!R.lines.length) $("rWhy").textContent = masteryWhy(_t("No chips for a match you left."));
   vcRankCard();
   if (VC.res && VC.res.id === tk.id) vcVerdictView(false);
 }
@@ -270,13 +270,13 @@ function vcRankCard() {
   const r0 = p ? p.r0 : me.r, n0 = p ? p.n0 : me.n, ti = tierInfo(r0), card = $("rRank");
   card.hidden = false; card.classList.add("qm-wait", "vc"); card.classList.remove("qm-zero"); card.style.setProperty("--tc", ti.t.col);
   paintBadge($("rBadge"), ti.i);
-  $("rTier").textContent = n0 < QM_PLACING ? "Placing" : ti.t.name;
+  $("rTier").textContent = n0 < QM_PLACING ? _t("Placing") : qmTier(ti.t.name);
   $("rPromo").textContent = ""; $("rPromo").classList.remove("down");
   const rt = $("rRating"), b = document.createElement("b"); b.textContent = `${r0} → …`; rt.textContent = ""; rt.append(b);
   $("rBar").style.setProperty("--p", ti.p);
   const g = $("rGain"); g.style.setProperty("--g0", ti.p); g.style.setProperty("--g1", ti.p);
-  $("rStick").className = "delta wait"; $("rDelta").textContent = "…"; $("rStick").querySelector("small").textContent = "Confirming";
-  const ln = vcLine(); ln.hidden = false; ln.className = "rk-bd mute"; ln.textContent = "… on the CPU board";
+  $("rStick").className = "delta wait"; $("rDelta").textContent = "…"; $("rStick").querySelector("small").textContent = _t("Confirming");
+  const ln = vcLine(); ln.hidden = false; ln.className = "rk-bd mute"; ln.textContent = _t("… on the CPU board");
   QM.cfT = performance.now();
 }
 // the server's verdict on the results on screen
@@ -288,41 +288,41 @@ function vcVerdictView(late) {
   const look = (k) => { sheet.classList.remove("win", "loss", "draw"); sheet.classList.add(k); };
   if (v.res === null) {
     const me = vcMine() || VC_FRESH, rt = $("rRating"), b = document.createElement("b"); b.textContent = String(me.r);
-    card.classList.add("qm-zero"); st.className = "delta zero"; $("rDelta").textContent = "±0"; st.querySelector("small").textContent = "No result";
-    rt.textContent = ""; rt.append(b, " · unchanged"); $("rPromo").textContent = "";
-    resTitle("No result"); look("draw");
-    resLine($("rSub"), [v.why === "late" ? "The server had already counted this match." : "The game was updated during this match. Your CPU rank doesn't change."]);
+    card.classList.add("qm-zero"); st.className = "delta zero"; $("rDelta").textContent = "±0"; st.querySelector("small").textContent = _t("No result");
+    rt.textContent = ""; rt.append(b, ` · ${_t("unchanged")}`); $("rPromo").textContent = "";
+    resTitle(_t("No result")); look("draw");
+    resLine($("rSub"), [v.why === "late" ? _t("The server had already counted this match.") : _t("The game was updated during this match. Your CPU rank doesn't change.")]);
     ln.hidden = true;
     return;
   }
   if (late) { st.style.animation = "none"; void st.offsetWidth; st.style.animation = ""; }   // the sticker pops again (40-results.css)
   resRank({ before: v.r0, after: v.r1, delta: v.dr, tb: tierIdx(v.r0), ta: tierIdx(v.r1) });
-  st.querySelector("small").textContent = "Rating";   // was "Confirming"
-  if (v.n < QM_PLACING) { $("rTier").textContent = `Placing ${v.n} of ${QM_PLACING}`; $("rPromo").textContent = ""; }
-  else if (v.n === QM_PLACING) { $("rPromo").textContent = "Placed!"; $("rPromo").classList.remove("down"); }
+  st.querySelector("small").textContent = _t("Rating");   // was "Confirming"
+  if (v.n < QM_PLACING) { $("rTier").textContent = _t("Placing {n} of {m}", { n: v.n, m: QM_PLACING }); $("rPromo").textContent = ""; }
+  else if (v.n === QM_PLACING) { $("rPromo").textContent = _t("Placed!"); $("rPromo").classList.remove("down"); }
   // the board line: "#14 → #11 on the CPU board ▲3", "#11 on the CPU board", "Not on the CPU board yet · 3 more matches"
   const a = v.pl0 | 0, b = v.pl1 | 0;
   ln.hidden = false;
-  if (!b) { ln.className = "rk-bd mute"; ln.textContent = v.n < QM_PLACING ? `CPU board after ${QM_PLACING - v.n} more` : "Not on the CPU board"; }
-  else if (!a) { ln.className = "rk-bd up"; ln.textContent = `#${b} on the CPU board · Boards ›`; }
-  else if (b < a) { ln.className = "rk-bd up"; ln.textContent = `#${a} → #${b} on the CPU board ▲${a - b}`; }
-  else if (b > a) { ln.className = "rk-bd down"; ln.textContent = `#${a} → #${b} on the CPU board ▼${b - a}`; }
-  else { ln.className = "rk-bd"; ln.textContent = `#${b} on the CPU board · Boards ›`; }
+  if (!b) { ln.className = "rk-bd mute"; ln.textContent = v.n < QM_PLACING ? _t("CPU board after {n} more", { n: QM_PLACING - v.n }) : _t("Not on the CPU board"); }
+  else if (!a) { ln.className = "rk-bd up"; ln.textContent = _t("#{n} on the CPU board · Boards ›", { n: b }); }
+  else if (b < a) { ln.className = "rk-bd up"; ln.textContent = _t("#{a} → #{b} on the CPU board ▲{d}", { a, b, d: a - b }); }
+  else if (b > a) { ln.className = "rk-bd down"; ln.textContent = _t("#{a} → #{b} on the CPU board ▼{d}", { a, b, d: b - a }); }
+  else { ln.className = "rk-bd"; ln.textContent = _t("#{n} on the CPU board · Boards ›", { n: b }); }
   if (v.why === "game" && v.res !== R.res) {   // the server's copy decides
-    resTitle(v.res === 1 ? "Victory" : v.res === 0 ? "Defeat" : "Draw"); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
-    resLine($("rSub"), ["The server's result: ", v.res === 1 ? "you won." : v.res === 0 ? "you lost." : "a draw."]);
+    resTitle(v.res === 1 ? _t("Victory") : v.res === 0 ? _t("Defeat") : _t("Draw")); look(v.res === 1 ? "win" : v.res === 0 ? "loss" : "draw");
+    resLine($("rSub"), [v.res === 1 ? _t("The server's result: you won.") : v.res === 0 ? _t("The server's result: you lost.") : _t("The server's result: a draw.")]);
   } else if (v.why !== "game" && v.why !== "ff") {
-    st.querySelector("small").textContent = "Rating · not confirmed";
-    resTitle("Not confirmed"); look("loss");
-    resLine($("rSub"), [v.why === "gone" ? "That match had no result in time. It counts as a loss." : "The server couldn't confirm this match. It counts as a loss."]);
-  } else if (v.why === "ff") st.querySelector("small").textContent = "Rating · forfeit";
+    st.querySelector("small").textContent = _t("Rating · not confirmed");
+    resTitle(_t("Not confirmed")); look("loss");
+    resLine($("rSub"), [v.why === "gone" ? _t("That match had no result in time. It counts as a loss.") : _t("The server couldn't confirm this match. It counts as a loss.")]);
+  } else if (v.why === "ff") st.querySelector("small").textContent = _t("Rating · forfeit");
 }
 // Pause: what leaving costs (ui/quick.js qmPauseText)
 function vcPauseText() {
   if (match.vc.tc) { tcPauseText(); return; }   // ui/tourney.js
   const tk = match.vc, me = vcMine() || VC_FRESH, dr = qmElo(me.r, tk.pm ? VC_PLACE_R : tk.cr, 0, me.n);
-  $("pQuit").querySelector("span").textContent = "Forfeit";
-  $("pNote").textContent = `Leaving counts as a loss · ${dr === 0 ? "−0" : String(dr).replace("-", "−")}`;
+  $("pQuit").querySelector("span").textContent = _t("Forfeit");
+  $("pNote").textContent = _t("Leaving counts as a loss · {d}", { d: dr === 0 ? "−0" : String(dr).replace("-", "−") });
 }
 
 /* ----- the Quick match screen in VS CPU mode (ui/quick.js qmRender calls this last) ----- */
@@ -331,7 +331,7 @@ function vcRender(lb) {
   scr.classList.toggle("vc", on);
   const v = $("qmV");
   v.disabled = qmSearching() || off || !QM.conn;
-  $("qmVSub").textContent = off ? "opens soon" : !QM.conn ? "needs the server" : "CPU rank";
+  $("qmVSub").textContent = off ? _t("opens soon") : !QM.conn ? _t("needs the server") : _t("CPU rank");
   // the warm-up's way to a match that counts, when nobody is here
   $("qmToV").hidden = on || off || !QM.conn || qmSearching() || lb.q > 0;
   const bd = $("qmBoard");
@@ -339,16 +339,16 @@ function vcRender(lb) {
   if (!on) return;
   $("qmCpu").hidden = true;
   const find = $("qmFind");
-  find.querySelector("span").textContent = QM.no === "old" ? "Reload" : VC.asking ? "Starting…" : "Fight a CPU";
+  find.querySelector("span").textContent = QM.no === "old" ? _t("Reload") : VC.asking ? _t("Starting…") : _t("Fight a CPU");
   find.disabled = QM.no !== "old" && (!QM.conn || off || VC.asking || QM.making);
   const nx = vcNext(), me = vcMine() || VC_FRESH, truth = $("qmTruth");
   truth.className = "qm-truth" + (VC.note || QM.no ? " note" : lb.q ? " live" : "");
-  truth.textContent = QM.no === "old" ? "A new version of the game is out. Reload to play." : VC.note ||
-    (!QM.conn ? "Connecting to the server…" : VC.pend ? "Sending your last match to the server…"
-      : lb.q ? `● ${lb.q} searching · switch to Ranked to meet ${lb.q === 1 ? "them" : "one"}`
-      : nx.pm ? `Placement ${me.n + 1} of ${QM_PLACING}: a Hard CPU · win to start high`
-      : `Next CPU: about ${nx.word} · ${tierInfo(nx.lo).t.name} ${nx.lo}–${nx.hi}`);
-  $("qmHelp").textContent = "Ranked vs CPU: the server checks every match. The CPU gets stronger as your CPU rank rises, up to its best at 1730.";
+  truth.textContent = QM.no === "old" ? _t("A new version of the game is out. Reload to play.") : VC.note ||
+    (!QM.conn ? _t("Connecting to the server…") : VC.pend ? _t("Sending your last match to the server…")
+      : lb.q ? _t("● {n} searching · switch to Ranked to meet them|● {n} searching · switch to Ranked to meet one", { n: lb.q })
+      : nx.pm ? _t("Placement {n} of {m}: a Hard CPU · win to start high", { n: me.n + 1, m: QM_PLACING })
+      : _t("Next CPU: about {level} · {tier} {lo}–{hi}", { level: nx.word, tier: qmTier(tierInfo(nx.lo).t.name), lo: nx.lo, hi: nx.hi }));
+  $("qmHelp").textContent = _t("Ranked vs CPU: the server checks every match. The CPU gets stronger as your CPU rank rises, up to its best at 1730.");
 }
 // the rank plate in VS CPU mode: your CPU rank, the ember CPU sticker on the emblem, the board line under the bar
 function vcPlate() {
@@ -356,11 +356,11 @@ function vcPlate() {
   card.style.setProperty("--tc", ti.t.col);
   card.classList.toggle("placing", placing); card.classList.add("vc"); card.classList.remove("wanted");
   const bd = $("qmBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
-  $("qmTier").textContent = placing ? "Placing" : ti.t.name;
-  $("qmRating")._t = placing ? [`${me.n} of ${QM_PLACING} played · ${me.r}`] : ti.next ? [`${me.r} · ${ti.need} to ${ti.next.name}`, `${me.r} · ${ti.need} to go`] : [`${me.r} · top tier`];   // qmThin picks
+  $("qmTier").textContent = placing ? _t("Placing") : qmTier(ti.t.name);
+  $("qmRating")._t = placing ? [_t("{n} of {m} played · {r}", { n: me.n, m: QM_PLACING, r: me.r })] : ti.next ? [_t("{r} · {need} to {tier}", { r: me.r, need: ti.need, tier: qmTier(ti.next.name) }), _t("{r} · {need} to go", { r: me.r, need: ti.need })] : [_t("{r} · top tier", { r: me.r })];   // qmThin picks
   $("qmBar").style.setProperty("--p", placing ? me.n / QM_PLACING : ti.p);
-  $("qmRec").textContent = `${me.w}W · ${me.l}L\nCPU rank`;
-  const pp = $("qmPips"); pp.setAttribute("aria-label", `${me.n} of ${QM_PLACING} placing matches played`);
+  $("qmRec").textContent = `${_t("{w}W · {l}L", { w: me.w, l: me.l })}\n${_t("CPU rank")}`;
+  const pp = $("qmPips"); pp.setAttribute("aria-label", _t("{n} of {m} placing matches played", { n: me.n, m: QM_PLACING }));
   [...pp.children].forEach((e, k) => e.classList.toggle("on", k < me.n));
   $("qmKRec").textContent = $("qmRec").textContent.replace("\n", " · ");
   let ln = $("qmBdl");
@@ -371,7 +371,7 @@ function vcPlate() {
   }
   ln.hidden = false;
   ln.classList.toggle("mute", !VC.pl);
-  ln.textContent = VC.pl ? `#${VC.pl} on the CPU board · Boards ›` : placing ? `CPU board after ${QM_PLACING - me.n} more ${QM_PLACING - me.n === 1 ? "match" : "matches"}` : "The CPU board · Boards ›";
+  ln.textContent = VC.pl ? _t("#{n} on the CPU board · Boards ›", { n: VC.pl }) : placing ? _t("CPU board after {n} more match|CPU board after {n} more matches", { n: QM_PLACING - me.n }) : _t("The CPU board · Boards ›");
   const w = $("qmWant"); if (w) w.hidden = true;   // the online streak's WANTED tag (ui/rivals.js): not for the CPU rank
   qmThin();   // ui/quick.js: the narrow plate below 820 px
 }
@@ -386,7 +386,7 @@ function vcLast() {
 // the menu's gold hero in VS CPU mode: [kicker after the online count, the line under it]
 function vcHero() {
   const me = vcMine() || VC_FRESH, ti = tierInfo(me.r), placing = me.n < QM_PLACING;
-  return [`VS CPU · ${placing ? "Placing" : `${ti.t.name} ${me.r}`}`, placing ? `Placing · ${me.n} of ${QM_PLACING}` : VC.pl ? `#${VC.pl} on the CPU board` : `${me.w}W · ${me.l}L`];
+  return [_t("VS CPU · {rank}", { rank: placing ? _t("Placing") : _t("{tier} {r}", { tier: qmTier(ti.t.name), r: me.r }) }), placing ? _t("Placing · {n} of {m}", { n: me.n, m: QM_PLACING }) : VC.pl ? _t("#{n} on the CPU board", { n: VC.pl }) : _t("{w}W · {l}L", { w: me.w, l: me.l })];
 }
 
 /* ----- the boards (ui/boards.js shows them) ----- */
@@ -427,14 +427,14 @@ function vcBdDone(k, d) {
 function vcStripText() {   // the HUD strip: this match counts, and for which rank
   if (match.vc.tc) return tcStripText();   // ui/tourney.js: a cup match against a CPU
   const me = vcMine() || VC_FRESH;
-  return me.n < QM_PLACING ? `Ranked vs CPU · placement ${me.n + 1} of ${QM_PLACING}` : `Ranked vs CPU · ${tierInfo(me.r).t.name} ${me.r}`;
+  return me.n < QM_PLACING ? _t("Ranked vs CPU · placement {n} of {m}", { n: me.n + 1, m: QM_PLACING }) : _t("Ranked vs CPU · {tier} {r}", { tier: qmTier(tierInfo(me.r).t.name), r: me.r });
 }
 function vcTick() {
   bwTick();   // ui/bossweek.js: a Boss Week result still on its way, the Monday card
   tcTick();   // ui/tourney.js: the call-up's clock, a cup match's log still on its way
   if (!qmOn()) return;
   if (VC.vsT && performance.now() - VC.vsT > 3000 && VC.tk) { const tk = VC.tk; VC.tk = null; vcStart(tk); }
-  if (VC.asking && Date.now() - VC.askT > 10000) vcFail("Couldn't reach the server. Try again.");
+  if (VC.asking && Date.now() - VC.askT > 10000) vcFail(_t("Couldn't reach the server. Try again."));
   // a result sent with no answer: ask for the record (it shows whether the server still waits for it, and sends it again)
   const p = VC.pend;
   if (p && p.sentT && Date.now() - p.sentT > 15000 && QM.authed) { p.sentT = Date.now(); vcFlush(); window.__blQuick.send({ t: "cme" }); }

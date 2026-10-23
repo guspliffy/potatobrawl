@@ -25,6 +25,7 @@
 #   --video=      step the page at 30 fps from the hit to the results, screenshot every frame at the given size and device scale, encode with ffmpeg
 #   --tail=N      with --video: N more frames of the results (default 8; a page may leave something on them, the Alchemist's Ultimate splatters them)
 #   --after=...   pictures of the results that many ms after they came up (stepped at 20 fps)
+#   --lang=xx     the page in another language (fr, de, es, ru, or xx the pseudo-language)
 # Prints "no errors" when no page errors happened and every run ended on the results screen as expected.
 import sys, json, pathlib, subprocess, shutil
 from playwright.sync_api import sync_playwright
@@ -43,6 +44,7 @@ tail = int(opt("--tail", "8"))
 after_ms = [int(x) for x in opt("--after", "").split(",") if x]
 fighter = opt("--fighter", "dragon")
 throttle = float(opt("--throttle", "1"))
+lang = opt("--lang")   # a language for the page (ui/lang.js), e.g. --lang=ru
 size = next((a.split("x") for a in args if "x" in a and a[0].isdigit()), ["844", "390"])
 W, H = int(size[0]), int(size[1])
 ALL = ["phoenix", "alchemist", "odin", "wizard", "samurai", "dragon", "gunslinger", "reaper"]
@@ -110,9 +112,9 @@ def run(b, fid, opp):
     pg.on("console", on_console)
     if throttle > 1:
         ctx.new_cdp_session(pg).send("Emulation.setCPUThrottlingRate", {"rate": throttle})
-    pg.goto((ROOT / "build" / "test.html").as_uri()); pg.wait_for_timeout(1200)
+    pg.goto((ROOT / "build" / "test.html").as_uri() + (f"?lang={lang}" if lang else "")); pg.wait_for_timeout(1200)
     pg.click("#bPractice"); pg.wait_for_timeout(300)
-    pg.click("#lvlPick"); pg.click("#lvlPop button:has-text('Dummy')")
+    pg.click("#lvlPick"); pg.click("#lvlPop button >> nth=0")   # Dummy (LEVELS[0]), in any language
     pg.click("#oppPick"); pg.click(f"#oppPop button >> nth={1 + ALL.index(opp)}")
     pg.click("#selGo")
     pg.wait_for_function("() => window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=20000)

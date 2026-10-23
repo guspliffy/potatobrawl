@@ -554,7 +554,7 @@ async function play(H, G, opts) {
   {
     // the referee's boss HP with a friend: his Road HP (game/ui/road.js ROAD_REG) x the two-player K (game/ui/online.js DUO_HP), as the page reads them
     const src = (f) => fs.readFileSync(path.join(ROOT, "game/ui", f), "utf8");
-    const road = Object.fromEntries([...src("road.js").matchAll(/boss: "(\w+)", bk: "\w+", pk: "\w+", title: "[^"]+", hp: ([0-9.]+)/g)].map((m) => [m[1], +m[2]]));
+    const road = Object.fromEntries([...src("road.js").matchAll(/boss: "(\w+)", bk: "\w+", pk: "\w+", title: (?:_t\()?"[^"]+"\)?, hp: ([0-9.]+)/g)].map((m) => [m[1], +m[2]]));
     const duo = JSON.parse(/const DUO_HP = (\{[^\n]*\});/.exec(src("online.js"))[1].replace(/(\w+):/g, '"$1":'));
     check(JSON.stringify(road) === JSON.stringify(Q.ROAD_HP) && JSON.stringify(duo) === JSON.stringify(Q.DUO_HP) && BL.BOSSES.every((b) => Q.DUO_HP[b.id]),
       "the referee's boss HP with a friend is the page's (ROAD_REG hp x DUO_HP)");

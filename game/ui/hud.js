@@ -236,7 +236,9 @@ function hudDuo() {
   p1.classList.toggle("right", !on); p1.classList.toggle("pmini", on);
   if (!on) { for (const id of ["pc2", "pc3"]) { const el = $(id); if (el) el.remove(); } }
   else if (!$("pc2")) {
-    hr.insertBefore($("duoCards").content.cloneNode(true), $("pauseBtn"));
+    const cards = $("duoCards").content.cloneNode(true);
+    _tDom(cards);   // ui/lang.js: the template's text is not in the page at start, so the page's one pass over the markup did not reach it
+    hr.insertBefore(cards, $("pauseBtn"));
     for (const i of [2, 3]) $("pc" + i).addEventListener("pointerdown", (e) => { e.preventDefault(); if (mode === "match" && !paused) duoFocus(cardSlot[i]); });
   }
   for (let i = 0; i < 4; i++) {

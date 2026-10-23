@@ -129,13 +129,13 @@ function buildRules() {
     }
   };
   const setBoss = (patch) => { P.onBoss = Object.assign(onBoss(), patch); }, setTeam = (patch) => { P.onTeam = Object.assign(onTeam(), patch); };
-  pick("ruleM", [{ md: "1v1", label: "1 vs 1" }, { md: "team", label: "2 vs 2" }, { md: "boss", label: "Vs boss" }], (it) => it.md === md,
+  pick("ruleM", [{ md: "1v1", label: _t("1 vs 1") }, { md: "team", label: _t("2 vs 2") }, { md: "boss", label: _t("Vs boss") }], (it) => it.md === md,
     (it) => { setBoss({ on: it.md === "boss" }); setTeam({ on: it.md === "team" }); });
-  for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? v + " min" : "No limit")], ["b", "ruleB", (v) => (v === 3 ? "Best of 3" : "Single")]])
+  for (const [k, id, label] of [["l", "ruleL", (v) => String(v)], ["t", "ruleT", (v) => (v ? _t("{n} min", { n: v }) : _t("No limit"))], ["b", "ruleB", (v) => (v === 3 ? _t("Best of 3") : _t("Single"))]])
     pick(id, RULES[k].map((v) => ({ v, label: label(v) })), (it) => P.rules[k] === it.v, (it) => { P.rules = Object.assign({}, P.rules, { [k]: it.v }); });
   pick("ruleBo", BL.BOSSES.map((b) => ({ v: b.id, label: b.name, short: BOSS_SHORT[b.id] })), (it) => it.v === ob.b, (it) => setBoss({ b: it.v }));
   pick("ruleLv", BOSS_LV.map((name, i) => ({ v: i, label: name })), (it) => it.v === ob.lv, (it) => setBoss({ lv: it.v }));
-  pick("ruleCpu", TB_LV.map((k, i) => ({ v: i, label: LEVELS[k].name })), (it) => it.v === ot.lv, (it) => setTeam({ lv: it.v }));
+  pick("ruleCpu", TB_LV.map((k, i) => ({ v: i, label: _tv(LEVELS[k].name) })), (it) => it.v === ot.lv, (it) => setTeam({ lv: it.v }));
   // a boss fight swaps lives, time and format for the boss (his map comes with him) and his level; a team brawl for the CPUs' level
   for (const id of ["rowL", "rowT", "rowB"]) $(id).hidden = md !== "1v1";
   for (const id of ["rowBo", "rowLv"]) $(id).hidden = md !== "boss";
@@ -151,14 +151,14 @@ async function namesFor(peers) {
   let ps = {};
   if (NET.user && ids.length) { try { ps = await NET.user.profiles(ids); } catch (e) { ps = {}; } }
   const out = {};
-  for (const p of peers) out[p.peer] = (p.by && ps[p.by] && ps[p.by].name) || (p.sameTab ? NET.myName || "You" : "Friend");
+  for (const p of peers) out[p.peer] = (p.by && ps[p.by] && ps[p.by].name) || (p.sameTab ? NET.myName || _t("You") : _t("Friend"));
   return out;
 }
 async function resolveOppName() {
   const peers = NET.mr ? NET.mr.peers().filter((p) => p.peer === NET.oppPeer) : [];
   if (!peers.length) return;
   const n = await namesFor(peers);
-  NET.oppName = n[NET.oppPeer] || "Friend";
+  NET.oppName = n[NET.oppPeer] || _t("Friend");
   if (mode === "match" && match && match.online) $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = NET.oppName;
 }
 
@@ -198,13 +198,13 @@ async function renderOnline() {
   buildRules();
   fightCard();
   if (NET.tried && !NET.ok) {
-    st.textContent = NET.dead ? "Disconnected from online play" : "Online play isn't available here";
+    st.textContent = NET.dead ? _t("Disconnected from online play") : _t("Online play isn't available here");
     st.className = "kicker on-status bad";
     hostBtn.disabled = true;
-    $("onMyName").textContent = "You";
+    $("onMyName").textContent = _t("You");
     list.innerHTML = ""; list.dataset.sig = "";
     const li = document.createElement("li"); li.className = "empty";
-    li.textContent = NET.standalone ? "Online play needs the game's web link. A downloaded copy can't reach other players." : "Online play works when this page is open in Claude and you're signed in. It doesn't work from a public link or a downloaded copy.";
+    li.textContent = NET.standalone ? _t("Online play needs the game's web link. A downloaded copy can't reach other players.") : _t("Online play works when this page is open in Claude and you're signed in. It doesn't work from a public link or a downloaded copy.");
     list.appendChild(li);
     hereNow(null);
     note.textContent = ""; note.className = "on-note";
@@ -212,11 +212,11 @@ async function renderOnline() {
   }
   const peers = NET.lobbyPeers.filter((p) => p.kind === "viewer");
   const others = peers.filter((p) => !p.sameTab);
-  st.textContent = !NET.tried ? "Connecting" : NET.connected ? `Online · ${peers.length || 1} here` : "Connecting";
+  st.textContent = !NET.tried ? _t("Connecting") : NET.connected ? _t("Online · {n} here", { n: peers.length || 1 }) : _t("Connecting");
   st.className = "kicker on-status" + (NET.connected ? " ok" : "");
   const names = await namesFor(peers);
   if (seq !== onSeq || mode !== "online") return;
-  $("onMyName").textContent = NET.myName || "You";
+  $("onMyName").textContent = NET.myName || _t("You");
   plateSet($("onMyName").parentNode, shopWorn());   // your nameplate on the Fight Card (ui/shop.js)
   const nameIn = $("onName");
   $("onMyName").hidden = NET.standalone; nameIn.hidden = !NET.standalone;
@@ -230,32 +230,32 @@ async function renderOnline() {
     if (inv) hosts = [inv, ...hosts.filter((h) => h !== inv)];
     else {
       const li = document.createElement("li"); li.className = "empty";
-      li.textContent = performance.now() - NET.inviteT < 6000 ? "Looking for your friend's match…" : "Your friend's match isn't open right now. It shows up here when they're back, or ask them for a new link.";
+      li.textContent = performance.now() - NET.inviteT < 6000 ? _t("Looking for your friend's match…") : _t("Your friend's match isn't open right now. It shows up here when they're back, or ask them for a new link.");
       frag.appendChild(li);
     }
   }
   if (!hosts.length && !NET.invite) {
     const li = document.createElement("li"); li.className = "empty";
-    li.textContent = NET.phase === "hosting" ? "No other open matches." : NET.standalone ? "No open matches yet. Host one and send your friend the link." : "No open matches yet. Host one, or ask a friend to.";
+    li.textContent = NET.phase === "hosting" ? _t("No other open matches.") : NET.standalone ? _t("No open matches yet. Host one and send your friend the link.") : _t("No open matches yet. Host one, or ask a friend to.");
     frag.appendChild(li);
   }
   for (const h of hosts) {
     const li = document.createElement("li");
     if (NET.invite && h.presence.host === NET.invite) li.className = "invited";
     const who = document.createElement("div"); who.className = "who";
-    const b = document.createElement("b"); b.textContent = names[h.peer] || "Friend";
+    const b = document.createElement("b"); b.textContent = names[h.peer] || _t("Friend");
     plateSet(b, h.presence.np);   // the host's nameplate (ui/shop.js; unknown or none = plain)
     const sp = document.createElement("span"); const hf = FIG[h.presence.f];
     const old = h.presence.v !== PROTO;
     if (old) li.classList.add("old");
     const bo = validBo(h.presence.bo) ? h.presence.bo : null;   // a boss fight: the row reads as an invitation to team up
     const tm = h.presence.tm && Number.isInteger(h.presence.tm.n) && [0, 1, 2].includes(h.presence.tm.lv) ? h.presence.tm : null;   // a team brawl: its free seats
-    if (old) sp.textContent = "Different game version. Both of you reload the page.";
-    else if (tm) sp.textContent = (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") +
-      (tm.n > 0 ? `Team brawl · ${tm.n} seat${tm.n > 1 ? "s" : ""} open · ${tbLvName(tm.lv)} CPUs` : "Team brawl · full");
+    if (old) sp.textContent = _t("Different game version. Both of you reload the page.");
+    else if (tm) sp.textContent = (NET.invite && h.presence.host === NET.invite ? `${_t("Invited you")} · ` : "") +
+      (tm.n > 0 ? _t("Team brawl · {n} seat open · {level} CPUs|Team brawl · {n} seats open · {level} CPUs", { n: tm.n, level: tbLvName(tm.lv) }) : _t("Team brawl · full"));
     else {
-      sp.textContent = (NET.invite && h.presence.host === NET.invite ? "Invited you · " : "") + (hf ? hf.name : "Fighter");
-      if (bo) { const em = document.createElement("em"); em.textContent = `vs ${boSpec(bo).name}`; sp.append(" · ", em, ` · ${BOSS_LV[bo.lv]}`); }
+      sp.textContent = (NET.invite && h.presence.host === NET.invite ? `${_t("Invited you")} · ` : "") + (hf ? hf.name : _t("Fighter"));
+      if (bo) { const em = document.createElement("em"); em.textContent = _t("vs {name}", { name: boSpec(bo).name }); sp.append(" · ", em, ` · ${BOSS_LV[bo.lv]}`); }
       else if (validRules(h.presence.r)) sp.append(` · ${ruleText(h.presence.r)}`);
     }
     who.append(b, sp);
@@ -264,14 +264,14 @@ async function renderOnline() {
     li.appendChild(por);
     const btn = document.createElement("button"); btn.className = "chip";
     const joining = NET.phase === "joining" && NET.mrCode === h.presence.host;
-    btn.textContent = joining ? "Joining" : bo ? "Team up" : "Join";
+    btn.textContent = joining ? _t("Joining") : bo ? _t("Team up") : _t("Join");
     btn.disabled = old || joining || NET.phase === "handshake" || !NET.connected || (!!tm && tm.n <= 0);
     btn.addEventListener("click", () => { Sfx.init(); Sfx.ui(); goFull(); netJoin(h.presence.host); });
     li.dataset.h = h.presence.host; li.append(who, btn); frag.appendChild(li);
   }
   const sig = [...frag.childNodes].map((li) => `${li.className}:${li.dataset.h || ""}:${li.textContent}:${li.querySelector("button") ? li.querySelector("button").disabled : ""}`).join("|");
   if (list.dataset.sig !== sig) { list.replaceChildren(frag); list.dataset.sig = sig; }
-  hereNow(others.map((p) => ({ n: names[p.peer] || "Friend", busy: !!(p.presence && p.presence.busy), np: plateCls(p.presence && p.presence.np) })));
+  hereNow(others.map((p) => ({ n: names[p.peer] || _t("Friend"), busy: !!(p.presence && p.presence.busy), np: plateCls(p.presence && p.presence.np) })));
   // a team brawl's board (ui/online-team.js): the seats with the names of the people in the match's room
   const tbOn = !!NET.tb && (NET.phase === "hosting" || NET.phase === "board" || NET.phase === "handshake");
   const roomNames = tbOn && NET.mr ? Object.assign({}, names, await namesFor(NET.mr.peers())) : names;
@@ -279,38 +279,38 @@ async function renderOnline() {
   tbRender(roomNames);
   $("onRules").hidden = tbOn && NET.role !== "host";
   $("rowM").hidden = tbOn;   // the board is up: the mode is set until the brawl closes
-  if (!tbOn) $("onKick").textContent = onTeam().on && !onBoss().on ? "Your team brawl" : "Your match";
+  if (!tbOn) $("onKick").textContent = onTeam().on && !onBoss().on ? _t("Your team brawl") : _t("Your match");
   hostBtn.classList.remove("full");
   const ob = onBoss().on, ot = !ob && onTeam().on;
   if (tbOn) tbHostBtn(hostBtn, note, roomNames);   // Start (the host) or Leave (a friend)
   else {
     hostBtn.disabled = !NET.connected || NET.phase === "joining" || NET.phase === "handshake";
-    hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? "Cancel" : ob ? "Host a boss fight" : ot ? "Host a team brawl" : "Host a match";
+    hostBtn.querySelector("span").textContent = NET.phase === "hosting" ? _t("Cancel") : ob ? _t("Host a boss fight") : ot ? _t("Host a team brawl") : _t("Host a match");
     hostBtn.classList.toggle("primary", NET.phase !== "hosting");   // Cancel is the ink button
   }
   note.className = "on-note" + (NET.phase !== "idle" ? " live" : "");
   if (!tbOn) note.textContent =
-    NET.phase === "hosting" ? (ob ? "Waiting for a partner. Your fight is listed for everyone here." : "Waiting for a challenger. Your match is listed for everyone here.") :
-    NET.phase === "joining" ? (NET.joinLong && performance.now() - NET.joinT > 6000 ? "Waiting for your friend to come back to the game…" : "Joining…") :
-    NET.phase === "handshake" ? `Connecting to ${NET.oppName || "your friend"}…` :
-    NET.note || (ob ? (NET.standalone ? "Pick the boss, host, then send your friend the link." : "Pick the boss and host. Your friends see the fight in their list.")
-      : ot ? (NET.standalone ? "Pick the CPU level, host, then send up to three friends the link." : "Pick the CPU level and host. Your friends see the brawl in their list.")
-      : NET.standalone ? "Pick the rules, host, then send your friend the link." : "Pick the rules and host. Your friends see the match in their list.");
+    NET.phase === "hosting" ? (ob ? _t("Waiting for a partner. Your fight is listed for everyone here.") : _t("Waiting for a challenger. Your match is listed for everyone here.")) :
+    NET.phase === "joining" ? (NET.joinLong && performance.now() - NET.joinT > 6000 ? _t("Waiting for your friend to come back to the game…") : _t("Joining…")) :
+    NET.phase === "handshake" ? _t("Connecting to {name}…", { name: NET.oppName || _t("your friend") }) :
+    NET.note || (ob ? (NET.standalone ? _t("Pick the boss, host, then send your friend the link.") : _t("Pick the boss and host. Your friends see the fight in their list."))
+      : ot ? (NET.standalone ? _t("Pick the CPU level, host, then send up to three friends the link.") : _t("Pick the CPU level and host. Your friends see the brawl in their list."))
+      : NET.standalone ? _t("Pick the rules, host, then send your friend the link.") : _t("Pick the rules and host. Your friends see the match in their list."));
   const inv = $("onInvite"), invWas = inv.hidden;
   // a team brawl's link sits in the room card, under the open matches (its board fills the host card)
   if (NET.tb && inv.parentNode !== $("onList").parentNode) $("onList").after(inv);
   else if (!NET.tb && inv.parentNode !== note.parentNode) note.before(inv);
   inv.hidden = !(NET.standalone && NET.phase === "hosting" && NET.hostCode);
   if (!inv.hidden) {
-    $("onInvT").textContent = NET.tb ? "Your team brawl is open" : ob ? "Your boss fight is open" : chlRoom(NET.hostCode) ? "Your challenge is open" : "Your match is open";
+    $("onInvT").textContent = NET.tb ? _t("Your team brawl is open") : ob ? _t("Your boss fight is open") : chlRoom(NET.hostCode) ? _t("Your challenge is open") : _t("Your match is open");
     $("onLink").textContent = inviteLink();
     $("onShare").hidden = !navigator.share;
     if (invWas) inv.scrollIntoView({ block: "nearest" });   // on a small phone the host card scrolls: the link comes into view
     chlCopied();   // ui/challenge.js: "Link copied" after a challenge on a computer
   }
   $("onHelp").textContent = NET.standalone
-    ? "No account needed. Matches connect while both of you have the page open."
-    : "Friends need a Claude account and access to this page. Share it from the page's Share menu, then you both open it and pick Play friends. A public link won't connect.";
+    ? _t("No account needed. Matches connect while both of you have the page open.")
+    : _t("Friends need a Claude account and access to this page. Share it from the page's Share menu, then you both open it and pick Play friends. A public link won't connect.");
 }
 // "Here now": a pill per player (a mint dot; grey "· in a match" when busy); rebuilt only when it changes. null = nothing (offline)
 function hereNow(ps) {
@@ -319,10 +319,10 @@ function hereNow(ps) {
   box.dataset.sig = sig; box.replaceChildren();
   box.classList.toggle("empty", !!ps && !ps.length);
   if (!ps) return;
-  if (!ps.length) { box.textContent = "Just you. Friends show up here when they open this page."; return; }
+  if (!ps.length) { box.textContent = _t("Just you. Friends show up here when they open this page."); return; }
   for (const p of ps) {
     const el = document.createElement("span"); el.className = "on-pl" + (p.busy ? " busy" : "") + (p.np ? " " + p.np : "");
-    el.textContent = p.busy ? `${p.n} · in a match` : p.n;
+    el.textContent = p.busy ? _t("{name} · in a match", { name: p.n }) : p.n;
     box.appendChild(el);
   }
 }
@@ -331,9 +331,9 @@ function fightCard() {
   const spec = FIG[sel.fighter], pi = palIdx(spec.id), p = spec.palettes[pi] || spec.palettes[0], fc = $("onFc");
   fc.style.setProperty("--c", col(p)); fc.style.setProperty("--cg", rgba(col(p), 0.42));
   $("onFName").textContent = spec.name;
-  $("onFSkin").textContent = p.name;
-  $("onFRole").textContent = spec.role;
-  $("onChange").setAttribute("aria-label", `Your fighter: ${spec.name}, ${p.name}. Change fighter`);
+  $("onFSkin").textContent = _tv(p.name);
+  $("onFRole").textContent = _tv(spec.role);
+  $("onChange").setAttribute("aria-label", _t("Your fighter: {name}, {skin}. Change fighter", { name: spec.name, skin: _tv(p.name) }));
 }
 // back from the fighter select: the card pops and the model comes in (css/95-lobby.css)
 function fightCardIn() { const fc = $("onFc"); fc.classList.remove("fc-in"); void fc.offsetWidth; fc.classList.add("fc-in"); }
@@ -388,7 +388,7 @@ async function netHost() {
   try { await openMatchRoom(code); }
   catch (e) {
     if (chlRoom(code)) NET.chlNext = code;   // the link is out already: Host tries the same room again
-    NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = "Couldn't open a match. Try again."; renderOnline(); return;
+    NET.phase = "idle"; NET.role = null; NET.hostCode = null; NET.tb = null; NET.note = _t("Couldn't open a match. Try again."); renderOnline(); return;
   }
   if (team) { tbSeat(NET.mr.peers()); namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), tb: tbPres(), gz: glazePres() }); }
   else namedPresence({ role: "host", f: sel.fighter, pi: palIdx(sel.fighter), r: P.rules, bo: hostBo(), gz: glazePres(), ko: koPres() });   // gz: your glazed skins (ui/glaze.js); ko: your Potatalities (ui/kopages.js)
@@ -405,7 +405,7 @@ async function netJoin(code) {
   qmSilent();   // ui/quick.js: the silent account, for the referee
   renderOnline();
   try { await openMatchRoom(code); }
-  catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = "Couldn't join that match."; renderOnline(); return; }
+  catch (e) { NET.phase = "idle"; NET.role = null; NET.mrCode = null; NET.note = _t("Couldn't join that match."); renderOnline(); return; }
   namedPresence({ role: "guest", f: sel.fighter, pi: palIdx(sel.fighter), gz: glazePres(), ko: koPres() });
   if (NET.invite === code) NET.invite = null;
   lobbyPresence(); renderOnline();
@@ -414,7 +414,7 @@ function matchRoomLost() {
   if (NET.tb) { tbRoomLost(); return; }   // ui/online-team.js
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { finishOnline(false, true); return; }
-  leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "The match connection dropped.";
+  leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = _t("The match connection dropped.");
   if (mode === "online") renderOnline();
 }
 function onMatchPeers(ch) {
@@ -437,7 +437,7 @@ function onMatchPeers(ch) {
     const host = peers.find((p) => !p.sameTab && p.presence && p.presence.role === "host");
     if (!host) { if (NET.oppPeer) opponentLeft(); return; }
     const opp = host.presence.opp;
-    if (NET.phase === "joining" && typeof opp === "string" && opp !== NET.myPeer) { NET.note = "That match just filled up."; netCancel(); return; }
+    if (NET.phase === "joining" && typeof opp === "string" && opp !== NET.myPeer) { NET.note = _t("That match just filled up."); netCancel(); return; }
     if (NET.phase === "joining" && opp === NET.myPeer) {
       NET.oppPeer = host.peer; NET.oppBy = host.by; NET.phase = "handshake";
       lobbyPresence(); resolveOppName().then(renderOnline); renderOnline();
@@ -448,19 +448,19 @@ function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
   if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm)) { NET.oppLeft = true; return; }   // Next match never waits for them
-  if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = `${NET.oppName || "Your friend"} left`; return; }
+  if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = _t("{name} left", { name: NET.oppName || _t("Your friend") }); return; }
   if (NET.role === "host") {
     NET.oppPeer = null; NET.oppBy = null; NET.oppName = ""; NET.phase = "hosting";
     namedPresence({ opp: null, start: null }); lobbyPresence(); renderOnline(); return;
   }
-  NET.note = "The host left."; netCancel();
+  NET.note = _t("The host left."); netCancel();
 }
 
 const JOIN_LONG = 180000;   // how long a friend who opened an invite link waits for its host to come back to the page (ms)
 function handshakeTick(now) {
   const opp = NET.oppPeer && NET.mr ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
   if (NET.role === "guest" && NET.phase === "joining" && now - NET.joinT > (NET.joinLong ? JOIN_LONG : 8000) && !NET.qm) {   // a Quick match: the server calls it off
-    NET.note = NET.joinLong ? "Your friend didn't come back to the game. Ask them for a new link." : "No answer from the host."; netCancel(); return;
+    NET.note = NET.joinLong ? _t("Your friend didn't come back to the game. Ask them for a new link.") : _t("No answer from the host."); netCancel(); return;
   }
   if (!opp) return;
   const pr = opp.presence || {};
@@ -670,7 +670,7 @@ function netTick() {
   }
   namedPresence({ m: NET.matchId, s: from, i: str, fr: NET.frame, ck: NET.ckSend, pg: NET.myPg, po: NET.echo });
   const badge = $("netBadge");
-  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${NET.oppName || "your friend"}${match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
+  if (NET.stall > 20) { badge.hidden = false; badge.className = "warn"; badge.textContent = `${_t("Waiting for {name}", { name: NET.oppName || _t("your friend") })}${match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm) ? ` · ${Math.max(0, 15 - Math.floor(NET.stall / 60))}` : ""}`; }
   else if (!badge.hidden) badge.hidden = true;
   if (NET.stall > 60 * 15) { if (match.boss) cpuTakeover(); else finishOnline(false, true); }
 }
@@ -686,8 +686,8 @@ function cpuTakeover() {
   $("pc" + meSlot).classList.remove("nice");
   $("netBadge").hidden = true;
   if (!live) return;
-  showBanner(`${NET.oppName || "Your partner"} dropped`, `CPU has ${mate.spec.name} now`, "fin", 2200, "#f3d9a4");
-  $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = "CPU";
+  showBanner(_t("{name} dropped", { name: NET.oppName || _t("Your partner") }), _t("CPU has {name} now", { name: mate.spec.name }), "fin", 2200, "#f3d9a4");
+  $("pc" + (1 - meSlot)).querySelector(".pc-tag").textContent = _t("CPU");
   tagShow();   // hud.js: the markers come back for 3 s, the partner's now reads CPU
 }
 // the fight a friend dropped out of, made the Road's: the boss keeps the share of HP he has left, but of his Road HP (his HP with a friend
@@ -736,10 +736,10 @@ function updateRematchLabel() {
   const opp = NET.mr && NET.mr.peers().find((p) => p.peer === NET.oppPeer);
   const theyWant = opp && opp.presence && opp.presence.rm === NET.matchId + 1;
   const iWant = NET.rm === NET.matchId + 1;
-  const who = NET.oppName || "Your friend", inSet = NET.setRes && !NET.setRes.over, boss = match.boss;
+  const who = NET.oppName || _t("Your friend"), inSet = NET.setRes && !NET.setRes.over, boss = match.boss;
   // the button keeps its word; the ready state is its small line (the results screen, css/40-results.css)
-  $("rAgain").querySelector("span").textContent = boss ? NET.again : inSet ? "Next game" : "Rematch";
-  $("rAgainSub").textContent = iWant ? `Waiting for ${who}` : theyWant ? `${who} ${inSet || boss ? "is ready" : "wants a rematch"}` : "";
+  $("rAgain").querySelector("span").textContent = boss ? NET.again : inSet ? _t("Next game") : _t("Rematch");
+  $("rAgainSub").textContent = iWant ? _t("Waiting for {name}", { name: who }) : theyWant ? (inSet || boss ? _t("{name} is ready", { name: who }) : _t("{name} wants a rematch", { name: who })) : "";
 }
 function finishOnline(left, lost) {
   if (mode !== "match" || !match || !match.online) return;
@@ -756,10 +756,10 @@ function finishOnline(left, lost) {
     R.set = { n: NET.set.n, mine: w[meSlot], theirs: w[1 - meSlot], over: NET.setRes.over };
   }
   if (!left && !lost) {
-    if (res === 1) R.lines.push(["Win against a friend", 15]);
-    else if (res === 0.5) R.lines.push(["Draw", 8]);
-    else R.lines.push(["Match played", 5]);
-    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    if (res === 1) R.lines.push([_t("Win against a friend"), 15]);
+    else if (res === 0.5) R.lines.push([_t("Draw"), 8]);
+    else R.lines.push([_t("Match played"), 5]);
+    if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 2]);
     R.total = R.lines.reduce((a, l) => a + l[1], 0);
     P.tokens += R.total;
     P.friendW = (P.friendW || 0) + (res === 1 ? 1 : 0); P.friendL = (P.friendL || 0) + (res === 0 ? 1 : 0);
@@ -780,12 +780,12 @@ function finishBossOnline() {
   const R = { res: won ? 1 : 0, online: true, me, op: b, lines: [], total: 0, dropped: !!NET.cpuMate && NET.dropLive, mateFin: won && by === mate.slot,
     boss: { lv, mate, hp, secs: Math.round(G.t / 60), name: b.spec.name, by } };
   if (won) {
-    R.lines.push([`Win on ${BOSS_LV[lv]}`, DUO_WIN[lv]]);
-    if (by === me.slot) R.lines.push(["Final launch", 5]);   // a flourish, not a prize: the KO page is the reward
+    R.lines.push([_t("Win on {level}", { level: BOSS_LV[lv] }), DUO_WIN[lv]]);
+    if (by === me.slot) R.lines.push([_t("Final launch"), 5]);   // a flourish, not a prize: the KO page is the reward
   } else {
-    R.lines.push(["Fight played", 5]);
+    R.lines.push([_t("Fight played"), 5]);
     const t = Math.min(10, Math.floor((1 - hp) * 10 + 1e-9));   // +1 per 10% of his HP taken
-    if (t > 0) R.lines.push([`Took ${t * 10}% of his HP`, t]);
+    if (t > 0) R.lines.push([_t("Took {n}% of his HP", { n: t * 10 }), t]);
   }
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   P.tokens += R.total;
@@ -797,11 +797,11 @@ function finishBossOnline() {
   const k = ROAD_REG.findIndex((g) => g.boss === b.spec.id), r = roadGet(), open = k >= 0 && roadRegOpen(r, k) && roadGateOpen(r, k);
   const w = won && open ? roadBossWin(k, lv, me.spec) : null;
   if (w) { R.total += w.total; if (w.skin) R.skin = w.skin; R.road = { boss: true, k, lv, got: 1 << lv, had: w.had & ~(1 << lv), labels: BOSS_LV }; }
-  const road = !won ? [] : !w ? ["Open the fence on your Road to earn this star"] : w.lines.length ? w.lines : [`${BOSS_LV[lv]} already won on your Road`];
-  R.why = [...R.lines.map(([n, v]) => `${n} +${v}`), ...road, ...(title ? ["New title: Double Trouble"] : [])].join(" · ");
-  if (match.finBy && R.mateFin) match.finBy += ` · by ${NET.cpuMate ? "CPU" : NET.oppName || "your partner"}`;
+  const road = !won ? [] : !w ? [_t("Open the fence on your Road to earn this star")] : w.lines.length ? w.lines : [_t("{level} already won on your Road", { level: BOSS_LV[lv] })];
+  R.why = [...R.lines.map(([n, v]) => `${n} +${v}`), ...road, ...(title ? [_t("New title: {title}", { title: _t("Double Trouble") })] : [])].join(" · ");
+  if (match.finBy && R.mateFin) match.finBy += ` · ${_t("by {name}", { name: NET.cpuMate ? _t("CPU") : NET.oppName || _t("your partner") })}`;
   if (NET.cpuMate) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";
-  NET.again = NET.cpuMate ? "Retry vs CPU" : won ? (lv < 2 ? `Next: ${BOSS_LV[lv + 1]}` : "Again") : "Retry";
+  NET.again = NET.cpuMate ? _t("Retry vs CPU") : won ? (lv < 2 ? _t("Next: {level}", { level: BOSS_LV[lv + 1] }) : _t("Again")) : _t("Retry");
   $("netBadge").hidden = true;
   showResults(R);
   if (won && !NET.cpuMate) rvBossRes(R);   // ui/rivals.js: bosses beaten together, once the server has counted this one
@@ -840,7 +840,7 @@ function drawNice(c, g) {
     for (let j = 0; j < 20; j++) { const a = (j / 20) * Math.PI * 2, r = j % 2 ? 26 : 38; c.lineTo(Math.cos(a) * r * 1.5, Math.sin(a) * r * 0.85); }
     c.closePath(); c.fillStyle = "#fff7e0"; c.fill(); c.lineWidth = 3; c.strokeStyle = "rgba(14,16,34,.9)"; c.lineJoin = "round"; c.stroke();
     c.font = 'italic 900 28px "Barlow Condensed", "Arial Narrow", sans-serif'; c.textAlign = "center"; c.textBaseline = "middle";
-    c.lineWidth = 6; c.strokeText("NICE!", 0, 1); c.fillStyle = "#ffb627"; c.fillText("NICE!", 0, 1);
+    const nice = _t("NICE!"); c.lineWidth = 6; c.strokeText(nice, 0, 1); c.fillStyle = "#ffb627"; c.fillText(nice, 0, 1);
     c.restore();
   }
 }

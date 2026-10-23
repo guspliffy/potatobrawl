@@ -24,12 +24,13 @@
   #app:not(.short):not(.portrait) #resSheet .res-chl { height: 34px; margin-top: 6px; gap: 7px; padding: 0 13px 0 10px; font-size: 14px; }
   #app:not(.short):not(.portrait) #resSheet .res-chl svg { width: 17px; height: 17px; }
 }
-@container (max-width: 799px) { #app:not(.short):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
+#resSheet .res-chl .chl-sh { display: none; }   /* "Challenge" alone where "Challenge a friend" does not fit */
+@container (max-width: 799px) { #app:not(.short):not(.portrait) #resSheet .res-chl .chl-af { display: none; } #app:not(.short):not(.portrait) #resSheet .res-chl .chl-sh { display: inline; } }
 
 /* upright phones: in the banner */
 #app.portrait #resSheet .res-chl { height: 32px; margin-top: 4px; font-size: 13px; }
 #app.portrait #resSheet .res-chl svg { width: 16px; height: 16px; }
 
 /* narrow phones: the panel's text column is too narrow for the whole label, so "a friend" goes (the plane says the rest); the screen's own width, as in 40-results.css */
-@container (max-width: 689px) { #app.short:not(.tiny):not(.portrait) #resSheet .res-chl .chl-af { display: none; } }
-@container (max-width: 629px) { #app.tiny #resSheet .res-chl .chl-af { display: none; } }
+@container (max-width: 689px) { #app.short:not(.tiny):not(.portrait) #resSheet .res-chl .chl-af { display: none; } #app.short:not(.tiny):not(.portrait) #resSheet .res-chl .chl-sh { display: inline; } }
+@container (max-width: 629px) { #app.tiny #resSheet .res-chl .chl-af { display: none; } #app.tiny #resSheet .res-chl .chl-sh { display: inline; } }

@@ -139,7 +139,7 @@ button { font: inherit; color: inherit; }
 @keyframes fbIn { 0% { transform: translateX(-70%) rotate(-7deg); opacity: 0; } 14% { transform: translateX(2%) rotate(-7deg); opacity: 1; } 22% { transform: translateX(0) rotate(-7deg); } 80% { transform: translateX(1.5%) rotate(-7deg); opacity: 1; } 100% { transform: translateX(55%) rotate(-7deg); opacity: 0; } }
 /* a fighter at finish percent: the percent pulses (gently) between two reds; the colour matches the red the percent tint reaches at 175 */
 .pcard.finr .pc-pct { animation: finPulse 0.9s ease-in-out infinite; }
-.pcard.finr .pc-name::after { content: " · finish"; color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
+.pcard.finr .pc-name::after { content: " " var(--tw-finish, "· finish"); color: #ff5a4a; font-size: 0.85em; letter-spacing: 0.06em; }
 @keyframes finPulse { 0%, 100% { color: #ff3b32; text-shadow: 0 0 3px rgba(255, 70, 50, 0.3); } 50% { color: #ff8a7c; text-shadow: 0 0 14px rgba(255, 90, 60, 0.85); } }
 
 /* ---------- ultimate bar (hud.js): a slanted trough on the bottom edge of each name card, as wide as the card. It fills in the fighter's
@@ -536,7 +536,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .ac-t small { font-size: 12px; line-height: 1.25; color: var(--mute); }
 .ac-t.on { border-color: var(--sand); box-shadow: inset 0 0 0 1px var(--sand); }
 .ac-t.lock { cursor: default; opacity: 0.62; }
-.ac-t.lock b::after { content: " (locked)"; font-size: 10px; letter-spacing: 0.1em; color: var(--mute); }
+.ac-t.lock b::after { content: " " var(--tw-locked, "(locked)"); font-size: 10px; letter-spacing: 0.1em; color: var(--mute); }
 .ac-pan { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ac-pan[hidden] { display: none; }
 .ac-pan h4 { margin: 0; }
@@ -679,7 +679,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 .cup-list { display: none; position: absolute; inset: 0; padding-bottom: 6px; }
 .cl-h { margin: 6px 0 4px; }
 .cl-m { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
-.cl-m::after { content: "vs"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; color: var(--mute); background: var(--ink); border-radius: 8px; padding: 0 3px; }
+.cl-m::after { content: var(--tw-vs, "vs"); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; color: var(--mute); background: var(--ink); border-radius: 8px; padding: 0 3px; }
 .cl-m .cs { height: 46px; }
 .cl-m .cs-n { font-size: 14px; }
 #app.portrait .cup-grid { display: none; }
@@ -789,6 +789,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <p class="wl-p">Hits raise their %. The higher it is, the farther they fly — knock them off the screen.</p>
       <button class="btn primary lg" id="welGo"><span>Play the tutorial · 1 min</span></button>
       <button class="btn wl-skip" id="welSkip"><span>Skip, just fight</span></button>
+      <div class="wl-lang" id="welLang" translate="no"></div>
     </div>
   </section>
 
@@ -797,19 +798,19 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
        behind on the right (upright: in the middle). Styles: game/css/20-menu.css; texts: renderMenu (ui/screens.js), renderPill (ui/acct.js). -->
   <section id="scrMenu" class="screen mm scroll">
     <header class="mm-bar">
-      <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
+      <div class="logo one mm-logo"><i class="rays" aria-hidden="true"></i><svg class="spud" viewBox="0 0 44 48" aria-hidden="true"><path d="M23 13c-2-3-6-4-7-9 3 1 5 3 6 6 1-4 4-6 8-6-1 4-4 7-6 9z" fill="#5fc14b" stroke="#0e1022" stroke-width="2" stroke-linejoin="round"/><path d="M22 10v6" stroke="#0e1022" stroke-width="2.2" stroke-linecap="round"/><path d="M11 29c-2-9 4-15 11-15s13 5 12 15c-1 9-6 14-12 14S12 38 11 29z" fill="#f2c46b" stroke="#0e1022" stroke-width="2.4"/><circle cx="17" cy="27" r="2.3" fill="#0e1022"/><circle cx="27" cy="27" r="2.3" fill="#0e1022"/><circle cx="17.8" cy="26.3" r=".8" fill="#fff"/><circle cx="27.8" cy="26.3" r=".8" fill="#fff"/><path d="M19 33c2 2 4 2 6 0" fill="none" stroke="#0e1022" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="30" cy="31" r="1.9" fill="#f08a7c" opacity=".8"/><circle cx="15" cy="20" r="1.1" fill="#c99a44"/><circle cx="30" cy="37" r="1.1" fill="#c99a44"/></svg><div class="mm-wmw"><h1 class="wm" translate="no"><b>Potato</b> <b>Brawl</b></h1><i class="slash" aria-hidden="true"></i></div></div>
       <div class="mm-topr">
-        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin pm zero" id="mPommes">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
+        <button class="mm-me" id="mRank" aria-label="Account and profile"><span class="plate"><span class="mm-avw"><span class="av" id="mAvatar"></span><i class="badge" id="mBadge"></i></span><span class="who"><b id="mName"></b><small><span id="mTier" translate="no">Bronze</span> <i id="mRating">1000</i></small></span><span class="mm-title" id="mTitle" hidden></span></span><span class="coin chips" id="mTokens">0</span><span class="coin pm zero" id="mPommes">0</span><span class="coin flame" id="mStreak"><b id="mStreakN">0</b><i class="mm-gift" id="mGift" hidden></i></span><span class="coin cup" id="mCups" hidden>0</span></button>
         <button class="round mm-fs" id="bFull" aria-label="Fullscreen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="fs-go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fs-out" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g></svg></button>
         <button class="round" id="bSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.19,10.24 L21.86,10.31 L21.86,13.69 L19.19,13.76 L18.33,15.84 L20.17,17.77 L17.77,20.17 L15.84,18.33 L13.76,19.19 L13.69,21.86 L10.31,21.86 L10.24,19.19 L8.16,18.33 L6.23,20.17 L3.83,17.77 L5.67,15.84 L4.81,13.76 L2.14,13.69 L2.14,10.31 L4.81,10.24 L5.67,8.16 L3.83,6.23 L6.23,3.83 L8.16,5.67 L10.24,4.81 L10.31,2.14 L13.69,2.14 L13.76,4.81 L15.84,5.67 L17.77,3.83 L20.17,6.23 L18.33,8.16 Z M12,8.6 A3.4,3.4 0 1,0 12,15.4 A3.4,3.4 0 1,0 12,8.6 Z"/></svg></button>
       </div>
     </header>
     <!-- the Road (ui/road.js, 70-road.css): the map in small, your stop and stars; beside the column on wide screens, over it upright -->
-    <button class="card mm-road" id="bRoad" data-sfx="go"><canvas id="mRoadCv" aria-hidden="true"></canvas><span class="mm-rdt"><b>The Road</b><span id="mRoad">Stop 1 of 8 · 0 ★</span></span><i class="mm-rdgo" aria-hidden="true"></i></button>
+    <button class="card mm-road" id="bRoad" data-sfx="go"><canvas id="mRoadCv" aria-hidden="true"></canvas><span class="mm-rdt"><b>The Road</b><span id="mRoad" translate="no">Stop 1 of 8 · 0 ★</span></span><i class="mm-rdgo" aria-hidden="true"></i></button>
     <div class="mm-col">
       <button class="card gold tone mm-hero" id="bRanked" data-sfx="go" style="--i:0"><span class="mm-art"><img id="mHeroArt" alt=""></span><span class="mm-edge" aria-hidden="true"></span><span class="mm-body"><span class="kick" id="mRankKick">Ranked match</span><span class="mm-ttl">Ranked</span><span class="mm-sub" id="mRec">0W · 0L</span><span class="mm-cta"><span>Play</span><i aria-hidden="true"></i></span></span></button>
       <div class="mm-row2">
-        <button class="card mm-tile mm-daily" id="bDaily" data-sfx="flip" style="--i:1"><span class="mm-vs" aria-hidden="true"><img id="mDailyA" alt=""><img id="mDailyB" alt=""><i>VS</i></span><span class="mm-tb"><b>Daily Potato</b><span class="mm-l" id="mDaily">today's match</span><span class="mm-l mm-l2" id="mDailyR"></span></span><span class="tag ember mm-today" id="mDailyTag">Today</span></button>
+        <button class="card mm-tile mm-daily" id="bDaily" data-sfx="flip" style="--i:1"><span class="mm-vs" aria-hidden="true"><img id="mDailyA" alt=""><img id="mDailyB" alt=""><i>VS</i></span><span class="mm-tb"><b>Daily Potato</b><span class="mm-l" id="mDaily" translate="no">today's match</span><span class="mm-l mm-l2" id="mDailyR"></span></span><span class="tag ember mm-today" id="mDailyTag">Today</span></button>
         <!-- Boss Week (ui/bwsheet.js bwTile, css/97-bossweek.css): this week's boss in a disc ringed in his colour, the time left, your best and place; the tag is #6 (gold) or NEW (ember) -->
         <button class="card mm-tile mm-bw" id="bBw" data-sfx="flip" style="--i:2"><span class="mm-bwd rd-bossph rd-scratch" id="mBwD" aria-hidden="true"><img id="mBwArt" alt=""><i>&#9760;</i></span><span class="mm-tb"><b>Boss Week</b><span class="mm-l" id="mBw"></span><span class="mm-l mm-l2" id="mBwR"></span></span><span class="tag gold mm-bwt" id="mBwTag" hidden></span></button>
       </div>
@@ -821,7 +822,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       </div>
     </div>
     <span class="hint" id="rotHint" hidden>Turn your phone sideways for a bigger arena.</span>
-    <div class="a2hs" id="a2hsHint" hidden><span>Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress.</span><button class="link" id="a2hsOk">OK</button></div>
+    <div class="a2hs" id="a2hsHint" hidden><span translate="no">Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress.</span><button class="link" id="a2hsOk">OK</button></div>
     <span class="livetag mm-live"><i aria-hidden="true"></i><span id="mLive">Live</span></span>
   </section>
 
@@ -911,7 +912,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     <div class="cup2">
       <header class="sel-head">
         <button class="back" id="cupBack" aria-label="Menu"></button>
-        <div class="grow"><div class="kicker" id="cupKick">Tournament</div><h2 id="cupTitle">Quarter-final</h2></div>
+        <div class="grow"><div class="kicker" id="cupKick">Tournament</div><h2 id="cupTitle" translate="no">Quarter-final</h2></div>
         <div class="coin chips" aria-label="Potato chips"><span id="cupTokens">0</span></div>
       </header>
       <div class="cup-main">
@@ -926,7 +927,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <section id="scrRoad" class="screen rd-scr" hidden>
     <header class="sel-head rd-head">
       <button class="back" id="roadBack" aria-label="Menu"></button>
-      <div class="grow rd-title"><div class="kicker" id="roadKick">The Road · region 1 of 3</div><div class="rd-reg"><button class="rd-arr prev" id="roadPrev" aria-label="Region before"></button><h2 id="roadReg">The Field</h2><button class="rd-arr next" id="roadNext" aria-label="Next region"></button></div></div>
+      <div class="grow rd-title"><div class="kicker" id="roadKick" translate="no">The Road · region 1 of 3</div><div class="rd-reg"><button class="rd-arr prev" id="roadPrev" aria-label="Region before"></button><h2 id="roadReg" translate="no">The Field</h2><button class="rd-arr next" id="roadNext" aria-label="Next region"></button></div></div>
       <span class="rd-sum" id="roadSum"></span>
       <div class="coin chips" aria-label="Potato chips"><span id="roadTokens">0</span></div>
     </header>
@@ -1049,7 +1050,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
               <button id="qmC" role="radio" aria-checked="false"><b>Casual</b><small>just for fun</small></button>
               <button id="qmV" role="radio" aria-checked="false"><b>VS CPU</b><small id="qmVSub">CPU rank</small></button>
             </div>
-            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier">Bronze</b><span class="qm-rks" id="qmRating"></span><span class="qm-pips" id="qmPips" role="img"><i></i><i></i><i></i><i></i><i></i></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
+            <div class="qm-rk" id="qmRank"><i class="badge" id="qmBadge"></i><div class="qm-rkb"><b class="qm-rkt" id="qmTier" translate="no">Bronze</b><span class="qm-rks" id="qmRating"></span><span class="qm-pips" id="qmPips" role="img"><i></i><i></i><i></i><i></i><i></i></span><div class="bar"><i id="qmBar"></i></div></div><span class="kick qm-rec" id="qmRec"></span><i class="tag ember st rv-want" id="qmWant" hidden>Wanted</i></div>
             <button class="btn primary lg" id="qmFind"><span>Find match</span></button>
             <p class="qm-truth" id="qmTruth"></p>
           </div>
@@ -1068,7 +1069,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
             <span class="qm-cpl" id="qmCpuL">Keeps searching · chips, no rank change. A found player interrupts the fight.</span>
             <button class="btn primary" id="qmWarm"><span>Warm up</span></button>
             <!-- nobody here: the way to a CPU match that counts (ui/vscpu.js) -->
-            <button class="qm-tov" id="qmToV" hidden>Want it to count? · <b>VS CPU</b> ›</button>
+            <button class="qm-tov" id="qmToV" translate="no" hidden>Want it to count? · <b>VS CPU</b> ›</button>
           </div>
           <!-- the CPU board in small (ui/boards.js bdPreview, css/97-boards.css): top 3, a gap, you; the VS CPU mode shows it in the warm-up card's place -->
           <div class="on-card qm-board" id="qmBoard" role="button" tabindex="0" aria-label="CPU board. Open the full board" hidden>
@@ -1093,11 +1094,11 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <header class="sh-head"><h3>Season 1</h3><span class="tag gold ss-new">New</span><button class="round x" id="ssClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="sh-body">
         <div class="ss-pl">
-          <div class="ss-p on" id="ssOn"><i class="badge" id="ssBadgeN"></i><div><span class="kick">Your online rank</span><b id="ssTierN">Bronze</b><span id="ssRateN">1000 · everyone starts here</span></div></div>
-          <div class="ss-p old" id="ssOld"><i class="badge" id="ssBadgeO"></i><div><span class="kick">Your CPU rank</span><b id="ssTierO">Bronze</b><span id="ssRateO"></span></div></div>
+          <div class="ss-p on" id="ssOn"><i class="badge" id="ssBadgeN"></i><div><span class="kick">Your online rank</span><b id="ssTierN" translate="no">Bronze</b><span id="ssRateN" translate="no">1000 · everyone starts here</span></div></div>
+          <div class="ss-p old" id="ssOld"><i class="badge" id="ssBadgeO"></i><div><span class="kick">Your CPU rank</span><b id="ssTierO" translate="no">Bronze</b><span id="ssRateO"></span></div></div>
         </div>
         <div class="ss-ls">
-          <p><b>Ranked is online now:</b> real players, and the server keeps the score.</p>
+          <p translate="no"><b>Ranked is online now:</b> real players, and the server keeps the score.</p>
           <p>Titles you earned stay.</p>
           <p class="mute">No sign-up: your rank lives on this phone's sync code (Account). Link another phone with it.</p>
         </div>
@@ -1222,9 +1223,9 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <button class="rv-strip" id="rRiv" hidden aria-label="Rivals"></button>
           <p class="res-fin" id="rFin" hidden></p>
           <!-- a CPU just played its Potatality on you (ui/shop.js shopResKo; styles in css/93-shop.css): a band to that fighter's card in the Shop -->
-          <button class="res-ko" id="rKo" type="button" hidden><em>Potatality</em> <span>&middot; in the Shop</span><i class="pmglyph" aria-hidden="true"></i> <b aria-hidden="true">&rsaquo;</b></button>
+          <button class="res-ko" id="rKo" type="button" hidden><em translate="no">Potatality</em> <span>&middot; in the Shop</span><i class="pmglyph" aria-hidden="true"></i> <b aria-hidden="true">&rsaquo;</b></button>
           <!-- Challenge a friend (ui/challenge.js): hosts a Play friends match and shares its link -->
-          <button class="res-chl" id="rChl" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L3 10.2l7.4 3.4L13.8 21zM21 3L10.4 13.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Challenge <span class="chl-af">a friend</span></span></button>
+          <button class="res-chl" id="rChl" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L3 10.2l7.4 3.4L13.8 21zM21 3L10.4 13.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><span class="chl-af">Challenge a friend</span><span class="chl-sh">Challenge</span></span></button>
           <p class="res-stars" id="rStars" hidden></p>
         </div>
       </div>
@@ -1232,7 +1233,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="card res-rank" id="rRank">
           <div class="badge" id="rBadge"></div>
           <div class="rk-body">
-            <div class="rk-head"><span class="rk-tier" id="rTier">Bronze</span><span class="promo" id="rPromo"></span></div>
+            <div class="rk-head"><span class="rk-tier" id="rTier" translate="no">Bronze</span><span class="promo" id="rPromo"></span></div>
             <div class="rk-sub" id="rRating"></div>
             <div class="bar"><i id="rBar"></i><b id="rGain"></b></div>
           </div>
@@ -1334,6 +1335,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
         <div class="set-row"><span>Sound</span><span class="chips" id="setSound"></span></div>
         <div class="set-row" id="setFullRow"><span id="setFullL">Fullscreen in fights</span><span class="chips" id="setFull"></span><small id="setFullNow"></small></div>
         <div class="set-row" id="setScreenRow"><span>Screen</span><span class="chips" id="setScreen"></span></div>
+        <div class="set-row" id="setLangRow" hidden><span>Language</span><span class="chips" id="setLang" translate="no"></span></div>
         <div class="set-row" id="setCountRow" hidden><span>Play counts</span><span class="chips" id="setCount"></span></div>
         <p class="set-fine" id="setCountNote" hidden></p>
         <div class="set-row" id="setStakeRow" hidden><span>Chip stakes</span><span class="chips" id="setStake"></span></div>
@@ -1351,8 +1353,8 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
       <div class="sh-body">
         <p class="a2hs-lead">Play without the browser bars: add the game to your Home Screen.</p>
         <ol class="a2hs-steps">
-          <li><span class="a2hs-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 9.5H6.5v11h11v-11h-2"/><path d="M12 3.5v11M8.5 7L12 3.5 15.5 7"/></g></svg></span><span>Tap <b>Share</b> in the browser's bar</span></li>
-          <li><span class="a2hs-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></g></svg></span><span>Then <b>Add to Home Screen</b></span></li>
+          <li><span class="a2hs-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 9.5H6.5v11h11v-11h-2"/><path d="M12 3.5v11M8.5 7L12 3.5 15.5 7"/></g></svg></span><span translate="no">Tap <b>Share</b> in the browser's bar</span></li>
+          <li><span class="a2hs-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></g></svg></span><span translate="no">Then <b>Add to Home Screen</b></span></li>
         </ol>
         <p class="set-fine">The app keeps its own progress. Your sync code (Account) links the two.</p>
         <button class="btn primary" id="a2hsGot"><span>Got it</span></button>
@@ -1381,7 +1383,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <div class="ac-pick" id="acPick" hidden></div>
           <div class="ac-rank" id="acRank">
             <span class="ring"><svg viewBox="0 0 34 34" aria-hidden="true"><circle class="rt" cx="15" cy="15" r="15" transform="translate(2 2)"/><circle class="rp" id="acRing" cx="15" cy="15" r="15" transform="translate(2 2)"/></svg><i class="badge" id="acBadge"></i></span>
-            <div><div class="rk-tier" id="acTier">Bronze</div><div class="rk-sub" id="acRating"></div></div>
+            <div><div class="rk-tier" id="acTier" translate="no">Bronze</div><div class="rk-sub" id="acRating"></div></div>
           </div>
           <dl class="ac-stats">
             <div><dt>Wins</dt><dd id="acW">0</dd></div>

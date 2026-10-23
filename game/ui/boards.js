@@ -13,12 +13,12 @@
 screens.boards = $("scrBoards");
 const BD_KEY = "potatobrawl.boards.v1";
 const BD_PLACING = 5;             // matches that place a player on a board
-const BD_SEASON = "Season 1";
+const BD_SEASON = _t("Season 1");
 // the tabs: k = the board vcBoard() is asked for, kick = the kicker's first words, gone / hint = the empty board, fight = its button, none = your row without an account
 const BD_TABS = [
-  { k: "c", name: "VS CPU", kick: "CPU rank", gone: "Nobody on the board yet.", hint: `${BD_PLACING} Ranked CPU matches get you on.`, fight: true, none: "Play a Ranked CPU match to get a place" },
-  { k: "o", name: "Online", kick: "Online rank", gone: "Nobody has placed yet.", hint: `${BD_PLACING} Ranked matches get you on.`, fight: false, none: "Play a Ranked match to get a place" },
-  { k: "w", name: "Boss Week", kick: "Boss Week", gone: "", hint: "", fight: false, none: "Finish the boss once to get a place" },   // ui/bwsheet.js draws its rows, kicker and empty state
+  { k: "c", name: _t("VS CPU"), kick: _t("CPU rank"), gone: _t("Nobody on the board yet."), hint: _t("{n} Ranked CPU matches get you on.", { n: BD_PLACING }), fight: true, none: _t("Play a Ranked CPU match to get a place") },
+  { k: "o", name: _t("Online"), kick: _t("Online rank"), gone: _t("Nobody has placed yet."), hint: _t("{n} Ranked matches get you on.", { n: BD_PLACING }), fight: false, none: _t("Play a Ranked match to get a place") },
+  { k: "w", name: _t("Boss Week"), kick: _t("Boss Week"), gone: "", hint: "", fight: false, none: _t("Finish the boss once to get a place") },   // ui/bwsheet.js draws its rows, kicker and empty state
 ];
 const BD = { k: "c", req: 0, st: "idle", data: null, got: 0, tm: 0, lt: 0 };   // st: idle | load | ok | empty | off
 const BDP = { at: 0, data: undefined, p: null };   // the preview's cache: undefined = nothing yet, null = offline
@@ -37,7 +37,7 @@ BD.k = bdLast();
 // what the server sent, made safe to draw: numbers are whole numbers, text is cut to size, an unknown fighter shows nothing
 function bdRow(o) {
   if (!o || typeof o !== "object") return null;
-  return { id: bdStr(o.id, 12), nm: bdStr(o.nm, 24).trim() || "Player", f: FIG[o.f] ? o.f : "", r: bdInt(o.r, 1000), w: bdInt(o.w), l: bdInt(o.l), pl: bdStr(o.pl, 24) };
+  return { id: bdStr(o.id, 12), nm: bdStr(o.nm, 24).trim() || _t("Player"), f: FIG[o.f] ? o.f : "", r: bdInt(o.r, 1000), w: bdInt(o.w), l: bdInt(o.l), pl: bdStr(o.pl, 24) };
 }
 function bdClean(d, k) {
   if (k === "w") return bwBdPrep(d);   // ui/bwsheet.js: times, hearts lost and crowns instead of ratings
@@ -59,7 +59,7 @@ function bdFetch(k) {
     Promise.resolve(p).then((d) => d, () => null).then((d) => { clearTimeout(over); done(bdClean(d, k)); });
   });
 }
-const bdPlaceN = (n) => `${n} ${n === 1 ? "match" : "matches"}`;
+const bdPlaceN = (n) => _t("{n} match to get on|{n} matches to get on", { n });
 
 /* ----- one row: place (a disc for 1-3), tier emblem, name on its plate, fighter, record, rating -----
    o.me: this is your row in the list; o.sticky: it is the bar under the list; o.of: "#143 of 187" for a bar below the top 100 */
@@ -70,19 +70,19 @@ function bdRowEl(row, i, o) {
   const p = bdMk("span", "bd-p");
   if (i >= 1 && i <= 3) p.appendChild(bdMk("i", "bd-d " + "gsb"[i - 1], String(i))); else p.textContent = String(i);
   const ti = tierIdx(row.r), em = bdMk("i", "badge bd-em");
-  em.style.setProperty("--tc", TIERS[ti].col); em.innerHTML = tierEmblem(ti); em.title = TIERS[ti].name;
+  em.style.setProperty("--tc", TIERS[ti].col); em.innerHTML = tierEmblem(ti); em.title = qmTier(TIERS[ti].name);
   const n = bdMk("span", "bd-n"), t = bdMk("span", "bd-t");   // the title line (YOU · name) and under or beside it the fighter
-  if (o.me || o.sticky) t.appendChild(bdMk("em", "bd-yt", "You"));
+  if (o.me || o.sticky) t.appendChild(bdMk("em", "bd-yt", _t("You")));
   const nm = bdMk("b", "bd-nm", row.nm); plateSet(nm, row.pl); nm.title = row.nm;
   t.appendChild(nm); n.appendChild(t);
-  const fig = row.f ? FIG[row.f].name : "", rec = `${row.w}W\u00a0${row.l}L`;
+  const fig = row.f ? FIG[row.f].name : "", rec = _t("{w}W {l}L", { w: row.w, l: row.l }).replace(/ /g, "\u00a0");
   const f1 = [fig, o.of].filter(Boolean).join(" · "), f2 = [fig, o.of ? "" : rec, o.of].filter(Boolean).join(" · ");   // wide: the record has its column; upright: it joins this line
   const f = bdMk("small", "bd-f");
   if (f1) f.appendChild(bdMk("span", "bd-f1", f1));
   f.appendChild(bdMk("span", "bd-f2", f2));
   n.appendChild(f);
   el.append(p, em, n, bdMk("small", "bd-w", rec), bdMk("b", "bd-v", String(row.r)));
-  el.setAttribute("aria-label", `${i}. ${row.nm}${fig ? `, ${fig}` : ""}, ${row.w} wins ${row.l} losses, rating ${row.r}`);
+  el.setAttribute("aria-label", fig ? _t("{i}. {name}, {fighter}, {w} wins {l} losses, rating {r}", { i, name: row.nm, fighter: fig, w: row.w, l: row.l, r: row.r }) : _t("{i}. {name}, {w} wins {l} losses, rating {r}", { i, name: row.nm, w: row.w, l: row.l, r: row.r }));
   return el;
 }
 const bdPips = (n) => { const e = bdMk("span", "bd-pips"); e.setAttribute("aria-hidden", "true"); for (let k = 0; k < BD_PLACING; k++) e.appendChild(bdMk("i", k < n ? "on" : "")); return e; };
@@ -131,16 +131,16 @@ function bdLoad() {
 // how old the list is, as the kicker says it (the page's own clock from the moment it arrived)
 function bdAgo() {
   const s = Math.max(0, (Date.now() - BD.got) / 1000);
-  return s < 30 ? "just now" : s < 3600 ? `${Math.max(1, Math.floor(s / 60))} min ago` : `${Math.floor(s / 3600)} h ago`;
+  return s < 30 ? _t("just now") : s < 3600 ? _t("{n} min ago", { n: Math.max(1, Math.floor(s / 60)) }) : _t("{n} h ago", { n: Math.floor(s / 3600) });
 }
-function bdAge() { const e = $("bdKick").querySelector(".bd-up"); if (e && BD.st === "ok") e.textContent = ` · Updated ${bdAgo()}`; }
+function bdAge() { const e = $("bdKick").querySelector(".bd-up"); if (e && BD.st === "ok") e.textContent = ` · ${_t("Updated {ago}", { ago: bdAgo() })}`; }
 function bdKickDraw() {
   const k = $("bdKick"), t = bdCur(), d = BD.data;
   k.textContent = "";
-  if (t.k === "w") { k.appendChild(document.createTextNode(bwBdKick(BD.st, d))); if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`)); return; }
-  const tail = BD.st === "load" ? ["Loading"] : BD.st === "off" ? [] : [`${d.n} ${d.n === 1 ? "player" : "players"}`];
+  if (t.k === "w") { k.appendChild(document.createTextNode(bwBdKick(BD.st, d))); if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · ${_t("Updated {ago}", { ago: bdAgo() })}`)); return; }
+  const tail = BD.st === "load" ? [_t("Loading")] : BD.st === "off" ? [] : [_t("{n} player|{n} players", { n: d.n })];
   k.appendChild(document.createTextNode([t.kick, BD_SEASON].concat(tail).join(" · ")));
-  if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · Updated ${bdAgo()}`));
+  if (BD.st === "ok") k.appendChild(bdMk("span", "bd-up", ` · ${_t("Updated {ago}", { ago: bdAgo() })}`));
 }
 // the three-bar podium of the empty states
 const bdPod = () => { const e = bdMk("div", "bd-pod"); e.setAttribute("aria-hidden", "true"); e.append(bdMk("i"), bdMk("i"), bdMk("i")); return e; };
@@ -149,13 +149,13 @@ function bdStateDraw() {
   box.textContent = "";
   if (BD.st === "off") {
     box.className = "bd-state off";
-    box.append(bdMk("div", "bd-off", "Offline"), bdMk("b", "bd-big", "Boards need the server."), bdMk("p", "bd-sub", "Check the connection, then try again."));
-    const b = bdMk("button", "mini bd-again", "Try again"); b.type = "button"; bdTap(b, bdLoad); box.appendChild(b);
+    box.append(bdMk("div", "bd-off", _t("Offline")), bdMk("b", "bd-big", _t("Boards need the server.")), bdMk("p", "bd-sub", _t("Check the connection, then try again.")));
+    const b = bdMk("button", "mini bd-again", _t("Try again")); b.type = "button"; bdTap(b, bdLoad); box.appendChild(b);
   } else {
     box.className = "bd-state";
     if (t.k === "w") { bwBdEmpty(box); return; }   // ui/bwsheet.js: Nobody has a time yet + FIGHT <boss>
     box.append(bdPod(), bdMk("b", "bd-big", t.gone), bdMk("p", "bd-sub", t.hint));
-    if (t.fight) { const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", "Fight a CPU")); bdTap(b, bdFight); box.appendChild(b); }
+    if (t.fight) { const b = bdMk("button", "btn primary bd-fight"); b.type = "button"; b.appendChild(bdMk("span", "", _t("Fight a CPU"))); bdTap(b, bdFight); box.appendChild(b); }
   }
 }
 // ghost rows while the list is on its way
@@ -176,22 +176,22 @@ function bdYouDraw(d) {
   box.hidden = false;
   if (t.k === "w" && m && !m.i) {   // an account with no time yet
     const e = bdMk("div", "bd-r you none");
-    e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", `No time yet. Finish ${bwBossSpec(bwSpec().boss).name} once to get a place`));
+    e.append(bdMk("em", "bd-yt", _t("You")), bdMk("span", "bd-none", _t("No time yet. Finish {boss} once to get a place", { boss: bwBossSpec(bwSpec().boss).name })));
     box.appendChild(e); return;
   }
   if (!m) {   // no account yet
     const e = bdMk("div", "bd-r you none");
-    e.append(bdMk("em", "bd-yt", "You"), bdMk("span", "bd-none", t.none));
+    e.append(bdMk("em", "bd-yt", _t("You")), bdMk("span", "bd-none", t.none));
     box.appendChild(e);
   } else if (!m.i) {   // placing
     const left = Math.max(0, BD_PLACING - m.pn), e = bdMk("div", "bd-r you placing"), txt = bdMk("span", "bd-pk");
-    txt.append(bdMk("b", "", `Placing ${m.pn} of ${BD_PLACING}`), bdMk("small", "", left ? `${bdPlaceN(left)} to get on` : "Almost there"));
-    e.append(bdMk("em", "bd-yt", "You"), txt, bdPips(m.pn));
+    txt.append(bdMk("b", "", _t("Placing {n} of {m}", { n: m.pn, m: BD_PLACING })), bdMk("small", "", left ? bdPlaceN(left) : _t("Almost there")));
+    e.append(bdMk("em", "bd-yt", _t("You")), txt, bdPips(m.pn));
     box.appendChild(e);
   } else {
-    const inTop = m.i <= d.top.length, e = bdRowEl(m.row, m.i, { sticky: true, of: inTop ? "" : `#${m.i} of ${d.n}` });
+    const inTop = m.i <= d.top.length, e = bdRowEl(m.row, m.i, { sticky: true, of: inTop ? "" : _t("#{i} of {n}", { i: m.i, n: d.n }) });
     if (inTop) {
-      e.setAttribute("role", "button"); e.tabIndex = 0; e.title = "Show my place in the list";
+      e.setAttribute("role", "button"); e.tabIndex = 0; e.title = _t("Show my place in the list");
       e.addEventListener("click", () => { Sfx.init(); Sfx.ui(); bdToMe(); });
       e.addEventListener("keydown", (ev) => { if (ev.code === "Enter" || ev.code === "Space") { ev.preventDefault(); bdToMe(); } });
     } else gap.hidden = false;
@@ -210,7 +210,7 @@ function bdDraw() {
   const d = BD.data, list = $("bdList"), st = BD.st;
   bdKickDraw();
   screens.boards.classList.toggle("bw-tab", BD.k === "w");   // css/97-bossweek.css: the time column is wider
-  $("bdHd").querySelector(".bd-hr").textContent = BD.k === "w" ? "Time" : "Rating";
+  $("bdHd").querySelector(".bd-hr").textContent = BD.k === "w" ? _t("Time") : _t("Rating");
   $("bdHd").hidden = !(st === "ok" || st === "load");
   list.hidden = !(st === "ok" || st === "load");
   $("bdState").hidden = !(st === "off" || st === "empty");
@@ -235,7 +235,7 @@ function bdPvRow(row, i, o) {
   const ti = tierIdx(row.r), em = bdMk("i", "badge bd-em");
   em.style.setProperty("--tc", TIERS[ti].col); em.innerHTML = tierEmblem(ti);
   const n = bdMk("span", "bd-n");
-  if (o.you) n.appendChild(bdMk("em", "bd-yt", "You"));
+  if (o.you) n.appendChild(bdMk("em", "bd-yt", _t("You")));
   const nm = bdMk("b", "bd-nm", row.nm); plateSet(nm, row.pl);
   n.appendChild(nm);
   el.append(p, em, n, bdMk("b", "bd-v", String(row.r)));
@@ -245,8 +245,8 @@ function bdPvDraw(d) {   // d: undefined (on its way), null (no server) or a cle
   const box = $("qbList"); if (!box) return;
   box.textContent = "";
   if (d === undefined) { for (let k = 0; k < 3; k++) { const r = bdMk("div", "qb-r sk"); r.append(bdMk("i", "bd-gp"), bdMk("i", "bd-ge"), bdMk("i", "bd-gn"), bdMk("i", "bd-gv")); box.appendChild(r); } return; }
-  if (!d) { box.appendChild(bdMk("p", "qb-note", "The board needs the server.")); return; }
-  if (!d.top.length) { box.appendChild(bdMk("p", "qb-note", `Nobody on the board yet. ${BD_PLACING} Ranked CPU matches get you on.`)); return; }
+  if (!d) { box.appendChild(bdMk("p", "qb-note", _t("The board needs the server."))); return; }
+  if (!d.top.length) { box.appendChild(bdMk("p", "qb-note", `${BD_TABS[0].gone} ${BD_TABS[0].hint}`)); return; }
   d.top.slice(0, 3).forEach((row, k) => box.appendChild(bdPvRow(row, k + 1, { you: !!d.me && d.me.i === k + 1 })));
   const m = d.me;
   if (m && m.i > 3 && m.row) {
@@ -254,7 +254,7 @@ function bdPvDraw(d) {   // d: undefined (on its way), null (no server) or a cle
     box.appendChild(bdPvRow(m.row, m.i, { you: true }));
   } else if (m && !m.i) {   // placing: no place and no rating yet, the five pips say how far
     const e = bdMk("div", "qb-r you placing"), n = bdMk("span", "bd-n");
-    n.append(bdMk("em", "bd-yt", "You"), bdMk("b", "bd-nm", `Placing ${m.pn} of ${BD_PLACING}`));
+    n.append(bdMk("em", "bd-yt", _t("You")), bdMk("b", "bd-nm", _t("Placing {n} of {m}", { n: m.pn, m: BD_PLACING })));
     e.append(bdMk("span", "bd-p", "–"), n, bdPips(m.pn));
     box.appendChild(e);
   } else if (!m) box.appendChild(bdMk("p", "qb-note", BD_TABS[0].none));
@@ -274,19 +274,20 @@ function bdPlates(box) {
   const rk = typeof vcRanks === "function" ? vcRanks() : null;
   if (!rk || typeof rk !== "object" || (!rk.on && !rk.cpu)) { box.hidden = true; return; }
   box.hidden = false;
-  for (const [k, o, name] of [["o", rk.on, ["Online", "Online rank"]], ["c", rk.cpu, ["CPU", "CPU rank"]]]) {
+  for (const [k, o, name] of [["o", rk.on, [_t("Online"), _t("Online rank")]], ["c", rk.cpu, [_t("CPU"), _t("CPU rank")]]]) {
     if (!o || typeof o !== "object") continue;
     const r = bdInt(o.r, 1000), n = bdInt(o.n), pl = bdInt(o.pl), placing = n < BD_PLACING, ti = tierIdx(r);
     const b = bdMk("button", "bd-pl" + (placing ? " placing" : "") + (k === "c" ? " cpu" : ""));
     b.type = "button"; b.dataset.k = k; b.style.setProperty("--tc", TIERS[ti].col);
     const em = bdMk("i", "badge"); paintBadge(em, ti);
-    if (k === "c") em.appendChild(bdMk("span", "tag ember bd-st", "CPU"));
+    if (k === "c") em.appendChild(bdMk("span", "tag ember bd-st", _t("CPU")));
     const t = bdMk("span", "bd-pt");
-    const q = bdMk("span", "bd-pq"); q.append(name[0], bdMk("span", "bd-rk", " rank"), pl > 0 ? ` · #${pl}` : "");   // upright: ONLINE · #14 (the plate is narrow)
-    t.append(q, bdMk("b", "", placing ? "Placing" : TIERS[ti].name),
-      bdMk("small", "", placing ? `${n} of ${BD_PLACING}` : String(r)));
+    const q = bdMk("span", "bd-pq"); q.append(name[0], bdMk("span", "bd-rk", ` ${_t("rank@@follows the mode: Online rank, CPU rank (hidden on a narrow plate)")}`), pl > 0 ? ` · #${pl}` : "");   // upright: ONLINE · #14 (the plate is narrow)
+    t.append(q, bdMk("b", "", placing ? _t("Placing") : qmTier(TIERS[ti].name)),
+      bdMk("small", "", placing ? _t("{n} of {m}", { n, m: BD_PLACING }) : String(r)));
     b.append(em, t, bdMk("i", "bd-go"));
-    b.setAttribute("aria-label", `${name[1]}${pl > 0 ? `, place ${pl}` : ""}: ${placing ? `placing, ${n} of ${BD_PLACING} matches played` : `${TIERS[ti].name} ${r}`}. Open the board`);
+    const sv = { name: name[1], n: pl, state: placing ? _t("placing, {n} of {m} matches played", { n, m: BD_PLACING }) : _t("{tier} {r}", { tier: qmTier(TIERS[ti].name), r }) };
+    b.setAttribute("aria-label", pl > 0 ? _t("{name}, place {n}: {state}. Open the board", sv) : _t("{name}: {state}. Open the board", sv));
     bdTap(b, () => bdOpen(k));
     box.appendChild(b);
   }

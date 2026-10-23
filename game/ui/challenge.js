@@ -10,7 +10,7 @@
 const CHL = { copied: 0 };   // 1: the line is on the clipboard and the lobby's link card hasn't said so yet
 const chlRoom = (code) => typeof code === "string" && /^ch[a-z0-9]{7}$/.test(code);
 const chlCan = () => !!NET.standalone && onlineAvailable() && !(NET.tried && !NET.ok);
-const chlText = () => `Think you can beat my ${FIG[sel.fighter].name}?`;
+const chlText = () => _t("Think you can beat my {name}?", { name: FIG[sel.fighter].name });
 const chlPhone = () => !!navigator.share && !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);   // a computer copies the link instead
 // screens.js showResults: after a finished 1v1 against a CPU (the Road, the Daily, bosses, 2v2, the Tournament and the tutorial have their
 // own ends), a Quick match and Ranked vs CPU (not a warm-up while the search runs: the tap would stop it); not after Play friends
@@ -43,6 +43,6 @@ function chlCopied() {
   const btn = $("onCopy");
   if (!CHL.copied || mode !== "online" || $("onInvite").hidden || !chlRoom(NET.hostCode)) return;
   CHL.copied = 0;
-  btn.textContent = "Link copied";
-  setTimeout(() => { btn.textContent = "Copy link"; }, 2500);
+  btn.textContent = _t("Link copied");
+  setTimeout(() => { btn.textContent = _t("Copy link"); }, 2500);
 }

@@ -6,7 +6,7 @@
 #scrQuick .qm-seg button small { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* the CPU rank: an ember CPU sticker on the emblem's corner, the record line in sand */
 #scrQuick .qm-rk.vc { position: relative; box-shadow: inset 0 0 0 1.5px rgba(239, 122, 82, 0.45); }
-#scrQuick .qm-rk.vc::before { content: "CPU"; position: absolute; left: 6px; top: -9px; z-index: 2; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px;
+#scrQuick .qm-rk.vc::before { content: var(--tw-cpu, "CPU"); position: absolute; left: 6px; top: -9px; z-index: 2; padding: 3px 5px 2px; border: 2px solid var(--ink); border-radius: 5px;
   background: var(--ember, #ef7a52); color: var(--ink); font: 900 9.5px/1 var(--display); letter-spacing: 0.08em; transform: rotate(-6deg); box-shadow: 0 2px 0 var(--ink); }
 #scrQuick .qm-bdl { appearance: none; grid-column: 1 / -1; justify-self: start; max-width: 100%; margin-top: -7px; padding: 0; border: 0; background: none; cursor: pointer;
   font: 700 12px/1.2 var(--body); color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -40,7 +40,7 @@
 #resSheet .rk-bd[hidden] { display: none; }
 
 /* the menu's profile plate on the CPU rank: a small ember CPU sticker on the picture's corner */
-#scrMenu .plate.vc .mm-avw::after { content: "CPU"; position: absolute; left: -7px; top: -6px; z-index: 2; padding: 2px 3px 1px; border: 1.5px solid var(--ink); border-radius: 4px;
+#scrMenu .plate.vc .mm-avw::after { content: var(--tw-cpu, "CPU"); position: absolute; left: -7px; top: -6px; z-index: 2; padding: 2px 3px 1px; border: 1.5px solid var(--ink); border-radius: 4px;
   background: var(--ember); color: var(--ink); font: 900 8px/1 var(--display); letter-spacing: 0.06em; transform: rotate(-8deg); }
 
 /* the Account sheet's board places */

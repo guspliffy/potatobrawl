@@ -68,24 +68,24 @@ const acPlayed = (e) => (e ? (e.w | 0) + (e.l | 0) + (e.d | 0) : 0);
 // Titles, earnable from the start (ten, Jack of Spuds, and a Lv 5 and a Lv 10 title per fighter from ui/mastery.js). `how` is shown while one is locked. Best first (what "automatic" picks).
 const ACT = [
   // the CPU board's (ui/vscpu.js): live, lost the moment someone passes you
-  { id: "cpu1", name: () => "#1 CPU board", ok: () => vcPlace() === 1, how: "Be #1 on the CPU board (Ranked vs CPU). It goes when someone passes you." },
-  { id: "cpu10", name: () => "Top 10 CPU", ok: () => vcPlace() >= 1 && vcPlace() <= 10, how: "Get into the top 10 of the CPU board (Ranked vs CPU)." },
-  { id: "flawless", name: () => "Flawless", ok: () => (P.flawless | 0) > 0, how: "Win a cup without losing a life." },
-  { id: "devil", name: () => "Devil Masher", ok: () => (roadGet().b & 7) > 0, how: "Beat Old Scratch past the last stop of the Road." },
-  { id: "dome", name: () => "Dome Cracker", ok: () => ((roadGet().b2 | 0) & 7) > 0, how: "Beat Zorp past the last stop of The Kitchen." },
-  { id: "kraken", name: () => "Kraken Fryer", ok: () => ((roadGet().b3 | 0) & 7) > 0, how: "Beat Kraken Spud at the end of the pier in The Deep." },
-  { id: "duo", name: () => "Double Trouble", ok: () => (P.duo | 0) > 0, how: "Beat a boss on Hard or Nightmare with a friend online (Play friends, Vs boss)." },
-  { id: "dynamic", name: () => "Dynamic Duo", ok: () => (P.duoW | 0) >= DUO_TITLE, how: `Win ${DUO_TITLE} Team Brawl 2v2 matches (Practice or online).` },
+  { id: "cpu1", name: () => _t("#1 CPU board"), ok: () => vcPlace() === 1, how: _t("Be #1 on the CPU board (Ranked vs CPU). It goes when someone passes you.") },
+  { id: "cpu10", name: () => _t("Top 10 CPU"), ok: () => vcPlace() >= 1 && vcPlace() <= 10, how: _t("Get into the top 10 of the CPU board (Ranked vs CPU).") },
+  { id: "flawless", name: () => _t("Flawless"), ok: () => (P.flawless | 0) > 0, how: _t("Win a cup without losing a life.") },
+  { id: "devil", name: () => _t("Devil Masher"), ok: () => (roadGet().b & 7) > 0, how: _t("Beat {boss} past the last stop of the Road.", { boss: "Old Scratch" }) },
+  { id: "dome", name: () => _t("Dome Cracker"), ok: () => ((roadGet().b2 | 0) & 7) > 0, how: _t("Beat {boss} past the last stop of The Kitchen.", { boss: "Zorp" }) },
+  { id: "kraken", name: () => _t("Kraken Fryer"), ok: () => ((roadGet().b3 | 0) & 7) > 0, how: _t("Beat {boss} at the end of the pier in The Deep.", { boss: "Kraken Spud" }) },
+  { id: "duo", name: () => _t("Double Trouble"), ok: () => (P.duo | 0) > 0, how: _t("Beat a boss on Hard or Nightmare with a friend online (Play friends, Vs boss).") },
+  { id: "dynamic", name: () => _t("Dynamic Duo"), ok: () => (P.duoW | 0) >= DUO_TITLE, how: _t("Win {n} Team Brawl 2v2 matches (Practice or online).", { n: DUO_TITLE }) },
   ...mxActs(10),   // the Lv 10 title of each fighter (ui/mastery.js)
-  { id: "cup", name: () => "Cup winner", ok: () => (P.cups | 0) > 0, how: "Win a cup." },
+  { id: "cup", name: () => _t("Cup winner"), ok: () => (P.cups | 0) > 0, how: _t("Win a cup.") },
   mxJack,          // Jack of Spuds: Lv 5 with every fighter
-  { id: "combo", name: () => "Combo Potato", ok: () => routesDone().length >= ROUTE_TOTAL, how: `Clear all ${ROUTE_TOTAL} combo routes in the Combo trial (How to play).` },
-  { id: "collector", name: () => "Collector", ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: "Own every chip skin of one fighter." },
-  { id: "centurion", name: () => "Centurion", ok: () => (P.wins | 0) + qmWins() >= 100, how: "Win 100 ranked matches." },
+  { id: "combo", name: () => _t("Combo Potato"), ok: () => routesDone().length >= ROUTE_TOTAL, how: _t("Clear all {n} combo routes in the Combo trial (How to play).", { n: ROUTE_TOTAL }) },
+  { id: "collector", name: () => _t("Collector"), ok: () => FIGHTERS.some((f) => (P.owned[f.id] || []).filter((i) => i < chipN(f)).length >= chipN(f)), how: _t("Own every chip skin of one fighter.") },
+  { id: "centurion", name: () => _t("Centurion"), ok: () => (P.wins | 0) + qmWins() >= 100, how: _t("Win 100 ranked matches.") },
   ...mxActs(5),    // the Lv 5 title of each fighter
-  { id: "couch", name: () => "Couch Potato", ok: hvTitleOk, how: "Reach day 14 of the Harvest, the daily gifts behind the flame." },   // ui/harvest.js
-  { id: "wanderer", name: () => "Wanderer", ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: "Play ranked matches with seven different fighters." },
-  { id: "tier", name: () => tierInfo(rankView().pk).t.name, ok: () => rankView().n > 0, how: "Play a ranked match. It shows the best tier you reached." },   // online: Season 1's peak (ui/quick.js)
+  { id: "couch", name: () => _t("Couch Potato"), ok: hvTitleOk, how: _t("Reach day 14 of the Harvest, the daily gifts behind the flame.") },   // ui/harvest.js
+  { id: "wanderer", name: () => _t("Wanderer"), ok: () => Object.values(acFstats()).filter((e) => acPlayed(e) > 0).length >= 7, how: _t("Play ranked matches with seven different fighters.") },
+  { id: "tier", name: () => _tv(tierInfo(rankView().pk).t.name), ok: () => rankView().n > 0, how: _t("Play a ranked match. It shows the best tier you reached.") },   // online: Season 1's peak (ui/quick.js)
 ];
 const ACT_SHOWN = ["tier", "cpu1", "cpu10", "centurion", "cup", "flawless", "devil", "dome", "kraken", "duo", "dynamic", "collector", "wanderer", "combo", "jack", "couch"];   // the order of the list (fighter titles follow once earned)
 const acShown = () => [...ACT_SHOWN.filter((id) => (window.__blQuick && !window.__blNoQuick) || (id !== "cpu1" && id !== "cpu10")), ...ACT.filter((t) => t.fighter && t.ok()).map((t) => t.id)];   // the CPU board titles only where the boards are
@@ -111,19 +111,19 @@ function renderPill() {
   $("mName").textContent = name;
   me.querySelector(".plate").style.setProperty("--tc", ti.t.col);
   plateSet(me.querySelector(".plate"), shopWorn());   // the nameplate worn (ui/shop.js); Ink = today's look
-  $("mTier").textContent = ti.t.name;
+  $("mTier").textContent = _tv(ti.t.name);
   $("mRating").textContent = rk.r;
   me.querySelector(".plate").classList.toggle("vc", !!rk.cpu);   // the CPU rank (no online match yet): the ember CPU sticker on the emblem
   // the title sticker; the automatic tier title is left out while it only repeats the tier shown beside it
   const tt = acTitle(), mt = $("mTitle");
-  mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === ti.t.name);
+  mt.textContent = tt ? tt.name : ""; mt.hidden = !tt || (tt.auto && tt.id === "tier" && tt.name === _tv(ti.t.name));
   const bd = $("mBadge"); if (bd._i !== ti.i) { bd._i = ti.i; paintBadge(bd, ti.i); }
   $("mTokens").textContent = fmtChips(P.tokens);
   psPill();   // ui/pshop.js: the Pommes pill beside the chips
   const cb = $("mCups"); cb.hidden = !(cups > 0); cb.textContent = cups;
   const ds = dailyStreakNow(), gift = hvWaiting();   // the Daily Potato streak (ui/daily.js), today's Harvest gift (ui/harvest.js)
   $("mStreakN").textContent = ds; $("mStreak").classList.toggle("zero", !(ds > 0)); $("mGift").hidden = !gift;
-  me.setAttribute("aria-label", `Account. ${name}${tt ? `, ${tt.name}` : ""}, ${ti.t.name} ${rk.r}, ${fmtChips(P.tokens)} chips${koBal() > 0 ? `, ${fmtChips(koBal())} Pommes` : ""}${cups > 0 ? `, ${cups} ${cups === 1 ? "cup" : "cups"}` : ""}${ds > 0 ? `, ${ds}-day Daily Potato streak` : ""}${gift ? ", today's Harvest gift waits behind the flame" : ""}`);
+  me.setAttribute("aria-label", _t("Account. {parts}", { parts: [name, ...(tt ? [tt.name] : []), `${_tv(ti.t.name)} ${rk.r}`, _t("{c} chips", { c: fmtChips(P.tokens) }), ...(koBal() > 0 ? [_t("{c} Pommes", { c: fmtChips(koBal()) })] : []), ...(cups > 0 ? [_t("{n} cup|{n} cups", { n: cups })] : []), ...(ds > 0 ? [_t("{n}-day Daily Potato streak", { n: ds })] : []), ...(gift ? [_t("today's Harvest gift waits behind the flame")] : [])].join(", ") }));
   menuFit();   // ui/screens.js: tighter coins or no name when the bar is full
 }
 
@@ -137,16 +137,16 @@ function acBtn(label, cls, fn) {
 }
 function acAgo(t) {
   const s = (Date.now() - t) / 1000;
-  if (s < 45) return "just now";
-  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86400)} d ago`;
+  if (s < 45) return _t("just now");
+  if (s < 3600) return _t("{n} min ago", { n: Math.max(1, Math.round(s / 60)) });
+  if (s < 86400) return _t("{n} h ago", { n: Math.round(s / 3600) });
+  return _t("{n} d ago", { n: Math.round(s / 86400) });
 }
 function acSkinCount(p) { return FIGHTERS.reduce((a, f) => a + (p.owned && p.owned[f.id] ? p.owned[f.id].length : 1), 0); }
 const acSkinTotal = () => FIGHTERS.reduce((a, f) => a + f.palettes.length, 0);
 function acSum(p) {   // one line about a profile, for the "replace it?" question
   const ti = tierInfo(p.rating);
-  return `${ti.t.name} ${p.rating} · ${fmtChips(p.tokens)} chips · ${acSkinCount(p)} skins`;
+  return _t("{tier} {r} · {c} chips · {s} skins", { tier: _tv(ti.t.name), r: p.rating, c: fmtChips(p.tokens), s: acSkinCount(p) });
 }
 function renderAccount() {
   if (screens.account.hidden) return;
@@ -161,7 +161,7 @@ function renderAccount() {
   renderPick();
   const inp = $("acName"); if (document.activeElement !== inp) inp.value = name;
   plateSet(inp, shopWorn());   // the name sits on the nameplate worn (ui/shop.js)
-  $("acPlays").textContent = FIG[P.last] ? `Plays ${FIG[P.last].name}` : "";
+  $("acPlays").textContent = FIG[P.last] ? _t("Plays {name}", { name: FIG[P.last].name }) : "";
   $("acPicBtn").setAttribute("aria-expanded", String(acUI.pick === "av")); $("acTitBtn").setAttribute("aria-expanded", String(acUI.pick === "ti"));
   $("acPicBtn").classList.toggle("on", acUI.pick === "av"); $("acTitBtn").classList.toggle("on", acUI.pick === "ti");
   paintBadge($("acBadge"), ti.i);
@@ -173,25 +173,25 @@ function renderAccount() {
     $("acRank").hidden = qmOn();   // on our server the two plates take the rank card's place
   }
   $("acRank").style.setProperty("--tc", ti.t.col);
-  $("acTier").textContent = ti.t.name;
-  $("acRating").textContent = `${rk.r} rating · best ${rk.pk}${ti.next ? ` · ${ti.need} to ${ti.next.name}` : ""}${rk.online ? " · Season 1" : ""}`;
+  $("acTier").textContent = _tv(ti.t.name);
+  $("acRating").textContent = `${_t("{r} rating · best {pk}", { r: rk.r, pk: rk.pk })}${ti.next ? ` · ${_t("{n} to {tier}", { n: ti.need, tier: _tv(ti.next.name) })}` : ""}${rk.online ? ` · ${_t("Season 1")}` : ""}`;
   $("acW").textContent = rk.w; $("acL").textContent = rk.l;
   { const c = $("acChips"); c.textContent = fmtChips(P.tokens); c.classList.toggle("wide", String(Math.round(P.tokens)).length >= 5); }   // the coin sits by the label (shell.html); from five digits the number is a size smaller
   $("acSkins").innerHTML = `${acSkinCount(P)}<small> / ${acSkinTotal()}</small>`;
   const more = [];
   const fw = P.friendW | 0, fl = P.friendL | 0, cups = P.cups | 0;
-  if (fw + fl > 0) more.push(`Friend matches: ${fw} won, ${fl} lost`);
-  if (cups > 0) more.push(`Cups won: ${cups}${(P.flawless | 0) > 0 ? ` (${P.flawless} flawless)` : ""}`);
-  if ((P.duoW | 0) + (P.duoC | 0) > 0) more.push(`2v2: ${P.duoW | 0} won, ${P.duoC | 0} ${(P.duoC | 0) === 1 ? "Catch" : "Catches"}`);
+  if (fw + fl > 0) more.push(_t("Friend matches: {w} won, {l} lost", { w: fw, l: fl }));
+  if (cups > 0) more.push((P.flawless | 0) > 0 ? _t("Cups won: {n} ({f} flawless)", { n: cups, f: P.flawless }) : _t("Cups won: {n}", { n: cups }));
+  if ((P.duoW | 0) + (P.duoC | 0) > 0) more.push(_t("2v2: {w} won, {n} Catch|2v2: {w} won, {n} Catches", { w: P.duoW | 0, n: P.duoC | 0 }));
   $("acMore").textContent = more.join(" · "); $("acMore").hidden = !more.length;
   const form = $("acForm"); form.innerHTML = "";
   const hist = rk.h.slice(0, 10);
   if (hist.length) {
-    form.appendChild(acMk("span", "ac-line", "Recent ranked"));
-    for (const h of hist) { const i = acMk("i", h.res === 1 ? "w" : h.res === 0 ? "l" : "", h.res === 1 ? "W" : h.res === 0 ? "L" : "D"); i.title = `${h.dr > 0 ? "+" : ""}${h.dr}`; form.appendChild(i); }
+    form.appendChild(acMk("span", "ac-line", _t("Recent ranked")));
+    for (const h of hist) { const i = acMk("i", h.res === 1 ? "w" : h.res === 0 ? "l" : "", h.res === 1 ? _t("W@@W for win, one letter") : h.res === 0 ? _t("L@@L for loss, one letter") : _t("D@@D for draw, one letter")); i.title = `${h.dr > 0 ? "+" : ""}${h.dr}`; form.appendChild(i); }
   }
   form.hidden = !hist.length;
-  $("acReset").textContent = acUI.resetArmed ? (ACCT.code ? "Tap again to erase it everywhere" : "Tap again to erase rating, chips and skins") : "Reset progress";
+  $("acReset").textContent = acUI.resetArmed ? (ACCT.code ? _t("Tap again to erase it everywhere") : _t("Tap again to erase rating, chips and skins")) : _t("Reset progress");
   renderSync();
 }
 
@@ -201,7 +201,7 @@ function renderPick() {
   if (acUI.pick === "av") {
     const cur = acAvatar();
     const row = acMk("div", "ac-row");
-    row.appendChild(acBtn("Fighter I played last", "chip" + (cur.own ? "" : " on"), () => { P.avatar = ""; saveProfile(); renderPill(); renderAccount(); }));
+    row.appendChild(acBtn(_t("Fighter I played last"), "chip" + (cur.own ? "" : " on"), () => { P.avatar = ""; saveProfile(); renderPill(); renderAccount(); }));
     box.appendChild(row);
     const all = acMk("div", "ac-pk-av");
     for (const f of FIGHTERS) {
@@ -209,7 +209,7 @@ function renderPick() {
       for (const i of P.owned[f.id] || [0]) {
         if (!f.palettes[i]) continue;
         const b = acMk("button", "ac-pk" + (cur.own && cur.f === f.id && cur.p === i ? " on" : ""));
-        b.setAttribute("aria-label", `${f.name}, ${f.palettes[i].name}`); b.setAttribute("aria-pressed", String(cur.own && cur.f === f.id && cur.p === i)); b.title = `${f.name}, ${f.palettes[i].name}`;
+        b.setAttribute("aria-label", `${f.name}, ${_tv(f.palettes[i].name)}`); b.setAttribute("aria-pressed", String(cur.own && cur.f === f.id && cur.p === i)); b.title = `${f.name}, ${_tv(f.palettes[i].name)}`;
         const a = acMk("span", "av"); acSetAvatar(a, f.id, i); b.appendChild(a);
         b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.avatar = f.id + ":" + i; saveProfile(); renderPill(); renderAccount(); });
         g.appendChild(b);
@@ -221,13 +221,13 @@ function renderPick() {
     const cur = acTitle();
     const list = acMk("div", "ac-tl");
     const auto = acMk("button", "ac-t" + (!P.title || (cur && cur.auto) ? " on" : ""));
-    auto.appendChild(acMk("b", "", "Automatic")); auto.appendChild(acMk("small", "", "Shows the best title you have earned."));
+    auto.appendChild(acMk("b", "", _t("Automatic"))); auto.appendChild(acMk("small", "", _t("Shows the best title you have earned.")));
     auto.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.title = ""; saveProfile(); renderPill(); renderAccount(); });
     list.appendChild(auto);
     for (const id of acShown()) {
       const t = ACT.find((x) => x.id === id), ok = t.ok();
       const b = acMk("button", "ac-t" + (ok ? "" : " lock") + (ok && cur && !cur.auto && cur.id === id ? " on" : ""));
-      b.appendChild(acMk("b", "", t.name())); b.appendChild(acMk("small", "", ok ? (t.note ? "Earned: " + t.note() + "." : "Earned.") : t.how));
+      b.appendChild(acMk("b", "", t.name())); b.appendChild(acMk("small", "", ok ? (t.note ? _t("Earned: {note}.", { note: t.note() }) : _t("Earned.")) : t.how));
       if (ok) b.addEventListener("click", () => { Sfx.init(); Sfx.ui(); P.title = id; saveProfile(); renderPill(); renderAccount(); });
       else { b.setAttribute("aria-disabled", "true"); }
       list.appendChild(b);
@@ -240,7 +240,7 @@ tap("acTitBtn", () => { acUI.pick = acUI.pick === "ti" ? "" : "ti"; renderAccoun
 tap("acAvBtn", () => { acUI.pick = acUI.pick === "av" ? "" : "av"; renderAccount(); });
 
 /* ----- Stats tab ----- */
-function acDate(t) { try { return new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return ""; } }
+function acDate(t) { try { return new Date(t).toLocaleDateString(LOC, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return ""; } }
 function acFav() {   // the fighter with the most counted matches (ties: the earlier in the roster)
   let best = null, n = 0;
   for (const f of FIGHTERS) { const m = acPlayed(acFstats()[f.id]); if (m > n) { n = m; best = f; } }
@@ -250,15 +250,15 @@ function renderStats() {
   const pan = $("acPanS"); pan.innerHTML = "";
   rvStats(pan);   // ui/rivals.js: the Rivals list on top (Quick match on our server)
   const st = acFstats(), fav = acFav();
-  if (rankView().online && (P.matches | 0) > 0) { const ti = tierInfo(P.rating | 0); pan.appendChild(acMk("p", "ac-line", `Your CPU rank (before Season 1): ${ti.t.name} ${P.rating | 0} · best ${Math.max(P.peak | 0, P.rating | 0)} · ${P.wins | 0}W ${P.losses | 0}L. Ranked is online now.`)); }   // ui/quick.js
-  pan.appendChild(acMk("p", "ac-line", P.fsince ? `Per-fighter records count ranked matches since ${acDate(P.fsince)}. Friend and cup matches are not counted.` : "Per-fighter records start with your next ranked match. Friend and cup matches are not counted."));
+  if (rankView().online && (P.matches | 0) > 0) { const ti = tierInfo(P.rating | 0); pan.appendChild(acMk("p", "ac-line", _t("Your CPU rank (before Season 1): {tier} {r} · best {pk} · {w}W {l}L. Ranked is online now.", { tier: _tv(ti.t.name), r: P.rating | 0, pk: Math.max(P.peak | 0, P.rating | 0), w: P.wins | 0, l: P.losses | 0 }))); }   // ui/quick.js
+  pan.appendChild(acMk("p", "ac-line", P.fsince ? _t("Per-fighter records count ranked matches since {date}. Friend and cup matches are not counted.", { date: acDate(P.fsince) }) : _t("Per-fighter records start with your next ranked match. Friend and cup matches are not counted.")));
   if (fav) {
     const d = acMk("div", "fs-fav"); const a = acMk("span", "av"); acSetAvatar(a, fav.f.id, P.pal[fav.f.id] || 0); d.appendChild(a);
-    const w = acMk("div"); w.appendChild(acMk("span", "kicker", "Favourite fighter")); w.appendChild(acMk("b", "", fav.f.name)); w.appendChild(acMk("span", "ac-line", `${fav.n} ${fav.n === 1 ? "match" : "matches"}`));
+    const w = acMk("div"); w.appendChild(acMk("span", "kicker", _t("Favourite fighter"))); w.appendChild(acMk("b", "", fav.f.name)); w.appendChild(acMk("span", "ac-line", _t("{n} match|{n} matches", { n: fav.n })));
     d.appendChild(w); pan.appendChild(d);
   }
   const t = acMk("table", "fs-tab"), hd = acMk("tr");
-  for (const h of ["Fighter", "Wins", "Losses", "Win rate", "Mastery"]) hd.appendChild(acMk("th", "", h));
+  for (const h of [_t("Fighter"), _t("Wins"), _t("Losses"), _t("Win rate"), _t("Mastery")]) hd.appendChild(acMk("th", "", h));
   t.appendChild(acMk("thead")).appendChild(hd);
   const tb = acMk("tbody");
   for (const f of FIGHTERS) {
@@ -267,20 +267,20 @@ function renderStats() {
     acSetAvatar(a, f.id, P.pal[f.id] || 0); fn.appendChild(a); fn.appendChild(acMk("span", "", f.name)); c0.appendChild(fn); tr.appendChild(c0);
     tr.appendChild(acMk("td", m ? "" : "z", m ? String(w) : "0")); tr.appendChild(acMk("td", m ? "" : "z", m ? String(l) : "0"));
     tr.appendChild(acMk("td", m ? "" : "z", m ? Math.round((100 * w) / m) + "%" : "\u2013"));
-    { const mt = acMk("td", "mx-c"), lv = mxInfo(f.id).lv; mt.innerHTML = `${mxShieldHTML(lv)}<span>Lv ${lv}</span>`; tr.appendChild(mt); }   // ui/mastery.js
+    { const mt = acMk("td", "mx-c"), lv = mxInfo(f.id).lv; mt.innerHTML = `${mxShieldHTML(lv)}<span>${_t("Lv {n}", { n: lv })}</span>`; tr.appendChild(mt); }   // ui/mastery.js
     tb.appendChild(tr);
   }
   t.appendChild(tb); pan.appendChild(t);
   const hist = (P.history || []).slice(0, SYNC.HIST);
-  pan.appendChild(acMk("div", "kicker", `Last ${SYNC.HIST} ranked matches${rankView().online ? " vs a CPU" : ""}`));
-  if (!hist.length) { pan.appendChild(acMk("p", "ac-line", "No ranked matches yet.")); return; }
+  pan.appendChild(acMk("div", "kicker", rankView().online ? _t("Last {n} ranked matches vs a CPU", { n: SYNC.HIST }) : _t("Last {n} ranked matches", { n: SYNC.HIST })));
+  if (!hist.length) { pan.appendChild(acMk("p", "ac-line", _t("No ranked matches yet."))); return; }
   const ul = acMk("ul", "hx-list");
   for (const h of hist) {
     const me = FIG[h.me], op = FIG[h.op], li = acMk("li", "hx");
-    li.appendChild(acMk("i", "r " + (h.r === 1 ? "w" : h.r === 0 ? "l" : ""), h.r === 1 ? "W" : h.r === 0 ? "L" : "D"));
+    li.appendChild(acMk("i", "r " + (h.r === 1 ? "w" : h.r === 0 ? "l" : ""), h.r === 1 ? _t("W@@W for win, one letter") : h.r === 0 ? _t("L@@L for loss, one letter") : _t("D@@D for draw, one letter")));
     const a = acMk("span", "av"); acSetAvatar(a, h.me, 0); li.appendChild(a);
     const b2 = acMk("span", "av"); acSetAvatar(b2, h.op, 0); li.appendChild(b2);
-    li.appendChild(acMk("span", "vs", `${me ? me.name : h.me} vs ${op ? op.name : h.op}${h.opr ? ` ${h.opr}` : ""}`));
+    li.appendChild(acMk("span", "vs", `${_t("{a} vs {b}", { a: me ? me.name : h.me, b: op ? op.name : h.op })}${h.opr ? ` ${h.opr}` : ""}`));
     li.appendChild(acMk("b", h.d > 0 ? "up" : h.d < 0 ? "down" : "", (h.d > 0 ? "+" : "") + h.d));
     li.appendChild(acMk("small", "", h.t ? acAgo(h.t) : ""));
     ul.appendChild(li);
@@ -296,12 +296,12 @@ function renderStats() {
 const LKR = { id: "", tiles: [], cards: [], cardsFor: "", sig: "" };
 function lkBuild() {
   const pan = $("acPanL");
-  pan.innerHTML = '<div class="lk-top"><div class="lk-col" id="lkCol"></div><span class="lk-own" id="lkOwn"></span><div class="coin chips lk-coin" aria-label="Chips"><span id="lkTokens"></span></div></div>' +
-    '<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="Fighters"></div>' +
+  pan.innerHTML = `<div class="lk-top"><div class="lk-col" id="lkCol"></div><span class="lk-own" id="lkOwn"></span><div class="coin chips lk-coin" aria-label="${_t("Chips")}"><span id="lkTokens"></span></div></div>` +
+    `<div class="lk-strip" id="lkStrip" role="radiogroup" aria-label="${_t("Fighters")}"></div>` +
     '<div class="lk-rack" id="lkRack">' +
-    '<div class="lk-grp"><div class="lk-k"><b>Chip skins</b><span>bought with chips, worn for good</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="Chip skins"></div></div>' +
-    '<div class="lk-grp"><div class="lk-k"><b>Won skins</b><span id="lkRoadSub"></span></div><div class="lk-row r4" id="lkRoad" role="group" aria-label="Won skins"></div></div>' +
-    '<div class="lk-grp lk-pmg"><div class="lk-k"><b>Special skins</b><span>bought with Pommes</span></div><div class="lk-row r4" id="lkPm" role="group" aria-label="Special skins"></div></div></div>';
+    `<div class="lk-grp"><div class="lk-k"><b>${_t("Chip skins")}</b><span>${_t("bought with chips, worn for good")}</span></div><div class="lk-row r4" id="lkChip" role="group" aria-label="${_t("Chip skins")}"></div></div>` +
+    `<div class="lk-grp"><div class="lk-k"><b>${_t("Won skins")}</b><span id="lkRoadSub"></span></div><div class="lk-row r4" id="lkRoad" role="group" aria-label="${_t("Won skins")}"></div></div>` +
+    `<div class="lk-grp lk-pmg"><div class="lk-k"><b>${_t("Special skins")}</b><span>${_t("bought with Pommes")}</span></div><div class="lk-row r4" id="lkPm" role="group" aria-label="${_t("Special skins")}"></div></div></div>`;
   const strip = $("lkStrip");
   LKR.tiles = FIGHTERS.map((f) => {
     const b = acMk("button", "lk-tile");
@@ -349,7 +349,7 @@ function renderLocker() {
   const spec = FIG[LKR.id];
   // the top line: the Collection, the skins owned of all, the chips
   const cell = $("lkCol"); cell.innerHTML = ""; masteryCollection(cell);   // ui/mastery.js
-  $("lkOwn").innerHTML = `<b>${acSkinCount(P)} / ${acSkinTotal()}</b> skins`;
+  $("lkOwn").innerHTML = _t("<b>{n} / {t}</b> skins", { n: acSkinCount(P), t: acSkinTotal() });
   $("lkTokens").textContent = fmtChips(P.tokens);
   // the strip: a tile whose worn skin changed is drawn again
   for (const a of LKR.tiles) {
@@ -357,7 +357,7 @@ function renderLocker() {
     a.el.className = "lk-tile" + (on ? " on" : "") + (n >= f.palettes.length ? " full" : "");
     a.el.style.setProperty("--c", col(pal)); a.el.style.setProperty("--cg", rgba(col(pal), 0.42));
     a.el.setAttribute("aria-checked", String(on)); a.el.tabIndex = on ? 0 : -1;
-    a.el.setAttribute("aria-label", `${f.name}, wearing ${pal.name}, ${n} of ${f.palettes.length} skins`);
+    a.el.setAttribute("aria-label", _t("{name}, wearing {skin}, {n} of {t} skins", { name: f.name, skin: _tv(pal.name), n, t: f.palettes.length }));
     a.el.querySelector("small").innerHTML = `${n}<i>/${f.palettes.length}</i>`;
     if (a.key !== key) { a.key = key; a.f = lkFighter(f, pal); a.dirty = true; }
     if (glazeOn(a.f) !== glazeHas(f.id, pi)) { glazeMark(a.f, glazeHas(f.id, pi)); a.dirty = true; }   // ui/glaze.js
@@ -370,7 +370,7 @@ function renderLocker() {
     for (const a of LKR.cards) a.dirty = true;
     LKR.cardsFor = spec.id;
   }
-  $("lkRoadSub").innerHTML = `from the bosses and the Harvest<em>, with ${spec.name}</em>`;
+  $("lkRoadSub").innerHTML = _t("from the bosses and the Harvest<em>, with {name}</em>", { name: spec.name });
   for (const b of $("lkRack").querySelectorAll(".sk")) skStyle(b, spec, +b.dataset.i, false, true);
   for (const a of LKR.cards) if (glazeOn(a.f) !== glazeHas(spec.id, a.i)) { glazeMark(a.f, glazeHas(spec.id, a.i)); a.dirty = true; }   // ui/glaze.js
   lkPaint();
@@ -390,14 +390,14 @@ for (const b of document.querySelectorAll(".ac-tabs .chip")) {
 /* ----- the sheet: the sync section ----- */
 function acMsg(text, cls) { acUI.msg = text || ""; acUI.cls = cls || ""; const m = document.getElementById("acMsg"); if (m) { m.textContent = acUI.msg; m.className = "ac-msg" + (acUI.cls ? " " + acUI.cls : ""); } }
 function acStatusText() {
-  if (ACCT.op === "saving") return "Saving...";
+  if (ACCT.op === "saving") return _t("Saving...");
   if (acUI.err) return acUI.err;
-  return ACCT.t ? `Saved ${acAgo(ACCT.t)}` : "Not saved yet";
+  return ACCT.t ? _t("Saved {ago}", { ago: acAgo(ACCT.t) }) : _t("Not saved yet");
 }
 function renderStatus() { const s = document.getElementById("acStat"); if (s && !screens.account.hidden) s.textContent = acStatusText(); }
 function acctLink() { return location.origin + location.pathname.replace(/index\.html$/, "") + "#sync=" + ACCT.code; }
 function acCopy(text, btn, idle) {
-  const done = (ok) => { if (!ok) { acUI.manual = text; renderSync(); return; } btn.textContent = "Copied"; setTimeout(() => { if (btn.isConnected) btn.textContent = idle; }, 1800); };
+  const done = (ok) => { if (!ok) { acUI.manual = text; renderSync(); return; } btn.textContent = _t("Copied"); setTimeout(() => { if (btn.isConnected) btn.textContent = idle; }, 1800); };
   try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
 }
 function acSyncView() {
@@ -405,7 +405,7 @@ function acSyncView() {
   const head = (t) => box.appendChild(acMk("div", "kicker", t));
   const msg = (alt) => { const m = acMk("p", "ac-msg" + (acUI.cls ? " " + acUI.cls : ""), acUI.msg || alt || ""); m.id = "acMsg"; m.setAttribute("aria-live", "polite"); box.appendChild(m); };
   if (ACCT.code) {   // ----- linked
-    head("Saved to an account");
+    head(_t("Saved to an account"));
     const code = acMk("div", "ac-code");
     const flip = () => {   // tap the code or the button: show it for a while, tap again to hide it
       acUI.showCode = !acUI.showCode; clearTimeout(acShowT);
@@ -415,73 +415,73 @@ function acSyncView() {
     const cs = acMk("span", "", acUI.showCode ? SYNC.fmtCode(ACCT.code) : "\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022");
     if (!acUI.showCode) cs.addEventListener("click", () => { Sfx.init(); Sfx.ui(); flip(); });
     code.appendChild(cs);
-    code.appendChild(acBtn(acUI.showCode ? "Hide" : "Show", "chip", flip));
+    code.appendChild(acBtn(acUI.showCode ? _t("Hide") : _t("Show"), "chip", flip));
     box.appendChild(code);
-    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? "Write this code down and keep it private. It is the only way to get your progress back." : "This code gets your progress onto another device. Keep it private."));
+    box.appendChild(acMk("p", "ac-note" + (acUI.fresh ? " keep" : ""), acUI.fresh ? _t("Write this code down and keep it private. It is the only way to get your progress back.") : _t("This code gets your progress onto another device. Keep it private.")));
     const st = acMk("p", "ac-msg"); const sv = acMk("span", "", acStatusText()); sv.id = "acStat"; st.appendChild(sv);
     st.appendChild(document.createTextNode(" · "));
-    st.appendChild(acBtn("Sync now", "link", () => { acctSync(true); }));
+    st.appendChild(acBtn(_t("Sync now"), "link", () => { acctSync(true); }));
     box.appendChild(st);
     const row = acMk("div", "ac-row");
-    row.appendChild(acBtn("Copy code", "chip", (e, b) => acCopy(SYNC.fmtCode(ACCT.code), b, "Copy code")));
-    row.appendChild(acBtn("Copy link", "chip", (e, b) => acCopy(acctLink(), b, "Copy link")));
+    row.appendChild(acBtn(_t("Copy code"), "chip", (e, b) => acCopy(SYNC.fmtCode(ACCT.code), b, _t("Copy code"))));
+    row.appendChild(acBtn(_t("Copy link"), "chip", (e, b) => acCopy(acctLink(), b, _t("Copy link"))));
     box.appendChild(row);
     if (acUI.manual) { const t = acMk("div", "on-link", acUI.manual); box.appendChild(t); }
-    box.appendChild(acBtn(acUI.unlinkArmed ? "Tap again to unlink" : "Unlink this device", "link", () => {
+    box.appendChild(acBtn(acUI.unlinkArmed ? _t("Tap again to unlink") : _t("Unlink this device"), "link", () => {
       if (!acUI.unlinkArmed) { acUI.unlinkArmed = true; clearTimeout(acUnlinkT); acUnlinkT = setTimeout(() => { acUI.unlinkArmed = false; renderSync(); }, 6000); renderSync(); return; }
       acUI.unlinkArmed = false; acctUnlink();
     }));
     msg();
     return;
   }
-  head("Save your progress");
+  head(_t("Save your progress"));
   if (!acctOk || ACCT.avail === false) {   // ----- no accounts here (local file, test page, or the server has them off)
-    box.appendChild(acMk("p", "ac-note keep", "Saving to an account isn't available yet."));
+    box.appendChild(acMk("p", "ac-note keep", _t("Saving to an account isn't available yet.")));
     return;
   }
   if (ACCT.avail === null && !ACCT.pingFailed) {   // ----- asking the server whether it has accounts
-    box.appendChild(acMk("p", "ac-note keep", "Checking..."));
+    box.appendChild(acMk("p", "ac-note keep", _t("Checking...")));
     return;
   }
   if (acUI.view === "replace" && acUI.pend) {   // ----- linking would replace what this device has
     const pd = acUI.pend;
-    box.appendChild(acMk("p", "", "This device already has progress. Linking replaces it with the account's."));
-    const a = acMk("p", "ac-line"); a.appendChild(acMk("b", "", "This device: ")); a.appendChild(document.createTextNode(acSum(P))); box.appendChild(a);
-    const b = acMk("p", "ac-line"); b.appendChild(acMk("b", "", "Account: ")); b.appendChild(document.createTextNode(acSum(pd.S))); box.appendChild(b);
+    box.appendChild(acMk("p", "", _t("This device already has progress. Linking replaces it with the account's.")));
+    const a = acMk("p", "ac-line"); a.appendChild(acMk("b", "", _t("This device:"))); a.appendChild(document.createTextNode(" " + acSum(P))); box.appendChild(a);
+    const b = acMk("p", "ac-line"); b.appendChild(acMk("b", "", _t("Account:"))); b.appendChild(document.createTextNode(" " + acSum(pd.S))); box.appendChild(b);
     const row = acMk("div", "ac-row");
-    row.appendChild(acBtn("Use the account's", "chip on", () => { acUI.view = "main"; acctLinkNow(pd); }));
-    row.appendChild(acBtn("Cancel", "chip", () => { acUI.view = "main"; acUI.pend = null; acMsg(""); renderSync(); acctStripHash(); }));
+    row.appendChild(acBtn(_t("Use the account's"), "chip on", () => { acUI.view = "main"; acctLinkNow(pd); }));
+    row.appendChild(acBtn(_t("Cancel"), "chip", () => { acUI.view = "main"; acUI.pend = null; acMsg(""); renderSync(); acctStripHash(); }));
     box.appendChild(row);
     msg();
     return;
   }
   if (acUI.view === "enter") {   // ----- typing a code
-    box.appendChild(acMk("p", "", "Type the code from your other device, or paste its link."));
+    box.appendChild(acMk("p", "", _t("Type the code from your other device, or paste its link.")));
     const inp = acMk("input", "ac-in"); inp.id = "acCode"; inp.placeholder = "XXXX-XXXX-XXXX-XXXX"; inp.maxLength = 300;
-    inp.autocomplete = "off"; inp.spellcheck = false; inp.setAttribute("autocapitalize", "characters"); inp.setAttribute("aria-label", "Sync code");
+    inp.autocomplete = "off"; inp.spellcheck = false; inp.setAttribute("autocapitalize", "characters"); inp.setAttribute("aria-label", _t("Sync code"));
     inp.value = acUI.code;
     inp.addEventListener("input", () => { inp.value = acUI.code = SYNC.typing(inp.value); if (acUI.cls === "bad") acMsg(""); });
     inp.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") go.click(); });
     inp.addEventListener("keyup", (e) => e.stopPropagation());
     box.appendChild(inp);
     const row = acMk("div", "ac-row");
-    const go = acBtn("Link this device", "chip on", () => acctTryLink(inp.value));
+    const go = acBtn(_t("Link this device"), "chip on", () => acctTryLink(inp.value));
     go.disabled = acUI.busy;
     row.appendChild(go);
-    row.appendChild(acBtn("Cancel", "chip", () => { acUI.view = "main"; acUI.code = ""; acMsg(""); renderSync(); }));
+    row.appendChild(acBtn(_t("Cancel"), "chip", () => { acUI.view = "main"; acUI.code = ""; acMsg(""); renderSync(); }));
     box.appendChild(row);
     msg();
     return;
   }
   // ----- not linked
-  box.appendChild(acMk("p", "ac-note keep", "Get a code to keep your rating, chips and skins safe, and to play on another device."));
-  const make = acBtn("Save my progress", "btn primary", () => acctCreate());
+  box.appendChild(acMk("p", "ac-note keep", _t("Get a code to keep your rating, chips and skins safe, and to play on another device.")));
+  const make = acBtn(_t("Save my progress"), "btn primary", () => acctCreate());
   make.disabled = acUI.busy; box.appendChild(make);
   const row = acMk("div", "ac-row");
-  row.appendChild(acBtn("I have a code", "link", () => { acUI.view = "enter"; acMsg(""); renderSync(); const i = document.getElementById("acCode"); if (i) i.focus(); }));
-  if (ACCT.pingFailed) row.appendChild(acBtn("Try again", "link", () => acctPing(true)));
+  row.appendChild(acBtn(_t("I have a code"), "link", () => { acUI.view = "enter"; acMsg(""); renderSync(); const i = document.getElementById("acCode"); if (i) i.focus(); }));
+  if (ACCT.pingFailed) row.appendChild(acBtn(_t("Try again"), "link", () => acctPing(true)));
   box.appendChild(row);
-  msg(ACCT.pingFailed ? "Couldn't reach the server. Try again later." : "");
+  msg(ACCT.pingFailed ? _t("Couldn't reach the server. Try again later.") : "");
 }
 function renderSync() { if (!screens.account.hidden) acSyncView(); }
 
@@ -511,12 +511,12 @@ async function acctPing(again) {
   renderSync();
 }
 function acctFail(r, what) {   // the words for a call that did not work
-  if (r.s === 400) return ["That code doesn't look right.", "bad"];
-  if (r.s === 404 && r.j && r.j.error === "unknown") return ["No account has that code.", "bad"];
-  if (r.s === 404) { ACCT.avail = false; return ["Saving to an account isn't available yet.", ""]; }
-  if (r.s === 429) return ["Too many tries. Please wait a minute.", ""];
-  if (r.s === 503) return ["The server is full right now.", ""];
-  return [what || "Couldn't reach the server. Try again later.", ""];
+  if (r.s === 400) return [_t("That code doesn't look right."), "bad"];
+  if (r.s === 404 && r.j && r.j.error === "unknown") return [_t("No account has that code."), "bad"];
+  if (r.s === 404) { ACCT.avail = false; return [_t("Saving to an account isn't available yet."), ""]; }
+  if (r.s === 429) return [_t("Too many tries. Please wait a minute."), ""];
+  if (r.s === 503) return [_t("The server is full right now."), ""];
+  return [what || _t("Couldn't reach the server. Try again later."), ""];
 }
 
 /* ----- linking ----- */
@@ -535,15 +535,15 @@ function acctLinkNow(d) {
   try { acctApplyProf(d.S); } finally { acctApplying = false; }
   ACCT.lastC = SYNC.canon(acctSnap());
   acctStore(); acctStripHash();
-  acMsg("Linked. Your progress is now on this device.", "ok");
+  acMsg(_t("Linked. Your progress is now on this device."), "ok");
   renderMenu(); renderSync();
   if (!SYNC.same(acctSnap(), ACCT.base)) acctSoon(300);   // e.g. the account had no name yet
 }
 async function acctTryLink(raw) {
   const code = SYNC.normCode(raw);
-  if (!code) { acMsg("That code doesn't look right.", "bad"); return; }
+  if (!code) { acMsg(_t("That code doesn't look right."), "bad"); return; }
   if (acUI.busy) return;
-  acUI.busy = true; acMsg("Looking...", ""); renderSync();
+  acUI.busy = true; acMsg(_t("Looking..."), ""); renderSync();
   const r = await acctCall("load", { code });
   acUI.busy = false;
   if (r.s === 200 && r.j && r.j.prof && Number.isSafeInteger(r.j.rev)) {
@@ -559,7 +559,7 @@ async function acctTryLink(raw) {
 }
 async function acctCreate() {
   if (acUI.busy) return;
-  acUI.busy = true; acMsg("Saving...", ""); renderSync();
+  acUI.busy = true; acMsg(_t("Saving..."), ""); renderSync();
   const prof = acctSnap();
   const r = await acctCall("new", { prof });
   acUI.busy = false;
@@ -573,14 +573,14 @@ async function acctCreate() {
     renderSync();
     return;
   }
-  const [t, c] = acctFail(r, "Couldn't save. Try again later.");
+  const [t, c] = acctFail(r, _t("Couldn't save. Try again later."));
   acMsg(t, c); renderSync();
 }
 function acctUnlink() {
   clearTimeout(acctTimer); clearTimeout(acShowT); acctRetryMs = 0; acctAgain = false;
   ACCT.code = ""; ACCT.rev = 0; ACCT.base = null; ACCT.t = 0; ACCT.lt = 0; ACCT.force = false; ACCT.op = "";
   acUI.err = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = ""; acUI.view = "main";
-  acctStore(); acMsg("This device is no longer linked. Its progress stays here.", "");
+  acctStore(); acMsg(_t("This device is no longer linked. Its progress stays here."), "");
   renderAccount(); acctPing();
 }
 
@@ -628,16 +628,16 @@ async function acctSync(now) {
         if (forced) { ACCT.rev = r.j.rev; acctStore(); }                                      // a reset: this device's copy wins
         else acctTake(SYNC.sanitize(r.j.prof, FIGHTERS), r.j.rev, r.j.t);
       } else {   // one quiet line, and another try later
-        if (r.s === 404 && r.j && r.j.error === "unknown") { acUI.err = "This account isn't on the server any more."; }
-        else if (r.s === 0) { acUI.err = "Couldn't reach the server. Will try again."; retry = acctRetryMs = Math.min(300000, (acctRetryMs || 15000) * 2); }
-        else if (r.s === 404) { ACCT.avail = false; acUI.err = "Saving to an account isn't available right now."; retry = 300000; }
-        else if (r.s === 429) { acUI.err = "Too many requests. Will try again soon."; retry = 90000; }
-        else { acUI.err = "Couldn't save. Will try again."; retry = 60000; }
+        if (r.s === 404 && r.j && r.j.error === "unknown") { acUI.err = _t("This account isn't on the server any more."); }
+        else if (r.s === 0) { acUI.err = _t("Couldn't reach the server. Will try again."); retry = acctRetryMs = Math.min(300000, (acctRetryMs || 15000) * 2); }
+        else if (r.s === 404) { ACCT.avail = false; acUI.err = _t("Saving to an account isn't available right now."); retry = 300000; }
+        else if (r.s === 429) { acUI.err = _t("Too many requests. Will try again soon."); retry = 90000; }
+        else { acUI.err = _t("Couldn't save. Will try again."); retry = 60000; }
         break;
       }
       if (!(ACCT.force || !SYNC.same(acctSnap(), ACCT.base))) break;   // nothing left to send
     }
-  } catch (e) { acUI.err = "Couldn't save. Will try again."; retry = 60000; }
+  } catch (e) { acUI.err = _t("Couldn't save. Will try again."); retry = 60000; }
   ACCT.op = ""; acctBusy = false;
   renderStatus(); renderSync();
   if (acctAgain) { acctAgain = false; acctSoon(300); } else if (retry) acctSoon(retry);
@@ -697,7 +697,7 @@ setTimeout(() => {
   const code = ACCT.hash;
   if (!acctOk) { acctStripHash(); return; }
   if (ACCT.code) {   // already linked
-    openAccount(); acMsg(ACCT.code === code ? "This device is already linked to that account." : "This device is linked to another account. Unlink it first to use a different code.", ""); renderSync(); acctStripHash(); return;
+    openAccount(); acMsg(ACCT.code === code ? _t("This device is already linked to that account.") : _t("This device is linked to another account. Unlink it first to use a different code."), ""); renderSync(); acctStripHash(); return;
   }
   openAccount();
   acctTryLink(code).then(() => { if (acUI.view !== "replace") acctStripHash(); });

@@ -61,7 +61,7 @@ function finPuppet(f, x, facing, role) {
 }
 // Called when the sim says the match is over; returns true while the cinematic still holds the results.
 // the name card's word: YOU WIN on your own page; on your partner's in a boss fight WINS IT (so it reads as the team's win)
-const finWinWord = (W) => (W.slot === meSlot ? "YOU WIN" : G && G.fighters.length > 2 && !W.spec.boss ? "WINS IT" : "WINS");
+const finWinWord = (W) => (W.slot === meSlot ? _t("YOU WIN") : G && G.fighters.length > 2 && !W.spec.boss ? _t("WINS IT") : _t("WINS"));
 function finHold(fn) { if (!FIN.on) return false; FIN.finish = fn; return true; }
 function finEnd() {
   if (!FIN.on) return;
@@ -116,15 +116,15 @@ function finishBan(g, attSlot) {
   finBanAt = now;
   const a = g.fighters[attSlot];
   if (!a) return;
-  finBanEl.style.setProperty("--fb", col(a.pal)); finBanT.textContent = FIN_NAME[a.spec.id] || `${a.spec.signature.name} finish`;
+  finBanEl.style.setProperty("--fb", col(a.pal)); finBanT.textContent = FIN_NAME[a.spec.id] || _t("{move} finish", { move: _tv(a.spec.signature.name) });
   finBanEl.hidden = false; fxRestart(finBanEl, "go");
   finSfx(() => { Sfx.noise(0.07, 0.9, 6500); Sfx.noise(0.55, 0.85, 1000); Sfx.tone(150, 34, 0.6, "sawtooth", 0.3); Sfx.tone(2300, 260, 0.14, "square", 0.06); });
 }
 // a finishing special with its own name on the band, the Finish! banner and the Special button (the Gunslinger's golden bullet, the Reaper's hook)
 const FIN_NAME = { gunslinger: "High Noon", reaper: "Last Rites" };
-const finName = (spec) => FIN_NAME[spec.id] || spec.signature.name;
+const finName = (spec) => FIN_NAME[spec.id] || _tv(spec.signature.name);
 // what the results screen calls the finisher: the finishing special's own name, else the title of the fighter's manga page (Inferno, One Cut ...)
-const finTitle = (spec) => FIN_NAME[spec.id] || (MANGA[spec.id] && MANGA[spec.id].name) || spec.signature.name;
+const finTitle = (spec) => FIN_NAME[spec.id] || (MANGA[spec.id] && MANGA[spec.id].name) || _tv(spec.signature.name);
 // an Ultimate KO: the title of the fighter's own Ultimate page (Hundred Petals ...), else the ultimate's name (Mutagen Cloud ...)
 const finUltiTitle = (spec) => (MANGA[spec.id] && MANGA[spec.id].ulti && MANGA[spec.id].ulti.name) || (spec.ultimate && spec.ultimate.name) || finTitle(spec);
 // "hit" event with fin:true (called from the hit case in effects.js): a finishing special landed, lethal or not
@@ -780,7 +780,7 @@ function finOverlay(o, tk) {
   o.fillStyle = "#05050b"; o.fillRect(0, 0, L.gw, bar); o.fillRect(0, L.gh - bar, L.gw, bar);
   if (bar > 14 && FIN.cut) {
     o.font = `600 ${Math.round(clamp(bar * 0.34, 10, 14))}px system-ui, sans-serif`; o.textAlign = "right"; o.textBaseline = "middle";
-    o.fillStyle = "rgba(217,212,234,0.6)"; o.fillText(touchUI ? "Tap to skip" : "Click or press a key to skip", L.gw - 16, L.gh - bar / 2);
+    o.fillStyle = "rgba(217,212,234,0.6)"; o.fillText(touchUI ? _t("Tap to skip") : _t("Click or press a key to skip"), L.gw - 16, L.gh - bar / 2);
   }
   // fade towards the results screen
   const fade = fe(FT.END - 260, FT.END, t);

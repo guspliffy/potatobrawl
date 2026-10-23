@@ -28,12 +28,26 @@ $("turnUp").addEventListener("click", () => { Sfx.init(); P.screen = "up"; saveP
 // nothing under the screen hears a touch that lands on it
 $("turn").addEventListener("pointerdown", (e) => e.stopPropagation());
 
+// The few sentences in shell.html that an inline tag cuts in two (a bold word inside) are marked translate="no" there, because _tDom would translate the
+// pieces one by one. Here each is ONE _t text over the whole sentence, tags included, and goes into the same place (in English it is the page's own markup).
+function wlSentences() {
+  const put = (el, html) => { if (el) el.innerHTML = html; };
+  put($("a2hsHint").firstElementChild, _t("Play without the browser bars: tap Share, then <b>Add to Home Screen</b>. The app keeps its own progress."));
+  const steps = document.querySelectorAll("#scrA2hs .a2hs-steps li > span:last-child");   // the Fullscreen sheet's two steps
+  put(steps[0], _t("Tap <b>Share</b> in the browser's bar"));
+  put(steps[1], _t("Then <b>Add to Home Screen</b>"));
+  put($("qmToV"), _t("Want it to count? · <b>VS CPU</b> ›"));   // Quick match (vscpu.js shows it)
+  put(document.querySelector("#scrSeason .ss-ls p"), _t("<b>Ranked is online now:</b> real players, and the server keeps the score."));   // the Season 1 sheet
+}
+wlSentences();
+
 const WEL = { on: false, g: null, tm: 0 };
 screens.welcome = $("scrWelcome");
 function welcomeSeed() {   // the attract fight is new now and then: its first fighter always starts at 110%
   if (attract && WEL.g !== attract.g) { WEL.g = attract.g; attract.g.fighters[0].percent = 110; }
 }
 function welcomeOpen() {
+  langWel();   // ui/lang.js: the five languages under the buttons
   WEL.on = true;
   show(null); modal("welcome", true);   // show(null) hides the menu
   welcomeSeed();

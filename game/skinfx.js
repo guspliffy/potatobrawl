@@ -7,23 +7,23 @@
    fighter; and they are the first thing dropped when a phone can't keep up. Both players' skins
    are part of the online match setup, so both screens show the same effects. */
 const FXTEXT = {
-  phoenix: ["", "Embers drift off the wings", "Embers, plus a flame ring on every air jump", "Embers, flame rings, wings that flicker like fire and a flare on every KO"],
-  alchemist: ["", "Green drips from the hood", "Drips, plus a vapour trail on the toxic orb", "Drips, vapour trail, glowing eyes and two-colour zaps"],
-  odin: ["", "Feathers drift when the raven comes back", "Feathers, plus frosty breath", "Feathers, frosty breath, glowing runes on the armour and a rune ring on every KO"],
-  wizard: ["", "Sparkles circle the staff tip", "Sparkles, plus a glitter trail on the bolt", "Sparkles, glitter, twinkling stars on the hat and a star trail on every KO"],
-  samurai: ["", "Petals drift while running", "Petals, plus ink-brush slashes", "Petals, ink slashes, a glowing blade and a flash line on Quick Draw"],
-  dragon: ["", "Smoke curls from his mouth", "Smoke, plus a gust ring on every wing flap", "Smoke, gusts, glowing wing bones and a fire roar on every KO"],
-  gunslinger: ["", "Smoke curls from the barrels", "Smoke, plus brass shells on every Twin Shot", "Smoke, shells, gold pistols and a gold burst on every KO"],
-  reaper: ["", "Dark wisps drift off the hood", "Wisps, plus amber soul sparks on every scythe swing", "Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO"],
+  phoenix: ["", _t("Embers drift off the wings"), _t("Embers, plus a flame ring on every air jump"), _t("Embers, flame rings, wings that flicker like fire and a flare on every KO")],
+  alchemist: ["", _t("Green drips from the hood"), _t("Drips, plus a vapour trail on the toxic orb"), _t("Drips, vapour trail, glowing eyes and two-colour zaps")],
+  odin: ["", _t("Feathers drift when the raven comes back"), _t("Feathers, plus frosty breath"), _t("Feathers, frosty breath, glowing runes on the armour and a rune ring on every KO")],
+  wizard: ["", _t("Sparkles circle the staff tip"), _t("Sparkles, plus a glitter trail on the bolt"), _t("Sparkles, glitter, twinkling stars on the hat and a star trail on every KO")],
+  samurai: ["", _t("Petals drift while running"), _t("Petals, plus ink-brush slashes"), _t("Petals, ink slashes, a glowing blade and a flash line on Quick Draw")],
+  dragon: ["", _t("Smoke curls from his mouth"), _t("Smoke, plus a gust ring on every wing flap"), _t("Smoke, gusts, glowing wing bones and a fire roar on every KO")],
+  gunslinger: ["", _t("Smoke curls from the barrels"), _t("Smoke, plus brass shells on every Twin Shot"), _t("Smoke, shells, gold pistols and a gold burst on every KO")],
+  reaper: ["", _t("Dark wisps drift off the hood"), _t("Wisps, plus amber soul sparks on every scythe swing"), _t("Wisps, soul sparks, a ghost-lit blade and a soul burst on every KO")],
 };
 // a Road skin (palettes 4-6, pal.road = the boss that gives it), the Harvest skin (palette 7, pal.road = "harvest", ui/harvest.js) and a
 // Pommes skin (palettes 8-9, pal.pommes = the line) have none of the chip skins' effects: their own overlay (skinRoad, skinPm)
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road || f.pal.pommes ? 0 : i; };
 const skinRoad = (f) => (f.pal && f.pal.road) || "";
 // what each Road skin does (the select screen's note)
-const ROADFX = { scratch: "Roasted dark at the feet, with ember cracks that glow and spit sparks",
-  zorp: "A glass specimen dome over the head and a green glow from below", kraken: "A wet sheen, barnacles, a starfish and a strand of kelp",
-  harvest: "A sun-warmed sheen with twinkling gold dust that drifts off and bursts on every KO" };
+const ROADFX = { scratch: _t("Roasted dark at the feet, with ember cracks that glow and spit sparks"),
+  zorp: _t("A glass specimen dome over the head and a green glow from below"), kraken: _t("A wet sheen, barnacles, a starfish and a strand of kelp"),
+  harvest: _t("A sun-warmed sheen with twinkling gold dust that drifts off and bursts on every KO") };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [0, 1, 2, 3].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three, a 2v2 four)
@@ -398,8 +398,8 @@ function roadSkinKo(k, rs) {
    two inks (ui/draw-fighters.js noirOn). */
 const skinPm = (f) => (f && f.pal && f.pal.pommes) || 0;
 // what each Pommes line does (the select screen and the Skin Rack)
-const PMFX = { 1: "Inked like a manga page: halftone shading, a boiling outline, ink strokes on dashes and hits and an inked KO",
-  2: "A night sky inside: a breathing nebula, twinkling stars, a comet in orbit, stardust and a starburst on every KO" };
+const PMFX = { 1: _t("Inked like a manga page: halftone shading, a boiling outline, ink strokes on dashes and hits and an inked KO"),
+  2: _t("A night sky inside: a breathing nebula, twinkling stars, a comet in orbit, stardust and a starburst on every KO") };
 const PMSK_INK = "#1b1a22", PMSK_PAPER = "#ece2cc", PMSK_TAU = Math.PI * 2;
 // Ink Noir: where the halftone starts, as a share of the potato's height below its top (0.45: the lower 55 %), under each costume's face and hood
 const PMSK_DOTS = { phoenix: 0.45, alchemist: 0.6, odin: 0.5, wizard: 0.4, samurai: 0.5, dragon: 0.45, gunslinger: 0.55, reaper: 0.65 };

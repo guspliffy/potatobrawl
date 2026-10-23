@@ -18,7 +18,7 @@
 screens.pshop = $("scrPshop");
 const PS = { id: "", on: false, arm: "", armT: 0, wait: "", why: "", claim: false, msgT: 0, raf: 0, tmr: 0, made: false, fin: [], sk: [], strip: [], ad: null, pk: null, mk: null, adN: -1, hiT: 0, pulseT: 0, ret: null };
 const PS_WORD_CLASSIC = "KO";
-const PS_SOON_AD = "Ads come soon: they pay Pommes without paying anything.";
+const PS_SOON_AD = _t("Ads come soon: they pay Pommes without paying anything.");
 const psMk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const psCalm = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 const psCone = (cls) => `<i class="ps-cone${cls ? " " + cls : ""}" aria-hidden="true"></i>`;
@@ -48,7 +48,7 @@ function psFinCard(k) {
   const info = psMk("span", "ps-info"), nm = psMk("b", "ps-nm"), ln = psMk("span", "ps-ln"), pr = psMk("span", "ps-pr"), btn = psMk("span", "ps-btn"), badge = psMk("i", "ps-badge");
   main.type = "button";
   badge.setAttribute("aria-hidden", "true"); word.setAttribute("aria-hidden", "true"); pic.setAttribute("aria-hidden", "true"); btn.setAttribute("aria-hidden", "true");
-  if (sh) { art.innerHTML = PS_DICE; art.classList.add("ps-dice"); nm.textContent = "Shuffle"; }
+  if (sh) { art.innerHTML = PS_DICE; art.classList.add("ps-dice"); nm.textContent = _t("Shuffle"); }
   else art.append(word, pic);
   info.append(nm, ln, pr, btn);
   main.append(art, info);
@@ -56,7 +56,7 @@ function psFinCard(k) {
   const c = { kind: "fin", k, key: sh ? "sh" : "p" + k, el, main, art, word, pic, nm, ln, pr, btn, badge, go: null };
   if (!sh) {
     const go = psMk("button", "ps-go");
-    go.type = "button"; go.innerHTML = PS_PLAY + `<span aria-hidden="true">Watch</span>`;
+    go.type = "button"; go.innerHTML = PS_PLAY + `<span aria-hidden="true">${_t("Watch")}</span>`;
     go.addEventListener("click", () => psWatch(k));
     el.appendChild(go); c.go = go;
   }
@@ -103,11 +103,11 @@ function psBuild() {
   const get = $("psGet");
   const ad = psMk("button", "ps-tile ps-ad"), pk = psMk("div", "ps-tile ps-pk"), mk = psMk("div", "ps-tile ps-mk");
   ad.type = "button";
-  ad.innerHTML = `<span class="ps-ti">${PS_PLAY}</span><span class="ps-tx"><b>Watch an ad</b><small></small></span><span class="ps-tv"><span class="ps-tn">+10</span><span class="ps-tu">${psCone()}Pommes</span></span><i class="ps-soon" aria-hidden="true">Soon</i>`;
-  pk.innerHTML = `<span class="ps-ti">${psCone("big")}</span><span class="ps-tx"><b>${KO_PRICE} Pommes</b><small>one page or skin</small></span><span class="ps-tv"><span class="ps-tn">${KO_EUR}</span></span><i class="ps-soon" aria-hidden="true">Soon</i>`;
-  mk.innerHTML = `<span class="ps-ti">${psCone("big")}</span><span class="ps-tx"><b>Pommes live on your account</b><small>make a sync code to buy, earn and keep them</small></span><button type="button" class="ps-mkb"><span>Make a code</span></button>`;
+  ad.innerHTML = `<span class="ps-ti">${PS_PLAY}</span><span class="ps-tx"><b>${_t("Watch an ad")}</b><small></small></span><span class="ps-tv"><span class="ps-tn">+10</span><span class="ps-tu">${psCone()}Pommes</span></span><i class="ps-soon" aria-hidden="true">${_t("Soon")}</i>`;
+  pk.innerHTML = `<span class="ps-ti">${psCone("big")}</span><span class="ps-tx"><b>${KO_PRICE} Pommes</b><small>${_t("one page or skin")}</small></span><span class="ps-tv"><span class="ps-tn">${KO_EUR}</span></span><i class="ps-soon" aria-hidden="true">${_t("Soon")}</i>`;
+  mk.innerHTML = `<span class="ps-ti">${psCone("big")}</span><span class="ps-tx"><b>${_t("Pommes live on your account")}</b><small>${_t("make a sync code to buy, earn and keep them")}</small></span><button type="button" class="ps-mkb"><span>${_t("Make a code")}</span></button>`;
   ad.addEventListener("click", psAdTap);
-  pk.addEventListener("click", () => { if (KO.buy) { Sfx.init(); Sfx.ui(); psSay("Buying Pommes opens soon."); } });
+  pk.addEventListener("click", () => { if (KO.buy) { Sfx.init(); Sfx.ui(); psSay(_t("Buying Pommes opens soon.")); } });
   pk.addEventListener("keydown", (e) => { if (KO.buy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pk.click(); } });
   mk.querySelector(".ps-mkb").addEventListener("click", () => { Sfx.init(); Sfx.ui(); pshopClose(); openAccount("p"); });
   PS.ad = ad; PS.pk = pk; PS.mk = mk;
@@ -170,17 +170,17 @@ function psFill() {
   const src = PORTRAITS[id] ? `url("${PORTRAITS[id]}")` : "";
   for (const c of PS.fin) {
     if (c.k === "s") continue;
-    const pg = c.k === 0 ? { name: "Classic", word: PS_WORD_CLASSIC } : koPage(id, c.k);
+    const pg = c.k === 0 ? { name: _t("Classic"), word: PS_WORD_CLASSIC } : koPage(id, c.k);
     c.pic.style.backgroundImage = src;
     c.word.textContent = pg.word; c.word.style.setProperty("--wn", String(Math.max(3, pg.word.length)));
     c.nm.textContent = pg.name; c.nm.style.setProperty("--nl", String(Math.max(6, pg.name.length)));
-    c.ln.innerHTML = c.k === 0 ? `<span class="f">${spec.name}'s </span>normal KO` : `<span class="f">${spec.name} · </span>Potatality ${c.k}`;   // the fighter's name goes first when the card is narrow
+    c.ln.innerHTML = c.k === 0 ? _t('<span class="f">{name}\'s </span>normal KO', { name: spec.name }) : _t('<span class="f">{name} · </span>Potatality {n}', { name: spec.name, n: c.k });   // the fighter's name goes first when the card is narrow
   }
   for (const c of PS.sk) {
     const i = koSkinIdx(id, c.n), pal = i >= 0 ? spec.palettes[i] : null;
     c.pal = i;
-    c.nm.textContent = pal ? pal.name : c.n === 1 ? "Ink Noir" : "Starfall"; c.nm.style.setProperty("--nl", String(Math.max(6, c.nm.textContent.length)));
-    c.ln.innerHTML = `<span class="f">${spec.name} · </span>${c.n === 1 ? "manga ink" : "night sky"}`;
+    c.nm.textContent = pal ? _tv(pal.name) : c.n === 1 ? _t("Ink Noir") : _t("Starfall"); c.nm.style.setProperty("--nl", String(Math.max(6, c.nm.textContent.length)));
+    c.ln.innerHTML = c.n === 1 ? _t('<span class="f">{name} · </span>manga ink', { name: spec.name }) : _t('<span class="f">{name} · </span>night sky', { name: spec.name });
     c.el.style.setProperty("--c", pal ? col(pal) : "#ff4f4f");
     if (pal) {
       const f = BL.newGame({ seed: 1, players: [{ spec, pal }, { spec, pal }], countdown: 1 }).fighters[0];
@@ -234,40 +234,40 @@ function psStyle() {
   const id = PS.id, spec = psSpec(), pick = koPick(id), bal = koBal(), mix = pick === "s";
   $("psBal").innerHTML = `${psCone()}<b>${fmtChips(bal)}</b> <span>Pommes</span>`;
   $("psBal").classList.toggle("zero", !(bal > 0));
-  $("psBal").setAttribute("aria-label", `${fmtChips(bal)} Pommes`);
+  $("psBal").setAttribute("aria-label", _t("{c} Pommes", { c: fmtChips(bal) }));
   for (const c of PS.fin) {
     const st = psFinState(c), name = c.nm.textContent;
     if (c.k === "s") {
       const u = psUsable().length, on = pick === "s";
-      c.nm.textContent = "Shuffle"; c.nm.style.setProperty("--nl", "7");
-      c.ln.innerHTML = `<span class="l">a random owned one each KO</span><span class="s">random owned</span>`;
-      const hint = u === 0 ? `<span class="l">buy a Potatality</span><span class="s">buy a page</span>` : `<span class="l">buy one more page</span><span class="s">buy 1 more</span>`;
-      psSet(c, st, on, false, false, false, st === "off" ? `Shuffle: ${u === 0 ? "buy a Potatality first" : "needs two Potatalities"}` : `Shuffle: a random owned page each KO${on ? ", plays" : ", tap to use"}`, "", on ? "Plays ✓" : "Use");
+      c.nm.textContent = _t("Shuffle"); c.nm.style.setProperty("--nl", "7");
+      c.ln.innerHTML = `<span class="l">${_t("a random owned one each KO")}</span><span class="s">${_t("random owned")}</span>`;
+      const hint = u === 0 ? `<span class="l">${_t("buy a Potatality")}</span><span class="s">${_t("buy a page")}</span>` : `<span class="l">${_t("buy one more page")}</span><span class="s">${_t("buy 1 more")}</span>`;
+      psSet(c, st, on, false, false, false, st === "off" ? (u === 0 ? _t("Shuffle: buy a Potatality first") : _t("Shuffle: needs two Potatalities")) : (on ? _t("Shuffle: a random owned page each KO, plays") : _t("Shuffle: a random owned page each KO, tap to use")), "", on ? _t("Plays ✓") : _t("Use"));
       c.pr.innerHTML = st === "off" ? hint : "";
       c.main.setAttribute("aria-pressed", String(on));
-      c.badge.textContent = on ? "Plays" : "";
+      c.badge.textContent = on ? _t("Plays") : "";
       continue;
     }
     const n = c.k, item = n ? psPageItem(n) : "", on = pick === n, inMix = mix && n > 0 && st === "own", arm = PS.arm === item && st === "buy", busy = !!item && KO.busy === item;
-    const btn = st === "soon" ? "Soon" : busy ? "…" : arm ? "Sure?" : st === "own" ? (on ? "Plays ✓" : inMix ? "In the mix" : "Use") : "Buy";
-    const price = n === 0 ? "Free" : st === "own" ? "Owned" : st === "soon" ? "Soon" : psPrice();
-    const label = st === "soon" ? `${name}: not drawn yet, coming soon` : st === "own" ? `${name}, ${spec.name}'s ${n ? "Potatality " + n : "classic KO"}: ${on ? "plays on your KO" : inMix ? "in the mix" : "tap to use"}`
-      : `${name}, ${spec.name}'s Potatality ${n}: ${busy ? "buying" : arm ? "tap again to buy" : `${KO_PRICE} Pommes, ${KO_EUR}`}`;
+    const btn = st === "soon" ? _t("Soon") : busy ? "…" : arm ? _t("Sure?") : st === "own" ? (on ? _t("Plays ✓") : inMix ? _t("In the mix") : _t("Use")) : _t("Buy");
+    const price = n === 0 ? _t("Free@@price") : st === "own" ? _t("Owned") : st === "soon" ? _t("Soon") : psPrice();
+    const label = st === "soon" ? _t("{name}: not drawn yet, coming soon", { name }) : st === "own" ? _t("{name}, {fighter}'s {what}: {say}", { name, fighter: spec.name, what: n ? _t("Potatality {n}", { n }) : _t("classic KO"), say: on ? _t("plays on your KO") : inMix ? _t("in the mix") : _t("tap to use") })
+      : _t("{name}, {fighter}'s Potatality {n}: {say}", { name, fighter: spec.name, n, say: busy ? _t("buying") : arm ? _t("tap again to buy") : _t("{p} Pommes, {e}", { p: KO_PRICE, e: KO_EUR }) });
     psSet(c, st, on, inMix, arm, busy, label, price, btn);
-    c.badge.textContent = on ? "Plays" : inMix ? "In mix" : "";
+    c.badge.textContent = on ? _t("Plays") : inMix ? _t("In mix") : "";
     c.main.setAttribute("aria-pressed", st === "own" ? String(on) : "false");
     if (c.go) {
       const can = n === 0 || koHas(id, n);
       c.go.disabled = !can;
-      c.go.setAttribute("aria-label", can ? `Watch ${name}` : `Watch ${name}: not drawn yet`);
+      c.go.setAttribute("aria-label", can ? _t("Watch {name}", { name }) : _t("Watch {name}: not drawn yet", { name }));
     }
   }
   for (const c of PS.sk) {
     const st = psSkinState(c), item = psSkinItem(c.n), arm = PS.arm === item && st === "buy", busy = KO.busy === item, worn = st === "worn", name = c.nm.textContent;
-    const btn = st === "soon" ? "Soon" : busy ? "…" : arm ? "Sure?" : worn ? "Worn ✓" : st === "own" ? "Wear" : "Buy";
-    const price = st === "own" || st === "worn" ? "Owned" : st === "soon" ? "Soon" : psPrice();
-    psSet(c, st, false, false, arm, busy, `${name} skin for ${spec.name}: ${worn ? "worn" : st === "own" ? "owned, tap to wear" : busy ? "buying" : arm ? "tap again to buy" : `${KO_PRICE} Pommes, ${KO_EUR}`}`, price, btn);
-    c.badge.textContent = worn ? "Worn" : "";
+    const btn = st === "soon" ? _t("Soon") : busy ? "…" : arm ? _t("Sure?") : worn ? _t("Worn ✓") : st === "own" ? _t("Wear") : _t("Buy");
+    const price = st === "own" || st === "worn" ? _t("Owned") : st === "soon" ? _t("Soon") : psPrice();
+    psSet(c, st, false, false, arm, busy, _t("{name} skin for {fighter}: {say}", { name, fighter: spec.name, say: worn ? _t("worn") : st === "own" ? _t("owned, tap to wear") : busy ? _t("buying") : arm ? _t("tap again to buy") : _t("{p} Pommes, {e}", { p: KO_PRICE, e: KO_EUR }) }), price, btn);
+    c.badge.textContent = worn ? _t("Worn") : "";
     c.main.setAttribute("aria-pressed", st === "own" || worn ? String(worn) : "false");
   }
   psGet();
@@ -289,16 +289,16 @@ function psGet() {
   $("psGet").classList.toggle("nocode", !has);
   if (!has) return;
   const st = psAdState(), left = koAdLeft(), sub = ad.querySelector("small");
-  const words = { soon: "ads come soon", gone: "back tomorrow", wait: `in ${psAdWait()}s`, busy: "…", load: "looking for one…", none: "no ad now, tap to retry", idle: "tap to look for one", ready: `${KO.adN} of ${KO.adMax} today` };
+  const words = { soon: _t("ads come soon"), gone: _t("back tomorrow"), wait: _t("in {n}s", { n: psAdWait() }), busy: "…", load: _t("looking for one…"), none: _t("no ad now, tap to retry"), idle: _t("tap to look for one"), ready: _t("{n} of {m} today", { n: KO.adN, m: KO.adMax }) };
   sub.textContent = words[st];
   for (const s of ["soon", "gone", "wait", "busy", "load", "ready", "none", "idle"]) ad.classList.toggle(s, s === st);
   ad.setAttribute("aria-disabled", String(st === "soon" || st === "gone" || st === "busy" || st === "load" || st === "wait"));
-  ad.setAttribute("aria-label", `Watch an ad for 10 Pommes: ${words[st]}${st === "soon" ? "" : `, ${left} left today`}`);
+  ad.setAttribute("aria-label", st === "soon" ? _t("Watch an ad for 10 Pommes: {say}", { say: words[st] }) : _t("Watch an ad for 10 Pommes: {say}, {left} left today", { say: words[st], left }));
   const buy = !!KO.buy;
   pk.classList.toggle("go", buy);
   pk.querySelector(".ps-soon").hidden = buy;
   if (buy) { pk.setAttribute("role", "button"); pk.tabIndex = 0; pk.removeAttribute("aria-disabled"); } else { pk.removeAttribute("role"); pk.removeAttribute("tabindex"); pk.setAttribute("aria-disabled", "true"); }
-  pk.setAttribute("aria-label", `${KO_PRICE} Pommes for ${KO_EUR}: one page or skin${buy ? "" : ". Coming soon."}`);
+  pk.setAttribute("aria-label", buy ? _t("{p} Pommes for {e}: one page or skin", { p: KO_PRICE, e: KO_EUR }) : _t("{p} Pommes for {e}: one page or skin. Coming soon.", { p: KO_PRICE, e: KO_EUR }));
 }
 
 /* ----- taps ----- */
@@ -330,13 +330,13 @@ function psTap(c) {
   Sfx.init();
   const id = PS.id;
   if (c.kind === "fin" && c.k === "s") {
-    if (psUsable().length < 2) { psNo(c, psUsable().length ? "Shuffle needs two Potatalities." : "Buy a Potatality to shuffle."); return; }
+    if (psUsable().length < 2) { psNo(c, psUsable().length ? _t("Shuffle needs two Potatalities.") : _t("Buy a Potatality to shuffle.")); return; }
     if (koPick(id) !== "s") { Sfx.uiFlip(); koSetPick(id, "s"); }
     return;
   }
   const st = c.kind === "fin" ? psFinState(c) : psSkinState(c);
   if (st === "soon") return;
-  if (c.kind === "fin" && st === "own") { if (koPick(id) !== c.k) { Sfx.uiFlip(); if (!koSetPick(id, c.k)) psNo(c, "That one isn't yours yet."); } return; }
+  if (c.kind === "fin" && st === "own") { if (koPick(id) !== c.k) { Sfx.uiFlip(); if (!koSetPick(id, c.k)) psNo(c, _t("That one isn't yours yet.")); } return; }
   if (c.kind === "sk" && (st === "own" || st === "worn")) {
     if (st === "own") { Sfx.uiFlip(); koSkins(); P.pal[id] = c.pal; saveProfile(); koRefresh(); }   // koSkins: the owned Pommes skins join P.owned, then WEAR; koRefresh: the Rack and the Locker follow
     return;
@@ -346,15 +346,15 @@ function psTap(c) {
 function psBuyTap(c, item) {
   if (KO.busy) return;
   const bal = koBal();
-  if (!ACCT.code) { psDisarm(); psNo(c, "Pommes live on your account: make a sync code."); psPulse("mk"); return; }
-  if (!koMine()) { psDisarm(); psNo(c, "Can't reach your Pommes: try again."); koAsk(true); return; }
-  if (bal < KO_PRICE) { psDisarm(); psNo(c, `${fmtChips(KO_PRICE - bal)} more Pommes`); psPulse("ad"); return; }
+  if (!ACCT.code) { psDisarm(); psNo(c, _t("Pommes live on your account: make a sync code.")); psPulse("mk"); return; }
+  if (!koMine()) { psDisarm(); psNo(c, _t("Can't reach your Pommes: try again.")); koAsk(true); return; }
+  if (bal < KO_PRICE) { psDisarm(); psNo(c, _t("{c} more Pommes", { c: fmtChips(KO_PRICE - bal) })); psPulse("ad"); return; }
   if (PS.arm !== item) { psArm(item); return; }
   psDisarm();
   PS.wait = item;
   if (koBuy(item)) { psStyle(); return; }   // asked: "…" until the server answers (pm-ok, pm-no: psKoRender)
   PS.wait = "";
-  psNo(c, KO.why === "short" ? `${fmtChips(KO_PRICE - koBal())} more Pommes` : "That didn't go through: try again.");
+  psNo(c, KO.why === "short" ? _t("{c} more Pommes", { c: fmtChips(KO_PRICE - koBal()) }) : _t("That didn't go through: try again."));
   psStyle();
 }
 // WATCH: the page on a dummy, then back here on this fighter
@@ -362,7 +362,7 @@ function psWatch(n) {
   Sfx.init();
   const id = PS.id;
   if (n && !koHas(id, n)) return;
-  if (!koDemoOk(id, n)) { Sfx.uiNo(); psSay("Watch works from the menu."); return; }
+  if (!koDemoOk(id, n)) { Sfx.uiNo(); psSay(_t("Watch works from the menu.")); return; }
   const back = () => pshopOpen(id);
   psLeave();
   try { koDemo(id, n, back); } catch (e) {   // a page that fails to start must not leave the game on an empty match screen: back to the sheet
@@ -388,12 +388,12 @@ function psAdTap() {
     psStyle();
   } else if (st === "none" || st === "idle") { Sfx.ui(); psPrimeAd(true); }
   else if (st === "soon") { Sfx.uiNo(); psSay(PS_SOON_AD); }
-  else if (st === "gone") { Sfx.uiNo(); psSay("That's all the ads for today: back tomorrow."); }
-  else if (st === "wait") { Sfx.uiNo(); psSay(`The next ad is in ${psAdWait()} s.`); }
+  else if (st === "gone") { Sfx.uiNo(); psSay(_t("That's all the ads for today: back tomorrow.")); }
+  else if (st === "wait") { Sfx.uiNo(); psSay(_t("The next ad is in {n} s.", { n: psAdWait() })); }
 }
 
 /* ----- what the server said (kopages.js calls koListen's functions after every answer) ----- */
-const PS_WHY = { acct: "Signed out for a moment: try again.", own: "You own it already.", ads: "No ads right now.", max: "That's all the ads for today: back tomorrow.", fail: "That didn't go through: try again." };
+const PS_WHY = { acct: _t("Signed out for a moment: try again."), own: _t("You own it already."), ads: _t("No ads right now."), max: _t("That's all the ads for today: back tomorrow."), fail: _t("That didn't go through: try again.") };
 function psBurst(c) {
   if (!c || !c.art || psCalm()) return;
   const box = psMk("span", "ps-burst");
@@ -414,7 +414,7 @@ function psKoRender() {
   } else if (PS.wait && KO.why) PS.wait = "";
   if (KO.why !== PS.why) {
     PS.why = KO.why;
-    if (KO.why === "short") psSay(`${fmtChips(Math.max(0, KO_PRICE - koBal()))} more Pommes`);
+    if (KO.why === "short") psSay(_t("{c} more Pommes", { c: fmtChips(Math.max(0, KO_PRICE - koBal())) }));
     else if (PS_WHY[KO.why]) { Sfx.uiNo(); psSay(PS_WHY[KO.why]); }
   }
   if (KO.adN !== PS.adN) { PS.adN = KO.adN; if (PS.claim) { PS.claim = false; Sfx.uiCoin(); } }

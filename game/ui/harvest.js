@@ -70,31 +70,31 @@ function hvTile(i, v, h, key) {   // day i (1-30)
   if (i === HV_N) {   // the fighter who got the skin this round, or (still to come) the one played most as a silhouette
     const id = got ? h.sk[h.sk.length - 1] || "" : g.sk ? hvFav() : "";
     body = !id ? `<i class="hv-gzi" aria-hidden="true">✦</i>` : `<canvas class="hv-sil${got ? " on" : ""}" data-f="${id}" aria-hidden="true"></canvas>${got ? "" : "<b>?</b>"}`;
-    say = !id ? "a Glaze token" : got ? `the Harvest skin for ${FIG[id] ? FIG[id].name : "a fighter"}` : "the Harvest skin for a fighter you choose";
-  } else if (g.plate) { body = `<span class="hv-pl np-sprout" aria-hidden="true"></span>`; say = `${g.chips} chips and the Sprout nameplate`; }
-  else if (g.title) { body = `<span class="hv-tt">Title</span>`; say = `${g.chips} chips and the title Couch Potato`; }
-  else { body = `<span class="hv-amt">${big ? hvChip(g.chips) : g.chips}</span>${g.ago ? `<em class="hv-plus">+2 go</em>` : ""}`; say = `${g.chips} chips${g.ago ? " and 2 free Another go tries" : ""}`; }
-  el.innerHTML = `<small>${now || today ? "Today" : i}</small>${body}`;
-  el.setAttribute("aria-label", `Day ${i}: ${say}${got ? ", claimed" : now ? ", today's gift" : ""}`);
+    say = !id ? _t("a Glaze token") : got ? _t("the Harvest skin for {name}", { name: FIG[id] ? FIG[id].name : _t("a fighter") }) : _t("the Harvest skin for a fighter you choose");
+  } else if (g.plate) { body = `<span class="hv-pl np-sprout" aria-hidden="true"></span>`; say = _t("{n} chips and the Sprout nameplate", { n: g.chips }); }
+  else if (g.title) { body = `<span class="hv-tt">${_t("Title")}</span>`; say = _t("{n} chips and the title Couch Potato", { n: g.chips }); }
+  else { body = `<span class="hv-amt">${big ? hvChip(g.chips) : g.chips}</span>${g.ago ? `<em class="hv-plus">${_t("+2 go")}</em>` : ""}`; say = g.ago ? _t("{n} chips and 2 free Another go tries", { n: g.chips }) : _t("{n} chips", { n: g.chips }); }
+  el.innerHTML = `<small>${now || today ? _t("Today") : i}</small>${body}`;
+  el.setAttribute("aria-label", got ? _t("Day {n}: {say}, claimed", { n: i, say }) : now ? _t("Day {n}: {say}, today's gift", { n: i, say }) : _t("Day {n}: {say}", { n: i, say }));
   return el;
 }
 function hvLegend(c) {
-  const sk = hvSkinLeft().length ? `the Harvest skin for ${c > 0 ? "another fighter" : "a fighter you choose"}` : "a Glaze token";
-  return c > 0 ? `<b>Day 7</b> and <b>14</b> 100 chips · <b>21</b> 150 chips + 2 Another go · <b>28</b> 200 chips · <b>30</b> ${sk}`
-    : `<b>Day 7</b> Sprout nameplate · <b>14</b> title Couch Potato · <b>21</b> 150 chips + 2 Another go · <b>28</b> 200 chips · <b>30</b> ${sk}`;
+  const sk = hvSkinLeft().length ? (c > 0 ? _t("the Harvest skin for another fighter") : _t("the Harvest skin for a fighter you choose")) : _t("a Glaze token");
+  return c > 0 ? _t("<b>Day 7</b> and <b>14</b> 100 chips · <b>21</b> 150 chips + 2 Another go · <b>28</b> 200 chips · <b>30</b> {sk}", { sk })
+    : _t("<b>Day 7</b> Sprout nameplate · <b>14</b> title Couch Potato · <b>21</b> 150 chips + 2 Another go · <b>28</b> 200 chips · <b>30</b> {sk}", { sk });
 }
 // the gift's lines: chips, then what comes with them
 function hvWhat(g) {
-  const more = g.plate ? `<span class="hv-wl">+ the <span class="hv-wp np-sprout">Sprout</span> nameplate</span>` : g.title ? `<span class="hv-wl">+ the title <b>Couch Potato</b></span>`
-    : g.ago ? `<span class="hv-wl">+ 2 free Daily <b>Another go</b> tries</span>` : g.gz ? `<span class="hv-wl">A <b>Glaze token</b>: glaze any skin for free in the Shop</span>` : "";
-  return `${g.chips ? `<span class="hv-wc">${hvChip("+" + g.chips)} <em>chips</em></span>` : ""}${more}`;
+  const more = g.plate ? `<span class="hv-wl">${_t('+ the <span class="hv-wp np-sprout">Sprout</span> nameplate')}</span>` : g.title ? `<span class="hv-wl">${_t("+ the title <b>Couch Potato</b>")}</span>`
+    : g.ago ? `<span class="hv-wl">${_t("+ 2 free Daily <b>Another go</b> tries")}</span>` : g.gz ? `<span class="hv-wl">${_t("A <b>Glaze token</b>: glaze any skin for free in the Shop")}</span>` : "";
+  return `${g.chips ? `<span class="hv-wc">${hvChip("+" + g.chips)} <em>${_t("chips")}</em></span>` : ""}${more}`;
 }
 // the Daily sheet was opened (ui/daily.js): draw it; the ×2 ad is asked for once per opening
 function hvRender() { HV.adNew = true; hvPaint(); }
 function hvPaint() {
   const key = dailyKey(), h = hvGet(), v = hvView(h, key), grid = $("hvGrid");
   cancelAnimationFrame(HV.raf); HV.raf = 0; HV.art = null;
-  $("hvHead").innerHTML = `The Harvest${v.c > 0 ? ` ${v.c + 1}` : ""} · <b>day ${Math.max(1, v.open ? v.n + 1 : v.n)} of ${HV_N}</b>`;
+  $("hvHead").innerHTML = v.c > 0 ? _t("The Harvest {r} · <b>day {n} of {m}</b>", { r: v.c + 1, n: Math.max(1, v.open ? v.n + 1 : v.n), m: HV_N }) : _t("The Harvest · <b>day {n} of {m}</b>", { n: Math.max(1, v.open ? v.n + 1 : v.n), m: HV_N });
   grid.innerHTML = "";
   for (let i = 1; i <= HV_N; i++) grid.appendChild(hvTile(i, v, h, key));
   $("hvLeg").innerHTML = hvLegend(v.c);
@@ -105,9 +105,9 @@ function hvPaint() {
     const back = h.d > key, nn = h.n >= HV_N ? 1 : h.n + 1, nc = h.n >= HV_N ? h.c + 1 : h.c, g = hvGift(nn, nc);
     box.className = "hv-gift done";
     const dc = adsOn() && !back && h.d === key && adsDay().hv ? hvGift(h.n, h.c).chips : 0;   // claimed doubled today: the button stays, "Doubled"
-    box.innerHTML = `<div class="hv-dn"><b>Day ${h.n}</b><small>claimed</small><i class="hv-ok" aria-hidden="true">✓</i></div>
-      ${dc ? `<button class="btn hv-ad" id="hvAd" data-chips="${dc}" disabled></button>` : ""}<p class="hv-k2">Next · day ${nn}</p><div class="hv-what">${g.sk ? `<span class="hv-wl">the Harvest skin for a fighter you choose</span>` : hvWhat(g)}</div>
-      <p class="hv-note">${back ? `Your next gift opens the day after ${dailyLabel(h.d)}.` : `It opens in ${dailyNextIn()}. A missed day waits for you.`}</p>`;
+    box.innerHTML = `<div class="hv-dn"><b>${_t("Day {n}", { n: h.n })}</b><small>${_t("claimed")}</small><i class="hv-ok" aria-hidden="true">✓</i></div>
+      ${dc ? `<button class="btn hv-ad" id="hvAd" data-chips="${dc}" disabled></button>` : ""}<p class="hv-k2">${_t("Next · day {n}", { n: nn })}</p><div class="hv-what">${g.sk ? `<span class="hv-wl">${_t("the Harvest skin for a fighter you choose")}</span>` : hvWhat(g)}</div>
+      <p class="hv-note">${back ? _t("Your next gift opens the day after {day}.", { day: dailyLabel(h.d) }) : _t("It opens in {t}. A missed day waits for you.", { t: dailyNextIn() })}</p>`;
     if (dc) hvAdSync();
     return;
   }
@@ -116,10 +116,10 @@ function hvPaint() {
   if (g.sk) {   // day 30: pick the fighter, see him in Harvest Gold, claim
     if (!FIG[HV.pick] || hvHasSkin(HV.pick)) HV.pick = hvFav();
     const left = hvSkinLeft();
-    box.innerHTML = `<div class="hv-dn"><b>Day ${n}</b><small>Harvest skin</small></div>
+    box.innerHTML = `<div class="hv-dn"><b>${_t("Day {n}", { n })}</b><small>${_t("Harvest skin")}</small></div>
       <div class="hv-art"><canvas id="hvArt" aria-hidden="true"></canvas></div>
-      <div class="hv-pick" role="radiogroup" aria-label="The fighter who gets the Harvest skin">${FIGHTERS.map((f) => `<button class="hv-pf${f.id === HV.pick ? " on" : ""}" data-f="${f.id}" role="radio" aria-checked="${f.id === HV.pick}" aria-label="${hvEsc(f.name)}${left.includes(f.id) ? "" : ", has it already"}"${left.includes(f.id) ? "" : " disabled"} style="background-image:url('${PORTRAITS[f.id] || ""}')"></button>`).join("")}</div>
-      <button class="btn primary lg hv-claim" id="hvClaim"><span>Claim for ${hvEsc(FIG[HV.pick].name)}</span></button>`;
+      <div class="hv-pick" role="radiogroup" aria-label="${_t("The fighter who gets the Harvest skin")}">${FIGHTERS.map((f) => `<button class="hv-pf${f.id === HV.pick ? " on" : ""}" data-f="${f.id}" role="radio" aria-checked="${f.id === HV.pick}" aria-label="${left.includes(f.id) ? hvEsc(f.name) : _t("{name}, has it already", { name: hvEsc(f.name) })}"${left.includes(f.id) ? "" : " disabled"} style="background-image:url('${PORTRAITS[f.id] || ""}')"></button>`).join("")}</div>
+      <button class="btn primary lg hv-claim" id="hvClaim"><span>${_t("Claim for {name}", { name: hvEsc(FIG[HV.pick].name) })}</span></button>`;
     for (const b of box.querySelectorAll(".hv-pf:not([disabled])")) b.addEventListener("click", () => { Sfx.init(); Sfx.uiFlip(); HV.pick = b.dataset.f; hvPaint(); });
     const spec = FIG[HV.pick], f = BL.newGame({ seed: 1, players: [{ spec, pal: spec.palettes[hvSkinIdx(spec)] }, { spec, pal: spec.palettes[0] }], countdown: 1 }).fighters[0];
     f.x = 0; f.y = 0; f.facing = -1;
@@ -127,10 +127,10 @@ function hvPaint() {
     const step = () => { HV.raf = 0; if (!HV.art || screens.daily.hidden) return; paintModel(HV.art, tick); HV.raf = requestAnimationFrame(step); };
     HV.raf = requestAnimationFrame(step);
   } else {
-    box.innerHTML = `<div class="hv-dn"><b>Day ${n}</b><small>today's gift</small></div><div class="hv-what">${hvWhat(g)}</div>
-      <button class="btn primary lg hv-claim" id="hvClaim"><span>Claim</span></button>
+    box.innerHTML = `<div class="hv-dn"><b>${_t("Day {n}", { n })}</b><small>${_t("today's gift")}</small></div><div class="hv-what">${hvWhat(g)}</div>
+      <button class="btn primary lg hv-claim" id="hvClaim"><span>${_t("Claim")}</span></button>
       ${g.chips ? `<button class="btn hv-ad" id="hvAd" data-chips="${g.chips}" disabled></button>
-      <p class="hv-note">${adsOn() ? "Ads are never needed." : "Ads come later and are never needed."} Today's gift is yours as it is.</p>` : ""}`;
+      <p class="hv-note">${adsOn() ? _t("Ads are never needed. Today's gift is yours as it is.") : _t("Ads come later and are never needed. Today's gift is yours as it is.")}</p>` : ""}`;
     if (g.chips) { $("hvAd").addEventListener("click", hvTapAd); hvAdSync(); hvAdAsk(); }
   }
   $("hvClaim").addEventListener("click", hvTapClaim);
@@ -141,12 +141,12 @@ function hvAdSync() {
   const b = $("hvAd");
   if (!b) return;
   const c = +b.dataset.chips || 0, on = adsOn(), used = on && adsDay().hv === 1, st = on ? adsState("harvest") : "off", can = on && !used && st === "ready";
-  const word = used ? "Doubled" : st === "none" ? "No ad right now" : st === "busy" ? "Watching…" : "×2 · watch an ad";
+  const word = used ? _t("Doubled") : st === "none" ? _t("No ad right now") : st === "busy" ? _t("Watching…") : _t("×2 · watch an ad");
   b.disabled = !can; b.setAttribute("aria-disabled", String(!can));
   b.classList.toggle("on", can); b.classList.toggle("used", used);
-  b.innerHTML = `<span>${word}</span><small>${c} → ${c * 2}</small>${on ? "" : `<i class="hv-soon" aria-hidden="true">Soon</i>`}`;
-  b.setAttribute("aria-label", !on ? "Double it by watching an ad: coming soon" : used ? `Doubled today: ${c} chips twice` : st === "none" ? "No ad right now. Today's gift is yours as it is."
-    : st === "busy" ? "Watching an ad" : `Double it by watching an ad: ${c} to ${c * 2} chips${can ? "" : ", getting an ad ready"}`);
+  b.innerHTML = `<span>${word}</span><small>${c} → ${c * 2}</small>${on ? "" : `<i class="hv-soon" aria-hidden="true">${_t("Soon")}</i>`}`;
+  b.setAttribute("aria-label", !on ? _t("Double it by watching an ad: coming soon") : used ? _t("Doubled today: {n} chips twice", { n: c }) : st === "none" ? _t("No ad right now. Today's gift is yours as it is.")
+    : st === "busy" ? _t("Watching an ad") : can ? _t("Double it by watching an ad: {a} to {b} chips", { a: c, b: c * 2 }) : _t("Double it by watching an ad: {a} to {b} chips, getting an ad ready", { a: c, b: c * 2 }));
   const k = $("hvClaim");
   if (k) k.disabled = st === "busy";   // not claimed from under an ad that is showing
 }
@@ -201,6 +201,6 @@ function hvAfterClaim(r) {
   hvPaint(); dailyAgainLabel();   // day 21's free tries show on Another go at once
   const t = $("hvGrid").children[r.n - 1];
   if (t && !resCalm()) slReplay(t, "hv-pop");
-  if (r.sk) { const k = $("hvGift").querySelector(".hv-dn small"); if (k) k.textContent = `Harvest Gold · ${FIG[r.pick].name}`; }
+  if (r.sk) { const k = $("hvGift").querySelector(".hv-dn small"); if (k) k.textContent = _t("Harvest Gold · {name}", { name: FIG[r.pick].name }); }
 }
 window.__blHarvest = { gift: hvGift, claim: hvClaim, get st() { return hvGet(); }, view: hvView, open: hvOpen };

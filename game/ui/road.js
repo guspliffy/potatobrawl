@@ -12,71 +12,71 @@
 // from 0.25 to 1.00 (the strongest CPU in the game), and the twists turn against you: in The Field they help or are even, in The Kitchen
 // they are even or a little against you, in The Deep you start behind. tests/roadcurve.js plays every stop with bots and keeps it so.
 const ROAD = [
-  { id: "gate", name: "The Farm Gate", cpu: "Small Fry", f: "phoenix", d: 0.25, lives: 2, secs: 120, map: "field",
-    line: "Gate's open. Mind the sprouts, they bite.", bonus: { k: "fast", s: 60, txt: "Win in under 60 s" } },
-  { id: "sprout", name: "The Sprout Patch", cpu: "Mash", f: "odin", d: 0.4, secs: 120, map: "field", cpuPct: 40, twist: "Mash starts at 40%.",
-    line: "Nobody moves Mash. Nobody.", bonus: { k: "route", r: "three", txt: "Land the Three-piece combo" } },
-  { id: "scarecrow", name: "The Scarecrow's Post", cpu: "Straw Jack", f: "reaper", d: 0.4, secs: 120, map: "field", myPct: 20, twist: "You start at 20%.",
-    line: "Caw. Just a scarecrow. Nothing with a scythe here.", bonus: { k: "fin", txt: "KO with a finisher special" } },
-  { id: "well", name: "The Lord's Well", cpu: "Dr. Peel", f: "alchemist", d: 0.5, secs: 90, map: "castle", twist: "Win inside 90 seconds.",
-    line: "Drink this. No? Then I'll throw it.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
-  { id: "crow", name: "Crow's Rest", cpu: "Bang Bang Maris", f: "gunslinger", d: 0.53, lives: 1, secs: 60, map: "field", twist: "One life each.",
-    line: "One heart. One shot. Don't blink.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "barn", name: "The Burnt Barn", cpu: "Cinder", f: "dragon", d: 0.56, map: "fryer", myPct: 50, twist: "You start at 50%.",
-    line: "Smell that? That's you, in a minute.", bonus: { k: "route", r: "trip", txt: "Land the Trip & Spike combo" } },
-  { id: "moon", name: "The Harvest Moon", cpu: "Moonie", f: "wizard", d: 0.59, map: "moon", myPct: 20, twist: "You start at 20%.",
-    line: "The stars said you'd come. They were vague about the leaving.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "edge", name: "The Field's Edge", cpu: "Sir Spudsalot", f: "samurai", d: 0.66, lives: 2, map: "field",
-    line: "He's behind the fence. First, me.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
+  { id: "gate", name: _t("The Farm Gate"), cpu: "Small Fry", f: "phoenix", d: 0.25, lives: 2, secs: 120, map: "field",
+    line: _t("Gate's open. Mind the sprouts, they bite."), bonus: { k: "fast", s: 60, txt: _t("Win in under 60 s") } },
+  { id: "sprout", name: _t("The Sprout Patch"), cpu: "Mash", f: "odin", d: 0.4, secs: 120, map: "field", cpuPct: 40, twist: _t("Mash starts at 40%."),
+    line: _t("Nobody moves Mash. Nobody."), bonus: { k: "route", r: "three", txt: _t("Land the Three-piece combo") } },
+  { id: "scarecrow", name: _t("The Scarecrow's Post"), cpu: "Straw Jack", f: "reaper", d: 0.4, secs: 120, map: "field", myPct: 20, twist: _t("You start at 20%."),
+    line: _t("Caw. Just a scarecrow. Nothing with a scythe here."), bonus: { k: "fin", txt: _t("KO with a finisher special") } },
+  { id: "well", name: _t("The Lord's Well"), cpu: "Dr. Peel", f: "alchemist", d: 0.5, secs: 90, map: "castle", twist: _t("Win inside 90 seconds."),
+    line: _t("Drink this. No? Then I'll throw it."), bonus: { k: "route", r: "lift", txt: _t("Land the Lift & Smash combo") } },
+  { id: "crow", name: _t("Crow's Rest"), cpu: "Bang Bang Maris", f: "gunslinger", d: 0.53, lives: 1, secs: 60, map: "field", twist: _t("One life each."),
+    line: _t("One heart. One shot. Don't blink."), bonus: { k: "ulti", txt: _t("KO with an ulti") } },
+  { id: "barn", name: _t("The Burnt Barn"), cpu: "Cinder", f: "dragon", d: 0.56, map: "fryer", myPct: 50, twist: _t("You start at 50%."),
+    line: _t("Smell that? That's you, in a minute."), bonus: { k: "route", r: "trip", txt: _t("Land the Trip & Spike combo") } },
+  { id: "moon", name: _t("The Harvest Moon"), cpu: "Moonie", f: "wizard", d: 0.59, map: "moon", myPct: 20, twist: _t("You start at 20%."),
+    line: _t("The stars said you'd come. They were vague about the leaving."), bonus: { k: "ulti", txt: _t("KO with an ulti") } },
+  { id: "edge", name: _t("The Field's Edge"), cpu: "Sir Spudsalot", f: "samurai", d: 0.66, lives: 2, map: "field",
+    line: _t("He's behind the fence. First, me."), bonus: { k: "fast", s: 120, txt: _t("Win in under 2 minutes") } },
 ];
 // region 2, The Kitchen, and region 3, The Deep (bosses2/fable-design.md section 5)
 const ROAD_KITCHEN = [
-  { id: "backdoor", name: "The Back Door", cpu: "Dishwater Dan", f: "odin", d: 0.66, lives: 2, secs: 120, map: "kitchen",
-    line: "Staff only. You staff? Didn't think so.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
-  { id: "pantry", name: "The Pantry", cpu: "Tin Can Tina", f: "gunslinger", d: 0.68, map: "kitchen", myPct: 30, twist: "You start at 30%.",
-    line: "Everything in here has a date on it. Yours is today.", bonus: { k: "route", r: "sig", txt: "Land the Signature combo" } },
-  { id: "cold", name: "The Cold Store", cpu: "Frosty Fritz", f: "wizard", d: 0.7, lives: 2, secs: 120, map: "moon",
-    line: "Minus twenty in here. Don't worry, you'll stop shivering.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
-  { id: "stove", name: "The Stove", cpu: "Sizzle", f: "dragon", d: 0.72, secs: 120, map: "fryer", myPct: 40, twist: "You start at 40%.",
-    line: "Oil's hot. Hop in, I'll time you.", bonus: { k: "fin", txt: "KO with a finisher special" } },
-  { id: "spice", name: "The Spice Rack", cpu: "Paprika Pete", f: "phoenix", d: 0.72, lives: 1, secs: 60, map: "kitchen", twist: "One life each.",
-    line: "One pinch. That's all it takes.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "sink", name: "The Sink", cpu: "Suds", f: "alchemist", d: 0.76, secs: 120, map: "kitchen", myPct: 60, twist: "You start at 60%.",
-    line: "Everything ends up in the sink. Even you.", bonus: { k: "route", r: "lift", txt: "Land the Lift & Smash combo" } },
-  { id: "chef", name: "The Chef's Table", cpu: "Chef Rösti", f: "samurai", d: 0.8, lives: 1, map: "castle", twist: "One life each.",
-    line: "Precision. Presentation. Then the plate.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
-  { id: "window", name: "The Window", cpu: "Tinfoil Tom", f: "reaper", d: 0.8, lives: 2, map: "kitchen", myPct: 40, twist: "You start at 40%.",
-    line: "They're watching. Through the window. I've seen the lights.", bonus: { k: "fast", s: 120, txt: "Win in under 2 minutes" } },
+  { id: "backdoor", name: _t("The Back Door"), cpu: "Dishwater Dan", f: "odin", d: 0.66, lives: 2, secs: 120, map: "kitchen",
+    line: _t("Staff only. You staff? Didn't think so."), bonus: { k: "fast", s: 75, txt: _t("Win in under 75 s") } },
+  { id: "pantry", name: _t("The Pantry"), cpu: "Tin Can Tina", f: "gunslinger", d: 0.68, map: "kitchen", myPct: 30, twist: _t("You start at 30%."),
+    line: _t("Everything in here has a date on it. Yours is today."), bonus: { k: "route", r: "sig", txt: _t("Land the Signature combo") } },
+  { id: "cold", name: _t("The Cold Store"), cpu: "Frosty Fritz", f: "wizard", d: 0.7, lives: 2, secs: 120, map: "moon",
+    line: _t("Minus twenty in here. Don't worry, you'll stop shivering."), bonus: { k: "route", r: "rising", txt: _t("Land the Rising combo") } },
+  { id: "stove", name: _t("The Stove"), cpu: "Sizzle", f: "dragon", d: 0.72, secs: 120, map: "fryer", myPct: 40, twist: _t("You start at 40%."),
+    line: _t("Oil's hot. Hop in, I'll time you."), bonus: { k: "fin", txt: _t("KO with a finisher special") } },
+  { id: "spice", name: _t("The Spice Rack"), cpu: "Paprika Pete", f: "phoenix", d: 0.72, lives: 1, secs: 60, map: "kitchen", twist: _t("One life each."),
+    line: _t("One pinch. That's all it takes."), bonus: { k: "ulti", txt: _t("KO with an ulti") } },
+  { id: "sink", name: _t("The Sink"), cpu: "Suds", f: "alchemist", d: 0.76, secs: 120, map: "kitchen", myPct: 60, twist: _t("You start at 60%."),
+    line: _t("Everything ends up in the sink. Even you."), bonus: { k: "route", r: "lift", txt: _t("Land the Lift & Smash combo") } },
+  { id: "chef", name: _t("The Chef's Table"), cpu: "Chef Rösti", f: "samurai", d: 0.8, lives: 1, map: "castle", twist: _t("One life each."),
+    line: _t("Precision. Presentation. Then the plate."), bonus: { k: "route", r: "own", txt: _t("Land your fighter's own combo") } },
+  { id: "window", name: _t("The Window"), cpu: "Tinfoil Tom", f: "reaper", d: 0.8, lives: 2, map: "kitchen", myPct: 40, twist: _t("You start at 40%."),
+    line: _t("They're watching. Through the window. I've seen the lights."), bonus: { k: "fast", s: 120, txt: _t("Win in under 2 minutes") } },
 ];
 const ROAD_DEEP = [
-  { id: "harbour", name: "The Harbour Wall", cpu: "Salty Sal", f: "samurai", d: 0.82, lives: 2, secs: 120, map: "deep", myPct: 20, twist: "You start at 20%.",
-    line: "Mind the wall. Mind the drop. Mind me.", bonus: { k: "fast", s: 75, txt: "Win in under 75 s" } },
-  { id: "market", name: "The Fish Market", cpu: "Haddock Hal", f: "gunslinger", d: 0.84, map: "bay", myLifePct: 10, twist: "You start every life at 10%.",
-    line: "Fresh today! Well. Fresh-ish.", bonus: { k: "route", r: "trip", txt: "Land the Trip & Spike combo" } },
-  { id: "lighthouse", name: "The Lighthouse", cpu: "Old Lamp", f: "wizard", d: 0.87, lives: 2, secs: 90, map: "deep", twist: "Win inside 90 seconds.",
-    line: "Three flashes means rocks. Two means run. I only do one.", bonus: { k: "ulti", txt: "KO with an ulti" } },
-  { id: "wreck", name: "The Wreck", cpu: "Barnacle Bill", f: "odin", d: 0.88, map: "castle", myPct: 40, twist: "You start at 40%.",
-    line: "Went down with my ship. Came back up annoyed.", bonus: { k: "route", r: "three", txt: "Land the Three-piece combo" } },
-  { id: "fog", name: "The Fog Bank", cpu: "Misty", f: "reaper", d: 0.9, secs: 120, map: "deep", myPct: 50, twist: "You start at 50%.",
-    line: "Can't see a thing out here. Perfect.", bonus: { k: "route", r: "own", txt: "Land your fighter's own combo" } },
-  { id: "trawler", name: "The Trawler", cpu: "Captain Crisp", f: "dragon", d: 0.93, lives: 1, secs: 90, map: "bay", myPct: 30, twist: "One life each, and you start at 30%.",
-    line: "Net's down. Guess what's in it.", bonus: { k: "fin", txt: "KO with a finisher special" } },
-  { id: "whirlpool", name: "The Whirlpool", cpu: "Gurgle", f: "alchemist", d: 0.96, secs: 120, map: "fryer", myPct: 60, cpuPct: 30, twist: "You start at 60%, Gurgle at 30%.",
-    line: "Round and round. Down and down. Lovely.", bonus: { k: "route", r: "rising", txt: "Land the Rising combo" } },
-  { id: "pier", name: "The End of the Pier", cpu: "The Harbour Master", f: "phoenix", d: 1, lives: 2, map: "deep", myPct: 30, twist: "You start at 30%.",
-    line: "Nobody passes the end of the pier. Not without a ticket.", bonus: { k: "fast", s: 150, txt: "Win in under 2:30" } },
+  { id: "harbour", name: _t("The Harbour Wall"), cpu: "Salty Sal", f: "samurai", d: 0.82, lives: 2, secs: 120, map: "deep", myPct: 20, twist: _t("You start at 20%."),
+    line: _t("Mind the wall. Mind the drop. Mind me."), bonus: { k: "fast", s: 75, txt: _t("Win in under 75 s") } },
+  { id: "market", name: _t("The Fish Market"), cpu: "Haddock Hal", f: "gunslinger", d: 0.84, map: "bay", myLifePct: 10, twist: _t("You start every life at 10%."),
+    line: _t("Fresh today! Well. Fresh-ish."), bonus: { k: "route", r: "trip", txt: _t("Land the Trip & Spike combo") } },
+  { id: "lighthouse", name: _t("The Lighthouse"), cpu: "Old Lamp", f: "wizard", d: 0.87, lives: 2, secs: 90, map: "deep", twist: _t("Win inside 90 seconds."),
+    line: _t("Three flashes means rocks. Two means run. I only do one."), bonus: { k: "ulti", txt: _t("KO with an ulti") } },
+  { id: "wreck", name: _t("The Wreck"), cpu: "Barnacle Bill", f: "odin", d: 0.88, map: "castle", myPct: 40, twist: _t("You start at 40%."),
+    line: _t("Went down with my ship. Came back up annoyed."), bonus: { k: "route", r: "three", txt: _t("Land the Three-piece combo") } },
+  { id: "fog", name: _t("The Fog Bank"), cpu: "Misty", f: "reaper", d: 0.9, secs: 120, map: "deep", myPct: 50, twist: _t("You start at 50%."),
+    line: _t("Can't see a thing out here. Perfect."), bonus: { k: "route", r: "own", txt: _t("Land your fighter's own combo") } },
+  { id: "trawler", name: _t("The Trawler"), cpu: "Captain Crisp", f: "dragon", d: 0.93, lives: 1, secs: 90, map: "bay", myPct: 30, twist: _t("One life each, and you start at 30%."),
+    line: _t("Net's down. Guess what's in it."), bonus: { k: "fin", txt: _t("KO with a finisher special") } },
+  { id: "whirlpool", name: _t("The Whirlpool"), cpu: "Gurgle", f: "alchemist", d: 0.96, secs: 120, map: "fryer", myPct: 60, cpuPct: 30, twist: _t("You start at 60%, Gurgle at 30%."),
+    line: _t("Round and round. Down and down. Lovely."), bonus: { k: "route", r: "rising", txt: _t("Land the Rising combo") } },
+  { id: "pier", name: _t("The End of the Pier"), cpu: "The Harbour Master", f: "phoenix", d: 1, lives: 2, map: "deep", myPct: 30, twist: _t("You start at 30%."),
+    line: _t("Nobody passes the end of the pier. Not without a ticket."), bonus: { k: "fast", s: 150, txt: _t("Win in under 2:30") } },
 ];
 ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);
 // the regions in order: stops k*8 .. k*8+7, the boss past the fence, where his levels and first-win reward live in P.road, his title;
 // hp / mate: on the Road each boss is tougher than the one before (his HP x hp, your CPU partner's strength mate on Normal, +0.1 a
 // level), where Practice uses 3/4 HP and a .55 partner (ui/boss.js); online with a friend he has his Road HP x DUO_HP (ui/online.js)
 const ROAD_REG = [
-  { id: "field", name: "The Field", boss: "scratch", bk: "b", pk: "paid", title: "Devil Masher", hp: 0.9, mate: 0.5 },
-  { id: "kitchen", name: "The Kitchen", boss: "zorp", bk: "b2", pk: "p2", title: "Dome Cracker", hp: 1.2, mate: 0.4 },
-  { id: "deep", name: "The Deep", boss: "kraken", bk: "b3", pk: "p3", title: "Kraken Fryer", hp: 1.3, mate: 0.35 },
+  { id: "field", name: _t("The Field"), boss: "scratch", bk: "b", pk: "paid", title: _t("Devil Masher"), hp: 0.9, mate: 0.5 },
+  { id: "kitchen", name: _t("The Kitchen"), boss: "zorp", bk: "b2", pk: "p2", title: _t("Dome Cracker"), hp: 1.2, mate: 0.4 },
+  { id: "deep", name: _t("The Deep"), boss: "kraken", bk: "b3", pk: "p3", title: _t("Kraken Fryer"), hp: 1.3, mate: 0.35 },
 ];
 const ROAD_N = 8, ROAD_GATE = 12, ROAD_STAR_CHIPS = 10, ROAD_BOSS_CHIPS = 150;
-const ROAD_STARS = ["Win", "No heart lost"];
+const ROAD_STARS = [_t("Win"), _t("No heart lost")];
 function roadGet() { return SYNC.cleanRoad(P.road) || { s: [], b: 0, paid: false }; }
 const roadBits = (r, i) => r.s[i] | 0;
 const roadNStars = (bits) => (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);
@@ -94,20 +94,20 @@ const roadGateOpen = (r, k) => roadRegStars(r, k) >= ROAD_GATE;
 const roadHome = (r) => { let k = 0; while (roadRegOpen(r, k + 1)) k++; return k; };
 // RD.sel: a stop (0..23) or a region's boss (ROAD.length + k)
 const roadIsBoss = (i) => i >= ROAD.length;
-const roadSelName = (i) => (roadIsBoss(i) ? roadBossSpec(i - ROAD.length).name : `stop ${(i % ROAD_N) + 1}: ${ROAD[i].name}`);
+const roadSelName = (i) => (roadIsBoss(i) ? roadBossSpec(i - ROAD.length).name : _t("stop {n}: {name}", { n: (i % ROAD_N) + 1, name: ROAD[i].name }));
 const roadLives = (st) => [st.lives || 3, st.cpuLives || st.lives || 3];
 const roadSecs = (st) => st.secs || 180;
 const mmssR = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 // the stop's rules in one line: the twist in bold, then lives, time, map
 function roadRules(st) {
-  const [a, b] = roadLives(st), lives = a === b ? `${a} ${a === 1 ? "life" : "lives"} each` : `${a} lives vs ${b}`;
+  const [a, b] = roadLives(st), lives = a === b ? _t("{n} life each|{n} lives each", { n: a }) : _t("{a} lives vs {b}", { a, b });
   const mi = BL.MAPS.findIndex((m) => m.id === st.map);
   return { twist: st.twist || "", rest: `${lives} · ${mmssR(roadSecs(st))} · ${mapName(Math.max(0, mi))}` };
 }
 // region k: "Stop 3 of 8 · 7 ★" (every stop won: "Old Scratch · 7 ★"); the stars are the whole Road's
 function roadSummary(r, k) {
   const n = roadNext(r, k), t = roadTotal(r);
-  return `${n < ROAD_N ? `Stop ${n + 1} of ${ROAD_N}` : roadGateOpen(r, k) ? roadBossSpec(k).name : `${ROAD_GATE} ★ open the fence`} · ${t} ★`;
+  return `${n < ROAD_N ? _t("Stop {n} of {total}", { n: n + 1, total: ROAD_N }) : roadGateOpen(r, k) ? roadBossSpec(k).name : _t("{n} ★ open the fence", { n: ROAD_GATE })} · ${t} ★`;
 }
 
 /* ----- the map: a dirt path from the gate (bottom left) to the fence gap (top right) across the night field ----- */
@@ -354,7 +354,7 @@ function openRoad(o) {
 }
 function roadHeader() {
   const r = roadGet(), k = RD.reg;
-  $("roadKick").textContent = `The Road · region ${k + 1} of ${ROAD_REG.length}`;
+  $("roadKick").textContent = _t("The Road · region {n} of {total}", { n: k + 1, total: ROAD_REG.length });
   $("roadReg").textContent = ROAD_REG[k].name;
   $("roadSum").textContent = roadSummary(r, k);
   $("roadTokens").textContent = fmtChips(P.tokens);
@@ -370,7 +370,7 @@ function roadGo(d) {
   Sfx.init();
   if (!roadRegOpen(r, k)) {
     Sfx.uiBack();
-    roadNote(!roadRegReady(k) ? `${ROAD_REG[k].name} is coming soon.` : `Beat ${roadBossSpec(k - 1).name} past the fence of ${ROAD_REG[k - 1].name} to open ${ROAD_REG[k].name}.`);
+    roadNote(!roadRegReady(k) ? _t("{name} is coming soon.", { name: ROAD_REG[k].name }) : _t("Beat {boss} past the fence of {from} to open {to}.", { boss: roadBossSpec(k - 1).name, from: ROAD_REG[k - 1].name, to: ROAD_REG[k].name }));
     return;
   }
   Sfx.uiFlip(); RD.reg = k; RD.hopT = 0; $("roadHits").dataset.key = ""; roadHeader(); rdArrive(null);
@@ -387,12 +387,12 @@ function roadHits() {
     const boss = j === ROAD_N, i = boss ? ROAD.length + k : k * ROAD_N + j, open = boss ? roadGateOpen(r, k) : roadOpen(r, i), b = document.createElement("button");
     b.className = "rd-hit"; b.style.left = `${x}px`; b.style.top = `${y}px`; b.style.setProperty("--s", `${Math.max(44, R * 2.4)}px`);
     const n = boss ? roadNStars(roadBossBits(r, k)) : roadNStars(roadBits(r, i)), bn = roadBossSpec(k).name;
-    b.setAttribute("aria-label", boss ? `${bn}, ${open ? `${n} of 3 stars` : `opens at ${ROAD_GATE} stars`}` : `Stop ${j + 1}, ${ROAD[i].name}, ${open ? `${n} of 3 stars` : "locked"}`);
+    b.setAttribute("aria-label", boss ? `${bn}, ${open ? _t("{n} of 3 stars", { n }) : _t("opens at {n} stars", { n: ROAD_GATE })}` : _t("Stop {n}, {name}, {state}", { n: j + 1, name: ROAD[i].name, state: open ? _t("{n} of 3 stars", { n }) : _t("locked") }));
     b.dataset.i = i;
     if (!open) b.classList.add("lock");
     b.addEventListener("click", () => {
       Sfx.init();
-      if (!open) { Sfx.uiBack(); roadNote(boss ? `Win ${ROAD_GATE} stars in ${ROAD_REG[k].name} to open the fence (you have ${roadRegStars(roadGet(), k)}).` : `Win stop ${j} first.`); return; }
+      if (!open) { Sfx.uiBack(); roadNote(boss ? _t("Win {n} stars in {name} to open the fence (you have {have}).", { n: ROAD_GATE, name: ROAD_REG[k].name, have: roadRegStars(roadGet(), k) }) : _t("Win stop {n} first.", { n: j })); return; }
       Sfx.ui();
       if (!RD.walk && Math.round(RD.pos) === j) { RD.hopT = 24; roadSheet(i); } else rdWalk(j, () => roadSheet(i));   // mid-walk: turn toward the new stop from where it is
     });
@@ -408,9 +408,9 @@ function roadSheet(i) {
   RD.sel = i;
   const r = roadGet(), boss = roadIsBoss(i), k = boss ? i - ROAD.length : roadRegOf(i), me = FIG[P.last] || FIGHTERS[0], mi = P.pal[me.id] || 0;
   const RG_ = ROAD_REG[k], bspec = roadBossSpec(k);
-  $("rsKick").textContent = boss ? `${RG_.name} · past the fence` : `${RG_.name} · stop ${(i % ROAD_N) + 1} of ${ROAD_N}`;
+  $("rsKick").textContent = boss ? _t("{name} · past the fence", { name: RG_.name }) : _t("{name} · stop {n} of {total}", { name: RG_.name, n: (i % ROAD_N) + 1, total: ROAD_N });
   $("rsName").textContent = boss ? bspec.name : ROAD[i].name;
-  dailyCard($("rsMe"), me.id, mi, "You · tap to change");   // your card is the fighter picker
+  dailyCard($("rsMe"), me.id, mi, _t("You · tap to change"));   // your card is the fighter picker
   $("rsMe").insertAdjacentHTML("beforeend", `<span class="rd-chg" aria-hidden="true">⇄</span>`);
   const sheet = $("roadStopSheet");
   sheet.classList.toggle("boss", boss);
@@ -418,8 +418,8 @@ function roadSheet(i) {
   if (boss) {
     const b = bspec, bb = roadBossBits(r, k), rs = roadSkinOf(me, b.id);
     const op = $("rsOp"); op.style.setProperty("--fc", col(b.palettes[0]));
-    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${b.role}<span class="rd-sep"> · </span><span class="rd-cp">you + a CPU partner</span></small></span>`;
-    $("rsRule").innerHTML = `<b>Two against one.</b> You and a CPU partner, 3 lives each. ${BOSS_RULE[b.id] || "Break him (0 HP), then land a heavy, special or ulti."}`;
+    op.innerHTML = `<span class="dly-ph rd-bossph rd-${b.id}"><i>☠</i></span><span class="dly-t"><b>${b.name}</b><small>${_tv(b.role)}<span class="rd-sep"> · </span><span class="rd-cp">${_t("you + a CPU partner")}</span></small></span>`;
+    $("rsRule").innerHTML = `${_t("<b>Two against one.</b> You and a CPU partner, 3 lives each.")} ${BOSS_RULE[b.id] || _t("Break him (0 HP), then land a heavy, special or ulti.")}`;
     $("rsLine").textContent = BOSS_LINE[b.id] || "";
     // the level stars are the picker: it starts on the first level not won yet; Fight plays the picked one
     const first = BOSS_LV.findIndex((_, q) => !(bb & (1 << q)));
@@ -427,8 +427,8 @@ function roadSheet(i) {
     $("rsStars").innerHTML = BOSS_LV.map((n, q) => roadStarHTML(!!(bb & (1 << q)), n, q)).join("");
     $("rsCombo").hidden = true;
     rdLevel(RD.blv);
-    const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? ` ${me.name} has his ${me.palettes[rs].name} skin.` : ` A win gives ${me.name} the ${me.palettes[rs].name} skin.`;
-    $("rsReward").textContent = (r[RG_.pk] ? "Every level won is a star." : `First win: the ${RG_.title} title and ${ROAD_BOSS_CHIPS} chips.`) + skin;
+    const skin = rs < 0 ? "" : (P.owned[me.id] || []).includes(rs) ? _t("{name} has his {skin} skin.", { name: me.name, skin: _tv(me.palettes[rs].name) }) : _t("A win gives {name} the {skin} skin.", { name: me.name, skin: _tv(me.palettes[rs].name) });
+    $("rsReward").textContent = (r[RG_.pk] ? _t("Every level won is a star.") : _t("First win: the {title} title and {chips} chips.", { title: RG_.title, chips: ROAD_BOSS_CHIPS })) + (skin ? ` ${skin}` : "");
   } else {
     const st = ROAD[i], op = FIG[st.f], bits = roadBits(r, i);
     dailyCard($("rsOp"), op.id, 0, st.cpu);
@@ -439,9 +439,9 @@ function roadSheet(i) {
     // a combo star: the combo's name and buttons under the stars (your fighter's own combo follows the fighter); a tap opens the Combo trial on it
     const rt = roadRouteOf(st, me.id), cb = $("rsCombo");
     cb.hidden = !rt;
-    if (rt) cb.innerHTML = `<button class="rd-cmb" id="rsComboGo" aria-label="${cupEsc(rt.name)} combo: practise it in the Combo trial"><span class="rd-cn">${cupEsc(rt.name)}</span><span class="rk-row">${routeKeysHTML(rt)}</span><i class="rd-cgo" aria-hidden="true"></i></button>`;
-    $("rsReward").textContent = bits === 7 ? "All three stars won." : `Each new star: +${ROAD_STAR_CHIPS} chips.`;
-    $("rsGo").querySelector("span").textContent = "Fight";
+    if (rt) cb.innerHTML = `<button class="rd-cmb" id="rsComboGo" aria-label="${cupEsc(_t("{name} combo: practise it in the Combo trial", { name: routeName(rt) }))}"><span class="rd-cn">${cupEsc(routeName(rt))}</span><span class="rk-row">${routeKeysHTML(rt)}</span><i class="rd-cgo" aria-hidden="true"></i></button>`;
+    $("rsReward").textContent = bits === 7 ? _t("All three stars won.") : _t("Each new star: +{chips} chips.", { chips: ROAD_STAR_CHIPS });
+    $("rsGo").querySelector("span").textContent = _t("Fight");
   }
   modal("roadStop", true);
   roadSheetFit();
@@ -462,7 +462,7 @@ const roadStarHTML = (on, label, q) => q === undefined ? `<span class="rd-st${on
 function rdLevel(q) {
   RD.blv = q;
   for (const b of $("rsStars").querySelectorAll(".rd-lvb")) { const on = +b.dataset.q === q; b.classList.toggle("sel", on); b.setAttribute("aria-pressed", String(on)); }
-  $("rsGo").querySelector("span").textContent = `Fight · ${BOSS_LV[q]}`;
+  $("rsGo").querySelector("span").textContent = _t("Fight · {level}", { level: BOSS_LV[q] });
 }
 
 /* ----- the fights ----- */
@@ -524,10 +524,10 @@ function roadMatchEnd(forfeit) {
   // a win: the big button goes on to the next stop (the region's boss after its last one, once the fence is open); a loss: Retry
   rd.next = !won ? null : j + 1 < ROAD_N ? { i: rd.i + 1 } : roadGateOpen(r, k) ? { i: ROAD.length + k } : null;
   const short = won && j === ROAD_N - 1 && !roadGateOpen(r, k) ? ROAD_GATE - rs : 0;
-  const why = forfeit ? "No stars for a forfeit." : !won ? "No stars this time. A win opens the next stop." :
-    (fresh > 0 ? `${fresh} new ${fresh === 1 ? "star" : "stars"} +${total}` : got === 7 ? "Three stars again." : "No new stars this time.") +
-    (gate ? ` · The fence is open: ${roadBossSpec(k).name} waits past the last stop.` : "") +
-    (short ? ` · ${short} more ${short === 1 ? "star opens" : "stars open"} the fence.` : "");
+  const why = forfeit ? _t("No stars for a forfeit.") : !won ? _t("No stars this time. A win opens the next stop.") :
+    (fresh > 0 ? _t("{n} new star +{total}|{n} new stars +{total}", { n: fresh, total }) : got === 7 ? _t("Three stars again.") : _t("No new stars this time.")) +
+    (gate ? ` · ${_t("The fence is open: {name} waits past the last stop.", { name: roadBossSpec(k).name })}` : "") +
+    (short ? ` · ${_t("{n} more star opens the fence.|{n} more stars open the fence.", { n: short })}` : "");
   showResults({ res, forfeit, ranked: false, me, op, lines: [], total, why, road: { i: rd.i, got, had, labels: [...ROAD_STARS, st.bonus.txt] } });
 }
 // bossMatchEnd: a Road boss fight adds its star, the first win's reward and the fighter's Road skin to the results
@@ -536,7 +536,7 @@ function roadBossEnd(R) {
   const w = won ? roadBossWin(k, lv, R.me.spec) : { total: 0, lines: [], had: roadBossBits(roadGet(), k), skin: null };
   if (w.skin) R.skin = w.skin;
   R.total = w.total;
-  R.why = R.forfeit ? "No stars for a forfeit." : !won ? "He'll be here. Try again with another partner, or on Normal." : w.lines.length ? w.lines.join(" · ") : `${BOSS_LV[lv]} already won.`;
+  R.why = R.forfeit ? _t("No stars for a forfeit.") : !won ? _t("He'll be here. Try again with another partner, or on Normal.") : w.lines.length ? w.lines.join(" · ") : _t("{level} already won.", { level: BOSS_LV[lv] });
   R.road = { boss: true, k, lv, got: won ? bit : 0, had: w.had & ~(won ? bit : 0), labels: BOSS_LV };
   // a win goes on: into the next region when this first win opened it, else to the next level (after Nightmare, the next region)
   const nk = k + 1 < ROAD_REG.length && roadRegReady(k + 1) ? k + 1 : -1;
@@ -548,10 +548,10 @@ function roadBossEnd(R) {
 function roadBossWin(k, lv, spec) {
   const RG_ = ROAD_REG[k], r = roadGet(), bit = 1 << lv, had = r[RG_.bk] | 0, lines = [], rs = roadSkinOf(spec, RG_.boss);
   let total = 0, skin = null;
-  if (!(had & bit)) { r[RG_.bk] = had | bit; total += ROAD_STAR_CHIPS; lines.push(`${BOSS_LV[lv]} star +${ROAD_STAR_CHIPS}`); }
-  if (!r[RG_.pk]) { r[RG_.pk] = true; total += ROAD_BOSS_CHIPS; lines.push(`${RG_.title} title + ${ROAD_BOSS_CHIPS}`); }
-  if (rs >= 0 && !(P.owned[spec.id] || []).includes(rs)) { P.owned[spec.id] = [...(P.owned[spec.id] || [0]), rs]; skin = { f: spec.id, i: rs }; lines.push(`${spec.palettes[rs].name} skin for ${spec.name}`); }
-  if (k + 1 < ROAD_REG.length && roadRegReady(k + 1) && !had) lines.push(`${ROAD_REG[k + 1].name} is open`);
+  if (!(had & bit)) { r[RG_.bk] = had | bit; total += ROAD_STAR_CHIPS; lines.push(_t("{level} star +{chips}", { level: BOSS_LV[lv], chips: ROAD_STAR_CHIPS })); }
+  if (!r[RG_.pk]) { r[RG_.pk] = true; total += ROAD_BOSS_CHIPS; lines.push(_t("{title} title + {chips}", { title: RG_.title, chips: ROAD_BOSS_CHIPS })); }
+  if (rs >= 0 && !(P.owned[spec.id] || []).includes(rs)) { P.owned[spec.id] = [...(P.owned[spec.id] || [0]), rs]; skin = { f: spec.id, i: rs }; lines.push(_t("{skin} skin for {name}", { skin: _tv(spec.palettes[rs].name), name: spec.name })); }
+  if (k + 1 < ROAD_REG.length && roadRegReady(k + 1) && !had) lines.push(_t("{name} is open", { name: ROAD_REG[k + 1].name }));
   if (total || skin) { P.road = r; P.tokens += total; saveProfile(); }
   return { total, lines, had, skin };
 }
@@ -566,7 +566,7 @@ function roadResStars(R) {
   const rt = rd.boss ? null : roadRouteOf(ROAD[rd.i], R.me.spec.id);
   el.innerHTML = rd.labels.map((n, k) => {
     const on = !!((rd.got | rd.had) & (1 << k)), fresh = !!(rd.got & (1 << k)) && !(rd.had & (1 << k));
-    if (k === 2 && rt && !on) return `<button class="rd-st rd-stk" style="--k:${k}" data-i="${rd.i}" aria-label="Combo star missed: ${cupEsc(rt.name)}. Practise it in the Combo trial"><i aria-hidden="true">★</i><small>${cupEsc(rt.name)}</small><span class="rk-row">${routeKeysHTML(rt)}</span></button>`;
+    if (k === 2 && rt && !on) return `<button class="rd-st rd-stk" style="--k:${k}" data-i="${rd.i}" aria-label="${cupEsc(_t("Combo star missed: {name}. Practise it in the Combo trial", { name: routeName(rt) }))}"><i aria-hidden="true">★</i><small>${cupEsc(routeName(rt))}</small><span class="rk-row">${routeKeysHTML(rt)}</span></button>`;
     return `<span class="rd-st${on ? " on" : ""}${fresh ? " new" : ""}" style="--k:${k}"><i aria-hidden="true">★</i><small>${cupEsc(n)}</small></span>`;
   }).join("");
 }
@@ -580,12 +580,12 @@ function roadResRetry(R) {
   $("rRetry").parentNode.classList.toggle("retry", !!miss);
   sub.textContent = miss;
   // a narrow Retry (a small phone): "★ Lift & Smash" without the word combo, so the line is never cut
-  if (rt) requestAnimationFrame(() => { if (sub.textContent === miss && sub.scrollWidth > sub.clientWidth + 1) sub.textContent = `★ ${rt.name}`; });
+  if (rt) requestAnimationFrame(() => { if (sub.textContent === miss && sub.scrollWidth > sub.clientWidth + 1) sub.textContent = `★ ${routeName(rt)}`; });
 }
 // a stop's bonus star in a few words, for Retry's second line: "Three-piece combo", "Under 60 s", "Under 2:30", "Finisher KO", "Ulti KO"
 function roadStarShort(st, fid) {
   const b = st.bonus, rt = roadRouteOf(st, fid);
-  return rt ? `${rt.name} combo` : b.k === "fast" ? `Under ${b.s < 100 ? `${b.s} s` : `${Math.floor(b.s / 60)}:${String(b.s % 60).padStart(2, "0")}`}` : b.k === "fin" ? "Finisher KO" : b.k === "ulti" ? "Ulti KO" : b.txt;
+  return rt ? _t("{name} combo", { name: routeName(rt) }) : b.k === "fast" ? _t("Under {time}", { time: b.s < 100 ? _t("{n} s", { n: b.s }) : `${Math.floor(b.s / 60)}:${String(b.s % 60).padStart(2, "0")}` }) : b.k === "fin" ? _t("Finisher KO") : b.k === "ulti" ? _t("Ulti KO") : b.txt;
 }
 // the combo route a stop's combo star asks for ("own": the fighter you play's own route), null for the other stars
 function roadRouteOf(st, fid) {
@@ -605,10 +605,10 @@ function roadTrial(i) {
 // Next: Hard after a boss win; Retry after a loss (menus.js rAgain does it)
 function roadAgainLabel() {
   const nx = match && match.road && match.road.next;
-  if (!nx) return "Retry";
-  if (nx.lv !== undefined) return `Next: ${BOSS_LV[nx.lv]}`;
-  if (nx.k !== undefined) return `To ${ROAD_REG[nx.k].name}`;
-  return roadIsBoss(nx.i) ? `To ${roadBossSpec(nx.i - ROAD.length).name}` : "Next stop";
+  if (!nx) return _t("Retry");
+  if (nx.lv !== undefined) return _t("Next: {level}", { level: BOSS_LV[nx.lv] });
+  if (nx.k !== undefined) return _t("To {name}", { name: ROAD_REG[nx.k].name });
+  return roadIsBoss(nx.i) ? _t("To {name}", { name: roadBossSpec(nx.i - ROAD.length).name }) : _t("Next stop");
 }
 // Retry beside Next stop: the same stop, or the same boss level
 function roadRetry() {
@@ -630,7 +630,7 @@ function roadGoesOn(r, k) {
   return j < ROAD_N ? k * ROAD_N + j : roadGateOpen(r, k) ? ROAD.length + k : null;
 }
 function roadResMode(R) {
-  return R.road.boss ? `The Road · ${roadBossSpec(R.road.k).name} · ${BOSS_LV[R.road.lv]}` : `The Road · ${ROAD_REG[roadRegOf(R.road.i)].name} · stop ${(R.road.i % ROAD_N) + 1} · ${ROAD[R.road.i].name}`;
+  return R.road.boss ? _t("The Road · {boss} · {level}", { boss: roadBossSpec(R.road.k).name, level: BOSS_LV[R.road.lv] }) : _t("The Road · {region} · stop {n} · {name}", { region: ROAD_REG[roadRegOf(R.road.i)].name, n: (R.road.i % ROAD_N) + 1, name: ROAD[R.road.i].name });
 }
 
 /* ----- the menu card: the map in small, "Stop 3 of 8 · 7 ★" ----- */

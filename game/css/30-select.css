@@ -71,7 +71,7 @@
 #scrSelect .tile.on { z-index: 2; transform: scale(1.06); color: var(--ink); box-shadow: 0 0 0 3px var(--gold), 0 5px 0 2px var(--ink), 0 0 18px rgba(244, 201, 93, 0.45); }
 #scrSelect .tile.on img { filter: none; }
 #scrSelect .tile.on span { background: var(--gold); }
-#scrSelect .tile.on::after { content: "YOU"; position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
+#scrSelect .tile.on::after { content: var(--tw-you, "YOU"); position: absolute; right: -2px; top: -2px; padding: 4px 7px 3px; background: var(--gold); color: var(--ink); border: 2px solid var(--ink); border-radius: 0 7px 0 7px; font: 900 10px/1 var(--display); letter-spacing: 0.1em; }
 #scrSelect .tile:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 /* ---- stage: portrait over the fighter-colour sunburst + speed lines, the name, the role plate, the model in the skin, the Skins bar ---- */
