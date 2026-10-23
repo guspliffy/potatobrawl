@@ -52,7 +52,7 @@ function loadProfile() {
 /* Friend match rules: lives, minutes (0 = no limit), single match or best of 3. */
 const RULES = { l: [1, 3, 5], t: [2, 4, 0], b: [1, 3] };
 function validRules(r) { return !!r && typeof r === "object" && RULES.l.includes(r.l) && RULES.t.includes(r.t) && RULES.b.includes(r.b); }
-function ruleText(r) { return `${r.l} ${r.l === 1 ? "life" : "lives"} · ${r.t ? r.t + " min" : "no time limit"} · ${r.b === 3 ? "best of 3" : "single match"}`; }
+function ruleText(r) { return `${_t("{n} life|{n} lives", { n: r.l })} · ${r.t ? _t("{n} min", { n: r.t }) : _t("no time limit")} · ${r.b === 3 ? _t("best of 3") : _t("single match")}`; }
 function saveProfile() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(P)); } catch (e) { /* ignore */ }
   try { acctDirty(); } catch (e) { /* accounts (ui/acct.js) not set up yet */ }   // a linked account saves itself shortly after
@@ -67,13 +67,13 @@ function playedOnce() {
 function markPlayed() { if (!P.fin1) { P.fin1 = true; saveProfile(); } }
 
 const TIERS = [
-  { name: "Tin", min: 0, col: "#9097ad" },
-  { name: "Bronze", min: 900, col: "#cd8f5b" },
-  { name: "Silver", min: 1050, col: "#c9d0e4" },
-  { name: "Gold", min: 1200, col: "#f0c35a" },
-  { name: "Platinum", min: 1350, col: "#7fd6c8" },
-  { name: "Diamond", min: 1500, col: "#8fb6ff" },
-  { name: "Blastmaster", min: 1650, col: "#ef7a52" },
+  { name: _tk("Tin"), min: 0, col: "#9097ad" },
+  { name: _tk("Bronze"), min: 900, col: "#cd8f5b" },
+  { name: _tk("Silver"), min: 1050, col: "#c9d0e4" },
+  { name: _tk("Gold"), min: 1200, col: "#f0c35a" },
+  { name: _tk("Platinum"), min: 1350, col: "#7fd6c8" },
+  { name: _tk("Diamond"), min: 1500, col: "#8fb6ff" },
+  { name: _tk("Blastmaster"), min: 1650, col: "#ef7a52" },
 ];
 function tierIdx(r) { let i = 0; for (let k = 0; k < TIERS.length; k++) if (r >= TIERS[k].min) i = k; return i; }
 function tierInfo(r) {
@@ -205,12 +205,12 @@ function tierEmblem(i, cls) {
   return `<svg class="em em${i}${cls ? " " + cls : ""}" viewBox="0 0 60 60" aria-hidden="true" focusable="false">${emSvg[i].replace(/%U/g, String(++emSeq))}</svg>`;
 }
 // the emblem as a small labelled badge in markup (the cup bracket)
-const tierBadge = (i, cls) => `<i class="${cls}" role="img" aria-label="${TIERS[i].name} tier" title="${TIERS[i].name}">${tierEmblem(i)}</i>`;
+const tierBadge = (i, cls) => `<i class="${cls}" role="img" aria-label="${_t("{name} tier", { name: _tv(TIERS[i].name) })}" title="${_tv(TIERS[i].name)}">${tierEmblem(i)}</i>`;
 // paint tier i's emblem into el (the pill, the Account sheet, the results). from < i: a promotion, the old emblem spins out first.
 function paintBadge(el, i, from) {
   const t = TIERS[i], up = from != null && from >= 0 && from < i;
   el.style.setProperty("--tc", t.col);
-  el.setAttribute("role", "img"); el.setAttribute("aria-label", `${t.name} tier`); el.title = t.name;
+  el.setAttribute("role", "img"); el.setAttribute("aria-label", _t("{name} tier", { name: _tv(t.name) })); el.title = _tv(t.name);
   el.innerHTML = tierEmblem(i) + (up ? tierEmblem(from, "was") : "");
   el.classList.remove("promo");
   if (up) { void el.offsetWidth; el.classList.add("promo"); }

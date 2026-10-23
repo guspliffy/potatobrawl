@@ -15,9 +15,9 @@
 const DAILY = {
   lives: 3, secs: 180, win: 40, draw: 15, loss: 5, again: 50,
   d: [0.45, 0.52, 0.59, 0.66, 0.73, 0.8, 0.87],                          // CPU strength, Monday to Sunday in equal steps
-  words: ["Normal", "Normal", "Normal", "Hard", "Hard", "Hard", "Brutal"],
+  words: [_t("Normal"), _t("Normal"), _t("Normal"), _t("Hard"), _t("Hard"), _t("Hard"), _t("Brutal")],
 };
-const DAY_N = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON_N = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_N = [_t("Sun@@day of the week, short"), _t("Mon@@day of the week, short"), _t("Tue@@day of the week, short"), _t("Wed@@day of the week, short"), _t("Thu@@day of the week, short"), _t("Fri@@day of the week, short"), _t("Sat@@day of the week, short")], MON_N = [_t("Jan@@month, short"), _t("Feb@@month, short"), _t("Mar@@month, short"), _t("Apr@@month, short"), _t("May@@month, short"), _t("Jun@@month, short"), _t("Jul@@month, short"), _t("Aug@@month, short"), _t("Sep@@month, short"), _t("Oct@@month, short"), _t("Nov@@month, short"), _t("Dec@@month, short")];
 const DLY = { key: "", arm: false, armT: 0 };   // the day the sheet shows; whether Another go waits for its second tap
 
 /* ----- the day and its matchup ----- */
@@ -38,7 +38,7 @@ function dailyPick(key) {
 function dailyPals(pk) { const mi = P.pal[pk.me] || 0; return [mi, pk.opp === pk.me ? (mi + 1) % chipN(FIG[pk.opp]) : 0]; }
 function dailyNextIn() {   // until the next local midnight
   const ms = dailyDate(dailyShift(dailyKey(), 1)) - Date.now();
-  return ms < 3600000 ? `${Math.max(1, Math.ceil(ms / 60000))} min` : `${Math.round(ms / 3600000)} h`;
+  return ms < 3600000 ? _t("{n} min", { n: Math.max(1, Math.ceil(ms / 60000)) }) : _t("{n} h", { n: Math.round(ms / 3600000) });
 }
 
 /* ----- the record ----- */
@@ -50,7 +50,7 @@ function dailyAfter(st, key, prev, res, forfeit) {
   const won = res === 1, draw = res === 0.5, s = won ? prev + 1 : draw ? prev : 0;
   return { st: { d: key, r: res, s, w: won || (draw && s > 0) ? key : st.w, b: Math.max(st.b, s) }, chips: won ? DAILY.win : draw ? DAILY.draw : forfeit ? 0 : DAILY.loss };
 }
-const dailyRes = (r) => (r === 1 ? "Won" : r === 0.5 ? "Draw" : "Lost");   // -1 (left unfinished) is a loss
+const dailyRes = (r) => (r === 1 ? _t("Won") : r === 0.5 ? _t("Draw") : _t("Lost"));   // -1 (left unfinished) is a loss
 // Another go is open: today's try ended in a loss or a draw (r 0 / 0.5 with p; a forfeit or a quit has none), and it was not taken yet
 const dailyAgainOk = (st, key) => st.d === key && (st.r === 0 || st.r === 0.5) && typeof st.p === "number" && !st.x;
 // the record as it stood before today's first try: the day that kept the streak was yesterday when a streak showed (a draw moved it to today); the best never moved
@@ -60,7 +60,7 @@ const dailyBefore = (st, key) => ({ w: st.p > 0 ? dailyShift(key, -1) : st.w, b:
 function dailyMenu() {
   const key = dailyKey(), st = dailyGet(), done = st.d === key, s = dailyStreak(st, key);
   const pk = done ? null : dailyPick(key);
-  $("mDaily").textContent = pk ? `${FIG[pk.me].name} vs ${FIG[pk.opp].name} · ${pk.word}` : `${dailyRes(st.r)}${s > 0 && st.r > 0 ? ` · ${s}-day streak` : ""} · next in ${dailyNextIn()}`;
+  $("mDaily").textContent = pk ? _t("{a} vs {b} · {word}", { a: FIG[pk.me].name, b: FIG[pk.opp].name, word: pk.word }) : `${dailyRes(st.r)}${s > 0 && st.r > 0 ? ` · ${_t("{n}-day streak", { n: s })}` : ""} · ${_t("next in {t}", { t: dailyNextIn() })}`;
   $("bDaily").classList.toggle("won", done && st.r === 1);
 }
 function dailyCard(el, id, pi, who) {
@@ -73,12 +73,12 @@ function dailyOpen() {
   const key = dailyKey(), st = dailyGet(), pk = dailyPick(key), [mi, oi] = dailyPals(pk), done = st.d === key, s = dailyStreak(st, key), again = dailyAgainOk(st, key);
   DLY.key = key; dailyDisarm();
   $("dlyDate").textContent = dailyLabel(key);
-  dailyCard($("dlyMe"), pk.me, mi, "You"); dailyCard($("dlyOp"), pk.opp, oi, pk.cpu);
-  $("dlyWho").textContent = `${FIG[pk.me].name} vs ${FIG[pk.opp].name} · ${pk.cpu}`;
-  const best = st.b > 0 ? ` Best streak: ${st.b} ${st.b === 1 ? "day" : "days"}.` : "";
-  $("dlyRule").innerHTML = done ? `<b>${dailyRes(st.r)} today.</b>${again ? ` One more go for ${DAILY.again} chips.` : s > 0 ? ` ${s}-day streak.` : ""}` : `<b>One try.</b> Win: ${DAILY.win} chips${s > 0 ? ` and a ${s + 1}-day streak` : ""}.`;
-  $("dlyLine").textContent = again ? `The same match again. Its result replaces today's: a win pays ${DAILY.win} chips${st.p > 0 ? ` and makes it a ${st.p + 1}-day streak` : ""}, a draw ${DAILY.draw}, a loss ${DAILY.loss}.`
-    : done ? `The next Daily Potato opens in ${dailyNextIn()}.${best}` : `CPU: ${pk.word} · ${DAILY.lives} lives · ${DAILY.secs / 60} min · the same matchup for everyone today.`;
+  dailyCard($("dlyMe"), pk.me, mi, _t("You")); dailyCard($("dlyOp"), pk.opp, oi, pk.cpu);
+  $("dlyWho").textContent = _t("{a} vs {b} · {cpu}", { a: FIG[pk.me].name, b: FIG[pk.opp].name, cpu: pk.cpu });
+  const best = st.b > 0 ? ` ${_t("Best streak: {n} day.|Best streak: {n} days.", { n: st.b })}` : "";
+  $("dlyRule").innerHTML = done ? `<b>${st.r === 1 ? _t("Won today.") : st.r === 0.5 ? _t("Draw today.") : _t("Lost today.")}</b>${again ? ` ${_t("One more go for {n} chips.", { n: DAILY.again })}` : s > 0 ? ` ${_t("{n}-day streak.", { n: s })}` : ""}` : `<b>${_t("One try.")}</b> ${s > 0 ? _t("Win: {n} chips and a {s}-day streak.", { n: DAILY.win, s: s + 1 }) : _t("Win: {n} chips.", { n: DAILY.win })}`;
+  $("dlyLine").textContent = again ? (st.p > 0 ? _t("The same match again. Its result replaces today's: a win pays {w} chips and makes it a {s}-day streak, a draw {d}, a loss {l}.", { w: DAILY.win, s: st.p + 1, d: DAILY.draw, l: DAILY.loss }) : _t("The same match again. Its result replaces today's: a win pays {w} chips, a draw {d}, a loss {l}.", { w: DAILY.win, d: DAILY.draw, l: DAILY.loss }))
+    : done ? `${_t("The next Daily Potato opens in {t}.", { t: dailyNextIn() })}${best}` : _t("CPU: {word} · {n} lives · {m} min · the same matchup for everyone today.", { word: pk.word, n: DAILY.lives, m: DAILY.secs / 60 });
   $("dlyGo").hidden = done;
   $("dlyAgain").hidden = !again;
   dailyAgainLabel();
@@ -90,8 +90,8 @@ function dailyOpen() {
 function dailyAgainLabel() {
   const b = $("dlyAgain"), free = (P.ago | 0) > 0, short = !free && P.tokens < DAILY.again;
   b.classList.toggle("ember", DLY.arm); b.classList.toggle("primary", !DLY.arm && !short); b.classList.toggle("dim", short);
-  b.querySelector("span").innerHTML = `${DLY.arm ? "Sure?" : "Another go"} ${free ? "· free" : `<span class="tokglyph"></span>${DAILY.again}`}`;
-  b.setAttribute("aria-label", free ? `${DLY.arm ? "Sure? " : ""}Another go, free (${P.ago | 0} left from the Harvest)` : DLY.arm ? `Sure? Another go for ${DAILY.again} chips` : short ? `Another go costs ${DAILY.again} chips, you have ${fmtChips(P.tokens)}` : `Another go for ${DAILY.again} chips`);
+  b.querySelector("span").innerHTML = `${DLY.arm ? _t("Sure?") : _t("Another go")} ${free ? `· ${_t("free")}` : `<span class="tokglyph"></span>${DAILY.again}`}`;
+  b.setAttribute("aria-label", free ? (DLY.arm ? _t("Sure? Another go, free ({n} left from the Harvest)", { n: P.ago | 0 }) : _t("Another go, free ({n} left from the Harvest)", { n: P.ago | 0 })) : DLY.arm ? _t("Sure? Another go for {n} chips", { n: DAILY.again }) : short ? _t("Another go costs {n} chips, you have {c}", { n: DAILY.again, c: fmtChips(P.tokens) }) : _t("Another go for {n} chips", { n: DAILY.again }));
 }
 function dailyDisarm() { clearTimeout(DLY.armT); DLY.arm = false; }
 function dailyFight() {
@@ -109,7 +109,7 @@ function dailyAgain() {
   const free = (P.ago | 0) > 0;
   if (!free && P.tokens < DAILY.again) {
     dailyDisarm(); Sfx.uiNo(); dailyAgainLabel();
-    $("dlyLine").textContent = `Another go costs ${DAILY.again} chips and you have ${fmtChips(P.tokens)}: ${DAILY.again - P.tokens} more needed. Chips come from ranked wins, the Daily Potato, tournaments and Road stars.`;
+    $("dlyLine").textContent = `${_t("Another go costs {n} chips and you have {c}: {m} more needed.", { n: DAILY.again, c: fmtChips(P.tokens), m: DAILY.again - P.tokens })} ${_t("Chips come from ranked wins, the Daily Potato, tournaments and Road stars.")}`;
     return;
   }
   if (!DLY.arm) {   // the first tap arms the button (ember, "Sure?") for 3 s
@@ -142,8 +142,8 @@ function dailyMatchEnd(forfeit) {
   else if (!forfeit && res !== 1) st.p = dm.prev;   // a finished loss or draw keeps Another go open (a win or a forfeit does not)
   P.daily = st; P.tokens += chips;
   saveProfile();
-  const sk = ` · ${st.s}-day streak`, reset = dm.prev > 0 ? " · streak reset" : "", ag = dm.again ? " · another go" : "";
-  const why = res === 1 ? `Daily win +${chips}${sk}${ag}` : res === 0.5 ? `Daily draw +${chips}${st.s > 0 ? sk : ""}${ag}` : forfeit ? `No chips for a forfeit${reset}${ag}` : `Daily played +${chips}${reset}${ag}`;
+  const sk = ` · ${_t("{n}-day streak", { n: st.s })}`, reset = dm.prev > 0 ? ` · ${_t("streak reset")}` : "", ag = dm.again ? ` · ${_t("another go")}` : "";
+  const why = res === 1 ? `${_t("Daily win +{n}", { n: chips })}${sk}${ag}` : res === 0.5 ? `${_t("Daily draw +{n}", { n: chips })}${st.s > 0 ? sk : ""}${ag}` : forfeit ? `${_t("No chips for a forfeit")}${reset}${ag}` : `${_t("Daily played +{n}", { n: chips })}${reset}${ag}`;
   showResults({ res, forfeit, ranked: false, daily: dm, me, op, lines: [], total: chips, why });
 }
 

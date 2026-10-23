@@ -17,19 +17,19 @@
    change of what the server said. The results' "Potatality · in the Pommes Shop" band (#rKo) is shopResKo and opens that sheet on the fighter whose page
    just played on you. */
 const PLATES = [
-  { id: "", name: "Ink", price: 0 },
-  { id: "sunset", name: "Sunset", price: 150 },
-  { id: "mint", name: "Mint", price: 150 },
-  { id: "nightsky", name: "Night Sky", price: 200 },
-  { id: "roaddust", name: "Road Dust", price: 200 },
-  { id: "kraken", name: "Kraken Ink", price: 200 },
-  { id: "halftone", name: "Halftone", price: 300 },
-  { id: "goldleaf", name: "Gold Leaf", price: 300 },
-  { id: "sprout", name: "Sprout", price: 0, harvest: true },   // day 7 of the Harvest only
+  { id: "", name: _t("Ink"), price: 0 },
+  { id: "sunset", name: _t("Sunset"), price: 150 },
+  { id: "mint", name: _t("Mint"), price: 150 },
+  { id: "nightsky", name: _t("Night Sky"), price: 200 },
+  { id: "roaddust", name: _t("Road Dust"), price: 200 },
+  { id: "kraken", name: _t("Kraken Ink"), price: 200 },
+  { id: "halftone", name: _t("Halftone"), price: 300 },
+  { id: "goldleaf", name: _t("Gold Leaf"), price: 300 },
+  { id: "sprout", name: _t("Sprout"), price: 0, harvest: true },   // day 7 of the Harvest only
 ];
 const SH_AD = 25, SH_AD_DAY = 3;   // the Free chips row: chips per ad, ads a day
 const SH = { arm: "", armT: 0, msgT: 0, msg: "", raf: 0, pl: [], gz: [], top: null, ad: null, pms: null, pmN: null };
-const SH_FROM = "Chips come from ranked wins, the Daily Potato, tournaments and Road stars.";
+const SH_FROM = _t("Chips come from ranked wins, the Daily Potato, tournaments and Road stars.");
 const plateInfo = (id) => PLATES.find((p) => p.id === id);
 const plateCls = (id) => (id && plateInfo(id) ? "np-" + id : "");
 // put a plate class on an element and take the earlier one off (el._np remembers it)
@@ -82,7 +82,7 @@ function renderShop() {
   const top = shMk("div", "sh-top"), bal = shMk("span", "coin chips sh-bal"), pm = shMk("button", "sh-pm"), from = shMk("p", "sh-from"), sk = shMk("span", "sh-skins");
   bal.id = "shBal"; pm.id = "shPm"; from.id = "shFrom"; from.setAttribute("aria-live", "polite");
   pm.type = "button"; pm.addEventListener("click", shopPommes);   // the pill opens the Pommes Shop, as the row at the end does
-  sk.innerHTML = `Skins <b>${acSkinCount(P)} / ${acSkinTotal()}</b> · in the Locker`;
+  sk.innerHTML = _t("Skins <b>{n} / {t}</b> · in the Locker", { n: acSkinCount(P), t: acSkinTotal() });
   top.append(bal, pm, from, sk);
   SH.top = { bal, pm, from };
   const ad = shMk("div", "sh-ad");   // SOON while ads are off, a button once an ad is ready (shopAdUpdate)
@@ -92,16 +92,16 @@ function renderShop() {
   const pms = shopPommesRow();
   const kick = (title, text, more) => {   // more: a second sentence, shown here on a landscape sheet (under the cards the rest of the time, .sh-note)
     const k = shMk("div", "sh-k"), s = shMk("span", "", text);
-    if (more) s.appendChild(shMk("em", "sh-k2", more));
+    if (more) s.appendChild(shMk("em", "sh-k2", ", " + more));
     k.appendChild(shMk("b", "", title)); k.appendChild(s); return k;
   };
-  const NOTE = "The worn skin of each fighter is glazed here.";
+  const NOTE = _t("The worn skin of each fighter is glazed here.");
   const g1 = shMk("div", "sh-grid sh-plates"), g2 = shMk("div", "sh-grid sh-glaze");
-  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", "Nameplates"); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", "Glaze");
+  g1.setAttribute("role", "group"); g1.setAttribute("aria-label", _t("Nameplates")); g2.setAttribute("role", "group"); g2.setAttribute("aria-label", _t("Glaze"));
   for (const c of SH.pl) g1.appendChild(c.el);
   for (const c of SH.gz) g2.appendChild(c.el);
-  pan.append(top, ad, kick("Nameplates", "the plate behind your name", ", on the menu, in your profile and on the results"), g1,
-    kick("Glaze", "a pearl sheen on a skin you own", `, ${GLAZE_PRICE} chips each. ${NOTE}`), g2,
+  pan.append(top, ad, kick(_t("Nameplates"), _t("the plate behind your name"), _t("on the menu, in your profile and on the results")), g1,
+    kick(_t("Glaze"), _t("a pearl sheen on a skin you own"), _t("{n} chips each. {note}", { n: GLAZE_PRICE, note: NOTE })), g2,
     shMk("p", "sh-note", NOTE), pms);
   koAsk();   // ui/kopages.js: the balance again from the server (not more than every 5 s)
   shopRefresh();
@@ -114,22 +114,22 @@ function shopRefresh() {
   if (!SH.top) return;
   const name = acctName(), worn = shopWorn();
   SH.top.bal.innerHTML = fmtChips(P.tokens);
-  SH.top.bal.setAttribute("aria-label", `${fmtChips(P.tokens)} chips`);
+  SH.top.bal.setAttribute("aria-label", _t("{c} chips", { c: fmtChips(P.tokens) }));
   SH.top.from.textContent = SH.msg || SH_FROM; SH.top.from.classList.toggle("say", !!SH.msg);
   for (const c of SH.pl) {
     const p = plateInfo(c.id), st = plState(c.id), arm = SH.arm === "p:" + c.id;
     c.nm.textContent = name;
     c.el.className = `sh-c sh-pl ${st}${arm ? " arm" : ""}`;
-    c.small.innerHTML = arm ? `<span>Sure?</span>${shCoin(p.price)}` : st === "worn" ? "Worn" : st === "own" ? "Tap to wear" : st === "gift" ? "Harvest gift" : shCoin(p.price);
+    c.small.innerHTML = arm ? `<span>${_t("Sure?")}</span>${shCoin(p.price)}` : st === "worn" ? _t("Worn") : st === "own" ? _t("Tap to wear") : st === "gift" ? _t("Harvest gift") : shCoin(p.price);
     c.el.setAttribute("aria-pressed", String(st === "worn"));
-    c.el.setAttribute("aria-label", `${p.name} nameplate: ${st === "worn" ? "worn" : st === "own" ? "owned, tap to wear" : st === "gift" ? "a gift on day 7 of the Harvest" : arm ? `tap again to buy for ${p.price} chips` : `${p.price} chips`}`);
+    c.el.setAttribute("aria-label", _t("{name} nameplate: {say}", { name: p.name, say: st === "worn" ? _t("worn") : st === "own" ? _t("owned, tap to wear") : st === "gift" ? _t("a gift on day 7 of the Harvest") : arm ? _t("tap again to buy for {n} chips", { n: p.price }) : _t("{n} chips", { n: p.price }) }));
   }
   for (const c of SH.gz) {
     const st = gzState(c), arm = SH.arm === "g:" + c.id, spec = FIG[c.id], pal = spec.palettes[c.i] || spec.palettes[0];
-    const tk = st === "token" || (arm && (P.gzt | 0) > 0), price = tk ? "token" : shCoin(GLAZE_PRICE), say = tk ? "a Glaze token" : `${GLAZE_PRICE} chips`;
+    const tk = st === "token" || (arm && (P.gzt | 0) > 0), price = tk ? "token" : shCoin(GLAZE_PRICE), say = tk ? _t("a Glaze token") : _t("{n} chips", { n: GLAZE_PRICE });
     c.el.className = `sh-c sh-gz ${st === "token" ? "buy tk" : st}${arm ? " arm" : ""}`;
-    c.small.innerHTML = arm ? `<span>Sure?</span>${tk ? " token" : price}` : st === "glazed" ? "Glazed ✦" : `<span>Glaze</span>${tk ? " · token" : price}`;
-    c.el.setAttribute("aria-label", `${spec.name}, ${pal.name}: ${st === "glazed" ? "glazed" : arm ? `tap again to glaze for ${say}` : `glaze for ${say}`}`);
+    c.small.innerHTML = arm ? `<span>${_t("Sure?")}</span>${tk ? ` ${_t("token")}` : price}` : st === "glazed" ? _t("Glazed ✦") : `<span>${_t("Glaze")}</span>${tk ? ` · ${_t("token")}` : price}`;
+    c.el.setAttribute("aria-label", st === "glazed" ? _t("{name}, {skin}: glazed", { name: spec.name, skin: _tv(pal.name) }) : arm ? _t("{name}, {skin}: tap again to glaze for {say}", { name: spec.name, skin: _tv(pal.name), say }) : _t("{name}, {skin}: glaze for {say}", { name: spec.name, skin: _tv(pal.name), say }));
     if (glazeOn(c.art.f) !== (st === "glazed")) { glazeMark(c.art.f, st === "glazed"); shopPaint(false); }
   }
   shopPmUpdate(); shopAdUpdate();
@@ -142,7 +142,7 @@ function shopPommesRow() {
   const el = shMk("button", "sh-ad sh-pms"), ico = shMk("span", "sh-pmi"), t = shMk("span", "sh-adt"), v = shMk("span", "sh-pmv"), go = shMk("b", "sh-pmg", "›");
   el.type = "button";
   ico.setAttribute("aria-hidden", "true"); ico.innerHTML = shPmCone; go.setAttribute("aria-hidden", "true");
-  t.append(shMk("b", "", "Pommes Shop"), " ", shMk("span", "", "KO pages and special skins"));   // (the spaces: the row reads as a sentence to anything that takes its text)
+  t.append(shMk("b", "", _t("Pommes Shop")), " ", shMk("span", "", _t("KO pages and special skins")));   // (the spaces: the row reads as a sentence to anything that takes its text)
   el.append(ico, " ", t, " ", v, " ", go);
   el.addEventListener("click", shopPommes);
   SH.pms = { el, v };
@@ -154,10 +154,10 @@ function shopPmUpdate() {
   const n = koBal(), pm = SH.top.pm, row = SH.pms;
   if (SH.pmN === n) return;
   pm.innerHTML = `${shPmCone}<b>${fmtChips(n)}</b> <span>Pommes</span>`;
-  pm.setAttribute("aria-label", `${fmtChips(n)} Pommes: open the Pommes Shop`);
+  pm.setAttribute("aria-label", _t("{c} Pommes: open the Pommes Shop", { c: fmtChips(n) }));
   pm.classList.toggle("zero", !(n > 0));
   row.v.textContent = fmtChips(n); row.el.classList.toggle("zero", !(n > 0));
-  row.el.setAttribute("aria-label", `Pommes Shop: ${fmtChips(n)} Pommes. KO pages and special skins`);
+  row.el.setAttribute("aria-label", _t("Pommes Shop: {c} Pommes. KO pages and special skins", { c: fmtChips(n) }));
   if (SH.pmN !== null && !resCalm()) slReplay(pm, "sh-pop");
   SH.pmN = n;
 }
@@ -172,14 +172,14 @@ function shopAdUpdate() {
   const k = !on ? "soon" : used >= SH_AD_DAY ? "done" : st === "ready" ? "ready" : st === "none" ? "none" : st === "busy" ? "busy" : "wait";
   if (el._k === `${k}:${used}`) return;
   el._k = `${k}:${used}`;
-  const sub = k === "soon" ? `A short ad, +${SH_AD} chips, ${SH_AD_DAY} a day. Never required.` : k === "done" ? "back tomorrow" : k === "none" ? "No ad right now" : `+${SH_AD} chips · ${used} of ${SH_AD_DAY} today`;
-  el.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>Free chips</b><span>${sub}</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span>${k === "soon" ? '<i class="sh-soon">Soon</i>' : ""}`;
+  const sub = k === "soon" ? _t("A short ad, +{n} chips, {d} a day. Never required.", { n: SH_AD, d: SH_AD_DAY }) : k === "done" ? _t("back tomorrow") : k === "none" ? _t("No ad right now") : _t("+{n} chips · {u} of {d} today", { n: SH_AD, u: used, d: SH_AD_DAY });
+  el.innerHTML = `<i class="sh-adi" aria-hidden="true"></i><span class="sh-adt"><b>${_t("Free chips")}</b><span>${sub}</span></span><span class="sh-adv">${shCoin("+" + SH_AD)}</span>${k === "soon" ? `<i class="sh-soon">${_t("Soon")}</i>` : ""}`;
   el.className = k === "soon" ? "sh-ad" : `sh-ad ${k}`;
   if (k === "ready") { el.setAttribute("role", "button"); el.tabIndex = 0; el.removeAttribute("aria-disabled"); }
   else { el.removeAttribute("role"); el.removeAttribute("tabindex"); el.setAttribute("aria-disabled", "true"); }
-  const say = { soon: `a short ad, ${SH_AD} chips, ${SH_AD_DAY} a day, never required. Coming soon.`, ready: `watch a short ad for ${SH_AD} chips, ${used} of ${SH_AD_DAY} today`,
-    done: `all ${SH_AD_DAY} ads watched today, back tomorrow`, none: "no ad right now", busy: "an ad is playing", wait: `getting an ad ready, ${used} of ${SH_AD_DAY} today` };
-  el.setAttribute("aria-label", `Free chips: ${say[k]}`);
+  const say = { soon: _t("a short ad, {n} chips, {d} a day, never required. Coming soon.", { n: SH_AD, d: SH_AD_DAY }), ready: _t("watch a short ad for {n} chips, {u} of {d} today", { n: SH_AD, u: used, d: SH_AD_DAY }),
+    done: _t("all {d} ads watched today, back tomorrow", { d: SH_AD_DAY }), none: _t("no ad right now"), busy: _t("an ad is playing"), wait: _t("getting an ad ready, {u} of {d} today", { u: used, d: SH_AD_DAY }) };
+  el.setAttribute("aria-label", _t("Free chips: {say}", { say: say[k] }));
 }
 // the tab opened, or came back from the Pommes Shop (which asks for its own ad): ask for one if none is on the way and some are left today
 function shopAdAsk() {
@@ -227,8 +227,8 @@ function shopPlateTap(id) {
   if (st === "own") {   // owned: worn at once
     shopDisarm(); P.plate = id; saveProfile(); Sfx.uiFlip(); renderPill(); shopRefresh(); return;
   }
-  if (st === "gift") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} isn't sold: it is the gift on day 7 of the Harvest, behind the flame on the start page.`); return; }
-  if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`${p.name} costs ${p.price} chips and you have ${fmtChips(P.tokens)}: ${p.price - P.tokens} more needed.`); return; }
+  if (st === "gift") { shopDisarm(); Sfx.uiNo(); shopSay(_t("{name} isn't sold: it is the gift on day 7 of the Harvest, behind the flame on the start page.", { name: p.name })); return; }
+  if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(_t("{name} costs {p} chips and you have {c}: {m} more needed.", { name: p.name, p: p.price, c: fmtChips(P.tokens), m: p.price - P.tokens })); return; }
   if (SH.arm !== "p:" + id) { shopArm("p:" + id); return; }
   shopDisarm();
   if (P.tokens < p.price || shopOwns(id)) { shopRefresh(); return; }
@@ -239,7 +239,7 @@ function shopGlazeTap(id) {
   Sfx.init();
   const c = SH.gz.find((x) => x.id === id), st = gzState(c);
   if (st === "glazed") { shopDisarm(); shopRefresh(); return; }
-  if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(`Glaze costs ${GLAZE_PRICE} chips and you have ${fmtChips(P.tokens)}: ${GLAZE_PRICE - P.tokens} more needed.`); return; }
+  if (st === "short") { shopDisarm(); Sfx.uiNo(); shopSay(_t("Glaze costs {p} chips and you have {c}: {m} more needed.", { p: GLAZE_PRICE, c: fmtChips(P.tokens), m: GLAZE_PRICE - P.tokens })); return; }
   if (SH.arm !== "g:" + id) { shopArm("g:" + id); return; }
   shopDisarm();
   const tk = (P.gzt | 0) > 0;   // a Glaze token from the Harvest goes first
@@ -259,8 +259,8 @@ function shopResKo(id) {
   const el = $("rKo"), ok = typeof id === "string" && !!KO_PAGES[id];
   el.hidden = !ok; el.dataset.id = ok ? id : "";
   const sp = el.querySelector("span");   // (shell.html still says "in the Shop"); "in the " drops out on the smallest screens
-  if (!sp.firstElementChild) { sp.textContent = "· "; sp.append(shMk("span", "rk-in", "in the "), "Pommes Shop"); }
-  if (ok) el.setAttribute("aria-label", `${KO_PAGES[id].name}, ${FIG[id].name}'s Potatality: see it in the Pommes Shop`);
+  if (!sp.firstElementChild) { sp.textContent = "· "; sp.append(shMk("span", "rk-in", `${_t("in the")} `), _t("Pommes Shop")); }
+  if (ok) el.setAttribute("aria-label", _t("{page}, {name}'s Potatality: see it in the Pommes Shop", { page: KO_PAGES[id].name, name: FIG[id].name }));
 }
 $("rKo").addEventListener("click", () => {
   const id = $("rKo").dataset.id;

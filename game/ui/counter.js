@@ -212,9 +212,9 @@ function cntSettings() {
   $("setCountRow").hidden = !CNT.can;
   $("setCountNote").hidden = !CNT.can;
   if (!CNT.can) return;
-  chipRow("setCount", [[true, "On"], [false, "Off"]], CNT.on, cntSwitch, (v) => v && CNT.gpc);
-  $("setCountNote").textContent = CNT.gpc ? "Your browser asks sites not to count visits, so this device sends nothing."
-    : "Play counts are anonymous totals (no name, no ID, no cookies) that show which modes people enjoy.";
+  chipRow("setCount", [[true, _t("On")], [false, _t("Off")]], CNT.on, cntSwitch, (v) => v && CNT.gpc);
+  $("setCountNote").textContent = CNT.gpc ? _t("Your browser asks sites not to count visits, so this device sends nothing.")
+    : _t("Play counts are anonymous totals (no name, no ID, no cookies) that show which modes people enjoy.");
 }
 function cntSwitch(v) {
   if (!v) {
