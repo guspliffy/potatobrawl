@@ -18,6 +18,7 @@ const TB_RELAY = 60;       // frames of a dropped friend's last inputs passed on
 const TB_HOLD = 3000;      // the lead waits at most this long for every phone's copy of a dropped friend's last inputs
 const tbTeam = (s) => (s < 2 ? 0 : 1), tbMate = (s) => s ^ 1, tbFoes = (s) => (s < 2 ? [2, 3] : [0, 1]);
 const tbLvName = (lv) => LEVELS[TB_LV[lv]].name;
+const tbAnd = (l) => l.reduce((a, b) => _t("{a} and {b}", { a, b }));   // "Jonny", "Jonny and Mia", "Jonny and Mia and Tom": a list of names, never empty
 // The lobby's third mode. P.onTeam = { on, lv (0-2) }: this device's last pick (not synced), Normal at first
 function onTeam() {
   const o = P.onTeam && typeof P.onTeam === "object" ? P.onTeam : {};
@@ -166,14 +167,14 @@ function tbGuest(peers) {
   const tb = host && host.presence.tb, me = tbMe();
   if (!host || !tb || !tbValidBd(tb.bd)) {
     if (NET.phase === "joining") return;   // the host's board has not come in yet (handshakeTick gives up after 8 s)
-    NET.note = NET.phase === "board" ? "The host closed the brawl." : "The host left."; netCancel(); return;
+    NET.note = NET.phase === "board" ? _t("The host closed the brawl.") : _t("The host left."); netCancel(); return;
   }
   NET.tb = Object.assign(NET.tb || {}, { host: host.peer, lv: [0, 1, 2].includes(tb.lv) ? tb.lv : 1, bd: tb.bd.slice(), open: !!tb.open });
   const seated = tb.bd.includes(me);
   if (NET.phase === "joining") {
     if (seated) { NET.phase = "board"; NET.oppPeer = null; lobbyPresence(); renderOnline(); return; }
-    if (!tb.open) { NET.note = "That brawl has already started."; netCancel(); return; }
-    if (!tbFree(tb.bd)) { NET.note = "That match just filled up."; netCancel(); return; }
+    if (!tb.open) { NET.note = _t("That brawl has already started."); netCancel(); return; }
+    if (!tbFree(tb.bd)) { NET.note = _t("That match just filled up."); netCancel(); return; }
     return;
   }
   const go = host.presence.go;
@@ -209,44 +210,44 @@ function tbRender(names) {
       const pr = peer === me ? { f: sel.fighter } : ((mr.find((q) => q.peer === peer) || {}).presence || {});
       const spec = FIG[pr.f];
       if (spec && PORTRAITS[spec.id]) { const im = document.createElement("img"); im.src = PORTRAITS[spec.id]; im.alt = ""; av.appendChild(im); }
-      nm.textContent = peer === me ? NET.myName || "You" : names[peer] || "Friend";
-      const tag = peer === hostPeer ? "Host" : peer === me ? "You" : "";
+      nm.textContent = peer === me ? NET.myName || _t("You") : names[peer] || _t("Friend");
+      const tag = peer === hostPeer ? _t("Host") : peer === me ? _t("You") : "";
       if (tag) { const t = document.createElement("em"); t.textContent = tag; nm.appendChild(t); }
-      sb.textContent = spec ? spec.name : "Picking";
+      sb.textContent = spec ? spec.name : _t("Picking");
     } else {
-      av.textContent = "C";
-      nm.textContent = `CPU · ${tbLvName(T.lv)}`;
-      sb.textContent = "Free for a friend";
+      av.textContent = _t("C@@first letter of CPU, in a round badge");
+      nm.textContent = _t("CPU · {level}", { level: tbLvName(T.lv) });
+      sb.textContent = _t("Free for a friend");
     }
     tx.append(nm, sb); el.append(av, tx);
   };
   TB_SEATS.forEach(seat);
   const s = T.bd.indexOf(me), across = s < 0 ? [] : tbFoes(s), canSw = across.some((k) => !T.bd[k]) && NET.phase !== "handshake";
   $("onSwitch").disabled = !canSw;
-  $("onTbNote").textContent = s >= 0 && !canSw && NET.phase !== "handshake" ? `${s < 2 ? "Ember" : "Ice"} is full.` : "Empty seats play as CPUs.";
+  $("onTbNote").textContent = s >= 0 && !canSw && NET.phase !== "handshake" ? (s < 2 ? _t("Ember is full.") : _t("Ice is full.")) : _t("Empty seats play as CPUs.");
   $("onClose").hidden = !host;
   $("onClose").disabled = NET.phase === "handshake";
   const rl = $("onTbR");
   rl.hidden = host;
-  rl.textContent = `${tbLvName(T.lv)} CPUs in empty seats · 3 hearts · 4:00`;
-  $("onKick").textContent = host ? "Your team brawl" : `${names[T.host] || "Your friend"}'s team brawl`;
+  rl.textContent = _t("{level} CPUs in empty seats · 3 hearts · 4:00", { level: tbLvName(T.lv) });
+  $("onKick").textContent = host ? _t("Your team brawl") : _t("{name}'s team brawl", { name: names[T.host] || _t("Your friend") });
 }
 // the host button and the note while a team brawl is open (renderOnline)
 function tbHostBtn(btn, note, names) {
   const T = NET.tb, me = tbMe(), friends = T.bd.filter((p) => p && p !== me);
   if (NET.role === "host") {
-    btn.querySelector("span").textContent = "Start";
+    btn.querySelector("span").textContent = _t("Start");
     btn.classList.add("primary");
     btn.disabled = !NET.connected || !friends.length || NET.phase === "handshake";
     btn.classList.toggle("full", T.bd.every((p) => p) && NET.phase === "hosting");
-    const who = friends.map((p) => names[p] || "Friend");
-    note.textContent = NET.phase === "handshake" ? "Starting…" : !who.length ? (NET.standalone ? "Waiting for friends. Send them the link: up to three can join." : "Waiting for friends. Your brawl is listed for everyone here.")
-      : T.bd.every((p) => p) ? "Everyone's in. Start when you're ready." : `${who.length === 1 ? who[0] + " is" : who.slice(0, -1).join(", ") + " and " + who[who.length - 1] + " are"} in. Start when you're ready.`;
+    const who = friends.map((p) => names[p] || _t("Friend"));
+    note.textContent = NET.phase === "handshake" ? _t("Starting…") : !who.length ? (NET.standalone ? _t("Waiting for friends. Send them the link: up to three can join.") : _t("Waiting for friends. Your brawl is listed for everyone here."))
+      : T.bd.every((p) => p) ? _t("Everyone's in. Start when you're ready.") : who.length === 1 ? _t("{who} is in. Start when you're ready.", { who: who[0] }) : _t("{who} are in. Start when you're ready.", { who: tbAnd(who) });
   } else {
-    btn.querySelector("span").textContent = "Leave";
+    btn.querySelector("span").textContent = _t("Leave");
     btn.classList.remove("primary", "full");
     btn.disabled = NET.phase === "handshake";
-    note.textContent = NET.phase === "handshake" ? "Starting…" : `${names[T.host] || "The host"} starts the brawl. Change your fighter while you wait.`;
+    note.textContent = NET.phase === "handshake" ? _t("Starting…") : _t("{name} starts the brawl. Change your fighter while you wait.", { name: names[T.host] || _t("The host") });
   }
 }
 
@@ -254,7 +255,7 @@ function tbHostBtn(btn, note, names) {
 function tbStartMatch(st) {
   const me = st.h.indexOf(tbMe());
   NET.startSeen = st.id;
-  if (me < 0) { NET.phase = NET.role === "host" ? "hosting" : "board"; NET.hs = null; NET.note = "The brawl started without you."; renderOnline(); return; }
+  if (me < 0) { NET.phase = NET.role === "host" ? "hosting" : "board"; NET.hs = null; NET.note = _t("The brawl started without you."); renderOnline(); return; }
   Object.assign(NET, { matchId: st.id, D: st.d, frame: 0, myLog: [], stall: 0, ckMine: new Map(), ckSend: null, syncSent: null, syncTx: null, syncRx: null, lastSync: 0,
     rm: 0, lastOpp: null, oppLeft: false, rtt: st.rtt || 0, rules: TB_RULES, set: null, setRes: null, nextF: null, rttLive: 0, rttS: [], myPg: null, echo: null, pgT: 0,
     boss: null, cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0, oppPeer: null, hs: null });
@@ -270,7 +271,7 @@ function tbStartMatch(st) {
   G = newGame({ players, stocks: TB_RULES.l, time: TB_RULES.t * 60, countdown: 150, seed: st.seed, map: st.seed % BL.POOL });
   G.rng = BL.rngOf(st.seed);   // the CPUs' random numbers, with their counter in .s for the repair copy
   for (const s of TB_SEATS) if (!st.h[s]) TM.bots[s] = makeBot(d, BL.BOT_STYLES[st.f[s]]);
-  const names = st.h.map((p, s) => (s === me ? NET.myName || "You" : p ? "Friend" : st.nm[s]));
+  const names = st.h.map((p, s) => (s === me ? NET.myName || _t("You") : p ? _t("Friend") : st.nm[s]));
   match = { online: true, duo: true, tb: true, ranked: false, level: tbLvName(st.lv), lv: st.lv, d, names, caught: 0 };
   NET.phase = "match"; NICE.length = 0;
   namedPresence({ m: st.id, s: 0, i: "", fr: 0, ck: null, sync: null, sa: null, rm: null, pg: null, po: null, rt: null, cl: null, ho: null, fp: null, bk: null, go: null, em: 0 });
@@ -347,7 +348,7 @@ function tbTick() {
   NET.ticks = (NET.ticks || 0) + 1; if (!steps) NET.stallTotal = (NET.stallTotal || 0) + 1;
   if (NET.mr && !TM.solo) { tbSend(now, others); tbLead(now); }
   const badge = $("netBadge");
-  if (NET.stall > 20 && TM.wait >= 0 && !TM.solo && G.phase !== "over") { badge.hidden = false; badge.className = "warn"; badge.textContent = `Waiting for ${match.names[TM.wait] || "a friend"}`; }
+  if (NET.stall > 20 && TM.wait >= 0 && !TM.solo && G.phase !== "over") { badge.hidden = false; badge.className = "warn"; badge.textContent = _t("Waiting for {name}", { name: match.names[TM.wait] || _t("a friend") }); }
   else if (!badge.hidden) badge.hidden = true;
 }
 // my inputs go out from the oldest frame a friend may still miss, at most 72 frames
@@ -515,7 +516,7 @@ function tbCpuFrom(s, F) {
 function tbDropShow(s) {
   tbTags();
   if (!G || (G.phase !== "countdown" && G.phase !== "play") || mode !== "match") return;
-  showBanner(`${match.names[s] || "A friend"} dropped`, `CPU has ${G.fighters[s].spec.name} now`, "fin", 2200, TEAM_COL[tbTeam(s)]);
+  showBanner(_t("{name} dropped", { name: match.names[s] || _t("A friend") }), _t("CPU has {name} now", { name: G.fighters[s].spec.name }), "fin", 2200, TEAM_COL[tbTeam(s)]);
   tagShow();
 }
 // this phone hears nobody: every other person's fighter goes to a CPU here, from the frames they are missing, and the match goes on
@@ -534,7 +535,7 @@ function tbSolo() {
   $("netBadge").hidden = true;
   tbTags();
   if (mode === "match" && G && (G.phase === "countdown" || G.phase === "play")) {
-    showBanner("Connection lost", "CPUs play your friends' seats", "fin", 2400, "#f3d9a4");
+    showBanner(_t("Connection lost"), _t("CPUs play your friends' seats"), "fin", 2400, "#f3d9a4");
     tagShow();
   }
 }
@@ -650,7 +651,7 @@ function drawTbPing(c, g) {
   const t = (performance.now() - P_.t0) / TB_PING, f = g.fighters[P_.slot];
   if (t >= 1 || !f) { if (t >= 1) TM.ping = null; return; }
   if (f.state === "dead" || f.state === "gone") return;
-  const k = 1 / cam.z, who = P_.by === meSlot ? "YOU" : (match.names[P_.by] || "FRIEND").toUpperCase(), label = (who.length > 10 ? who.slice(0, 10) : who) + " ▼";
+  const k = 1 / cam.z, who = P_.by === meSlot ? _t("YOU") : (match.names[P_.by] || _t("Friend")).toUpperCase(), label = (who.length > 10 ? who.slice(0, 10) : who) + " ▼";
   const pop = t < 0.08 ? 0.5 + (t / 0.08) * 0.6 : t < 0.15 ? 1.1 - ((t - 0.08) / 0.07) * 0.1 : 1;
   c.save();
   c.globalAlpha = t > 0.85 ? (1 - t) / 0.15 : 1;
@@ -664,11 +665,11 @@ function drawTbPing(c, g) {
 
 /* ----- names on the cards and the markers; TAG TEAM! ----- */
 // a card's tag: the friend's name, or CPU (a CPU seat, or a friend who dropped)
-const tbTag = (s) => (s === meSlot ? "You" : tbPerson(s) ? match.names[s] || "Friend" : "CPU");
+const tbTag = (s) => (s === meSlot ? _t("You") : tbPerson(s) ? match.names[s] || _t("Friend") : _t("CPU"));
 // the line under a card's tag: a CPU's potato name, or the name of the friend a CPU took over from
 const tbSub = (s) => (s === meSlot || tbPerson(s) ? "" : match.names[s] || "");
 // the marker over a fighter (draw-world.js duoTags)
-const tbMark = (s) => (s === meSlot ? "YOU" : tbPerson(s) ? (match.names[s] || "Friend").toUpperCase().slice(0, 10) : "CPU");
+const tbMark = (s) => (s === meSlot ? _t("YOU") : tbPerson(s) ? (match.names[s] || _t("Friend")).toUpperCase().slice(0, 10) : _t("CPU"));
 function tbTags() {
   if (mode !== "match" || !match || !match.tb || !G) return;
   for (const s of TB_SEATS) {
@@ -680,10 +681,10 @@ function tbTags() {
   }
 }
 // a name for the lines (countdown, results): You, the friend's name, CPU and the potato name (a friend who dropped: their name, CPU)
-const tbWho = (s) => (s === meSlot ? "You" : !TM.hum[s] ? `CPU ${match.names[s]}` : tbPerson(s) ? match.names[s] || "Friend" : `${match.names[s] || "Friend"} (CPU)`);
+const tbWho = (s) => (s === meSlot ? _t("You") : !TM.hum[s] ? _t("CPU {name}", { name: match.names[s] }) : tbPerson(s) ? match.names[s] || _t("Friend") : _t("{name} (CPU)", { name: match.names[s] || _t("Friend") }));
 function tbVs() {
   const m = tbMate(meSlot), [a, b] = tbFoes(meSlot);
-  return `You & ${tbWho(m)} vs ${tbWho(a)} & ${tbWho(b)}`;
+  return _t("You & {mate} vs {a} & {b}", { mate: tbWho(m), a: tbWho(a), b: tbWho(b) });
 }
 // both teammates hit the same foe within half a second: TAG TEAM! over that foe in your team's colour (your team's tags only; UI only)
 function tbEvent(g, e, live) {
@@ -695,7 +696,7 @@ function tbEvent(g, e, live) {
   const prev = TM.hits[e.def];
   if (prev && prev.by !== e.slot && g.t - prev.t <= 30 && g.t - (TM.tagT[e.def] ?? -999) > 60) {
     TM.tagT[e.def] = g.t;
-    chgPops.push({ x: e.x, y: e.y - 34, t: 0, pop: 1, col: TEAM_COL[a.team], txt: "TAG TEAM!" });
+    chgPops.push({ x: e.x, y: e.y - 34, t: 0, pop: 1, col: TEAM_COL[a.team], txt: _t("TAG TEAM!") });
     Sfx.tone(700, 1050, 0.12, "triangle", 0.05);
   }
   TM.hits[e.def] = { by: e.slot, t: g.t };
@@ -711,20 +712,20 @@ function tbFinish() {
     lines: [], total: 0, conn: TM.lost, mateFin: TM.finBy === m && res === 1,
     duo: { mate: G.fighters[m], foes: foes.map((s) => G.fighters[s]), names: match.names, lv: match.level, caught: match.caught } };
   if (people) {
-    if (res === 1) R.lines.push([people === 2 ? "Win against friends" : "Win against a friend", 15]);
-    else if (res === 0.5) R.lines.push(["Draw", 8]);
-    else R.lines.push(["Match played", 5]);
-    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    if (res === 1) R.lines.push([people === 2 ? _t("Win against friends") : _t("Win against a friend"), 15]);
+    else if (res === 0.5) R.lines.push([_t("Draw"), 8]);
+    else R.lines.push([_t("Match played"), 5]);
+    if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 2]);
     P.friendW = (P.friendW || 0) + (res === 1 ? 1 : 0); P.friendL = (P.friendL || 0) + (res === 0 ? 1 : 0);
-  } else if (res === 1 && lv === 2) R.lines.push(["Win vs Hard CPUs", DUO_CHIPS]);
+  } else if (res === 1 && lv === 2) R.lines.push([_t("Win vs Hard CPUs"), DUO_CHIPS]);
   R.total = R.lines.reduce((a, l) => a + l[1], 0);
   P.tokens += R.total;
   if (res === 1) P.duoW = (P.duoW | 0) + 1;
   if (match.caught) P.duoC = (P.duoC | 0) + match.caught;
-  if (res === 1 && P.duoW === DUO_TITLE) R.title = "Dynamic Duo";
+  if (res === 1 && P.duoW === DUO_TITLE) R.title = _t("Dynamic Duo");
   saveProfile();
-  R.whyNo = `Against two CPUs only a win on Hard pays chips (${DUO_CHIPS}).`;
-  if (match.finBy && R.mateFin) match.finBy += ` · by ${tbWho(m)}`;
+  R.whyNo = _t("Against two CPUs only a win on Hard pays chips ({n}).", { n: DUO_CHIPS });
+  if (match.finBy && R.mateFin) match.finBy += ` · ${_t("by {name}", { name: tbWho(m) })}`;
   TM.again = 0;
   if (TM.solo) { leaveMatchRoom(); NET.phase = "idle"; } else NET.phase = "result";
   $("netBadge").hidden = true;
@@ -734,23 +735,25 @@ function tbFinish() {
 }
 // the results' kicker and story line
 function tbResMode(R) {
-  if (R.conn) return "Team brawl · connection lost";
+  if (R.conn) return _t("Team brawl · connection lost");
   const m = tbMate(meSlot);
-  if (TM.hum[m]) return `Team brawl · with ${tbWho(m)}`;
-  const ppl = tbFoes(meSlot).filter((s) => TM.hum[s]).map((s) => match.names[s] || "Friend");
-  return ppl.length ? `Team brawl · vs ${ppl.join(" and ")}` : `Team brawl · ${match.level} CPUs`;
+  if (TM.hum[m]) return _t("Team brawl · with {name}", { name: tbWho(m) });
+  const ppl = tbFoes(meSlot).filter((s) => TM.hum[s]).map((s) => match.names[s] || _t("Friend"));
+  return ppl.length ? _t("Team brawl · vs {names}", { names: tbAnd(ppl) }) : _t("Team brawl · {level} CPUs", { level: match.level });
 }
+// a story line with names in it, as resLine's parts: _t gets each bold name's place marked (TB_N) and the line comes back split there, the names as { b } parts
+const TB_N = { m: "\u00010\u0002", a: "\u00011\u0002", b: "\u00012\u0002" };
+const tbLine = (s, names) => s.split(/\u0001(\d)\u0002/).map((x, i) => (i % 2 ? { b: names[x] } : x)).filter((x) => x !== "");
 function tbResLine(R) {
-  const m = tbMate(meSlot), [a, b] = tbFoes(meSlot), how = G.sudden && G.endReason === "stocks" ? " in sudden death" : G.endReason === "time" ? " on time" : "";
-  const us = ["You and ", { b: tbWho(m) }], them = [{ b: tbWho(a) }, " and ", { b: tbWho(b) }];
+  const m = tbMate(meSlot), [a, b] = tbFoes(meSlot), how = G.sudden && G.endReason === "stocks" ? 1 : G.endReason === "time" ? 2 : 0, names = [tbWho(m), tbWho(a), tbWho(b)];   // names: {m} your partner, {a} and {b} the foes
   let line;
   if (R.res === 1) {
-    line = [...us, " beat ", ...them, `${how}.`];
-    if (TM.finBy === meSlot) line.push(" You landed the final launch.");
-    else if (TM.finBy === m) line.push(" ", { b: tbWho(m) }, " landed the final launch.");
-  } else if (R.res === 0) line = [...them, " beat you and ", { b: tbWho(m) }, `${how}.`];
-  else line = ["Nobody scored a KO in sudden death either."];
-  if (R.conn) line.push(" Your connection dropped, so CPUs played your friends' seats.");
+    line = tbLine(how === 1 ? _t("You and {m} beat {a} and {b} in sudden death.", TB_N) : how === 2 ? _t("You and {m} beat {a} and {b} on time.", TB_N) : _t("You and {m} beat {a} and {b}.", TB_N), names);
+    if (TM.finBy === meSlot) line.push(" ", _t("You landed the final launch."));
+    else if (TM.finBy === m) line.push(" ", ...tbLine(_t("{m} landed the final launch.", TB_N), names));
+  } else if (R.res === 0) line = tbLine(how === 1 ? _t("{a} and {b} beat you and {m} in sudden death.", TB_N) : how === 2 ? _t("{a} and {b} beat you and {m} on time.", TB_N) : _t("{a} and {b} beat you and {m}.", TB_N), names);
+  else line = [_t("Nobody scored a KO in sudden death either.")];
+  if (R.conn) line.push(" ", _t("Your connection dropped, so CPUs played your friends' seats."));
   return line;
 }
 // who is still here for a rematch: the people of this match in the room (not handed to a CPU)
@@ -795,19 +798,19 @@ function tbAgain() {
 function tbAgainLabel() {
   if (mode !== "result" || !match || !match.tb || !TM) return;
   const btn = $("rAgain"), sub = $("rAgainSub");
-  if (TM.solo || !NET.mr) { btn.querySelector("span").textContent = "Retry vs CPU"; btn.disabled = false; sub.textContent = ""; return; }
-  btn.querySelector("span").textContent = "Rematch";
+  if (TM.solo || !NET.mr) { btn.querySelector("span").textContent = _t("Retry vs CPU"); btn.disabled = false; sub.textContent = ""; return; }
+  btn.querySelector("span").textContent = _t("Rematch");
   const here = tbHere().filter((s) => s !== meSlot), next = NET.matchId + 1;
-  const left = TB_SEATS.filter((s) => s !== meSlot && TM.hum[s] && !here.includes(s)).map((s) => match.names[s] || "A friend");
-  const board = here.filter((s) => tbPresOf(s).bk === NET.matchId).map((s) => match.names[s] || "A friend");
-  if (board.length) { btn.disabled = true; sub.textContent = `${board.join(" and ")} went back to the board`; return; }
-  const ready = here.filter((s) => tbPresOf(s).rm === next).map((s) => match.names[s] || "Friend");
-  const wait = here.filter((s) => tbPresOf(s).rm !== next).map((s) => match.names[s] || "Friend");
+  const left = TB_SEATS.filter((s) => s !== meSlot && TM.hum[s] && !here.includes(s)).map((s) => match.names[s] || _t("A friend"));
+  const board = here.filter((s) => tbPresOf(s).bk === NET.matchId).map((s) => match.names[s] || _t("A friend"));
+  if (board.length) { btn.disabled = true; sub.textContent = _t("{names} went back to the board", { names: tbAnd(board) }); return; }
+  const ready = here.filter((s) => tbPresOf(s).rm === next).map((s) => match.names[s] || _t("Friend"));
+  const wait = here.filter((s) => tbPresOf(s).rm !== next).map((s) => match.names[s] || _t("Friend"));
   btn.disabled = NET.rm === next;
   const parts = [];
-  if (left.length) parts.push(`${left.join(" and ")} left · ${left.length > 1 ? "CPUs take the seats" : "CPU takes the seat"}`);
-  if (ready.length) parts.push(`${ready.join(" and ")} ready`);
-  if (NET.rm === next && wait.length) parts.push(`waiting for ${wait.join(" and ")}`);
+  if (left.length) parts.push(_t("{names} left · CPU takes the seat|{names} left · CPUs take the seats", { n: left.length, names: tbAnd(left) }));
+  if (ready.length) parts.push(_t("{names} ready", { names: tbAnd(ready) }));
+  if (NET.rm === next && wait.length) parts.push(_t("waiting for {names}", { names: tbAnd(wait) }));
   sub.textContent = parts.join(" · ");
 }
 // Board: back to the seats in the same room (the host's brawl is listed again with its free seats)
@@ -831,6 +834,6 @@ function tbBoard() {
 function tbRoomLost() {
   if (NET.phase === "match") { tbSolo(); return; }
   if (NET.phase === "result" && TM) { TM.solo = true; leaveMatchRoom(); tbAgainLabel(); return; }
-  leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = "The match connection dropped.";
+  leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = _t("The match connection dropped.");
   if (mode === "online") renderOnline();
 }

@@ -22,9 +22,12 @@ const TC = {
 function tcSave() { try { localStorage.setItem(TC_KEY, JSON.stringify({ pend: TC.pend })); } catch (e) { /* ignore */ } }
 const tcOn = () => qmOn();
 const tcNow = () => Date.now() + TC.off;
-const TC_ROUNDS = { 4: ["Semi-final", "Final"], 8: ["Quarter-final", "Semi-final", "Final"] };
-const tcRoundName = (size, r) => (TC_ROUNDS[size] || TC_ROUNDS[8])[r] || "Final";
-const tcKind = (c) => (c && c.k === "f" ? "Friends Cup" : "Daily Cup");
+const TC_ROUNDS = { 4: [_t("Semi-final"), _t("Final")], 8: [_t("Quarter-final"), _t("Semi-final"), _t("Final")] };
+const tcRoundName = (size, r) => (TC_ROUNDS[size] || TC_ROUNDS[8])[r] || _t("Final");
+const tcKind = (c) => (c && c.k === "f" ? _t("Friends Cup") : _t("Daily Cup"));
+// "Out in the semi-final" / "Through to the final" for round r of a cup of that size (a cup of 4 starts at the semi-final)
+const tcOutIn = (size, r) => [_t("Out in the quarter-final"), _t("Out in the semi-final"), _t("Out in the final")][size === 4 ? r + 1 : r];
+const tcThrough = (size, r) => [_t("Through to the semi-final"), _t("Through to the final")][size === 4 ? r + 1 : r];
 // your seat in a running cup and the match you play next (or now): { key, r, i, side, s (w | c | l | d), opp (its slot or -1), rdy }
 function tcMine() {
   const c = TC.cup;
@@ -59,7 +62,7 @@ window.__blTcT = { open: tcOpen, bracket: tcBracket, render: tcRender, called: t
 function tcAsk(force) { if (tcOn() && QM.conn && (force || !ACCT.code || QM.authed)) window.__blQuick.send({ t: "tc?" }); }
 function tcMsg(m) {
   if (!m || typeof m !== "object") return;
-  if (m.t === "me") { tcAsk(true); if (!m.err) { tcFlush(); tcDo(); } else if (TC.want) tcFail(m.err === "off" ? "Cups open soon." : "This phone's account isn't on the server. Check Account."); }
+  if (m.t === "me") { tcAsk(true); if (!m.err) { tcFlush(); tcDo(); } else if (TC.want) tcFail(m.err === "off" ? _t("Cups open soon.") : _t("This phone's account isn't on the server. Check Account.")); }
   else if (m.t === "tc") tcGot(m);
   else if (m.t === "tc-no") tcNo(m.why);
   else if (m.t === "tc-call") tcCalled(m);
@@ -107,10 +110,10 @@ function tcRender() {
 function tcNo(why) {
   TC.busy = false;
   if (why === "acct") { QM.authed = false; qmAuth(); return; }   // signed out (the server restarted): sign in, then the wanted message goes
-  if (why === "old") { QM.no = "old"; tcFail("A new version is out. Reload the page."); return; }
+  if (why === "old") { QM.no = "old"; tcFail(_t("A new version is out. Reload the page.")); return; }
   if (why === "slow" && TC.last && !TC.again) { const w = TC.last; TC.again = true; TC.busy = true; setTimeout(() => { if (!TC.want) tcSend(w); }, 1500); return; }   // once
-  tcFail({ closed: "That cup isn't open.", full: "That cup is full.", busy: "You're already in a cup.", nocup: "No cup with that code.", few: "A cup needs 2 players.",
-    host: "Only the host can start it.", bad: "Couldn't join. Try again.", slow: "One moment, then try again." }[why] || "Couldn't join. Try again.");
+  tcFail({ closed: _t("That cup isn't open."), full: _t("That cup is full."), busy: _t("You're already in a cup."), nocup: _t("No cup with that code."), few: _t("A cup needs 2 players."),
+    host: _t("Only the host can start it."), bad: _t("Couldn't join. Try again."), slow: _t("One moment, then try again.") }[why] || _t("Couldn't join. Try again."));
 }
 function tcFail(note) { TC.want = null; TC.busy = false; TC.note = note || ""; tcRender(); }
 // a message that needs the account: made silently first (as Ranked vs CPU), then signed in, then sent (tcMsg "me")
@@ -122,15 +125,15 @@ function tcSend(msg) {
 }
 async function tcGoOn() {
   if (!TC.want) return;
-  if (!QM.conn) { TC.busy = false; TC.note = "Connecting to the server…"; tcRender(); return; }   // goes on when connected (tcBoot)
-  if (qmAcctOff()) { tcFail("Cups open once accounts are on."); return; }
-  if (QM.acct === "unknown") { tcFail("This phone's account isn't on the server. Check Account."); return; }
+  if (!QM.conn) { TC.busy = false; TC.note = _t("Connecting to the server…"); tcRender(); return; }   // goes on when connected (tcBoot)
+  if (qmAcctOff()) { tcFail(_t("Cups open once accounts are on.")); return; }
+  if (QM.acct === "unknown") { tcFail(_t("This phone's account isn't on the server. Check Account.")); return; }
   TC.busy = true; TC.note = ""; tcRender();
   const w0 = TC.want;
-  setTimeout(() => { if (TC.want === w0 && TC.busy) tcFail("Couldn't reach the server. Try again."); }, 10000);
+  setTimeout(() => { if (TC.want === w0 && TC.busy) tcFail(_t("Couldn't reach the server. Try again.")); }, 10000);
   if (!ACCT.code) {
     const ok = await qmMakeAcct();
-    if (!ok) { tcFail(qmAcctOff() ? "Cups open soon." : "Couldn't reach the server. Try again."); return; }
+    if (!ok) { tcFail(qmAcctOff() ? _t("Cups open soon.") : _t("Couldn't reach the server. Try again.")); return; }
   }
   if (!QM.authed) { qmAuth(); return; }
   tcDo();
@@ -148,7 +151,7 @@ function tcIn(on) { cnt("tc:in"); tcSend({ t: "tci", on: on ? 1 : 0 }); }
 function tcJoin() { const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: "d", f, pi: palIdx(f) }); }
 function tcJoinCode(code) {
   code = String(code || "").toUpperCase().replace(/[^0-9A-Z]/g, "");
-  if (!/^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/.test(code)) { tcFail("A cup code has 5 letters and digits."); return; }
+  if (!/^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/.test(code)) { tcFail(_t("A cup code has 5 letters and digits.")); return; }
   const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: code, f, pi: palIdx(f) });
 }
 function tcHost() { const f = tcFighter(); cnt("tc:host"); tcSend({ t: "tcn", f, pi: palIdx(f) }); }
@@ -199,9 +202,9 @@ function tcShare() {
   const link = tcLink();
   if (!link) return;
   cnt("tc:share");
-  const text = `Join my PotatoBrawl cup! Code ${TC.cup.code}`;
+  const text = _t("Join my PotatoBrawl cup! Code {code}", { code: TC.cup.code });
   if (chlPhone()) { try { navigator.share({ title: "PotatoBrawl", text, url: link }).catch(() => {}); return; } catch (e) { /* no share sheet: copy */ } }
-  try { navigator.clipboard.writeText(link).then(() => { TC.note = "Link copied."; tcRender(); }, () => {}); } catch (e) { /* no clipboard */ }
+  try { navigator.clipboard.writeText(link).then(() => { TC.note = _t("Link copied."); tcRender(); }, () => {}); } catch (e) { /* no clipboard */ }
 }
 // loop.js, after the turn-sideways screen: a Friends Cup's link opens the sheet and joins it
 function tcHashCode() { const m = /^#cup=([0-9A-Za-z]{5})$/.exec(location.hash || ""); return m ? m[1].toUpperCase() : ""; }
@@ -254,14 +257,14 @@ function tcDrop() {
 // what the call-up's FIGHT leaves (the banner's small line), "" when nothing
 function tcBusy() {
   if (mode === "match" && match) {
-    if (match.tcw || match.warm) return "Your warm-up ends.";
-    if (match.qm) return match.qm.ranked || match.qm.sk ? "You leave your Quick match: it counts as a loss." : "You leave your Quick match.";
-    if (match.online) return "You leave the friend match.";
-    if (match.vc && !match.vc.tc) return "Your Ranked vs CPU match ends without a result.";
-    if (match.bw) return "Your Boss Week try ends.";
-    return "This fight ends.";
+    if (match.tcw || match.warm) return _t("Your warm-up ends.");
+    if (match.qm) return match.qm.ranked || match.qm.sk ? _t("You leave your Quick match: it counts as a loss.") : _t("You leave your Quick match.");
+    if (match.online) return _t("You leave the friend match.");
+    if (match.vc && !match.vc.tc) return _t("Your Ranked vs CPU match ends without a result.");
+    if (match.bw) return _t("Your Boss Week try ends.");
+    return _t("This fight ends.");
   }
-  return qmSearching() ? "Your Quick match search stops." : "";
+  return qmSearching() ? _t("Your Quick match search stops.") : "";
 }
 // the match against a player was assigned (ui/quick.js qmFound asks): only the one you were called to and said FIGHT for
 function tcFoundOk(m) {
@@ -296,7 +299,7 @@ function tcTicket(m) {
   vcVs(tk);
   $("vsMode").textContent = `${tcKind(TC.cup)} · ${tcRoundName(tk.tc.size, tk.tc.r)}`;
   const me = TC.cup.mi >= 0 ? TC.cup.slots[TC.cup.mi] : null, t = $("vsTL"), w = t && t.querySelector("span");
-  if (w && me) w.textContent = `Seed ${me.sd}`;
+  if (w && me) w.textContent = _t("Seed {n}", { n: me.sd });
   tcRender();
 }
 // screens.js finishMatch -> vcMatchEnd: the chips of a friend match on this phone, the log to the server, the results
@@ -305,8 +308,8 @@ function tcCpuEnd(forfeit) {
   const res = forfeit ? 0 : G.winner === 0 ? 1 : G.winner === 1 ? 0 : 0.5;
   const R = { res, forfeit, tc: tk.tc, tk, me, op, lines: [], total: 0 };
   if (!forfeit) {
-    R.lines.push(res === 1 ? ["Win", 15] : res === 0.5 ? ["Draw", 8] : ["Match played", 5]);
-    if (me.kos) R.lines.push([`${me.kos} KO${me.kos > 1 ? "s" : ""}`, me.kos * 2]);
+    R.lines.push(res === 1 ? [_t("Win"), 15] : res === 0.5 ? [_t("Draw"), 8] : [_t("Match played"), 5]);
+    if (me.kos) R.lines.push([_t("{n} KO|{n} KOs", { n: me.kos }), me.kos * 2]);
     R.total = R.lines.reduce((a, l) => a + l[1], 0);
     P.tokens += R.total; saveProfile();
   }
@@ -349,10 +352,10 @@ function tcResults(R) {
   const key = tm.key, size = c ? c.size : tm.size || 8, r = tm.r | 0;
   TC.shown = { key, R };
   $("rMode").textContent = `${tcKind(c)} · ${tcRoundName(size, r)}`;
-  $("rAgain").querySelector("span").textContent = "Bracket"; $("rAgain").disabled = false;
+  $("rAgain").querySelector("span").textContent = _t("Bracket"); $("rAgain").disabled = false;
   $("rChange").hidden = true; $("rMenuSub").textContent = "";
   { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); $("rRank").hidden = true; }
-  if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? "You left the match: you're out of the cup." : "No chips for an unfinished match.");
+  if (!R.lines.length) $("rWhy").textContent = masteryWhy(R.forfeit ? _t("You left the match: you're out of the cup.") : _t("No chips for an unfinished match."));
   if (typeof tcvResult === "function") tcvResult(R, TC.res[key] || null);
 }
 // the results' buttons and Pause (ui/quick.js asks first): a cup match's BRACKET; the lobby warm-up's ANOTHER CPU FIGHT and BACK TO THE LOBBY
@@ -375,19 +378,19 @@ function tcAfterMatch() {
 }
 function tcWarmResults() {   // ui/quick.js qmResults
   const k = $("rMode"); k.textContent = "";
-  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = "CPU";
-  k.append(t, "Warm-up");
-  $("rAgain").querySelector("span").textContent = "Another CPU fight";
-  $("rChange").querySelector("span").textContent = "Back to the lobby";
+  const t = document.createElement("span"); t.className = "tag ember st qm-cpu"; t.textContent = _t("CPU");
+  k.append(t, _t("Warm-up"));
+  $("rAgain").querySelector("span").textContent = _t("Another CPU fight");
+  $("rChange").querySelector("span").textContent = _t("Back to the lobby");
   $("rMenuSub").textContent = "";
   { const ln = $("rBoardL"); if (ln) ln.hidden = true; $("rRank").classList.remove("vc"); }
 }
 function tcPauseText() {
-  if (match && match.tcw) { $("pQuit").querySelector("span").textContent = "Back to the lobby"; $("pNote").textContent = "A call-up stops this fight."; return; }
-  $("pQuit").querySelector("span").textContent = "Forfeit";
-  $("pNote").textContent = match && match.qm ? "Online matches keep running while this is open. Leaving knocks you out of the cup." : "Leaving knocks you out of the cup.";
+  if (match && match.tcw) { $("pQuit").querySelector("span").textContent = _t("Back to the lobby"); $("pNote").textContent = _t("A call-up stops this fight."); return; }
+  $("pQuit").querySelector("span").textContent = _t("Forfeit");
+  $("pNote").textContent = match && match.qm ? _t("Online matches keep running while this is open. Leaving knocks you out of the cup.") : _t("Leaving knocks you out of the cup.");
 }
-function tcStripText() { const tk = match.vc; return `${tcKind(tk.tc)} · ${tcRoundName(tk.tc.size, tk.tc.r)} · vs CPU`; }   // ui/vscpu.js: the HUD strip
+function tcStripText() { const tk = match.vc; return _t("{cup} · {round} · vs CPU", { cup: tcKind(tk.tc), round: tcRoundName(tk.tc.size, tk.tc.r) }); }   // ui/vscpu.js: the HUD strip
 
 /* ----- a warm-up in the lobby: a CPU fight while you wait (a call-up stops it) ----- */
 function tcWarm() {
@@ -397,7 +400,7 @@ function tcWarm() {
   const oppPal = opp.id === me.id ? opp.palettes[(palIdx(me.id) + 1) % opp.palettes.length] : opp.palettes[0];
   const d = Math.max(LEVELS[2].d, clamp((rankView().r - 750) / 1000, 0.08, 0.98));
   G = newGame({ seed: newSeed(), players: [{ spec: me, pal: myPal }, { spec: opp, pal: oppPal }], stocks: 3, time: 240, countdown: 150, map: randMap() });
-  match = { warm: true, tcw: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: "Warm-up", cpu: cpuName() };
+  match = { warm: true, tcw: true, ranked: false, d, bot: makeBot(d, BL.BOT_STYLES[opp.id]), level: _t("Warm-up"), cpu: cpuName() };
   meSlot = 0;
   enterMatchUI();
 }
