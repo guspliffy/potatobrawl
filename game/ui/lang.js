@@ -169,6 +169,8 @@ new MutationObserver((ms) => {
   }
 }).observe(document.body, { childList: true, characterData: true, subtree: true });
 addEventListener("resize", () => { for (const el of document.querySelectorAll(T_FIT)) tFitLater(el); });
+// a font that arrives late (Barlow from Google, the Russian letters) changes every text's width without resizing its box
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => { for (const el of document.querySelectorAll(T_FIT)) tFitLater(el); });
 // a change saves the choice and loads the page again (a ?lang= in the address would win over it, so it goes)
 function langSet(l) {
   if (!LANGS.includes(l) || l === LANG) return;

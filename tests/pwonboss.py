@@ -21,8 +21,8 @@ BOT = """window.__blInput = (g) => { const me = g.fighters[window.__blastline.ne
   const down = b.state === 'broken'; return { x: Math.abs(dx) > 34 ? Math.sign(dx) : 0, light: !down && g.t % 16 < 2, heavy: down && g.t % 24 < 2, special: !down && g.t % 120 === 60 }; }; 0"""
 # his Road HP (ui/road.js ROAD_REG) and the two-player K (ui/online.js DUO_HP), as the game reads them
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'game', 'ui')
-ROAD_HP = {m[0]: float(m[1]) for m in re.findall(r'boss: "(\w+)", bk: "\w+", pk: "\w+", title: "[^"]+", hp: ([0-9.]+)', open(os.path.join(SRC, 'road.js')).read())}
-ROAD_MATE = {m[0]: float(m[1]) for m in re.findall(r'boss: "(\w+)", bk: "\w+", pk: "\w+", title: "[^"]+", hp: [0-9.]+, mate: ([0-9.]+)', open(os.path.join(SRC, 'road.js')).read())}
+ROAD_HP = {m[0]: float(m[1]) for m in re.findall(r'boss: "(\w+)", bk: "\w+", pk: "\w+", title: (?:_t\()?"[^"]+"\)?, hp: ([0-9.]+)', open(os.path.join(SRC, 'road.js')).read())}
+ROAD_MATE = {m[0]: float(m[1]) for m in re.findall(r'boss: "(\w+)", bk: "\w+", pk: "\w+", title: (?:_t\()?"[^"]+"\)?, hp: [0-9.]+, mate: ([0-9.]+)', open(os.path.join(SRC, 'road.js')).read())}
 DUO_HP = json.loads(re.sub(r'(\w+):', r'"\1":', re.search(r'const DUO_HP = (\{[^\n]*\});', open(os.path.join(SRC, 'online.js')).read()).group(1)))
 errs = []
 

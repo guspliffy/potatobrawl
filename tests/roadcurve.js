@@ -11,8 +11,8 @@ const N = +(process.argv[2] || 10), PS = [0.7, 0.9];
 const BL = require("../game/core.js").BL, F = BL.FIGHTERS, FIG = Object.fromEntries(F.map((f) => [f.id, f]));
 const src = fs.readFileSync(path.join(__dirname, "../game/ui/road.js"), "utf8");
 const a = src.indexOf("const ROAD = ["), b = src.indexOf("ROAD.push(...ROAD_KITCHEN, ...ROAD_DEEP);");
-const ROAD = new Function(src.slice(a, b) + "\nreturn ROAD.concat(ROAD_KITCHEN, ROAD_DEEP);")();
-const REG = new Function(src.slice(src.indexOf("const ROAD_REG = ["), src.indexOf("];", src.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
+const ROAD = new Function("const _t = (s) => s, _tk = (s) => s, _tv = (s) => s;\n" + src.slice(a, b) + "\nreturn ROAD.concat(ROAD_KITCHEN, ROAD_DEEP);")();
+const REG = new Function("const _t = (s) => s, _tk = (s) => s, _tv = (s) => s;\n" + src.slice(src.indexOf("const ROAD_REG = ["), src.indexOf("];", src.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
 const SOLO = +(fs.readFileSync(path.join(__dirname, "../game/ui/boss.js"), "utf8").match(/const BOSS_SOLO = ([0-9.]+)/) || [])[1];
 // one stop, as roadFight (ui/road.js) sets it up
 function play(st, me, P, seed) {

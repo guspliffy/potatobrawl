@@ -59,7 +59,6 @@ CHECK = r"""(xx) => {
     const rg = document.createRange(); rg.selectNodeContents(n);
     const rs = [...rg.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
     if (!rs.length) continue;
-    texts.push([el, t, rs]);
     // the nearest box that hides overflow
     let clip = null;
     for (let a = el; a && a !== document.body; a = a.parentElement) {
@@ -72,6 +71,8 @@ CHECK = r"""(xx) => {
       clip = ar;
       break;
     }
+    // what shows of it: a text cut by its box (an ellipsis) covers nothing past the box
+    texts.push([el, t, clip ? rs.map((r) => ({ left: Math.max(r.left, clip.left), right: Math.min(r.right, clip.right), top: Math.max(r.top, clip.top), bottom: Math.min(r.bottom, clip.bottom) })) : rs]);
     // out of its own button / chip / tag
     const box = el.closest(BOX);
     if (box) { const br = box.getBoundingClientRect(); if (rs.some((r) => r.left < br.left - 2 || r.right > br.right + 2 || r.top < br.top - 3 || r.bottom > br.bottom + 3)) add('spill', el, t); }
@@ -135,6 +136,8 @@ async def sweep(b, lang, size):
         except Exception as e:
             errs.append(f'{tag} {s}: could not open: {str(e)[:120]}'); continue
         await pg.wait_for_timeout(1500 if s in ('quick', 'bw', 'tc', 'boards', 'match') else 500)
+        # the labels' fit runs a frame after a change, and a box it resized fits again a frame later
+        await pg.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))))")
         found = await pg.evaluate(CHECK, lang == 'xx')
         report.setdefault(lang, {}).setdefault(size, {})[s] = found
         await pg.screenshot(path=f'{OUT}/{lang}_{size}_{s}.png')

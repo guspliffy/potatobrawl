@@ -11,7 +11,7 @@ const fs = require("fs"), path = require("path");
 const N = +(process.argv[2] || 96), PS = [0.7, 0.9], TOL = 8;
 const BL = require("../game/core.js").BL, F = BL.FIGHTERS;
 const road = fs.readFileSync(path.join(__dirname, "../game/ui/road.js"), "utf8"), online = fs.readFileSync(path.join(__dirname, "../game/ui/online.js"), "utf8");
-const REG = new Function(road.slice(road.indexOf("const ROAD_REG = ["), road.indexOf("];", road.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
+const REG = new Function("const _t = (s) => s, _tk = (s) => s, _tv = (s) => s;\n" + road.slice(road.indexOf("const ROAD_REG = ["), road.indexOf("];", road.indexOf("const ROAD_REG = [")) + 2) + "\nreturn ROAD_REG;")();
 const m = /const DUO_HP = (\{[^\n]*\});/.exec(online);
 const DUO = Object.assign(new Function(`return ${m[1]};`)(), process.env.DUO ? JSON.parse(process.env.DUO) : {});
 function fight(boss, lv, a, b, da, db, hpMul, seed) {
