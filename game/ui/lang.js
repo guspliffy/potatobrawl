@@ -96,21 +96,25 @@ if (T_CYR && typeof FontFace === "function" && document.fonts) {
    most to 70% of the style sheet's size (T_FIT_P lines 82%, T_FIT_T tile titles 60%), until the text stays inside its box (the nearest
    box that clips, its button, chip, tag or pill, the screen). It runs again when such a text changes or its box is resized or shown, one frame later (never inside the observer). */
 // lines of a few words in a box of fixed height: these step down to 82% at most
-const T_FIT_P = "#dSig span, #dUlt span, #dBlurb, #skFx, .sk-k span, .hv-wait";
+const T_FIT_P = "#dSig span, #dUlt span, #dBlurb, #skFx, .sk-k span, .hv-wait, #mBw";
 const T_FIT = ["#bDaily b", "#bBw b", "#bRanked .mm-ttl", ".mm-mt", "#bPractice small", "#mBwR .bw-p", "#mRankKick", "#mRec", "#mDaily", "#mDailyR",
   "#dSkFx", "#oppPick small", "#mapPick small", "#qmFRole", "#onFRole", "#qmR b", "#qmC b", "#qmC small", "#qmV b", "#qmVSub", "#qmToV b", "#qmRating",
   "#skRoad b", "#skRoad small", "#skPm b", "#skPm small", "#skChip small", ".ps-nm", ".ps-c .s", ".ps-c .l", ".ps-btn", "#acPanH b", "#acPanH small",
-  "#acBds b", "#acBds small", "#acBds .bd-rk", ".bw-tw", "#welGo span", "#hvAd span", T_FIT_P].join(", ");
+  "#acBds b", "#acBds small", "#acBds .bd-rk", ".bw-tw", "#welGo span", "#hvAd span", ".ac-tabs", T_FIT_P].join(", ");
 const T_BOX = "button, .btn, .chip, .tag, .coin, [class*='pill'], [class*='badge']";
 // the start page's tile titles may go down to 60% (a narrow tile at 667x375 with its NEW tag)
 const T_FIT_T = "#bDaily b, #bBw b";
 // a text that must also keep clear of a tag drawn over its box's corner
 const T_AVOID = { "#bBw b": "#mBwTag", "#hvAd span": "#hvAd .hv-soon" };
+// a line whose box (a tile of fixed height) must hold all its lines: the line steps down while the box's content runs over it
+const T_TALL = { "#mBw": "#bBw", "#mDaily": "#bDaily", "#mDailyR": "#bDaily" };
 function tOver(el) {
   const rg = document.createRange(); rg.selectNodeContents(el);
   const rs = [...rg.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
   if (!rs.length) return false;
-  const out = (b, m) => { const r = b.getBoundingClientRect(); return rs.some((q) => q.left < r.left - m || q.right > r.right + m || q.top < r.top - m || q.bottom > r.bottom + m); };
+  // up and down a line may stand out by a third of its size (a tight line-height): only a whole extra line counts
+  const my = parseFloat(getComputedStyle(el).fontSize) * 0.35;
+  const out = (b, m) => { const r = b.getBoundingClientRect(); return rs.some((q) => q.left < r.left - m || q.right > r.right + m || q.top < r.top - my || q.bottom > r.bottom + my); };
   for (let a = el; a && a !== document.body; a = a.parentElement) {
     const cs = getComputedStyle(a);
     if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
@@ -120,10 +124,19 @@ function tOver(el) {
   }
   const box = el.closest(T_BOX);
   if ((box && out(box, 1.5)) || rs.some((q) => q.left < 0 || q.right > innerWidth)) return true;
+  for (const k in T_TALL) if (el.matches(k)) { const b = el.closest(T_TALL[k]); if (b && b.scrollHeight > b.clientHeight + 1) return true; }
   for (const k in T_AVOID) if (el.matches(k)) { const o = document.querySelector(T_AVOID[k]); if (o && !o.hidden && o.offsetWidth) { const r = o.getBoundingClientRect(); if (rs.some((q) => q.right > r.left + 1 && q.left < r.right - 1 && q.bottom > r.top + 1 && q.top < r.bottom - 1)) return true; } }
   return false;
 }
 function tFit(el) {
+  if (el.matches(".ac-tabs")) {   // a tab strip whose last tab runs past the sheet: its tabs pad less (css/50-sheets.css)
+    el.classList.remove("sq");
+    let p = el.parentElement;
+    while (p && p !== document.body && getComputedStyle(p).overflowX === "visible") p = p.parentElement;   // the box that clips it
+    const last = el.lastElementChild, edge = p && p !== document.body ? p.getBoundingClientRect().right : innerWidth;
+    if (last && last.getBoundingClientRect().right > edge + 1) el.classList.add("sq");
+    return;
+  }
   el.style.fontSize = "";
   if (!el.isConnected || !tOver(el)) return;
   const base = parseFloat(getComputedStyle(el).fontSize);

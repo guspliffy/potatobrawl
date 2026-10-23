@@ -248,6 +248,7 @@
 .bd-plates .bd-pl.cpu { gap: 14px; }
 #app.narrow .bd-plates .badge { width: 34px; height: 34px; }
 #app.narrow .bd-plates .bd-pl, #app.narrow .bd-plates .bd-pl.cpu { gap: 9px; padding: 7px 6px 7px 8px; }
+#app.slim .bd-plates { grid-template-columns: minmax(0, 1fr); }   /* 667x375 and upright: one plate per row, "Placing" and its count keep their room */
 #app.narrow .bd-plates .bd-pl.cpu { gap: 13px; }
 #app.narrow .bd-plates .bd-pq { font-size: 10px; letter-spacing: 0.08em; }
 #app.narrow .bd-plates .bd-rk, #app.narrow .bd-plates .bd-go { display: none; }

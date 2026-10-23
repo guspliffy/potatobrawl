@@ -38,6 +38,7 @@
 .ac-tabs .chip, .set-row .chips .chip { isolation: isolate; flex: none; background: none; border: 0; border-radius: 0; box-shadow: none; color: var(--text); }
 #app .ac-tabs .chip, #app .set-row .chips .chip { min-height: 40px; padding: 4px 20px; font-size: 16px; }
 #app.tiny .ac-tabs .chip, #app.tiny .set-row .chips .chip { min-height: 40px; padding: 3px 17px; font-size: 15px; }
+#app .ac-tabs.sq .chip, #app.narrow .ac-tabs.sq .chip { padding-left: 8px; padding-right: 8px; }   /* the tabs' words don't fit the sheet (Russian at 390 wide): ui/lang.js tFit (css/93-shop.css has the narrow padding) */
 .ac-tabs .chip::before, .set-row .chips .chip::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--ink); border-radius: 0;
   background: linear-gradient(180deg, #343b6a, #22264a); box-shadow: 0 3px 0 var(--ink), var(--bevel); transform: skewX(-8deg);

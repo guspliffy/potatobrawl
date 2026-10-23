@@ -4,6 +4,14 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Languages (2026-10-23, branch claude/project-thread-iauvii; no PROTO bump, no server change): English, French, German, Spanish,
+  Russian. Jonny's ask: a language choice. Every text a player sees goes through `_t` (ui/lang.js); the tables are game/lang/<xx>.json
+  (1,803 lines each), written by four translators at once and checked by a reviewer each (tone: tu/du/tú/ты; terms in Project files
+  languages/terms.md and glossary-<xx>.md); Fable checked the look and picked the Russian font (Fira Sans Extra Condensed, built into the
+  page). The language comes from the browser; the picker is in Settings (start page) and on the welcome sheet; a change reloads. Names
+  stay English (fighters, bosses, KO pages, CPUs, Pommes, Potatality). Tight labels shrink to fit (lang.js T_FIT). Play counts gl:<xx>
+  (the stats page shows the game and the browser language). Tests: tools/i18n.js (check.sh 8l, also --quick), tests/pwlang.py (8m).
+  Rule for later PRs: a new text gets its four lines in the same PR (CLAUDE.md).
 - Online cups (2026-10-22, branch claude/project-thread-b0ndfy, PR #62; no PROTO bump; no new server setup: cups are saved in
   <accounts>/cups/ and the cup record in the account files' `tc` part).
   - The Daily Cup at 20:00 Berlin: "I'm in tonight" all day (the Tournament mini on the start page), a lobby from 19:30 with a CPU
