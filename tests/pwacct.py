@@ -164,6 +164,28 @@ async def functional(b, d):
     await wait_pull(A); await A.wait_for_function('window.__blAcct.P.tokens === 130', timeout=12000)
     expect((await prof(A))['owned']['dragon'] == [0, 3], 'A: pulled the merged copy with B\'s skin')
 
+    # ----- a save that reaches the server but whose answer never comes back (the app closed at once, a timeout): counted once
+    lost = {'n': 0}
+    async def drop_answer(route):
+        if lost['n'] == 0:
+            lost['n'] = 1
+            await route.fetch()   # the save is written...
+            await route.abort()   # ...and the page never hears it
+        else: await route.continue_()
+    await B.route('**/api/acct/save', drop_answer)
+    w0 = (await prof(B))['wins']
+    await B.evaluate("(() => { const P = window.__blAcct.P; P.tokens += 25; P.wins += 1; window.__blAcct.save(); })()")
+    await wait_rec(d, code, lambda r: r['prof']['tokens'] == 155, 'the save whose answer was lost', 12)
+    await B.wait_for_function("window.__blAcct.ui.err.includes('reach') && window.__blAcct.st.pend.length === 1", timeout=15000)
+    await B.unroute('**/api/acct/save')
+    await B.evaluate('window.__blAcct.sync()')
+    await B.wait_for_function("!window.__blAcct.st.op && window.__blAcct.st.pend.length === 0", timeout=15000)
+    await B.wait_for_timeout(500)
+    r = rec(d, code); pb = await prof(B)
+    expect(r['prof']['tokens'] == 155 and pb['tokens'] == 155 and pb['wins'] == w0 + 1 and r['prof']['wins'] == w0 + 1,
+           f'B: a save whose answer was lost counts once on the next sync (chips {pb["tokens"]} here, {r["prof"]["tokens"]} on the server; 155 each, not 180)')
+    await wait_pull(A); await A.wait_for_function('window.__blAcct.P.tokens === 155', timeout=12000)
+
     # ----- a ranked match result saves by itself
     await A.click('#bRanked'); await A.wait_for_timeout(700)
     await A.click('#selGo'); await A.wait_for_timeout(700)

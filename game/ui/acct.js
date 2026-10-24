@@ -6,7 +6,9 @@
 const ACCT_KEY = "potatobrawl.acct.v1";
 // Saved on this device (ACCT_KEY): the code, the server's revision we last synced, the copy the server had then (base),
 // when we last synced (t), when this device last changed its progress (lt), and a pending reset (force).
-const ACCT = { code: "", rev: 0, base: null, t: 0, lt: 0, force: false, avail: null, pingFailed: false, hash: "", lastC: "", op: "" };
+// pend: the saves sent whose answers never came ({sid, prof}, up to 3; the page closed right after sending, a timeout): the server's 409 says
+// which one landed (accounts.js sv), and the merge then starts from that copy, so its chips, wins and losses don't count twice
+const ACCT = { code: "", rev: 0, base: null, t: 0, lt: 0, force: false, avail: null, pingFailed: false, hash: "", lastC: "", op: "", pend: [] };
 // What the sheet is showing right now (not saved).
 const acUI = { tab: "p", pick: "", view: "main", pend: null, code: "", showCode: false, fresh: false, msg: "", cls: "", err: "", busy: false, manual: "", resetArmed: false, unlinkArmed: false };
 const acctOk = !!window.__blStandalone && /^https?:$/.test(location.protocol);   // a copy served by our own server can ask it for accounts
@@ -19,6 +21,8 @@ let acctBusy = false, acctAgain = false, acctApplying = false, acctTimer = 0, ac
     if (code && Number.isSafeInteger(s.rev) && s.rev >= 1 && s.base && typeof s.base === "object") {
       ACCT.code = code; ACCT.rev = s.rev; ACCT.base = SYNC.sanitize(s.base, FIGHTERS);
       ACCT.t = +s.t || 0; ACCT.lt = +s.lt || 0; ACCT.force = !!s.force;
+      ACCT.pend = Array.isArray(s.pend) ? s.pend.filter((x) => x && typeof x.sid === "string" && x.prof && typeof x.prof === "object").slice(-3)
+        .map((x) => ({ sid: x.sid, prof: SYNC.sanitize(x.prof, FIGHTERS) })) : [];
     }
   } catch (e) { /* storage unavailable: linking lasts until the page closes */ }
   // a link like https://potatobrawl.cloud/#sync=CODE
@@ -28,7 +32,7 @@ let acctBusy = false, acctAgain = false, acctApplying = false, acctTimer = 0, ac
 function acctStore() {
   try {
     if (!ACCT.code) localStorage.removeItem(ACCT_KEY);
-    else localStorage.setItem(ACCT_KEY, JSON.stringify({ code: ACCT.code, rev: ACCT.rev, base: ACCT.base, t: ACCT.t, lt: ACCT.lt, force: ACCT.force }));
+    else localStorage.setItem(ACCT_KEY, JSON.stringify({ code: ACCT.code, rev: ACCT.rev, base: ACCT.base, t: ACCT.t, lt: ACCT.lt, force: ACCT.force, pend: ACCT.pend }));
   } catch (e) { /* ignore */ }
 }
 function acctStripHash() { if (/^#sync=/.test(location.hash || "")) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* sandboxed */ } } }
@@ -529,7 +533,7 @@ function acctApplyProf(S) {   // the account's copy (or a merge) becomes this de
   renderAccount();
 }
 function acctLinkNow(d) {
-  ACCT.code = d.code; ACCT.rev = d.rev; ACCT.base = d.S; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.op = "";
+  ACCT.code = d.code; ACCT.rev = d.rev; ACCT.base = d.S; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.op = ""; ACCT.pend = [];
   acUI.err = ""; acUI.pend = null; acUI.view = "main"; acUI.code = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = "";
   acctApplying = true;
   try { acctApplyProf(d.S); } finally { acctApplying = false; }
@@ -566,7 +570,7 @@ async function acctCreate() {
   const code = r.s === 200 && r.j ? SYNC.normCode(r.j.code) : "";
   if (code && Number.isSafeInteger(r.j.rev)) {
     ACCT.avail = true;
-    ACCT.code = code; ACCT.rev = r.j.rev; ACCT.base = prof; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.lastC = SYNC.canon(prof);
+    ACCT.code = code; ACCT.rev = r.j.rev; ACCT.base = prof; ACCT.t = Date.now(); ACCT.lt = 0; ACCT.force = false; ACCT.lastC = SYNC.canon(prof); ACCT.pend = [];
     acctStore(); cnt("acct");   // cnt: ui/counter.js
     acUI.fresh = true; acUI.showCode = true; acUI.manual = ""; acMsg("");
     clearTimeout(acShowT); acShowT = setTimeout(() => { acUI.showCode = false; acUI.fresh = false; renderSync(); }, 60000);
@@ -578,7 +582,7 @@ async function acctCreate() {
 }
 function acctUnlink() {
   clearTimeout(acctTimer); clearTimeout(acShowT); acctRetryMs = 0; acctAgain = false;
-  ACCT.code = ""; ACCT.rev = 0; ACCT.base = null; ACCT.t = 0; ACCT.lt = 0; ACCT.force = false; ACCT.op = "";
+  ACCT.code = ""; ACCT.rev = 0; ACCT.base = null; ACCT.t = 0; ACCT.lt = 0; ACCT.force = false; ACCT.op = ""; ACCT.pend = [];
   acUI.err = ""; acUI.showCode = false; acUI.fresh = false; acUI.manual = ""; acUI.view = "main";
   acctStore(); acMsg(_t("This device is no longer linked. Its progress stays here."), "");
   renderAccount(); acctPing();
@@ -599,9 +603,11 @@ function acctTake(S, rev, t) {
   const merged = SYNC.same(local, ACCT.base) ? S : SYNC.mergeProf(local, ACCT.base, S, ACCT.lt > (+t || 0));
   acctApplying = true;
   try { acctApplyProf(merged); } finally { acctApplying = false; }
-  ACCT.base = S; ACCT.rev = rev; ACCT.t = Date.now(); ACCT.lastC = SYNC.canon(acctSnap());
+  ACCT.base = S; ACCT.rev = rev; ACCT.t = Date.now(); ACCT.lastC = SYNC.canon(acctSnap()); ACCT.pend = [];   // S holds whichever unanswered save landed
   acctStore();
 }
+// a save's id (accounts.js keeps the last 8 in the file)
+function acctSid() { try { return [...crypto.getRandomValues(new Uint8Array(6))].map((b) => b.toString(16).padStart(2, "0")).join(""); } catch (e) { return (Date.now().toString(36) + "00000000").slice(0, 12); } }
 // Save if this device has changes, otherwise look for the server's. Never while a match is on.
 async function acctSync(now) {
   if (!ACCT.code || !acctOk) return;
@@ -615,18 +621,27 @@ async function acctSync(now) {
       const local = acctSnap();
       const forced = ACCT.force, dirty = forced || !SYNC.same(local, ACCT.base);
       ACCT.op = dirty ? "saving" : ""; renderStatus();
-      const r = dirty ? await acctCall("save", { code: ACCT.code, rev: ACCT.rev, prof: local }) : await acctCall("load", { code: ACCT.code });
+      let sid = "", prev = [];
+      if (dirty) {   // kept before it goes out: if the answer never comes, the next try asks whether it landed
+        prev = ACCT.pend.map((x) => x.sid); sid = acctSid();
+        ACCT.pend.push({ sid, prof: local }); if (ACCT.pend.length > 3) ACCT.pend.shift();
+        acctStore();
+      }
+      const r = dirty ? await acctCall("save", Object.assign({ code: ACCT.code, rev: ACCT.rev, prof: local, sid }, prev.length ? { prev } : {})) : await acctCall("load", { code: ACCT.code });
       if (!ACCT.code) break;                           // unlinked while we waited
       if (mode === "match") { retry = 4000; break; }   // a match started while we waited: change nothing now
+      if (dirty && r.s) ACCT.pend = ACCT.pend.filter((x) => x.sid !== sid);   // answered (only a 200 writes): this one is settled
+      // (a match that started meanwhile breaks out above with this save still pending: a 200 it got is found again by its id next time)
       if (r.s === 200 && r.j && dirty && Number.isSafeInteger(r.j.rev)) {
-        ACCT.rev = r.j.rev; ACCT.base = local; ACCT.t = Date.now(); if (forced) ACCT.force = false; acctStore(); acctRetryMs = 0; ACCT.avail = true;
+        ACCT.rev = r.j.rev; ACCT.base = local; ACCT.t = Date.now(); ACCT.pend = []; if (forced) ACCT.force = false; acctStore(); acctRetryMs = 0; ACCT.avail = true;
       } else if (r.s === 200 && r.j && !dirty && r.j.prof && Number.isSafeInteger(r.j.rev)) {
         acctRetryMs = 0; ACCT.avail = true;
         if (r.j.rev !== ACCT.rev) acctTake(SYNC.sanitize(r.j.prof, FIGHTERS), r.j.rev, r.j.t);
         else { ACCT.t = Date.now(); acctStore(); }
       } else if (r.s === 409 && dirty && r.j && r.j.prof && Number.isSafeInteger(r.j.rev)) {
-        if (forced) { ACCT.rev = r.j.rev; acctStore(); }                                      // a reset: this device's copy wins
-        else acctTake(SYNC.sanitize(r.j.prof, FIGHTERS), r.j.rev, r.j.t);
+        const hit = typeof r.j.landed === "string" && ACCT.pend.find((x) => x.sid === r.j.landed);
+        if (forced) { ACCT.rev = r.j.rev; ACCT.pend = []; acctStore(); }                      // a reset: this device's copy wins
+        else { if (hit) ACCT.base = hit.prof; acctTake(SYNC.sanitize(r.j.prof, FIGHTERS), r.j.rev, r.j.t); }   // an earlier save landed: merge from it
       } else {   // one quiet line, and another try later
         if (r.s === 404 && r.j && r.j.error === "unknown") { acUI.err = _t("This account isn't on the server any more."); }
         else if (r.s === 0) { acUI.err = _t("Couldn't reach the server. Will try again."); retry = acctRetryMs = Math.min(300000, (acctRetryMs || 15000) * 2); }
