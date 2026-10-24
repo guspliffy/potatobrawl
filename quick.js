@@ -78,6 +78,7 @@ const TIMES = {
   waitMsg: 2000,                              // qm-wait every
   offer: 30000,                               // a chip challenge waits this long for an answer
   rematch: 120000,                            // a chip challenge can follow a result this long
+  drain: 600000,                              // a drain (SIGUSR2) that no restart followed ends by itself (an update stopped half way)
 };
 const ROOM_PREFIX = "qm";
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -199,7 +200,7 @@ function init(opts) {
   const last = new Map();     // peer -> its last refereed result { mid, i (its slot), peers, files, names, f, p, pf, t }: who a chip challenge goes to
   const offers = new Map();   // challenger peer -> a chip challenge { to, s, t, mid }
   const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0, friendGames: 0, staked: 0, stakeVerdicts: 0, bossWins: 0, cupMatches: 0, cupGames: 0 };
-  let draining = false;
+  let draining = false, drainT = null;
 
   const now = () => Date.now();
   const send = (peer, msg) => { try { o.send(peer, msg); } catch (e) { /* the peer is gone */ } };
@@ -714,7 +715,12 @@ function init(opts) {
   return {
     handle, canJoin, presence, left, gone, tick, assign,
     seatOf: (peer) => seats.get(peer) || null,   // cpurank.js: the account a connection signed in with
-    drain() { draining = true; for (const q of Q.values()) waitMsg(q, now()); },
+    drain() {
+      draining = true; for (const q of Q.values()) waitMsg(q, now());
+      clearTimeout(drainT);
+      drainT = setTimeout(() => { draining = false; o.log.warn("quick: no restart came after the drain, matches are made again"); for (const q of Q.values()) waitMsg(q, now()); }, T.drain);
+      if (drainT.unref) drainT.unref();
+    },
     draining: () => draining,
     running, searching: () => Q.size, stats: () => Object.assign({ running: running(), searching: Q.size }, S),
     proto: PROTO, T, _M: M, _Q: Q, _offers: offers,

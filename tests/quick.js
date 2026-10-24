@@ -15,7 +15,7 @@ const Q = require("../quick.js");
 const ROOT = path.join(__dirname, "..");
 const PORT = +process.env.QUICK_PORT || 8092;   // check.sh gives every server its own port
 const PROTO = +/const PROTO = (\d+);/.exec(fs.readFileSync(path.join(ROOT, "game/ui/online.js"), "utf8"))[1];
-const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400, offer: 1500, rematch: 8000 };
+const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400, offer: 1500, rematch: 8000, drain: 5000 };
 let fails = 0, passes = 0;
 function check(ok, what) { if (ok) { passes++; console.log("PASS " + what); } else { fails++; console.log("FAIL " + what); if (process.env.QM_DEBUG && global.__log) console.log(global.__log().split("\n").filter((l) => /rror|at /.test(l)).slice(0, 12).join("\n")); } }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -540,6 +540,7 @@ async function play(H, G, opts) {
     check(/draining: yes/.test(r.text) && !!(await D1.next((m) => m.t === "qm-wait" && m.hold === 1, 1500)), "SIGUSR2: draining, searches are told to hold");
     B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
     check(!(await D1.next((m) => m.t === "qm-found", 1500)), "draining: no new matches are made");
+    check(!!(await D1.next((m) => m.t === "qm-found", 6000)) && !/draining: yes/.test((await call("GET", "/health")).text), "a drain no restart followed ends by itself: matches are made again");
     for (const p of [A, B, C, D1, X, thief, thief2]) p.close();
   } finally { await stopServer(srv); }
 

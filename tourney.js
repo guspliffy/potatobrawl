@@ -111,6 +111,7 @@ function init(opts) {
   const DIR = acct ? path.join(acct.dir, "cups") : "";
   const S = { cups: 0, daily: 0, friends: 0, off: 0, matches: 0, cpu: 0, walkovers: 0, paid: 0, refused: 0 };
   const C = new Map();       // cup id -> cup
+  const OLD = new Map();     // cup id -> its t0: a file on disk no longer in memory, deleted after KEEP_DAYS (also on a server that never restarts)
   const W = new Map();       // peer -> account file ("" not signed in): pages that asked tc? and get every change
   const byFile = new Map();  // account file -> its newest watching page
   const inCup = new Map();   // account file -> the id of the cup it is in (a lobby, a running cup, or one it just finished)
@@ -144,7 +145,8 @@ function init(opts) {
       try { c = JSON.parse(fs.readFileSync(full, "utf8")); } catch (e) { continue; }
       if (!c || c.v !== 1 || c.id !== mm[1]) continue;
       if (t - (c.t0 || 0) > KEEP_DAYS * 864e5) { try { fs.unlinkSync(full); } catch (e) { /* gone */ } continue; }
-      if (t - (c.t0 || 0) > 2 * 864e5) continue;   // only today's and yesterday's are kept in memory
+      if (t - (c.t0 || 0) > 2 * 864e5) { OLD.set(c.id, c.t0 || 0); continue; }   // only today's and yesterday's are kept in memory
+      for (const m of Object.values(c.m || {})) delete m.busy;   // a replay the restart cut (saved mid-replay, it would block that match for good)
       C.set(c.id, c);
       if (c.st === "run") {
         // the restart cut the running matches: a match against a player is called again; a CPU match's ticket stays good
@@ -637,9 +639,10 @@ function init(opts) {
       } else if (c.k === "f" && c.st === "open" && t - c.tu > T.idle) close(c, "idle");
       else if ((c.st === "done" || c.st === "off") && t - (c.te || c.tu) > T.keep) {
         for (const [file, id] of inCup) if (id === c.id) inCup.delete(file);
-        if (t - c.t0 > 2 * 864e5) C.delete(c.id);
+        if (t - c.t0 > 2 * 864e5) { C.delete(c.id); OLD.set(c.id, c.t0 || 0); }
       }
     }
+    for (const [id, t0] of OLD) if (t - t0 > KEEP_DAYS * 864e5) { OLD.delete(id); try { fs.unlinkSync(cfile(id)); } catch (e) { /* gone */ } }
   }
   // the roll call before the start: a page that answers tc? or joins now is here (marked again at the start)
   function hereNow(file) {

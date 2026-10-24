@@ -106,8 +106,9 @@ function cleanTk(t) {
   return { id: t.id, wk: t.wk, v: t.v | 0, seed: t.seed, f: t.f, p: t.p, pp: t.pp, t: t.t };
 }
 function cleanRun(r) {
-  if (!r || typeof r !== "object" || !hex12(r.id) || !isInt(r.t) || r.t <= 0 || !isInt(r.fl) || !okFig(r.f, r.p) || !isInt(r.seed) || typeof r.lg !== "string") return null;
-  return { id: r.id, t: r.t, fl: r.fl, f: r.f, p: r.p, pp: r.pp | 0, seed: r.seed, v: r.v | 0, at: Number.isFinite(r.at) ? r.at : 0, lg: r.lg };
+  if (!r || typeof r !== "object" || !hex12(r.id) || !isInt(r.t) || r.t <= 0 || !isInt(r.fl) || !okFig(r.f, r.p) || !isInt(r.seed)) return null;
+  // lg "": a paid week's run, its log dropped from the account file (the week file keeps the top runs' logs)
+  return { id: r.id, t: r.t, fl: r.fl, f: r.f, p: r.p, pp: r.pp | 0, seed: r.seed, v: r.v | 0, at: Number.isFinite(r.at) ? r.at : 0, lg: typeof r.lg === "string" ? r.lg : "" };
 }
 function cleanBw(o) {
   const c = freshBw();
@@ -261,6 +262,7 @@ function init(opts) {
           const bw = cleanBw(rec.bw);
           bw.pw = wk; bw.lr = { wk, no: x.no, boss: x.boss, pl, of: x.n, c };
           if (pl === 1) bw.cr++;
+          if (bw.b && bw.w === wk) bw.b.lg = "";   // the paid week's log isn't needed any more (up to 24,000 frames in every player's file)
           rec.bw = bw;
         });
         S.paid++;

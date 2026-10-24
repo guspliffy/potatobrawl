@@ -23,6 +23,7 @@
  * Pommes (pommes.js): the premium currency's wallet in the account files, what it buys (an alternate KO page per fighter) and the
  * requests of tools/pommes.js (grant, move); needs the sign-in and the accounts. Money can't buy Pommes yet (the payment step comes later).
  * SIGUSR2 = drain before an update: no new Quick matches (or cup matches) are made, the running ones play on; /health counts them.
+ * A drain that no restart follows (an update stopped half way) ends by itself after 10 minutes (quick.js T.drain).
  */
 const http = require("http");
 const fs = require("fs");

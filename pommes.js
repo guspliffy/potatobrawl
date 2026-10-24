@@ -148,14 +148,23 @@ function init(opts) {
       if (!FILE_RE.test(q.from || "") || !FILE_RE.test(q.to || "") || q.from === q.to) return { ok: false, why: "two different accounts needed" };
       const a = acct.readFile(q.from), b = acct.readFile(q.to);
       if (!a || !b) return { ok: false, why: !a ? "the old account doesn't exist" : "the new account doesn't exist" };
-      const pa = cleanPm(a.pm), pb = cleanPm(b.pm), t = Date.now(), w = "move" + (why ? ": " + why : "");
+      const pa = cleanPm(a.pm), pb = cleanPm(b.pm), pb0 = cleanPm(b.pm), t = Date.now(), w = "move" + (why ? ": " + why : "");
       pb.bal += pa.bal; pb.own = [...new Set([...pb.own, ...pa.own])];
       pb.log.push({ t, d: pa.bal, b: pb.bal, w: w + " (in)", it: pa.own.join(",") }); pb.log = pb.log.slice(-LOG_KEEP);
       try { if (!acct.writePm(q.to, pb)) return { ok: false, why: "the new account is gone" }; }
       catch (e) { return { ok: false, why: "the disk refused: " + e.message }; }
-      ledger({ t, f: idOf(q.to), d: pa.bal, b: pb.bal, w: w + " (in)", it: pa.own.join(","), from: idOf(q.from) });
       const empty = Object.assign({ bal: 0, own: [], log: pa.log.concat([{ t, d: -pa.bal, b: 0, w: w + " (out)", it: pa.own.join(",") }]).slice(-LOG_KEEP) }, pa.ad ? { ad: pa.ad } : {});
-      try { acct.writePm(q.from, empty); } catch (e) { o.log.warn("pommes: moved but couldn't empty the old account,", e.message); }
+      let out = false, err = "";
+      try { out = !!acct.writePm(q.from, empty); } catch (e) { err = e.message; }
+      if (!out) {   // the old account still has them: the new one gives them back, so the Pommes are never in two places
+        let undone = false;
+        try { undone = !!acct.writePm(q.to, pb0); } catch (e) { /* said below */ }
+        o.log.warn(`pommes: couldn't empty ${q.from.slice(0, 8)} for a move${err ? " (" + err + ")" : ""}, ${undone ? "nothing moved" : "AND couldn't undo it"}`);
+        if (undone) return { ok: false, why: "couldn't empty the old account" + (err ? " (" + err + ")" : "") + "; nothing moved" };
+        ledger({ t, f: idOf(q.to), d: pa.bal, b: pb.bal, w: w + " (in, the old account not emptied)", it: pa.own.join(","), from: idOf(q.from) });
+        return { ok: false, why: `couldn't empty the old account or undo the move: both have the ${pa.bal} Pommes now; take them back from one` };
+      }
+      ledger({ t, f: idOf(q.to), d: pa.bal, b: pb.bal, w: w + " (in)", it: pa.own.join(","), from: idOf(q.from) });
       ledger({ t, f: idOf(q.from), d: -pa.bal, b: 0, w: w + " (out)", it: pa.own.join(","), to: idOf(q.to) });
       S.moved++;
       o.log.log(`pommes: moved ${pa.bal} and ${pa.own.length} items from ${q.from.slice(0, 8)} to ${q.to.slice(0, 8)}`);
