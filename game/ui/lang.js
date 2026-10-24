@@ -107,7 +107,8 @@ const T_FIT_T = "#bDaily b, #bBw b";
 // a text that must also keep clear of a tag drawn over its box's corner
 const T_AVOID = { "#bBw b": "#mBwTag", "#hvAd span": "#hvAd .hv-soon" };
 // a line whose box (a tile of fixed height) must hold all its lines: the line steps down while the box's content runs over it
-const T_TALL = { "#mBw": "#bBw", "#mDaily": "#bDaily", "#mDailyR": "#bDaily" };
+// (the title too: once Boss Week's NEW tag goes, its title is back to full size above three lines in Russian at 667x375)
+const T_TALL = { "#bBw b": "#bBw", "#mBw": "#bBw", "#bDaily b": "#bDaily", "#mDaily": "#bDaily", "#mDailyR": "#bDaily" };
 function tOver(el) {
   const rg = document.createRange(); rg.selectNodeContents(el);
   const rs = [...rg.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
