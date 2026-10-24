@@ -768,6 +768,7 @@ function step(g, inputs) {
   detectHits(g);
   if (live && teamGame(g)) catches(g);
   for (const f of g.fighters) checkBlast(g, f);
+  outCheck(g);
   if (live && !g.look) for (const L of g.launches) checkLethal(g, L);
   if (live && g.timed && g.phase === "play") { g.timer--; if (g.timer <= 0) endByTime(g); }
 }
@@ -1410,6 +1411,8 @@ function knockback(hit, percent, weight) {
 
 function applyHit(g, h) {
   const { att, def } = h;
+  // decided at an earlier hit of this same frame (detectHits gathers the frame's hits first): the finishing launch stands
+  if (def.doomed) return;
   if (def.spec.boss) return bossHit(g, h);
   if (h.hit.mark) return ultMark(g, att, def);
   // finish mode: a special on an opponent at finishPct or more (the number shown before the hit) finishes
@@ -2098,14 +2101,17 @@ function ko(g, f) {
   g.hitstop = Math.max(g.hitstop, 6);
   Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false, pop: 0, ultTgt: -1 });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
-  if (f.stocks <= 0) {
-    setState(f, "gone");
-    // the team is out when all of it is gone
-    if (g.fighters.every((o) => o.team !== f.team || o.state === "gone")) {
-      const other = g.fighters.find((o) => o.team !== f.team && o.state !== "gone");
-      endGame(g, other ? other.team : -1, "stocks");
-    }
-  } else { setState(f, "dead"); f.dead = 70; }
+  if (f.stocks <= 0) setState(f, "gone");   // the team out ends the match: outCheck, once every blast line of the frame is checked
+  else { setState(f, "dead"); f.dead = 70; }
+}
+// a team is out when all of it is gone. Checked after every fighter's blast lines, so two last hearts lost on the same frame are a
+// tie, never a win for whoever comes later in the slot order: sudden death in a 1v1, a draw when it was sudden death already (or 2v2)
+function outCheck(g) {
+  if (g.phase !== "play" || !g.fighters.some((f) => g.fighters.every((o) => o.team !== f.team || o.state === "gone"))) return;
+  const left = g.fighters.find((o) => o.state !== "gone");
+  if (left) return endGame(g, left.team, "stocks");
+  if (g.sudden || g.fighters.length !== 2) return endGame(g, -1, "stocks");
+  startSudden(g);
 }
 function respawn(g, f) {
   // 2v2: over your team's side (the second of a team a little further out); otherwise slot 0 left, everyone else right

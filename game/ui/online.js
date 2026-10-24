@@ -13,7 +13,7 @@
    18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start.
    19: the sprint (a new input and its codes, new fighter fields, CPUs that sprint).
    20: the Pommes skins are new palettes (indices 8 and 9), and presence `ko` says which KO pages are in the mix ({fighter: [1, 2]}). */
-const PROTO = 20;
+const PROTO = 21;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",

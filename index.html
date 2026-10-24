@@ -347,6 +347,8 @@ button { font: inherit; color: inherit; }
 #app.portrait .a2hs { width: auto; left: 14px; }
 .a2hs-sheet { width: min(420px, 100%); }
 .a2hs-lead { margin: 0; font-size: 14px; line-height: 1.35; color: var(--text); }
+/* the game open in another tab (ui/welcome.js): over every sheet, card and banner of this page, under the turn-sideways screen */
+#scrTwice { z-index: 40; }
 .a2hs-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .a2hs-steps li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(14, 16, 34, 0.86); border: 1px solid rgba(243, 217, 164, 0.35);
   font-size: 14px; line-height: 1.3; color: var(--sand); }
@@ -7489,6 +7491,7 @@ function step(g, inputs) {
   detectHits(g);
   if (live && teamGame(g)) catches(g);
   for (const f of g.fighters) checkBlast(g, f);
+  outCheck(g);
   if (live && !g.look) for (const L of g.launches) checkLethal(g, L);
   if (live && g.timed && g.phase === "play") { g.timer--; if (g.timer <= 0) endByTime(g); }
 }
@@ -8131,6 +8134,8 @@ function knockback(hit, percent, weight) {
 
 function applyHit(g, h) {
   const { att, def } = h;
+  // decided at an earlier hit of this same frame (detectHits gathers the frame's hits first): the finishing launch stands
+  if (def.doomed) return;
   if (def.spec.boss) return bossHit(g, h);
   if (h.hit.mark) return ultMark(g, att, def);
   // finish mode: a special on an opponent at finishPct or more (the number shown before the hit) finishes
@@ -8819,14 +8824,17 @@ function ko(g, f) {
   g.hitstop = Math.max(g.hitstop, 6);
   Object.assign(f, { vx: 0, vy: 0, kbx: 0, kby: 0, move: null, mid: null, hitstun: 0, percent: 0, tumble: false, ledge: 0, lastHitBy: null, strLaunched: false, chg: 0, link: 0, lk: false, pop: 0, ultTgt: -1 });
   g.projs = g.projs.filter((p) => p.owner !== f.slot);
-  if (f.stocks <= 0) {
-    setState(f, "gone");
-    // the team is out when all of it is gone
-    if (g.fighters.every((o) => o.team !== f.team || o.state === "gone")) {
-      const other = g.fighters.find((o) => o.team !== f.team && o.state !== "gone");
-      endGame(g, other ? other.team : -1, "stocks");
-    }
-  } else { setState(f, "dead"); f.dead = 70; }
+  if (f.stocks <= 0) setState(f, "gone");   // the team out ends the match: outCheck, once every blast line of the frame is checked
+  else { setState(f, "dead"); f.dead = 70; }
+}
+// a team is out when all of it is gone. Checked after every fighter's blast lines, so two last hearts lost on the same frame are a
+// tie, never a win for whoever comes later in the slot order: sudden death in a 1v1, a draw when it was sudden death already (or 2v2)
+function outCheck(g) {
+  if (g.phase !== "play" || !g.fighters.some((f) => g.fighters.every((o) => o.team !== f.team || o.state === "gone"))) return;
+  const left = g.fighters.find((o) => o.state !== "gone");
+  if (left) return endGame(g, left.team, "stocks");
+  if (g.sudden || g.fighters.length !== 2) return endGame(g, -1, "stocks");
+  startSudden(g);
 }
 function respawn(g, f) {
   // 2v2: over your team's side (the second of a team a little further out); otherwise slot 0 left, everyone else right
@@ -40207,7 +40215,7 @@ window.__blPshop = { open: pshopOpen, close: pshopClose, focus: pshopFocus, st: 
    18: the Harvest skin is a new palette (index 7) an older copy can't draw or accept in a match start.
    19: the sprint (a new input and its codes, new fighter fields, CPUs that sprint).
    20: the Pommes skins are new palettes (indices 8 and 9), and presence `ko` says which KO pages are in the mix ({fighter: [1, 2]}). */
-const PROTO = 20;
+const PROTO = 21;
 const NET = {
   room: null, user: null, tried: false, ok: false, connected: false, dead: null,
   myPeer: null, myName: "", oppName: "", lobbyPeers: [], note: "",
