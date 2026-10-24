@@ -145,7 +145,7 @@ p { margin: 8px 0 0; }
 .brow .bt { color: var(--muted); white-space: nowrap; }
 .kv > div { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .kv .kl small { display: block; margin-top: 1px; color: var(--muted); font-size: 12.5px; }
-.kv .n { font: 700 21px/1 var(--head); text-align: right; }
+.kv .n { font: 700 21px/1 var(--head); text-align: right; white-space: nowrap; }
 .peaks { display: flex; align-items: flex-end; gap: 2px; height: 46px; margin-top: 30px; border-bottom: 1px solid var(--rule); }
 .peaks i { position: relative; flex: 1 1 0; min-width: 2px; background: var(--bar); border-radius: 2px 2px 0 0; }
 .peaks i b { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 2px; font: 600 12px/1 var(--body); }
@@ -256,6 +256,7 @@ p { margin: 8px 0 0; }
   function fmt(n) { return Number(n).toLocaleString("en-US"); }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
   function plural(n, w, pl) { return fmt(n) + " " + (n === 1 ? w : pl || w + "s"); }
+  function hm(m) { m = Math.round(m); return m < 60 ? fmt(m) + " min" : fmt(Math.floor(m / 60)) + " h" + (m % 60 ? " " + (m % 60) + " min" : ""); }
   function modeName(id) { return MODES[id] || id; }
   function fighterName(id) { return FIGHTERS[id] || cap(id); }
   function cnt(day, key) { var o = C.D[day]; return o ? (+o[key] || 0) : 0; }
@@ -295,16 +296,17 @@ p { margin: 8px 0 0; }
 
   // ---------- the numbers behind one render
   function context(data, rangeId) {
-    var tn = dn(data.today), D = data.days || {}, ret = {}, first = Infinity;
+    var tn = dn(data.today), D = data.days || {}, ret = {}, first = Infinity, since = Infinity;
     Object.keys(D).forEach(function (d) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !D[d] || typeof D[d] !== "object") { delete D[d]; return; }
       var n = dn(d); if (n < first) first = n;
+      if ((+D[d].open || +D[d].pt) && n < since) since = n;   // the first day of the counter that waits for a tap and counts play time
       for (var k in D[d]) if (k.indexOf("ret:") === 0) {
         var p = k.split(":"); if (p.length !== 3) continue;
         (ret[p[1]] || (ret[p[1]] = {}))[p[2]] = (ret[p[1]][p[2]] || 0) + (+D[d][k] || 0);
       }
     });
-    return { D: D, tn: tn, today: data.today, ret: ret, first: first, R: mkRange(rangeId, tn) };
+    return { D: D, tn: tn, today: data.today, ret: ret, first: first, since: since, R: mkRange(rangeId, tn) };
   }
 
   // ---------- reusable pieces
@@ -536,6 +538,29 @@ p { margin: 8px 0 0; }
     return s;
   }
 
+  // ---------- 4b. play time (ui/counter.js since 2026-10-24): pt = a minute of real play (a running match, or a tap within the last
+  // minute), pt:<5|15|30|60> = a player's day passed that mark, open = a device opened the game that day, tap or not. Since then a
+  // device is a player (day) only from its first tap, click or key, so open - day = opened without a tap: bots and quick looks.
+  function secTime() {
+    var R = C.R, d = R.days.filter(function (x) { return cnt(x, "open") > 0 || cnt(x, "pt") > 0; });
+    var mins = S(d, "pt"), pd = S(d, "day"), op = S(d, "open");
+    var s = sec("Play time", d.length ? hm(mins) + " played " + R.now : null);
+    s.setAttribute("data-sec", "time");
+    if (!isFinite(C.since)) { s.appendChild(note("No play time counted yet: it starts with the version of 24 Oct.")); return s; }
+    if (!d.length) { s.appendChild(note("No play time " + R.now + " yet.")); return s; }
+    var per = pd ? mins / pd : 0;
+    s.appendChild(h("div", { class: "kv" },
+      kvRow("Played", hm(mins), "a running match, or a tap in the last minute"),
+      kvRow("Per player, per day", pd ? (per < 10 ? per.toFixed(1) : fmt(Math.round(per))) + " min" : "–", plural(pd, "player-day") + " " + R.now),
+      kvRow("Opened without playing", fmt(Math.max(0, op - pd)), "of " + plural(op, "open") + " · no tap, click or key: bots and quick looks")));
+    if (pd) {
+      s.appendChild(h("h3", null, "Time played in a day · " + plural(pd, "player-day")));
+      s.appendChild(barRows([{ l: "Under 5 min", v: Math.max(0, pd - S(d, "pt:5")) }].concat([5, 15, 30, 60].map(function (m) { return { l: m + "+ min", v: S(d, "pt:" + m) }; })), pd));
+    }
+    s.appendChild(h("p", { class: "small mut" }, "Since " + fd(C.since) + " a player counts from their first tap, click or key, and automated browsers are left out. Before that every page open counted."));
+    return s;
+  }
+
   // ---------- 5. hooks
   function secHooks() {
     var R = C.R, d = R.days, rw = P(d, "rw:"), bs = P(d, "bs:"), bw = P(d, "bw:"), scr = P(d, "scr:"), skins = P(d, "skin:");
@@ -720,7 +745,7 @@ p { margin: 8px 0 0; }
     C = context(d, st.range); C.tz = d.tz || "Europe/Berlin";
     var m = $("main"); m.textContent = ""; m.setAttribute("data-state", "ok");
     if (d.acct && d.acct.warn && d.acct.maxFiles > 0 && d.acct.maxBytes > 0) m.appendChild(acctWarn(d.acct));
-    [secPulse, secNew, secBack, secPlay, secHooks, secOnline, secBoard, secBossWeek, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
+    [secPulse, secNew, secBack, secPlay, secTime, secHooks, secOnline, secBoard, secBossWeek, secHealth, foot].forEach(function (f) { m.appendChild(f()); });
     drawSpark();
   }
 

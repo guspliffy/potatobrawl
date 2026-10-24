@@ -16,6 +16,7 @@ Screenshots go to the folder in argv[1]. Prints one line per problem, then "no e
 Usage:  python3 tests/pwstakes.py [outdir]        (needs `python3 game/build.py` first)"""
 import asyncio, traceback, sys, os, json, subprocess, tempfile, shutil, time, hashlib, pathlib, re, urllib.request
 from playwright.async_api import async_playwright
+import pwwin   # leave the game's fullscreen before each resize (tests/pwwin.py)
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get('PWSTAKES_PORT', 8102))
 URL = f'http://localhost:{PORT}/'

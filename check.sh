@@ -8,7 +8,7 @@
 #   CHECK_JOBS=1 ./check.sh     one browser step at a time (a slow or busy machine)
 #   PORT_BASE=9091 ./check.sh   the test servers use ports PORT_BASE .. PORT_BASE+15 (default 8091), e.g. for a second checkout
 # Needs: node, python3, `npm install` (ws), and Python Playwright matching the installed Chromium
-# (in Claude's cloud container: python3 -m pip install playwright==1.56.0).
+# (in Claude's cloud container: python3 -m pip install playwright==1.63.0 for its chromium-1243; it was 1.56.0 before 2026-10-24).
 # macOS: bash 3.2 works (it polls instead of `wait -n`), and without `timeout` the steps run with no time limit unless coreutils' gtimeout is installed.
 set -u
 # macOS has no `timeout`: use coreutils' gtimeout when there, else run the command without a limit
@@ -481,7 +481,7 @@ else fail "play counts server" "$LOGS/stats.log"; fi
 #     from before the counter (a 2v2 win counts as "team"), came back after three days, an error, and a server with the counter off (one try, then silence).
 s_statsui() {
 PWSTATS_PORT=$((PB + 7)) timeout 900 python3 "$ROOT/tests/pwstats.py" > "$LOGS/stats-ui.log" 2>&1
-if grep -q "^no errors" "$LOGS/stats-ui.log"; then pass "play counts in the browser (first visit, Off/On, privacy signal, returning, counter off)"
+if grep -q "^no errors" "$LOGS/stats-ui.log"; then pass "play counts in the browser (bots, first tap, first visit, Off/On, play time, privacy signal, returning, counter off)"
 else fail "play counts in the browser" "$LOGS/stats-ui.log"; fi
 }
 

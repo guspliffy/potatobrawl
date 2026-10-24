@@ -1,0 +1,68 @@
+# Players and play time: it only reads and changes nothing on the server. Paste it as root (or run
+#   curl -fsSL https://raw.githubusercontent.com/guspliffy/potatobrawl/main/deploy/players.txt | bash
+# ) and send Claude everything it prints. It reads the play counts' day files (/var/lib/potatobrawl/stats) and the dates of the
+# account files (/var/lib/potatobrawl/accounts), the same numbers the private stats page shows, all days at once.
+# Since the version of 2026-10-24 a player counts from their first tap, click or key ("open" counts every page open, bots included)
+# and play time is measured (pt: one minute of real play); before that every page open counted and only the length of finished
+# matches is known (ml: the fighting time below is an estimate from those buckets).
+bash <<'EOF'
+[ "$(id -u)" = 0 ] || { echo "Please run as root (type: sudo -i), then paste again."; exit 1; }
+SD=${SD:-/var/lib/potatobrawl/stats} AD=${AD:-/var/lib/potatobrawl/accounts} node - <<'JS'
+const fs = require("fs"), path = require("path"), SD = process.env.SD, AD = process.env.AD;
+console.log("===== PotatoBrawl players and play time, " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC");
+const D = {};
+try { for (const f of fs.readdirSync(SD).sort()) if (/^\d{4}-\d{2}-\d{2}\.json$/.test(f)) { try { D[f.slice(0, 10)] = JSON.parse(fs.readFileSync(path.join(SD, f), "utf8")); } catch (e) { /* a broken day */ } } }
+catch (e) { console.log("can't read " + SD + ": " + e.message); }
+const days = Object.keys(D).sort(), g = (d, k) => D[d][k] | 0;
+const sum = (ds, f) => ds.reduce((a, d) => a + f(d), 0);
+const pre = (d, p) => Object.keys(D[d]).filter((k) => k.startsWith(p)).reduce((a, k) => a + (D[d][k] | 0), 0);
+const MID = { 0: 0.5, 1: 1.5, 2: 2.5, 3: 4, 5: 6 };   // minutes: the middle of each match-length bucket (5 = "5+ min", taken as 6)
+const fight = (d) => Object.keys(MID).reduce((a, b) => a + g(d, "ml:" + b) * MID[b], 0);
+const pad = (v, n) => String(v).padStart(n), hm = (m) => (m >= 90 ? (m / 60).toFixed(1) + " h" : Math.round(m) + " min");
+const T = {}; for (const d of days) for (const k in D[d]) T[k] = (T[k] || 0) + (D[d][k] | 0);   // every key over all days
+const top = (label, p) => { const e = Object.keys(T).filter((k) => k.startsWith(p)).sort((a, b) => T[b] - T[a]).slice(0, 12); console.log(label + ": " + (e.length ? e.map((k) => k.slice(p.length) + " " + T[k]).join(", ") : "none")); };
+if (!days.length) console.log("no day files in " + SD + " (are the play counts on?)");
+else {
+  // a device counts once per month ("mo"); the first month's devices plus the brand-new devices of every later month = everyone so far
+  const months = [...new Set(days.map((d) => d.slice(0, 7)))];
+  let total = 0;
+  months.forEach((m, i) => { const ds = days.filter((d) => d.startsWith(m)); total += i ? sum(ds, (d) => g(d, "day:new")) : sum(ds, (d) => g(d, "mo")); });
+  const nd = days.filter((d) => g(d, "open") || g(d, "pt"));   // the days of the counter that waits for a tap and measures play time
+  console.log("--- players (counted since " + days[0] + ", " + days.length + " days; one player = one phone or browser with Play counts on)");
+  console.log("players so far:              about " + total);
+  console.log("brand-new players:           " + sum(days, (d) => g(d, "day:new")) + " (first day they played, since counting began)");
+  months.forEach((m) => console.log("different players in " + m + ":  " + sum(days.filter((d) => d.startsWith(m)), (d) => g(d, "mo"))));
+  console.log("most players online at once: " + Math.max(...days.map((d) => g(d, "peak"))));
+  if (nd.length) {
+    const op = sum(nd, (d) => g(d, "open")), pd = sum(nd, (d) => g(d, "day"));
+    console.log("since " + nd[0] + ": opened " + op + " times, played " + pd + ", opened without a tap " + Math.max(0, op - pd) + " (bots and quick looks; once per device per day)");
+  }
+  console.log("--- play time");
+  if (nd.length) {
+    const pt = sum(nd, (d) => g(d, "pt")), pd = sum(nd, (d) => g(d, "day"));
+    console.log("played since " + nd[0] + ":     " + hm(pt) + ", about " + (pd ? (pt / pd).toFixed(1) : 0) + " min per player per day (" + pd + " player-days)");
+    console.log("days of 5 / 15 / 30 / 60+ min: " + [5, 15, 30, 60].map((m) => sum(nd, (d) => g(d, "pt:" + m))).join(" / ") + " (player-days)");
+  } else console.log("play time is measured from the version of 2026-10-24 on (no day with it yet)");
+  const mins = sum(days, fight), fin = sum(days, (d) => pre(d, "ml:"));
+  console.log("finished matches:            " + fin + ", about " + hm(mins) + " of fighting (" + (fin ? (mins / fin).toFixed(1) : 0) + " min a match)");
+  console.log("matches given up or dropped: " + sum(days, (d) => Object.keys(D[d]).filter((k) => /^me:.*:(quit|drop)$/.test(k) && !/^me:(tutorial|trial):/.test(k)).reduce((a, k) => a + D[d][k], 0)));
+  const FL = [["0", "under 1 min"], ["1", "1-3 min"], ["3", "3-10 min"], ["10", "10-30 min"], ["30", "30+ min"]];
+  console.log("new players' first visit:    " + FL.map(([k, l]) => sum(days, (d) => g(d, "fl:" + k)) + " " + l).join(", "));
+  console.log("new players' matches:        " + [["d1", 1], ["d5", 5], ["d10", 10], ["d25", 25]].map(([k, n]) => sum(days, (d) => g(d, "fn:" + k)) + " finished " + n).join(", "));
+  console.log("--- per day: opened, players (new), most online, matches started / finished, play time (- = not measured yet), fighting");
+  for (const d of days.slice(-21)) console.log(d + "  " + pad(D[d].open === undefined ? "-" : g(d, "open"), 5) + "  " + pad(g(d, "day"), 4) + " (" + pad(g(d, "day:new"), 3) + ")  " + pad(g(d, "peak"), 3) + "  " +
+    pad(pre(d, "ms:") - g(d, "ms:tutorial") - g(d, "ms:trial"), 5) + " / " + pad(pre(d, "ml:"), 5) + "  " + pad(D[d].open === undefined && !g(d, "pt") ? "-" : hm(g(d, "pt")), 8) + "  " + pad(hm(fight(d)), 7));
+  console.log("--- first visits and what they did (all days)");
+  top("devices (per day)", "dev:"); top("browser language", "lang:"); top("game language", "gl:");
+  top("first visit ended on", "fx:"); top("welcome sheet and tutorial steps", "tut:"); top("first match mode", "first:");
+  top("matches started", "ms:"); top("how matches ended", "me:"); top("screens opened", "scr:"); top("errors", "err:");
+}
+console.log("--- accounts (made by a sync code or the online modes)");
+try {
+  const now = Date.now(); let n = 0, a1 = 0, a7 = 0;
+  for (const f of fs.readdirSync(AD)) if (/^[0-9a-f]{64}\.json$/.test(f)) { n++; const t = fs.statSync(path.join(AD, f)).mtimeMs; if (now - t < 864e5) a1++; if (now - t < 7 * 864e5) a7++; }
+  console.log("accounts: " + n + ", used in the last 24 h: " + a1 + ", in the last 7 days: " + a7);
+} catch (e) { console.log("can't read " + AD + ": " + e.message); }
+console.log("===== end (send Claude everything from the first ===== line)");
+JS
+EOF

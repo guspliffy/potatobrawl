@@ -9,6 +9,8 @@
  * The numbers come from simulating every new player over the days after they arrive, so they agree with each other (the funnel
  * shrinks step by step, ret:<date>:<T> keys sit on the day a device first came back, started matches >= ended ones, ...).
  * Seeded PRNG: the same N gives the same numbers every run (only the calendar dates move with today).
+ * The last NEW_DAYS days also carry what the counter of 2026-10-24 sends: open (opened that day, tap or not: a third more than the
+ * players, the bots and quick looks) and play time (pt minutes, the pt:<5|15|30|60> day marks), both worked out without new random draws.
  */
 const fs = require("fs");
 const path = require("path");
@@ -54,6 +56,8 @@ const weekOf = (i) => Math.floor((t0 + i + 3) / 7);      // Monday-start weeks
 const monthOf = (i) => { const d = dateOf(i); return +d.slice(0, 4) * 12 + +d.slice(5, 7); };
 const isWeekend = (i) => ((t0 + i + 3) % 7) >= 5;
 const F = Array.from({ length: N }, () => ({}));
+const NEW_DAYS = 20;
+const newEra = (i) => i >= N - NEW_DAYS;
 const add = (i, k, v) => { F[i][k] = (F[i][k] || 0) + (v === undefined ? 1 : v); };
 
 // ---------- the game's vocabulary
@@ -107,7 +111,7 @@ function playMatch(p, i, mode, st) {
   const winP = mode === "tutorial" ? 1 : mode === "practice" ? 0.7 : online ? 0.46 : bossy ? Math.max(0.12, 0.55 - lv * 0.2) : 0.52;
   const res = chance(winP) ? "win" : chance(0.9) ? "loss" : "draw";
   add(i, `me:${mode}:${res}`);
-  const len = mode === "tutorial" ? 0 : pick(online || mode === "ranked" ? { 1: 18, 2: 32, 3: 34, 5: 16 } : { 0: 14, 1: 38, 2: 28, 3: 16, 5: 4 });
+  const len = mode === "tutorial" ? 0 : +pick(online || mode === "ranked" ? { 1: 18, 2: 32, 3: 34, 5: 16 } : { 0: 14, 1: 38, 2: 28, 3: 16, 5: 4 });
   add(i, "ml:" + len);
   st.min += len === 0 ? 0.7 : len + 0.5;
   if (chance(0.07)) add(i, "mslow");
@@ -157,7 +161,7 @@ function visit(p, i, first) {
         if (chance(0.66)) { add(i, "again:tutorial"); forced = "ranked"; }
       }
     }
-    if (left) { if (first) endFirst(p, i, st, left); return; }
+    if (left) { if (first) endFirst(p, i, st, left); return st; }
   }
   if (first) planned = forced ? 1 + geo(1.0) : (chance(0.3) ? 0 : 1 + geo(0.9));
   else {
@@ -178,7 +182,7 @@ function visit(p, i, first) {
     if (mode === "cup") screen("cup");
     if (mode === "trial" && !p.route && chance(0.12)) { p.route = true; add(i, "route"); }
     const out = playMatch(p, i, mode, st);
-    if (out === "closed") { if (first) endFirst(p, i, st, "match:" + mode); else extras(p, i, screen); return; }
+    if (out === "closed") { if (first) endFirst(p, i, st, "match:" + mode); else extras(p, i, screen); return st; }
     st.where = out === "finished" ? "result" : out === "drop" ? "online" : "select";
     if (out === "finished" && m < planned - 1) {
       if (chance(0.55)) add(i, "again:" + mode); else mode = null;   // Rematch / Next, or back to the menu
@@ -190,6 +194,7 @@ function visit(p, i, first) {
     else if (st.where === "result" && chance(0.35)) st.where = "menu";
     endFirst(p, i, st, st.where);
   }
+  return st;
 }
 function extras(p, i, screen) {
   for (const s in SCREENS) if (chance(SCREENS[s] / 100)) screen(s);
@@ -236,8 +241,14 @@ for (let i = 0; i < N; i++) {
       p.ret = true;
       for (const T of [1, 3, 7, 14, 30]) if (i - p.d0 <= T) add(i, `ret:${dateOf(p.d0)}:${T}`);
     }
-    visit(p, i, first);
+    const st = visit(p, i, first);
+    if (newEra(i)) {   // the day's minutes: its matches and tutorial plus a minute and a half of menus
+      const m = Math.max(1, Math.round(st.min + 1.5));
+      add(i, "open"); add(i, "pt", m);
+      for (const T of [5, 15, 30, 60]) if (m >= T) add(i, "pt:" + T);
+    }
   }
+  if (newEra(i)) add(i, "open", Math.round((F[i].day || 0) * 0.35));   // opened without a tap
   // the most players online at once: a fraction of the day's players, never more than they were
   const n = F[i].day || 0;
   const peak = n ? Math.max(1, Math.round(n * (0.1 + rand() * 0.14))) : 0;

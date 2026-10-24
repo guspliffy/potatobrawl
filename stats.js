@@ -21,8 +21,10 @@
  * The page key is made the first time the counter starts and kept in STATS_DIR/key (hex, mode 600); delete it and restart to
  * get a new link.
  *
- * The keys the game sends (game/ui/counter.js; the stats page reads them):
- *   day day:new day:back wk mo           a device's first open that day / its first ever / returning; first open that week, month
+ * The keys the game sends (game/ui/counter.js; the stats page reads them). Since 2026-10-24 a device sends nothing but "open" until its
+ * first real tap, click, key or gamepad press of the visit, and an automated browser (navigator.webdriver, a robot's name) sends nothing:
+ *   open                                 a device opened the game that day, tap or not (once a day; bots and quick looks show as open - day)
+ *   day day:new day:back wk mo           a device's first day with a tap / its first ever / returning; first one that week, month
  *   dev:<phone|tablet|desktop> app:<app|web> lang:<xx|other> gl:<en|fr|de|es|ru> ver:<PROTO>   with each device's first open of the day
  *                                        (lang: the browser's language; gl: the game's, game/ui/lang.js)
  *   ret:<YYYY-MM-DD>:<1|3|7|14|30>       a device first seen on that date came back within that many days (once per device)
@@ -35,6 +37,8 @@
  *   rp:<watch|link|share>                 replays (game/ui/replay.js): one watched, a #watch= link opened, a run's link shared
  *   tc:<in|join|host|start|play|champ|share|link>   cups (game/ui/tourney.js): "I'm in tonight", a join, a Friends Cup hosted / started,
  *                                        a call-up's FIGHT, a cup won, a cup link shared / opened
+ *   pt pt:<5|15|30|60>                   one minute of real play (the page showing, in a running match or a tap within the last minute);
+ *                                        a device's day passed 5 / 15 / 30 / 60 minutes (once per device per day)
  *   peak                                  (written here) the most players online at once that day: a maximum, not a sum
  */
 const fs = require("fs");
@@ -60,7 +64,7 @@ const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const FILE_RE = /^(\d{4}-\d{2}-\d{2})\.json$/;
 const W = "[a-z][a-z0-9-]{0,15}";   // a mode, fighter, boss or screen id
 const KEY_RES = [
-  /^(day|day:new|day:back|wk|mo|inv|acct|route|mslow)$/,
+  /^(open|day|day:new|day:back|wk|mo|inv|acct|route|mslow|pt)$/, /^pt:(5|15|30|60)$/,
   /^dev:(phone|tablet|desktop)$/, /^app:(app|web)$/, /^lang:([a-z]{2}|other)$/, /^gl:(en|fr|de|es|ru)$/, /^ver:\d{1,4}$/,
   /^ret:\d{4}-\d{2}-\d{2}:(1|3|7|14|30)$/,
   new RegExp(`^tut:${W}$`), /^fn:(s1|d1|s2|d5|d10|d25)$/, new RegExp(`^first:${W}$`),

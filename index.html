@@ -9856,14 +9856,19 @@ window.__blTour = (id) => {
    key per day. This device keeps one note in localStorage (CNT_KEY): its first day, the last day / week / month it said hello, which
    "came back within N days" it already sent, its match counts and the once-only milestones it already sent.
    Counting runs only in the copy our own server serves (net-ws.js sets __blStandalone) and stops for the visit when the server
-   answers 202 (its counter is off; 404 from a server without one). Never when the browser sends Global Privacy Control, or after
-   Settings > Play counts > Off.
+   answers 202 (its counter is off; 404 from a server without one). Never when the browser sends Global Privacy Control, after
+   Settings > Play counts > Off, or in a browser that says it is automated (search engines, site scanners: CNT_BOT).
+   A device counts as a player only from its first real tap, click, key or gamepad press of the visit (cntGo): before that only
+   "open" is sent, and everything else waits in CNT.held. Play time: one "pt" per minute of real play (cntTime).
    This part sits right after base.js, so the hooks the other parts call (cntStart, cntEnd, cntScreen, ...) find CNT ready; cntBoot
    runs from loop.js once every part is loaded (it reads NET and PROTO). */
 const CNT_KEY = "potatobrawl.count.v1";
-const CNT = { can: false, gpc: false, on: false, booted: false, dead: false, busy: false, note: null, q: [], pre: [], seen: new Set(), errs: 0,
-  live: null, first: false, vis: 0, t0: Date.now(), n: 0, ticking: false };
+const CNT = { can: false, gpc: false, bot: false, on: false, booted: false, dead: false, busy: false, note: null, q: [], pre: [], seen: new Set(), errs: 0,
+  live: null, first: false, vis: 0, t0: Date.now(), n: 0, ticking: false, go: false, held: [], inAt: 0, sec: 0 };
 const CNT_RET = [1, 3, 7, 14, 30];   // "came back within N days"
+const CNT_PT = [5, 15, 30, 60];      // minutes played in one day: each mark is sent once per device per day
+// a browser that names itself a robot (crawlers, page checkers, headless or driven browsers); navigator.webdriver is checked too
+const CNT_BOT = /\bbot\b|bot\/|crawl|spider|slurp|headless|lighthouse|pagespeed|prerender|phantomjs|puppeteer|playwright|selenium/i;
 const cntPad = (v) => String(v).padStart(2, "0");
 const cntDayStr = (d) => `${d.getFullYear()}-${cntPad(d.getMonth() + 1)}-${cntPad(d.getDate())}`;   // the local calendar day
 const cntDayNum = (s) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 86400000;
@@ -9873,8 +9878,9 @@ function cntSave() {
 }
 function cnt(k) {
   if (!CNT.on || CNT.dead) return;
-  CNT.q.push(k);
-  if (CNT.q.length > 300) CNT.q.splice(0, CNT.q.length - 300);
+  const q = CNT.go ? CNT.q : CNT.held;   // before the first tap of the visit nothing leaves the page (cntGo sends it)
+  q.push(k);
+  if (q.length > 300) q.splice(0, q.length - 300);
 }
 // once per device ever, and only for a device that started after the counter did (its first steps are what these follow)
 function cntOnce(k) {
@@ -9908,7 +9914,7 @@ function cntApp() {
 /* ----- the first open of each day (and week, month): who plays, on what, and who came back ----- */
 function cntDaily() {
   const N = CNT.note, now = new Date(), d = cntDayStr(now);
-  if (!CNT.on || N.l === d) return;
+  if (!CNT.on || !CNT.go || N.l === d) return;
   N.l = d;
   cnt("day"); cnt(N.f === d ? "day:new" : "day:back");
   const wk = cntWeekStr(now), mo = d.slice(0, 7);
@@ -9988,7 +9994,7 @@ function cntScreen(name) {   // screens.js show() and modal(), acct.js tabs: onc
 /* ----- the first time a brand-new device leaves the page: where it was, how long, how many matches ----- */
 function cntFirstExit() {
   const N = CNT.note;
-  if (!CNT.on || !CNT.first || !N || N.x) return;
+  if (!CNT.on || !CNT.go || !CNT.first || !N || N.x) return;
   N.x = 1; cntSave();
   const where = mode === "match" && match ? (match.tutorial && !match.trial ? "tut:" + TUT.id : "match:" + cntMode(match)) : mode;
   const mins = (Date.now() - CNT.t0) / 60000;
@@ -10026,37 +10032,87 @@ function cntFlush(beacon) {
 }
 function cntTick() {
   cntDrop();
+  if (CNT.on && document.visibilityState === "visible" && cntPadDown()) cntInput();
+  cntTime();
   if (++CNT.n % 20 === 0) { cntDaily(); cntFlush(false); }
 }
-function cntHide() { if (!CNT.on) return; cntDrop(); cntFirstExit(); cntFlush(true); }
+function cntHide() {
+  if (!CNT.on) return;
+  cntDrop(); cntFirstExit();
+  if (CNT.sec >= 30) cntMinute();   // the minute this visit was in the middle of: rounded
+  CNT.sec = 0;
+  cntFlush(true);
+}
+
+/* ----- the first real tap, click, key or gamepad press of the visit: from here on this device counts as a player ----- */
+function cntInput(e) {
+  if (e && e.isTrusted === false) return;   // events made by a page script are no player
+  CNT.inAt = Date.now();
+  if (!CNT.go) cntGo();
+}
+function cntGo() {
+  if (!CNT.on || CNT.go) return;
+  CNT.go = true;
+  const N = CNT.note;
+  // a device that only looked before (opened without a tap): its first day is the day it first plays
+  if (N.p) { delete N.p; if (N.f) N.f = cntDayStr(new Date()); cntSave(); }
+  CNT.q.push(...CNT.held); CNT.held.length = 0;
+  if (CNT.q.length > 300) CNT.q.splice(0, CNT.q.length - 300);
+  cntDaily(); cntFlush(false);
+}
+function cntPadDown() {   // a gamepad button held or a stick pushed (polled once a second, like the tick)
+  let pads = [];
+  try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return false; }
+  for (const p of pads || []) if (p && ((p.buttons || []).some((b) => b && b.pressed) || (p.axes || []).some((a) => Math.abs(a) > 0.5))) return true;
+  return false;
+}
+
+/* ----- play time: a second counts while the page shows and the player is in a running match or touched it within the last minute ----- */
+function cntTime() {
+  if (!CNT.on || !CNT.go || document.visibilityState !== "visible") return;
+  if (!(mode === "match" && !paused) && Date.now() - CNT.inAt > 60000) return;   // idle in the menus for a minute: the clock stops
+  if (++CNT.sec >= 60) cntMinute();
+}
+function cntMinute() {   // pt: one minute played; pt:<5|15|30|60>: this device's day just passed that many minutes
+  CNT.sec = 0;
+  const N = CNT.note, d = cntDayStr(new Date());
+  if (N.td !== d) { N.td = d; N.tm = 0; }
+  N.tm = (N.tm | 0) + 1; cntSave();
+  cnt("pt");
+  if (CNT_PT.includes(N.tm)) cnt("pt:" + N.tm);
+}
 
 function cntBoot() {   // loop.js, before the first menu
   CNT.booted = true;
   CNT.can = !!window.__blStandalone && /^https?:$/.test(location.protocol);
   CNT.gpc = navigator.globalPrivacyControl === true;
+  CNT.bot = navigator.webdriver === true || CNT_BOT.test(String(navigator.userAgent || ""));
   let N = null;
   try { N = JSON.parse(localStorage.getItem(CNT_KEY) || "null"); } catch (e) { /* storage blocked */ }
   if (N && typeof N === "object" && N.off) { CNT.note = N; return; }   // Settings > Play counts > Off on this device
-  if (!CNT.can || CNT.gpc) { CNT.pre.length = 0; return; }
+  if (!CNT.can || CNT.gpc || CNT.bot) { CNT.pre.length = 0; return; }
   const today = cntDayStr(new Date()), fresh = !N || typeof N !== "object";
   // a device with progress from before the counter (or one arriving through a sync link) is a returning player, not a new one
   const isNew = fresh && firstRun && !ACCT.hash;
-  if (fresh) N = { f: isNew ? today : "", l: "", w: "", m: "", r: 0, s: 0, d: 0, k: {}, x: isNew ? 0 : 1 };
-  N.f = /^\d{4}-\d{2}-\d{2}$/.test(N.f) ? N.f : ""; N.r |= 0; N.s |= 0; N.d |= 0;
+  // p: no tap yet on this device; o: the last day it was opened; td / tm: the day and the minutes played on it (cntMinute)
+  if (fresh) N = { f: isNew ? today : "", l: "", w: "", m: "", r: 0, s: 0, d: 0, k: {}, x: isNew ? 0 : 1, p: 1 };
+  N.f = /^\d{4}-\d{2}-\d{2}$/.test(N.f) ? N.f : ""; N.r |= 0; N.s |= 0; N.d |= 0; N.tm |= 0;
   if (!N.k || typeof N.k !== "object" || Array.isArray(N.k)) N.k = {};
   CNT.note = N;
   if (!cntSave()) return;   // no storage: every visit would look like a new player, so count nothing
-  CNT.on = true; CNT.first = isNew;
+  CNT.on = true; CNT.first = !!(N.p && N.f);   // a new device until its first visit with a tap has ended
   for (const k of CNT.pre) cnt(k);
   CNT.pre.length = 0;
   if (NET.invite) cnt("inv");
-  if (chlRoom(NET.invite)) { cnt("chl:open"); if (isNew) cnt("chl:new"); }   // a Challenge a friend link (ui/challenge.js), and on a brand-new device
-  cntDaily(); cntFlush(false); cntListen();
+  if (chlRoom(NET.invite)) { cnt("chl:open"); if (CNT.first) cnt("chl:new"); }   // a Challenge a friend link (ui/challenge.js), and on a brand-new device
+  if (N.o !== today) { N.o = today; cntSave(); CNT.q.push("open"); }   // opened today, tap or not: the one key sent before the first tap
+  cntFlush(false); cntListen();
 }
 function cntListen() {
   if (CNT.ticking) return;
   CNT.ticking = true;
   setInterval(cntTick, 1000);
+  for (const ev of ["pointerdown", "keydown", "touchstart"]) window.addEventListener(ev, cntInput, { capture: true, passive: true });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") cntHide(); });
   window.addEventListener("pagehide", cntHide);
 }
@@ -10065,26 +10121,27 @@ function cntSettings() {
   $("setCountRow").hidden = !CNT.can;
   $("setCountNote").hidden = !CNT.can;
   if (!CNT.can) return;
-  chipRow("setCount", [[true, _t("On")], [false, _t("Off")]], CNT.on, cntSwitch, (v) => v && CNT.gpc);
+  chipRow("setCount", [[true, _t("On")], [false, _t("Off")]], CNT.on, cntSwitch, (v) => v && (CNT.gpc || CNT.bot));
   $("setCountNote").textContent = CNT.gpc ? _t("Your browser asks sites not to count visits, so this device sends nothing.")
     : _t("Play counts are anonymous totals (no name, no ID, no cookies) that show which modes people enjoy.");
 }
 function cntSwitch(v) {
   if (!v) {
-    CNT.on = false; CNT.q.length = 0; CNT.live = null;
+    CNT.on = false; CNT.q.length = 0; CNT.held.length = 0; CNT.live = null;
     CNT.note = Object.assign(CNT.note || {}, { off: true }); cntSave();
     return;
   }
-  if (CNT.gpc || CNT.on) return;
+  if (CNT.gpc || CNT.bot || CNT.on) return;
   // counting again: this device isn't followed as a new player (its first steps weren't counted)
   const N = CNT.note && typeof CNT.note === "object" ? CNT.note : {};
-  CNT.note = { f: "", l: "", w: "", m: "", r: 0, s: N.s | 0, d: N.d | 0, k: {}, x: 1 };
+  CNT.note = { f: "", l: "", w: "", m: "", r: 0, s: N.s | 0, d: N.d | 0, k: {}, x: 1, o: cntDayStr(new Date()), td: N.td || "", tm: N.tm | 0 };   // today's minutes go on
   if (!cntSave()) return;
-  CNT.on = true; CNT.first = false;
+  CNT.on = true; CNT.first = false; CNT.go = true; CNT.inAt = Date.now();   // the tap on On is this visit's first tap
   cntDaily(); cntFlush(false); cntListen();
 }
 // for the tests (tests/pwstats.py): send now instead of within 20 s, and look at the state
-window.__blCount = { flush() { cntDrop(); cntFlush(false); }, get on() { return CNT.on; }, get dead() { return CNT.dead; }, get queue() { return CNT.q.slice(); }, get note() { return CNT.note; } };
+window.__blCount = { flush() { cntDrop(); cntFlush(false); }, get on() { return CNT.on; }, get dead() { return CNT.dead; }, get go() { return CNT.go; }, get queue() { return CNT.q.concat(CNT.held); }, get note() { return CNT.note; },
+  minutes(n) { if (CNT.on && CNT.go) for (let i = 0; i < n; i++) cntMinute(); } };   // minutes: n minutes of play at once (pt, pt:<mark>)
 /* ===================== input ===================== */
 const touch = { x: 0, y: 0, jump: false, light: false, heavy: false, special: false, dodge: false, ulti: false, id: null, ox: 0, oy: 0 };
 const latch = new Set();

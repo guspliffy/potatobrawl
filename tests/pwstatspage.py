@@ -16,7 +16,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 ARGS = ['--disable-gpu']   # canvas 2D on the CPU rasterizer: about 2.5x faster than SwiftShader's emulated GPU (the game has no WebGL)
 SIZES = [('phone', {'width': 390, 'height': 844}, True), ('land', {'width': 844, 'height': 390}, True), ('desk', {'width': 1280, 'height': 800}, False)]
 RANGES = ['today', 'week', 'month']
-SECTIONS = ['Pulse', 'New players', 'Coming back', 'What they play', 'Hooks', 'Online', 'Health']
+SECTIONS = ['Pulse', 'New players', 'Coming back', 'What they play', 'Play time', 'Hooks', 'Online', 'Health']
 FONT_RE = re.compile(r'fonts\.(googleapis|gstatic)\.com')
 errs = []
 def expect(ok, msg):
@@ -45,6 +45,9 @@ def api(key=KEY):
     return json.loads(urllib.request.urlopen(req, timeout=10).read())
 
 # ---------- what the numbers should be, worked out from the raw day files
+def hm(m):   # web/stats.html hm(): minutes as "45 min" / "2 h" / "2 h 5 min"
+    return f'{m:,} min' if m < 60 else f'{m // 60:,} h' + (f' {m % 60} min' if m % 60 else '')
+
 def expected(data):
     days, today = data['days'], datetime.date.fromisoformat(data['today'])
     mon = today - datetime.timedelta(days=today.weekday())
@@ -53,7 +56,7 @@ def expected(data):
     for r in RANGES:
         ds = [(first[r] + datetime.timedelta(days=i)).isoformat() for i in range((today - first[r]).days + 1)]
         g = lambda k: sum(days.get(d, {}).get(k, 0) for d in ds)
-        out[r] = {'players': g({'today': 'day', 'week': 'wk', 'month': 'mo'}[r]), 'new': g('day:new'),
+        out[r] = {'players': g({'today': 'day', 'week': 'wk', 'month': 'mo'}[r]), 'new': g('day:new'), 'pt': g('pt'),
                   'started': sum(v for d in ds for k, v in days.get(d, {}).items() if k.startswith('ms:'))}
     out['monday'] = f'{mon.day} {mon.strftime("%b")}'
     return out
@@ -128,6 +131,8 @@ async def populated(b, data):
             rows = await pg.evaluate("document.querySelectorAll('.cw').length")
             expect(1 <= rows <= 8, f'{tag}: {rows} cohort rows')
             expect(f'Week of {exp["monday"]}' in (await text(pg, '.cw:first-of-type .cw-t') or '') or f'Week of {exp["monday"]}' in (await text(pg, '.cw-t') or ''), f'{tag}: newest cohort row is not the week of {exp["monday"]}')
+            pt = (await text(pg, 'section[data-sec=time] .kv > div:first-child .n') or '').strip()
+            expect(pt == hm(e['pt']), f'{tag}: Play time shows {pt!r}, the day files say {hm(e["pt"])!r}')
             if r != 'today' or e['started']:
                 expect(await pg.evaluate("document.querySelectorAll('.mrow').length") >= 1, f'{tag}: no match modes shown')
             errl = await pg.evaluate("[...document.querySelectorAll('.err code')].map((e) => e.textContent)")
@@ -193,7 +198,7 @@ async def messages(b, empty):
         await pg.click(f'.pill[data-range={r}]'); await pg.wait_for_timeout(150)
         t = await pg.evaluate("document.getElementById('main').innerText")
         expect('No plays counted yet' in t, f'empty_{r}: no "No plays counted yet" line')
-        expect(await pg.evaluate("document.querySelectorAll('main section').length") == 7, f'empty_{r}: sections missing')
+        expect(await pg.evaluate("document.querySelectorAll('main section').length") == len(SECTIONS), f'empty_{r}: sections missing')
         await sane(pg, f'empty_{r}'); await fit(pg, f'empty_{r}')
     await pg.click('.pill[data-range=week]'); await pg.wait_for_timeout(150)
     expect(await text(pg, '.warn') is None, 'empty: an accounts warning without accounts')
