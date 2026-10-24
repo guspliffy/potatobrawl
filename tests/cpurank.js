@@ -118,6 +118,8 @@ const backdate = (dir, code) => edit(dir, code, (rec) => { rec.cpu.tk.t -= 10 * 
   const codes0 = [1280, 1280, 1280, 5, 5, 2600, ...new Array(130).fill(1280)];
   check(JSON.stringify(C.unpack(C.pack(codes0))) === JSON.stringify(codes0) && C.pack(codes0).length === 6 * 3, "the packed log: runs of three characters, back to the same codes");
   check(C.unpack("AA") === null && C.unpack("@@A") === null && C.unpack("____") === null, "a broken log doesn't unpack");
+  // a hit's freeze frames log inputs while the clock stands still: a 4:00 match that goes into sudden death logged 16,541 (it was refused at 16,000)
+  check(C.unpack(C.pack(new Array(22000).fill(1280))) !== null && C.unpack(C.pack(new Array(24001).fill(1280))) === null, "a log of 22,000 inputs (4:00, a whole sudden death and the freeze frames) unpacks; one past the cap doesn't");
   check(C.strength(1000) === 0.25 && C.strength(1250) === 0.5 && Math.abs(C.strength(1650) - 0.9) < 1e-9 && C.strength(1730) === 0.98 && C.strength(2500) === 0.98 && C.strength(500) === 0.08, "the CPU's strength: Easy+ at 1000, Normal 1250, Hard 1650, full from 1730");
   check(C.boardName({ name: "Tuber Tom" }, 0) === "Tuber Tom" && C.boardName({ name: "sh1t lord" }, 0) === "Potato" && C.boardName({ name: "Tuber" }, 1) === "Potato" && C.boardName({}, 0) === "Potato", "board names: the account name, a word filter, a blanked name");
 
@@ -181,6 +183,13 @@ const backdate = (dir, code) => edit(dir, code, (rec) => { rec.cpu.tk.t -= 10 * 
     check(tk.cr >= cpu.r - 70 && tk.cr <= cpu.r + 70 && Math.abs(tk.d - C.strength(tk.cr)) < 1e-9, `after placement the CPU is rated yours ±70 (${cpu.r} -> CPU ${tk.cr})`);
     me = await A.ask({ t: "cme" }, "cme");
     check(me && me.n === 5 && me.pl === 1 && me.of === 1 && me.tk === tk.id, "placed after 5: #1 of 1 on the CPU board");
+    { // a phone's save that changes nothing on the board (chips after a match) keeps the place
+      const rec = readRec(dir, codeA), sv = await call("POST", "/api/acct/save", { code: codeA, rev: rec.rev, prof: Object.assign({}, rec.prof, { tokens: (rec.prof.tokens | 0) + 1 }) });
+      await sleep(300);
+      while (await A.next((x) => x.t === "cme", 300));   // the answers already waiting (a "late" result sends one too)
+      me = await A.ask({ t: "cme" }, "cme");
+      check(sv.status === 200 && me && me.pl === 1, "a save that changes nothing on the board keeps the place (#1, not none)");
+    }
     // the game updated meanwhile: a ticket from another version gives no result
     edit(dir, codeA, (rec) => { rec.cpu.tk.v = PROTO - 1; rec.cpu.tk.t -= 600000; });
     sendLog(A, tk.id, playCpu(tk, 0.98).codes, 2);

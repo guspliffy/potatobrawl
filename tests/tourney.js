@@ -260,20 +260,14 @@ async function playRoom(a, b) {
     const calls = [];
     for (const p of fin) calls.push(await p.next((m) => m.t === "tc-call" && m.key === "1:0", 4000));
     check(calls.every((x) => x && x.r === 1), `the final is called (${fin.map((p) => p.name).join(" vs ") + (fin.length < 2 ? " vs the CPU" : "")})`);
+    // the final is a walkover: the second finalist (or the only one, against the CPU) misses the call. A finalist who played the
+    // semi-final still gets the final's prize below (only a player who never played a match gets none)
     let champ = null;
-    if (fin.length === 2) {
-      for (const p of fin) p.send({ t: "tcgo" });
-      const pf = await playRoom(fin[0], fin[1]);
-      const w = pf.g.winner;
-      champ = w < 0 ? A : (w === 0) === (pf.H === fin[0]) ? fin[0] : fin[1];   // (a draw: Ann, seed 1)
-    } else {
-      const P = fin[0];
-      P.send({ t: "tcgo" });
-      const t2 = await P.next((m) => m.t === "tc-tk", 3000);
-      const pl = playCpu(t2.tk, 0.95);
-      sendLog(P, t2.tk.id, pl.codes);
-      champ = pl.winner === 0 || (pl.winner < 0 && P === A) ? P : null;
-    }
+    const late = fin[fin.length - 1];
+    if (fin.length === 2) fin[0].send({ t: "tcgo" });
+    const rl = await late.next((m) => m.t === "tc-res" && m.key === "1:0", 8000);
+    check(rl && rl.res === 0 && rl.why === "wo", `a finalist who misses the call loses the final by walkover (${late.name})`);
+    if (fin.length === 2) champ = fin[0];
     const ends = {};
     for (const p of [A, B, Cc]) ends[p.name] = await p.next((m) => m.t === "tc-end", 8000);
     check(Object.values(ends).every((e) => e && e.id === cupId && e.of === 3 && e.k === "d"), "the cup is over: every player hears it");

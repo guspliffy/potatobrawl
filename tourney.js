@@ -51,8 +51,8 @@ const PRIZE = { 4: [60, 30, 10], 8: [120, 60, 30, 10] };          // a Daily Cup
 const PLACE = [1, 2, 3, 5];                   // ...the places those are
 const CPU_R = [1250, 1650];                   // CPUs play at the cup's average rating, between Normal and Hard
 const NAMES = 36;                             // the page's CPU_NAMES (ui/screens.js): a CPU's name is CPU_NAMES[ni % its length]
-const MAX_FRAMES = 17500;                     // a CPU match's log: the countdown, 4:00 and a whole sudden death (17,250 frames)
-const MAX_PARTS = 12, PART = 6000;
+const MAX_FRAMES = 24000;                     // a CPU match's log: the countdown, 4:00 and a whole sudden death (17,250 clock frames, and a hit's freeze frames log inputs too)
+const MAX_PARTS = 14, PART = 6000;
 const KEEP_DAYS = 7;                          // cup files kept
 const TIMES = {
   tick: 1000,
@@ -350,7 +350,7 @@ function init(opts) {
     for (let r = 1; r <= R; r++) c.p.push(new Array(size >> r).fill(-1));
     c.m = {};
     for (let r = 0; r < R; r++) for (let i = 0; i < size >> (r + 1); i++) c.m[r + ":" + i] = { s: "w", rdy: [0, 0], tries: 0 };
-    c.out = {}; c.noshow = []; c.st = "run"; c.ts = now(); c.ent = [];
+    c.out = {}; c.noshow = []; c.pld = []; c.st = "run"; c.ts = now(); c.ent = [];
     for (const s of c.slots) if (s.h) inCup.set(s.file, c.id);
     S.cups++;
     o.log.log(`tourney: ${c.id} starts, ${list.length} players in a cup of ${size}`);
@@ -411,9 +411,12 @@ function init(opts) {
     const a = c.p[r][2 * i], b = c.p[r][2 * i + 1], R = rounds(c.size);
     m.s = "d"; m.why = why; m.w = w; m.room = null; m.tk = null; m.te = now();
     c.p[r + 1][i] = w === 0 ? a : w === 1 ? b : -2;
-    const noShow = why === "wo" || why === "x" || why === "quit";   // never played: no prize
+    const noShow = why === "wo" || why === "x" || why === "quit";   // not played: a player who never played a match gets no prize
+    if (!c.pld) c.pld = [];   // the players with a match played (a cup from before the list: its matches so far count as not played)
     for (const [side, k] of [[0, a], [1, b]]) {
-      if (k < 0 || side === w) continue;
+      if (k < 0) continue;
+      if (!noShow && c.slots[k].h && !c.pld.includes(k)) c.pld.push(k);
+      if (side === w) continue;
       c.out[k] = r;
       if (noShow && c.slots[k].h) c.noshow.push(k);
     }
@@ -589,7 +592,8 @@ function init(opts) {
         if (lr === undefined) { lr = 0; for (let r = 0; r < R; r++) if (c.p[r].includes(k)) lr = r; }
         idx = R - lr;
       }
-      c.res[k] = { pl: PLACE[idx], c: c.k === "d" && !c.noshow.includes(k) ? (PRIZE[c.size][idx] || 0) : 0 };
+      const never = c.noshow.includes(k) && !(c.pld || []).includes(k);   // a semi-finalist who misses the final's call still gets the final's prize
+      c.res[k] = { pl: PLACE[idx], c: c.k === "d" && !never ? (PRIZE[c.size][idx] || 0) : 0 };
     }
     o.log.log(`tourney: ${c.id} done, champion ${c.ch >= 0 ? (c.slots[c.ch].h ? c.slots[c.ch].id : "a CPU") : "nobody"}`);
     pay(c);

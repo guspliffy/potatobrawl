@@ -36,7 +36,9 @@ const SPREAD = 70;               // the CPU's rating is yours ± this
 const TOP = 100;                 // rows a board sends
 const OPEN_MS = 24 * 3600e3;     // a ticket with no result counts as a loss after this
 const GAP_MS = 2000;             // one ticket per account this often at most
-const MAX_PARTS = 12, PART = 6000, MAX_FRAMES = 16000;   // the result's size: 12 messages of 6,000 characters, 4:27 of play
+// the result's size: 14 messages of 6,000 characters. The log has one input per step, and a hit's freeze frames are steps too (the clock
+// stands still), so a match logs about 1.1-1.25 inputs per clock frame: 4:00 and a whole sudden death is up to about 22,000
+const MAX_PARTS = 14, PART = 6000, MAX_FRAMES = 24000;
 const CHUNK = 2000;              // frames replayed between two looks at the network (about 10 ms)
 const RULES = { stocks: 3, time: 240, countdown: 150 };   // the old Ranked vs a CPU: 3 lives, 4 minutes
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -163,11 +165,12 @@ function init(opts) {
       c: cpu.n >= PLACING ? { r: cpu.r, w: cpu.w, l: cpu.l, f: mostOf(cpu.fc), rt: cpu.rt } : null, cpn: cpu.n,
       o: isInt(on.n) && on.n >= PLACING ? { r: on.r | 0, w: on.w | 0, l: on.l | 0, f: mostOf(ofs), rt: lastOn } : null, opn: on.n | 0,
     };
-    B.set(file, e);
     if (cpu.tk) openTk.add(file); else openTk.delete(file);
-    // a resort only when something a board shows changed (a phone's save usually changes nothing here)
-    const same = old && old.nm === e.nm && old.pl === e.pl && JSON.stringify([old.c, old.o]) === JSON.stringify([e.c, e.o]);
-    if (!same) sorted.c = sorted.o = null;
+    // a resort only when something a board shows changed (a phone's save usually changes nothing here); then the entry keeps its object,
+    // since the sorted lists hold it (a new object would be missing from them: no place on the pill or the board until the next resort)
+    const same = old && old.id === e.id && old.nm === e.nm && old.pl === e.pl && JSON.stringify([old.c, old.o]) === JSON.stringify([e.c, e.o]);
+    if (same) Object.assign(old, e);
+    else { B.set(file, e); sorted.c = sorted.o = null; }
   }
   const rowOf = (e, k) => ({ id: e.id, nm: e.nm, f: e[k].f, r: e[k].r, w: e[k].w, l: e[k].l, pl: e.pl });
   function board(k, file) {

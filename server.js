@@ -82,6 +82,7 @@ try {
     nameOf: (peer) => { const c = clients.get(peer); return c ? c.name : ""; },
     byOf: (peer) => { const c = clients.get(peer); return c ? c.by : ""; },
     online: () => clients.size,
+    live: (peer) => { const c = clients.get(peer); return !!(c && c.ws); },   // false in the grace after a socket closed: no match is dealt to it then
     onCup: (tm, res, why, rv) => { if (tourney) tourney.matchEnd(tm, res, why, rv); },   // a cup match the referee decided
     T: process.env.QM_T ? JSON.parse(process.env.QM_T) : undefined,   // tests only: shorter waits
   });

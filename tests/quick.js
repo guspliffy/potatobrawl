@@ -190,7 +190,23 @@ async function play(H, G, opts) {
     check(!!(await A.next((m) => m.t === "qm-no" && m.why === "old")), "an older page can't search (old: reload)");
     A.send({ t: "qm", v: PROTO, mode: "r", f: "nobody", pi: 0 });
     check(!!(await A.next((m) => m.t === "qm-no" && m.why === "bad")), "an unknown fighter is refused");
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "constructor", pi: 0 });
+    check(!!(await A.next((m) => m.t === "qm-no" && m.why === "bad")) && !/message failed/.test(srv.log()), "a fighter named like an object's own property is refused (the server doesn't throw)");
     bad.close();
+
+    // ---- a phone whose socket closes while it searches is not paired in its grace; back with the same peer and secret, it is ----
+    const Xg = phone("Xen"); await Xg.open();
+    let Yg = phone("Yam"); await Yg.open();
+    Xg.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    await Xg.next((m) => m.t === "qm-wait");
+    Yg.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    Yg.close();   // the search went out, then the Wi-Fi blinked
+    check(!(await Xg.next((m) => m.t === "qm-found", 700)), "a search whose socket closed is not paired while it is away");
+    Yg = phone("Yam", { peer: Yg.peer, k: Yg.k }); await Yg.open();
+    Yg.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    const fx = await Xg.next((m) => m.t === "qm-found"), fy = await Yg.next((m) => m.t === "qm-found");
+    check(!!fx && !!fy && fx.room === fy.room, "back within the grace, it is paired as usual");
+    for (const p of [Xg, Yg]) { if (fx) p.send({ t: "leave", room: fx.room }); p.close(); }
 
     // ---- a whole Ranked match, decided by the referee ----
     A.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 });

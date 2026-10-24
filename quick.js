@@ -203,6 +203,7 @@ function init(opts) {
 
   const now = () => Date.now();
   const send = (peer, msg) => { try { o.send(peer, msg); } catch (e) { /* the peer is gone */ } };
+  const live = (peer) => !o.live || o.live(peer);   // server.js: the peer has a socket now (not in its grace after a drop)
   const waited = (q, t) => (t - q.since) / 1000;
   const range = (q, t) => { const w = waited(q, t); for (const [s, r] of T.range) if (w < s) return r; return Infinity; };
 
@@ -259,7 +260,8 @@ function init(opts) {
   }
   function pairAll() {
     if (draining) return;
-    const t = now(), list = [...Q.values()].sort((x, y) => x.since - y.since), used = new Set();
+    // a phone whose socket closed stays in the queue for the grace (it may come back) but is not paired: its qm-found would go nowhere
+    const t = now(), list = [...Q.values()].filter((q) => live(q.peer)).sort((x, y) => x.since - y.since), used = new Set();
     for (const a of list) {
       if (used.has(a.peer)) continue;
       let best = null;
@@ -306,7 +308,7 @@ function init(opts) {
     const t = now(), side = [];
     for (const x of [x0, x1]) {
       const seat = seats.get(x.peer), on = seat ? onOf(seat.file) : null, cur = ofPeer.get(x.peer), mm = cur && M.get(cur);
-      if (!on || (mm && !mm.done)) return null;
+      if (!on || (mm && !mm.done) || !live(x.peer)) return null;   // not connected right now: the cup calls the match again
       side.push({ peer: x.peer, file: seat.file, id: seat.id, last: on.last, name: x.name || o.nameOf(x.peer) || "Potato", by: o.byOf(x.peer) || x.peer, mode: "t",
         f: x.f, pi: x.pi, r: on.r, n: on.n, since: t, sent: 0 });
     }

@@ -50,7 +50,7 @@ const LV = 1;                               // Hard
 const ROAD = { scratch: { hp: 0.9, mate: 0.5 }, zorp: { hp: 1.2, mate: 0.4 }, kraken: { hp: 1.3, mate: 0.35 } };
 const CAP = 240 * 60;                       // frames from GO: a run past 4:00 has no time (the phone ends it there)
 const RULES = { stocks: 3, time: 0, countdown: 150 };   // a boss fight: 3 lives each, no clock (the Road's)
-const PART = 6000, MAX_PARTS = 14, MAX_FRAMES = 18000;   // the log: 14 messages of 6,000 characters, 5:00 of play (4:00 + the KO's tail)
+const PART = 6000, MAX_PARTS = 14, MAX_FRAMES = 24000;   // the log: 14 messages of 6,000 characters, 4:00 + the KO's tail (a hit's freeze frames log inputs too)
 const CHUNK = 2000;                         // frames replayed between two looks at the network (about 10 ms)
 const OPEN = 3;                             // open tickets kept per account (the last try can still arrive while the next one starts)
 const GAP_MS = 2000;                        // one ticket per account this often at most
