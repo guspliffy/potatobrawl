@@ -41,7 +41,7 @@ const CHUNK = 2000;              // frames replayed between two looks at the net
 const RULES = { stocks: 3, time: 240, countdown: 150 };   // the old Ranked vs a CPU: 3 lives, 4 minutes
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+const FIG = Object.assign(Object.create(null), Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));   // no prototype: "constructor" is no fighter
 const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;
 const isInt = Number.isInteger;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

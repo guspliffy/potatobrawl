@@ -57,8 +57,9 @@ const GAP_MS = 2000;                        // one ticket per account this often
 const TOP = 100, KEEP_TOP = 10, KEEP_WEEKS = 4;
 const RUN_PER_MIN = 60;                     // GET /api/run/<id> per address and minute
 const prize = (pl) => (pl === 1 ? 300 : pl <= 3 ? 150 : pl <= 10 ? 80 : 25);   // chips for a place (one prize per player)
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
-const BOSS = Object.fromEntries(BL.BOSSES.map((b) => [b.id, b]));
+const dict = (o) => Object.assign(Object.create(null), o);   // no prototype: "constructor" is no fighter or boss
+const FIG = dict(Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));
+const BOSS = dict(Object.fromEntries(BL.BOSSES.map((b) => [b.id, b])));
 const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;
 const isInt = Number.isInteger;
 const hex12 = (s) => typeof s === "string" && /^[0-9a-f]{12}$/.test(s);

@@ -85,12 +85,14 @@ const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 // the input codes a 1v1 can use (game/ui/online.js): buttons, ULTI held, a sprint press (SPRINT_BASE + side x 9 + the stick's y); not Focus (2v2)
 const ULTI_BASE = 2592, SPRINT_BASE = ULTI_BASE + 81 * 16 + 81 * 2, CODES = SPRINT_BASE + 18, NEUTRAL = 1280;
 const codeOk = (v) => v < ULTI_BASE + 81 * 16 || (v >= SPRINT_BASE && v < CODES);
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+// lookups keyed by what a phone sends have no prototype: "constructor" or "toString" must not look like a fighter or a boss
+const dict = (o) => Object.assign(Object.create(null), o);
+const FIG = dict(Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));
 // a boss fight with a friend (game/ui/online.js): 3 hearts each, no clock, one fight; his HP is his Road HP (game/ui/road.js ROAD_REG hp)
 // x the two-player K (game/ui/online.js DUO_HP), multiplied in that order as the page does (tests/quick.js checks they match the page's)
 const BOSS_RULES = { l: 3, t: 0, b: 1 };
-const ROAD_HP = { scratch: 0.9, zorp: 1.2, kraken: 1.3 };
-const DUO_HP = { scratch: [1.05, 1.05, 1.05], zorp: [1.15, 1.15, 1.15], kraken: [1.55, 1.55, 1.55] };
+const ROAD_HP = dict({ scratch: 0.9, zorp: 1.2, kraken: 1.3 });
+const DUO_HP = dict({ scratch: [1.05, 1.05, 1.05], zorp: [1.15, 1.15, 1.15], kraken: [1.55, 1.55, 1.55] });
 const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 // the game version the phones must have: the same PROTO as the page this server serves (game/ui/online.js)

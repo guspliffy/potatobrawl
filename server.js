@@ -220,13 +220,21 @@ function drop(peer) {
   if (pommes) pommes.gone(peer);
 }
 
+let lastMsgErr = 0;   // a failed message is logged once a minute at most
 wss.on("connection", (ws) => {
   let peer = null;
   let budget = 120, last = Date.now();
   ws.isAlive = true;
   ws.on("pong", () => { ws.isAlive = true; });
+  // a frame over maxPayload or a broken frame: ws closes the socket itself; without a listener the 'error' event would end the process
+  ws.on("error", () => {});
 
+  // one message that throws (a field shaped oddly) is dropped and logged, never the end of every match on the server
   ws.on("message", (buf) => {
+    try { onMessage(buf); }
+    catch (e) { const now = Date.now(); if (now - lastMsgErr > 60000) { lastMsgErr = now; console.warn("ws: a message failed:", e && e.stack || e); } }
+  });
+  const onMessage = (buf) => {
     const now = Date.now();
     budget = Math.min(240, budget + (now - last) * 0.12);   // about 120 messages per second, burst 240
     last = now;
@@ -291,7 +299,7 @@ wss.on("connection", (ws) => {
       drop(peer);
       peer = null;
     }
-  });
+  };
 
   ws.on("close", () => {
     if (!peer) return;

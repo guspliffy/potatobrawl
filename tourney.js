@@ -69,7 +69,7 @@ const TIMES = {
 const ALPHA = "23456789ABCDEFGHJKMNPQRSTVWXYZ";   // a Friends Cup's code: 5 of these (no 0/O, 1/I/L, U)
 const CODE_RE = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
 const ID_RE = /^(d\d{8}[a-h]?|f[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5})$/;
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+const FIG = Object.assign(Object.create(null), Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));   // no prototype: "constructor" is no fighter
 const isInt = Number.isInteger;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const okFig = (f, pi) => !!FIG[f] && isInt(pi) && pi >= 0 && pi < FIG[f].palettes.length;
