@@ -344,6 +344,9 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
     played, per player per day, opened without playing (open - day), the 5/15/30/60 bars. deploy/players.txt prints it all
     (read-only, curl | bash). Browser tests: Playwright's own browser is a bot now, so tests/pwstats.py passes HUMAN_UA and
     webdriver false; other browser tests count nothing.
+  - Same PR: the cloud container now has Python Playwright 1.63 + Chromium 1243, whose set_viewport_size resizes the window and
+    fails while the game is fullscreen (goFull on a tap). tests/pwwin.py wraps it to leave fullscreen first; pwreplay, pwbw,
+    pwtourney, pwquick and pwstakes import it. Still red on main: pwlang finds the Russian Boss Week label spilling #bBw at 667 px.
 - Session 6 of the big-features plan, part 1 (2026-10-15, branch claude/project-thread-qtfrko, PROTO 14, players reload once): Team Brawl 2v2, you and a
   CPU partner against two CPUs, offline. Plan doc https://claude.ai/code/artifact/f4ff6904-3262-4992-9c4c-7cc8b1cee3aa, Fable's design
   /mnt/project-files/2v2/fable-2v2.md. Online 2v2 is a later session (a four-input lockstep, a lobby for four, the snapshot size).

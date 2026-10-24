@@ -16,6 +16,7 @@ bracket and the results card at four sizes) go to the folder in argv[1]. Prints 
 Usage:  python3 tests/pwtourney.py [outdir]        (needs `python3 game/build.py` first)"""
 import asyncio, sys, os, json, subprocess, tempfile, shutil, time, hashlib, pathlib, re, urllib.request
 from playwright.async_api import async_playwright
+import pwwin   # leave the game's fullscreen before each resize (tests/pwwin.py)
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get('PWTC_PORT', 8105))
 URL = f'http://localhost:{PORT}/'

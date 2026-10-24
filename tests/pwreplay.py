@@ -13,6 +13,7 @@ Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwreplay.py [outdir]        (needs `python3 game/build.py` first)"""
 import asyncio, sys, os, json, subprocess, tempfile, shutil, time, pathlib, urllib.request
 from playwright.async_api import async_playwright
+import pwwin   # leave the game's fullscreen before each resize (tests/pwwin.py)
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get('PWREPLAY_PORT', 8104))
 URL = f'http://localhost:{PORT}/'
