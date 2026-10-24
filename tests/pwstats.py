@@ -1,8 +1,9 @@
-"""Play counts in the browser (ui/counter.js) against a real `node server.js` with a temporary STATS_DIR on port 8098: what a new
-player's first visit sends (welcome sheet, tutorial skipped into the first fight, that won, Rematch, a quit, where they left), a second visit on the same
-day, Settings > Play counts Off and On, a browser with Global Privacy Control, a player from before the counter (and their Team Brawl 2v2 win), a player coming back
-three days later (came back within 3/7/14/30 days, not 1), an error on the page, and a server with the counter off (one try, then
-silence). Prints one line per problem, then "no errors".
+"""Play counts in the browser (ui/counter.js) against a real `node server.js` with a temporary STATS_DIR on port 8098: an automated
+browser (sends nothing), what a new player's first visit sends (only "open" before the first tap; welcome sheet, tutorial skipped into the first fight,
+that won, Rematch, a quit, where they left), a second visit on the same day, Settings > Play counts Off and On, play time (pt and its day marks), a browser
+with Global Privacy Control, a player from before the counter (and their Team Brawl 2v2 win), a player coming back three days later (came back within
+3/7/14/30 days, not 1), an error on the page, a device that only looked on an earlier day (new on the day it first taps), and a server with the counter
+off (one try, then silence). The pages pass as a person's browser (HUMAN_UA, navigator.webdriver false); the automated one keeps Playwright's. Prints one line per problem, then "no errors".
 Usage:  python3 tests/pwstats.py        (needs `python3 game/build.py` first)"""
 import asyncio, os, re, json, subprocess, tempfile, shutil, time, pathlib, urllib.request, datetime
 from zoneinfo import ZoneInfo
@@ -16,6 +17,8 @@ PROF = 'potatobrawl.profile.v1'
 NOTE = 'potatobrawl.count.v1'
 G = 'window.__blastline.game'
 PROTO = re.search(r'const PROTO = (\d+)', (ROOT / 'game' / 'ui' / 'online.js').read_text()).group(1)
+HUMAN_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+HUMAN = "Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false });"   # Playwright's browser says it is automated
 errs = []
 def expect(ok, msg):
     if not ok: errs.append(msg)
@@ -41,8 +44,9 @@ def counts(stats_dir):
     d = json.loads(urllib.request.urlopen(rq, timeout=5).read())
     return d['days'].get(d['today'], {})
 
-async def page(b, tag, init=None, vp=(1280, 760), path=''):
-    ctx = await b.new_context(viewport={'width': vp[0], 'height': vp[1]}, timezone_id=TZ, locale='en-US')
+async def page(b, tag, init=None, vp=(1280, 760), path='', human=True):
+    ctx = await b.new_context(viewport={'width': vp[0], 'height': vp[1]}, timezone_id=TZ, locale='en-US', **({'user_agent': HUMAN_UA} if human else {}))
+    if human: await ctx.add_init_script(HUMAN)
     if init: await ctx.add_init_script(init)
     pg = await ctx.new_page()
     pg.hits = []
@@ -53,6 +57,9 @@ async def page(b, tag, init=None, vp=(1280, 760), path=''):
     await pg.wait_for_function("window.__blastline && window.__blCount", timeout=20000)
     await pg.evaluate("window.__blastline.perf.lockQ = true")
     return ctx, pg
+
+async def tap(pg):   # a real key press: the visit's first input makes the device a player (ui/counter.js cntGo)
+    await pg.keyboard.press('Shift'); await pg.wait_for_timeout(50)
 
 async def flush(pg, wait=500):
     await pg.evaluate("window.__blCount.flush()")
@@ -77,9 +84,21 @@ async def welcome_go(pg):
 def day_str(days_ago=0):
     return (datetime.datetime.now(ZoneInfo(TZ)) - datetime.timedelta(days=days_ago)).strftime('%Y-%m-%d')
 
+def played(c): return {k: v for k, v in c.items() if k != 'peak'}   # peak is the server's own sample
+
 async def counted(b, sd):
-    # --- a brand-new player: the welcome sheet; take the tutorial, skip it (a new player goes on to the first fight), win that, Rematch, quit it, leave the page
+    # --- an automated browser (Playwright's own: navigator.webdriver, HeadlessChrome): nothing at all, even after a tap
+    ctx, pg = await page(b, 'bot', human=False)
+    await mode_is(pg, 'menu'); await tap(pg); await flush(pg)
+    expect(not await pg.evaluate("window.__blCount.on") and not pg.hits, f'bot: counted ({len(pg.hits)} hits)')
+    await pg.goto('about:blank'); await pg.wait_for_timeout(300)
+    expect(not played(counts(sd)), f'bot: the day has counts {played(counts(sd))}')
+    await ctx.close()
+
+    # --- a brand-new player: only "open" until the first tap; the welcome sheet; take the tutorial, skip it (a new player goes on to the first fight), win that, Rematch, quit it, leave the page
     ctx, pg = await page(b, 'new')
+    await mode_is(pg, 'menu'); await pg.wait_for_timeout(300); await flush(pg)
+    expect(not await pg.evaluate("window.__blCount.go") and played(counts(sd)) == {'open': 1}, f'new: before a tap the day should hold only open: {played(counts(sd))}')
     await welcome_go(pg)
     expect(await pg.evaluate("window.__blCount.on"), 'new: counting is not on')
     note = await pg.evaluate("window.__blCount.note")
@@ -95,7 +114,7 @@ async def counted(b, sd):
     fighter = await pg.evaluate("JSON.parse(localStorage.getItem('%s')).last" % PROF)
     await pg.goto('about:blank'); await pg.wait_for_timeout(800)   # pagehide: the first-visit beacon
     c = counts(sd)
-    want = {'day': 1, 'day:new': 1, 'wk': 1, 'mo': 1, 'dev:desktop': 1, 'app:web': 1, 'lang:en': 1, f'ver:{PROTO}': 1,
+    want = {'open': 1, 'day': 1, 'day:new': 1, 'wk': 1, 'mo': 1, 'dev:desktop': 1, 'app:web': 1, 'lang:en': 1, f'ver:{PROTO}': 1,
             'ms:tutorial': 1, 'tut:go': 1, 'tut:move': 1, 'me:tutorial:quit': 1, 'tut:skip': 1,
             'ms:practice': 2, f'fp:{fighter}': 2, 'me:practice:win': 1, 'me:practice:quit': 1, 'ml:0': 1, 'again:practice': 1,
             'fn:s1': 1, 'first:practice': 1, 'fn:d1': 1, 'fn:s2': 1, 'fx:menu': 1, 'fl:0': 1, 'fm:1': 1}
@@ -111,7 +130,7 @@ async def counted(b, sd):
     await pg.goto(URL); await mode_is(pg, 'menu'); await pg.evaluate("window.__blastline.perf.lockQ = true")
     await flush(pg)
     c2 = counts(sd)
-    expect(c2.get('day') == 1 and c2.get('ms:tutorial') == 1, f'again: a second visit the same day counted a new hello or tutorial ({c2.get("day")}, {c2.get("ms:tutorial")})')
+    expect(c2.get('day') == 1 and c2.get('open') == 1 and c2.get('ms:tutorial') == 1, f'again: a second visit the same day counted a new hello or tutorial ({c2.get("open")}, {c2.get("day")}, {c2.get("ms:tutorial")})')
     await pg.click('#bSettings'); await pg.wait_for_timeout(300)
     expect(await pg.is_visible('#setCountRow') and await pg.is_visible('#setCountNote'), 'settings: the Play counts row is not shown')
     await flush(pg)
@@ -132,6 +151,12 @@ async def counted(b, sd):
     expect(await pg.evaluate("window.__blCount.on") and c3.get('day:back') == 1 and c3.get('day') == 2 and note.get('f') == '' and c3.get('fn:s1') == 1,
            f'settings: On again should count a returning device, not a new one ({c3.get("day")}, {c3.get("day:back")}, {note})')
     expect(c3.get('scr:settings') == 1, f'settings: scr:settings = {c3.get("scr:settings")}')
+    # play time: one pt a minute; the day's 5 and 15 minute marks once (the minutes of the first visit go on after Off / On)
+    tm0 = (await pg.evaluate("window.__blCount.note")).get('tm', 0)
+    await pg.evaluate("window.__blCount.minutes(16)"); await flush(pg)
+    c3 = counts(sd); tm = (await pg.evaluate("window.__blCount.note")).get('tm')
+    expect(tm0 < 5 and tm == tm0 + 16 and c3.get('pt') == tm and c3.get('pt:5') == 1 and c3.get('pt:15') == 1 and 'pt:30' not in c3,
+           f'time: {tm0} + 16 minutes: note {tm}, pt {c3.get("pt")}, marks {c3.get("pt:5")} {c3.get("pt:15")} {c3.get("pt:30")}')
     await ctx.close()
 
     # --- Global Privacy Control: nothing is sent; Settings shows Off and can't turn it on
@@ -146,7 +171,7 @@ async def counted(b, sd):
     # --- a player from before the counter (a saved profile, no note): a returning player, never a new one
     old = json.dumps(json.dumps({'tokens': 50, 'rating': 1040, 'matches': 5, 'wins': 3, 'losses': 2, 'tut': True, 'last': 'odin'}))
     ctx, pg = await page(b, 'old', "if (localStorage.getItem('%s') === null) localStorage.setItem('%s', %s);" % (PROF, PROF, old))
-    await mode_is(pg, 'menu'); await flush(pg)
+    await mode_is(pg, 'menu'); await tap(pg); await flush(pg)
     note = await pg.evaluate("window.__blCount.note")
     c4 = counts(sd)
     expect(note.get('f') == '' and note.get('x') == 1 and c4.get('day:back') == 2 and c4.get('day:new') == 1, f'old: not counted as a returning player ({note}, {c4.get("day:back")})')
@@ -172,7 +197,7 @@ async def counted(b, sd):
     await mode_is(pg, 'menu')
     await pg.evaluate("setTimeout(() => { throw new Error('pwstats boom') }, 0); setTimeout(() => { throw new Error('pwstats boom') }, 0)")
     await pg.wait_for_timeout(300)
-    await flush(pg)
+    await tap(pg); await flush(pg)
     c5 = counts(sd)
     for T in (3, 7, 14, 30): expect(c5.get(f'ret:{f}:{T}') == 1, f'back: ret:{f}:{T} = {c5.get(f"ret:{f}:{T}")}')
     expect(f'ret:{f}:1' not in c5, 'back: counted as back within 1 day')
@@ -197,10 +222,22 @@ async def counted(b, sd):
     await ctx.close()
     # a brand-new device opens a challenge link whose match is closed: counted as opened (and by a new player), the lobby says it isn't open right now
     ctx, pg = await page(b, 'link', path='#join-chabc1234')
-    await mode_is(pg, 'online'); await flush(pg)
+    await mode_is(pg, 'online'); await tap(pg); await flush(pg)
     c6 = counts(sd)
     expect(c6.get('chl:open') == 1 and c6.get('chl:new') == 1 and c6.get('inv') == 1, f'link: chl:open {c6.get("chl:open")}, chl:new {c6.get("chl:new")}, inv {c6.get("inv")}')
     await pg.wait_for_function("document.querySelector('#onList li.empty') && document.querySelector('#onList li.empty').textContent.includes('right now')", timeout=15000)
+    await ctx.close()
+    # --- a device that only looked two days ago (opened, no tap): today's first tap makes it a new player from today
+    f = day_str(2)
+    look = json.dumps(json.dumps({'f': f, 'l': '', 'w': '', 'm': '', 'r': 0, 's': 0, 'd': 0, 'k': {}, 'x': 0, 'p': 1, 'o': f}))
+    c7 = counts(sd)
+    ctx, pg = await page(b, 'look', "if (localStorage.getItem('%s') === null) localStorage.setItem('%s', %s);" % (NOTE, NOTE, look))
+    await mode_is(pg, 'menu'); await flush(pg)
+    c8 = counts(sd)
+    expect(c8.get('open') == c7.get('open', 0) + 1 and c8.get('day') == c7.get('day'), f'look: before the tap open {c7.get("open")} -> {c8.get("open")}, day {c7.get("day")} -> {c8.get("day")}')
+    await tap(pg); await flush(pg)
+    c8 = counts(sd); note = await pg.evaluate("window.__blCount.note")
+    expect(c8.get('day:new') == c7.get('day:new', 0) + 1 and note.get('f') == day_str() and 'p' not in note, f'look: not new today after the tap ({c7.get("day:new")} -> {c8.get("day:new")}, {note})')
     await ctx.close()
 
 async def off(b):
