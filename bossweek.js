@@ -50,15 +50,16 @@ const LV = 1;                               // Hard
 const ROAD = { scratch: { hp: 0.9, mate: 0.5 }, zorp: { hp: 1.2, mate: 0.4 }, kraken: { hp: 1.3, mate: 0.35 } };
 const CAP = 240 * 60;                       // frames from GO: a run past 4:00 has no time (the phone ends it there)
 const RULES = { stocks: 3, time: 0, countdown: 150 };   // a boss fight: 3 lives each, no clock (the Road's)
-const PART = 6000, MAX_PARTS = 14, MAX_FRAMES = 18000;   // the log: 14 messages of 6,000 characters, 5:00 of play (4:00 + the KO's tail)
+const PART = 6000, MAX_PARTS = 14, MAX_FRAMES = 24000;   // the log: 14 messages of 6,000 characters, 4:00 + the KO's tail (a hit's freeze frames log inputs too)
 const CHUNK = 2000;                         // frames replayed between two looks at the network (about 10 ms)
 const OPEN = 3;                             // open tickets kept per account (the last try can still arrive while the next one starts)
 const GAP_MS = 2000;                        // one ticket per account this often at most
 const TOP = 100, KEEP_TOP = 10, KEEP_WEEKS = 4;
 const RUN_PER_MIN = 60;                     // GET /api/run/<id> per address and minute
 const prize = (pl) => (pl === 1 ? 300 : pl <= 3 ? 150 : pl <= 10 ? 80 : 25);   // chips for a place (one prize per player)
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
-const BOSS = Object.fromEntries(BL.BOSSES.map((b) => [b.id, b]));
+const dict = (o) => Object.assign(Object.create(null), o);   // no prototype: "constructor" is no fighter or boss
+const FIG = dict(Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));
+const BOSS = dict(Object.fromEntries(BL.BOSSES.map((b) => [b.id, b])));
 const PLATE_RE = /^[a-z][a-z0-9_]{0,15}$/;
 const isInt = Number.isInteger;
 const hex12 = (s) => typeof s === "string" && /^[0-9a-f]{12}$/.test(s);
@@ -105,8 +106,9 @@ function cleanTk(t) {
   return { id: t.id, wk: t.wk, v: t.v | 0, seed: t.seed, f: t.f, p: t.p, pp: t.pp, t: t.t };
 }
 function cleanRun(r) {
-  if (!r || typeof r !== "object" || !hex12(r.id) || !isInt(r.t) || r.t <= 0 || !isInt(r.fl) || !okFig(r.f, r.p) || !isInt(r.seed) || typeof r.lg !== "string") return null;
-  return { id: r.id, t: r.t, fl: r.fl, f: r.f, p: r.p, pp: r.pp | 0, seed: r.seed, v: r.v | 0, at: Number.isFinite(r.at) ? r.at : 0, lg: r.lg };
+  if (!r || typeof r !== "object" || !hex12(r.id) || !isInt(r.t) || r.t <= 0 || !isInt(r.fl) || !okFig(r.f, r.p) || !isInt(r.seed)) return null;
+  // lg "": a paid week's run, its log dropped from the account file (the week file keeps the top runs' logs)
+  return { id: r.id, t: r.t, fl: r.fl, f: r.f, p: r.p, pp: r.pp | 0, seed: r.seed, v: r.v | 0, at: Number.isFinite(r.at) ? r.at : 0, lg: typeof r.lg === "string" ? r.lg : "" };
 }
 function cleanBw(o) {
   const c = freshBw();
@@ -260,6 +262,7 @@ function init(opts) {
           const bw = cleanBw(rec.bw);
           bw.pw = wk; bw.lr = { wk, no: x.no, boss: x.boss, pl, of: x.n, c };
           if (pl === 1) bw.cr++;
+          if (bw.b && bw.w === wk) bw.b.lg = "";   // the paid week's log isn't needed any more (up to 24,000 frames in every player's file)
           rec.bw = bw;
         });
         S.paid++;

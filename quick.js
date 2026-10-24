@@ -78,6 +78,7 @@ const TIMES = {
   waitMsg: 2000,                              // qm-wait every
   offer: 30000,                               // a chip challenge waits this long for an answer
   rematch: 120000,                            // a chip challenge can follow a result this long
+  drain: 600000,                              // a drain (SIGUSR2) that no restart followed ends by itself (an update stopped half way)
 };
 const ROOM_PREFIX = "qm";
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -85,12 +86,14 @@ const B64I = Object.fromEntries([...B64].map((ch, i) => [ch, i]));
 // the input codes a 1v1 can use (game/ui/online.js): buttons, ULTI held, a sprint press (SPRINT_BASE + side x 9 + the stick's y); not Focus (2v2)
 const ULTI_BASE = 2592, SPRINT_BASE = ULTI_BASE + 81 * 16 + 81 * 2, CODES = SPRINT_BASE + 18, NEUTRAL = 1280;
 const codeOk = (v) => v < ULTI_BASE + 81 * 16 || (v >= SPRINT_BASE && v < CODES);
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+// lookups keyed by what a phone sends have no prototype: "constructor" or "toString" must not look like a fighter or a boss
+const dict = (o) => Object.assign(Object.create(null), o);
+const FIG = dict(Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));
 // a boss fight with a friend (game/ui/online.js): 3 hearts each, no clock, one fight; his HP is his Road HP (game/ui/road.js ROAD_REG hp)
 // x the two-player K (game/ui/online.js DUO_HP), multiplied in that order as the page does (tests/quick.js checks they match the page's)
 const BOSS_RULES = { l: 3, t: 0, b: 1 };
-const ROAD_HP = { scratch: 0.9, zorp: 1.2, kraken: 1.3 };
-const DUO_HP = { scratch: [1.05, 1.05, 1.05], zorp: [1.15, 1.15, 1.15], kraken: [1.55, 1.55, 1.55] };
+const ROAD_HP = dict({ scratch: 0.9, zorp: 1.2, kraken: 1.3 });
+const DUO_HP = dict({ scratch: [1.05, 1.05, 1.05], zorp: [1.15, 1.15, 1.15], kraken: [1.55, 1.55, 1.55] });
 const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 // the game version the phones must have: the same PROTO as the page this server serves (game/ui/online.js)
@@ -197,10 +200,11 @@ function init(opts) {
   const last = new Map();     // peer -> its last refereed result { mid, i (its slot), peers, files, names, f, p, pf, t }: who a chip challenge goes to
   const offers = new Map();   // challenger peer -> a chip challenge { to, s, t, mid }
   const S = { found: 0, ranked: 0, casual: 0, verdicts: 0, voids: 0, drift: 0, casualGames: 0, unfinished: 0, bounties: 0, friendGames: 0, staked: 0, stakeVerdicts: 0, bossWins: 0, cupMatches: 0, cupGames: 0 };
-  let draining = false;
+  let draining = false, drainT = null;
 
   const now = () => Date.now();
   const send = (peer, msg) => { try { o.send(peer, msg); } catch (e) { /* the peer is gone */ } };
+  const live = (peer) => !o.live || o.live(peer);   // server.js: the peer has a socket now (not in its grace after a drop)
   const waited = (q, t) => (t - q.since) / 1000;
   const range = (q, t) => { const w = waited(q, t); for (const [s, r] of T.range) if (w < s) return r; return Infinity; };
 
@@ -257,7 +261,8 @@ function init(opts) {
   }
   function pairAll() {
     if (draining) return;
-    const t = now(), list = [...Q.values()].sort((x, y) => x.since - y.since), used = new Set();
+    // a phone whose socket closed stays in the queue for the grace (it may come back) but is not paired: its qm-found would go nowhere
+    const t = now(), list = [...Q.values()].filter((q) => live(q.peer)).sort((x, y) => x.since - y.since), used = new Set();
     for (const a of list) {
       if (used.has(a.peer)) continue;
       let best = null;
@@ -304,7 +309,7 @@ function init(opts) {
     const t = now(), side = [];
     for (const x of [x0, x1]) {
       const seat = seats.get(x.peer), on = seat ? onOf(seat.file) : null, cur = ofPeer.get(x.peer), mm = cur && M.get(cur);
-      if (!on || (mm && !mm.done)) return null;
+      if (!on || (mm && !mm.done) || !live(x.peer)) return null;   // not connected right now: the cup calls the match again
       side.push({ peer: x.peer, file: seat.file, id: seat.id, last: on.last, name: x.name || o.nameOf(x.peer) || "Potato", by: o.byOf(x.peer) || x.peer, mode: "t",
         f: x.f, pi: x.pi, r: on.r, n: on.n, since: t, sent: 0 });
     }
@@ -710,7 +715,12 @@ function init(opts) {
   return {
     handle, canJoin, presence, left, gone, tick, assign,
     seatOf: (peer) => seats.get(peer) || null,   // cpurank.js: the account a connection signed in with
-    drain() { draining = true; for (const q of Q.values()) waitMsg(q, now()); },
+    drain() {
+      draining = true; for (const q of Q.values()) waitMsg(q, now());
+      clearTimeout(drainT);
+      drainT = setTimeout(() => { draining = false; o.log.warn("quick: no restart came after the drain, matches are made again"); for (const q of Q.values()) waitMsg(q, now()); }, T.drain);
+      if (drainT.unref) drainT.unref();
+    },
     draining: () => draining,
     running, searching: () => Q.size, stats: () => Object.assign({ running: running(), searching: Q.size }, S),
     proto: PROTO, T, _M: M, _Q: Q, _offers: offers,

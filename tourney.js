@@ -51,8 +51,8 @@ const PRIZE = { 4: [60, 30, 10], 8: [120, 60, 30, 10] };          // a Daily Cup
 const PLACE = [1, 2, 3, 5];                   // ...the places those are
 const CPU_R = [1250, 1650];                   // CPUs play at the cup's average rating, between Normal and Hard
 const NAMES = 36;                             // the page's CPU_NAMES (ui/screens.js): a CPU's name is CPU_NAMES[ni % its length]
-const MAX_FRAMES = 17500;                     // a CPU match's log: the countdown, 4:00 and a whole sudden death (17,250 frames)
-const MAX_PARTS = 12, PART = 6000;
+const MAX_FRAMES = 24000;                     // a CPU match's log: the countdown, 4:00 and a whole sudden death (17,250 clock frames, and a hit's freeze frames log inputs too)
+const MAX_PARTS = 14, PART = 6000;
 const KEEP_DAYS = 7;                          // cup files kept
 const TIMES = {
   tick: 1000,
@@ -69,7 +69,7 @@ const TIMES = {
 const ALPHA = "23456789ABCDEFGHJKMNPQRSTVWXYZ";   // a Friends Cup's code: 5 of these (no 0/O, 1/I/L, U)
 const CODE_RE = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
 const ID_RE = /^(d\d{8}[a-h]?|f[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5})$/;
-const FIG = Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f]));
+const FIG = Object.assign(Object.create(null), Object.fromEntries(BL.FIGHTERS.map((f) => [f.id, f])));   // no prototype: "constructor" is no fighter
 const isInt = Number.isInteger;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const okFig = (f, pi) => !!FIG[f] && isInt(pi) && pi >= 0 && pi < FIG[f].palettes.length;
@@ -111,6 +111,7 @@ function init(opts) {
   const DIR = acct ? path.join(acct.dir, "cups") : "";
   const S = { cups: 0, daily: 0, friends: 0, off: 0, matches: 0, cpu: 0, walkovers: 0, paid: 0, refused: 0 };
   const C = new Map();       // cup id -> cup
+  const OLD = new Map();     // cup id -> its t0: a file on disk no longer in memory, deleted after KEEP_DAYS (also on a server that never restarts)
   const W = new Map();       // peer -> account file ("" not signed in): pages that asked tc? and get every change
   const byFile = new Map();  // account file -> its newest watching page
   const inCup = new Map();   // account file -> the id of the cup it is in (a lobby, a running cup, or one it just finished)
@@ -144,7 +145,8 @@ function init(opts) {
       try { c = JSON.parse(fs.readFileSync(full, "utf8")); } catch (e) { continue; }
       if (!c || c.v !== 1 || c.id !== mm[1]) continue;
       if (t - (c.t0 || 0) > KEEP_DAYS * 864e5) { try { fs.unlinkSync(full); } catch (e) { /* gone */ } continue; }
-      if (t - (c.t0 || 0) > 2 * 864e5) continue;   // only today's and yesterday's are kept in memory
+      if (t - (c.t0 || 0) > 2 * 864e5) { OLD.set(c.id, c.t0 || 0); continue; }   // only today's and yesterday's are kept in memory
+      for (const m of Object.values(c.m || {})) delete m.busy;   // a replay the restart cut (saved mid-replay, it would block that match for good)
       C.set(c.id, c);
       if (c.st === "run") {
         // the restart cut the running matches: a match against a player is called again; a CPU match's ticket stays good
@@ -350,7 +352,7 @@ function init(opts) {
     for (let r = 1; r <= R; r++) c.p.push(new Array(size >> r).fill(-1));
     c.m = {};
     for (let r = 0; r < R; r++) for (let i = 0; i < size >> (r + 1); i++) c.m[r + ":" + i] = { s: "w", rdy: [0, 0], tries: 0 };
-    c.out = {}; c.noshow = []; c.st = "run"; c.ts = now(); c.ent = [];
+    c.out = {}; c.noshow = []; c.pld = []; c.st = "run"; c.ts = now(); c.ent = [];
     for (const s of c.slots) if (s.h) inCup.set(s.file, c.id);
     S.cups++;
     o.log.log(`tourney: ${c.id} starts, ${list.length} players in a cup of ${size}`);
@@ -411,9 +413,12 @@ function init(opts) {
     const a = c.p[r][2 * i], b = c.p[r][2 * i + 1], R = rounds(c.size);
     m.s = "d"; m.why = why; m.w = w; m.room = null; m.tk = null; m.te = now();
     c.p[r + 1][i] = w === 0 ? a : w === 1 ? b : -2;
-    const noShow = why === "wo" || why === "x" || why === "quit";   // never played: no prize
+    const noShow = why === "wo" || why === "x" || why === "quit";   // not played: a player who never played a match gets no prize
+    if (!c.pld) c.pld = [];   // the players with a match played (a cup from before the list: its matches so far count as not played)
     for (const [side, k] of [[0, a], [1, b]]) {
-      if (k < 0 || side === w) continue;
+      if (k < 0) continue;
+      if (!noShow && c.slots[k].h && !c.pld.includes(k)) c.pld.push(k);
+      if (side === w) continue;
       c.out[k] = r;
       if (noShow && c.slots[k].h) c.noshow.push(k);
     }
@@ -589,7 +594,8 @@ function init(opts) {
         if (lr === undefined) { lr = 0; for (let r = 0; r < R; r++) if (c.p[r].includes(k)) lr = r; }
         idx = R - lr;
       }
-      c.res[k] = { pl: PLACE[idx], c: c.k === "d" && !c.noshow.includes(k) ? (PRIZE[c.size][idx] || 0) : 0 };
+      const never = c.noshow.includes(k) && !(c.pld || []).includes(k);   // a semi-finalist who misses the final's call still gets the final's prize
+      c.res[k] = { pl: PLACE[idx], c: c.k === "d" && !never ? (PRIZE[c.size][idx] || 0) : 0 };
     }
     o.log.log(`tourney: ${c.id} done, champion ${c.ch >= 0 ? (c.slots[c.ch].h ? c.slots[c.ch].id : "a CPU") : "nobody"}`);
     pay(c);
@@ -633,9 +639,10 @@ function init(opts) {
       } else if (c.k === "f" && c.st === "open" && t - c.tu > T.idle) close(c, "idle");
       else if ((c.st === "done" || c.st === "off") && t - (c.te || c.tu) > T.keep) {
         for (const [file, id] of inCup) if (id === c.id) inCup.delete(file);
-        if (t - c.t0 > 2 * 864e5) C.delete(c.id);
+        if (t - c.t0 > 2 * 864e5) { C.delete(c.id); OLD.set(c.id, c.t0 || 0); }
       }
     }
+    for (const [id, t0] of OLD) if (t - t0 > KEEP_DAYS * 864e5) { OLD.delete(id); try { fs.unlinkSync(cfile(id)); } catch (e) { /* gone */ } }
   }
   // the roll call before the start: a page that answers tc? or joins now is here (marked again at the start)
   function hereNow(file) {

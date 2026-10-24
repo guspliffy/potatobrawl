@@ -232,6 +232,7 @@ const res = (P) => P.next((m) => m.t === "bw-res", 8000);
     const [first, second] = order[0].i === 0 ? [ra, rb] : [rb, ra];
     check(first.prof.tokens === (first === ra ? 7 : 5) + 300 && second.prof.tokens === (second === ra ? 7 : 5) + 150, "the finished week is paid: #1 300 chips, #2 150");
     check(first.bw.pw === wk && first.bw.cr === 1 && first.bw.lr.pl === 1 && first.bw.lr.of === 2 && second.bw.lr.pl === 2 && second.bw.cr === 0, "paid mark, crown and the result card in the account file");
+    check(first.bw.b && first.bw.b.t > 0 && first.bw.b.lg === "" && second.bw.b && second.bw.b.lg === "", "a paid week's run keeps its time, its log leaves the account file");
     const wf = path.join(dir, "weeks", wk + ".json");
     const x = fs.existsSync(wf) ? JSON.parse(fs.readFileSync(wf, "utf8")) : null;
     check(x && x.n === 2 && x.top.length === 2 && x.top[0].run && typeof x.top[0].run.lg === "string" && x.boss === sp.boss, "the week file: its ranking and the top runs with their logs");

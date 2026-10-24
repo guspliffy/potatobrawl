@@ -32,6 +32,7 @@ const crypto = require("crypto");
 const ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
 const FILE_RE = /^[0-9a-f]{64}\.json$/;
+const SID_RE = /^[0-9a-z]{8,16}$/;   // a save's id (the page's acctSave)
 const DEFAULTS = {
   maxBody: 16 * 1024,            // bytes of request body
   perMin: 60,                    // requests per IP per minute
@@ -202,8 +203,16 @@ function init(dir, opts) {
         if (!Number.isSafeInteger(m.rev) || m.rev < 1 || !isObj(m.prof) || !shapeOk(m.prof, 0)) return send(res, 400, { error: "prof" });
         const rec = read(code);
         if (!rec) return unknown(res);
-        if (rec.rev !== m.rev) return send(res, 409, { prof: rec.prof, rev: rec.rev, t: rec.t });
-        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}, rec.cpu ? { cpu: rec.cpu } : {}, rec.bw ? { bw: rec.bw } : {}, rec.pm ? { pm: rec.pm } : {}, rec.tc ? { tc: rec.tc } : {}), file = fileOf(code);   // the online, CPU, Boss Week and cup records and the Pommes stay the server's
+        // sid: this save's id; prev: the ids of the page's saves whose answers never came (a page closed right after sending, a timeout).
+        // The ids of the last 8 saves stay in the file (sv), so a 409 can say which one did land: the page then merges against that copy,
+        // not against its older base (which counted that save's chips, wins and losses twice)
+        const sv = Array.isArray(rec.sv) ? rec.sv.filter((x) => SID_RE.test(x)) : [];
+        if (rec.rev !== m.rev) {
+          const landed = Array.isArray(m.prev) ? m.prev.slice(0, 4).find((x) => typeof x === "string" && sv.includes(x)) : undefined;
+          return send(res, 409, Object.assign({ prof: rec.prof, rev: rec.rev, t: rec.t }, landed ? { landed } : {}));
+        }
+        if (typeof m.sid === "string" && SID_RE.test(m.sid)) { sv.push(m.sid); if (sv.length > 8) sv.splice(0, sv.length - 8); }
+        const next = Object.assign({ rev: rec.rev + 1, t: Date.now(), prof: m.prof }, rec.on ? { on: rec.on } : {}, rec.cpu ? { cpu: rec.cpu } : {}, rec.bw ? { bw: rec.bw } : {}, rec.pm ? { pm: rec.pm } : {}, rec.tc ? { tc: rec.tc } : {}, sv.length ? { sv } : {}), file = fileOf(code);   // the online, CPU, Boss Week and cup records and the Pommes stay the server's
         if (total - (sizes.get(file) || 0) + Buffer.byteLength(JSON.stringify(next)) > o.maxBytes) return send(res, 503, { error: "full" });
         write(file, next);
         return send(res, 200, { rev: next.rev, t: next.t });

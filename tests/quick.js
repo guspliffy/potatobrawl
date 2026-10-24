@@ -15,7 +15,7 @@ const Q = require("../quick.js");
 const ROOT = path.join(__dirname, "..");
 const PORT = +process.env.QUICK_PORT || 8092;   // check.sh gives every server its own port
 const PROTO = +/const PROTO = (\d+);/.exec(fs.readFileSync(path.join(ROOT, "game/ui/online.js"), "utf8"))[1];
-const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400, offer: 1500, rematch: 8000 };
+const FAST = { tick: 100, range: [[0.6, 200], [1.2, 400]], fallback: 1.2, noStart: 1500, quiet: 1500, keep: 3000, waitMsg: 400, offer: 1500, rematch: 8000, drain: 5000 };
 let fails = 0, passes = 0;
 function check(ok, what) { if (ok) { passes++; console.log("PASS " + what); } else { fails++; console.log("FAIL " + what); if (process.env.QM_DEBUG && global.__log) console.log(global.__log().split("\n").filter((l) => /rror|at /.test(l)).slice(0, 12).join("\n")); } }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -190,7 +190,23 @@ async function play(H, G, opts) {
     check(!!(await A.next((m) => m.t === "qm-no" && m.why === "old")), "an older page can't search (old: reload)");
     A.send({ t: "qm", v: PROTO, mode: "r", f: "nobody", pi: 0 });
     check(!!(await A.next((m) => m.t === "qm-no" && m.why === "bad")), "an unknown fighter is refused");
+    A.send({ t: "qm", v: PROTO, mode: "r", f: "constructor", pi: 0 });
+    check(!!(await A.next((m) => m.t === "qm-no" && m.why === "bad")) && !/message failed/.test(srv.log()), "a fighter named like an object's own property is refused (the server doesn't throw)");
     bad.close();
+
+    // ---- a phone whose socket closes while it searches is not paired in its grace; back with the same peer and secret, it is ----
+    const Xg = phone("Xen"); await Xg.open();
+    let Yg = phone("Yam"); await Yg.open();
+    Xg.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    await Xg.next((m) => m.t === "qm-wait");
+    Yg.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    Yg.close();   // the search went out, then the Wi-Fi blinked
+    check(!(await Xg.next((m) => m.t === "qm-found", 700)), "a search whose socket closed is not paired while it is away");
+    Yg = phone("Yam", { peer: Yg.peer, k: Yg.k }); await Yg.open();
+    Yg.send({ t: "qm", v: PROTO, mode: "c", f: "odin", pi: 0 });
+    const fx = await Xg.next((m) => m.t === "qm-found"), fy = await Yg.next((m) => m.t === "qm-found");
+    check(!!fx && !!fy && fx.room === fy.room, "back within the grace, it is paired as usual");
+    for (const p of [Xg, Yg]) { if (fx) p.send({ t: "leave", room: fx.room }); p.close(); }
 
     // ---- a whole Ranked match, decided by the referee ----
     A.send({ t: "qm", v: PROTO, mode: "r", f: "samurai", pi: 0 });
@@ -524,6 +540,7 @@ async function play(H, G, opts) {
     check(/draining: yes/.test(r.text) && !!(await D1.next((m) => m.t === "qm-wait" && m.hold === 1, 1500)), "SIGUSR2: draining, searches are told to hold");
     B.send({ t: "qm", v: PROTO, mode: "r", f: "odin", pi: 0 });
     check(!(await D1.next((m) => m.t === "qm-found", 1500)), "draining: no new matches are made");
+    check(!!(await D1.next((m) => m.t === "qm-found", 6000)) && !/draining: yes/.test((await call("GET", "/health")).text), "a drain no restart followed ends by itself: matches are made again");
     for (const p of [A, B, C, D1, X, thief, thief2]) p.close();
   } finally { await stopServer(srv); }
 

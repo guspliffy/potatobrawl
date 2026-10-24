@@ -83,4 +83,45 @@ for (let seed = 1; seed <= N; seed++) {
 console.log(`lethal calls ${calls} (last life ${finals}), wrong ${wrong}; matches ended at the hit ${endsAtHit}, other endings ${otherEnds}`);
 check(wrong === 0, "every lethal call ended in that KO");
 check(endsAtHit > N / 2, "most matches end at a lethal hit");
+
+// two last hearts lost on the same frame: a tie (sudden death; a draw in sudden death), not a win for the higher slot
+function bothOut(sudden, one) {
+  const a = FIGHTERS[0], b = FIGHTERS[1];
+  const g = newGame({ seed: 3, players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[0] }], countdown: 0, stocks: 1 });
+  for (let i = 0; i < 5; i++) step(g, [blankInput(), blankInput()]);
+  g.events.length = 0; if (sudden) g.sudden = true;
+  g.fighters[0].x = BL.STAGE.blast.left - 20; if (!one) g.fighters[1].x = BL.STAGE.blast.right + 20;
+  step(g, [blankInput(), blankInput()]);
+  return g;
+}
+{
+  const g1 = bothOut(false, false), g2 = bothOut(true, false), g3 = bothOut(false, true);
+  check(g1.phase === "play" && g1.events.some((e) => e.type === "sudden") && g1.fighters.every((f) => f.stocks === 1 && f.state === "idle"), "both last hearts on one frame: sudden death");
+  check(g2.phase === "end" && g2.winner === -1, "both last hearts on one frame in sudden death: a draw");
+  check(g3.phase === "end" && g3.winner === 1, "one last heart: the other side wins");
+}
+// a boss finished by two players' heavies on the same frame: the first hit's finishing launch stands (he flies out, a KO)
+{
+  const mapOf = (b) => Math.max(0, BL.MAPS.findIndex((m) => m.id === b.map));
+  for (const boss of BL.BOSSES) {
+    const a = byId("odin"), b = byId("wizard");
+    const g = newGame({ players: [{ spec: a, pal: a.palettes[0] }, { spec: b, pal: b.palettes[0] }, { spec: boss, pal: boss.palettes[0] }], stocks: 3, time: 0, countdown: 0, seed: 77, map: mapOf(boss), level: 1, hpMul: 0.05 });
+    const bots = [makeBot(0.8), makeBot(0.8)], B = g.fighters[2];
+    for (let t = 0; t < 20000 && (g.phase === "play" || g.phase === "countdown") && !(B.state === "broken" && g.hitstop === 0); t++) {
+      step(g, [botInput(g, g.fighters[0], B, bots[0]), botInput(g, g.fighters[1], B, bots[1])]); g.events.length = 0;
+    }
+    if (B.state !== "broken") { check(false, `${boss.id}: broken by the bots`); continue; }
+    for (let i = 0; i < 20; i++) { step(g, [blankInput(), blankInput()]); g.events.length = 0; }
+    for (const [k, side] of [[0, -1], [1, 1]]) {
+      const f = g.fighters[k], m = f.spec.moves.hSide;
+      Object.assign(f, { x: B.x + side * 70, y: BL.STAGE.main.top, grounded: true, plat: -1, facing: -side, state: "attack", st: 5, move: m, mid: "hSide", mt: m.startup, chg: 0, hitLog: {}, invuln: 0, held: -1, vx: 0, vy: 0, kbx: 0, kby: 0, hitstun: 0 });
+    }
+    g.hitstop = 0;
+    step(g, [blankInput(), blankInput()]);
+    const hits = g.events.filter((e) => e.type === "hit" && e.def === 2).length;
+    let ko = false;
+    for (let t = 0; t < 400 && g.phase !== "over"; t++) { step(g, [blankInput(), blankInput()]); if (g.events.some((e) => e.type === "ko" && e.slot === 2)) ko = true; g.events.length = 0; }
+    check(hits === 1 && B.doomed && B.state === "gone" && ko && g.winner === 0, `${boss.id}: two finishing hits on one frame, the first launches him out (hits ${hits}, ${B.state}, KO ${ko})`);
+  }
+}
 if (!bad) console.log("finish ok");

@@ -53,9 +53,22 @@ function loadProfile() {
 const RULES = { l: [1, 3, 5], t: [2, 4, 0], b: [1, 3] };
 function validRules(r) { return !!r && typeof r === "object" && RULES.l.includes(r.l) && RULES.t.includes(r.t) && RULES.b.includes(r.b); }
 function ruleText(r) { return `${_t("{n} life|{n} lives", { n: r.l })} · ${r.t ? _t("{n} min", { n: r.t }) : _t("no time limit")} · ${r.b === 3 ? _t("best of 3") : _t("single match")}`; }
+let tabAsleep = false;   // the game is playing in another tab on this device: this page saves nothing (ui/welcome.js tabSleep)
 function saveProfile() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(P)); } catch (e) { /* ignore */ }
+  if (tabAsleep) return;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(P)); } catch (e) { saveWarn(); }   // storage full or blocked
   try { acctDirty(); } catch (e) { /* accounts (ui/acct.js) not set up yet */ }   // a linked account saves itself shortly after
+}
+// a save that didn't land is said once per page load (out of a match), never silently lost: an account keeps the progress instead
+let saveWarned = false;
+function saveWarn() {
+  if (saveWarned) return;
+  saveWarned = true;
+  const say = () => {
+    if (mode === "match") { setTimeout(say, 3000); return; }
+    try { rpvToast(_t("This browser can't keep your progress. Save it in Account."), 5000); } catch (e) { /* the toast (ui/rpview.js) isn't up yet */ setTimeout(say, 3000); }
+  };
+  setTimeout(say, 1500);
 }
 let P = loadProfile();
 // True once the player finished a match that is not the tutorial or the Combo trial (P.fin1, set by markPlayed). A profile from before the flag

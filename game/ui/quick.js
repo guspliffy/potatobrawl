@@ -374,6 +374,7 @@ function qmFinish(left, lost) {
   QM.st = "idle";
   $("netBadge").hidden = true;
   showResults(R);
+  goneLine();   // ui/online.js
   lobbyPresence();
 }
 // Pause > Forfeit: Ranked counts it as a loss (the server too, when the room is left); Casual just leaves

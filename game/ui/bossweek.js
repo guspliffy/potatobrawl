@@ -203,7 +203,7 @@ function bwStart(tk) {
   const me = FIG[tk.f], pf = FIG[tk.pf], boss = bwBossSpec(tk.boss);
   G = newGame({ players: [{ spec: me, pal: me.palettes[tk.p] || me.palettes[0] }, { spec: pf, pal: pf.palettes[tk.pp] || pf.palettes[0] }, { spec: boss, pal: boss.palettes[0] }],
     stocks: 3, time: 0, countdown: 150, map: tk.map, level: tk.lv, hpMul: tk.hp, seed: tk.seed });
-  match = { boss: true, bw: tk, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0 }, level: tk.lv, d: tk.d, bot: makeBot(tk.d, BL.BOT_STYLES[pf.id]), cpu: cpuName(), road: null, log: [] };
+  match = { boss: true, bw: tk, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0, fl: -1 }, level: tk.lv, d: tk.d, bot: makeBot(tk.d, BL.BOT_STYLES[pf.id]), cpu: cpuName(), road: null, log: [] };
   BW.run = match.bwr;   // tests read it
   meSlot = 0;
   enterMatchUI();
@@ -220,6 +220,7 @@ function bwEvent(g, e) {
   if (!r) return;
   if (e.type === "go") r.go = g.t;
   else if (e.type === "lethal" && e.slot === 2 && r.ko < 0) r.ko = g.t;
+  else if (e.type === "game" && r.fl < 0) r.fl = g.fighters[0].falls | 0;   // the hearts lost when the fight is decided: where the server's replay stops
 }
 function bwPill() {   // made once, under the boss bar (inside it, so it hides with it)
   let el = $("bwPill");
@@ -255,7 +256,7 @@ function bwHud() {
 
 /* ----- the end: a win that beats your best goes to the server; the Road's Hard star where his fence is open ----- */
 function bwEnd(R) {   // bossMatchEnd (ui/boss.js)
-  const tk = match.bw, r = match.bwr, mine = bwMine(), fl = R.me.falls | 0;
+  const tk = match.bw, r = match.bwr, mine = bwMine(), fl = r.fl >= 0 ? r.fl : R.me.falls | 0;   // a fall in the KO's tail doesn't count (bossweek.js replay)
   const won = !R.forfeit && R.res === 1 && r.go >= 0 && r.ko >= 0 && !r.cap, t = won ? r.ko - r.go : 0;
   const b0 = mine ? mine.t : 0, beat = won && t <= BW_CAP && (!b0 || t < b0 || (t === b0 && fl < mine.fl));
   if (r.cap) { R.res = 0; R.forfeit = false; }

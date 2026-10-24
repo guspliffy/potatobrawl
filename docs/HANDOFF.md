@@ -1,9 +1,34 @@
-# PotatoBrawl handoff (updated 2026-10-24: play counts wait for the first tap, leave automated browsers out and measure play time, deploy/players.txt (no PROTO bump); 2026-10-22: the Pommes Shop on its own page with the Pommes pill on the start page, a second Potatality per fighter and the finisher choice (Classic, 1, 2, Shuffle), the two Pommes skin lines Ink Noir and Starfall, rewarded ads behind a switch, PROTO 20; online cups, the Daily Cup at 20:00 Berlin and Friends Cups by link, every match checked by the server, prizes paid by the game (no PROTO bump); Potatalities, a second KO page per fighter with a food gag, and the Pommes wallet on the server, buying with money still off (no PROTO bump); 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
+# PotatoBrawl handoff (updated 2026-10-24: 25 bug fixes from the bug research, PROTO 21; play counts wait for the first tap, leave automated browsers out and measure play time, deploy/players.txt (no PROTO bump); 2026-10-22: the Pommes Shop on its own page with the Pommes pill on the start page, a second Potatality per fighter and the finisher choice (Classic, 1, 2, Shuffle), the two Pommes skin lines Ink Noir and Starfall, rewarded ads behind a switch, PROTO 20; online cups, the Daily Cup at 20:00 Berlin and Friends Cups by link, every match checked by the server, prizes paid by the game (no PROTO bump); Potatalities, a second KO page per fighter with a food gag, and the Pommes wallet on the server, buying with money still off (no PROTO bump); 2026-10-21: Boss Week replays, watch any top-10 run, your own last run or a shared #watch= link, with seek (no PROTO bump); Boss Week, one boss a week on Hard and the fastest KO is #1, checked by the server, paid on Monday (no PROTO bump); leftover fixes, Challenge a friend link and First minute, no PROTO change; 2026-10-17: the sprint in the fight engine, PROTO 19; the Harvest, 30 daily gifts behind the flame, and the Shop's free-chips row (coming soon), PROTO 18; 2026-10-16: Road bosses with an online friend count for the Road, Team up on the boss sheet, the boss tougher for two, PROTO 17; chip stakes (a rematch for 10/25/50 chips) and the Play friends referee; Ranked vs CPU is back on our server, checked by the server, with a CPU board and an online board; rival record and streak bounty on Quick match; jump combos land at human reaction speed, PROTO 16; online Team Brawl 2v2 for up to four phones, PROTO 15; Quick match, Ranked and Casual against real players with the server as referee; the Skins menu and the new Play friends lobby; play counts + stats page; Team Brawl 2v2 against CPUs, PROTO 14)
 
 Read this first in the next session, then the plan doc "PotatoBrawl: Session Wrap-up and Next Plan"
 (https://claude.ai/code/artifact/f7e0713d-9315-4348-b861-f7c29d3c927f; Jonny's answers to the decision table live there).
 
 ## State
+- Bug fixes (2026-10-24, thread "Find bugs in the game code", branch claude/project-thread-y09dbt, one PR; PROTO 21; the report is the
+  Claude Doc https://claude.ai/artifact/EUkdznNwC7jSZLKW5g7UyS, ids S1-S11 / L1-L5 / U1-U9 below are its rows).
+  - Server: a WebSocket error or a message that throws no longer stops server.js (ws "error" listener, the message handler in a
+    try/catch, one warning a minute). Lookups keyed by what a phone sends have no prototype (quick, cpurank, bossweek, tourney:
+    "constructor" is no fighter). A page that dropped is not paired while it is in its 8 s grace (quick.js `live`, server.js passes it).
+    Replay caps count hitstop frames: MAX_FRAMES 24000 (MAX_PARTS 14) in cpurank, bossweek and tourney, so a long sudden death checks.
+    cpurank touch() updates a row in place (the place no longer drops to 0). A cup finalist who misses the call loses by walkover but
+    keeps a round winner's prize (c.pld: who played). A paid Boss Week's run keeps its time, its log leaves the account file (the week
+    file keeps the top 10's). Cup files older than 7 days are deleted while the server runs (OLD), a replay cut by a restart no longer
+    blocks its match (m.busy). A Pommes move that can't empty the old account gives the Pommes back from the new one and says so. A drain
+    (SIGUSR2) that no restart follows ends after 10 minutes (quick.js T.drain).
+  - Accounts (S3): each save carries a save id (sid); the server keeps the last 8 (rec.sv) and a 409 says which of the page's earlier
+    saves already landed (`landed`), so a save whose answer was lost is no longer merged in twice (chips and wins doubled). acct.js
+    keeps up to 3 unanswered saves in ACCT.pend.
+  - Page: one tab plays: a second tab or window of the game (BroadcastChannel "potatobrawl.tabs") puts the older one to sleep behind the
+    "Open in another tab" card (#scrTwice, Play here reloads and takes over; a tab in a match keeps it); a sleeping tab saves nothing
+    (tabAsleep). A friend who leaves after the match is decided no longer turns the loser's result into a win (online.js matchDecided,
+    NET.gone). KO.busy (buying, a rewarded ad) clears on a lost connection or after 12 s. The stake sheet's X (#stkClose) closes it.
+    Boss Week counts hearts lost from GO (r.fl). "1 KO / 2 KOs". One staffTip (skinfx.js). A button held by two fingers lets go with
+    the last; keys and buttons let go when the page is hidden. A Friends Cup Start without an answer frees the button after 6 s.
+    A save that the browser refuses says so once (rpvToast, "This browser can't keep your progress. Save it in Account.").
+  - Engine (PROTO 21): a fighter decided at an earlier hit of the same frame takes no more hits (applyHit: a boss finished by two
+    heavies on one frame flies out, the Kraken too); two last hearts lost on the same frame are a tie (outCheck: sudden death in a 1v1,
+    a draw in sudden death or 2v2), no longer a win for the higher slot. tests/finish.js checks both. Boss Week runs and replays of
+    PROTO 20 no longer play (a version bump always does that); the week's best times stay.
 - Languages (2026-10-23, branch claude/project-thread-iauvii; no PROTO bump, no server change): English, French, German, Spanish,
   Russian. Jonny's ask: a language choice. Every text a player sees goes through `_t` (ui/lang.js); the tables are game/lang/<xx>.json
   (1,803 lines each), written by four translators at once and checked by a reviewer each (tone: tu/du/tú/ты; terms in Project files
@@ -1009,7 +1034,7 @@ index.html is committed with every source change (check.sh flags a stale one).
 ## Cups (tourney.js on the server): what it does and stores
 - tourney.js is called from server.js only (tc?, tci, tcj, tcn, tcs, tcl, tcp, tcgo, tcr; see its header comment) and needs Quick
   match's sign-in and the accounts. quick.js assign() makes a cup match between two players and onCup(tm, res, why, rv) brings its
-  verdict back; cpurank.js replayCpu plays a CPU match again (MAX_FRAMES 17500 here: 4:00 and a whole sudden death).
+  verdict back; cpurank.js replayCpu plays a CPU match again (MAX_FRAMES 24000: 4:00, a whole sudden death and the hitstop frames).
 - Stored: each cup in <accounts>/cups/<id>.json after every change (kept 7 days); the account file's `tc` part {w (Daily Cups won), fw
   (Friends Cups won), pd (the last 12 cups paid), lc (the last cup)}: accounts.writeTc, kept on a phone's save like on, cpu, bw, pm. A Daily Cup's prize goes into prof.tokens with
   accounts.addChips and the cup marked paid in the same write, so a restart never pays twice.
@@ -1117,8 +1142,7 @@ experiments/lockfix-prototype/ was removed once the fix went into core.js (its c
   stop and ask instead of guessing, plan before code changes, session conclusion + next plan at the end.
 
 ## Next work, in order
-- Cups leftovers (online tournaments, PR #62): 2v2 cups, watching a cup match live, a replay of the final; Ranked vs CPU's own
-  MAX_FRAMES (16000, cpurank.js) can't hold a whole 45 s sudden death (the cups use 17500).
+- Cups leftovers (online tournaments, PR #62): 2v2 cups, watching a cup match live, a replay of the final.
 - NEXT: step 8's payment step (Pommes for euros, behind a switch until the provider's keys are in the server's settings; Stripe
   Checkout + webhook crediting once per session, refunds take Pommes back). Before it: Jonny's provider account, terms + withdrawal
   text. The rewarded ads are built (PR 2): they go live with ADS_CLIENT + web/ads.txt + PM_ADS=1 once AdSense (H5 games ads) is approved.

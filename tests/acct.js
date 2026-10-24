@@ -391,6 +391,19 @@ async function serverTests() {
     const race = await Promise.all(Array.from({ length: 12 }, (_, i) => post("save", { code, rev: 3, prof: SYNC.sanitize({ tokens: 100 + i }, FIGHTERS) })));
     check(race.filter((x) => x.status === 200).length === 1 && race.filter((x) => x.status === 409).length === 11, "save: 12 saves at once on one revision -> one 200, eleven 409");
     check(!fs.readdirSync(dir).some((f) => /\.tmp$/.test(f)) && fs.readdirSync(dir).length === 1, "save: no temp files left behind");
+    // a save that landed but whose answer never came (the page closed, a timeout): its next try (the old revision, the lost save's id in
+    // prev) gets 409 naming it, so the page merges from that copy, not from its older base (that counted the match twice)
+    r = await post("load", { code });
+    const rv = r.json.rev, sent = SYNC.sanitize(Object.assign({}, r.json.prof, { tokens: 300, wins: 4 }), FIGHTERS);
+    r = await post("save", { code, rev: rv, prof: sent, sid: "aaaa1111bbbb" });   // landed; the page never hears it
+    check(r.status === 200, "save: a save with its id");
+    r = await post("save", { code, rev: rv, prof: sent, sid: "cccc2222dddd", prev: ["aaaa1111bbbb"] });
+    check(r.status === 409 && r.json.landed === "aaaa1111bbbb" && r.json.prof.tokens === 300, "save: the retry gets 409 naming the save that landed");
+    const oldBase = SYNC.sanitize(Object.assign({}, sent, { tokens: 200, wins: 3 }), FIGHTERS);   // the page's base before the match (+100 chips, +1 win)
+    const again = SYNC.mergeProf(sent, sent, r.json.prof, true), twice = SYNC.mergeProf(sent, oldBase, r.json.prof, true);
+    check(again.tokens === 300 && again.wins === 4 && twice.tokens === 400, "merge from the landed copy counts the match once (300), from the old base twice (400)");
+    r = await post("save", { code, rev: rv, prof: sent, sid: "eeee3333ffff", prev: ["9999zzzz8888"] });
+    check(r.status === 409 && !("landed" in r.json), "save: a lost save that never landed: no name in the 409 (the usual merge)");
 
     // wrong input
     r = await post("load", { code: "7K3F-9QXM" });

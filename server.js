@@ -23,6 +23,7 @@
  * Pommes (pommes.js): the premium currency's wallet in the account files, what it buys (an alternate KO page per fighter) and the
  * requests of tools/pommes.js (grant, move); needs the sign-in and the accounts. Money can't buy Pommes yet (the payment step comes later).
  * SIGUSR2 = drain before an update: no new Quick matches (or cup matches) are made, the running ones play on; /health counts them.
+ * A drain that no restart follows (an update stopped half way) ends by itself after 10 minutes (quick.js T.drain).
  */
 const http = require("http");
 const fs = require("fs");
@@ -82,6 +83,7 @@ try {
     nameOf: (peer) => { const c = clients.get(peer); return c ? c.name : ""; },
     byOf: (peer) => { const c = clients.get(peer); return c ? c.by : ""; },
     online: () => clients.size,
+    live: (peer) => { const c = clients.get(peer); return !!(c && c.ws); },   // false in the grace after a socket closed: no match is dealt to it then
     onCup: (tm, res, why, rv) => { if (tourney) tourney.matchEnd(tm, res, why, rv); },   // a cup match the referee decided
     T: process.env.QM_T ? JSON.parse(process.env.QM_T) : undefined,   // tests only: shorter waits
   });
@@ -220,13 +222,21 @@ function drop(peer) {
   if (pommes) pommes.gone(peer);
 }
 
+let lastMsgErr = 0;   // a failed message is logged once a minute at most
 wss.on("connection", (ws) => {
   let peer = null;
   let budget = 120, last = Date.now();
   ws.isAlive = true;
   ws.on("pong", () => { ws.isAlive = true; });
+  // a frame over maxPayload or a broken frame: ws closes the socket itself; without a listener the 'error' event would end the process
+  ws.on("error", () => {});
 
+  // one message that throws (a field shaped oddly) is dropped and logged, never the end of every match on the server
   ws.on("message", (buf) => {
+    try { onMessage(buf); }
+    catch (e) { const now = Date.now(); if (now - lastMsgErr > 60000) { lastMsgErr = now; console.warn("ws: a message failed:", e && e.stack || e); } }
+  });
+  const onMessage = (buf) => {
     const now = Date.now();
     budget = Math.min(240, budget + (now - last) * 0.12);   // about 120 messages per second, burst 240
     last = now;
@@ -291,7 +301,7 @@ wss.on("connection", (ws) => {
       drop(peer);
       peer = null;
     }
-  });
+  };
 
   ws.on("close", () => {
     if (!peer) return;

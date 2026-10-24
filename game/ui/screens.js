@@ -609,7 +609,7 @@ function showResults(R) {
   roadResStars(R);   // ui/road.js: a Road stop's three stars
   // four tiles: KOs, damage dealt, falls, chips (counting up); the line under them says what the chips were for
   const k = R.me.kos, fl = R.me.falls;
-  $("rKOs").textContent = k; $("rKOsL").textContent = k === 1 ? "KO" : "KOs";
+  $("rKOs").textContent = k; $("rKOsL").textContent = _t("KO|KOs", { n: k });
   $("rDmg").textContent = Math.round(R.me.dmgDealt);
   $("rFalls").textContent = fl; $("rFallsL").textContent = _t("Fall|Falls", { n: fl });
   const why = R.why || [...R.lines.map(([n, v]) => `${n} +${v}`), ...(R.title ? [_t("New title: {title}", { title: R.title })] : [])].join(" · ");   // R.why: the Daily Potato's own line; R.title: a title this match earned (2v2)

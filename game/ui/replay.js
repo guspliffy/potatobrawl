@@ -159,7 +159,7 @@ function rpOpen(cfg, codes, meta, from) {
 function rpBegin() {
   const { g, bot } = rpNewGame(RP.cfg), M = RP.meta, k = RP.cfg.kind;
   G = g; meSlot = 0; RP.i = 0; RP.on = true; RP.ended = false;
-  match = k === "bw" ? { boss: true, rp: true, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0 }, level: RP.cfg.lv, d: RP.cfg.d, bot, cpu: M.cpu || cpuName(), road: null }
+  match = k === "bw" ? { boss: true, rp: true, bwr: { go: -1, ko: -1, brk: -1, cap: false, spl: 0, fl: -1 }, level: RP.cfg.lv, d: RP.cfg.d, bot, cpu: M.cpu || cpuName(), road: null }
     : { rp: true, ranked: false, d: RP.cfg.d, bot, level: null, cpu: M.cpu || cpuName() };
   match.rpTag = M.own ? _t("YOU") : M.nm.slice(0, 10).toUpperCase();   // the marker over your fighter (draw-world.js drawTag)
   if (typeof bdClose === "function" && screens.boards && !screens.boards.hidden) bdClose();
@@ -219,7 +219,7 @@ function rpSeek(to) {
 function rpFresh() {   // the run from its first tick
   const { g, bot } = rpNewGame(RP.cfg);
   G = g; match.bot = bot; RP.i = 0; lastCount = 0;
-  if (match.bwr) Object.assign(match.bwr, { go: -1, ko: -1, brk: -1, cap: false, spl: 0 });
+  if (match.bwr) Object.assign(match.bwr, { go: -1, ko: -1, brk: -1, cap: false, spl: 0, fl: -1 });
   if (!RP.meta.own) GLAZED.delete(G.fighters[0]);
   else glazeMatch();
 }
