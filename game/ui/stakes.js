@@ -237,7 +237,7 @@ function stkSheetFill() {
 }
 tap("skSend", stkChallenge);
 tap("skNo", () => modal("stake", false));
-tap("skClose", () => modal("stake", false));
+tap("stkClose", () => modal("stake", false));
 
 /* ----- the challenge card: over the results' right column (sideways), else at the bottom of any screen but a fight ----- */
 function stkCard() {

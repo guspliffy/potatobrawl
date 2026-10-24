@@ -1277,7 +1277,7 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
   <!-- chip stakes (ui/stakes.js): the rematch for chips, 10 / 25 / 50 (after the results, so it opens over them) -->
   <section id="scrStake" class="screen modal" hidden>
     <div class="sheet sk-sheet scroll">
-      <header class="sh-head"><h3>Rematch for chips</h3><button class="round x" id="skClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <header class="sh-head"><h3>Rematch for chips</h3><button class="round x" id="stkClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
       <div class="sh-body">
         <p class="sk-who" id="skWho"></p>
         <p class="sk-rules">Same fighters · 3 lives · 4:00 · not Ranked. Winner takes the pot; the server referees. Leaving is a loss.</p>
@@ -1362,6 +1362,16 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the game open in another tab or window (ui/welcome.js tabSleep): this page sleeps, so only one page saves the progress -->
+  <section id="scrTwice" class="screen modal" hidden>
+    <div class="sheet a2hs-sheet">
+      <header class="sh-head"><h3>Open in another tab</h3></header>
+      <div class="sh-body">
+        <p class="a2hs-lead">PotatoBrawl is open in another tab or window. One plays at a time, so your progress stays in one place.</p>
+        <button class="btn primary" id="twiceHere"><span>Play here</span></button>
+      </div>
+    </div>
+  </section>
   <section id="scrAccount" class="screen modal" hidden>
     <div class="sheet acct-sheet scroll">
       <header class="sh-head"><h3>Account</h3><button class="round x" id="acClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>

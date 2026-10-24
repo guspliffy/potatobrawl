@@ -369,7 +369,7 @@ function leaveMatchRoom() {
 }
 function resetNet() {
   Object.assign(NET, { role: null, hostCode: null, oppPeer: null, oppBy: null, oppName: "", lastOpp: null, matchId: 0, startSeen: 0,
-    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, lastStart: null, boss: null, cpuMate: null, dropLive: false, qm: null,
+    pings: [], pingT: 0, hsT: 0, rm: 0, lastSync: 0, syncSent: null, syncTx: null, syncRx: null, oppLeft: false, gone: "", lastStart: null, boss: null, cpuMate: null, dropLive: false, qm: null,
     tb: null, hs: null });
   NET.pingSent = new Map(); NET.pingSeen = new Set();
   TM = null;
@@ -413,6 +413,7 @@ async function netJoin(code) {
 function matchRoomLost() {
   if (NET.tb) { tbRoomLost(); return; }   // ui/online-team.js
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
+  if (NET.phase === "match" && matchDecided(_t("The match connection dropped."))) return;
   if (NET.phase === "match") { finishOnline(false, true); return; }
   leaveMatchRoom(); resetNet(); NET.phase = "idle"; NET.note = _t("The match connection dropped.");
   if (mode === "online") renderOnline();
@@ -444,8 +445,17 @@ function onMatchPeers(ch) {
     }
   }
 }
+// The game already has its winner (a KO, the clock) and only the room went: the other phone skipped the KO page and left, or ours
+// dropped after the end. The match ends as played (the KO page still plays here), never as "they left" with the win and its chips.
+function matchDecided(note) {
+  if (!G || (G.phase !== "end" && G.phase !== "over")) return false;
+  NET.oppLeft = true; NET.gone = note;
+  if (!FIN.on) finishOnline(false);   // with the KO page on, its end finishes the match (ui/finisher.js finEnd)
+  return true;
+}
 function opponentLeft() {
   if (NET.phase === "match" && match && match.boss) { cpuTakeover(); return; }
+  if (NET.phase === "match" && matchDecided(_t("{name} left", { name: NET.oppName || _t("Your friend") }))) return;
   if (NET.phase === "match") { NET.oppLeft = true; finishOnline(true); return; }
   if (NET.phase === "result" && match && match.qm && (match.qm.ranked || match.qm.sk || match.qm.tm)) { NET.oppLeft = true; return; }   // Next match never waits for them
   if (NET.phase === "result") { NET.oppLeft = true; $("rAgain").disabled = true; $("rAgainSub").textContent = _t("{name} left", { name: NET.oppName || _t("Your friend") }); return; }
@@ -508,7 +518,7 @@ function validStart(st) {
 }
 function startOnlineMatch(st) {
   Object.assign(NET, { matchId: st.id, startSeen: st.id, D: st.d, frame: 0, myLog: [], opLog: [], oppFrame: 0, stall: 0,
-    ckMine: new Map(), ckSend: null, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, rm: 0, lastOpp: null, oppLeft: false, rtt: st.rtt || 0,
+    ckMine: new Map(), ckSend: null, syncSent: null, syncTx: null, syncRx: null, lastSync: 0, rm: 0, lastOpp: null, oppLeft: false, gone: "", rtt: st.rtt || 0,
     rules: st.r, set: st.set, setRes: null, nextF: null, rttLive: 0, rttS: [], myPg: null, echo: null, pgT: 0,
     boss: st.bo || null, cpuMate: null, dropLive: false, emN: 0, emSeen: 0, emT: 0 });
   for (let i = 0; i < NET.D; i++) { NET.myLog.push(NEUTRAL); NET.opLog.push(NEUTRAL); }
@@ -638,6 +648,7 @@ function netTick() {
   const opp = NET.oppPeer ? NET.mr.peers().find((p) => p.peer === NET.oppPeer) : null;
   if (NET.phase === "result") { resultTick(opp); return; }
   if (NET.phase !== "match" || !G) return;
+  if (NET.gone) { $("netBadge").hidden = true; return; }   // matchDecided: the KO page plays out, there is nobody to wait for
   if (opp && opp.presence !== NET.lastOpp) { NET.lastOpp = opp.presence; readOpp(opp.presence); }
   const maxSteps = NET.oppFrame - NET.frame > 3 ? 2 : 1;
   let steps = 0;
@@ -769,8 +780,11 @@ function finishOnline(left, lost) {
   else NET.phase = "result";
   $("netBadge").hidden = true;
   showResults(R);
+  goneLine();
   lobbyPresence();
 }
+// the results of a match whose room went at its end (matchDecided): no rematch, and why
+function goneLine() { if (NET.gone && NET.phase === "result") { $("rAgain").disabled = true; $("rAgainSub").textContent = NET.gone; } }
 
 /* ----- the end of an online boss fight ----- */
 const DUO_WIN = [20, 30, 45];   // chips for a win, by level (both phones pay their own player)

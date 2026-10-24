@@ -205,12 +205,12 @@ function rpvClose() {
 }
 // a run on its way (a fetch or the scan)
 function rpvLoad(on) { rpvMake(); RPV.load.hidden = !on; }
-function rpvToast(msg) {
+function rpvToast(msg, ms) {
   rpvMake();
   const t = RPV.toast;
   t.textContent = msg; t.hidden = false;
   t.classList.remove("in"); void t.offsetWidth; t.classList.add("in");
-  clearTimeout(RPV.toastT); RPV.toastT = setTimeout(() => { t.hidden = true; }, 2600);
+  clearTimeout(RPV.toastT); RPV.toastT = setTimeout(() => { t.hidden = true; }, ms || 2600);
 }
 
 /* ----- the share link's title card: TUBER TOM VS ZORP · BOSS WEEK 42 · 1:21.44 · #1, then ▶ WATCH ----- */

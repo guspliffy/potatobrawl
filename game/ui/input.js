@@ -34,6 +34,8 @@ window.addEventListener("keydown", (e) => {
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
 window.addEventListener("blur", () => { keys.clear(); releaseTouch(); });
+// a phone switching apps (or a hidden tab) may never send blur or the key-up: let go of everything there too
+document.addEventListener("visibilitychange", () => { if (document.hidden) { keys.clear(); releaseTouch(); } });
 
 function readPad() {
   const r = { x: 0, y: 0 };
@@ -111,18 +113,20 @@ stickZone.addEventListener("pointercancel", endStick);
 stickZone.addEventListener("lostpointercapture", endStick);
 
 const padBtns = [...document.querySelectorAll(".pb")];
+const padHeld = new Map();   // button -> the fingers on it: two thumbs on one button, the first lifting must not let go of it
 for (const b of padBtns) {
-  const k = b.dataset.k;
+  const k = b.dataset.k, held = new Set();
+  padHeld.set(b, held);
   b.addEventListener("pointerdown", (e) => {
     e.preventDefault(); Sfx.init();
     try { b.setPointerCapture(e.pointerId); } catch (_) {}
-    touch[k] = true; latch.add(k); b.classList.add("on");
+    held.add(e.pointerId); touch[k] = true; latch.add(k); b.classList.add("on");
   });
-  const up = () => { touch[k] = false; b.classList.remove("on"); };
+  const up = (e) => { held.delete(e.pointerId); if (held.size) return; touch[k] = false; b.classList.remove("on"); };
   b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
   b.addEventListener("contextmenu", (e) => e.preventDefault());
 }
-function releaseTouch() { for (const b of padBtns) { touch[b.dataset.k] = false; b.classList.remove("on"); } endStick(); }
+function releaseTouch() { for (const b of padBtns) { padHeld.get(b).clear(); touch[b.dataset.k] = false; b.classList.remove("on"); } endStick(); }
 app.addEventListener("contextmenu", (e) => { if (mode === "match") e.preventDefault(); });
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 const touchUI = (window.matchMedia && matchMedia("(pointer: coarse)").matches) || navigator.maxTouchPoints > 0;

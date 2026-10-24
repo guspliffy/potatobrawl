@@ -41,7 +41,7 @@ const KO_PAGES2 = {
 };
 // code: the account the copy belongs to (another account on this device sees none of it); items: every item owned; own: the fighter ids of the "ko:" ones;
 // pick: { fighterId: 0 | 1 | 2 | "s" } on this device (off: the old on/off switch, kept in step with pick 0 for ui/shop.js); ads, adN, adMax, adIn (s, at adT): today's ads
-const KO = { code: "", bal: 0, items: [], own: [], pick: {}, off: {}, buy: false, ads: false, adN: 0, adMax: 0, adIn: 0, adT: 0, t: 0, askT: 0, busy: "", why: "", demo: "", demoN: 1, back: null, backFn: null };
+const KO = { code: "", bal: 0, items: [], own: [], pick: {}, off: {}, buy: false, ads: false, adN: 0, adMax: 0, adIn: 0, adT: 0, t: 0, askT: 0, busy: "", bn: 0, why: "", demo: "", demoN: 1, back: null, backFn: null };
 const KO_LIS = [];
 const KO_ITEM_RE = /^(ko|ko2|sk1|sk2):([a-z]+)$/;
 const koKnown = (id) => typeof id === "string" && Object.prototype.hasOwnProperty.call(KO_PAGES, id);
@@ -115,7 +115,18 @@ function koRefresh() {
 function koBoot() {   // qmBoot (ui/quick.js), once
   if (!qmOn()) return;
   window.__blQuick.on(koMsg);
+  window.__blQuick.onConnection((on) => { if (!on && KO.busy) koFree(); });   // the answer to a buy can't come any more: the buttons work again
 }
+// busy until the server answers (pm-ok, pm-ad, pm-no); a message that can't go out, a dropped connection or no answer in 12 s frees the buttons
+// ("fail": try again; the server pays a buy at most once, and the balance comes back with the next pm-st)
+function koWait(what, msg) {
+  KO.busy = what; KO.why = "";
+  const n = ++KO.bn;
+  if (!window.__blQuick.send(msg)) { koFree(); return false; }
+  setTimeout(() => { if (KO.bn === n && KO.busy) { koFree(); koAsk(true); } }, 12000);
+  return true;
+}
+function koFree() { KO.busy = ""; KO.why = "fail"; koRefresh(); }
 // ask for the balance and the items (the Shop opening, signing in); at most every 5 s unless forced
 function koAsk(force) {
   if (!qmOn() || !QM.conn || !ACCT.code) return;
@@ -187,8 +198,7 @@ function koBuy(item) {
   const n = x[1] === "ko" ? 1 : x[1] === "ko2" ? 2 : 0;
   if ((n && !koHas(x[2], n)) || koItem(item) || KO.busy || !koCan()) return false;
   if (KO.bal < KO_PRICE) { KO.why = "short"; koRefresh(); return false; }   // every item costs KO_PRICE (the server checks it again)
-  KO.busy = item; KO.why = "";
-  window.__blQuick.send({ t: "pmb", item });
+  if (!koWait(item, { t: "pmb", item })) return false;
   koRefresh();
   return true;
 }
@@ -196,8 +206,7 @@ function koBuy(item) {
 const koAdLeft = () => (koMine() && KO.ads ? Math.max(0, KO.adMax - KO.adN) : 0);
 function koAdClaim() {
   if (KO.busy || !koCan() || koAdLeft() <= 0) return false;
-  KO.busy = "ad"; KO.why = "";
-  window.__blQuick.send({ t: "pma" });
+  if (!koWait("ad", { t: "pma" })) return false;
   koRefresh();
   return true;
 }

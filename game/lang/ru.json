@@ -1801,5 +1801,10 @@
  "<em>Resume</em> · quarter-final": "<em>Продолжить</em> · четвертьфинал",
  "<em>Resume</em> · semi-final": "<em>Продолжить</em> · полуфинал",
  "<em>Resume</em> · final": "<em>Продолжить</em> · финал",
- "Challenge a friend": "Вызвать друга"
+ "Challenge a friend": "Вызвать друга",
+ "Open in another tab": "Открыто в другой вкладке",
+ "PotatoBrawl is open in another tab or window. One plays at a time, so your progress stays in one place.": "PotatoBrawl открыт в другой вкладке или окне. Играть можно только в одной, чтобы твой прогресс был в одном месте.",
+ "Play here": "Играть здесь",
+ "KO|KOs": "KO|KO|KO",
+ "This browser can't keep your progress. Save it in Account.": "Этот браузер не сохраняет твой прогресс. Сохрани его в разделе «Аккаунт»."
 }

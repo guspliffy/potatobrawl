@@ -610,7 +610,7 @@ function acctTake(S, rev, t) {
 function acctSid() { try { return [...crypto.getRandomValues(new Uint8Array(6))].map((b) => b.toString(16).padStart(2, "0")).join(""); } catch (e) { return (Date.now().toString(36) + "00000000").slice(0, 12); } }
 // Save if this device has changes, otherwise look for the server's. Never while a match is on.
 async function acctSync(now) {
-  if (!ACCT.code || !acctOk) return;
+  if (!ACCT.code || !acctOk || tabAsleep) return;   // tabAsleep: another tab plays (ui/welcome.js)
   if (acctBusy) { acctAgain = true; return; }
   if (mode === "match") { acctSoon(4000); return; }
   clearTimeout(acctTimer);

@@ -155,7 +155,13 @@ function tcJoinCode(code) {
   const f = tcFighter(); cnt("tc:join"); tcSend({ t: "tcj", k: code, f, pi: palIdx(f) });
 }
 function tcHost() { const f = tcFighter(); cnt("tc:host"); tcSend({ t: "tcn", f, pi: palIdx(f) }); }
-function tcStart() { if (!TC.cup || !TC.cup.host) return; Sfx.init(); goFull(); cnt("tc:start"); window.__blQuick.send({ t: "tcs" }); TC.busy = true; tcRender(); }
+function tcStart() {
+  if (!TC.cup || !TC.cup.host) return;
+  Sfx.init(); goFull(); cnt("tc:start");
+  TC.last = { t: "tcs" }; TC.again = false;   // a "slow" answer tries the start again once (not the host or join sent before it)
+  window.__blQuick.send({ t: "tcs" }); TC.busy = true; tcRender();
+  setTimeout(() => { if (TC.busy) { TC.busy = false; tcRender(); } }, 6000);   // no answer: the button comes back
+}
 function tcLeave() {
   if (!TC.cup) return;
   window.__blQuick.send({ t: "tcl" });

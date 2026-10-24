@@ -61,3 +61,34 @@ function welcomeClose() {
 }
 tap("welGo", () => { welcomeClose(); cntOnce("tut:go"); goFull(); startTutorial(); });   // ui/counter.js cntOnce: the funnel's "picked" row
 tap("welSkip", () => { welcomeClose(); cntOnce("tut:fight"); P.tut = true; saveProfile(); goFull(); startFirstFight(); });
+
+/* ----- the game open twice on one device (two tabs or windows share its saved progress) -----
+   Each page keeps the progress in memory and saves all of it, so the page that saved last wrote its older copy over the other's chips,
+   skins and gifts (and both pages would send the same changes to the account). Only one page plays now: a page that opens says so (hi),
+   and an older page goes to sleep behind a card, saving nothing; one in a match keeps playing and the new page sleeps instead (busy).
+   Play here wakes a sleeping page: it reloads (with the progress as the other page saved it) and takes over, a match there or not. */
+const TAB = { id: Math.random().toString(36).slice(2, 10), at: Date.now(), ch: null };
+screens.twice = $("scrTwice");
+function tabSleep() {
+  if (tabAsleep) return;
+  tabAsleep = true;
+  clearTimeout(acctTimer);   // ui/acct.js: a sync that was coming
+  modal("twice", true);
+}
+try {
+  TAB.ch = new BroadcastChannel("potatobrawl.tabs");
+  TAB.ch.onmessage = (e) => {
+    const m = e.data && typeof e.data === "object" ? e.data : {};
+    if (m.id === TAB.id || tabAsleep) return;
+    if (m.t === "hi") {
+      const newer = m.take || m.at > TAB.at || (m.at === TAB.at && m.id > TAB.id);   // two pages opened at once (a restored session): the newer plays
+      if (!newer) return;
+      if (!m.take && mode === "match") TAB.ch.postMessage({ t: "busy", id: TAB.id, to: m.id });
+      else tabSleep();
+    } else if (m.t === "busy" && m.to === TAB.id) tabSleep();
+  };
+  let take = false;
+  try { take = sessionStorage.getItem("potatobrawl.take") === "1"; sessionStorage.removeItem("potatobrawl.take"); } catch (e) { /* no session storage */ }
+  TAB.ch.postMessage({ t: "hi", id: TAB.id, at: TAB.at, take });
+} catch (e) { /* no BroadcastChannel (an old browser): every page plays, as before */ }
+tap("twiceHere", () => { try { sessionStorage.setItem("potatobrawl.take", "1"); } catch (e) { /* the reload still wakes it */ } location.reload(); });

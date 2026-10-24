@@ -2352,11 +2352,8 @@ function uvHidden(f) { return uvHeld(f) === "dive" && f.mt >= 15 && f.mt < 31; }
 function uvAlpha(f) { return uvHeld(f) === "cuts" && f.mt >= 24 && f.mt <= 36 ? 0.3 : 1; }
 // how far into the super freeze the user's power pose is (0..1); 1 outside the freeze
 function uvFz(f) { return f.mt === 0 && UV.g && UV.g.fighters[f.slot] === f ? clamp(UV.t / 10, 0, 1) : 1; }
-// the crystal of the Wizard's staff in the world (where his stars are called from)
-function staffTip(f, tk) {
-  const P = pose(f, tk), a = P.holdAng != null ? P.holdAng : -Math.PI / 2 + 0.12;
-  return [f.x + f.facing * (P.hF[0] + Math.cos(a) * 40), f.y + P.hF[1] + Math.sin(a) * 40];
-}
+// the crystal of the Wizard's staff in the world (where his stars are called from): staffTip in game/skinfx.js (one copy: a second
+// declaration here was silently replaced by that one in the shared scope)
 
 function drawFighter(c, f, tk, at) {
   if (f.spec.boss) return drawBoss(c, f, tk, at);   // a boss has his own drawing (ui/draw-boss.js)

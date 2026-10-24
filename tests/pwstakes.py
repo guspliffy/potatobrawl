@@ -159,9 +159,13 @@ async def main():
             for name, vp in (('667', TINY), ('1280', DESK)):
                 await A.set_viewport_size(vp); await A.wait_for_timeout(450); await shot(A, f'result-forchips-{name}'); await clipped(A, f'A seg {name}', '#resSheet .res-actions .btn, #rStake .sk-l')
             await A.set_viewport_size(PHONE); await A.wait_for_timeout(300)
-            # the stake sheet
+            # the stake sheet: its X closes it (it shared the Skin Rack's id once, so the X did nothing)
             await tap(A, '#rStake')
             expect(await shown(A, '#scrStake .sk-sheet'), 'A: the stake sheet opens')
+            await tap(A, '#stkClose'); await A.wait_for_timeout(300)
+            expect(not await shown(A, '#scrStake .sk-sheet'), 'A: the stake sheet\'s X closes it')
+            await tap(A, '#rStake')
+            expect(await shown(A, '#scrStake .sk-sheet'), 'A: the stake sheet opens again')
             have = await text(A, '#skHave')
             expect(has(have, 'You have', '0 of 5 today'), f'A: the sheet says the chips and today\'s count, got {have!r}')
             expect(await A.evaluate("[...document.querySelectorAll('#skTiles .sk-tile')].map((b) => b.disabled).join() === 'false,false,false'"), 'A: 10, 25 and 50 all open')
