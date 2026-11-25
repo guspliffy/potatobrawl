@@ -1740,7 +1740,7 @@ const HEAVY_LOOK = {
     hSide: {
       name: "Fire headbutt", glintAt: "foot",
       pose(X) { const { P, w, h } = X; P.wingUp = hpath(X, 0, -0.8, 0.4); P.glintAt = [w * 0.3, -h * 0.82]; },
-      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 5, hkPhxDir(e, att), 1.5, 6, 5.4, 30, 0.1); for (let i = 0; i < 6; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 5, hkPhxDir(e, att), 1.5, 6, 5.4, 30, 0.1); for (let i = 0; i < 3; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
     },
     // both arms up, wings snap open, a flame crescent over the head, embers rain down
     hUp: {
@@ -1756,7 +1756,7 @@ const HEAVY_LOOK = {
         P.glintAt = [w * 0.2, -h - 8];
       },
       swing(f) { for (let i = 0; i < 6; i++) ember(f.x + frand(-26, 26), f.y - f.s.h - frand(6, 26), frand(-0.6, 0.6), frand(0.4, 1.6)); },
-      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 5, -Math.PI / 2, 1.6, 6, 5.4, 30, 0.1); for (let i = 0; i < 6; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 5, -Math.PI / 2, 1.6, 6, 5.4, 30, 0.1); for (let i = 0; i < 3; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
     },
     // crouch, both feet slammed out, broken flame rings along the ground (behind the fighters)
     hDown: {
@@ -1770,13 +1770,13 @@ const HEAVY_LOOK = {
         P.glintAt = [w * 0.2, -leg * 0.5];
       },
       swing(f) { for (const s of [1, -1]) for (let i = 0; i < 5; i++) ember(f.x + s * f.facing * 34 + frand(-8, 8), f.y - 4, s * f.facing * frand(0.5, 3), frand(-3, -0.5)); dust(f.x, f.y, 6, 70); },
-      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 3, -Math.PI / 2, 1.8, 5, 5, 28, 0.1); for (let i = 0; i < 6; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 3, -Math.PI / 2, 1.8, 5, 5, 28, 0.1); for (let i = 0; i < 3; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
     },
     // the headbutt with a roll and a longer flame tail
     hAir: {
       name: "Fire dive",
       pose(X) { const { P, w, h } = X; P.lean += hpath(X, 0, -0.1, 0.3); P.wingUp = hpath(X, 0, -0.5, 0.3); P.glintAt = [w * 0.3, -h * 0.82]; },
-      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 5, hkPhxDir(e, att), 1.5, 6, 5.4, 30, 0.1); for (let i = 0; i < 6; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
+      hit(att, e) { hkPhxShards(HK_PHX, e.x, e.y, 5, hkPhxDir(e, att), 1.5, 6, 5.4, 30, 0.1); for (let i = 0; i < 3; i++) ember(e.x, e.y, frand(-4, 4), frand(-4, 0)); },
     },
   },
 
@@ -2005,7 +2005,7 @@ function gunSpark(e, n) {
   burstLines(e.x, e.y, n, ["#fff4d0", "#ffb347"], 7);
 }
 function greenBurst(e) {   // the Alchemist's zap hit: acid beads thrown up and dripping back (the hit spark itself is the generic one)
-  hkPhxShards(HK_ALC, e.x, e.y, 6, -Math.PI / 2, 2.6, 6, 4.4, 22, 0.16);
+  hkPhxShards(HK_ALC, e.x, e.y, 4, Math.atan2(-1, -Math.sign(e.dirx || 0) * 0.8), 1.4, 7.5, 3.8, 22, 0.16);   // few, small, thrown up and back off the victim (tests/pwhit.py)
 }
 
 /* ---- swoosh styles used by the looks above ---- */
