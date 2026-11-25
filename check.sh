@@ -373,6 +373,15 @@ if grep -q "^no errors" "$LOGS/ult-ui.log"; then pass "ulti bar + ULTI button (t
 else fail "ulti bar + ULTI button" "$LOGS/ult-ui.log"; fi
 }
 
+# 6d1. The hit grammar (ui/hitkit.js, effects.js): the kit sheet, each fighter's launcher frame by frame (Reduce flashes off and on: impact
+#      frames, hit-stop, launch, residue), and a light, a heavy and a launcher per fighter: the hit kit's effects cover at most 20 % of the
+#      victim on every tick. Sheets in build/shots/hit.
+s_hit() {
+(cd "$SHOTS" && timeout 900 python3 "$ROOT/tests/pwhit.py" --out "$SHOTS/hit") > "$LOGS/hit.log" 2>&1
+if grep -q "^no errors" "$LOGS/hit.log"; then pass "hit grammar (spark tiers, impact frames, Reduce flashes, the spark never hides the victim; sheets in build/shots/hit)"
+else fail "hit grammar" "$LOGS/hit.log"; fi
+}
+
 # 6d2. Boss Week's menu parts (UI only): the start-page tile (with and without a time, NEW / PAID tag), the Boss Week sheet (boss card, your best,
 #      fighter picker and the select round trip, FIGHT / PRACTICE, no time / checking / empty board / offline) and its Boards tab, the Monday
 #      card, at five sizes: nothing cut, overlapping or off the screen. Shots in build/shots/bwsheet.
@@ -530,13 +539,13 @@ else fail "languages on screen" "$LOGS/lang-ui.log"; fi
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo lang)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui pota pota2 pshop ads pmskin bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui hit pota pota2 pshop ads pmskin bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui langui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, bw, pm, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti lang)
 SOLO=(quick cpu bw pm tc acct stats)
-REAL=(langui mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+REAL=(langui mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui hit pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti lang); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)
