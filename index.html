@@ -14842,60 +14842,78 @@ cvFigReg("reaper", {
     const ka = grd ? 1 : Math.round((1 - clamp((f.vy || 0) * 0.012, -0.08, 0.12)) * 50) / 50;
     const fn = cvRprCloakFn(P, g, dq, lq, tr, ka);
     if (TEAM_RIM && !K.at) cvRprRim(c, K, fn);
-    // at rest (no transform) the cloak goes into the hood's sprite and the skin pass lies on the bell (fig.sil); otherwise the cloak is a
-    // stack of its own, and the skin pass goes on the cloak (in its transform), then on the hood
-    if (fn) { K.stack(["cloak"], fn, g + "," + dq + "," + tr + "," + ka); if (K.skinPass) cvRprSkin(K, CV_RPR_SIL.cloak, fn); }
-    const skin = !fn ? "skin" : K.skinPass ? cvRprSkinHood : null;
+    // at rest (no transform) the cloak goes into the hood's sprite; otherwise it is a stack of its own. The skin pass lies once on the bell
+    // (fig.sil) over the hood: at rest the bell's own, otherwise the turned cloak's (cvRprBell)
+    if (fn) K.stack(["cloak"], fn, g + "," + dq + "," + tr + "," + ka);
+    const skin = fn && K.skinPass ? (KK) => cvRprSkin(KK, cvRprBell(fn)) : "skin";
     K.stack([fn ? null : "cloak", "hood", skin, K.faceRest && !(P.mouth > 0.5) ? "eyes" : cvRprFaceK, "sprout", "top"].filter(Boolean));
     K.arm(true, P.scyBack ? null : cvRprScythe);
     reapLightTrail(c, f, P);   // a light's swing trail (draw-fighters.js)
   },
 });
 // the silhouette potatoPath() replays (glaze, the Road and Pommes skin passes): the bell he reads as, the cloak and the hood as one
-// outline (the body's ellipse sits hidden inside the cloak); and each alone, for the skin pass of a cloak that is turned (cvRprSkin)
+// outline (the body's ellipse sits hidden inside the cloak), thinned (a point within 0.3 of the line through its neighbours goes: the
+// passes clip to it and stroke it). A and B keep the cloak and the hood for the bells of a turned cloak (cvRprBell)
 const CV_RPR_SIL = (() => {
-  const flat = (Q) => { const o = new Float64Array(Q.length * 2); Q.forEach((q, i) => { o[i * 2] = q[0]; o[i * 2 + 1] = q[1]; }); return o; };
-  const A = cvPos(cvSm(CV_RPR_CLOAK)), B = cvPos(cvSm(CV_RPR_HOOD));
-  return { all: flat(cvRprUnion(A, B)), cloak: flat(A), hood: flat(B) };
+  const A = cvRprThin(cvPos(cvSm(CV_RPR_CLOAK)), 0.3), B = cvRprThin(cvPos(cvSm(CV_RPR_HOOD)), 0.3);
+  return { A, B, all: cvRprFlat(cvRprUnion(A, B)) };
 })();
 CV_FIG.reaper.sil = CV_RPR_SIL.all;
-// the outline of the union of two simple polygons of one winding (dense points, as cvSm makes them): walk one; where it runs into the
-// other, go on along the other from its nearest point outside the first, and back; stop on a point already walked
-function cvRprUnion(A, B) {
-  const ins = (Q, p) => cvInside(Q, p[0], p[1]), out = [], seen = new Set();
-  let P = A, Q = B, onA = true, i = A.findIndex((p) => !ins(B, p));
-  for (let n = 0; n < 4 * (A.length + B.length); n++) {
-    if (onA) { if (seen.has(i)) break; seen.add(i); }
-    out.push(P[i]);
-    let j = (i + 1) % P.length;
-    if (ins(Q, P[j])) {
-      let bd = Infinity;
-      Q.forEach((q, k) => { const d = (q[0] - P[j][0]) ** 2 + (q[1] - P[j][1]) ** 2; if (d < bd && !ins(P, q)) { bd = d; j = k; } });
-      [P, Q] = [Q, P]; onA = !onA;
-    }
-    i = j;
+const CV_RPR_BELLS = new Map();   // the bells of a turned cloak, by its turn (rounded)
+function cvRprFlat(Q) { const o = new Float64Array(Q.length * 2); Q.forEach((q, i) => { o[i * 2] = q[0]; o[i * 2 + 1] = q[1]; }); return o; }
+// fewer points on a dense closed outline: a run of points goes while each lies within tol of the line from the last kept one on
+function cvRprThin(Q, tol) {
+  const n = Q.length, out = [Q[0]];
+  for (let i = 1, a = 0; i < n; i++) {
+    const A = Q[a], b = Q[(i + 1) % n], dx = b[0] - A[0], dy = b[1] - A[1], L = Math.hypot(dx, dy) || 1;
+    let ok = true;
+    for (let m = a + 1; m <= i && ok; m++) ok = Math.abs((Q[m][0] - A[0]) * dy - (Q[m][1] - A[1]) * dx) / L <= tol;
+    if (!ok) { out.push(Q[i]); a = i; }
   }
   return out;
 }
-// the skin pass (K.skinBody: glaze, a Road or Pommes skin) on one silhouette; with fn, in the cloak's transform: the kit's squash and lean
-// come first in skinBody, so fn (after the drop) is moved in front of them: M = A X A^-1
-function cvRprSkin(K, sil, fn) {
-  const fig = K.fig, s0 = fig.sil, c = K.c, P = K.P;
-  fig.sil = sil; c.save();
-  try {
-    if (fn) {
-      const h = P.hip, d = P.cvDrop, X = new DOMMatrix().translateSelf(0, d);
-      const A = new DOMMatrix().scaleSelf(K.sx, K.sy).translateSelf(h[0], h[1]).rotateSelf((P.lean * 180) / Math.PI).translateSelf(-h[0], -h[1]);
-      fn({ translate: (x, y) => X.translateSelf(x, y), rotate: (a) => X.rotateSelf((a * 180) / Math.PI), scale: (x, y) => X.scaleSelf(x, y),
-        transform: (a, b, cc, dd, e, f) => X.multiplySelf(new DOMMatrix([a, b, cc, dd, e, f])) });
-      X.translateSelf(0, -d);
-      const M = A.multiply(X).multiply(A.inverse());
-      c.transform(M.a, M.b, M.c, M.d, M.e, M.f);
+// the outline of the union of two simple polygons of one winding: walk A from a point outside B; where an edge runs into the other, go on
+// along the other from the crossing (forward on both), and back; stop back at the start
+function cvRprUnion(A, B) {
+  const s = A.findIndex((p) => !cvInside(B, p[0], p[1]));
+  if (s < 0) return B;
+  const out = [A[s]];
+  let cur = A, oth = B, p = A[s], j = (s + 1) % A.length;
+  for (let n = 0; n < 4 * (A.length + B.length); n++) {
+    const q = cur[j];
+    let hit = null, hk = -1;
+    for (let k = 0; k < oth.length; k++) {
+      const h = cvHit(p, q, oth[k], oth[(k + 1) % oth.length]);
+      if (h && h[2] > 1e-7 && (!hit || h[2] < hit[2])) { hit = h; hk = k; }
     }
-    K.skinBody();
-  } finally { c.restore(); fig.sil = s0; }
+    if (hit) { p = [hit[0], hit[1]]; out.push(p); [cur, oth] = [oth, cur]; j = (hk + 1) % cur.length; continue; }
+    if (cur === A && j === s) break;
+    out.push(q); p = q; j = (j + 1) % cur.length;
+  }
+  return out;
 }
-const cvRprSkinHood = (K) => cvRprSkin(K, CV_RPR_SIL.hood, null);
+// the bell of a turned cloak: the cloak's points through fn's matrix (the standing frame, after the drop: as the stack draws it) and the
+// hood, as one outline; made once per turn
+function cvRprBell(fn) {
+  let m = [1, 0, 0, 1, 0, 0];
+  const mul = (a, b, c, d, e, f) => { const [A, B, C, D, E, F] = m; m = [A * a + C * b, B * a + D * b, A * c + C * d, B * c + D * d, A * e + C * f + E, B * e + D * f + F]; };
+  fn({ translate: (x, y) => mul(1, 0, 0, 1, x, y), rotate: (a) => { const cs = Math.cos(a), sn = Math.sin(a); mul(cs, sn, -sn, cs, 0, 0); },
+    scale: (x, y) => mul(x, 0, 0, y, 0, 0), transform: mul });
+  const key = m.map((v, i) => Math.round(v * (i < 4 ? 500 : 20))).join(",");
+  let s = CV_RPR_BELLS.get(key);
+  if (!s) {
+    if (CV_RPR_BELLS.size > 300) CV_RPR_BELLS.clear();
+    const A = CV_RPR_SIL.A.map(([x, y]) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]);
+    CV_RPR_BELLS.set(key, (s = cvRprFlat(cvRprUnion(A, CV_RPR_SIL.B))));
+  }
+  return s;
+}
+// the skin pass (K.skinBody: glaze, a Road or Pommes skin) on a bell of a turned cloak
+function cvRprSkin(K, sil) {
+  const fig = K.fig, s0 = fig.sil;
+  fig.sil = sil;
+  try { K.skinBody(); } finally { fig.sil = s0; }
+}
 // the cloak's transform in the standing frame (after the kit's lean and drop), or null when it has none
 function cvRprCloakFn(P, g, dq, lq, tr, ka) {
   const T = CV_RPR_TOP, hx = P.hip[0], hy = P.hip[1] - P.cvDrop;
