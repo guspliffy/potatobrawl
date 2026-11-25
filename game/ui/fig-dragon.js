@@ -38,8 +38,8 @@ cvFigReg("dragon", {
   face: { x: 9.5, y: -43, s: 1, iris: "iris", brow: 0.5, lid: 0.26, lidCol: "lid", browW: 3, browUp: 0,
     mouth: { k: "none", x: 20.5, y: -31, s: 0.9 } },   // (the mouth line and the fang are carved on the jaw; a shout opens it there)
   mouthPt: [27, -32],
-  arm: { shF: [8, -27], shB: [-15, -32], len: 24, lenB: 14, bendB: "back", r0: 5.2, r1: 4.8, col: "skin", colB: "sc",
-    hand: { r: 6.6, col: "sc", thumb: false, k: 1.3, more: (c, K, x, y, front, ang) => cvDrgClaws(c, K, x, y, ang) }, handB: { r: 5.6, col: "sc", thumb: false } },
+  arm: { shF: [8, -27], shB: [-15, -32], len: 24, lenB: 14, bendB: "back", r0: 5.6, r1: 3.4, col: "skin", colB: "sc", colU: "sc",
+    hand: { r: 7.6, col: "sc", thumb: false, k: 1.3, more: (c, K, x, y, front, ang) => cvDrgClaws(c, K, x, y, ang) }, handB: { r: 5.6, col: "sc", thumb: false } },
   leg: { hipF: [10, -14], hipB: [-9, -14], len: 9, draw: (c, K, hip, foot, front) => cvDrgLeg(c, K, hip, foot, front) },
   carve: {
     wingB(S) { cvDrgWing(S, -4, -3, "scB", "memB"); },
@@ -116,7 +116,7 @@ cvFigReg("dragon", {
 const CV_DRG_CLAWS = [[4, -5, -0.5], [6.5, -0.5, 0], [4.5, 4, 0.5]].map(([x, y, a]) => cvPos([[-1, -1.8], [4.6, 0], [-1, 1.8]].map(([u, v]) => [x + u * Math.cos(a) - v * Math.sin(a), y + u * Math.sin(a) + v * Math.cos(a)])));
 const CV_DRG_CLAW = cvPath(CV_DRG_CLAWS), CV_DRG_CLAWI = cvPath(CV_DRG_CLAWS.map((p) => cvOffset(p, 1.1)));
 function cvDrgClaws(c, K, x, y, ang) {
-  c.save(); c.translate(x, y); c.rotate(ang);
+  c.save(); c.translate(x, y); c.rotate(ang); c.scale(1.15, 1.15);   // (carved for a fist of radius 6.6)
   c.fillStyle = CV_INK; c.fill(CV_DRG_CLAWI); cvMgInk(c, CV_DRG_CLAWI); c.fillStyle = K.C.horn; c.fill(CV_DRG_CLAW);
   c.restore();
 }

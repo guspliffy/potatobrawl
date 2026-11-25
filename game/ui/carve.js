@@ -27,11 +27,13 @@
                                        Road and Pommes passes, the 2v2 team rim) and P.rx / P.ry / P.cy / P.top
      face: { x, y, s, ... }            the live face (cvFace below); x, y the middle between the eyes, also P.head
      mouthPt: [x, y]                   P.mouthPt (where flames and the manga's "mmm" come from)
-     arm: { shF, shB, len, lenB, bendB, r0, r1, col, colB, hand, handB }   shoulders (standing frame), bone lengths (front, back), the back
-                                       elbow's side ("down" default, "back", "fwd", "up"), radii at the shoulder and the wrist, colour keys
-                                       (front, back). hand / handB: a mitten { r, col, thumb (default true), k (the size of its shadow: 1 a
-                                       mitten, ~1.5 a gauntlet), more(c, K, x, y, front, ang) } (more: live details over it, ang the forearm's
-                                       angle); its outline goes with the arm's in one fill
+     arm: { shF, shB, len, lenB, bendB, r0, r1, col, colB, colU, cuff, hand, handB }   shoulders (standing frame), arm lengths (front,
+                                       back; the rig's), the back elbow's side ("down" default, "back", "fwd", "up"), radii at the shoulder
+                                       and the wrist (taper it: an arm reads by its shoulder and its hand), colour keys (front, back; colU
+                                       the front upper arm's own, a sleeve). cuff: { len, r0, r1, col } a band on the forearm behind the hand
+                                       (a gauntlet's cuff; the front arm). hand / handB: a mitten { r, col, thumb (default true), k (the size of
+                                       its shadow: 1 a mitten, ~1.5 a gauntlet), more(c, K, x, y, front, ang) } (more: live details over it,
+                                       ang the forearm's angle); its outline goes with the arm's in one fill
      leg: { hipF, hipB, len, bones, r0, r1, col, colB, boot: { s, col, colB }, draw }   hips (standing frame), bone length (bones: 1 a
                                        single bone, for short legs), radii, colours; the boots are carved for you from boot (parts "boot",
                                        "bootB", S.boot); draw(c, K, hip, foot, front) instead for a figure with its own legs (a hakama)
@@ -548,12 +550,14 @@ function cvLimbAdd(c, a, e, b, r0, rm, r1, ox, oy, capA, capB) {
   c.closePath();
 }
 // a limb a -> e -> b (e null: one bone) tapered r0 -> r1 in three fills: the ink (with whatever inkMore adds to it, a mitten's outline), the
-// shadow tone, the lit part (the limb moved towards the light, cut to itself)
-function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB) {
+// shadow tone, the lit part (the limb moved towards the light, cut to itself); noInk: the last two only (a colour laid over a limb)
+function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB, noInk) {
   const rm = (r0 + r1) / 2, w = (lw || 2.2) / 2;
-  c.beginPath(); cvLimbAdd(c, a, e, b, r0 + w, rm + w, r1 + w, 0, 0, capA, capB);
-  if (inkMore) inkMore(c);
-  c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  if (!noInk) {
+    c.beginPath(); cvLimbAdd(c, a, e, b, r0 + w, rm + w, r1 + w, 0, 0, capA, capB);
+    if (inkMore) inkMore(c);
+    c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  }
   c.beginPath(); cvLimbAdd(c, a, e, b, r0 - w, rm - w, r1 - w, 0, 0, capA, capB); c.fillStyle = shade; c.fill();
   if (shade === col) return;
   const g = (CV_LD + w) / 2, k = (CV_LD - w) / 2 / CV_LD;
@@ -883,9 +887,16 @@ CV_Kit.prototype = {
     // the back arm is one tone, its shadow (it reads as further away, and costs a fill less)
     const sc = cvShC(C, col), hs = cvShC(C, H.col), flat = !front;
     cvLimb(c, a, e, h, A.r0, A.r1, flat ? sc : C[col], sc, 2.2, held ? null : (cc) => cvCircAdd(cc, h[0], h[1], H.r + 1.1), true, false);
+    if (front && A.colU)   // the upper arm in a colour of its own (a scaled sleeve) inside the arm's ink, round over the forearm at the elbow
+      cvLimb(c, a, null, e, A.r0, (A.r0 + A.r1) / 2, C[A.colU], cvShC(C, A.colU), 2.2, null, true, true, true);
+    const U = front && A.cuff, fl = Math.hypot(h[0] - e[0], h[1] - e[1]);
+    if (U && fl > H.r) {   // a cuff on the forearm, its end under the hand (one tone: two fills)
+      const ux = (h[0] - e[0]) / fl, uy = (h[1] - e[1]) / fl, d1 = Math.min(fl, H.r * 0.55 + U.len);
+      cvLimb(c, [h[0] - ux * d1, h[1] - uy * d1], null, [h[0] - ux * H.r * 0.55, h[1] - uy * H.r * 0.55], U.r0, U.r1, C[U.col], C[U.col], 2.2, null, true, true);
+    }
     if (held) held(c, this);
     if (front && this.f.mid === "ulti" && this.f.state === "attack") uvHeldProp(c, this.f, this.P, this.tk);   // an Ultimate's prop in the fist (Gungnir)
-    cvMitt(c, h[0], h[1], H.r, flat ? hs : C[H.col], hs, H.thumb, H.k, !!held);
+    cvMitt(c, h[0], h[1], H.r, flat ? hs : C[H.col], hs, H.thumb, H.k, !!held || !!(U && fl > H.r));
     if (H.more) H.more(c, this, h[0], h[1], front, Math.atan2(h[1] - e[1], h[0] - e[0]));
   },
   leg(front) {

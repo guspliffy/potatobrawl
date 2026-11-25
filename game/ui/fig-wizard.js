@@ -45,17 +45,17 @@ cvFigReg("wizard", {
       S.line([[-4, -34.5], [2, -29.5], [8, -34]], 2.2, "gold");
       S.cel(cvCirc(11, -23.8, 2.6, 2.4), "gold", { sh: [1, -1], lw: 1.6 });   // the knot
     },
-    // the white moustache, over the mouth
+    // the white moustache, under the nose (drawn over the near sleeve, which crosses the face at rest)
     stache(S) { S.cel(cvSm([[7, -39, 1], [2, -38], [-4, -32, 1], [3, -33.5], [7, -36, 1], [11, -33.5], [18, -32, 1], [12, -38]]), "brow", { sh: [1.5, -1.5], shade: "browSh", lw: 1.6 }); },
     // the hat: the cone bent back with the star charm on its tip, the gold band, the wide brim, the sprout growing out of its front
     hat(S) { S.with(0, -2, 0, 1, () => {
-      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-15, -90], [-31, -100, 1], [-8, -98], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
-      S.line([[-10, -84], [-15, -90], [-22, -95]], 1.3, "robe/sh.5");
+      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
+      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "robe/sh.5");
       S.cel(cvSm([[-13, -61, 1], [-12.4, -67], [1, -65.5], [13.4, -67], [15, -61, 1], [1, -59]]), "gold", { sh: [3, -2], lw: 1.8 });
       S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "robe", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "robe/lt.25" });
       S.line([[-2.5, -64], [-3.2, -68], [-2.4, -71.5]], 2.2, "stem");
       S.leaf(-2.6, -71, 8, -2.5, "leaf"); S.leaf(-2.4, -71.5, 9, -0.6, "leaf");
-      S.line([[-31, -100], [-33, -93]], 1.2); S.star(-33, -90, 3.8, "gold", 1.2);
+      S.line([[-34.4, -93.5], [-34.5, -86.5]], 1.2); S.star(-34, -83.5, 3.8, "gold", 1.2);
     }); },
     // the staff along +x (the hand at 0): the shaft 34 back and 33 forward, a leather grip, the gold crescent that cradles the crystal at 40
     staff(S) {
@@ -67,8 +67,8 @@ cvFigReg("wizard", {
     },
     // the crystal: a long diamond (its long axis along the staff), a darker facet and a light one
     crystal(S) {
-      S.cel([[-9.5, 0], [0, -5], [9.5, 0], [0, 5]], "cry", { lw: 2, sh: [2, 3], shade: "cryD", hi: [-2.5, -2], hiCol: "cryHi" });
-      S.line([[-9.5, 0], [9.5, 0]], 0.8, "cryD");
+      S.cel([[-11.9, 0], [0, -6.3], [11.9, 0], [0, 6.3]], "cry", { lw: 2.2, sh: [2.5, 3.8], shade: "cryD", hi: [-3, -2.5], hiCol: "cryHi" });
+      S.line([[-11.9, 0], [11.9, 0]], 0.9, "cryD");
     },
   },
   draw(K) {
@@ -84,10 +84,11 @@ cvFigReg("wizard", {
     cvWizSkirt(K);
     // the hat at rest goes into the body's sprite; moving, it is a stack of its own
     const hR = !sw && !sq;
-    K.stack(["body", "skin", "robe", "face", "stache", hR ? "hat" : null, hR ? "top" : null].filter(Boolean));
+    K.stack(["body", "skin", "robe", "face", hR ? "hat" : null, hR ? "top" : null].filter(Boolean));
     if (!hR) { K.stack(["hat"], (c) => { c.translate(1, -59); c.transform(1, 0, -sw, 1 - sq, 0, 0); c.translate(-1, 59); }, sw + "," + sq); if (K.skinPass) K.skinTop(); }
     cvWizStaff(K);
     K.arm(true, cvWizCuffF);
+    K.stack(["stache"]);
   },
 });
 // a band along an arc as a polygon (the crescent that cradles the crystal)
@@ -151,12 +152,12 @@ function cvWizStaff(K) {
   const bob = Math.sin(tk * 0.08 + f.slot) * 1.2, turn = 0.45 + 0.55 * Math.abs(Math.cos(tk * 0.035 + f.slot));
   c.save(); c.translate(hx, hy); c.rotate(a);
   K.draw("staff");
-  c.translate(42 + bob, 0);
-  if (!K.flash) { c.globalAlpha *= 0.3; c.beginPath(); cvCircAdd(c, 0, 0, 9 * gf); c.fillStyle = C.cryHi; c.fill(); c.globalAlpha /= 0.3; }
+  c.translate(44 + bob, 0);
+  if (!K.flash) { c.globalAlpha *= 0.3; c.beginPath(); cvCircAdd(c, 0, 0, 11 * gf); c.fillStyle = C.cryHi; c.fill(); c.globalAlpha /= 0.3; }
   c.save(); c.scale(cf, cf * turn); K.draw("crystal"); c.restore();
   if (!K.flash && (tk + f.slot * 17) % 90 < 30) {   // a twinkle beside the crystal now and then
     const q = ((tk + f.slot * 17) % 90) / 30, r = 3.2 * Math.sin(Math.PI * q);
-    c.beginPath(); cvWizStar(c, 6, -8, r); cvWizStar(c, -7, 6, r * 0.6); c.fillStyle = C.cryHi; c.fill();
+    c.beginPath(); cvWizStar(c, 7.5, -10, r); cvWizStar(c, -8.5, 7.5, r * 0.6); c.fillStyle = C.cryHi; c.fill();
   }
   c.restore();
 }

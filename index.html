@@ -13326,11 +13326,13 @@ function uvShotTick(g, f) {
                                        Road and Pommes passes, the 2v2 team rim) and P.rx / P.ry / P.cy / P.top
      face: { x, y, s, ... }            the live face (cvFace below); x, y the middle between the eyes, also P.head
      mouthPt: [x, y]                   P.mouthPt (where flames and the manga's "mmm" come from)
-     arm: { shF, shB, len, lenB, bendB, r0, r1, col, colB, hand, handB }   shoulders (standing frame), bone lengths (front, back), the back
-                                       elbow's side ("down" default, "back", "fwd", "up"), radii at the shoulder and the wrist, colour keys
-                                       (front, back). hand / handB: a mitten { r, col, thumb (default true), k (the size of its shadow: 1 a
-                                       mitten, ~1.5 a gauntlet), more(c, K, x, y, front, ang) } (more: live details over it, ang the forearm's
-                                       angle); its outline goes with the arm's in one fill
+     arm: { shF, shB, len, lenB, bendB, r0, r1, col, colB, colU, cuff, hand, handB }   shoulders (standing frame), arm lengths (front,
+                                       back; the rig's), the back elbow's side ("down" default, "back", "fwd", "up"), radii at the shoulder
+                                       and the wrist (taper it: an arm reads by its shoulder and its hand), colour keys (front, back; colU
+                                       the front upper arm's own, a sleeve). cuff: { len, r0, r1, col } a band on the forearm behind the hand
+                                       (a gauntlet's cuff; the front arm). hand / handB: a mitten { r, col, thumb (default true), k (the size of
+                                       its shadow: 1 a mitten, ~1.5 a gauntlet), more(c, K, x, y, front, ang) } (more: live details over it,
+                                       ang the forearm's angle); its outline goes with the arm's in one fill
      leg: { hipF, hipB, len, bones, r0, r1, col, colB, boot: { s, col, colB }, draw }   hips (standing frame), bone length (bones: 1 a
                                        single bone, for short legs), radii, colours; the boots are carved for you from boot (parts "boot",
                                        "bootB", S.boot); draw(c, K, hip, foot, front) instead for a figure with its own legs (a hakama)
@@ -13847,12 +13849,14 @@ function cvLimbAdd(c, a, e, b, r0, rm, r1, ox, oy, capA, capB) {
   c.closePath();
 }
 // a limb a -> e -> b (e null: one bone) tapered r0 -> r1 in three fills: the ink (with whatever inkMore adds to it, a mitten's outline), the
-// shadow tone, the lit part (the limb moved towards the light, cut to itself)
-function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB) {
+// shadow tone, the lit part (the limb moved towards the light, cut to itself); noInk: the last two only (a colour laid over a limb)
+function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB, noInk) {
   const rm = (r0 + r1) / 2, w = (lw || 2.2) / 2;
-  c.beginPath(); cvLimbAdd(c, a, e, b, r0 + w, rm + w, r1 + w, 0, 0, capA, capB);
-  if (inkMore) inkMore(c);
-  c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  if (!noInk) {
+    c.beginPath(); cvLimbAdd(c, a, e, b, r0 + w, rm + w, r1 + w, 0, 0, capA, capB);
+    if (inkMore) inkMore(c);
+    c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  }
   c.beginPath(); cvLimbAdd(c, a, e, b, r0 - w, rm - w, r1 - w, 0, 0, capA, capB); c.fillStyle = shade; c.fill();
   if (shade === col) return;
   const g = (CV_LD + w) / 2, k = (CV_LD - w) / 2 / CV_LD;
@@ -14182,9 +14186,16 @@ CV_Kit.prototype = {
     // the back arm is one tone, its shadow (it reads as further away, and costs a fill less)
     const sc = cvShC(C, col), hs = cvShC(C, H.col), flat = !front;
     cvLimb(c, a, e, h, A.r0, A.r1, flat ? sc : C[col], sc, 2.2, held ? null : (cc) => cvCircAdd(cc, h[0], h[1], H.r + 1.1), true, false);
+    if (front && A.colU)   // the upper arm in a colour of its own (a scaled sleeve) inside the arm's ink, round over the forearm at the elbow
+      cvLimb(c, a, null, e, A.r0, (A.r0 + A.r1) / 2, C[A.colU], cvShC(C, A.colU), 2.2, null, true, true, true);
+    const U = front && A.cuff, fl = Math.hypot(h[0] - e[0], h[1] - e[1]);
+    if (U && fl > H.r) {   // a cuff on the forearm, its end under the hand (one tone: two fills)
+      const ux = (h[0] - e[0]) / fl, uy = (h[1] - e[1]) / fl, d1 = Math.min(fl, H.r * 0.55 + U.len);
+      cvLimb(c, [h[0] - ux * d1, h[1] - uy * d1], null, [h[0] - ux * H.r * 0.55, h[1] - uy * H.r * 0.55], U.r0, U.r1, C[U.col], C[U.col], 2.2, null, true, true);
+    }
     if (held) held(c, this);
     if (front && this.f.mid === "ulti" && this.f.state === "attack") uvHeldProp(c, this.f, this.P, this.tk);   // an Ultimate's prop in the fist (Gungnir)
-    cvMitt(c, h[0], h[1], H.r, flat ? hs : C[H.col], hs, H.thumb, H.k, !!held);
+    cvMitt(c, h[0], h[1], H.r, flat ? hs : C[H.col], hs, H.thumb, H.k, !!held || !!(U && fl > H.r));
     if (H.more) H.more(c, this, h[0], h[1], front, Math.atan2(h[1] - e[1], h[0] - e[0]));
   },
   leg(front) {
@@ -14246,11 +14257,11 @@ window.__cvTest = { draw: (c, f, tk) => drawFighter(c, f, tk), toScreen: (x, y) 
   bakes: () => ({ n: CV_BAKE.size, px: cvBakePx, made: cvBakeMade, big: cvBakeBig }) };
 /* ===================== Carved Ink: Odin (ui/carve.js has the kit and the API) =====================
    A boulder: the widest, a square russet under a helm whose wings are his sprout leaves, a forked beard, a floor-length cape that settles
-   late, steel gauntlets 17 units wide, one cold blue eye under a white brow and a patch on the other, the raven on his back shoulder.
+   late, steel gauntlets 18 units wide on a steel cuff, one cold blue eye under a white brow and a patch on the other, the raven on his back shoulder.
    Mockup: redesign/mockups/src/fighters.js NEWF.d.odin; colours of the ten skins: fx.js skinPal(). */
 cvFigReg("odin", {
   pal: { skin: "#e3a45a", steel: "#b9c4d6", cape: "#b8262d", beard: "#f6f1e7", gold: "#ecb53a", fur: "#8a6248", raven: "#2b3052",
-    belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9", eyeR: "#ff5a4a" },
+    belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9" },
   chip: [{}, { cape: "#3d7fbf", steel: "#d3e6f6", gold: "#9fd6ff" }, { cape: "#7a3a1e", steel: "#ecc452", gold: "#fff2b0" },
     { cape: "#3d3d4c", steel: "#6e7289", gold: "#b6bbd6", raven: "#15131f" }],
   won: { scratch: { cape: "#8a1a1a", skin: "#8c4a30", steel: "#5a4a52", gold: "#ff7a2b" },
@@ -14268,8 +14279,8 @@ cvFigReg("odin", {
   face: { x: 11.5, y: -43, s: 1.05, one: "far", iris: "iris", brow: -0.3, browCol: "beard", browW: 3.2, browUp: 0.6, lid: 0.22, lidCol: "lid",
     mouth: { k: "none", x: 8.5, y: -31, s: 0.85, under: true } },   // (it shows only when he shouts: under the moustache)
   mouthPt: [13, -33],
-  arm: { shF: [15, -27], shB: [-19, -38], len: 26, lenB: 15, bendB: "back", r0: 6, r1: 5.4, col: "skin",
-    hand: { r: 8.6, col: "steel", k: 1.56, thumb: false, more: (c, K, x, y, front, ang) => cvOdinFist(c, K, x, y, ang) }, handB: { r: 8, col: "steel", k: 1.28, thumb: false } },
+  arm: { shF: [15, -27], shB: [-19, -38], len: 26, lenB: 15, bendB: "back", r0: 6, r1: 4, col: "skin", cuff: { len: 6.5, r0: 5.4, r1: 6.4, col: "steel" },
+    hand: { r: 9, col: "steel", k: 1.56, thumb: false, more: (c, K, x, y, front, ang) => cvOdinFist(c, K, x, y, ang) }, handB: { r: 8, col: "steel", k: 1.28, thumb: false } },
   leg: { hipF: [9.9, -14], hipB: [-9.9, -14], len: 10.5, bones: 1, r0: 5.6, r1: 5.2, col: "greave", boot: { s: 1.2, col: "steel" } },
   carve: {
     // the cape hangs from the back of the shoulders to the floor, its hem cut in points
@@ -14286,21 +14297,24 @@ cvFigReg("odin", {
       } });
       S.cel(cvSm([[-24, -46], [-27, -54], [-19, -57], [-12, -52], [-14, -44], [-20, -41]]), "fur", { sh: [2, -2], lw: 2.2 });
     },
-    // the raven, hunched on the shoulder (its perch (-20, -64)): gold beak, red eye
+    // the raven, hunched on the shoulder (its perch (-20, -64)), standing on its feet a little over the helm (the gap under it reads as a
+    // bird, not a plume): its head up past the helm's line, the gold beak, a white eye
     raven(S) {
-      S.cel(cvSm([[-34, -62, 1], [-26, -70], [-17, -72], [-12, -68], [-6, -67, 1], [-12, -64], [-15, -58], [-24, -56]]), "raven", { sh: [2, -2], lw: 2.2 });
-      S.fill([[-11.5, -68.6], [-5, -67], [-11.5, -65.2]], "gold");
-      S.fill(cvCirc(-15.5, -67.6, 1.3), "eyeR");
+      S.line([[-22, -61], [-22.5, -56.5]], 1.4); S.line([[-17.5, -62], [-17, -57.5]], 1.4);
+      S.cel(cvSm([[-37, -63, 1], [-30, -70], [-21, -75.5], [-15, -77.5], [-10.5, -75.5, 1], [-11.5, -71, 1], [-14, -67], [-19, -62], [-28, -60.5]]), "raven", { sh: [2, -2], lw: 2.2 });
+      S.cel([[-11.5, -76.4], [-4.5, -73.6], [-11.8, -71.8]], "gold", { lw: 1.4, sh: 0 });
+      S.fill(cvCirc(-15, -73.8, 1.5), "eye");
     },
-    // the helm (steel cap, gold rim, nose guard) with the two leaves for wings, the patch and its strap, the forked beard
+    // the helm's far wing (a leaf), behind the raven
+    leafB(S) { S.leaf(-8, -62, 17, -2.05, "leafFar"); },
+    // the helm (steel cap, gold rim, nose guard) with the near leaf for a wing, the patch and its strap, the forked beard
     head(S) {
-      S.leaf(-8, -62, 17, -2.05, "leafFar");
       S.cel(cvSm([[-22, -47, 1], [-23, -60], [0, -70], [22, -61], [22.5, -47, 1], [14, -49], [12, -40, 1], [8.5, -40, 1], [7, -49], [-8, -48]]), "steel", { sh: [7, -5], hi: [-5, 6], hiCol: "steelHi" });
       S.line([[-22, -48.5], [-8, -49.5], [7, -50.5]], 2.6, "gold"); S.line([[14, -50.5], [22, -48.5]], 2.6, "gold");
       S.leaf(9, -63, 19, -2.2, "leaf"); S.cel(cvCirc(9, -61.5, 3.2), "gold", { sh: [1, -1], lw: 1.6 });
       S.fill(cvBlob(1.5, -43, 5, 4.6), "ink"); S.line([[-20, -47], [-6, -44], [3, -43]], 1.8);
-      S.cel(cvSm([[-13, -37, 1], [-2, -35], [10, -37.5], [20, -35], [25.5, -38, 1], [25, -24], [17, -7, 1], [13, -19], [9, -17, 1], [4, -3, 1], [-6, -18], [-14, -26]]), "beard", { sh: [5, -3], shade: "beardSh", lw: 2.4 });
-      S.line([[1, -28], [3, -16]], 1.2, "beardLn"); S.line([[16, -28], [16, -19]], 1.2, "beardLn");
+      S.cel(cvSm([[-13, -37, 1], [-2, -35], [10, -37.5], [20, -35], [25.5, -38, 1], [25, -24], [18, -11], [12.5, -2.5, 1], [8.5, -8, 1], [3.5, -2, 1], [-6, -18], [-14, -26]]), "beard", { sh: [5, -3], shade: "beardSh", lw: 2.4 });
+      S.line([[1, -28], [3, -16]], 1.2, "beardLn"); S.line([[14, -28], [11, -14]], 1.2, "beardLn");
     },
     // the moustache, over the mouth
     stache(S) { S.cel(cvSm([[10, -38, 1], [4, -37], [-5, -30, 1], [4, -31], [10, -34, 1], [17, -31], [26, -31, 1], [17, -37]]), "beard", { sh: [2, -2], shade: "beardSh", lw: 1.8 }); },
@@ -14317,7 +14331,7 @@ cvFigReg("odin", {
     K.rim();
     // the raven sits in the body's sprite while it is perched; when it lifts off it is drawn on its own
     const perched = !f._ravenOut && !(P.ravenTo && P.ravenK > 0);
-    K.stack(["body", "skin", perched ? "raven" : f._ravenOut ? null : cvOdinRaven, "head", "face", "stache", "top"]);
+    K.stack(["body", "skin", "leafB", perched ? "raven" : f._ravenOut ? null : cvOdinRaven, "head", "face", "stache", "top"]);
     K.arm(true);
   },
 });
@@ -14366,7 +14380,7 @@ cvFigReg("samurai", {
   face: { x: 9.5, y: -42, s: 1, iris: "iris", brow: 0.2, browUp: 0.6, lid: 0.3, lidCol: "lid", mouth: { k: "line", x: 11, y: -33.5, s: 0.9 },
     extra(S) { S.line([[16, -47], [18.5, -38]], 1.1, "scar"); } },
   mouthPt: [12, -33],
-  arm: { shF: [3, -33], shB: [-13, -32], len: 19, lenB: 14, bendB: "back", r0: 4.2, r1: 3.8, col: "lac",
+  arm: { shF: [3, -31], shB: [-13, -32], len: 19, lenB: 14, bendB: "back", r0: 4.2, r1: 3.8, col: "lac",
     hand: { r: 4.9, col: "skin" }, handB: { r: 4.6, col: "skin", thumb: false } },
   leg: { hipF: [5.5, -23], hipB: [-6, -23], len: 22, draw: (c, K, hip, foot, front) => cvHakama(c, K, hip, foot, front) },
   carve: {
@@ -14375,10 +14389,10 @@ cvFigReg("samurai", {
       S.cel(cvSm([[-13, -51, 1], [-24, -56], [-34, -52], [-44, -57, 1], [-40, -50, 1], [-32, -47], [-22, -50], [-14, -47, 1]]), "red", { sh: [2, -1.5], lw: 2.2 });
       S.cel(cvSm([[-13, -49, 1], [-22, -46], [-30, -40], [-40, -41, 1], [-37, -35, 1], [-27, -36], [-18, -42], [-12, -45, 1]]), "redSh", { sh: [2, -1.5], lw: 2.2 });
     },
-    // the scabbard on the belt, crossing behind
+    // the scabbard low on the belt, crossing behind
     sheath(S) {
-      S.cel(cvCapsule([12, -27], [-36, -15], 2.6, 2.2), "lac", { sh: [1, -1.2], lw: 2.2, hi: [0, 1.6], hiCol: "lacHi" });
-      S.cel(cvCirc(-35, -15.2, 2.6), "gold", { lw: 1.6, sh: 0 });
+      S.cel(cvCapsule([12, -22.5], [-36, -10.5], 2.6, 2.2), "lac", { sh: [1, -1.2], lw: 2.2, hi: [0, 1.6], hiCol: "lacHi" });
+      S.cel(cvCirc(-35, -10.7, 2.6), "gold", { lw: 1.6, sh: 0 });
     },
     // the potato in the lacquered wrap with jade lacing, the headband and its knot, the topknot (the sprout, tied up)
     body(S) {
@@ -14393,28 +14407,28 @@ cvFigReg("samurai", {
       S.line([[-1, -57], [-2, -62]], 3.2, "stem"); S.rect(-4.6, -61.5, 5.4, 2.4, "red");
       S.leaf(-2, -62, 11, -2.1, "leaf"); S.leaf(-2, -62.5, 12, -1.2, "leaf");
     },
-    // the two shoulder plates (sode), two lames each with a jade lace
+    // the two shoulder plates (sode), big, two lames each with a broad jade lace
     plates(S) {
-      for (const [x, y, a, k] of [[-19, -47, 0.8, 0.9], [-6, -46, 0.2, 0.85]]) {
+      for (const [x, y, a, k] of [[-20, -48, 0.8, 1.17], [-7, -47, 0.2, 1.1]]) {
         S.with(x, y, a, k, () => {
           for (let i = 0; i < 2; i++) {
             S.cel([[-7 - i, i * 6], [7 + i, i * 6], [8.5 + i, i * 6 + 7], [-8.5 - i, i * 6 + 7]], "lac", { sh: [2, -1.2], lw: 2 });
-            S.rect(-7.5 - i, i * 6 + 4.4, 15 + 2 * i, 1.8, "jade");
+            S.rect(-7.5 - i, i * 6 + 4, 15 + 2 * i, 2.3, "jade");
           }
         });
       }
     },
     // the hilt out of the sheath, its wrap and guard (only while the blade is sheathed)
     hilt(S) {
-      S.cel(cvCapsule([12, -27], [25, -30.5], 2.4, 2.2), "tsuka", { sh: [1, -1], lw: 2, in() { for (let x = 14; x < 26; x += 3.2) S.line([[x, -31.5], [x + 2.4, -26]], 1.1, "lac"); } });
-      S.cel(cvCirc(12.5, -27.2, 2.2, 4.6, 0.26), "gold", { lw: 1.6, sh: 0 });
+      S.cel(cvCapsule([12, -22.5], [25, -26], 2.4, 2.2), "tsuka", { sh: [1, -1], lw: 2, in() { for (let x = 14; x < 26; x += 3.2) S.line([[x, -27], [x + 2.4, -21.5]], 1.1, "lac"); } });
+      S.cel(cvCirc(12.5, -22.7, 2.2, 4.6, 0.26), "gold", { lw: 1.6, sh: 0 });
     },
   },
   draw(K) {
     const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
     const out = f.state === "attack" && f.move && f.move.limb !== "leg";   // the blade is drawn
-    // at rest the front hand sits on the hilt
-    if (K.rest && !out) K.hF = K.pt(19, -28.5);
+    // at rest the front hand sits on the hilt, low on the belt (under the mouth)
+    if (K.rest && !out) K.hF = K.pt(19, -23.5);
     // the tails: they hang at rest, stream back on the run, lift as he falls and snap on a swing (a spring about the knot)
     const run = clamp(Math.abs(f.vx + f.kbx), 0, 12), snap = out && P.hv ? 0.25 : out ? 0.12 : 0;
     const ang = K.spring("tails", -0.42 + run * 0.05 + (air ? clamp(f.vy * 0.06, -0.5, 0.55) : 0) + snap + Math.sin(tk * 0.07 + f.slot) * 0.05, 0.3);
@@ -14435,28 +14449,43 @@ function cvSamKatana(c, K) {
   cvKatC = K.C;
   try { katana(c, P, K.f, rot(P.sh, P.hip, P.lean), K.f.pal); } finally { cvKatC = null; }
 }
-// a hakama leg: a wide trouser leg from the hip to the floor, flared, a darker back fold, a sandal on the floor
+// a hakama leg: a wide trouser leg from the hip to the floor, flared, a darker back fold, a sandal on the floor. On the floor the hem lies
+// flat and the two legs splay apart (a wedge with a split between the hems, inside the hurtbox but for 3 units a side); a leg off the
+// floor (a kick, a jump) hangs straight from the hip, its hem across it (the splay eases in and out: a spring)
 function cvHakama(c, K, a, ft, front) {
-  const C = K.C, col = front ? C.hak : C.hakB, sh = cvShC(C, front ? "hak" : "hakB");
-  const dx = ft[0] - a[0], dy = ft[1] - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, nx = uy, ny = -ux;   // u: down the leg, n: to its front
-  const t0 = 7.2, t1 = K.rest ? 10.5 : 9.5, bx = ft[0] + (front ? 2.5 : -2.5) * (K.rest ? 1 : 0), by = ft[1];
-  // the leg grown by g all round (its ink under it, then the cloth inside the line)
-  const leg = (g) => {
-    const ax = a[0] - ux * g, ay = a[1] - uy * g, fx = bx + ux * g, fy = by + uy * g;
-    c.beginPath(); c.moveTo(ax - nx * (t0 + g), ay - ny * (t0 + g)); c.lineTo(ax + nx * (t0 + g), ay + ny * (t0 + g));
-    c.lineTo(fx + nx * (t1 + g), fy + ny * (t1 + g)); c.lineTo(fx - nx * (t1 + g), fy - ny * (t1 + g)); c.closePath();
+  const C = K.C, f = K.f, col = front ? C.hak : C.hakB, sh = cvShC(C, front ? "hak" : "hakB"), side = front ? 1 : -1;
+  const flat = f.grounded && ft[1] > -2, sp = K.spring(front ? "hakF" : "hakB", flat && f.state !== "run" ? 1 : 0, 0.35);
+  const t0 = 7.2, t1 = 8 + (1 - sp) * 1.5, bx = ft[0] + side * (front ? 4.6 : 6.4) * sp, by = ft[1];
+  const dx = bx - a[0], dy = by - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, nx = -uy, ny = ux;   // u: down the leg, n: to its front
+  const hx = flat ? 1 : -nx, hy = flat ? 0 : -ny;   // along the hem, to the front
+  // the leg's corners (top back, top front, hem front, hem back), and the quad grown by g all round (mitred)
+  const Q = [[a[0] + nx * t0, a[1] + ny * t0], [a[0] - nx * t0, a[1] - ny * t0], [bx + hx * t1, by + hy * t1], [bx - hx * t1, by - hy * t1]];
+  if ((Q[1][0] - Q[0][0]) * (Q[2][1] - Q[1][1]) - (Q[1][1] - Q[0][1]) * (Q[2][0] - Q[1][0]) < 0) Q.reverse();
+  const grow = (g) => {
+    const o = [];
+    for (let i = 0; i < 4; i++) {
+      const p0 = Q[(i + 3) % 4], p1 = Q[i], p2 = Q[(i + 1) % 4];
+      let ax = p1[0] - p0[0], ay = p1[1] - p0[1], la = Math.hypot(ax, ay) || 1, bx2 = p2[0] - p1[0], by2 = p2[1] - p1[1], lb = Math.hypot(bx2, by2) || 1;
+      const n1 = [ay / la, -ax / la], n2 = [by2 / lb, -bx2 / lb], k = g / Math.max(0.3, 1 + n1[0] * n2[0] + n1[1] * n2[1]);
+      o.push([p1[0] + (n1[0] + n2[0]) * k, p1[1] + (n1[1] + n2[1]) * k]);
+    }
+    c.beginPath(); c.moveTo(o[0][0], o[0][1]); for (let i = 1; i < 4; i++) c.lineTo(o[i][0], o[i][1]); c.closePath();
+    return o;
   };
-  leg(1.3); c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
-  leg(-1.3); c.fillStyle = col; c.fill();
+  grow(1.3); c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  const I = grow(-1.3); c.fillStyle = col; c.fill();
+  // the corners of the cloth by name: TB top back, TF top front, HF hem front, HB hem back
+  const by0 = (p) => p[0] * hx + p[1] * hy, srt = I.slice().sort((p, q) => (p[0] - a[0]) * ux + (p[1] - a[1]) * uy - ((q[0] - a[0]) * ux + (q[1] - a[1]) * uy));
+  const top = srt.slice(0, 2).sort((p, q) => by0(p) - by0(q)), hem = srt.slice(2).sort((p, q) => by0(p) - by0(q));
+  const [TB, TF] = top, [HB, HF] = hem, L = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
   if (sh !== col) {   // the shadow on the back third
-    const q1 = [a[0] - nx * 5.9 + ux * 1.3, a[1] - ny * 5.9 + uy * 1.3], q4 = [bx - nx * (t1 - 1.3) - ux * 1.3, by - ny * (t1 - 1.3) - uy * 1.3];
-    c.beginPath(); c.moveTo(q1[0], q1[1]); c.lineTo(q1[0] + nx * 4, q1[1] + ny * 4); c.lineTo(q4[0] + nx * 6, q4[1] + ny * 6); c.lineTo(q4[0], q4[1]); c.closePath();
-    c.fillStyle = sh; c.fill();
+    const p = L(TB, TF, 0.36), q = L(HB, HF, 0.3);
+    c.beginPath(); c.moveTo(TB[0], TB[1]); c.lineTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.lineTo(HB[0], HB[1]); c.closePath(); c.fillStyle = sh; c.fill();
   }
   // the pleat, and the sandal on the floor edge
-  c.beginPath(); cvSegAdd(c, a[0] + nx * 1.5 + ux * 5, a[1] + ny * 1.5 + uy * 5, bx + nx * 3 - ux * 2, by + ny * 3 - uy * 2, 1.2); c.fillStyle = cvShC(C, "hakB"); c.fill();
-  const p3 = [bx + nx * t1, by + ny * t1], p4 = [bx - nx * t1, by - ny * t1];
-  c.beginPath(); cvSegAdd(c, p4[0] + nx * 1.5 - ux * 1.1, p4[1] + ny * 1.5 - uy * 1.1, p3[0] - nx * 1.5 - ux * 1.1, p3[1] - ny * 1.5 - uy * 1.1, 2.4); c.fillStyle = CV_INK; c.fill();
+  const p0 = L(L(TB, TF, 0.6), L(HB, HF, 0.62), 0.25), p1 = L(L(TB, TF, 0.6), L(HB, HF, 0.62), 0.92);
+  c.beginPath(); cvSegAdd(c, p0[0], p0[1], p1[0], p1[1], 1.2); c.fillStyle = cvShC(C, "hakB"); c.fill();
+  c.beginPath(); cvSegAdd(c, HB[0] + hx * 0.4 - ux * 0.2, HB[1] + hy * 0.4 - uy * 0.2, HF[0] - hx * 0.4 - ux * 0.2, HF[1] - hy * 0.4 - uy * 0.2, 2.4); c.fillStyle = CV_INK; c.fill();
 }
 /* ===================== Carved Ink: Wizard (ui/carve.js has the kit and the API) =====================
    A tall A: the tallest and narrowest potato under a hat as big as he is (the cone bent back, a gold star charm on its tip, the sprout on
@@ -14505,17 +14534,17 @@ cvFigReg("wizard", {
       S.line([[-4, -34.5], [2, -29.5], [8, -34]], 2.2, "gold");
       S.cel(cvCirc(11, -23.8, 2.6, 2.4), "gold", { sh: [1, -1], lw: 1.6 });   // the knot
     },
-    // the white moustache, over the mouth
+    // the white moustache, under the nose (drawn over the near sleeve, which crosses the face at rest)
     stache(S) { S.cel(cvSm([[7, -39, 1], [2, -38], [-4, -32, 1], [3, -33.5], [7, -36, 1], [11, -33.5], [18, -32, 1], [12, -38]]), "brow", { sh: [1.5, -1.5], shade: "browSh", lw: 1.6 }); },
     // the hat: the cone bent back with the star charm on its tip, the gold band, the wide brim, the sprout growing out of its front
     hat(S) { S.with(0, -2, 0, 1, () => {
-      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-15, -90], [-31, -100, 1], [-8, -98], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
-      S.line([[-10, -84], [-15, -90], [-22, -95]], 1.3, "robe/sh.5");
+      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
+      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "robe/sh.5");
       S.cel(cvSm([[-13, -61, 1], [-12.4, -67], [1, -65.5], [13.4, -67], [15, -61, 1], [1, -59]]), "gold", { sh: [3, -2], lw: 1.8 });
       S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "robe", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "robe/lt.25" });
       S.line([[-2.5, -64], [-3.2, -68], [-2.4, -71.5]], 2.2, "stem");
       S.leaf(-2.6, -71, 8, -2.5, "leaf"); S.leaf(-2.4, -71.5, 9, -0.6, "leaf");
-      S.line([[-31, -100], [-33, -93]], 1.2); S.star(-33, -90, 3.8, "gold", 1.2);
+      S.line([[-34.4, -93.5], [-34.5, -86.5]], 1.2); S.star(-34, -83.5, 3.8, "gold", 1.2);
     }); },
     // the staff along +x (the hand at 0): the shaft 34 back and 33 forward, a leather grip, the gold crescent that cradles the crystal at 40
     staff(S) {
@@ -14527,8 +14556,8 @@ cvFigReg("wizard", {
     },
     // the crystal: a long diamond (its long axis along the staff), a darker facet and a light one
     crystal(S) {
-      S.cel([[-9.5, 0], [0, -5], [9.5, 0], [0, 5]], "cry", { lw: 2, sh: [2, 3], shade: "cryD", hi: [-2.5, -2], hiCol: "cryHi" });
-      S.line([[-9.5, 0], [9.5, 0]], 0.8, "cryD");
+      S.cel([[-11.9, 0], [0, -6.3], [11.9, 0], [0, 6.3]], "cry", { lw: 2.2, sh: [2.5, 3.8], shade: "cryD", hi: [-3, -2.5], hiCol: "cryHi" });
+      S.line([[-11.9, 0], [11.9, 0]], 0.9, "cryD");
     },
   },
   draw(K) {
@@ -14544,10 +14573,11 @@ cvFigReg("wizard", {
     cvWizSkirt(K);
     // the hat at rest goes into the body's sprite; moving, it is a stack of its own
     const hR = !sw && !sq;
-    K.stack(["body", "skin", "robe", "face", "stache", hR ? "hat" : null, hR ? "top" : null].filter(Boolean));
+    K.stack(["body", "skin", "robe", "face", hR ? "hat" : null, hR ? "top" : null].filter(Boolean));
     if (!hR) { K.stack(["hat"], (c) => { c.translate(1, -59); c.transform(1, 0, -sw, 1 - sq, 0, 0); c.translate(-1, 59); }, sw + "," + sq); if (K.skinPass) K.skinTop(); }
     cvWizStaff(K);
     K.arm(true, cvWizCuffF);
+    K.stack(["stache"]);
   },
 });
 // a band along an arc as a polygon (the crescent that cradles the crystal)
@@ -14611,12 +14641,12 @@ function cvWizStaff(K) {
   const bob = Math.sin(tk * 0.08 + f.slot) * 1.2, turn = 0.45 + 0.55 * Math.abs(Math.cos(tk * 0.035 + f.slot));
   c.save(); c.translate(hx, hy); c.rotate(a);
   K.draw("staff");
-  c.translate(42 + bob, 0);
-  if (!K.flash) { c.globalAlpha *= 0.3; c.beginPath(); cvCircAdd(c, 0, 0, 9 * gf); c.fillStyle = C.cryHi; c.fill(); c.globalAlpha /= 0.3; }
+  c.translate(44 + bob, 0);
+  if (!K.flash) { c.globalAlpha *= 0.3; c.beginPath(); cvCircAdd(c, 0, 0, 11 * gf); c.fillStyle = C.cryHi; c.fill(); c.globalAlpha /= 0.3; }
   c.save(); c.scale(cf, cf * turn); K.draw("crystal"); c.restore();
   if (!K.flash && (tk + f.slot * 17) % 90 < 30) {   // a twinkle beside the crystal now and then
     const q = ((tk + f.slot * 17) % 90) / 30, r = 3.2 * Math.sin(Math.PI * q);
-    c.beginPath(); cvWizStar(c, 6, -8, r); cvWizStar(c, -7, 6, r * 0.6); c.fillStyle = C.cryHi; c.fill();
+    c.beginPath(); cvWizStar(c, 7.5, -10, r); cvWizStar(c, -8.5, 7.5, r * 0.6); c.fillStyle = C.cryHi; c.fill();
   }
   c.restore();
 }
@@ -14758,7 +14788,8 @@ cvFigReg("reaper", {
     kraken: { cloak: "#22343a", skin: "#b89a62", soul: "#3ef2c0" }, harvest: { cloak: "#5a3a1c", skin: "#f8cc52", soul: "#ffe08a", steel: "#fff0b0" } },
   pm: { 1: { cloak: "#3a3842", deep: "#1b1a22", soul: "#ffb444", skin: "#f1e8d2" }, 2: { cloak: "#9b5cff", skin: "#34246a", soul: "#ff6ad5", steel: "#f0e0ff" } },
   prim: "cloak",
-  derive(C) { C.band = cvSh(C.steel, 0.45); C.shade = cvMix(C.skin, C.deep, 0.25); C.shadeD = cvMix(C.skin, C.deep, 0.6); C.soulHi = cvMix(C.soul, "#ffffff", 0.7); },
+  // (the face in the hood is dark, towards deep, so the two bright slits carry it)
+  derive(C) { C.band = cvSh(C.steel, 0.45); C.shade = cvMix(C.skin, C.deep, 0.6); C.shadeD = cvMix(C.skin, C.deep, 0.8); C.soulHi = cvMix(C.soul, "#ffffff", 0.7); },
   body: { x: 0, y: -38, rx: 19, ry: 33 },
   face: { x: 8.5, y: -50.5, s: 0.9, mouth: { k: "smirk", x: 9.5, y: -42.5, s: 0.85 } },   // (the slits are cvRprFace's; the kit draws the mouth)
   mouthPt: [9.5, -42],
@@ -14968,7 +14999,7 @@ function cvRprBlade(S) {
 /* ===================== Carved Ink: Phoenix (ui/carve.js has the kit and the API) =====================
    A comet: a slim sweet potato tipped forward, all flame behind him: the crest swept back over his head, one big wing, two tail ribbons,
    each in three flame tones (f1 the edge, f2, f3 the hot core) that lag the body (a spring), embers rising off the crest. Thin bird legs
-   with talons, a yellow fist under a feather sleeve, raised brows, an open beak-smile; the sprout sits green in the fire. The wing is
+   with talons, a yellow fist under a feather sleeve (the back arm a wedge of feathers), raised brows, an open beak-smile; the sprout sits green in the fire. The wing is
    driven like the old flameWing (draw-fighters.js): P.flap, P.wingUp, spread in the air. Mockup: redesign/mockups/src/fighters.js
    NEWF.d.phoenix; skins: fx.js skinPal(). */
 const CV_PHX_TAIL = [[-8, -20, 1], [-24, -24], [-44, -12, 1], [-28, -12], [-36, -2, 1], [-20, -8], [-10, -10, 1]];
@@ -14997,8 +15028,8 @@ cvFigReg("phoenix", {
   face: { x: 9, y: -43, s: 1, iris: "iris", brow: -0.28, browUp: 2.4, mouth: { k: "open", x: 10, y: -33.5, s: 0.95 },
     extra(S) { S.add([cvCirc(0.5, -35.5, 3.4, 2), cvCirc(18.5, -36, 2.7, 1.6)], "blush", 1, 0.42); } },
   mouthPt: [13, -33],
-  arm: { shF: [11, -25], shB: [-8, -37], len: 23, lenB: 15, bendB: "back", r0: 4.2, r1: 3.5, col: "f2",
-    hand: { r: 5.2, col: "f3" }, handB: { r: 4.8, col: "f2", thumb: false } },
+  arm: { shF: [11, -25], shB: [-8, -37], len: 23, lenB: 15, bendB: "back", r0: 5, r1: 3, col: "f2",
+    hand: { r: 6.2, col: "f3" }, handB: { r: 4.8, col: "f2", thumb: false } },
   leg: { hipF: [6, -16], hipB: [-4, -16], len: 14, draw: (c, K, hip, foot, front) => cvPhxLeg(c, K, hip, foot, front) },
   carve: {
     // the two tail ribbons, low behind
@@ -15015,6 +15046,12 @@ cvFigReg("phoenix", {
       } });
       S.line([[12, -55], [11.5, -60.3], [12.5, -63.3]], 2.4, "stem");
       S.leaf(12, -62.7, 8.9, -2.5, "leaf"); S.leaf(12, -63.2, 10, -0.6, "leaf");
+    },
+    // the back arm: a small wedge of flame feathers, shoulder to hand (carved for an arm 20 units long, along +x)
+    wingArm(S) {
+      const P = cvSm([[-3, -5, 1], [9, -4.2], [22, -0.5, 1], [16.5, 2.6], [15.5, 8, 1], [11, 3.6], [7.5, 9.5, 1], [4, 4], [-1.5, 7.5, 1], [-3.5, 3]]);
+      S.cel(P, "f2", { sh: 0, lw: 2 });
+      S.with(6, 0.5, 0, 0.5, () => S.fill(cvShift(P, -6, -0.5), "f3"));
     },
     // the feather sleeve: three feathers hanging under the front arm, swept back (carved for an arm 20 units long, along +x)
     sleeve(S) {
@@ -15036,7 +15073,7 @@ cvFigReg("phoenix", {
     K.stack(["wing"], (c) => { c.translate(-6, -42); c.rotate(wq); c.scale(ws, ws); c.translate(6, 42); }, wq.toFixed(2) + "," + ws);
     // in the air the front wing-arm spreads forward, clear of the face (the rig raises it over the head)
     if (K.rest && air) K.hF = [P.hF[0] + 12, P.hF[1] + 9];
-    K.arm(false);
+    cvPhxWingArm(K);
     K.leg(false); K.leg(true);
     K.rim();
     K.stack(["crest"], (c) => { c.translate(-4, -54); c.rotate(lq * 0.8); c.translate(4, 54); }, lq.toFixed(2));
@@ -15055,6 +15092,14 @@ function cvPhxEmbers(c, K, lq) {
     c.moveTo(x, y - r * 1.6); c.lineTo(x + r, y); c.lineTo(x, y + r * 1.2); c.lineTo(x - r, y); c.closePath();
   }
   c.fillStyle = K.C.f2; c.fill();
+}
+// the back arm, a wedge of flame feathers from the shoulder to the hand, its feathers hanging down (paths: it turns with the arm)
+function cvPhxWingArm(K) {
+  const A = K.fig.arm, a = K.pt(A.shB[0], A.shB[1]), h = K.hB, dx = h[0] - a[0], dy = h[1] - a[1], d = Math.hypot(dx, dy), c = K.c;
+  const th = Math.atan2(dy, dx), flip = Math.cos(th) < 0 ? -1 : 1;
+  c.save(); c.translate(a[0], a[1]); c.rotate(th); c.scale(clamp(d / 20, 0.55, 1.5), flip);
+  K.draw("wingArm");
+  c.restore();
 }
 // the feather sleeve under the front arm, shoulder to fist (paths: it turns with the arm); it hangs under the arm, or behind it when the
 // arm is raised
@@ -15126,8 +15171,8 @@ cvFigReg("dragon", {
   face: { x: 9.5, y: -43, s: 1, iris: "iris", brow: 0.5, lid: 0.26, lidCol: "lid", browW: 3, browUp: 0,
     mouth: { k: "none", x: 20.5, y: -31, s: 0.9 } },   // (the mouth line and the fang are carved on the jaw; a shout opens it there)
   mouthPt: [27, -32],
-  arm: { shF: [8, -27], shB: [-15, -32], len: 24, lenB: 14, bendB: "back", r0: 5.2, r1: 4.8, col: "skin", colB: "sc",
-    hand: { r: 6.6, col: "sc", thumb: false, k: 1.3, more: (c, K, x, y, front, ang) => cvDrgClaws(c, K, x, y, ang) }, handB: { r: 5.6, col: "sc", thumb: false } },
+  arm: { shF: [8, -27], shB: [-15, -32], len: 24, lenB: 14, bendB: "back", r0: 5.6, r1: 3.4, col: "skin", colB: "sc", colU: "sc",
+    hand: { r: 7.6, col: "sc", thumb: false, k: 1.3, more: (c, K, x, y, front, ang) => cvDrgClaws(c, K, x, y, ang) }, handB: { r: 5.6, col: "sc", thumb: false } },
   leg: { hipF: [10, -14], hipB: [-9, -14], len: 9, draw: (c, K, hip, foot, front) => cvDrgLeg(c, K, hip, foot, front) },
   carve: {
     wingB(S) { cvDrgWing(S, -4, -3, "scB", "memB"); },
@@ -15204,7 +15249,7 @@ cvFigReg("dragon", {
 const CV_DRG_CLAWS = [[4, -5, -0.5], [6.5, -0.5, 0], [4.5, 4, 0.5]].map(([x, y, a]) => cvPos([[-1, -1.8], [4.6, 0], [-1, 1.8]].map(([u, v]) => [x + u * Math.cos(a) - v * Math.sin(a), y + u * Math.sin(a) + v * Math.cos(a)])));
 const CV_DRG_CLAW = cvPath(CV_DRG_CLAWS), CV_DRG_CLAWI = cvPath(CV_DRG_CLAWS.map((p) => cvOffset(p, 1.1)));
 function cvDrgClaws(c, K, x, y, ang) {
-  c.save(); c.translate(x, y); c.rotate(ang);
+  c.save(); c.translate(x, y); c.rotate(ang); c.scale(1.15, 1.15);   // (carved for a fist of radius 6.6)
   c.fillStyle = CV_INK; c.fill(CV_DRG_CLAWI); cvMgInk(c, CV_DRG_CLAWI); c.fillStyle = K.C.horn; c.fill(CV_DRG_CLAW);
   c.restore();
 }

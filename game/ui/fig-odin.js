@@ -1,10 +1,10 @@
 /* ===================== Carved Ink: Odin (ui/carve.js has the kit and the API) =====================
    A boulder: the widest, a square russet under a helm whose wings are his sprout leaves, a forked beard, a floor-length cape that settles
-   late, steel gauntlets 17 units wide, one cold blue eye under a white brow and a patch on the other, the raven on his back shoulder.
+   late, steel gauntlets 18 units wide on a steel cuff, one cold blue eye under a white brow and a patch on the other, the raven on his back shoulder.
    Mockup: redesign/mockups/src/fighters.js NEWF.d.odin; colours of the ten skins: fx.js skinPal(). */
 cvFigReg("odin", {
   pal: { skin: "#e3a45a", steel: "#b9c4d6", cape: "#b8262d", beard: "#f6f1e7", gold: "#ecb53a", fur: "#8a6248", raven: "#2b3052",
-    belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9", eyeR: "#ff5a4a" },
+    belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9" },
   chip: [{}, { cape: "#3d7fbf", steel: "#d3e6f6", gold: "#9fd6ff" }, { cape: "#7a3a1e", steel: "#ecc452", gold: "#fff2b0" },
     { cape: "#3d3d4c", steel: "#6e7289", gold: "#b6bbd6", raven: "#15131f" }],
   won: { scratch: { cape: "#8a1a1a", skin: "#8c4a30", steel: "#5a4a52", gold: "#ff7a2b" },
@@ -22,8 +22,8 @@ cvFigReg("odin", {
   face: { x: 11.5, y: -43, s: 1.05, one: "far", iris: "iris", brow: -0.3, browCol: "beard", browW: 3.2, browUp: 0.6, lid: 0.22, lidCol: "lid",
     mouth: { k: "none", x: 8.5, y: -31, s: 0.85, under: true } },   // (it shows only when he shouts: under the moustache)
   mouthPt: [13, -33],
-  arm: { shF: [15, -27], shB: [-19, -38], len: 26, lenB: 15, bendB: "back", r0: 6, r1: 5.4, col: "skin",
-    hand: { r: 8.6, col: "steel", k: 1.56, thumb: false, more: (c, K, x, y, front, ang) => cvOdinFist(c, K, x, y, ang) }, handB: { r: 8, col: "steel", k: 1.28, thumb: false } },
+  arm: { shF: [15, -27], shB: [-19, -38], len: 26, lenB: 15, bendB: "back", r0: 6, r1: 4, col: "skin", cuff: { len: 6.5, r0: 5.4, r1: 6.4, col: "steel" },
+    hand: { r: 9, col: "steel", k: 1.56, thumb: false, more: (c, K, x, y, front, ang) => cvOdinFist(c, K, x, y, ang) }, handB: { r: 8, col: "steel", k: 1.28, thumb: false } },
   leg: { hipF: [9.9, -14], hipB: [-9.9, -14], len: 10.5, bones: 1, r0: 5.6, r1: 5.2, col: "greave", boot: { s: 1.2, col: "steel" } },
   carve: {
     // the cape hangs from the back of the shoulders to the floor, its hem cut in points
@@ -40,21 +40,24 @@ cvFigReg("odin", {
       } });
       S.cel(cvSm([[-24, -46], [-27, -54], [-19, -57], [-12, -52], [-14, -44], [-20, -41]]), "fur", { sh: [2, -2], lw: 2.2 });
     },
-    // the raven, hunched on the shoulder (its perch (-20, -64)): gold beak, red eye
+    // the raven, hunched on the shoulder (its perch (-20, -64)), standing on its feet a little over the helm (the gap under it reads as a
+    // bird, not a plume): its head up past the helm's line, the gold beak, a white eye
     raven(S) {
-      S.cel(cvSm([[-34, -62, 1], [-26, -70], [-17, -72], [-12, -68], [-6, -67, 1], [-12, -64], [-15, -58], [-24, -56]]), "raven", { sh: [2, -2], lw: 2.2 });
-      S.fill([[-11.5, -68.6], [-5, -67], [-11.5, -65.2]], "gold");
-      S.fill(cvCirc(-15.5, -67.6, 1.3), "eyeR");
+      S.line([[-22, -61], [-22.5, -56.5]], 1.4); S.line([[-17.5, -62], [-17, -57.5]], 1.4);
+      S.cel(cvSm([[-37, -63, 1], [-30, -70], [-21, -75.5], [-15, -77.5], [-10.5, -75.5, 1], [-11.5, -71, 1], [-14, -67], [-19, -62], [-28, -60.5]]), "raven", { sh: [2, -2], lw: 2.2 });
+      S.cel([[-11.5, -76.4], [-4.5, -73.6], [-11.8, -71.8]], "gold", { lw: 1.4, sh: 0 });
+      S.fill(cvCirc(-15, -73.8, 1.5), "eye");
     },
-    // the helm (steel cap, gold rim, nose guard) with the two leaves for wings, the patch and its strap, the forked beard
+    // the helm's far wing (a leaf), behind the raven
+    leafB(S) { S.leaf(-8, -62, 17, -2.05, "leafFar"); },
+    // the helm (steel cap, gold rim, nose guard) with the near leaf for a wing, the patch and its strap, the forked beard
     head(S) {
-      S.leaf(-8, -62, 17, -2.05, "leafFar");
       S.cel(cvSm([[-22, -47, 1], [-23, -60], [0, -70], [22, -61], [22.5, -47, 1], [14, -49], [12, -40, 1], [8.5, -40, 1], [7, -49], [-8, -48]]), "steel", { sh: [7, -5], hi: [-5, 6], hiCol: "steelHi" });
       S.line([[-22, -48.5], [-8, -49.5], [7, -50.5]], 2.6, "gold"); S.line([[14, -50.5], [22, -48.5]], 2.6, "gold");
       S.leaf(9, -63, 19, -2.2, "leaf"); S.cel(cvCirc(9, -61.5, 3.2), "gold", { sh: [1, -1], lw: 1.6 });
       S.fill(cvBlob(1.5, -43, 5, 4.6), "ink"); S.line([[-20, -47], [-6, -44], [3, -43]], 1.8);
-      S.cel(cvSm([[-13, -37, 1], [-2, -35], [10, -37.5], [20, -35], [25.5, -38, 1], [25, -24], [17, -7, 1], [13, -19], [9, -17, 1], [4, -3, 1], [-6, -18], [-14, -26]]), "beard", { sh: [5, -3], shade: "beardSh", lw: 2.4 });
-      S.line([[1, -28], [3, -16]], 1.2, "beardLn"); S.line([[16, -28], [16, -19]], 1.2, "beardLn");
+      S.cel(cvSm([[-13, -37, 1], [-2, -35], [10, -37.5], [20, -35], [25.5, -38, 1], [25, -24], [18, -11], [12.5, -2.5, 1], [8.5, -8, 1], [3.5, -2, 1], [-6, -18], [-14, -26]]), "beard", { sh: [5, -3], shade: "beardSh", lw: 2.4 });
+      S.line([[1, -28], [3, -16]], 1.2, "beardLn"); S.line([[14, -28], [11, -14]], 1.2, "beardLn");
     },
     // the moustache, over the mouth
     stache(S) { S.cel(cvSm([[10, -38, 1], [4, -37], [-5, -30, 1], [4, -31], [10, -34, 1], [17, -31], [26, -31, 1], [17, -37]]), "beard", { sh: [2, -2], shade: "beardSh", lw: 1.8 }); },
@@ -71,7 +74,7 @@ cvFigReg("odin", {
     K.rim();
     // the raven sits in the body's sprite while it is perched; when it lifts off it is drawn on its own
     const perched = !f._ravenOut && !(P.ravenTo && P.ravenK > 0);
-    K.stack(["body", "skin", perched ? "raven" : f._ravenOut ? null : cvOdinRaven, "head", "face", "stache", "top"]);
+    K.stack(["body", "skin", "leafB", perched ? "raven" : f._ravenOut ? null : cvOdinRaven, "head", "face", "stache", "top"]);
     K.arm(true);
   },
 });

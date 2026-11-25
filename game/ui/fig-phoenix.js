@@ -1,7 +1,7 @@
 /* ===================== Carved Ink: Phoenix (ui/carve.js has the kit and the API) =====================
    A comet: a slim sweet potato tipped forward, all flame behind him: the crest swept back over his head, one big wing, two tail ribbons,
    each in three flame tones (f1 the edge, f2, f3 the hot core) that lag the body (a spring), embers rising off the crest. Thin bird legs
-   with talons, a yellow fist under a feather sleeve, raised brows, an open beak-smile; the sprout sits green in the fire. The wing is
+   with talons, a yellow fist under a feather sleeve (the back arm a wedge of feathers), raised brows, an open beak-smile; the sprout sits green in the fire. The wing is
    driven like the old flameWing (draw-fighters.js): P.flap, P.wingUp, spread in the air. Mockup: redesign/mockups/src/fighters.js
    NEWF.d.phoenix; skins: fx.js skinPal(). */
 const CV_PHX_TAIL = [[-8, -20, 1], [-24, -24], [-44, -12, 1], [-28, -12], [-36, -2, 1], [-20, -8], [-10, -10, 1]];
@@ -30,8 +30,8 @@ cvFigReg("phoenix", {
   face: { x: 9, y: -43, s: 1, iris: "iris", brow: -0.28, browUp: 2.4, mouth: { k: "open", x: 10, y: -33.5, s: 0.95 },
     extra(S) { S.add([cvCirc(0.5, -35.5, 3.4, 2), cvCirc(18.5, -36, 2.7, 1.6)], "blush", 1, 0.42); } },
   mouthPt: [13, -33],
-  arm: { shF: [11, -25], shB: [-8, -37], len: 23, lenB: 15, bendB: "back", r0: 4.2, r1: 3.5, col: "f2",
-    hand: { r: 5.2, col: "f3" }, handB: { r: 4.8, col: "f2", thumb: false } },
+  arm: { shF: [11, -25], shB: [-8, -37], len: 23, lenB: 15, bendB: "back", r0: 5, r1: 3, col: "f2",
+    hand: { r: 6.2, col: "f3" }, handB: { r: 4.8, col: "f2", thumb: false } },
   leg: { hipF: [6, -16], hipB: [-4, -16], len: 14, draw: (c, K, hip, foot, front) => cvPhxLeg(c, K, hip, foot, front) },
   carve: {
     // the two tail ribbons, low behind
@@ -48,6 +48,12 @@ cvFigReg("phoenix", {
       } });
       S.line([[12, -55], [11.5, -60.3], [12.5, -63.3]], 2.4, "stem");
       S.leaf(12, -62.7, 8.9, -2.5, "leaf"); S.leaf(12, -63.2, 10, -0.6, "leaf");
+    },
+    // the back arm: a small wedge of flame feathers, shoulder to hand (carved for an arm 20 units long, along +x)
+    wingArm(S) {
+      const P = cvSm([[-3, -5, 1], [9, -4.2], [22, -0.5, 1], [16.5, 2.6], [15.5, 8, 1], [11, 3.6], [7.5, 9.5, 1], [4, 4], [-1.5, 7.5, 1], [-3.5, 3]]);
+      S.cel(P, "f2", { sh: 0, lw: 2 });
+      S.with(6, 0.5, 0, 0.5, () => S.fill(cvShift(P, -6, -0.5), "f3"));
     },
     // the feather sleeve: three feathers hanging under the front arm, swept back (carved for an arm 20 units long, along +x)
     sleeve(S) {
@@ -69,7 +75,7 @@ cvFigReg("phoenix", {
     K.stack(["wing"], (c) => { c.translate(-6, -42); c.rotate(wq); c.scale(ws, ws); c.translate(6, 42); }, wq.toFixed(2) + "," + ws);
     // in the air the front wing-arm spreads forward, clear of the face (the rig raises it over the head)
     if (K.rest && air) K.hF = [P.hF[0] + 12, P.hF[1] + 9];
-    K.arm(false);
+    cvPhxWingArm(K);
     K.leg(false); K.leg(true);
     K.rim();
     K.stack(["crest"], (c) => { c.translate(-4, -54); c.rotate(lq * 0.8); c.translate(4, 54); }, lq.toFixed(2));
@@ -88,6 +94,14 @@ function cvPhxEmbers(c, K, lq) {
     c.moveTo(x, y - r * 1.6); c.lineTo(x + r, y); c.lineTo(x, y + r * 1.2); c.lineTo(x - r, y); c.closePath();
   }
   c.fillStyle = K.C.f2; c.fill();
+}
+// the back arm, a wedge of flame feathers from the shoulder to the hand, its feathers hanging down (paths: it turns with the arm)
+function cvPhxWingArm(K) {
+  const A = K.fig.arm, a = K.pt(A.shB[0], A.shB[1]), h = K.hB, dx = h[0] - a[0], dy = h[1] - a[1], d = Math.hypot(dx, dy), c = K.c;
+  const th = Math.atan2(dy, dx), flip = Math.cos(th) < 0 ? -1 : 1;
+  c.save(); c.translate(a[0], a[1]); c.rotate(th); c.scale(clamp(d / 20, 0.55, 1.5), flip);
+  K.draw("wingArm");
+  c.restore();
 }
 // the feather sleeve under the front arm, shoulder to fist (paths: it turns with the arm); it hangs under the arm, or behind it when the
 // arm is raised

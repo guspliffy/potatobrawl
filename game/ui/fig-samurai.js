@@ -22,7 +22,7 @@ cvFigReg("samurai", {
   face: { x: 9.5, y: -42, s: 1, iris: "iris", brow: 0.2, browUp: 0.6, lid: 0.3, lidCol: "lid", mouth: { k: "line", x: 11, y: -33.5, s: 0.9 },
     extra(S) { S.line([[16, -47], [18.5, -38]], 1.1, "scar"); } },
   mouthPt: [12, -33],
-  arm: { shF: [3, -33], shB: [-13, -32], len: 19, lenB: 14, bendB: "back", r0: 4.2, r1: 3.8, col: "lac",
+  arm: { shF: [3, -31], shB: [-13, -32], len: 19, lenB: 14, bendB: "back", r0: 4.2, r1: 3.8, col: "lac",
     hand: { r: 4.9, col: "skin" }, handB: { r: 4.6, col: "skin", thumb: false } },
   leg: { hipF: [5.5, -23], hipB: [-6, -23], len: 22, draw: (c, K, hip, foot, front) => cvHakama(c, K, hip, foot, front) },
   carve: {
@@ -31,10 +31,10 @@ cvFigReg("samurai", {
       S.cel(cvSm([[-13, -51, 1], [-24, -56], [-34, -52], [-44, -57, 1], [-40, -50, 1], [-32, -47], [-22, -50], [-14, -47, 1]]), "red", { sh: [2, -1.5], lw: 2.2 });
       S.cel(cvSm([[-13, -49, 1], [-22, -46], [-30, -40], [-40, -41, 1], [-37, -35, 1], [-27, -36], [-18, -42], [-12, -45, 1]]), "redSh", { sh: [2, -1.5], lw: 2.2 });
     },
-    // the scabbard on the belt, crossing behind
+    // the scabbard low on the belt, crossing behind
     sheath(S) {
-      S.cel(cvCapsule([12, -27], [-36, -15], 2.6, 2.2), "lac", { sh: [1, -1.2], lw: 2.2, hi: [0, 1.6], hiCol: "lacHi" });
-      S.cel(cvCirc(-35, -15.2, 2.6), "gold", { lw: 1.6, sh: 0 });
+      S.cel(cvCapsule([12, -22.5], [-36, -10.5], 2.6, 2.2), "lac", { sh: [1, -1.2], lw: 2.2, hi: [0, 1.6], hiCol: "lacHi" });
+      S.cel(cvCirc(-35, -10.7, 2.6), "gold", { lw: 1.6, sh: 0 });
     },
     // the potato in the lacquered wrap with jade lacing, the headband and its knot, the topknot (the sprout, tied up)
     body(S) {
@@ -49,28 +49,28 @@ cvFigReg("samurai", {
       S.line([[-1, -57], [-2, -62]], 3.2, "stem"); S.rect(-4.6, -61.5, 5.4, 2.4, "red");
       S.leaf(-2, -62, 11, -2.1, "leaf"); S.leaf(-2, -62.5, 12, -1.2, "leaf");
     },
-    // the two shoulder plates (sode), two lames each with a jade lace
+    // the two shoulder plates (sode), big, two lames each with a broad jade lace
     plates(S) {
-      for (const [x, y, a, k] of [[-19, -47, 0.8, 0.9], [-6, -46, 0.2, 0.85]]) {
+      for (const [x, y, a, k] of [[-20, -48, 0.8, 1.17], [-7, -47, 0.2, 1.1]]) {
         S.with(x, y, a, k, () => {
           for (let i = 0; i < 2; i++) {
             S.cel([[-7 - i, i * 6], [7 + i, i * 6], [8.5 + i, i * 6 + 7], [-8.5 - i, i * 6 + 7]], "lac", { sh: [2, -1.2], lw: 2 });
-            S.rect(-7.5 - i, i * 6 + 4.4, 15 + 2 * i, 1.8, "jade");
+            S.rect(-7.5 - i, i * 6 + 4, 15 + 2 * i, 2.3, "jade");
           }
         });
       }
     },
     // the hilt out of the sheath, its wrap and guard (only while the blade is sheathed)
     hilt(S) {
-      S.cel(cvCapsule([12, -27], [25, -30.5], 2.4, 2.2), "tsuka", { sh: [1, -1], lw: 2, in() { for (let x = 14; x < 26; x += 3.2) S.line([[x, -31.5], [x + 2.4, -26]], 1.1, "lac"); } });
-      S.cel(cvCirc(12.5, -27.2, 2.2, 4.6, 0.26), "gold", { lw: 1.6, sh: 0 });
+      S.cel(cvCapsule([12, -22.5], [25, -26], 2.4, 2.2), "tsuka", { sh: [1, -1], lw: 2, in() { for (let x = 14; x < 26; x += 3.2) S.line([[x, -27], [x + 2.4, -21.5]], 1.1, "lac"); } });
+      S.cel(cvCirc(12.5, -22.7, 2.2, 4.6, 0.26), "gold", { lw: 1.6, sh: 0 });
     },
   },
   draw(K) {
     const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
     const out = f.state === "attack" && f.move && f.move.limb !== "leg";   // the blade is drawn
-    // at rest the front hand sits on the hilt
-    if (K.rest && !out) K.hF = K.pt(19, -28.5);
+    // at rest the front hand sits on the hilt, low on the belt (under the mouth)
+    if (K.rest && !out) K.hF = K.pt(19, -23.5);
     // the tails: they hang at rest, stream back on the run, lift as he falls and snap on a swing (a spring about the knot)
     const run = clamp(Math.abs(f.vx + f.kbx), 0, 12), snap = out && P.hv ? 0.25 : out ? 0.12 : 0;
     const ang = K.spring("tails", -0.42 + run * 0.05 + (air ? clamp(f.vy * 0.06, -0.5, 0.55) : 0) + snap + Math.sin(tk * 0.07 + f.slot) * 0.05, 0.3);
@@ -91,26 +91,41 @@ function cvSamKatana(c, K) {
   cvKatC = K.C;
   try { katana(c, P, K.f, rot(P.sh, P.hip, P.lean), K.f.pal); } finally { cvKatC = null; }
 }
-// a hakama leg: a wide trouser leg from the hip to the floor, flared, a darker back fold, a sandal on the floor
+// a hakama leg: a wide trouser leg from the hip to the floor, flared, a darker back fold, a sandal on the floor. On the floor the hem lies
+// flat and the two legs splay apart (a wedge with a split between the hems, inside the hurtbox but for 3 units a side); a leg off the
+// floor (a kick, a jump) hangs straight from the hip, its hem across it (the splay eases in and out: a spring)
 function cvHakama(c, K, a, ft, front) {
-  const C = K.C, col = front ? C.hak : C.hakB, sh = cvShC(C, front ? "hak" : "hakB");
-  const dx = ft[0] - a[0], dy = ft[1] - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, nx = uy, ny = -ux;   // u: down the leg, n: to its front
-  const t0 = 7.2, t1 = K.rest ? 10.5 : 9.5, bx = ft[0] + (front ? 2.5 : -2.5) * (K.rest ? 1 : 0), by = ft[1];
-  // the leg grown by g all round (its ink under it, then the cloth inside the line)
-  const leg = (g) => {
-    const ax = a[0] - ux * g, ay = a[1] - uy * g, fx = bx + ux * g, fy = by + uy * g;
-    c.beginPath(); c.moveTo(ax - nx * (t0 + g), ay - ny * (t0 + g)); c.lineTo(ax + nx * (t0 + g), ay + ny * (t0 + g));
-    c.lineTo(fx + nx * (t1 + g), fy + ny * (t1 + g)); c.lineTo(fx - nx * (t1 + g), fy - ny * (t1 + g)); c.closePath();
+  const C = K.C, f = K.f, col = front ? C.hak : C.hakB, sh = cvShC(C, front ? "hak" : "hakB"), side = front ? 1 : -1;
+  const flat = f.grounded && ft[1] > -2, sp = K.spring(front ? "hakF" : "hakB", flat && f.state !== "run" ? 1 : 0, 0.35);
+  const t0 = 7.2, t1 = 8 + (1 - sp) * 1.5, bx = ft[0] + side * (front ? 4.6 : 6.4) * sp, by = ft[1];
+  const dx = bx - a[0], dy = by - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, nx = -uy, ny = ux;   // u: down the leg, n: to its front
+  const hx = flat ? 1 : -nx, hy = flat ? 0 : -ny;   // along the hem, to the front
+  // the leg's corners (top back, top front, hem front, hem back), and the quad grown by g all round (mitred)
+  const Q = [[a[0] + nx * t0, a[1] + ny * t0], [a[0] - nx * t0, a[1] - ny * t0], [bx + hx * t1, by + hy * t1], [bx - hx * t1, by - hy * t1]];
+  if ((Q[1][0] - Q[0][0]) * (Q[2][1] - Q[1][1]) - (Q[1][1] - Q[0][1]) * (Q[2][0] - Q[1][0]) < 0) Q.reverse();
+  const grow = (g) => {
+    const o = [];
+    for (let i = 0; i < 4; i++) {
+      const p0 = Q[(i + 3) % 4], p1 = Q[i], p2 = Q[(i + 1) % 4];
+      let ax = p1[0] - p0[0], ay = p1[1] - p0[1], la = Math.hypot(ax, ay) || 1, bx2 = p2[0] - p1[0], by2 = p2[1] - p1[1], lb = Math.hypot(bx2, by2) || 1;
+      const n1 = [ay / la, -ax / la], n2 = [by2 / lb, -bx2 / lb], k = g / Math.max(0.3, 1 + n1[0] * n2[0] + n1[1] * n2[1]);
+      o.push([p1[0] + (n1[0] + n2[0]) * k, p1[1] + (n1[1] + n2[1]) * k]);
+    }
+    c.beginPath(); c.moveTo(o[0][0], o[0][1]); for (let i = 1; i < 4; i++) c.lineTo(o[i][0], o[i][1]); c.closePath();
+    return o;
   };
-  leg(1.3); c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
-  leg(-1.3); c.fillStyle = col; c.fill();
+  grow(1.3); c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  const I = grow(-1.3); c.fillStyle = col; c.fill();
+  // the corners of the cloth by name: TB top back, TF top front, HF hem front, HB hem back
+  const by0 = (p) => p[0] * hx + p[1] * hy, srt = I.slice().sort((p, q) => (p[0] - a[0]) * ux + (p[1] - a[1]) * uy - ((q[0] - a[0]) * ux + (q[1] - a[1]) * uy));
+  const top = srt.slice(0, 2).sort((p, q) => by0(p) - by0(q)), hem = srt.slice(2).sort((p, q) => by0(p) - by0(q));
+  const [TB, TF] = top, [HB, HF] = hem, L = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
   if (sh !== col) {   // the shadow on the back third
-    const q1 = [a[0] - nx * 5.9 + ux * 1.3, a[1] - ny * 5.9 + uy * 1.3], q4 = [bx - nx * (t1 - 1.3) - ux * 1.3, by - ny * (t1 - 1.3) - uy * 1.3];
-    c.beginPath(); c.moveTo(q1[0], q1[1]); c.lineTo(q1[0] + nx * 4, q1[1] + ny * 4); c.lineTo(q4[0] + nx * 6, q4[1] + ny * 6); c.lineTo(q4[0], q4[1]); c.closePath();
-    c.fillStyle = sh; c.fill();
+    const p = L(TB, TF, 0.36), q = L(HB, HF, 0.3);
+    c.beginPath(); c.moveTo(TB[0], TB[1]); c.lineTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.lineTo(HB[0], HB[1]); c.closePath(); c.fillStyle = sh; c.fill();
   }
   // the pleat, and the sandal on the floor edge
-  c.beginPath(); cvSegAdd(c, a[0] + nx * 1.5 + ux * 5, a[1] + ny * 1.5 + uy * 5, bx + nx * 3 - ux * 2, by + ny * 3 - uy * 2, 1.2); c.fillStyle = cvShC(C, "hakB"); c.fill();
-  const p3 = [bx + nx * t1, by + ny * t1], p4 = [bx - nx * t1, by - ny * t1];
-  c.beginPath(); cvSegAdd(c, p4[0] + nx * 1.5 - ux * 1.1, p4[1] + ny * 1.5 - uy * 1.1, p3[0] - nx * 1.5 - ux * 1.1, p3[1] - ny * 1.5 - uy * 1.1, 2.4); c.fillStyle = CV_INK; c.fill();
+  const p0 = L(L(TB, TF, 0.6), L(HB, HF, 0.62), 0.25), p1 = L(L(TB, TF, 0.6), L(HB, HF, 0.62), 0.92);
+  c.beginPath(); cvSegAdd(c, p0[0], p0[1], p1[0], p1[1], 1.2); c.fillStyle = cvShC(C, "hakB"); c.fill();
+  c.beginPath(); cvSegAdd(c, HB[0] + hx * 0.4 - ux * 0.2, HB[1] + hy * 0.4 - uy * 0.2, HF[0] - hx * 0.4 - ux * 0.2, HF[1] - hy * 0.4 - uy * 0.2, 2.4); c.fillStyle = CV_INK; c.fill();
 }
