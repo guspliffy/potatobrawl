@@ -757,17 +757,7 @@ function gunHeld(c, f, P, hand, a, shot, r, limb, flash, back) {
   if (!back) { c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke(); }
 }
 // the muzzle flash, in the pistol's own frame (x along the barrel): a white core in a four-point star, k frames old
-function gunFlash(c, x, y, k, s, gold) {
-  const q = 1 - k / 3;
-  if (q <= 0) return;
-  c.save(); c.translate(x, y); c.scale(s * (0.7 + 0.5 * q), s * (0.7 + 0.5 * q));
-  c.globalAlpha = q;
-  c.fillStyle = gold ? "#ffcf3d" : "#ffb347";
-  c.beginPath(); c.moveTo(-2, -5); c.lineTo(5, -2.5); c.lineTo(17, 0); c.lineTo(5, 2.5); c.lineTo(-2, 5); c.lineTo(1, 0); c.closePath(); c.fill();
-  c.beginPath(); c.moveTo(3, -9); c.lineTo(6, 0); c.lineTo(3, 9); c.lineTo(8, 0); c.closePath(); c.fill();
-  c.fillStyle = gold ? "#fff6c8" : "#fff4d8"; c.beginPath(); c.ellipse(4, 0, 5, 2.6, 0, 0, Math.PI * 2); c.fill();
-  c.restore();
-}
+function gunFlash(c, x, y, k, s, gold) { hkGunFlash(c, x, y, k, s, gold); }   // the kit's muzzle star (ui/hk-gunslinger.js)
 // neckerchief, leather vest, belt and the holster on the front hip, over the potato (inside the body's lean)
 function gunOutfit(c, f, P, pal, flash) {
   const { rx, ry, cy } = P, hx = P.head[0], lvl = skinLvl(f);
@@ -915,11 +905,8 @@ function scythe(c, f, P, RC, limb, lw) {
   c.fillStyle = limb; c.beginPath(); c.arc(hx, hy, lw, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();   // the fist over the handle
 }
 // a swing trail: the blade tip's path as a pale crescent (tapered at both ends), cheap: one dark wash, the pale body, a white core
-function scyTrail(c, pts, n, wmax, a) {
-  if (a <= 0 || n < 2) return;
-  c.globalAlpha = 0.35 * a; c.fillStyle = "rgba(20,15,30,0.9)"; brush(c, pts, wmax * 1.3 + 2, n);
-  c.globalAlpha = 0.85 * a; c.fillStyle = "#e6e9f2"; brush(c, pts, wmax, n);
-  c.globalAlpha = a; c.fillStyle = "#ffffff"; brush(c, pts, wmax * 0.38, n);
+function scyTrail(c, pts, n, wmax, a) {   // the kit's: violet edge, mint body, pale core over an ink edge (ui/hk-reaper.js)
+  hkRprTrail(c, pts, n, wmax, a);
   c.globalAlpha = 1;
 }
 // the tip path of a swing: T = { h1, h2, a1, a2, s, k1, k2 } (hand, angle, blade side, foreshortening at the window's start and end); or T.flat = { cx, cy, rf, rb, ry, t1, t2 }
@@ -950,9 +937,9 @@ function reapReach(c, f, P, tk) {
       inn.push(flat ? [cx + ca * (rx - d * 0.6), cy + sa * ry - d] : [cx + ca * (rx - d), cy + sa * (ry - d)]);
     }
     c.beginPath(); c.moveTo(o[0][0], o[0][1]); for (const p of o) c.lineTo(p[0], p[1]); for (let i = inn.length - 1; i >= 0; i--) c.lineTo(inn[i][0], inn[i][1]); c.closePath();
-    c.globalAlpha = (0.3 + 0.55 * q) * pulse; c.fillStyle = "#ffffff"; c.fill();
-    c.globalAlpha = 0.25 + 0.3 * q; c.strokeStyle = "rgba(20,15,30,0.6)"; c.lineWidth = 1; c.stroke();
-    if (full) { c.globalAlpha = 1; const m = o[7]; star4(c, m[0], m[1], 5 + 2 * pulse, "#ffffff"); }   // full charge: a star at the far point of the reach
+    c.globalAlpha = (0.35 + 0.55 * q) * pulse; c.fillStyle = HK_KIT.reaper.cols[1]; c.fill();   // the kit's mint over an ink edge (ui/hk-reaper.js)
+    c.globalAlpha = 0.45 + 0.4 * q; c.strokeStyle = HK_INK; c.lineWidth = 1.2; c.stroke();
+    if (full) { c.globalAlpha = 1; const m = o[7]; hkSpark(c, m[0], m[1], 5 + 2 * pulse, HK_KIT.reaper, 1, 0, 3, 0); }   // full charge: the kit's spark at the far point of the reach
   }
   c.restore();
 }
@@ -1057,8 +1044,11 @@ function reaperPose(f, P, m, mid, phase, k, w, leg, tor, set) {
 }
 // the trail of a light: the tip's arc, or a thrust streak behind the poking end (butt or handle head)
 function reapLightTrail(c, f, P) {
-  const R = P.reapT;
+  const R = P.reapT, m = f.move;
   if (!R) return;
+  const spec = f.mid === "spec" && m && f.state === "attack";
+  if (spec && f.mt > m.startup && f.mt <= m.startup + m.active) return;   // Harvest's spin: one closed ring behind the fighters instead (hkRprHarvest, ui/hk-reaper.js)
+  if (spec) { scyTrail(c, scyPts(R.T, P.w, 14), 14, R.wmax * 1.8, R.a); return; }   // Last Rites: the hook up, nearly twice as wide
   let pts;
   if (R.T.pt === "butt" || R.T.pt === "head") {
     const d = R.T.pt === "butt" ? -P.w * SCY.butt : P.w * SCY.head, e = (h, a) => [h[0] + Math.cos(a) * d, h[1] + Math.sin(a) * d];
@@ -1616,10 +1606,11 @@ const HEAVY_LOOK = {
         P.sheath = X.phase === 0 ? (X.mt >= X.startup ? 0.5 : 1) : X.phase === 1 ? 0 : clamp((X.k - 0.3) / 0.4, 0, 1);
         P.glintAt = "katana";
         X.trail = { line: [[10, X.ty + 2], [94, X.ty + 2]] };
+        if (X.phase === 1 && X.age === 0) P.hkHide = true;   // the smear frame: the crescent stands in for the blade (ui/fig-samurai.js)
       },
-      fx(c, f, P, hv, tk) { inkStroke(c, f, lpts(hv.trail.line[0], hv.trail.line[1], 18), hv, 13, 8); if (hv.phase === 1 && hv.age <= 1) { c.globalAlpha = 0.7; c.strokeStyle = "#ffffff"; c.lineWidth = 3; c.beginPath(); c.moveTo(hv.trail.line[0][0], hv.trail.line[0][1] - 1); c.lineTo(hv.trail.line[1][0], hv.trail.line[1][1] - 1); c.stroke(); } },
-      swing(f) { for (let i = 0; i < 3; i++) addFx({ k: "petal", x: f.x + f.facing * frand(20, 60), y: f.y - frand(25, 45), vx: f.facing * frand(1, 3), vy: frand(-1, 0.2), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: mix(f.pal.accent, "#ffb7c9", 0.6), r: frand(2.2, 3), t: 0, life: 30, g: 0.03, damp: 0.96 }); },
-      hit(att, e) { addFx({ k: "flashline", x1: att.x, x2: e.x + att.facing * 40, y: e.y, col: att.pal.accent, t: 0, life: 14 }); },
+      // (the Samurai's smears are drawn behind the fighters: UV_BACK.samurai, ui/hk-samurai.js)
+      swing(f) { for (let i = 0; i < 3; i++) addFx({ k: "petal", x: f.x + f.facing * frand(20, 60), y: f.y - frand(25, 45), vx: f.facing * frand(1, 3), vy: frand(-1, 0.2), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: HK_SAM_PETAL[i % 3], r: frand(2.2, 3), t: 0, life: 30, g: 0.03, damp: 0.96 }); },
+      hit(att, e) { hkSamAdd({ sub: "samcut", owner: att.slot, x: e.x, y: e.y, ang: -0.42 * att.facing, len: 66, w: 4.6, life: 16 }); },   // a straight cut on contact
     },
     // crouch, then the blade sweeps from hip to overhead in a tall ink arc with a petal burst
     hUp: {
@@ -1636,9 +1627,8 @@ const HEAVY_LOOK = {
         X.trail = { h1, h2, a1: 0.5, a2: -2.75 };
         P.glintAt = "katana";
       },
-      fx(c, f, P, hv, tk) { inkArc(c, f, P, hv, 11); petals(c, f, hv, tk, 9); },
-      swing(f) { for (let i = 0; i < 5; i++) addFx({ k: "petal", x: f.x + f.facing * frand(0, 30), y: f.y - frand(60, 85), vx: f.facing * frand(-1, 2), vy: frand(-2, -0.4), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: mix(f.pal.accent, "#ffb7c9", 0.6), r: frand(2.2, 3.2), t: 0, life: 34, g: 0.04, damp: 0.96 }); },
-      hit(att, e) { for (let i = 0; i < 6; i++) addFx({ k: "petal", x: e.x, y: e.y, vx: frand(-3, 3), vy: frand(-3, 0), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: mix(att.pal.accent, "#ffb7c9", 0.6), r: frand(2.4, 3.4), t: 0, life: 30, g: 0.05, damp: 0.95 }); },
+      swing(f) { for (let i = 0; i < 5; i++) addFx({ k: "petal", x: f.x + f.facing * frand(0, 30), y: f.y - frand(60, 85), vx: f.facing * frand(-1, 2), vy: frand(-2, -0.4), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: HK_SAM_PETAL[i % 3], r: frand(2.2, 3.2), t: 0, life: 34, g: 0.04, damp: 0.96 }); },
+      hit(att, e) { for (let i = 0; i < 6; i++) addFx({ k: "petal", x: e.x, y: e.y, vx: frand(-3, 3), vy: frand(-3, 0), rot: frand(0, 6), vr: frand(-0.2, 0.2), col: HK_SAM_PETAL[i % 3], r: frand(2.4, 3.4), t: 0, life: 30, g: 0.05, damp: 0.95 }); },
     },
     // the spin stays; the blade is held straight out and an ink ring sweeps the floor
     hDown: {
@@ -1653,11 +1643,6 @@ const HEAVY_LOOK = {
         P.holdAng = X.phase === 2 ? mixv(0, -0.8, ease(X.k)) : 0;
         if (X.phase === 0) { P.holdAng = mixv(-0.8, 0, X.wk); X.hF = hpath(X, X.hF, X.hF, X.hF); }
         P.glintAt = "katana";
-      },
-      fx(c, f, P, hv, tk) {
-        // the ink ring lies flat on the floor, so undo the body spin
-        if (P.spin) { c.translate(0, -P.h * 0.5); c.rotate(-P.spin); c.translate(0, P.h * 0.5); }
-        dustArcs(c, f, P, hv, 60, "rgba(20,15,30,0.92)", f.pal.accent, true);
       },
       swing(f) { groundDust(f, [44, -44], 3); },
     },
@@ -1674,7 +1659,6 @@ const HEAVY_LOOK = {
         X.trail = { h1, h2, a1: -1.55, a2: 0.35 };
         P.glintAt = "katana";
       },
-      fx(c, f, P, hv, tk) { inkArc(c, f, P, hv, 10); },
     },
   },
 
@@ -1690,9 +1674,9 @@ const HEAVY_LOOK = {
         if (X.phase === 0) { X.fF = [w * 0.3, 0]; X.fB = [-w * 0.3, 0]; }
         P.lean = hpath(X, 0, -0.25, 0.3);
         P.glintAt = [-w * 0.5, -leg - tor * 0.62];
+        X.replace = true;   // the smear is the kit's, behind the fighters (UV_BACK.odin, ui/hk-odin.js)
       },
-      fx(c, f, P, hv, tk) { shockArcs(c, f, hv, "#bfe3ff"); runeHit(c, f, hv, hv.tx + hv.b.r * 0.55, hv.ty, 0); },
-      hit(att, e) { for (let i = 0; i < 6; i++) addFx({ k: "puff", x: e.x, y: e.y, vx: frand(-2.5, 2.5), vy: frand(-2, 0), r: frand(3, 5), t: 0, life: 24, col: "#dfeeff" }); hxAdd(att, e, { sub: "rune", which: 0, col: "#8fc8ff", life: 14 }); },
+      hit(att, e) { hkSamAdd({ sub: "odnring", owner: att.slot, x: e.x, y: e.y, r0: 14, r1: 50, life: 16 }); },   // a rune ring opens on the hit
     },
     // an uppercut with the raven lifting off his shoulder
     hUp: {
@@ -1705,10 +1689,10 @@ const HEAVY_LOOK = {
         P.ravenTo = [X.hF[0] - 6, X.hF[1] - 20];
         P.ravenK = X.phase === 0 ? (X.mt >= X.startup ? 0.3 : 0.05 * X.wk) : X.phase === 1 ? 1 : 1 - ease(clamp(X.k * 1.5, 0, 1));
         P.glintAt = [-w * 0.15, -leg - tor * 0.12];
+        X.replace = true;
       },
-      fx(c, f, P, hv, tk) { runeHit(c, f, hv, 4, hv.b ? hv.b.y - 14 : -98, 2); },
       swing(f) { for (let i = 0; i < 4; i++) addFx({ k: "feather", x: f.x - f.facing * 12 + frand(-6, 6), y: f.y - f.s.h * 0.85, vx: frand(-1, 1.5) * f.facing, vy: frand(-2.4, -0.8), rot: frand(0, 6), vr: frand(-0.15, 0.15), t: 0, life: 50, g: 0.05, damp: 0.95 }); },
-      hit(att, e) { for (let i = 0; i < 4; i++) addFx({ k: "feather", x: e.x, y: e.y, vx: frand(-3, 3), vy: frand(-3, 0), rot: frand(0, 6), vr: frand(-0.15, 0.15), t: 0, life: 42, g: 0.06, damp: 0.95 }); hxAdd(att, e, { sub: "rune", which: 2, col: "#8fc8ff", life: 14 }); },
+      hit(att, e) { for (let i = 0; i < 4; i++) addFx({ k: "feather", x: e.x, y: e.y, vx: frand(-3, 3), vy: frand(-3, 0), rot: frand(0, 6), vr: frand(-0.15, 0.15), t: 0, life: 42, g: 0.06, damp: 0.95 }); hkSamAdd({ sub: "odnring", owner: att.slot, x: e.x, y: e.y, r0: 12, r1: 44, life: 16 }); },
     },
     // both fists driven into the floor; shock ring plus a rune ring
     hDown: {
@@ -1721,15 +1705,11 @@ const HEAVY_LOOK = {
         X.fF = [w * 0.38, 0]; X.fB = [-w * 0.36, 0];
         P.lean = hpath(X, 0, -0.12, 0.34);
         P.glintAt = [w * 0.3, -h * 0.98];
-      },
-      fx(c, f, P, hv, tk) {
-        const age = Math.max(0, hv.age + (hv.phase === 0 ? 0 : 1)), a = 1 - age / 16;
-        for (const sx of [1, -1]) gring(c, sx * 40, -4, 12 + age * 4.2, a, "#e8f2ff");
-        if (hv.phase > 0) { c.globalAlpha = a; for (const sx of [1, -1]) rune(c, sx * 40, -22 - age * 0.4, 9, sx > 0 ? 3 : 1, "#bfe3ff", 2.2); }
+        X.replace = true;
       },
       swing(f) {
-        addFx({ k: "shock", x: f.x, y: f.y, t: 0, life: 18 }); dust(f.x, f.y, 8, 60);
-        addFx({ k: "runering", x: f.x, y: f.y, col: "#bfe3ff", t: 0, life: 36, r: f.s.w * 1.2 });
+        dust(f.x, f.y, 8, 60);
+        hkSamAdd({ sub: "odnring", owner: f.slot, x: f.x, y: f.y - 2, r0: 16, r1: f.s.w * 1.9, ry: 0.26, life: 30 });   // the rune ring on the floor (ui/hk-odin.js)
       },
     },
     // both fists overhead, then hammered down in front
@@ -1743,9 +1723,9 @@ const HEAVY_LOOK = {
         P.glintAt = [w * 0.12, -h - 16];
         const sh = [w * 0.38, -leg - tor * 0.7];
         X.trail = { h1: sh, h2: sh, a1: -1.75, a2: 0.15, L: 56 };
+        X.replace = true;
       },
-      fx(c, f, P, hv, tk) { inkArc(c, f, P, hv, 13, f.pal.accent, "#e8f2ff"); runeHit(c, f, hv, hv.tx + hv.b.r * 0.4, hv.ty, 1); },
-      hit(att, e) { hxAdd(att, e, { sub: "rune", which: 1, col: "#8fc8ff", life: 14 }); },
+      hit(att, e) { hkSamAdd({ sub: "odnring", owner: att.slot, x: e.x, y: e.y, r0: 12, r1: 46, life: 16 }); },
     },
   },
 
@@ -1888,7 +1868,7 @@ const HEAVY_LOOK = {
         if (X.phase === 1) { const a = X.age % 2; P.shotF = a ? -1 : 0; P.shotB = a ? 0 : -1; }
         P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
       },
-      fx(c, f, P, hv, tk) { gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 34, false); },
+      // (the blasts of the Gunslinger's heavies are drawn behind the fighters: UV_BACK.gunslinger, ui/hk-gunslinger.js)
       swing(f) { gunSmoke(f, [[52, -42], [44, -38]], 5); for (let i = 0; i < 2; i++) gunShell(f, 30, -44); },
       hit(att, e) { gunSpark(e, 9); },
     },
@@ -1904,10 +1884,6 @@ const HEAVY_LOOK = {
         P.lean = hpath(X, 0, 0.1, -0.08); P.crouch = Math.max(P.crouch, X.phase === 1 ? 0.18 : 0);
         if (X.phase === 1 && X.age < 2) { P.shotF = X.age; P.shotB = X.age; }
         P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
-      },
-      fx(c, f, P, hv, tk) {
-        gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 30, false);
-        gunBlast(c, P, hv, gunMuzzle(P, P.hB, P.gunB, true), P.gunB, 24, false);
       },
       swing(f) { gunSmoke(f, [[14, -96], [-6, -92]], 4); },
       hit(att, e) { gunSpark(e, 8); },
@@ -1926,12 +1902,6 @@ const HEAVY_LOOK = {
         if (X.phase === 1 && X.age < 2) { P.shotF = X.age; P.shotB = X.age; }
         P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
       },
-      fx(c, f, P, hv, tk) {
-        gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 22, false);
-        gunBlast(c, P, hv, gunMuzzle(P, P.hB, P.gunB, true), P.gunB, 22, false);
-        const age = Math.max(0, hv.age + 1), a = 1 - age / 14;
-        for (const sx of [1, -1]) gring(c, sx * 38, -2, 8 + age * 3.4, a, "#ffcf7a", "rgba(90,50,20,0.7)");
-      },
       swing(f) { groundDust(f, [40, -40], 4); gunSmoke(f, [[40, -14], [-40, -14]], 3); },
       hit(att, e) { gunSpark(e, 8); },
     },
@@ -1948,7 +1918,6 @@ const HEAVY_LOOK = {
         if (X.phase === 1) { const a = X.age % 2; P.shotF = a ? -1 : 0; P.shotB = a ? 0 : -1; }
         P.glintAt = gunMuzzle(P, X.hF, P.holdAng, false);
       },
-      fx(c, f, P, hv, tk) { gunBlast(c, P, hv, gunMuzzle(P, P.hF, P.holdAng, false), P.holdAng, 30, false); },
       swing(f) { gunSmoke(f, [[50, -42]], 4); gunShell(f, 30, -44); },
       hit(att, e) { gunSpark(e, 8); },
     },
@@ -1959,7 +1928,7 @@ const HEAVY_LOOK = {
     hSide: {
       name: "Reap", linger: 8, glintCol: "#e6e9f2",
       pose(X) { reapFlat(X, -X.leg - X.tor * 0.3, 0.3, { rf: 94, rb: 68, ry: 12 }, 0.28); },
-      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 12); },
+      // (the smears of the Reaper's heavies are drawn behind the fighters: UV_BACK.reaper, ui/hk-reaper.js)
       swing(f) { reapWisps(f, [[60, -40], [-50, -36]], 3); },
       hit(att, e) { reapHit(e); },
     },
@@ -1979,7 +1948,6 @@ const HEAVY_LOOK = {
         X.trail = { h1, h2, a1: -0.3, a2: -2.85, s: -1 };
         P.glintAt = scyTipAt(X.hF, P.holdAng, P.bladeS, w, 1);
       },
-      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 12); },
       swing(f) { reapWisps(f, [[0, -100]], 3); },
       hit(att, e) { reapHit(e); },
     },
@@ -1987,7 +1955,6 @@ const HEAVY_LOOK = {
     hDown: {
       name: "Grave sweep", linger: 8, glintCol: "#e6e9f2",
       pose(X) { reapFlat(X, -X.leg - X.tor * 0.05, 0.46, { rf: 78, rb: 78, ry: 7 }, 0.2); },
-      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 10); },
       swing(f) { groundDust(f, [52, -52], 4); },
       hit(att, e) { reapHit(e); },
     },
@@ -2006,7 +1973,6 @@ const HEAVY_LOOK = {
         X.trail = { h1, h2, a1: -1.7, a2: 2.5, s: 1 };
         P.glintAt = scyTipAt(X.hF, P.holdAng, P.bladeS, w, 1);
       },
-      fx(c, f, P, hv, tk) { reapTrailFx(c, f, P, hv, 12); },
       swing(f) { reapWisps(f, [[50, -40], [-40, -30]], 2); },
       hit(att, e) { reapHit(e); },
     },
@@ -2041,38 +2007,20 @@ function reapWisps(f, pts, n) {
   const dark = skinLvl(f) === 3 ? "#cfc9ba" : "#4a4458";
   for (const [x, y] of pts) for (let i = 0; i < n; i++) addFx({ k: "puff", x: f.x + f.facing * (x + frand(-8, 8)), y: f.y + y + frand(-6, 6), vx: frand(-0.5, 0.5), vy: frand(-0.8, -0.2), r: frand(3, 5), t: 0, life: frand(20, 30), col: dark });
 }
-function reapHit(e) {
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 50, col: "#eef0f8" });
-  burstLines(e.x, e.y, 7, ["#ffffff", "#c9cdd8"], 7);
+function reapHit(e) {   // crescent shards flung off the hit and two thin mint ribbons (the kit's, ui/hk-reaper.js)
+  for (let i = 0; i < 4; i++) { const an = -Math.PI / 2 + (i - 1.5) * 0.9 + frand(-0.2, 0.2), sp = frand(3, 5.5); addFx({ k: "hkg", kit: HK_KIT.reaper, x: e.x, y: e.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, s: frand(4.5, 6.5), rot: an, vr: frand(-0.25, 0.25), i, t: 0, life: frand(16, 22), damp: 0.9, g: 0.08 }); }
+  for (let i = 0; i < 2; i++) { const an = frand(0, Math.PI * 2); addFx({ k: "line", x: e.x + Math.cos(an) * 10, y: e.y + Math.sin(an) * 10, vx: Math.cos(an) * 6, vy: Math.sin(an) * 6, t: 0, life: 9, col: HK_KIT.reaper.cols[1], w: 2.2 }); }
 }
 // the muzzle of a pistol held at hand along a (see gunHeld), in fighter space
 function gunMuzzle(P, hand, a, back) { const s = back ? 0.92 : 1, ca = Math.cos(a), sa = Math.sin(a); return [hand[0] + (18.5 * ca + 2.7 * sa) * s, hand[1] + (18.5 * sa - 2.7 * ca) * s]; }
 // a heavy's blast from the muzzle at m along a: a fire cone len long in the hit window, then a grey smoke ball that drifts and fades
-function gunBlast(c, P, hv, m, a, len, gold) {
-  const age = Math.max(0, hv.age + 1);
-  c.save(); c.translate(m[0], m[1]); c.rotate(a);
-  if (hv.phase === 1) {
-    const q = 1 - hv.u * 0.35, L_ = len * (0.8 + 0.25 * Math.sin(age * 2.1)) * (1 + 0.6 * HV_K);
-    c.globalAlpha = 0.9; c.fillStyle = "rgba(20,15,30,0.75)";
-    c.beginPath(); c.moveTo(0, -7 * q); c.quadraticCurveTo(L_ * 0.5, -12 * q, L_ + 4, 0); c.quadraticCurveTo(L_ * 0.5, 12 * q, 0, 7 * q); c.closePath(); c.fill();
-    c.fillStyle = gold ? "#ffcf3d" : "#ff9a3d";
-    c.beginPath(); c.moveTo(0, -5.5 * q); c.quadraticCurveTo(L_ * 0.5, -10 * q, L_, 0); c.quadraticCurveTo(L_ * 0.5, 10 * q, 0, 5.5 * q); c.closePath(); c.fill();
-    c.fillStyle = "#fff4d0"; c.beginPath(); c.ellipse(L_ * 0.3, 0, L_ * 0.32, 3.2 * q, 0, 0, Math.PI * 2); c.fill();
-    star4(c, 3, 0, 11 * q, "#ffffff");
-  }
-  const sm = hv.phase === 2 ? hv.post : 0, k = sm / 16;
-  if (hv.phase === 2 && k < 1) {
-    c.globalAlpha = 0.55 * (1 - k); c.fillStyle = "#cfc8d8";
-    for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(8 + i * 7 + sm * 0.8, -sm * (0.5 + i * 0.25), 4 + i * 1.5 + sm * 0.45, 0, Math.PI * 2); c.fill(); }
-  }
-  c.restore();
-}
+function gunBlast(c, P, hv, m, a, len, gold) { hkGunBlast(c, P, hv, m, a, len); }   // the kit's flat blast (ui/hk-gunslinger.js; the heavies draw it behind the fighters)
 // one-shot world effects: smoke puffs at muzzle points (fighter-relative [x, y]), a brass shell, sparks on a hit
 function gunSmoke(f, pts, n) { for (const [x, y] of pts) for (let i = 0; i < n; i++) addFx({ k: "puff", x: f.x + f.facing * (x + frand(-4, 8)), y: f.y + y + frand(-4, 4), vx: f.facing * frand(0.2, 1.2), vy: frand(-0.9, -0.2), r: frand(3, 5.5), t: 0, life: frand(22, 34), col: "#cfc8d8" }); }
-function gunShell(f, x, y) { addFx({ k: "shard", x: f.x + f.facing * x, y: f.y + y, vx: -f.facing * frand(1, 2.4), vy: frand(-3.2, -2), rot: frand(0, 6), vr: frand(-0.4, 0.4), r: 2.2, col: "#e3b54a", t: 0, life: 30, g: 0.32, damp: 0.98 }); }
-function gunSpark(e, n) {
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 44, col: "#ffcf7a" });
-  burstLines(e.x, e.y, n, ["#fff4d0", "#ffb347"], 7);
+function gunShell(f, x, y) { addFx({ k: "hkg", kit: HK_GUN_SHELL, x: f.x + f.facing * x, y: f.y + y, vx: -f.facing * frand(1, 2.4), vy: frand(-3.2, -2), s: 3, rot: frand(0, 6), vr: frand(-0.4, 0.4), i: 0, t: 0, life: 30, g: 0.32, damp: 0.98 }); }   // a brass shell (ui/hk-gunslinger.js)
+function gunSpark(e, n) {   // square brass chips and ivory dashes off the hit (the kit's, ui/hk-gunslinger.js)
+  for (let i = 0; i < Math.ceil(n * 0.6); i++) { const an = frand(0, Math.PI * 2), sp = frand(2.5, 6); addFx({ k: "hkg", kit: HK_KIT.gunslinger, x: e.x, y: e.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - 1, s: frand(3.6, 5.4), rot: an, vr: frand(-0.3, 0.3), i, t: 0, life: frand(14, 20), damp: 0.88, g: 0.12 }); }
+  for (let i = 0; i < Math.ceil(n * 0.4); i++) { const an = frand(0, Math.PI * 2); addFx({ k: "line", x: e.x + Math.cos(an) * 8, y: e.y + Math.sin(an) * 8, vx: Math.cos(an) * 7, vy: Math.sin(an) * 7, t: 0, life: 8, col: "#fffbe8", w: 2.4 }); }
 }
 function greenBurst(e) {
   addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: 54, col: "#7dff62" });
@@ -2299,6 +2247,7 @@ function drawCharge(c, f, P, tk) {
   const acc = f.spec.look.costume === "reaper" ? "#dfe3ee" : f.pal.accent, ramp = Math.min(1, n / 4), pulse = 0.88 + 0.12 * Math.sin(tk * 0.5);   // the Reaper's grey hood would make a dark glow
   const a = st === 1 ? 0.55 + 0.25 * q : st === 2 ? 0.7 + 0.2 * q : 1, r = (st === 1 ? 20 + 8 * q : st === 2 ? 28 + 8 * q : 40) * pulse;
   const pts = chargePts(f, P, P.hv.key);
+  if (HK_KIT[f.spec.id] && HK_KIT[f.spec.id].charge) return HK_KIT[f.spec.id].charge(c, f, P, tk, st, q, pts);   // a kit's own flat charge-up (ui/hk-<fighter>.js)
   c.save(); c.lineCap = "round"; c.lineJoin = "round";
   if (st === 3) {
     // rim light round the whole body
@@ -2319,14 +2268,7 @@ function drawCharge(c, f, P, tk) {
    While the opponent is at BL.TUNE.finishPct or more, Samurai's Quick Draw leaves the white flash line (the world-space part is finDashTick in effects.js;
    the projectiles and the ring under the feet are in draw-world.js). */
 function drawFinishFx(c, f, P, tk) {
-  const m = f.move;
-  if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(foeSlot(f.slot))) return;
-  if (f.mt < m.startup + 1 || f.mt > m.startup + m.active) return;   // after the dash the finDashTick line takes over
-  const dist = Math.min(260, (m.speed || 15) * (f.mt - m.startup)), y = -P.h * 0.45, pts = lpts([-dist - 6, y], [-6, y], 8);
-  c.save(); c.lineCap = "round";
-  c.globalAlpha = 0.5; c.fillStyle = f.pal.accent; brush(c, pts, 15, 8);
-  c.globalAlpha = 1; c.fillStyle = "#ffffff"; brush(c, pts, 5, 8);
-  c.restore();
+  // the Samurai's finish-ready Quick Draw (five red after-images and the white ruled line) is drawn behind the fighters now: hkSamDash, ui/hk-samurai.js
 }
 
 /* ===================== Ultimates: the looks of the eight ulti moves (UI only) =====================
@@ -2439,7 +2381,7 @@ function uvHeldProp(c, f, P, tk) {
     c.fillStyle = LIMB; c.beginPath(); c.arc(P.hF[0], P.hF[1], 4.6, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();   // the fist over the shaft
   } else if (cos === "samurai" && mt >= 16 && mt <= 23) {   // a white glint on the hilt just before the dash
     const q = (mt - 15) / 8, [hx, hy] = P.hF;
-    glowDot(c, hx, hy, 16 + 14 * q, 0.7, "#ffffff"); star4(c, hx, hy, 7 + 12 * q, "#ffffff");
+    hkSamDisc(c, hx, hy, 12 + 10 * q, HK_KIT.samurai.cols[1], 0.8); hkSamCut(c, hx, hy, 0, 8 + 12 * q, 2 + q, HK_KIT.samurai); hkSamCut(c, hx, hy, Math.PI / 2, 5 + 8 * q, 1.6 + q, HK_KIT.samurai);   // a flat glint (ui/hk-samurai.js)
   }
 }
 function uvBehind(c, f, tk) {
@@ -2448,15 +2390,15 @@ function uvBehind(c, f, tk) {
     if (mt >= 1 && mt < 15) glowDot(c, f.x, cy, 78, 0.7, "#ff8a2b");
     else if (mt >= 31 && mt < 60) uvPhoenixComet(c, f, tk, true);
   } else if (k === "cuts" && mt >= 24 && mt <= 40) {   // afterimages: the accent-coloured silhouettes of where he just was
-    const d = f.facing, fade = mt <= 35 ? 1 : 1 - (mt - 35) / 5, sil = uvSil(f, tk, f.pal.accent), S = UV_SIL.S;
+    const d = f.facing, fade = mt <= 35 ? 1 : 1 - (mt - 35) / 5, sil = uvSil(f, tk, HK_KIT.samurai.cols[1]), S = UV_SIL.S;   // (the kit's jade)
     for (let i = 1; i <= 5; i++) { c.globalAlpha = 0.5 * (1 - i / 6) * fade; c.drawImage(sil, f.x - d * 22 * i * (mt <= 35 ? 1 : 0.6) - S / 2, f.y - S * 0.8); }
     c.globalAlpha = 1;
   } else if (k === "deadeye" && mt >= 1 && mt < 96) {   // the red of the dead eye round him
     const a = clamp(mt / 8, 0, 1) * clamp((96 - mt) / 12, 0, 1);
-    glowDot(c, f.x, cy, 96, (0.42 + 0.1 * Math.sin(tk * 0.4)) * a, "#ff2a2a");
+    hkSamDisc(c, f.x, cy, 70, HK_GUN_RED, (0.5 + 0.1 * Math.sin(tk * 0.4)) * a);   // flat (ui/hk-samurai.js)
   } else if (k === "harvest" && mt >= 1 && mt <= 72) {   // a pale ghost-green light under the hood
     const a = clamp(mt / 6, 0, 1) * clamp((72 - mt) / 10, 0, 1);
-    glowDot(c, f.x, cy, 84, 0.3 * a, "#bfffe0");
+    hkSamDisc(c, f.x, cy, 64, HK_KIT.reaper.cols[1], 0.5 * a);   // flat (ui/hk-samurai.js)
   }
 }
 function uvAhead(c, f, tk) {
@@ -2594,28 +2536,7 @@ function uvDragonFire(c, f, tk) {
 
 /* ---- Samurai: Thousand Cuts ---- */
 function uvSamuraiFront(c, g, f, tk) {
-  const mt = f.mt, d = f.facing;
-  if (mt >= 24 && mt <= 46) {   // the streak he left through the dash: a white blade of light from where he started to where he is
-    const x0 = UV.dash[f.slot] ? UV.dash[f.slot].x : f.x - d * 264, a = mt <= 35 ? 1 : 1 - (mt - 35) / 11, y = f.y - 34, len = Math.abs(f.x - x0);
-    if (len > 8) {
-      const pts = lpts([x0, y], [f.x, y], 10);
-      c.save(); c.globalAlpha = 0.5 * a; c.fillStyle = f.pal.accent; brush(c, pts, 34, 10);
-      c.globalAlpha = 0.9 * a; c.fillStyle = "#ffffff"; brush(c, pts, 12, 10); c.restore();
-    }
-  }
-  const t = f.ultTgt >= 0 ? g.fighters[f.ultTgt] : null;
-  if (t && mt >= 30 && mt < 67) {   // the held opponent: more and more cut lines flicker across him, in the last frames hard and bright
-    const n = Math.min(18, Math.floor((mt - 28) / 2.1) + 1), hot = mt >= 58 ? (mt - 57) / 9 : 0;
-    c.save(); c.lineCap = "round";
-    for (let i = 0; i < n; i++) {
-      const cx = t.x + (nz(i * 7.1) - 0.5) * 30, cy = t.y - t.s.h * (0.15 + 0.7 * nz(i * 5.9)), an = (nz(i * 3.3) - 0.5) * 2.4 + (i % 2 ? 0.45 : -0.45), len = 34 + 26 * nz(i * 2.2);
-      const newest = i >= n - 2;
-      c.globalAlpha = (newest ? 0.95 : 0.38 + 0.2 * hot) * (mt < 40 ? 0.8 : 1); c.strokeStyle = "#ffffff"; c.lineWidth = newest ? 2.6 + 1.4 * hot : 1.4 + hot;
-      c.beginPath(); c.moveTo(cx - Math.cos(an) * len, cy - Math.sin(an) * len); c.lineTo(cx + Math.cos(an) * len, cy + Math.sin(an) * len); c.stroke();
-    }
-    if (hot > 0) { c.globalAlpha = 0.3 * hot; c.globalCompositeOperation = "lighter"; glowDot(c, t.x, t.y - t.s.h * 0.5, 60, 0.7 * hot, "#ffffff"); }
-    c.restore();
-  }
+  // nothing over the fighters: the dash's line, the ink screen and the eight cuts on the sheath click are behind them (hkSamCuts, ui/hk-samurai.js)
 }
 
 /* ---- Reaper: Soul Harvest ---- */
@@ -2638,30 +2559,16 @@ function uvReaperFront(c, g, f, tk) {
       path((j - 1.5) * 16, Math.sin(tk * 0.15 + j * 2) * 12); c.setLineDash([16, 14]); c.lineDashOffset = -tk * 3.4 - j * 5; c.strokeStyle = "rgba(190,255,225,0.55)"; c.lineWidth = 2; c.stroke();
     }
     c.setLineDash([]); c.lineDashOffset = 0;
-    c.globalCompositeOperation = "lighter";
-    for (let i = 0; i < 4; i++) {   // little souls riding the chains
+    for (let i = 0; i < 4; i++) {   // little souls riding the chains (flat: the kit's mint over ink, a pale core)
       const u = (tk * 0.035 + i / 4) % 1, w = 1 - u, qx = w * w * bx + 2 * w * u * (mx + nx * 10) + u * u * ax, qy = w * w * by + 2 * w * u * (my + ny * 10 + 20 * (1 - taut)) + u * u * ay;
-      glowDot(c, qx, qy, 11, 0.8, "#bfffe0"); glowDot(c, qx, qy, 4, 1, "#ffffff");
+      c.fillStyle = HK_KIT.reaper.cols[1]; c.beginPath(); c.arc(qx, qy, 5, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = HK_INK; c.stroke();
+      c.fillStyle = HK_KIT.reaper.cols[0]; c.beginPath(); c.arc(qx - 1, qy - 1, 2, 0, Math.PI * 2); c.fill();
     }
-    c.globalCompositeOperation = "source-over";
-    c.lineWidth = 2.6; c.strokeStyle = "rgba(190,255,225,0.8)";   // the hook round his middle
+    c.lineWidth = 2.6; c.strokeStyle = HK_KIT.reaper.cols[1];   // the hook round his middle
     c.beginPath(); c.ellipse(bx, o.y - o.s.h * 0.35, o.s.w * 0.8 + 3 * Math.sin(tk * 0.5), 7, 0, 0, Math.PI * 2); c.stroke();
     c.restore();
   }
-  if (mt >= 25 && mt <= 42) {   // the sweep: a big white crescent on each side, both swinging up over him
-    const u = clamp((mt - 25) / 6, 0, 1), fade = mt <= 31 ? 1 : 1 - (mt - 31) / 11, cx = f.x, cy = f.y - 46;
-    if (fade > 0) {
-      c.save();
-      for (const sd of [1, -1]) {
-        const n = 18, tail = Math.max(0, u - 0.75), i0 = Math.floor(tail * n), i1 = Math.max(i0 + 2, Math.ceil(u * n)), pts = [];
-        for (let i = i0; i <= i1; i++) { const s = i / n, an = lerp(0.95, -1.55, s); pts.push([cx + sd * Math.cos(an) * 112, cy + Math.sin(an) * 92]); }
-        c.globalAlpha = 0.55 * fade; c.fillStyle = "rgba(190,255,225,0.9)"; brush(c, pts, 44, pts.length - 1);
-        c.globalAlpha = 0.95 * fade; c.fillStyle = "rgba(20,15,30,0.5)"; brush(c, pts, 30, pts.length - 1);
-        c.globalAlpha = fade; c.fillStyle = "#ffffff"; brush(c, pts, 24, pts.length - 1);
-      }
-      c.restore();
-    }
-  }
+  // (the sweep: the moon-sized crescent behind the fighters, hkRprMoon, ui/hk-reaper.js)
 }
 
 /* ---- Wizard: Meteor Shower ---- */
@@ -2683,22 +2590,21 @@ function uvDeadEyeFront(c, g, f, tk) {   // a red reticle on the opponent that t
   if (!o || o.state === "dead" || o.state === "gone" || mt < 4 || mt > 72) return;
   const shots = clamp(Math.floor((mt - 24) / 8) + 1, 0, 6), since = mt >= 24 ? (mt - 24) % 8 : 9, k = clamp((mt - 4) / 14, 0, 1), a = clamp((74 - mt) / 8, 0, 1);
   const r = lerp(62, 26, ease(k)) * (1 - 0.08 * shots) * (1 + (since < 3 ? 0.14 : 0)), x = o.x, y = o.y - o.s.h * 0.55;
-  c.save(); c.globalAlpha = a; c.lineCap = "round";
-  c.strokeStyle = since < 2 ? "#ffffff" : "#ff3030"; c.lineWidth = 2.6;
-  c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.stroke();
-  c.lineWidth = 2.2;
-  for (let i = 0; i < 4; i++) { const an = (i / 4) * Math.PI * 2 + 0.785 * 0; c.beginPath(); c.moveTo(x + Math.cos(an) * (r - 7), y + Math.sin(an) * (r - 7)); c.lineTo(x + Math.cos(an) * (r + 9), y + Math.sin(an) * (r + 9)); c.stroke(); }
-  c.fillStyle = "#ff3030"; c.beginPath(); c.arc(x, y, 2.6, 0, Math.PI * 2); c.fill();
-  c.globalAlpha = a * 0.35; c.lineWidth = 6; c.strokeStyle = "#ff3030"; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.stroke();
+  c.save(); c.globalAlpha = a; c.lineCap = "butt";   // flat, the kit's: a red ring and cross over an ink line, a dashed ivory ring outside (ui/hk-gunslinger.js)
+  const ring = (w, col) => { c.lineWidth = w; c.strokeStyle = col; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); for (let i = 0; i < 4; i++) { const an = (i / 4) * Math.PI * 2; c.moveTo(x + Math.cos(an) * (r - 8), y + Math.sin(an) * (r - 8)); c.lineTo(x + Math.cos(an) * (r + 11), y + Math.sin(an) * (r + 11)); } c.stroke(); };
+  ring(5, HK_INK); ring(2.6, since < 2 ? HK_GUN_IVORY : HK_GUN_RED);
+  c.setLineDash([9, 6]); c.lineDashOffset = -mt * 0.8; c.lineWidth = 1.8; c.strokeStyle = HK_GUN_IVORY; c.beginPath(); c.arc(x, y, r + 7, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+  c.fillStyle = HK_GUN_RED; c.beginPath(); c.arc(x, y, 2.6, 0, Math.PI * 2); c.fill(); c.lineWidth = 1; c.strokeStyle = HK_INK; c.stroke();
   c.restore();
 }
 function uvEyeVignette(c, g) {   // screen space: a red vignette while the dead eye is open
   let k = 0;
   for (const f of g.fighters) if (uvHeld(f) === "deadeye") k = Math.max(k, clamp(f.mt / 8, 0, 1) * clamp((96 - f.mt) / 12, 0, 1));
   if (k <= 0.01) return;
-  const R = Math.hypot(L.gw, L.gh), gr = c.createRadialGradient(L.gw / 2, L.gh / 2, R * 0.16, L.gw / 2, L.gh / 2, R * 0.6);
-  gr.addColorStop(0, "rgba(150,10,24,0)"); gr.addColorStop(1, `rgba(150,10,24,${0.5 * k})`);
-  c.save(); c.fillStyle = gr; c.fillRect(0, 0, L.gw, L.gh); c.fillStyle = `rgba(120,0,14,${0.07 * k})`; c.fillRect(0, 0, L.gw, L.gh); c.restore();
+  // flat (no gradient): a faint red over the screen and a red frame inside its edge; Reduce flashes: only the faint red (ui/hitkit.js hkCalm)
+  c.save(); c.fillStyle = `rgba(120,0,14,${0.1 * k})`; c.fillRect(0, 0, L.gw, L.gh);
+  if (!hkCalm()) { const m = Math.min(L.gw, L.gh) * 0.07; c.globalAlpha = 0.34 * k; c.lineWidth = m * 2; c.strokeStyle = "#8c0a18"; c.strokeRect(0, 0, L.gw, L.gh); c.globalAlpha = 0.5 * k; c.lineWidth = 3; c.strokeStyle = HK_GUN_RED; c.strokeRect(m, m, L.gw - m * 2, L.gh - m * 2); }
+  c.restore();
 }
 
 /* ---- over the fighters, world space ---- */
@@ -2732,9 +2638,9 @@ function uvFighterTick(g, f) {
     if (mt >= 4 && mt <= 46 && (mt & 1) === 0) { const [tx, ty] = staffTip(f, tick); mote(tx + frand(-5, 5), ty + frand(-5, 5), frand(-0.6, 0.6), -frand(0.6, 2), (mt & 3) ? "#bff3ff" : "#fff6d8", 2.4, 24, 0); }
   } else if (k === "cuts") {
     if (mt <= 23) UV.dash[f.slot] = { x: f.x };
-    if (mt <= 21 && (mt & 1) === 0) addFx({ k: "petal", x: f.x + d * frand(-110, 110), y: f.y - frand(6, 80), vx: 0, vy: frand(-0.4, 0.2), rot: frand(0, 6), vr: frand(-0.25, 0.25), col: mix(f.pal.accent, "#ffb7c9", 0.65), r: frand(2.4, 3.4), t: 0, life: 26, g: 0, damp: 1, tow: f.slot });
-    if (mt === 24 && uvCue(f, "dash")) { if (live) Sfx.cutPass(); for (let i = 0; i < 8; i++) addFx({ k: "puff", x: f.x - d * 20, y: f.y - frand(2, 12), vx: -d * frand(1, 4), vy: -frand(0, 1.2), r: frand(4, 8), t: 0, life: 22 }); sfx.push({ k: "flash", t: 0, life: 5 }); }
-    if (mt >= 24 && mt <= 35) addFx({ k: "line", x: f.x, y: f.y - frand(10, 56), vx: -d * frand(4, 10), vy: 0, t: 0, life: 9, col: "#ffffff", w: 2 });
+    if (mt <= 21 && (mt & 1) === 0) addFx({ k: "petal", x: f.x + d * frand(-110, 110), y: f.y - frand(6, 80), vx: 0, vy: frand(-0.4, 0.2), rot: frand(0, 6), vr: frand(-0.25, 0.25), col: HK_SAM_PETAL[(mt >> 1) % 3], r: frand(2.4, 3.4), t: 0, life: 26, g: 0, damp: 1, tow: f.slot });
+    if (mt === 24 && uvCue(f, "dash")) { if (live) Sfx.cutPass(); for (let i = 0; i < 8; i++) addFx({ k: "puff", x: f.x - d * 20, y: f.y - frand(2, 12), vx: -d * frand(1, 4), vy: -frand(0, 1.2), r: frand(4, 8), t: 0, life: 22 }); if (!hkCalm()) sfx.push({ k: "flash", t: 0, life: 5 }); }   // (Reduce flashes: no white flash)
+    if (mt >= 24 && mt <= 35) addFx({ k: "line", x: f.x, y: f.y - frand(10, 56), vx: -d * frand(4, 10), vy: 0, t: 0, life: 9, col: mt & 1 ? "#ffffff" : HK_KIT.samurai.cols[1], w: 2 });
     if (mt === 36 && uvCue(f, "stop")) dust(f.x, f.y, 6, 40);
   } else if (k === "hellfire") {
     if (mt === 25 && uvCue(f, "fire") && live) Sfx.hellfire();
@@ -2810,13 +2716,8 @@ function drawGunLightFx(c, f, P, tk) {
     if (a == null) return;
     const [mx, my] = gunMuzzle(P, hand, a, back), hx = b.x + (b.x2 - b.x) * t, hy = b.y + (b.y2 - b.y) * t, ux = Math.cos(a), uy = Math.sin(a);
     const len = (hx - mx) * ux + (hy - my) * uy;   // how far past the muzzle the head is
-    if (len > 3) {
-      const ex = mx + ux * len, ey = my + uy * len;
-      c.globalAlpha = 0.55 * fade; c.strokeStyle = "rgba(20,15,30,0.9)"; c.lineWidth = 6.5; c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
-      c.globalAlpha = 0.95 * fade; c.strokeStyle = "#ffb347"; c.lineWidth = 3.6; c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
-      c.strokeStyle = "#ffffff"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
-    }
-    c.globalAlpha = fade; glowDot(c, hx, hy, 15, 0.8, "#ffd27a"); star4(c, hx, hy, 5 + 2 * (1 - t), "#ffffff");
+    if (len > 3) hkGunRule(c, mx, my, mx + ux * len, my + uy * len, 5.6, fade);   // the kit's ruled tracer (ui/hk-gunslinger.js)
+    c.globalAlpha = fade; hkSpark(c, hx, hy, 6 + 2 * (1 - t), HK_KIT.gunslinger, 1, a, 2 + i, 0);   // its head: the kit's star, flat
   });
   c.restore();
 }

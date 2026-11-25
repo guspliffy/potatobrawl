@@ -203,17 +203,16 @@ function finOrbFx(c, p, tk) {   // the toxic orb trails a green comet tail and d
   }
   c.restore();
 }
-function finRavenFx(c, p, tk) {   // a pale-blue streak behind the raven, and its eyes burn red
-  const s = p.vx >= 0 ? 1 : -1;
-  c.save(); c.translate(p.x, p.y);
-  const g = c.createLinearGradient(0, 0, -s * 110, 0); g.addColorStop(0, "rgba(200,236,255,0.8)"); g.addColorStop(1, "rgba(200,236,255,0)");
-  c.fillStyle = g; c.beginPath(); c.moveTo(-s * 6, -11); c.quadraticCurveTo(-s * 50, -9, -s * 112, 0); c.quadraticCurveTo(-s * 50, 11, -s * 6, 11); c.closePath(); c.fill();
-  c.strokeStyle = "rgba(235,248,255,0.8)"; c.lineWidth = 1.6; c.lineCap = "round";
-  for (const [dy, len] of [[-4, 70], [2, 90], [7, 56]]) { c.beginPath(); c.moveTo(-s * 12, dy); c.lineTo(-s * (12 + len), dy * 0.5); c.stroke(); }
+function finRavenFx(c, p, tk) {   // finish-ready: a long gold pennant wake with two ruled lines (Odin's kit, ui/hk-odin.js), and its eyes burn red
+  const s = p.vx >= 0 ? 1 : -1, sp = Math.abs(p.vx), K = HK_KIT.odin;
+  hkOdnPennant(c, p.x - s * 12, p.y - 1, s > 0 ? 0 : Math.PI, 60 + sp * 11, 11, K, 1);
+  c.save(); c.lineCap = "round";
+  for (const [dy, len] of [[-13, 58 + sp * 4], [12, 44 + sp * 3]]) { c.strokeStyle = HK_INK; c.lineWidth = 4; c.beginPath(); c.moveTo(p.x - s * 22, p.y + dy); c.lineTo(p.x - s * (22 + len), p.y + dy * 0.7); c.stroke(); c.strokeStyle = K.cols[1]; c.lineWidth = 2; c.stroke(); }
   c.restore();
 }
-function finRavenEyes(c, p) {   // the red glow over the raven's eye
-  const s = p.vx >= 0 ? 1 : -1; glowDot(c, p.x + s * 11, p.y - 7.5, 11, 0.9, "#ff2a2a"); glowDot(c, p.x + s * 11, p.y - 7.5, 4, 1, "#ffd0d0");
+function finRavenEyes(c, p) {   // the eye burns: a flat red ring round it (no glow)
+  const s = p.vx >= 0 ? 1 : -1, x = p.x + s * 15, y = p.y - 5.1;
+  c.save(); c.lineWidth = 1.6; c.strokeStyle = "#e3453b"; c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.stroke(); c.restore();
 }
 function finBoltFx(c, p, tk) {   // the crystal bolt trails stars
   c.save();
@@ -257,9 +256,7 @@ function drawProj(c, p, tk) {
   }
   if (p.style === "raven") {
     if (rdy) finRavenFx(c, p, tk);
-    c.save(); c.translate(p.x, p.y); c.scale(p.vx >= 0 ? 1 : -1, 1);
-    ravenShape(c, 0, 0, 1.25, Math.sin(tk * 0.6) * 0.7, rdy);
-    c.restore();
+    hkOdnRaven(c, p, tk, rdy);   // the bird, its pennant wake, feathers shed on the turn (ui/hk-odin.js)
     if (rdy) finRavenEyes(c, p);
     return;
   }
@@ -287,23 +284,9 @@ function drawProj(c, p, tk) {
     return;
   }
   if (p.style === "bullet" || p.style === "gold") {
-    // a small bright tracer; High Noon's bullet is golden, bigger, with a long trail and a glow (the drawing only, the hitbox is the same)
-    // Dead Eye's bullets (hit.ult) are the same with a hot red-orange glow; its sixth, the golden one, is half as big again with a longer trail
-    const gold = p.style === "gold", ult = !!(p.hit && p.hit.ult), sp = Math.hypot(p.vx, p.vy) || 1, r = gold ? (ult ? 8.2 : 5.4) : ult ? 3.8 : 3;
-    const len = Math.min(gold ? sp * (ult ? 9 : 6) : sp * (ult ? 4 : 2.6), p.t * sp + 4);
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
-    if (gold) glowDot(c, 0, 0, r * 4.2, ult ? 0.75 : 0.55, "#ffcf3d");
-    else if (ult) glowDot(c, 0, 0, r * 3.4, 0.5, "#ff5a3d");
-    const gr = c.createLinearGradient(-len, 0, 0, 0);
-    gr.addColorStop(0, gold ? "rgba(255,190,50,0)" : ult ? "rgba(255,70,50,0)" : "rgba(255,180,80,0)"); gr.addColorStop(1, gold ? "rgba(255,226,120,0.95)" : ult ? "rgba(255,210,180,0.95)" : "rgba(255,242,210,0.9)");
-    c.fillStyle = gr; c.beginPath(); c.moveTo(0, -r * 0.85); c.lineTo(-len, -r * 0.2); c.lineTo(-len, r * 0.2); c.lineTo(0, r * 0.85); c.closePath(); c.fill();
-    c.fillStyle = gold ? "#ffd84a" : "#fff6dc"; c.beginPath(); c.ellipse(0, 0, r * 1.6, r, 0, 0, Math.PI * 2); c.fill();
-    if (gold) {
-      c.lineWidth = 1.2; c.strokeStyle = "#9c6c16"; c.stroke();
-      c.fillStyle = "#fffbe6"; c.beginPath(); c.ellipse(r * 0.3, -r * 0.3, r * 0.7, r * 0.3, 0, 0, Math.PI * 2); c.fill();
-      for (let i = 1; i <= 3; i++) star4(c, -len * (0.2 + i * 0.22), Math.sin(tk * 0.5 + i * 2) * r * 0.9, 4.2 - i * 0.7, "#fff4c8");
-    }
-    c.restore();
+    // a ruled tracer with a squared brass head; High Noon's (finish-ready) is a gold slug twice the size with a longer, double rule; Dead Eye's
+    // first five are ivory dashes, its sixth the gold slug (the kit's, ui/hk-gunslinger.js; the drawing only, the hitbox is the same)
+    hkGunBullet(c, p, tk);
     return;
   }
   if (p.style === "fry") {
@@ -417,12 +400,10 @@ function uvDrawSpear(c, p, tk) {
   const dir = p.dir || 1, s = p.vx * dir, turn = 1 - clamp((s + 5) / 10, 0, 1), sp = Math.abs(p.vx);
   const ang = (dir > 0 ? turn * Math.PI : Math.PI - turn * Math.PI) + Math.sin(tk * 0.45) * 0.06;
   c.save(); c.translate(p.x, p.y);
-  if (sp > 4) {   // the streak of light behind it
-    const hd = p.vx >= 0 ? 1 : -1, tl = Math.min(260, sp * 8 + 90), g = c.createLinearGradient(0, 0, -hd * tl, 0);
-    g.addColorStop(0, "rgba(255,236,150,0.7)"); g.addColorStop(0.5, "rgba(255,200,70,0.3)"); g.addColorStop(1, "rgba(255,180,60,0)");
-    c.fillStyle = g; c.beginPath(); c.moveTo(-hd * 84, -9); c.lineTo(-hd * tl, 0); c.lineTo(-hd * 84, 9); c.closePath(); c.fill();
-    c.fillStyle = "rgba(255,255,240,0.6)"; c.beginPath(); c.moveTo(-hd * 84, -2.2); c.lineTo(-hd * tl * 0.6, 0); c.lineTo(-hd * 84, 2.2); c.closePath(); c.fill();
-    for (let i = 0; i < 4; i++) { const k = (tk * 0.07 + i / 4) % 1; c.globalAlpha = 1 - k; star4(c, -hd * (90 + k * (tl - 90)), (nz(i * 5.5) - 0.5) * 22, 4.5 * (1 - k * 0.5), i % 2 ? "#fff6d8" : "#ffd23f"); }
+  if (sp > 4) {   // flat, the kit's (ui/hk-odin.js): out, the stage-long line is behind it (UV_BACK.odin); back, a pennant streams from it
+    const hd = p.vx >= 0 ? 1 : -1;
+    if (s < 0) hkOdnPennant(c, -hd * 40, 0, hd > 0 ? 0 : Math.PI, Math.min(170, 40 + sp * 7), 12, HK_KIT.odin, Math.min(1, sp / 12));
+    for (let i = 0; i < 3; i++) { const k = (tk * 0.07 + i / 3) % 1; c.globalAlpha = 1 - k; hkShard(c, -hd * (70 + k * 120), (nz(i * 5.5) - 0.5) * 22, 5 * (1 - k * 0.4), hd > 0 ? Math.PI : 0, HK_KIT.odin, i); }
     c.globalAlpha = 1;
   }
   c.rotate(ang); c.scale(1, 0.86 + 0.14 * Math.cos(tk * 0.33)); c.translate(-58, 0);   // the head leads the hitbox by a few pixels, the shaft trails behind it
@@ -442,7 +423,7 @@ function uvSpearShape(c, tk) {
   c.fillStyle = "#f7ebb6"; c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
   c.strokeStyle = "#e2ad3c"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(56, -3); c.lineTo(66, -8.2); c.lineTo(90, -0.6); c.moveTo(56, 3); c.lineTo(66, 8.2); c.lineTo(90, 0.6); c.stroke();
   c.strokeStyle = "rgba(255,255,255,0.9)"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(56, 0); c.lineTo(88, 0); c.stroke();
-  glowDot(c, 92, 0, 28, 0.75, UV_GOLD);
+  hkSamDisc(c, 92, 0, 15, HK_KIT.odin.cols[1], 0.9); hkSpark(c, 92, 0, 7, HK_KIT.odin, 1, 0, 3, 0);   // the tip: a flat halo and the kit's star (ui/hitkit.js)
   for (let i = 0; i < 3; i++) { c.globalAlpha = 0.45 + 0.5 * Math.sin(tk * 0.2 + i * 1.9) ** 2; rune(c, -34 + i * 28, -17, 6.5, i + 1, "#fff2b8", 1.5); }   // the runes pulse one after the other
 }
 // Wizard: a falling star with a long pale trail; the fifth is bigger and golden
