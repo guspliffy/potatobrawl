@@ -3,7 +3,7 @@
 # sprinting (the dash) and light attacks that land, then a KO by this fighter (the Dummy at 400 % with lives to spare and a heavy, so the
 # KO is a plain one in the arena, not the last-life finisher). The page clock is taken over as in tests/pwfin.py: every picture is an
 # exact frame. Checks: no page errors, the fighter wears the line, the light attacks landed, the KO happened, and the two overlay passes
-# cost <= 0.5 ms a frame on average per fighter. The passes are timed by the hook in skinfx.js (window.__pmskProf: the real
+# cost <= 0.5 ms a frame on average per fighter (the Reaper 0.6: BUDGET_OF). The passes are timed by the hook in skinfx.js (window.__pmskProf: the real
 # performance.now, the canvas flushed with a 1 px read before and after each pass so its raster counts; the read itself is counted
 # too, so the numbers are an upper bound).
 # Saves per line one contact sheet: <outdir>/<line>-844.jpg (844x390: 8 fighters x standing, dashing, KO effect) and <line>-up.jpg
@@ -25,6 +25,9 @@ LINES = [int(x) for x in opt('--lines', '1,2').split(',')]
 NAME = {1: 'ink-noir', 2: 'starfall'}
 UP_IDS = ['wizard', 'reaper']
 BUDGET = 0.5   # ms a frame per fighter, both passes
+# the Reaper's passes cover his whole cloak and hood (the redesign's bell, about twice a potato body's area), so they cost more per frame;
+# his figure itself got about 0.9 ms cheaper to draw than the old one (tests/pwcarve.py), so the figure and its skin still cost about half
+BUDGET_OF = {'reaper': 0.6}
 FRAME = 17     # ms per stepped frame (one simulation step)
 CELL = (252, 228)   # one picture on the sheet (the crop is 210 x 190 world units round the fighter, about 0.6 of its pixels)
 errs, bad, cost = [], [], {}
@@ -135,7 +138,8 @@ def run(b, fid, line, W, H, up):
     cost.setdefault(line, []).append((fid, avg, mx, len(S), rd))
     print(f'{tag}: overlay {avg:.3f} ms avg ({max(0, avg - rd):.3f} without the reads), {mx:.1f} ms max over {len(S)} frames; light hits {hit:.0f}%, KO {ko} (try {attempt + 1})', flush=True)
     if not S: bad.append(f'{tag}: the overlay passes never ran')
-    if avg > BUDGET: bad.append(f'{tag}: the overlay costs {avg:.3f} ms a frame on average (budget {BUDGET})')   # the upper bound (reads counted) keeps to the budget
+    bud = BUDGET_OF.get(fid, BUDGET)
+    if avg > bud: bad.append(f'{tag}: the overlay costs {avg:.3f} ms a frame on average (budget {bud})')   # the upper bound (reads counted) keeps to the budget
     return pics
 
 def sheet(cols, path):

@@ -10612,6 +10612,9 @@ function pose(f, tk) {
       if (P.hB[0] > -w * 0.68) P.hB = [-w * 0.68 + (P.hB[0] + w * 0.3) * 0.3, P.hB[1] + 4];
       if (L_.costume === "reaper" && st !== "helpless") P.hF = [w * 0.9 + (st === "run" ? (P.hF[0] - w * 0.75) * 0.5 : 0), P.hF[1] + tor * 0.16];   // the scythe held out at his side, clear of the face
     }
+    // a Carved Ink figure (ui/carve.js): P.fig, the new body's numbers (rx, ry, cy, top, head, mouthPt) and the motion layer (P.sq)
+    const fg = cvFigOf(L_.costume);
+    if (fg) cvPose(f, P, fg);
   }
   return P;
 }
@@ -10827,6 +10830,7 @@ let noirOn = false;
 const noirC = (colr, ink) => (noirOn ? ink : colr);   // a costume's fixed colour, or its ink on Ink Noir
 const SPECKS = [[-0.55, 0.35, 1.3], [-0.2, 0.62, 1.1], [0.36, 0.5, 1.2], [-0.62, -0.05, 1], [0.05, 0.3, 0.9], [0.58, 0.18, 1]];
 function potatoPath(c, P) {
+  if (P.fig) return cvSilPath(c, P);   // a Carved Ink figure's body (ui/carve.js); a boss's own P never carries one
   const { rx, ry, cy } = P;
   c.beginPath();
   for (let i = 0; i <= 32; i++) {
@@ -11137,24 +11141,26 @@ function wizardStaff(c, P, f, shR, tk) {
 }
 function katana(c, P, f, shR, pal) {
   const a = heldDir(f, P, shR, -0.8), L = P.w * 1.35, sh = P.sheath;
+  // a Carved Ink figure holds it (ui/fig-samurai.js): its ink, a steel blade with the skin's jade edge, the wrap, lacquer and gold of the skin
+  const K = cvKatC, ink = K ? CV_INK : OUT, grip = K ? K.tsuka : noirC("#3a2a22", NOIR_D), lac = K ? K.lac : noirC("#26232d", NOIR_D), gold = K ? K.gold : noirC("#c9a227", NOIR_L);
   c.save(); c.translate(P.hF[0], P.hF[1]); c.rotate(a);
   c.lineCap = "round";
-  c.strokeStyle = OUT; c.lineWidth = 5.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(2, 0); c.stroke();
-  c.strokeStyle = noirC("#3a2a22", NOIR_D); c.lineWidth = 3; c.stroke();
+  c.strokeStyle = ink; c.lineWidth = 5.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(2, 0); c.stroke();
+  c.strokeStyle = grip; c.lineWidth = 3; c.stroke();
   if (sh > 0) {
     // Iaido: the blade rests in its scabbard (lacquer, gold mouth and tip) until the draw
     c.beginPath(); c.moveTo(4, -3.4); c.lineTo(L * 0.96, -2.8); c.lineTo(L * 0.96, 2.8); c.lineTo(4, 3.4); c.closePath();
-    c.fillStyle = noirC("#26232d", NOIR_D); c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
-    c.fillStyle = noirC("#c9a227", NOIR_L); c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = lac; c.fill(); c.lineWidth = K ? 2 : 1.6; c.strokeStyle = ink; c.stroke();
+    c.fillStyle = gold; c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
     c.strokeStyle = "rgba(255,255,255,0.25)"; c.lineWidth = 1; c.beginPath(); c.moveTo(10, -1.6); c.lineTo(L * 0.9, -1.4); c.stroke();
   }
   const Lb = sh > 0 ? 4 + (L - 4) * (1 - sh) : L;
   if (Lb > 9) {
     c.beginPath(); c.moveTo(4, -1.8); c.quadraticCurveTo(Lb * 0.55, -3.6, Lb, -5.5); c.quadraticCurveTo(Lb * 0.55, 0.6, 4, 1.8); c.closePath();
-    c.fillStyle = pal.accent; c.fill(); c.lineWidth = 1.5; c.strokeStyle = OUT; c.stroke();
-    c.strokeStyle = "rgba(255,255,255,0.6)"; c.lineWidth = 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(Lb * 0.55, -2.5, Lb - 4, -4.5); c.stroke();
+    c.fillStyle = K ? K.steel : pal.accent; c.fill(); c.lineWidth = K ? 1.7 : 1.5; c.strokeStyle = ink; c.stroke();
+    c.strokeStyle = K ? K.jade : "rgba(255,255,255,0.6)"; c.lineWidth = K ? 1.4 : 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(Lb * 0.55, -2.5, Lb - 4, -4.5); c.stroke();
   }
-  c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = noirC("#c9a227", NOIR_L); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+  c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = gold; c.fill(); c.lineWidth = 1.2; c.strokeStyle = ink; c.stroke();
   c.restore();
 }
 /* ---- Gunslinger: hat, neckerchief, vest, belt with holster, two revolvers ---- */
@@ -11584,94 +11590,97 @@ function drawPotato(c, f, tk, at) {
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
   const shR = rot(P.sh, P.hip, P.lean), shB = rot(P.shB, P.hip, P.lean);
-  if (TEAM_RIM && !at) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js)
+  if (TEAM_RIM && !at && !P.fig) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js; a figure draws it itself)
   if (f.spr && f.state === "run" && f.grounded && !at) sprintLines(c, f, P, tk, alpha);
-  if (cos === "phoenix") {
-    const air = !f.grounded && f.state !== "ledge";
-    const len = P.w * (air ? 1.35 : 1.0);
-    const a1 = rot([-P.w * 0.2, P.cy - P.ry * 0.2], P.hip, P.lean), a2 = rot([P.w * 0.05, P.cy - P.ry * 0.3], P.hip, P.lean);
-    const fl = P.flap + P.wingUp * 0.9;
-    flameWing(c, a1[0], a1[1], (air ? -2.7 : -2.4) + fl + P.lean, len, pal, true);
-    flameWing(c, a2[0], a2[1], (air ? -0.75 : -1.2) - fl * 0.7 + P.lean, len * 0.9, pal, false);
-  }
-  if (cos === "dragon") {
-    dragonTail(c, P, pal, tk, f);
-    const air = !f.grounded && f.state !== "ledge", len = P.w * (air ? 1.1 : 0.95);
-    const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean);
-    const fl = P.flap - P.wingUp * 0.9;
-    batWing(c, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, pal, true, true);
-    batWing(c, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, pal, false, false);
-  }
-  if (cos === "alchemist") capeShape(c, P, f, tk, mix(pal.accent, "#000000", 0.15), false);
-  if (cos === "odin") capeShape(c, P, f, tk, pal.accent, true);
-  if (cos === "reaper") { graveCloud(c, f, P, tk, P.cloud); if (P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); }
-  limbPath(c, P.hipB, P.fB, legLen, "fwd", lw, limbB);
-  c.fillStyle = limbB; c.beginPath(); c.ellipse(P.fB[0] + 2, P.fB[1] - 1, 5, 3, 0, 0, Math.PI * 2); c.fill();
-  limbPath(c, shB, P.hB, armLen, "down", lw - 0.5, limbB);
-  c.fillStyle = limbB; c.beginPath(); c.arc(P.hB[0], P.hB[1], lw * (look.fist ? 1 : 0.85), 0, Math.PI * 2); c.fill();
-  if (cos === "gunslinger") gunHeld(c, f, P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, P.shotB, lw * 0.85, limbB, flash, true);
-  limbPath(c, P.hipF, P.fF, legLen, "fwd", lw, limbF);
-  c.fillStyle = limbF; c.beginPath(); c.ellipse(P.fF[0] + 2, P.fF[1] - 1, 5.5, 3.2, 0, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
-  c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
-  potatoBody(c, P, pal);
-  if (cos === "odin") odinFront(c, P, pal);
-  if (cos === "samurai") {
-    c.save(); potatoPath(c, P); c.clip();
-    c.fillStyle = noirC("#24222c", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.42, P.rx * 2.6, P.ry);
-    c.fillStyle = noirC("#c8352b", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.62, P.rx * 2.6, 1.6); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.82, P.rx * 2.6, 1.6);
-    c.fillStyle = noirC("#2a2833", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.3, P.rx * 2.6, P.ry * 0.17);
-    c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy - P.ry * 0.62, P.rx * 2.6, P.ry * 0.13);   // the headband (Ink Noir: the accent)
+  if (P.fig) cvFigure(c, f, P, tk, at, flash);   // a Carved Ink figure (ui/carve.js, ui/fig-<fighter>.js); the effects below are shared
+  else {
+    if (cos === "phoenix") {
+      const air = !f.grounded && f.state !== "ledge";
+      const len = P.w * (air ? 1.35 : 1.0);
+      const a1 = rot([-P.w * 0.2, P.cy - P.ry * 0.2], P.hip, P.lean), a2 = rot([P.w * 0.05, P.cy - P.ry * 0.3], P.hip, P.lean);
+      const fl = P.flap + P.wingUp * 0.9;
+      flameWing(c, a1[0], a1[1], (air ? -2.7 : -2.4) + fl + P.lean, len, pal, true);
+      flameWing(c, a2[0], a2[1], (air ? -0.75 : -1.2) - fl * 0.7 + P.lean, len * 0.9, pal, false);
+    }
+    if (cos === "dragon") {
+      dragonTail(c, P, pal, tk, f);
+      const air = !f.grounded && f.state !== "ledge", len = P.w * (air ? 1.1 : 0.95);
+      const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean);
+      const fl = P.flap - P.wingUp * 0.9;
+      batWing(c, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, pal, true, true);
+      batWing(c, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, pal, false, false);
+    }
+    if (cos === "alchemist") capeShape(c, P, f, tk, mix(pal.accent, "#000000", 0.15), false);
+    if (cos === "odin") capeShape(c, P, f, tk, pal.accent, true);
+    if (cos === "reaper") { graveCloud(c, f, P, tk, P.cloud); if (P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); }
+    limbPath(c, P.hipB, P.fB, legLen, "fwd", lw, limbB);
+    c.fillStyle = limbB; c.beginPath(); c.ellipse(P.fB[0] + 2, P.fB[1] - 1, 5, 3, 0, 0, Math.PI * 2); c.fill();
+    limbPath(c, shB, P.hB, armLen, "down", lw - 0.5, limbB);
+    c.fillStyle = limbB; c.beginPath(); c.arc(P.hB[0], P.hB[1], lw * (look.fist ? 1 : 0.85), 0, Math.PI * 2); c.fill();
+    if (cos === "gunslinger") gunHeld(c, f, P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, P.shotB, lw * 0.85, limbB, flash, true);
+    limbPath(c, P.hipF, P.fF, legLen, "fwd", lw, limbF);
+    c.fillStyle = limbF; c.beginPath(); c.ellipse(P.fF[0] + 2, P.fF[1] - 1, 5.5, 3.2, 0, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+    c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    potatoBody(c, P, pal);
+    if (cos === "odin") odinFront(c, P, pal);
+    if (cos === "samurai") {
+      c.save(); potatoPath(c, P); c.clip();
+      c.fillStyle = noirC("#24222c", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.42, P.rx * 2.6, P.ry);
+      c.fillStyle = noirC("#c8352b", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.62, P.rx * 2.6, 1.6); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.82, P.rx * 2.6, 1.6);
+      c.fillStyle = noirC("#2a2833", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.3, P.rx * 2.6, P.ry * 0.17);
+      c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy - P.ry * 0.62, P.rx * 2.6, P.ry * 0.13);   // the headband (Ink Noir: the accent)
+      c.restore();
+      c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.beginPath(); c.ellipse(-P.rx * 0.98, P.cy - P.ry * 0.56, 2.6, 2.4, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(-P.rx * 1.12, P.cy - P.ry * 0.42, 1.5, 4.5, 0.7, 0, Math.PI * 2); c.fill();
+    }
+    if (cos === "wizard") {
+      c.save(); potatoPath(c, P); c.clip();
+      c.fillStyle = mix(pal.accent, "#000000", 0.25); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, P.ry);
+      c.fillStyle = noirC("#d8b04a", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
+      c.restore();
+    }
+    if (cos === "gunslinger") gunOutfit(c, f, P, pal, flash);
+    if (cos === "dragon") {
+      c.fillStyle = noirC(mix(pal.body, "#fff0c6", 0.45), NOIR_L); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = noirC(mix(pal.body, "#7a4a22", 0.4), NOIR_D); c.lineWidth = 1.2;
+      for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
+    }
+    roadSkinBody(c, f, P, tk, flash);
+    if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
+    potatoFace(c, f, P, look);
+    if (cos === "odin") odinBeard(c, P, pal);
+    if (cos === "alchemist") {
+      alchemistHood(c, P, pal);
+      const [gx, gy] = P.head, er = P.w * 0.1;
+      for (const dx of [-1.25, 1.2]) { c.fillStyle = noirC("#b8863b", NOIR_D); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = noirC("#8fe8d2", NOIR_L); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
+    }
+    if (cos === "wizard") wizardHat(c, P, pal, tk);
+    if (cos === "gunslinger") cowboyHat(c, P, pal);
+    if (cos === "reaper") reaperHood(c, f, P, RC, tk);
+    if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
+    if (cos === "dragon") {
+      c.fillStyle = noirC("#efe3c8", NOIR_L); c.strokeStyle = OUT; c.lineWidth = 1.2;
+      for (const x0 of [-P.w * 0.2, P.w * 0.12]) { c.beginPath(); c.moveTo(x0 - 3.5, P.top + 5); c.quadraticCurveTo(x0 - 3, P.top - 8, x0 - 9, P.top - 15); c.quadraticCurveTo(x0 + 1, P.top - 6, x0 + 3.5, P.top + 4); c.closePath(); c.fill(); c.stroke(); }
+    }
+    if (cos === "samurai") { c.fillStyle = noirC("#1c1714", NOIR_D); c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
+    if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
+    if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
+    roadSkinTop(c, f, P, tk, flash);
     c.restore();
-    c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.beginPath(); c.ellipse(-P.rx * 0.98, P.cy - P.ry * 0.56, 2.6, 2.4, 0, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.ellipse(-P.rx * 1.12, P.cy - P.ry * 0.42, 1.5, 4.5, 0.7, 0, Math.PI * 2); c.fill();
+    if (cos === "odin" && !f._ravenOut) {
+      let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
+      if (P.ravenTo && P.ravenK > 0) p = lerp2(p, P.ravenTo, P.ravenK);   // Raven rise: it lifts off with the fist
+      ravenShape(c, p[0], p[1], 0.85, P.ravenK > 0.3 ? Math.sin(tk * 1.1) * 0.8 : Math.sin(tk * 0.08) > 0.95 ? 0.4 : 0);
+    }
+    limbPath(c, shR, P.hF, armLen, "down", lw, limbF);
+    c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
+    if (f.mid === "ulti" && f.state === "attack") uvHeldProp(c, f, P, tk);
+    if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
+    if (cos === "samurai") katana(c, P, f, shR, pal);
+    if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
+    if (cos === "reaper") { if (!P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); reapLightTrail(c, f, P); }
+    if (cos === "alchemist" && f.specCd <= 0 && !flash && f.mid !== "ulti") greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   }
-  if (cos === "wizard") {
-    c.save(); potatoPath(c, P); c.clip();
-    c.fillStyle = mix(pal.accent, "#000000", 0.25); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, P.ry);
-    c.fillStyle = noirC("#d8b04a", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
-    c.restore();
-  }
-  if (cos === "gunslinger") gunOutfit(c, f, P, pal, flash);
-  if (cos === "dragon") {
-    c.fillStyle = noirC(mix(pal.body, "#fff0c6", 0.45), NOIR_L); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = noirC(mix(pal.body, "#7a4a22", 0.4), NOIR_D); c.lineWidth = 1.2;
-    for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
-  }
-  roadSkinBody(c, f, P, tk, flash);
-  if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
-  potatoFace(c, f, P, look);
-  if (cos === "odin") odinBeard(c, P, pal);
-  if (cos === "alchemist") {
-    alchemistHood(c, P, pal);
-    const [gx, gy] = P.head, er = P.w * 0.1;
-    for (const dx of [-1.25, 1.2]) { c.fillStyle = noirC("#b8863b", NOIR_D); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = noirC("#8fe8d2", NOIR_L); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
-  }
-  if (cos === "wizard") wizardHat(c, P, pal, tk);
-  if (cos === "gunslinger") cowboyHat(c, P, pal);
-  if (cos === "reaper") reaperHood(c, f, P, RC, tk);
-  if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
-  if (cos === "dragon") {
-    c.fillStyle = noirC("#efe3c8", NOIR_L); c.strokeStyle = OUT; c.lineWidth = 1.2;
-    for (const x0 of [-P.w * 0.2, P.w * 0.12]) { c.beginPath(); c.moveTo(x0 - 3.5, P.top + 5); c.quadraticCurveTo(x0 - 3, P.top - 8, x0 - 9, P.top - 15); c.quadraticCurveTo(x0 + 1, P.top - 6, x0 + 3.5, P.top + 4); c.closePath(); c.fill(); c.stroke(); }
-  }
-  if (cos === "samurai") { c.fillStyle = noirC("#1c1714", NOIR_D); c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
-  if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
-  if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
-  roadSkinTop(c, f, P, tk, flash);
-  c.restore();
-  if (cos === "odin" && !f._ravenOut) {
-    let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
-    if (P.ravenTo && P.ravenK > 0) p = lerp2(p, P.ravenTo, P.ravenK);   // Raven rise: it lifts off with the fist
-    ravenShape(c, p[0], p[1], 0.85, P.ravenK > 0.3 ? Math.sin(tk * 1.1) * 0.8 : Math.sin(tk * 0.08) > 0.95 ? 0.4 : 0);
-  }
-  limbPath(c, shR, P.hF, armLen, "down", lw, limbF);
-  c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
-  if (f.mid === "ulti" && f.state === "attack") uvHeldProp(c, f, P, tk);
-  if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
-  if (cos === "samurai") katana(c, P, f, shR, pal);
-  if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
-  if (cos === "reaper") { if (!P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); reapLightTrail(c, f, P); }
-  if (cos === "alchemist" && f.specCd <= 0 && !flash && f.mid !== "ulti") greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
   }
@@ -13287,6 +13296,2111 @@ function uvShotTick(g, f) {
   });
   gunShell(f, P.hF[0], P.hF[1] - 2);
   if (live) Sfx.pop();
+}
+/* ===================== Carved Ink: the fighters' drawing kit (Fable's redesign, concept redesign/concept.md; UI only) =====================
+   Every top-level name in this file and in ui/fig-<fighter>.js starts with cv / CV_ (all ui parts share one scope).
+   A fighter with an entry CV_FIG[costume] is drawn by this kit (drawPotato hands over to cvFigure); a fighter without one keeps the old
+   drawing. window.__cvOff = true draws everyone the old way (tests/pwcarve.py times both). The simulation is never read for more than
+   positions and states, and nothing here writes to a fighter or a game.
+
+   THE LOOK. One ink CV_INK; outer lines 2.6 units, inner 1.2-1.8. Three flat tones per part: the base, one hard shadow on the lower back
+   (cvSh: the base pushed 34 % towards violet), a highlight plane on metal and hats (cvLt). A cream rim CV_RIM on the back edge of the body
+   and the big costume shapes. No gradients, no shadowBlur, no strokes and no clips at draw time: every tone is one filled polygon.
+
+   SPACE. "Standing frame": world units, origin at the feet, y up is negative, facing right; the fighter as he stands at rest, the same space
+   as the mockups (redesign/mockups/src/fighters.js) and as pose() with no crouch, bob or lean. The kit maps it onto the rig every frame:
+   standing (x, y) -> rig (x, y + P.cvDrop) [crouch and bob] -> turned by P.lean about P.hip -> squashed by the motion layer about the feet.
+   Arms and legs are drawn in the rig's own (unsquashed) frame from shoulder / hip points that follow the body to P.hF / P.hB / P.fF / P.fB,
+   so a punch or a kick always ends where the rig (and the hitbox) puts it.
+
+   ONE FIGURE = CV_FIG[costume] = {
+     pal: { key: "#rrggbb", ... }      every colour the figure uses, default skin (palette 0). Leaf greens, irises, metals too: every skin
+                                       transform (Ink Noir, dim, hit flash) then reaches all of them.
+     chip: [{}, {...}, {...}, {...}]   overrides for the chip skins 1-3 (palette index 1..3; 0 is pal itself)
+     won: { scratch, zorp, kraken, harvest }   overrides for the won skins (pal.road); include `skin` (the body)
+     pm: { 1: {...}, 2: {...} }        overrides for the Pommes skins (pal.pommes 1 Ink Noir, 2 Starfall). Ink Noir first turns every pal colour
+                                       into one of two inks (light CV_NOIR_L / dark CV_NOIR_D by luminance), then applies pm[1]
+     prim: "key"                       the costume's main colour: an unknown palette (a copy that is not in the list) sets it from pal.accent
+     derive(C)                         optional: sets the tones that follow a skin's colours (C.greave = cvSh(C.steel, 0.35)), before the mode
+     body: { x, y, rx, ry, o }         the potato in the standing frame (cvBlob(x, y, rx, ry, o)): the silhouette potatoPath() replays (glaze,
+                                       Road and Pommes passes, the 2v2 team rim) and P.rx / P.ry / P.cy / P.top
+     face: { x, y, s, ... }            the live face (cvFace below); x, y the middle between the eyes, also P.head
+     mouthPt: [x, y]                   P.mouthPt (where flames and the manga's "mmm" come from)
+     arm: { shF, shB, len, lenB, bendB, r0, r1, col, colB, colU, cuff, hand, handB }   shoulders (standing frame), arm lengths (front,
+                                       back; the rig's), the back elbow's side ("down" default, "back", "fwd", "up"), radii at the shoulder
+                                       and the wrist (taper it: an arm reads by its shoulder and its hand), colour keys (front, back; colU
+                                       the front upper arm's own, a sleeve). cuff: { len, r0, r1, col } a band on the forearm behind the hand
+                                       (a gauntlet's cuff; the front arm). hand / handB: a mitten { r, col, thumb (default true), k (the size of
+                                       its shadow: 1 a mitten, ~1.5 a gauntlet), more(c, K, x, y, front, ang) } (more: live details over it,
+                                       ang the forearm's angle); its outline goes with the arm's in one fill
+     leg: { hipF, hipB, len, bones, r0, r1, col, colB, boot: { s, col, colB }, draw }   hips (standing frame), bone length (bones: 1 a
+                                       single bone, for short legs), radii, colours; the boots are carved for you from boot (parts "boot",
+                                       "bootB", S.boot); draw(c, K, hip, foot, front) instead for a figure with its own legs (a hakama)
+     carve: { name(S) }                the static parts, carved once per figure (the first time it is drawn) into filled polygons with colour
+                                       KEYS, not colours: one carving serves every skin and mode (S below)
+     draw(K)                           the figure, back to front, every frame: calls the kit (K below) and its own live parts
+   }
+   cvFigReg(id, fig) registers one (fills in fig.id and the silhouette). The face's options are listed above cvFace.
+
+   SHAPES are arrays of points [x, y] (dense polygons; nothing is stroked): cvBlob(cx, cy, rx, ry, o) the potato, cvSm(pts, open) a smooth
+   path through points ([x, y, 1] a sharp corner), cvCirc(x, y, r, ry, rot), cvCapsule(a, b, r0, r1), cvRect(x, y, w, h).
+   COLOUR KEYS: a key of the skin's colour set ("cape"), "key/sh" its shadow tone, "key/sh.3" a lighter one, "key/lt" its highlight, "ink",
+   "rim", "eye" (the eye white), or a literal "#rrggbb" (kept on every skin: avoid it but for mouths).
+   THE CARVER, S (in carve.name(S); the standing frame, or what S.with sets):
+     S.cel(shape, key, o)   the carved part: the ink outline (o.lw, default 2.6; 0 none; half outside the shape, half over it), the base,
+                            the hard shadow (what the shape moved by o.sh = [dx, dy] towards the light leaves uncovered; default [4, -3];
+                            0 none; o.shade its key, default key + "/sh"), a highlight (o.hi = [dx, dy] the same way, o.hiCol), the rim on
+                            the back edge (o.rim: 1), then o.in(S): details clipped to the part (to its convex hull)
+     S.fill(shape, key)     a flat fill;  S.rect(x, y, w, h, key);  S.specks([[x, y, r], ...], key)
+     S.line(pts, w, key[, w1])   a brush line along a smooth curve through pts (w to w1 wide), ink by default
+     S.leaf(x, y, len, ang, key[, vein]), S.boot(x, y, s, key), S.star(x, y, r, key[, ink])   the mockup's helpers
+     S.with(x, y, ang, k, fn)    fn(S) in a frame moved to (x, y), turned by ang and scaled by k (line widths and shadow shifts scale too)
+
+   THE KIT, K (one per figure per frame; read-only on f and g):
+     K.c, K.f, K.P, K.tk, K.C (this frame's colours: cvCol(K.C, key)), K.fig, K.flash, K.at, K.rest (standing about, no move)
+     K.hF, K.hB      the hands to draw (P.hF / P.hB; a figure may move them at rest, e.g. onto a hilt, before it draws the arms)
+     K.sx, K.sy      the motion layer's squash (1 = none)
+     K.stack(list[, fn, fk])   THE way to draw the carved parts on the body: list, back to front, of part names and tokens. A run of names
+                     is drawn as ONE sprite, baked upright (per skin and mode, run and zoom level, never per lean or sway) and drawn
+                     through the frame's lean and fn, turned (a pose that recurs is held: COST). Tokens: "face" the
+                     face (baked with the run at rest, a shout's mouth laid over it; live with an expression, hitstun or a blink), "skin"
+                     the won / Pommes skin body pass and Glaze (put it right after the body), "top" the skin's top pass (after the hats),
+                     a function g(K) a live part in between, null nothing (handy: cond ? "hilt" : null). Tokens break the run.
+                     fn(c) a transform in the standing frame (a sway, a flutter); fk, a string naming its step, lets a pose of it be held:
+                     quantize what goes into fn coarsely (0.02-0.05 steps) so a few steps recur. Without fk the run always draws turned.
+                     On a manga page (its context is wrapped: cvMgInk) every part is drawn as paths instead, so the page can ink it
+     K.sprite(list)  parts as one sprite in the current transform (for a big part that moves on its own)
+     K.draw(name)    a carved part drawn as paths in the current transform (cheaper for a small part that moves on its own: the raven,
+                     the boots)
+     K.part(name[, fn])   a carved part drawn as paths on the body (fn as for K.stack); costs one fill per tone and shape, use K.stack
+     K.body(fn)      fn(c) in the standing frame (squash, crouch, lean): a live part that rides on the body
+     K.pt(x, y)      a standing-frame point in the rig frame (where arms and legs start)
+     K.arm(front[, held])   the arm to K.hF / K.hB with its hand; held(c, K) is drawn between the arm and the hand (a sword hilt in the fist)
+     K.leg(front)    the leg to P.fF / P.fB with its boot
+     K.face()        the live face (P.expr, hitstun eyes, P.mouth, blinks); K.stack's "face" token calls it when it must
+     K.rim()         the 2v2 team rim (draw it before the body)
+     K.skinBody(), K.skinTop()   the skin passes ("skin" / "top" in K.stack call them)
+     K.spring(name, target, k)   a lagging value for secondary motion (capes, tails): per fighter, eased once per tick
+   The back arm and back leg are one tone (their shadow): they read as further away. Live parts use cvLimb / cvMitt / cvCapAdd / cvSegAdd /
+   cvArcAdd: build a path, fill it; ink under, the shadow, the lit part inset towards the light (CV_LDX, CV_LDY).
+
+   MOTION (cvMotion, from pose()): P.sq > 0 squashes (the coil before a hit: <= 8 % in the last 2 startup frames of a light, the last 5 of a
+   heavy, held while a heavy is charged; landing), P.sq < 0 stretches (<= 12 % on the first active frame, a jump's take-off). The figure is
+   scaled about the feet: K.sx = 1 + 0.6 * sq, K.sy = 1 - sq. Personality (an idle breath, a cape that settles late) is the figure's
+   own: K.spring and tk in draw(K).
+
+   COST (software canvas on a phone: every fill costs per shape and per edge, a stroke three times a fill, a sprite per pixel; budget
+   0.35 ms per figure per frame, tests/pwcarve.py times it; and a match must not keep baking sprites: tests/pwcarve.py ME OPP --live).
+   A smoothed sprite costs about 4 ns per device pixel it covers (transparent ones too; twice that turned), a fill a few microseconds
+   plus its area: big static parts go through K.stack (a figure is two or three sprites: what hangs behind, the body run), limbs, hands,
+   boots and small moving parts are a few fills each. THE SPRITE RULE (cvBaked, K.stack): a sprite's key is the skin, the run of parts
+   and the zoom level, never a value that changes from frame to frame: a lean or a sway turns the upright sprite. A pose (lean step and
+   fk) gets a sprite of its own only once it is held: drawn 20 times, at most ten per stack and fighter (a stance, a run's lean, a cape at
+   rest). So pass fk only for a transform whose steps recur, quantized coarsely. A figure bakes at most one sprite a frame (the rest draw
+   as paths that frame); a new zoom level waits until it has been needed 20 frames in a row, drawing a cached level scaled meanwhile; a
+   sprite over 0.5 M px (a big draw: the fighter select, a sheet's portrait), the hit flash, the dimmed helpless figure and a manga page
+   are drawn as paths. Sprites live in CV_BAKE (6 M px, least recently used out). The live test's limits: at most 10 new sprites in the
+   last 600 of 1800 frames and 150 in all, at most 3 M px held with two figures. Anything else that changes every frame: a few plain
+   fills. */
+const CV_INK = "#1a1326", CV_RIM = "#fff0c0", CV_EYE = "#fffdf4", CV_TAU = Math.PI * 2;
+const CV_NOIR_L = "#d8cfb8", CV_NOIR_D = "#3a3842";
+const CV_FIG = {};
+let cvKatC = null;   // the colour set katana() (draw-fighters.js) paints with while a figure holds it (ui/fig-samurai.js)
+
+/* ---------- colours (hex in, hex out, cached) ---------- */
+const cvHexC = new Map(), cvMixC = new Map();
+function cvHex(h) {
+  let v = cvHexC.get(h);
+  if (!v) { v = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; cvHexC.set(h, v); }
+  return v;
+}
+function cvMix(a, b, t) {
+  const k = a + b + t;
+  let v = cvMixC.get(k);
+  if (v === undefined) {
+    const A = cvHex(a), B = cvHex(b);
+    v = "#" + A.map((x, i) => Math.round(x + (B[i] - x) * t).toString(16).padStart(2, "0")).join("");
+    cvMixC.set(k, v);
+  }
+  return v;
+}
+const cvSh = (col, k) => cvMix(col, "#2a1450", k === undefined ? 0.34 : k);   // the one shadow tone: pushed towards violet
+const cvLt = (col, k) => cvMix(col, "#fff6d8", k === undefined ? 0.4 : k);
+const cvLum = (h) => { const [r, g, b] = cvHex(h); return (0.3 * r + 0.59 * g + 0.11 * b) / 255; };
+
+/* ---------- shapes: dense polygons, made once ---------- */
+const CV_STEP = 1.2;   // units between the points of a curve
+const cvMid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+function cvQuadTo(out, p0, q, p1) {
+  const n = Math.max(2, Math.min(18, Math.ceil((Math.hypot(q[0] - p0[0], q[1] - p0[1]) + Math.hypot(p1[0] - q[0], p1[1] - q[1])) / CV_STEP)));
+  for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t; out.push([u * u * p0[0] + 2 * u * t * q[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * q[1] + t * t * p1[1]]); }
+}
+// a potato: a superellipse (sq < 1 squarer), pear (wider at the bottom), lean (the top forward), with two small bumps
+function cvBlob(cx, cy, rx, ry, o) {
+  o = o || {}; const pear = o.pear || 0, sq = o.sq || 1, lean = o.lean || 0, n = Math.max(24, Math.min(80, Math.ceil((rx + ry) * 3.1 / CV_STEP))), out = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * CV_TAU, cs = Math.cos(a), sn = Math.sin(a);
+    const ex = Math.sign(cs) * Math.pow(Math.abs(cs), sq), ey = Math.sign(sn) * Math.pow(Math.abs(sn), sq);
+    const bump = 1 + 0.02 * Math.sin(a * 3 + 1) + 0.012 * Math.sin(a * 5 + 2.3);
+    const y = ey * ry * bump, x = ex * rx * (1 + pear * ey) * bump - y * lean;
+    out.push([cx + x, cy + y]);
+  }
+  return out;
+}
+// a smooth closed shape through points; a point [x, y, 1] is a sharp corner, the others round it off (open: a curve through them)
+function cvSm(pts, open) {
+  const n = pts.length, out = [];
+  if (open) {
+    let cur = [pts[0][0], pts[0][1]]; out.push(cur);
+    if (n === 2) { out.push([pts[1][0], pts[1][1]]); return out; }
+    for (let i = 1; i < n - 1; i++) { const e = i === n - 2 ? pts[n - 1] : cvMid(pts[i], pts[i + 1]); cvQuadTo(out, cur, pts[i], e); cur = e; }
+    return out;
+  }
+  let cur = cvMid(pts[n - 1], pts[0]); out.push(cur);
+  for (let i = 0; i < n; i++) {
+    const q = pts[i], x = cvMid(q, pts[(i + 1) % n]);
+    if (q[2]) { out.push([q[0], q[1]]); out.push(x); } else cvQuadTo(out, cur, q, x);
+    cur = x;
+  }
+  out.pop();   // back at the start
+  return out;
+}
+function cvCirc(x, y, r, ry, rot) {
+  ry = ry || r; const n = Math.max(10, Math.min(64, Math.ceil(Math.PI * (r + ry) / CV_STEP))), cs = Math.cos(rot || 0), sn = Math.sin(rot || 0), out = [];
+  for (let i = 0; i < n; i++) { const a = (i / n) * CV_TAU, u = Math.cos(a) * r, v = Math.sin(a) * ry; out.push([x + u * cs - v * sn, y + u * sn + v * cs]); }
+  return out;
+}
+function cvCapsule(a, b, r0, r1) {
+  const th = Math.atan2(b[1] - a[1], b[0] - a[0]), out = [], arc = (c, r, a0) => { const n = Math.max(5, Math.ceil(Math.PI * r / CV_STEP)); for (let i = 0; i <= n; i++) { const t = a0 + (i / n) * Math.PI; out.push([c[0] + Math.cos(t) * r, c[1] + Math.sin(t) * r]); } };
+  arc(a, r0, th + Math.PI / 2); arc(b, r1, th - Math.PI / 2);
+  return out;
+}
+const cvRect = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+function cvArea(P) { let s = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) s += P[j][0] * P[i][1] - P[i][0] * P[j][1]; return s / 2; }
+const cvPos = (P) => (cvArea(P) < 0 ? P.slice().reverse() : P);   // one winding for every polygon: a fill of many is their union
+const cvShift = (P, dx, dy) => P.map((p) => [p[0] + dx, p[1] + dy]);
+function cvInside(P, x, y) {
+  let c = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) c = !c; }
+  return c;
+}
+// where segment p-q crosses segment r-s: [x, y, t along p-q, u along r-s] (each in [0, 1)), or null
+function cvHit(p, q, r, s) {
+  const dx = q[0] - p[0], dy = q[1] - p[1], ex = s[0] - r[0], ey = s[1] - r[1], den = dx * ey - dy * ex;
+  if (Math.abs(den) < 1e-12) return null;
+  const fx = r[0] - p[0], fy = r[1] - p[1], t = (fx * ey - fy * ex) / den, u = (fx * dy - fy * dx) / den;
+  return t >= 0 && t < 1 && u >= 0 && u < 1 ? [p[0] + dx * t, p[1] + dy * t, t, u] : null;
+}
+// cuts out the small loops an offset makes at a tight corner
+function cvUnloop(P) {
+  for (let i = 0; i < P.length && P.length > 5; i++) {
+    const n = P.length;
+    for (let k = 2; k < Math.min(16, n - 1); k++) {
+      const j = (i + k) % n, h = cvHit(P[i], P[(i + 1) % n], P[j], P[(j + 1) % n]);
+      if (!h) continue;
+      const x = [h[0], h[1]];
+      P = i + k < n ? P.slice(0, i + 1).concat([x], P.slice(j + 1)) : P.slice(j + 1, i + 1).concat([x]);
+      i = -1; break;
+    }
+  }
+  return P;
+}
+// the shape grown by d (shrunk for d < 0); corners that open up are rounded (the round join of a stroke)
+function cvOffset(P, d) {
+  const n = P.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const a = P[(i + n - 1) % n], p = P[i], b = P[(i + 1) % n];
+    const l0 = Math.hypot(p[0] - a[0], p[1] - a[1]) || 1, l1 = Math.hypot(b[0] - p[0], b[1] - p[1]) || 1;
+    const n0x = (p[1] - a[1]) / l0, n0y = -(p[0] - a[0]) / l0, n1x = (b[1] - p[1]) / l1, n1y = -(b[0] - p[0]) / l1;
+    const cr = n0x * n1y - n0y * n1x, dt = n0x * n1x + n0y * n1y;
+    if (cr * d > 0 && dt < 0.92) {
+      const a0 = Math.atan2(n0y, n0x), da = Math.atan2(cr, dt), k = Math.max(1, Math.ceil(Math.abs(da) / 0.35));
+      for (let j = 0; j <= k; j++) { const t = a0 + (da * j) / k; out.push([p[0] + Math.cos(t) * d, p[1] + Math.sin(t) * d]); }
+    } else {
+      let mx = n0x + n1x, my = n0y + n1y; const ml = Math.hypot(mx, my) || 1; mx /= ml; my /= ml;
+      const m = Math.min(4, 1 / Math.max(0.25, mx * n0x + my * n0y));
+      out.push([p[0] + mx * d * m, p[1] + my * d * m]);
+    }
+  }
+  return cvUnloop(out);
+}
+// A minus B (both one winding): the pieces of A outside B, each closed along B's edge (the shadow a shape leaves when moved)
+function cvMinus(A, B) {
+  const n = A.length, m = B.length, X = [];
+  for (let i = 0; i < n; i++) {
+    const p = A[i], q = A[(i + 1) % n];
+    for (let j = 0; j < m; j++) {
+      const r = B[j], s = B[(j + 1) % m], h = cvHit(p, q, r, s);
+      if (h) X.push({ x: h[0], y: h[1], a: i + h[2], b: j + h[3], out: (s[0] - r[0]) * (q[1] - p[1]) - (s[1] - r[1]) * (q[0] - p[0]) < 0 });
+    }
+  }
+  if (!X.length) return cvInside(B, A[0][0], A[0][1]) ? [] : [A];
+  if (X.length % 2) return [];   // a touch we cannot read: no shadow rather than a wrong one
+  const byA = X.slice().sort((p, q) => p.a - q.a), byB = X.slice().sort((p, q) => p.b - q.b), res = [], used = new Set();
+  byA.forEach((x, i) => (x.ia = i)); byB.forEach((x, i) => (x.ib = i));
+  for (const s of X) {
+    if (!s.out || used.has(s)) continue;
+    const poly = []; let cur = s, guard = 0;
+    do {
+      used.add(cur);
+      const nx = byA[(cur.ia + 1) % byA.length], da = (nx.a - cur.a + n) % n;   // along A, outside B, to where A goes into B
+      poly.push([cur.x, cur.y]);
+      for (let k = Math.floor(cur.a) + 1; k <= cur.a + da; k++) poly.push(A[k % n]);
+      poly.push([nx.x, nx.y]); used.add(nx);
+      const pv = byB[(nx.ib - 1 + byB.length) % byB.length], db = (nx.b - pv.b + m) % m;   // back along B, inside A
+      for (let k = Math.floor(nx.b); k > nx.b - db; k--) poly.push(B[((k % m) + m) % m]);
+      cur = pv;
+    } while (cur !== s && ++guard < 64);
+    if (cur === s && poly.length > 2) res.push(poly);
+  }
+  return res;
+}
+function cvHull(P) {
+  const s = P.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+  for (const p of s) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = s.length - 1; i >= 0; i--) { const p = s[i]; while (hi.length > 1 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+  return cvPos(lo.slice(0, -1).concat(hi.slice(0, -1)));
+}
+// P cut to the convex H (one winding)
+function cvClip(P, H) {
+  let out = P;
+  for (let i = 0; i < H.length && out.length; i++) {
+    const a = H[i], b = H[(i + 1) % H.length], ex = b[0] - a[0], ey = b[1] - a[1], inp = out, side = (p) => ex * (p[1] - a[1]) - ey * (p[0] - a[0]);
+    out = [];
+    for (let j = 0; j < inp.length; j++) {
+      const p = inp[j], q = inp[(j + 1) % inp.length], sp = side(p), sq = side(q);
+      if (sp >= 0) out.push(p);
+      if ((sp >= 0) !== (sq >= 0)) { const t = sp / (sp - sq); out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+    }
+  }
+  return out;
+}
+// a brush line along an open polyline, w0 to w1 wide, round ends
+function cvBrush(pts, w0, w1) {
+  if (w1 === undefined) w1 = w0;
+  const n = pts.length, L = [], R = [], cum = [0];
+  for (let i = 1; i < n; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const tot = cum[n - 1] || 1, dir = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, dx = (b[0] - a[0]) / l, dy = (b[1] - a[1]) / l;
+    const w = (w0 + ((w1 - w0) * cum[i]) / tot) / 2, p = pts[i];
+    L.push([p[0] + dy * w, p[1] - dx * w]); R.push([p[0] - dy * w, p[1] + dx * w]); dir.push([dx, dy, w]);
+  }
+  const cap = (p, d, from) => { const out = [], a0 = Math.atan2(-d[0], d[1]) + from; for (let k = 1; k < 6; k++) { const t = a0 + (k / 6) * Math.PI; out.push([p[0] + Math.cos(t) * d[2], p[1] + Math.sin(t) * d[2]]); } return out; };
+  return cvUnloop(L.concat(cap(pts[n - 1], dir[n - 1], 0), R.reverse(), cap(pts[0], dir[0], Math.PI)));
+}
+// a closed polygon with the points it does not need left out (none moves the outline more than tol units): a fill costs by its edges
+function cvSimplify(P, tol) {
+  const n = P.length;
+  if (n < 8) return P;
+  let far = 0, fd = -1;   // split the ring at its two most distant points
+  for (let i = 1; i < n; i++) { const d = (P[i][0] - P[0][0]) ** 2 + (P[i][1] - P[0][1]) ** 2; if (d > fd) { fd = d; far = i; } }
+  const keep = new Uint8Array(n), t2 = tol * tol;
+  keep[0] = keep[far] = 1;
+  const dp = (i0, i1) => {   // Ramer-Douglas-Peucker on the run i0 .. i1 (i1 may wrap)
+    const st = [[i0, i1]];
+    while (st.length) {
+      const [a, b] = st.pop(), A = P[a % n], B = P[b % n], dx = B[0] - A[0], dy = B[1] - A[1], l2 = dx * dx + dy * dy || 1e-9;
+      let m = -1, md = t2;
+      for (let i = a + 1; i < b; i++) {
+        const Q = P[i % n], t = Math.max(0, Math.min(1, ((Q[0] - A[0]) * dx + (Q[1] - A[1]) * dy) / l2)), ex = A[0] + dx * t - Q[0], ey = A[1] + dy * t - Q[1], d = ex * ex + ey * ey;
+        if (d > md) { md = d; m = i; }
+      }
+      if (m > 0) { keep[m % n] = 1; st.push([a, m], [m, b]); }
+    }
+  };
+  dp(0, far); dp(far, n);
+  return P.filter((_, i) => keep[i]);
+}
+// polygons to one Path2D (for a figure's own cached live shapes)
+function cvPath(polys) {
+  const p = new Path2D();
+  for (const Q of polys) { const P = cvSimplify(Q, 0.12); p.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) p.lineTo(P[i][0], P[i][1]); p.closePath(); }
+  return p;
+}
+function cvBootPts(x, y, s) { return cvSm([[x - 5 * s, y, 1], [x - 5.5 * s, y - 8 * s], [x + 2 * s, y - 9 * s], [x + 4 * s, y - 5 * s], [x + 10 * s, y - 5 * s], [x + 11 * s, y, 1]]); }
+
+/* ---------- the carver: a figure's static parts as fills by colour key, once ---------- */
+function CV_Carve() { this.ops = []; this.m = [1, 0, 0, 1, 0, 0]; this.clipH = null; }
+CV_Carve.prototype = {
+  with(x, y, ang, k, fn) {
+    const m0 = this.m, [a, b, c, d, e, f] = m0, cs = Math.cos(ang || 0) * (k || 1), sn = Math.sin(ang || 0) * (k || 1);
+    this.m = [a * cs + c * sn, b * cs + d * sn, -a * sn + c * cs, -b * sn + d * cs, a * x + c * y + e, b * x + d * y + f];
+    try { fn(this); } finally { this.m = m0; }
+  },
+  _xf(P) { const [a, b, c, d, e, f] = this.m; return P.map((p) => [a * p[0] + c * p[1] + e, b * p[0] + d * p[1] + f]); },
+  // polygons (in the current frame) as fills of one key; t: a shading tone (left out on a hit flash), al: its alpha
+  add(polys, k, t, al) {
+    let ps = polys.filter((P) => P.length > 2).map((P) => this._xf(P));
+    if (this.clipH) ps = ps.map((P) => cvClip(P, this.clipH));
+    ps = ps.filter((P) => P.length > 2).map(cvPos);
+    if (!ps.length) return;
+    t = t ? 1 : 0; al = al || 1;
+    const last = this.ops[this.ops.length - 1];
+    if (last && last.k === k && last.t === t && last.a === al) last.ps.push(...ps);
+    else this.ops.push({ k, t, a: al, ps });
+  },
+  fill(P, k) { this.add([P], k); },
+  rect(x, y, w, h, k) { this.add([cvRect(x, y, w, h)], k); },
+  specks(list, k) { this.add(list.map(([x, y, r]) => cvCirc(x, y, r, r * 0.7, 0.4)), k); },
+  line(pts, w, k, w1) { this.add([cvBrush(cvSm(pts, true), w, w1)], k || "ink"); },
+  cel(P, k, o) {
+    o = o || {}; P = cvPos(P);
+    const lw = o.lw === undefined ? 2.6 : o.lw, In = lw ? cvOffset(P, -lw / 2) : P, sh = o.sh === undefined ? [4, -3] : o.sh;
+    if (lw) this.add([cvOffset(P, lw / 2)], o.ink || "ink");
+    this.add([In], k);
+    if (sh && o.shade !== 0) this.add(cvMinus(In, cvShift(P, sh[0], sh[1])), o.shade || k + "/sh", 1);
+    if (o.hi) this.add(cvMinus(In, cvShift(P, o.hi[0], o.hi[1])), o.hiCol || k + "/lt", 1);
+    if (o.rim) this.add(cvMinus(In, cvShift(P, 2.2, -0.4)), "rim", 1, 0.85);
+    if (o.in) {
+      const h0 = this.clipH, H = cvHull(this._xf(In));
+      this.clipH = h0 ? cvPos(cvClip(H, h0)) : H;
+      try { o.in(this); } finally { this.clipH = h0; }
+    }
+  },
+  leaf(x, y, len, ang, k, vein) {
+    this.with(x, y, ang, 1, () => {
+      this.cel(cvSm([[0, 0, 1], [len * 0.35, -len * 0.3], [len, 0, 1], [len * 0.35, len * 0.3]]), k, { sh: [0.6, -1.6], lw: 1.8, shade: k + "/sh.3" });
+      this.line([[len * 0.15, 0], [len * 0.75, 0]], 1, vein || k + "/sh.5");
+    });
+  },
+  boot(x, y, s, k) { this.cel(cvBootPts(x, y, s), k, { sh: [2, -2], lw: 2.2 }); this.rect(x - 5 * s, y - 1.6 * s, 16 * s, 1.6 * s, "ink"); },
+  star(x, y, r, k, ink) {
+    const P = [];
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * CV_TAU - Math.PI / 2, rr = i % 2 ? r * 0.36 : r; P.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr]); }
+    if (ink) this.cel(P, k, { lw: ink, sh: 0 }); else this.fill(P, k);
+  },
+  done() {
+    return this.ops.map((o) => {
+      const bb = [1e9, 1e9, -1e9, -1e9];
+      for (const P of o.ps) for (const q of P) { bb[0] = Math.min(bb[0], q[0]); bb[1] = Math.min(bb[1], q[1]); bb[2] = Math.max(bb[2], q[0]); bb[3] = Math.max(bb[3], q[1]); }
+      return { p: cvPath(o.ps), k: o.k, t: o.t, a: o.a, bb };
+    });
+  },
+};
+// the parts of a figure, carved the first time it is drawn
+function cvOpsOf(fig) {
+  if (!fig.ops) { const ops = {}; for (const k in fig.carve) { const S = new CV_Carve(); fig.carve[k](S); ops[k] = S.done(); } fig.ops = ops; }
+  return fig.ops;
+}
+// one carved part, in the current transform
+function cvOps(c, ops, C) {
+  const ga = c.globalAlpha;
+  for (let i = 0; i < ops.length; i++) {
+    const o = ops[i];
+    if (o.t && C.flat) continue;
+    c.fillStyle = cvCol(C, o.k);
+    if (o.a !== 1) { c.globalAlpha = ga * o.a; c.fill(o.p); c.globalAlpha = ga; } else c.fill(o.p);
+    if (cvMg && o.k === "ink") cvMgInk(c, o.p);
+  }
+}
+// a manga page (ui/manga.js) draws a fighter through a context whose fillStyle is wrapped: it tints every colour, its strokes in OUT come out
+// k times wider, and its halo pass turns everything white with wider lines still. The kit then draws paths, not sprites (K.stack, K.sprite),
+// and gives the ink outlines a stroke the page can widen (cvMgInk)
+let cvMg = false;
+function cvMgInk(c, p) { if (!cvMg) return; c.lineWidth = 1.3; c.strokeStyle = OUT; c.lineJoin = "round"; if (p) c.stroke(p); else c.stroke(); }
+
+// a part's fills; "face" is the face at rest (cvFaceCarve), carved like the rest
+function cvPartOps(fig, name) {
+  if (name !== "face") return cvOpsOf(fig)[name];
+  if (!fig.faceOps) { const S = new CV_Carve(); cvFaceCarve(S, fig.face); fig.faceOps = S.done(); }
+  return fig.faceOps;
+}
+
+/* ---------- sprites: a run of carved parts drawn once per skin and zoom level, upright ---------- */
+// A sprite is baked in the standing frame with nothing turned, at a zoom level q (device pixels per unit, a quarter octave), and drawn
+// through the figure's transform of the frame (lean, sway, squash): so its key is only the skin, the run of parts and q (a held pose
+// adds its own, K.stack), and a match bakes a few dozen sprites in its first seconds and then few. The zoom level: the cached one that is
+// no more than 3 % smaller than the transform and no more than two thirds bigger (a camera that eases in and out reuses what it has),
+// else the next quarter octave up.
+const CV_BAKE = new Map(), CV_BAKE_MAX = 6e6, CV_SPRITE_MAX = 5e5;   // pixels held in all (least recently used out); the biggest sprite
+let cvBakePx = 0, cvBakeMade = 0, cvBakeBig = 0;
+// the box of a run of parts in the standing frame, kept on the figure
+function cvRunBox(fig, list, lk) {
+  let b = fig.boxes.get(lk);
+  if (b) return b;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const n of list) for (const o of cvPartOps(fig, n)) { x0 = Math.min(x0, o.bb[0]); y0 = Math.min(y0, o.bb[1]); x1 = Math.max(x1, o.bb[2]); y1 = Math.max(y1, o.bb[3]); }
+  b = [Math.floor(x0 - 1), Math.floor(y0 - 1), Math.ceil(x1 + 1), Math.ceil(y1 + 1)];
+  fig.boxes.set(lk, b);
+  return b;
+}
+// the sprite of a run for the kit K, or null: the caller then draws the parts as paths. Null when it would be bigger than CV_SPRITE_MAX
+// pixels (a big draw: the fighter select, a sheet's portrait) or when it is not baked yet and K has baked one this frame already.
+// pose: null upright, or a held pose { k, ls, fn } baked into the sprite: the lean ls (steps of 0.02 rad, about the hip) and the stack's
+// transform fn, named by k
+function cvBaked(K, list, pose) {
+  const fig = K.fig, C = K.C, z = K.z, lk = list.join(","), pre = C.key + "|" + lk + "|", suf = pose ? "@" + pose.k : "";
+  const L = Math.ceil(Math.log2(z) * 4 - 0.05);
+  let s;
+  for (const k of [L - 1, L, L + 1, L + 2, L + 3]) {   // a cached level that fits
+    const q = Math.pow(2, k / 4);
+    if (q * 1.03 < z || q * 0.6 > z) continue;
+    s = CV_BAKE.get(pre + k + suf);
+    if (s) { CV_BAKE.delete(pre + k + suf); CV_BAKE.set(pre + k + suf, s); return s; }   // most recently used last
+  }
+  // nothing cached fits. A new level waits until the figure has needed it for 20 frames in a row (a camera punch is over by then): until
+  // then a held pose turns the upright sprite (the caller) and an upright run uses another level that is cached, drawn up to 1.7 times
+  // bigger or up to 2.4 times smaller (only a run met for the first time is baked at once)
+  let fb = null;
+  for (const k of [L - 1, L - 2, L - 3, L + 3, L + 4, L + 5]) { fb = CV_BAKE.get(pre + k + suf); if (fb) break; }
+  if ((pose || fb) && cvNeed(K, pre + L + suf) < 20) return pose ? null : fb;
+  let b = cvRunBox(fig, list, lk), m = null;
+  const q = Math.pow(2, L / 4);
+  if (pose) {   // the pose as a matrix, and the box through it
+    const px = K.P.hip[0], py = K.P.hip[1] - K.P.cvDrop;
+    m = new DOMMatrix().translateSelf(px, py).rotateSelf((pose.ls / 50) * (180 / Math.PI)).translateSelf(-px, -py);
+    if (pose.fn) pose.fn({ translate: (x, y) => m.translateSelf(x, y), rotate: (a) => m.rotateSelf((a * 180) / Math.PI), scale: (x, y) => m.scaleSelf(x, y),
+      transform: (a, b_, c, d, e, f) => m.multiplySelf(new DOMMatrix([a, b_, c, d, e, f])) });
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y] of [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]]) {
+      const t = m.transformPoint({ x, y }); x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y); x1 = Math.max(x1, t.x); y1 = Math.max(y1, t.y);
+    }
+    b = [Math.floor(x0), Math.floor(y0), Math.ceil(x1), Math.ceil(y1)];
+  }
+  const w = Math.max(1, Math.ceil((b[2] - b[0]) * q)), h = Math.max(1, Math.ceil((b[3] - b[1]) * q));
+  if (w * h > CV_SPRITE_MAX || K.baked) return null;
+  K.baked = true;
+  const cv2 = document.createElement("canvas"); cv2.width = w; cv2.height = h;
+  const x = cv2.getContext("2d");
+  x.setTransform(q, 0, 0, q, -b[0] * q, -b[1] * q);
+  if (m) x.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+  for (const n of list) cvOps(x, cvPartOps(fig, n), C);
+  s = { cv: cv2, x0: b[0], y0: b[1], w: w / q, h: h / q, px: w * h };
+  const key = pre + L + suf;
+  CV_BAKE.set(key, s); cvBakePx += s.px; cvBakeMade++; cvBakeBig = Math.max(cvBakeBig, s.px);
+  for (const [k, v] of CV_BAKE) { if (cvBakePx <= CV_BAKE_MAX || k === key) break; CV_BAKE.delete(k); cvBakePx -= v.px; }
+  return s;
+}
+// how many frames in a row this fighter has asked for the sprite key (one count per game tick)
+const CV_NEED = new WeakMap();
+function cvNeed(K, key) {
+  let m = CV_NEED.get(K.f);
+  if (!m) CV_NEED.set(K.f, (m = new Map()));
+  let v = m.get(key);
+  if (!v || K.tk - v[1] > 1 || K.tk < v[1]) m.set(key, (v = [0, K.tk - 1]));
+  if (K.tk !== v[1]) { v[0]++; v[1] = K.tk; }
+  if (m.size > 64) for (const [k, w] of m) if (K.tk - w[1] > 1) m.delete(k);
+  return v[0];
+}
+// device pixels per unit of the current transform
+function cvZoomOf(c) { const m = c.getTransform(); return Math.max(0.05, Math.sqrt(Math.max(m.a * m.a + m.b * m.b, m.c * m.c + m.d * m.d))); }
+
+/* ---------- live drawing: build a path, fill it ---------- */
+// a tapered capsule a -> b (radii r0, r1), added to the current path
+function cvCapAdd(c, ax, ay, bx, by, r0, r1) {
+  const th = Math.atan2(by - ay, bx - ax), h = Math.PI / 2;
+  c.moveTo(ax + Math.cos(th + h) * r0, ay + Math.sin(th + h) * r0);
+  c.arc(ax, ay, r0, th + h, th + 3 * h); c.arc(bx, by, r1, th - h, th + h); c.closePath();
+}
+// a circle, added to the current path (anticlockwise on the screen, like a limb's contour: a fill of both is their union)
+const cvCircAdd = (c, x, y, r) => { c.moveTo(x + r, y); c.arc(x, y, r, CV_TAU, 0, true); };
+// a straight stroke x0, y0 -> x1, y1, w wide (square ends), added to the current path
+function cvSegAdd(c, x0, y0, x1, y1, w) {
+  const l = Math.hypot(x1 - x0, y1 - y0) || 1, ux = ((x1 - x0) / l) * (w / 2), uy = ((y1 - y0) / l) * (w / 2);
+  c.moveTo(x0 - ux + uy, y0 - uy - ux); c.lineTo(x1 + ux + uy, y1 + uy - ux); c.lineTo(x1 + ux - uy, y1 + uy + ux); c.lineTo(x0 - ux - uy, y0 - uy + ux); c.closePath();
+}
+// a band along an arc (centre x, y, radius r, w wide), added to the current path
+function cvArcAdd(c, x, y, r, a0, a1, w) { c.moveTo(x + Math.cos(a0) * (r + w / 2), y + Math.sin(a0) * (r + w / 2)); c.arc(x, y, r + w / 2, a0, a1); c.arc(x, y, Math.max(0.1, r - w / 2), a1, a0, true); c.closePath(); }
+// the light comes from the upper front: a round part's lit side is the part moved that way, cut to itself (the mockup's cel(sx 2, sy -1.5))
+const CV_LDX = 2, CV_LDY = -1.5, CV_LD = Math.hypot(CV_LDX, CV_LDY);
+// an elbow or a knee for a limb of bone length len from a to b: bend "down" (elbows), "fwd" (knees), "back", "up"
+function cvJoint(a, b, len, bend) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
+  let mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  if (d < len) {
+    const off = Math.sqrt(Math.max(0, (len / 2) * (len / 2) - (d / 2) * (d / 2)));
+    let nx = -dy / d, ny = dx / d;
+    if (bend === "fwd" ? nx < 0 : bend === "back" ? nx > 0 : bend === "up" ? ny > 0 : ny < 0) { nx = -nx; ny = -ny; }
+    mx += nx * off; my += ny * off;
+  }
+  return [mx, my];
+}
+// the outline of a limb a -> e -> b (two bones; e null: one bone a -> b) with radii r0, rm, r1, moved by ox, oy, as one contour added to the
+// current path: a round elbow outside, a mitred one inside; round ends where capA / capB, else cut straight (an end hidden under the body,
+// a boot or a fist costs nothing)
+function cvLimbAdd(c, a, e, b, r0, rm, r1, ox, oy, capA, capB) {
+  if (!e) { e = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; rm = (r0 + r1) / 2; }
+  let d1x = e[0] - a[0], d1y = e[1] - a[1], d2x = b[0] - e[0], d2y = b[1] - e[1];
+  let l1 = Math.hypot(d1x, d1y), l2 = Math.hypot(d2x, d2y);
+  if (l1 < 1e-3 && l2 < 1e-3) { cvCircAdd(c, a[0] + ox, a[1] + oy, Math.max(r0, r1)); return; }
+  if (l1 < 1e-3) { d1x = d2x; d1y = d2y; l1 = l2; } else if (l2 < 1e-3) { d2x = d1x; d2y = d1y; l2 = l1; }
+  d1x /= l1; d1y /= l1; d2x /= l2; d2y /= l2;
+  const t1 = Math.atan2(d1x, -d1y), t2 = Math.atan2(d2x, -d2y);   // the angles of the left normals (-dy, dx)
+  const cr = d1x * d2y - d1y * d2x, phi = Math.atan2(cr, d1x * d2x + d1y * d2y), ex = e[0] + ox, ey = e[1] + oy;
+  let first = true;
+  const pt = (x, y) => { if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y); };
+  const arc = (x, y, r, a0, da, n) => { for (let i = 0; i <= n; i++) { const t = a0 + (da * i) / n; pt(x + Math.cos(t) * r, y + Math.sin(t) * r); } };
+  const joint = (sg) => {   // the elbow on side sg (+1 the left side, going out; -1 the right side, coming back)
+    if (Math.abs(phi) < 0.06) pt(ex + Math.cos(sg > 0 ? t1 : t2 + Math.PI) * rm, ey + Math.sin(sg > 0 ? t1 : t2 + Math.PI) * rm);
+    else if (cr * sg > 0) {   // inside the bend: where the two edges meet
+      let mx = Math.cos(t1) + Math.cos(t2), my = Math.sin(t1) + Math.sin(t2); const ml = Math.hypot(mx, my) || 1;
+      const k = (sg * rm) / Math.max(0.35, Math.cos(phi / 2)); pt(ex + (mx / ml) * k, ey + (my / ml) * k);
+    } else if (sg > 0) arc(ex, ey, rm, t1, phi, Math.max(1, Math.ceil(Math.abs(phi) / 0.6)));
+    else arc(ex, ey, rm, t2 + Math.PI, -phi, Math.max(1, Math.ceil(Math.abs(phi) / 0.6)));
+  };
+  pt(a[0] + ox + Math.cos(t1) * r0, a[1] + oy + Math.sin(t1) * r0);
+  joint(1);
+  if (capB) arc(b[0] + ox, b[1] + oy, r1, t2, -Math.PI, 5);
+  else { pt(b[0] + ox + Math.cos(t2) * r1, b[1] + oy + Math.sin(t2) * r1); pt(b[0] + ox - Math.cos(t2) * r1, b[1] + oy - Math.sin(t2) * r1); }
+  joint(-1);
+  if (capA) arc(a[0] + ox, a[1] + oy, r0, t1 + Math.PI, -Math.PI, 5);
+  else pt(a[0] + ox - Math.cos(t1) * r0, a[1] + oy - Math.sin(t1) * r0);
+  c.closePath();
+}
+// a limb a -> e -> b (e null: one bone) tapered r0 -> r1 in three fills: the ink (with whatever inkMore adds to it, a mitten's outline), the
+// shadow tone, the lit part (the limb moved towards the light, cut to itself); noInk: the last two only (a colour laid over a limb)
+function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB, noInk) {
+  const rm = (r0 + r1) / 2, w = (lw || 2.2) / 2;
+  if (!noInk) {
+    c.beginPath(); cvLimbAdd(c, a, e, b, r0 + w, rm + w, r1 + w, 0, 0, capA, capB);
+    if (inkMore) inkMore(c);
+    c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  }
+  c.beginPath(); cvLimbAdd(c, a, e, b, r0 - w, rm - w, r1 - w, 0, 0, capA, capB); c.fillStyle = shade; c.fill();
+  if (shade === col) return;
+  const g = (CV_LD + w) / 2, k = (CV_LD - w) / 2 / CV_LD;
+  c.beginPath(); cvLimbAdd(c, a, e, b, Math.max(0.4, r0 - g), Math.max(0.4, rm - g), Math.max(0.4, r1 - g), CV_LDX * k, CV_LDY * k, capA, capB); c.fillStyle = col; c.fill();
+}
+// a mitten (its ink went with the arm's unless ink): round, the shadow low at the back (k scales it: 1 a mitten, 2 a big gauntlet), a thumb
+function cvMitt(c, x, y, r, col, shade, thumb, k, ink) {
+  k = k || 1;
+  const w = 1.1, s = CV_LD * k;
+  if (ink) { c.beginPath(); cvCircAdd(c, x, y, r + w); c.fillStyle = CV_INK; c.fill(); cvMgInk(c); }
+  c.beginPath(); cvCircAdd(c, x, y, r - w); c.fillStyle = shade; c.fill();
+  if (shade !== col) { const d = (s - w) / 2 / CV_LD; c.beginPath(); cvCircAdd(c, x + CV_LDX * d, y + CV_LDY * d, Math.max(0.5, r - (s + w) / 2)); c.fillStyle = col; c.fill(); }
+  if (thumb !== false) { c.beginPath(); cvArcAdd(c, x + r * 0.15, y - r * 0.1, r * 0.55, -0.3, 1.5, 1.3); c.fillStyle = CV_INK; c.fill(); }
+}
+
+/* ---------- the skin's colours ---------- */
+// the palette index of the skin a fighter wears (a palette copy from a snapshot is found by its name)
+function cvPalIdx(f) { const ps = f.spec.palettes, i = ps.indexOf(f.pal); return i >= 0 ? i : ps.findIndex((p) => p.name === (f.pal && f.pal.name)); }
+// the colour set of one skin in one mode ("n" normal, "f" hit flash: all white, "d" helpless: dimmed), cached on the figure
+function cvCols(fig, f, mode) {
+  const pal = f.pal || {}, i = cvPalIdx(f), key = (i >= 0 ? i : "x" + pal.body + pal.accent) + mode;
+  let C = fig.cols.get(key);
+  if (C) return C;
+  let base = Object.assign({}, fig.pal);
+  if (pal.pommes === 1) {
+    for (const k in base) base[k] = cvLum(base[k]) > 0.55 ? CV_NOIR_L : CV_NOIR_D;
+    Object.assign(base, fig.pm[1]);
+  } else if (pal.pommes) Object.assign(base, fig.pm[pal.pommes]);
+  else if (pal.road) Object.assign(base, fig.won[pal.road]);
+  else if (i >= 0 && i < 4) Object.assign(base, fig.chip[i]);
+  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { base[fig.prim] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
+  if (fig.derive) fig.derive(base);   // tones that follow a skin's colour (a shadow steel, a beard's shade)
+  if (mode === "f") for (const k in base) base[k] = "#ffffff";
+  else if (mode === "d") for (const k in base) base[k] = cvMix(base[k], "#6a6a7a", 0.45);
+  C = Object.assign(base, { key: fig.id + ":" + key, flat: mode === "f", res: {} });
+  fig.cols.set(key, C);
+  return C;
+}
+// a colour key in this colour set (see COLOUR KEYS above), cached
+function cvCol(C, k) {
+  let v = C.res[k];
+  if (v) return v;
+  if (k === "ink") v = CV_INK;
+  else if (k === "rim") v = C.flat ? "#ffffff" : CV_RIM;
+  else if (k === "eye") v = C.flat ? "#ffffff" : CV_EYE;
+  else {
+    const i = k.indexOf("/"), base = C[i < 0 ? k : k.slice(0, i)];
+    if (base === undefined || typeof base !== "string") v = k;
+    else if (i < 0 || C.flat) v = base;
+    else { const md = k.slice(i + 1), amt = md.length > 2 ? parseFloat("0" + md.slice(2)) : undefined; v = md.slice(0, 2) === "lt" ? cvLt(base, amt) : cvSh(base, amt); }
+  }
+  C.res[k] = v;
+  return v;
+}
+const cvShC = (C, k) => cvCol(C, k + "/sh");   // a live part's shadow tone (flat on a hit flash)
+
+/* ---------- the face ---------- */
+// F: x, y (the middle between the eyes), s (size), iris, brow (radians, + = the inner end down: fierce), browUp, browW, browCol (a colour
+// key, default ink), lid (0..0.6 of the eye covered from the top), lidCol (a key), look ([x, y] of the pupils), one ("near" | "far": only
+// that eye; the other is the figure's own business, e.g. Odin's patch), mouth: { k: "line" | "smile" | "smirk" | "grin" | "frown" | "none",
+// x, y, s, under (the mouth sits under a moustache: no teeth row) }, blink (default true), extra(S): carved details drawn last (a scar)
+// P.expr (ui/manga.js and the manga pages: terror | grin | rage | calm | dazed | ko, P.exK 0..1) and hitstun (> < eyes) take over.
+// Each tone of both eyes is one fill.
+function cvFace(c, K, F) {
+  const P = K.P, f = K.f, C = K.C, s = F.s || 1, ex = P.expr || "", xk = P.exK === undefined ? 1 : P.exK;
+  const hurt = !ex && f.state === "hitstun";
+  const bl = F.blink !== false && !ex && !hurt && ((K.tk + f.slot * 53) % 211) < 4;   // a blink every 3.5 s
+  const E = [], B = [], st = [];
+  for (let i = 0; i < 2; i++) {
+    if ((F.one === "near" && i === 1) || (F.one === "far" && i === 0)) continue;
+    const ex0 = i ? F.x + 5.6 * s : F.x - 5.4 * s, ey = i ? F.y - 0.3 * s : F.y, rx = (i ? 3.9 : 4.5) * s, ry = (i ? 5.3 : 5.6) * s, side = i ? -1 : 1;
+    if (hurt) { const d = i ? -1 : 1; st.push([2.2 * s, ex0 - d * rx * 0.75, ey - ry * 0.55, ex0 + d * rx * 0.6, ey, ex0 - d * rx * 0.75, ey + ry * 0.55]); continue; }   // > <
+    if (ex === "ko") { const r = rx * 0.8; st.push([2.4 * s, ex0 - r, ey - r, ex0 + r, ey + r], [2.4 * s, ex0 + r, ey - r, ex0 - r, ey + r]); continue; }
+    const k = ex === "terror" ? 1 + 0.45 * xk : 1, pk = ex === "terror" ? 1 - 0.6 * xk : 1;
+    const erx = rx * k, ery = ry * k * (ex === "rage" || ex === "grin" ? 0.9 : 1);
+    if (F.brow !== undefined && !F.noBrow) {   // the brow
+      let b = F.brow, up = F.browUp === undefined ? 1.6 : F.browUp;
+      if (ex === "terror") { b = -0.35 - 0.15 * xk; up += 2 * xk; } else if (ex === "rage") { b = 0.55; up -= 0.6; } else if (ex === "grin") { b = side > 0 ? 0.25 : -0.2; up += side > 0 ? 0 : 1.2; } else if (ex === "dazed") { b = -0.3; up += 1; }
+      b *= side;
+      const by = ey - ery - up * s, L = 5.2 * s, cs = Math.cos(b) * L, sn = Math.sin(b) * L;
+      B.push([ex0 - cs, by - sn, ex0 + cs, by + sn]);
+    }
+    if (ex === "calm" || bl) { st.push([2.2 * s, ex0, ey - ry * 0.35, rx * 1.05]); continue; }   // closed: a soft lid line
+    const lk = F.look || [1.1, 0.3], lid = ex === "terror" ? 0 : ex === "rage" ? 0.4 : ex === "grin" ? 0.3 : F.lid || 0;
+    E.push({ x: ex0, y: ey, rx: erx, ry: ery, ix: ex0 + lk[0] * s * k, iy: ey + lk[1] * s * k, ir: 3.1 * s * k * pk, pr: 1.7 * s * k * pk,
+      lid, ly: ey - ery + ery * 2 * lid, lt: Math.tan((ex === "rage" ? 0.5 : F.brow || 0) * side) });
+  }
+  const lay = (col, add) => { c.beginPath(); for (const e of E) add(e); c.fillStyle = col; c.fill(); };
+  if (E.length) {
+    lay(CV_INK, (e) => c.ellipse(e.x, e.y, e.rx + 0.85 * s, e.ry + 0.85 * s, 0, 0, CV_TAU)); cvMgInk(c);
+    c.beginPath(); for (const e of E) { c.moveTo(e.x + e.rx, e.y); c.ellipse(e.x, e.y, e.rx, e.ry, 0, 0, CV_TAU); } c.fillStyle = C.flat ? "#ffffff" : CV_EYE; c.fill();
+    if (ex === "dazed") {   // spiral eyes
+      c.strokeStyle = CV_INK; c.lineWidth = 1.4 * s; c.lineCap = "round"; c.beginPath();
+      E.forEach((e, i) => { for (let a = 0; a <= Math.PI * 5; a += 0.3) { const r = e.rx * (0.1 + (0.8 * a) / (Math.PI * 5)), x = e.x + Math.cos(a + i * 2) * r, y = e.y + Math.sin(a + i * 2) * r; if (a) c.lineTo(x, y); else c.moveTo(x, y); } });
+      c.stroke();
+    } else {
+      lay(C[F.iris] || C.iris, (e) => cvCircAdd(c, e.ix, e.iy, e.ir));
+      lay(CV_INK, (e) => cvCircAdd(c, e.ix, e.iy, e.pr));
+      lay("#ffffff", (e) => cvCircAdd(c, e.ix - 1.2 * s, e.iy - 1.5 * s, 1.05 * s));
+      if (E.some((e) => e.lid > 0)) {   // the lid, tilted with the brow, its edge inked
+        lay(CV_INK, (e) => e.lid > 0 && cvLidAdd(c, e, 0.75 * s));
+        lay(C[F.lidCol] || C.skin, (e) => e.lid > 0 && cvLidAdd(c, e, -0.75 * s));
+      }
+    }
+  }
+  if (B.length) { const w = ((F.browW || 2.6) * s) / 2; c.beginPath(); for (const b of B) cvCapAdd(c, b[0], b[1], b[2], b[3], w, w); c.fillStyle = F.browCol ? cvCol(C, F.browCol) : CV_INK; c.fill(); }
+  if (st.length) {   // hitstun, KO and closed eyes: a few strokes (not every frame)
+    c.strokeStyle = CV_INK; c.lineCap = "round"; c.lineJoin = "round";
+    for (const q of st) {
+      c.lineWidth = q[0]; c.beginPath();
+      if (q.length === 4) c.arc(q[1], q[2], q[3], 0.45, Math.PI - 0.45);
+      else { c.moveTo(q[1], q[2]); c.lineTo(q[3], q[4]); if (q.length > 5) c.lineTo(q[5], q[6]); }
+      c.stroke();
+    }
+  }
+  if (F.extra) { const fig = K.fig; if (!fig.extraOps) { const S = new CV_Carve(); F.extra(S); fig.extraOps = S.done(); } cvOps(c, fig.extraOps, C); }
+  cvMouthFor(c, K, F, hurt, ex, xk);
+}
+// the face at rest (no expression, eyes open, the figure's own mouth), carved once: it goes into the head's sprite (K.stack, "face")
+function cvFaceCarve(S, F) {
+  const s = F.s || 1, E = [], lk = F.look || [1.1, 0.3];
+  for (let i = 0; i < 2; i++) {
+    if ((F.one === "near" && i === 1) || (F.one === "far" && i === 0)) continue;
+    const x = i ? F.x + 5.6 * s : F.x - 5.4 * s, y = i ? F.y - 0.3 * s : F.y, rx = (i ? 3.9 : 4.5) * s, ry = (i ? 5.3 : 5.6) * s, side = i ? -1 : 1;
+    E.push({ x, y, rx, ry, side, ix: x + lk[0] * s, iy: y + lk[1] * s, ly: y - ry + ry * 2 * (F.lid || 0), lt: Math.tan((F.brow || 0) * side) });
+  }
+  for (const e of E) S.fill(cvCirc(e.x, e.y, e.rx + 0.85 * s, e.ry + 0.85 * s), "ink");
+  for (const e of E) S.fill(cvCirc(e.x, e.y, e.rx, e.ry), "eye");
+  for (const e of E) S.fill(cvCirc(e.ix, e.iy, 3.1 * s), F.iris || "iris");
+  for (const e of E) S.fill(cvCirc(e.ix, e.iy, 1.7 * s), "ink");
+  for (const e of E) S.fill(cvCirc(e.ix - 1.2 * s, e.iy - 1.5 * s, 1.05 * s), "#ffffff");
+  if (F.lid > 0) {   // the lid over the top of the eye, its edge inked
+    const lid = (e, dy) => { const yl = (x) => e.ly + dy + (x - e.x) * e.lt, L = 30; return cvClip(cvCirc(e.x, e.y, e.rx, e.ry), cvPos([[e.x - L, yl(e.x - L)], [e.x + L, yl(e.x + L)], [e.x + L, e.y - 60], [e.x - L, e.y - 60]])); };
+    for (const e of E) S.fill(lid(e, 0.75 * s), "ink");
+    for (const e of E) S.fill(lid(e, -0.75 * s), F.lidCol || "skin");
+  }
+  if (F.brow !== undefined && !F.noBrow) {
+    const up = F.browUp === undefined ? 1.6 : F.browUp, w = ((F.browW || 2.6) * s) / 2;
+    for (const e of E) { const b = F.brow * e.side, by = e.y - e.ry - up * s, L = 5.2 * s, cs = Math.cos(b) * L, sn = Math.sin(b) * L; S.fill(cvCapsule([e.x - cs, by - sn], [e.x + cs, by + sn], w, w), F.browCol || "ink"); }
+  }
+  if (F.extra) F.extra(S);
+  const M = F.mouth || { k: "line" };
+  if (M.k !== "none") cvMouth(S, M.x, M.y, M.k, M.s || 1, M.under);
+}
+// the part of eye e above its lid line (moved down by dy), added to the current path
+function cvLidAdd(c, e, dy) {
+  const n = 20, yl = (x) => e.ly + dy + (x - e.x) * e.lt;
+  let first = true, prev = null;
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * CV_TAU, x = e.x + Math.cos(a) * e.rx, y = e.y + Math.sin(a) * e.ry, up = y < yl(x);
+    if (prev && up !== prev[2]) {   // the lid line crosses this edge
+      const d0 = prev[1] - yl(prev[0]), d1 = y - yl(x), t = d0 / (d0 - d1), px = prev[0] + (x - prev[0]) * t, py = prev[1] + (y - prev[1]) * t;
+      if (first) { c.moveTo(px, py); first = false; } else c.lineTo(px, py);
+    }
+    if (up) { if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y); }
+    prev = [x, y, up];
+  }
+  if (!first) c.closePath();
+}
+// the mouth for the moment: a shout (P.mouth), hitstun, the expression, or the figure's own
+function cvMouthFor(c, K, F, hurt, ex, xk) {
+  const M = F.mouth || { k: "line" }, P = K.P, s = M.s || 1;
+  if (M.k === "none" && !ex && !hurt && P.mouth <= 0.5) return;
+  let k = M.k;
+  if (ex === "terror" || ex === "ko" || hurt || P.mouth > 0.5) k = "open";
+  else if (ex === "rage") k = P.mouth > 0.2 ? "open" : "teeth";
+  else if (ex === "grin") k = "smirk"; else if (ex === "calm") k = "smile"; else if (ex === "dazed") k = "wave";
+  if (k === "none") return;
+  const ss = Math.round(s * (k === "open" && ex === "terror" ? 1 + 0.3 * xk : 1) * 20) / 20, key = k + ss + (M.under ? "u" : "");
+  let ops = K.fig.mouths.get(key);
+  if (!ops) { const S = new CV_Carve(); cvMouth(S, M.x, M.y, k, ss, M.under); ops = S.done(); K.fig.mouths.set(key, ops); }
+  cvOps(c, ops, K.C);
+}
+// a mouth carved once per kind and size
+function cvMouth(S, x, y, kind, s, under) {
+  if (kind === "open" || kind === "grin" || kind === "teeth") {
+    const P = kind === "teeth" ? cvRect(x - 5 * s, y - 1.5 * s, 10 * s, 3.5 * s)
+      : cvSm([[x - 6 * s, y - 1.5 * s, 1], [x, y + (kind === "open" ? 7 : 5.5) * s], [x + 6 * s, y - 2 * s, 1], [x, y - 0.5 * s]]);
+    S.cel(P, kind === "open" ? "#7a1f2b" : "eye", { lw: 1.7 * s, sh: 0, in: () => {
+      if (kind === "open") { S.fill(cvCirc(x, y + 5 * s, 4 * s, 2.6 * s), "#ff7a6b"); if (!under) S.rect(x - 6 * s, y - 3 * s, 12 * s, 2.6 * s, "eye"); }
+      else for (const dx of [-2.6, 0, 2.6]) S.rect(x + (dx - 0.45) * s, y - 1.5 * s, 0.9 * s, 4.5 * s, "ink");
+    } });
+  } else if (kind === "smile") S.line([[x - 4.5 * s, y - 0.5 * s], [x, y + 3 * s], [x + 4.5 * s, y - 1 * s]], 1.9 * s);
+  else if (kind === "smirk") S.line([[x - 4.5 * s, y + 0.8 * s], [x + 1 * s, y + 1.8 * s], [x + 5.5 * s, y - 2.2 * s]], 1.9 * s);
+  else if (kind === "frown") S.line([[x - 4 * s, y + 1.5 * s], [x, y - 1 * s], [x + 4 * s, y + 1.2 * s]], 2 * s);
+  else if (kind === "wave") S.line([[x - 4.5 * s, y], [x - 2.2 * s, y - 1.4 * s], [x, y + 0.6 * s], [x + 2.2 * s, y - 1.4 * s], [x + 4.5 * s, y]], 1.8 * s);
+  else S.line([[x - 3.5 * s, y + 0.4 * s], [x, y - 0.2 * s], [x + 3.5 * s, y + 0.6 * s]], 2 * s);
+}
+
+/* ---------- registration, the rig hook, the motion layer ---------- */
+function cvFigReg(id, fig) {
+  const b = fig.body, pts = cvBlob(b.x, b.y, b.rx, b.ry, b.o);
+  fig.id = id; fig.cols = new Map(); fig.mouths = new Map(); fig.boxes = new Map(); fig.ops = null;
+  fig.sil = new Float64Array(pts.length * 2); pts.forEach((q, i) => { fig.sil[i * 2] = q[0]; fig.sil[i * 2 + 1] = q[1]; });
+  fig.pal = fig.pal || {}; fig.chip = fig.chip || [{}, {}, {}, {}]; fig.won = fig.won || {}; fig.pm = fig.pm || {};
+  fig.carve = fig.carve || {};
+  const B = fig.leg && fig.leg.boot;
+  if (B) {   // the boots: carved standing on their sole at (0, 0), drawn at the foot (K.leg)
+    fig.carve.boot = (S) => S.boot(0, 0, B.s, B.col);
+    fig.carve.bootB = (S) => S.boot(0, 0, B.s, B.colB || B.col);
+  }
+  CV_FIG[id] = fig;
+}
+const cvFigOf = (cos) => (window.__cvOff ? null : CV_FIG[cos] || null);
+// called at the end of pose() for a fighter with a figure: tags P and moves the body's numbers onto the new body (in the rig frame)
+function cvPose(f, P, fig) {
+  const drop = P.hip[1] + P.leg, b = fig.body;
+  P.fig = fig; P.cvDrop = drop;
+  P.rx = b.rx; P.ry = b.ry; P.cy = b.y + drop; P.top = b.y - b.ry + drop;
+  P.head = [fig.face.x, fig.face.y + drop];
+  P.mouthPt = [fig.mouthPt[0], fig.mouthPt[1] + drop];
+  cvMotion(f, P);
+}
+// the motion layer: anticipation coil, the stretch of the first active frame, landing and take-off (P.sq, read by the kit only)
+function cvMotion(f, P) {
+  let q = 0;
+  const st = f.state;
+  if (st === "attack" && f.move) {
+    const m = f.move, a0 = m.startup + 1, n = HEAVY_KEYS[f.mid] === 1 ? 5 : 2;
+    if (P.hold) q = 0.08;
+    else if (f.mt < a0 && f.mt > m.startup - n) q = (0.08 * (f.mt - (m.startup - n))) / n;
+    else if (f.mt === a0) q = -0.12;
+    else if (f.mt === a0 + 1) q = -0.05;
+  } else if (st === "land") q = 0.1 * Math.max(0, 1 - (f.st || 0) / 5);
+  else if (st === "jumpsquat") q = 0.07;
+  else if (st === "air" && f.vy < -7) q = -Math.min(0.06, (-f.vy - 7) * 0.012);
+  P.sq = q;
+}
+
+/* ---------- the kit, one per figure per frame ---------- */
+const CV_SPR = new WeakMap();   // fighter -> { name: [value, velocity, tick] }: secondary motion, eased once per tick
+const CV_POSES = new WeakMap();   // fighter -> Map(stack -> { n: draws per pose, held: poses with sprites }) (K.stack)
+function CV_Kit(c, f, P, tk, at, flash) {
+  const fig = P.fig;
+  this.c = c; this.f = f; this.P = P; this.tk = tk; this.at = at; this.fig = fig; this.flash = flash;
+  this.C = cvCols(fig, f, flash ? "f" : P.dim ? "d" : "n");
+  this.ops = cvOpsOf(fig);
+  this.z = cvZoomOf(c); this.baked = false;   // (cvBaked: one new sprite per figure per frame at most)
+  this.ls = Math.round(P.lean * 50);   // the lean in steps of 0.02 rad (K.stack)
+  this.vec = !!flash || !!P.dim;   // the hit flash and the dimmed helpless figure are drawn as paths (they come and go: no sprites for them)
+  const pal = f.pal || {}, F = fig.face;
+  this.skinPass = !!(pal.road || pal.pommes || (!flash && !P.dim && glazeOn(f)));   // a won / Pommes skin or Glaze draws between the parts
+  this.faceRest = !P.expr && f.state !== "hitstun" && !(F.blink !== false && ((tk + f.slot * 53) % 211) < 4);   // (a shout keeps it: K.stack)
+  const sq = P.sq || 0;
+  this.sx = 1 + 0.6 * sq; this.sy = 1 - sq;
+  this.cs = Math.cos(P.lean); this.sn = Math.sin(P.lean);
+  this.hF = P.hF; this.hB = P.hB;
+  this.rest = !P.hv && f.state !== "attack" && f.state !== "hitstun" && f.state !== "ledge" && !f.finPose;
+}
+CV_Kit.prototype = {
+  // the squash about the feet, then crouch / bob and lean (the body's own frame is the standing frame)
+  _sq(c) { if (this.sx !== 1 || this.sy !== 1) c.scale(this.sx, this.sy); },
+  _lean(c) { const h = this.P.hip; if (this.P.lean) { c.translate(h[0], h[1]); c.rotate(this.P.lean); c.translate(-h[0], -h[1]); } },
+  body(fn) { const c = this.c; c.save(); this._sq(c); this._lean(c); c.translate(0, this.P.cvDrop); fn(c); c.restore(); },
+  pt(x, y) {
+    const h = this.P.hip, dx = x - h[0], dy = y + this.P.cvDrop - h[1];
+    return [(h[0] + dx * this.cs - dy * this.sn) * this.sx, (h[1] + dx * this.sn + dy * this.cs) * this.sy];
+  },
+  part(name, fn) {
+    const c = this.c;
+    c.save(); this._sq(c); this._lean(c); c.translate(0, this.P.cvDrop);
+    if (fn) fn(c);
+    cvOps(c, this.ops[name], this.C);
+    c.restore();
+  },
+  draw(name) { cvOps(this.c, this.ops[name], this.C); },
+  // carved parts back to front as sprites: a run of parts is one sprite. "face" is the face (carved at rest, live otherwise), "skin" and
+  // "top" the skin passes (only when the skin has one), a function f(K) a live part between them (it breaks the run)
+  stack(list, fn, fk) {
+    let run = [], shout = false;
+    const P = this.P, c = this.c, fig = this.fig, ls = this.ls;
+    // the pose of this stack: its lean step and, with fn, the step fk of its transform. The first ten poses this fighter has been drawn in
+    // 20 times (a stance, a run's lean, a cape at rest; not the frames between) are held: they get sprites of their own, drawn upright.
+    // Any other pose turns the upright sprite (twice the cost); no lean and no fn, none
+    let pose = null;
+    if ((ls || fn) && !this.vec && (!fn || fk !== undefined)) {
+      const pk = ls + "/" + (fn ? fk : "");
+      let all = CV_POSES.get(this.f);
+      if (!all) CV_POSES.set(this.f, (all = new Map()));
+      let S = all.get(list[0]);
+      if (!S) all.set(list[0], (S = { n: new Map(), held: new Set() }));
+      if (S.held.has(pk)) pose = { k: pk, ls, fn };
+      else if (S.held.size < 10) {
+        const n = (S.n.get(pk) || 0) + 1;
+        if (S.n.size > 500) S.n.clear();   // (a long match of ever new poses)
+        S.n.set(pk, n);
+        if (n >= 20) { S.held.add(pk); pose = { k: pk, ls, fn }; if (S.held.size === 10) S.n.clear(); }
+      }
+    }
+    const out = () => {
+      if (!run.length) return;
+      let sp = null, posed = false;
+      if (!this.vec) {
+        if (pose) { sp = cvBaked(this, run, pose); posed = !!sp; }
+        if (!sp) sp = cvBaked(this, run, null);
+      }
+      c.save(); this._sq(c);
+      if (posed) c.translate(0, P.cvDrop);
+      else { if (!sp || ls) this._lean(c); c.translate(0, P.cvDrop); if (fn) fn(c); }
+      if (sp) c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of run) cvOps(c, cvPartOps(fig, n), this.C);
+      if (shout) {   // a shout: the open mouth over the run that holds the resting face (turned like a held pose's sprite)
+        if (posed) { const px = P.hip[0], py = P.hip[1] - P.cvDrop; c.translate(px, py); c.rotate(ls / 50); c.translate(-px, -py); if (fn) fn(c); }
+        cvMouthFor(c, this, fig.face, false, null, 0);
+      }
+      c.restore(); run = []; shout = false;
+    };
+    for (const it of list) {
+      if (!it) continue;
+      if (typeof it === "function") { out(); it(this); }
+      else if (it === "skin") { if (this.skinPass) { out(); this.skinBody(); } }
+      else if (it === "top") { if (this.skinPass) { out(); this.skinTop(); } }
+      else if (it === "face" && !this.faceRest) { out(); this.face(); }
+      else { run.push(it); if (it === "face" && P.mouth > 0.5) shout = true; }
+    }
+    out();
+  },
+  // carved parts as one sprite in the current transform
+  sprite(list) {
+    const sp = this.vec ? null : cvBaked(this, list);
+    if (sp) this.c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of list) cvOps(this.c, cvPartOps(this.fig, n), this.C);
+  },
+  arm(front, held) {
+    const A = this.fig.arm, c = this.c, C = this.C, sh = front ? A.shF : A.shB, h = front ? this.hF : this.hB;
+    const a = this.pt(sh[0], sh[1]), col = front ? A.col : A.colB || A.col, H = front ? A.hand : A.handB || A.hand;
+    const e = cvJoint(a, h, front ? A.len : A.lenB || A.len, front ? "down" : A.bendB || "down");
+    // the hand's outline goes with the arm's (one fill) unless something is held between them; the wrist end hides under the hand
+    // the back arm is one tone, its shadow (it reads as further away, and costs a fill less)
+    const sc = cvShC(C, col), hs = cvShC(C, H.col), flat = !front;
+    cvLimb(c, a, e, h, A.r0, A.r1, flat ? sc : C[col], sc, 2.2, held ? null : (cc) => cvCircAdd(cc, h[0], h[1], H.r + 1.1), true, false);
+    if (front && A.colU)   // the upper arm in a colour of its own (a scaled sleeve) inside the arm's ink, round over the forearm at the elbow
+      cvLimb(c, a, null, e, A.r0, (A.r0 + A.r1) / 2, C[A.colU], cvShC(C, A.colU), 2.2, null, true, true, true);
+    const U = front && A.cuff, fl = Math.hypot(h[0] - e[0], h[1] - e[1]);
+    if (U && fl > H.r) {   // a cuff on the forearm, its end under the hand (one tone: two fills)
+      const ux = (h[0] - e[0]) / fl, uy = (h[1] - e[1]) / fl, d1 = Math.min(fl, H.r * 0.55 + U.len);
+      cvLimb(c, [h[0] - ux * d1, h[1] - uy * d1], null, [h[0] - ux * H.r * 0.55, h[1] - uy * H.r * 0.55], U.r0, U.r1, C[U.col], C[U.col], 2.2, null, true, true);
+    }
+    if (held) held(c, this);
+    if (front && this.f.mid === "ulti" && this.f.state === "attack") uvHeldProp(c, this.f, this.P, this.tk);   // an Ultimate's prop in the fist (Gungnir)
+    cvMitt(c, h[0], h[1], H.r, flat ? hs : C[H.col], hs, H.thumb, H.k, !!held || !!(U && fl > H.r));
+    if (H.more) H.more(c, this, h[0], h[1], front, Math.atan2(h[1] - e[1], h[0] - e[0]));
+  },
+  leg(front) {
+    const G = this.fig.leg, P = this.P, hp = front ? G.hipF : G.hipB, a = this.pt(hp[0], hp[1]);
+    let ft = front ? P.fF : P.fB;
+    // at rest a stride never stretches the short leg more than 25 % (a kick goes all the way to its target)
+    if (this.f.state !== "attack") { const dx = ft[0] - a[0], dy = ft[1] - a[1], d = Math.hypot(dx, dy), m = G.len * 1.25; if (d > m) ft = [a[0] + (dx / d) * m, a[1] + (dy / d) * m]; }
+    if (typeof G.draw === "function") return G.draw(this.c, this, a, ft, front);
+    const c = this.c, C = this.C, col = front ? G.col : G.colB || G.col, B = G.boot;
+    // the shin ends on the boot's ankle; the boot turns with the shin when the foot is off the floor; both ends hide (body, boot)
+    const flat = this.f.grounded && ft[1] > -2 && this.f.state !== "attack";
+    const k = cvJoint(a, ft, G.len, "fwd"), ang = flat ? 0 : clamp(-Math.atan2(ft[0] - k[0], ft[1] - k[1]) * 0.8, -1.4, 1.4);
+    const cs = Math.cos(ang), sn = Math.sin(ang), ax = ft[0] + (B.s * cs + 5 * B.s * sn), ay = ft[1] + (B.s * sn - 5 * B.s * cs);
+    const sc = cvShC(C, col);   // the back leg one tone, like the back arm
+    cvLimb(c, a, G.bones === 1 ? null : cvJoint(a, [ax, ay], G.len, "fwd"), [ax, ay], G.r0, G.r1, front ? C[col] : sc, sc, 2.2, null, false, false);
+    c.save(); c.translate(ft[0], ft[1]); if (ang) c.rotate(ang); this.draw(front ? "boot" : "bootB"); c.restore();   // (paths: a small part that turns)
+  },
+  face() { this.body((c) => cvFace(c, this, this.fig.face)); },
+  rim() { if (TEAM_RIM && !this.at) { const c = this.c; c.save(); this._sq(c); teamRimBody(c, this.f, this.P); c.restore(); } },
+  skinBody() {
+    const c = this.c, f = this.f, P = this.P;
+    if (!f.pal || (!f.pal.road && !f.pal.pommes && (this.flash || P.dim || !glazeOn(f)))) return;
+    c.save(); this._sq(c); this._lean(c);
+    roadSkinBody(c, f, P, this.tk, this.flash);
+    if (!this.flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, this.tk);   // ui/glaze.js
+    c.restore();
+  },
+  skinTop() { const f = this.f; if (!f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash); c.restore(); },
+  spring(name, target, k) {
+    let S = CV_SPR.get(this.f);
+    if (!S) { S = {}; CV_SPR.set(this.f, S); }
+    let v = S[name];
+    if (!v) v = S[name] = [target, 0, this.tk];
+    const n = this.tk - v[2];
+    if (n < 0 || n > 7) { v[0] = target; v[1] = 0; }   // a jump in time (a replay seek, a new page): settle at once
+    else for (let i = 0; i < n; i++) { v[1] = v[1] * 0.72 + (target - v[0]) * (k || 0.25); v[0] += v[1]; }
+    v[2] = this.tk;
+    return v[0];
+  },
+};
+// drawPotato's hand-over: the figure, in the fighter's own frame (feet at 0, facing right), after the sprint lines and before the effects
+function cvFigure(c, f, P, tk, at, flash) {
+  const K = new CV_Kit(c, f, P, tk, at, flash);
+  cvMg = Object.prototype.hasOwnProperty.call(c, "fillStyle");   // a manga page's context (see cvMgInk): paths
+  if (cvMg) K.vec = true;
+  try { P.fig.draw(K); } finally { cvMg = false; }
+  return K;
+}
+// potatoPath for a figure: the body's silhouette in the rig frame (the caller has turned the context with the lean)
+function cvSilPath(c, P) {
+  const s = P.fig.sil, d = P.cvDrop;
+  c.beginPath(); c.moveTo(s[0], s[1] + d);
+  for (let i = 2; i < s.length; i += 2) c.lineTo(s[i], s[i + 1] + d);
+  c.closePath();
+}
+// tests/pwcarve.py: the drawing and the camera, from outside the page's scope
+window.__cvTest = { draw: (c, f, tk) => drawFighter(c, f, tk), toScreen: (x, y) => toScreen(x, y), get cam() { return cam; }, get dpr() { return DPR; }, get L() { return L; }, get ctx() { return ctx; },
+  figs: () => Object.keys(CV_FIG), glaze: (f, on) => glazeMark(f, on), set rim(v) { TEAM_RIM = !!v; },
+  bakes: () => ({ n: CV_BAKE.size, px: cvBakePx, made: cvBakeMade, big: cvBakeBig }) };
+/* ===================== Carved Ink: Odin (ui/carve.js has the kit and the API) =====================
+   A boulder: the widest, a square russet under a helm whose wings are his sprout leaves, a forked beard, a floor-length cape that settles
+   late, steel gauntlets 18 units wide on a steel cuff, one cold blue eye under a white brow and a patch on the other, the raven on his back shoulder.
+   Mockup: redesign/mockups/src/fighters.js NEWF.d.odin; colours of the ten skins: fx.js skinPal(). */
+cvFigReg("odin", {
+  pal: { skin: "#e3a45a", steel: "#b9c4d6", cape: "#b8262d", beard: "#f6f1e7", gold: "#ecb53a", fur: "#8a6248", raven: "#2b3052",
+    belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9" },
+  chip: [{}, { cape: "#3d7fbf", steel: "#d3e6f6", gold: "#9fd6ff" }, { cape: "#7a3a1e", steel: "#ecc452", gold: "#fff2b0" },
+    { cape: "#3d3d4c", steel: "#6e7289", gold: "#b6bbd6", raven: "#15131f" }],
+  won: { scratch: { cape: "#8a1a1a", skin: "#8c4a30", steel: "#5a4a52", gold: "#ff7a2b" },
+    zorp: { cape: "#5f8fa0", skin: "#a9c8a0", steel: "#cfe6de", gold: "#9dff5a", beard: "#e6ffe0" },
+    kraken: { cape: "#2f6a7a", skin: "#b89a62", steel: "#8fc0c6", gold: "#3ef2c0", beard: "#e0f6f0" },
+    harvest: { cape: "#a8641e", skin: "#f8cc52", steel: "#f2c94c", gold: "#fff6c8", beard: "#fff6dc" } },
+  pm: { 1: { cape: "#ff3d57", skin: "#f1e8d2", beard: "#f1e8d2" },
+    2: { cape: "#cfa9ff", skin: "#34246a", steel: "#e0d0ff", gold: "#ff6ad5", beard: "#f6eaff", raven: "#0e0a1f" } },
+  prim: "cape",
+  derive(C) {
+    C.greave = cvSh(C.steel, 0.35); C.steelHi = cvMix(C.steel, "#ffffff", 0.72); C.lid = cvSh(C.skin, 0.2);
+    C.beardSh = cvMix(C.beard, "#7f8fc0", 0.3); C.beardLn = cvMix(C.beard, "#5a6aa0", 0.4); C.capeIn = cvSh(C.cape, 0.5);
+  },
+  body: { x: 0, y: -36, rx: 24.5, ry: 26, o: { sq: 0.8 } },
+  face: { x: 11.5, y: -43, s: 1.05, one: "far", iris: "iris", brow: -0.3, browCol: "beard", browW: 3.2, browUp: 0.6, lid: 0.22, lidCol: "lid",
+    mouth: { k: "none", x: 8.5, y: -31, s: 0.85, under: true } },   // (it shows only when he shouts: under the moustache)
+  mouthPt: [13, -33],
+  arm: { shF: [15, -27], shB: [-19, -38], len: 26, lenB: 15, bendB: "back", r0: 6, r1: 4, col: "skin", cuff: { len: 6.5, r0: 5.4, r1: 6.4, col: "steel" },
+    hand: { r: 9, col: "steel", k: 1.56, thumb: false, more: (c, K, x, y, front, ang) => cvOdinFist(c, K, x, y, ang) }, handB: { r: 8, col: "steel", k: 1.28, thumb: false } },
+  leg: { hipF: [9.9, -14], hipB: [-9.9, -14], len: 10.5, bones: 1, r0: 5.6, r1: 5.2, col: "greave", boot: { s: 1.2, col: "steel" } },
+  carve: {
+    // the cape hangs from the back of the shoulders to the floor, its hem cut in points
+    cape(S) {
+      S.cel(cvSm([[-14, -58, 1], [-28, -50], [-34, -24], [-40, -1, 1], [-30, -5], [-22, -1, 1], [-14, -5], [-6, -2, 1], [-4, -30]]), "cape", { sh: [4, -3] });
+      S.line([[-17, -50], [-24, -30], [-29, -6]], 1.3, "capeIn");
+    },
+    // the square russet, the belt across it, the fur collar on the back shoulder
+    body(S) {
+      S.cel(cvBlob(0, -36, 24.5, 26, { sq: 0.8 }), "skin", { sh: [10, -6], rim: 1, in() {
+        S.specks([[-14, -24, 1.4], [-18, -34, 1.1]], "skin/sh.3");
+        S.rect(-30, -22, 60, 7, "belt"); S.rect(-30, -22, 22, 7, "belt/sh"); S.rect(10, -22.5, 7, 8, "gold");
+        S.rect(-30, -23, 60, 1.4, "ink"); S.rect(-30, -15.6, 60, 1.4, "ink"); S.rect(10, -22.5, 1.2, 8, "ink"); S.rect(16.4, -22.5, 1.2, 8, "ink");
+      } });
+      S.cel(cvSm([[-24, -46], [-27, -54], [-19, -57], [-12, -52], [-14, -44], [-20, -41]]), "fur", { sh: [2, -2], lw: 2.2 });
+    },
+    // the raven, hunched on the shoulder (its perch (-20, -64)), standing on its feet a little over the helm (the gap under it reads as a
+    // bird, not a plume): its head up past the helm's line, the gold beak, a white eye
+    raven(S) {
+      S.line([[-22, -61], [-22.5, -56.5]], 1.4); S.line([[-17.5, -62], [-17, -57.5]], 1.4);
+      S.cel(cvSm([[-37, -63, 1], [-30, -70], [-21, -75.5], [-15, -77.5], [-10.5, -75.5, 1], [-11.5, -71, 1], [-14, -67], [-19, -62], [-28, -60.5]]), "raven", { sh: [2, -2], lw: 2.2 });
+      S.cel([[-11.5, -76.4], [-4.5, -73.6], [-11.8, -71.8]], "gold", { lw: 1.4, sh: 0 });
+      S.fill(cvCirc(-15, -73.8, 1.5), "eye");
+    },
+    // the helm's far wing (a leaf), behind the raven
+    leafB(S) { S.leaf(-8, -62, 17, -2.05, "leafFar"); },
+    // the helm (steel cap, gold rim, nose guard) with the near leaf for a wing, the patch and its strap, the forked beard
+    head(S) {
+      S.cel(cvSm([[-22, -47, 1], [-23, -60], [0, -70], [22, -61], [22.5, -47, 1], [14, -49], [12, -40, 1], [8.5, -40, 1], [7, -49], [-8, -48]]), "steel", { sh: [7, -5], hi: [-5, 6], hiCol: "steelHi" });
+      S.line([[-22, -48.5], [-8, -49.5], [7, -50.5]], 2.6, "gold"); S.line([[14, -50.5], [22, -48.5]], 2.6, "gold");
+      S.leaf(9, -63, 19, -2.2, "leaf"); S.cel(cvCirc(9, -61.5, 3.2), "gold", { sh: [1, -1], lw: 1.6 });
+      S.fill(cvBlob(1.5, -43, 5, 4.6), "ink"); S.line([[-20, -47], [-6, -44], [3, -43]], 1.8);
+      S.cel(cvSm([[-13, -37, 1], [-2, -35], [10, -37.5], [20, -35], [25.5, -38, 1], [25, -24], [18, -11], [12.5, -2.5, 1], [8.5, -8, 1], [3.5, -2, 1], [-6, -18], [-14, -26]]), "beard", { sh: [5, -3], shade: "beardSh", lw: 2.4 });
+      S.line([[1, -28], [3, -16]], 1.2, "beardLn"); S.line([[14, -28], [11, -14]], 1.2, "beardLn");
+    },
+    // the moustache, over the mouth
+    stache(S) { S.cel(cvSm([[10, -38, 1], [4, -37], [-5, -30, 1], [4, -31], [10, -34, 1], [17, -31], [26, -31, 1], [17, -37]]), "beard", { sh: [2, -2], shade: "beardSh", lw: 1.8 }); },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
+    // the cape: it trails behind on the run and settles late (a spring), lifts when he falls, breathes at rest (sheared about the
+    // shoulders; in steps of 0.02 and 0.05, so a held pose of it has a sprite of its own: K.stack)
+    const run = clamp((f.vx + f.kbx) * f.facing, -10, 10), sway = K.spring("cape", -run * 0.05 + Math.sin(tk * 0.05 + f.slot) * 0.025 + (air ? -0.1 : 0), 0.16);
+    const sw = Math.round(sway * 50) / 50, lift = air ? Math.round(clamp(f.vy * 0.025, -0.1, 0.28) * 20) / 20 : 0;
+    K.stack(["cape"], (c) => { c.translate(-12, -56); c.transform(1, 0, sw, 1 - lift, 0, 0); c.translate(12, 56); }, sw + "," + lift);
+    K.arm(false);
+    K.leg(false); K.leg(true);
+    K.rim();
+    // the raven sits in the body's sprite while it is perched; when it lifts off it is drawn on its own
+    const perched = !f._ravenOut && !(P.ravenTo && P.ravenK > 0);
+    K.stack(["body", "skin", "leafB", perched ? "raven" : f._ravenOut ? null : cvOdinRaven, "head", "face", "stache", "top"]);
+    K.arm(true);
+  },
+});
+// the front gauntlet over its round steel fist: the highlight on top, a gold plate on its back and the knuckles (turned with the forearm)
+const CV_ODIN_PLATE = cvPath([cvClip(cvRect(-9, -3.5, 5, 7), cvCirc(0, 0, 7.5))]), CV_ODIN_KNUCKLE = cvPath([cvBrush(cvSm([[2, -6], [6, -1], [3, 5]], true), 1.3)]);
+function cvOdinFist(c, K, x, y, ang) {
+  const C = K.C;
+  if (!C.flat) { c.beginPath(); cvArcAdd(c, x + 0.6, y - 0.6, 5.3, -2.2, -0.5, 2); c.fillStyle = C.steelHi; c.fill(); }
+  c.save(); c.translate(x, y); c.rotate(ang); c.fillStyle = C.gold; c.fill(CV_ODIN_PLATE); c.fillStyle = CV_INK; c.fill(CV_ODIN_KNUCKLE); c.restore();
+}
+// the raven on the back shoulder: it shifts its weight now and then, lifts off with the fist (Raven rise: P.ravenTo, P.ravenK)
+function cvOdinRaven(K) {
+  const P = K.P, f = K.f, c = K.c, tk = K.tk;
+  let p = K.pt(-20, -64), wob = Math.sin(tk * 0.031 + f.slot) > 0.93 ? 0.09 : 0, flap = Math.sin(tk * 0.08 + f.slot) > 0.95 ? 0.5 : 0;
+  if (P.ravenTo && P.ravenK > 0) { p = lerp2(p, P.ravenTo, P.ravenK); if (P.ravenK > 0.3) flap = 0.5 + 0.5 * Math.sin(tk * 1.1); }
+  c.save(); c.translate(p[0], p[1]); if (P.lean + wob) c.rotate(P.lean + wob);
+  if (flap) {   // the wing, raised
+    const C = K.C; c.save(); c.translate(-4, -4); c.rotate(-0.4 - flap * 1.1);
+    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-6, -9, -16, -8); c.lineTo(-11, -4); c.lineTo(-14, -1); c.quadraticCurveTo(-6, 3, 0, 0); c.closePath();
+    c.fillStyle = C.raven; c.fill(); c.lineWidth = 1.8; c.strokeStyle = CV_INK; c.lineJoin = "round"; c.stroke(); c.restore();
+  }
+  c.translate(20, 64); K.draw("raven");
+  c.restore();
+}
+/* ===================== Carved Ink: Samurai (ui/carve.js has the kit and the API) =====================
+   A low wedge: wide hakama legs, lacquered plates with jade lacing at the shoulders, the red headband with two tails that snap, the
+   sprout tied up as his topknot, level focused eyes and a small scar. The blade lives in its sheath (across his back, the hilt forward
+   under his hand) until a move draws it: every attack but a kick has it out (katana(), draw-fighters.js), Iaido and Thousand Cuts hold
+   the sheath in the hand (P.sheath). Mockup: redesign/mockups/src/fighters.js NEWF.d.samurai; skins: fx.js skinPal(). */
+cvFigReg("samurai", {
+  pal: { skin: "#dba862", lac: "#2b2f48", jade: "#2fd39a", red: "#e3453b", hak: "#35467a", steel: "#eaf2f6", gold: "#ecb53a",
+    tsuka: "#f3ead2", stem: "#3f7d3a", leaf: "#7fd35c", iris: "#1f9a72" },
+  chip: [{}, { jade: "#dfe7f0", hak: "#5c6680", lac: "#3d4358", red: "#3f8fe0" }, { jade: "#ff4a3a", hak: "#5a1c28", lac: "#1f1a24", red: "#f6efe0" },
+    { jade: "#b08aff", hak: "#3d2a78", lac: "#2a2148", red: "#ffd23f" }],
+  won: { scratch: { jade: "#ff5a36", skin: "#8c4a30", lac: "#241418", hak: "#3a1a1c", red: "#ffb02e" },
+    zorp: { jade: "#6cf0c8", skin: "#a9c8a0", lac: "#1f3a36", hak: "#2a5a52", red: "#9dff5a" },
+    kraken: { jade: "#3ef2c0", skin: "#b89a62", lac: "#162a36", hak: "#1f4a5a", red: "#ff7a8a" },
+    harvest: { jade: "#ffd66b", skin: "#f8cc52", lac: "#5a3a1c", hak: "#8a531e", red: "#fff0b0" } },
+  pm: { 1: { jade: "#2fd39a", skin: "#f1e8d2" }, 2: { jade: "#ff3fa4", skin: "#34246a", lac: "#1a1238", hak: "#4a2a8a", red: "#c9a6ff" } },
+  prim: "jade",
+  derive(C) {
+    C.lid = cvSh(C.skin, 0.18); C.scar = cvSh(C.skin, 0.45); C.lacHi = cvMix(C.lac, "#a0a8e0", 0.35); C.lacSh = cvSh(C.lac, 0.4);
+    C.hakB = cvSh(C.hak, 0.18); C.redSh = cvSh(C.red, 0.2);
+  },
+  body: { x: 1, y: -37, rx: 18, ry: 20.5, o: { lean: 0.08 } },
+  face: { x: 9.5, y: -42, s: 1, iris: "iris", brow: 0.2, browUp: 0.6, lid: 0.3, lidCol: "lid", mouth: { k: "line", x: 11, y: -33.5, s: 0.9 },
+    extra(S) { S.line([[16, -47], [18.5, -38]], 1.1, "scar"); } },
+  mouthPt: [12, -33],
+  arm: { shF: [3, -31], shB: [-13, -32], len: 19, lenB: 14, bendB: "back", r0: 4.2, r1: 3.8, col: "lac",
+    hand: { r: 4.9, col: "skin" }, handB: { r: 4.6, col: "skin", thumb: false } },
+  leg: { hipF: [5.5, -23], hipB: [-6, -23], len: 22, draw: (c, K, hip, foot, front) => cvHakama(c, K, hip, foot, front) },
+  carve: {
+    // the two headband tails, from the knot back
+    tails(S) {
+      S.cel(cvSm([[-13, -51, 1], [-24, -56], [-34, -52], [-44, -57, 1], [-40, -50, 1], [-32, -47], [-22, -50], [-14, -47, 1]]), "red", { sh: [2, -1.5], lw: 2.2 });
+      S.cel(cvSm([[-13, -49, 1], [-22, -46], [-30, -40], [-40, -41, 1], [-37, -35, 1], [-27, -36], [-18, -42], [-12, -45, 1]]), "redSh", { sh: [2, -1.5], lw: 2.2 });
+    },
+    // the scabbard low on the belt, crossing behind
+    sheath(S) {
+      S.cel(cvCapsule([12, -22.5], [-36, -10.5], 2.6, 2.2), "lac", { sh: [1, -1.2], lw: 2.2, hi: [0, 1.6], hiCol: "lacHi" });
+      S.cel(cvCirc(-35, -10.7, 2.6), "gold", { lw: 1.6, sh: 0 });
+    },
+    // the potato in the lacquered wrap with jade lacing, the headband and its knot, the topknot (the sprout, tied up)
+    body(S) {
+      S.cel(cvBlob(1, -37, 18, 20.5, { lean: 0.08 }), "skin", { sh: [8, -5], rim: 1, in() {
+        S.rect(-24, -31, 48, 16, "lac"); S.rect(-24, -31, 16, 16, "lacSh");
+        S.rect(-24, -27.9, 48, 1.8, "jade"); S.rect(-24, -23.4, 48, 1.8, "jade");
+        S.rect(-24, -32, 48, 1.4, "ink");
+        S.rect(-24, -53, 48, 5.4, "red"); S.rect(-24, -53, 14, 5.4, "redSh");
+        S.rect(-24, -54, 48, 1.3, "ink"); S.rect(-24, -47.8, 48, 1.3, "ink");
+      } });
+      S.cel(cvCirc(-14.5, -50, 3.4), "red", { sh: [1, -1], lw: 1.8 });
+      S.line([[-1, -57], [-2, -62]], 3.2, "stem"); S.rect(-4.6, -61.5, 5.4, 2.4, "red");
+      S.leaf(-2, -62, 11, -2.1, "leaf"); S.leaf(-2, -62.5, 12, -1.2, "leaf");
+    },
+    // the two shoulder plates (sode), big, two lames each with a broad jade lace
+    plates(S) {
+      for (const [x, y, a, k] of [[-20, -48, 0.8, 1.17], [-7, -47, 0.2, 1.1]]) {
+        S.with(x, y, a, k, () => {
+          for (let i = 0; i < 2; i++) {
+            S.cel([[-7 - i, i * 6], [7 + i, i * 6], [8.5 + i, i * 6 + 7], [-8.5 - i, i * 6 + 7]], "lac", { sh: [2, -1.2], lw: 2 });
+            S.rect(-7.5 - i, i * 6 + 4, 15 + 2 * i, 2.3, "jade");
+          }
+        });
+      }
+    },
+    // the hilt out of the sheath, its wrap and guard (only while the blade is sheathed)
+    hilt(S) {
+      S.cel(cvCapsule([12, -22.5], [25, -26], 2.4, 2.2), "tsuka", { sh: [1, -1], lw: 2, in() { for (let x = 14; x < 26; x += 3.2) S.line([[x, -27], [x + 2.4, -21.5]], 1.1, "lac"); } });
+      S.cel(cvCirc(12.5, -22.7, 2.2, 4.6, 0.26), "gold", { lw: 1.6, sh: 0 });
+    },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
+    const out = f.state === "attack" && f.move && f.move.limb !== "leg";   // the blade is drawn
+    // at rest the front hand sits on the hilt, low on the belt (under the mouth)
+    if (K.rest && !out) K.hF = K.pt(19, -23.5);
+    // the tails: they hang at rest, stream back on the run, lift as he falls and snap on a swing (a spring about the knot)
+    const run = clamp(Math.abs(f.vx + f.kbx), 0, 12), snap = out && P.hv ? 0.25 : out ? 0.12 : 0;
+    const ang = K.spring("tails", -0.42 + run * 0.05 + (air ? clamp(f.vy * 0.06, -0.5, 0.55) : 0) + snap + Math.sin(tk * 0.07 + f.slot) * 0.05, 0.3);
+    // (in steps of 0.04, so a held pose of them has a sprite of its own: K.stack; they flutter only on the move)
+    const aq = Math.round(ang * 25) / 25, flut = run > 3 || air ? Math.round((1 + 0.12 * Math.sin(tk * 0.45)) * 25) / 25 : 1;
+    K.stack(["tails"], (c) => { c.translate(-14, -50); c.rotate(aq); c.scale(1, flut); c.translate(14, 50); }, aq + "," + flut);
+    if (!(P.sheath > 0 && out)) K.stack(["sheath"]);
+    K.arm(false);
+    K.leg(false); K.leg(true);
+    K.rim();
+    K.stack(["body", "skin", "face", "plates", out ? null : "hilt", "top"]);
+    K.arm(true, out ? cvSamKatana : null);
+  },
+});
+// the katana in the fist (draw-fighters.js katana(): its pose and its sheath logic; the colours come from this skin)
+function cvSamKatana(c, K) {
+  const P = K.P;
+  cvKatC = K.C;
+  try { katana(c, P, K.f, rot(P.sh, P.hip, P.lean), K.f.pal); } finally { cvKatC = null; }
+}
+// a hakama leg: a wide trouser leg from the hip to the floor, flared, a darker back fold, a sandal on the floor. On the floor the hem lies
+// flat and the two legs splay apart (a wedge with a split between the hems, inside the hurtbox but for 3 units a side); a leg off the
+// floor (a kick, a jump) hangs straight from the hip, its hem across it (the splay eases in and out: a spring)
+function cvHakama(c, K, a, ft, front) {
+  const C = K.C, f = K.f, col = front ? C.hak : C.hakB, sh = cvShC(C, front ? "hak" : "hakB"), side = front ? 1 : -1;
+  const flat = f.grounded && ft[1] > -2, sp = K.spring(front ? "hakF" : "hakB", flat && f.state !== "run" ? 1 : 0, 0.35);
+  const t0 = 7.2, t1 = 8 + (1 - sp) * 1.5, bx = ft[0] + side * (front ? 4.6 : 6.4) * sp, by = ft[1];
+  const dx = bx - a[0], dy = by - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, nx = -uy, ny = ux;   // u: down the leg, n: to its front
+  const hx = flat ? 1 : -nx, hy = flat ? 0 : -ny;   // along the hem, to the front
+  // the leg's corners (top back, top front, hem front, hem back), and the quad grown by g all round (mitred)
+  const Q = [[a[0] + nx * t0, a[1] + ny * t0], [a[0] - nx * t0, a[1] - ny * t0], [bx + hx * t1, by + hy * t1], [bx - hx * t1, by - hy * t1]];
+  if ((Q[1][0] - Q[0][0]) * (Q[2][1] - Q[1][1]) - (Q[1][1] - Q[0][1]) * (Q[2][0] - Q[1][0]) < 0) Q.reverse();
+  const grow = (g) => {
+    const o = [];
+    for (let i = 0; i < 4; i++) {
+      const p0 = Q[(i + 3) % 4], p1 = Q[i], p2 = Q[(i + 1) % 4];
+      let ax = p1[0] - p0[0], ay = p1[1] - p0[1], la = Math.hypot(ax, ay) || 1, bx2 = p2[0] - p1[0], by2 = p2[1] - p1[1], lb = Math.hypot(bx2, by2) || 1;
+      const n1 = [ay / la, -ax / la], n2 = [by2 / lb, -bx2 / lb], k = g / Math.max(0.3, 1 + n1[0] * n2[0] + n1[1] * n2[1]);
+      o.push([p1[0] + (n1[0] + n2[0]) * k, p1[1] + (n1[1] + n2[1]) * k]);
+    }
+    c.beginPath(); c.moveTo(o[0][0], o[0][1]); for (let i = 1; i < 4; i++) c.lineTo(o[i][0], o[i][1]); c.closePath();
+    return o;
+  };
+  grow(1.3); c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  const I = grow(-1.3); c.fillStyle = col; c.fill();
+  // the corners of the cloth by name: TB top back, TF top front, HF hem front, HB hem back
+  const by0 = (p) => p[0] * hx + p[1] * hy, srt = I.slice().sort((p, q) => (p[0] - a[0]) * ux + (p[1] - a[1]) * uy - ((q[0] - a[0]) * ux + (q[1] - a[1]) * uy));
+  const top = srt.slice(0, 2).sort((p, q) => by0(p) - by0(q)), hem = srt.slice(2).sort((p, q) => by0(p) - by0(q));
+  const [TB, TF] = top, [HB, HF] = hem, L = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+  if (sh !== col) {   // the shadow on the back third
+    const p = L(TB, TF, 0.36), q = L(HB, HF, 0.3);
+    c.beginPath(); c.moveTo(TB[0], TB[1]); c.lineTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.lineTo(HB[0], HB[1]); c.closePath(); c.fillStyle = sh; c.fill();
+  }
+  // the pleat, and the sandal on the floor edge
+  const p0 = L(L(TB, TF, 0.6), L(HB, HF, 0.62), 0.25), p1 = L(L(TB, TF, 0.6), L(HB, HF, 0.62), 0.92);
+  c.beginPath(); cvSegAdd(c, p0[0], p0[1], p1[0], p1[1], 1.2); c.fillStyle = cvShC(C, "hakB"); c.fill();
+  c.beginPath(); cvSegAdd(c, HB[0] + hx * 0.4 - ux * 0.2, HB[1] + hy * 0.4 - uy * 0.2, HF[0] - hx * 0.4 - ux * 0.2, HF[1] - hy * 0.4 - uy * 0.2, 2.4); c.fillStyle = CV_INK; c.fill();
+}
+/* ===================== Carved Ink: Wizard (ui/carve.js has the kit and the API) =====================
+   A tall A: the tallest and narrowest potato under a hat as big as he is (the cone bent back, a gold star charm on its tip, the sprout on
+   its front), a starred robe that flares to a gold hem and hides his legs (only the toes of his boots show), bell sleeves, kind half-closed
+   eyes under white brows and a white moustache. The staff keeps today's pose logic (heldDir, 34 back and 40 forward of the hand, P.cryK,
+   P.staffTip); its crystal floats in a gold crescent over the top and turns. Mockup: redesign/mockups/src/fighters.js NEWF.d.wizard;
+   skins: fx.js skinPal(). */
+cvFigReg("wizard", {
+  pal: { skin: "#f2b04e", robe: "#3d3a78", lining: "#8a66e0", gold: "#f6c64f", wood: "#8a5a36", cry: "#ffe38a", boot: "#5b3a2a",
+    brow: "#fbf6ea", iris: "#3f6fb0", stem: "#4f9a3c", leaf: "#7fd35c", blush: "#ff6a5a" },
+  chip: [{}, { robe: "#6a3fc4", lining: "#ff8ad8", gold: "#ffd9f2" }, { robe: "#2f7a4b", lining: "#b6ff6a", gold: "#f6c64f", cry: "#b6ff6a" },
+    { robe: "#9a2b38", lining: "#ffb02e", gold: "#ffe08a", cry: "#ff9a6a" }],
+  won: { scratch: { robe: "#3a1428", skin: "#8c4a30", cry: "#ff8a3c", gold: "#ff7a2b", lining: "#ff5a36" },
+    zorp: { robe: "#2f4f5a", skin: "#a9c8a0", cry: "#9dff5a", gold: "#9dff5a", lining: "#5affc3" },
+    kraken: { robe: "#1e3a4a", skin: "#b89a62", cry: "#3ef2c0", gold: "#e6c98a", lining: "#3ef2c0" },
+    harvest: { robe: "#8a3f1a", skin: "#f8cc52", cry: "#fff6c8", gold: "#ffe08a", lining: "#ffd66b" } },
+  pm: { 1: { robe: "#3a3842", skin: "#f1e8d2", cry: "#a86bff", gold: "#a86bff", brow: "#f1e8d2" },
+    2: { robe: "#ffd36b", skin: "#34246a", cry: "#ff6ad5", gold: "#ff6ad5", lining: "#ff6ad5", brow: "#f6eaff" } },
+  prim: "robe",
+  derive(C) {
+    C.lid = cvSh(C.skin, 0.18); C.browSh = cvMix(C.brow, "#7f8fc0", 0.28); C.cryD = cvMix(C.cry, "#c0602a", 0.32);
+    C.cryHi = cvMix(C.cry, "#ffffff", 0.7);
+  },
+  body: { x: 1, y: -40, rx: 15, ry: 22 },
+  face: { x: 7, y: -45, s: 0.95, iris: "iris", brow: -0.2, browCol: "brow", browW: 3.2, browUp: 0.8, lid: 0.25, lidCol: "lid",
+    mouth: { k: "none", x: 7.5, y: -31.5, s: 0.8, under: true } },   // (it shows only when he shouts: under the moustache)
+  mouthPt: [8, -32],
+  arm: { shF: [7, -37], shB: [-10, -38], len: 24, lenB: 20, bendB: "back", r0: 3.4, r1: 7, col: "robe",
+    hand: { r: 4.6, col: "skin" }, handB: { r: 4.3, col: "skin", thumb: false } },
+  carve: {
+    // the potato: tall and narrow, two specks, the blush
+    body(S) {
+      S.cel(cvBlob(1, -40, 15, 22), "skin", { sh: [7, -5], rim: 1, in() {
+        S.specks([[-8, -46, 1.2], [-10, -54, 0.9]], "skin/sh.3");
+        S.add([cvCirc(-0.5, -38.6, 3.2, 1.9)], "blush", 0, 0.42); S.add([cvCirc(14.2, -40.6, 2.4, 1.6)], "blush", 0, 0.42);
+      } });
+    },
+    // the robe over the lower half: a V neck with a gold edge, stars, the gold sash at the waist (the skirt hangs from under it, live)
+    robe(S) {
+      S.cel(cvSm([[-12.5, -40, 1], [-15.5, -31], [-17.5, -21.5, 1], [18, -21.5, 1], [16.8, -31], [15.2, -40, 1], [8, -34], [2, -29.5, 1], [-4, -34.5]]), "robe", {
+        sh: [7, -4], rim: 1, in() {
+          S.star(-8.5, -31, 3, "gold"); S.star(10.5, -28.5, 1.9, "gold"); S.star(-3, -36.5, 1.4, "lining/lt");
+          S.rect(-20, -26, 40, 4.2, "gold"); S.rect(-20, -26, 12, 4.2, "gold/sh.3");
+          S.rect(-20, -27, 40, 1.1, "ink"); S.rect(-20, -21.9, 40, 1.1, "ink");
+        } });
+      S.line([[-4, -34.5], [2, -29.5], [8, -34]], 2.2, "gold");
+      S.cel(cvCirc(11, -23.8, 2.6, 2.4), "gold", { sh: [1, -1], lw: 1.6 });   // the knot
+    },
+    // the white moustache, under the nose (drawn over the near sleeve, which crosses the face at rest)
+    stache(S) { S.cel(cvSm([[7, -39, 1], [2, -38], [-4, -32, 1], [3, -33.5], [7, -36, 1], [11, -33.5], [18, -32, 1], [12, -38]]), "brow", { sh: [1.5, -1.5], shade: "browSh", lw: 1.6 }); },
+    // the hat: the cone bent back with the star charm on its tip, the gold band, the wide brim, the sprout growing out of its front
+    hat(S) { S.with(0, -2, 0, 1, () => {
+      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
+      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "robe/sh.5");
+      S.cel(cvSm([[-13, -61, 1], [-12.4, -67], [1, -65.5], [13.4, -67], [15, -61, 1], [1, -59]]), "gold", { sh: [3, -2], lw: 1.8 });
+      S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "robe", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "robe/lt.25" });
+      S.line([[-2.5, -64], [-3.2, -68], [-2.4, -71.5]], 2.2, "stem");
+      S.leaf(-2.6, -71, 8, -2.5, "leaf"); S.leaf(-2.4, -71.5, 9, -0.6, "leaf");
+      S.line([[-34.4, -93.5], [-34.5, -86.5]], 1.2); S.star(-34, -83.5, 3.8, "gold", 1.2);
+    }); },
+    // the staff along +x (the hand at 0): the shaft 34 back and 33 forward, a leather grip, the gold crescent that cradles the crystal at 40
+    staff(S) {
+      S.cel(cvCapsule([-34, 0], [34, 0], 2.1, 1.8), "wood", { sh: [0, 1.3], lw: 2 });
+      S.rect(-4, -2.4, 9, 4.8, "boot"); S.line([[-2, -2.2], [0, 2.2]], 0.9, "ink"); S.line([[2, -2.2], [4, 2.2]], 0.9, "ink");
+      S.cel(cvCirc(-34, 0, 2.6), "gold", { lw: 1.6, sh: 0 });
+      S.cel(cvWizArc(41, 0, 7, Math.PI / 2 + 0.45, Math.PI * 1.5 - 0.45, 2.4), "gold", { lw: 1.6, sh: 0 });
+      S.cel(cvCirc(34, 0, 2.4), "gold", { lw: 1.6, sh: 0 });
+    },
+    // the crystal: a long diamond (its long axis along the staff), a darker facet and a light one
+    crystal(S) {
+      S.cel([[-11.9, 0], [0, -6.3], [11.9, 0], [0, 6.3]], "cry", { lw: 2.2, sh: [2.5, 3.8], shade: "cryD", hi: [-3, -2.5], hiCol: "cryHi" });
+      S.line([[-11.9, 0], [11.9, 0]], 0.9, "cryD");
+    },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
+    // the hat: the cone lags behind on the run, lifts as he falls (a spring sheared about the brim); the brim squashes on
+    // landing and springs back (steps of 0.04, so a held pose of it has a sprite of its own: K.stack)
+    const run = clamp((f.vx + f.kbx) * f.facing, -10, 10);
+    const sway = K.spring("hat", run * 0.014 + (air ? clamp(f.vy * 0.014, -0.12, 0.16) : 0), 0.16);
+    const squash = K.spring("brim", f.state === "land" ? 0.14 : f.state === "jumpsquat" ? 0.08 : 0, 0.3);
+    const sw = Math.round(sway * 25) / 25, sq = Math.round(clamp(squash, -0.08, 0.16) * 25) / 25;
+    K.arm(false);
+    K.rim();
+    cvWizSkirt(K);
+    // the hat at rest goes into the body's sprite; moving, it is a stack of its own
+    const hR = !sw && !sq;
+    K.stack(["body", "skin", "robe", "face", hR ? "hat" : null, hR ? "top" : null].filter(Boolean));
+    if (!hR) { K.stack(["hat"], (c) => { c.translate(1, -59); c.transform(1, 0, -sw, 1 - sq, 0, 0); c.translate(-1, 59); }, sw + "," + sq); if (K.skinPass) K.skinTop(); }
+    cvWizStaff(K);
+    K.arm(true, cvWizCuffF);
+    K.stack(["stache"]);
+  },
+});
+// a band along an arc as a polygon (the crescent that cradles the crystal)
+function cvWizArc(x, y, r, a0, a1, w) {
+  const o = [], n = 14;
+  for (let i = 0; i <= n; i++) { const a = a0 + ((a1 - a0) * i) / n; o.push([x + Math.cos(a) * (r + w / 2), y + Math.sin(a) * (r + w / 2)]); }
+  for (let i = n; i >= 0; i--) { const a = a0 + ((a1 - a0) * i) / n; o.push([x + Math.cos(a) * (r - w / 2), y + Math.sin(a) * (r - w / 2)]); }
+  return o;
+}
+// the bell sleeve's lining at the cuff of the near arm (between the sleeve and the hand: K.arm's held), turned with the forearm
+function cvWizCuffF(c, K) {
+  const A = K.fig.arm, h = K.hF, a = K.pt(A.shF[0], A.shF[1]), e = cvJoint(a, h, A.len, "down"), ang = Math.atan2(h[1] - e[1], h[0] - e[0]);
+  c.beginPath(); c.ellipse(h[0], h[1], 2.2, A.r1 - 1.1, ang, 0, CV_TAU); c.fillStyle = K.C.lining; c.fill();
+}
+// the robe's skirt from under the sash to a gold hem over the boots, spread between the feet (it follows a stride, a kick and a jump),
+// two gold stars on it. Live: the ink, the cloth, the back shadow, the hem, the stars and the toes are six fills
+function cvWizSkirt(K) {
+  const c = K.c, C = K.C, P = K.P, f = K.f;
+  const fF = P.fF, fB = P.fB, wl = K.pt(-14.5, -24), wr = K.pt(15, -24);
+  const back = fF[0] < fB[0] ? fF : fB, fwd = back === fF ? fB : fF;
+  const B = [Math.min(back[0] - 6, wl[0] - 6), back[1] - 1.5], F = [Math.max(fwd[0] + 8, wr[0] + 6.5), fwd[1] - 1.5];
+  const M = [(B[0] + F[0]) / 2, Math.max(B[1], F[1]) + (f.grounded ? 0 : 1.5)];
+  // the toes of the boots, under the hem
+  c.beginPath(); for (const p of [fB, fF]) c.ellipse(p[0] + 3.2, p[1] - 1.8, 6.6, 3.9, 0, 0, CV_TAU); c.fillStyle = CV_INK; c.fill();
+  c.beginPath(); for (const p of [fB, fF]) c.ellipse(p[0] + 3.2, p[1] - 2, 5.4, 2.8, 0, 0, CV_TAU); c.fillStyle = C.boot; c.fill();
+  // the skirt grown by g (the ink under it, the cloth inside the line)
+  const sk = (g) => {
+    c.beginPath(); c.moveTo(wl[0] - g, wl[1] - g); c.lineTo(wr[0] + g, wr[1] - g);
+    c.quadraticCurveTo(wr[0] + 1 + g, (wr[1] + F[1]) * 0.45, F[0] + g, F[1] + g * 0.6);
+    c.quadraticCurveTo(M[0], M[1] + 3 + g, B[0] - g, B[1] + g * 0.6);
+    c.quadraticCurveTo(wl[0] - 1 - g, (wl[1] + B[1]) * 0.45, wl[0] - g, wl[1] - g); c.closePath();
+  };
+  sk(1.3); c.fillStyle = CV_INK; c.fill(); cvMgInk(c);
+  sk(-1.2); c.fillStyle = C.robe; c.fill();
+  const sh = cvShC(C, "robe"), lerp2p = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+  if (sh !== C.robe) {   // the back third in shadow
+    const a = lerp2p(wl, wr, 0.3), b = lerp2p(B, F, 0.28);
+    c.beginPath(); c.moveTo(wl[0] + 0.2, wl[1] + 1); c.lineTo(a[0], a[1] + 1); c.quadraticCurveTo(a[0] - 1, (a[1] + b[1]) / 2, b[0], b[1] - 1);
+    c.lineTo(B[0] + 1.4, B[1] - 0.6); c.quadraticCurveTo(wl[0] + 0.2, (wl[1] + B[1]) * 0.45, wl[0] + 0.2, wl[1] + 1); c.closePath(); c.fillStyle = sh; c.fill();
+  }
+  // the gold hem: a band along the bottom edge
+  c.beginPath(); c.moveTo(B[0] + 0.2, B[1] - 0.6); c.quadraticCurveTo(M[0], M[1] + 1.8, F[0] - 0.2, F[1] - 0.6);
+  c.lineTo(F[0] - 1.4, F[1] - 4.2); c.quadraticCurveTo(M[0], M[1] - 1.8, B[0] + 1.6, B[1] - 4.2); c.closePath(); c.fillStyle = C.gold; c.fill();
+  // two stars on the cloth (bilinear in the skirt: u across, v down)
+  const at = (u, v) => lerp2p(lerp2p(wl, wr, u), lerp2p(B, F, u), v);
+  c.beginPath();
+  for (const [u, v, r] of [[0.32, 0.45, 2.6], [0.72, 0.62, 2]]) {
+    const p = at(u, v);
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * CV_TAU - Math.PI / 2, rr = i % 2 ? r * 0.36 : r; if (i) c.lineTo(p[0] + Math.cos(a) * rr, p[1] + Math.sin(a) * rr); else c.moveTo(p[0] + Math.cos(a) * rr, p[1] + Math.sin(a) * rr); }
+    c.closePath();
+  }
+  c.fillStyle = C.gold; c.fill();
+}
+// the staff in the front hand (wizardStaff's pose logic: heldDir with the rest angle -PI/2 + 0.12, the tip 40 out, P.cryK, P.staffTip):
+// the carved shaft and crescent, the crystal floating over it and turning, a soft glow and a twinkle
+function cvWizStaff(K) {
+  const c = K.c, P = K.P, f = K.f, tk = K.tk, C = K.C;
+  const a = heldDir(f, P, rot(P.sh, P.hip, P.lean), -Math.PI / 2 + 0.12), [hx, hy] = K.hF;
+  P.staffTip = [hx + Math.cos(a) * 40, hy + Math.sin(a) * 40];
+  const fl = 1 + Math.sin(tk * 0.3) * 0.08, gf = fl * P.cryK, cf = fl * (1 + (P.cryK - 1) * 0.5);   // cryK: the crystal flares during heavy wind-ups
+  const bob = Math.sin(tk * 0.08 + f.slot) * 1.2, turn = 0.45 + 0.55 * Math.abs(Math.cos(tk * 0.035 + f.slot));
+  c.save(); c.translate(hx, hy); c.rotate(a);
+  K.draw("staff");
+  c.translate(44 + bob, 0);
+  if (!K.flash) { c.globalAlpha *= 0.3; c.beginPath(); cvCircAdd(c, 0, 0, 11 * gf); c.fillStyle = C.cryHi; c.fill(); c.globalAlpha /= 0.3; }
+  c.save(); c.scale(cf, cf * turn); K.draw("crystal"); c.restore();
+  if (!K.flash && (tk + f.slot * 17) % 90 < 30) {   // a twinkle beside the crystal now and then
+    const q = ((tk + f.slot * 17) % 90) / 30, r = 3.2 * Math.sin(Math.PI * q);
+    c.beginPath(); cvWizStar(c, 7.5, -10, r); cvWizStar(c, -8.5, 7.5, r * 0.6); c.fillStyle = C.cryHi; c.fill();
+  }
+  c.restore();
+}
+// a four-point star added to the current path
+function cvWizStar(c, x, y, r) {
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * CV_TAU - Math.PI / 2, rr = i % 2 ? r * 0.3 : r; if (i) c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); else c.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  c.closePath();
+}
+/* ===================== Carved Ink: Gunslinger (ui/carve.js has the kit and the API) =====================
+   A flat hat over a poncho triangle on long legs: the lankiest potato, a hat wider than he is (it tips as he rises and falls), the shadow of
+   the brim over his eyes, a smirk with a wheat stalk (his sprout, chewed), a red bandana whose two tails stream behind, a striped poncho
+   with a pointed hem, denim legs in boots with spurs, and two long-barrel revolvers. The pistols keep today's pose logic (heldDir with the
+   rest angle -0.3, P.gunB, P.shotF / P.shotB and the muzzle flash gunFlash() at gunMuzzle(): the barrel ends at 18.5 along it, as in
+   gunHeld()); they are carved here, steel and grip in the skin's colours. Mockup: redesign/mockups/src/fighters.js NEWF.d.gunslinger;
+   skins: fx.js skinPal(). */
+cvFigReg("gunslinger", {
+  pal: { skin: "#e9b268", hat: "#8f5c33", pon: "#c8793a", cream: "#f6dfae", teal: "#2f9a94", red: "#dd4238", denim: "#3f5285", hide: "#4a2f22",
+    steel: "#cdd4de", gold: "#ecb53a", grip: "#6e4526", iris: "#2f8f8a", stalk: "#c9a14a", wheat: "#d9c05a" },
+  chip: [{}, { hat: "#2c2836", pon: "#3f3848", cream: "#b3a6d0", teal: "#dd4238", denim: "#2a2a36" },
+    { hat: "#f3ecd9", pon: "#5a82b8", cream: "#f6dfae", teal: "#ecb53a", red: "#2f5fa8" },
+    { hat: "#3a2a1a", pon: "#dba62c", cream: "#fff3b8", teal: "#8a5a1a", steel: "#f2c94c", red: "#8a1f1f" }],
+  won: { scratch: { pon: "#4a2018", skin: "#8c4a30", hat: "#2a1512", cream: "#ff7a2b", teal: "#ffb02e", denim: "#2a1a1c" },
+    zorp: { pon: "#7a9a8a", skin: "#a9c8a0", hat: "#3a5a52", cream: "#9dff5a", teal: "#d6f6e0", denim: "#2a4a4a" },
+    kraken: { pon: "#6a8a8a", skin: "#b89a62", hat: "#2a3a46", cream: "#3ef2c0", teal: "#ff7a8a", denim: "#1f3a4a" },
+    harvest: { pon: "#7a5226", skin: "#f8cc52", hat: "#8a531e", cream: "#ffe08a", teal: "#fff6c8", steel: "#f2c94c", denim: "#5a3a1c" } },
+  pm: { 1: { pon: "#3a3842", skin: "#f1e8d2", teal: "#3ef2c0", red: "#3ef2c0" },
+    2: { pon: "#c7ff5a", skin: "#34246a", hat: "#1a1238", cream: "#ff6ad5", teal: "#2b1f52", denim: "#1a1238", red: "#ff6ad5" } },
+  prim: "pon",
+  derive(C) { C.lid = cvSh(C.skin, 0.34); C.redSh = cvSh(C.red, 0.2); C.steelHi = cvMix(C.steel, "#ffffff", 0.6); },
+  body: { x: 0, y: -39, rx: 16, ry: 20.5 },
+  face: { x: 7.5, y: -46, s: 0.92, iris: "iris", brow: 0.12, noBrow: true, lid: 0.42, lidCol: "lid", mouth: { k: "smirk", x: 9, y: -38.5, s: 0.9 } },
+  mouthPt: [10, -38],
+  arm: { shF: [8, -33], shB: [-11, -34], len: 22, lenB: 20, bendB: "back", r0: 4, r1: 3.6, col: "pon",
+    hand: { r: 4.7, col: "hide" }, handB: { r: 4.4, col: "hide", thumb: false } },
+  leg: { hipF: [5, -21], hipB: [-5, -21], len: 18, r0: 4.6, r1: 4, col: "denim", boot: { s: 1.12, col: "hide" } },
+  carve: {
+    // the two bandana tails, from the knot at the back of the neck, hanging at rest (turned 0.3 down about the knot)
+    tails(S) {
+      const T = (pts) => cvSm(pts.map((p) => [p[0] + 10, p[1] + 45, p[2]]));
+      S.with(-10, -45, -0.3, 1, () => {
+        S.cel(T([[-10, -47, 1], [-22, -52], [-30, -46], [-40, -50, 1], [-36, -42, 1], [-28, -40], [-20, -44], [-10, -42, 1]]), "red", { sh: [2, -1.5], lw: 2.2 });
+        S.cel(T([[-10, -45, 1], [-19, -41], [-26, -36], [-34, -36, 1], [-31, -31, 1], [-23, -32], [-16, -38], [-9, -41, 1]]), "redSh", { sh: [2, -1.5], lw: 2.2 });
+      });
+    },
+    // the potato, the shadow of the brim across its top
+    body(S) {
+      S.cel(cvBlob(0, -39, 16, 20.5), "skin", { sh: [7, -5], rim: 1, in() {
+        S.specks([[-8, -30, 1.2], [-11, -38, 0.9]], "skin/sh.3");
+        S.rect(-20, -62, 40, 12.5, "skin/sh");
+      } });
+    },
+    // the poncho: a triangle with a pointed hem, a cream and a teal stripe along it; the bandana knotted at the neck
+    poncho(S) {
+      S.cel(cvSm([[-13, -46, 1], [-20, -36], [-26, -22, 1], [-10, -19], [5, -12, 1], [14, -22], [24, -28, 1], [18, -38], [13, -47, 1], [0, -43]]), "pon", {
+        sh: [6, -4], rim: 1, in() {
+          S.line([[-26, -27], [-10, -24], [5, -17], [14, -27], [25, -33]], 3.4, "cream");
+          S.line([[-26, -32], [-10, -29], [5, -22], [14, -32], [25, -38]], 2.2, "teal");
+        } });
+      S.cel(cvSm([[-11, -47, 1], [1, -43], [13, -48, 1], [10, -41], [3, -36, 1], [-6, -41]]), "red", { sh: [3, -2], lw: 2 });
+    },
+    // the wheat stalk he chews (his sprout)
+    stalk(S) { S.line([[13.5, -39.5], [22, -43], [27, -42]], 1.5, "stalk"); S.leaf(26, -42, 6, -0.5, "wheat"); },
+    // the hat: a dented crown with the band and its gold star, the wide brim with its sides curled up
+    hat(S) {
+      S.cel(cvSm([[-12, -59, 1], [-12, -71], [-5, -76], [1, -72], [8, -77], [14, -71], [14, -58, 1]]), "hat", { sh: [5, -3], hi: [-3, 4], hiCol: "hat/lt.25" });
+      S.cel(cvSm([[-12, -60, 1], [-12.2, -64.5], [1, -63], [14.2, -64.5], [14, -59, 1], [1, -57]]), "red", { sh: [3, -2], lw: 1.6 });
+      S.star(4, -61, 2.8, "gold", 1);
+      S.cel(cvSm([[-31, -62], [-15, -55], [3, -53.5], [22, -52.5], [35, -55], [24, -59.5], [3, -60], [-17, -62.5]]), "hat", { sh: [4, -2.4], rim: 1, hi: [-3, 2.4], hiCol: "hat/lt.25" });
+    },
+    // a long-barrel revolver in the hand at 0, along +x: the barrel to 18.5 (the muzzle, gunMuzzle()), the cylinder, the grip down
+    gun(S) { cvGnsGun(S, false); },
+    gunB(S) { cvGnsGun(S, true); },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, air = !f.grounded && f.state !== "ledge";
+    // the bandana tails: they hang at rest, stream back and flutter on the run, lift as he falls (a spring about the knot; steps of 0.04)
+    const run = clamp(Math.abs(f.vx + f.kbx), 0, 12);
+    const ang = K.spring("tails", run * 0.045 + (air ? clamp(f.vy * 0.05, -0.45, 0.5) : 0), 0.28) + (run > 3 || air ? 0.06 * Math.sin(K.tk * 0.45) : 0);
+    const aq = Math.round(ang * 25) / 25;
+    // the hat: it tips back as he rises and forward as he falls (steps of 0.03)
+    const tilt = K.spring("ghat", air ? clamp(f.vy * 0.008, -0.07, 0.07) : 0, 0.3), tq = Math.round(tilt / 0.03) * 0.03;
+    K.arm(false, cvGnsGunB);
+    K.leg(false); K.leg(true);
+    K.rim();
+    // at rest the tails and the hat go into the body's sprite; moving, each is a stack of its own
+    const tR = !aq, hR = !tq;
+    if (!tR) K.stack(["tails"], (c) => { c.translate(-10, -45); c.rotate(aq); c.translate(10, 45); }, String(aq));
+    K.stack([tR ? "tails" : null, "body", "skin", "poncho", "face", "stalk", hR ? "hat" : null, hR ? "top" : null].filter(Boolean));
+    if (!hR) { K.stack(["hat"], (c) => { c.translate(2, -58); c.rotate(tq); c.translate(-2, 58); }, String(tq)); if (K.skinPass) K.skinTop(); }
+    K.arm(true, cvGnsGunF);
+  },
+});
+// spurs on the boots: a gold rowel at the heel (the kit carves the boots from leg.boot; this adds the rowel to the same parts)
+CV_FIG.gunslinger.carve.boot = (S) => { S.boot(0, 0, 1.12, "hide"); S.line([[-5.6, -3.4], [-7.6, -3.6]], 1.2, "ink"); S.star(-8.4, -3.6, 2.6, "gold", 1); };
+CV_FIG.gunslinger.carve.bootB = (S) => { S.boot(0, 0, 1.12, "hide"); S.line([[-5.6, -3.4], [-7.6, -3.6]], 1.2, "ink"); S.star(-8.4, -3.6, 2.6, "gold/sh", 1); };
+// the revolver, carved (far: the one in the back hand, in shadow tones and flat): one ink under all its pieces, the grip, the steel,
+// their shadows, the lines (six fills, four far: it is drawn as paths, turned with the hand)
+function cvGnsGun(S, far) {
+  const st = far ? "steel/sh.3" : "steel", sd = "steel/sh", gr = far ? "grip/sh.3" : "grip", gd = "grip/sh";
+  const G = cvPos(cvSm([[-4.2, -1.6, 1], [2, -1.6, 1], [-0.6, 8.6, 1], [-7, 8, 1]])), B = cvPos(cvRect(3, -4.4, 15.5, 3.4));
+  const H = cvPos([[-4.4, -4.8], [-7.8, -7.8], [-2.6, -5.4]]), Y = cvPos(cvSm([[-5, -5.6, 1], [5.2, -5.6, 1], [5.2, 1.6, 1], [-5, 1.6, 1]]));
+  S.add([G, B, H, Y].map((P) => cvOffset(P, 0.8)).concat([cvRect(15.4, -6.3, 1.7, 2)]), "ink");
+  const gi = cvOffset(G, -0.8), bi = cvOffset(B, -0.8), yi = cvOffset(Y, -0.8);
+  S.add([gi], gr); if (!far) S.add(cvMinus(gi, cvShift(G, 1.2, -1)), gd, 1);
+  S.add([bi, cvOffset(H, -0.6), yi], st);
+  if (!far) S.add(cvMinus(bi, cvShift(B, 0, -1.1)).concat(cvMinus(yi, cvShift(Y, 0, -1.6))), sd, 1);
+  S.line([[-3, -1.9], [3.4, -1.9]], 0.8, "ink"); S.line([[5.2, -5], [5.2, 1]], 1, "ink"); S.line([[0.2, 1.6], [1.6, 4.6], [4.2, 1.6]], 1, "ink");
+}
+// a pistol in the hand (gunHeld's pose and size: the far one 0.92; the muzzle flash when it has just fired), between the arm and the fist
+function cvGnsGunAt(c, K, front) {
+  const P = K.P, f = K.f, h = front ? K.hF : K.hB;
+  const a = front ? heldDir(f, P, rot(P.sh, P.hip, P.lean), -0.3) : P.gunB != null ? P.gunB : Math.PI + 0.35, shot = front ? P.shotF : P.shotB;
+  c.save(); c.translate(h[0], h[1]); c.rotate(a); if (!front) c.scale(0.92, 0.92);
+  K.draw(front ? "gun" : "gunB");
+  if (shot >= 0 && !K.flash) { const big = front ? P.bigF : P.bigB; gunFlash(c, 18.5, -2.7, shot, big ? 1.9 : f.finShot && front ? 1.6 : P.ultShots ? 1.3 : 1, big || (f.finShot && front)); }
+  c.restore();
+}
+const cvGnsGunF = (c, K) => cvGnsGunAt(c, K, true), cvGnsGunB = (c, K) => cvGnsGunAt(c, K, false);
+/* ===================== Carved Ink: Reaper (ui/carve.js has the kit and the API) =====================
+   No legs to see: a ragged bell of a cloak that reaches the floor with a torn hem, a rope at the waist, a hooked hood with a wilted
+   sprout on the hook, the face in the hood's shadow with two eye slits that glow (soul), a smirk, bone-pale hands and soul motes drifting
+   off the back of the hem. On the floor the hem stays on the floor (the cloak is turned back from the body's lean and stretched to the
+   crouch; K.stack's fn), so he glides; off the floor it hangs from the body, trails behind as he moves, lifts as he falls. The face is the
+   figure's own (the slits are no kit eyes): carved at rest, live with an expression, hitstun, a blink or a shout (cvRprFace).
+   The scythe keeps today's pose logic (scythe(): scyAng, P.bladeS, P.scyK, P.scyBack, P.scyTip), carved in this skin's colours;
+   graveCloud (P.cloud) and reapLightTrail are today's. Mockup: redesign/mockups/src/fighters.js NEWF.d.reaper;
+   skins: fx.js skinPal(). */
+const CV_RPR_TOP = -50;   // the top of the cloak (the stretch to the crouch and the trail turn about it)
+const CV_RPR_EYES = [[4.6, 3.5, 0.35], [12.6, 3, -0.3]];   // the slits: x (at y -50.5), half length, tilt
+const CV_RPR_CLOAK = [[-13, -50, 1], [-20, -30], [-25, -8], [-23, 0, 1], [-18, -8], [-13, 0, 1], [-7, -7], [-1, 0, 1], [5, -7], [11, 0, 1], [16, -8], [23, 0, 1], [21, -28], [14, -50, 1]];
+const CV_RPR_HOOD = [[-16, -38, 1], [-21, -56], [-10, -72], [6, -78], [19, -72, 1], [11, -70], [19, -60], [18, -46], [11, -35, 1], [-3, -33]];
+let cvRprRims = null;   // the outlines of the cloak and the hood for the 2v2 team rim (the body's silhouette sits inside the cloak)
+cvFigReg("reaper", {
+  pal: { cloak: "#565069", deep: "#17131f", skin: "#e2a95c", soul: "#8dffd0", bone: "#efe9da", wood: "#6e4a33", steel: "#e3e9f0",
+    stem: "#4f7d4a", leaf: "#86b56a" },
+  chip: [{}, { cloak: "#3f6e3a", soul: "#c6ff6a" }, { cloak: "#3a3340", soul: "#ff8a3c", steel: "#ffd9b0" },
+    { cloak: "#ebe6d8", soul: "#8dffd0", bone: "#3a3644", wood: "#3a3644" }],
+  won: { scratch: { cloak: "#3a1410", skin: "#8c4a30", soul: "#ff7a2b" }, zorp: { cloak: "#2d4a3e", skin: "#a9c8a0", soul: "#9dff5a" },
+    kraken: { cloak: "#22343a", skin: "#b89a62", soul: "#3ef2c0" }, harvest: { cloak: "#5a3a1c", skin: "#f8cc52", soul: "#ffe08a", steel: "#fff0b0" } },
+  pm: { 1: { cloak: "#3a3842", deep: "#1b1a22", soul: "#ffb444", skin: "#f1e8d2" }, 2: { cloak: "#9b5cff", skin: "#34246a", soul: "#ff6ad5", steel: "#f0e0ff" } },
+  prim: "cloak",
+  // (the face in the hood is dark, towards deep, so the two bright slits carry it)
+  derive(C) { C.band = cvSh(C.steel, 0.45); C.shade = cvMix(C.skin, C.deep, 0.6); C.shadeD = cvMix(C.skin, C.deep, 0.8); C.soulHi = cvMix(C.soul, "#ffffff", 0.7); },
+  body: { x: 0, y: -40, rx: 19, ry: 27 },   // (hidden in the cloak: its numbers size the skin passes, so it stays small)
+  face: { x: 8.5, y: -50.5, s: 0.9, mouth: { k: "smirk", x: 9.5, y: -42.5, s: 0.85 } },   // (the slits are cvRprFace's; the kit draws the mouth)
+  mouthPt: [9.5, -42],
+  arm: { shF: [6, -35], shB: [-10, -39], len: 20, lenB: 18, bendB: "back", r0: 4.6, r1: 5.8, col: "cloak",
+    hand: { r: 4.9, col: "bone" }, handB: { r: 4.6, col: "bone", thumb: false } },
+  carve: {
+    // the bell: the dark inside showing between the tatters, the torn hem on the floor, two folds and the rope at the waist
+    cloak(S) {
+      S.fill(cvSm([[-18, -20, 1], [-20, 0, 1], [18, 0, 1], [18, -20, 1]]), "deep");
+      S.cel(cvSm(CV_RPR_CLOAK), "cloak", { sh: [8, -4], rim: 1, hi: [-5, 2], hiCol: "cloak/lt.22" });
+      S.line([[-6, -34], [-10, -12]], 1.3, "cloak/sh.5"); S.line([[7, -34], [9, -12]], 1.3, "cloak/sh.5");
+      S.line([[-14, -31], [0, -27], [16, -31]], 2.6, "wood");
+      S.line([[1, -27.5], [-1, -20], [1.5, -14]], 1.6, "wood"); S.cel(cvCirc(0.5, -27.5, 2.2, 2), "wood", { lw: 1.4, sh: 0 });
+    },
+    // the hood with its hook, the opening dark, the face in its shadow
+    hood(S) {
+      S.cel(cvSm(CV_RPR_HOOD), "cloak", { sh: [6, -5], rim: 1, hi: [-4, 5], hiCol: "cloak/lt.22" });
+      S.line([[-12, -64], [-15, -52], [-12, -41]], 1.3, "cloak/sh.5");
+      S.cel(cvBlob(7.5, -51, 10.8, 13.4), "deep", { shade: 0, lw: 2.2 });
+      S.cel(cvBlob(8.5, -48.5, 9, 10.6), "shade", { sh: [3, 7], shade: "shadeD", lw: 0 });
+    },
+    // the face at rest: the glow of the slits, the slits, the smirk
+    eyes(S) {
+      for (const [x, w, a] of CV_RPR_EYES) {
+        S.add([cvCirc(x, -50.5, 7)], "soul", 1, 0.2); S.add([cvCirc(x, -50.5, 4.2)], "soul", 1, 0.35);
+        S.with(x, -50.5, a, 1, () => S.cel(cvSm([[-w, 0.8, 1], [0, -2.4], [w, -0.6, 1], [0, 1.6]]), "soulHi", { lw: 1.2, sh: 0 }));
+      }
+      cvMouth(S, 9.5, -42.5, "smirk", 0.85);
+    },
+    // the scythe in the hand's frame (at 0, along +x; today's measures for w 46: SCY in draw-fighters.js): the snath and its knob, the
+    // collar at the head, the blade from the collar (its side +y; cvRprScythe flips and squashes it as scythe() does) with a soul edge
+    snath(S) { cvRprSnath(S); },
+    collar(S) { cvRprCollar(S); },
+    blade(S) { cvRprBlade(S); },
+    // the wilted sprout off the hook
+    sprout(S) { S.line([[4, -77], [9, -84], [16, -82]], 2.2, "stem"); S.leaf(16, -82, 9, 0.9, "leaf"); S.leaf(6, -80, 7, -2.4, "leaf"); },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, c = K.c;
+    graveCloud(c, f, P, tk, P.cloud);   // Grave rise (draw-fighters.js)
+    cvRprMotes(c, K);
+    if (P.scyBack) cvRprScythe(c, K);   // Harvest: the blade swings behind him
+    K.arm(false);
+    // the cloak: on the floor its hem stays there (g 1: turned back from the lean, the top sheared along with it, stretched to the crouch);
+    // off it, it hangs (g 0), lifting as he falls and stretching as he rises; the hem trails behind as he moves (all in steps: K.stack)
+    const grd = f.grounded && f.state !== "ledge" && !(f.state === "hitstun" && P.spin);
+    const g = Math.round(clamp(K.spring("rgnd", grd ? 1 : 0, 0.35), 0, 1) * 10) / 10;
+    const dq = Math.round(P.cvDrop * 2) / 2, lq = K.ls / 50;
+    const tr = Math.round(K.spring("rtrail", clamp(-(f.vx + f.kbx) * f.facing * (grd ? 0.6 : 0.9), -8, 8) + (grd ? 0 : Math.sin(tk * 0.2 + f.slot) * 0.8), 0.2));
+    const ka = grd ? 1 : Math.round((1 - clamp((f.vy || 0) * 0.012, -0.08, 0.12)) * 50) / 50;
+    const fn = cvRprCloakFn(P, g, dq, lq, tr, ka);
+    if (TEAM_RIM && !K.at) cvRprRim(c, K, fn);
+    // at rest (no transform) the cloak goes into the hood's sprite; otherwise it is a stack of its own. The skin pass lies once on the bell
+    // (fig.sil) over the hood: at rest the bell's own, otherwise the turned cloak's (cvRprBell)
+    if (fn) K.stack(["cloak"], fn, g + "," + dq + "," + tr + "," + ka);
+    const skin = fn && K.skinPass ? (KK) => cvRprSkin(KK, cvRprBell(fn)) : "skin";
+    K.stack([fn ? null : "cloak", "hood", skin, K.faceRest && !(P.mouth > 0.5) ? "eyes" : cvRprFaceK, "sprout", "top"].filter(Boolean));
+    K.arm(true, P.scyBack ? null : cvRprScythe);
+    reapLightTrail(c, f, P);   // a light's swing trail (draw-fighters.js)
+  },
+});
+// the silhouette potatoPath() replays (glaze, the Road and Pommes skin passes): the bell he reads as, the cloak and the hood as one
+// outline (the body's ellipse sits hidden inside the cloak), thinned (a point within 0.3 of the line through its neighbours goes: the
+// passes clip to it and stroke it). A and B keep the cloak and the hood for the bells of a turned cloak (cvRprBell)
+const CV_RPR_SIL = (() => {
+  const A = cvRprThin(cvPos(cvSm(CV_RPR_CLOAK)), 0.3), B = cvRprThin(cvPos(cvSm(CV_RPR_HOOD)), 0.3);
+  return { A, B, all: cvRprFlat(cvRprUnion(A, B)) };
+})();
+CV_FIG.reaper.sil = CV_RPR_SIL.all;
+const CV_RPR_BELLS = new Map();   // the bells of a turned cloak, by its turn (rounded)
+function cvRprFlat(Q) { const o = new Float64Array(Q.length * 2); Q.forEach((q, i) => { o[i * 2] = q[0]; o[i * 2 + 1] = q[1]; }); return o; }
+// fewer points on a dense closed outline: a run of points goes while each lies within tol of the line from the last kept one on
+function cvRprThin(Q, tol) {
+  const n = Q.length, out = [Q[0]];
+  for (let i = 1, a = 0; i < n; i++) {
+    const A = Q[a], b = Q[(i + 1) % n], dx = b[0] - A[0], dy = b[1] - A[1], L = Math.hypot(dx, dy) || 1;
+    let ok = true;
+    for (let m = a + 1; m <= i && ok; m++) ok = Math.abs((Q[m][0] - A[0]) * dy - (Q[m][1] - A[1]) * dx) / L <= tol;
+    if (!ok) { out.push(Q[i]); a = i; }
+  }
+  return out;
+}
+// the outline of the union of two simple polygons of one winding: walk A from a point outside B; where an edge runs into the other, go on
+// along the other from the crossing (forward on both), and back; stop back at the start
+function cvRprUnion(A, B) {
+  const s = A.findIndex((p) => !cvInside(B, p[0], p[1]));
+  if (s < 0) return B;
+  const out = [A[s]];
+  let cur = A, oth = B, p = A[s], j = (s + 1) % A.length;
+  for (let n = 0; n < 4 * (A.length + B.length); n++) {
+    const q = cur[j];
+    let hit = null, hk = -1;
+    for (let k = 0; k < oth.length; k++) {
+      const h = cvHit(p, q, oth[k], oth[(k + 1) % oth.length]);
+      if (h && h[2] > 1e-7 && (!hit || h[2] < hit[2])) { hit = h; hk = k; }
+    }
+    if (hit) { p = [hit[0], hit[1]]; out.push(p); [cur, oth] = [oth, cur]; j = (hk + 1) % cur.length; continue; }
+    if (cur === A && j === s) break;
+    out.push(q); p = q; j = (j + 1) % cur.length;
+  }
+  return out;
+}
+// the bell of a turned cloak: the cloak's points through fn's matrix (the standing frame, after the drop: as the stack draws it) and the
+// hood, as one outline; made once per turn
+function cvRprBell(fn) {
+  let m = [1, 0, 0, 1, 0, 0];
+  const mul = (a, b, c, d, e, f) => { const [A, B, C, D, E, F] = m; m = [A * a + C * b, B * a + D * b, A * c + C * d, B * c + D * d, A * e + C * f + E, B * e + D * f + F]; };
+  fn({ translate: (x, y) => mul(1, 0, 0, 1, x, y), rotate: (a) => { const cs = Math.cos(a), sn = Math.sin(a); mul(cs, sn, -sn, cs, 0, 0); },
+    scale: (x, y) => mul(x, 0, 0, y, 0, 0), transform: mul });
+  const key = m.map((v, i) => Math.round(v * (i < 4 ? 500 : 20))).join(",");
+  let s = CV_RPR_BELLS.get(key);
+  if (!s) {
+    if (CV_RPR_BELLS.size > 300) CV_RPR_BELLS.clear();
+    const A = CV_RPR_SIL.A.map(([x, y]) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]);
+    CV_RPR_BELLS.set(key, (s = cvRprFlat(cvRprUnion(A, CV_RPR_SIL.B))));
+  }
+  return s;
+}
+// the skin pass (K.skinBody: glaze, a Road or Pommes skin) on a bell of a turned cloak
+function cvRprSkin(K, sil) {
+  const fig = K.fig, s0 = fig.sil;
+  fig.sil = sil;
+  try { K.skinBody(); } finally { fig.sil = s0; }
+}
+// the cloak's transform in the standing frame (after the kit's lean and drop), or null when it has none
+function cvRprCloakFn(P, g, dq, lq, tr, ka) {
+  const T = CV_RPR_TOP, hx = P.hip[0], hy = P.hip[1] - P.cvDrop;
+  const k = 1 - (g * dq) / -T + (1 - g) * (ka - 1);   // the hem on the floor at y -dq (then the drop puts it at 0)
+  const kx = g && lq ? (g * ((T - hy) * Math.sin(lq))) / (T + dq) : 0, sx = tr / -T;
+  if (!(g && lq) && !kx && !sx && k === 1) return null;
+  return (c) => {
+    if (g && lq) { c.translate(hx, hy); c.rotate(-lq * g); c.translate(-hx, -hy); }
+    if (kx) { c.translate(0, -dq); c.transform(1, 0, -kx, 1, 0, 0); c.translate(0, dq); }
+    if (sx) { c.translate(0, T); c.transform(1, 0, sx, 1, 0, 0); c.translate(0, -T); }
+    if (k !== 1) { c.translate(0, T); c.scale(1, k); c.translate(0, -T); }
+  };
+}
+// the 2v2 team rim: the cloak's and the hood's outlines (teamRimBody's width), behind them
+function cvRprRim(c, K, fn) {
+  const tc = TEAM_COL[K.f.team];
+  if (!tc) return;
+  if (!cvRprRims) cvRprRims = [cvPath([cvSm(CV_RPR_CLOAK)]), cvPath([cvSm(CV_RPR_HOOD)])];
+  c.lineJoin = "round"; c.lineWidth = 2.5 + 4 / cam.z; c.strokeStyle = tc;
+  K.body((cc) => { if (fn) fn(cc); cc.stroke(cvRprRims[0]); });
+  K.body((cc) => cc.stroke(cvRprRims[1]));
+}
+// soul motes rising off the back of the hem: three, live (two fills)
+function cvRprMotes(c, K) {
+  const tk = K.tk, f = K.f, a0 = c.globalAlpha, M = [];
+  for (let i = 0; i < 3; i++) {
+    const t = (tk * 0.011 + i / 3 + f.slot * 0.17) % 1, r = (3.2 - i * 0.6) * (1 - t * 0.55);
+    M.push([K.pt(-23 - i * 4 + Math.sin(tk * 0.07 + i * 2.1) * 2.5 - t * 4, -3 - t * 30), r, 1 - t]);
+  }
+  c.beginPath(); for (const [p, r] of M) cvCircAdd(c, p[0], p[1], r * 2.6);
+  c.globalAlpha = a0 * 0.22; c.fillStyle = K.C.soul; c.fill();
+  c.beginPath(); for (const [p, r, q] of M) if (q > 0.15) cvCircAdd(c, p[0], p[1], r);
+  c.globalAlpha = a0 * 0.9; c.fill();
+  c.globalAlpha = a0;
+}
+// the scythe in the front hand: scythe()'s pose (scyAng, P.bladeS, P.scyK, P.scyBack) and P.scyTip (scyTipAt), drawn from the carved
+// parts as paths (a turned sprite costs more than their few fills): the snath foreshortened by scyK, the blade flipped and squashed by
+// bladeS; between the arm and the mitten, or behind him in Harvest. The top chip skin keeps its ghost-lit edge
+function cvRprScythe(c, K) {
+  const P = K.P, f = K.f, a = scyAng(f, P), s = P.bladeS, k = P.scyK, w = P.w, h = K.hF, u = w / 46;
+  c.save(); c.translate(h[0], h[1]); c.rotate(a); if (u !== 1) c.scale(u, u);
+  c.save(); c.scale(k, 1); K.draw("snath"); c.restore();
+  c.translate(46.92 * k, 0);
+  K.draw("collar");
+  if (Math.abs(s) > 0.06) {
+    c.scale(k * 0.5 + 0.5, s); K.draw("blade");
+    if (skinLvl(f) === 3 && !K.flash && !P.dim) {
+      c.globalAlpha *= 0.45; c.strokeStyle = K.C.soul; c.lineWidth = 4 / Math.max(0.4, Math.abs(s)); c.lineCap = "round";
+      c.beginPath(); c.moveTo(-1, 5); c.quadraticCurveTo(6.3, 21.2, -10.8, 41.9); c.stroke(); c.globalAlpha /= 0.45;
+    }
+  }
+  c.restore();
+  P.scyTip = scyTipAt(h, a, s, w, k);
+}
+// a quadratic curve as points
+function cvRprQuad(p0, q, p1) {
+  const o = [];
+  for (let i = 0; i <= 12; i++) { const t = i / 12, m = 1 - t; o.push([m * m * p0[0] + 2 * m * t * q[0] + t * t * p1[0], m * m * p0[1] + 2 * m * t * q[1] + t * t * p1[1]]); }
+  return o;
+}
+// the face when it is not at rest: the slits for the moment (an expression, hitstun, a blink, a shout) and the kit's mouth
+const cvRprFaceK = (K) => K.body((c) => cvRprFace(c, K));
+function cvRprFace(c, K) {
+  const P = K.P, f = K.f, C = K.C, F = K.fig.face, ex = P.expr || "", xk = P.exK === undefined ? 1 : P.exK, a0 = c.globalAlpha, y = -50.5;
+  const hurt = !ex && f.state === "hitstun", bl = !ex && !hurt && ((K.tk + f.slot * 53) % 211) < 4;
+  const glow = ex === "ko" ? 0 : ex === "rage" ? 1.5 : ex === "terror" ? 1.2 : bl || ex === "calm" ? 0.5 : 1;
+  if (glow && !C.flat) {
+    c.beginPath(); for (const e of CV_RPR_EYES) cvCircAdd(c, e[0], y, 6.5); c.globalAlpha = a0 * 0.22 * glow; c.fillStyle = C.soul; c.fill();
+    c.beginPath(); for (const e of CV_RPR_EYES) cvCircAdd(c, e[0], y, 4); c.globalAlpha = a0 * Math.min(0.6, 0.35 * glow); c.fill();
+    c.globalAlpha = a0;
+  }
+  c.lineCap = "round"; c.lineJoin = "round";
+  const strokes = (w, add) => { c.beginPath(); CV_RPR_EYES.forEach(add); c.lineWidth = w + 1.6; c.strokeStyle = CV_INK; c.stroke(); cvMgInk(c); c.lineWidth = w; c.strokeStyle = C.soulHi; c.stroke(); };
+  if (hurt) strokes(1.8, ([x], i) => { const d = i ? -1 : 1; c.moveTo(x - d * 2.6, y - 2.6); c.lineTo(x + d * 2, y); c.lineTo(x - d * 2.6, y + 2.6); });   // > <
+  else if (ex === "ko") strokes(1.9, ([x]) => { c.moveTo(x - 2.6, y - 2.6); c.lineTo(x + 2.6, y + 2.6); c.moveTo(x + 2.6, y - 2.6); c.lineTo(x - 2.6, y + 2.6); });
+  else if (ex === "dazed") strokes(1.2, ([x], i) => { for (let a = 0; a <= Math.PI * 5; a += 0.3) { const r = 3.6 * (0.1 + (0.8 * a) / (Math.PI * 5)), px = x + Math.cos(a + i * 2) * r, py = y + Math.sin(a + i * 2) * r; if (a) c.lineTo(px, py); else c.moveTo(px, py); } });
+  else if (ex === "calm") strokes(1.6, ([x]) => { c.moveTo(x + 3 * Math.cos(0.25), y - 1 + 3 * Math.sin(0.25)); c.arc(x, y - 1, 3, 0.25, Math.PI - 0.25); });   // closed, content
+  else if (ex === "grin") strokes(1.9, ([x]) => { c.moveTo(x - 3.1 * Math.cos(0.35), y + 1.6 - 3.1 * Math.sin(0.35)); c.arc(x, y + 1.6, 3.1, Math.PI + 0.35, -0.35); });   // ^ ^
+  else if (bl) strokes(1.3, ([x, w, a]) => { c.moveTo(x - Math.cos(a) * w, y - Math.sin(a) * w); c.lineTo(x + Math.cos(a) * w, y + Math.sin(a) * w); });
+  else {
+    // open: the slits (rage: tilted hard inwards, narrower), terror: wide round eyes with a dot of a pupil
+    const tr = ex === "terror", k = tr ? 1 + 0.45 * xk : 1;
+    const E = CV_RPR_EYES.map(([x, w, a], i) => (tr ? [x, 3 * k, 3 * k, 0] : ex === "rage" ? [x, w * 1.05, 1.2, i ? -0.75 : 0.75] : [x, w, 1.7, a]));
+    const lay = (d, col) => { c.beginPath(); for (const [x, rx, ry, a] of E) { c.moveTo(x + (rx + d) * Math.cos(a), y + (rx + d) * Math.sin(a)); c.ellipse(x, y, rx + d, ry + d, a, 0, CV_TAU); } c.fillStyle = col; c.fill(); };
+    lay(0.85, CV_INK); cvMgInk(c); lay(0, C.soulHi);
+    if (tr) { c.beginPath(); for (const [x] of E) cvCircAdd(c, x + 0.6, y + 0.3, 1.2 * (1 - 0.4 * xk) + 0.4); c.fillStyle = CV_INK; c.fill(); }
+  }
+  cvMouthFor(c, K, F, hurt, ex, xk);
+}
+// the snath and its knob; the collar (at the head); the blade from the collar (its side +y), a soul edge along the cut
+function cvRprSnath(S) {
+  S.cel(cvCapsule([-20.24, 0], [46.92, 0], 2.5, 2.5), "wood", { lw: 1.4, sh: [0, -1.4] });
+  S.cel(cvCirc(-20.24, 0, 3.3), "wood", { lw: 1.3, sh: [1, -1] });
+}
+function cvRprCollar(S) { S.cel(cvRect(-6, -3.6, 9, 7.2), "band", { lw: 1.3, sh: [1.5, -1] }); }
+function cvRprBlade(S) {
+  const B = cvRprQuad([3, -3], [26.1, 13.5], [-12.6, 45.1]).concat(cvRprQuad([-12.6, 45.1], [7.2, 19.8], [-3, 3.5]).slice(1));
+  S.cel(B, "steel", { lw: 1.8, sh: [-3, 1.5], shade: "steel/sh" });
+  S.line(cvRprQuad([-1, 5], [6.3, 21.2], [-10.8, 41.9]), 1.6, "soul");
+}
+/* ===================== Carved Ink: Phoenix (ui/carve.js has the kit and the API) =====================
+   A comet: a slim sweet potato tipped forward, all flame behind him: the crest swept back over his head, one big wing, two tail ribbons,
+   each in three flame tones (f1 the edge, f2, f3 the hot core) that lag the body (a spring), embers rising off the crest. Thin bird legs
+   with talons, a yellow fist under a feather sleeve (the back arm a wedge of feathers), raised brows, an open beak-smile; the sprout sits green in the fire. The wing is
+   driven like the old flameWing (draw-fighters.js): P.flap, P.wingUp, spread in the air. Mockup: redesign/mockups/src/fighters.js
+   NEWF.d.phoenix; skins: fx.js skinPal(). */
+const CV_PHX_TAIL = [[-8, -20, 1], [-24, -24], [-44, -12, 1], [-28, -12], [-36, -2, 1], [-20, -8], [-10, -10, 1]];
+const CV_PHX_WING = [[-4, -46, 1], [-22, -60], [-46, -66, 1], [-32, -52], [-50, -46, 1], [-32, -42], [-44, -30, 1], [-26, -34], [-30, -22, 1], [-10, -30]];
+const CV_PHX_CREST = [[13, -55, 1], [12, -70, 1], [5, -63], [1, -86, 1], [-6, -68], [-17, -84, 1], [-15, -64], [-30, -70, 1], [-18, -50]];
+// a flame: the edge tone carved, its inner tones the same shape shrunk about (ox, oy) (k2: a third, hot core)
+function cvPhxFlame(S, pts, ox, oy, k, k2, edge, mid) {
+  const P = cvSm(pts), rel = cvShift(P, -ox, -oy);
+  S.cel(P, edge || "f1", { sh: [2.5, -2] });
+  S.with(ox, oy, 0, k, () => S.fill(rel, mid || "f2"));
+  if (k2) S.with(ox, oy, 0, k2, () => S.fill(rel, "f3"));
+}
+cvFigReg("phoenix", {
+  pal: { skin: "#f8bd4c", f1: "#ff5326", f2: "#ff9a1f", f3: "#ffe05a", leg: "#e27a1f", stem: "#3f7d3a", leaf: "#7fd35c", iris: "#e2541c",
+    blush: "#ff6050" },
+  chip: [{}, { f1: "#2f8cff", f2: cvLt("#2f8cff", 0.42), f3: cvLt("#2f8cff", 0.8) }, { f1: "#2fb85a", f2: cvLt("#2fb85a", 0.42), f3: "#f4ffb0" },
+    { f1: "#ff9d0a", f2: "#ffd23f", f3: "#fffbe0", leg: "#c98a1a" }],
+  won: { scratch: { f1: "#ff3d1f", f2: cvLt("#ff3d1f", 0.42), f3: cvLt("#ff3d1f", 0.8), skin: "#8c4a30" },
+    zorp: { f1: "#5aff9a", f2: cvLt("#5aff9a", 0.42), f3: cvLt("#5aff9a", 0.8), skin: "#a9c8a0" },
+    kraken: { f1: "#ff7a8a", f2: cvLt("#ff7a8a", 0.42), f3: "#fff0d6", skin: "#b89a62" },
+    harvest: { f1: "#ff9a1f", f2: "#ffd23f", f3: "#fffbe0", skin: "#f8cc52" } },
+  pm: { 1: { f1: "#ff6a2b", f2: "#d8cfb8", f3: "#f1e8d2", skin: "#f1e8d2" }, 2: { f1: "#ff6a9a", f2: "#ffb0e0", f3: "#fff0fa", skin: "#34246a" } },
+  prim: "f1",
+  derive(C) { C.hi = cvLt(C.skin, 0.6); C.legB = cvSh(C.leg, 0.25); },
+  body: { x: 2, y: -36, rx: 16.5, ry: 23.5, o: { pear: -0.14, lean: 0.14 } },
+  face: { x: 9, y: -43, s: 1, iris: "iris", brow: -0.28, browUp: 2.4, mouth: { k: "open", x: 10, y: -33.5, s: 0.95 },
+    extra(S) { S.add([cvCirc(0.5, -35.5, 3.4, 2), cvCirc(18.5, -36, 2.7, 1.6)], "blush", 1, 0.42); } },
+  mouthPt: [13, -33],
+  arm: { shF: [11, -25], shB: [-8, -37], len: 23, lenB: 15, bendB: "back", r0: 5, r1: 3, col: "f2",
+    hand: { r: 6.2, col: "f3" }, handB: { r: 4.8, col: "f2", thumb: false } },
+  leg: { hipF: [6, -16], hipB: [-4, -16], len: 14, draw: (c, K, hip, foot, front) => cvPhxLeg(c, K, hip, foot, front) },
+  carve: {
+    // the two tail ribbons, low behind
+    tail(S) { cvPhxFlame(S, CV_PHX_TAIL, -12, -16, 0.62); },
+    // the wing: four flame feathers off the back (its root (-6, -42))
+    wing(S) { cvPhxFlame(S, CV_PHX_WING, -10, -42, 0.66, 0.36); },
+    // the crest, swept back behind the head
+    crest(S) { cvPhxFlame(S, CV_PHX_CREST, -4, -58, 0.66, 0.36); },
+    // the sweet potato tipped forward, a glossy brow, the sprout green in the fire
+    body(S) {
+      S.cel(cvBlob(2, -36, 16.5, 23.5, { pear: -0.14, lean: 0.14 }), "skin", { sh: [8, -5], rim: 1, in() {
+        S.specks([[-6, -24, 1.3], [-9, -34, 1], [0, -18, 1.1]], "skin/sh.3");
+        S.fill(cvCirc(11, -52, 5, 2.4, -0.5), "hi");
+      } });
+      S.line([[12, -55], [11.5, -60.3], [12.5, -63.3]], 2.4, "stem");
+      S.leaf(12, -62.7, 8.9, -2.5, "leaf"); S.leaf(12, -63.2, 10, -0.6, "leaf");
+    },
+    // the back arm: a small wedge of flame feathers, shoulder to hand (carved for an arm 20 units long, along +x)
+    wingArm(S) {
+      const P = cvSm([[-3, -5, 1], [9, -4.2], [22, -0.5, 1], [16.5, 2.6], [15.5, 8, 1], [11, 3.6], [7.5, 9.5, 1], [4, 4], [-1.5, 7.5, 1], [-3.5, 3]]);
+      S.cel(P, "f2", { sh: 0, lw: 2 });
+      S.with(6, 0.5, 0, 0.5, () => S.fill(cvShift(P, -6, -0.5), "f3"));
+    },
+    // the feather sleeve: three feathers hanging under the front arm, swept back (carved for an arm 20 units long, along +x)
+    sleeve(S) {
+      const P = cvSm([[0, -2.5, 1], [18, -2, 1], [17, 3], [13.5, 13, 1], [10, 5], [5, 14.5, 1], [3, 5], [-4, 11, 1], [-2, 1]]);
+      S.cel(P, "f1", { sh: 0, lw: 2 });
+      S.with(6, 2, 0, 0.62, () => S.fill(cvShift(P, -6, -2), "f2"));
+    },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
+    // the flames lag the body: they stream back on the run and lift as he falls (a spring); in steps of 0.04 rad, so a held pose of them
+    // has a sprite of its own (K.stack), no sprite per animation step. Their flicker is live: embers off the crest (cvPhxEmbers)
+    const run = clamp((f.vx + f.kbx) * f.facing, -10, 10), calm = clamp(1 - Math.abs(run) / 4, 0, 1);   // (the idle sway stops on the run: one pose)
+    const lag = K.spring("flame", -run * 0.025 + (air ? clamp(f.vy * 0.025, -0.15, 0.2) : 0) + Math.sin(tk * 0.06 + f.slot) * 0.03 * calm, 0.3), lq = Math.round(lag * 25) / 25;
+    K.stack(["tail"], (c) => { c.translate(-10, -14); c.rotate(lq * 1.4); c.translate(10, 14); }, lq.toFixed(2));
+    // the wing: P.flap beats it, P.wingUp raises it (a heavy's flare, the Ultimate), the air spreads it (as the old flameWing); in steps of
+    // 0.03 rad, so a held pose of it has a sprite of its own (K.stack)
+    const wa = K.spring("wing", P.flap + P.wingUp * 0.9 + (air ? -0.3 : 0) + lag * 0.6, 0.45), wq = Math.round(wa / 0.03) * 0.03, ws = air ? 1.18 : 1;
+    K.stack(["wing"], (c) => { c.translate(-6, -42); c.rotate(wq); c.scale(ws, ws); c.translate(6, 42); }, wq.toFixed(2) + "," + ws);
+    // in the air the front wing-arm spreads forward, clear of the face (the rig raises it over the head)
+    if (K.rest && air) K.hF = [P.hF[0] + 12, P.hF[1] + 9];
+    cvPhxWingArm(K);
+    K.leg(false); K.leg(true);
+    K.rim();
+    K.stack(["crest"], (c) => { c.translate(-4, -54); c.rotate(lq * 0.8); c.translate(4, 54); }, lq.toFixed(2));
+    if (!K.flash) K.body((c) => cvPhxEmbers(c, K, lq));
+    K.stack(["body", "skin", "face", "top"]);
+    cvPhxSleeve(K);
+    K.arm(true);
+  },
+});
+// embers: three sparks that rise off the crest's tips and drift back as they shrink (one live fill)
+function cvPhxEmbers(c, K, lq) {
+  const t = K.tk * 0.035 + K.f.slot * 0.3;
+  c.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const ph = (t + i / 3) % 1, r = 1.9 * (1 - ph) + 0.3, x = [1, -17, -30][i] - ph * (9 - lq * 40), y = [-84, -82, -68][i] - ph * 13;
+    c.moveTo(x, y - r * 1.6); c.lineTo(x + r, y); c.lineTo(x, y + r * 1.2); c.lineTo(x - r, y); c.closePath();
+  }
+  c.fillStyle = K.C.f2; c.fill();
+}
+// the back arm, a wedge of flame feathers from the shoulder to the hand, its feathers hanging down (paths: it turns with the arm)
+function cvPhxWingArm(K) {
+  const A = K.fig.arm, a = K.pt(A.shB[0], A.shB[1]), h = K.hB, dx = h[0] - a[0], dy = h[1] - a[1], d = Math.hypot(dx, dy), c = K.c;
+  const th = Math.atan2(dy, dx), flip = Math.cos(th) < 0 ? -1 : 1;
+  c.save(); c.translate(a[0], a[1]); c.rotate(th); c.scale(clamp(d / 20, 0.55, 1.5), flip);
+  K.draw("wingArm");
+  c.restore();
+}
+// the feather sleeve under the front arm, shoulder to fist (paths: it turns with the arm); it hangs under the arm, or behind it when the
+// arm is raised
+function cvPhxSleeve(K) {
+  const A = K.fig.arm, a = K.pt(A.shF[0], A.shF[1]), h = K.hF, dx = h[0] - a[0], dy = h[1] - a[1], d = Math.hypot(dx, dy);
+  if (d < 6) return;
+  const th = Math.atan2(dy, dx), flip = Math.cos(th) + Math.sin(th) < 0 ? -1 : 1, c = K.c;
+  c.save(); c.translate(a[0], a[1]); c.rotate(th); c.scale(clamp(d / 20, 0.5, 1.4) * 0.9, flip);
+  K.draw("sleeve");
+  c.restore();
+}
+// the talon in its foot's frame (standing on (0, 0), the ankle over x = 0): its ink (the outline and two claws) and its fill, wound like a
+// limb's contour so that one fill of the shin and the foot is their union (cvPhxLeg)
+const CV_PHX_FOOT = cvSm([[-4, 0, 1], [-3, -4], [2, -4.5], [9.5, 0, 1]]), cvPhxCw = (P) => cvPos(P).slice().reverse();
+const CV_PHX_TALON = [[cvOffset(CV_PHX_FOOT, 1), [[8.4, -0.3], [12.2, 0.6], [9.6, -2.6]], [[3.2, -0.4], [6.6, 0.7], [4.2, -2.8]]].map(cvPhxCw),
+  [cvPhxCw(cvOffset(CV_PHX_FOOT, -1))]];
+// a bird leg in two fills (the ink, the leg's one tone): thin, its knee bent back, on a three-toed foot that turns with the shin off the floor
+function cvPhxLeg(c, K, a, ft, front) {
+  const f = K.f, flat = f.grounded && ft[1] > -2 && f.state !== "attack";
+  const kn = cvJoint(a, ft, 14, "back"), ang = flat ? 0 : clamp(-Math.atan2(ft[0] - kn[0], ft[1] - kn[1]) * 0.8, -1.4, 1.4);
+  const cs = Math.cos(ang), sn = Math.sin(ang), an = [ft[0] + sn * 3, ft[1] - cs * 3], e = cvJoint(a, an, 14, "back");
+  for (let i = 0; i < 2; i++) {
+    const g = i ? -1 : 1;   // (the ink: the limb 1 wider; the fill: 1 narrower)
+    c.beginPath(); cvLimbAdd(c, a, e, an, 2.6 + g, 2.35 + g, 2.1 + g, 0, 0, false, false);
+    for (const Q of CV_PHX_TALON[i]) {
+      for (let j = 0; j < Q.length; j++) { const x = ft[0] + Q[j][0] * cs - Q[j][1] * sn, y = ft[1] + Q[j][0] * sn + Q[j][1] * cs; if (j) c.lineTo(x, y); else c.moveTo(x, y); }
+      c.closePath();
+    }
+    if (i) { c.fillStyle = front ? K.C.leg : K.C.legB; c.fill(); } else { c.fillStyle = CV_INK; c.fill(); cvMgInk(c); }
+  }
+}
+/* ===================== Carved Ink: Dragon (ui/carve.js has the kit and the API) =====================
+   A pear: bottom-heavy, a jaw that sticks out with an underbite fang and a smoking nostril, a heavy brow, horns forward, the scaled back
+   with its spikes, cream belly plates, two raised bat wings behind him and a thick curled tail with a spade tip. Clawed feet, a clawed
+   fist. The wings are driven like the old batWing (draw-fighters.js): P.flap beats them, P.wingUp spreads them, the air opens them; they
+   bob on his footfalls. The tail counter-swings at rest and follows P.tailTo in the Tail sweep (as the old dragonTail). Mockup:
+   redesign/mockups/src/fighters.js NEWF.d.dragon; skins: fx.js skinPal(). */
+const CV_DRG_WING = [[-13, -48, 1], [-18, -64], [-32, -88, 1], [-34, -66], [-56, -60, 1], [-40, -50], [-50, -34, 1], [-28, -38], [-16, -34, 1]];
+const CV_DRG_FOOT = [[-7, 0, 1], [-7, -9], [2, -11], [6, -5], [12, -4], [13, 0, 1]];
+const CV_DRG_TOE = [4, 8, 12].map((d) => [[d - 2, 0], [d + 1.5, 0], [d + 1.6, -3.4]]);
+// a bat wing at (dx, dy) from the mockup's, nine tenths its size about its root (-10, -44): the membrane, the arm bone inked, two finger bones
+function cvDrgWing(S, dx, dy, bone, mem) {
+  S.with(dx - 1, dy - 4.4, 0, 0.9, () => {
+    S.cel(cvSm(CV_DRG_WING), mem, { sh: [3, -2.5] });
+    S.line([[-11.5, -49], [-18, -64], [-32, -88]], 4.4, "ink"); S.line([[-11.5, -49], [-18, -64], [-32, -88]], 2.4, bone);
+    S.line([[-20, -66], [-36, -62], [-55, -60]], 1.5, bone); S.line([[-19, -64], [-34, -48], [-49, -35]], 1.5, bone);
+  });
+}
+// a clawed foot standing on (0, 0), the ankle over x = 0: the foot, then its three horn claws
+function cvDrgFoot(S, col, shade) {
+  S.cel(cvSm(CV_DRG_FOOT), col, shade ? { sh: [2, -2], lw: 2.2 } : { sh: 0, lw: 2.2 });
+  S.add(CV_DRG_TOE.map((t) => cvOffset(cvPos(t), 0.5)), "ink"); S.add(CV_DRG_TOE.map((t) => cvOffset(cvPos(t), -0.5)), "horn");
+}
+cvFigReg("dragon", {
+  pal: { skin: "#efac5a", sc: "#d9562a", mem: "#ffa24a", belly: "#ffe6b3", horn: "#fff3da", leaf: "#7fd35c", iris: "#f2b21f" },
+  chip: [{}, { sc: "#2f9a5c", mem: "#a6e06a", belly: "#f6f3c0" }, { sc: "#473a72", mem: "#9a84e0", belly: "#d6ccf6", horn: "#e6e0ff" },
+    { sc: "#a81c28", mem: "#ff8a1f", belly: "#ffd27a" }],
+  won: { scratch: { sc: "#a01f1f", skin: "#8c4a30", mem: "#ff7a1f", belly: "#ffb86a" },
+    zorp: { sc: "#3fbf7a", skin: "#a9c8a0", mem: "#b6ffb0", belly: "#e6ffd6" },
+    kraken: { sc: "#3f7a8a", skin: "#b89a62", mem: "#7ae0d6", belly: "#f0e6c0" },
+    harvest: { sc: "#c9741a", skin: "#f8cc52", mem: "#ffd66b", belly: "#fff3c8", horn: "#fff6dc" } },
+  pm: { 1: { sc: "#ffc21f", skin: "#f1e8d2", mem: "#d8cfb8" }, 2: { sc: "#ff8c42", skin: "#34246a", mem: "#ff6ad5", belly: "#c9a6ff", horn: "#ffe6fa" } },
+  prim: "sc",
+  derive(C) {
+    C.lid = cvSh(C.skin, 0.18); C.scB = cvSh(C.sc, 0.3); C.memB = cvSh(C.mem, 0.42); C.bellyLn = cvMix(C.belly, "#a0602a", 0.42);
+    C.hornSh = cvMix(C.horn, "#c8863a", 0.38); C.hornB = cvSh(C.horn, 0.18);
+  },
+  body: { x: 0, y: -31, rx: 20.5, ry: 24, o: { pear: 0.2, sq: 0.95 } },
+  face: { x: 9.5, y: -43, s: 1, iris: "iris", brow: 0.5, lid: 0.26, lidCol: "lid", browW: 3, browUp: 0,
+    mouth: { k: "none", x: 20.5, y: -31, s: 0.9 } },   // (the mouth line and the fang are carved on the jaw; a shout opens it there)
+  mouthPt: [27, -32],
+  arm: { shF: [8, -27], shB: [-15, -32], len: 24, lenB: 14, bendB: "back", r0: 5.6, r1: 3.4, col: "skin", colB: "sc", colU: "sc",
+    hand: { r: 7.6, col: "sc", thumb: false, k: 1.3, more: (c, K, x, y, front, ang) => cvDrgClaws(c, K, x, y, ang) }, handB: { r: 5.6, col: "sc", thumb: false } },
+  leg: { hipF: [10, -14], hipB: [-9, -14], len: 9, draw: (c, K, hip, foot, front) => cvDrgLeg(c, K, hip, foot, front) },
+  carve: {
+    wingB(S) { cvDrgWing(S, -4, -3, "scB", "memB"); },
+    wingF(S) { cvDrgWing(S, 3, 3, "sc", "mem"); },
+    // the tail, curled up behind, and its spade
+    tail(S) {
+      S.cel(cvSm([[-15, -22, 1], [-26, -17], [-36, -20], [-41, -28], [-42, -37], [-46, -43, 1], [-50, -37], [-50, -25], [-43, -11], [-30, -5], [-15, -5, 1]]), "sc", { sh: [3, -3] });
+      S.cel(cvSm([[-45, -34, 1], [-56, -40, 1], [-48, -50, 1], [-38, -41, 1]]), "mem", { sh: [2, -2], lw: 2.2 });
+    },
+    // the spade alone, pointing along +x (the live tail of the Tail sweep)
+    spade(S) { S.cel(cvSm([[-3, 0, 1], [5, -6, 1], [13, 0, 1], [5, 6, 1]]), "mem", { sh: [2, -2], lw: 2.2 }); },
+    // the clawed feet, standing on (0, 0), the ankle over x = 0 (the far one in the scales' shadow)
+    foot(S) { cvDrgFoot(S, "sc", true); },
+    footB(S) { cvDrgFoot(S, "sc/sh", false); },
+    // the back spikes and the far horn
+    back(S) {
+      for (const [x, y, a] of [[-9, -53, -0.9], [-17, -45, -1.25], [-22, -34, -1.5], [-24, -23, -1.75]])
+        S.with(x, y, a + Math.PI / 2, 1, () => S.cel(cvSm([[-4, 2, 1], [0, -8, 1], [4, 2, 1]]), "horn", { sh: [1, -1], shade: "hornSh", lw: 1.8 }));
+      S.cel(cvSm([[-6, -53, 1], [-4, -64], [5, -72, 1], [1, -62], [2, -54, 1]]), "hornB", { sh: [1, -1], lw: 2 });
+    },
+    // the pear and its jaw under one outline: the scaled back, the belly plates, the jaw's shadow, the mouth with its fang, the nostril
+    body(S) {
+      const B = cvPos(cvBlob(0, -31, 20.5, 24, { pear: 0.2, sq: 0.95 })), J = cvPos(cvBlob(19, -33, 9, 6.6)), Ji = cvOffset(J, -1.3);
+      S.fill(cvOffset(B, 1.3), "ink"); S.fill(cvOffset(J, 1.3), "ink");
+      S.fill(Ji, "skin");
+      S.cel(cvOffset(B, -1.3), "skin", { lw: 0, sh: [9, -6], rim: 1, in() {
+        S.specks([[2, -48, 1.1], [-4, -40, 1]], "skin/sh.3");
+        S.cel(cvSm([[-30, -60, 1], [-2, -60, 1], [-8, -50], [-4, -44], [-11, -38], [-7, -30], [-14, -24], [-10, -16], [-16, -6, 1], [-30, -6, 1]]), "sc", { sh: [3, -2], lw: 1.6 });
+        S.cel(cvCirc(7, -19, 12.5, 13.5), "belly", { sh: 0, lw: 1.6 });
+        for (const y of [-25, -19, -13]) S.line([[-6, y], [7, y + 2.5], [20, y]], 1.4, "bellyLn");
+      } });
+      S.fill(cvClip(cvRect(8, -29.5, 30, 6), cvHull(Ji)), "skin/sh");
+      S.line([[13, -30.5], [20, -29], [27, -31.5]], 1.9);
+      S.cel([[20, -29.4], [21.6, -34.4], [23.6, -30]], "eye", { lw: 1.2, sh: 0 });
+      S.fill(cvCirc(24.5, -36, 1.1, 1.7, 0.3), "ink");
+    },
+    // the near horn over the brow, and the sprout between the horns
+    horns(S) {
+      S.cel(cvSm([[5, -54, 1], [9, -64], [21, -71, 1], [14, -61], [13, -53, 1]]), "horn", { sh: [1.4, -1.4], shade: "hornSh", lw: 2 });
+      S.leaf(-2, -55, 8, -1.9, "leaf"); S.leaf(-1, -55, 8.5, -1.1, "leaf");
+    },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
+    // (calm: 1 standing, 0 on the run; the idle breathing stops on the run, so a run holds one pose of each part: K.stack)
+    const run = clamp((f.vx + f.kbx) * f.facing, -10, 10), calm = clamp(1 - Math.abs(run) / 4, 0, 1), c = K.c;
+    // the wings (one sprite, the far one a little behind and darker): P.wingUp spreads them (+ raises), P.flap beats them, the air opens
+    // them a little lower and wider, and they settle late (a spring); in steps of 0.04 rad, so a held pose has a sprite of its own
+    // (K.stack). They bob on each footfall of the run (a lift: it needs no sprite of its own). Wings and tail ride on the body but do not
+    // tip with its lean (they trail): turned no more than their own swing, their sprites stay small and mostly upright
+    const bob = f.state === "run" && f.grounded ? -Math.abs(Math.sin(f.anim.run)) * 2.4 : 0, ul = -P.lean;
+    const wt = P.wingUp * 0.6 - P.flap * 0.8 + (air ? -0.15 : 0) + Math.sin(tk * 0.05 + f.slot) * 0.02 * calm;
+    const wq = Math.round(K.spring("wings", wt, 0.45) * 25) / 25, ws = air ? 1.12 : 1;
+    c.save(); c.translate(0, bob);
+    K.stack(["wingB", "wingF"], (c) => { c.translate(-8, -43); c.rotate(wq + ul); c.scale(ws, ws); c.translate(8, 43); }, wq.toFixed(2) + "," + ws);
+    c.restore();
+    // the tail: it counter-swings against the run and lifts a little as he falls; in the Tail sweep it follows P.tailTo (live)
+    if (P.tailTo) cvDrgTailLive(K);
+    else {
+      const ta = K.spring("tail", run * 0.02 + (air ? clamp(-f.vy * 0.015, -0.12, 0.12) : 0) + Math.sin(tk * 0.07 + f.slot) * 0.04 * calm, 0.2), tq = Math.round(ta * 25) / 25;
+      K.stack(["tail"], (c) => { c.translate(-12, -14); c.rotate(tq + ul); c.translate(12, 14); }, tq.toFixed(2));
+    }
+    // at rest the fist stays under the jaw; in the air it goes out in front, clear of the face (the rig raises it over the head)
+    if (K.rest) K.hF = air ? [P.hF[0] + 14, P.hF[1] + 10] : [P.hF[0] - 6, P.hF[1] + 7];
+    K.arm(false);
+    K.leg(false); K.leg(true);
+    K.rim();
+    K.stack(["back", "body", "skin", "face", "horns", "top"]);
+    if (calm > 0.5 && f.state !== "attack" && P.mouth <= 0.5 && !K.flash) cvDrgSmoke(K);   // (standing, between moves)
+    K.arm(true);
+  },
+});
+// the claws on the front fist (three bone-white points along the forearm)
+const CV_DRG_CLAWS = [[4, -5, -0.5], [6.5, -0.5, 0], [4.5, 4, 0.5]].map(([x, y, a]) => cvPos([[-1, -1.8], [4.6, 0], [-1, 1.8]].map(([u, v]) => [x + u * Math.cos(a) - v * Math.sin(a), y + u * Math.sin(a) + v * Math.cos(a)])));
+const CV_DRG_CLAW = cvPath(CV_DRG_CLAWS), CV_DRG_CLAWI = cvPath(CV_DRG_CLAWS.map((p) => cvOffset(p, 1.1)));
+function cvDrgClaws(c, K, x, y, ang) {
+  c.save(); c.translate(x, y); c.rotate(ang); c.scale(1.15, 1.15);   // (carved for a fist of radius 6.6)
+  c.fillStyle = CV_INK; c.fill(CV_DRG_CLAWI); cvMgInk(c, CV_DRG_CLAWI); c.fillStyle = K.C.horn; c.fill(CV_DRG_CLAW);
+  c.restore();
+}
+// smoke from the nostril while he stands: three puffs rising and fading (one fill)
+function cvDrgSmoke(K) {
+  const tk = K.tk, s = K.f.slot;
+  K.body((c) => {
+    c.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const ph = (tk * 0.018 + i / 3 + s * 0.17) % 1, r = 1.3 + ph * 2.2;
+      cvCircAdd(c, 26 + ph * 6 + Math.sin(ph * 6 + i) * 1.5, -37.5 - ph * 15, r * (ph > 0.8 ? (1 - ph) * 5 : 1));
+    }
+    const ga = c.globalAlpha; c.globalAlpha = ga * 0.7; c.fillStyle = "#ffffff"; c.fill(); c.globalAlpha = ga;
+  });
+}
+// the tail in the Tail sweep: a bowed, tapered tail from the hip to P.tailTo (drawn live), the spade at its tip
+function cvDrgTailLive(K) {
+  const P = K.P, c = K.c, C = K.C, a = K.pt(-12, -16), t = P.tailTo, dx = t[0] - a[0], dy = t[1] - a[1], d = Math.hypot(dx, dy) || 1;
+  let nx = -dy / d, ny = dx / d;
+  if (ny > 0) { nx = -nx; ny = -ny; }
+  const e = [(a[0] + t[0]) / 2 + nx * d * 0.22, (a[1] + t[1]) / 2 + ny * d * 0.22];
+  cvLimb(c, a, e, t, 7, 3, C.sc, cvShC(C, "sc"), 2.4, null, false, true);
+  c.save(); c.translate(t[0], t[1]); c.rotate(Math.atan2(t[1] - e[1], t[0] - e[0])); K.draw("spade"); c.restore();
+}
+// a short leg on a clawed foot (paths) that turns with the shin off the floor
+function cvDrgLeg(c, K, a, ft, front) {
+  const C = K.C, f = K.f, flat = f.grounded && ft[1] > -2 && f.state !== "attack", sc = cvShC(C, "sc");
+  const ang = flat ? 0 : clamp(-Math.atan2(ft[0] - a[0], ft[1] - a[1]) * 0.8, -1.4, 1.4);
+  const ax = ft[0] + Math.sin(ang) * 6, ay = ft[1] - Math.cos(ang) * 6;
+  cvLimb(c, a, null, [ax, ay], 5.4, 5, front ? C.sc : sc, sc, 2.2, null, false, false);
+  c.save(); c.translate(ft[0], ft[1]); if (ang) c.rotate(ang); K.draw(front ? "foot" : "footB"); c.restore();
+}
+/* ===================== Carved Ink: Alchemist (ui/carve.js has the kit and the API) =====================
+   A round goblin: the shortest and roundest, hunched under a hood whose tip hooks back, a torn mantle that drags behind, brass goggles
+   with lit green lenses for eyes (the kit's eyes behind green glass, so every expression still reads), a toothy grin, two vials on a
+   leather bandolier. The flask in his front hand is the special's ready sign (the old greenOrb, draw-fighters.js): it shows, lit and
+   bubbling, only while f.specCd <= 0, outside the Ultimate (which holds its own flask) and the Flask smash (P.flask). Mockup:
+   redesign/mockups/src/fighters.js NEWF.d.alchemist; skins: fx.js skinPal(). */
+const CV_ALC_EYES = [[3.1, -37, 4.5, 5.6], [14.1, -37.3, 3.9, 5.3]];   // the kit's two eyes for face x 8.6, y -37, s 1 (near, far)
+cvFigReg("alchemist", {
+  pal: { skin: "#e2a352", hood: "#6f42b8", lining: "#2c1a52", brass: "#e0a93f", goo: "#8dff3a", hide: "#5b3a2a", vial: "#ff5aa8",
+    leaf: "#9be86a", stem: "#3f7d3a", glass: "#d8f6ff", iris: "#3a2450" },
+  chip: [{}, { hood: "#b3324a", lining: cvSh("#b3324a", 0.62), brass: "#d9d2c0" }, { hood: "#2f4a9a", lining: cvSh("#2f4a9a", 0.62), brass: "#9fb0d6" },
+    { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0" }],
+  won: { scratch: { hood: "#5a1436", lining: cvSh("#5a1436", 0.62), skin: "#8c4a30", goo: "#ff7a2b", brass: "#ffb02e" },
+    zorp: { hood: "#2a6e5a", lining: cvSh("#2a6e5a", 0.62), skin: "#a9c8a0", goo: "#c6ff5a", brass: "#d6f6e0" },
+    kraken: { hood: "#3a2f6e", lining: cvSh("#3a2f6e", 0.62), skin: "#b89a62", goo: "#3ef2c0", brass: "#e6c98a" },
+    harvest: { hood: "#8a531e", lining: cvSh("#8a531e", 0.62), skin: "#f8cc52", goo: "#fff0a0", brass: "#fff0b0" } },
+  pm: { 1: { hood: "#3a3842", lining: "#1b1a22", goo: "#8dff3a", skin: "#f1e8d2" },
+    2: { hood: "#5effc3", lining: "#ff6ad5", skin: "#34246a", goo: "#5effc3", brass: "#ff6ad5" } },
+  prim: "hood",
+  derive(C) {
+    C.mantle = cvSh(C.hood, 0.22); C.pants = cvSh(C.hood, 0.3); C.hoodLn = cvSh(C.hood, 0.5); C.faceSh = cvSh(C.skin, 0.45);
+    C.gooHi = cvLt(C.goo, 0.55); C.lensHi = cvLt(C.goo, 0.75);
+  },
+  body: { x: 0, y: -28, rx: 21, ry: 20, o: { sq: 0.92 } },
+  face: { x: 8.6, y: -37, s: 1, iris: "iris", brow: 0.32, browUp: 2.2, browW: 2.8, lid: 0.18, lidCol: "faceSh", mouth: { k: "grin", x: 10, y: -27.2, s: 1.05 } },
+  mouthPt: [11, -26],
+  arm: { shF: [14, -18], shB: [-12, -26], len: 20, lenB: 12, bendB: "back", r0: 4.4, r1: 3.8, col: "hood",
+    hand: { r: 5, col: "hide" }, handB: { r: 4.6, col: "hide", thumb: false } },
+  leg: { hipF: [7.2, -12], hipB: [-6.4, -12], len: 8, bones: 1, r0: 4, r1: 3.6, col: "pants", boot: { s: 0.95, col: "hide" } },
+  carve: {
+    // the torn mantle, hanging from the back of the hood
+    mantle(S) { S.cel(cvSm([[-14, -42, 1], [-26, -30], [-33, -7, 1], [-27, -12], [-23, -3, 1], [-17, -10], [-12, -4, 1], [-6, -18]]), "mantle", { sh: [3, -2] }); },
+    // the round potato, the leather bandolier across it with its two vials
+    body(S) {
+      S.cel(cvBlob(0, -28, 21, 20, { sq: 0.92 }), "skin", { sh: [9, -6], rim: 1, in() {
+        S.specks([[-10, -16, 1.3], [-14, -24, 1], [2, -12, 1.1]], "skin/sh.3");
+        S.fill(cvBrush([[-24, -24.6], [24, -9.4]], 6.6), "ink"); S.fill(cvBrush([[-24, -24.6], [24, -9.4]], 4.2), "hide");
+      } });
+      for (const [x, y, col] of [[-6, -17.5, "vial"], [3, -14.5, "goo"]]) {
+        S.with(x, y, 0.3, 1, () => { S.cel(cvSm([[-2.4, -4, 1], [2.4, -4, 1], [2.4, 3], [0, 5], [-2.4, 3]]), col, { sh: [1, -1], lw: 1.5 }); S.rect(-2.6, -5.6, 5.2, 2, "hide"); });
+      }
+    },
+    // the hood with its hooked tip, its dark lining round the face, the face in its shadow, the sprout, the goggles' strap and brass rims
+    hood(S) {
+      S.cel(cvSm([[19, -30, 1], [20, -44], [10, -57], [-6, -60], [-22, -68], [-40, -62, 1], [-30, -58], [-25, -44], [-25, -28], [-21, -20, 1], [-6, -24], [8, -21]]), "hood",
+        { sh: [6, -5], rim: 1, hi: [-5, 5] });
+      S.line([[-22, -52], [-30, -58], [-36, -61]], 1.4, "hoodLn");
+      S.cel(cvBlob(6.5, -34, 15, 14.2), "lining", { sh: 0, lw: 2.2 });
+      S.cel(cvBlob(8, -33, 12.5, 12), "skin", { sh: [5, -5], shade: "faceSh", lw: 0 });
+      S.line([[1, -56], [0.5, -60.8], [1.5, -63.5]], 2.4, "stem");
+      S.leaf(1, -63, 7.7, -2.5, "leaf"); S.leaf(1, -63.5, 8.6, -0.6, "leaf");
+      S.line([[-7, -40], [2, -37.5], [20, -38]], 3.2, "hide");
+      for (const [x, y, rx, ry] of CV_ALC_EYES.slice().reverse()) S.cel(cvCirc(x, y, rx + 2.6, ry + 2.3), "brass", { sh: [1.5, -1.5], lw: 2 });
+    },
+    // the lit lenses over the eyes: green glass and a glint
+    lens(S) {
+      for (const [x, y, rx, ry] of CV_ALC_EYES) {
+        const E = cvCirc(x, y, rx + 0.6, ry + 0.6);
+        S.add([E], "goo", 1, 0.34);
+        S.add([cvClip(cvPos([[x - rx, y - 1], [x + 1, y - ry - 1], [x + 3.5, y - ry - 1], [x - rx, y + 2.5]]), cvPos(E))], "lensHi", 1, 0.75);
+      }
+    },
+    // the flask (the ready sign), its origin the hand: a glow, the round glass, the goo, its meniscus and glint, the cork
+    flask(S) {
+      S.add([cvCirc(3, -13, 13.5)], "gooHi", 1, 0.3);
+      const G = [[0.6, -27], [0.6, -20]];
+      for (let i = 0; i <= 28; i++) { const a = -1.9 - (i / 28) * (CV_TAU - 0.65); G.push([3 + Math.cos(a) * 8, -12 + Math.sin(a) * 8]); }
+      G.push([5.4, -27]);
+      S.cel(G, "glass", { lw: 2, sh: [1.5, -1.2], in() {
+        S.rect(-7, -13, 20, 12, "goo"); S.rect(-7, -13, 20, 1.6, "gooHi");
+        S.fill(cvCirc(-0.8, -14, 1.4, 3.4, 0.4), "#ffffff");
+      } });
+      S.cel(cvRect(-0.4, -30, 6.8, 3.4), "hide", { lw: 1.6, sh: 0 });
+    },
+  },
+  draw(K) {
+    const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
+    // the mantle drags: it trails behind on the run and settles late (a spring), lifts when he falls (sheared about the shoulders, in steps
+    // of 0.02 and 0.05, so a held pose has a sprite of its own: K.stack)
+    const run = clamp((f.vx + f.kbx) * f.facing, -10, 10), calm = clamp(1 - Math.abs(run) / 4, 0, 1);   // (the idle sway stops on the run: one pose)
+    const sway = K.spring("mantle", -run * 0.06 + Math.sin(tk * 0.06 + f.slot) * 0.03 * calm + (air ? -0.12 : 0), 0.14);
+    const sw = Math.round(sway * 50) / 50, lift = air ? Math.round(clamp(f.vy * 0.03, -0.1, 0.3) * 20) / 20 : 0;
+    K.stack(["mantle"], (c) => { c.translate(-14, -42); c.transform(1, 0, sw, 1 - lift, 0, 0); c.translate(14, 42); }, sw + "," + lift);
+    // the special is ready: the flask is up in his hand (at rest he holds it high, by his face)
+    const ready = f.specCd <= 0 && !K.flash && f.mid !== "ulti" && !P.flask;
+    if (ready && K.rest && f.grounded) K.hF = [P.hF[0] - 6, P.hF[1] - 4];
+    K.arm(false);
+    K.leg(false); K.leg(true);
+    K.rim();
+    K.stack(["body", "skin", "hood", "face", "lens", "top"]);
+    K.arm(true, ready ? cvAlcFlask : null);
+  },
+});
+// the flask in the fist (one small sprite, upright) and its bubbles rising off the cork (live)
+function cvAlcFlask(c, K) {
+  const [x, y] = K.hF, tk = K.tk;
+  c.save(); c.translate(x, y); K.sprite(["flask"]);
+  c.beginPath();
+  for (let i = 0; i < 3; i++) { const ph = (tk * 0.04 + i / 3) % 1; cvCircAdd(c, 3 + Math.sin(ph * 5 + i * 2) * 2.2, -33 - ph * 14, (1 + 1.2 * Math.sin(ph * Math.PI)) * (i === 1 ? 1.2 : 1)); }
+  c.fillStyle = K.C.goo; c.fill();
+  c.restore();
 }
 /* ===================== Glaze: a pearl sheen over a skin you own, bought in the Shop (UI only, never in the simulation) =====================
    P.glazed = { fighterId: [skin index, ...] }, synced like the skins owned. A fighter object drawn with glaze is marked here (a WeakSet, so
