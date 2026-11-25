@@ -163,6 +163,7 @@ function pose(f, tk) {
     const fg = cvFigOf(L_.costume);
     if (fg) cvPose(f, P, fg);
   }
+  hkJit(f, P, tk);   // ui/hitkit.js: the fighter just hit shakes 2 px on alternate ticks while the hit-stop holds
   return P;
 }
 
@@ -1239,7 +1240,7 @@ function drawPotato(c, f, tk, at) {
   noirOn = false;
   if (!at) drawHx(c, f.slot);
 }
-// The classic slash / flame / zap / magic swoosh for the move being played
+// The swing smear (a crescent in the fighter's kit) / flame / zap / magic swoosh for the move being played
 function drawSwooshes(c, f, P, tk, alpha) {
   if (!P.swoosh || P.swoosh.linger) return;
   const S = P.swoosh, m = f.move, pal0 = f.pal;
@@ -1248,36 +1249,41 @@ function drawSwooshes(c, f, P, tk, alpha) {
   if (S.fire) { c.globalAlpha = alpha; drawFlame(c, P, S, tk); }
   else if (m && m.zap) { c.globalAlpha = alpha; drawZap(c, [P.hF[0], P.hF[1] - 4], S, tk, skinLvl(f) >= 3 ? pal0.accent : null); }
   else if (m && m.magic) { c.globalAlpha = alpha * 0.95; drawMagic(c, P.staffTip || P.hF, S, tk); }
-  else drawSwoosh(c, f, P, S);
+  else { c.globalAlpha = alpha; drawSwoosh(c, f, P, S); }
 }
-// Slash arcs. Samurai skins from the second chip skin (150 chips) get an ink-brush underlay with the same shape and size.
+// The smear (concept D.1): the swing's path as a crescent in the fighter's kit (ui/hitkit.js hkSmear: never the skin's colours), thickest at
+// its leading end, full on the first active frame (two on the biggest arcs), then fading over the rest of the hit window. Samurai skins from
+// the second chip skin (150 chips) keep their ink-brush underlay under it and its dotted brush line on top.
 function drawSwoosh(c, f, P, S) {
-  const ink = f.spec.look.costume === "samurai" && skinLvl(f) >= 2 && !S.body;
-  const path = () => {
-    c.beginPath();
-    if (S.body) c.arc(0, -P.h * 0.5, S.r + 4, P.spin - 2.2, P.spin + 0.4);
-    else if (S.sweep) { c.moveTo(S.sx, S.sy); c.quadraticCurveTo((S.sx + S.tx) / 2, Math.min(S.sy, S.ty) - S.r * 0.8, S.tx, S.ty); }
-    else c.arc(S.tx - S.r * 0.45, S.ty, S.r * 0.95, -1.15, 1.15);
-  };
-  const lw = S.body ? 5 : S.sweep ? S.r * 0.6 : S.r * (S.heavy ? 0.5 : 0.35);
-  if (S.hv && !S.body) {
-    // heavies: dark edge, accent core, white hairline (a charged heavy: thicker, with a light second tone round it)
-    const ga = c.globalAlpha, ck = S.ck || 0, lw0 = lw;
-    const lwk = lw0 * (1 + 0.7 * ck);
-    if (ck > 0.04) { c.globalAlpha = ga * 0.6; c.strokeStyle = mix(f.pal.accent, "#ffffff", 0.6); c.lineWidth = lwk * 1.3 + 4 + 5 * ck; path(); c.stroke(); }
-    c.globalAlpha = ga; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lwk * 1.3; path(); c.stroke();
-    c.strokeStyle = f.pal.accent; c.lineWidth = lwk * 0.62; path(); c.stroke();
-    c.strokeStyle = "rgba(255,255,255,0.85)"; c.lineWidth = Math.max(1.2, lwk * 0.14); path(); c.stroke();
-    return;
+  const K = hkKit(f), m = f.move, ink = f.spec.look.costume === "samurai" && skinLvl(f) >= 2 && !S.body;
+  // the arc: centre, radius, from a0 to the leading end a1
+  let cx, cy, r, a0, a1;
+  if (S.body) { cx = 0; cy = -P.h * 0.5; r = S.r + 4; a0 = P.spin - 2.2; a1 = P.spin + 0.4; }
+  else if (S.sweep) {
+    // the whole path of the hitbox (a smear is the swing's blur from its first frame): the circle through its start, the middle of the
+    // old quadratic path (bulging up) and its end
+    const b = m && m.boxes[0], ex = b ? b.x2 : S.tx, ey = b ? b.y2 : S.ty, ax = S.sx, ay = S.sy;
+    const mx = (ax + ex) / 2, my = Math.min(ay, ey) - S.r * 0.8, bx = 0.25 * ax + 0.5 * mx + 0.25 * ex, by = 0.25 * ay + 0.5 * my + 0.25 * ey;
+    const d = 2 * (ax * (by - ey) + bx * (ey - ay) + ex * (ay - by));
+    if (Math.abs(d) < 1e-3) { const ga = c.globalAlpha; hkStreak(c, [ax, ay], [ex, ey], S.r * 0.4, K, { a: hkSmearA(S, m) }); c.globalAlpha = ga; return; }
+    const A2 = ax * ax + ay * ay, B2 = bx * bx + by * by, E2 = ex * ex + ey * ey;
+    cx = (A2 * (by - ey) + B2 * (ey - ay) + E2 * (ay - by)) / d; cy = (A2 * (ex - bx) + B2 * (ax - ex) + E2 * (bx - ax)) / d;
+    r = Math.hypot(ax - cx, ay - cy);
+    const wrap = (v) => Math.atan2(Math.sin(v), Math.cos(v));
+    a0 = Math.atan2(ay - cy, ax - cx); const am = Math.atan2(by - cy, bx - cx), ae = Math.atan2(ey - cy, ex - cx);
+    a1 = a0 + wrap(am - a0) + wrap(ae - am);
+  } else {
+    const up = f.mid === "up" || f.mid === "uair" || f.mid === "hUp";
+    cx = S.tx - S.r * 0.45; cy = S.ty; r = S.r * 0.95; a0 = up ? 1.15 : -1.15; a1 = -a0;
   }
-  if (ink) {
-    const ga = c.globalAlpha;
-    c.globalAlpha = ga * 0.8; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = lw; path(); c.stroke();
-    c.globalAlpha = ga; c.strokeStyle = f.pal.accent; c.lineWidth = lw * 0.45; path(); c.stroke();
-    c.strokeStyle = "rgba(20,15,30,0.5)"; c.lineWidth = 1.2; c.setLineDash([2, 5]); path(); c.stroke(); c.setLineDash([]);
-    return;
-  }
-  c.lineWidth = lw; path(); c.stroke();
+  const ck = S.ck || 0, w = (S.body ? 7 : S.hv ? S.r * 0.75 : S.sweep ? S.r * 0.62 : S.r * (S.heavy ? 0.55 : 0.45)) * (1 + 0.7 * ck), a = hkSmearA(S, m);
+  const arc = () => { c.beginPath(); c.arc(cx, cy, r - w * 0.35, a0, a1, a1 < a0); };
+  const ga = c.globalAlpha;
+  if (ink) { c.globalAlpha = ga * 0.8 * a; c.strokeStyle = "rgba(20,15,30,0.85)"; c.lineWidth = w * 1.25; c.lineCap = "round"; arc(); c.stroke(); c.globalAlpha = ga; }
+  if (ck > 0.04) { c.globalAlpha = ga * 0.45 * a; c.fillStyle = K.cols[1]; hkArcPath(c, cx, cy, r + 2 + 3 * ck, a0, a1, w * 1.4 + 4 + 4 * ck, 0, 1); c.fill(); c.globalAlpha = ga; }   // a charged heavy: a second, lighter tone round it
+  hkSmear(c, cx, cy, r, a0, a1, w, K, { a });
+  if (ink) { c.globalAlpha = ga * a; c.strokeStyle = "rgba(20,15,30,0.5)"; c.lineWidth = 1.2; c.setLineDash([2, 5]); arc(); c.stroke(); c.setLineDash([]); }
+  c.globalAlpha = ga;
 }
 
 function drawFighter0(c, f, tk, at) {
@@ -1430,19 +1436,10 @@ function flaskShape(c, x, y, s, rot0, liquid) {
 }
 
 /* ---- the glint in the last two startup frames, then the look's own fx ---- */
+// a flat four-point glint in the kit's core colour where the swing will come from (the coil itself is the motion layer, carve.js cvMotion)
 function drawGlint(c, f, P, tk) {
   const a = P.pre;
   if (!a) return;
-  const L = P.hv && P.hv.look, gc = (L && L.glintCol) || "#ffffff";
-  c.save();
-  if (P.rx) {
-    // rim light round the potato
-    c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
-    c.globalAlpha = 0.3 * a; c.strokeStyle = gc; c.lineWidth = 7; c.beginPath(); c.ellipse(0, P.cy, P.rx + 2, P.ry + 2, 0, 0, Math.PI * 2); c.stroke();
-    c.globalAlpha = 0.95 * a; c.strokeStyle = "#ffffff"; c.lineWidth = 2.6; c.stroke();
-  }
-  c.restore();
-  // a sparkle where the swing will come from
   let g = P.hF;
   if (P.glintAt === "tip") g = P.staffTip || P.hF;
   else if (P.glintAt === "katana") { const sh = rot(P.sh, P.hip, P.lean), ang = heldDir(f, P, sh, -0.8); g = [P.hF[0] + Math.cos(ang) * 8, P.hF[1] + Math.sin(ang) * 8]; }
@@ -1450,11 +1447,7 @@ function drawGlint(c, f, P, tk) {
   else if (P.glintAt === "foot") g = P.fF;
   else if (P.glintAt) g = P.glintAt;
   c.save(); c.globalAlpha = a;
-  const gl = c.createRadialGradient(g[0], g[1], 1, g[0], g[1], 20);
-  gl.addColorStop(0, "rgba(255,255,255,0.8)"); gl.addColorStop(1, "rgba(255,255,255,0)");
-  c.fillStyle = gl; c.beginPath(); c.arc(g[0], g[1], 20, 0, Math.PI * 2); c.fill();
-  star4(c, g[0], g[1], 15 * (0.6 + 0.4 * a), "#ffffff");
-  star4(c, g[0], g[1], 7, gc);
+  hkGlint(c, g[0], g[1], 12 * (0.65 + 0.35 * a), hkKit(f));
   c.restore();
 }
 function drawHeavyFx(c, f, P, tk) {
@@ -1511,13 +1504,8 @@ function heavySwing(g, f, live) {
   };
   setTimeout(poll, Math.max(0, (mv.startup - 4) * STEP));
 }
-// Runs when a heavy connects: the ring is half as big again, plus the fighter's own sparks.
+// Runs when a heavy connects: the fighter's own sparks (the shared part, the spark by tier in the fighter's kit, is ui/hitkit.js hkHit).
 function heavyHit(att, e) {
-  const kb = e.kb || 10, c0 = e.fire ? "#ff8a3d" : col(e.pal), ck = (e.chg || 0) / BL.TUNE.chgMax, big = 1 + 0.5 * ck;
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 18, r0: 12, r1: (26 + kb * 2.4) * 1.5 * big, col: c0 });
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 12, r0: 4, r1: (26 + kb * 2.4) * 0.8 * big, col: "#ffffff" });
-  if (kb <= 14 || ck > 0.3) addFx({ k: "star", x: e.x, y: e.y, t: 0, life: 8, s: (36 + kb * 1.6) * (1 + 0.25 * ck) });
-  if (ck > 0.1) burstLines(e.x, e.y, 4 + Math.round(8 * ck), [c0, "#ffffff"], 6 + 4 * ck);
   const L = HEAVY_LOOK[att.spec.id] && HEAVY_LOOK[att.spec.id][att.mid];
   if (L && L.hit) L.hit(att, e);
 }

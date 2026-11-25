@@ -2,15 +2,6 @@
 const fx = [], sfx = [], trails = [[], [], [], []], combos = [null, null, null, null], chgPops = [], finDash = [null, null, null, null];   // per slot (a boss fight has three, a 2v2 four)
 const clearTrails = () => { for (const t of trails) t.length = 0; };
 function addFx(o) { if (fx.length < 260) fx.push(o); }
-function spark(x, y, col, kb, dx, dy) {
-  const n = 6 + Math.min(10, (kb * 0.35) | 0);
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * (4 + kb * 0.35);
-    addFx({ k: "line", x, y, vx: Math.cos(a) * sp + (dx || 0) * kb * 0.25, vy: Math.sin(a) * sp + (dy || 0) * kb * 0.25, t: 0, life: 9 + Math.random() * 8, col: i % 2 ? "#ffffff" : col, w: 2 + kb * 0.08 });
-  }
-  addFx({ k: "ring", x, y, t: 0, life: 14, r0: 8, r1: 26 + kb * 2.4, col });
-  if (kb > 14) addFx({ k: "star", x, y, t: 0, life: 7, s: 26 + kb * 1.6 });
-}
 function dust(x, y, n, spread) {
   for (let i = 0; i < n; i++) addFx({ k: "puff", x: x + (Math.random() - 0.5) * spread, y: y - 2, vx: (Math.random() - 0.5) * 3, vy: -Math.random() * 1.4, r: 4 + Math.random() * 5, t: 0, life: 16 + Math.random() * 10 });
 }
@@ -19,6 +10,7 @@ function updateFx(g) {
   if (mode === "match" && g === G) tagStep(g);   // hud.js: when the YOU / CPU markers show
   skinTick(g, tick);
   uvTick(g);   // Ultimates: the super freeze clock, particles and cues of the ulti being played
+  hkTick(g);   // ui/hitkit.js: the impact frames' clock
   { BL.useStage(g); const ma = mapArt(); if (ma.tick) ma.tick(g, mode === "match" && g === G && !FIN.on); }   // the map's ambient particles / sounds (draw-world.js MAP_ART)
   for (const p of g.projs) if (p.style === "fire" && Math.random() < 0.7) ember(p.x - p.vx * 0.6 + (Math.random() - 0.5) * 10, p.y + (Math.random() - 0.5) * 10, -p.vx * 0.12 + (Math.random() - 0.5), -0.6 - Math.random());
   for (const f of g.fighters) {
@@ -95,25 +87,17 @@ function drawFx(c) {
   }
   c.globalAlpha = 1;
 }
+// the launch trail behind a fighter sent flying: a tapered ribbon in the kit of whoever hit it, widest at the fighter (ui/hitkit.js hkTrail)
 function drawTrails(c, g) {
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
-    if (tr.length < 2) return;
-    c.lineCap = "round"; c.lineJoin = "round";
-    for (let k = 1; k < tr.length; k++) {
-      const a = k / tr.length;
-      c.strokeStyle = rgba(f.lastHitBy ? col(f.lastHitBy.pal) : "#ffffff", 0.35 * a);
-      c.lineWidth = f.s.w * 0.9 * a;
-      c.beginPath(); c.moveTo(tr[k - 1][0], tr[k - 1][1]); c.lineTo(tr[k][0], tr[k][1]); c.stroke();
-    }
-    c.strokeStyle = "rgba(255,255,255,0.55)"; c.lineWidth = 3;
-    c.beginPath(); c.moveTo(tr[0][0], tr[0][1]); for (const p of tr) c.lineTo(p[0], p[1]); c.stroke();
+    if (tr.length >= 2) hkTrail(c, tr, f.s.w * 0.26, hkKit(f.lastHitBy || ""));
   });
 }
 function drawScreenFx(c) {
   for (const e of sfx) {
     const a = 1 - e.t / e.life;
-    if (e.k === "flash") { c.fillStyle = `rgba(255,248,235,${a * 0.35})`; c.fillRect(0, 0, L.gw, L.gh); continue; }
+    if (e.k === "flash") { c.fillStyle = hkCalm() ? `rgba(10,8,24,${a * 0.3})` : `rgba(255,248,235,${a * 0.35})`; c.fillRect(0, 0, L.gw, L.gh); continue; }   // Reduce flashes: a dim
     if (e.k === "beam") {
       const [sx0, sy0] = toScreen(e.wx, e.wy);
       const x = clamp(sx0, 0, L.gw), y = clamp(sy0, 0, L.gh);
@@ -255,6 +239,7 @@ function render2D(g, tk) {
   BL.useStage(g);   // the layout (and look) of the map this game is played on
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip();
+  if (hkFrame(c, g, tk)) { c.restore(); return; }   // ui/hitkit.js: a launcher's two impact frames take the whole picture
   drawBackground(c, tk);
   finSkyTint(c);
   const ox = L.gw / 2 - cam.x * cam.z + cam.sx, oy = L.gh / 2 - cam.y * cam.z + cam.sy;
@@ -262,6 +247,7 @@ function render2D(g, tk) {
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
   bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
+  hkDim(c, g);   // ui/hitkit.js: the hit-stop look's dimmed backdrop
   hkUnder(c, g, tk);   // ui/hitkit.js: the floor marks (residue), under the shadows and the fighters
   TEAM_RIM = !!(match && match.duo && g.fighters.length === 4);   // 2v2: team rims on the fighters (draw-world.js)
   for (const f of g.fighters) drawShadow(c, f);
@@ -270,7 +256,8 @@ function render2D(g, tk) {
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
   for (const p of g.projs) drawProj(c, p, tk);
   uvBack(c, g, tk);   // ui/hitkit.js: the Ultimates' payoffs that go behind the fighters (UV_BACK, ui/hk-<fighter>.js)
-  const order = [...g.fighters].sort((a, b) => (a.slot === 0 ? 1 : 0) - (b.slot === 0 ? 1 : 0));
+  // slot 0 on top, but a fighter attacking goes under the others, so its smears, heavy looks and claw marks pass behind the one it hits
+  const order = [...g.fighters].sort((a, b) => (a.state === "attack" ? 0 : 2) + (a.slot === 0 ? 1 : 0) - (b.state === "attack" ? 0 : 2) - (b.slot === 0 ? 1 : 0));
   const us = uvVeilSlot(g);   // the super freeze: the veil goes over the stage and the other fighter, the user is drawn lit on top of it
   if (us >= 0) {
     for (const f of order) if (f.slot !== us && f.state !== "dead" && f.state !== "gone") drawFighter(c, f, tk);
@@ -307,11 +294,11 @@ function handleEvent(g, e, live) {
   duoEvent(g, e, live);    // 2v2: the Catch's pop (ui/duo.js)
   switch (e.type) {
     case "hit": {
-      if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
+      const hsp = hkHit(g, e, live);   // ui/hitkit.js: the spark in the attacker's kit by tier, shards, the floor mark, the hit-stop look, the impact frames
+      if (e.fin && live) { finHit(g, e); hkFinFlash(g); }   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js), after the impact frames
       if (e.chg >= BL.TUNE.chgMax) chargedPop(e);   // a full-charge heavy: the "CHARGED" pop
-      spark(e.x, e.y, e.ult ? (e.ps === "cloud" && e.kb < 12 ? "#9bff6a" : UV_GOLD) : e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);   // an ulti's hit: gold-tinged
       if (e.ult) uvHit(g, e, live);
-      const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
+      const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: the fighter's own sparks
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       else if (hAtt && hAtt.move && hAtt.move.shot) gunSpark(e, 4);   // a Gunslinger light shot: a small gold spark where it lands
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
@@ -319,12 +306,13 @@ function handleEvent(g, e, live) {
       if (rt && rt.fresh && live) Sfx.route();
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? routeName(rt) : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
-      if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
+      if (e.fire) for (let i = 0; i < 10; i++) ember(hsp.x, hsp.y, (Math.random() - 0.5) * 6, -Math.random() * 4);   // from the contact edge
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
     }
-    case "lethal": if (live) { finLethal(g, e); roadEvent(g, e); } break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    // the hit that cannot be survived: its spark becomes a launcher's (hkLethal); KO zoom, or the finisher on the last life (its flash after the impact frames)
+    case "lethal": hkLethal(g, e); if (live) { finLethal(g, e); hkFinFlash(g); roadEvent(g, e); } break;
     case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
       if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
@@ -345,7 +333,10 @@ function handleEvent(g, e, live) {
       if (live) Sfx.dash();
       break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
-    case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
+    case "pound":   // the ground pound: a floor mark in the fighter's kit and dust
+      if (g.fighters[e.slot]) addFx({ k: "hkm", kit: hkKit(g.fighters[e.slot]), x: e.x, y: e.y, w: 30, t: 0, life: 22, fade: 8 });
+      dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
+    case "catch": hkCatch(g, e); break;   // 2v2: a small spark where the Catch lands (the CAUGHT! pop is duo.js)
     case "swing": {
       const hSw = g.fighters[e.slot];   // a heavy: camera shake and the low heavy sound arrive when the hit window opens
       // an ulti has its own sound (Sfx.ulti on the "ulti" event), a Gunslinger light is a shot (Sfx.pop on its first active frame, uvShotTick)
@@ -608,7 +599,7 @@ function uvScreen(c, g) {
   if (UV.g !== g || UV.t > UV_BANNER) return;
   const t = UV.t, f = g.fighters[UV.slot];
   if (!f) return;
-  const calm = reducedMotion(), [sx, sy] = toScreen(f.x, f.y - f.s.h * 0.5 * uvScale(f)), R = Math.max(L.gw, L.gh);
+  const calm = hkCalm(), [sx, sy] = toScreen(f.x, f.y - f.s.h * 0.5 * uvScale(f)), R = Math.max(L.gw, L.gh);   // Reduce flashes (or the system's reduced motion)
   c.save();
   if (t < 16) {   // the flash: white-gold, brightest at the user
     const a = Math.pow(1 - t / 16, 1.5) * (calm ? 0.35 : 1);
