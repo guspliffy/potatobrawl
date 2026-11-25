@@ -74,7 +74,8 @@ cvFigReg("samurai", {
     // the tails: they hang at rest, stream back on the run, lift as he falls and snap on a swing (a spring about the knot)
     const run = clamp(Math.abs(f.vx + f.kbx), 0, 12), snap = out && P.hv ? 0.25 : out ? 0.12 : 0;
     const ang = K.spring("tails", -0.42 + run * 0.05 + (air ? clamp(f.vy * 0.06, -0.5, 0.55) : 0) + snap + Math.sin(tk * 0.07 + f.slot) * 0.05, 0.3);
-    const flut = Math.round((1 + 0.12 * Math.sin(tk * (run > 3 || air ? 0.45 : 0.12))) * 50) / 50, aq = Math.round(ang * 50) / 50;   // (a sprite per step)
+    // (in steps of 0.04, so a held pose of them has a sprite of its own: K.stack; they flutter only on the move)
+    const aq = Math.round(ang * 25) / 25, flut = run > 3 || air ? Math.round((1 + 0.12 * Math.sin(tk * 0.45)) * 25) / 25 : 1;
     K.stack(["tails"], (c) => { c.translate(-14, -50); c.rotate(aq); c.scale(1, flut); c.translate(14, 50); }, aq + "," + flut);
     if (!(P.sheath > 0 && out)) K.stack(["sheath"]);
     K.arm(false);

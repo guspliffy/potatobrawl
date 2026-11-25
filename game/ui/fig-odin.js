@@ -61,10 +61,10 @@ cvFigReg("odin", {
   },
   draw(K) {
     const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
-    // the cape: it trails behind on the run and settles late (a spring), lifts when he falls, breathes at rest
-    // (a sprite per step of 0.01 of both)
+    // the cape: it trails behind on the run and settles late (a spring), lifts when he falls, breathes at rest (sheared about the
+    // shoulders; in steps of 0.02 and 0.05, so a held pose of it has a sprite of its own: K.stack)
     const run = clamp((f.vx + f.kbx) * f.facing, -10, 10), sway = K.spring("cape", -run * 0.05 + Math.sin(tk * 0.05 + f.slot) * 0.025 + (air ? -0.1 : 0), 0.16);
-    const sw = Math.round(sway * 100) / 100, lift = air ? Math.round(clamp(f.vy * 0.025, -0.1, 0.28) * 100) / 100 : 0;
+    const sw = Math.round(sway * 50) / 50, lift = air ? Math.round(clamp(f.vy * 0.025, -0.1, 0.28) * 20) / 20 : 0;
     K.stack(["cape"], (c) => { c.translate(-12, -56); c.transform(1, 0, sw, 1 - lift, 0, 0); c.translate(12, 56); }, sw + "," + lift);
     K.arm(false);
     K.leg(false); K.leg(true);

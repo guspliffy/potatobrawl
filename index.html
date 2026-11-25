@@ -13359,12 +13359,13 @@ function uvShotTick(g, f) {
      K.hF, K.hB      the hands to draw (P.hF / P.hB; a figure may move them at rest, e.g. onto a hilt, before it draws the arms)
      K.sx, K.sy      the motion layer's squash (1 = none)
      K.stack(list[, fn, fk])   THE way to draw the carved parts on the body: list, back to front, of part names and tokens. A run of names
-                     is drawn as ONE sprite (baked the first time: per skin and mode, zoom step, lean step of 0.02 rad). Tokens: "face" the
+                     is drawn as ONE sprite, baked upright (per skin and mode, run and zoom level, never per lean or sway) and drawn
+                     through the frame's lean and fn, turned (a pose that recurs is held: COST). Tokens: "face" the
                      face (baked with the run at rest, a shout's mouth laid over it; live with an expression, hitstun or a blink), "skin"
                      the won / Pommes skin body pass and Glaze (put it right after the body), "top" the skin's top pass (after the hats),
                      a function g(K) a live part in between, null nothing (handy: cond ? "hilt" : null). Tokens break the run.
-                     fn(c) a transform in the standing frame (a sway, a flutter); with fk, a string naming its step, it is baked too
-                     (one sprite per fk: quantize what goes into fn, 0.01-0.02 steps); without fk it draws turned, at twice the cost.
+                     fn(c) a transform in the standing frame (a sway, a flutter); fk, a string naming its step, lets a pose of it be held:
+                     quantize what goes into fn coarsely (0.02-0.05 steps) so a few steps recur. Without fk the run always draws turned.
                      On a manga page (its context is wrapped: cvMgInk) every part is drawn as paths instead, so the page can ink it
      K.sprite(list)  parts as one sprite in the current transform (for a big part that moves on its own)
      K.draw(name)    a carved part drawn as paths in the current transform (cheaper for a small part that moves on its own: the raven,
@@ -13387,11 +13388,18 @@ function uvShotTick(g, f) {
    own: K.spring and tk in draw(K).
 
    COST (software canvas on a phone: every fill costs per shape and per edge, a stroke three times a fill, a sprite per pixel; budget
-   0.35 ms per figure per frame, tests/pwcarve.py times it). A smoothed sprite costs about 4 ns per device pixel it covers (transparent
-   ones too; twice that turned), a fill a few microseconds plus its area: big static parts go through K.stack (a figure is two or three
-   sprites: what hangs behind, the body run), limbs, hands, boots and small moving parts are a few fills each. Anything else that changes
-   every frame: quantize it and bake it (fk), or draw it as a few plain fills. Sprites live in CV_BAKE (12 M pixels, least recently used
-   out). */
+   0.35 ms per figure per frame, tests/pwcarve.py times it; and a match must not keep baking sprites: tests/pwcarve.py ME OPP --live).
+   A smoothed sprite costs about 4 ns per device pixel it covers (transparent ones too; twice that turned), a fill a few microseconds
+   plus its area: big static parts go through K.stack (a figure is two or three sprites: what hangs behind, the body run), limbs, hands,
+   boots and small moving parts are a few fills each. THE SPRITE RULE (cvBaked, K.stack): a sprite's key is the skin, the run of parts
+   and the zoom level, never a value that changes from frame to frame: a lean or a sway turns the upright sprite. A pose (lean step and
+   fk) gets a sprite of its own only once it is held: drawn 20 times, at most ten per stack and fighter (a stance, a run's lean, a cape at
+   rest). So pass fk only for a transform whose steps recur, quantized coarsely. A figure bakes at most one sprite a frame (the rest draw
+   as paths that frame); a new zoom level waits until it has been needed 20 frames in a row, drawing a cached level scaled meanwhile; a
+   sprite over 0.5 M px (a big draw: the fighter select, a sheet's portrait), the hit flash, the dimmed helpless figure and a manga page
+   are drawn as paths. Sprites live in CV_BAKE (6 M px, least recently used out). The live test's limits: at most 10 new sprites in the
+   last 600 of 1800 frames and 150 in all, at most 3 M px held with two figures. Anything else that changes every frame: a few plain
+   fills. */
 const CV_INK = "#1a1326", CV_RIM = "#fff0c0", CV_EYE = "#fffdf4", CV_TAU = Math.PI * 2;
 const CV_NOIR_L = "#d8cfb8", CV_NOIR_D = "#3a3842";
 const CV_FIG = {};
@@ -13697,47 +13705,84 @@ function cvPartOps(fig, name) {
   return fig.faceOps;
 }
 
-/* ---------- sprites: a run of carved parts drawn once per skin, mode and zoom step ---------- */
-const CV_BAKE = new Map(), CV_BAKE_MAX = 12e6;
-let cvBakePx = 0;
-// xf: { k, fn(c) } a transform the parts are drawn with into the sprite (the lean step, a cape's sway), named by k: the sprite is then drawn
-// upright (a turned or sheared sprite costs twice an upright one to draw)
-function cvBaked(fig, list, C, q, xf) {
-  const key = C.key + "|" + list.join(",") + "|" + q + (xf ? "|" + xf.k : "");
-  let s = CV_BAKE.get(key);
-  if (s) { CV_BAKE.delete(key); CV_BAKE.set(key, s); return s; }   // most recently used last
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, m = null;
-  if (xf) {   // the transform as a matrix, for the sprite's box
-    m = new DOMMatrix();
-    xf.fn({ translate: (x, y) => m.translateSelf(x, y), rotate: (a) => m.rotateSelf((a * 180) / Math.PI), scale: (x, y) => m.scaleSelf(x, y),
-      transform: (a, b, c, d, e, f) => m.multiplySelf(new DOMMatrix([a, b, c, d, e, f])) });
-  }
-  for (const n of list) for (const o of cvPartOps(fig, n)) {
-    for (let i = 0; i < 4; i++) {
-      let x = o.bb[i & 1 ? 2 : 0], y = o.bb[i & 2 ? 3 : 1];
-      if (m) { const t = m.transformPoint({ x, y }); x = t.x; y = t.y; }
-      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
-    }
-  }
-  x0 = Math.floor(x0 - 1); y0 = Math.floor(y0 - 1); x1 = Math.ceil(x1 + 1); y1 = Math.ceil(y1 + 1);
-  const cv2 = document.createElement("canvas");
-  cv2.width = Math.max(1, Math.ceil((x1 - x0) * q)); cv2.height = Math.max(1, Math.ceil((y1 - y0) * q));
-  const x = cv2.getContext("2d");
-  x.setTransform(q, 0, 0, q, -x0 * q, -y0 * q);
-  if (xf) xf.fn(x);
-  for (const n of list) cvOps(x, cvPartOps(fig, n), C);
-  return cvBakeKeep(key, { cv: cv2, x0, y0, w: cv2.width / q, h: cv2.height / q, px: cv2.width * cv2.height });
+/* ---------- sprites: a run of carved parts drawn once per skin and zoom level, upright ---------- */
+// A sprite is baked in the standing frame with nothing turned, at a zoom level q (device pixels per unit, a quarter octave), and drawn
+// through the figure's transform of the frame (lean, sway, squash): so its key is only the skin, the run of parts and q (a held pose
+// adds its own, K.stack), and a match bakes a few dozen sprites in its first seconds and then few. The zoom level: the cached one that is
+// no more than 3 % smaller than the transform and no more than two thirds bigger (a camera that eases in and out reuses what it has),
+// else the next quarter octave up.
+const CV_BAKE = new Map(), CV_BAKE_MAX = 6e6, CV_SPRITE_MAX = 5e5;   // pixels held in all (least recently used out); the biggest sprite
+let cvBakePx = 0, cvBakeMade = 0, cvBakeBig = 0;
+// the box of a run of parts in the standing frame, kept on the figure
+function cvRunBox(fig, list, lk) {
+  let b = fig.boxes.get(lk);
+  if (b) return b;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const n of list) for (const o of cvPartOps(fig, n)) { x0 = Math.min(x0, o.bb[0]); y0 = Math.min(y0, o.bb[1]); x1 = Math.max(x1, o.bb[2]); y1 = Math.max(y1, o.bb[3]); }
+  b = [Math.floor(x0 - 1), Math.floor(y0 - 1), Math.ceil(x1 + 1), Math.ceil(y1 + 1)];
+  fig.boxes.set(lk, b);
+  return b;
 }
-function cvBakeKeep(key, s) {
-  CV_BAKE.set(key, s); cvBakePx += s.px;
+// the sprite of a run for the kit K, or null: the caller then draws the parts as paths. Null when it would be bigger than CV_SPRITE_MAX
+// pixels (a big draw: the fighter select, a sheet's portrait) or when it is not baked yet and K has baked one this frame already.
+// pose: null upright, or a held pose { k, ls, fn } baked into the sprite: the lean ls (steps of 0.02 rad, about the hip) and the stack's
+// transform fn, named by k
+function cvBaked(K, list, pose) {
+  const fig = K.fig, C = K.C, z = K.z, lk = list.join(","), pre = C.key + "|" + lk + "|", suf = pose ? "@" + pose.k : "";
+  const L = Math.ceil(Math.log2(z) * 4 - 0.05);
+  let s;
+  for (const k of [L - 1, L, L + 1, L + 2, L + 3]) {   // a cached level that fits
+    const q = Math.pow(2, k / 4);
+    if (q * 1.03 < z || q * 0.6 > z) continue;
+    s = CV_BAKE.get(pre + k + suf);
+    if (s) { CV_BAKE.delete(pre + k + suf); CV_BAKE.set(pre + k + suf, s); return s; }   // most recently used last
+  }
+  // nothing cached fits. A new level waits until the figure has needed it for 20 frames in a row (a camera punch is over by then): until
+  // then a held pose turns the upright sprite (the caller) and an upright run uses another level that is cached, drawn up to 1.7 times
+  // bigger or up to 2.4 times smaller (only a run met for the first time is baked at once)
+  let fb = null;
+  for (const k of [L - 1, L - 2, L - 3, L + 3, L + 4, L + 5]) { fb = CV_BAKE.get(pre + k + suf); if (fb) break; }
+  if ((pose || fb) && cvNeed(K, pre + L + suf) < 20) return pose ? null : fb;
+  let b = cvRunBox(fig, list, lk), m = null;
+  const q = Math.pow(2, L / 4);
+  if (pose) {   // the pose as a matrix, and the box through it
+    const px = K.P.hip[0], py = K.P.hip[1] - K.P.cvDrop;
+    m = new DOMMatrix().translateSelf(px, py).rotateSelf((pose.ls / 50) * (180 / Math.PI)).translateSelf(-px, -py);
+    if (pose.fn) pose.fn({ translate: (x, y) => m.translateSelf(x, y), rotate: (a) => m.rotateSelf((a * 180) / Math.PI), scale: (x, y) => m.scaleSelf(x, y),
+      transform: (a, b_, c, d, e, f) => m.multiplySelf(new DOMMatrix([a, b_, c, d, e, f])) });
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y] of [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]]) {
+      const t = m.transformPoint({ x, y }); x0 = Math.min(x0, t.x); y0 = Math.min(y0, t.y); x1 = Math.max(x1, t.x); y1 = Math.max(y1, t.y);
+    }
+    b = [Math.floor(x0), Math.floor(y0), Math.ceil(x1), Math.ceil(y1)];
+  }
+  const w = Math.max(1, Math.ceil((b[2] - b[0]) * q)), h = Math.max(1, Math.ceil((b[3] - b[1]) * q));
+  if (w * h > CV_SPRITE_MAX || K.baked) return null;
+  K.baked = true;
+  const cv2 = document.createElement("canvas"); cv2.width = w; cv2.height = h;
+  const x = cv2.getContext("2d");
+  x.setTransform(q, 0, 0, q, -b[0] * q, -b[1] * q);
+  if (m) x.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+  for (const n of list) cvOps(x, cvPartOps(fig, n), C);
+  s = { cv: cv2, x0: b[0], y0: b[1], w: w / q, h: h / q, px: w * h };
+  const key = pre + L + suf;
+  CV_BAKE.set(key, s); cvBakePx += s.px; cvBakeMade++; cvBakeBig = Math.max(cvBakeBig, s.px);
   for (const [k, v] of CV_BAKE) { if (cvBakePx <= CV_BAKE_MAX || k === key) break; CV_BAKE.delete(k); cvBakePx -= v.px; }
   return s;
 }
-// canvas pixels per unit of the current transform, rounded up to a quarter octave (a sprite is never drawn more than 19 % smaller than baked)
-function cvScaleOf(c) {
-  const m = c.getTransform(), z = Math.sqrt(Math.max(m.a * m.a + m.b * m.b, m.c * m.c + m.d * m.d, 1e-4));
-  return Math.min(24, Math.max(0.25, Math.pow(2, Math.ceil(Math.log2(z) * 4 - 0.05) / 4)));
+// how many frames in a row this fighter has asked for the sprite key (one count per game tick)
+const CV_NEED = new WeakMap();
+function cvNeed(K, key) {
+  let m = CV_NEED.get(K.f);
+  if (!m) CV_NEED.set(K.f, (m = new Map()));
+  let v = m.get(key);
+  if (!v || K.tk - v[1] > 1 || K.tk < v[1]) m.set(key, (v = [0, K.tk - 1]));
+  if (K.tk !== v[1]) { v[0]++; v[1] = K.tk; }
+  if (m.size > 64) for (const [k, w] of m) if (K.tk - w[1] > 1) m.delete(k);
+  return v[0];
 }
+// device pixels per unit of the current transform
+function cvZoomOf(c) { const m = c.getTransform(); return Math.max(0.05, Math.sqrt(Math.max(m.a * m.a + m.b * m.b, m.c * m.c + m.d * m.d))); }
 
 /* ---------- live drawing: build a path, fill it ---------- */
 // a tapered capsule a -> b (radii r0, r1), added to the current path
@@ -14000,7 +14045,7 @@ function cvMouth(S, x, y, kind, s, under) {
 /* ---------- registration, the rig hook, the motion layer ---------- */
 function cvFigReg(id, fig) {
   const b = fig.body, pts = cvBlob(b.x, b.y, b.rx, b.ry, b.o);
-  fig.id = id; fig.cols = new Map(); fig.mouths = new Map(); fig.ops = null;
+  fig.id = id; fig.cols = new Map(); fig.mouths = new Map(); fig.boxes = new Map(); fig.ops = null;
   fig.sil = new Float64Array(pts.length * 2); pts.forEach((q, i) => { fig.sil[i * 2] = q[0]; fig.sil[i * 2 + 1] = q[1]; });
   fig.pal = fig.pal || {}; fig.chip = fig.chip || [{}, {}, {}, {}]; fig.won = fig.won || {}; fig.pm = fig.pm || {};
   fig.carve = fig.carve || {};
@@ -14039,12 +14084,15 @@ function cvMotion(f, P) {
 
 /* ---------- the kit, one per figure per frame ---------- */
 const CV_SPR = new WeakMap();   // fighter -> { name: [value, velocity, tick] }: secondary motion, eased once per tick
+const CV_POSES = new WeakMap();   // fighter -> Map(stack -> { n: draws per pose, held: poses with sprites }) (K.stack)
 function CV_Kit(c, f, P, tk, at, flash) {
   const fig = P.fig;
   this.c = c; this.f = f; this.P = P; this.tk = tk; this.at = at; this.fig = fig; this.flash = flash;
   this.C = cvCols(fig, f, flash ? "f" : P.dim ? "d" : "n");
   this.ops = cvOpsOf(fig);
-  this.q = cvScaleOf(c);
+  this.z = cvZoomOf(c); this.baked = false;   // (cvBaked: one new sprite per figure per frame at most)
+  this.ls = Math.round(P.lean * 50);   // the lean in steps of 0.02 rad (K.stack)
+  this.vec = !!flash || !!P.dim;   // the hit flash and the dimmed helpless figure are drawn as paths (they come and go: no sprites for them)
   const pal = f.pal || {}, F = fig.face;
   this.skinPass = !!(pal.road || pal.pommes || (!flash && !P.dim && glazeOn(f)));   // a won / Pommes skin or Glaze draws between the parts
   this.faceRest = !P.expr && f.state !== "hitstun" && !(F.blink !== false && ((tk + f.slot * 53) % 211) < 4);   // (a shout keeps it: K.stack)
@@ -14074,18 +14122,42 @@ CV_Kit.prototype = {
   // carved parts back to front as sprites: a run of parts is one sprite. "face" is the face (carved at rest, live otherwise), "skin" and
   // "top" the skin passes (only when the skin has one), a function f(K) a live part between them (it breaks the run)
   stack(list, fn, fk) {
-    let run = [];
-    const P = this.P, c = this.c, baked = !fn || fk !== undefined, lq = Math.round(P.lean * 50) / 50;   // the lean, in steps of 0.02 rad
-    // the sprite is drawn leaning (and swaying: fn named by fk) and so drawn upright; one sprite per lean step and fk
-    const px = P.hip[0], py = P.hip[1] - P.cvDrop;
-    const xf = baked && (lq || fn) ? { k: lq + "/" + fk, fn: (x) => { if (lq) { x.translate(px, py); x.rotate(lq); x.translate(-px, -py); } if (fn) fn(x); } } : null;
+    let run = [], shout = false;
+    const P = this.P, c = this.c, fig = this.fig, ls = this.ls;
+    // the pose of this stack: its lean step and, with fn, the step fk of its transform. The first ten poses this fighter has been drawn in
+    // 20 times (a stance, a run's lean, a cape at rest; not the frames between) are held: they get sprites of their own, drawn upright.
+    // Any other pose turns the upright sprite (twice the cost); no lean and no fn, none
+    let pose = null;
+    if ((ls || fn) && !this.vec && (!fn || fk !== undefined)) {
+      const pk = ls + "/" + (fn ? fk : "");
+      let all = CV_POSES.get(this.f);
+      if (!all) CV_POSES.set(this.f, (all = new Map()));
+      let S = all.get(list[0]);
+      if (!S) all.set(list[0], (S = { n: new Map(), held: new Set() }));
+      if (S.held.has(pk)) pose = { k: pk, ls, fn };
+      else if (S.held.size < 10) {
+        const n = (S.n.get(pk) || 0) + 1;
+        if (S.n.size > 500) S.n.clear();   // (a long match of ever new poses)
+        S.n.set(pk, n);
+        if (n >= 20) { S.held.add(pk); pose = { k: pk, ls, fn }; if (S.held.size === 10) S.n.clear(); }
+      }
+    }
     const out = () => {
       if (!run.length) return;
+      let sp = null, posed = false;
+      if (!this.vec) {
+        if (pose) { sp = cvBaked(this, run, pose); posed = !!sp; }
+        if (!sp) sp = cvBaked(this, run, null);
+      }
       c.save(); this._sq(c);
-      if (cvMg) { this._lean(c); c.translate(0, P.cvDrop); if (fn) fn(c); for (const n of run) cvOps(c, cvPartOps(this.fig, n), this.C); }   // a manga page: paths
-      else if (baked) { const s = cvBaked(this.fig, run, this.C, this.q, xf); c.translate(0, P.cvDrop); c.drawImage(s.cv, s.x0, s.y0, s.w, s.h); }
-      else { const s = cvBaked(this.fig, run, this.C, this.q); this._lean(c); c.translate(0, P.cvDrop); fn(c); c.drawImage(s.cv, s.x0, s.y0, s.w, s.h); }
-      c.restore(); run = [];
+      if (posed) c.translate(0, P.cvDrop);
+      else { if (!sp || ls) this._lean(c); c.translate(0, P.cvDrop); if (fn) fn(c); }
+      if (sp) c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of run) cvOps(c, cvPartOps(fig, n), this.C);
+      if (shout) {   // a shout: the open mouth over the run that holds the resting face (turned like a held pose's sprite)
+        if (posed) { const px = P.hip[0], py = P.hip[1] - P.cvDrop; c.translate(px, py); c.rotate(ls / 50); c.translate(-px, -py); if (fn) fn(c); }
+        cvMouthFor(c, this, fig.face, false, null, 0);
+      }
+      c.restore(); run = []; shout = false;
     };
     for (const it of list) {
       if (!it) continue;
@@ -14093,15 +14165,14 @@ CV_Kit.prototype = {
       else if (it === "skin") { if (this.skinPass) { out(); this.skinBody(); } }
       else if (it === "top") { if (this.skinPass) { out(); this.skinTop(); } }
       else if (it === "face" && !this.faceRest) { out(); this.face(); }
-      else if (it === "face" && P.mouth > 0.5) { run.push(it); out(); this.body((x) => cvMouthFor(x, this, this.fig.face, false, null, 0)); }   // the shout over the resting face
-      else run.push(it);
+      else { run.push(it); if (it === "face" && P.mouth > 0.5) shout = true; }
     }
     out();
   },
-  // carved parts as one sprite in the current transform (a boot at the foot)
+  // carved parts as one sprite in the current transform
   sprite(list) {
-    if (cvMg) { for (const n of list) cvOps(this.c, cvPartOps(this.fig, n), this.C); return; }
-    const s = cvBaked(this.fig, list, this.C, this.q); this.c.drawImage(s.cv, s.x0, s.y0, s.w, s.h);
+    const sp = this.vec ? null : cvBaked(this, list);
+    if (sp) this.c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of list) cvOps(this.c, cvPartOps(this.fig, n), this.C);
   },
   arm(front, held) {
     const A = this.fig.arm, c = this.c, C = this.C, sh = front ? A.shF : A.shB, h = front ? this.hF : this.hB;
@@ -14157,7 +14228,8 @@ CV_Kit.prototype = {
 // drawPotato's hand-over: the figure, in the fighter's own frame (feet at 0, facing right), after the sprint lines and before the effects
 function cvFigure(c, f, P, tk, at, flash) {
   const K = new CV_Kit(c, f, P, tk, at, flash);
-  cvMg = Object.prototype.hasOwnProperty.call(c, "fillStyle");   // a manga page's context (see cvMgInk)
+  cvMg = Object.prototype.hasOwnProperty.call(c, "fillStyle");   // a manga page's context (see cvMgInk): paths
+  if (cvMg) K.vec = true;
   try { P.fig.draw(K); } finally { cvMg = false; }
   return K;
 }
@@ -14171,7 +14243,7 @@ function cvSilPath(c, P) {
 // tests/pwcarve.py: the drawing and the camera, from outside the page's scope
 window.__cvTest = { draw: (c, f, tk) => drawFighter(c, f, tk), toScreen: (x, y) => toScreen(x, y), get cam() { return cam; }, get dpr() { return DPR; }, get L() { return L; }, get ctx() { return ctx; },
   figs: () => Object.keys(CV_FIG), glaze: (f, on) => glazeMark(f, on), set rim(v) { TEAM_RIM = !!v; },
-  bakes: () => ({ n: CV_BAKE.size, px: cvBakePx }) };
+  bakes: () => ({ n: CV_BAKE.size, px: cvBakePx, made: cvBakeMade, big: cvBakeBig }) };
 /* ===================== Carved Ink: Odin (ui/carve.js has the kit and the API) =====================
    A boulder: the widest, a square russet under a helm whose wings are his sprout leaves, a forked beard, a floor-length cape that settles
    late, steel gauntlets 17 units wide, one cold blue eye under a white brow and a patch on the other, the raven on his back shoulder.
@@ -14235,10 +14307,10 @@ cvFigReg("odin", {
   },
   draw(K) {
     const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
-    // the cape: it trails behind on the run and settles late (a spring), lifts when he falls, breathes at rest
-    // (a sprite per step of 0.01 of both)
+    // the cape: it trails behind on the run and settles late (a spring), lifts when he falls, breathes at rest (sheared about the
+    // shoulders; in steps of 0.02 and 0.05, so a held pose of it has a sprite of its own: K.stack)
     const run = clamp((f.vx + f.kbx) * f.facing, -10, 10), sway = K.spring("cape", -run * 0.05 + Math.sin(tk * 0.05 + f.slot) * 0.025 + (air ? -0.1 : 0), 0.16);
-    const sw = Math.round(sway * 100) / 100, lift = air ? Math.round(clamp(f.vy * 0.025, -0.1, 0.28) * 100) / 100 : 0;
+    const sw = Math.round(sway * 50) / 50, lift = air ? Math.round(clamp(f.vy * 0.025, -0.1, 0.28) * 20) / 20 : 0;
     K.stack(["cape"], (c) => { c.translate(-12, -56); c.transform(1, 0, sw, 1 - lift, 0, 0); c.translate(12, 56); }, sw + "," + lift);
     K.arm(false);
     K.leg(false); K.leg(true);
@@ -14346,7 +14418,8 @@ cvFigReg("samurai", {
     // the tails: they hang at rest, stream back on the run, lift as he falls and snap on a swing (a spring about the knot)
     const run = clamp(Math.abs(f.vx + f.kbx), 0, 12), snap = out && P.hv ? 0.25 : out ? 0.12 : 0;
     const ang = K.spring("tails", -0.42 + run * 0.05 + (air ? clamp(f.vy * 0.06, -0.5, 0.55) : 0) + snap + Math.sin(tk * 0.07 + f.slot) * 0.05, 0.3);
-    const flut = Math.round((1 + 0.12 * Math.sin(tk * (run > 3 || air ? 0.45 : 0.12))) * 50) / 50, aq = Math.round(ang * 50) / 50;   // (a sprite per step)
+    // (in steps of 0.04, so a held pose of them has a sprite of its own: K.stack; they flutter only on the move)
+    const aq = Math.round(ang * 25) / 25, flut = run > 3 || air ? Math.round((1 + 0.12 * Math.sin(tk * 0.45)) * 25) / 25 : 1;
     K.stack(["tails"], (c) => { c.translate(-14, -50); c.rotate(aq); c.scale(1, flut); c.translate(14, 50); }, aq + "," + flut);
     if (!(P.sheath > 0 && out)) K.stack(["sheath"]);
     K.arm(false);
