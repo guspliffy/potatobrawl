@@ -11,7 +11,6 @@ const CV_RPR_TOP = -50;   // the top of the cloak (the stretch to the crouch and
 const CV_RPR_EYES = [[4.6, 3.5, 0.35], [12.6, 3, -0.3]];   // the slits: x (at y -50.5), half length, tilt
 const CV_RPR_CLOAK = [[-13, -50, 1], [-20, -30], [-25, -8], [-23, 0, 1], [-18, -8], [-13, 0, 1], [-7, -7], [-1, 0, 1], [5, -7], [11, 0, 1], [16, -8], [23, 0, 1], [21, -28], [14, -50, 1]];
 const CV_RPR_HOOD = [[-16, -38, 1], [-21, -56], [-10, -72], [6, -78], [19, -72, 1], [11, -70], [19, -60], [18, -46], [11, -35, 1], [-3, -33]];
-let cvRprRims = null;   // the outlines of the cloak and the hood for the 2v2 team rim (the body's silhouette sits inside the cloak)
 cvFigReg("reaper", {
   pal: { cloak: "#565069", deep: "#17131f", skin: "#e2a95c", soul: "#8dffd0", bone: "#efe9da", wood: "#6e4a33", steel: "#e3e9f0",
     stem: "#4f7d4a", leaf: "#86b56a" },
@@ -74,7 +73,6 @@ cvFigReg("reaper", {
     const tr = Math.round(K.spring("rtrail", clamp(-(f.vx + f.kbx) * f.facing * (grd ? 0.6 : 0.9), -8, 8) + (grd ? 0 : Math.sin(tk * 0.2 + f.slot) * 0.8), 0.2));
     const ka = grd ? 1 : Math.round((1 - clamp((f.vy || 0) * 0.012, -0.08, 0.12)) * 50) / 50;
     const fn = cvRprCloakFn(P, g, dq, lq, tr, ka);
-    if (TEAM_RIM && !K.at) cvRprRim(c, K, fn);
     // at rest (no transform) the cloak goes into the hood's sprite; otherwise it is a stack of its own. The skin pass lies once on the bell
     // (fig.sil) over the hood: at rest the bell's own, otherwise the turned cloak's (cvRprBell)
     if (fn) K.stack(["cloak"], fn, g + "," + dq + "," + tr + "," + ka);
@@ -159,15 +157,6 @@ function cvRprCloakFn(P, g, dq, lq, tr, ka) {
     if (sx) { c.translate(0, T); c.transform(1, 0, sx, 1, 0, 0); c.translate(0, -T); }
     if (k !== 1) { c.translate(0, T); c.scale(1, k); c.translate(0, -T); }
   };
-}
-// the 2v2 team rim: the cloak's and the hood's outlines (teamRimBody's width), behind them
-function cvRprRim(c, K, fn) {
-  const tc = TEAM_COL[K.f.team];
-  if (!tc) return;
-  if (!cvRprRims) cvRprRims = [cvPath([cvSm(CV_RPR_CLOAK)]), cvPath([cvSm(CV_RPR_HOOD)])];
-  c.lineJoin = "round"; c.lineWidth = 2.5 + 4 / cam.z; c.strokeStyle = tc;
-  K.body((cc) => { if (fn) fn(cc); cc.stroke(cvRprRims[0]); });
-  K.body((cc) => cc.stroke(cvRprRims[1]));
 }
 // soul motes rising off the back of the hem: three, live (two fills)
 function cvRprMotes(c, K) {
