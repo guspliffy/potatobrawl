@@ -3,7 +3,7 @@
    two frames and flickering after, with a lime ribbon on the flask's arc behind the fighters; the flask smash a splash crown of beads on
    both sides; the Toxic Orb an orb with a dark crescent and a meniscus, two shrinking droplets behind it and a dashed dome where it will
    burst; the burst a cluster of beads inside its dashed true size; puddle beads on the floor; and Mutagen Cloud's payoff: one giant living
-   cell with a broken lime rim, a clear inside and two nuclei, the last pulse flashing (dimmed under Reduce flashes). Flat fills only; the
+   cell with a broken lime rim, a clear inside and two nuclei, the last pulse a thick cream ring over a faint lime wash. Flat fills only; the
    shared T5 tools are in ui/hk-phoenix.js (hkPhx*). */
 const HK_ALC = HK_KIT.alchemist;
 HK_ALC.charge = (c, f, P, tk, st, q, pts) => hkPhxCharge(c, f, P, tk, st, q, pts, HK_ALC, CHARGE_GATHER.alchemist);
@@ -202,15 +202,12 @@ function hkAlcCell(c, p, tk) {
   c.restore();
 }
 // the cloud's pulse rings and the last pulse's flash (spawned by uvCloudTick, drawn behind the fighters): a pulse is a dashed lime ring
-// running out from the rim; the last pulse fills the cell cream-white and throws a thick ring, a dimmed lime wash under Reduce flashes
+// running out from the rim; the last pulse washes the cell lime at 15 % and throws a thick cream ring
 function hkAlcPulse(c, e) {
-  const C = HK_ALC.cols, q = e.t / e.life, a = 1 - q, calm = hkCalm(), ga = c.globalAlpha;
+  const C = HK_ALC.cols, q = e.t / e.life, a = 1 - q, ga = c.globalAlpha;
   const R = lerp(e.r0, e.r1, easeOut2(q));
   c.save(); c.translate(e.x, e.y); c.lineCap = "butt";
-  if (e.last) {
-    c.globalAlpha = ga * a * (calm ? 0.22 : 0.75); c.fillStyle = calm ? C[1] : C[0]; c.beginPath(); c.arc(0, 0, e.r0 * (1 + 0.15 * q), 0, CV_TAU); c.fill();
-    if (!calm) { c.globalAlpha = ga * a * 0.6; c.fillStyle = "#ffffff"; c.beginPath(); c.arc(0, 0, e.r0 * 0.6 * (1 + 0.3 * q), 0, CV_TAU); c.fill(); }
-  }
+  if (e.last) { c.globalAlpha = ga * a * 0.15; c.fillStyle = C[1]; c.beginPath(); c.arc(0, 0, e.r0 * (1 + 0.15 * q), 0, CV_TAU); c.fill(); }   // a clear inside (the victim stays readable): the flash is the thick ring
   c.globalAlpha = ga * a; c.setLineDash([R * 0.42, R * 0.18]); c.lineDashOffset = q * 30;
   c.beginPath(); c.arc(0, 0, R, 0, CV_TAU); c.lineWidth = (e.last ? 12 : 7) * a + 3; c.strokeStyle = HK_INK; c.stroke();
   c.lineWidth = (e.last ? 7 : 4) * a + 1.4; c.strokeStyle = e.last ? C[0] : C[1]; c.stroke();

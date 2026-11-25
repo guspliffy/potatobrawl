@@ -89,10 +89,11 @@ function drawFx(c) {
   c.globalAlpha = 1;
 }
 // the launch trail behind a fighter sent flying: a tapered ribbon in the kit of whoever hit it, widest at the fighter (ui/hitkit.js hkTrail)
+// (at most 3 body heights long: a KO launch moves the fighter so fast that 16 points would cross half the stage)
 function drawTrails(c, g) {
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
-    if (tr.length >= 2) hkTrail(c, tr, f.s.w * 0.26, hkKit(f.lastHitBy || ""));
+    if (tr.length >= 2) hkTrail(c, hkCap(tr, f.s.h * 3), f.s.w * 0.26, hkKit(f.lastHitBy || ""));
   });
 }
 function drawScreenFx(c) {

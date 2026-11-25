@@ -15,7 +15,9 @@
      hkSpark(c, x, y, R, kit, tier, dir, seed, q)   the hit spark. tier 1 light, 2 heavy, 3 launcher (adds the ink flare and a dashed white
                                                     ring). R is the radius of its outer (edge) layer: the body layer is 0.72 R, the core 0.42 R.
                                                     dir the launch angle (radians, screen y down), seed any integer (the jagged edge), q its
-                                                    age 0..1 (the caller scales R and sets globalAlpha; q is for a shape that changes as it ages)
+                                                    age 0..1 (the caller scales R and sets globalAlpha; q is for a shape that changes as it ages).
+                                                    part (optional): "back" only the flare, halo and rings, "front" only the three layers
+                                                    (a hit's spark: the back under the fighters in hkUnder, the front over them)
      hkShard(c, x, y, s, rot, kit, i)               one shard of the kit's shape, s its size, rot its angle, i picks core or body colour
      hkSmear(c, cx, cy, r, a0, a1, w, kit, o)       a swing smear: a crescent on the arc of radius r about (cx, cy) from angle a0 to a1,
                                                     w thick at its widest, thickest towards the leading end a1, three tones (edge with an ink
@@ -27,14 +29,15 @@
    A fighter's own file (hk-<fighter>.js) may replace one of these for its kit: HK_KIT.<id>.spark / .shard / .mark, same arguments.
 
    PARTICLES in the shared fx list (effects.js), drawn by drawFx through hkDrawFx; under the fighters by hkUnder:
-     { k: "hks", kit, tier, x, y, R, dir, seed, t, life }                 a spark: pops in to 1.1 R, settles, fades in its last 40 %
+     { k: "hks", kit, tier, x, y, R, dir, seed, t, life }                 a spark: pops in to 1.1 R, settles, fades in its last 40 %; its
+                                                                          flare, halo and rings behind the fighters (hkUnder)
      { k: "hkg", kit, x, y, vx, vy, s, rot, vr, i, t, life, damp, g }     a flying shard (updateFx moves it: vx, vy, damp, g, vr)
      { k: "hkm", kit, x, y, w, t, life, fade }                            a floor mark, drawn under the fighters (hkUnder): it holds, then
                                                                           fades over its last `fade` ticks (8 when left out)
    THE HIT GRAMMAR (below the particles: tiers, the contact edge, impact frames, hit-stop look, residue; its own comment there) is what
    effects.js calls for every fighter hit: hkHit(g, e, live) on the "hit" event (returns its spark), hkLethal on "lethal", hkTick every sim
    tick, hkFrame / hkDim from render2D, hkJit from pose(). HK_LAUNCH_KB / HK_MID_KB are the tier thresholds.
-   HOOKS render2D calls (effects.js): hkUnder(c, g, tk) after the stage, under the shadows and the fighters (floor marks); uvBack(c, g, tk)
+   HOOKS render2D calls (effects.js): hkUnder(c, g, tk) after the stage, under the shadows and the fighters (floor marks, the sparks' back layers); uvBack(c, g, tk)
    after the projectiles, under the fighters: UV_BACK[spec.id](c, g, f, tk) for every fighter of the game (an Ultimate's payoff image that
    must stay behind the fighter being hit; the entry decides from f's state and its own fx whether there is anything to draw). */
 const HK_INK = "#1a1326";
@@ -104,22 +107,25 @@ function hkLayer(c, x, y, r, sh, rot, dir, seed) {
   else if (sh === "lobe") hkBurst(c, x, y, r * 1.1, 7, 0.62, rot, seed, true);
   else hkBurst(c, x, y, r * 1.1, 8, 0.45, rot, seed);
 }
-function hkSpark(c, x, y, R, K, tier, dir, seed, q) {
-  if (K.spark) return K.spark(c, x, y, R, K, tier, dir, seed, q);
+function hkSpark(c, x, y, R, K, tier, dir, seed, q, part) {
+  if (K.spark) return K.spark(c, x, y, R, K, tier, dir, seed, q, part);
   if (R <= 0.5) return;
   const C = K.cols, sh = K.shape, ga = c.globalAlpha, rot2 = sh === "facet" || sh === "rune" ? 0.2 : 0.55;
   c.lineJoin = "round";
-  if (tier >= 3) { c.beginPath(); hkBurst(c, x, y, R * 1.5, 12, 0.3, dir, seed + 3); c.fillStyle = HK_INK; c.fill(); }   // the ink flare
-  if (tier >= 2) {   // a soft halo: two flat discs, no gradient
-    c.fillStyle = C[1]; c.globalAlpha = ga * 0.14;
-    c.beginPath(); c.arc(x, y, R * 1.9, 0, CV_TAU); c.fill(); c.beginPath(); c.arc(x, y, R * 1.45, 0, CV_TAU); c.fill();
-    c.globalAlpha = ga;
+  if (part !== "front") {   // the back layers (a hit's spark draws them under the fighters: hkUnder)
+    if (tier >= 3) { c.beginPath(); hkBurst(c, x, y, R * 1.5, 12, 0.3, dir, seed + 3); c.fillStyle = HK_INK; c.fill(); }   // the ink flare
+    if (tier >= 2) {   // a soft halo: two flat discs, no gradient
+      c.fillStyle = C[1]; c.globalAlpha = ga * 0.14;
+      c.beginPath(); c.arc(x, y, R * 1.9, 0, CV_TAU); c.fill(); c.beginPath(); c.arc(x, y, R * 1.45, 0, CV_TAU); c.fill();
+      c.globalAlpha = ga;
+    }
+    if (sh === "rune" && tier >= 2) { c.lineWidth = 1.8; c.strokeStyle = C[1]; c.setLineDash([R * 0.42, R * 0.28]); c.beginPath(); c.arc(x, y, R * 1.35, 0, CV_TAU); c.stroke(); c.setLineDash([]); }   // Odin's gold rune ring
+    if (tier >= 3) { c.lineWidth = 2.2; c.strokeStyle = "#ffffff"; c.setLineDash([R * 0.9, R * 0.5]); c.beginPath(); c.arc(x, y, R * 1.75, dir + 0.4, dir + 0.4 + CV_TAU); c.stroke(); c.setLineDash([]); }
+    if (part === "back") return;
   }
   hkLayer(c, x, y, R, sh, dir + 0.2, dir, seed); c.fillStyle = C[2]; c.fill(); c.lineWidth = 2.2; c.strokeStyle = HK_INK; c.stroke();
   hkLayer(c, x, y, R * 0.72, sh, dir + rot2, dir, seed); c.fillStyle = C[1]; c.fill();
   hkLayer(c, x, y, R * 0.42, sh, dir + 0.2, dir, seed); c.fillStyle = C[0]; c.fill();
-  if (sh === "rune") { c.lineWidth = 1.8; c.strokeStyle = C[0]; c.setLineDash([R * 0.42, R * 0.28]); c.beginPath(); c.arc(x, y, R * 1.35, 0, CV_TAU); c.stroke(); c.setLineDash([]); }
-  if (tier >= 3) { c.lineWidth = 2.2; c.strokeStyle = "#ffffff"; c.setLineDash([R * 0.9, R * 0.5]); c.beginPath(); c.arc(x, y, R * 1.75, dir + 0.4, dir + 0.4 + CV_TAU); c.stroke(); c.setLineDash([]); }
 }
 
 /* ---------- a shard ---------- */
@@ -190,16 +196,17 @@ function hkMark(c, x, y, w, K, a) {
 
 /* ---------- the particles ---------- */
 // drawFx (effects.js) hands every fx entry here first; true when it was one of ours
+// a spark particle as it ages: pops in to 1.1 R, settles, fades in its last 40 % (part: "front" / "back", see hkSpark)
+function hkSparkFx(c, e, part) {
+  const q = e.t / e.life, s = q < 0.2 ? 0.55 + (q / 0.2) * 0.55 : 1.1 - ((q - 0.2) / 0.8) * 0.4;
+  c.globalAlpha = q < 0.6 ? 1 : Math.max(0, 1 - (q - 0.6) / 0.4);
+  hkSpark(c, e.x, e.y, e.R * s, e.kit, e.tier, e.dir, e.seed, q, part);
+  c.globalAlpha = 1;
+}
 function hkDrawFx(c, e, a) {
   const k = e.k;
   if (k === "hkm") return true;   // floor marks: hkUnder, under the fighters
-  if (k === "hks") {
-    const q = e.t / e.life, s = q < 0.2 ? 0.55 + (q / 0.2) * 0.55 : 1.1 - ((q - 0.2) / 0.8) * 0.4;
-    c.globalAlpha = q < 0.6 ? 1 : Math.max(0, 1 - (q - 0.6) / 0.4);
-    hkSpark(c, e.x, e.y, e.R * s, e.kit, e.tier, e.dir, e.seed, q);
-    c.globalAlpha = 1;
-    return true;
-  }
+  if (k === "hks") { hkSparkFx(c, e, "front"); return true; }   // its back layers: hkUnder
   if (k === "hkg") {
     c.globalAlpha = Math.min(1, a * 1.6);
     hkShard(c, e.x, e.y, e.s * (0.55 + 0.45 * a), e.rot || 0, e.kit, e.i);
@@ -212,6 +219,7 @@ function hkDrawFx(c, e, a) {
 // (8 when left out)
 function hkUnder(c, g, tk) {
   for (const e of fx) {
+    if (e.k === "hks" && e.tier >= 2) { hkSparkFx(c, e, "back"); continue; }   // a hit spark's flare, halo and ring go behind the fighter it hit
     if (e.k !== "hkm" || e.t < 0) continue;
     hkMark(c, e.x, e.y, e.w, e.kit, Math.min(1, (e.life - e.t) / (e.fade || 8)));
   }
@@ -253,6 +261,16 @@ function hkRibbon(c, pts, w) {
   for (let i = B.length - 2; i >= 0; i -= 2) c.lineTo(B[i], B[i + 1]);
   c.closePath();
 }
+// the last stretch of a trail, at most len long (oldest first; the cut point interpolated); the trail itself when it is shorter
+function hkCap(pts, len) {
+  let n = pts.length - 1, d = 0;
+  for (; n > 0; n--) {
+    const s = Math.hypot(pts[n][0] - pts[n - 1][0], pts[n][1] - pts[n - 1][1]);
+    if (d + s > len) { const u = (len - d) / s, a = pts[n], b = pts[n - 1]; return [[a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u], ...pts.slice(n)]; }
+    d += s;
+  }
+  return pts;
+}
 function hkTrail(c, pts, w, K) {
   if (pts.length < 2) return;
   const ga = c.globalAlpha;
@@ -271,8 +289,9 @@ function hkTrail(c, pts, w, K) {
                         kb >= HK_LAUNCH_KB (the top 10 % of knockback). An Ultimate's launching hit is one of these; its small hits are not
    Armor hits and the 2v2 Catch are tier 1. PERF.q >= 1 halves the shards.
    SIZE RULE: the spark never hides the fighter being hit. Its edge layer, as drawn (the shape's reach, the pop-in to 1.1), is at most 0.225 x
-   the victim's height (0.45 body heights wide; the ink flare and the ring reach 1.75 R, the halo is flat and faint), and its centre sits on
-   the victim's outline (the hurtbox), on the side the hit came from. Effects that belong to the attacker (smears, heavy looks, claw marks)
+   the victim's height (0.45 body heights wide; the ink flare and the ring reach 1.75 R, the halo is flat and faint), and its centre sits just
+   outside the victim's outline (the hurtbox, plus 0.1 body heights), on the side the hit came from; its flare, halo and rings are drawn
+   behind the fighters. Effects that belong to the attacker (smears, heavy looks, claw marks)
    pass behind the victim: render2D draws a fighter in "attack" under the others.
    IMPACT FRAMES (tier 3, live matches only: mode "match", not the menu's demo, not during the finisher, at most once per 30 ticks, never
    under Reduce flashes): sim tick 1 after the hit is frame A (paper screen, every fighter in ink), tick 2 frame B (ink screen, every fighter
@@ -314,7 +333,8 @@ function hkEdge(d, ex, ey, att) {
   ux /= l; uy /= l;
   const t = Math.min(Math.abs(ux) > 1e-3 ? hw / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-3 ? hh / Math.abs(uy) : 1e9);
   if (Math.hypot(ex - cx, ey - cy) >= t) return [ex, ey];
-  return [cx + ux * t, cy + uy * t];
+  const o = t + d.s.h * 0.1;   // a little outside the hurtbox: the drawn figure (robe, hat, cape) reaches past it
+  return [cx + ux * o, cy + uy * o];
 }
 // the floor a fighter stands on (its feet within 6 px of it): { y, x1, x2 }, or null in mid-air
 function hkFloorOf(f) {
