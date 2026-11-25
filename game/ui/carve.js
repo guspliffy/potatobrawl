@@ -79,7 +79,8 @@
      K.arm(front[, held])   the arm to K.hF / K.hB with its hand; held(c, K) is drawn between the arm and the hand (a sword hilt in the fist)
      K.leg(front)    the leg to P.fF / P.fB with its boot
      K.face()        the live face (P.expr, hitstun eyes, P.mouth, blinks); K.stack's "face" token calls it when it must
-     K.rim()         nothing (the 2v2 team rim is the rim pass, TEAM RIM below; kept so a figure's draw needs no edit)
+     K.rim()         the 2v2 team rim is the rim pass (TEAM RIM below); K.rim() draws the old cheap body rim only where that pass is off
+                     (PERF.q >= 2: a phone the frame-time watchdog finds slow)
      K.skinBody(), K.skinTop()   the skin passes ("skin" / "top" in K.stack call them)
      K.spring(name, target, k)   a lagging value for secondary motion (capes, tails): per fighter, eased once per tick
    The back arm and back leg are one tone (their shadow): they read as further away. Live parts use cvLimb / cvMitt / cvCapAdd / cvSegAdd /
@@ -1198,7 +1199,7 @@ CV_Kit.prototype = {
     c.save(); c.translate(ft[0], ft[1]); if (ang) c.rotate(ang); this.draw(front ? "boot" : "bootB"); c.restore();   // (paths: a small part that turns)
   },
   face() { if (!this.rimPass) this.body((c) => cvFace(c, this, this.fig.face)); },   // (inside the head: no rim)
-  rim() {},   // the team rim is the rim pass (cvRimPass)
+  rim() { if (TEAM_RIM && !this.at && !this.rimPass && PERF.q >= 2) { const c = this.c; c.save(); this._sq(c); teamRimBody(c, this.f, this.P); c.restore(); } },   // the team rim is the rim pass (cvRimPass); on a slow phone (PERF.q >= 2) the old body rim
   skinBody() {
     const c = this.c, f = this.f, P = this.P;
     if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes && (this.flash || P.dim || !glazeOn(f)))) return;
@@ -1225,7 +1226,7 @@ CV_Kit.prototype = {
 function cvFigure(c, f, P, tk, at, flash) {
   cvMg = Object.prototype.hasOwnProperty.call(c, "fillStyle");   // a manga page's context (see cvMgInk): paths
   try {
-    const tc = TEAM_RIM && !at && !cvMg && !cvRimOff && TEAM_COL[f.team];
+    const tc = TEAM_RIM && !at && !cvMg && !cvRimOff && PERF.q < 2 && TEAM_COL[f.team];   // (a phone the watchdog finds slow: K.rim's cheap body rim)
     if (tc) cvRimPass(c, f, P, tk, at, flash, tc);
     const K = new CV_Kit(c, f, P, tk, at, flash);
     if (cvMg) K.vec = true;
