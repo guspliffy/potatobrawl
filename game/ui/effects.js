@@ -2,15 +2,6 @@
 const fx = [], sfx = [], trails = [[], [], [], []], combos = [null, null, null, null], chgPops = [], finDash = [null, null, null, null];   // per slot (a boss fight has three, a 2v2 four)
 const clearTrails = () => { for (const t of trails) t.length = 0; };
 function addFx(o) { if (fx.length < 260) fx.push(o); }
-function spark(x, y, col, kb, dx, dy) {
-  const n = 6 + Math.min(10, (kb * 0.35) | 0);
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * (4 + kb * 0.35);
-    addFx({ k: "line", x, y, vx: Math.cos(a) * sp + (dx || 0) * kb * 0.25, vy: Math.sin(a) * sp + (dy || 0) * kb * 0.25, t: 0, life: 9 + Math.random() * 8, col: i % 2 ? "#ffffff" : col, w: 2 + kb * 0.08 });
-  }
-  addFx({ k: "ring", x, y, t: 0, life: 14, r0: 8, r1: 26 + kb * 2.4, col });
-  if (kb > 14) addFx({ k: "star", x, y, t: 0, life: 7, s: 26 + kb * 1.6 });
-}
 function dust(x, y, n, spread) {
   for (let i = 0; i < n; i++) addFx({ k: "puff", x: x + (Math.random() - 0.5) * spread, y: y - 2, vx: (Math.random() - 0.5) * 3, vy: -Math.random() * 1.4, r: 4 + Math.random() * 5, t: 0, life: 16 + Math.random() * 10 });
 }
@@ -19,6 +10,7 @@ function updateFx(g) {
   if (mode === "match" && g === G) tagStep(g);   // hud.js: when the YOU / CPU markers show
   skinTick(g, tick);
   uvTick(g);   // Ultimates: the super freeze clock, particles and cues of the ulti being played
+  hkTick(g);   // ui/hitkit.js: the impact frames' clock
   { BL.useStage(g); const ma = mapArt(); if (ma.tick) ma.tick(g, mode === "match" && g === G && !FIN.on); }   // the map's ambient particles / sounds (draw-world.js MAP_ART)
   for (const p of g.projs) if (p.style === "fire" && Math.random() < 0.7) ember(p.x - p.vx * 0.6 + (Math.random() - 0.5) * 10, p.y + (Math.random() - 0.5) * 10, -p.vx * 0.12 + (Math.random() - 0.5), -0.6 - Math.random());
   for (const f of g.fighters) {
@@ -49,7 +41,7 @@ function updateFx(g) {
 // Reaper's Grave rise: a dark wisp cloud billows out under him (pale on the Bone skin, embers in it on Ember Wake), a low rush in place of the jump sound
 function graveRise(e, f, live) {
   const lvl = skinLvl(f), col = lvl === 3 ? "#d6d0c2" : "#4a4458";
-  addFx({ k: "ring", x: e.x, y: e.y + 4, t: 0, life: 14, r0: 6, r1: 34, col: lvl === 3 ? "#efeadc" : "#6a6478" });
+  for (let i = 0; i < 3; i++) addFx({ k: "hkg", kit: HK_KIT.reaper, x: e.x + (i - 1) * 14, y: e.y + 2, vx: (i - 1) * 1.2, vy: -frand(1.6, 2.6), s: frand(4.5, 6), rot: -Math.PI / 2 + (i - 1) * 0.5, vr: 0, i, t: 0, life: 18, damp: 0.92 });   // the kit's crescents rise off the cloud (ui/hk-reaper.js)
   for (let i = 0; i < 9; i++) addFx({ k: "puff", x: e.x + frand(-18, 18), y: e.y + frand(0, 10), vx: frand(-1.6, 1.6), vy: frand(0.2, 1.1), r: frand(5, 8), t: 0, life: frand(26, 40), col });
   if (lvl === 2) for (let i = 0; i < 4; i++) ember(e.x + frand(-14, 14), e.y + 6, frand(-1, 1), frand(-0.4, 0.6));
   if (live) Sfx.graveRise();
@@ -68,15 +60,17 @@ function harvestSwing(g, f, live) {
   setTimeout(poll, Math.max(0, (mv.startup - 4) * STEP));
 }
 // Gunslinger's Powder jump: a flash, a tracer and smoke under him, and a shot sound in place of the jump sound
-function powderJump(e, dir, live) {
-  addFx({ k: "ring", x: e.x + dir * 14, y: e.y + 6, t: 0, life: 12, r0: 4, r1: 24, col: "#ffd27a" });
-  addFx({ k: "line", x: e.x + dir * 14, y: e.y + 46, vx: 0, vy: 22, w: 2.5, col: "#fff2c4", t: 0, life: 6 });
+function powderJump(e, dir, live) {   // the kit's (ui/hk-gunslinger.js): its star at the muzzle, an ivory tracer down, brass chips
+  addFx({ k: "hks", kit: HK_KIT.gunslinger, tier: 1, x: e.x + dir * 14, y: e.y + 6, R: 13, dir: Math.PI / 2, seed: 6, t: 0, life: 10 });
+  addFx({ k: "line", x: e.x + dir * 14, y: e.y + 46, vx: 0, vy: 22, w: 2.5, col: "#fffbe8", t: 0, life: 6 });
+  for (let i = 0; i < 3; i++) addFx({ k: "hkg", kit: HK_KIT.gunslinger, x: e.x + dir * 14, y: e.y + 8, vx: frand(-2.4, 2.4), vy: frand(0.5, 2.5), s: frand(3.2, 4.4), rot: frand(0, 6), vr: frand(-0.3, 0.3), i, t: 0, life: 16, damp: 0.92, g: 0.1 });
   for (let i = 0; i < 6; i++) addFx({ k: "puff", x: e.x + dir * 14 + frand(-10, 10), y: e.y + frand(2, 12), vx: frand(-1.2, 1.2), vy: frand(0.1, 0.8), r: frand(4, 6.5), t: 0, life: frand(22, 34), col: "#cfc8d8" });
   if (live) Sfx.shot(false);
 }
 function drawFx(c) {
   for (const e of fx) {
     const a = 1 - e.t / e.life;
+    if (hkDrawFx(c, e, a)) continue;   // ui/hitkit.js: the Carved Ink sparks and shards
     if (drawSkinFx(c, e, a)) continue;
     if (e.k === "uv") { uvDrawFx(c, e, a); continue; }
     if (e.k === "line") { c.strokeStyle = e.col; c.globalAlpha = a; c.lineWidth = e.w; c.lineCap = "round"; c.beginPath(); c.moveTo(e.x, e.y); c.lineTo(e.x - e.vx * 1.8, e.y - e.vy * 1.8); c.stroke(); }
@@ -94,25 +88,18 @@ function drawFx(c) {
   }
   c.globalAlpha = 1;
 }
+// the launch trail behind a fighter sent flying: a tapered ribbon in the kit of whoever hit it, widest at the fighter (ui/hitkit.js hkTrail)
+// (at most 3 body heights long: a KO launch moves the fighter so fast that 16 points would cross half the stage)
 function drawTrails(c, g) {
   g.fighters.forEach((f, i) => {
     const tr = trails[i];
-    if (tr.length < 2) return;
-    c.lineCap = "round"; c.lineJoin = "round";
-    for (let k = 1; k < tr.length; k++) {
-      const a = k / tr.length;
-      c.strokeStyle = rgba(f.lastHitBy ? col(f.lastHitBy.pal) : "#ffffff", 0.35 * a);
-      c.lineWidth = f.s.w * 0.9 * a;
-      c.beginPath(); c.moveTo(tr[k - 1][0], tr[k - 1][1]); c.lineTo(tr[k][0], tr[k][1]); c.stroke();
-    }
-    c.strokeStyle = "rgba(255,255,255,0.55)"; c.lineWidth = 3;
-    c.beginPath(); c.moveTo(tr[0][0], tr[0][1]); for (const p of tr) c.lineTo(p[0], p[1]); c.stroke();
+    if (tr.length >= 2) hkTrail(c, hkCap(tr, f.s.h * 3), f.s.w * 0.26, hkKit(f.lastHitBy || ""));
   });
 }
 function drawScreenFx(c) {
   for (const e of sfx) {
     const a = 1 - e.t / e.life;
-    if (e.k === "flash") { c.fillStyle = `rgba(255,248,235,${a * 0.35})`; c.fillRect(0, 0, L.gw, L.gh); continue; }
+    if (e.k === "flash") { c.fillStyle = hkCalm() ? `rgba(10,8,24,${a * 0.3})` : `rgba(255,248,235,${a * 0.35})`; c.fillRect(0, 0, L.gw, L.gh); continue; }   // Reduce flashes: a dim
     if (e.k === "beam") {
       const [sx0, sy0] = toScreen(e.wx, e.wy);
       const x = clamp(sx0, 0, L.gw), y = clamp(sy0, 0, L.gh);
@@ -194,7 +181,7 @@ function finDashTick(g) {
     const m = f.move;
     if (f.spec.look.costume !== "samurai" || f.state !== "attack" || !m || m.kind !== "dash" || !finishReady(foeSlot(f.slot)) || skinLvl(f) >= 3) { finDash[i] = null; return; }
     if (f.mt === m.startup + 1) finDash[i] = f.x;
-    if (f.mt === m.startup + m.active && finDash[i] !== null) { addFx({ k: "flashline", x1: finDash[i], x2: f.x, y: f.y - f.s.h * 0.45, col: "#ffffff", t: 0, life: 26 }); finDash[i] = null; }
+    if (f.mt === m.startup + m.active && finDash[i] !== null) { hkSamAdd({ sub: "samline", owner: f.slot, x1: finDash[i], x2: f.x, y: f.y - f.s.h * 0.45, life: 26 }); finDash[i] = null; }   // the kit's white line (ui/hk-samurai.js)
   });
 }
 function drawBubbles(c, g, tk, img) {
@@ -254,6 +241,7 @@ function render2D(g, tk) {
   BL.useStage(g);   // the layout (and look) of the map this game is played on
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.save(); c.beginPath(); c.rect(0, 0, L.gw, L.gh); c.clip();
+  if (hkFrame(c, g, tk)) { c.restore(); return; }   // ui/hitkit.js: a launcher's two impact frames take the whole picture
   drawBackground(c, tk);
   finSkyTint(c);
   const ox = L.gw / 2 - cam.x * cam.z + cam.sx, oy = L.gh / 2 - cam.y * cam.z + cam.sy;
@@ -261,13 +249,17 @@ function render2D(g, tk) {
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
   bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
+  hkDim(c, g);   // ui/hitkit.js: the hit-stop look's dimmed backdrop
+  hkUnder(c, g, tk);   // ui/hitkit.js: the floor marks (residue), under the shadows and the fighters
   TEAM_RIM = !!(match && match.duo && g.fighters.length === 4);   // 2v2: team rims on the fighters (draw-world.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
   for (const p of g.projs) drawProj(c, p, tk);
-  const order = [...g.fighters].sort((a, b) => (a.slot === 0 ? 1 : 0) - (b.slot === 0 ? 1 : 0));
+  uvBack(c, g, tk);   // ui/hitkit.js: the Ultimates' payoffs that go behind the fighters (UV_BACK, ui/hk-<fighter>.js)
+  // slot 0 on top, but a fighter attacking goes under the others, so its smears, heavy looks and claw marks pass behind the one it hits
+  const order = [...g.fighters].sort((a, b) => (a.state === "attack" ? 0 : 2) + (a.slot === 0 ? 1 : 0) - (b.state === "attack" ? 0 : 2) - (b.slot === 0 ? 1 : 0));
   const us = uvVeilSlot(g);   // the super freeze: the veil goes over the stage and the other fighter, the user is drawn lit on top of it
   if (us >= 0) {
     for (const f of order) if (f.slot !== us && f.state !== "dead" && f.state !== "gone") drawFighter(c, f, tk);
@@ -304,11 +296,11 @@ function handleEvent(g, e, live) {
   duoEvent(g, e, live);    // 2v2: the Catch's pop (ui/duo.js)
   switch (e.type) {
     case "hit": {
-      if (e.fin && live) finHit(g, e);   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js)
+      const hsp = hkHit(g, e, live);   // ui/hitkit.js: the spark in the attacker's kit by tier, shards, the floor mark, the hit-stop look, the impact frames
+      if (e.fin && live) { finHit(g, e); hkFinFlash(g); }   // finisher-ui: the finishing blow's flash + banner (finHit lives in finisher.js), after the impact frames
       if (e.chg >= BL.TUNE.chgMax) chargedPop(e);   // a full-charge heavy: the "CHARGED" pop
-      spark(e.x, e.y, e.ult ? (e.ps === "cloud" && e.kb < 12 ? "#9bff6a" : UV_GOLD) : e.fire ? "#ff8a3d" : col(e.pal), e.kb, e.dirx, e.diry);   // an ulti's hit: gold-tinged
       if (e.ult) uvHit(g, e, live);
-      const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: bigger ring plus the fighter's own sparks
+      const hAtt = !e.ps && !e.armor ? g.fighters[e.slot] : null;   // a heavy connecting: the fighter's own sparks
       if (hAtt && isHeavyKey(hAtt.mid)) heavyHit(hAtt, e);
       else if (hAtt && hAtt.move && hAtt.move.shot) gunSpark(e, 4);   // a Gunslinger light shot: a small gold spark where it lands
       const rt = e.def !== undefined ? comboRoute(g, e) : null;   // a named combo route (ui/combos.js)
@@ -316,12 +308,13 @@ function handleEvent(g, e, live) {
       if (rt && rt.fresh && live) Sfx.route();
       if (e.combo >= 2 && e.def !== undefined) combos[e.def] = { n: e.combo, dmg: Math.round(e.comboDmg), t: 0, col: col(e.pal), fin: !!e.finisher, pop: rt && rt.fresh ? 1.6 : 1, at: combos[e.def] && combos[e.def].at, route: rt ? routeName(rt) : "" };
       if (e.finisher) cam.shake = Math.max(cam.shake, 7);
-      if (e.fire) for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4);
+      if (e.fire) for (let i = 0; i < 10; i++) ember(hsp.x, hsp.y, (Math.random() - 0.5) * 6, -Math.random() * 4);   // from the contact edge
       if (e.kb > 12) cam.shake = Math.max(cam.shake, Math.min(16, e.kb * 0.45));
       if (live) e.armor ? Sfx.armor() : Sfx.hit(e.kb);
       break;
     }
-    case "lethal": if (live) { finLethal(g, e); roadEvent(g, e); } break;   // the hit that cannot be survived: KO zoom, or the finisher on the last life
+    // the hit that cannot be survived: its spark becomes a launcher's (hkLethal); KO zoom, or the finisher on the last life (its flash after the impact frames)
+    case "lethal": hkLethal(g, e); if (live) { finLethal(g, e); hkFinFlash(g); roadEvent(g, e); } break;
     case "chargeMax": if (live && e.slot === meSlot) finChargeMax(); break;
     case "ko":
       if (e.doomed && FIN.on) { trails[e.slot].length = 0; break; }   // the finisher stages its own exit
@@ -335,6 +328,7 @@ function handleEvent(g, e, live) {
     case "jump": if (live && !e.rec && e.slot === meSlot) hudX.jb = true;   // the Special button grows while this jump lasts (updateHud)
       if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "gunslinger") { powderJump(e, g.fighters[e.slot].facing, live); break; }   // Gunslinger: the recovery is a shot fired down
       if (e.rec && g.fighters[e.slot] && g.fighters[e.slot].spec.look.costume === "reaper") { graveRise(e, g.fighters[e.slot], live); break; }   // Reaper: a dark cloud lifts him
+      if (e.rec && g.fighters[e.slot] && HK_KIT[g.fighters[e.slot].spec.id] && HK_KIT[g.fighters[e.slot].spec.id].rec) { HK_KIT[g.fighters[e.slot].spec.id].rec(e, g.fighters[e.slot], live); break; }   // a kit's recovery flourish (ui/hk-<fighter>.js)
       if (e.ground) dust(e.x, e.y, 5, 18); else addFx({ k: "ring", x: e.x, y: e.y - 4, t: 0, life: 12, r0: 6, r1: 26, col: "#d9d4ea" }); if (live) Sfx.jump(); break;
     case "land": dust(e.x, e.y, 3, 22); break;
     case "sprint":   // the sprint's push-off: a puff of dust kicked back from the feet, a short whoosh
@@ -342,7 +336,10 @@ function handleEvent(g, e, live) {
       if (live) Sfx.dash();
       break;
     case "bounce": dust(e.x, e.y, 6, 30); break;
-    case "pound": addFx({ k: "shock", x: e.x, y: e.y, t: 0, life: 18 }); dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
+    case "pound":   // the ground pound: a floor mark in the fighter's kit and dust
+      if (g.fighters[e.slot]) addFx({ k: "hkm", kit: hkKit(g.fighters[e.slot]), x: e.x, y: e.y, w: 30, t: 0, life: 22, fade: 8 });
+      dust(e.x, e.y, 8, 50); cam.shake = Math.max(cam.shake, 6); break;
+    case "catch": hkCatch(g, e); break;   // 2v2: a small spark where the Catch lands (the CAUGHT! pop is duo.js)
     case "swing": {
       const hSw = g.fighters[e.slot];   // a heavy: camera shake and the low heavy sound arrive when the hit window opens
       // an ulti has its own sound (Sfx.ulti on the "ulti" event), a Gunslinger light is a shot (Sfx.pop on its first active frame, uvShotTick)
@@ -366,20 +363,20 @@ function handleEvent(g, e, live) {
         const sh = g.fighters[e.slot], d = sh ? sh.facing : 1, gold = e.style === "gold";
         if (sh && sh.mid === "ulti") uvDeadEyeShot(g, e, sh, gold);   // Dead Eye: a bigger flash, ring and shell for each of the six
         for (let i = 0; i < (gold ? 6 : 2); i++) addFx({ k: "puff", x: e.x + d * (8 + Math.random() * 10), y: e.y + (Math.random() - 0.5) * 6, vx: d * (0.4 + Math.random()), vy: -0.3 - Math.random() * 0.6, r: 2.5 + Math.random() * (gold ? 4 : 2), t: 0, life: 20 + Math.random() * 12, col: "#d6cfdc" });
-        if (gold) { addFx({ k: "ring", x: e.x + d * 10, y: e.y, t: 0, life: 14, r0: 4, r1: 40, col: "#ffcf3d" }); cam.shake = Math.max(cam.shake, 5); }
+        if (gold) { addFx({ k: "hks", kit: HK_KIT.gunslinger, tier: 2, x: e.x + d * 10, y: e.y, R: 16, dir: d > 0 ? 0 : Math.PI, seed: 4, t: 0, life: 12 }); cam.shake = Math.max(cam.shake, 5); }   // the kit's star (ui/hk-gunslinger.js)
         if (live) Sfx.shot(gold);
       }
       else if (live) Sfx.swing(true);
       break;
     case "burst":
       if (g.fighters[e.slot] && g.fighters[e.slot].spec.boss) break;   // his fireballs land in fire (ui/draw-boss.js), not the Alchemist's green
-      addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: e.r * 1.2, col: "#7dff62" });
-      for (let i = 0; i < 12; i++) addFx({ k: "line", x: e.x, y: e.y, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 7, t: 0, life: 12 + Math.random() * 8, col: i % 2 ? "#d9ffcf" : "#55e05a", w: 2.5 });
+      hkAlcBurstFx(e);   // beads thrown up and out, a puddle where it met the floor (ui/hk-alchemist.js)
       cam.shake = Math.max(cam.shake, 5);
       if (live) Sfx.burst();
       break;
     case "projEnd":
       if (e.style === "star" || e.style === "bigstar") uvStarLand(g, e, live);   // the Wizard's stars: an impact sparkle on the floor
+      else if (e.style === "fire" && g.fighters[e.slot] && HK_KIT[g.fighters[e.slot].spec.id]) hkPhxFireEnd(e, HK_KIT[g.fighters[e.slot].spec.id]);   // Phoenix / Dragon (ui/hk-phoenix.js)
       else if (e.style === "fire") { addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 34, col: "#ff8a3d" }); for (let i = 0; i < 10; i++) ember(e.x, e.y, (Math.random() - 0.5) * 6, -Math.random() * 4); }
       else dust(e.x, e.y, 2, 10);
       break;
@@ -491,8 +488,8 @@ function uvTick(g) {
     const sp = g.projs.find((p) => p.owner === i && p.style === "spear");
     if (UV.spear[i] && !sp && f.state !== "dead" && f.state !== "gone" && Math.abs(UV.spear[i].x - f.x) < 80) {
       const cx = f.x + f.facing * 12, cy = f.y - 34;
-      addFx({ k: "ring", x: cx, y: cy, t: 0, life: 14, r0: 6, r1: 38, col: UV_GOLD });
-      for (let j = 0; j < 6; j++) addFx({ k: "uv", sub: "spark4", x: cx, y: cy, vx: frand(-3, 3), vy: frand(-3, 1), s: frand(4, 7), col: j % 2 ? "#ffffff" : UV_GOLD, t: 0, life: 16, damp: 0.9 });
+      hkSamAdd({ sub: "odnring", owner: i, x: cx, y: cy, r0: 6, r1: 38, life: 14 });   // the catch: the kit's rune ring (ui/hk-odin.js)
+      for (let j = 0; j < 6; j++) { const an = (j / 6) * Math.PI * 2; addFx({ k: "hkg", kit: HK_KIT.odin, x: cx, y: cy, vx: Math.cos(an) * 3.4, vy: Math.sin(an) * 3.4, s: frand(4, 6), rot: an, vr: 0, i: j, t: 0, life: 16, damp: 0.9 }); }
       if (mode === "match" && !FIN.on) Sfx.ultMark();
     }
     UV.spear[i] = sp ? { x: sp.x } : false;
@@ -505,24 +502,25 @@ function uvMark(g, e, live) {
   const f = g.fighters[e.slot];
   if (e.def === undefined) {   // Phoenix: the spot is picked; two rings close in on it
     const fy = f ? uvFloorY(f) : 0;
-    for (let i = 0; i < 2; i++) addFx({ k: "uv", sub: "ringf", x: e.x, y: fy, r0: 120 + i * 40, r1: 78, col: UV_GOLD, t: -i * 6, life: 22 });
+    for (let i = 0; i < 2; i++) addFx({ k: "uv", sub: "ringf", x: e.x, y: fy, r0: 120 + i * 40, r1: 78, col: HK_KIT.phoenix.cols[0], t: -i * 6, life: 22 });
     if (live) Sfx.ultMark();
     return;
   }
   // Samurai: the dash passed the opponent, who is held still until the cut
   addFx({ k: "ring", x: e.x, y: e.y - 34, t: 0, life: 12, r0: 6, r1: 50, col: "#ffffff" });
-  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; addFx({ k: "line", x: e.x, y: e.y - 34, vx: Math.cos(a) * 7, vy: Math.sin(a) * 7, t: 0, life: 10, col: "#ffffff", w: 2.4 }); }
-  sfx.push({ k: "flash", t: 0, life: 6 });
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; addFx({ k: "line", x: e.x, y: e.y - 34, vx: Math.cos(a) * 7, vy: Math.sin(a) * 7, t: 0, life: 10, col: i % 2 ? HK_KIT.samurai.cols[1] : "#ffffff", w: 2.4 }); }
+  if (!hkCalm()) sfx.push({ k: "flash", t: 0, life: 6 });   // (Reduce flashes: no white flash)
 }
-function uvLand(g, e, live) {   // Phoenix's comet hits the floor
-  addFx({ k: "uv", sub: "dome", x: e.x, y: e.y, r1: 200, t: 0, life: 22 });
-  addFx({ k: "uv", sub: "ringf", x: e.x, y: e.y, r0: 20, r1: 240, col: UV_GOLD, t: 0, life: 22 });
-  addFx({ k: "uv", sub: "ringf", x: e.x, y: e.y, r0: 10, r1: 160, col: "#ffffff", t: 0, life: 14 });
+function uvLand(g, e, live) {   // Phoenix's comet hits the floor: the three prongs driven into the mark, the floor crowned in flame (UV_BACK.phoenix, behind the fighters)
+  const K = HK_KIT.phoenix;
+  addFx({ k: "hkphx", owner: e.slot, x: e.x, y: e.y, t: 0, life: 46 });
+  addFx({ k: "uv", sub: "ringf", x: e.x, y: e.y, r0: 20, r1: 240, col: K.cols[1], t: 0, life: 22 });
+  addFx({ k: "uv", sub: "ringf", x: e.x, y: e.y, r0: 10, r1: 160, col: K.cols[0], t: 0, life: 14 });
   dust(e.x, e.y, 12, 90);
   for (let i = 0; i < 22; i++) ember(e.x + frand(-40, 40), e.y - frand(0, 12), frand(-5, 5), -frand(2, 9));
-  for (let i = 0; i < 8; i++) addFx({ k: "uv", sub: "spark4", x: e.x + frand(-30, 30), y: e.y - 10, vx: frand(-5, 5), vy: -frand(2, 8), s: frand(5, 9), col: i % 2 ? "#ffffff" : UV_GOLD, t: 0, life: 22, damp: 0.93, g: 0.25 });
+  hkPhxShards(K, e.x, e.y - 10, 10, -Math.PI / 2, 2.4, 8, 6.5, 32, 0.14);   // feathers thrown up, drifting down
   cam.shake = Math.max(cam.shake, 15);
-  sfx.push({ k: "flash", t: 0, life: 10 });
+  sfx.push({ k: "flash", t: hkCalm() ? 6 : 0, life: 10 });   // Reduce flashes: a dim backdrop, not a flash
   if (live) { camPunch(e.x, e.y - 40, 0.45, 16); Sfx.ultLand(); }
 }
 // an ulti's hit lands: a gold ring and chime on all of them; the Samurai's cut is a big white line and a burst of petals
@@ -531,40 +529,39 @@ function uvHit(g, e, live) {
   if (!pulse) addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 8, r1: 34 + e.kb * 2, col: UV_GOLD });
   if (live && !pulse) Sfx.ultHit();
   if (cos === "samurai" && !e.ps) {
-    const a = -0.5 * (att.facing >= 0 ? 1 : -1);
-    addFx({ k: "uv", sub: "cut", x: e.x, y: e.y, ang: a, len: 230, w: 13, t: 0, life: 26 });
-    addFx({ k: "uv", sub: "cut", x: e.x, y: e.y, ang: a + 1.15, len: 150, w: 6, t: 0, life: 20 });
-    addFx({ k: "uv", sub: "cut", x: e.x, y: e.y, ang: a - 0.45, len: 170, w: 5, t: 0, life: 22 });
-    for (let i = 0; i < 26; i++) addFx({ k: "petal", x: e.x + frand(-16, 16), y: e.y + frand(-20, 14), vx: frand(-6, 6), vy: frand(-5, 0.5), rot: frand(0, 6), vr: frand(-0.3, 0.3), col: i % 3 ? mix(att.pal.accent, "#ffb7c9", 0.65) : "#ffffff", r: frand(2.6, 4.2), t: 0, life: frand(34, 52), g: 0.06, damp: 0.95 });
-    sfx.push({ k: "flash", t: 0, life: 8 });
+    HK_SAM.cut[att.slot] = { g, t: tick, x: e.x, y: e.y };   // the ink screen and the eight cuts at once (hkSamCuts, ui/hk-samurai.js)
+    for (let i = 0; i < 26; i++) addFx({ k: "petal", x: e.x + frand(-16, 16), y: e.y + frand(-20, 14), vx: frand(-6, 6), vy: frand(-5, 0.5), rot: frand(0, 6), vr: frand(-0.3, 0.3), col: HK_SAM_PETAL[i % 3], r: frand(2.6, 4.2), t: 0, life: frand(34, 52), g: 0.06, damp: 0.95 });
     cam.shake = Math.max(cam.shake, 10);
     if (live) { camPunch(e.x, e.y, 0.55, 14); Sfx.cutClick(); }
-  }
+  } else if (cos === "reaper" && !e.ps && att.mt >= 25) HK_RPR.hit[att.slot] = { g, t: tick, x: e.x, y: e.y };   // the sweep: the moon crescent (ui/hk-reaper.js)
   if (e.ps === "spear") for (let i = 0; i < 8; i++) addFx({ k: "uv", sub: "spark4", x: e.x, y: e.y, vx: frand(-5, 5), vy: frand(-5, 3), s: frand(5, 9), col: i % 2 ? "#ffffff" : UV_GOLD, t: 0, life: 18, damp: 0.9 });
   if (e.ps === "bigstar" || e.ps === "star") for (let i = 0; i < 6; i++) addFx({ k: "uv", sub: "spark4", x: e.x, y: e.y, vx: frand(-5, 5), vy: frand(-6, 1), s: frand(4, 8), col: i % 2 ? "#bff3ff" : UV_GOLD, t: 0, life: 18, damp: 0.9 });
 }
 
 // ---- Alchemist: the cloud bursts out of the flask, pulses wet and heavy, and the last pulse is a burst ----
 function uvCloudBurst(g, e, live) {
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 10, r1: 96, col: "#9bff6a" });
-  for (let i = 0; i < 14; i++) { const a = Math.random() * 6.28, sp = frand(1, 4); addFx({ k: "puff", x: e.x, y: e.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.4, r: frand(8, 16), t: 0, life: frand(22, 36), col: i % 2 ? "#7fe05a" : "#b8ff90" }); }
+  const K = HK_KIT.alchemist;   // Bubbling acid (ui/hk-alchemist.js)
+  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 16, r0: 10, r1: 96, col: K.cols[1] });
+  for (let i = 0; i < 10; i++) { const a = Math.random() * 6.28, sp = frand(1, 4); addFx({ k: "puff", x: e.x, y: e.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.4, r: frand(8, 16), t: 0, life: frand(22, 36), col: i % 2 ? K.cols[1] : K.cols[0] }); }
+  hkPhxShards(K, e.x, e.y, 8, -Math.PI / 2, 6.28, 5, 5, 26, 0.05);
   if (live) Sfx.cloud();
 }
 function uvCloudTick(g, p) {
   if (p.t < 30 || p.t % 30 !== 0 || UV.pulse.get(p) === p.t) return;
   UV.pulse.set(p, p.t);
   const last = p.t + 30 > p.life;
-  addFx({ k: "uv", sub: "toxring", x: p.x, y: p.y, r0: p.r * 0.9, r1: p.r * (last ? 1.9 : 1.45), t: 0, life: last ? 22 : 16, last });
-  for (let i = 0; i < (last ? 16 : 7); i++) { const a = Math.random() * 6.28, sp = frand(1.5, last ? 7 : 4); addFx({ k: "puff", x: p.x + Math.cos(a) * p.r * 0.6, y: p.y + Math.sin(a) * p.r * 0.6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.5, r: frand(7, 14), t: 0, life: frand(20, 34), col: i % 2 ? "#7fe05a" : "#d4ffbc" }); }
-  if (last) for (let i = 0; i < 8; i++) addFx({ k: "uv", sub: "spark4", x: p.x, y: p.y, vx: frand(-8, 8), vy: frand(-8, 4), s: frand(5, 9), col: i % 2 ? "#ffffff" : UV_GOLD, t: 0, life: 22, damp: 0.92 });
+  const K = HK_KIT.alchemist;   // the pulse ring and the last pulse's flash: UV_BACK.alchemist (ui/hk-alchemist.js), behind the fighters
+  addFx({ k: "hkalc", owner: p.owner, x: p.x, y: p.y, r0: p.r * 0.9, r1: p.r * (last ? 1.9 : 1.45), t: 0, life: last ? 22 : 16, last });
+  for (let i = 0; i < (last ? 12 : 5); i++) { const a = Math.random() * 6.28, sp = frand(1.5, last ? 7 : 4); addFx({ k: "puff", x: p.x + Math.cos(a) * p.r * 0.6, y: p.y + Math.sin(a) * p.r * 0.6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.5, r: frand(7, 14), t: 0, life: frand(20, 34), col: i % 2 ? K.cols[1] : K.cols[0] }); }
+  if (last) hkPhxShards(K, p.x, p.y, 12, -Math.PI / 2, 6.28, 8, 6, 26, 0.08);
   cam.shake = Math.max(cam.shake, last ? 9 : 2.5);
   if (mode === "match" && !FIN.on) Sfx.cloudPulse(last);
 }
 // ---- Odin: the throw ----
 function uvSpearThrow(g, e, live) {
   const f = g.fighters[e.slot], d = f ? f.facing : 1;
-  addFx({ k: "ring", x: e.x, y: e.y, t: 0, life: 14, r0: 6, r1: 46, col: UV_GOLD });
-  for (let i = 0; i < 7; i++) addFx({ k: "uv", sub: "spark4", x: e.x, y: e.y + frand(-10, 10), vx: d * frand(1, 6), vy: frand(-2, 2), s: frand(4, 7), col: i % 2 ? "#ffffff" : UV_GOLD, t: 0, life: 16, damp: 0.9 });
+  hkSamAdd({ sub: "odnring", owner: e.slot, x: e.x, y: e.y, r0: 8, r1: 46, life: 16 });   // the kit's rune ring and arrows (ui/hk-odin.js)
+  for (let i = 0; i < 6; i++) addFx({ k: "hkg", kit: HK_KIT.odin, x: e.x, y: e.y + frand(-10, 10), vx: d * frand(2, 7), vy: frand(-2, 2), s: frand(4, 6.5), rot: d > 0 ? 0 : Math.PI, vr: 0, i, t: 0, life: 16, damp: 0.9 });
   cam.shake = Math.max(cam.shake, 4);
   if (live) Sfx.spear();
 }
@@ -573,27 +570,29 @@ function uvStarCall(g, e, live) {
   const f = g.fighters[e.slot];
   if (f) {
     const [tx, ty] = staffTip(f, tick);
-    addFx({ k: "ring", x: tx, y: ty, t: 0, life: 12, r0: 4, r1: 40, col: "#bff3ff" });
-    addFx({ k: "uv", sub: "beam", x: tx, y: ty, t: 0, life: 12 });
-    for (let i = 0; i < 5; i++) addFx({ k: "uv", sub: "spark4", x: tx, y: ty, vx: frand(-2, 2), vy: -frand(1, 5), s: frand(3, 6), col: i % 2 ? "#fff6d8" : "#bff3ff", t: 0, life: 18, damp: 0.92 });
+    const K = HK_KIT.wizard;   // Cut crystal (ui/hk-wizard.js; the beam is drawn by UV_BACK.wizard)
+    addFx({ k: "ring", x: tx, y: ty, t: 0, life: 12, r0: 4, r1: 40, col: K.cols[1] });
+    addFx({ k: "hkwiz", sub: "beam", owner: e.slot, x: tx, y: ty, t: 0, life: 12 });
+    hkPhxShards(K, tx, ty, 5, -Math.PI / 2, 1.8, 4, 4.4, 18, 0);
   }
   if (live) Sfx.starCall();
 }
-function uvStarLand(g, e, live) {
-  const big = e.style === "bigstar";
-  addFx({ k: "uv", sub: "ringf", x: e.x, y: e.y, r0: 8, r1: big ? 96 : 64, col: big ? UV_GOLD : "#bff3ff", t: 0, life: big ? 20 : 15 });
-  addFx({ k: "ring", x: e.x, y: e.y - 6, t: 0, life: 12, r0: 4, r1: big ? 50 : 34, col: "#ffffff" });
-  for (let i = 0; i < (big ? 12 : 7); i++) { const a = -Math.PI / 2 + frand(-1.3, 1.3), sp = frand(3, big ? 9 : 6); addFx({ k: "uv", sub: "spark4", x: e.x, y: e.y - 4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: frand(4, big ? 10 : 7), col: i % 3 ? (big ? UV_GOLD : "#bff3ff") : "#ffffff", t: 0, life: 20, damp: 0.92, g: 0.22 }); }
+function uvStarLand(g, e, live) {   // each star leaves a crown of crystal points where it lands, the last one 1.7x the size (UV_BACK.wizard, ui/hk-wizard.js)
+  const big = e.style === "bigstar", K = HK_KIT.wizard;
+  addFx({ k: "hkwiz", owner: e.slot, big, x: e.x, y: e.y, t: 0, life: big ? 32 : 24 });
+  addFx({ k: "uv", sub: "ringf", x: e.x, y: e.y, r0: 8, r1: big ? 96 : 64, col: big ? K.cols[1] : K.cols[2], t: 0, life: big ? 20 : 15 });
+  addFx({ k: "ring", x: e.x, y: e.y - 6, t: 0, life: 12, r0: 4, r1: big ? 50 : 34, col: K.cols[0] });
+  hkPhxShards(K, e.x, e.y - 4, big ? 12 : 7, -Math.PI / 2, 2.6, big ? 8 : 5.5, big ? 7 : 5, 22, 0.22);
   dust(e.x, e.y, big ? 6 : 3, 30);
   cam.shake = Math.max(cam.shake, big ? 8 : 3);
   if (live) Sfx.starHit(big);
 }
 // ---- Gunslinger: each of the six shots gets a flash ring, a star at the muzzle, a shell and smoke; the sixth is bigger ----
 function uvDeadEyeShot(g, e, f, gold) {
-  const d = f.facing, mx = e.x + d * 14;
-  addFx({ k: "ring", x: mx, y: e.y, t: 0, life: gold ? 18 : 10, r0: 4, r1: gold ? 70 : 34, col: gold ? "#ffcf3d" : "#ff9a4d" });
-  addFx({ k: "star", x: mx + d * 6, y: e.y, t: 0, life: gold ? 9 : 6, s: gold ? 54 : 30 });
-  for (let i = 0; i < (gold ? 10 : 4); i++) addFx({ k: "line", x: mx, y: e.y, vx: d * frand(4, 12), vy: frand(-3, 3), t: 0, life: 9, col: i % 2 ? "#fff6d8" : "#ff9a4d", w: 2 });
+  const d = f.facing, mx = e.x + d * 14;   // the kit's muzzle star and ivory dashes (ui/hk-gunslinger.js); the sixth starts the gold line
+  addFx({ k: "hks", kit: HK_KIT.gunslinger, tier: gold ? 3 : 1, x: mx + d * 4, y: e.y, R: gold ? 22 : 12, dir: d > 0 ? 0 : Math.PI, seed: 9, t: 0, life: gold ? 14 : 8 });
+  for (let i = 0; i < (gold ? 8 : 3); i++) addFx({ k: "line", x: mx, y: e.y, vx: d * frand(4, 12), vy: frand(-3, 3), t: 0, life: 9, col: i % 2 ? "#fffbe8" : "#f6c040", w: 2 });
+  if (gold) { const slug = g.projs.filter((p) => p.owner === e.slot && p.style === "gold").pop() || null; HK_GUN.gold[e.slot] = { g, t: tick, x: mx, y: e.y, d, p: slug, xEnd: mx }; }
   gunShell(f, 10, -34);
   cam.shake = Math.max(cam.shake, gold ? 8 : 2.6);
 }
@@ -605,7 +604,7 @@ function uvScreen(c, g) {
   if (UV.g !== g || UV.t > UV_BANNER) return;
   const t = UV.t, f = g.fighters[UV.slot];
   if (!f) return;
-  const calm = reducedMotion(), [sx, sy] = toScreen(f.x, f.y - f.s.h * 0.5 * uvScale(f)), R = Math.max(L.gw, L.gh);
+  const calm = hkCalm(), [sx, sy] = toScreen(f.x, f.y - f.s.h * 0.5 * uvScale(f)), R = Math.max(L.gw, L.gh);   // Reduce flashes (or the system's reduced motion)
   c.save();
   if (t < 16) {   // the flash: white-gold, brightest at the user
     const a = Math.pow(1 - t / 16, 1.5) * (calm ? 0.35 : 1);
@@ -677,33 +676,7 @@ function uvDrawFx(c, e, a) {
       c.globalAlpha = a * 0.16; c.fillStyle = e.col; c.fill();
       break;
     }
-    case "dome": {   // Phoenix's landing: a dome of white-gold fire that rises and thins
-      const r = e.r1 * (0.4 + 0.6 * easeOut2(Math.min(1, q * 1.8))), fa = Math.min(1, a * 1.6);
-      c.save(); c.translate(e.x, e.y); c.scale(1, 0.7);
-      const gr = c.createRadialGradient(0, 0, r * 0.05, 0, 0, r);
-      gr.addColorStop(0, `rgba(255,252,225,${fa})`); gr.addColorStop(0.3, `rgba(255,214,100,${0.95 * fa})`); gr.addColorStop(0.65, `rgba(255,110,34,${0.7 * fa})`); gr.addColorStop(1, "rgba(255,60,20,0)");
-      c.fillStyle = gr; c.beginPath(); c.arc(0, 0, r, Math.PI, Math.PI * 2); c.closePath(); c.fill();
-      c.globalCompositeOperation = "lighter"; glowDot(c, 0, -r * 0.1, r * 0.55, 0.8 * fa, "#fff3c0");
-      c.restore();
-      break;
-    }
     case "spark4": c.globalAlpha = Math.min(1, a * 1.5); star4(c, e.x, e.y, e.s * (0.4 + 0.6 * a), e.col); break;
-    case "cut": {   // a long white lens, thin at both ends, with a gold edge: it flashes in, holds, fades
-      const grow = Math.min(1, (e.t + 1) / 3), len = e.len * easeOut2(grow), w = e.w * (1 - q * 0.55);
-      c.save(); c.translate(e.x, e.y); c.rotate(e.ang);
-      const lens = (ln, wd) => { c.beginPath(); c.moveTo(-ln, 0); c.quadraticCurveTo(0, -wd, ln, 0); c.quadraticCurveTo(0, wd, -ln, 0); c.closePath(); c.fill(); };
-      c.globalAlpha = Math.min(1, a * 1.4) * 0.8; c.fillStyle = UV_GOLD; lens(len, w * 1.7);
-      c.globalAlpha = Math.min(1, a * 1.6); c.fillStyle = "#ffffff"; lens(len * 0.96, w);
-      c.restore();
-      break;
-    }
-    case "toxring": {   // the cloud pulses: a ring of toxic light running out from its edge (the last one is gold-white and big)
-      const r = lerp(e.r0, e.r1, easeOut2(q));
-      c.globalAlpha = a * 0.9; c.strokeStyle = e.last ? "#fffbd0" : "#c9ff9e"; c.lineWidth = (e.last ? 9 : 5) * a + 1.5;
-      c.beginPath(); c.arc(e.x, e.y, r, 0, Math.PI * 2); c.stroke();
-      c.globalAlpha = a * 0.28; c.strokeStyle = e.last ? UV_GOLD : "#6fe34a"; c.lineWidth = (e.last ? 22 : 12) * a; c.stroke();
-      break;
-    }
     case "beam": {   // the Wizard's call: a pale column to the sky
       const gr = c.createLinearGradient(0, e.y, 0, e.y - 520);
       gr.addColorStop(0, `rgba(255,246,216,${0.8 * a})`); gr.addColorStop(1, "rgba(190,243,255,0)");

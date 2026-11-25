@@ -82,7 +82,7 @@ cvFigReg("samurai", {
     K.leg(false); K.leg(true);
     K.rim();
     K.stack(["body", "skin", "face", "plates", out ? null : "hilt", "top"]);
-    K.arm(true, out ? cvSamKatana : null);
+    K.arm(true, out && !P.hkHide ? cvSamKatana : null);   // P.hkHide: the smear frame of the side heavy (ui/hk-samurai.js)
   },
 });
 // the katana in the fist (draw-fighters.js katana(): its pose and its sheath logic; the colours come from this skin)

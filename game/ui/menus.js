@@ -119,6 +119,9 @@ function renderSettings() {
   else chipRow("setFull", [["how", _t("How")]], null, () => modal("a2hs", true));
   $("setScreenRow").hidden = !L.canRotate;
   chipRow("setScreen", [["cw", _t("Sideways")], ["ccw", _t("Flipped")], ["up", _t("Upright")]], P.screen || "cw", (v) => { P.screen = v; saveProfile(); releaseTouch(); resize(); });
+  // Reduce flashes (ui/hitkit.js hkCalm): no impact frames, a dim in place of each screen flash. P.rf 1 / 0 (this device only; unset: the
+  // system's reduced-motion setting, which the chips show until one is picked)
+  chipRow("setRf", [[1, _t("On")], [0, _t("Off")]], hkCalm() ? 1 : 0, (v) => { P.rf = v; saveProfile(); });
   langRow();   // ui/lang.js: Language (on the start page only: a change reloads)
   cntSettings();   // ui/counter.js: Play counts On / Off
   stkSettings();   // ui/stakes.js: Chip stakes On / Off

@@ -79,11 +79,26 @@
      K.arm(front[, held])   the arm to K.hF / K.hB with its hand; held(c, K) is drawn between the arm and the hand (a sword hilt in the fist)
      K.leg(front)    the leg to P.fF / P.fB with its boot
      K.face()        the live face (P.expr, hitstun eyes, P.mouth, blinks); K.stack's "face" token calls it when it must
-     K.rim()         the 2v2 team rim (draw it before the body)
+     K.rim()         the 2v2 team rim is the rim pass (TEAM RIM below); K.rim() draws the old cheap body rim only where that pass is off
+                     (PERF.q >= 2: a phone the frame-time watchdog finds slow)
      K.skinBody(), K.skinTop()   the skin passes ("skin" / "top" in K.stack call them)
      K.spring(name, target, k)   a lagging value for secondary motion (capes, tails): per fighter, eased once per tick
    The back arm and back leg are one tone (their shadow): they read as further away. Live parts use cvLimb / cvMitt / cvCapAdd / cvSegAdd /
    cvArcAdd: build a path, fill it; ink under, the shadow, the lit part inset towards the light (CV_LDX, CV_LDY).
+
+   TEAM RIM (a 2v2 match: TEAM_RIM, draw-world.js; never a stand-in drawn `at`, a manga page, the select screen or a sheet). Each fighter
+   wears a band CV_RIM_PX screen pixels wide in its team's colour (TEAM_COL, ui/duo.js) round its whole silhouette, outside it only.
+   cvFigure runs the figure's draw(K) twice: first the rim pass (cvRimPass; K.rimPass set: { tc, R, L, p }, R the band in units, L the
+   zoom level, p the rim path), then the figure. The rim pass gathers every ink outline (and the opaque bits of a carved part that reach
+   past its ink, a stem: op.out) grown by R into one path in device pixels, each point's y on a whole pixel (CV_RimPath: the raster's fast
+   case), and fills it once in the team colour before any part of the figure: the figure then covers all of it but the band. Carved
+   parts (K.stack's runs, K.sprite, K.draw's parts, a cvPath shape) give their outline, the union of their polygons traced once
+   (cvRimUnion) and grown once per zoom level (cvRimGrow): no sprite, nothing per frame but placing it; arms, legs and mittens give their
+   ink grown (cvLimb, cvMitt); the figure's own live parts draw through CV_RimCtx, a context that records an ink fill's path (CV_INK or
+   OUT) and grows it (cvRimGrowLive), strokes an ink stroke 2R wider at once, and drops every other fill, stroke, image and text. The
+   face, the skin passes and the sprites are skipped (a figure's sprites and pose counts are the figure's pass alone). A figure that is
+   see-through (a dodge, the intangible blink) draws the pass at its own alpha squared. Cost (tests/pwcarve.py --rim): about 0.2 ms a
+   figure on the test machine's software raster, mostly the one fill.
 
    MOTION (cvMotion, from pose()): P.sq > 0 squashes (the coil before a hit: <= 8 % in the last 2 startup frames of a light, the last 5 of a
    heavy, held while a heavy is charged; landing), P.sq < 0 stretches (<= 12 % on the first active frame, a jump's take-off). The figure is
@@ -313,10 +328,11 @@ function cvSimplify(P, tol) {
   dp(0, far); dp(far, n);
   return P.filter((_, i) => keep[i]);
 }
-// polygons to one Path2D (for a figure's own cached live shapes)
+// polygons to one Path2D (for a figure's own cached live shapes; it keeps them, cvP, for the 2v2 team rim)
 function cvPath(polys) {
   const p = new Path2D();
-  for (const Q of polys) { const P = cvSimplify(Q, 0.12); p.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) p.lineTo(P[i][0], P[i][1]); p.closePath(); }
+  p.cvP = polys.map((Q) => cvSimplify(Q, 0.12));
+  for (const P of p.cvP) { p.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) p.lineTo(P[i][0], P[i][1]); p.closePath(); }
   return p;
 }
 function cvBootPts(x, y, s) { return cvSm([[x - 5 * s, y, 1], [x - 5.5 * s, y - 8 * s], [x + 2 * s, y - 9 * s], [x + 4 * s, y - 5 * s], [x + 10 * s, y - 5 * s], [x + 11 * s, y, 1]]); }
@@ -372,10 +388,15 @@ CV_Carve.prototype = {
     if (ink) this.cel(P, k, { lw: ink, sh: 0 }); else this.fill(P, k);
   },
   done() {
+    // out: an opaque fill (not a shading tone) with a point outside every ink polygon of the part, a stem drawn as a plain line; rp: the
+    // polygons the 2v2 team rim traces (cvRimShape), the opaque ink's and these
+    const ink = [];
+    for (const o of this.ops) if (o.k === "ink") ink.push(...o.ps);
     return this.ops.map((o) => {
       const bb = [1e9, 1e9, -1e9, -1e9];
       for (const P of o.ps) for (const q of P) { bb[0] = Math.min(bb[0], q[0]); bb[1] = Math.min(bb[1], q[1]); bb[2] = Math.max(bb[2], q[0]); bb[3] = Math.max(bb[3], q[1]); }
-      return { p: cvPath(o.ps), k: o.k, t: o.t, a: o.a, bb };
+      const out = o.k !== "ink" && o.a === 1 && !o.t && o.ps.some((P) => P.some((q) => !ink.some((I) => cvInside(I, q[0], q[1]))));
+      return { p: cvPath(o.ps), k: o.k, t: o.t, a: o.a, bb, out, rp: o.a === 1 && (o.k === "ink" || out) ? o.ps : null };
     });
   },
 };
@@ -386,6 +407,7 @@ function cvOpsOf(fig) {
 }
 // one carved part, in the current transform
 function cvOps(c, ops, C) {
+  if (c.cvRim) { cvRimDraw(c.c, cvRimOfOps(ops), c.cvRim); return; }   // the rim pass (CV_RimCtx): the part's rim
   const ga = c.globalAlpha;
   for (let i = 0; i < ops.length; i++) {
     const o = ops[i];
@@ -553,6 +575,13 @@ function cvLimbAdd(c, a, e, b, r0, rm, r1, ox, oy, capA, capB) {
 // shadow tone, the lit part (the limb moved towards the light, cut to itself); noInk: the last two only (a colour laid over a limb)
 function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB, noInk) {
   const rm = (r0 + r1) / 2, w = (lw || 2.2) / 2;
+  if (c.cvRim) {   // the rim pass (CV_RimCtx): the ink grown by the band, one fill (a colour laid over a limb has no ink: nothing)
+    if (noInk) return;
+    const p = c.cvRim.p.at(c.c), R = c.cvRim.R;
+    cvLimbAdd(p, a, e, b, r0 + w + R, rm + w + R, r1 + w + R, 0, 0, capA, capB);
+    if (inkMore) inkMore(p);
+    return;
+  }
   if (!noInk) {
     c.beginPath(); cvLimbAdd(c, a, e, b, r0 + w, rm + w, r1 + w, 0, 0, capA, capB);
     if (inkMore) inkMore(c);
@@ -567,10 +596,248 @@ function cvLimb(c, a, e, b, r0, r1, col, shade, lw, inkMore, capA, capB, noInk) 
 function cvMitt(c, x, y, r, col, shade, thumb, k, ink) {
   k = k || 1;
   const w = 1.1, s = CV_LD * k;
+  if (c.cvRim) {   // the rim pass: its ink grown by the band (an ink that went with the arm's went with the arm's rim)
+    if (ink) cvCircAdd(c.cvRim.p.at(c.c), x, y, r + w + c.cvRim.R);
+    return;
+  }
   if (ink) { c.beginPath(); cvCircAdd(c, x, y, r + w); c.fillStyle = CV_INK; c.fill(); cvMgInk(c); }
   c.beginPath(); cvCircAdd(c, x, y, r - w); c.fillStyle = shade; c.fill();
   if (shade !== col) { const d = (s - w) / 2 / CV_LD; c.beginPath(); cvCircAdd(c, x + CV_LDX * d, y + CV_LDY * d, Math.max(0.5, r - (s + w) / 2)); c.fillStyle = col; c.fill(); }
   if (thumb !== false) { c.beginPath(); cvArcAdd(c, x + r * 0.15, y - r * 0.1, r * 0.55, -0.3, 1.5, 1.3); c.fillStyle = CV_INK; c.fill(); }
+}
+
+/* ---------- the 2v2 team rim (TEAM RIM in the header) ---------- */
+const CV_RIM_PX = 2;   // the band past the ink, in screen pixels (as the old body rim: teamRimBody, draw-world.js)
+let cvRimOff = false;   // tests/pwcarve.py: a 2v2 drawn without it (the cost of the rim)
+// A fill costs by its edges and by every pixel of every piece that overlaps another, so a carved part's rim is its outline: the union of its
+// polygons, drawn on a scratch canvas CV_RIM_UPX pixels to the unit and traced (marching squares, each point placed by the coverage),
+// simplified. The outer contours wind as cvPos, the holes the other way (so cvOffset grows the one and shrinks the other)
+const CV_RIM_UPX = 3;
+let cvRimCv = null;
+function cvRimUnion(polys) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const P of polys) for (const q of P) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+  if (!(x1 > x0 && y1 > y0)) return [];
+  const s = CV_RIM_UPX, W = Math.ceil((x1 - x0) * s) + 4, H = Math.ceil((y1 - y0) * s) + 4, ox = 2 - x0 * s, oy = 2 - y0 * s;
+  const cv = cvRimCv || (cvRimCv = document.createElement("canvas"));
+  if (cv.width < W || cv.height < H) { cv.width = Math.max(cv.width, W); cv.height = Math.max(cv.height, H); }
+  const x = cv.getContext("2d", { willReadFrequently: true });
+  x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H); x.setTransform(s, 0, 0, s, ox, oy); x.beginPath();
+  for (const P0 of polys) { const P = cvPos(P0); x.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) x.lineTo(P[i][0], P[i][1]); x.closePath(); }
+  x.fillStyle = "#000"; x.fill();
+  const d = x.getImageData(0, 0, W, H).data, v = (i, j) => d[(j * W + i) * 4 + 3] / 255;
+  // a crossing on the edge from sample (i, j) along x (k 0) or y (k 1): id 2 (j W + i) + k, its point in units
+  const pos = new Map(), nxt = new Map();
+  const pt = (id) => {
+    let q = pos.get(id);
+    if (!q) {
+      const k = id & 1, ij = id >> 1, i = ij % W, j = (ij - i) / W, a = v(i, j), b = k ? v(i, j + 1) : v(i + 1, j), t = (0.5 - a) / (b - a);
+      pos.set(id, (q = [(i + 0.5 + (k ? 0 : t) - ox) / s, (j + 0.5 + (k ? t : 0) - oy) / s]));
+    }
+    return q;
+  };
+  const F = [false, false, false, false], E = [0, 0, 0, 0];
+  for (let j = 0; j < H - 1; j++) for (let i = 0; i < W - 1; i++) {
+    const a = v(i, j), b = v(i + 1, j), c = v(i + 1, j + 1), e = v(i, j + 1);
+    F[0] = a >= 0.5; F[1] = b >= 0.5; F[2] = c >= 0.5; F[3] = e >= 0.5;   // the corners clockwise: top left, top right, bottom right, bottom left
+    if (F[0] === F[1] && F[1] === F[2] && F[2] === F[3]) continue;
+    E[0] = 2 * (j * W + i); E[1] = 2 * (j * W + i + 1) + 1; E[2] = 2 * ((j + 1) * W + i); E[3] = 2 * (j * W + i) + 1;   // edge k: corner k to k + 1
+    // a run of inside corners k .. m is cut off from edge k - 1 to edge m (so every contour keeps the inside on one side)
+    if (F[0] !== F[1] && F[1] !== F[2] && F[2] !== F[3]) {   // a saddle: the middle decides which corners are joined
+      const mid = (a + b + c + e) / 4 >= 0.5;
+      for (let k = 0; k < 4; k++) if (F[k] !== mid) { if (F[k]) nxt.set(E[(k + 3) % 4], E[k]); else nxt.set(E[k], E[(k + 3) % 4]); }
+      continue;
+    }
+    let k = 0;
+    while (!(F[k] && !F[(k + 3) % 4])) k++;
+    let m = k;
+    while (F[(m + 1) % 4]) m = (m + 1) % 4;
+    nxt.set(E[(k + 3) % 4], E[m]);
+  }
+  const out = [];
+  for (const id0 of nxt.keys()) {
+    if (nxt.get(id0) < 0) continue;
+    const P = [];
+    let id = id0;
+    for (;;) { const n = nxt.get(id); if (n === undefined || n < 0) break; P.push(pt(id)); nxt.set(id, -1); id = n; }
+    if (P.length > 2 && Math.abs(cvArea(P)) > 0.3) out.push(cvSimplify(P, 0.12));
+  }
+  let big = null;
+  for (const P of out) if (!big || Math.abs(cvArea(P)) > Math.abs(cvArea(big))) big = P;
+  return big && cvArea(big) < 0 ? out.map((P) => P.reverse()) : out;
+}
+// the outline grown by R (round outside corners; a hole the band closes left out): its contours as flat lists x, y, x, y ...
+function cvRimGrow(cont, R) {
+  const out = [];
+  for (const P of cont) {
+    const hole = cvArea(P) < 0, Q = cvSimplify(cvOffset(P, R), Math.max(0.3, R * 0.2));   // (R / 5: a fifth of the band, half a screen pixel)
+    if (Q.length < 3 || (hole && !(cvArea(Q) < -R * R))) continue;
+    const F = new Float64Array(Q.length * 2);
+    for (let i = 0; i < Q.length; i++) { F[2 * i] = Q[i][0]; F[2 * i + 1] = Q[i][1]; }
+    out.push(F);
+  }
+  return out;
+}
+// a live ink path grown by R into the rim path p (CV_RimPath), cheaply as it is made every frame: a point a corner (two at a sharp outside
+// one), no loop cut out
+function cvRimGrowLive(p, polys, R) {
+  for (const P0 of polys) {
+    const D = P0.filter((q, i) => { const r = P0[(i + 1) % P0.length]; return Math.abs(q[0] - r[0]) + Math.abs(q[1] - r[1]) > 0.05; });   // (no repeated point)
+    const n = D.length;
+    if (n < 3) continue;
+    const P = cvPos(D);
+    for (let i = 0; i < n; i++) {
+      const a = P[(i + n - 1) % n], q = P[i], b = P[(i + 1) % n];
+      const l0 = Math.hypot(q[0] - a[0], q[1] - a[1]), l1 = Math.hypot(b[0] - q[0], b[1] - q[1]);
+      const n0x = (q[1] - a[1]) / l0, n0y = -(q[0] - a[0]) / l0, n1x = (b[1] - q[1]) / l1, n1y = -(b[0] - q[0]) / l1;
+      if (n0x * n1y - n0y * n1x > 0 && n0x * n1x + n0y * n1y < 0.5) {   // a sharp outside corner: cut off
+        if (i) p.lineTo(q[0] + n0x * R, q[1] + n0y * R); else p.moveTo(q[0] + n0x * R, q[1] + n0y * R);
+        p.lineTo(q[0] + n1x * R, q[1] + n1y * R);
+        continue;
+      }
+      let mx = n0x + n1x, my = n0y + n1y;
+      const ml = Math.hypot(mx, my) || 1, m = (R * Math.min(4, 1 / Math.max(0.25, (mx * n0x + my * n0y) / ml))) / ml;
+      if (i) p.lineTo(q[0] + mx * m, q[1] + my * m); else p.moveTo(q[0] + mx * m, q[1] + my * m);
+    }
+    p.closePath();
+  }
+}
+// the rim of carved parts (a list of their ops): the outline of their ink and of the fills that reach past it (op.rp); its grown paths are
+// made per zoom level (g), lazily
+function cvRimShape(opsList) {
+  const all = [];
+  for (const ops of opsList) for (const o of ops) if (o.rp) for (const P of o.rp) if (P.length > 2) all.push(P);
+  return { cont: cvRimUnion(all), g: new Map() };
+}
+const cvRimOfOps = (ops) => ops.rimS || (ops.rimS = cvRimShape([ops]));
+function cvRimOfRun(fig, list) {
+  const m = fig.rimRuns || (fig.rimRuns = new Map()), lk = list.join(",");
+  let S = m.get(lk);
+  if (!S) m.set(lk, (S = cvRimShape(list.map((n) => cvPartOps(fig, n)))));
+  return S;
+}
+// The rim pass gathers the whole rim in one path in device pixels (rim.p), filled once at its end: one blend (a see-through figure shows no
+// darker overlaps), one raster job. Each piece is placed through the transform it is drawn in, and every point's y is rounded to a whole
+// pixel: the raster fills a path whose edges start and end on pixel rows at about half the cost (x keeps its fraction, the band its shape)
+function CV_RimPath() { this.p = new Path2D(); this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0; }
+CV_RimPath.prototype = {
+  at(c) { const m = c.getTransform(); this.a = m.a; this.b = m.b; this.c = m.c; this.d = m.d; this.e = m.e; this.f = m.f; return this; },
+  moveTo(x, y) { this.p.moveTo(this.a * x + this.c * y + this.e, Math.round(this.b * x + this.d * y + this.f)); },
+  lineTo(x, y) { this.p.lineTo(this.a * x + this.c * y + this.e, Math.round(this.b * x + this.d * y + this.f)); },
+  closePath() { this.p.closePath(); },
+  arc(x, y, r, a0, a1, ccw) {   // as points (a mitten, a limb's round end): 12 to the turn
+    let d = a1 - a0;
+    if (!ccw && d >= CV_TAU) d = CV_TAU; else if (ccw && -d >= CV_TAU) d = -CV_TAU;
+    else { d %= CV_TAU; if (!ccw && d < 0) d += CV_TAU; if (ccw && d > 0) d -= CV_TAU; }
+    const n = Math.max(2, Math.ceil((Math.abs(d) * 12) / CV_TAU));
+    for (let i = 0; i <= n; i++) { const t = a0 + (d * i) / n; this.lineTo(x + Math.cos(t) * r, y + Math.sin(t) * r); }
+  },
+  // grown contours (cvRimGrow)
+  add(G) { for (const F of G) { this.moveTo(F[0], F[1]); for (let i = 2; i < F.length; i += 2) this.lineTo(F[i], F[i + 1]); this.closePath(); } },
+};
+// a rim shape, grown for the zoom level rim.L (a quarter octave; one either side will do, so a camera that eases in and out makes few), added
+// in the current transform of c
+function cvRimDraw(c, S, rim) {
+  const L = rim.L;
+  let G = S.g.get(L) || S.g.get(L - 1) || S.g.get(L + 1);
+  if (!G) {
+    G = cvRimGrow(S.cont, (CV_RIM_PX * DPR) / Math.pow(2, L / 4));
+    if (S.g.size > 5) S.g.delete(S.g.keys().next().value);
+    S.g.set(L, G);
+  }
+  rim.p.at(c).add(G);
+}
+const cvIsInk = (s) => s === CV_INK || s === OUT;
+// The rim pass's context: the figure's own live parts draw through it unchanged. An ink fill becomes the rim: the path, which it records as
+// it is built (lines; arcs, ellipses and curves as points), grown by R and filled in the team colour (a cvPath shape: its outline, as a carved
+// part's; a path it could not follow, another Path2D or one built across a change of transform, is filled and stroked 2R wide); an ink stroke is a team-colour stroke 2R wider; every
+// other fill and stroke, an image or a text is dropped. The colours and the line width it is given are kept here (with save / restore), the
+// rest goes to the canvas
+function CV_RimCtx(c, rim) {
+  this.c = c; this.cvRim = rim; this._fs = c.fillStyle; this._ss = c.strokeStyle; this._lw = c.lineWidth; this._st = [];
+  this._sp = []; this._cur = null; this._ok = true;
+}
+const CV_ARC_STEP = 0.35;   // radians between the points of a recorded arc
+CV_RimCtx.prototype = {
+  get fillStyle() { return this._fs; }, set fillStyle(v) { this._fs = v; },
+  get strokeStyle() { return this._ss; }, set strokeStyle(v) { this._ss = v; },
+  get lineWidth() { return this._lw; }, set lineWidth(v) { if (v > 0 && v < Infinity) this._lw = v; },
+  save() { this._st.push(this._fs, this._ss, this._lw); this.c.save(); },
+  restore() { if (this._st.length) { this._lw = this._st.pop(); this._ss = this._st.pop(); this._fs = this._st.pop(); } this._moved(); this.c.restore(); },
+  // the path, recorded
+  _pt(x, y) { if (!this._cur) this._sp.push((this._cur = [])); this._cur.push([x, y]); },
+  _moved() { if (this._sp.length) this._ok = false; },   // a change of transform under a path being built: it cannot be grown
+  beginPath() { this._sp = []; this._cur = null; this._ok = true; this.c.beginPath(); },
+  moveTo(x, y) { this._cur = null; this._pt(x, y); this.c.moveTo(x, y); },
+  lineTo(x, y) { this._pt(x, y); this.c.lineTo(x, y); },
+  closePath() { this._cur = null; this.c.closePath(); },
+  rect(x, y, w, h) { this._cur = null; this._pt(x, y); this._pt(x + w, y); this._pt(x + w, y + h); this._pt(x, y + h); this._cur = null; this.c.rect(x, y, w, h); },
+  _arc(x, y, rx, ry, rot, a0, a1, ccw) {
+    let d = a1 - a0;
+    if (!ccw && d >= CV_TAU) d = CV_TAU; else if (ccw && -d >= CV_TAU) d = -CV_TAU;
+    else { d %= CV_TAU; if (!ccw && d < 0) d += CV_TAU; if (ccw && d > 0) d -= CV_TAU; }
+    const n = Math.max(2, Math.ceil(Math.abs(d) / CV_ARC_STEP)), cs = Math.cos(rot), sn = Math.sin(rot);
+    for (let i = 0; i <= n; i++) { const t = a0 + (d * i) / n, u = Math.cos(t) * rx, v = Math.sin(t) * ry; this._pt(x + u * cs - v * sn, y + u * sn + v * cs); }
+  },
+  arc(x, y, r, a0, a1, ccw) { this._arc(x, y, r, r, 0, a0, a1, !!ccw); this.c.arc(x, y, r, a0, a1, !!ccw); },
+  ellipse(x, y, rx, ry, rot, a0, a1, ccw) { this._arc(x, y, rx, ry, rot, a0, a1, !!ccw); this.c.ellipse(x, y, rx, ry, rot, a0, a1, !!ccw); },
+  quadraticCurveTo(qx, qy, x, y) {
+    const p = this._cur && this._cur[this._cur.length - 1];
+    if (p) for (let i = 1; i <= 6; i++) { const t = i / 6, u = 1 - t; this._pt(u * u * p[0] + 2 * u * t * qx + t * t * x, u * u * p[1] + 2 * u * t * qy + t * t * y); }
+    else this._pt(x, y);
+    this.c.quadraticCurveTo(qx, qy, x, y);
+  },
+  bezierCurveTo(ax, ay, bx, by, x, y) {
+    const p = this._cur && this._cur[this._cur.length - 1];
+    if (p) for (let i = 1; i <= 8; i++) { const t = i / 8, u = 1 - t; this._pt(u * u * u * p[0] + 3 * u * u * t * ax + 3 * u * t * t * bx + t * t * t * x, u * u * u * p[1] + 3 * u * u * t * ay + 3 * u * t * t * by + t * t * t * y); }
+    else this._pt(x, y);
+    this.c.bezierCurveTo(ax, ay, bx, by, x, y);
+  },
+  arcTo() { this._ok = false; this.c.arcTo.apply(this.c, arguments); },
+  roundRect() { this._ok = false; this.c.roundRect.apply(this.c, arguments); },
+  translate(x, y) { this._moved(); this.c.translate(x, y); },
+  rotate(a) { this._moved(); this.c.rotate(a); },
+  scale(x, y) { this._moved(); this.c.scale(x, y); },
+  transform(a, b, c, d, e, f) { this._moved(); this.c.transform(a, b, c, d, e, f); },
+  setTransform() { this._moved(); this.c.setTransform.apply(this.c, arguments); },
+  resetTransform() { this._moved(); this.c.resetTransform(); },
+  // the drawing
+  fill(p) {
+    if (!cvIsInk(this._fs)) return;
+    const c = this.c, rim = this.cvRim;
+    if (!(p instanceof Path2D) && this._ok) { cvRimGrowLive(rim.p.at(c), this._sp, rim.R); return; }
+    if (p && p.cvP) { cvRimDraw(c, p.rimS || (p.rimS = { cont: cvRimUnion(p.cvP), g: new Map() }), rim); return; }   // a cvPath shape: its outline
+    c.fillStyle = rim.tc; c.strokeStyle = rim.tc; c.lineWidth = 2 * rim.R; c.lineJoin = "round";
+    if (p instanceof Path2D) { c.fill(p); c.stroke(p); } else { c.fill(); c.stroke(); }
+  },
+  stroke(p) {
+    if (!cvIsInk(this._ss)) return;
+    const c = this.c; c.strokeStyle = this.cvRim.tc; c.lineWidth = this._lw + 2 * this.cvRim.R;
+    if (p instanceof Path2D) c.stroke(p); else c.stroke();
+  },
+  drawImage() {}, fillRect() {}, strokeRect() {}, fillText() {}, strokeText() {}, clearRect() {}, putImageData() {},
+};
+(() => {   // everything else goes straight to the canvas
+  const B = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype, R = CV_RimCtx.prototype;
+  if (!B) return;
+  for (const k of Object.getOwnPropertyNames(B)) {
+    if (k === "constructor" || Object.prototype.hasOwnProperty.call(R, k)) continue;
+    const d = Object.getOwnPropertyDescriptor(B, k);
+    if (typeof d.value === "function") { const fn = d.value; R[k] = function () { return fn.apply(this.c, arguments); }; }
+    else if (d.get) Object.defineProperty(R, k, { get() { return this.c[k]; }, set: d.set ? function (v) { this.c[k] = v; } : undefined });
+  }
+})();
+// the rim pass of a figure (cvFigure): its draw(K) through a CV_RimCtx, before the figure
+function cvRimPass(c, f, P, tk, at, flash, tc) {
+  const z = cvZoomOf(c), ga = c.globalAlpha, rim = { tc, R: (CV_RIM_PX * DPR) / z, L: Math.round(Math.log2(z) * 4), p: new CV_RimPath() };
+  const K = new CV_Kit(new CV_RimCtx(c, rim), f, P, tk, at, flash);
+  K.rimPass = rim; K.rc = c; K.vec = true;   // (no sprites: the rim is fills)
+  c.save();
+  if (ga < 1) c.globalAlpha = ga * ga;   // a see-through figure: a fainter rim
+  try {
+    P.fig.draw(K);
+    c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = tc; c.fill(rim.p.p);
+  } finally { c.restore(); }
 }
 
 /* ---------- the skin's colours ---------- */
@@ -793,6 +1060,7 @@ const CV_POSES = new WeakMap();   // fighter -> Map(stack -> { n: draws per pose
 function CV_Kit(c, f, P, tk, at, flash) {
   const fig = P.fig;
   this.c = c; this.f = f; this.P = P; this.tk = tk; this.at = at; this.fig = fig; this.flash = flash;
+  this.rimPass = null; this.rc = c;   // the rim pass: { tc, R } and the canvas under its CV_RimCtx (cvRimPass)
   this.C = cvCols(fig, f, flash ? "f" : P.dim ? "d" : "n");
   this.ops = cvOpsOf(fig);
   this.z = cvZoomOf(c); this.baked = false;   // (cvBaked: one new sprite per figure per frame at most)
@@ -827,6 +1095,7 @@ CV_Kit.prototype = {
   // carved parts back to front as sprites: a run of parts is one sprite. "face" is the face (carved at rest, live otherwise), "skin" and
   // "top" the skin passes (only when the skin has one), a function f(K) a live part between them (it breaks the run)
   stack(list, fn, fk) {
+    if (this.rimPass) { this.rimStack(list, fn); return; }
     let run = [], shout = false;
     const P = this.P, c = this.c, fig = this.fig, ls = this.ls;
     // the pose of this stack: its lean step and, with fn, the step fk of its transform. The first ten poses this fighter has been drawn in
@@ -874,8 +1143,22 @@ CV_Kit.prototype = {
     }
     out();
   },
+  // the rim pass's stack: its live parts drawn (through the CV_RimCtx), its carved parts one grown outline added to the rim path (the face
+  // and the skin passes lie inside the figure: left out)
+  rimStack(list, fn) {
+    const run = [], c = this.rc;
+    for (const it of list) {
+      if (typeof it === "function") it(this);
+      else if (it && it !== "face" && it !== "skin" && it !== "top") run.push(it);
+    }
+    if (!run.length) return;
+    c.save(); this._sq(c); this._lean(c); c.translate(0, this.P.cvDrop); if (fn) fn(c);
+    cvRimDraw(c, cvRimOfRun(this.fig, run), this.rimPass);
+    c.restore();
+  },
   // carved parts as one sprite in the current transform
   sprite(list) {
+    if (this.rimPass) { cvRimDraw(this.rc, cvRimOfRun(this.fig, list), this.rimPass); return; }
     const sp = this.vec ? null : cvBaked(this, list);
     if (sp) this.c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of list) cvOps(this.c, cvPartOps(this.fig, n), this.C);
   },
@@ -886,7 +1169,8 @@ CV_Kit.prototype = {
     // the hand's outline goes with the arm's (one fill) unless something is held between them; the wrist end hides under the hand
     // the back arm is one tone, its shadow (it reads as further away, and costs a fill less)
     const sc = cvShC(C, col), hs = cvShC(C, H.col), flat = !front;
-    cvLimb(c, a, e, h, A.r0, A.r1, flat ? sc : C[col], sc, 2.2, held ? null : (cc) => cvCircAdd(cc, h[0], h[1], H.r + 1.1), true, false);
+    const hr = H.r + 1.1 + (this.rimPass ? this.rimPass.R : 0);   // (the rim pass grows the hand's ink with the arm's)
+    cvLimb(c, a, e, h, A.r0, A.r1, flat ? sc : C[col], sc, 2.2, held ? null : (cc) => cvCircAdd(cc, h[0], h[1], hr), true, false);
     if (front && A.colU)   // the upper arm in a colour of its own (a scaled sleeve) inside the arm's ink, round over the forearm at the elbow
       cvLimb(c, a, null, e, A.r0, (A.r0 + A.r1) / 2, C[A.colU], cvShC(C, A.colU), 2.2, null, true, true, true);
     const U = front && A.cuff, fl = Math.hypot(h[0] - e[0], h[1] - e[1]);
@@ -914,17 +1198,17 @@ CV_Kit.prototype = {
     cvLimb(c, a, G.bones === 1 ? null : cvJoint(a, [ax, ay], G.len, "fwd"), [ax, ay], G.r0, G.r1, front ? C[col] : sc, sc, 2.2, null, false, false);
     c.save(); c.translate(ft[0], ft[1]); if (ang) c.rotate(ang); this.draw(front ? "boot" : "bootB"); c.restore();   // (paths: a small part that turns)
   },
-  face() { this.body((c) => cvFace(c, this, this.fig.face)); },
-  rim() { if (TEAM_RIM && !this.at) { const c = this.c; c.save(); this._sq(c); teamRimBody(c, this.f, this.P); c.restore(); } },
+  face() { if (!this.rimPass) this.body((c) => cvFace(c, this, this.fig.face)); },   // (inside the head: no rim)
+  rim() { if (TEAM_RIM && !this.at && !this.rimPass && PERF.q >= 2) { const c = this.c; c.save(); this._sq(c); teamRimBody(c, this.f, this.P); c.restore(); } },   // the team rim is the rim pass (cvRimPass); on a slow phone (PERF.q >= 2) the old body rim
   skinBody() {
     const c = this.c, f = this.f, P = this.P;
-    if (!f.pal || (!f.pal.road && !f.pal.pommes && (this.flash || P.dim || !glazeOn(f)))) return;
+    if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes && (this.flash || P.dim || !glazeOn(f)))) return;
     c.save(); this._sq(c); this._lean(c);
     roadSkinBody(c, f, P, this.tk, this.flash);
     if (!this.flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, this.tk);   // ui/glaze.js
     c.restore();
   },
-  skinTop() { const f = this.f; if (!f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash); c.restore(); },
+  skinTop() { const f = this.f; if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash); c.restore(); },
   spring(name, target, k) {
     let S = CV_SPR.get(this.f);
     if (!S) { S = {}; CV_SPR.set(this.f, S); }
@@ -938,12 +1222,17 @@ CV_Kit.prototype = {
   },
 };
 // drawPotato's hand-over: the figure, in the fighter's own frame (feet at 0, facing right), after the sprint lines and before the effects
+// (in a 2v2 match the rim pass first: TEAM RIM in the header)
 function cvFigure(c, f, P, tk, at, flash) {
-  const K = new CV_Kit(c, f, P, tk, at, flash);
   cvMg = Object.prototype.hasOwnProperty.call(c, "fillStyle");   // a manga page's context (see cvMgInk): paths
-  if (cvMg) K.vec = true;
-  try { P.fig.draw(K); } finally { cvMg = false; }
-  return K;
+  try {
+    const tc = TEAM_RIM && !at && !cvMg && !cvRimOff && PERF.q < 2 && TEAM_COL[f.team];   // (a phone the watchdog finds slow: K.rim's cheap body rim)
+    if (tc) cvRimPass(c, f, P, tk, at, flash, tc);
+    const K = new CV_Kit(c, f, P, tk, at, flash);
+    if (cvMg) K.vec = true;
+    P.fig.draw(K);
+    return K;
+  } finally { cvMg = false; }
 }
 // potatoPath for a figure: the body's silhouette in the rig frame (the caller has turned the context with the lean)
 function cvSilPath(c, P) {
@@ -954,5 +1243,5 @@ function cvSilPath(c, P) {
 }
 // tests/pwcarve.py: the drawing and the camera, from outside the page's scope
 window.__cvTest = { draw: (c, f, tk) => drawFighter(c, f, tk), toScreen: (x, y) => toScreen(x, y), get cam() { return cam; }, get dpr() { return DPR; }, get L() { return L; }, get ctx() { return ctx; },
-  figs: () => Object.keys(CV_FIG), glaze: (f, on) => glazeMark(f, on), set rim(v) { TEAM_RIM = !!v; },
+  figs: () => Object.keys(CV_FIG), glaze: (f, on) => glazeMark(f, on), set rim(v) { TEAM_RIM = !!v; }, set rimOff(v) { cvRimOff = !!v; },
   bakes: () => ({ n: CV_BAKE.size, px: cvBakePx, made: cvBakeMade, big: cvBakeBig }) };

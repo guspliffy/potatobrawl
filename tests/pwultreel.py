@@ -9,6 +9,7 @@
 #   --at=h16,m22,m61+4,cloud:33   dev: grab these moments of one ulti (hN = N ticks of super freeze left, mN = the first frame the ulti is at frame N,
 #                        mN+k = k ticks after that, so a hit's hitstop can be stepped through) into DIR/dev-*.png
 #   --mute         sound off (default: sound on, so every Sfx call of an ulti is exercised; a bad call shows as a page error)
+#   --calm         the Reduce flashes setting on (no screen flashes; an ink or light screen is a dimmed backdrop)
 # --slow is the game speed of the move (0.5 = half speed); the super freeze always runs at full speed.
 # Checks (a failure exits 1): no page errors; the ulti starts, spends the bar, freezes the game 30 ticks and hurts the CPU; the
 # frame cost of the ulti ticks stays within +8 ms of an idle tick (software canvas in headless Chromium, so a phone is cheaper).
@@ -107,6 +108,7 @@ def start(b, fid, opp, vw, vh, upright):
     ctx = b.new_context(viewport={"width": vw, "height": vh}, device_scale_factor=dsf, has_touch=upright, is_mobile=upright)
     prof = {"tut": True, "last": fid, "gfx": "2d", "sound": sound, "fs": False}
     if upright: prof["screen"] = "up"
+    if flag("--calm"): prof["rf"] = 1   # --calm: the Reduce flashes setting on (ui/hitkit.js hkCalm)
     ctx.add_init_script("localStorage.setItem('potatobrawl.profile.v1', JSON.stringify(%s))" % json.dumps(prof))
     ctx.add_init_script(CLOCK)
     pg = ctx.new_page()

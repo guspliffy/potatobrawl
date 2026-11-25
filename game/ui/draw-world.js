@@ -147,9 +147,10 @@ function drawFinRing(c, f) {
   c.restore();
 }
 
-/* ---- 2v2 team rims (UI only; TEAM_COL is in ui/duo.js): while a 2v2 is drawn (render2D sets TEAM_RIM) every potato gets a thin outline in its
-   team's colour behind it (teamRimBody, called from drawPotato: one more stroke of the body path, wider than the ink outline so a ring
-   about 2 screen pixels thick shows) and a steady ring at the feet (drawTeamRing, from drawShadow). Ice blue is your team, ember red the foes. ---- */
+/* ---- 2v2 team rims (UI only; TEAM_COL is in ui/duo.js): while a 2v2 is drawn (render2D sets TEAM_RIM) every fighter gets a thin outline in
+   its team's colour round its whole figure (a Carved Ink figure: the rim pass, ui/carve.js TEAM RIM, a band about 2 screen pixels past the
+   ink; the old drawing, window.__cvOff: teamRimBody, called from drawPotato, one more stroke of the body path, wider than the ink outline)
+   and a steady ring at the feet (drawTeamRing, from drawShadow). Ice blue is your team, ember red the foes. ---- */
 let TEAM_RIM = false;
 function teamRimBody(c, f, P) {
   const tc = TEAM_COL[f.team];
@@ -189,51 +190,29 @@ function drawRespawnPlat(c, f, tk) {
 // Finish-ready projectile extras. K scales the drawing (never the hitbox).
 const FIN_K = { orb: 1.25, bolt: 1.35, raven: 1, phoenix: 1.6, dragon: 1.5 };
 function finProjK(p, rdy) { if (!rdy) return 1; if (p.style === "fire") return FIN_K[RG && RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix"] || 1.6; return FIN_K[p.style] || 1; }
-function teardrop(c, x, y, s) { c.beginPath(); c.moveTo(x, y - s * 1.6); c.quadraticCurveTo(x + s, y + s * 0.3, x, y + s); c.quadraticCurveTo(x - s, y + s * 0.3, x, y - s * 1.6); c.fill(); }
-function finOrbFx(c, p, tk) {   // the toxic orb trails a green comet tail and drips as it flies
+function finOrbFx(c, p, tk) {   // the orb half as big again with a lime ribbon tail and drips falling off it (ui/hk-alchemist.js)
   c.save();
-  const a = Math.atan2(p.vy, p.vx), r = p.r * 1.25, len = r * 4.2;
-  c.save(); c.translate(p.x, p.y); c.rotate(a);
-  const g = c.createLinearGradient(0, 0, -len, 0); g.addColorStop(0, "rgba(150,255,120,0.6)"); g.addColorStop(1, "rgba(80,255,90,0)");
-  c.fillStyle = g; c.beginPath(); c.moveTo(0, -r * 0.9); c.quadraticCurveTo(-len * 0.5, -r * 0.55, -len, 0); c.quadraticCurveTo(-len * 0.5, r * 0.55, 0, r * 0.9); c.closePath(); c.fill(); c.restore();
-  for (let i = 0; i < 7; i++) {
-    const ph = (tk * 0.045 + i / 7 + nz(i * 3.3) * 0.2) % 1, x = p.x - p.vx * (1.2 + i * 1.7) + (nz(i * 9.7) - 0.5) * 8, y = p.y + r * 0.55 + ph * 34 + i;
-    c.globalAlpha = Math.min(1, (1 - ph) * 1.3); c.fillStyle = i % 2 ? "#d4ffbc" : "#46d83f"; teardrop(c, x, y, 3.6 + (i % 3) * 0.7);
-    c.lineWidth = 1; c.strokeStyle = "rgba(20,90,30,0.6)"; c.stroke();
-  }
+  hkAlcOrb(c, p, tk, FIN_K.orb, true);
   c.restore();
 }
-function finRavenFx(c, p, tk) {   // a pale-blue streak behind the raven, and its eyes burn red
-  const s = p.vx >= 0 ? 1 : -1;
-  c.save(); c.translate(p.x, p.y);
-  const g = c.createLinearGradient(0, 0, -s * 110, 0); g.addColorStop(0, "rgba(200,236,255,0.8)"); g.addColorStop(1, "rgba(200,236,255,0)");
-  c.fillStyle = g; c.beginPath(); c.moveTo(-s * 6, -11); c.quadraticCurveTo(-s * 50, -9, -s * 112, 0); c.quadraticCurveTo(-s * 50, 11, -s * 6, 11); c.closePath(); c.fill();
-  c.strokeStyle = "rgba(235,248,255,0.8)"; c.lineWidth = 1.6; c.lineCap = "round";
-  for (const [dy, len] of [[-4, 70], [2, 90], [7, 56]]) { c.beginPath(); c.moveTo(-s * 12, dy); c.lineTo(-s * (12 + len), dy * 0.5); c.stroke(); }
+function finRavenFx(c, p, tk) {   // finish-ready: a long gold pennant wake with two ruled lines (Odin's kit, ui/hk-odin.js), and its eyes burn red
+  const s = p.vx >= 0 ? 1 : -1, sp = Math.abs(p.vx), K = HK_KIT.odin;
+  hkOdnPennant(c, p.x - s * 12, p.y - 1, s > 0 ? 0 : Math.PI, 60 + sp * 11, 11, K, 1);
+  c.save(); c.lineCap = "round";
+  for (const [dy, len] of [[-13, 58 + sp * 4], [12, 44 + sp * 3]]) { c.strokeStyle = HK_INK; c.lineWidth = 4; c.beginPath(); c.moveTo(p.x - s * 22, p.y + dy); c.lineTo(p.x - s * (22 + len), p.y + dy * 0.7); c.stroke(); c.strokeStyle = K.cols[1]; c.lineWidth = 2; c.stroke(); }
   c.restore();
 }
-function finRavenEyes(c, p) {   // the red glow over the raven's eye
-  const s = p.vx >= 0 ? 1 : -1; glowDot(c, p.x + s * 11, p.y - 7.5, 11, 0.9, "#ff2a2a"); glowDot(c, p.x + s * 11, p.y - 7.5, 4, 1, "#ffd0d0");
+function finRavenEyes(c, p) {   // the eye burns: a flat red ring round it (no glow)
+  const s = p.vx >= 0 ? 1 : -1, x = p.x + s * 15, y = p.y - 5.1;
+  c.save(); c.lineWidth = 1.6; c.strokeStyle = "#e3453b"; c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.stroke(); c.restore();
 }
 function finBoltFx(c, p, tk) {   // the crystal bolt trails stars
-  c.save();
-  const g = c.createLinearGradient(p.x, p.y, p.x - p.vx * 12, p.y - p.vy * 12); g.addColorStop(0, "rgba(255,244,200,0.7)"); g.addColorStop(1, "rgba(150,230,255,0)");
-  c.strokeStyle = g; c.lineWidth = p.r * 0.9; c.lineCap = "round"; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx * 12, p.y - p.vy * 12); c.stroke();
-  for (let i = 1; i <= 5; i++) {
-    c.globalAlpha = 1 - i / 6;
-    star4(c, p.x - p.vx * (1.6 + i * 2.4), p.y + Math.sin(tk * 0.4 + i * 1.9) * p.r * 0.5, p.r * (0.95 - i * 0.1), i % 2 ? "#fff6d8" : "#bff3ff");
-  }
+  c.save();   // a longer segmented wake, an outer violet cut and crystal chips tumbling behind (ui/hk-wizard.js)
+  hkWizBolt(c, p, tk, FIN_K.bolt, true);
   c.restore();
 }
-function finFireFx(c, p, tk, who) {   // Phoenix: a long comet tail. Dragon: every puff drags a short fat cone, together one thick stream
-  const a = Math.atan2(p.vy, p.vx), dragon = who === "dragon", r = p.r * (dragon ? 1.5 : 1.6), fl = 1 + Math.sin(tk * 0.9 + p.x * 0.05) * 0.06;
-  c.save(); c.translate(p.x, p.y); c.rotate(a);
-  const len = (dragon ? r * 3.3 : r * 5.6) * fl, hw = dragon ? r * 1.15 : r * 0.92, tail = dragon ? hw * 1.5 : hw * 0.22;
-  const g = c.createLinearGradient(0, 0, -len, 0);
-  g.addColorStop(0, dragon ? "rgba(255,214,120,0.9)" : "rgba(255,236,160,0.95)"); g.addColorStop(0.45, "rgba(255,122,43,0.65)"); g.addColorStop(1, "rgba(255,60,20,0)");
-  c.fillStyle = g; c.beginPath(); c.moveTo(0, -hw); c.quadraticCurveTo(-len * 0.5, -hw * (dragon ? 1.1 : 0.62), -len, -tail); c.lineTo(-len, tail); c.quadraticCurveTo(-len * 0.5, hw * (dragon ? 1.1 : 0.62), 0, hw); c.closePath(); c.fill();
-  if (!dragon) { c.fillStyle = "rgba(255,250,225,0.8)"; c.beginPath(); c.moveTo(0, -hw * 0.4); c.quadraticCurveTo(-len * 0.35, -hw * 0.25, -len * 0.62, 0); c.quadraticCurveTo(-len * 0.35, hw * 0.25, 0, hw * 0.4); c.closePath(); c.fill(); }
-  c.restore();
+function finFireFx(c, p, tk, who) {   // Phoenix: the ball with a wake twice as long, an outer flame and more feathers; Dragon: the breath's lobes trail on
+  if (who === "dragon") hkDrgBreath(c, p, tk, FIN_K.dragon, true); else hkPhxBall(c, p, tk, FIN_K.phoenix, true);
 }
 
 function drawProj(c, p, tk) {
@@ -243,67 +222,32 @@ function drawProj(c, p, tk) {
   if (p.style === "star" || p.style === "bigstar") return uvDrawStar(c, p, tk);
   const rdy = p.style !== "burst" && finishReady(foeSlot(p.owner)), K = finProjK(p, rdy);
   if (p.style === "orb") {
-    for (let i = 3; i >= 1; i--) { c.fillStyle = `rgba(120,255,110,${0.12 * (4 - i)})`; c.beginPath(); c.arc(p.x - p.vx * i * 1.6, p.y - p.vy * i * 1.6, p.r * (1 - i * 0.15) * K, 0, Math.PI * 2); c.fill(); }
-    if (rdy) finOrbFx(c, p, tk);
-    greenOrb(c, p.x, p.y, p.r * 0.9 * K, tk);
+    if (rdy) finOrbFx(c, p, tk); else hkAlcOrb(c, p, tk, 1, false);   // Bubbling acid (ui/hk-alchemist.js; where it bursts: UV_BACK.alchemist)
     return;
   }
   if (p.style === "burst") {
-    const k = p.t / p.life, r = p.r * (0.55 + 0.45 * ease(Math.min(1, k * 1.6)));
-    const g = c.createRadialGradient(p.x, p.y, r * 0.2, p.x, p.y, r);
-    g.addColorStop(0, `rgba(230,255,210,${0.9 * (1 - k)})`); g.addColorStop(0.5, `rgba(120,255,100,${0.6 * (1 - k)})`); g.addColorStop(1, "rgba(60,200,70,0)");
-    c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, r, 0, Math.PI * 2); c.fill();
+    hkAlcBurst(c, p, tk);   // its dashed true size and a cluster of beads (ui/hk-alchemist.js)
     return;
   }
   if (p.style === "raven") {
     if (rdy) finRavenFx(c, p, tk);
-    c.save(); c.translate(p.x, p.y); c.scale(p.vx >= 0 ? 1 : -1, 1);
-    ravenShape(c, 0, 0, 1.25, Math.sin(tk * 0.6) * 0.7, rdy);
-    c.restore();
+    hkOdnRaven(c, p, tk, rdy);   // the bird, its pennant wake, feathers shed on the turn (ui/hk-odin.js)
     if (rdy) finRavenEyes(c, p);
     return;
   }
   if (p.style === "bolt") {
-    if (rdy) finBoltFx(c, p, tk);
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.scale(K, K);
-    const g = c.createRadialGradient(0, 0, 2, 0, 0, p.r * 2);
-    g.addColorStop(0, "rgba(255,240,180,0.9)"); g.addColorStop(1, "rgba(120,220,255,0)");
-    c.fillStyle = g; c.beginPath(); c.ellipse(-p.r * 0.6, 0, p.r * 2.4, p.r * 1.1, 0, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.moveTo(p.r * 1.1, 0); c.lineTo(0, -p.r * 0.55); c.lineTo(-p.r * 0.9, 0); c.lineTo(0, p.r * 0.55); c.closePath();
-    c.fillStyle = "#ffe08a"; c.fill(); c.lineWidth = 1.4; c.strokeStyle = "#a8701c"; c.stroke();
-    c.restore();
+    if (rdy) finBoltFx(c, p, tk); else hkWizBolt(c, p, tk, 1, false);   // a long cut diamond, a segmented wake (ui/hk-wizard.js)
     return;
   }
   if (p.style === "fire") {
-    const fl = Math.sin(tk * 0.9 + p.x * 0.05), R = p.r * K;
-    if (rdy) finFireFx(c, p, tk, RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix");
-    for (let i = 4; i >= 1; i--) {
-      c.fillStyle = `rgba(255,${110 + i * 18},40,${0.2 * (5 - i) / 4})`;
-      c.beginPath(); c.arc(p.x - p.vx * i * 1.7, p.y - p.vy * i * 1.7, R * (1 - i * 0.13), 0, Math.PI * 2); c.fill();
-    }
-    const gr = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 1.5);
-    gr.addColorStop(0, "#fffbe0"); gr.addColorStop(0.3, "#ffd166"); gr.addColorStop(0.65, "#ff7a2b"); gr.addColorStop(1, "rgba(255,70,30,0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(p.x, p.y, R * 1.5 + fl * 1.5, 0, Math.PI * 2); c.fill();
+    const who = RG && RG.fighters[p.owner] ? RG.fighters[p.owner].spec.id : "phoenix";   // Feather fire / Rolling flame (ui/hk-phoenix.js, ui/hk-dragon.js)
+    if (rdy) finFireFx(c, p, tk, who); else if (who === "dragon") hkDrgBreath(c, p, tk, 1, false); else hkPhxBall(c, p, tk, 1, false);
     return;
   }
   if (p.style === "bullet" || p.style === "gold") {
-    // a small bright tracer; High Noon's bullet is golden, bigger, with a long trail and a glow (the drawing only, the hitbox is the same)
-    // Dead Eye's bullets (hit.ult) are the same with a hot red-orange glow; its sixth, the golden one, is half as big again with a longer trail
-    const gold = p.style === "gold", ult = !!(p.hit && p.hit.ult), sp = Math.hypot(p.vx, p.vy) || 1, r = gold ? (ult ? 8.2 : 5.4) : ult ? 3.8 : 3;
-    const len = Math.min(gold ? sp * (ult ? 9 : 6) : sp * (ult ? 4 : 2.6), p.t * sp + 4);
-    c.save(); c.translate(p.x, p.y); c.rotate(Math.atan2(p.vy, p.vx));
-    if (gold) glowDot(c, 0, 0, r * 4.2, ult ? 0.75 : 0.55, "#ffcf3d");
-    else if (ult) glowDot(c, 0, 0, r * 3.4, 0.5, "#ff5a3d");
-    const gr = c.createLinearGradient(-len, 0, 0, 0);
-    gr.addColorStop(0, gold ? "rgba(255,190,50,0)" : ult ? "rgba(255,70,50,0)" : "rgba(255,180,80,0)"); gr.addColorStop(1, gold ? "rgba(255,226,120,0.95)" : ult ? "rgba(255,210,180,0.95)" : "rgba(255,242,210,0.9)");
-    c.fillStyle = gr; c.beginPath(); c.moveTo(0, -r * 0.85); c.lineTo(-len, -r * 0.2); c.lineTo(-len, r * 0.2); c.lineTo(0, r * 0.85); c.closePath(); c.fill();
-    c.fillStyle = gold ? "#ffd84a" : "#fff6dc"; c.beginPath(); c.ellipse(0, 0, r * 1.6, r, 0, 0, Math.PI * 2); c.fill();
-    if (gold) {
-      c.lineWidth = 1.2; c.strokeStyle = "#9c6c16"; c.stroke();
-      c.fillStyle = "#fffbe6"; c.beginPath(); c.ellipse(r * 0.3, -r * 0.3, r * 0.7, r * 0.3, 0, 0, Math.PI * 2); c.fill();
-      for (let i = 1; i <= 3; i++) star4(c, -len * (0.2 + i * 0.22), Math.sin(tk * 0.5 + i * 2) * r * 0.9, 4.2 - i * 0.7, "#fff4c8");
-    }
-    c.restore();
+    // a ruled tracer with a squared brass head; High Noon's (finish-ready) is a gold slug twice the size with a longer, double rule; Dead Eye's
+    // first five are ivory dashes, its sixth the gold slug (the kit's, ui/hk-gunslinger.js; the drawing only, the hitbox is the same)
+    hkGunBullet(c, p, tk);
     return;
   }
   if (p.style === "fry") {
@@ -359,57 +303,11 @@ function duoTags(c, g) {
 
 
 /* ---- Ultimates: the projectiles and the marks on the floor (UI only; the hitboxes are the sim's, only the drawing grows) ---- */
-// Alchemist: the cloud is two pre-rendered sprites of billows (so a frame costs two drawImage calls and a few bubbles: no shadowBlur,
-// no filter), turned against each other, swelling on every pulse (p.t % 30 === 0), trembling and brightening in the 30 ticks before the
-// last pulse, which launches.
-const UV_CLOUD = { base: null, hi: null };
-function uvCloudSprites() {
-  if (UV_CLOUD.base) return UV_CLOUD;
-  const S = 256, mk = (draw) => { const cv = document.createElement("canvas"); cv.width = cv.height = S; draw(cv.getContext("2d")); return cv; };
-  const puffs = (x, n, seed, dmax, rmin, rv, cols) => {
-    for (let i = 0; i < n; i++) {
-      const a = nz(seed + i * 3.1) * 6.283, d = Math.sqrt(nz(seed + i * 7.7)) * S * dmax, r = S * (rmin + rv * nz(seed + i * 5.3)), cx = S / 2 + Math.cos(a) * d, cy = S / 2 + Math.sin(a) * d;
-      const g = x.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
-      g.addColorStop(0, cols[0]); g.addColorStop(0.6, cols[1]); g.addColorStop(1, cols[2]);
-      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
-    }
-  };
-  UV_CLOUD.base = mk((x) => {
-    puffs(x, 30, 1, 0.3, 0.14, 0.1, ["rgba(86,190,60,0.95)", "rgba(46,140,48,0.78)", "rgba(24,92,44,0)"]);
-    const g = x.createRadialGradient(S / 2, S / 2, S * 0.1, S / 2, S / 2, S * 0.46); g.addColorStop(0, "rgba(40,120,50,0.55)"); g.addColorStop(1, "rgba(24,90,44,0)");
-    x.fillStyle = g; x.fillRect(0, 0, S, S);
-  });
-  UV_CLOUD.hi = mk((x) => {
-    puffs(x, 20, 9, 0.27, 0.09, 0.08, ["rgba(210,255,170,0.9)", "rgba(140,235,100,0.55)", "rgba(100,210,80,0)"]);
-    puffs(x, 8, 4, 0.2, 0.05, 0.04, ["rgba(255,255,230,0.85)", "rgba(220,255,190,0.4)", "rgba(200,255,170,0)"]);
-  });
-  return UV_CLOUD;
-}
+// Alchemist: Mutagen Cloud is one giant living cell (ui/hk-alchemist.js): a clear inside, two nuclei, bubbles, a broken lime rim that swells
+// on every pulse (p.t % 30 === 0); it trembles and the rim turns cream in the 30 ticks before the last pulse, which launches. Flat fills.
 function uvDrawCloud(c, p, tk) {
-  const sp = uvCloudSprites(), r = p.r, grow = easeOut2(clamp(p.t / 10, 0, 1)), ph = p.t % 30;
-  const pulse = p.t >= 30 ? Math.max(0, 1 - ph / 12) : 0, charge = p.t >= p.life - 31 ? clamp((p.t - (p.life - 31)) / 30, 0, 1) : 0;
-  const s = ((r * 2.35) / 256) * grow * (1 + 0.13 * pulse + 0.05 * charge + Math.sin(tk * 0.15) * 0.015);
-  c.save(); c.translate(p.x + (charge ? Math.sin(tk * 1.9) * 2.6 * charge : 0), p.y);
-  c.globalAlpha = 0.92; c.save(); c.rotate(tk * 0.006); c.scale(s, s); c.drawImage(sp.base, -128, -128); c.restore();
-  c.globalAlpha = 0.8; c.save(); c.rotate(-tk * 0.009 + 1); c.scale(s * 0.92, s * 0.92); c.drawImage(sp.hi, -128, -128); c.restore();
-  c.globalAlpha = 1;
-  if (pulse > 0 || charge > 0) {   // the pulse: a light flash inside; before the last one the whole cloud glows pale and gold
-    c.globalCompositeOperation = "lighter";
-    glowDot(c, 0, 0, r * 1.1, 0.34 * pulse + 0.3 * charge, charge > 0.5 ? "#fff3b0" : "#9bff6a");
-    c.globalCompositeOperation = "source-over";
-  }
-  // bubbles rise inside and pop at the top
-  for (let i = 0; i < 9; i++) {
-    const per = 70 + nz(i * 4.4) * 50, k = ((tk + nz(i * 8.8) * per) % per) / per, bx = (nz(i * 1.7) - 0.5) * r * 1.3, half = Math.sqrt(Math.max(0, r * r - bx * bx)) * 0.86;
-    const by = half - k * half * 2, br = 3.5 + nz(i * 6.1) * 5 * (k < 0.9 ? 1 : 1 + (k - 0.9) * 8);
-    c.globalAlpha = k > 0.94 ? (1 - k) / 0.06 : 0.9; c.fillStyle = "rgba(170,255,130,0.28)"; c.strokeStyle = "rgba(235,255,215,0.85)"; c.lineWidth = 1.4;
-    c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.fillStyle = "rgba(255,255,255,0.8)"; c.beginPath(); c.arc(bx - br * 0.3, by - br * 0.3, br * 0.25, 0, Math.PI * 2); c.fill();
-  }
-  c.globalAlpha = 1;
-  // the true size of the cloud (what hurts): a faint dashed ring that flares on the pulse
-  c.setLineDash([9, 7]); c.lineDashOffset = -tk * 0.35; c.lineWidth = 2 + 2 * pulse; c.strokeStyle = rgba(charge > 0.5 ? "#fff3b0" : "#c9ff9e", 0.32 + 0.5 * pulse + 0.35 * charge);
-  c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+  c.save();
+  hkAlcCell(c, p, tk);
   c.restore();
 }
 // Odin: Gungnir, a long golden spear with runes that glow; it tumbles over at the far end of the boomerang and trails light
@@ -417,12 +315,10 @@ function uvDrawSpear(c, p, tk) {
   const dir = p.dir || 1, s = p.vx * dir, turn = 1 - clamp((s + 5) / 10, 0, 1), sp = Math.abs(p.vx);
   const ang = (dir > 0 ? turn * Math.PI : Math.PI - turn * Math.PI) + Math.sin(tk * 0.45) * 0.06;
   c.save(); c.translate(p.x, p.y);
-  if (sp > 4) {   // the streak of light behind it
-    const hd = p.vx >= 0 ? 1 : -1, tl = Math.min(260, sp * 8 + 90), g = c.createLinearGradient(0, 0, -hd * tl, 0);
-    g.addColorStop(0, "rgba(255,236,150,0.7)"); g.addColorStop(0.5, "rgba(255,200,70,0.3)"); g.addColorStop(1, "rgba(255,180,60,0)");
-    c.fillStyle = g; c.beginPath(); c.moveTo(-hd * 84, -9); c.lineTo(-hd * tl, 0); c.lineTo(-hd * 84, 9); c.closePath(); c.fill();
-    c.fillStyle = "rgba(255,255,240,0.6)"; c.beginPath(); c.moveTo(-hd * 84, -2.2); c.lineTo(-hd * tl * 0.6, 0); c.lineTo(-hd * 84, 2.2); c.closePath(); c.fill();
-    for (let i = 0; i < 4; i++) { const k = (tk * 0.07 + i / 4) % 1; c.globalAlpha = 1 - k; star4(c, -hd * (90 + k * (tl - 90)), (nz(i * 5.5) - 0.5) * 22, 4.5 * (1 - k * 0.5), i % 2 ? "#fff6d8" : "#ffd23f"); }
+  if (sp > 4) {   // flat, the kit's (ui/hk-odin.js): out, the stage-long line is behind it (UV_BACK.odin); back, a pennant streams from it
+    const hd = p.vx >= 0 ? 1 : -1;
+    if (s < 0) hkOdnPennant(c, -hd * 40, 0, hd > 0 ? 0 : Math.PI, Math.min(170, 40 + sp * 7), 12, HK_KIT.odin, Math.min(1, sp / 12));
+    for (let i = 0; i < 3; i++) { const k = (tk * 0.07 + i / 3) % 1; c.globalAlpha = 1 - k; hkShard(c, -hd * (70 + k * 120), (nz(i * 5.5) - 0.5) * 22, 5 * (1 - k * 0.4), hd > 0 ? Math.PI : 0, HK_KIT.odin, i); }
     c.globalAlpha = 1;
   }
   c.rotate(ang); c.scale(1, 0.86 + 0.14 * Math.cos(tk * 0.33)); c.translate(-58, 0);   // the head leads the hitbox by a few pixels, the shaft trails behind it
@@ -442,47 +338,19 @@ function uvSpearShape(c, tk) {
   c.fillStyle = "#f7ebb6"; c.fill(); c.lineWidth = 2; c.strokeStyle = OUT; c.stroke();
   c.strokeStyle = "#e2ad3c"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(56, -3); c.lineTo(66, -8.2); c.lineTo(90, -0.6); c.moveTo(56, 3); c.lineTo(66, 8.2); c.lineTo(90, 0.6); c.stroke();
   c.strokeStyle = "rgba(255,255,255,0.9)"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(56, 0); c.lineTo(88, 0); c.stroke();
-  glowDot(c, 92, 0, 28, 0.75, UV_GOLD);
+  hkSamDisc(c, 92, 0, 15, HK_KIT.odin.cols[1], 0.9); hkSpark(c, 92, 0, 7, HK_KIT.odin, 1, 0, 3, 0);   // the tip: a flat halo and the kit's star (ui/hitkit.js)
   for (let i = 0; i < 3; i++) { c.globalAlpha = 0.45 + 0.5 * Math.sin(tk * 0.2 + i * 1.9) ** 2; rune(c, -34 + i * 28, -17, 6.5, i + 1, "#fff2b8", 1.5); }   // the runes pulse one after the other
 }
 // Wizard: a falling star with a long pale trail; the fifth is bigger and golden
 function uvDrawStar(c, p, tk) {
-  const big = p.style === "bigstar", R = p.r * (big ? 1.2 : 1.12), tl = big ? 320 : 240, sway = Math.sin(tk * 0.2 + p.x) * 3;
-  c.save(); c.translate(p.x, p.y);
-  const g = c.createLinearGradient(0, 0, 0, -tl);
-  g.addColorStop(0, "rgba(255,246,210,0.9)"); g.addColorStop(0.3, big ? "rgba(255,206,80,0.55)" : "rgba(180,240,255,0.55)"); g.addColorStop(1, "rgba(180,240,255,0)");
-  c.fillStyle = g; c.beginPath(); c.moveTo(-R * 0.8, 0); c.quadraticCurveTo(-R * 0.4 + sway, -tl * 0.5, sway, -tl); c.quadraticCurveTo(R * 0.4 + sway, -tl * 0.5, R * 0.8, 0); c.closePath(); c.fill();
-  c.fillStyle = "rgba(255,255,255,0.7)"; c.beginPath(); c.moveTo(-R * 0.28, 0); c.lineTo(sway * 0.6, -tl * 0.62); c.lineTo(R * 0.28, 0); c.closePath(); c.fill();
-  for (let i = 0; i < 5; i++) { const k = (tk * 0.05 + i / 5) % 1; c.globalAlpha = (1 - k) * 0.9; star4(c, Math.sin(tk * 0.3 + i * 2.1) * R * 0.9, -R - k * (tl - R) * 0.8, 3.2 + 3 * (1 - k), i % 2 ? "#fff6d8" : (big ? "#ffd23f" : "#bff3ff")); }
-  c.globalAlpha = 1;
-  glowDot(c, 0, 0, R * 2.8, 0.6, big ? "#ffcf3d" : "#bff3ff");
-  c.rotate(tk * (big ? 0.05 : 0.08));
-  c.beginPath();
-  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? R * 0.46 : R; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-  c.closePath(); c.fillStyle = big ? "#ffd84a" : "#fff0b8"; c.fill(); c.lineWidth = 2; c.strokeStyle = big ? "#a8701c" : "#c79a3c"; c.lineJoin = "round"; c.stroke();
-  c.beginPath();
-  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? R * 0.2 : R * 0.52; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-  c.closePath(); c.fillStyle = "#ffffff"; c.fill();
+  c.save();   // a cut crystal falling on a three-tone streak, the fifth gold and bigger (ui/hk-wizard.js)
+  hkWizFallStar(c, p, tk);
   c.restore();
 }
 // the marks on the floor: under each falling star a ring that grows as the star comes down, with a ring closing in on it (they meet at
 // the moment of the hit), and a pale lane up to the star
 function uvStarMarks(c, g, tk) {
-  for (const p of g.projs) {
-    if (p.style !== "star" && p.style !== "bigstar") continue;
-    const big = p.style === "bigstar", q = clamp((p.y + 558) / 558, 0, 1), rm = (p.r + 22) * (0.34 + 0.66 * q), hot = q > 0.8 && tk % 6 < 3;
-    const colr = big ? "#ff9a3d" : "#fff0b0", fy = STAGE.main.top;
-    c.save();
-    c.fillStyle = big ? "rgba(255,150,60,0.07)" : "rgba(255,240,170,0.06)"; c.globalAlpha = 0.5 + 0.5 * q;
-    c.fillRect(p.x - (p.r + 22), p.y, (p.r + 22) * 2, fy - p.y);   // the lane the star falls down
-    c.globalAlpha = 1;
-    c.fillStyle = rgba(colr, 0.12 + 0.3 * q); c.beginPath(); c.ellipse(p.x, fy + 1, rm, rm * 0.27, 0, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = hot ? "#ffffff" : colr; c.lineWidth = 2.2 + 2.2 * q; c.globalAlpha = 0.55 + 0.45 * q; c.beginPath(); c.ellipse(p.x, fy + 1, rm, rm * 0.27, 0, 0, Math.PI * 2); c.stroke();
-    const rc = rm * (1 + 1.1 * (1 - q)); c.globalAlpha = 0.65 * (1 - q * 0.6); c.lineWidth = 2; c.strokeStyle = "#ffffff";
-    c.beginPath(); c.ellipse(p.x, fy + 1, rc, rc * 0.27, 0, 0, Math.PI * 2); c.stroke();
-    c.globalAlpha = 0.5 + 0.5 * q; c.strokeStyle = colr; c.lineWidth = 2.4; c.beginPath(); c.moveTo(p.x - 7, fy - 2); c.lineTo(p.x + 7, fy + 4); c.moveTo(p.x + 7, fy - 2); c.lineTo(p.x - 7, fy + 4); c.stroke();
-    c.restore();
-  }
+  hkWizStarMarks(c, g, tk);   // the lane, the ring growing as the star comes down, a ring closing in on it, the cross (ui/hk-wizard.js)
 }
 function uvFloor(c, g, tk) {
   for (const f of g.fighters) if (uvHeld(f) === "dive") uvPhoenixMark(c, f, tk);   // draw-fighters.js

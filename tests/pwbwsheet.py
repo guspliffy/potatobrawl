@@ -160,7 +160,7 @@ async def run_size(b, tag, w, h, mob, up):
     # ---- Settings: How to play is the first row and opens the sheet ----
     await clk('#bSettings'); await pg.wait_for_timeout(300)
     need(await pg.evaluate("document.querySelector('#scrSettings .sh-body').firstElementChild.id") == 'bHelp', 'How to play is not the first row of Settings')
-    await check(pg, tag, 'settings', '#scrSettings .set-sheet')
+    await check(pg, tag, 'settings', '#scrSettings .set-sheet', scroller='#scrSettings .set-sheet')   # (the sheet scrolls: its last rows, the fine print, may be below the fold on a short phone)
     await shot(pg, tag, 'settings')
     await clk('#bHelp'); await pg.wait_for_timeout(300)
     need(await pg.evaluate("!document.getElementById('scrHelp').hidden && document.getElementById('scrSettings').hidden"), 'How to play did not open (alone)')
