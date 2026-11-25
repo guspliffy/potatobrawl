@@ -23,7 +23,7 @@ cvFigReg("reaper", {
   prim: "cloak",
   // (the face in the hood is dark, towards deep, so the two bright slits carry it)
   derive(C) { C.band = cvSh(C.steel, 0.45); C.shade = cvMix(C.skin, C.deep, 0.6); C.shadeD = cvMix(C.skin, C.deep, 0.8); C.soulHi = cvMix(C.soul, "#ffffff", 0.7); },
-  body: { x: 0, y: -38, rx: 19, ry: 33 },
+  body: { x: 0, y: -40, rx: 19, ry: 27 },   // (hidden in the cloak: its numbers size the skin passes, so it stays small)
   face: { x: 8.5, y: -50.5, s: 0.9, mouth: { k: "smirk", x: 9.5, y: -42.5, s: 0.85 } },   // (the slits are cvRprFace's; the kit draws the mouth)
   mouthPt: [9.5, -42],
   arm: { shF: [6, -35], shB: [-10, -39], len: 20, lenB: 18, bendB: "back", r0: 4.6, r1: 5.8, col: "cloak",
