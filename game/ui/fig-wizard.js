@@ -148,6 +148,7 @@ function cvWizStaff(K) {
   const c = K.c, P = K.P, f = K.f, tk = K.tk, C = K.C;
   const a = heldDir(f, P, rot(P.sh, P.hip, P.lean), -Math.PI / 2 + 0.12), [hx, hy] = K.hF;
   P.staffTip = [hx + Math.cos(a) * 40, hy + Math.sin(a) * 40];
+  if (P.hkHide) return;   // a sweep's first active frame: the ribbon behind and the star at the tip stand in for the staff (HEAVY_LOOK.wizard)
   const fl = 1 + Math.sin(tk * 0.3) * 0.08, gf = fl * P.cryK, cf = fl * (1 + (P.cryK - 1) * 0.5);   // cryK: the crystal flares during heavy wind-ups
   const bob = Math.sin(tk * 0.08 + f.slot) * 1.2, turn = 0.45 + 0.55 * Math.abs(Math.cos(tk * 0.035 + f.slot));
   c.save(); c.translate(hx, hy); c.rotate(a);
