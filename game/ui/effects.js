@@ -77,6 +77,7 @@ function powderJump(e, dir, live) {
 function drawFx(c) {
   for (const e of fx) {
     const a = 1 - e.t / e.life;
+    if (hkDrawFx(c, e, a)) continue;   // ui/hitkit.js: the Carved Ink sparks and shards
     if (drawSkinFx(c, e, a)) continue;
     if (e.k === "uv") { uvDrawFx(c, e, a); continue; }
     if (e.k === "line") { c.strokeStyle = e.col; c.globalAlpha = a; c.lineWidth = e.w; c.lineCap = "round"; c.beginPath(); c.moveTo(e.x, e.y); c.lineTo(e.x - e.vx * 1.8, e.y - e.vy * 1.8); c.stroke(); }
@@ -261,12 +262,14 @@ function render2D(g, tk) {
   drawStage(c, tk);
   uvFloor(c, g, tk);   // Ultimates: marks on the floor (Phoenix's target, the Wizard's stars)
   bossFloor(c, g, tk);   // a boss's tells on the floor (ui/draw-boss.js)
+  hkUnder(c, g, tk);   // ui/hitkit.js: the floor marks (residue), under the shadows and the fighters
   TEAM_RIM = !!(match && match.duo && g.fighters.length === 4);   // 2v2: team rims on the fighters (draw-world.js)
   for (const f of g.fighters) drawShadow(c, f);
   drawTrails(c, g);
   for (const f of g.fighters) drawRespawnPlat(c, f, tk);
   for (const f of g.fighters) f._ravenOut = g.projs.some((p) => p.owner === f.slot && p.style === "raven");
   for (const p of g.projs) drawProj(c, p, tk);
+  uvBack(c, g, tk);   // ui/hitkit.js: the Ultimates' payoffs that go behind the fighters (UV_BACK, ui/hk-<fighter>.js)
   const order = [...g.fighters].sort((a, b) => (a.slot === 0 ? 1 : 0) - (b.slot === 0 ? 1 : 0));
   const us = uvVeilSlot(g);   // the super freeze: the veil goes over the stage and the other fighter, the user is drawn lit on top of it
   if (us >= 0) {
