@@ -159,6 +159,9 @@ function pose(f, tk) {
       if (P.hB[0] > -w * 0.68) P.hB = [-w * 0.68 + (P.hB[0] + w * 0.3) * 0.3, P.hB[1] + 4];
       if (L_.costume === "reaper" && st !== "helpless") P.hF = [w * 0.9 + (st === "run" ? (P.hF[0] - w * 0.75) * 0.5 : 0), P.hF[1] + tor * 0.16];   // the scythe held out at his side, clear of the face
     }
+    // a Carved Ink figure (ui/carve.js): P.fig, the new body's numbers (rx, ry, cy, top, head, mouthPt) and the motion layer (P.sq)
+    const fg = cvFigOf(L_.costume);
+    if (fg) cvPose(f, P, fg);
   }
   return P;
 }
@@ -374,6 +377,7 @@ let noirOn = false;
 const noirC = (colr, ink) => (noirOn ? ink : colr);   // a costume's fixed colour, or its ink on Ink Noir
 const SPECKS = [[-0.55, 0.35, 1.3], [-0.2, 0.62, 1.1], [0.36, 0.5, 1.2], [-0.62, -0.05, 1], [0.05, 0.3, 0.9], [0.58, 0.18, 1]];
 function potatoPath(c, P) {
+  if (P.fig) return cvSilPath(c, P);   // a Carved Ink figure's body (ui/carve.js); a boss's own P never carries one
   const { rx, ry, cy } = P;
   c.beginPath();
   for (let i = 0; i <= 32; i++) {
@@ -684,24 +688,26 @@ function wizardStaff(c, P, f, shR, tk) {
 }
 function katana(c, P, f, shR, pal) {
   const a = heldDir(f, P, shR, -0.8), L = P.w * 1.35, sh = P.sheath;
+  // a Carved Ink figure holds it (ui/fig-samurai.js): its ink, a steel blade with the skin's jade edge, the wrap, lacquer and gold of the skin
+  const K = cvKatC, ink = K ? CV_INK : OUT, grip = K ? K.tsuka : noirC("#3a2a22", NOIR_D), lac = K ? K.lac : noirC("#26232d", NOIR_D), gold = K ? K.gold : noirC("#c9a227", NOIR_L);
   c.save(); c.translate(P.hF[0], P.hF[1]); c.rotate(a);
   c.lineCap = "round";
-  c.strokeStyle = OUT; c.lineWidth = 5.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(2, 0); c.stroke();
-  c.strokeStyle = noirC("#3a2a22", NOIR_D); c.lineWidth = 3; c.stroke();
+  c.strokeStyle = ink; c.lineWidth = 5.5; c.beginPath(); c.moveTo(-9, 0); c.lineTo(2, 0); c.stroke();
+  c.strokeStyle = grip; c.lineWidth = 3; c.stroke();
   if (sh > 0) {
     // Iaido: the blade rests in its scabbard (lacquer, gold mouth and tip) until the draw
     c.beginPath(); c.moveTo(4, -3.4); c.lineTo(L * 0.96, -2.8); c.lineTo(L * 0.96, 2.8); c.lineTo(4, 3.4); c.closePath();
-    c.fillStyle = noirC("#26232d", NOIR_D); c.fill(); c.lineWidth = 1.6; c.strokeStyle = OUT; c.stroke();
-    c.fillStyle = noirC("#c9a227", NOIR_L); c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = lac; c.fill(); c.lineWidth = K ? 2 : 1.6; c.strokeStyle = ink; c.stroke();
+    c.fillStyle = gold; c.fillRect(4, -3.6, 4, 7.2); c.beginPath(); c.arc(L * 0.96, 0, 3.2, 0, Math.PI * 2); c.fill();
     c.strokeStyle = "rgba(255,255,255,0.25)"; c.lineWidth = 1; c.beginPath(); c.moveTo(10, -1.6); c.lineTo(L * 0.9, -1.4); c.stroke();
   }
   const Lb = sh > 0 ? 4 + (L - 4) * (1 - sh) : L;
   if (Lb > 9) {
     c.beginPath(); c.moveTo(4, -1.8); c.quadraticCurveTo(Lb * 0.55, -3.6, Lb, -5.5); c.quadraticCurveTo(Lb * 0.55, 0.6, 4, 1.8); c.closePath();
-    c.fillStyle = pal.accent; c.fill(); c.lineWidth = 1.5; c.strokeStyle = OUT; c.stroke();
-    c.strokeStyle = "rgba(255,255,255,0.6)"; c.lineWidth = 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(Lb * 0.55, -2.5, Lb - 4, -4.5); c.stroke();
+    c.fillStyle = K ? K.steel : pal.accent; c.fill(); c.lineWidth = K ? 1.7 : 1.5; c.strokeStyle = ink; c.stroke();
+    c.strokeStyle = K ? K.jade : "rgba(255,255,255,0.6)"; c.lineWidth = K ? 1.4 : 1; c.beginPath(); c.moveTo(7, -1); c.quadraticCurveTo(Lb * 0.55, -2.5, Lb - 4, -4.5); c.stroke();
   }
-  c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = noirC("#c9a227", NOIR_L); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+  c.beginPath(); c.ellipse(3, 0, 2.2, 5.2, 0, 0, Math.PI * 2); c.fillStyle = gold; c.fill(); c.lineWidth = 1.2; c.strokeStyle = ink; c.stroke();
   c.restore();
 }
 /* ---- Gunslinger: hat, neckerchief, vest, belt with holster, two revolvers ---- */
@@ -1131,94 +1137,97 @@ function drawPotato(c, f, tk, at) {
   c.lineCap = "round"; c.lineJoin = "round";
   const lw = look.limbW, legLen = Math.max(P.leg * 1.25, 12), armLen = P.tor * 0.85;
   const shR = rot(P.sh, P.hip, P.lean), shB = rot(P.shB, P.hip, P.lean);
-  if (TEAM_RIM && !at) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js)
+  if (TEAM_RIM && !at && !P.fig) teamRimBody(c, f, P);   // 2v2: the team-colour outline behind the body (draw-world.js; a figure draws it itself)
   if (f.spr && f.state === "run" && f.grounded && !at) sprintLines(c, f, P, tk, alpha);
-  if (cos === "phoenix") {
-    const air = !f.grounded && f.state !== "ledge";
-    const len = P.w * (air ? 1.35 : 1.0);
-    const a1 = rot([-P.w * 0.2, P.cy - P.ry * 0.2], P.hip, P.lean), a2 = rot([P.w * 0.05, P.cy - P.ry * 0.3], P.hip, P.lean);
-    const fl = P.flap + P.wingUp * 0.9;
-    flameWing(c, a1[0], a1[1], (air ? -2.7 : -2.4) + fl + P.lean, len, pal, true);
-    flameWing(c, a2[0], a2[1], (air ? -0.75 : -1.2) - fl * 0.7 + P.lean, len * 0.9, pal, false);
-  }
-  if (cos === "dragon") {
-    dragonTail(c, P, pal, tk, f);
-    const air = !f.grounded && f.state !== "ledge", len = P.w * (air ? 1.1 : 0.95);
-    const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean);
-    const fl = P.flap - P.wingUp * 0.9;
-    batWing(c, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, pal, true, true);
-    batWing(c, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, pal, false, false);
-  }
-  if (cos === "alchemist") capeShape(c, P, f, tk, mix(pal.accent, "#000000", 0.15), false);
-  if (cos === "odin") capeShape(c, P, f, tk, pal.accent, true);
-  if (cos === "reaper") { graveCloud(c, f, P, tk, P.cloud); if (P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); }
-  limbPath(c, P.hipB, P.fB, legLen, "fwd", lw, limbB);
-  c.fillStyle = limbB; c.beginPath(); c.ellipse(P.fB[0] + 2, P.fB[1] - 1, 5, 3, 0, 0, Math.PI * 2); c.fill();
-  limbPath(c, shB, P.hB, armLen, "down", lw - 0.5, limbB);
-  c.fillStyle = limbB; c.beginPath(); c.arc(P.hB[0], P.hB[1], lw * (look.fist ? 1 : 0.85), 0, Math.PI * 2); c.fill();
-  if (cos === "gunslinger") gunHeld(c, f, P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, P.shotB, lw * 0.85, limbB, flash, true);
-  limbPath(c, P.hipF, P.fF, legLen, "fwd", lw, limbF);
-  c.fillStyle = limbF; c.beginPath(); c.ellipse(P.fF[0] + 2, P.fF[1] - 1, 5.5, 3.2, 0, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
-  c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
-  potatoBody(c, P, pal);
-  if (cos === "odin") odinFront(c, P, pal);
-  if (cos === "samurai") {
-    c.save(); potatoPath(c, P); c.clip();
-    c.fillStyle = noirC("#24222c", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.42, P.rx * 2.6, P.ry);
-    c.fillStyle = noirC("#c8352b", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.62, P.rx * 2.6, 1.6); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.82, P.rx * 2.6, 1.6);
-    c.fillStyle = noirC("#2a2833", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.3, P.rx * 2.6, P.ry * 0.17);
-    c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy - P.ry * 0.62, P.rx * 2.6, P.ry * 0.13);   // the headband (Ink Noir: the accent)
+  if (P.fig) cvFigure(c, f, P, tk, at, flash);   // a Carved Ink figure (ui/carve.js, ui/fig-<fighter>.js); the effects below are shared
+  else {
+    if (cos === "phoenix") {
+      const air = !f.grounded && f.state !== "ledge";
+      const len = P.w * (air ? 1.35 : 1.0);
+      const a1 = rot([-P.w * 0.2, P.cy - P.ry * 0.2], P.hip, P.lean), a2 = rot([P.w * 0.05, P.cy - P.ry * 0.3], P.hip, P.lean);
+      const fl = P.flap + P.wingUp * 0.9;
+      flameWing(c, a1[0], a1[1], (air ? -2.7 : -2.4) + fl + P.lean, len, pal, true);
+      flameWing(c, a2[0], a2[1], (air ? -0.75 : -1.2) - fl * 0.7 + P.lean, len * 0.9, pal, false);
+    }
+    if (cos === "dragon") {
+      dragonTail(c, P, pal, tk, f);
+      const air = !f.grounded && f.state !== "ledge", len = P.w * (air ? 1.1 : 0.95);
+      const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean);
+      const fl = P.flap - P.wingUp * 0.9;
+      batWing(c, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, pal, true, true);
+      batWing(c, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, pal, false, false);
+    }
+    if (cos === "alchemist") capeShape(c, P, f, tk, mix(pal.accent, "#000000", 0.15), false);
+    if (cos === "odin") capeShape(c, P, f, tk, pal.accent, true);
+    if (cos === "reaper") { graveCloud(c, f, P, tk, P.cloud); if (P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); }
+    limbPath(c, P.hipB, P.fB, legLen, "fwd", lw, limbB);
+    c.fillStyle = limbB; c.beginPath(); c.ellipse(P.fB[0] + 2, P.fB[1] - 1, 5, 3, 0, 0, Math.PI * 2); c.fill();
+    limbPath(c, shB, P.hB, armLen, "down", lw - 0.5, limbB);
+    c.fillStyle = limbB; c.beginPath(); c.arc(P.hB[0], P.hB[1], lw * (look.fist ? 1 : 0.85), 0, Math.PI * 2); c.fill();
+    if (cos === "gunslinger") gunHeld(c, f, P, P.hB, P.gunB != null ? P.gunB : Math.PI + 0.35, P.shotB, lw * 0.85, limbB, flash, true);
+    limbPath(c, P.hipF, P.fF, legLen, "fwd", lw, limbF);
+    c.fillStyle = limbF; c.beginPath(); c.ellipse(P.fF[0] + 2, P.fF[1] - 1, 5.5, 3.2, 0, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.2; c.strokeStyle = OUT; c.stroke();
+    c.save(); c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], -P.hip[1]);
+    potatoBody(c, P, pal);
+    if (cos === "odin") odinFront(c, P, pal);
+    if (cos === "samurai") {
+      c.save(); potatoPath(c, P); c.clip();
+      c.fillStyle = noirC("#24222c", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.42, P.rx * 2.6, P.ry);
+      c.fillStyle = noirC("#c8352b", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.62, P.rx * 2.6, 1.6); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.82, P.rx * 2.6, 1.6);
+      c.fillStyle = noirC("#2a2833", NOIR_D); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.3, P.rx * 2.6, P.ry * 0.17);
+      c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.fillRect(-P.rx * 1.3, P.cy - P.ry * 0.62, P.rx * 2.6, P.ry * 0.13);   // the headband (Ink Noir: the accent)
+      c.restore();
+      c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.beginPath(); c.ellipse(-P.rx * 0.98, P.cy - P.ry * 0.56, 2.6, 2.4, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(-P.rx * 1.12, P.cy - P.ry * 0.42, 1.5, 4.5, 0.7, 0, Math.PI * 2); c.fill();
+    }
+    if (cos === "wizard") {
+      c.save(); potatoPath(c, P); c.clip();
+      c.fillStyle = mix(pal.accent, "#000000", 0.25); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, P.ry);
+      c.fillStyle = noirC("#d8b04a", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
+      c.restore();
+    }
+    if (cos === "gunslinger") gunOutfit(c, f, P, pal, flash);
+    if (cos === "dragon") {
+      c.fillStyle = noirC(mix(pal.body, "#fff0c6", 0.45), NOIR_L); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = noirC(mix(pal.body, "#7a4a22", 0.4), NOIR_D); c.lineWidth = 1.2;
+      for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
+    }
+    roadSkinBody(c, f, P, tk, flash);
+    if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
+    potatoFace(c, f, P, look);
+    if (cos === "odin") odinBeard(c, P, pal);
+    if (cos === "alchemist") {
+      alchemistHood(c, P, pal);
+      const [gx, gy] = P.head, er = P.w * 0.1;
+      for (const dx of [-1.25, 1.2]) { c.fillStyle = noirC("#b8863b", NOIR_D); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = noirC("#8fe8d2", NOIR_L); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
+    }
+    if (cos === "wizard") wizardHat(c, P, pal, tk);
+    if (cos === "gunslinger") cowboyHat(c, P, pal);
+    if (cos === "reaper") reaperHood(c, f, P, RC, tk);
+    if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
+    if (cos === "dragon") {
+      c.fillStyle = noirC("#efe3c8", NOIR_L); c.strokeStyle = OUT; c.lineWidth = 1.2;
+      for (const x0 of [-P.w * 0.2, P.w * 0.12]) { c.beginPath(); c.moveTo(x0 - 3.5, P.top + 5); c.quadraticCurveTo(x0 - 3, P.top - 8, x0 - 9, P.top - 15); c.quadraticCurveTo(x0 + 1, P.top - 6, x0 + 3.5, P.top + 4); c.closePath(); c.fill(); c.stroke(); }
+    }
+    if (cos === "samurai") { c.fillStyle = noirC("#1c1714", NOIR_D); c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
+    if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
+    if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
+    roadSkinTop(c, f, P, tk, flash);
     c.restore();
-    c.fillStyle = noirOn ? pal.accent : "#c8352b"; c.beginPath(); c.ellipse(-P.rx * 0.98, P.cy - P.ry * 0.56, 2.6, 2.4, 0, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.ellipse(-P.rx * 1.12, P.cy - P.ry * 0.42, 1.5, 4.5, 0.7, 0, Math.PI * 2); c.fill();
+    if (cos === "odin" && !f._ravenOut) {
+      let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
+      if (P.ravenTo && P.ravenK > 0) p = lerp2(p, P.ravenTo, P.ravenK);   // Raven rise: it lifts off with the fist
+      ravenShape(c, p[0], p[1], 0.85, P.ravenK > 0.3 ? Math.sin(tk * 1.1) * 0.8 : Math.sin(tk * 0.08) > 0.95 ? 0.4 : 0);
+    }
+    limbPath(c, shR, P.hF, armLen, "down", lw, limbF);
+    c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
+    if (f.mid === "ulti" && f.state === "attack") uvHeldProp(c, f, P, tk);
+    if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
+    if (cos === "samurai") katana(c, P, f, shR, pal);
+    if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
+    if (cos === "reaper") { if (!P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); reapLightTrail(c, f, P); }
+    if (cos === "alchemist" && f.specCd <= 0 && !flash && f.mid !== "ulti") greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   }
-  if (cos === "wizard") {
-    c.save(); potatoPath(c, P); c.clip();
-    c.fillStyle = mix(pal.accent, "#000000", 0.25); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, P.ry);
-    c.fillStyle = noirC("#d8b04a", NOIR_L); c.fillRect(-P.rx * 1.3, P.cy + P.ry * 0.45, P.rx * 2.6, 1.8);
-    c.restore();
-  }
-  if (cos === "gunslinger") gunOutfit(c, f, P, pal, flash);
-  if (cos === "dragon") {
-    c.fillStyle = noirC(mix(pal.body, "#fff0c6", 0.45), NOIR_L); c.beginPath(); c.ellipse(P.rx * 0.18, P.cy + P.ry * 0.55, P.rx * 0.55, P.ry * 0.32, 0, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = noirC(mix(pal.body, "#7a4a22", 0.4), NOIR_D); c.lineWidth = 1.2;
-    for (const t of [-0.3, 0, 0.3]) { const yy = P.cy + P.ry * (0.55 + t * 0.6), hw2 = P.rx * 0.5 * Math.sqrt(1 - t * t * 1.6); c.beginPath(); c.moveTo(P.rx * 0.18 - hw2, yy); c.lineTo(P.rx * 0.18 + hw2, yy); c.stroke(); }
-  }
-  roadSkinBody(c, f, P, tk, flash);
-  if (!flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, tk);   // ui/glaze.js: the pearl sheen of a glazed skin (over the body, under the face)
-  potatoFace(c, f, P, look);
-  if (cos === "odin") odinBeard(c, P, pal);
-  if (cos === "alchemist") {
-    alchemistHood(c, P, pal);
-    const [gx, gy] = P.head, er = P.w * 0.1;
-    for (const dx of [-1.25, 1.2]) { c.fillStyle = noirC("#b8863b", NOIR_D); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.75, 0, Math.PI * 2); c.fill(); c.fillStyle = noirC("#8fe8d2", NOIR_L); c.beginPath(); c.arc(gx + dx * er, gy - er * 3.1, er * 0.5, 0, Math.PI * 2); c.fill(); }
-  }
-  if (cos === "wizard") wizardHat(c, P, pal, tk);
-  if (cos === "gunslinger") cowboyHat(c, P, pal);
-  if (cos === "reaper") reaperHood(c, f, P, RC, tk);
-  if (cos === "phoenix") for (const a of [-2.2, -1.75, -1.3]) flameWing(c, -P.w * 0.12, P.top + P.ry * 0.2, a, P.w * 0.42, pal, false);
-  if (cos === "dragon") {
-    c.fillStyle = noirC("#efe3c8", NOIR_L); c.strokeStyle = OUT; c.lineWidth = 1.2;
-    for (const x0 of [-P.w * 0.2, P.w * 0.12]) { c.beginPath(); c.moveTo(x0 - 3.5, P.top + 5); c.quadraticCurveTo(x0 - 3, P.top - 8, x0 - 9, P.top - 15); c.quadraticCurveTo(x0 + 1, P.top - 6, x0 + 3.5, P.top + 4); c.closePath(); c.fill(); c.stroke(); }
-  }
-  if (cos === "samurai") { c.fillStyle = noirC("#1c1714", NOIR_D); c.beginPath(); c.ellipse(-P.w * 0.04, P.top - 2, 5.5, 4.5, 0, 0, Math.PI * 2); c.fill(); sprout(c, -P.w * 0.04, P.top - 5, 0.85); }
-  if (cos === "phoenix" || cos === "dragon") sprout(c, -P.w * 0.04, P.top + 1, 1);
-  if (cos === "odin") sprout(c, P.w * 0.06, P.top - 3, 0.9);
-  roadSkinTop(c, f, P, tk, flash);
-  c.restore();
-  if (cos === "odin" && !f._ravenOut) {
-    let p = rot([-P.w * 0.38, P.top + P.ry * 0.62], P.hip, P.lean);
-    if (P.ravenTo && P.ravenK > 0) p = lerp2(p, P.ravenTo, P.ravenK);   // Raven rise: it lifts off with the fist
-    ravenShape(c, p[0], p[1], 0.85, P.ravenK > 0.3 ? Math.sin(tk * 1.1) * 0.8 : Math.sin(tk * 0.08) > 0.95 ? 0.4 : 0);
-  }
-  limbPath(c, shR, P.hF, armLen, "down", lw, limbF);
-  c.fillStyle = limbF; c.beginPath(); c.arc(P.hF[0], P.hF[1], lw * (look.fist ? 1.15 : 0.95), 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = OUT; c.stroke();
-  if (f.mid === "ulti" && f.state === "attack") uvHeldProp(c, f, P, tk);
-  if (cos === "wizard") wizardStaff(c, P, f, shR, tk);
-  if (cos === "samurai") katana(c, P, f, shR, pal);
-  if (cos === "gunslinger") gunHeld(c, f, P, P.hF, heldDir(f, P, shR, -0.3), P.shotF, lw * 0.95, limbF, flash, false);
-  if (cos === "reaper") { if (!P.scyBack) scythe(c, f, P, RC, limbF, lw * 0.95); reapLightTrail(c, f, P); }
-  if (cos === "alchemist" && f.specCd <= 0 && !flash && f.mid !== "ulti") greenOrb(c, P.hF[0] + 2, P.hF[1] - 4, P.w * 0.15, tk);
   if (f.armorFlash > 0 || (BL.armored(f) && tk % 6 < 3)) {
     c.strokeStyle = "rgba(255,240,200,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -P.h * 0.5, P.w * 0.9, P.h * 0.62, 0, 0, Math.PI * 2); c.stroke();
   }
