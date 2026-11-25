@@ -147,9 +147,10 @@ function drawFinRing(c, f) {
   c.restore();
 }
 
-/* ---- 2v2 team rims (UI only; TEAM_COL is in ui/duo.js): while a 2v2 is drawn (render2D sets TEAM_RIM) every potato gets a thin outline in its
-   team's colour behind it (teamRimBody, called from drawPotato: one more stroke of the body path, wider than the ink outline so a ring
-   about 2 screen pixels thick shows) and a steady ring at the feet (drawTeamRing, from drawShadow). Ice blue is your team, ember red the foes. ---- */
+/* ---- 2v2 team rims (UI only; TEAM_COL is in ui/duo.js): while a 2v2 is drawn (render2D sets TEAM_RIM) every fighter gets a thin outline in
+   its team's colour round its whole figure (a Carved Ink figure: the rim pass, ui/carve.js TEAM RIM, a band about 2 screen pixels past the
+   ink; the old drawing, window.__cvOff: teamRimBody, called from drawPotato, one more stroke of the body path, wider than the ink outline)
+   and a steady ring at the feet (drawTeamRing, from drawShadow). Ice blue is your team, ember red the foes. ---- */
 let TEAM_RIM = false;
 function teamRimBody(c, f, P) {
   const tc = TEAM_COL[f.team];
