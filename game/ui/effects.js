@@ -675,33 +675,7 @@ function uvDrawFx(c, e, a) {
       c.globalAlpha = a * 0.16; c.fillStyle = e.col; c.fill();
       break;
     }
-    case "dome": {   // Phoenix's landing: a dome of white-gold fire that rises and thins
-      const r = e.r1 * (0.4 + 0.6 * easeOut2(Math.min(1, q * 1.8))), fa = Math.min(1, a * 1.6);
-      c.save(); c.translate(e.x, e.y); c.scale(1, 0.7);
-      const gr = c.createRadialGradient(0, 0, r * 0.05, 0, 0, r);
-      gr.addColorStop(0, `rgba(255,252,225,${fa})`); gr.addColorStop(0.3, `rgba(255,214,100,${0.95 * fa})`); gr.addColorStop(0.65, `rgba(255,110,34,${0.7 * fa})`); gr.addColorStop(1, "rgba(255,60,20,0)");
-      c.fillStyle = gr; c.beginPath(); c.arc(0, 0, r, Math.PI, Math.PI * 2); c.closePath(); c.fill();
-      c.globalCompositeOperation = "lighter"; glowDot(c, 0, -r * 0.1, r * 0.55, 0.8 * fa, "#fff3c0");
-      c.restore();
-      break;
-    }
     case "spark4": c.globalAlpha = Math.min(1, a * 1.5); star4(c, e.x, e.y, e.s * (0.4 + 0.6 * a), e.col); break;
-    case "cut": {   // a long white lens, thin at both ends, with a gold edge: it flashes in, holds, fades
-      const grow = Math.min(1, (e.t + 1) / 3), len = e.len * easeOut2(grow), w = e.w * (1 - q * 0.55);
-      c.save(); c.translate(e.x, e.y); c.rotate(e.ang);
-      const lens = (ln, wd) => { c.beginPath(); c.moveTo(-ln, 0); c.quadraticCurveTo(0, -wd, ln, 0); c.quadraticCurveTo(0, wd, -ln, 0); c.closePath(); c.fill(); };
-      c.globalAlpha = Math.min(1, a * 1.4) * 0.8; c.fillStyle = UV_GOLD; lens(len, w * 1.7);
-      c.globalAlpha = Math.min(1, a * 1.6); c.fillStyle = "#ffffff"; lens(len * 0.96, w);
-      c.restore();
-      break;
-    }
-    case "toxring": {   // the cloud pulses: a ring of toxic light running out from its edge (the last one is gold-white and big)
-      const r = lerp(e.r0, e.r1, easeOut2(q));
-      c.globalAlpha = a * 0.9; c.strokeStyle = e.last ? "#fffbd0" : "#c9ff9e"; c.lineWidth = (e.last ? 9 : 5) * a + 1.5;
-      c.beginPath(); c.arc(e.x, e.y, r, 0, Math.PI * 2); c.stroke();
-      c.globalAlpha = a * 0.28; c.strokeStyle = e.last ? UV_GOLD : "#6fe34a"; c.lineWidth = (e.last ? 22 : 12) * a; c.stroke();
-      break;
-    }
     case "beam": {   // the Wizard's call: a pale column to the sky
       const gr = c.createLinearGradient(0, e.y, 0, e.y - 520);
       gr.addColorStop(0, `rgba(255,246,216,${0.8 * a})`); gr.addColorStop(1, "rgba(190,243,255,0)");
