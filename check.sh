@@ -357,6 +357,14 @@ if grep -q "^ads ok" "$LOGS/ads.log"; then pass "rewarded ads + Harvest x2 (SOON
 else fail "rewarded ads + Harvest x2" "$LOGS/ads.log"; fi
 }
 
+# 6a2. The one-time skins upgrade card (ui/skinup.js): shown once on a quiet menu to a player who owns a skin beyond the free ones (order, "+N" tile),
+#      See my skins opens the Skin Rack on the first skin shown, Nice! closes; never for a fresh or free-only profile; fits four sizes and Russian.
+s_skinup() {
+(cd "$SHOTS" && timeout 600 python3 "$ROOT/tests/pwskinup.py" skinup) > "$LOGS/skinup.log" 2>&1
+if grep -q "^skinup ok" "$LOGS/skinup.log" && grep -q "^no errors" "$LOGS/skinup.log"; then pass "skins upgrade card (once, order, See my skins / Nice!, four sizes + Russian; shots in build/shots/skinup)"
+else fail "skins upgrade card" "$LOGS/skinup.log"; fi
+}
+
 # 6c6. The Pommes skins in the fight (skinfx.js: Ink Noir, Starfall): every fighter x line runs, sprints, lands hits and KOs wearing it, no page
 #      errors, the overlay costs <= 0.5 ms a frame per fighter. Contact sheets in build/shots/pmskin.
 s_pmskin() {
@@ -539,13 +547,13 @@ else fail "languages on screen" "$LOGS/lang-ui.log"; fi
 
 # The order the lines come in (the numbering above).
 QUICK_STEPS=(build proto snap lock finish combos sprint ulti boss duo lang)
-ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins shop acctui hud ultui hit pota pota2 pshop ads pmskin bwsheet rpview tut maps
+ORDER=("${QUICK_STEPS[@]}" balance botstyle roadcurve bossduo online onboss on2v2 acct quick cpu bw pm tc bwui replay tcui quickui stakesui screens skins skinup shop acctui hud ultui hit pota pota2 pshop ads pmskin bwsheet rpview tut maps
   finisher cup comboui daily bossui roadui mastery stats statsui statspage duoui fsui langui)
 # The lanes, each longest first (mastery about 6 minutes, maps 5, the accounts sheet 3, ...). Simulations play no clock, so they run at low
 # priority next to the rest; the server tests (quick, cpu, bw, pm, tc, acct, stats) have short timers, so they run alone first (about 20 seconds).
 SIMS=(balance botstyle roadcurve bossduo duo boss snap finish lock combos sprint ulti lang)
 SOLO=(quick cpu bw pm tc acct stats)
-REAL=(langui mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins bossui ultui hit pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
+REAL=(langui mastery maps shop acctui on2v2 hud daily screens roadui duoui quickui stakesui tcui bwui replay tut skins skinup bossui ultui hit pota pota2 pshop ads pmskin bwsheet rpview onboss comboui cup statsui online statspage finisher fsui)
 if [ $QUICK = 1 ]; then SIMS=(boss duo snap finish lock combos sprint ulti lang); SOLO=(); REAL=(); fi
 
 # one step in the background: its line goes to $RES/<step>, its seconds to $RES/<step>.t (written last: the step is done)

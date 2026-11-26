@@ -1164,6 +1164,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
     </div>
   </section>
 
+  <!-- the one-time skins upgrade card (ui/skinup.js, css/96-skinup.css): your own skins drawn live, once, over the menu -->
+  <section id="scrSkUp" class="screen modal" hidden>
+    <div class="sheet su-sheet" role="dialog" aria-labelledby="suT">
+      <header class="sh-head"><h3 id="suT">Your skins got an upgrade</h3><button class="round x" id="suClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="su-body">
+        <p class="su-line" id="suL">Every skin you own was redrawn. Same name, same effects, a new look.</p>
+        <div class="su-row" id="suRow"></div>
+        <div class="su-acts"><button class="btn primary" id="suSee"><span>See my skins</span></button><button class="btn" id="suOk"><span>Nice!</span></button></div>
+      </div>
+    </div>
+  </section>
+
   <!-- the Tournament sheet (ui/tcview.js, css/97-tourney.css; the page logic is ui/tourney.js): your fighter, the Daily Cup, Friends Cups, the Practice cup, and the lobby once you are in one -->
   <section id="scrTc" class="screen modal" hidden>
     <div class="sheet tcv-sheet" role="dialog" aria-label="Tournament">

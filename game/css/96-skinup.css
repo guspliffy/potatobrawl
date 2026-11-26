@@ -1,0 +1,22 @@
+/* The one-time skins upgrade card (ui/skinup.js; shell.html #scrSkUp): your own skins, drawn live, with "See my skins" and "Nice!". */
+#scrSkUp { z-index: 6; }
+.su-sheet { width: min(420px, 100%); max-height: 100%; gap: 0; padding: 0; overflow: hidden; }
+.su-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; min-height: 0; }
+.su-line { margin: 0; color: var(--text); font: 600 15px/1.25 var(--body, inherit); text-align: center; }
+.su-row { display: flex; justify-content: center; gap: 6px; }
+.su-t { position: relative; flex: 0 1 62px; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 3px; animation: suPop 0.34s cubic-bezier(0.2, 1.4, 0.4, 1) both; animation-delay: calc(var(--k, 0) * 80ms); }
+.su-a { position: relative; height: 64px; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; background: linear-gradient(180deg, #f6a45a, #7a3a6a); box-shadow: 0 2px 0 var(--ink); }
+.su-a canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.su-t b { font: 800 10px/1.05 var(--display); letter-spacing: 0.02em; text-transform: uppercase; text-align: center; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.1em; overflow-wrap: anywhere; }
+.su-n .su-a { display: grid; place-items: center; background: var(--ink); font: italic 900 26px/1 var(--display); color: var(--gold); }
+.su-acts { display: flex; gap: 10px; margin-top: 4px; }
+.su-acts .btn { flex: 1 1 0; width: auto; min-width: 0; min-height: 44px; font-size: 17px; padding: 4px 10px; }
+.su-acts .btn span { white-space: normal; }
+@keyframes suPop { from { transform: scale(0.3) translateY(8px); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } }
+#app.short .su-body { padding: 8px 14px 10px; gap: 6px; }
+#app.short .su-line { font-size: 13px; }
+#app.short .su-a { height: 52px; }
+#app.short .su-acts .btn { min-height: 38px; font-size: 15px; }
+#app.tiny .su-a { height: 44px; }
+@media (max-width: 440px) { .su-row { gap: 4px; } .su-t b { font-size: 9px; } .su-sheet .sh-head h3 { font-size: 19px; } .su-sheet .sh-head h3::after { display: none; } }
+@media (prefers-reduced-motion: reduce) { .su-t { animation: none; } }

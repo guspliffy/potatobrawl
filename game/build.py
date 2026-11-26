@@ -9,7 +9,7 @@ core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
 UI_PARTS = ['base', 'lang', 'counter', 'input', 'view', 'draw-fighters', 'carve', 'fig-odin', 'fig-samurai', 'fig-wizard', 'fig-gunslinger', 'fig-reaper', 'fig-phoenix', 'fig-dragon', 'fig-alchemist', 'glaze', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'hitkit', 'hk-phoenix', 'hk-dragon', 'hk-alchemist', 'hk-wizard', 'hk-samurai', 'hk-odin', 'hk-gunslinger', 'hk-reaper', 'finisher', 'manga',
-            'screens', 'hud', 'boss', 'duo', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'ads', 'harvest', 'skins', 'kopages', 'shop', 'pshop', 'online', 'online-team', 'menus', 'combos', 'mastery', 'acct', 'quick', 'rivals', 'vscpu', 'boards', 'stakes', 'challenge', 'bossweek', 'bwsheet', 'tourney', 'tcview', 'replay', 'rpview', 'tutorial', 'welcome', 'loop']
+            'screens', 'hud', 'boss', 'duo', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'ads', 'harvest', 'skins', 'skinup', 'kopages', 'shop', 'pshop', 'online', 'online-team', 'menus', 'combos', 'mastery', 'acct', 'quick', 'rivals', 'vscpu', 'boards', 'stakes', 'challenge', 'bossweek', 'bwsheet', 'tourney', 'tcview', 'replay', 'rpview', 'tutorial', 'welcome', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
 # the language tables: game/lang/<fr|de|es|ru>.json ("English": "theirs"), into ui/lang.js (tools/i18n.js checks them)
