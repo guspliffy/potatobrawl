@@ -14,7 +14,7 @@ cvFigReg("wizard", {
     harvest: { skin: "#f0b41e", hat: "#e0a01a", robe: "#a8641e", gold: "#fff3b0", lining: "#ffd66b", cry: "#fff6c8", wood: "#8a4f14", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
   pm: { 1: { robe: "#3a3842", skin: "#f1e8d2", cry: "#a86bff", gold: "#a86bff", brow: "#f1e8d2", hat: "#3a3842" },
     2: { skin: "#34246a", hat: "#4a2f9a", robe: "#2b1f52", gold: "#ffd36b", lining: "#ff6ad5", cry: "#ff6ad5", brow: "#f6eaff", wood: "#1a1238", boot: "#1a1238", rim: "#ff6ad5" } },
-  prim: "robe",
+  prim: ["robe", "hat"],
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.browSh = cvMix(C.brow, "#7f8fc0", 0.28); C.cryD = cvMix(C.cry, "#c0602a", 0.32);
     C.cryHi = cvMix(C.cry, "#ffffff", 0.7);

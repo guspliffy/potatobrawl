@@ -12911,7 +12911,7 @@ function uvShotTick(g, f) {
      won: { scratch, zorp, kraken, harvest }   overrides for the won skins (pal.road); include `skin` (the body)
      pm: { 1: {...}, 2: {...} }        overrides for the Pommes skins (pal.pommes 1 Ink Noir, 2 Starfall). Ink Noir first turns every pal colour
                                        into one of two inks (light CV_NOIR_L / dark CV_NOIR_D by luminance), then applies pm[1]
-     prim: "key"                       the costume's main colour: an unknown palette (a copy that is not in the list) sets it from pal.accent
+     prim: "key" | ["key", ...]        the costume's main colour(s): an unknown palette (a copy that is not in the list) sets it from pal.accent
      derive(C)                         optional: sets the tones that follow a skin's colours (C.greave = cvSh(C.steel, 0.35)), before the mode
      body: { x, y, rx, ry, o }         the potato in the standing frame (cvBlob(x, y, rx, ry, o)): the silhouette potatoPath() replays (glaze,
                                        Road and Pommes passes, the 2v2 team rim) and P.rx / P.ry / P.cy / P.top
@@ -13746,7 +13746,7 @@ function cvCols(fig, f, mode) {
   } else if (pal.pommes) Object.assign(base, fig.pm[pal.pommes]);
   else if (pal.road) Object.assign(base, fig.won[pal.road]);
   else if (i >= 0 && i < 4) Object.assign(base, fig.chip[i]);
-  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { base[fig.prim] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
+  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { for (const k of [].concat(fig.prim)) base[k] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
   if (fig.derive) fig.derive(base);   // tones that follow a skin's colour (a shadow steel, a beard's shade)
   if (mode === "f") for (const k in base) base[k] = "#ffffff";
   else if (mode === "d") for (const k in base) base[k] = cvMix(base[k], "#6a6a7a", 0.45);
@@ -14149,14 +14149,13 @@ window.__cvTest = { draw: (c, f, tk) => drawFighter(c, f, tk), toScreen: (x, y) 
 cvFigReg("odin", {
   pal: { skin: "#e3a45a", steel: "#b9c4d6", cape: "#b8262d", beard: "#f6f1e7", gold: "#ecb53a", fur: "#8a6248", raven: "#2b3052",
     belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9" },
-  chip: [{}, { cape: "#3d7fbf", steel: "#d3e6f6", gold: "#9fd6ff" }, { cape: "#7a3a1e", steel: "#ecc452", gold: "#fff2b0" },
-    { cape: "#3d3d4c", steel: "#6e7289", gold: "#b6bbd6", raven: "#15131f" }],
+  chip: [{}, { steel: "#3f5f8a", cape: "#a9d4f0", gold: "#e6f6ff", fur: "#dfe9f2" }, { steel: "#ecc452", cape: "#e0a020", gold: "#7a3a1e", fur: "#5a2a14" }, { steel: "#4a4d62", cape: "#23222e", gold: "#b6bbd6", raven: "#15131f", fur: "#2e2a36" }],
   won: { scratch: { cape: "#8a1a1a", skin: "#8c4a30", steel: "#5a4a52", gold: "#ff7a2b" },
     zorp: { cape: "#5f8fa0", skin: "#a9c8a0", steel: "#cfe6de", gold: "#9dff5a", beard: "#e6ffe0" },
     kraken: { cape: "#2f6a7a", skin: "#b89a62", steel: "#8fc0c6", gold: "#3ef2c0", beard: "#e0f6f0" },
-    harvest: { cape: "#a8641e", skin: "#f8cc52", steel: "#f2c94c", gold: "#fff6c8", beard: "#fff6dc" } },
+    harvest: { skin: "#f0b41e", steel: "#ffd66b", cape: "#a8641e", gold: "#fff6c8", beard: "#fff6dc", fur: "#8a4f14", belt: "#5a3210", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
   pm: { 1: { cape: "#ff3d57", skin: "#f1e8d2", beard: "#f1e8d2" },
-    2: { cape: "#cfa9ff", skin: "#34246a", steel: "#e0d0ff", gold: "#ff6ad5", beard: "#f6eaff", raven: "#0e0a1f" } },
+    2: { skin: "#34246a", steel: "#6a4fd0", cape: "#1a1238", gold: "#ff6ad5", beard: "#f6eaff", fur: "#2b1f52", raven: "#0e0a1f", belt: "#1a1238", rim: "#ff6ad5" } },
   prim: "cape",
   derive(C) {
     C.greave = cvSh(C.steel, 0.35); C.steelHi = cvMix(C.steel, "#ffffff", 0.72); C.lid = cvSh(C.skin, 0.2);
@@ -14251,13 +14250,12 @@ function cvOdinRaven(K) {
 cvFigReg("samurai", {
   pal: { skin: "#dba862", lac: "#2b2f48", jade: "#2fd39a", red: "#e3453b", hak: "#35467a", steel: "#eaf2f6", gold: "#ecb53a",
     tsuka: "#f3ead2", stem: "#3f7d3a", leaf: "#7fd35c", iris: "#1f9a72" },
-  chip: [{}, { jade: "#dfe7f0", hak: "#5c6680", lac: "#3d4358", red: "#3f8fe0" }, { jade: "#ff4a3a", hak: "#5a1c28", lac: "#1f1a24", red: "#f6efe0" },
-    { jade: "#b08aff", hak: "#3d2a78", lac: "#2a2148", red: "#ffd23f" }],
+  chip: [{}, { lac: "#c9d3df", jade: "#2b3350", hak: "#5c6680", red: "#3f8fe0" }, { lac: "#8a1c22", jade: "#f6efe0", hak: "#efe6d6", red: "#ff4a3a", tsuka: "#1f1a24" }, { lac: "#8f73f0", jade: "#ffd23f", hak: "#2a2148", red: "#ffd23f" }],
   won: { scratch: { jade: "#ff5a36", skin: "#8c4a30", lac: "#241418", hak: "#3a1a1c", red: "#ffb02e" },
     zorp: { jade: "#6cf0c8", skin: "#a9c8a0", lac: "#1f3a36", hak: "#2a5a52", red: "#9dff5a" },
     kraken: { jade: "#3ef2c0", skin: "#b89a62", lac: "#162a36", hak: "#1f4a5a", red: "#ff7a8a" },
-    harvest: { jade: "#ffd66b", skin: "#f8cc52", lac: "#5a3a1c", hak: "#8a531e", red: "#fff0b0" } },
-  pm: { 1: { jade: "#2fd39a", skin: "#f1e8d2" }, 2: { jade: "#ff3fa4", skin: "#34246a", lac: "#1a1238", hak: "#4a2a8a", red: "#c9a6ff" } },
+    harvest: { skin: "#f0b41e", lac: "#8a4f14", jade: "#ffd66b", hak: "#5a3210", red: "#fff3b0", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { jade: "#2fd39a", skin: "#f1e8d2" }, 2: { jade: "#ff3fa4", skin: "#34246a", lac: "#1a1238", hak: "#4a2a8a", red: "#c9a6ff", rim: "#ff6ad5" } },
   prim: "jade",
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.scar = cvSh(C.skin, 0.45); C.lacHi = cvMix(C.lac, "#a0a8e0", 0.35); C.lacSh = cvSh(C.lac, 0.4);
@@ -14381,17 +14379,16 @@ function cvHakama(c, K, a, ft, front) {
    P.staffTip); its crystal floats in a gold crescent over the top and turns. Mockup: redesign/mockups/src/fighters.js NEWF.d.wizard;
    skins: fx.js skinPal(). */
 cvFigReg("wizard", {
-  pal: { skin: "#f2b04e", robe: "#3d3a78", lining: "#8a66e0", gold: "#f6c64f", wood: "#8a5a36", cry: "#ffe38a", boot: "#5b3a2a",
+  pal: { skin: "#f2b04e", hat: "#3d3a78", robe: "#3d3a78", lining: "#8a66e0", gold: "#f6c64f", wood: "#8a5a36", cry: "#ffe38a", boot: "#5b3a2a",
     brow: "#fbf6ea", iris: "#3f6fb0", stem: "#4f9a3c", leaf: "#7fd35c", blush: "#ff6a5a" },
-  chip: [{}, { robe: "#6a3fc4", lining: "#ff8ad8", gold: "#ffd9f2" }, { robe: "#2f7a4b", lining: "#b6ff6a", gold: "#f6c64f", cry: "#b6ff6a" },
-    { robe: "#9a2b38", lining: "#ffb02e", gold: "#ffe08a", cry: "#ff9a6a" }],
-  won: { scratch: { robe: "#3a1428", skin: "#8c4a30", cry: "#ff8a3c", gold: "#ff7a2b", lining: "#ff5a36" },
-    zorp: { robe: "#2f4f5a", skin: "#a9c8a0", cry: "#9dff5a", gold: "#9dff5a", lining: "#5affc3" },
-    kraken: { robe: "#1e3a4a", skin: "#b89a62", cry: "#3ef2c0", gold: "#e6c98a", lining: "#3ef2c0" },
-    harvest: { robe: "#8a3f1a", skin: "#f8cc52", cry: "#fff6c8", gold: "#ffe08a", lining: "#ffd66b" } },
-  pm: { 1: { robe: "#3a3842", skin: "#f1e8d2", cry: "#a86bff", gold: "#a86bff", brow: "#f1e8d2" },
-    2: { robe: "#ffd36b", skin: "#34246a", cry: "#ff6ad5", gold: "#ff6ad5", lining: "#ff6ad5", brow: "#f6eaff" } },
-  prim: "robe",
+  chip: [{}, { hat: "#2f1a6a", robe: "#b79af5", gold: "#ff8ad8", lining: "#6a3fc4" }, { hat: "#3f8f52", robe: "#3f8f52", gold: "#f6c64f", lining: "#b6ff6a", cry: "#b6ff6a", wood: "#e6d9b0" }, { hat: "#f0d48a", robe: "#b3283a", gold: "#fff0b0", lining: "#ffb02e", cry: "#ff9a6a" }],
+  won: { scratch: { hat: "#3a1428", robe: "#3a1428", skin: "#8c4a30", cry: "#ff8a3c", gold: "#ff7a2b", lining: "#ff5a36" },
+    zorp: { hat: "#2f4f5a", robe: "#2f4f5a", skin: "#a9c8a0", cry: "#9dff5a", gold: "#9dff5a", lining: "#5affc3" },
+    kraken: { hat: "#1e3a4a", robe: "#1e3a4a", skin: "#b89a62", cry: "#3ef2c0", gold: "#e6c98a", lining: "#3ef2c0" },
+    harvest: { skin: "#f0b41e", hat: "#e0a01a", robe: "#a8641e", gold: "#fff3b0", lining: "#ffd66b", cry: "#fff6c8", wood: "#8a4f14", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { robe: "#3a3842", skin: "#f1e8d2", cry: "#a86bff", gold: "#a86bff", brow: "#f1e8d2", hat: "#3a3842" },
+    2: { skin: "#34246a", hat: "#4a2f9a", robe: "#2b1f52", gold: "#ffd36b", lining: "#ff6ad5", cry: "#ff6ad5", brow: "#f6eaff", wood: "#1a1238", boot: "#1a1238", rim: "#ff6ad5" } },
+  prim: ["robe", "hat"],
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.browSh = cvMix(C.brow, "#7f8fc0", 0.28); C.cryD = cvMix(C.cry, "#c0602a", 0.32);
     C.cryHi = cvMix(C.cry, "#ffffff", 0.7);
@@ -14425,10 +14422,10 @@ cvFigReg("wizard", {
     stache(S) { S.cel(cvSm([[7, -39, 1], [2, -38], [-4, -32, 1], [3, -33.5], [7, -36, 1], [11, -33.5], [18, -32, 1], [12, -38]]), "brow", { sh: [1.5, -1.5], shade: "browSh", lw: 1.6 }); },
     // the hat: the cone bent back with the star charm on its tip, the gold band, the wide brim, the sprout growing out of its front
     hat(S) { S.with(0, -2, 0, 1, () => {
-      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
-      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "robe/sh.5");
+      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "hat", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "hat/lt.22" });
+      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "hat/sh.5");
       S.cel(cvSm([[-13, -61, 1], [-12.4, -67], [1, -65.5], [13.4, -67], [15, -61, 1], [1, -59]]), "gold", { sh: [3, -2], lw: 1.8 });
-      S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "robe", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "robe/lt.25" });
+      S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "hat", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "hat/lt.25" });
       S.line([[-2.5, -64], [-3.2, -68], [-2.4, -71.5]], 2.2, "stem");
       S.leaf(-2.6, -71, 8, -2.5, "leaf"); S.leaf(-2.4, -71.5, 9, -0.6, "leaf");
       S.line([[-34.4, -93.5], [-34.5, -86.5]], 1.2); S.star(-34, -83.5, 3.8, "gold", 1.2);
@@ -14553,15 +14550,13 @@ function cvWizStar(c, x, y, r) {
 cvFigReg("gunslinger", {
   pal: { skin: "#e9b268", hat: "#8f5c33", pon: "#c8793a", cream: "#f6dfae", teal: "#2f9a94", red: "#dd4238", denim: "#3f5285", hide: "#4a2f22",
     steel: "#cdd4de", gold: "#ecb53a", grip: "#6e4526", iris: "#2f8f8a", stalk: "#c9a14a", wheat: "#d9c05a" },
-  chip: [{}, { hat: "#2c2836", pon: "#3f3848", cream: "#b3a6d0", teal: "#dd4238", denim: "#2a2a36" },
-    { hat: "#f3ecd9", pon: "#5a82b8", cream: "#f6dfae", teal: "#ecb53a", red: "#2f5fa8" },
-    { hat: "#3a2a1a", pon: "#dba62c", cream: "#fff3b8", teal: "#8a5a1a", steel: "#f2c94c", red: "#8a1f1f" }],
+  chip: [{}, { hat: "#2c2836", pon: "#3f3848", cream: "#b3a6d0", teal: "#dd4238", denim: "#2a2a36" }, { hat: "#f3ecd9", pon: "#5a82b8", cream: "#f6dfae", teal: "#ecb53a", red: "#2f5fa8", denim: "#2a3458" }, { hat: "#3a2a1a", pon: "#e6b62e", cream: "#fff3b8", teal: "#8a5a1a", steel: "#f2c94c", red: "#8a1f1f", denim: "#5a3a1c" }],
   won: { scratch: { pon: "#4a2018", skin: "#8c4a30", hat: "#2a1512", cream: "#ff7a2b", teal: "#ffb02e", denim: "#2a1a1c" },
     zorp: { pon: "#7a9a8a", skin: "#a9c8a0", hat: "#3a5a52", cream: "#9dff5a", teal: "#d6f6e0", denim: "#2a4a4a" },
     kraken: { pon: "#6a8a8a", skin: "#b89a62", hat: "#2a3a46", cream: "#3ef2c0", teal: "#ff7a8a", denim: "#1f3a4a" },
-    harvest: { pon: "#7a5226", skin: "#f8cc52", hat: "#8a531e", cream: "#ffe08a", teal: "#fff6c8", steel: "#f2c94c", denim: "#5a3a1c" } },
+    harvest: { skin: "#f0b41e", hat: "#e0a01a", pon: "#a8641e", cream: "#fff3b0", teal: "#ffd66b", red: "#8a4f14", steel: "#f2c94c", denim: "#5a3210", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
   pm: { 1: { pon: "#3a3842", skin: "#f1e8d2", teal: "#3ef2c0", red: "#3ef2c0" },
-    2: { pon: "#c7ff5a", skin: "#34246a", hat: "#1a1238", cream: "#ff6ad5", teal: "#2b1f52", denim: "#1a1238", red: "#ff6ad5" } },
+    2: { skin: "#34246a", hat: "#1a1238", pon: "#4a2f9a", cream: "#ff6ad5", teal: "#c7ff5a", red: "#ff6ad5", denim: "#1a1238", hide: "#0e0a1f", steel: "#e0d0ff", rim: "#ff6ad5" } },
   prim: "pon",
   derive(C) { C.lid = cvSh(C.skin, 0.34); C.redSh = cvSh(C.red, 0.2); C.steelHi = cvMix(C.steel, "#ffffff", 0.6); },
   body: { x: 0, y: -39, rx: 16, ry: 20.5 },
@@ -14669,11 +14664,10 @@ const CV_RPR_HOOD = [[-16, -38, 1], [-21, -56], [-10, -72], [6, -78], [19, -72, 
 cvFigReg("reaper", {
   pal: { cloak: "#565069", deep: "#17131f", skin: "#e2a95c", soul: "#8dffd0", bone: "#efe9da", wood: "#6e4a33", steel: "#e3e9f0",
     stem: "#4f7d4a", leaf: "#86b56a" },
-  chip: [{}, { cloak: "#3f6e3a", soul: "#c6ff6a" }, { cloak: "#3a3340", soul: "#ff8a3c", steel: "#ffd9b0" },
-    { cloak: "#ebe6d8", soul: "#8dffd0", bone: "#3a3644", wood: "#3a3644" }],
+  chip: [{}, { cloak: "#6f9a48", soul: "#c6ff6a", deep: "#10180f", wood: "#3a2a1a" }, { cloak: "#2a2430", soul: "#ff8a3c", steel: "#ffd9b0", wood: "#8a3a1a" }, { cloak: "#ebe6d8", bone: "#3a3644", wood: "#3a3644" }],
   won: { scratch: { cloak: "#3a1410", skin: "#8c4a30", soul: "#ff7a2b" }, zorp: { cloak: "#2d4a3e", skin: "#a9c8a0", soul: "#9dff5a" },
-    kraken: { cloak: "#22343a", skin: "#b89a62", soul: "#3ef2c0" }, harvest: { cloak: "#5a3a1c", skin: "#f8cc52", soul: "#ffe08a", steel: "#fff0b0" } },
-  pm: { 1: { cloak: "#3a3842", deep: "#1b1a22", soul: "#ffb444", skin: "#f1e8d2" }, 2: { cloak: "#9b5cff", skin: "#34246a", soul: "#ff6ad5", steel: "#f0e0ff" } },
+    kraken: { cloak: "#22343a", skin: "#b89a62", soul: "#3ef2c0" }, harvest: { skin: "#f0b41e", cloak: "#d9a01e", deep: "#3a2408", soul: "#fff0b0", steel: "#fff0b0", bone: "#fff6dc", wood: "#8a4f14", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { cloak: "#3a3842", deep: "#1b1a22", soul: "#ffb444", skin: "#f1e8d2" }, 2: { skin: "#34246a", cloak: "#6a3fd0", deep: "#0e0a1f", soul: "#ff6ad5", steel: "#f0e0ff", bone: "#e0d0ff", wood: "#1a1238", rim: "#ff6ad5" } },
   prim: "cloak",
   // (the face in the hood is dark, towards deep, so the two bright slits carry it)
   derive(C) { C.band = cvSh(C.steel, 0.45); C.shade = cvMix(C.skin, C.deep, 0.6); C.shadeD = cvMix(C.skin, C.deep, 0.8); C.soulHi = cvMix(C.soul, "#ffffff", 0.7); },
@@ -14910,13 +14904,12 @@ function cvPhxFlame(S, pts, ox, oy, k, k2, edge, mid) {
 cvFigReg("phoenix", {
   pal: { skin: "#f8bd4c", f1: "#ff5326", f2: "#ff9a1f", f3: "#ffe05a", leg: "#e27a1f", stem: "#3f7d3a", leaf: "#7fd35c", iris: "#e2541c",
     blush: "#ff6050" },
-  chip: [{}, { f1: "#2f8cff", f2: cvLt("#2f8cff", 0.42), f3: cvLt("#2f8cff", 0.8) }, { f1: "#2fb85a", f2: cvLt("#2fb85a", 0.42), f3: "#f4ffb0" },
-    { f1: "#ff9d0a", f2: "#ffd23f", f3: "#fffbe0", leg: "#c98a1a" }],
+  chip: [{}, { f1: "#1f4fc4", f2: "#3f9bff", f3: "#d6f0ff" }, { f1: "#a6e84a", f2: "#2fa85a", f3: "#145c3c", leg: "#2f7a3a" }, { f1: "#ffb000", f2: "#ffe27a", f3: "#fff6c8", leg: "#8a5a12" }],
   won: { scratch: { f1: "#ff3d1f", f2: cvLt("#ff3d1f", 0.42), f3: cvLt("#ff3d1f", 0.8), skin: "#8c4a30" },
     zorp: { f1: "#5aff9a", f2: cvLt("#5aff9a", 0.42), f3: cvLt("#5aff9a", 0.8), skin: "#a9c8a0" },
     kraken: { f1: "#ff7a8a", f2: cvLt("#ff7a8a", 0.42), f3: "#fff0d6", skin: "#b89a62" },
-    harvest: { f1: "#ff9a1f", f2: "#ffd23f", f3: "#fffbe0", skin: "#f8cc52" } },
-  pm: { 1: { f1: "#ff6a2b", f2: "#d8cfb8", f3: "#f1e8d2", skin: "#f1e8d2" }, 2: { f1: "#ff6a9a", f2: "#ffb0e0", f3: "#fff0fa", skin: "#34246a" } },
+    harvest: { skin: "#f0b41e", f1: "#a8641e", f2: "#f0b41e", f3: "#fff3b0", leg: "#8a4f14", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { f1: "#3a3842", f2: "#d8cfb8", f3: "#ff6a2b", skin: "#f1e8d2" }, 2: { f1: "#ff6a9a", f2: "#ffb0e0", f3: "#fff0fa", skin: "#34246a", leg: "#c9a6ff", rim: "#ff6ad5" } },
   prim: "f1",
   derive(C) { C.hi = cvLt(C.skin, 0.6); C.legB = cvSh(C.leg, 0.25); },
   body: { x: 2, y: -36, rx: 16.5, ry: 23.5, o: { pear: -0.14, lean: 0.14 } },
@@ -15050,13 +15043,12 @@ function cvDrgFoot(S, col, shade) {
 }
 cvFigReg("dragon", {
   pal: { skin: "#efac5a", sc: "#d9562a", mem: "#ffa24a", belly: "#ffe6b3", horn: "#fff3da", leaf: "#7fd35c", iris: "#f2b21f" },
-  chip: [{}, { sc: "#2f9a5c", mem: "#a6e06a", belly: "#f6f3c0" }, { sc: "#473a72", mem: "#9a84e0", belly: "#d6ccf6", horn: "#e6e0ff" },
-    { sc: "#a81c28", mem: "#ff8a1f", belly: "#ffd27a" }],
-  won: { scratch: { sc: "#a01f1f", skin: "#8c4a30", mem: "#ff7a1f", belly: "#ffb86a" },
+  chip: [{}, { sc: "#8fdc6a", mem: "#1f6a4a", belly: "#f6f3c0" }, { sc: "#2a2240", mem: "#7a64c8", belly: "#b8aee0", horn: "#e6e0ff" }, { sc: "#c2202a", mem: "#ffd23f", belly: "#3a0f14", horn: "#2a1418" }],
+  won: { scratch: { sc: "#a01f1f", horn: "#c9262a", skin: "#8c4a30", mem: "#ff7a1f", belly: "#ffb86a" },
     zorp: { sc: "#3fbf7a", skin: "#a9c8a0", mem: "#b6ffb0", belly: "#e6ffd6" },
     kraken: { sc: "#3f7a8a", skin: "#b89a62", mem: "#7ae0d6", belly: "#f0e6c0" },
-    harvest: { sc: "#c9741a", skin: "#f8cc52", mem: "#ffd66b", belly: "#fff3c8", horn: "#fff6dc" } },
-  pm: { 1: { sc: "#ffc21f", skin: "#f1e8d2", mem: "#d8cfb8" }, 2: { sc: "#ff8c42", skin: "#34246a", mem: "#ff6ad5", belly: "#c9a6ff", horn: "#ffe6fa" } },
+    harvest: { skin: "#ffd66b", sc: "#e0a01a", mem: "#8a4f14", belly: "#fff3c8", horn: "#fff6dc", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { sc: "#ffc21f", skin: "#f1e8d2", mem: "#d8cfb8" }, 2: { skin: "#34246a", sc: "#4a2f9a", mem: "#ff6ad5", belly: "#c9a6ff", horn: "#ffe6fa", iris: "#ff8c42", rim: "#ff6ad5" } },
   prim: "sc",
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.scB = cvSh(C.sc, 0.3); C.memB = cvSh(C.mem, 0.42); C.bellyLn = cvMix(C.belly, "#a0602a", 0.42);
@@ -15187,14 +15179,13 @@ const CV_ALC_EYES = [[3.1, -37, 4.5, 5.6], [14.1, -37.3, 3.9, 5.3]];   // the ki
 cvFigReg("alchemist", {
   pal: { skin: "#e2a352", hood: "#6f42b8", lining: "#2c1a52", brass: "#e0a93f", goo: "#8dff3a", hide: "#5b3a2a", vial: "#ff5aa8",
     leaf: "#9be86a", stem: "#3f7d3a", glass: "#d8f6ff", iris: "#3a2450" },
-  chip: [{}, { hood: "#b3324a", lining: cvSh("#b3324a", 0.62), brass: "#d9d2c0" }, { hood: "#2f4a9a", lining: cvSh("#2f4a9a", 0.62), brass: "#9fb0d6" },
-    { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0" }],
+  chip: [{}, { hood: "#8f1c34", lining: "#ffd9c9", brass: "#f0e6d2", hide: "#2a1218" }, { hood: "#141c44", lining: "#0a0e26", brass: "#c9d6f2", hide: "#c9d6f2" }, { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0", hide: "#3a2f4a" }],
   won: { scratch: { hood: "#5a1436", lining: cvSh("#5a1436", 0.62), skin: "#8c4a30", goo: "#ff7a2b", brass: "#ffb02e" },
     zorp: { hood: "#2a6e5a", lining: cvSh("#2a6e5a", 0.62), skin: "#a9c8a0", goo: "#c6ff5a", brass: "#d6f6e0" },
     kraken: { hood: "#3a2f6e", lining: cvSh("#3a2f6e", 0.62), skin: "#b89a62", goo: "#3ef2c0", brass: "#e6c98a" },
-    harvest: { hood: "#8a531e", lining: cvSh("#8a531e", 0.62), skin: "#f8cc52", goo: "#fff0a0", brass: "#fff0b0" } },
+    harvest: { skin: "#f0b41e", hood: "#a8641e", lining: "#5a3210", brass: "#fff3b0", goo: "#fff0a0", hide: "#5a3210", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
   pm: { 1: { hood: "#3a3842", lining: "#1b1a22", goo: "#8dff3a", skin: "#f1e8d2" },
-    2: { hood: "#5effc3", lining: "#ff6ad5", skin: "#34246a", goo: "#5effc3", brass: "#ff6ad5" } },
+    2: { skin: "#34246a", hood: "#4a2f9a", lining: "#ff6ad5", brass: "#5effc3", goo: "#5effc3", vial: "#ff6ad5", hide: "#1a1238", rim: "#ff6ad5" } },
   prim: "hood",
   derive(C) {
     C.mantle = cvSh(C.hood, 0.22); C.pants = cvSh(C.hood, 0.3); C.hoodLn = cvSh(C.hood, 0.5); C.faceSh = cvSh(C.skin, 0.45);

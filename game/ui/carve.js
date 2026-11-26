@@ -21,7 +21,7 @@
      won: { scratch, zorp, kraken, harvest }   overrides for the won skins (pal.road); include `skin` (the body)
      pm: { 1: {...}, 2: {...} }        overrides for the Pommes skins (pal.pommes 1 Ink Noir, 2 Starfall). Ink Noir first turns every pal colour
                                        into one of two inks (light CV_NOIR_L / dark CV_NOIR_D by luminance), then applies pm[1]
-     prim: "key"                       the costume's main colour: an unknown palette (a copy that is not in the list) sets it from pal.accent
+     prim: "key" | ["key", ...]        the costume's main colour(s): an unknown palette (a copy that is not in the list) sets it from pal.accent
      derive(C)                         optional: sets the tones that follow a skin's colours (C.greave = cvSh(C.steel, 0.35)), before the mode
      body: { x, y, rx, ry, o }         the potato in the standing frame (cvBlob(x, y, rx, ry, o)): the silhouette potatoPath() replays (glaze,
                                        Road and Pommes passes, the 2v2 team rim) and P.rx / P.ry / P.cy / P.top
@@ -856,7 +856,7 @@ function cvCols(fig, f, mode) {
   } else if (pal.pommes) Object.assign(base, fig.pm[pal.pommes]);
   else if (pal.road) Object.assign(base, fig.won[pal.road]);
   else if (i >= 0 && i < 4) Object.assign(base, fig.chip[i]);
-  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { base[fig.prim] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
+  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { for (const k of [].concat(fig.prim)) base[k] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
   if (fig.derive) fig.derive(base);   // tones that follow a skin's colour (a shadow steel, a beard's shade)
   if (mode === "f") for (const k in base) base[k] = "#ffffff";
   else if (mode === "d") for (const k in base) base[k] = cvMix(base[k], "#6a6a7a", 0.45);
