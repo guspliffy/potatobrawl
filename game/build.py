@@ -8,7 +8,7 @@ shell = (d/'shell.html').read_text()
 core = (d/'core.js').read_text()
 # ui.js is kept as parts in ui/ and joined in this order. The parts share one scope:
 # base.js opens the "(function () {" wrapper and loop.js closes it, so a part alone is not valid JS.
-UI_PARTS = ['base', 'lang', 'counter', 'input', 'view', 'draw-fighters', 'carve', 'fig-odin', 'fig-samurai', 'fig-wizard', 'fig-gunslinger', 'fig-reaper', 'fig-phoenix', 'fig-dragon', 'fig-alchemist', 'glaze', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'hitkit', 'hk-phoenix', 'hk-dragon', 'hk-alchemist', 'hk-wizard', 'hk-samurai', 'hk-odin', 'hk-gunslinger', 'hk-reaper', 'finisher', 'manga',
+UI_PARTS = ['base', 'lang', 'counter', 'input', 'view', 'draw-fighters', 'carve', 'fig-odin', 'fig-samurai', 'fig-wizard', 'fig-gunslinger', 'fig-reaper', 'fig-phoenix', 'fig-dragon', 'fig-alchemist', 'portrait', 'glaze', 'draw-world', 'draw-boss', 'draw-zorp', 'draw-kraken', 'effects', 'hitkit', 'hk-phoenix', 'hk-dragon', 'hk-alchemist', 'hk-wizard', 'hk-samurai', 'hk-odin', 'hk-gunslinger', 'hk-reaper', 'finisher', 'manga',
             'screens', 'hud', 'boss', 'duo', 'road', 'road-kitchen', 'road-deep', 'cup', 'daily', 'ads', 'harvest', 'skins', 'skinup', 'kopages', 'shop', 'pshop', 'online', 'online-team', 'menus', 'combos', 'mastery', 'acct', 'quick', 'rivals', 'vscpu', 'boards', 'stakes', 'challenge', 'bossweek', 'bwsheet', 'tourney', 'tcview', 'replay', 'rpview', 'tutorial', 'welcome', 'loop']
 ui = ''.join((d/'ui'/(n + '.js')).read_text() for n in UI_PARTS)
 # the manga finisher pages: one script per fighter in game/manga/<id>.js, spliced at the end of ui/manga.js
@@ -21,7 +21,6 @@ ui = ui.replace('/*LANGS*/{}', json.dumps({f.stem: json.loads(f.read_text(encodi
 ui = ui.replace('/*MANGA*/', '\n'.join(f.read_text() for f in sorted((d/'manga').glob('*.js'))))
 # the maps: one script per map in game/maps/<id>.js (MAP_ART entries), spliced in after the Potato Moon map in ui/draw-world.js
 ui = ui.replace('/*MAPS*/', '\n'.join(f.read_text() for f in sorted((d/'maps').glob('*.js'))) if (d/'maps').is_dir() else '')
-ui = ui.replace('/*PORTRAITS*/{}', (d/'portraits'/'portraits.json').read_text())
 ui = ui.replace('/*SKINFX*/', (d/'skinfx.js').read_text())
 ui = ui.replace('/*SYNC*/', (d/'sync.js').read_text())   # account sync, the pure part (also a node module)
 ui = ui.replace('/*ROUTES*/', (d/'routes.js').read_text())   # combo routes, the pure part (also a node module)

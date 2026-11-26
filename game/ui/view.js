@@ -109,7 +109,7 @@ function px(p) {
   return e;
 }
 const col = (p) => p.ui || p.body;
-const PORTRAITS = /*PORTRAITS*/{};
+const PORTRAITS = {};   // fighter id -> portrait image URL, drawn from the rig the first time it is read (ui/portrait.js)
 // The percent stays white until about 90, warms to yellow by 130, and runs to red between 150 and 175, where finish mode starts
 // (BL.TUNE.finishPct) and the HUD card pulses. The card's pulse and the off-screen bubble's number share this red.
 function pctColor(p) {

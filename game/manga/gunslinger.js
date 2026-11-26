@@ -421,7 +421,12 @@ MANGA.gunslinger = (function () {
     const fl = t >= FIN.launch;
     let ghosts = null;
     if (fl && !MG.slow) { const b = pn.p(...loserAt(t)); ghosts = [70, 46, 23].map((dt) => { const a = pn.p(...loserAt(t - dt)); return [a[0] - b[0], a[1] - b[1], 0.26 - dt * 0.0026]; }); }
-    mgPuppet(c, pn, Lp, t, { light: Math.PI - dirAng(-0.45), free: MG.broke, halo: fl ? 3 : 0, ghosts, flash: Lp.flash > 0 });
+    // while its hat (the Reaper's sprout) is off and floats over the page, the loser is drawn without it: that part's carved fills set aside
+    if (fl && !hat && MG.byId.strike) gnsHatStart(t);
+    const off = fl && hat && hat.part && !((pota || pota2) && t >= MT.SPLASH), ops = off ? cvOpsOf(hat.fig) : null;
+    if (off) ops[hat.part] = [];
+    try { mgPuppet(c, pn, Lp, t, { light: Math.PI - dirAng(-0.45), free: MG.broke, halo: fl ? 3 : 0, ghosts, flash: Lp.flash > 0 }); }
+    finally { if (off) ops[hat.part] = hat.ops; }
   }
 
   /* ---- panel 4: he blows the smoke off the barrel ---- */
@@ -519,16 +524,11 @@ MANGA.gunslinger = (function () {
   function gnsHat(o, t) {
     const h = gnsHatAt(t);
     if (!h) return;
-    const Lp = L_();
-    MG.pt = hat.t0 - 1;
-    const P = pose(Lp, mgTk(hat.t0 - 1));
-    o.save(); o.translate(h.x, h.y); o.rotate(h.a); o.scale(h.s * (Lp.facing < 0 ? -1 : 1), h.s * h.sq);
+    o.save(); o.translate(h.x, h.y); o.rotate(h.a); o.scale(h.s * hat.k * hat.fc, h.s * hat.k * h.sq);
     MG.tintK = 0.5; mgInkOn(o, clamp(10 / (2.5 * h.s), 1, 2.2));
-    try {
-      if (hatKind === "cowboy") { o.translate(-P.rx * 0.08, -(P.top + P.ry * 0.3)); cowboyHat(o, P, Lp.pal); }
-      else if (hatKind === "wizard") { o.translate(0, -(P.top + P.ry * 0.22)); wizardHat(o, P, Lp.pal, mgTk(hat.t0)); }
-      else { o.scale(1.3, 1.3); sprout(o, 0, -2, 1); }
-    } finally { mgInkOff(o); }
+    cvMg = Object.prototype.hasOwnProperty.call(o, "fillStyle");   // (the page's inked context: the carved outlines get its strokes, as the figures' do)
+    try { o.translate(-hat.ax, -hat.ay); cvOps(o, hat.ops, hat.C); }
+    finally { cvMg = false; mgInkOff(o); }
     o.restore();
     // it lands: a little puff of dust either side
     const k = fe(LAND, LAND + 380, t);
@@ -538,12 +538,34 @@ MANGA.gunslinger = (function () {
       o.restore();
     }
   }
+  // what is shot off: the loser's own carved hat (ui/fig-gunslinger.js, fig-wizard.js "hat"), or bare-headed its own carved sprout when
+  // that is a part of its own (the Reaper's), else a little carved sprout; in the skin it wears. (ax, ay): its bottom middle, where it sits
+  // on the head; part: the part the loser is drawn without while it is off
+  let gnsSprout = null;
+  const GNS_LEAF = { leaf: "#7fd35c", res: {}, flat: false };
+  function gnsProp(Lp) {
+    const fig = CV_FIG[Lp.spec.look.costume] || null, part = fig && fig.carve[hatKind === "sprout" ? "sprout" : "hat"] ? (hatKind === "sprout" ? "sprout" : "hat") : null;
+    if (part) {
+      const ops = cvOpsOf(fig)[part];
+      let x0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const q of ops) { x0 = Math.min(x0, q.bb[0]); x1 = Math.max(x1, q.bb[2]); y1 = Math.max(y1, q.bb[3]); }
+      return { fig, part, ops, C: cvCols(fig, Lp, "n"), ax: (x0 + x1) / 2, ay: y1, k: 1 };
+    }
+    if (!gnsSprout) {
+      const S = new CV_Carve();
+      S.line([[0, 1], [-0.6, -3], [0.2, -6.5]], 2, "leaf/sh.5"); S.leaf(0, -6.2, 8, -2.5, "leaf"); S.leaf(0.4, -6.6, 9, -0.6, "leaf");
+      gnsSprout = S.done();
+    }
+    const C = fig && cvCols(fig, Lp, "n");
+    return { fig, part: null, ops: gnsSprout, C: C && typeof C.leaf === "string" ? C : GNS_LEAF, ax: 0, ay: 1, k: 1.3 };
+  }
   function gnsHatStart(t) {   // where the hat sits on the loser's head the moment it is shot off (css px of panel 3), and how big
     const Lp = L_(), pn = MG.byId.strike, tt = FIN.launch - 1;
     MG.pt = tt;
-    const P = pose(Lp, mgTk(tt)), lx = FIN.lx - FIN.dir * 5;
-    const q = rot([P.rx * 0.08, hatKind === "sprout" ? P.top + 1 : P.top + P.ry * (hatKind === "wizard" ? 0.22 : 0.3)], P.hip, P.lean), s = pn.sp(lx + Lp.facing * q[0], q[1]);
-    hat = { t0: FIN.launch, x: s[0], y: s[1], s: pn.z * (pn.z < 1.6 ? 1.15 : 1), foot: hatKind === "sprout" ? 2.6 : P.ry * 0.22, xl: L.gw * (FIN.dir > 0 ? (L.portrait ? 0.9 : 0.93) : (L.portrait ? 0.1 : 0.07)) };
+    const P = pose(Lp, mgTk(tt)), lx = FIN.lx - FIN.dir * 5, pr = gnsProp(Lp);
+    const q = pr.part ? rot([pr.ax, pr.ay + P.cvDrop], P.hip, P.lean) : rot([P.rx * 0.08, P.top + 1], P.hip, P.lean), s = pn.sp(lx + Lp.facing * q[0], q[1]);
+    hat = Object.assign(pr, { t0: FIN.launch, x: s[0], y: s[1], s: pn.z * (pn.z < 1.6 ? 1.15 : 1), fc: Lp.facing < 0 ? -1 : 1, foot: 0,
+      xl: L.gw * (FIN.dir > 0 ? (L.portrait ? 0.9 : 0.93) : (L.portrait ? 0.1 : 0.07)) });
   }
 
   /* ---- the Ultimate's panel 5: the WANTED poster (a full-page splash, slides in from the top at 3750) ---- */
