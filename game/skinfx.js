@@ -388,6 +388,13 @@ function roadSkinKo(k, rs) {
   }
 }
 
+/* ---- PR 3 hooks (ui/carve.js K.skinBack / K.skinFront): called for every skin but the free one, in the figure's standing frame (world
+   units, origin at the feet, y up negative, facing right; squash, crouch and lean already applied), skinBack before any part of the figure,
+   skinFront after all of it. flash: the hit flash (draw white or nothing), P.dim: the helpless figure (dim it). K: the figure's kit (read-only:
+   K.fig the CV_FIG entry, K.C this frame's colours). Never on the 2v2 rim pass. ---- */
+function skinBack(c, f, P, tk, flash, K) { }
+function skinFront(c, f, P, tk, flash, K) { }
+
 /* ---- Pommes skins: two lines laid on any fighter, bought with Pommes (pal.pommes: 1 Ink Noir, 2 Starfall; Fable, step8/fable-design-2.md
    section 2), UI only ----
    The Road skins' two passes, dispatched from roadSkinBody / roadSkinTop: pmskBody inside the body's lean clipped to the potato (before the

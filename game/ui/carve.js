@@ -1209,6 +1209,11 @@ CV_Kit.prototype = {
     c.restore();
   },
   skinTop() { const f = this.f; if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash); c.restore(); },
+  // the skin's fittings and extras behind the whole figure and over it (PR 3: a won skin's tail, Ink Noir's disc, Starfall's orbit, the chip
+  // skins' motes and glints): skinfx.js skinBack / skinFront, in the standing frame (squash, crouch, lean: K.body), not in the rim pass, for
+  // every skin but the free one (palette 0). They get K (read-only) for K.fig, K.C and K.pt
+  skinBack() { if (!this.rimPass && this.f.pal && cvPalIdx(this.f) !== 0) this.body((c) => skinBack(c, this.f, this.P, this.tk, this.flash, this)); },
+  skinFront() { if (!this.rimPass && this.f.pal && cvPalIdx(this.f) !== 0) this.body((c) => skinFront(c, this.f, this.P, this.tk, this.flash, this)); },
   spring(name, target, k) {
     let S = CV_SPR.get(this.f);
     if (!S) { S = {}; CV_SPR.set(this.f, S); }
@@ -1230,7 +1235,7 @@ function cvFigure(c, f, P, tk, at, flash) {
     if (tc) cvRimPass(c, f, P, tk, at, flash, tc);
     const K = new CV_Kit(c, f, P, tk, at, flash);
     if (cvMg) K.vec = true;
-    P.fig.draw(K);
+    K.skinBack(); P.fig.draw(K); K.skinFront();
     return K;
   } finally { cvMg = false; }
 }

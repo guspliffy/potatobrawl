@@ -14099,6 +14099,11 @@ CV_Kit.prototype = {
     c.restore();
   },
   skinTop() { const f = this.f; if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash); c.restore(); },
+  // the skin's fittings and extras behind the whole figure and over it (PR 3: a won skin's tail, Ink Noir's disc, Starfall's orbit, the chip
+  // skins' motes and glints): skinfx.js skinBack / skinFront, in the standing frame (squash, crouch, lean: K.body), not in the rim pass, for
+  // every skin but the free one (palette 0). They get K (read-only) for K.fig, K.C and K.pt
+  skinBack() { if (!this.rimPass && this.f.pal && cvPalIdx(this.f) !== 0) this.body((c) => skinBack(c, this.f, this.P, this.tk, this.flash, this)); },
+  skinFront() { if (!this.rimPass && this.f.pal && cvPalIdx(this.f) !== 0) this.body((c) => skinFront(c, this.f, this.P, this.tk, this.flash, this)); },
   spring(name, target, k) {
     let S = CV_SPR.get(this.f);
     if (!S) { S = {}; CV_SPR.set(this.f, S); }
@@ -14120,7 +14125,7 @@ function cvFigure(c, f, P, tk, at, flash) {
     if (tc) cvRimPass(c, f, P, tk, at, flash, tc);
     const K = new CV_Kit(c, f, P, tk, at, flash);
     if (cvMg) K.vec = true;
-    P.fig.draw(K);
+    K.skinBack(); P.fig.draw(K); K.skinFront();
     return K;
   } finally { cvMg = false; }
 }
@@ -21727,6 +21732,13 @@ function roadSkinKo(k, rs) {
     for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });
   }
 }
+
+/* ---- PR 3 hooks (ui/carve.js K.skinBack / K.skinFront): called for every skin but the free one, in the figure's standing frame (world
+   units, origin at the feet, y up negative, facing right; squash, crouch and lean already applied), skinBack before any part of the figure,
+   skinFront after all of it. flash: the hit flash (draw white or nothing), P.dim: the helpless figure (dim it). K: the figure's kit (read-only:
+   K.fig the CV_FIG entry, K.C this frame's colours). Never on the 2v2 rim pass. ---- */
+function skinBack(c, f, P, tk, flash, K) { }
+function skinFront(c, f, P, tk, flash, K) { }
 
 /* ---- Pommes skins: two lines laid on any fighter, bought with Pommes (pal.pommes: 1 Ink Noir, 2 Starfall; Fable, step8/fable-design-2.md
    section 2), UI only ----
