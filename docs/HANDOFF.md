@@ -28,7 +28,7 @@ Read this first in the next session, then the plan doc "PotatoBrawl: Session Wra
   - PR 3: skins, portraits, the upgrade card (Fable's spec redesign/pr3-design.md, look check redesign/look-check-pr3.md). Four layers per
     skin: 1 colours (fig-<id>.js chip / won / pm; a set may name an exact tone, "skin/sh" or "rim", which wins over the computed one; prim
     may list keys: the Wizard's hat is its own key), 2 flat atop paint over the body-level parts (skinfx.js skcAtop / skcAtopParts, laid by
-    K.paintRun: baked into the sprites source-atop, or clipped to the parts' outline where the kit draws paths: big draws, dimmed, manga),
+    K.paintRun the same in sprites and paths: over each part's fills, clipped to them, under its ink, cvAtopGroups; tests/pwatop.py),
     3 fittings carved once (K.fit: horns, tail, dome, net, laurel, Ink Noir's disc), 4 a few live fills (K.skinBack / K.skinFront round
     the whole figure, every skin but palette 0, never in the rim pass; the "skin" token breaks a run only for a live body pass, K.skinMid).
     Chip skins: four value layouts per fighter (they differ in grey), 150 three motes, 300 six motes and two glints, on top of FXTEXT's
