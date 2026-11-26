@@ -218,7 +218,7 @@ INKED = """[...document.querySelectorAll('#acPanH .sh-gz canvas')].map((c) => { 
 
 # ----- the Shop at one size -----
 P0 = {'tokens': 1500, 'rating': 1080, 'peak': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': True, 'last': 'phoenix', 'name': 'Potato 74',
-      'owned': {'phoenix': [0, 1, 2], 'odin': [0, 1]}, 'pal': {'phoenix': 2, 'odin': 1}}
+      'owned': {'phoenix': [0, 1, 2], 'odin': [0, 1]}, 'pal': {'phoenix': 2, 'odin': 1}, 'skup': 1}
 def card(kind, id_): return f'#acPanH .sh-{kind}[data-id="{id_}"]'
 
 async def shop_size(b, tag):

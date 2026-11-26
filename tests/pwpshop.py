@@ -31,7 +31,7 @@ PROF = 'potatobrawl.profile.v1'
 IDS = ['phoenix', 'alchemist', 'odin', 'wizard', 'samurai', 'dragon', 'gunslinger', 'reaper']
 NAMES = {'phoenix': ('Well Done', 'New Potatoes'), 'alchemist': ('Mashed', "Philosopher's Spud"), 'odin': ('Frozen Fries', 'Smash Landing'), 'wizard': ('Crisp-tal Ball', 'Hocus Croquettes'),
          'samurai': ('Hasselback', 'Snake Eyes'), 'dragon': ('Jacket Potato', 'Air Fryer'), 'gunslinger': ('Tater Tots', 'Loaded'), 'reaper': ('Rest in Peel', 'Gravy Digger')}
-P0 = {'tokens': 1500, 'rating': 1080, 'peak': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': True, 'last': 'phoenix', 'name': 'Potato 74', 'owned': {'phoenix': [0, 1, 2]}, 'pal': {'phoenix': 2}}
+P0 = {'tokens': 1500, 'rating': 1080, 'peak': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': True, 'last': 'phoenix', 'name': 'Potato 74', 'owned': {'phoenix': [0, 1, 2]}, 'pal': {'phoenix': 2}, 'skup': 1}
 errs = []
 
 def need(ok, msg):

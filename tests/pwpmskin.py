@@ -86,7 +86,7 @@ def run(b, fid, job, W, H, up):
     name, spec_idx, line = job   # core.js: pal.pommes 1 / 2 are palettes 8 / 9 (checked below)
     tag = f'{fid} {name} {W}x{H}'
     ctx = b.new_context(viewport={'width': W, 'height': H}, device_scale_factor=2, is_mobile=True, has_touch=True)
-    prof = {'tut': True, 'last': fid, 'sound': False, 'fs': False, 'screen': 'up' if up else 'cw', 'pal': {fid: spec_idx}, 'owned': {fid: [0, spec_idx]}}
+    prof = {'tut': True, 'last': fid, 'sound': False, 'fs': False, 'screen': 'up' if up else 'cw', 'pal': {fid: spec_idx}, 'owned': {fid: [0, spec_idx]}, 'skup': 1}
     ctx.add_init_script("window.__blNoQuick = true; localStorage.setItem('potatobrawl.profile.v1', %s);" % json.dumps(json.dumps(prof)))
     ctx.add_init_script(CLOCK); ctx.add_init_script(HOOKS)
     pg = ctx.new_page()

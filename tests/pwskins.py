@@ -26,7 +26,7 @@ KEY = 'potatobrawl.profile.v1'
 PORT = int(os.environ.get('PWSKINS_PORT', 8096))
 URL = f'http://localhost:{PORT}/'
 SIZES = [('se', 667, 320), ('phone', 844, 390), ('desk', 1280, 760), ('upright', 390, 844)]
-BASE = {'tokens': 160, 'rating': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': 1, 'last': 'samurai', 'owned': {'samurai': [0, 1]}, 'pal': {'samurai': 1},
+BASE = {'tokens': 160, 'rating': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': 1, 'last': 'samurai', 'owned': {'samurai': [0, 1]}, 'pal': {'samurai': 1}, 'skup': 1,
         'road': {'s': [7, 7, 3, 1], 'b': 0, 'paid': False}}
 errs = []
 
