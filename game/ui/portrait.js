@@ -22,7 +22,7 @@ const PT_SPEC = {
   phoenix: { s: 5.4, eye: 111, tilt: 6, wingUp: 0.5, field: "#b8361a", shade: "#7a1c1c", disc: "#ffd27a" },
   alchemist: { s: 5.0, eye: 117, tilt: -3, field: "#3a2270", shade: "#24144a", disc: "#8dff3a" },
   odin: { s: 5.0, eye: 111, tilt: -3, field: "#7a1a22", shade: "#4a1020", disc: "#ecb53a" },
-  wizard: { s: 4.2, eye: 142, tilt: -3, field: "#26244f", shade: "#17163a", disc: "#f6c64f" },
+  wizard: { s: 4.8, eye: 142, tilt: -3, field: "#26244f", shade: "#17163a", disc: "#f6c64f" },
   samurai: { s: 5.4, eye: 111, tilt: -2, ex: "rage", xk: 0.5, vx: 6, field: "#14604a", shade: "#0c3f3a", disc: "#f3ead2" },
   dragon: { s: 4.8, eye: 117, tilt: 4, hF: [4, 12], field: "#b8741a", shade: "#7a4414", disc: "#ffe6b3" },
   gunslinger: { s: 4.4, eye: 129, tilt: -3, hF: [2, 8], hB: [0, 8], hold: 1.2, gunB: 2.1, field: "#2f4a80", shade: "#1c2f58", disc: "#f6dfae" },

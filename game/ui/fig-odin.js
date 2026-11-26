@@ -5,7 +5,7 @@
 cvFigReg("odin", {
   pal: { skin: "#e3a45a", steel: "#b9c4d6", cape: "#b8262d", beard: "#f6f1e7", gold: "#ecb53a", fur: "#8a6248", raven: "#2b3052",
     belt: "#5b3a2a", leaf: "#7fd35c", leafFar: "#63b548", iris: "#4a86c9" },
-  chip: [{}, { steel: "#3f5f8a", cape: "#a9d4f0", gold: "#e6f6ff", fur: "#dfe9f2" }, { steel: "#ecc452", cape: "#e0a020", gold: "#7a3a1e", fur: "#5a2a14" }, { steel: "#4a4d62", cape: "#23222e", gold: "#b6bbd6", raven: "#15131f", fur: "#2e2a36" }],
+  chip: [{}, { steel: "#2c4468", cape: "#a9d4f0", gold: "#e6f6ff", fur: "#dfe9f2" }, { steel: "#ecc452", cape: "#e0a020", gold: "#7a3a1e", fur: "#5a2a14" }, { steel: "#4a4d62", cape: "#23222e", gold: "#b6bbd6", raven: "#15131f", fur: "#2e2a36" }],
   won: { scratch: { cape: "#8a1a1a", skin: "#8c4a30", steel: "#5a4a52", gold: "#ff7a2b" },
     zorp: { cape: "#5f8fa0", skin: "#a9c8a0", steel: "#cfe6de", gold: "#9dff5a", beard: "#e6ffe0" },
     kraken: { cape: "#2f6a7a", skin: "#b89a62", steel: "#8fc0c6", gold: "#3ef2c0", beard: "#e0f6f0" },

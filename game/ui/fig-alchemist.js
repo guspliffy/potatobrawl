@@ -8,7 +8,7 @@ const CV_ALC_EYES = [[3.1, -37, 4.5, 5.6], [14.1, -37.3, 3.9, 5.3]];   // the ki
 cvFigReg("alchemist", {
   pal: { skin: "#e2a352", hood: "#6f42b8", lining: "#2c1a52", brass: "#e0a93f", goo: "#8dff3a", hide: "#5b3a2a", vial: "#ff5aa8",
     leaf: "#9be86a", stem: "#3f7d3a", glass: "#d8f6ff", iris: "#3a2450" },
-  chip: [{}, { hood: "#8f1c34", lining: "#ffd9c9", brass: "#f0e6d2", hide: "#2a1218" }, { hood: "#141c44", lining: "#0a0e26", brass: "#c9d6f2", hide: "#c9d6f2" }, { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0", hide: "#3a2f4a" }],
+  chip: [{}, { hood: "#5e1024", lining: "#ffd9c9", brass: "#f0e6d2", hide: "#2a1218" }, { hood: "#141c44", lining: "#0a0e26", brass: "#c9d6f2", hide: "#c9d6f2" }, { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0", hide: "#3a2f4a" }],
   won: { scratch: { hood: "#5a1436", lining: cvSh("#5a1436", 0.62), skin: "#8c4a30", goo: "#ff7a2b", brass: "#ffb02e" },
     zorp: { hood: "#2a6e5a", lining: cvSh("#2a6e5a", 0.62), skin: "#a9c8a0", goo: "#c6ff5a", brass: "#d6f6e0" },
     kraken: { hood: "#3a2f6e", lining: cvSh("#3a2f6e", 0.62), skin: "#b89a62", goo: "#3ef2c0", brass: "#e6c98a" },
