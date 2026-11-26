@@ -396,9 +396,10 @@ function roadSkinKo(k, rs) {
    A skin of a carved figure (ui/carve.js) is four layers, cheapest first: 1 its colours (the fig files' chip / won / pm), and here
    2 ATOP PAINT (skcAtop): flat shapes over the figure's body-level parts (SKC_PARTS: body, head, hat, hood, cloak, robe, poncho, cape), in the
      standing frame: charred feet and ember cracks, the Specimen's glow from below, Harvest Gold's bronze foot shadow and sheen band, Ink
-     Noir's halftone, Starfall's nebula and stars. The kit bakes it into its sprites (K.paintRun: source-atop) and, where it draws paths (a
-     big draw: the select screen, the Skin Rack's model; the dimmed figure; a manga page), clips it to the parts' outline (skcClip). The
-     faces, lenses and the like are drawn after it, so none of it covers a face. Limbs, wings and weapons keep the colours only.
+     Noir's halftone, Starfall's nebula and stars. The kit lays it the same way in its sprites and where it draws paths (a big draw: the
+     select screen, the Skin Rack's model; the dimmed figure; a manga page): over each part's fills, clipped to them, under the ink drawn
+     after them (ui/carve.js K.paintRun, cvAtopGroups), so it never covers an outline or reaches past one (tests/pwatop.py). The faces,
+     lenses and the like are drawn after it, so none of it covers a face. Limbs, wings and weapons keep the colours only.
    3 FITTINGS (K.fit): new carved parts in fixed colours, one sprite each per skin and zoom level: behind the figure (skinBack: the tail, the
      disc), over its parts and under the front arm (the "top" slot: horns, the net with its kelp, starfish and barnacles, the laurel), in
      front of it all (skinFront: the dome).
@@ -436,9 +437,10 @@ const SKC_CATCH = { phoenix: [-18, 20, -34, -10, -50, -4, -24, 8, 10, -18], alch
 const SKC_LAUREL = { phoenix: [6, -46, 17, 15], alchemist: [6, -38, 18, 17], odin: [0, -52, 21, 17], wizard: [1, -60, 17, 13], samurai: [1, -44, 18, 15],
   dragon: [4, -44, 17, 14], gunslinger: [1, -60, 15, 13], reaper: [4, -58, 17, 17] };
 const SKC_GLINT = [[-1.3, -1.0, 4.5], [1.5, -0.15, 3.6], [-1.0, 0.9, 3], [1.1, -1.7, 3.2], [0.3, 1.15, 2.4]];
-// Ink Noir (3.1): the accent, the disc's middle and radius (up and behind the head)
-const SKC_DISC = { phoenix: ["#ff6a2b", -24, -66, 22], alchemist: ["#8dff3a", -18, -56, 22], odin: ["#ff3d57", -26, -62, 22], wizard: ["#a86bff", -20, -78, 22],
-  samurai: ["#2fd39a", -18, -54, 22], dragon: ["#ffc21f", -16, -66, 20], gunslinger: ["#3ef2c0", -18, -70, 22], reaper: ["#ffb444", -16, -66, 22] };
+// Ink Noir (3.1): the accent, the disc's middle and radius (up and behind the head; Phoenix, Odin and the Wizard moved back, the Wizard up
+// too, so a third or more shows), its alpha (0.9 unless given: the Reaper's pale orange on a sand wall needs all of it)
+const SKC_DISC = { phoenix: ["#ff6a2b", -24, -66, 22], alchemist: ["#8dff3a", -18, -56, 22], odin: ["#ff3d57", -26, -62, 22], wizard: ["#a86bff", -26, -84, 22],
+  samurai: ["#2fd39a", -18, -54, 22], dragon: ["#ffc21f", -16, -66, 20], gunslinger: ["#3ef2c0", -18, -70, 22], reaper: ["#ffb444", -16, -66, 22, 1] };
 const SKC_SHAPES = new Map(), SKC_PARTC = new Map();
 // a slow phone drops the live bits in the spec's order (section 4): 1 outer stars and ink drops, 2 bubbles and the bead, 3 chip motes and the
 // crack pulse (PERF.q steps up when a match cannot hold ~45 fps)
@@ -465,13 +467,13 @@ function skcAtopParts(K) {
   if (!s) { s = new Set(SKC_PARTS[K.fig.id] || ["body"]); if (k === "scratch" && K.fig.id === "phoenix") s.add("tail"); SKC_PARTC.set(key, s); }
   return s;
 }
-// the outline of a stretch of carved parts (the union of their ink and of what reaches past it), for a clip; kept on the figure
+// what the fills of some carved parts cover (inside their outlines: the ink left out), for a clip; kept on the figure
 function skcClip(fig, seg) {
   const m = fig.skcClip || (fig.skcClip = new Map()), key = seg.join(",");
   let p = m.get(key);
   if (!p) {
     p = new Path2D();
-    for (const n of seg) for (const o of cvPartOps(fig, n)) if (o.rp) for (const Q of o.rp) skcPoly(p, Q);
+    for (const n of seg) for (const o of cvPartOps(fig, n)) if (o.k !== "ink" && o.a === 1) p.addPath(o.p);
     m.set(key, p);
   }
   return p;
@@ -546,8 +548,8 @@ function skcShapes(fig, k, tail) {
   SKC_SHAPES.set(key, L);
   return L;
 }
-// layer 2: the atop paint of K's skin in the current transform (the standing frame of the parts just drawn; the caller has set source-atop
-// or a clip). part: the first part of the stretch (the Phoenix's "tail" has its own)
+// layer 2: the atop paint of K's skin in the current transform (the standing frame of the part being drawn; the caller has clipped it to
+// the fills just drawn: ui/carve.js K.paintRun). part: that part (the Phoenix's "tail" has its own)
 function skcAtop(c, K, part) {
   const L = skcShapes(K.fig, skcKind(K.f), part === "tail");
   if (K.P.dim) c.globalAlpha *= 0.5;
@@ -692,8 +694,8 @@ function skcFront(c, f, P, tk, K) {
   else if (k === "harvest") skcGlints(c, K, tk);
   else if (k === "star") skcOrbit(c, K, tk, true);
 }
-// the body slot (roadSkinBody with K; the body's lean, the rig frame): Devil's Roast's crack pulse (clipped like its cracks to the body-level
-// parts' outline, skcClip, kept on the figure), Ink Noir's boiling line
+// the body slot (roadSkinBody with K; the body's lean, the rig frame): Devil's Roast's crack pulse (clipped to the body-level parts' fills,
+// inside their outlines: skcClip), Ink Noir's boiling line
 function skcBody(c, f, P, tk, K) {
   const k = skcKind(f);
   if (k === "noir") return pmskBody(c, f, P, tk, K);
@@ -795,12 +797,12 @@ function skcGlints(c, K, tk) {
   SKC_GLINT.forEach(([u, v, r], i) => { const q = ((t - i * 30 + 150) % 150) / 40; if (q < 1) pmskStar4(c, B.x + u * B.rx, B.y + v * B.ry, r * Math.sin(Math.PI * q)); });
   c.fillStyle = "#fff3b0"; c.fill();
 }
-// Ink Noir: the disc behind the figure (a fitting, at 0.9) and four ink drops on its back edge, bobbing
+// Ink Noir: the disc behind the figure (a fitting, at 0.9 or its own alpha) and four ink drops on its back edge, bobbing
 function skcDisc(c, K, tk) {
   const D = SKC_DISC[K.fig.id];
   if (!D) return;
   const ga = c.globalAlpha;
-  c.globalAlpha = ga * 0.9; K.fit("skc-disc", (S) => skcDiscCarve(S, D)); c.globalAlpha = ga;
+  c.globalAlpha = ga * (D[4] || 0.9); K.fit("skc-disc", (S) => skcDiscCarve(S, D)); c.globalAlpha = ga;
   if (skcDrop(1)) return;
   c.beginPath();
   [[-150, 1.5], [-175, 2], [160, 2.6], [135, 3.4]].forEach(([a, r], i) => {
