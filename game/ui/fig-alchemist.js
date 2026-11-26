@@ -8,14 +8,13 @@ const CV_ALC_EYES = [[3.1, -37, 4.5, 5.6], [14.1, -37.3, 3.9, 5.3]];   // the ki
 cvFigReg("alchemist", {
   pal: { skin: "#e2a352", hood: "#6f42b8", lining: "#2c1a52", brass: "#e0a93f", goo: "#8dff3a", hide: "#5b3a2a", vial: "#ff5aa8",
     leaf: "#9be86a", stem: "#3f7d3a", glass: "#d8f6ff", iris: "#3a2450" },
-  chip: [{}, { hood: "#b3324a", lining: cvSh("#b3324a", 0.62), brass: "#d9d2c0" }, { hood: "#2f4a9a", lining: cvSh("#2f4a9a", 0.62), brass: "#9fb0d6" },
-    { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0" }],
+  chip: [{}, { hood: "#5e1024", lining: "#ffd9c9", brass: "#f0e6d2", hide: "#2a1218" }, { hood: "#141c44", lining: "#0a0e26", brass: "#c9d6f2", hide: "#c9d6f2" }, { hood: "#e6dfcc", lining: "#3a2f4a", brass: "#6b3fa0", hide: "#3a2f4a" }],
   won: { scratch: { hood: "#5a1436", lining: cvSh("#5a1436", 0.62), skin: "#8c4a30", goo: "#ff7a2b", brass: "#ffb02e" },
     zorp: { hood: "#2a6e5a", lining: cvSh("#2a6e5a", 0.62), skin: "#a9c8a0", goo: "#c6ff5a", brass: "#d6f6e0" },
     kraken: { hood: "#3a2f6e", lining: cvSh("#3a2f6e", 0.62), skin: "#b89a62", goo: "#3ef2c0", brass: "#e6c98a" },
-    harvest: { hood: "#8a531e", lining: cvSh("#8a531e", 0.62), skin: "#f8cc52", goo: "#fff0a0", brass: "#fff0b0" } },
+    harvest: { skin: "#f0b41e", hood: "#a8641e", lining: "#5a3210", brass: "#fff3b0", goo: "#fff0a0", hide: "#5a3210", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
   pm: { 1: { hood: "#3a3842", lining: "#1b1a22", goo: "#8dff3a", skin: "#f1e8d2" },
-    2: { hood: "#5effc3", lining: "#ff6ad5", skin: "#34246a", goo: "#5effc3", brass: "#ff6ad5" } },
+    2: { skin: "#34246a", hood: "#4a2f9a", lining: "#ff6ad5", brass: "#5effc3", goo: "#5effc3", vial: "#ff6ad5", hide: "#1a1238", rim: "#ff6ad5" } },
   prim: "hood",
   derive(C) {
     C.mantle = cvSh(C.hood, 0.22); C.pants = cvSh(C.hood, 0.3); C.hoodLn = cvSh(C.hood, 0.5); C.faceSh = cvSh(C.skin, 0.45);

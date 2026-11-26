@@ -26,7 +26,7 @@ ONE = [l for l in ARGV.get('one', 'fr,es').split(',') if l]
 SIZE_LIST = ARGV.get('sizes', 's667,p844,d1280,up390').split(',')
 SCREENS = ARGV.get('screens', 'menu,select,skins,pshop,help,settings,account,shop,daily,road,stop,quick,online,boards,bw,tc,match,pause,result,welcome').split(',')
 P0 = {'tokens': 1500, 'rating': 1080, 'peak': 1080, 'wins': 3, 'losses': 2, 'matches': 5, 'tut': True, 'fin1': True, 'last': 'phoenix', 'name': 'Potato 74',
-      'owned': {'phoenix': [0, 1, 2]}, 'pal': {'phoenix': 2}}
+      'owned': {'phoenix': [0, 1, 2]}, 'pal': {'phoenix': 2}, 'skup': 1}
 # what stays English in every language (game/ui/lang.js): names, the brand words, the KO pages' names
 KEEP = ['Phoenix', 'Alchemist', 'Odin', 'Wizard', 'Samurai', 'Dragon', 'Gunslinger', 'Reaper', 'Old Scratch', 'Zorp', 'Kraken Spud', 'Kraken', 'Scratch',
         'PotatoBrawl', 'Potato Brawl', 'Potato', 'Brawl', 'Pommes', 'Potatality', 'Potatalities', 'K.O.', 'KO', 'Potato 74',

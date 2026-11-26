@@ -24,7 +24,7 @@ function newAttract() {
 }
 
 /* ----- the main menu (Fable's design; markup in shell.html #scrMenu, styles in game/css/20-menu.css) ----- */
-// a portrait <img> on the menu, set only when the fighter changes (the portraits are inlined data URLs)
+// a portrait <img> on the menu, set only when the fighter changes (the portraits are blob URLs drawn from the rig, ui/portrait.js)
 function menuImg(img, id) {
   const src = PORTRAITS[id] || "";
   if (img._src !== src) { img._src = src; if (src) img.src = src; else img.removeAttribute("src"); }

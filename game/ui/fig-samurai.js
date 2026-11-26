@@ -6,13 +6,12 @@
 cvFigReg("samurai", {
   pal: { skin: "#dba862", lac: "#2b2f48", jade: "#2fd39a", red: "#e3453b", hak: "#35467a", steel: "#eaf2f6", gold: "#ecb53a",
     tsuka: "#f3ead2", stem: "#3f7d3a", leaf: "#7fd35c", iris: "#1f9a72" },
-  chip: [{}, { jade: "#dfe7f0", hak: "#5c6680", lac: "#3d4358", red: "#3f8fe0" }, { jade: "#ff4a3a", hak: "#5a1c28", lac: "#1f1a24", red: "#f6efe0" },
-    { jade: "#b08aff", hak: "#3d2a78", lac: "#2a2148", red: "#ffd23f" }],
+  chip: [{}, { lac: "#c9d3df", jade: "#2b3350", hak: "#5c6680", red: "#3f8fe0" }, { lac: "#8a1c22", jade: "#f6efe0", hak: "#efe6d6", red: "#ff4a3a", tsuka: "#1f1a24" }, { lac: "#8f73f0", jade: "#ffd23f", hak: "#2a2148", red: "#ffd23f" }],
   won: { scratch: { jade: "#ff5a36", skin: "#8c4a30", lac: "#241418", hak: "#3a1a1c", red: "#ffb02e" },
     zorp: { jade: "#6cf0c8", skin: "#a9c8a0", lac: "#1f3a36", hak: "#2a5a52", red: "#9dff5a" },
     kraken: { jade: "#3ef2c0", skin: "#b89a62", lac: "#162a36", hak: "#1f4a5a", red: "#ff7a8a" },
-    harvest: { jade: "#ffd66b", skin: "#f8cc52", lac: "#5a3a1c", hak: "#8a531e", red: "#fff0b0" } },
-  pm: { 1: { jade: "#2fd39a", skin: "#f1e8d2" }, 2: { jade: "#ff3fa4", skin: "#34246a", lac: "#1a1238", hak: "#4a2a8a", red: "#c9a6ff" } },
+    harvest: { skin: "#f0b41e", lac: "#8a4f14", jade: "#ffd66b", hak: "#5a3210", red: "#fff3b0", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { jade: "#2fd39a", skin: "#f1e8d2" }, 2: { jade: "#ff3fa4", skin: "#34246a", lac: "#1a1238", hak: "#4a2a8a", red: "#c9a6ff", rim: "#ff6ad5" } },
   prim: "jade",
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.scar = cvSh(C.skin, 0.45); C.lacHi = cvMix(C.lac, "#a0a8e0", 0.35); C.lacSh = cvSh(C.lac, 0.4);

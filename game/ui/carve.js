@@ -21,7 +21,7 @@
      won: { scratch, zorp, kraken, harvest }   overrides for the won skins (pal.road); include `skin` (the body)
      pm: { 1: {...}, 2: {...} }        overrides for the Pommes skins (pal.pommes 1 Ink Noir, 2 Starfall). Ink Noir first turns every pal colour
                                        into one of two inks (light CV_NOIR_L / dark CV_NOIR_D by luminance), then applies pm[1]
-     prim: "key"                       the costume's main colour: an unknown palette (a copy that is not in the list) sets it from pal.accent
+     prim: "key" | ["key", ...]        the costume's main colour(s): an unknown palette (a copy that is not in the list) sets it from pal.accent
      derive(C)                         optional: sets the tones that follow a skin's colours (C.greave = cvSh(C.steel, 0.35)), before the mode
      body: { x, y, rx, ry, o }         the potato in the standing frame (cvBlob(x, y, rx, ry, o)): the silhouette potatoPath() replays (glaze,
                                        Road and Pommes passes, the 2v2 team rim) and P.rx / P.ry / P.cy / P.top
@@ -46,7 +46,8 @@
    SHAPES are arrays of points [x, y] (dense polygons; nothing is stroked): cvBlob(cx, cy, rx, ry, o) the potato, cvSm(pts, open) a smooth
    path through points ([x, y, 1] a sharp corner), cvCirc(x, y, r, ry, rot), cvCapsule(a, b, r0, r1), cvRect(x, y, w, h).
    COLOUR KEYS: a key of the skin's colour set ("cape"), "key/sh" its shadow tone, "key/sh.3" a lighter one, "key/lt" its highlight, "ink",
-   "rim", "eye" (the eye white), or a literal "#rrggbb" (kept on every skin: avoid it but for mouths).
+   "rim", "eye" (the eye white), or a literal "#rrggbb" (kept on every skin: avoid it but for mouths). A skin's set may name a tone itself
+   ("skin/sh": "#b8761a", "rim": "#ff6ad5" in chip / won / pm): that exact key then wins over the computed one.
    THE CARVER, S (in carve.name(S); the standing frame, or what S.with sets):
      S.cel(shape, key, o)   the carved part: the ink outline (o.lw, default 2.6; 0 none; half outside the shape, half over it), the base,
                             the hard shadow (what the shape moved by o.sh = [dx, dy] towards the light leaves uncovered; default [4, -3];
@@ -81,7 +82,11 @@
      K.face()        the live face (P.expr, hitstun eyes, P.mouth, blinks); K.stack's "face" token calls it when it must
      K.rim()         the 2v2 team rim is the rim pass (TEAM RIM below); K.rim() draws the old cheap body rim only where that pass is off
                      (PERF.q >= 2: a phone the frame-time watchdog finds slow)
-     K.skinBody(), K.skinTop()   the skin passes ("skin" / "top" in K.stack call them)
+     K.skinBody(), K.skinTop()   the skin passes ("skin" / "top" in K.stack call them; "skin" breaks the run only for a skin with
+                     something live on the potato: K.skinMid); K.skinBack() / K.skinFront() round the whole figure (cvFigure)
+     K.fit(name, carve)   a skin's fitting (skinfx.js: horns, tail, dome, net, laurel, disc): carved once, one sprite (K.sprite)
+     A skin's flat paint over the body-level parts (skinfx.js skcAtop) is laid by K.paintRun, in the sprites and on the paths alike: over
+     each part's fills, clipped to them, under its ink (cvAtopGroups), so no outline is ever painted over
      K.spring(name, target, k)   a lagging value for secondary motion (capes, tails): per fighter, eased once per tick
    The back arm and back leg are one tone (their shadow): they read as further away. Live parts use cvLimb / cvMitt / cvCapAdd / cvSegAdd /
    cvArcAdd: build a path, fill it; ink under, the shadow, the lit part inset towards the light (CV_LDX, CV_LDY).
@@ -412,7 +417,7 @@ function cvOps(c, ops, C) {
   for (let i = 0; i < ops.length; i++) {
     const o = ops[i];
     if (o.t && C.flat) continue;
-    c.fillStyle = cvCol(C, o.k);
+    c.fillStyle = cvInkTest && o.k === "ink" ? cvInkTest : cvCol(C, o.k);   // (cvInkTest: tests/pwatop.py marks the carved ink)
     if (o.a !== 1) { c.globalAlpha = ga * o.a; c.fill(o.p); c.globalAlpha = ga; } else c.fill(o.p);
     if (cvMg && o.k === "ink") cvMgInk(c, o.p);
   }
@@ -420,7 +425,7 @@ function cvOps(c, ops, C) {
 // a manga page (ui/manga.js) draws a fighter through a context whose fillStyle is wrapped: it tints every colour, its strokes in OUT come out
 // k times wider, and its halo pass turns everything white with wider lines still. The kit then draws paths, not sprites (K.stack, K.sprite),
 // and gives the ink outlines a stroke the page can widen (cvMgInk)
-let cvMg = false;
+let cvMg = false, cvAtopOff = false, cvVecTest = false, cvInkTest = null;   // (the last three: tests only, window.__cvTest)
 function cvMgInk(c, p) { if (!cvMg) return; c.lineWidth = 1.3; c.strokeStyle = OUT; c.lineJoin = "round"; if (p) c.stroke(p); else c.stroke(); }
 
 // a part's fills; "face" is the face at rest (cvFaceCarve), carved like the rest
@@ -428,6 +433,24 @@ function cvPartOps(fig, name) {
   if (name !== "face") return cvOpsOf(fig)[name];
   if (!fig.faceOps) { const S = new CV_Carve(); cvFaceCarve(S, fig.face); fig.faceOps = S.done(); }
   return fig.faceOps;
+}
+
+// a part's fills cut into groups for a skin's atop paint (K.paintRun): each group its ops up to the next ink after a fill, with clip the
+// group's opaque fills (their own paths, so the clip is exactly what they cover; null when it has none). Kept on the figure
+function cvAtopGroups(fig, name) {
+  const M = fig.atopG || (fig.atopG = new Map());
+  let G = M.get(name);
+  if (G) return G;
+  G = [];
+  let ops = [], clip = null;
+  for (const o of cvPartOps(fig, name)) {
+    if (o.k === "ink" && clip) { G.push({ ops, clip }); ops = []; clip = null; }
+    ops.push(o);
+    if (o.k !== "ink" && o.a === 1) (clip || (clip = new Path2D())).addPath(o.p);
+  }
+  if (ops.length) G.push({ ops, clip });
+  M.set(name, G);
+  return G;
 }
 
 /* ---------- sprites: a run of carved parts drawn once per skin and zoom level, upright ---------- */
@@ -488,7 +511,7 @@ function cvBaked(K, list, pose) {
   const x = cv2.getContext("2d");
   x.setTransform(q, 0, 0, q, -b[0] * q, -b[1] * q);
   if (m) x.transform(m.a, m.b, m.c, m.d, m.e, m.f);
-  for (const n of list) cvOps(x, cvPartOps(fig, n), C);
+  K.paintRun(x, list);   // (with the skin's atop paint)
   s = { cv: cv2, x0: b[0], y0: b[1], w: w / q, h: h / q, px: w * h };
   const key = pre + L + suf;
   CV_BAKE.set(key, s); cvBakePx += s.px; cvBakeMade++; cvBakeBig = Math.max(cvBakeBig, s.px);
@@ -855,7 +878,7 @@ function cvCols(fig, f, mode) {
   } else if (pal.pommes) Object.assign(base, fig.pm[pal.pommes]);
   else if (pal.road) Object.assign(base, fig.won[pal.road]);
   else if (i >= 0 && i < 4) Object.assign(base, fig.chip[i]);
-  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { base[fig.prim] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
+  else if (i < 0 && /^#[0-9a-f]{6}$/i.test(pal.accent || "")) { for (const k of [].concat(fig.prim)) base[k] = pal.accent; if (/^#[0-9a-f]{6}$/i.test(pal.body || "")) base.skin = pal.body; }
   if (fig.derive) fig.derive(base);   // tones that follow a skin's colour (a shadow steel, a beard's shade)
   if (mode === "f") for (const k in base) base[k] = "#ffffff";
   else if (mode === "d") for (const k in base) base[k] = cvMix(base[k], "#6a6a7a", 0.45);
@@ -868,6 +891,7 @@ function cvCol(C, k) {
   let v = C.res[k];
   if (v) return v;
   if (k === "ink") v = CV_INK;
+  else if (typeof C[k] === "string" && (k === "rim" || k === "eye" || k.indexOf("/") > 0)) v = C[k];   // a tone a skin sets itself (won.harvest "skin/sh", Starfall's "rim"; flat / dimmed with the rest)
   else if (k === "rim") v = C.flat ? "#ffffff" : CV_RIM;
   else if (k === "eye") v = C.flat ? "#ffffff" : CV_EYE;
   else {
@@ -1068,6 +1092,9 @@ function CV_Kit(c, f, P, tk, at, flash) {
   this.vec = !!flash || !!P.dim;   // the hit flash and the dimmed helpless figure are drawn as paths (they come and go: no sprites for them)
   const pal = f.pal || {}, F = fig.face;
   this.skinPass = !!(pal.road || pal.pommes || (!flash && !P.dim && glazeOn(f)));   // a won / Pommes skin or Glaze draws between the parts
+  // the "skin" token breaks the body's run only for a pass with something live on the potato (Glaze, Devil's Roast's crack pulse, Ink
+  // Noir's boiling line: skinfx.js skcBodyLive); the rest of a skin's body paint is baked into the sprites (paintRun)
+  this.skinMid = this.skinPass && ((!flash && !P.dim && glazeOn(f)) || skcBodyLive(f));
   this.faceRest = !P.expr && f.state !== "hitstun" && !(F.blink !== false && ((tk + f.slot * 53) % 211) < 4);   // (a shout keeps it: K.stack)
   const sq = P.sq || 0;
   this.sx = 1 + 0.6 * sq; this.sy = 1 - sq;
@@ -1126,7 +1153,7 @@ CV_Kit.prototype = {
       c.save(); this._sq(c);
       if (posed) c.translate(0, P.cvDrop);
       else { if (!sp || ls) this._lean(c); c.translate(0, P.cvDrop); if (fn) fn(c); }
-      if (sp) c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of run) cvOps(c, cvPartOps(fig, n), this.C);
+      if (sp) c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else this.paintRun(c, run);
       if (shout) {   // a shout: the open mouth over the run that holds the resting face (turned like a held pose's sprite)
         if (posed) { const px = P.hip[0], py = P.hip[1] - P.cvDrop; c.translate(px, py); c.rotate(ls / 50); c.translate(-px, -py); if (fn) fn(c); }
         cvMouthFor(c, this, fig.face, false, null, 0);
@@ -1136,7 +1163,7 @@ CV_Kit.prototype = {
     for (const it of list) {
       if (!it) continue;
       if (typeof it === "function") { out(); it(this); }
-      else if (it === "skin") { if (this.skinPass) { out(); this.skinBody(); } }
+      else if (it === "skin") { if (this.skinMid) { out(); this.skinBody(); } }
       else if (it === "top") { if (this.skinPass) { out(); this.skinTop(); } }
       else if (it === "face" && !this.faceRest) { out(); this.face(); }
       else { run.push(it); if (it === "face" && P.mouth > 0.5) shout = true; }
@@ -1160,7 +1187,29 @@ CV_Kit.prototype = {
   sprite(list) {
     if (this.rimPass) { cvRimDraw(this.rc, cvRimOfRun(this.fig, list), this.rimPass); return; }
     const sp = this.vec ? null : cvBaked(this, list);
-    if (sp) this.c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else for (const n of list) cvOps(this.c, cvPartOps(this.fig, n), this.C);
+    if (sp) this.c.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h); else this.paintRun(this.c, list);
+  },
+  // a run of carved parts as fills into c: a sprite being baked or the canvas (the same either way). A skin's atop paint (layer 2 of a skin:
+  // skinfx.js skcAtop, flat shapes in the standing frame) goes on the parts that take it (skcAtopParts: the body-level parts) and never on
+  // the others (a face, lenses, a raven): each such part is drawn in its groups (cvAtopGroups: its fills up to the next ink), the paint
+  // over each group's fills, clipped to them, and under the ink drawn after them, so it never covers an outline or reaches past one. Not on
+  // the hit flash, not in the rim pass
+  paintRun(c, run) {
+    const fig = this.fig, C = this.C, A = C.flat || this.rimPass || cvAtopOff ? null : skcAtopParts(this);
+    for (const n of run) {
+      if (!A || !A.has(n)) { cvOps(c, cvPartOps(fig, n), C); continue; }
+      for (const g of cvAtopGroups(fig, n)) {
+        cvOps(c, g.ops, C);
+        if (g.clip) { c.save(); c.clip(g.clip); skcAtop(c, this, n); c.restore(); }
+      }
+    }
+  },
+  // a skin's fitting (layer 3: horns, a tail, the dome, the disc; skinfx.js): parts carved once per figure under name by carve(S), in fixed
+  // colours, drawn in the current transform as one sprite (per skin and zoom level, K.sprite), as paths where the kit draws paths
+  fit(name, carve) {
+    const ops = cvOpsOf(this.fig);
+    if (!ops[name]) { const S = new CV_Carve(); carve(S); ops[name] = S.done(); }
+    this.sprite([name]);
   },
   arm(front, held) {
     const A = this.fig.arm, c = this.c, C = this.C, sh = front ? A.shF : A.shB, h = front ? this.hF : this.hB;
@@ -1204,11 +1253,16 @@ CV_Kit.prototype = {
     const c = this.c, f = this.f, P = this.P;
     if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes && (this.flash || P.dim || !glazeOn(f)))) return;
     c.save(); this._sq(c); this._lean(c);
-    roadSkinBody(c, f, P, this.tk, this.flash);
+    roadSkinBody(c, f, P, this.tk, this.flash, this);
     if (!this.flash && !P.dim && glazeOn(f)) glazeDraw(c, f, P, this.tk);   // ui/glaze.js
     c.restore();
   },
-  skinTop() { const f = this.f; if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash); c.restore(); },
+  skinTop() { const f = this.f; if (this.rimPass || !f.pal || (!f.pal.road && !f.pal.pommes)) return; const c = this.c; c.save(); this._sq(c); this._lean(c); roadSkinTop(c, f, this.P, this.tk, this.flash, this); c.restore(); },
+  // the skin's fittings and extras behind the whole figure and over it (PR 3: a won skin's tail, Ink Noir's disc, Starfall's orbit, the chip
+  // skins' motes and glints): skinfx.js skinBack / skinFront, in the standing frame (squash, crouch, lean: K.body), not in the rim pass, for
+  // every skin but the free one (palette 0). They get K (read-only) for K.fig, K.C and K.pt
+  skinBack() { if (!this.rimPass && this.f.pal && cvPalIdx(this.f) !== 0) this.body((c) => skinBack(c, this.f, this.P, this.tk, this.flash, this)); },
+  skinFront() { if (!this.rimPass && this.f.pal && cvPalIdx(this.f) !== 0) this.body((c) => skinFront(c, this.f, this.P, this.tk, this.flash, this)); },
   spring(name, target, k) {
     let S = CV_SPR.get(this.f);
     if (!S) { S = {}; CV_SPR.set(this.f, S); }
@@ -1229,8 +1283,8 @@ function cvFigure(c, f, P, tk, at, flash) {
     const tc = TEAM_RIM && !at && !cvMg && !cvRimOff && PERF.q < 2 && TEAM_COL[f.team];   // (a phone the watchdog finds slow: K.rim's cheap body rim)
     if (tc) cvRimPass(c, f, P, tk, at, flash, tc);
     const K = new CV_Kit(c, f, P, tk, at, flash);
-    if (cvMg) K.vec = true;
-    P.fig.draw(K);
+    if (cvMg || cvVecTest) K.vec = true;
+    K.skinBack(); P.fig.draw(K); K.skinFront();
     return K;
   } finally { cvMg = false; }
 }
@@ -1244,4 +1298,7 @@ function cvSilPath(c, P) {
 // tests/pwcarve.py: the drawing and the camera, from outside the page's scope
 window.__cvTest = { draw: (c, f, tk) => drawFighter(c, f, tk), toScreen: (x, y) => toScreen(x, y), get cam() { return cam; }, get dpr() { return DPR; }, get L() { return L; }, get ctx() { return ctx; },
   figs: () => Object.keys(CV_FIG), glaze: (f, on) => glazeMark(f, on), set rim(v) { TEAM_RIM = !!v; }, set rimOff(v) { cvRimOff = !!v; },
-  bakes: () => ({ n: CV_BAKE.size, px: cvBakePx, made: cvBakeMade, big: cvBakeBig }) };
+  bakes: () => ({ n: CV_BAKE.size, px: cvBakePx, made: cvBakeMade, big: cvBakeBig }),
+  // tests/pwatop.py: the skins' atop paint off (the sprites dropped, so none baked with it is drawn), every figure drawn as paths
+  set atopOff(v) { cvAtopOff = !!v; CV_BAKE.clear(); cvBakePx = 0; }, set vec(v) { cvVecTest = !!v; },
+  set inkTest(v) { cvInkTest = v || null; CV_BAKE.clear(); cvBakePx = 0; } };

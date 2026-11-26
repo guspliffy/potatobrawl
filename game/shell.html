@@ -326,7 +326,7 @@ button { font: inherit; color: inherit; }
 /* ---------- menu: game/css/20-menu.css (the menu redesign); the rules below are shared with the Account sheet and the results ---------- */
 #app { --gear: 42px; }
 #app.short { --gear: 38px; }
-.av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
+.av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 50% 50% / auto 100% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
 .ring { --tc: #9097ad; --d: calc(var(--gear) - 10px); position: relative; width: var(--d); height: var(--d); flex: none; display: grid; place-items: center; }
 .ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring > svg circle { fill: none; stroke-width: 3.4; }
@@ -406,8 +406,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .ac-grid, #app.narrow .ac-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "me" "sync" "foot"; grid-template-rows: none; }
 .ac-me { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ac-id { display: flex; gap: 12px; align-items: center; }
-.av[data-f="gunslinger"] { background-position: 53% 67%; background-size: auto 190%; }   /* his face sits lower, under the hat brim */
-.av[data-f="reaper"] { background-position: 53% 62%; background-size: auto 190%; }   /* his face, inside the hood */
 .ac-id .av { --d: 58px; }
 .ac-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .ac-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 18ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
@@ -1160,6 +1158,18 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
           <span class="bw-wkm" id="bwwM"><span class="coin chips plus" id="bwwC"></span><small>paid into your account</small></span>
           <div class="bw-wka"><button class="btn primary" id="bwwGo"><span id="bwwGoT"></span></button><button class="btn" id="bwwOk"><span>OK</span></button></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- the one-time skins upgrade card (ui/skinup.js, css/96-skinup.css): your own skins drawn live, once, over the menu -->
+  <section id="scrSkUp" class="screen modal" hidden>
+    <div class="sheet su-sheet" role="dialog" aria-labelledby="suT">
+      <header class="sh-head"><h3 id="suT">Your skins got an upgrade</h3><button class="round x" id="suClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></button></header>
+      <div class="su-body">
+        <p class="su-line" id="suL">Every skin you own was redrawn. Same name, same effects, a new look.</p>
+        <div class="su-row" id="suRow"></div>
+        <div class="su-acts"><button class="btn primary" id="suSee"><span>See my skins</span></button><button class="btn" id="suOk"><span>Nice!</span></button></div>
       </div>
     </div>
   </section>

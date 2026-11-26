@@ -21,9 +21,9 @@ const FXTEXT = {
 const skinLvl = (f) => { const i = f.spec.palettes.indexOf(f.pal); return i < 0 || f.pal.road || f.pal.pommes ? 0 : i; };
 const skinRoad = (f) => (f.pal && f.pal.road) || "";
 // what each Road skin does (the select screen's note)
-const ROADFX = { scratch: _t("Roasted dark at the feet, with ember cracks that glow and spit sparks"),
-  zorp: _t("A glass specimen dome over the head and a green glow from below"), kraken: _t("A wet sheen, barnacles, a starfish and a strand of kelp"),
-  harvest: _t("A sun-warmed sheen with twinkling gold dust that drifts off and bursts on every KO") };
+const ROADFX = { scratch: _t("Roasted dark with red horns, a devil's tail and ember cracks that spit sparks"),
+  zorp: _t("A glass specimen dome over the head and a green glow from below"), kraken: _t("A fishing net, two kelp ribbons, barnacles, a starfish and rising bubbles"),
+  harvest: _t("Solid gold with a wheat laurel, a sheen band and gold dust that bursts on every KO") };
 const fxAmbient = () => true; // 60-chip effects would go first on slow phones (only the old 3D mode ever dropped them; always on now)
 const fxMoves = () => true;   // then the 120-chip ones; KO effects always stay
 const skinState = [0, 1, 2, 3].map(() => ({ flare: 0, raven: false, dashX: null }));   // one per slot (a boss fight has three, a 2v2 four)
@@ -129,6 +129,7 @@ function skinEvent(g, e) {
     case "projEnd": case "hit": {
       const style = e.type === "hit" ? e.ps : e.style, f = at(e.slot);
       if (e.type === "hit" && f && skinPm(f) === 1 && fxMoves()) pmskHit(f, e);   // Ink Noir: an ink star on every landed hit
+      if (e.type === "hit" && f && skinPm(f) && e.def !== undefined && fxMoves() && hkTier(e) >= 2) skcFleck(g, f, e);   // a Pommes skin's heavy-hit fleck
       if (style !== "bolt" || !f || skinLvl(f) < 2 || !fxMoves()) return;
       for (let i = 0; i < 7; i++) addFx({ k: "shard", x: e.x, y: e.y, vx: rnd(-3.5, 3.5), vy: rnd(-3.5, 1), rot: rnd(0, 6), vr: rnd(-0.3, 0.3), r: rnd(2, 3.4), col: i % 2 ? "#ffe08a" : mix(f.pal.accent, "#ffe08a", 0.4), t: 0, life: 20, g: 0.15, damp: 0.93 });
       return;
@@ -259,7 +260,8 @@ function rsStar(c, x, y, r, a) {
   for (let i = 0; i < 10; i++) { const q = a + (i / 10) * Math.PI * 2, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(q) * rr, y + Math.sin(q) * rr); }
   c.closePath();
 }
-function roadSkinBody(c, f, P, tk, flash) {
+function roadSkinBody(c, f, P, tk, flash, K) {
+  if (K) { if (!flash) pmskPass(skcBody, c, f, P, tk, K); return; }   // a carved figure (ui/carve.js): the Carved Ink skins below
   if (skinPm(f)) { if (!flash) pmskPass(pmskBody, c, f, P, tk); return; }   // a Pommes skin's body pass (below)
   const rs = skinRoad(f);
   if (!rs || flash) return;
@@ -311,7 +313,8 @@ function roadSkinBody(c, f, P, tk, flash) {
   }
   c.restore();
 }
-function roadSkinTop(c, f, P, tk, flash) {
+function roadSkinTop(c, f, P, tk, flash, K) {
+  if (K) { if (!flash) pmskPass(skcTop, c, f, P, tk, K); return; }
   if (skinPm(f)) { if (!flash) pmskPass(pmskTop, c, f, P, tk); return; }   // a Pommes skin's top pass (below)
   const rs = skinRoad(f);
   if (!rs || flash) return;
@@ -360,16 +363,17 @@ function roadSkinTop(c, f, P, tk, flash) {
 // ambient bits that leave the figure (particles): an ember spat off a crack, a drip off the kelp
 function roadSkinTick(f, rs, tk, slot) {
   const w = f.s.w, h = f.s.h, fc = f.facing;
-  if (rs === "scratch" && tk % 30 === (slot * 11) % 30) {
-    const [x, y] = RS_CRACK[(tk / 30 | 0) % 3];
-    mote(f.x + fc * x * w * 0.56, f.y - h * (0.36 - y * 0.24), rnd(-0.3, 0.3), rnd(-0.9, -0.5), Math.random() < 0.5 ? "#ff9a3a" : "#ff6a2b", 1.5, 40, -0.01);
+  const fig = CV_FIG[f.spec.look.costume];
+  if (rs === "scratch" && tk % 20 === (slot * 11) % 20) {   // off one of the three cracks (skcAtop), a third of the way up it
+    const k = (tk / 20 | 0) % 3, B = fig ? fig.body : { x: 0, y: -h * 0.4 };
+    mote(f.x + fc * (B.x - 16 + 11 * k), f.y + B.y + 8 - 8 * (k % 2), rnd(-0.3, 0.3), rnd(-0.9, -0.5), Math.random() < 0.5 ? "#ff9a3a" : "#ff6a2b", 1.5, 40, -0.01);
   }
   if (rs === "harvest" && tk % 14 === (slot * 5) % 14) {   // a fleck of gold dust lifts off and sinks away
     mote(f.x + rnd(-0.5, 0.5) * w, f.y - h * rnd(0.3, 0.85), rnd(-0.25, 0.25), rnd(-0.6, -0.2), Math.random() < 0.6 ? "#ffd66b" : "#fff3c4", rnd(1, 1.6), 46, 0.012);
   }
-  if (rs === "kraken" && tk % 40 === (slot * 13) % 40) {
-    const [ax] = RS_KELP[f.spec.look.costume] || [-0.8];
-    addFx({ k: "drip", x: f.x + fc * (ax * w * 0.56 - 10), y: f.y - h * 0.5, vx: 0, vy: 0.3, col: "#bfe8e0", r: rnd(1.4, 1.9), t: 0, life: 15, g: 0.2, damp: 0.98 });
+  if (rs === "kraken" && tk % 40 === (slot * 13) % 40) {   // off the tip of the long kelp ribbon (skcKelp)
+    const C = SKC_CATCH[f.spec.look.costume] || [0, 0, 0, -w * 0.4, -h * 0.5];
+    addFx({ k: "drip", x: f.x + fc * (C[3] - 7), y: f.y + C[4] + 29, vx: 0, vy: 0.3, col: "#bfe8e0", r: rnd(1.4, 1.9), t: 0, life: 15, g: 0.2, damp: 0.98 });
   }
 }
 // a Road skin's KO effect, off the fighter who scored it
@@ -386,6 +390,484 @@ function roadSkinKo(k, rs) {
     addFx({ k: "ring", x, y: k.y - 4, t: 0, life: 18, r0: 8, r1: 46, col: "#3ef2c0" });
     for (let i = 0; i < 3; i++) addFx({ k: "drip", x: x + (i - 1) * 9, y: y + 4, vx: (i - 1) * 1.4, vy: rnd(-3.4, -2.4), col: "#3ef2c0", r: rnd(1.8, 2.4), t: 0, life: 30, g: 0.2, damp: 0.98 });
   }
+}
+
+/* ===================== Carved Ink skins: atop paint, fittings, live bits (Fable, redesign/pr3-design.md sections 0-4; UI only) =====================
+   A skin of a carved figure (ui/carve.js) is four layers, cheapest first: 1 its colours (the fig files' chip / won / pm), and here
+   2 ATOP PAINT (skcAtop): flat shapes over the figure's body-level parts (SKC_PARTS: body, head, hat, hood, cloak, robe, poncho, cape), in the
+     standing frame: charred feet and ember cracks, the Specimen's glow from below, Harvest Gold's bronze foot shadow and sheen band, Ink
+     Noir's halftone, Starfall's nebula and stars. The kit lays it the same way in its sprites and where it draws paths (a big draw: the
+     select screen, the Skin Rack's model; the dimmed figure; a manga page): over each part's fills, clipped to them, under the ink drawn
+     after them (ui/carve.js K.paintRun, cvAtopGroups), so it never covers an outline or reaches past one (tests/pwatop.py). The faces,
+     lenses and the like are drawn after it, so none of it covers a face. Limbs, wings and weapons keep the colours only.
+   3 FITTINGS (K.fit): new carved parts in fixed colours, one sprite each per skin and zoom level: behind the figure (skinBack: the tail, the
+     disc), over its parts and under the front arm (the "top" slot: horns, the net with its kelp, starfish and barnacles, the laurel), in
+     front of it all (skinFront: the dome).
+   4 LIVE: at most 12 small fills or strokes a frame per fighter (motes, glints, the orbit, the bead, bubbles, drops) and the particles of
+     skinTick / skinEvent.
+   Every layer: flat tones, nothing on a hit flash, half alpha while P.dim, no white fills, no blue glows, no gold rings, no outline ring
+   round the body; nothing drawn on the figure uses Math.random (a still of a skin is always the same). A slow phone drops the live bits
+   in the spec's order (skcDrop): outer stars and ink drops, then bubbles and the bead, then chip motes and the crack pulse; never a fitting.
+   The hooks: K.skinBack / K.skinFront (every skin but the free one; the standing frame: squash, crouch and lean applied), the body slot
+   ("skin" in K.stack, roadSkinBody with K: Devil's Roast's crack pulse, Ink Noir's boiling line) and the top slot ("top", roadSkinTop
+   with K). Never in the 2v2 rim pass. Top-level names here start with skc / SKC_. */
+const SKC_INK = "#1b1a22", SKC_PAPER = "#f1e8d2", SKC_HORN = "#c9262a", SKC_TAIL = "#a01f1f";
+// the parts that take a skin's atop paint, per figure (Devil's Roast also lays it on the Phoenix's tail ribbons: their charred tips)
+const SKC_PARTS = { phoenix: ["body"], alchemist: ["mantle", "body", "hood"], odin: ["cape", "body", "head"], wizard: ["body", "robe", "hat"],
+  samurai: ["body", "plates"], dragon: ["body"], gunslinger: ["body", "poncho", "hat"], reaper: ["cloak", "hood"] };
+// the chip skins' motes and glints (section 1): the back column x, its low and high y, the glints G1 and G2, the 150 and 300 mote colours
+const SKC_MOTE = { phoenix: [-54, -14, -74, 22, -66, -36, -82, "#b6ff6a", "#ffd23f"], alchemist: [-42, -8, -56, 24, -56, -30, -72, "#ffd9a0", "#b79af5"],
+  odin: [-46, -6, -56, 30, -64, 4, -80, "#ffe08a", "#a9a0d6"], wizard: [-28, -10, -70, 20, -80, -26, -68, "#b6ff6a", "#ffb02e"],
+  samurai: [-48, -8, -68, 26, -58, -20, -70, "#ff6a5a", "#c9a6ff"], dragon: [-60, -10, -70, 32, -56, -14, -80, "#b79af5", "#ff8a1f"],
+  gunslinger: [-44, -8, -68, 38, -66, -24, -82, "#ffd66b", "#ffe08a"], reaper: [-32, -6, -66, 26, -74, -20, -84, "#ff8a3c", "#8dffd0"] };
+// Devil's Roast (2.1): the far and near horn roots, the tail's root, the horns' height (13 unless given). The Dragon wears his own horns,
+// bigger (fig-dragon.js); the Phoenix has no tail (his ribbons' tips are charred: skcShapes)
+const SKC_ROAST = { phoenix: [[5, -58], [17, -52], null], alchemist: [[-4, -59], [12, -55], [-16, -8]], odin: [[-4, -69], [18, -61], [-30, -6], 16],
+  wizard: [[-19, -65], [20, -64], [-14, -10]], samurai: [[-9, -55], [12, -54], [-12, -16], 11], gunslinger: [[-15, -62], [17, -60], [-14, -18]],
+  reaper: [[-5, -74], [17, -72], [-22, -6]] };
+// Specimen (2.2): the bell's middle x, its collar line by, its half width rx and its apex ty
+const SKC_DOME = { phoenix: [2, -26, 25, -92], alchemist: [0, -20, 28, -78], odin: [0, -25, 31, -84], wizard: [0, -31, 35, -106], samurai: [0, -27, 26, -80],
+  dragon: [4, -24, 29, -78], gunslinger: [1, -31, 39, -83], reaper: [3, -32, 25, -92] };
+// Deep Catch (2.3): the net's back and front x and its rope line ny, the kelp's root K, the starfish (x, y, r), the barnacles
+const SKC_CATCH = { phoenix: [-18, 20, -34, -10, -50, -4, -24, 8, 10, -18], alchemist: [-24, 23, -26, -24, -46, -14, -45, 8, 14, -13],
+  odin: [-27, 27, -30, -22, -48, -12, -31, 8, -14, -57], wizard: [-19, 20, -34, -27, -60, -4, -76, 7, 10, -14],
+  samurai: [-21, 22, -32, -14, -50, -9, -40, 7, 10, -20], dragon: [-24, 26, -30, -12, -50, 8, -20, 8, -18, -38],
+  gunslinger: [-26, 25, -34, -30, -62, -10, -30, 8, 8, -70], reaper: [-25, 23, -36, -18, -52, -9, -22, 8, -10, -62] };
+// Harvest Gold (2.4): the laurel's middle and radii; the five glints (x, y in the body's half sizes from its middle, r)
+const SKC_LAUREL = { phoenix: [6, -46, 17, 15], alchemist: [6, -38, 18, 17], odin: [0, -52, 21, 17], wizard: [1, -60, 17, 13], samurai: [1, -44, 18, 15],
+  dragon: [4, -44, 17, 14], gunslinger: [1, -60, 15, 13], reaper: [4, -58, 17, 17] };
+const SKC_GLINT = [[-1.3, -1.0, 4.5], [1.5, -0.15, 3.6], [-1.0, 0.9, 3], [1.1, -1.7, 3.2], [0.3, 1.15, 2.4]];
+// Ink Noir (3.1): the accent, the disc's middle and radius (up and behind the head; Phoenix, Odin and the Wizard moved back, the Wizard up
+// too, so a third or more shows), its alpha (0.9 unless given: the Reaper's pale orange on a sand wall needs all of it)
+const SKC_DISC = { phoenix: ["#ff6a2b", -24, -66, 22], alchemist: ["#8dff3a", -18, -56, 22], odin: ["#ff3d57", -26, -62, 22], wizard: ["#a86bff", -26, -84, 22],
+  samurai: ["#2fd39a", -18, -54, 22], dragon: ["#ffc21f", -16, -66, 20], gunslinger: ["#3ef2c0", -18, -70, 22], reaper: ["#ffb444", -16, -66, 22, 1] };
+const SKC_SHAPES = new Map(), SKC_PARTC = new Map();
+// a slow phone drops the live bits in the spec's order (section 4): 1 outer stars and ink drops, 2 bubbles and the bead, 3 chip motes and the
+// crack pulse (PERF.q steps up when a match cannot hold ~45 fps)
+const skcDrop = (n) => PERF.q >= n;
+// the mockup's hash (redesign/mockups/src/fx.js rnd): a fixed 0..1 per whole number
+const skcHash = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+// what a skin draws here: "scratch" | "zorp" | "kraken" | "harvest" (won), "noir" | "star" (Pommes), "c2" | "c3" (the 150 and 300 chip skins), or ""
+function skcKind(f) {
+  const p = f.pal;
+  if (!p) return "";
+  if (p.pommes) return p.pommes === 1 ? "noir" : "star";
+  if (p.road) return p.road;
+  const i = cvPalIdx(f);
+  return i === 2 || i === 3 ? "c" + i : "";
+}
+// a pass with something live on the potato (ui/carve.js: the "skin" token breaks the body's sprite only then)
+function skcBodyLive(f) { const p = f.pal; return !!p && (p.road === "scratch" || p.pommes === 1); }
+// the parts of K's figure that take its skin's atop paint, or null (ui/carve.js K.paintRun)
+function skcAtopParts(K) {
+  const k = skcKind(K.f);
+  if (k !== "scratch" && k !== "zorp" && k !== "harvest" && k !== "noir" && k !== "star") return null;
+  const key = K.fig.id + ":" + k;
+  let s = SKC_PARTC.get(key);
+  if (!s) { s = new Set(SKC_PARTS[K.fig.id] || ["body"]); if (k === "scratch" && K.fig.id === "phoenix") s.add("tail"); SKC_PARTC.set(key, s); }
+  return s;
+}
+// what the fills of some carved parts cover (inside their outlines: the ink left out), for a clip; kept on the figure
+function skcClip(fig, seg) {
+  const m = fig.skcClip || (fig.skcClip = new Map()), key = seg.join(",");
+  let p = m.get(key);
+  if (!p) {
+    p = new Path2D();
+    for (const n of seg) for (const o of cvPartOps(fig, n)) if (o.k !== "ink" && o.a === 1) p.addPath(o.p);
+    m.set(key, p);
+  }
+  return p;
+}
+// is (x, y) on the figure's face, padded by d: the box of its eyes and brows, or its mouth's (ui/carve.js cvFace)
+function skcOnFace(fig, x, y, d) {
+  const F = fig.face, s = F.s || 1, M = F.mouth;
+  if (Math.abs(x - F.x) < 10.5 * s + d && Math.abs(y - F.y) < 7.5 * s + d) return true;
+  return !!M && M.k !== "none" && Math.abs(x - M.x) < 6 * s + d && Math.abs(y - M.y) < 4 * s + d;
+}
+// a closed polygon added to a path
+function skcPoly(p, Q) { p.moveTo(Q[0][0], Q[0][1]); for (let i = 1; i < Q.length; i++) p.lineTo(Q[i][0], Q[i][1]); p.closePath(); }
+// Devil's Roast's ember crack k (0..2): from (B.x - 18 + 11k, B.y + 14 - 8 (k % 2)), five points up the torso; it stops short of the face
+// (where a crack would run into a mouth or an eye: Phoenix, Alchemist, Reaper). Kept on the figure
+function skcCrack(fig, k) {
+  const L = fig.skcCr || (fig.skcCr = []);
+  if (L[k]) return L[k];
+  const B = fig.body, x = B.x - 18 + 11 * k, y = B.y + 14 - 8 * (k % 2), C = [[0, 0], [3, -4], [1, -9], [6, -12], [5, -17]].map((q) => [x + q[0], y + q[1]]), out = [C[0]];
+  for (let i = 1; i < C.length; i++) {
+    const a = C[i - 1], b = C[i];
+    if (!skcOnFace(fig, b[0], b[1], 1.5)) { out.push(b); continue; }
+    let lo = 0, hi = 1;
+    for (let j = 0; j < 12; j++) { const m = (lo + hi) / 2; if (skcOnFace(fig, a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, 1.5)) hi = m; else lo = m; }
+    out.push([a[0] + (b[0] - a[0]) * lo, a[1] + (b[1] - a[1]) * lo]);
+    break;
+  }
+  return (L[k] = out);
+}
+// a skin's atop paint on one figure (and on the Phoenix's tail ribbons alone: tail): a list of [Path2D, colour, alpha], made once
+function skcShapes(fig, k, tail) {
+  const key = fig.id + ":" + k + (tail ? ":t" : "");
+  let L = SKC_SHAPES.get(key);
+  if (L) return L;
+  const B = fig.body, rect = (y0, y1) => { const p = new Path2D(); p.rect(-120, y0, 240, y1 - y0); return p; };
+  L = [];
+  if (k === "scratch") {
+    if (tail) {   // the outer third of both flame ribbons charred (CV_PHX_TAIL runs from x -8 to -44), a ragged edge
+      const p = new Path2D(); skcPoly(p, [[-31, -34], [-34, -24], [-30.5, -15], [-34, -7], [-31, 4], [-90, 4], [-90, -34]]); L.push([p, "#3a1410", 1]);
+    }
+    // charred feet: below y -14 mixed 35 % to #1a0a0c, below -6 mixed 80 % (two flat bands, each with a ragged top edge: 4 teeth 3 deep)
+    const saw = (y0) => { const p = new Path2D(), Q = [[-120, 12], [-120, y0]]; for (let i = 0; i <= 8; i++) Q.push([-36 + 9 * i, y0 - (i % 2) * 3]); Q.push([120, y0], [120, 12]); skcPoly(p, Q); return p; };
+    L.push([saw(-14), "#1a0a0c", 0.35], [saw(-6), "#1a0a0c", 0.692]);
+    if (!tail) {   // the three ember cracks: an orange line 2.8 wide with a hot core 1.1 wide
+      const o = new Path2D(), cr = new Path2D();
+      for (let i = 0; i < 3; i++) { const C = skcCrack(fig, i); skcPoly(o, cvBrush(C, 2.8)); skcPoly(cr, cvBrush(C, 1.1)); }
+      L.push([o, "#ff5a1f", 1], [cr, "#ffe08a", 1]);
+    }
+  } else if (k === "zorp") L.push([rect(B.y + B.ry * 0.3, 12), "#9dff5a", 0.22]);   // the glow from below, flat
+  else if (k === "harvest") {
+    L.push([rect(-12, 12), "#8c4a14", 0.5], [rect(-5, 12), "#8c4a14", 0.5]);   // the bronze foot shadow: 0.5, then 0.75 below y -5
+    const p = new Path2D();   // the sheen band across the whole figure at 42 degrees: a wide band and a thin one
+    skcPoly(p, [[-70, -30], [30, -120], [46, -120], [-54, -30]]); skcPoly(p, [[-40, -20], [60, -110], [65, -110], [-35, -20]]);
+    L.push([p, "#fff3b0", 0.5]);
+  } else if (k === "noir") {   // the halftone: deep-ink dots on a staggered grid (3.2 x 2.3), r 0.25 at the body's middle growing to 1.25 at the feet
+    const p = new Path2D();
+    for (let j = 0, y = B.y; y <= 2; j++, y = B.y + j * 2.3) {
+      const r = 0.25 + (y - B.y) / -B.y;
+      for (let x = -64 + (j % 2) * 1.6; x <= 64; x += 3.2) { p.moveTo(x + r, y); p.arc(x, y, r, 0, CV_TAU); }
+    }
+    L.push([p, SKC_INK, 1]);
+  } else if (k === "star") {
+    const nb = (r) => { const p = new Path2D(); p.arc(B.x + 8, B.y - 12, r, 0, CV_TAU); return p; };
+    L.push([nb(28), "#7a5aff", 0.3], [nb(16), "#ff6ad5", 0.45], [rect(-14, 12), "#0e0a1f", 0.3]);   // the nebula: three flat blobs
+    const st = new Path2D(), dt = new Path2D();   // sixteen stars over the whole figure, every fourth a four-point star (none on the face)
+    for (let i = 0; i < 16; i++) {
+      const x = -34 + 68 * skcHash(i), y = -6 - 80 * skcHash(i + 40);
+      if (skcOnFace(fig, x, y, 1)) continue;
+      if (i % 4 === 0) pmskStar4(st, x, y, 2.6); else { dt.moveTo(x + 0.8, y); dt.arc(x, y, 0.8, 0, CV_TAU); }
+    }
+    L.push([st, "#fff6d8", 1], [dt, "#fff6d8", 0.9]);
+  }
+  SKC_SHAPES.set(key, L);
+  return L;
+}
+// layer 2: the atop paint of K's skin in the current transform (the standing frame of the part being drawn; the caller has clipped it to
+// the fills just drawn: ui/carve.js K.paintRun). part: that part (the Phoenix's "tail" has its own)
+function skcAtop(c, K, part) {
+  const L = skcShapes(K.fig, skcKind(K.f), part === "tail");
+  if (K.P.dim) c.globalAlpha *= 0.5;
+  const ga = c.globalAlpha;
+  for (const [p, col, a] of L) { c.globalAlpha = ga * a; c.fillStyle = col; c.fill(p); }
+  c.globalAlpha = ga;
+}
+
+/* ---- layer 3: the fittings, carved once (CV_Carve in fixed colours; K.fit bakes them) ---- */
+// Devil's Roast: two horns (the root 5 wide, 13 high, curving outwards), in front of the headgear
+function skcHorns(S, id) {
+  const R = SKC_ROAST[id], k = (R[3] || 13) / 13;
+  for (const [r, s] of [[R[0], -1], [R[1], 1]]) {
+    const P = [[0, 0], [3 * s, -10], [8 * s, -15, 1], [7 * s, -5], [5 * s, 1, 1]].map((q) => [r[0] + q[0] * k, r[1] + q[1] * k, q[2]]);
+    S.cel(cvSm(P), SKC_HORN, { lw: 2, sh: [1.3, -1.3], shade: cvSh(SKC_HORN) });
+  }
+}
+// Devil's Roast: the arrow tail from its root at (0, 0), behind the figure
+function skcTail(S) {
+  S.cel(cvSm([[0, 0], [-16, 4], [-26, -8], [-22, -20], [-30, -22, 1], [-22, -32, 1], [-17, -22, 1], [-19, -10], [-14, -4], [0, -6]]), SKC_TAIL,
+    { lw: 2.2, sh: [2, -2], shade: cvSh(SKC_TAIL) });
+}
+// Specimen: the glass bell from the collar line up (a cubic over the apex)
+function skcBell(id) {
+  const [x, by, rx, ty] = SKC_DOME[id], arc = [];
+  for (let i = 0; i <= 40; i++) { const t = i / 40, u = 1 - t; arc.push([x + rx * (3 * u * t * t + t * t * t - u * u * u - 3 * u * u * t), by * (u * u * u + t * t * t) + (ty - 8) * 3 * u * t]); }
+  const ap = 0.25 * by + 0.75 * (ty - 8);   // the bell's top
+  return { x, by, rx, ty, arc, ap, hh: by - ap, yc: ap + 0.18 * (by - ap) };
+}
+// Specimen: the bell, its slime cap and drips, the reflection, the glass line, the collar and its clasp
+function skcDomeCarve(S, id) {
+  const D = skcBell(id), { x, by, rx, ty, arc, hh, yc } = D, h = by - ty, bell = cvPos(arc.slice());
+  S.add([bell], "#beffdc", 0, 0.2);   // the glass
+  // the slime: a scalloped cap over the top 18 % with three drips (6, 14 and 9 long, 3.5 wide, round ends), on the glass; ink on its lower edge
+  const edge = [], drips = [[-0.35, 6], [0.05, 14], [0.45, 9]];
+  for (let xx = x - rx - 4, di = 0; xx <= x + rx + 4; xx += 1.5) {
+    const d = drips[di];
+    if (d && xx >= x + d[0] * rx - 1.75) {
+      const dx = x + d[0] * rx, L = d[1];
+      edge.push([dx - 1.75, yc + 1], [dx - 1.75, yc + L], [dx - 1.2, yc + L + 1.2], [dx, yc + L + 1.75], [dx + 1.2, yc + L + 1.2], [dx + 1.75, yc + L], [dx + 1.75, yc + 1]);
+      xx = dx + 1.75; di++; continue;
+    }
+    edge.push([xx, yc + 1.6 * Math.abs(Math.sin(((xx - x) / rx) * Math.PI * 1.5))]);
+  }
+  S.clipH = cvHull(bell);
+  S.add([edge.concat([[x + rx + 6, ty - 14], [x - rx - 6, ty - 14]])], "#9dff5a", 0, 0.55);
+  S.add([cvBrush(edge, 1)], "ink");
+  S.clipH = null;
+  // the reflection: a wedge on the upper back quarter (5 wide at the bottom, 1.5 at the top) and two dots on the front top
+  S.add([cvBrush([[x - rx * 0.62, by - h * 0.35], [x - rx * 0.46, by - h * 0.62], [x - rx * 0.3, by - h * 0.86]], 5, 1.5)], "#eaffd6", 0, 0.55);
+  S.add([cvCirc(x + rx * 0.5, by - hh * 0.7, 2), cvCirc(x + rx * 0.3, by - hh * 0.84, 1.3)], "#eaffd6", 0, 0.9);
+  // the glass line: pale, then ink
+  S.add([cvBrush(arc, 2.4)], "#e6fff0"); S.add([cvBrush(arc, 1)], "ink");
+  // the collar band and the clasp
+  S.cel(cvRect(x - rx - 3, by - 3, rx * 2 + 6, 6.5), "#5ae08a", { lw: 2, sh: [2, -1.5], shade: cvSh("#5ae08a") });
+  S.cel(cvCirc(x + 4, by + 0.25, 3.4), "#eaffd6", { lw: 1.6, sh: 0 });
+}
+// Deep Catch: the second kelp ribbon, the net bag over body and legs (its mesh, rope, corks and lead weights), the starfish, the barnacles
+function skcCatchCarve(S, id) {
+  const [x0, x1, ny, kx, ky, sx, sy, sr, bx, by] = SKC_CATCH[id];
+  // the second kelp ribbon: shorter (22), hanging still 8 units in front of the long one's root, a pale line down its middle
+  const rx0 = kx + 8, mid = [[rx0, ky], [rx0 - 2, ky + 6], [rx0 + 1, ky + 12], [rx0 - 2, ky + 18], [rx0 - 1, ky + 22]];
+  S.cel(cvBrush(cvSm(mid, true), 4.4, 1.6), "#3ebf8a", { lw: 2, sh: [1.2, -1], shade: cvSh("#3ebf8a") });
+  S.line([[rx0, ky + 2], [rx0 - 2, ky + 6], [rx0 + 1, ky + 12], [rx0 - 1.6, ky + 16.5]], 0.9, "#8fe0b0");
+  // the bag: the rope line (ny at the back, ny + 2 at the front, sagging 2 in the middle) down to y -3, the bottom edge four scallops
+  const top = [], yb = -3, pt = [], bot = [];
+  for (let i = 0; i <= 12; i++) { const t = i / 12; top.push([x0 + (x1 - x0) * t, ny + 2 * t + 8 * t * (1 - t)]); }
+  for (let i = 0; i <= 4; i++) pt.push([x0 + 1.5 + ((x1 - x0 - 3) * i) / 4, yb]);
+  for (let i = 4; i > 0; i--) for (let j = 0; j < 6; j++) { const t = j / 6; bot.push([pt[i][0] + (pt[i - 1][0] - pt[i][0]) * t, yb - 2.6 * Math.sin(Math.PI * t)]); }
+  bot.push(pt[0]);
+  S.add([top.concat(bot)], "#3ef2c0", 0, 0.12);   // (so it reads as one mass at 48 px)
+  S.clipH = cvHull(top.concat([[x1 - 1.5, yb - 2.6], [x0 + 1.5, yb - 2.6]]));   // the mesh: diamonds, pitch 8 (above the scallops)
+  const M = [];
+  for (let c0 = -120; c0 <= 120; c0 += 8) M.push(cvBrush([[c0 - 70, -70], [c0 + 70, 70]], 1.3), cvBrush([[c0 - 70, 70], [c0 + 70, -70]], 1.3));
+  S.add(M, "#3ef2c0", 0, 0.7);
+  S.clipH = null;
+  for (const q of pt) S.cel(cvCirc(q[0], q[1], 1.6), "#5a6a70", { lw: 1, sh: 0 });   // the lead weights
+  S.add([cvBrush(top, 3.6)], "ink"); S.add([cvBrush(top, 2.2)], "#e6c98a");   // the rope, two cork floats
+  for (const t of [3, 9]) S.cel(cvCirc(top[t][0], top[t][1], 2.6), "#ff7a6a", { lw: 1.4, sh: [0.9, -0.9], shade: cvSh("#ff7a6a") });
+  // the starfish: coral, five arms (r 8), turned 0.3, five pale dots
+  S.with(sx, sy, 0.3, sr / 8, () => {
+    const P = [];
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * CV_TAU - Math.PI / 2, r = i % 2 ? 2.6 : 8; P.push([Math.cos(a) * r, Math.sin(a) * r, i % 2 ? 0 : 1]); }
+    S.cel(cvSm(P), "#ff7a6a", { lw: 1.8, sh: [1.2, -1.2], shade: cvSh("#ff7a6a") });
+    S.add([0, 1, 2, 3, 4].map((i) => { const a = (i / 5) * CV_TAU - Math.PI / 2; return cvCirc(Math.cos(a) * 4.3, Math.sin(a) * 4.3, 0.75); }), "#ffc2b8");
+  });
+  // the barnacles: three, a dark mouth in each
+  for (const [dx, dy, r] of [[0, 0, 3], [4, 5, 2.3], [-2, 6, 2]]) {
+    S.cel(cvCirc(bx + dx, by + dy, r), "#f6ecd0", { lw: 1.4, sh: [0.8, -0.8], shade: cvSh("#f6ecd0", 0.2) });
+    S.fill(cvCirc(bx + dx, by + dy - r * 0.1, r * 0.4), "#3a3a3a");
+  }
+}
+// Harvest Gold: an open wheat laurel on the head, four leaves a side pointing up along the wreath, a tie knot at each lower end
+function skcLaurel(S, id) {
+  const [cx, cy, rx, ry] = SKC_LAUREL[id], len = 8.5, w = 2.27;   // (the curve through +-w bulges to 3/4 of it: a leaf 3.4 wide)
+  for (const s of [-1, 1]) {
+    for (let k = 3; k >= 0; k--) {
+      const a = -Math.PI / 2 + (s * (29 + 22 * k) * Math.PI) / 180, x = cx + Math.cos(a) * rx, y = cy + Math.sin(a) * ry;
+      const ang = Math.atan2(-s * ry * Math.cos(a), s * rx * Math.sin(a));
+      S.with(x, y, ang, 1, () => {
+        S.cel(cvSm([[0, 0, 1], [len * 0.35, -w], [len, 0, 1], [len * 0.35, w]]), "#ffd23f", { lw: 1.4, sh: [0.6, -1], shade: cvSh("#ffd23f", 0.22) });
+        S.line([[1, 0], [len * 0.8, 0]], 0.8, "#c98a1e");
+      });
+      if (k === 3) S.cel(cvCirc(x, y + 1, 2), "#c98a1e", { lw: 1.2, sh: 0 });
+    }
+  }
+}
+// Ink Noir: the disc, flat in the accent (no ink, no dark fill), paper dots on its lower-left third (pitch 4, r 0.4 to 1.4 at the edge)
+function skcDiscCarve(S, D) {
+  const [col, cx, cy, r] = D, dots = [], d0 = r * 0.27;
+  S.fill(cvCirc(cx, cy, r), col);
+  for (let j = 0, y = cy - r; y <= cy + r; j++, y = cy - r + j * 3.46) for (let x = cx - r + (j % 2) * 2; x <= cx + r; x += 4) {
+    const d = (cx - x + (y - cy)) / Math.SQRT2;   // towards the lower left
+    if (d < d0) continue;
+    const rr = 0.4 + (d - d0) / (r - d0);
+    if (Math.hypot(x - cx, y - cy) + rr < r - 0.6) dots.push(cvCirc(x, y, rr));
+  }
+  S.add(dots, SKC_PAPER);
+}
+
+/* ---- the passes (tests/pwpmskin.py times them through pmskPass) ---- */
+// K.skinBack: behind the whole figure (the standing frame); K.skinFront: over all of it
+// (only the skins with something there: a pass costs its transform even when it draws nothing)
+const SKC_BACK = new Set(["c2", "c3", "scratch", "noir", "star"]), SKC_FRONT = new Set(["zorp", "kraken", "harvest", "star"]);
+function skinBack(c, f, P, tk, flash, K) { if (K && !flash && SKC_BACK.has(skcKind(f))) pmskPass(skcBack, c, f, P, tk, K); }
+function skinFront(c, f, P, tk, flash, K) { if (K && !flash && SKC_FRONT.has(skcKind(f))) pmskPass(skcFront, c, f, P, tk, K); }
+function skcBack(c, f, P, tk, K) {
+  const k = skcKind(f), id = K.fig.id;
+  if (k === "c2" || k === "c3") return skcMotes(c, K, k === "c3");
+  if (P.dim) c.globalAlpha *= 0.5;
+  if (k === "scratch") {   // the tail, swaying +-0.12 rad about its root over 156 frames
+    const R = SKC_ROAST[id];
+    if (R && R[2]) { c.translate(R[2][0], R[2][1]); c.rotate(0.12 * Math.sin((tk * CV_TAU) / 156 + f.slot)); K.fit("skc-tail", skcTail); }
+  } else if (k === "noir") skcDisc(c, K, tk);
+  else if (k === "star") skcOrbit(c, K, tk, false);
+}
+function skcFront(c, f, P, tk, K) {
+  const k = skcKind(f);
+  if (P.dim) c.globalAlpha *= 0.5;
+  if (k === "zorp") skcDome(c, K, tk);
+  else if (k === "kraken") skcBubbles(c, K, tk);
+  else if (k === "harvest") skcGlints(c, K, tk);
+  else if (k === "star") skcOrbit(c, K, tk, true);
+}
+// the body slot (roadSkinBody with K; the body's lean, the rig frame): Devil's Roast's crack pulse (clipped to the body-level parts' fills,
+// inside their outlines: skcClip), Ink Noir's boiling line
+function skcBody(c, f, P, tk, K) {
+  const k = skcKind(f);
+  if (k === "noir") return pmskBody(c, f, P, tk, K);
+  if (k !== "scratch" || skcDrop(3)) return;
+  c.save(); c.translate(0, P.cvDrop); c.clip(skcClip(K.fig, SKC_PARTS[K.fig.id] || ["body"]));
+  if (P.dim) c.globalAlpha *= 0.5;
+  const ga = c.globalAlpha;
+  c.strokeStyle = "#ffe08a"; c.lineWidth = 1.1; c.lineCap = "round"; c.lineJoin = "round";
+  for (let i = 0; i < 3; i++) {   // the three cores again, pulsing
+    const C = skcCrack(K.fig, i);
+    c.globalAlpha = ga * (0.5 + 0.5 * Math.sin(tk * 0.044 + 2.1 * i));
+    c.beginPath(); c.moveTo(C[0][0], C[0][1]); for (let j = 1; j < C.length; j++) c.lineTo(C[j][0], C[j][1]); c.stroke();
+  }
+  c.restore();
+}
+// the top slot (roadSkinTop with K: after the hats, under the front arm; the body's lean, the rig frame)
+function skcTop(c, f, P, tk, K) {
+  const k = skcKind(f), id = K.fig.id;
+  if (k === "noir") pmskTop(c, f, P, tk);   // today's speed ticks
+  c.save(); c.translate(0, P.cvDrop);
+  if (P.dim) c.globalAlpha *= 0.5;
+  if (k === "scratch") { if (SKC_ROAST[id]) K.fit("skc-horns", (S) => skcHorns(S, id)); }
+  else if (k === "kraken") { if (SKC_CATCH[id]) { skcKelp(c, K, tk); K.fit("skc-catch", (S) => skcCatchCarve(S, id)); } }
+  else if (k === "harvest") { if (SKC_LAUREL[id]) K.fit("skc-laurel", (S) => skcLaurel(S, id)); }
+  else if (k === "noir") {   // the accent wedge while he runs
+    const D = SKC_DISC[id];
+    if (D && f.state === "run") { c.beginPath(); c.moveTo(-46, -64); c.lineTo(-30, -68); c.lineTo(-31, -65); c.lineTo(-47, -61); c.closePath(); c.fillStyle = D[0]; c.fill(); }
+  } else if (k === "star") skcTwinkle(c, K, tk);
+  c.restore();
+}
+
+/* ---- layer 4: the live bits ---- */
+// the chip skins' motes (150: three on the back column; 300: six on two columns, and two glints): they follow the fighter's place and
+// facing, not the body's lean; not while dimmed
+function skcMotes(c, K, top) {
+  const P = K.P, M = SKC_MOTE[K.fig.id];
+  if (!M || P.dim || skcDrop(3)) return;
+  if (P.lean) { const h = P.hip; c.translate(0, -P.cvDrop); c.translate(h[0], h[1]); c.rotate(-P.lean); c.translate(-h[0], -h[1]); c.translate(0, P.cvDrop); }
+  const n = top ? 6 : 3, tk = K.tk + K.f.slot * 37, ga = c.globalAlpha;
+  c.fillStyle = top ? M[8] : M[7];
+  for (let i = 0; i < n; i++) {   // each rises 12 over 200 frames, sways +-2, fades in and out; the phases 1/n apart
+    const ph = (tk / 200 + i / n) % 1, a = Math.sin(Math.PI * ph);
+    const x = M[0] + (top && i % 2 ? 7 : 0) + 2 * Math.sin(ph * CV_TAU + i), y = M[1] + ((M[2] - M[1]) * (i + 0.5)) / n - 12 * ph;
+    c.globalAlpha = ga * a * 0.22; c.beginPath(); c.arc(x, y, 4, 0, CV_TAU); c.fill();
+    c.globalAlpha = ga * a; c.beginPath(); c.arc(x, y, 1.6, 0, CV_TAU); c.fill();
+  }
+  c.globalAlpha = ga;
+  if (!top) return;
+  c.fillStyle = "#fff0c0";
+  for (const [x, y, r, d] of [[M[3], M[4], 4, 0], [M[5], M[6], 2.8, 108]]) {   // a glint: 0 to full to 0 over 54 frames, once every 216
+    const q = ((tk + 216 - d) % 216) / 54;
+    if (q < 1) { c.beginPath(); pmskStar4(c, x, y, r * Math.sin(Math.PI * q)); c.fill(); }
+  }
+}
+// Deep Catch: today's waving kelp strand, now from its root K (the wave runs down it, two blades off it)
+function skcKelp(c, K, tk) {
+  const C = SKC_CATCH[K.fig.id], f = K.f, x0 = C[3], y0 = C[4], L = 30, ph = tk * 0.09 + f.slot, sw = Math.sin(tk * 0.052 + f.slot) * 0.2, pts = [];
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10, dx = -t * L * 0.22 + Math.sin(t * 6 - ph) * 3 * t, dy = t * L;
+    pts.push([x0 + dx * Math.cos(sw) - dy * Math.sin(sw), y0 + dx * Math.sin(sw) + dy * Math.cos(sw)]);
+  }
+  c.lineCap = "round"; c.lineJoin = "round";
+  c.beginPath();
+  for (const [i, s2] of [[4, -1], [7, 1]]) { const [bx, by] = pts[i]; c.moveTo(bx + s2 * 3.2 + 4.6, by + 1.5); c.ellipse(bx + s2 * 3.2, by + 1.5, 4.6, 1.7, s2 * 0.7 + sw + Math.sin(ph + i) * 0.15, 0, CV_TAU); }
+  c.fillStyle = "#2f8a5a"; c.fill(); c.strokeStyle = CV_INK; c.lineWidth = 1; c.stroke();
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+  c.lineWidth = 5.4; c.stroke();
+  c.strokeStyle = "#2f8a5a"; c.lineWidth = 3.6; c.stroke();
+  c.strokeStyle = "#5fbf7f"; c.lineWidth = 1.1; c.beginPath(); c.moveTo(pts[1][0], pts[1][1]); for (let i = 2; i < 9; i++) c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+}
+// Deep Catch: three bubbles (rings) rising 30 over 180 frames, a third of a cycle apart, growing 20 %
+function skcBubbles(c, K, tk) {
+  const C = SKC_CATCH[K.fig.id], M = K.fig.mouthPt;
+  if (!C || skcDrop(2)) return;
+  const ga = c.globalAlpha;
+  c.strokeStyle = "#c8fff5"; c.lineWidth = 1.2;
+  [[M[0] + 12, M[1] - 10, 3], [C[3] - 6, C[4] - 8, 2], [M[0] + 18, M[1] - 24, 2.4]].forEach(([x, y, r], i) => {
+    const q = (tk / 180 + i / 3) % 1;
+    c.globalAlpha = ga * 0.9 * Math.min(1, q * 8, (1 - q) * 6);
+    c.beginPath(); c.arc(x + Math.sin(q * 9 + i) * 1.2, y - 30 * q, r * (1 + 0.2 * q), 0, CV_TAU); c.stroke();
+  });
+  c.globalAlpha = ga;
+}
+// Specimen: the dome (a fitting, in front of everything), the slime bead sliding down the glass and back, the three motes orbiting inside
+function skcDome(c, K, tk) {
+  const id = K.fig.id;
+  if (!SKC_DOME[id]) return;
+  K.fit("skc-dome", (S) => skcDomeCarve(S, id));
+  if (skcDrop(2)) return;
+  const D = skcBell(id), q = 0.5 - 0.5 * Math.cos(((tk + K.f.slot * 60) / 240) * CV_TAU), bx = D.x + D.rx * 0.05, y0 = D.yc + 15.5, y = y0 + (D.ap + D.hh * 0.7 - y0) * q;
+  c.beginPath(); c.moveTo(bx + 1.8, y); c.arc(bx, y, 1.8, 0, CV_TAU);
+  for (let i = 0; i < 3; i++) { const a = tk * 0.0524 + i * 2.094, mx = D.x + Math.cos(a) * D.rx * 0.6, my = D.by - D.hh * 0.5 + Math.sin(a) * D.hh * 0.22; c.moveTo(mx + 1.1, my); c.arc(mx, my, 1.1, 0, CV_TAU); }
+  c.fillStyle = "#9dff5a"; c.fill();
+}
+// Harvest Gold: five glints on and round the body lighting in turn (40 frames each of a 150-frame round: two at once at most)
+function skcGlints(c, K, tk) {
+  const B = K.fig.body, t = (tk + K.f.slot * 75) % 150;
+  c.beginPath();
+  SKC_GLINT.forEach(([u, v, r], i) => { const q = ((t - i * 30 + 150) % 150) / 40; if (q < 1) pmskStar4(c, B.x + u * B.rx, B.y + v * B.ry, r * Math.sin(Math.PI * q)); });
+  c.fillStyle = "#fff3b0"; c.fill();
+}
+// Ink Noir: the disc behind the figure (a fitting, at 0.9 or its own alpha) and four ink drops on its back edge, bobbing
+function skcDisc(c, K, tk) {
+  const D = SKC_DISC[K.fig.id];
+  if (!D) return;
+  const ga = c.globalAlpha;
+  c.globalAlpha = ga * (D[4] || 0.9); K.fit("skc-disc", (S) => skcDiscCarve(S, D)); c.globalAlpha = ga;
+  if (skcDrop(1)) return;
+  c.beginPath();
+  [[-150, 1.5], [-175, 2], [160, 2.6], [135, 3.4]].forEach(([a, r], i) => {
+    const x = D[1] + Math.cos((a * Math.PI) / 180) * D[3], y = D[2] + Math.sin((a * Math.PI) / 180) * D[3] + 1.5 * Math.sin(((tk + K.f.slot * 30) / 120) * CV_TAU + i * 1.6);
+    c.moveTo(x + r, y); c.arc(x, y, r, 0, CV_TAU);
+  });
+  c.fillStyle = SKC_INK; c.fill();
+}
+// Starfall: the orbit ring round the figure (its far half behind it, the near half in front), the comet on it once every 192 frames (behind
+// on the far half), and behind the figure three outer stars twinkling in turn
+function skcOrbit(c, K, tk, near) {
+  const B = K.fig.body, rx = B.rx + 22, ry = 13, tl = -0.3, cs = Math.cos(tl), sn = Math.sin(tl), ga = c.globalAlpha;
+  c.globalAlpha = ga * 0.75; c.strokeStyle = "#c9a6ff"; c.lineWidth = 1.6;
+  c.beginPath(); c.ellipse(B.x, B.y, rx, ry, tl, near ? 0 : Math.PI, near ? Math.PI : CV_TAU); c.stroke();
+  const th0 = ((tk + K.f.slot * 96) / 192) * CV_TAU;
+  for (let i = 3; i >= 0; i--) {
+    const th = th0 - i * 0.16;
+    if (Math.sin(th) > 0 !== near) continue;
+    const ex = Math.cos(th) * rx, ey = Math.sin(th) * ry, x = B.x + ex * cs - ey * sn, y = B.y + ex * sn + ey * cs;
+    if (!i) { c.globalAlpha = ga * 0.35; c.fillStyle = "#ff6ad5"; c.beginPath(); c.arc(x, y, 9, 0, CV_TAU); c.fill(); }
+    c.globalAlpha = ga * (i ? 0.5 - i * 0.12 : 1); c.fillStyle = i ? "#ffb0e0" : "#fff6d8";
+    c.beginPath(); pmskStar4(c, x, y, 6 * (1 - i * 0.2)); c.fill();
+  }
+  c.globalAlpha = ga;
+  if (near || skcDrop(1)) return;
+  [[-34, -70, 3.4, "#fff6d8"], [30, -84, 2.6, "#ffb0e0"], [38, -30, 2.2, "#fff6d8"]].forEach(([x, y, r, col], i) => {
+    const tw = Math.max(0, Math.sin(((tk + K.f.slot * 40) / 150) * CV_TAU - i * 2.1));
+    c.fillStyle = col; c.beginPath(); pmskStar4(c, x, y, r * (0.45 + 0.55 * tw)); c.fill();
+  });
+}
+// Starfall: four of the seven twinkling stars (PMSK_STARS rows 0, 2, 4, 5; one that would sit on the face gives way to the next row), over
+// the costume too
+function skcTwinkle(c, K, tk) {
+  const fig = K.fig, B = fig.body, ga = c.globalAlpha;
+  let pl = fig.skcTw;
+  if (!pl) {
+    pl = fig.skcTw = [];
+    for (const i of [0, 2, 4, 5, 1, 3, 6]) { const [x, y, sz, per, ph] = PMSK_STARS[i], X = B.x + x * B.rx, Y = B.y + y * B.ry; if (pl.length < 4 && !skcOnFace(fig, X, Y, 2)) pl.push([X, Y, sz, per, ph]); }
+  }
+  c.fillStyle = "#ffc8ef";
+  for (const [x, y, sz, per, ph] of pl) {
+    const tw = Math.max(0, Math.sin((tk / per) * CV_TAU + ph));
+    c.globalAlpha = ga * (0.35 + 0.65 * tw * tw); c.beginPath(); pmskStar4(c, x, y, sz * 1.3 * (1 + 0.6 * tw)); c.fill();
+  }
+  c.globalAlpha = ga;
+}
+// a Pommes skin's heavy-hit fleck (a hit for which the hit kit plays its heavy panel, hkTier >= 2): particles off the hit point in a fan away
+// from the victim, on top of the hit's own spark. Ink Noir: four ink blots and one accent blot (100 degrees, 16 frames); Starfall: five star
+// sparks and one pink streak (120 degrees, 18 frames)
+function skcFleck(g, f, e) {
+  const d = g.fighters[e.def];
+  if (!d) return;
+  const a0 = Math.atan2(e.y - (d.y - d.s.h * 0.5), e.x - d.x);
+  if (skinPm(f) === 1) {
+    for (let i = 0; i < 5; i++) {
+      const a = a0 + ((i / 4 - 0.5) * 100 * Math.PI) / 180 + rnd(-0.1, 0.1), v = rnd(2, 3.6);
+      addFx({ k: "pmsk-ink", x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: i === 2 ? 3 : rnd(2, 4), col: i === 2 ? f.pal.accent : SKC_INK, t: 0, life: 16, damp: 0.88 });
+    }
+    return;
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = a0 + ((i / 4 - 0.5) * 120 * Math.PI) / 180 + rnd(-0.1, 0.1), v = rnd(2.2, 3.8);
+    addFx({ k: "pmsk-spark", x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(2.5, 4), col: i % 2 ? "#c9a6ff" : "#ffb3ec", t: 0, life: 18, damp: 0.9, ph: i });
+  }
+  addFx({ k: "pmsk-ray", x: e.x + Math.cos(a0) * 8, y: e.y + Math.sin(a0) * 8, vx: Math.cos(a0) * 3.4, vy: Math.sin(a0) * 3.4, ang: a0, len: 20, w: 2, col: "#ff6ad5", t: 0, life: 18, damp: 0.9 });
 }
 
 /* ---- Pommes skins: two lines laid on any fighter, bought with Pommes (pal.pommes: 1 Ink Noir, 2 Starfall; Fable, step8/fable-design-2.md
@@ -461,15 +943,16 @@ function pmskSpark4(c, x, y, r) {
   c.moveTo(x, y - r); c.lineTo(x + n, y - n); c.lineTo(x + r, y); c.lineTo(x + n, y + n);
   c.lineTo(x, y + r); c.lineTo(x - n, y + n); c.lineTo(x - r, y); c.lineTo(x - n, y - n); c.closePath();
 }
-// tests/pwpmskin.py times the two passes: it sets window.__pmskProf = { now, flush, add(slot, ms, readMs) } (never set in play). With flush
+// tests/pwpmskin.py times the skin passes (the Pommes skins' two; on a carved figure every pass of a skin: skinBack, the body and top slots,
+// skinFront): it sets window.__pmskProf = { now, flush, add(slot, ms, readMs) } (never set in play). With flush
 // a 1 px read before and after the pass makes the canvas draw what was queued, so the pass's raster is counted; a third read with nothing
 // queued measures the read itself (readMs)
-function pmskPass(fn, c, f, P, tk) {
+function pmskPass(fn, c, f, P, tk, K) {
   const pr = window.__pmskProf;
-  if (!pr) return fn(c, f, P, tk);
+  if (!pr) return fn(c, f, P, tk, K);
   const fl = () => { if (pr.flush) try { c.getImageData(0, 0, 1, 1); } catch (e) { pr.flush = false; } };
   fl(); const t0 = pr.now();
-  fn(c, f, P, tk); fl();
+  fn(c, f, P, tk, K); fl();
   const t1 = pr.now();
   fl();
   pr.add(f.slot, t1 - t0, pr.flush ? pr.now() - t1 : 0);
@@ -487,15 +970,15 @@ function pmskComet(c, f, P, tk, near) {
   }
   c.globalAlpha = a0;
 }
-function pmskBody(c, f, P, tk) {
+function pmskBody(c, f, P, tk, K) {
   const pm = skinPm(f), { rx, ry, cy } = P, k = rx / 25, cos = f.spec.look.costume;
   c.save(); potatoPath(c, P); c.clip();
   if (P.dim) c.globalAlpha = 0.5;
   const a0 = c.globalAlpha;
   if (pm === 1) {
     // the screen tone: the fighter's cached halftone laid on the body under the face (it squashes and leans with the body)
-    const sh = PMSK_DOTS[cos] || 0.45, T = pmskToneCv(c, f, P, sh);
-    c.globalAlpha = a0 * 0.55; c.drawImage(T.cv, -rx * 1.2, cy - ry + sh * ry * 2, rx * 2.4, ry * T.hk);
+    // (on a carved figure the halftone is atop paint, skcShapes, baked into its sprites)
+    if (!K) { const sh = PMSK_DOTS[cos] || 0.45, T = pmskToneCv(c, f, P, sh); c.globalAlpha = a0 * 0.55; c.drawImage(T.cv, -rx * 1.2, cy - ry + sh * ry * 2, rx * 2.4, ry * T.hk); }
     // three hatch strokes on the shadow side, boiling with the outline
     const bo = (tk / 5) | 0, ox = (pmskHash(bo * 2) - 0.5) * 1.2 * k, oy = (pmskHash(bo * 2 + 1) - 0.5) * 1.2 * k;
     c.globalAlpha = a0 * 0.8; c.strokeStyle = PMSK_INK; c.lineWidth = k; c.lineCap = "round";
@@ -596,6 +1079,9 @@ function pmskKo(k, pm) {
     const a6 = rnd(0, PMSK_TAU / 6);
     for (let i = 0; i < 6; i++) { const a = a6 + (i / 6) * PMSK_TAU, v = rnd(3.2, 3.8); addFx({ k: "pmsk-ray", x: x + Math.cos(a) * 22 * kk, y: y + Math.sin(a) * 22 * kk, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ang: a, len: 30 * kk, w: 2 * kk, col: "#ff6ad5", t: 0, life: 24, damp: 0.92 }); }
     for (let i = 0; i < 18; i++) { const a = (i / 18) * PMSK_TAU + rnd(-0.12, 0.12), v = rnd(1, 2.4); addFx({ k: "pmsk-spark", x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 6, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.3, r: rnd(2.5, 3.5) * kk, col: i % 2 ? "#ffb3ec" : "#c9a6ff", t: 0, life: 36, damp: 0.96, ph: i }); }
+    // the comet leaves its orbit (skcOrbit): from the front of the ring, 60 up and out over 24 frames, four copies trailing
+    const fig = CV_FIG[k.spec.look.costume], B = fig ? fig.body : { x: 0, y: -k.s.h * 0.45, rx: k.s.w * 0.4 }, fc = k.facing;
+    addFx({ k: "pmsk-comet", x: k.x + fc * (B.x + B.rx + 14), y: k.y + B.y - 4, dx: fc * 30, dy: -52, t: 0, life: 24 });
   }
 }
 // draws the Pommes particle kinds (from drawSkinFx); false for the others
@@ -639,6 +1125,15 @@ function pmskDrawFx(c, e, a) {
       const q = e.t / e.life;
       c.globalAlpha = a; c.strokeStyle = e.col; c.lineWidth = e.lw;
       c.beginPath(); c.arc(e.x, e.y, lerp(e.r0, e.r1, 1 - (1 - q) * (1 - q)), 0, PMSK_TAU); c.stroke();
+      return true;
+    }
+    case "pmsk-comet": {   // Starfall's KO: the comet flying off (x, y the start, dx, dy the flight), a pink glow, four copies behind
+      const q = e.t / e.life, at = (u) => 1 - (1 - u) * (1 - u), r = 10 * (1 - 0.35 * q);
+      for (let i = 4; i >= 0; i--) {
+        const u = at(Math.max(0, q - i * 0.07)), x = e.x + e.dx * u, y = e.y + e.dy * u;
+        if (!i) { c.globalAlpha = a * 0.35; c.fillStyle = "#ff6ad5"; c.beginPath(); c.arc(x, y, r * 1.4, 0, PMSK_TAU); c.fill(); }
+        c.globalAlpha = a * (i ? 0.5 - i * 0.1 : 1); c.fillStyle = i ? "#ffb0e0" : "#fff6d8"; c.beginPath(); pmskStar4(c, x, y, r * (1 - i * 0.16)); c.fill();
+      }
       return true;
     }
     case "pmsk-spark": {   // Starfall's KO: a sharp four-point star (r 2.5-3.5) that twinkles as it flies, on a larger magenta star (so it reads on a pale sky)

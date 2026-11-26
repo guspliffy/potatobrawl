@@ -14,7 +14,7 @@ SIZES = [('se', {'width': 667, 'height': 320}, True), ('phone', {'width': 844, '
          ('desk', {'width': 1280, 'height': 760}, False), ('up', {'width': 390, 'height': 844}, True),
          ('rot', {'width': 390, 'height': 844}, True)]   # up = the Upright screen setting; rot = an upright phone with the game turned sideways (the default)
 PA = {'tokens': 85, 'rating': 1080, 'peak': 1180, 'wins': 3, 'losses': 2, 'matches': 5, 'last': 'phoenix', 'friendW': 2, 'friendL': 1,
-      'owned': {'phoenix': [0, 1]}, 'pal': {'phoenix': 1},
+      'owned': {'phoenix': [0, 1]}, 'pal': {'phoenix': 1}, 'skup': 1,   # skup: the skins upgrade card seen (ui/skinup.js; tests/pwskinup.py covers it)
       'history': [{'r': 1, 'd': 14, 'me': 'phoenix', 'op': 'odin', 'opr': 1000, 't': 3}, {'r': 0, 'd': -12, 'me': 'phoenix', 'op': 'wizard', 'opr': 1040, 't': 2}, {'r': 1, 'd': 10, 'me': 'phoenix', 'op': 'dragon', 'opr': 990, 't': 1}]}
 PC = {'tokens': 12, 'rating': 1010, 'peak': 1010, 'wins': 1, 'losses': 0, 'matches': 1, 'last': 'samurai'}
 errs = []
