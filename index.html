@@ -12936,7 +12936,8 @@ function uvShotTick(g, f) {
    SHAPES are arrays of points [x, y] (dense polygons; nothing is stroked): cvBlob(cx, cy, rx, ry, o) the potato, cvSm(pts, open) a smooth
    path through points ([x, y, 1] a sharp corner), cvCirc(x, y, r, ry, rot), cvCapsule(a, b, r0, r1), cvRect(x, y, w, h).
    COLOUR KEYS: a key of the skin's colour set ("cape"), "key/sh" its shadow tone, "key/sh.3" a lighter one, "key/lt" its highlight, "ink",
-   "rim", "eye" (the eye white), or a literal "#rrggbb" (kept on every skin: avoid it but for mouths).
+   "rim", "eye" (the eye white), or a literal "#rrggbb" (kept on every skin: avoid it but for mouths). A skin's set may name a tone itself
+   ("skin/sh": "#b8761a", "rim": "#ff6ad5" in chip / won / pm): that exact key then wins over the computed one.
    THE CARVER, S (in carve.name(S); the standing frame, or what S.with sets):
      S.cel(shape, key, o)   the carved part: the ink outline (o.lw, default 2.6; 0 none; half outside the shape, half over it), the base,
                             the hard shadow (what the shape moved by o.sh = [dx, dy] towards the light leaves uncovered; default [4, -3];
@@ -13758,6 +13759,7 @@ function cvCol(C, k) {
   let v = C.res[k];
   if (v) return v;
   if (k === "ink") v = CV_INK;
+  else if (typeof C[k] === "string" && (k === "rim" || k === "eye" || k.indexOf("/") > 0)) v = C[k];   // a tone a skin sets itself (won.harvest "skin/sh", Starfall's "rim"; flat / dimmed with the rest)
   else if (k === "rim") v = C.flat ? "#ffffff" : CV_RIM;
   else if (k === "eye") v = C.flat ? "#ffffff" : CV_EYE;
   else {
