@@ -5,16 +5,15 @@
    P.staffTip); its crystal floats in a gold crescent over the top and turns. Mockup: redesign/mockups/src/fighters.js NEWF.d.wizard;
    skins: fx.js skinPal(). */
 cvFigReg("wizard", {
-  pal: { skin: "#f2b04e", robe: "#3d3a78", lining: "#8a66e0", gold: "#f6c64f", wood: "#8a5a36", cry: "#ffe38a", boot: "#5b3a2a",
+  pal: { skin: "#f2b04e", hat: "#3d3a78", robe: "#3d3a78", lining: "#8a66e0", gold: "#f6c64f", wood: "#8a5a36", cry: "#ffe38a", boot: "#5b3a2a",
     brow: "#fbf6ea", iris: "#3f6fb0", stem: "#4f9a3c", leaf: "#7fd35c", blush: "#ff6a5a" },
-  chip: [{}, { robe: "#6a3fc4", lining: "#ff8ad8", gold: "#ffd9f2" }, { robe: "#2f7a4b", lining: "#b6ff6a", gold: "#f6c64f", cry: "#b6ff6a" },
-    { robe: "#9a2b38", lining: "#ffb02e", gold: "#ffe08a", cry: "#ff9a6a" }],
-  won: { scratch: { robe: "#3a1428", skin: "#8c4a30", cry: "#ff8a3c", gold: "#ff7a2b", lining: "#ff5a36" },
-    zorp: { robe: "#2f4f5a", skin: "#a9c8a0", cry: "#9dff5a", gold: "#9dff5a", lining: "#5affc3" },
-    kraken: { robe: "#1e3a4a", skin: "#b89a62", cry: "#3ef2c0", gold: "#e6c98a", lining: "#3ef2c0" },
-    harvest: { robe: "#8a3f1a", skin: "#f8cc52", cry: "#fff6c8", gold: "#ffe08a", lining: "#ffd66b" } },
-  pm: { 1: { robe: "#3a3842", skin: "#f1e8d2", cry: "#a86bff", gold: "#a86bff", brow: "#f1e8d2" },
-    2: { robe: "#ffd36b", skin: "#34246a", cry: "#ff6ad5", gold: "#ff6ad5", lining: "#ff6ad5", brow: "#f6eaff" } },
+  chip: [{}, { hat: "#2f1a6a", robe: "#b79af5", gold: "#ff8ad8", lining: "#6a3fc4" }, { hat: "#3f8f52", robe: "#3f8f52", gold: "#f6c64f", lining: "#b6ff6a", cry: "#b6ff6a", wood: "#e6d9b0" }, { hat: "#f0d48a", robe: "#b3283a", gold: "#fff0b0", lining: "#ffb02e", cry: "#ff9a6a" }],
+  won: { scratch: { hat: "#3a1428", robe: "#3a1428", skin: "#8c4a30", cry: "#ff8a3c", gold: "#ff7a2b", lining: "#ff5a36" },
+    zorp: { hat: "#2f4f5a", robe: "#2f4f5a", skin: "#a9c8a0", cry: "#9dff5a", gold: "#9dff5a", lining: "#5affc3" },
+    kraken: { hat: "#1e3a4a", robe: "#1e3a4a", skin: "#b89a62", cry: "#3ef2c0", gold: "#e6c98a", lining: "#3ef2c0" },
+    harvest: { skin: "#f0b41e", hat: "#e0a01a", robe: "#a8641e", gold: "#fff3b0", lining: "#ffd66b", cry: "#fff6c8", wood: "#8a4f14", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { robe: "#3a3842", skin: "#f1e8d2", cry: "#a86bff", gold: "#a86bff", brow: "#f1e8d2", hat: "#3a3842" },
+    2: { skin: "#34246a", hat: "#4a2f9a", robe: "#2b1f52", gold: "#ffd36b", lining: "#ff6ad5", cry: "#ff6ad5", brow: "#f6eaff", wood: "#1a1238", boot: "#1a1238", rim: "#ff6ad5" } },
   prim: "robe",
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.browSh = cvMix(C.brow, "#7f8fc0", 0.28); C.cryD = cvMix(C.cry, "#c0602a", 0.32);
@@ -49,10 +48,10 @@ cvFigReg("wizard", {
     stache(S) { S.cel(cvSm([[7, -39, 1], [2, -38], [-4, -32, 1], [3, -33.5], [7, -36, 1], [11, -33.5], [18, -32, 1], [12, -38]]), "brow", { sh: [1.5, -1.5], shade: "browSh", lw: 1.6 }); },
     // the hat: the cone bent back with the star charm on its tip, the gold band, the wide brim, the sprout growing out of its front
     hat(S) { S.with(0, -2, 0, 1, () => {
-      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "robe", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "robe/lt.22" });
-      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "robe/sh.5");
+      S.cel(cvSm([[-13, -60, 1], [-10, -76], [-16.3, -88], [-34.4, -93.5, 1], [-11.6, -97.5], [5, -82], [15, -60, 1]]), "hat", { sh: [6, -4], rim: 1, hi: [-4, 4], hiCol: "hat/lt.22" });
+      S.line([[-10, -84], [-16.3, -88], [-24.4, -91]], 1.3, "hat/sh.5");
       S.cel(cvSm([[-13, -61, 1], [-12.4, -67], [1, -65.5], [13.4, -67], [15, -61, 1], [1, -59]]), "gold", { sh: [3, -2], lw: 1.8 });
-      S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "robe", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "robe/lt.25" });
+      S.cel(cvSm([[-28, -58], [-14, -53], [3, -52], [20, -53.5], [31, -58], [20, -61], [2, -62], [-16, -62]]), "hat", { sh: [4, -2.5], hi: [-3, 2.5], hiCol: "hat/lt.25" });
       S.line([[-2.5, -64], [-3.2, -68], [-2.4, -71.5]], 2.2, "stem");
       S.leaf(-2.6, -71, 8, -2.5, "leaf"); S.leaf(-2.4, -71.5, 9, -0.6, "leaf");
       S.line([[-34.4, -93.5], [-34.5, -86.5]], 1.2); S.star(-34, -83.5, 3.8, "gold", 1.2);

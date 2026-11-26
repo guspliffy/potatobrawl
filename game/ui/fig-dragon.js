@@ -22,13 +22,12 @@ function cvDrgFoot(S, col, shade) {
 }
 cvFigReg("dragon", {
   pal: { skin: "#efac5a", sc: "#d9562a", mem: "#ffa24a", belly: "#ffe6b3", horn: "#fff3da", leaf: "#7fd35c", iris: "#f2b21f" },
-  chip: [{}, { sc: "#2f9a5c", mem: "#a6e06a", belly: "#f6f3c0" }, { sc: "#473a72", mem: "#9a84e0", belly: "#d6ccf6", horn: "#e6e0ff" },
-    { sc: "#a81c28", mem: "#ff8a1f", belly: "#ffd27a" }],
-  won: { scratch: { sc: "#a01f1f", skin: "#8c4a30", mem: "#ff7a1f", belly: "#ffb86a" },
+  chip: [{}, { sc: "#8fdc6a", mem: "#1f6a4a", belly: "#f6f3c0" }, { sc: "#2a2240", mem: "#7a64c8", belly: "#b8aee0", horn: "#e6e0ff" }, { sc: "#c2202a", mem: "#ffd23f", belly: "#3a0f14", horn: "#2a1418" }],
+  won: { scratch: { sc: "#a01f1f", horn: "#c9262a", skin: "#8c4a30", mem: "#ff7a1f", belly: "#ffb86a" },
     zorp: { sc: "#3fbf7a", skin: "#a9c8a0", mem: "#b6ffb0", belly: "#e6ffd6" },
     kraken: { sc: "#3f7a8a", skin: "#b89a62", mem: "#7ae0d6", belly: "#f0e6c0" },
-    harvest: { sc: "#c9741a", skin: "#f8cc52", mem: "#ffd66b", belly: "#fff3c8", horn: "#fff6dc" } },
-  pm: { 1: { sc: "#ffc21f", skin: "#f1e8d2", mem: "#d8cfb8" }, 2: { sc: "#ff8c42", skin: "#34246a", mem: "#ff6ad5", belly: "#c9a6ff", horn: "#ffe6fa" } },
+    harvest: { skin: "#ffd66b", sc: "#e0a01a", mem: "#8a4f14", belly: "#fff3c8", horn: "#fff6dc", "skin/sh": "#b8761a", "skin/lt": "#fff3b0" } },
+  pm: { 1: { sc: "#ffc21f", skin: "#f1e8d2", mem: "#d8cfb8" }, 2: { skin: "#34246a", sc: "#4a2f9a", mem: "#ff6ad5", belly: "#c9a6ff", horn: "#ffe6fa", iris: "#ff8c42", rim: "#ff6ad5" } },
   prim: "sc",
   derive(C) {
     C.lid = cvSh(C.skin, 0.18); C.scB = cvSh(C.sc, 0.3); C.memB = cvSh(C.mem, 0.42); C.bellyLn = cvMix(C.belly, "#a0602a", 0.42);
