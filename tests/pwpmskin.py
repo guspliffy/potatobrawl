@@ -8,8 +8,10 @@
 # too, so the numbers are an upper bound).
 # Saves per line one contact sheet: <outdir>/<line>-844.jpg (844x390: 8 fighters x standing, dashing, KO effect) and <line>-up.jpg
 # (390x844 upright: 2 fighters), prints each run's cost, the cost per line and "pommes skins ok".
-#   python3 tests/pwpmskin.py [outdir] [fighter ...] [--lines=1,2] [--noup] [--raw]   (outdir default /mnt/project-files/step8/skins)
+#   python3 tests/pwpmskin.py [outdir] [fighter ...] [--lines=1,2] [--pals=3,4,5,6,7] [--noup] [--raw]   (outdir default /mnt/project-files/step8/skins)
 #   --raw  also saves each crop at full size (<outdir>/raw/<line>-<fighter>-<W>-<n>.png)
+#   --pals the same run and budget for other skins by palette index (spec.palettes: 3 the 300-chip skin, 4-7 the won skins: their Carved Ink
+#          passes in skinfx.js, also timed by __pmskProf); with --pals the Pommes lines run only when --lines is given too
 import sys, json, pathlib, io
 from playwright.sync_api import sync_playwright
 from PIL import Image, ImageDraw
@@ -21,8 +23,12 @@ pos = [a for a in args if not a.startswith('--')]
 OUT = pathlib.Path(pos[0] if pos and ('/' in pos[0] or pos[0] in ('.', '..')) else '/mnt/project-files/step8/skins')
 ALL = ['phoenix', 'alchemist', 'odin', 'wizard', 'samurai', 'dragon', 'gunslinger', 'reaper']
 IDS = [a for a in pos if a in ALL] or ALL
-LINES = [int(x) for x in opt('--lines', '1,2').split(',')]
+PALS = [int(x) for x in opt('--pals', '').split(',') if x]
+LINES = [int(x) for x in opt('--lines', '' if PALS else '1,2').split(',') if x]
 NAME = {1: 'ink-noir', 2: 'starfall'}
+PNAME = {1: 'chip-60', 2: 'chip-150', 3: 'chip-300', 4: 'devils-roast', 5: 'specimen', 6: 'deep-catch', 7: 'harvest-gold'}
+# a run: (its name, the palette worn, the Pommes line or 0)
+JOBS = [(NAME[l], 8 if l == 1 else 9, l) for l in LINES] + [(PNAME[i], i, 0) for i in PALS]
 UP_IDS = ['wizard', 'reaper']
 BUDGET = 0.5   # ms a frame per fighter, both passes
 # the Reaper's passes cover his whole cloak and hood (the redesign's bell, about twice a potato body's area), so they cost more per frame;
@@ -76,10 +82,10 @@ def shot(pg, name):
     if '--raw' in args: (OUT / 'raw').mkdir(exist_ok=True); (OUT / 'raw' / f'{name}.png').write_bytes(png)
     return Image.open(io.BytesIO(png)).convert('RGB').resize(CELL, Image.LANCZOS)
 
-def run(b, fid, line, W, H, up):
-    tag = f'{fid} {NAME[line]} {W}x{H}'
+def run(b, fid, job, W, H, up):
+    name, spec_idx, line = job   # core.js: pal.pommes 1 / 2 are palettes 8 / 9 (checked below)
+    tag = f'{fid} {name} {W}x{H}'
     ctx = b.new_context(viewport={'width': W, 'height': H}, device_scale_factor=2, is_mobile=True, has_touch=True)
-    spec_idx = 8 if line == 1 else 9   # core.js: pal.pommes 1 / 2 are palettes 8 / 9 (checked below)
     prof = {'tut': True, 'last': fid, 'sound': False, 'fs': False, 'screen': 'up' if up else 'cw', 'pal': {fid: spec_idx}, 'owned': {fid: [0, spec_idx]}}
     ctx.add_init_script("window.__blNoQuick = true; localStorage.setItem('potatobrawl.profile.v1', %s);" % json.dumps(json.dumps(prof)))
     ctx.add_init_script(CLOCK); ctx.add_init_script(HOOKS)
@@ -94,21 +100,21 @@ def run(b, fid, line, W, H, up):
     pg.wait_for_function("() => window.__blastline.game && window.__blastline.game.phase === 'play'", timeout=20000)
     pg.wait_for_timeout(200)
     worn = pg.evaluate("() => { const f = window.__blastline.game.fighters[0]; return [f.pal.pommes || 0, f.spec.palettes.indexOf(f.pal), f.pal.name]; }")
-    if worn[0] != line: bad.append(f'{tag}: the fighter wears {worn}, not line {line}')
+    if worn[0] != line or worn[1] != spec_idx: bad.append(f'{tag}: the fighter wears {worn}, not {name}')
     pg.evaluate("() => window.__clock.freeze()")
     S, pics = [], []
     frame(pg, {}, [])
     pg.evaluate("""() => { const g = window.__blastline.game, a = g.fighters[0], d = g.fighters[1];
       a.x = -190; a.facing = 1; d.x = 150; d.facing = -1; a.vx = a.vy = d.vx = d.vy = 0; }""")
     # standing (0.5 s)
-    frames(pg, 30, {}, S); pics.append(shot(pg, f'{NAME[line]}-{fid}-{W}-1'))
+    frames(pg, 30, {}, S); pics.append(shot(pg, f'{name}-{fid}-{W}-1'))
     # running (0.5 s), then the sprint: its burst is the dash
     frames(pg, 26, {'x': 1}, S)
     frame(pg, {'x': 1, 'sprint': True}, S)
     frames(pg, 6, {'x': 1}, S)
     spr = pg.evaluate("() => window.__blastline.game.fighters[0].spr")
     if not spr: bad.append(f'{tag}: the sprint did not start')
-    pics.append(shot(pg, f'{NAME[line]}-{fid}-{W}-2'))
+    pics.append(shot(pg, f'{name}-{fid}-{W}-2'))
     frames(pg, 10, {'x': 1}, S)
     # light attacks into the Dummy (Ink Noir: an ink star on each)
     pg.evaluate("""() => { const g = window.__blastline.game, a = g.fighters[0], d = g.fighters[1]; a.x = d.x - 34; a.facing = 1; a.vx = 0; d.percent = 0; }""")
@@ -128,14 +134,14 @@ def run(b, fid, line, W, H, up):
             if pg.evaluate("(s0) => window.__blastline.game.fighters[1].stocks < s0", s0): ko = True; break
         if ko: break
     if not ko: bad.append(f'{tag}: no KO')
-    frames(pg, 13 if line == 1 else 8, {}, S)   # each KO effect near its fullest: Ink Noir's word and burst, Starfall's ring (20 frames)
-    pics.append(shot(pg, f'{NAME[line]}-{fid}-{W}-3'))
+    frames(pg, 13 if line == 1 else 8 if line == 2 else 10, {}, S)   # each KO effect near its fullest: Ink Noir's word and burst, Starfall's ring (20 frames)
+    pics.append(shot(pg, f'{name}-{fid}-{W}-3'))
     frames(pg, 30, {}, S)
     ctx.close()
     n = len(S) or 1
     avg, rd = sum(m for m, _ in S) / n, sum(r for _, r in S) / n
     mx = max((m for m, _ in S), default=0)
-    cost.setdefault(line, []).append((fid, avg, mx, len(S), rd))
+    cost.setdefault(name, []).append((fid, avg, mx, len(S), rd))
     print(f'{tag}: overlay {avg:.3f} ms avg ({max(0, avg - rd):.3f} without the reads), {mx:.1f} ms max over {len(S)} frames; light hits {hit:.0f}%, KO {ko} (try {attempt + 1})', flush=True)
     if not S: bad.append(f'{tag}: the overlay passes never ran')
     bud = BUDGET_OF.get(fid, BUDGET)
@@ -157,17 +163,17 @@ def sheet(cols, path):
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--disable-gpu'])
     OUT.mkdir(parents=True, exist_ok=True)
-    for line in LINES:
-        cols = [(fid, run(b, fid, line, 844, 390, False)) for fid in IDS]
-        sheet(cols, OUT / f'{NAME[line]}-844.jpg')
+    for job in JOBS:
+        cols = [(fid, run(b, fid, job, 844, 390, False)) for fid in IDS]
+        sheet(cols, OUT / f'{job[0]}-844.jpg')
         if '--noup' not in args:
-            cols = [(fid, run(b, fid, line, 390, 844, True)) for fid in UP_IDS if fid in IDS or IDS == ALL]
-            if cols: sheet(cols, OUT / f'{NAME[line]}-up.jpg')
+            cols = [(fid, run(b, fid, job, 390, 844, True)) for fid in UP_IDS if fid in IDS or IDS == ALL]
+            if cols: sheet(cols, OUT / f'{job[0]}-up.jpg')
     b.close()
-for line, rows in cost.items():
+for name, rows in cost.items():
     n = sum(r[3] for r in rows)
     avg = sum(r[1] * r[3] for r in rows) / n if n else 0
     rd = sum(r[4] * r[3] for r in rows) / n if n else 0
-    print(f'{NAME[line]}: overlay {avg:.3f} ms avg a frame per fighter ({max(0, avg - rd):.3f} without the reads), {max(r[2] for r in rows):.1f} ms max (worst avg {max(rows, key=lambda r: r[1])[0]} {max(r[1] for r in rows):.3f} ms)')
+    print(f'{name}: overlay {avg:.3f} ms avg a frame per fighter ({max(0, avg - rd):.3f} without the reads), {max(r[2] for r in rows):.1f} ms max (worst avg {max(rows, key=lambda r: r[1])[0]} {max(r[1] for r in rows):.3f} ms)')
 for e in errs + bad: print('ERROR', e)
 print('pommes skins ok' if not errs and not bad else 'pommes skins FAILED')

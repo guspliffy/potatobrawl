@@ -54,12 +54,13 @@ cvFigReg("dragon", {
     // the clawed feet, standing on (0, 0), the ankle over x = 0 (the far one in the scales' shadow)
     foot(S) { cvDrgFoot(S, "sc", true); },
     footB(S) { cvDrgFoot(S, "sc/sh", false); },
-    // the back spikes and the far horn
-    back(S) {
+    // the back spikes and the far horn (k: the horn's size about its root (-2, -54); Devil's Roast wears it 1.25 times bigger: backDR)
+    back(S, k) {
       for (const [x, y, a] of [[-9, -53, -0.9], [-17, -45, -1.25], [-22, -34, -1.5], [-24, -23, -1.75]])
         S.with(x, y, a + Math.PI / 2, 1, () => S.cel(cvSm([[-4, 2, 1], [0, -8, 1], [4, 2, 1]]), "horn", { sh: [1, -1], shade: "hornSh", lw: 1.8 }));
-      S.cel(cvSm([[-6, -53, 1], [-4, -64], [5, -72, 1], [1, -62], [2, -54, 1]]), "hornB", { sh: [1, -1], lw: 2 });
+      S.with(-2, -54, 0, k || 1, () => S.cel(cvSm([[-4, 1, 1], [-2, -10], [7, -18, 1], [3, -8], [4, 0, 1]]), "hornB", { sh: [1, -1], lw: 2 }));
     },
+    backDR(S) { this.back(S, 1.25); },
     // the pear and its jaw under one outline: the scaled back, the belly plates, the jaw's shadow, the mouth with its fang, the nostril
     body(S) {
       const B = cvPos(cvBlob(0, -31, 20.5, 24, { pear: 0.2, sq: 0.95 })), J = cvPos(cvBlob(19, -33, 9, 6.6)), Ji = cvOffset(J, -1.3);
@@ -76,11 +77,12 @@ cvFigReg("dragon", {
       S.cel([[20, -29.4], [21.6, -34.4], [23.6, -30]], "eye", { lw: 1.2, sh: 0 });
       S.fill(cvCirc(24.5, -36, 1.1, 1.7, 0.3), "ink");
     },
-    // the near horn over the brow, and the sprout between the horns
-    horns(S) {
-      S.cel(cvSm([[5, -54, 1], [9, -64], [21, -71, 1], [14, -61], [13, -53, 1]]), "horn", { sh: [1.4, -1.4], shade: "hornSh", lw: 2 });
+    // the near horn over the brow (k: its size about its root (9, -54); Devil's Roast: hornsDR), and the sprout between the horns
+    horns(S, k) {
+      S.with(9, -54, 0, k || 1, () => S.cel(cvSm([[-4, 0, 1], [0, -10], [12, -17, 1], [5, -7], [4, 1, 1]]), "horn", { sh: [1.4, -1.4], shade: "hornSh", lw: 2 }));
       S.leaf(-2, -55, 8, -1.9, "leaf"); S.leaf(-1, -55, 8.5, -1.1, "leaf");
     },
+    hornsDR(S) { this.horns(S, 1.25); },
   },
   draw(K) {
     const f = K.f, P = K.P, tk = K.tk, air = !f.grounded && f.state !== "ledge";
@@ -107,7 +109,8 @@ cvFigReg("dragon", {
     K.arm(false);
     K.leg(false); K.leg(true);
     K.rim();
-    K.stack(["back", "body", "skin", "face", "horns", "top"]);
+    const dr = skinRoad(f) === "scratch";   // Devil's Roast: his own horns, bigger (skinfx.js has the other fighters' horns)
+    K.stack([dr ? "backDR" : "back", "body", "skin", "face", dr ? "hornsDR" : "horns", "top"]);
     if (calm > 0.5 && f.state !== "attack" && P.mouth <= 0.5 && !K.flash) cvDrgSmoke(K);   // (standing, between moves)
     K.arm(true);
   },
