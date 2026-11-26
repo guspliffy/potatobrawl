@@ -79,7 +79,7 @@ function suQuiet() {
 function suTick() {
   if (P.skup || SU.on) return;
   if (firstRun) { P.skup = 1; return; }   // a first run: never an "upgrade". Set in memory only: saving now would end the first-open flow (ui/mastery.js); the first real save keeps it
-  if (!P.tut) return;                                    // the first-open flow is not over yet
+  if (!P.tut && !playedOnce()) return;                   // the first-open flow is not over yet (a profile from before the tutorial has played: no P.tut)
   const list = suOwned();
   if (!list.length) {
     // only free skins: set silently, but once the server's Pommes skins have had their say (they can arrive a moment after load)
