@@ -978,7 +978,7 @@ function mgMateSticker(o, C, y, sl, t) {
   o.fillStyle = "#f1ece2"; o.beginPath(); o.arc(0, 0, r * 0.88, 0, Math.PI * 2); o.fill();
   o.save(); o.beginPath(); o.arc(0, 0, r * 0.8, 0, Math.PI * 2); o.clip();
   o.fillStyle = M.col; o.fillRect(-r, -r, 2 * r, 2 * r);
-  if (M.img && M.img.complete && M.img.naturalWidth) { const s2 = r * 1.7; o.drawImage(M.img, -s2 / 2, -s2 * 0.42, s2, s2); }
+  if (M.img && M.img.complete && M.img.naturalWidth) { const s2 = r * 1.7, h = M.img.naturalHeight; o.drawImage(M.img, (M.img.naturalWidth - h) / 2, 0, h, h, -s2 / 2, -s2 / 2, s2, s2); }   // (the portrait's middle square: its centre circle)
   o.restore();
   o.restore();
 }

@@ -326,7 +326,7 @@ button { font: inherit; color: inherit; }
 /* ---------- menu: game/css/20-menu.css (the menu redesign); the rules below are shared with the Account sheet and the results ---------- */
 #app { --gear: 42px; }
 #app.short { --gear: 38px; }
-.av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 49% 48% / auto 215% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
+.av { --d: calc(var(--gear) - 10px); width: var(--d); height: var(--d); flex: none; display: block; border-radius: 50%; background: var(--raise) 50% 50% / auto 100% no-repeat; border: 1px solid rgba(206, 210, 255, 0.28); }
 .ring { --tc: #9097ad; --d: calc(var(--gear) - 10px); position: relative; width: var(--d); height: var(--d); flex: none; display: grid; place-items: center; }
 .ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring > svg circle { fill: none; stroke-width: 3.4; }
@@ -406,8 +406,6 @@ kbd { font-family: var(--display); font-weight: 700; font-size: 13px; background
 #app.portrait .ac-grid, #app.narrow .ac-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "me" "sync" "foot"; grid-template-rows: none; }
 .ac-me { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ac-id { display: flex; gap: 12px; align-items: center; }
-.av[data-f="gunslinger"] { background-position: 53% 67%; background-size: auto 190%; }   /* his face sits lower, under the hat brim */
-.av[data-f="reaper"] { background-position: 53% 62%; background-size: auto 190%; }   /* his face, inside the hood */
 .ac-id .av { --d: 58px; }
 .ac-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .ac-name { font: 800 22px/1.1 var(--display); text-transform: uppercase; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; width: 100%; max-width: 18ch; user-select: text; -webkit-user-select: text; touch-action: manipulation; }

@@ -39,16 +39,46 @@ MANGA.dragon = (function () {
   }
   // a point of the page (shares of its area, drawn for a winner on the left; mirrored when he is on the right), in css px
   const pg = (fx, fy) => [MG.page.x + (FIN.dir > 0 ? fx : 1 - fx) * MG.page.w, MG.page.y + fy * MG.page.h];
-  // his wings, grown: the game's own bat wing drawn bigger behind him, through the same ink (the bones stay the wing's own)
+  // his wings, grown: his own carved pair (ui/fig-dragon.js wingB / wingF, in the skin he wears) drawn bigger about its root behind him,
+  // through the same ink; while they show, the puppet is drawn without its own pair (winged), so he never has two
   function wingsUnder(p, t) {
     const spread = ease(fe(MT.LOOK, 1700, t)) * (1 - ease(fe(MT.AFTER, MT.AFTER + 400, t)));
     if (spread < 0.05) return null;
-    return (lc) => {
-      const P = pose(p, mgTk(t)), len = P.w * 0.95 * (1 + 0.85 * spread);
-      const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean), fl = P.flap - P.wingUp * 0.9;
-      batWing(lc, a1[0], a1[1], Math.PI + 0.18 - fl + P.lean, len, p.pal, true, true);
-      batWing(lc, a2[0], a2[1], -0.25 + fl * 0.7 + P.lean, len * 0.9, p.pal, false, false);
+    return (lc) => carvedWings(lc, p, t, 1 + 0.35 * spread, 0, 0, 0.4 * spread);
+  }
+  // the carved wings' fills, kept before any draw leaves them out
+  let wingOps = null;
+  const wingParts = () => wingOps || (wingOps = ((o) => ({ B: o.wingB, F: o.wingF }))(cvOpsOf(CV_FIG.dragon)));
+  // the pair where the figure puts it (the turn of fig-dragon.js about the root (-8, -43), not tipped by the lean), grown g times; fan 0..1
+  // spreads them into a V instead, the far one up and back, the near one turned over to the front, each turned by beat (the Air Fryer's blades);
+  // up raises both (rad)
+  function carvedWings(c, p, t, g, fan, beat, up) {
+    if (!CV_FIG.dragon) return;
+    MG.pt = t;
+    const tk = mgTk(t), P = pose(p, tk), W = wingParts(), air = !p.grounded && p.state !== "ledge";
+    const calm = clamp(1 - Math.abs(clamp((p.vx + p.kbx) * p.facing, -10, 10)) / 4, 0, 1);
+    const wt = P.wingUp * 0.6 - P.flap * 0.8 + (air ? -0.15 : 0) + Math.sin(tk * 0.05 + p.slot) * 0.02 * calm + (up || 0), ws = (air ? 1.12 : 1) * g;
+    const C = cvCols(CV_FIG.dragon, p, p.flash > 0 && p.flash % 2 === 0 ? "f" : P.dim ? "d" : "n");
+    const one = (ops, rot0, flip) => {
+      c.save(); c.translate(-8, -43); c.rotate(rot0 - P.lean); c.scale(ws * flip, ws); c.translate(8, 43);
+      cvOps(c, ops, C);
+      c.restore();
     };
+    c.save();   // (the figure's frame: the squash about the feet, the lean about the hip, the drop)
+    if (P.sq) c.scale(1 + 0.6 * P.sq, 1 - P.sq);
+    c.translate(P.hip[0], P.hip[1]); c.rotate(P.lean); c.translate(-P.hip[0], P.cvDrop - P.hip[1]);
+    cvMg = Object.prototype.hasOwnProperty.call(c, "fillStyle");   // (the page's inked context: the outlines get its strokes, as the figure's do)
+    try {
+      one(W.B, lerp(wt, 0.14 - beat, fan), 1);
+      one(W.F, lerp(wt, beat - 0.14, fan), 1 - 2 * fan);
+    } finally { cvMg = false; c.restore(); }
+  }
+  // mgPuppet for him: when o.under draws the grown wings, his figure's own pair is left out for this one draw (its carved fills set aside)
+  function winged(c, pn, p, t, o) {
+    if (!o.under || !CV_FIG.dragon) return mgPuppet(c, pn, p, t, o);
+    const W = wingParts(), ops = cvOpsOf(CV_FIG.dragon);
+    ops.wingB = ops.wingF = [];
+    try { return mgPuppet(c, pn, p, t, o); } finally { ops.wingB = W.B; ops.wingF = W.F; }
   }
 
   /* ---- panels ---- */
@@ -107,7 +137,7 @@ MANGA.dragon = (function () {
       if (pts.length > 2) { c.fillStyle = `rgba(40,34,48,${(0.38 * (1 - fe(1950, 2250, t))).toFixed(3)})`; brush(c, pts, 16 * s, pts.length - 1); }
     }
     // him
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX });
+    winged(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX });
     pn.screen(c);
     // the squint: nothing drawn, it is in the face (pose). The edge of the page darkens as the power gathers: a 70% screen creeping in from the corners
     if (power > 0.3) {
@@ -164,7 +194,7 @@ MANGA.dragon = (function () {
     // the smear of the lunge (the one place with ghosts of the Dragon)
     let smear = null;
     if (t > 2840 && t < 3040 && !MG.slow) { const h0 = pn.p(...bodyPt(W, t, s, "head")), gh = (dt, a) => { const q = pn.p(...bodyPt(W, t - dt, grow(t - dt), "head")); return [q[0] - h0[0], q[1] - h0[1], a]; }; smear = [gh(60, 0.18), gh(30, 0.35)]; }
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX, ghosts: smear });
+    winged(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX, ghosts: smear });
     // the Ultimate: Hellfire's blast round the loser, a white disc with an ink ring growing out of the fire (2900-3060)
     if (ult && t >= H0 && t < 3060) {
       const k = easeOut(fe(H0, 3060, t)), R = 20 + 26 * k, a = 1 - fe(3000, 3060, t);
@@ -303,7 +333,7 @@ MANGA.dragon = (function () {
     c.beginPath(); c.arc(fx, fy, pn.h * 0.5, 0, Math.PI * 2); c.fillStyle = MG_PAPER; c.fill();
     mgFocus(c, fx, fy, Math.hypot(pn.w, pn.h) * 0.9, t * 0.0003, 0.5);
     ground(c, pn, t);
-    mgPuppet(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX });
+    winged(c, pn, W, t, { sc: s, light: dirAng(-0.6), post: chestGlow(W, t, s), under: wingsUnder(W, t), box: WBOX });
     pn.screen(c);
     // the smoke ring: an ellipse of tone, growing and fading toward the reader
     const k = fe(MT.AFTER + 200, MT.AFTER + 1000, t);
@@ -1015,7 +1045,7 @@ MANGA.dragon = (function () {
     if (sb > 0.02) { pn.screen(c); const b = pn.p(X, -2.2 * ry); mgStarburst(c, b[0], b[1], R * pn.z * (0.6 + 1.1 * sb), 0.3); }
     // the Dragon hovering beside it, wings beating, the belly lit as the sneeze builds
     const glow = fe(J.BACK - 80, J.ACHOO, t) * (1 - fe(J.ACHOO, J.HIT, t));
-    jpAsSplash(t, (W) => mgPuppet(c, pn, W, t, { sc: G.sc, light: dirAng(-0.6), post: jpGlow(W, t, glow), under: wingsUnder(W, t), box: WBOX }));
+    jpAsSplash(t, (W) => winged(c, pn, W, t, { sc: G.sc, light: dirAng(-0.6), post: jpGlow(W, t, glow), under: wingsUnder(W, t), box: WBOX }));
     // the steam: rises, bends to his nose (3250-3400), is sniffed in faster (3400-3600), thins while his head is back, is blown away by the sneeze
     const N = jpNose(Math.min(t, J.BACK)), S = [X - D * 0.08 * rx, -2.6 * ry], E0 = [S[0] - D * R * 0.25, S[1] - R * 1.35], bend = ease(fe(MT.SPLASH + 60, J.SNIFF, t));
     const E = [lerp(E0[0], N[0], bend), lerp(E0[1], N[1], bend)], sniff = fe(J.SNIFF - 80, J.SNIFF + 80, t) * (1 - fe(J.BACK, J.BACK + 120, t));
@@ -1255,15 +1285,11 @@ MANGA.dragon = (function () {
     const u = ease(fe(AF.SWOOP, AF.LAND, t)), v = 1 - u, cx = (G.hx + G.px) / 2, cy = G.rim - (G.port ? 200 : 120);
     return [v * v * G.hx + 2 * v * u * cx + u * u * G.px, v * v * (G.hy + bob) + 2 * v * u * cy];
   }
-  // his grown wings: behind the drum they are the fan's blades, spread out flat either side of it and beating (P.flap); they fold away once he has landed
+  // his grown wings: behind the drum they are the fan's blades, spread out in a V either side of it and beating (P.flap); they fold back
+  // behind him as he swoops and shrink to his own once he has landed
   function afWings(p, t, spread) {
     if (spread < 0.05) return null;
-    return (lc) => {
-      const P = pose(p, mgTk(t)), len = P.w * (0.95 + 1.45 * spread), fan = spread * (1 - fe(AF.SWOOP, AF.SWOOP + 60, t)), fl = P.flap - P.wingUp * 0.9;
-      const a1 = rot([-P.w * 0.3, P.cy + P.ry * 0.1], P.hip, P.lean), a2 = rot([P.w * 0.2, P.cy + P.ry * 0.05], P.hip, P.lean), b = P.flap - 0.18;
-      batWing(lc, a1[0], a1[1], lerp(Math.PI + 0.18 - fl, Math.PI + 0.3 - b, fan) + P.lean, len, p.pal, true, true);
-      batWing(lc, a2[0], a2[1], lerp(-0.25 + fl * 0.7, -0.3 + b, fan) + P.lean, len * 0.95, p.pal, false, false);
-    };
+    return (lc) => { MG.pt = t; const P = pose(p, mgTk(t)); carvedWings(lc, p, t, 1 + 0.2 * spread, spread * (1 - fe(AF.SWOOP, AF.SWOOP + 60, t)), P.flap - 0.18); };
   }
   function afAsDragon(t, fn) {
     const W = W_(), ox = W.x, oy = W.y, of = W.facing, q = afDragonAt(t); W.x = q[0]; W.y = q[1]; afIn = 1;
@@ -1409,7 +1435,7 @@ MANGA.dragon = (function () {
     afStand(c, G, lw);
     // the Dragon behind the drum (his wings either side are the fan), in front of it once he has swooped up over the rim
     const fd = afDragonAt(t), front = t >= AF.SWOOP && (fd[1] < G.rim || t >= (AF.SWOOP + AF.LAND) / 2);
-    const drawW = () => afAsDragon(t, (W) => mgPuppet(c, pn, W, t, { sc: G.sc, light: dirAng(-0.6), under: afWings(W, t, 1 - ease(fe(AF.LAND - 70, AF.LAND + 30, t))), box: WBOX }));
+    const drawW = () => afAsDragon(t, (W) => winged(c, pn, W, t, { sc: G.sc, light: dirAng(-0.6), under: afWings(W, t, 1 - ease(fe(AF.LAND - 70, AF.LAND + 30, t))), box: WBOX }));
     if (!front) drawW();
     pn.world(c);
     afDrumBack(c, C, R, t);
